@@ -1,0 +1,198 @@
+// Singleton SSH probe of the user's network switch.
+//
+// Triggered at scan-start (parallel to CV) and the result is cached in
+// localStorage so subsequent visits to the Available Ports page show the
+// last-known state instantly without re-probing. Re-fires only when:
+//   - a new scan starts (ScanPage calls triggerBackgroundProbe)
+//   - the user clicks Retry (force: true)
+//
+// Independent of the LLDP "find the other end of this cable" feature —
+// different consumer, same encrypted credentials path on the server.
+import { apiUrl, authFetch } from './api';
+
+const STORAGE_KEY = 'racktrack:portsProbe';
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data?.status === 'ok' && Array.isArray(data.ports)) return data;
+    return null;
+  } catch (_) { return null; }
+}
+function saveToStorage(s) {
+  try {
+    if (s?.status === 'ok') localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  } catch (_) { /* quota / disabled */ }
+}
+
+const cached = loadFromStorage();
+const state = cached || {
+  status: 'idle',     // 'idle' | 'running' | 'ok' | 'error'
+  ports: null,        // [{ iface, status, description }]
+  error: null,
+  host: null,
+  startedAt: null,
+  finishedAt: null,
+};
+const subs = new Set();
+
+function notify() { for (const fn of subs) { try { fn({ ...state }); } catch (_) {} } }
+function setState(patch) { Object.assign(state, patch); saveToStorage(state); notify(); }
+
+export function getProbeState() { return { ...state }; }
+export function subscribeProbe(fn) {
+  subs.add(fn);
+  try { fn({ ...state }); } catch (_) {}
+  return () => subs.delete(fn);
+}
+export function resetProbe() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+  setState({ status: 'idle', ports: null, error: null, host: null, startedAt: null, finishedAt: null });
+}
+
+// Parse `show interface status` rows. Tolerant to TP-Link / Cisco-ish layouts.
+function parseInterfaceStatusTable(text) {
+  if (!text) return [];
+  // Strip null bytes and paging prompts that remain after --More-- auto-advance.
+  // TP-Link emits: "Press any key to continue (Q to quit)\0<spaces><next line>".
+  // Convert \0 to \n so the data after the prompt becomes its own row, then
+  // strip ONLY the prompt text (plus trailing tabs/spaces) — never eat to the
+  // next \n, or we lose the port row that sits on the same line as the prompt
+  // (the "27 of 28" bug: Gi1/0/23 vanished because the server-side cleanup
+  // missed an edge case and this regex devoured the row).
+  const cleaned = text
+    .replace(/\x00/g, '\n')
+    .replace(/Press any key to continue(?:\s*\(Q to quit\))?[ \t]*/gi, '')
+    .replace(/--More--[ \t]*/g, '')
+    .replace(/<--- More --->[ \t]*/g, '');
+  const out = [];
+  for (const rawLine of cleaned.split('\n')) {
+    const line = rawLine.replace(/\r$/, '').trim();
+    if (!line) continue;
+    if (/^port\b/i.test(line)) continue;
+    if (/^-+\s*$/.test(line)) continue;
+    if (/^\s*Total/i.test(line)) continue;
+    const m = line.match(/^(\S+)\s+(\S+)(?:\s+(\S+))?(?:\s+(\S+))?(?:\s+(\S+))?(?:\s+(\S+))?(?:\s+(.*))?$/);
+    if (!m) continue;
+    const iface = m[1];
+    if (!/^([A-Za-z]{1,4}\d+(\/\d+){0,3}|Eth\d+(\/\d+)?)$/i.test(iface)) continue;
+    out.push({
+      iface,
+      status: (m[2] || '').toLowerCase(),
+      medium: (m[6] || '').trim().toLowerCase(),   // 'copper' | 'fiber' | ''
+      description: (m[7] || '').trim(),
+    });
+  }
+  return out;
+}
+export { parseInterfaceStatusTable };
+
+// Translate raw ssh2 / network error strings into something a technician can
+// act on. The switch-side SSH stack surfaces terse messages ("Not connected")
+// that read as a bug when they're really "the switch dropped the session" —
+// which a Retry usually clears now that the server does a full reconnect.
+function friendlyProbeError(msg) {
+  const m = (msg || '').toLowerCase();
+  if (/closed by the switch|session closed/.test(m))
+    return 'The switch accepted the login but closed the session — the saved switch account may not have CLI access. Check the switch credentials.';
+  if (/not connected|econnreset|epipe|unable to open shell|channel open failure/.test(m))
+    return 'Lost the SSH session to the switch — it may limit simultaneous connections. Tap Retry.';
+  if (/timed out|etimedout|ehostunreach|enetunreach/.test(m))
+    return 'The switch didn’t respond. Check you’re on the same network as the switch, then Retry.';
+  if (/auth|denied|permission|all configured authentication/.test(m))
+    return 'The switch rejected the saved credentials.';
+  if (/econnrefused/.test(m))
+    return 'The switch refused the connection — is SSH enabled on it?';
+  return msg;
+}
+export { friendlyProbeError };
+
+export function logicalVerdict(row) {
+  const s = (row.status || '').toLowerCase();
+  const hasDesc = !!(row.description && row.description.trim());
+  if (/(linkup|connected|^up$)/i.test(s)) return 'used';
+  if (/(err|disable|shutdown|admin)/i.test(s)) return 'reserved';
+  return hasDesc ? 'reserved' : 'available';
+}
+
+let inflight = false;
+
+// Idempotent: if a probe is already running or finished successfully, this
+// returns immediately. Pass `force: true` to re-probe (e.g. user-pressed Retry).
+export async function triggerBackgroundProbe({ force = false } = {}) {
+  if (!force) {
+    if (state.status === 'ok' || state.status === 'running') return;
+  }
+  if (inflight) return;
+  inflight = true;
+  setState({ status: 'running', error: null, startedAt: Date.now(), finishedAt: null });
+
+  // Watchdog: the request itself has no built-in timeout, and the server
+  // serializes SSH per host — so a busy switch (or a live poller holding the
+  // host lock) can leave this request open indefinitely, hanging the loader
+  // forever. Abort after a hard ceiling so the UI always resolves to an
+  // actionable error + Retry instead of spinning. Ceiling is set above the
+  // server-side command timeout so a normal failure surfaces its real reason
+  // first, and the watchdog only catches a genuine stall.
+  const SERVER_TIMEOUT_MS = 30000;
+  const WATCHDOG_MS = 38000;
+  const controller = new AbortController();
+  const watchdog = setTimeout(() => controller.abort(), WATCHDOG_MS);
+
+  try {
+    // Resolve the switch host. Prefer the user's last successful SSH host
+    // (server-side, per-user). NEVER fall back to the default gateway —
+    // that's almost never the managed switch and produces a 20-second
+    // ETIMEDOUT. If `last_host` is empty, use the in-office default the
+    // ResultsPage flow has been using (192.168.1.14).
+    const FALLBACK_SWITCH_HOST = '192.168.1.14';
+    let host = state.host;
+    if (!host) {
+      try {
+        const hr = await fetch(apiUrl('/api/switch/default-host'));
+        const hj = hr.ok ? await hr.json() : null;
+        host = hj?.last_host || FALLBACK_SWITCH_HOST;
+      } catch (_) { host = FALLBACK_SWITCH_HOST; }
+    }
+    if (!host) {
+      setState({ status: 'error', error: 'No network switch host configured.', finishedAt: Date.now() });
+      return;
+    }
+
+    const r = await authFetch(apiUrl('/api/switch/console/run'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        host,
+        command: 'show interface status',
+        vendor: 'tplink',
+        timeoutMs: SERVER_TIMEOUT_MS,
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`);
+    const entry = data.entry || {};
+    if (entry.error) throw new Error(entry.error);
+    const parsed = parseInterfaceStatusTable(entry.output || '');
+    if (parsed.length === 0) {
+      setState({ status: 'error', error: 'Probe returned no port rows.', host, finishedAt: Date.now() });
+      return;
+    }
+    setState({ status: 'ok', ports: parsed, host, finishedAt: Date.now() });
+  } catch (err) {
+    const aborted = err?.name === 'AbortError';
+    setState({
+      status: 'error',
+      error: aborted
+        ? 'The switch didn’t respond in time. Check you’re on the same network as it, then tap Retry.'
+        : friendlyProbeError(err.message || String(err)),
+      finishedAt: Date.now(),
+    });
+  } finally {
+    clearTimeout(watchdog);
+    inflight = false;
+  }
+}

@@ -1,0 +1,763 @@
+.specs {
+  position: relative;
+  /* Flex column so the header stays put and .scrollBody owns the scroll.
+     The page root is `.page.page-full` (height:100dvh, overflow:hidden), so
+     scrolling MUST live in an inner container — otherwise long spec tables
+     are clipped and the page can't scroll on mobile. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 18px;
+  background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 50%, var(--bg3) 100%);
+  overflow: hidden;
+}
+
+/* The actual scroll container — grows to fill the page and scrolls its
+   overflow. Bottom padding clears the mobile tab bar / gives breathing room. */
+.scrollBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 90px;
+}
+
+/* Circular "Back to top" button — appears once the user scrolls down. */
+.backToTop {
+  position: absolute;
+  right: 18px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border, rgba(0,0,0,0.12));
+  background: var(--card, #ffffff);
+  color: var(--t1, #1a1c1d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 40;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+}
+.backToTop:active { transform: translateY(1px); }
+
+/* Desktop: defer scrolling to DesktopShell's .fluid container so there's
+   only one scroll context. Without this, the inner scroll competes with
+   .fluid and the SFP Procurement Advisor below the specs table ends up
+   unreachable on long pages. */
+@media (min-width: 1180px) {
+  .specs {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    padding-bottom: 48px;
+  }
+  .scrollBody {
+    flex: none;
+    min-height: 0;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+}
+
+.amb {
+  position: absolute; top: -120px; right: -100px;
+  width: 380px; height: 380px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.22) 0%, transparent 65%);
+  pointer-events: none; z-index: 0;
+}
+.amb2 {
+  position: absolute; bottom: 60px; left: -120px;
+  width: 320px; height: 320px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.18) 0%, transparent 65%);
+  pointer-events: none; z-index: 0;
+}
+
+.header {
+  position: relative; z-index: 10;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 0 8px;
+  gap: 12px;
+}
+.title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--t1);
+  flex: 1;
+  text-align: center;
+}
+.backBtn {
+  width: 38px; height: 38px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--gb);
+  color: var(--t1);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.backBtn:hover { background: var(--card2); border-color: var(--gbc); }
+
+.intro {
+  position: relative; z-index: 5;
+  margin-top: 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.eyebrow {
+  font-size: .64rem; font-weight: 700;
+  color: var(--c2);
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.h2 {
+  font-size: clamp(1.25rem, 5.5vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  color: var(--t1);
+}
+.sub {
+  font-size: .85rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.form {
+  position: relative; z-index: 5;
+  margin-top: 22px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.field {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.label {
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.input {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--gb);
+  color: var(--t1);
+  font-size: .95rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.input::placeholder { color: var(--muted); }
+.input:focus {
+  border-color: var(--gbc);
+  box-shadow: 0 0 0 3px var(--cg2);
+}
+
+.suggestWrap { position: relative; }
+.suggestList {
+  position: absolute;
+  top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--card);
+  border: 1px solid var(--gb);
+  border-radius: 12px;
+  list-style: none;
+  padding: 4px;
+  margin: 0;
+  z-index: 30;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.suggestItem {
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-size: .88rem;
+  color: var(--t1);
+  cursor: pointer;
+}
+.suggestItem:hover { background: var(--cg2); color: var(--c2); }
+
+.fieldHint {
+  font-size: .72rem;
+  color: var(--muted);
+}
+
+.cta {
+  margin-top: 6px !important;
+}
+
+.errBanner {
+  position: relative; z-index: 5;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--rg);
+  border: 1px solid var(--gbr);
+  color: var(--red);
+  font-size: .85rem;
+  line-height: 1.4;
+}
+
+/* ── Plain-English summary card (always visible) ── */
+.summaryCard {
+  position: relative; z-index: 5;
+  margin-top: 22px;
+  background: var(--card);
+  border: 1px solid var(--gb);
+  border-radius: 18px;
+  padding: 18px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.summaryHead {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px;
+}
+.summaryBody {
+  font-size: .92rem;
+  line-height: 1.5;
+  color: var(--t2);
+  margin: 0;
+}
+.highlights {
+  display: flex; flex-direction: column;
+  background: var(--cg2);
+  border: 1px solid var(--gb);
+  border-radius: 14px;
+  padding: 4px 12px;
+}
+.highlightRow {
+  display: grid;
+  grid-template-columns: minmax(90px, 30%) 1fr;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--gbw);
+  font-size: .88rem;
+  line-height: 1.4;
+}
+.highlightRow:last-child { border-bottom: none; }
+.highlightLabel {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--c2);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  align-self: center;
+}
+.highlightVal {
+  color: var(--t1);
+  font-weight: 600;
+  word-break: break-word;
+}
+.summaryActions {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.summaryBtn {
+  flex: 1 1 auto;
+  min-width: 140px;
+  font-size: .85rem !important;
+  padding: 10px 14px !important;
+}
+
+.result {
+  position: relative; z-index: 5;
+  margin-top: 14px;
+  background: var(--card);
+  border: 1px solid var(--gb);
+  border-radius: 18px;
+  padding: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.resultHead {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gb);
+  margin-bottom: 12px;
+}
+.resultVendor {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--c2);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.resultModel {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--t1);
+  letter-spacing: -0.02em;
+  margin-top: 2px;
+}
+.sourceLink {
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--c2);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--gb);
+  background: var(--cg2);
+  flex-shrink: 0;
+}
+.sourceLink:hover { border-color: var(--gbc); color: var(--c1); }
+
+.specTable {
+  display: flex; flex-direction: column;
+}
+.specRow {
+  display: grid;
+  grid-template-columns: minmax(120px, 38%) 1fr;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--gbw);
+  font-size: .85rem;
+  line-height: 1.4;
+}
+.specRow:last-child { border-bottom: none; }
+.specKey {
+  color: var(--muted);
+  font-weight: 600;
+}
+.specVal {
+  color: var(--t1);
+  word-break: break-word;
+}
+
+/* ── Minimalistic refresh — white + subtle black accents. Wins via cascade order. ── */
+
+/* Page shell — kill the diagonal dark gradient, flatten to pure white. */
+.specs {
+  background: var(--md-background, #FFFFFF) !important;
+  background-image: none !important;
+  color: var(--md-on-surface, #121417);
+}
+
+/* Ambient blobs — the radial dark "glow" reads as dirt against white. Hide them. */
+.amb,
+.amb2 {
+  display: none !important;
+  background: none !important;
+  filter: none !important;
+}
+
+/* Header — flat, no shadow, hairline only when needed. */
+.header {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.title {
+  color: var(--md-on-surface, #121417);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Back button — outlined pill, no fill, no glow. */
+.backBtn {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 10px;
+}
+.backBtn:hover {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border-color: var(--md-on-surface, #121417) !important;
+}
+
+/* Intro / eyebrow / sub — hierarchy via weight + opacity, no grey ramp. */
+.eyebrow {
+  color: var(--md-on-surface, #121417);
+  opacity: 1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.h2 {
+  color: var(--md-on-surface, #121417);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.sub {
+  color: var(--md-on-surface, #121417);
+  opacity: 0.65;
+}
+
+/* Inputs — white, hairline, no focus glow. */
+.input {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 12px;
+  transition: border-color .15s ease;
+}
+.input::placeholder {
+  color: var(--md-on-surface, #121417);
+  opacity: 0.45;
+}
+.input:focus {
+  border-color: var(--md-on-surface, #121417) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Suggestion list — flat white, hairline, no blur. */
+.suggestList {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 10px;
+}
+.suggestItem {
+  color: var(--md-on-surface, #121417);
+}
+.suggestItem:hover {
+  background: var(--md-surface-container-lowest, #FFFFFF);
+  color: var(--md-on-surface, #121417);
+}
+.fieldHint {
+  color: var(--md-on-surface, #121417);
+  opacity: 0.6;
+}
+
+/* Section labels — solid black, 11/700/uppercase/0.10em. */
+.label,
+.highlightLabel,
+.specKey,
+.resultVendor {
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+}
+
+/* Spec values + highlight values — primary text, mono identifiers slightly muted. */
+.highlightVal,
+.specVal,
+.summaryBody,
+.resultModel {
+  color: var(--md-on-surface, #121417);
+  font-weight: 600;
+}
+.specVal {
+  font-weight: 500;
+}
+
+/* Error banner — flat, red border + red text, no glow. */
+.errBanner {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid #ef4444 !important;
+  color: #ef4444 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  border-radius: 10px;
+}
+
+/* Summary card — white, hairline, no shadow, no blur. */
+.summaryCard,
+.result {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Subtle step container for highlight rows — white, hairline, flat. */
+.highlights {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+.highlightRow,
+.specRow {
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+}
+.highlightRow:last-child,
+.specRow:last-child {
+  border-bottom: none !important;
+}
+
+/* Result head divider — hairline. */
+.resultHead {
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+}
+
+/* Source link pill — outlined, no fill on idle. */
+.sourceLink {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  font-weight: 600;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.sourceLink:hover {
+  background: var(--md-surface-container, #FAFAFA) !important;
+  border-color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+
+/* CTA / summary buttons — outlined pill, active = solid black border + bold. */
+.cta,
+.summaryBtn {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 10px !important;
+}
+.cta:hover,
+.summaryBtn:hover,
+.cta:focus-visible,
+.summaryBtn:focus-visible {
+  border-color: var(--md-on-surface, #121417) !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* ── SwitchInformationPage — SwitchCard renders via inline styles, so we
+   need !important descendants of .specs to neutralise drop-shadows,
+   gradients, blurs, and dark fills on cards / rows / pills. ── */
+
+/* Top-level switch <article> cards. */
+.specs article {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-top: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+
+/* Everything nested inside switch cards — strip shadows, blurs, gradients. */
+.specs article *,
+.specs article *::before,
+.specs article *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Header button inside switch card — flat, no fill on hover. */
+.specs article > button {
+  background: transparent !important;
+  background-image: none !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+
+/* Fields grid + tiles inside expanded card — #FAFAFA tiles on white card. */
+.specs article div[style*="grid"] > div {
+  background-image: none !important;
+}
+.specs article a {
+  color: var(--md-on-surface, #121417) !important;
+  text-decoration: none;
+}
+
+/* Mono identifier text (serial / MAC / model fragments). */
+.specs article code,
+.specs article kbd,
+.specs article samp,
+.specs article [class*="mono"] {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  color: var(--md-on-surface, #121417);
+  opacity: 0.7;
+}
+
+/* ── Status accent palette — green / red / amber, no blue. ── */
+[data-status="ok"],
+[data-status="healthy"],
+[data-status="active"] {
+  color: #22c55e !important;
+  border-color: #22c55e !important;
+}
+[data-status="critical"],
+[data-status="down"] {
+  color: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+[data-status="warn"],
+[data-status="warning"] {
+  color: #f59e0b !important;
+  border-color: #f59e0b !important;
+}
+
+/* ── CVE severity badges — red / amber / black-at-70% / black-at-50%. ── */
+[data-severity="critical"],
+[data-severity="CRITICAL"] {
+  color: #ef4444 !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid #ef4444 !important;
+  box-shadow: none !important;
+}
+[data-severity="high"],
+[data-severity="HIGH"] {
+  color: #f59e0b !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid #f59e0b !important;
+  box-shadow: none !important;
+}
+[data-severity="medium"],
+[data-severity="MEDIUM"] {
+  color: rgba(18, 20, 23, 0.7) !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  box-shadow: none !important;
+}
+[data-severity="low"],
+[data-severity="LOW"] {
+  color: rgba(18, 20, 23, 0.5) !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  box-shadow: none !important;
+}
+
+/* ── Generic chip / pill / tag fallbacks inside the Switches page. ── */
+.specs [class*="chip"],
+.specs [class*="Chip"],
+.specs [class*="pill"],
+.specs [class*="Pill"],
+.specs [class*="tag"],
+.specs [class*="Tag"],
+.specs [class*="badge"],
+.specs [class*="Badge"] {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 999px !important;
+}
+.specs [class*="chip"][aria-pressed="true"],
+.specs [class*="pill"][aria-pressed="true"],
+.specs [class*="tag"][aria-pressed="true"],
+.specs [aria-selected="true"][class*="chip"],
+.specs [aria-selected="true"][class*="pill"],
+.specs [aria-selected="true"][class*="tag"] {
+  border-color: var(--md-on-surface, #121417) !important;
+  font-weight: 700 !important;
+}
+
+/* ── Generic card / tile / panel / row / header fallbacks. ── */
+.specs [class*="card"],
+.specs [class*="Card"],
+.specs [class*="tile"],
+.specs [class*="Tile"],
+.specs [class*="panel"],
+.specs [class*="Panel"],
+.specs [class*="row"],
+.specs [class*="Row"],
+.specs [class*="header"],
+.specs [class*="Header"] {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.specs [class*="card"],
+.specs [class*="Card"],
+.specs [class*="tile"],
+.specs [class*="Tile"],
+.specs [class*="panel"],
+.specs [class*="Panel"] {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+
+/* Scrollable areas — neutral white bg, hairline only. */
+.specs [class*="scroll"],
+.specs [class*="Scroll"],
+.suggestList {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  scrollbar-color: var(--md-outline-variant, #E0E0E0) transparent;
+}
+
+/* CVE list containers — when authored as <ul>/<ol> inside switch cards. */
+.specs article ul,
+.specs article ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.specs article ul > li,
+.specs article ol > li {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+
+/* Empty / loading / error state blocks — white card, hairline, no glow. */
+.specs > div[style*="textAlign"],
+.specs > div[style*="text-align"] {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.specs p {
+  color: var(--md-on-surface, #121417);
+}

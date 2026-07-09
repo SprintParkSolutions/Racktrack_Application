@@ -1,0 +1,522 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   SINGLE THEME — white-focused, subtle-black accent. Flat surfaces only,
+   no gradients anywhere. Reads as a designed paper-white surface with
+   confident black type and pill buttons.
+   ══════════════════════════════════════════════════════════════════════ */
+:root,
+[data-theme='light'],
+[data-theme='dark'] {
+  /* ── Material 3 palette — exact match to the mockup spec.
+     Primary #121417, secondary #717171, outline #E0E0E0. ── */
+  --md-primary:                       #121417;
+  --md-on-primary:                    #ffffff;
+  --md-primary-container:             #121417;
+  --md-on-primary-container:          #ffffff;
+  --md-primary-fixed:                 #121417;
+  --md-primary-fixed-dim:             #121417;
+  --md-on-primary-fixed:              #ffffff;
+  --md-on-primary-fixed-variant:      #ffffff;
+
+  --md-secondary:                     #717171;
+  --md-on-secondary:                  #121417;
+  --md-secondary-container:           #FFFFFF;
+  --md-on-secondary-container:        #121417;
+  --md-secondary-fixed:               #FFFFFF;
+  --md-secondary-fixed-dim:           #FFFFFF;
+  --md-on-secondary-fixed:            #121417;
+  --md-on-secondary-fixed-variant:    #717171;
+
+  --md-tertiary:                      #121417;
+  --md-on-tertiary:                   #ffffff;
+  --md-tertiary-container:            #121417;
+  --md-on-tertiary-container:         #121417;
+  --md-tertiary-fixed:                #FFFFFF;
+  --md-tertiary-fixed-dim:            #121417;
+  --md-on-tertiary-fixed:             #121417;
+  --md-on-tertiary-fixed-variant:     #121417;
+
+  --md-error:                         #ba1a1a;
+  --md-on-error:                      #ffffff;
+  --md-error-container:               #ffdad6;
+  --md-on-error-container:            #93000a;
+
+  /* Mockup-exact neutral ramp.
+     Background #FFFFFF, container-low/lowest also #FFFFFF (mockup spec),
+     container #FAFAFA, highest/variant #F5F5F5, outline #E0E0E0. */
+  --md-background:                    #FFFFFF;
+  --md-on-background:                 #121417;
+  --md-surface:                       #FFFFFF;
+  --md-surface-bright:                #FFFFFF;
+  --md-surface-dim:                   #FFFFFF;
+  --md-on-surface:                    #121417;
+  --md-on-surface-variant:            #717171;
+  --md-surface-variant:               #FFFFFF;
+  --md-surface-tint:                  #121417;
+  --md-surface-container-lowest:      #FFFFFF;
+  --md-surface-container-low:         #FFFFFF;
+  --md-surface-container:             #FFFFFF;
+  --md-surface-container-high:        #FFFFFF;
+  --md-surface-container-highest:     #FFFFFF;
+
+  --md-outline:                       #E0E0E0;
+  --md-outline-variant:               #E0E0E0;
+  --md-inverse-surface:               #17171a;
+  --md-inverse-on-surface:            #f4f4f6;
+  --md-inverse-primary:               #c8c8cc;
+
+  /* ── Legacy aliases — every existing component still reads these. ── */
+  --bg:    var(--md-surface-container-lowest);
+  --bg2:   var(--md-surface-container-low);
+  --bg3:   var(--md-surface-container);
+
+  --card:  var(--md-surface-container-lowest);
+  --card2: var(--md-surface-container-low);
+
+  /* Brand — subtle-black accent on white */
+  --c1:   var(--md-primary);
+  --c2:   #17171a;
+  --c3:   #0d0d0f;
+  --cg:   rgba(13, 13, 15, 0.40);
+  --cg2:  rgba(13, 13, 15, 0.08);
+
+  /* Secondary — neutral grey */
+  --cyan:  var(--md-secondary);
+  --cyan2: var(--md-on-secondary-container);
+  --cyg:   rgba(91, 91, 96, 0.22);
+
+  --p1:   var(--md-primary);
+  --p2:   var(--md-secondary);
+  --pg:   rgba(91, 91, 96, 0.22);
+
+  /* "Gradients" — kept as tokens for back-compat, but flattened to a
+     single colour each so nothing renders as a gradient. */
+  --grad:     #17171a;
+  --grad-btn: #0d0d0f;
+  --grad-r:   #ba1a1a;
+
+  /* Status */
+  --green:  #22c55e;
+  --orange: #f59e0b;
+  --red:    var(--md-error);
+  --rg:     rgba(186, 26, 26, 0.22);
+  --gg:     rgba(34, 197, 94, 0.22);
+
+  /* Borders / hairlines */
+  --glass:  var(--md-surface-container-lowest);
+  --glass2: var(--md-surface-container-low);
+  --gb:     var(--md-outline-variant);
+  --gbc:    rgba(13, 13, 15, 0.45);
+  --gbr:    rgba(186, 26, 26, 0.35);
+  --gbw:    var(--md-outline-variant);
+
+  /* Text */
+  --t1: var(--md-on-surface);
+  --t2: var(--md-on-surface-variant);
+  --t3: rgba(13, 13, 15, 0.65);
+  --text:  var(--md-on-surface);
+  --muted: var(--md-on-surface-variant);
+
+  /* Font stack — Geist everywhere */
+  --font: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Radii — pulled in by ~20% so cards read as crisp rectangles with
+     a soft corner rather than soft pillows. */
+  --r1: 0.25rem;
+  --r2: 0.5rem;
+  --r3: 0.625rem;
+  --r4: 0.875rem;
+  --r-pill: 9999px;
+
+  /* Spacing scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-gutter: 20px;
+
+  /* Reusable shadow tokens — pulled WAY back. The previous values made
+     every card look like a marshmallow. Cards should sit on the page,
+     not hover above it. Use hairlines + 1px borders for separation;
+     only the primary CTA gets real elevation. */
+  --shadow-soft:       0 1px 2px rgba(13, 13, 15, 0.04);
+  --shadow-inner-soft: inset 0 1px 0 rgba(13, 13, 15, 0.03);
+  --shadow-glow:       0 8px 20px -8px rgba(13, 13, 15, 0.20);
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  /* Match the app surface so the rubber-band / overscroll area reads white
+     instead of the browser's default (which renders black when the OS is in
+     dark mode). color-scheme: light forces light UA rendering everywhere. */
+  background: var(--md-background);
+  color-scheme: light;
+}
+
+/* ── Responsive scaling for different screen sizes ── */
+@media (max-width: 360px) {
+  html { font-size: 14px; }
+}
+@media (min-width: 410px) and (max-width: 480px) {
+  html { font-size: 15.5px; }
+}
+@media (min-width: 480px) {
+  html { font-size: 16px; }
+}
+body {
+  font-family: var(--font);
+  background: var(--md-background);
+  background-attachment: fixed;
+  color: var(--t1);
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-overflow-scrolling: touch;
+  letter-spacing: -0.005em;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 540px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* iPad portrait (768–1023px) sits below the ≥1024px landscape/desktop
+   chrome (DesktopShell / HomeDesktop) but above the phone width. Without
+   this override it inherits #root's 540px cap and renders as a centered
+   column floating in whitespace. Let it fill the whole screen instead. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #root { max-width: none; }
+}
+
+/* ── Fit-any-mobile safeguards ──────────────────────────────────────────
+   Nothing may push the layout wider than the device. Media clamps to its
+   container, and stray horizontal overflow (wide tables, long unbroken
+   strings, absolutely-positioned art) is contained rather than creating a
+   sideways scroll that makes pages feel "off screen" on small phones. */
+html, body { overflow-x: hidden; max-width: 100%; }
+img, video, canvas, picture { max-width: 100%; height: auto; }
+svg { max-width: 100%; }
+#root { width: 100%; }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(13, 13, 15, 0.22); border-radius: 3px; }
+
+/* Material Symbols defaults */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+}
+
+/* ── Page ── */
+.page {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+  height: calc(100dvh - 80px);
+}
+.page-full {
+  min-height: 100dvh;
+  height: 100dvh;
+}
+
+@media (min-width: 1180px) {
+  .page, .page-full {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+}
+.pc {
+  flex: 1; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  position: relative; z-index: 1;
+  overflow: hidden;
+}
+
+/* ── "Gradient" text classes — flattened to flat subtle-black so
+   existing markup with `.gt` / `.title-grad` reads as solid type. ── */
+.gt, .title-grad {
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: currentColor;
+  background-clip: initial;
+  color: var(--md-on-surface);
+}
+
+/* ── Card surfaces — flat white, hairline only. NO inset highlight,
+   NO drop shadow. Purely 2D — depth comes from hierarchy, not shadow. ── */
+.glass {
+  background: var(--md-surface-container-lowest);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--r4);
+  box-shadow: none;
+}
+
+.glass-blue {
+  background: var(--md-surface-container-low);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--r4);
+  box-shadow: none;
+}
+
+/* ── Buttons — pill-shaped, flat fills only ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 26px;
+  min-height: 44px;
+  border-radius: var(--r-pill);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.18s, box-shadow 0.18s, background 0.18s, border-color 0.18s;
+}
+.btn:active { transform: scale(0.98) !important; }
+
+/* Primary — flat subtle-black pill. ZERO shadow — purely 2D. */
+.btn-primary {
+  background: #121417;
+  color: var(--md-on-primary);
+  border-color: transparent;
+  box-shadow: none;
+}
+.btn-primary:hover {
+  background: #121417;
+  opacity: 0.9;
+  box-shadow: none;
+}
+
+/* Secondary — flat white with hairline. No shadow. */
+.btn-secondary {
+  background: var(--md-surface-container-lowest);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+  box-shadow: none;
+}
+.btn-secondary:hover {
+  background: var(--md-surface-container-lowest);
+  border-color: var(--md-primary);
+}
+
+/* Ghost — transparent with hairline */
+.btn-ghost {
+  background: transparent;
+  color: var(--md-on-surface);
+  border: 1px solid rgba(13, 13, 15, 0.10);
+}
+.btn-ghost:hover {
+  background: rgba(13, 13, 15, 0.04);
+  border-color: rgba(13, 13, 15, 0.18);
+}
+
+.btn-lg   { padding: 16px 32px; font-size: 1rem; border-radius: var(--r-pill); }
+.btn-sm   { padding: 8px 14px; font-size: 0.78rem; }
+.btn-icon { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
+.btn-full { width: 100%; }
+
+/* ── Dots ── */
+.dot { display:inline-block; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.dot-green  { background:var(--green);  box-shadow:0 0 6px rgba(34, 197, 94, 0.4); }
+.dot-orange { background:var(--orange); box-shadow:0 0 6px rgba(245, 158, 11, 0.4); }
+.dot-red    { background:var(--red);    box-shadow:0 0 6px rgba(186, 26, 26, 0.45); animation:pR 1.3s ease infinite; }
+.dot-cyan   { background:var(--c1);     box-shadow:0 0 6px rgba(13, 13, 15, 0.35); animation:pC 2s ease infinite; }
+.dot-dim    { background: rgba(13, 13, 15, 0.25); }
+
+@keyframes pR { 0%,100%{box-shadow:0 0 6px rgba(186, 26, 26, 0.45)}  50%{box-shadow:0 0 18px rgba(186, 26, 26, 0.6);opacity:.6} }
+@keyframes pC { 0%,100%{box-shadow:0 0 6px rgba(13, 13, 15, 0.35)}   50%{box-shadow:0 0 18px rgba(13, 13, 15, 0.5);opacity:.8} }
+
+/* ── Badges — flat fills only ── */
+.badge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:4px 10px; border-radius:var(--r-pill);
+  font-size:0.68rem; font-weight:600; letter-spacing:.07em; text-transform:uppercase;
+}
+.badge-red    { background: rgba(186, 26, 26, 0.10); color: var(--md-error);   border: 1px solid rgba(186, 26, 26, 0.30); }
+.badge-green  { background: rgba(34, 197, 94, 0.10); color: #16a34a;           border: 1px solid rgba(34, 197, 94, 0.30); }
+.badge-orange { background: rgba(245, 158, 11, 0.10); color: #b45309;          border: 1px solid rgba(245, 158, 11, 0.30); }
+.badge-cyan   { background: var(--md-surface-container); color: var(--md-on-surface); border: 1px solid var(--md-outline-variant); }
+
+/* ── Input — flat white, crisp 1px border, no inset shadow ── */
+.input {
+  width: 100%;
+  background: var(--md-surface-container-lowest);
+  border: 1px solid rgba(13, 13, 15, 0.14);
+  border-radius: var(--r3);
+  color: var(--md-on-surface);
+  font-family: var(--font);
+  font-size: .95rem;
+  padding: 14px 16px;
+  outline: none;
+  box-shadow: none;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.input:hover {
+  border-color: rgba(13, 13, 15, 0.24);
+}
+.input:focus {
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 3px rgba(13, 13, 15, 0.08);
+}
+.input::placeholder { color: rgba(13, 13, 15, 0.40); }
+
+/* ── Shimmer — flat pulse, no gradient sweep ── */
+.shimmer {
+  background: rgba(13, 13, 15, 0.05);
+  animation: shim 1.6s infinite;
+}
+@keyframes shim { 0%,100% { opacity: 0.6 } 50% { opacity: 1 } }
+
+/* ── Section label ── */
+.sl {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+  margin-bottom: 12px;
+  opacity: 1;
+}
+
+/* ── Keyframes ── */
+@keyframes spin      { to { transform: rotate(360deg); } }
+@keyframes fade-up   { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fade-in   { from{opacity:0} to{opacity:1} }
+@keyframes blink     { 0%,100%{opacity:1} 50%{opacity:.25} }
+@keyframes scan-line { 0%{top:0%;opacity:.7} 100%{top:100%;opacity:0} }
+@keyframes float     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+
+.mono { font-family: var(--mono); }
+
+/* ── Native <select> dropdown options ── */
+select option {
+  background-color: var(--md-surface-container-lowest);
+  color: var(--md-on-surface);
+}
+select option:checked,
+select option:hover {
+  background-color: var(--md-surface-container);
+  color: var(--md-on-surface);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   WHITE-SURFACE ENFORCEMENT — every page renders on a white surface.
+   Module CSS that historically painted coloured page bands or gradients
+   is overridden here so the user always sees flat white with subtle
+   black accents.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, #root,
+.page, .page-full {
+  background-color: var(--md-background) !important;
+  background-image: none !important;
+}
+
+body {
+  color: var(--md-on-surface);
+}
+
+/* Kill every gradient still painted by module CSS. We can't easily
+   target individual `background: linear-gradient(...)` declarations
+   from here, so we strip `background-image` (which is what
+   gradient-shorthand actually compiles to) for the surfaces and
+   buttons most likely to use them. Keeps each surface flat. */
+[class*="card"],
+[class*="Card"],
+[class*="btn"],
+[class*="Btn"],
+[class*="button"],
+[class*="Button"],
+[class*="panel"],
+[class*="Panel"],
+[class*="tile"],
+[class*="Tile"],
+[class*="hero"],
+[class*="Hero"],
+[class*="header"],
+[class*="Header"],
+[class*="banner"],
+[class*="Banner"],
+[class*="modal"],
+[class*="Modal"],
+[class*="sheet"],
+[class*="Sheet"],
+[class*="dialog"],
+[class*="Dialog"],
+[class*="badge"],
+[class*="Badge"],
+[class*="chip"],
+[class*="Chip"],
+[class*="pill"],
+[class*="Pill"],
+[class*="bg"],
+[class*="Bg"],
+[class*="surface"],
+[class*="Surface"] {
+  background-image: none !important;
+}
+
+/* Flatten any background-clipped gradient text back to the on-surface
+   colour so titles and labels stay legible. */
+[class*="title"],
+[class*="Title"],
+[class*="grad"],
+[class*="Grad"],
+[class*="heading"],
+[class*="Heading"] {
+  -webkit-text-fill-color: currentColor !important;
+  background-clip: initial !important;
+  -webkit-background-clip: initial !important;
+}
+
+/* No 3D / shadow / glow anywhere. The mockup is purely 2D: hairlines
+   carry separation, fills carry hierarchy, never elevation. Strip
+   box-shadow from common surface/button classes so module CSS can't
+   paint a marshmallow. */
+[class*="card"],   [class*="Card"],
+[class*="btn"],    [class*="Btn"],
+[class*="button"], [class*="Button"],
+[class*="panel"],  [class*="Panel"],
+[class*="tile"],   [class*="Tile"],
+[class*="hero"],   [class*="Hero"],
+[class*="header"], [class*="Header"],
+[class*="banner"], [class*="Banner"],
+[class*="modal"],  [class*="Modal"],
+[class*="sheet"],  [class*="Sheet"],
+[class*="dialog"], [class*="Dialog"],
+[class*="badge"],  [class*="Badge"],
+[class*="chip"],   [class*="Chip"],
+[class*="pill"],   [class*="Pill"],
+[class*="input"],  [class*="Input"],
+[class*="field"],  [class*="Field"],
+[class*="select"], [class*="Select"],
+[class*="tab"],    [class*="Tab"],
+[class*="surface"],[class*="Surface"],
+[class*="cta"],    [class*="Cta"],
+[class*="glass"] {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

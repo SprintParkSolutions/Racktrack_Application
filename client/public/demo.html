@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RackTrack — Demo</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ── Stage / background ─────────────────────────────────────── */
+  html, body { min-height: 100%; }
+  body {
+    min-height: 100vh;
+    display: flex; align-items: safe center; justify-content: center;
+    padding: 24px 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #e5e7eb;
+    background:
+      radial-gradient(ellipse 55% 45% at 50% 50%, #0f1428 0%, #070a18 55%, #03050d 100%);
+    /* Scroll (not clip) so the phone frame — and the app's own scrollable
+       content inside it — stay reachable on screens shorter than the mockup. */
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ── Layer: tiny starfield ──────────────────────────────────── */
+  .stars, .stars-2, .stars-3 {
+    position: fixed; inset: 0;
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 0;
+  }
+  /* Three layers of small static stars — no twinkling. */
+  .stars {
+    background-image:
+      radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.55), transparent 50%),
+      radial-gradient(1px 1px at 78% 32%, rgba(255,255,255,0.45), transparent 50%),
+      radial-gradient(1.5px 1.5px at 36% 72%, rgba(196,181,253,0.55), transparent 50%),
+      radial-gradient(1px 1px at 64% 88%, rgba(255,255,255,0.35), transparent 50%),
+      radial-gradient(1px 1px at 92% 64%, rgba(125,211,252,0.45), transparent 50%),
+      radial-gradient(1px 1px at 8% 80%, rgba(255,255,255,0.40), transparent 50%),
+      radial-gradient(1px 1px at 50% 8%, rgba(255,255,255,0.50), transparent 50%);
+  }
+  .stars-2 {
+    background-image:
+      radial-gradient(1px 1px at 22% 44%, rgba(167,139,250,0.50), transparent 50%),
+      radial-gradient(1px 1px at 84% 12%, rgba(255,255,255,0.35), transparent 50%),
+      radial-gradient(1.5px 1.5px at 46% 28%, rgba(96,165,250,0.50), transparent 50%),
+      radial-gradient(1px 1px at 70% 58%, rgba(255,255,255,0.40), transparent 50%),
+      radial-gradient(1px 1px at 16% 62%, rgba(244,114,182,0.45), transparent 50%),
+      radial-gradient(1px 1px at 88% 80%, rgba(255,255,255,0.30), transparent 50%);
+  }
+  .stars-3 {
+    background-image:
+      radial-gradient(2px 2px at 30% 14%, rgba(255,255,255,0.60), transparent 50%),
+      radial-gradient(2px 2px at 58% 78%, rgba(196,181,253,0.60), transparent 50%),
+      radial-gradient(2px 2px at 12% 50%, rgba(125,211,252,0.60), transparent 50%);
+  }
+
+  /* ── Layer: aurora orbs ─────────────────────────────────────── */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    will-change: transform, opacity;
+    mix-blend-mode: screen;
+  }
+  /* Static orbs — no drift, no hue cycling. Color stays put so the
+     background doesn't fight with iframe-button hover transitions. */
+  .orb-1 {
+    top: -160px; left: -140px;
+    width: 520px; height: 520px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.55), transparent 65%);
+  }
+  .orb-2 {
+    bottom: -180px; right: -140px;
+    width: 580px; height: 580px;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.40), transparent 65%);
+  }
+  .orb-3 {
+    top: 56%; left: 70%;
+    width: 340px; height: 340px;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.22), transparent 65%);
+  }
+  .orb-4 {
+    top: 14%; right: 18%;
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.28), transparent 65%);
+  }
+
+  /* ── Layer: animated grid ───────────────────────────────────── */
+  .bg-grid {
+    position: fixed; inset: -10%;
+    background-image:
+      linear-gradient(rgba(167, 139, 250, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(167, 139, 250, 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 70% 60% at center, #000 0%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at center, #000 0%, transparent 80%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Layer: vignette ────────────────────────────────────────── */
+  .vignette {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.65) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ── Corner HUD brackets ────────────────────────────────────── */
+  .hud-corner {
+    position: fixed;
+    width: 60px; height: 60px;
+    border: 1.5px solid rgba(167, 139, 250, 0.35);
+    pointer-events: none;
+    z-index: 2;
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.15);
+  }
+  .hud-tl { top: 24px; left: 24px; border-right: none; border-bottom: none; border-radius: 8px 0 0 0; }
+  .hud-tr { top: 24px; right: 24px; border-left: none; border-bottom: none; border-radius: 0 8px 0 0; }
+  .hud-bl { bottom: 24px; left: 24px; border-right: none; border-top: none; border-radius: 0 0 0 8px; }
+  .hud-br { bottom: 24px; right: 24px; border-left: none; border-top: none; border-radius: 0 0 8px 0; }
+  .hud-corner::after {
+    content: '';
+    position: absolute;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #a78bfa;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.7);
+  }
+  .hud-tl::after { top: -3px; left: -3px; }
+  .hud-tr::after { top: -3px; right: -3px; }
+  .hud-bl::after { bottom: -3px; left: -3px; }
+  .hud-br::after { bottom: -3px; right: -3px; }
+
+  /* ── Phone shell ────────────────────────────────────────────── */
+  .phone-stage {
+    position: relative;
+    z-index: 3;
+    /* No tilt — the phone sits flat and perfectly centered so the iframe
+       content reads upright with no perspective offset. */
+  }
+
+  .phone {
+    position: relative;
+    width: 396px; height: 854px;
+    border-radius: 56px;
+    /* Multi-layer chrome rim */
+    background:
+      linear-gradient(160deg, #2e2e42 0%, #15151f 38%, #08080f 100%);
+    padding: 14px;
+    box-shadow:
+      /* inner rim highlight */
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+      /* outer thin black edge */
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 0 0 3px #0a0a14,
+      /* drop shadows for depth */
+      0 60px 120px -25px rgba(15, 10, 40, 0.90),
+      0 35px 70px -20px rgba(0, 0, 0, 0.80),
+      /* purple / cyan ambient bloom */
+      0 0 120px rgba(139, 92, 246, 0.28),
+      0 0 220px rgba(56, 189, 248, 0.12);
+    transform-style: preserve-3d;
+  }
+
+  /* Top/bottom specular highlight strip */
+  .phone::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    border-radius: 55px;
+    background:
+      linear-gradient(180deg,
+        rgba(255, 255, 255, 0.14) 0%,
+        transparent 6%,
+        transparent 94%,
+        rgba(255, 255, 255, 0.07) 100%),
+      linear-gradient(90deg,
+        rgba(255, 255, 255, 0.12) 0%,
+        transparent 5%,
+        transparent 95%,
+        rgba(255, 255, 255, 0.08) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  /* Static diagonal sheen on the bezel — no animation. */
+  .phone::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 56px;
+    background: linear-gradient(135deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.06) 50%,
+      transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.4;
+  }
+
+  /* Dynamic-Island-style notch */
+  .notch {
+    position: absolute;
+    top: 22px; left: 50%; transform: translateX(-50%);
+    width: 122px; height: 34px;
+    background: #030306;
+    border-radius: 999px;
+    z-index: 12;
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.06),
+      0 2px 4px rgba(0, 0, 0, 0.9);
+  }
+  .notch::after {
+    content: '';
+    position: absolute;
+    right: 14px; top: 50%;
+    transform: translateY(-50%);
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #1a2438, #050a14 70%);
+    box-shadow:
+      inset 0 0 2px rgba(96, 165, 250, 0.5),
+      0 0 4px rgba(96, 165, 250, 0.3);
+  }
+  .notch::before {
+    content: '';
+    position: absolute;
+    left: 18px; top: 50%;
+    transform: translateY(-50%);
+    width: 30px; height: 4px;
+    border-radius: 2px;
+    background: #0a0c14;
+  }
+
+  /* Side buttons */
+  .btn-r {
+    position: absolute; right: -3px; top: 200px;
+    width: 4px; height: 84px;
+    background: linear-gradient(90deg, #1c1c28, #38384f 50%, #1c1c28);
+    border-radius: 0 3px 3px 0;
+    box-shadow: inset -1px 0 1px rgba(0, 0, 0, 0.6);
+  }
+  .btn-l1, .btn-l2, .btn-l3 {
+    position: absolute; left: -3px;
+    width: 4px;
+    background: linear-gradient(-90deg, #1c1c28, #38384f 50%, #1c1c28);
+    border-radius: 3px 0 0 3px;
+    box-shadow: inset 1px 0 1px rgba(0, 0, 0, 0.6);
+  }
+  .btn-l1 { top: 160px; height: 30px; }
+  .btn-l2 { top: 220px; height: 62px; }
+  .btn-l3 { top: 296px; height: 62px; }
+
+  /* Screen */
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 42px;
+    overflow: hidden;
+    background: #000;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      inset 0 0 20px rgba(0, 0, 0, 0.5);
+  }
+  /* Transparent safe-area band — reserves vertical space below the
+     Dynamic Island so the iframe app's header isn't covered by the
+     notch. No visible UI; the band just matches the iframe background. */
+  .safe-area {
+    flex-shrink: 0;
+    height: 48px;
+    pointer-events: none;
+    background: transparent;
+  }
+  .screen iframe {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    border: none;
+    border-radius: 0 0 42px 42px;
+    display: block;
+  }
+  /* Static, very subtle screen glare. mix-blend-mode removed because it
+     amplifies hover-state color changes underneath, which makes simple
+     button hover transitions read as "flashes". */
+  .screen-glare {
+    position: absolute;
+    inset: 0;
+    border-radius: 42px;
+    background: linear-gradient(135deg,
+      transparent 0%,
+      transparent 42%,
+      rgba(255, 255, 255, 0.04) 50%,
+      transparent 58%,
+      transparent 100%);
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.5;
+  }
+
+  /* Lens flare highlight in top-left of the bezel */
+  .lens-flare {
+    position: absolute;
+    top: -40px; left: 40px;
+    width: 220px; height: 80px;
+    background: radial-gradient(ellipse, rgba(255, 255, 255, 0.18), transparent 65%);
+    filter: blur(14px);
+    pointer-events: none;
+    z-index: 4;
+    border-radius: 50%;
+  }
+
+  /* Static floor reflection — no pulse. */
+  .reflection {
+    position: absolute;
+    left: 50%; bottom: -90px;
+    transform: translateX(-50%);
+    width: 360px; height: 70px;
+    background: radial-gradient(ellipse, rgba(139, 92, 246, 0.35), transparent 70%);
+    filter: blur(22px);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Compact layout for short viewports */
+  @media (max-height: 900px) { .phone-stage { transform: scale(0.92); } }
+  @media (max-height: 800px) { .phone-stage { transform: scale(0.82); } }
+  @media (max-height: 700px) { .phone-stage { transform: scale(0.74); } }
+
+  /* Respect reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .stars, .stars-2, .stars-3,
+    .orb-1, .orb-2, .orb-3, .orb-4,
+    .bg-grid, .hud-corner::after,
+    .phone-stage, .phone, .phone::after, .reflection {
+      animation: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <!-- Background atmospheric layers -->
+  <div class="stars"></div>
+  <div class="stars-2"></div>
+  <div class="stars-3"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+  <div class="bg-grid"></div>
+  <div class="vignette"></div>
+
+  <!-- HUD corner brackets -->
+  <div class="hud-corner hud-tl"></div>
+  <div class="hud-corner hud-tr"></div>
+  <div class="hud-corner hud-bl"></div>
+  <div class="hud-corner hud-br"></div>
+
+  <!-- Phone — tilted stage wrapper for hero-shot 3D feel -->
+  <div class="phone-stage">
+    <div class="phone">
+      <div class="lens-flare"></div>
+      <div class="btn-r"></div>
+      <div class="btn-l1"></div>
+      <div class="btn-l2"></div>
+      <div class="btn-l3"></div>
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="safe-area" aria-hidden="true"></div>
+        <iframe src="/" allow="camera *; microphone *"></iframe>
+        <div class="screen-glare"></div>
+      </div>
+    </div>
+    <div class="reflection"></div>
+  </div>
+</body>
+</html>

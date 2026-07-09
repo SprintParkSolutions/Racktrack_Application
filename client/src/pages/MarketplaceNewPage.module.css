@@ -1,0 +1,267 @@
+/* MarketplaceNewPage — create a listing.
+   Same header pattern + form styling as ConnectionsPage so it feels
+   like the rest of the settings/utility surfaces. */
+
+.page {
+  position: relative;
+  display: flex; flex-direction: column;
+  gap: 14px;
+  min-height: 100dvh;
+  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  background: #ffffff;
+}
+:global([data-theme='light']) .page {
+  background: #ffffff;
+}
+
+.header {
+  display: flex; align-items: center; gap: 10px;
+  padding: max(20px, calc(env(safe-area-inset-top, 0px) + 16px)) 16px 6px;
+}
+.backBtn {
+  width: 38px; height: 38px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.10);
+  border: 1px solid rgba(0,0,0,0.18);
+  color: var(--text);
+  cursor: pointer;
+}
+.backBtn:hover { background: rgba(0,0,0,0.18); }
+.title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.intro {
+  margin: 0 16px;
+  font-size: .9rem;
+  line-height: 1.5;
+  color: var(--muted, rgba(0,0,0,0.85));
+}
+
+.kindToggle {
+  margin: 4px 16px 0;
+  display: inline-flex; align-self: flex-start;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 999px;
+  padding: 3px;
+}
+.kindBtn {
+  padding: 7px 18px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  color: var(--muted, rgba(0,0,0,0.75));
+  font-size: .82rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.kindActive {
+  background: var(--card, rgba(255,255,255,0.10));
+  color: var(--text);
+  font-weight: 600;
+}
+
+.scanHint {
+  margin: 0 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  font-size: .82rem;
+  color: var(--text);
+}
+.scanHint code {
+  background: var(--card2, rgba(255,255,255,0.08));
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: .78rem;
+}
+
+.form {
+  display: flex; flex-direction: column;
+  gap: 14px;
+  padding: 0 16px;
+}
+
+.field {
+  display: flex; flex-direction: column;
+  gap: 6px;
+}
+.label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.input, .textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  color: var(--text);
+  font-size: .92rem;
+  font-family: inherit;
+}
+.textarea { min-height: 90px; resize: vertical; }
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: #0b0c0e;
+}
+.hint {
+  font-size: .72rem;
+  color: var(--muted, rgba(0,0,0,0.75));
+}
+.hintError {
+  font-size: .78rem;
+  color: #b42318;
+}
+
+/* ── Photo upload ── */
+.photoDrop {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 6px;
+  padding: 22px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 2px dashed #f0f0f0;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.photoDrop:hover {
+  background: #ffffff;
+  border-color: #0b0c0e;
+}
+.photoIcon { font-size: 1.7rem; line-height: 1; }
+.photoMain { font-size: .95rem; font-weight: 600; }
+.photoSub  { font-size: .72rem; color: var(--muted, rgba(0,0,0,0.75)); }
+
+.photoCard {
+  display: flex; gap: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+}
+.photoPreview {
+  width: 88px; height: 88px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: rgba(0,0,0,0.08);
+}
+.photoMeta {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 8px; justify-content: space-between;
+}
+.photoStatus {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.photoActions { display: flex; gap: 12px; }
+.linkBtn, .linkBtnDanger {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.linkBtnDanger { color: #b42318; }
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.row3 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 480px) {
+  .row3 { grid-template-columns: 1fr 1fr; }
+}
+
+.partnerBox {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+}
+.partnerHead {
+  margin: 0 0 8px;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.partnerRow {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.partnerBtn {
+  display: inline-flex; align-items: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  color: var(--text);
+  font-size: .78rem;
+  text-decoration: none;
+}
+.partnerBtn:hover { border-color: #0b0c0e; }
+.partnerNote {
+  margin: 8px 0 0;
+  font-size: .72rem;
+  color: var(--muted, rgba(0,0,0,0.7));
+}
+
+.errBanner {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff5f5;
+  border: 1px solid #ffd9d9;
+  color: #b42318;
+  font-size: .85rem;
+}
+
+.actions {
+  display: flex; gap: 10px;
+  justify-content: flex-end;
+  padding: 6px 0 4px;
+}
+.btnPrimary {
+  padding: 11px 18px;
+  border-radius: 10px;
+  background: #0b0c0e;
+  border: 1px solid #0b0c0e;
+  color: white;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btnPrimary:disabled { opacity: .5; cursor: not-allowed; }
+.btnSecondary {
+  padding: 11px 16px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 500;
+  cursor: pointer;
+}

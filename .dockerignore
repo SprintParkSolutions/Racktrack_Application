@@ -1,0 +1,62 @@
+# Build context excludes — keep the image lean and reproducible.
+# Anything listed here is NOT sent to the Docker daemon / not COPY-able.
+
+# --- Node / JS ---
+node_modules
+client/node_modules
+server/node_modules
+client/dist            # rebuilt in the client-build stage
+npm-debug.log*
+
+# --- Python ---
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+
+# --- Model weights (mounted at runtime, git-LFS, large) ---
+Models
+*.pt
+*.pth
+*.onnx
+
+# --- Runtime data (mounted as volumes) ---
+outputs
+batch_outputs
+server/uploads
+!server/uploads/.gitkeep
+active_learning_Cache/data
+retraining_learning
+servicenow_inbox
+cmdb_racks
+
+# --- VCS / tooling ---
+.git
+.gitignore
+.gitattributes
+.gitleaks.toml
+.github
+.vscode
+.idea
+.claude
+
+# --- Docs / spreadsheets / misc large assets ---
+docs
+*.md
+*.xlsx
+cloudflared
+netdisco-docker
+
+# --- Secrets / env ---
+.env
+.env.*
+*/.env
+*/.env.*
+
+# --- OS / editor cruft ---
+.DS_Store
+**/.DS_Store
+*.log
+Test_Image
+hero1.png

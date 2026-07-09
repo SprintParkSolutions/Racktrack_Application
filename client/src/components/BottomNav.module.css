@@ -1,0 +1,86 @@
+/* BottomNav — white bar, hairline top border, 3 inline tabs with a tiny
+   black dot below the active label. No floating FAB. */
+
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 540px;
+  z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom);
+  pointer-events: none;
+}
+
+.bar {
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 64px;
+  padding: 0 var(--space-lg, 24px);
+  background: #ffffff;
+  border-top: 1px solid #E8E8E8;
+  pointer-events: auto;
+}
+
+/* Each tab — vertical stack: icon + label + (active-only) dot indicator */
+.tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 8px 12px;
+  gap: 2px;
+  color: #BBBBBB;
+  transition: color 0.18s;
+}
+
+.tab:hover {
+  color: var(--md-primary);
+}
+
+.tab.active {
+  color: var(--md-primary);
+}
+
+.icon {
+  font-size: 24px;
+  color: inherit;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  transition: font-variation-settings 0.18s;
+}
+
+.tab.active .icon {
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+
+.label {
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: inherit;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Tiny dot indicator below the label — only visible on the active tab */
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  margin-top: 2px;
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+
+.tab.active .dot {
+  opacity: 1;
+}

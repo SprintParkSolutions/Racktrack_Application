@@ -1,0 +1,48 @@
+# RackTrack — local / single-host deployment.
+#
+#   docker compose up --build
+#
+# Secrets live in server/.env (JWT secret, SMTP, MSAL, DB creds, ...) and are
+# injected at runtime via `env_file` — they are never baked into the image.
+# Model weights and mutable data are bind-mounted from the host.
+
+services:
+  racktrack:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: racktrack:latest
+    container_name: racktrack
+
+    # All secrets / config come from here (git-ignored). See server/.env.
+    env_file:
+      - server/.env
+
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      # Number of Python CV workers to pre-spawn (app.js -> RACKTRACK_WORKERS).
+      # NOTE: each worker loads the full torch + model stack into RAM
+      # (~1.5–2.5 GB resident depending on models). Size this to the host:
+      # a rough rule of thumb is one worker per ~3 GB of free RAM.
+      - RACKTRACK_WORKERS=1
+
+    ports:
+      - "3001:3001"
+
+    volumes:
+      # Model weights — read-only, mounted (large git-LFS files, not in image).
+      - ./Models:/app/Models:ro
+      # Active-learning cache — read-write.
+      - ./active_learning_Cache/data:/app/active_learning_Cache/data
+      # Pipeline outputs (annotated images, device maps, ...) — read-write.
+      - ./outputs:/app/outputs
+
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3001/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+    restart: unless-stopped

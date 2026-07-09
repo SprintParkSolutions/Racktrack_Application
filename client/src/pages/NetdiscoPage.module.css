@@ -1,0 +1,4166 @@
+﻿/* Netdisco page — visually consistent with ResultsPage / TopologyPage.
+   Same dark navy + cyan/blue/violet palette, same card density, same chip
+   shapes. The page should feel like a peer view of the rest of the app. */
+
+.page {
+  display: flex; flex-direction: column;
+  min-height: 100dvh;
+  background: rgba(0,0,0,0.42);
+  color: #cfc4c5;
+  position: relative;
+}
+
+.amb {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -5%,  rgba(0,0,0,0.16) 0%, rgba(0,0,0,0.08) 40%, transparent 60%),
+    radial-gradient(ellipse 55% 45% at 95% 95%,  rgba(0,0,0,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 35% at 5%  65%,  rgba(0,0,0,0.06) 0%, transparent 50%);
+}
+
+/* ── Header (matches ResultsPage exactly) ─────────────────────────────── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.88));
+  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+  border-bottom: 1px solid rgba(0,0,0,0.10);
+  position: sticky; top: 0; z-index: 60;
+  flex-shrink: 0;
+}
+
+.headerCenter {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  flex: 1; min-width: 0;
+  padding: 0 8px;
+  text-align: left;
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #000000 0%, #4c4546 40%, #4c4546 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 12px rgba(0,0,0,0.20));
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerMono {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: rgba(0,0,0,0.4);
+  letter-spacing: 0.08em;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 420px) {
+  .header { padding: 12px 10px 10px; }
+  .headerTitle { font-size: .92rem; }
+  .headerMono  { font-size: .55rem; }
+}
+@media (max-width: 360px) {
+  .headerTitle { font-size: .82rem; }
+}
+
+.healthPill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(232,232,232,0.7);
+  white-space: nowrap;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+@media (max-width: 420px) {
+  .healthPill { padding: 4px 8px; font-size: .55rem; gap: 4px; letter-spacing: .04em; }
+}
+
+.healthOk  { border-color: rgba(0,0,0,0.40); color: #1a1c1d; background: rgba(0,0,0,0.06); }
+.healthBad { border-color: rgba(0,0,0,0.40); color: #4c4546; background: rgba(0,0,0,0.06); }
+
+.healthDot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* ── Body ─────────────────────────────────────────────────────────────── */
+.main {
+  position: relative; z-index: 1;
+  flex: 1; overflow-y: auto;
+  max-width: 1100px; width: 100%; margin: 0 auto;
+  padding: 16px;
+  display: flex; flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Section card ─────────────────────────────────────────────────────── */
+.section {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px 16px;
+  backdrop-filter: blur(8px);
+}
+
+.sectionHead {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.sectionHead h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.85);
+}
+
+.headRight {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+
+.subtle {
+  color: rgba(0,0,0,0.5);
+  font-size: 0.65rem;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+}
+
+.subhead {
+  margin: 14px 0 6px;
+  font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.55);
+}
+
+.linkBtn {
+  background: none; border: none;
+  color: rgba(0,0,0,0.55);
+  font-size: 0.7rem; cursor: pointer;
+  padding: 2px 6px;
+  font-family: var(--mono);
+}
+.linkBtn:hover { color: #4c4546; }
+
+.syncBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  padding: 0;
+  background: rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.28);
+  color: #cfc4c5;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.syncBtn:hover:not(:disabled) {
+  background: rgba(0,0,0,0.16);
+  border-color: rgba(0,0,0,0.55);
+}
+.syncBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.syncBtnSpin svg {
+  animation: ndSpin 900ms linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes ndSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Device list (one card per scan device, expandable) ────────────────
+   Replaces the older match table. Each card mirrors ResultsPage.allCard
+   density: small, scannable, tap to expand. */
+.deviceList {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.deviceCard {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-left: 3px solid rgba(0,0,0,0.55);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: background 120ms, border-color 120ms;
+}
+
+.deviceCard:hover {
+  border-color: rgba(0,0,0,0.30);
+  background: rgba(0,0,0,0.04);
+}
+
+.deviceCardOpen {
+  border-left-color: #000000;
+  background: rgba(0,0,0,0.04);
+}
+
+.deviceCardDim {
+  opacity: 0.55;
+  border-left-color: rgba(0,0,0,0.35);
+}
+
+.deviceHead {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(110px, 0.85fr) minmax(140px, 1fr) auto auto;
+  gap: 12px; align-items: center;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+}
+
+.deviceHead:disabled { cursor: default; }
+
+.deviceTitle {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+
+.deviceName {
+  font-family: var(--mono);
+  font-size: 0.9rem; font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #cfc4c5;
+}
+
+.deviceClass {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.45);
+}
+
+.deviceSub {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  flex-wrap: wrap;
+}
+
+.modelTag {
+  font-size: 0.74rem;
+  color: rgba(245,245,245,0.85);
+  word-break: break-word;
+}
+
+.ipTag {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: rgba(0,0,0,0.55);
+  letter-spacing: 0.04em;
+}
+
+.unmanaged {
+  font-size: 0.7rem;
+  color: rgba(0,0,0,0.55);
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.chev {
+  color: rgba(0,0,0,0.7);
+  font-size: 0.85rem;
+  user-select: none;
+  align-self: center;
+}
+
+/* ── Inline counts in the header (total / up / dn / live) ───────────── */
+.deviceCounts {
+  display: flex; align-items: baseline; gap: 10px;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.cnt {
+  display: inline-flex; align-items: baseline; gap: 3px;
+  font-family: var(--mono);
+  color: rgba(245,245,245,0.85);
+}
+
+.cnt b {
+  font-size: 0.84rem; font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.cnt i {
+  font-style: normal;
+  font-size: 0.55rem; font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.45);
+}
+
+.cntUp   b { color: #1a1c1d; }
+.cntDown b { color: rgba(0,0,0,0.55); }
+.cntDown i { color: rgba(0,0,0,0.30); }
+.cntLive b { color: #000000; }
+
+.deviceBody {
+  padding: 4px 14px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+/* Legacy match table — kept in case anything else still references it. */
+.matchTable {
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.matchHead {
+  display: grid;
+  grid-template-columns: 1.1fr 0.8fr 1.6fr 0.9fr;
+  gap: 10px;
+  padding: 0 14px 6px;
+  font-size: 0.58rem; font-weight: 700;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  color: rgba(0,0,0,0.45);
+}
+
+.matchRow {
+  display: grid;
+  grid-template-columns: 1.1fr 0.8fr 1.6fr 0.9fr;
+  gap: 10px; align-items: center;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-left: 3px solid rgba(0,0,0,0.55);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+
+.matchRow:hover {
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.25);
+  border-left-color: #4c4546;
+}
+
+.matchRowSel {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.40);
+  border-left-color: #000000;
+}
+
+.matchScan, .matchNd, .matchStrategy {
+  display: flex; flex-direction: column;
+  gap: 2px; min-width: 0;
+}
+
+.matchScan strong {
+  font-family: var(--mono);
+  font-size: 0.82rem; font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #cfc4c5;
+}
+
+.matchNd strong {
+  font-family: var(--mono);
+  font-size: 0.78rem; font-weight: 700;
+  color: #f5f5f5;
+  word-break: break-all;
+}
+
+.matchPorts {
+  display: flex; gap: 5px; align-items: center; flex-wrap: wrap;
+}
+
+/* Port pills — same shape as ResultsPage portPill family */
+.portCount {
+  font-family: var(--mono); font-size: 0.64rem; font-weight: 700;
+  color: #1a1c1d;
+  background: rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.20);
+  border-radius: 100px;
+  padding: 2px 8px;
+}
+
+.connCount {
+  font-family: var(--mono); font-size: 0.64rem; font-weight: 700;
+  color: #000000;
+  background: rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.20);
+  border-radius: 100px;
+  padding: 2px 8px;
+}
+
+.tag {
+  display: inline-flex;
+  font-family: var(--mono);
+  padding: 3px 9px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tag_mgmt_ip {
+  background: rgba(0,0,0,0.10);
+  color: #4c4546;
+  border: 1px solid rgba(0,0,0,0.30);
+}
+
+.tag_ocr_model {
+  background: rgba(0,0,0,0.10);
+  color: #cfc4c5;
+  border: 1px solid rgba(0,0,0,0.30);
+}
+
+/* ── Device detail card ───────────────────────────────────────────────── */
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 14px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.12);
+}
+
+.field {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+}
+
+.fieldKey {
+  font-size: 0.56rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.5);
+  font-family: var(--mono);
+}
+
+.fieldVal {
+  font-size: 0.78rem;
+  color: #f5f5f5;
+  word-break: break-word;
+}
+
+.portFilter {
+  display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;
+}
+
+.filterBtn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(0,0,0,0.7);
+  font-size: 0.66rem;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  font-family: var(--mono);
+}
+
+.filterBtn:hover {
+  color: #f5f5f5;
+  border-color: rgba(0,0,0,0.40);
+}
+
+.filterBtnActive {
+  background: rgba(0,0,0,0.10);
+  border-color: rgba(0,0,0,0.50);
+  color: #cfc4c5;
+}
+
+/* ── Port table ───────────────────────────────────────────────────────── */
+.portTable {
+  display: flex; flex-direction: column;
+  max-height: 460px; overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.portTable::-webkit-scrollbar { width: 4px; }
+.portTable::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 2px;
+}
+
+/* Port table grid — 3 cols when no MACs are reported (the common case
+   for RackTrack-pushed devices), 4 cols when at least one port has an
+   active MAC sighting. The Neighbour column is intentionally removed:
+   passive patch panels were polluting it and the LLDP-only neighbours
+   that remained didn't justify the column on their own. */
+.portTable4 .portHead,
+.portTable4 .portRow {
+  grid-template-columns: 1fr 0.9fr 0.5fr;
+}
+
+.portTable5 .portHead,
+.portTable5 .portRow {
+  grid-template-columns: 1fr 0.9fr 0.5fr 0.55fr;
+}
+
+.portHead {
+  display: grid;
+  gap: 10px; align-items: center;
+  padding: 9px 14px;
+  position: sticky; top: 0;
+  background: rgba(0,0,0,0.95);
+  font-size: 0.56rem; font-weight: 700;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  color: rgba(0,0,0,0.50);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 1;
+}
+
+.portRow {
+  display: grid;
+  gap: 10px; align-items: center;
+  padding: 8px 14px;
+  font-size: 0.74rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.portState { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.portVlan  { font-family: var(--mono); font-size: 0.7rem; color: rgba(0,0,0,0.7); }
+.portNb    { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.portNb strong { font-family: var(--mono); font-size: 0.74rem; color: #f5f5f5; }
+
+.portRow:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.portRow:last-child { border-bottom: none; }
+
+.portName { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.portName strong {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: #f5f5f5;
+}
+
+.dotActive,
+.dotIdle {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.dotActive {
+  background: #1a1c1d;
+  box-shadow: 0 0 6px rgba(0,0,0,0.7);
+}
+
+.dotIdle {
+  background: rgba(0,0,0,0.45);
+}
+
+.macChip {
+  background: rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.25);
+  color: #cfc4c5;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 100px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+
+.macChip:hover { background: rgba(0,0,0,0.18); }
+
+/* End-device fallback button — shown in the Neighbour column when the
+   LLDP neighbour was a patch panel. We surface the MAC the switch sees
+   behind that port instead, since the patch panel is passive. */
+.endDeviceBtn {
+  display: inline-flex; flex-direction: column; align-items: flex-end; gap: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: right;
+  color: inherit;
+  font-family: var(--mono);
+}
+.endDeviceBtn strong {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: #cfc4c5;
+  letter-spacing: 0.02em;
+}
+.endDeviceBtn .subtle {
+  font-size: 0.58rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.65);
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+.endDeviceBtn:hover strong { color: #f9f9fb; }
+
+:global([data-theme='light']) .endDeviceBtn strong { color: #000000; }
+:global([data-theme='light']) .endDeviceBtn .subtle { color: #000000; }
+:global([data-theme='light']) .endDeviceBtn:hover strong { color: #1a1c1d; }
+
+/* ── MAC lookup ───────────────────────────────────────────────────────── */
+.macSection {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: -4px;     /* hugs the section above more tightly */
+}
+
+.macForm {
+  display: flex; gap: 8px; align-items: center;
+}
+
+.macLabel {
+  font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.55);
+  padding-left: 4px;
+  white-space: nowrap;
+}
+
+.macInput {
+  flex: 1;
+  padding: 7px 12px;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: #f5f5f5;
+  outline: none;
+  letter-spacing: 0.04em;
+}
+
+.macInput:focus { border-color: rgba(0,0,0,0.45); }
+
+.macBtn {
+  padding: 7px 14px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: rgba(0,0,0,0.10);
+  border: 1px solid rgba(0,0,0,0.35);
+  color: #cfc4c5;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.macBtn:hover:not(:disabled) {
+  background: rgba(0,0,0,0.20);
+  border-color: rgba(0,0,0,0.55);
+}
+
+.macBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.macReport { display: flex; flex-direction: column; gap: 4px; }
+
+.currentLoc {
+  display: flex; gap: 12px; align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.25);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.currentLabel {
+  font-size: 0.58rem; font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: #4c4546;
+}
+
+.currentLoc strong {
+  font-family: var(--mono);
+  font-size: 0.82rem; font-weight: 700;
+  color: #f5f5f5;
+}
+
+.miniTable { display: flex; flex-direction: column; gap: 2px; }
+
+.miniRow {
+  display: flex; gap: 12px; align-items: center;
+  padding: 7px 12px;
+  font-size: 0.72rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
+  flex-wrap: wrap;
+}
+
+.miniRow:nth-child(even) { background: rgba(255, 255, 255, 0.04); }
+
+.miniRow strong {
+  font-family: var(--mono);
+  color: #f5f5f5;
+}
+
+/* ── Empty / loading / error / warn states ────────────────────────────── */
+.loading {
+  padding: 14px;
+  font-size: 0.72rem;
+  color: rgba(0,0,0,0.55);
+  text-align: center;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+}
+
+.empty {
+  padding: 18px;
+  font-size: 0.74rem;
+  color: rgba(0,0,0,0.45);
+  text-align: center;
+  font-style: italic;
+}
+
+.error {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.25);
+  color: #4c4546;
+  font-size: 0.74rem;
+  margin-bottom: 8px;
+}
+
+.warn {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.25);
+  color: #cfc4c5;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+
+.warn code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  color: #cfc4c5;
+  font-size: 0.72rem;
+}
+
+.success {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.25);
+  color: #4c4546;
+  font-size: 0.74rem;
+  margin-bottom: 8px;
+}
+
+/* ── Mobile responsiveness ────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .deviceHead {
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas:
+      "title sub  chev"
+      "counts counts counts";
+    gap: 8px 10px;
+  }
+  .deviceTitle  { grid-area: title; }
+  .deviceSub    { grid-area: sub; }
+  .chev         { grid-area: chev; }
+  .deviceCounts { grid-area: counts; justify-self: stretch; justify-content: space-between; }
+
+  /* Hide the desktop table header on mobile — each port is a
+     denser self-describing card now. */
+  .portTable4 .portHead,
+  .portTable5 .portHead { display: none; }
+
+  /* Compact port card — at most two lines of content:
+       Line 1: port name (bold)            · state pill (right)
+       Line 2: descr · "VLAN N"
+     Neighbour column has been removed from the table entirely. */
+  .portTable4 .portRow,
+  .portTable5 .portRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "name   state"
+      "vlan   vlan"
+      "mac    mac";
+    align-items: center;
+    gap: 4px 12px;
+    padding: 11px 14px;
+    font-size: 0.74rem;
+  }
+
+  .portRow .portName {
+    grid-area: name;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+  .portRow .portName strong {
+    font-size: 0.86rem;
+    letter-spacing: 0.01em;
+  }
+  .portRow .portName .subtle {
+    font-size: 0.66rem;
+    color: rgba(0,0,0,0.45);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .portRow .portState {
+    grid-area: state;
+    justify-self: end;
+  }
+
+  .portRow .portVlan {
+    grid-area: vlan;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    color: rgba(0,0,0,0.65);
+  }
+  .portRow .portVlan::before {
+    content: 'VLAN';
+    color: rgba(0,0,0,0.42);
+    font-weight: 700;
+    font-size: 0.58rem;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+  }
+
+  /* MAC chip — its own bottom row only when present. */
+  .portTable5 .portRow > div:nth-child(4) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.66rem;
+    color: rgba(0,0,0,0.55);
+  }
+  .portTable5 .portRow > div:nth-child(4)::before {
+    content: 'MACs';
+    color: rgba(0,0,0,0.42);
+    font-weight: 700;
+    font-size: 0.58rem;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+  }
+}
+
+/* Light-theme mobile parity. */
+@media (max-width: 700px) {
+  :global([data-theme='light']) .portRow .portName strong { color: #1a1c1d; }
+  :global([data-theme='light']) .portRow .portName .subtle { color: #4c4546; }
+  :global([data-theme='light']) .portRow .portVlan { color: #4c4546; }
+  :global([data-theme='light']) .portRow .portVlan::before { color: #4c4546; }
+  :global([data-theme='light']) .portTable5 .portRow > div:nth-child(4) { color: #4c4546; }
+  :global([data-theme='light']) .portTable5 .portRow > div:nth-child(4)::before { color: #4c4546; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES
+   ══════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='light']) .page {
+  background: transparent;
+  color: #1a1c1d;
+}
+:global([data-theme='light']) .amb {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -5%, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.08) 40%, transparent 60%),
+    radial-gradient(ellipse 55% 45% at 95% 95%, rgba(0,0,0,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 35% at 5% 65%,  rgba(0,0,0,0.08) 0%, transparent 50%);
+}
+:global([data-theme='light']) .header {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249,249,249,0.88));
+  border-bottom: 1px solid #ffffff;
+}
+:global([data-theme='light']) .headerTitle {
+  background: linear-gradient(135deg, #000000 0%, #000000 50%, #4c4546 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: none;
+}
+:global([data-theme='light']) .headerMono { color: #4c4546; }
+:global([data-theme='light']) .healthPill {
+  background: #ffffff;
+  border: 1px solid #ffffff;
+  color: #4c4546;
+}
+:global([data-theme='light']) .healthOk {
+  border-color: rgba(0,0,0,0.40);
+  color: #1a1c1d;
+  background: rgba(0,0,0,0.06);
+}
+:global([data-theme='light']) .healthBad {
+  border-color: rgba(0,0,0,0.40);
+  color: #1a1c1d;
+  background: rgba(0,0,0,0.06);
+}
+
+:global([data-theme='light']) .section {
+  background: #ffffff;
+  border: 1px solid #ffffff;
+  backdrop-filter: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+:global([data-theme='light']) .sectionHead h3 { color: #000000; }
+:global([data-theme='light']) .subtle  { color: #4c4546; }
+:global([data-theme='light']) .subhead { color: #000000; }
+:global([data-theme='light']) .linkBtn { color: #4c4546; }
+:global([data-theme='light']) .linkBtn:hover { color: #1a1c1d; }
+:global([data-theme='light']) .syncBtn {
+  background: rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.30);
+  color: #000000;
+}
+:global([data-theme='light']) .syncBtn:hover:not(:disabled) {
+  background: rgba(0,0,0,0.16);
+  border-color: rgba(0,0,0,0.50);
+}
+
+:global([data-theme='light']) .deviceCard {
+  background: #ffffff;
+  border: 1px solid #ffffff;
+  border-left: 3px solid rgba(0,0,0,0.55);
+}
+:global([data-theme='light']) .deviceCard:hover {
+  border-color: rgba(0,0,0,0.30);
+  background: rgba(0,0,0,0.04);
+}
+:global([data-theme='light']) .deviceCardOpen {
+  border-left-color: #000000;
+  background: rgba(0,0,0,0.04);
+}
+:global([data-theme='light']) .deviceCardDim {
+  border-left-color: #cfc4c5;
+}
+:global([data-theme='light']) .deviceName  { color: #000000; }
+:global([data-theme='light']) .deviceClass { color: #4c4546; }
+:global([data-theme='light']) .modelTag    { color: #1a1c1d; }
+:global([data-theme='light']) .ipTag       { color: #4c4546; }
+:global([data-theme='light']) .unmanaged   { color: #4c4546; }
+:global([data-theme='light']) .chev        { color: #000000; }
+:global([data-theme='light']) .cnt         { color: #1a1c1d; }
+:global([data-theme='light']) .cnt i       { color: #4c4546; }
+:global([data-theme='light']) .cntUp b     { color: #1a1c1d; }
+:global([data-theme='light']) .cntDown b   { color: #4c4546; }
+:global([data-theme='light']) .cntDown i   { color: #4c4546; }
+:global([data-theme='light']) .cntLive b   { color: #000000; }
+
+:global([data-theme='light']) .deviceBody {
+  border-top: 1px solid #ffffff;
+  background: #fbfbfb;
+}
+
+/* Match table */
+:global([data-theme='light']) .matchHead { color: #000000; }
+:global([data-theme='light']) .matchRow {
+  background: #ffffff;
+  border: 1px solid #ffffff;
+  border-left: 3px solid rgba(0,0,0,0.55);
+}
+:global([data-theme='light']) .matchRow:hover {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.28);
+}
+:global([data-theme='light']) .matchRowSel {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.40);
+  border-left-color: #000000;
+}
+:global([data-theme='light']) .matchScan strong { color: #000000; }
+:global([data-theme='light']) .matchNd strong   { color: #1a1c1d; }
+
+:global([data-theme='light']) .portCount {
+  color: #1a1c1d;
+  background: rgba(0,0,0,0.10);
+  border-color: rgba(0,0,0,0.30);
+}
+:global([data-theme='light']) .connCount {
+  color: #000000;
+  background: rgba(0,0,0,0.10);
+  border-color: rgba(0,0,0,0.30);
+}
+:global([data-theme='light']) .tag_mgmt_ip {
+  background: rgba(0,0,0,0.10);
+  color: #1a1c1d;
+  border-color: rgba(0,0,0,0.30);
+}
+:global([data-theme='light']) .tag_ocr_model {
+  background: rgba(0,0,0,0.10);
+  color: #000000;
+  border-color: rgba(0,0,0,0.30);
+}
+
+:global([data-theme='light']) .detailGrid {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.20);
+}
+:global([data-theme='light']) .fieldKey { color: #000000; }
+:global([data-theme='light']) .fieldVal { color: #1a1c1d; }
+
+:global([data-theme='light']) .filterBtn {
+  background: #ffffff;
+  border: 1px solid #cfc4c5;
+  color: #4c4546;
+}
+:global([data-theme='light']) .filterBtn:hover {
+  color: #000000;
+  border-color: #4c4546;
+}
+:global([data-theme='light']) .filterBtnActive {
+  background: rgba(0,0,0,0.10);
+  border-color: rgba(0,0,0,0.45);
+  color: #000000;
+}
+
+:global([data-theme='light']) .portTable {
+  border: 1px solid #ffffff;
+}
+:global([data-theme='light']) .portHead {
+  background: #fbfbfb;
+  color: #000000;
+  border-bottom: 1px solid #ffffff;
+}
+:global([data-theme='light']) .portRow {
+  border-bottom: 1px solid #ffffff;
+}
+:global([data-theme='light']) .portRow:nth-child(even) { background: #fbfbfb; }
+:global([data-theme='light']) .portName strong,
+:global([data-theme='light']) .portNb strong { color: #1a1c1d; }
+:global([data-theme='light']) .portVlan { color: #4c4546; }
+:global([data-theme='light']) .dotActive {
+  background: #1a1c1d;
+  box-shadow: 0 0 6px rgba(0,0,0,0.55);
+}
+:global([data-theme='light']) .dotIdle { background: #cfc4c5; }
+:global([data-theme='light']) .macChip {
+  background: rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.28);
+  color: #000000;
+}
+:global([data-theme='light']) .macChip:hover { background: rgba(0,0,0,0.16); }
+
+/* MAC lookup */
+:global([data-theme='light']) .macSection {
+  background: #fbfbfb;
+  border: 1px solid #ffffff;
+}
+:global([data-theme='light']) .macLabel { color: #000000; }
+:global([data-theme='light']) .macInput {
+  background: #ffffff;
+  border: 1px solid #cfc4c5;
+  color: #1a1c1d;
+}
+:global([data-theme='light']) .macInput:focus {
+  border-color: #4c4546;
+}
+:global([data-theme='light']) .macBtn {
+  background: rgba(0,0,0,0.10);
+  border-color: rgba(0,0,0,0.40);
+  color: #000000;
+}
+:global([data-theme='light']) .macBtn:hover:not(:disabled) {
+  background: rgba(0,0,0,0.20);
+  border-color: rgba(0,0,0,0.55);
+}
+
+:global([data-theme='light']) .currentLoc {
+  background: rgba(0,0,0,0.08);
+  border-color: rgba(0,0,0,0.30);
+}
+:global([data-theme='light']) .currentLabel { color: #1a1c1d; }
+:global([data-theme='light']) .currentLoc strong { color: #1a1c1d; }
+
+:global([data-theme='light']) .miniRow { background: #fbfbfb; }
+:global([data-theme='light']) .miniRow:nth-child(even) { background: #f6f6f6; }
+:global([data-theme='light']) .miniRow strong { color: #1a1c1d; }
+
+:global([data-theme='light']) .loading { color: #4c4546; }
+:global([data-theme='light']) .empty   { color: #4c4546; }
+:global([data-theme='light']) .error {
+  background: rgba(0,0,0,0.08);
+  border-color: rgba(0,0,0,0.32);
+  color: #1a1c1d;
+}
+:global([data-theme='light']) .warn {
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.28);
+  color: #000000;
+}
+:global([data-theme='light']) .warn code {
+  background: #fbfbfb;
+  color: #000000;
+}
+:global([data-theme='light']) .success {
+  background: rgba(0,0,0,0.08);
+  border-color: rgba(0,0,0,0.30);
+  color: #1a1c1d;
+}
+
+/* ── Minimalistic refresh — white + subtle black accents. Wins via cascade order. ── */
+
+/* Page shell — white, no gradients, no ambient glow. */
+.page,
+:global([data-theme='light']) .page {
+  background: var(--md-background) !important;
+  color: var(--md-on-surface) !important;
+}
+.amb,
+:global([data-theme='light']) .amb {
+  background: none !important;
+  display: none !important;
+}
+
+/* Header — flat white, hairline bottom border, no blur, no shadow. */
+.header,
+:global([data-theme='light']) .header {
+  background: var(--md-surface-container-lowest) !important;
+  border-bottom: 1px solid var(--md-outline-variant) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+.headerTitle,
+:global([data-theme='light']) .headerTitle {
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: var(--md-on-surface) !important;
+  color: var(--md-on-surface) !important;
+  filter: none !important;
+  text-shadow: none !important;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+}
+.headerMono,
+:global([data-theme='light']) .headerMono {
+  color: var(--md-on-surface) !important;
+  opacity: 0.6;
+  font-family: var(--mono);
+}
+
+/* Health pill — outlined, status accents only via class. */
+.healthPill,
+:global([data-theme='light']) .healthPill {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  font-weight: 700;
+}
+.healthOk,
+:global([data-theme='light']) .healthOk {
+  background: var(--md-surface-container-lowest) !important;
+  border-color: #22c55e !important;
+  color: #15803d !important;
+}
+.healthBad,
+:global([data-theme='light']) .healthBad {
+  background: var(--md-surface-container-lowest) !important;
+  border-color: #ef4444 !important;
+  color: #b91c1c !important;
+}
+.healthDot {
+  box-shadow: none !important;
+}
+
+/* Main wrap — neutral. */
+.main {
+  background: transparent;
+}
+
+/* Section card — white, hairline, no shadow, no blur. */
+.section,
+:global([data-theme='light']) .section {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-radius: 12px;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+.sectionHead h3,
+:global([data-theme='light']) .sectionHead h3 {
+  color: var(--md-on-surface) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.subhead,
+:global([data-theme='light']) .subhead {
+  color: var(--md-on-surface) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.subtle,
+:global([data-theme='light']) .subtle {
+  color: var(--md-on-surface) !important;
+  opacity: 0.6;
+}
+.linkBtn,
+:global([data-theme='light']) .linkBtn {
+  color: var(--md-on-surface) !important;
+  opacity: 0.65;
+  background: transparent;
+  border: none;
+}
+.linkBtn:hover,
+:global([data-theme='light']) .linkBtn:hover {
+  color: var(--md-on-surface) !important;
+  opacity: 1;
+}
+
+/* Sync button — outlined, no fill. */
+.syncBtn,
+:global([data-theme='light']) .syncBtn {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  box-shadow: none !important;
+}
+.syncBtn:hover:not(:disabled),
+:global([data-theme='light']) .syncBtn:hover:not(:disabled) {
+  background: var(--md-surface-container) !important;
+  border-color: var(--md-on-surface) !important;
+}
+
+/* Device list — white cards, hairline borders, no shadow, no left bar fill. */
+.deviceCard,
+:global([data-theme='light']) .deviceCard {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-left: 1px solid var(--md-outline-variant) !important;
+  border-radius: 12px;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.deviceCard:hover,
+:global([data-theme='light']) .deviceCard:hover {
+  background: var(--md-surface-container) !important;
+  border-color: var(--md-on-surface) !important;
+  border-left-color: var(--md-on-surface) !important;
+}
+.deviceCardOpen,
+:global([data-theme='light']) .deviceCardOpen {
+  background: var(--md-surface-container-lowest) !important;
+  border-color: var(--md-on-surface) !important;
+  border-left: 2px solid var(--md-on-surface) !important;
+}
+.deviceCardDim,
+:global([data-theme='light']) .deviceCardDim {
+  opacity: 0.55;
+  border-left-color: var(--md-outline-variant) !important;
+}
+.deviceHead { background: transparent; }
+.deviceName,
+:global([data-theme='light']) .deviceName {
+  color: var(--md-on-surface) !important;
+  font-family: var(--mono);
+  opacity: 1;
+  font-weight: 800;
+}
+.deviceClass,
+:global([data-theme='light']) .deviceClass {
+  color: var(--md-on-surface) !important;
+  opacity: 0.55;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.modelTag,
+:global([data-theme='light']) .modelTag {
+  color: var(--md-on-surface) !important;
+  opacity: 0.85;
+}
+.ipTag,
+:global([data-theme='light']) .ipTag {
+  color: var(--md-on-surface) !important;
+  opacity: 0.65;
+  font-family: var(--mono);
+}
+.unmanaged,
+:global([data-theme='light']) .unmanaged {
+  color: var(--md-on-surface) !important;
+  opacity: 0.55;
+}
+.chev,
+:global([data-theme='light']) .chev {
+  color: var(--md-on-surface) !important;
+  opacity: 0.55;
+}
+
+/* Inline counts — solid black numerals, no glow, status colors only for live/down. */
+.cnt,
+:global([data-theme='light']) .cnt {
+  color: var(--md-on-surface) !important;
+}
+.cnt b { color: var(--md-on-surface) !important; }
+.cnt i,
+:global([data-theme='light']) .cnt i {
+  color: var(--md-on-surface) !important;
+  opacity: 0.55;
+}
+.cntUp b,
+:global([data-theme='light']) .cntUp b   { color: #22c55e !important; }
+.cntDown b,
+:global([data-theme='light']) .cntDown b { color: #ef4444 !important; }
+.cntDown i,
+:global([data-theme='light']) .cntDown i { color: var(--md-on-surface) !important; opacity: 0.4; }
+.cntLive b,
+:global([data-theme='light']) .cntLive b { color: var(--md-on-surface) !important; }
+
+/* Device body — subtle step. */
+.deviceBody,
+:global([data-theme='light']) .deviceBody {
+  background: var(--md-surface-container) !important;
+  border-top: 1px solid var(--md-outline-variant) !important;
+}
+
+/* Match table — same hairline treatment. */
+.matchRow,
+:global([data-theme='light']) .matchRow {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-left: 1px solid var(--md-outline-variant) !important;
+  box-shadow: none !important;
+}
+.matchRow:hover,
+:global([data-theme='light']) .matchRow:hover {
+  background: var(--md-surface-container) !important;
+  border-color: var(--md-on-surface) !important;
+  border-left-color: var(--md-on-surface) !important;
+}
+.matchRowSel,
+:global([data-theme='light']) .matchRowSel {
+  background: var(--md-surface-container-lowest) !important;
+  border-color: var(--md-on-surface) !important;
+  border-left: 2px solid var(--md-on-surface) !important;
+}
+.matchHead,
+:global([data-theme='light']) .matchHead {
+  color: var(--md-on-surface) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.matchScan strong,
+.matchNd strong,
+:global([data-theme='light']) .matchScan strong,
+:global([data-theme='light']) .matchNd strong {
+  color: var(--md-on-surface) !important;
+  opacity: 0.75;
+}
+
+/* Pills / tags / port counts — outlined only, no fill. */
+.portCount,
+.connCount,
+:global([data-theme='light']) .portCount,
+:global([data-theme='light']) .connCount {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  box-shadow: none !important;
+}
+.tag,
+.tag_mgmt_ip,
+.tag_ocr_model,
+:global([data-theme='light']) .tag_mgmt_ip,
+:global([data-theme='light']) .tag_ocr_model {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  box-shadow: none !important;
+}
+
+/* Detail grid — subtle step, hairline. */
+.detailGrid,
+:global([data-theme='light']) .detailGrid {
+  background: var(--md-surface-container) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  box-shadow: none !important;
+}
+.fieldKey,
+:global([data-theme='light']) .fieldKey {
+  color: var(--md-on-surface) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  opacity: 1;
+}
+.fieldVal,
+:global([data-theme='light']) .fieldVal {
+  color: var(--md-on-surface) !important;
+  opacity: 0.85;
+}
+
+/* Filter pills — outlined; active = solid black border + bold. */
+.filterBtn,
+:global([data-theme='light']) .filterBtn {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  opacity: 0.7;
+  font-weight: 600;
+  box-shadow: none !important;
+}
+.filterBtn:hover,
+:global([data-theme='light']) .filterBtn:hover {
+  background: var(--md-surface-container) !important;
+  border-color: var(--md-on-surface) !important;
+  color: var(--md-on-surface) !important;
+  opacity: 1;
+}
+.filterBtnActive,
+:global([data-theme='light']) .filterBtnActive {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-on-surface) !important;
+  color: var(--md-on-surface) !important;
+  opacity: 1;
+  font-weight: 800;
+}
+
+/* Port table — white, hairline rows. */
+.portTable,
+:global([data-theme='light']) .portTable {
+  border: 1px solid var(--md-outline-variant) !important;
+  background: var(--md-surface-container-lowest) !important;
+  border-radius: 12px;
+}
+.portHead,
+:global([data-theme='light']) .portHead {
+  background: var(--md-surface-container) !important;
+  border-bottom: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.portRow,
+:global([data-theme='light']) .portRow {
+  background: var(--md-surface-container-lowest) !important;
+  border-bottom: 1px solid var(--md-outline-variant) !important;
+}
+.portRow:nth-child(even),
+:global([data-theme='light']) .portRow:nth-child(even) {
+  background: var(--md-surface-container) !important;
+}
+.portRow:hover {
+  background: var(--md-surface-container) !important;
+}
+.portName strong,
+.portNb strong,
+:global([data-theme='light']) .portName strong,
+:global([data-theme='light']) .portNb strong {
+  color: var(--md-on-surface) !important;
+  opacity: 1;
+  font-family: var(--mono);
+}
+.portVlan,
+:global([data-theme='light']) .portVlan {
+  color: var(--md-on-surface) !important;
+  opacity: 0.7;
+  font-family: var(--mono);
+}
+
+/* Status dots — flat, no glow. */
+.dotActive,
+:global([data-theme='light']) .dotActive {
+  background: #22c55e !important;
+  box-shadow: none !important;
+}
+.dotIdle,
+:global([data-theme='light']) .dotIdle {
+  background: var(--md-on-surface) !important;
+  opacity: 0.3;
+  box-shadow: none !important;
+}
+
+/* MAC chip — outlined, no fill, mono. */
+.macChip,
+:global([data-theme='light']) .macChip {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  opacity: 0.85;
+  box-shadow: none !important;
+  font-family: var(--mono);
+}
+.macChip:hover,
+:global([data-theme='light']) .macChip:hover {
+  background: var(--md-surface-container) !important;
+  border-color: var(--md-on-surface) !important;
+  opacity: 1;
+}
+
+/* MAC lookup — white panel, white input, hairline focus. */
+.macSection,
+:global([data-theme='light']) .macSection {
+  background: var(--md-surface-container) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  box-shadow: none !important;
+}
+.macLabel,
+:global([data-theme='light']) .macLabel {
+  color: var(--md-on-surface) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.macInput,
+:global([data-theme='light']) .macInput {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  box-shadow: none !important;
+  outline: none;
+}
+.macInput:focus,
+:global([data-theme='light']) .macInput:focus {
+  border-color: var(--md-on-surface) !important;
+  box-shadow: none !important;
+  outline: none;
+}
+.macBtn,
+:global([data-theme='light']) .macBtn {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-on-surface) !important;
+  color: var(--md-on-surface) !important;
+  font-weight: 700;
+  box-shadow: none !important;
+}
+.macBtn:hover:not(:disabled),
+:global([data-theme='light']) .macBtn:hover:not(:disabled) {
+  background: var(--md-surface-container) !important;
+  border-color: var(--md-on-surface) !important;
+}
+
+/* Current location card / mini rows — white, hairline. */
+.currentLoc,
+:global([data-theme='light']) .currentLoc {
+  background: var(--md-surface-container) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  box-shadow: none !important;
+}
+.currentLabel,
+:global([data-theme='light']) .currentLabel {
+  color: var(--md-on-surface) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.currentLoc strong,
+:global([data-theme='light']) .currentLoc strong {
+  color: var(--md-on-surface) !important;
+  opacity: 1;
+  font-family: var(--mono);
+}
+.miniRow,
+:global([data-theme='light']) .miniRow {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+}
+.miniRow:nth-child(even),
+:global([data-theme='light']) .miniRow:nth-child(even) {
+  background: var(--md-surface-container) !important;
+}
+.miniRow strong,
+:global([data-theme='light']) .miniRow strong {
+  color: var(--md-on-surface) !important;
+  opacity: 0.75;
+}
+
+/* End-device button — keep flat. */
+.endDeviceBtn strong,
+:global([data-theme='light']) .endDeviceBtn strong {
+  color: var(--md-on-surface) !important;
+  opacity: 0.75;
+}
+.endDeviceBtn .subtle,
+:global([data-theme='light']) .endDeviceBtn .subtle {
+  color: var(--md-on-surface) !important;
+  opacity: 0.55;
+}
+.endDeviceBtn:hover strong,
+:global([data-theme='light']) .endDeviceBtn:hover strong {
+  color: var(--md-on-surface) !important;
+  opacity: 1;
+}
+
+/* States — white cards with status border accent. */
+.loading,
+:global([data-theme='light']) .loading {
+  color: var(--md-on-surface) !important;
+  opacity: 0.6;
+}
+.empty,
+:global([data-theme='light']) .empty {
+  color: var(--md-on-surface) !important;
+  opacity: 0.55;
+}
+.error,
+:global([data-theme='light']) .error {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid #ef4444 !important;
+  color: #b91c1c !important;
+  box-shadow: none !important;
+}
+.warn,
+:global([data-theme='light']) .warn {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid #f59e0b !important;
+  color: #b45309 !important;
+  box-shadow: none !important;
+}
+.warn code,
+:global([data-theme='light']) .warn code {
+  background: var(--md-surface-container) !important;
+  color: var(--md-on-surface) !important;
+  border: 1px solid var(--md-outline-variant);
+}
+.success,
+:global([data-theme='light']) .success {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid #22c55e !important;
+  color: #15803d !important;
+  box-shadow: none !important;
+}
+
+/* Final sweep — kill any remaining shadows / blurs / gradients / filters
+   inside the page. Targets common decorative properties without disturbing
+   structural layout. */
+.page *,
+.page *::before,
+.page *::after {
+  text-shadow: none !important;
+}
+.page .section,
+.page .deviceCard,
+.page .matchRow,
+.page .detailGrid,
+.page .macSection,
+.page .currentLoc,
+.page .miniRow,
+.page .portTable,
+.page .portRow,
+.page .portHead,
+.page .filterBtn,
+.page .filterBtnActive,
+.page .syncBtn,
+.page .macBtn,
+.page .macInput,
+.page .macChip,
+.page .portCount,
+.page .connCount,
+.page .tag,
+.page .healthPill,
+.page .header,
+.page .headerTitle {
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Floating Precision mockup pattern — large rounded cards with a left
+   accent strip, port LIST (not table) rows, glass-badge status pills.
+   Appended last so it beats everything above by cascade order.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Section head ───────────────────────────────────────────────── */
+.sectionHead {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  margin-bottom: 16px !important;
+  padding: 0 4px !important;
+}
+.sectionHead h3 {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.10em !important;
+  line-height: 16px !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface-variant) !important;
+  margin: 0 0 4px !important;
+}
+.headRight {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.subtle {
+  font-family: var(--mono) !important;
+  font-size: 12px !important;
+  color: var(--md-on-surface) !important;
+  opacity: 0.6 !important;
+}
+.subtle b, .headRight .subtle b {
+  font-weight: 700 !important;
+  color: var(--md-on-surface) !important;
+  opacity: 1 !important;
+}
+.syncBtn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 9999px !important;
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background-color 0.18s !important;
+}
+.syncBtn:hover { background: var(--md-surface-container) !important; }
+
+/* ── Device list spacing ──────────────────────────────────────── */
+.deviceList {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+}
+
+/* ── Device CARD — floating module with left accent ──────────── */
+.deviceCard {
+  position: relative !important;
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s !important;
+}
+.deviceCard::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0; top: 16px; bottom: 16px !important;
+  width: 2px !important;
+  border-radius: 2px !important;
+  background: var(--md-outline-variant) !important;
+  opacity: 0.6 !important;
+  transition: background-color 0.18s, opacity 0.18s !important;
+}
+.deviceCard:hover::before {
+  background: var(--md-on-surface) !important;
+  opacity: 0.4 !important;
+}
+/* Expanded card gets a bigger radius + a stronger left accent */
+.deviceCardOpen {
+  border-radius: 20px !important;
+  border-color: var(--md-outline-variant) !important;
+}
+.deviceCardOpen::before {
+  background: var(--md-on-surface) !important;
+  opacity: 0.7 !important;
+}
+.deviceCardDim { opacity: 0.6 !important; }
+
+/* ── Device header — name + Switch chip · model · IP · live count ── */
+.deviceHead {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  grid-template-areas:
+    "title chev"
+    "sub   chev"
+    "cnts  chev" !important;
+  align-items: start !important;
+  gap: 6px 12px !important;
+  padding: 18px 18px 16px 22px !important;
+  background: transparent !important;
+  border: none !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+.deviceHead:disabled { cursor: default !important; }
+
+.deviceTitle {
+  grid-area: title !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+.deviceName {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+  letter-spacing: -0.01em !important;
+  color: var(--md-on-surface) !important;
+}
+.deviceClass {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  line-height: 14px !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface-variant) !important;
+  background: var(--md-surface-container) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  padding: 2px 8px !important;
+  border-radius: 9999px !important;
+}
+
+.deviceSub {
+  grid-area: sub !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px 10px !important;
+  color: var(--md-on-surface) !important;
+}
+.modelTag, .ipTag {
+  font-family: var(--mono) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  color: var(--md-on-surface) !important;
+  opacity: 0.6 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.modelTag::after {
+  content: '·' !important;
+  display: inline !important;
+  margin-left: 10px !important;
+  opacity: 0.5 !important;
+}
+.unmanaged {
+  font-size: 12px !important;
+  color: var(--md-on-surface) !important;
+  opacity: 0.5 !important;
+  font-style: normal !important;
+}
+
+.deviceCounts {
+  grid-area: cnts !important;
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 6px !important;
+}
+.cnt, .cntLive, .cntUp, .cntDown {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 4px !important;
+  font-size: 11px !important;
+  color: var(--md-on-surface-variant) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.cnt b, .cntLive b, .cntUp b, .cntDown b {
+  font-weight: 700 !important;
+  color: var(--md-on-surface) !important;
+  font-size: 14px !important;
+}
+.cnt i, .cntLive i, .cntUp i, .cntDown i {
+  font-style: normal !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface-variant) !important;
+}
+
+.chev {
+  grid-area: chev !important;
+  align-self: start !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  color: var(--md-on-surface-variant) !important;
+  padding-top: 4px !important;
+}
+
+/* ── Expanded body ─────────────────────────────────────────────── */
+.deviceBody {
+  border-top: 1px solid var(--md-outline-variant) !important;
+  background: var(--md-surface-container-lowest) !important;
+  padding: 0 !important;
+}
+
+/* ── Filter pills row — full-width strip, scrollable ──────────── */
+.portFilter {
+  display: flex !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  padding: 12px 18px !important;
+  background: var(--md-surface-container) !important;
+  border-bottom: 1px solid var(--md-outline-variant) !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.portFilter::-webkit-scrollbar { display: none !important; }
+
+.filterBtn {
+  flex: 0 0 auto !important;
+  padding: 6px 14px !important;
+  border-radius: 9999px !important;
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+  opacity: 0.6 !important;
+  font-family: var(--font) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 18px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: all 0.15s !important;
+  -webkit-tap-highlight-color: transparent !important;
+  box-shadow: none !important;
+}
+.filterBtn:hover { opacity: 0.9 !important; }
+.filterBtnActive {
+  background: var(--md-on-surface) !important;
+  color: var(--md-surface-container-lowest) !important;
+  border-color: var(--md-on-surface) !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+.filterBtnActive:hover { opacity: 0.92 !important; }
+
+/* ── Port LIST (mockup converts the table to a row list) ──────── */
+.portTable, .portTable4, .portTable5 {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 6px 8px !important;
+  background: var(--md-surface-container-lowest) !important;
+}
+.portHead { display: none !important; } /* Hide the table header — list pattern uses inline labels */
+
+.portRow {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 12px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--md-outline-variant) !important;
+  border-radius: 0 !important;
+  transition: background-color 0.14s !important;
+}
+.portRow:last-child { border-bottom: none !important; }
+.portRow:hover { background: var(--md-surface-container) !important; }
+
+.portName {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+.portNameTop {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  min-width: 0 !important;
+}
+.portName strong {
+  font-family: var(--mono) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--md-on-surface) !important;
+}
+.portName .subtle {
+  font-family: var(--mono) !important;
+  font-size: 11px !important;
+  color: var(--md-on-surface) !important;
+  opacity: 0.55 !important;
+  font-weight: 400 !important;
+}
+.portVlanLabel {
+  font-family: var(--font) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  line-height: 14px !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface-variant) !important;
+}
+
+.portRowEnd {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+.portVlan { display: none !important; }
+
+/* State pill — green dot + lowercase "up" / "down" text in a glass pill */
+.portState {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 5px 10px !important;
+  border-radius: 9999px !important;
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  font-family: var(--mono) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-transform: lowercase !important;
+  color: var(--md-on-surface) !important;
+  flex-shrink: 0 !important;
+  box-shadow: none !important;
+}
+.dotActive {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #22c55e !important;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.45) !important;
+  flex-shrink: 0 !important;
+}
+.dotIdle {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #ef4444 !important;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.40) !important;
+  flex-shrink: 0 !important;
+}
+
+/* MAC chip on the right side of a row when present */
+.macChip {
+  font-family: var(--mono) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--md-on-surface) !important;
+  background: var(--md-surface-container) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-radius: 9999px !important;
+  padding: 3px 8px !important;
+  cursor: pointer !important;
+}
+.macChip:hover { background: var(--md-surface-container-high) !important; }
+
+/* Same overrides under the light-theme namespace so they win over the
+   existing :global([data-theme='light']) block earlier in the file. */
+:global([data-theme='light']) .deviceCard,
+:global([data-theme='light']) .deviceCardOpen {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  box-shadow: none !important;
+}
+:global([data-theme='light']) .filterBtn { background: var(--md-surface-container-lowest) !important; }
+:global([data-theme='light']) .filterBtnActive {
+  background: var(--md-on-surface) !important;
+  color: var(--md-surface-container-lowest) !important;
+  border-color: var(--md-on-surface) !important;
+}
+:global([data-theme='light']) .portRow { background: transparent !important; }
+:global([data-theme='light']) .portRow:hover { background: var(--md-surface-container) !important; }
+:global([data-theme='light']) .portState {
+  background: var(--md-surface-container-lowest) !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  color: var(--md-on-surface) !important;
+}
+:global([data-theme='light']) .dotActive { background: #22c55e !important; }
+:global([data-theme='light']) .dotIdle { background: #ef4444 !important; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Network tab — tight, white-focused, subtle-black-accent final pass.
+   Strips the accent strip, pill fills, and heavy chrome. Cards become
+   small flat tiles; rows are dense; filters are text tabs (underline
+   active). Hierarchy comes from weight + opacity only.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Section head — compact label + summary line ─────────────── */
+.section { padding: 0 !important; gap: 12px !important; }
+.sectionHead {
+  align-items: baseline !important;
+  margin-bottom: 12px !important;
+  padding: 0 !important;
+}
+.sectionHead h3 {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.10em !important;
+  line-height: 16px !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+  margin: 0 !important;
+}
+.syncBtn {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.syncBtn:hover { background: var(--md-surface-container, #FAFAFA) !important; }
+
+/* ── Device list spacing — tighter gaps between cards ────────── */
+.deviceList { gap: 10px !important; }
+
+/* ── Device card — flat tile, no accent strip ────────────────── */
+.deviceCard {
+  border-radius: 10px !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  box-shadow: none !important;
+}
+.deviceCard::before { display: none !important; content: none !important; }
+.deviceCardOpen { border-radius: 10px !important; }
+.deviceCardOpen::before { display: none !important; }
+
+/* ── Device header — two-row compact pattern ─────────────────── */
+.deviceHead {
+  display: grid !important;
+  grid-template-columns: 1fr auto auto !important;
+  grid-template-areas:
+    "title counts chev"
+    "sub   sub    sub" !important;
+  align-items: center !important;
+  column-gap: 12px !important;
+  row-gap: 4px !important;
+  padding: 12px 14px !important;
+}
+
+/* Title row: device name + (hidden) Switch chip */
+.deviceTitle {
+  grid-area: title !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  flex-wrap: wrap !important;
+}
+.deviceName {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 18px !important;
+  letter-spacing: -0.005em !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.deviceClass {
+  display: none !important; /* Subsumed into the model line below */
+}
+
+/* Sub row: mono model · ip below the title */
+.deviceSub {
+  grid-area: sub !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin: 0 !important;
+}
+.modelTag, .ipTag {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 11px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.modelTag::after {
+  content: '·' !important;
+  margin-left: 8px !important;
+  opacity: 0.6 !important;
+}
+.unmanaged {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 11px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.45 !important;
+  font-style: normal !important;
+}
+
+/* Counts column — small "5 live" inline */
+.deviceCounts {
+  grid-area: counts !important;
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 4px !important;
+}
+.cnt, .cntLive, .cntUp, .cntDown {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 4px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.cnt b, .cntLive b, .cntUp b, .cntDown b {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.cnt i, .cntLive i, .cntUp i, .cntDown i {
+  font-style: normal !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.5 !important;
+}
+
+.chev {
+  grid-area: chev !important;
+  align-self: center !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.45 !important;
+  padding-top: 0 !important;
+}
+/* Counts column sits next to chev on the title row, not on the sub row */
+.deviceCounts {
+  align-self: center !important;
+}
+
+/* ── Expanded body ────────────────────────────────────────────── */
+.deviceBody {
+  border-top: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  padding: 4px 14px 8px !important;
+}
+
+/* ── Filter row — UNDERLINE TABS, not pills ──────────────────── */
+.portFilter {
+  display: flex !important;
+  gap: 18px !important;
+  padding: 8px 0 0 !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  margin-bottom: 4px !important;
+  overflow-x: auto !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.portFilter::-webkit-scrollbar { display: none !important; }
+
+.filterBtn {
+  flex: 0 0 auto !important;
+  padding: 8px 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.5 !important;
+  font-family: var(--font, inherit) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 16px !important;
+  letter-spacing: 0.02em !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  margin-bottom: -1px !important;
+  box-shadow: none !important;
+  transition: opacity 0.14s, border-color 0.14s !important;
+}
+.filterBtn:hover { opacity: 0.85 !important; }
+.filterBtnActive {
+  background: transparent !important;
+  color: var(--md-on-surface, #121417) !important;
+  border-bottom-color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+
+/* ── Port rows — dense, no rounding, hairline dividers ───────── */
+.portTable, .portTable4, .portTable5 {
+  padding: 0 !important;
+  background: transparent !important;
+}
+.portRow {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 9px 0 !important;
+  border: none !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+.portRow:last-child { border-bottom: none !important; }
+.portRow:hover {
+  background: transparent !important;
+}
+
+.portName { gap: 2px !important; }
+.portNameTop { gap: 10px !important; }
+.portName strong {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.005em !important;
+}
+.portName .subtle {
+  font-size: 11px !important;
+  opacity: 0.5 !important;
+}
+.portVlanLabel {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  line-height: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.45 !important;
+}
+
+/* ── State pill — small, flat, monochrome — colour is on the dot ── */
+.portState {
+  padding: 3px 8px !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.85 !important;
+  text-transform: lowercase !important;
+  box-shadow: none !important;
+}
+.dotActive,
+:global([data-theme='light']) .dotActive {
+  width: 5px !important;
+  height: 5px !important;
+  background: #22c55e !important;
+  box-shadow: none !important;
+}
+.dotIdle,
+:global([data-theme='light']) .dotIdle {
+  width: 5px !important;
+  height: 5px !important;
+  background: #ef4444 !important;
+  box-shadow: none !important;
+}
+
+.macChip {
+  font-size: 10px !important;
+  padding: 2px 7px !important;
+  background: transparent !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.75 !important;
+  border-radius: 9999px !important;
+}
+.macChip:hover { opacity: 1 !important; background: var(--md-surface-container, #FAFAFA) !important; }
+
+/* Light-theme namespace mirrors of the above, so they win over the
+   existing :global blocks earlier in the file. */
+:global([data-theme='light']) .deviceCard,
+:global([data-theme='light']) .deviceCardOpen {
+  border-radius: 10px !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  box-shadow: none !important;
+}
+:global([data-theme='light']) .deviceCard::before,
+:global([data-theme='light']) .deviceCardOpen::before { display: none !important; content: none !important; }
+:global([data-theme='light']) .filterBtn {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+}
+:global([data-theme='light']) .filterBtnActive {
+  background: transparent !important;
+  color: var(--md-on-surface, #121417) !important;
+  border-bottom-color: var(--md-on-surface, #121417) !important;
+}
+:global([data-theme='light']) .portRow:hover { background: transparent !important; }
+:global([data-theme='light']) .portState {
+  background: transparent !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Final pass — refined, intentional, white-focused, subtle-black accents.
+   Adds confident typography + a small device-glyph block + proper filter
+   pills + breathing room so the tab reads as "designed" instead of "flat".
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Section header — confident, not whispering ──────────────── */
+.sectionHead {
+  align-items: flex-end !important;
+  margin-bottom: 16px !important;
+}
+.sectionHead h3 {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  line-height: 18px !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  margin: 0 !important;
+}
+.headRight .subtle {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.6 !important;
+}
+.headRight .subtle b {
+  font-family: var(--font, inherit) !important;
+  font-weight: 700 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+}
+.syncBtn {
+  width: 32px !important;
+  height: 32px !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  border-radius: 9999px !important;
+  transition: background-color 0.18s, border-color 0.18s !important;
+}
+.syncBtn:hover {
+  background: var(--md-on-surface, #121417) !important;
+  color: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border-color: var(--md-on-surface, #121417) !important;
+}
+
+/* ── Device list — slightly more space between cards ─────────── */
+.deviceList { gap: 12px !important; }
+
+/* ── Device card — flat white tile, hairline, a touch of polish ── */
+.deviceCard {
+  border-radius: 12px !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s !important;
+}
+.deviceCard:hover { border-color: rgba(18, 20, 23, 0.32) !important; }
+.deviceCard::before,
+:global([data-theme='light']) .deviceCard::before { display: none !important; content: none !important; }
+
+/* ── Header layout — icon + content + counts/chev ────────────── */
+.deviceHead {
+  display: grid !important;
+  grid-template-columns: 40px 1fr auto auto !important;
+  grid-template-areas:
+    "icon title counts chev"
+    "icon sub   sub    sub" !important;
+  align-items: center !important;
+  column-gap: 14px !important;
+  row-gap: 4px !important;
+  padding: 16px !important;
+}
+
+/* Add a small device-glyph block before the device name. We don't
+   inject markup, so we use the ::before pseudo as a flat icon tile. */
+.deviceHead::before {
+  content: '' !important;
+  grid-area: icon !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  background: var(--md-surface-container, #FAFAFA) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23121417' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='6' width='20' height='5' rx='1.5'/><rect x='2' y='13' width='20' height='5' rx='1.5'/><circle cx='6' cy='8.5' r='0.6' fill='%23121417'/><circle cx='6' cy='15.5' r='0.6' fill='%23121417'/></svg>") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}
+
+/* Title row: bigger, more confident */
+.deviceTitle {
+  grid-area: title !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  flex-wrap: wrap !important;
+}
+.deviceName {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: 22px !important;
+  letter-spacing: -0.01em !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.deviceClass { display: none !important; }
+
+.deviceSub {
+  grid-area: sub !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+.modelTag {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.7 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.modelTag::after {
+  content: '·' !important;
+  margin-left: 8px !important;
+  opacity: 0.5 !important;
+}
+.ipTag {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.unmanaged {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.45 !important;
+  font-style: normal !important;
+}
+
+/* Counts pill — small black pill on the right of the title row */
+.deviceCounts {
+  grid-area: counts !important;
+  align-self: center !important;
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 4px !important;
+  padding: 5px 10px !important;
+  background: var(--md-on-surface, #121417) !important;
+  border-radius: 9999px !important;
+}
+.cnt, .cntLive, .cntUp, .cntDown {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 4px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.cnt b, .cntLive b, .cntUp b, .cntDown b {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: var(--md-surface-container-lowest, #FFFFFF) !important;
+  letter-spacing: -0.005em !important;
+}
+.cnt i, .cntLive i, .cntUp i, .cntDown i {
+  font-style: normal !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+  color: var(--md-surface-container-lowest, #FFFFFF) !important;
+  opacity: 0.7 !important;
+}
+
+.chev {
+  grid-area: chev !important;
+  align-self: center !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.5 !important;
+  padding-top: 0 !important;
+}
+
+/* ── Expanded body — give it room to breathe ─────────────────── */
+.deviceBody {
+  border-top: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  padding: 6px 16px 12px !important;
+}
+
+/* ── Filter — pills again, with confident active-black state ── */
+.portFilter {
+  display: flex !important;
+  gap: 6px !important;
+  padding: 12px 0 !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  margin-bottom: 4px !important;
+  overflow-x: auto !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.portFilter::-webkit-scrollbar { display: none !important; }
+
+.filterBtn {
+  flex: 0 0 auto !important;
+  padding: 6px 12px !important;
+  border-radius: 9999px !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.85 !important;
+  font-family: var(--font, inherit) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 16px !important;
+  letter-spacing: 0 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+  transition: all 0.14s !important;
+}
+.filterBtn:hover {
+  border-color: rgba(18, 20, 23, 0.32) !important;
+  opacity: 1 !important;
+}
+.filterBtnActive,
+:global([data-theme='light']) .filterBtnActive {
+  background: var(--md-on-surface, #121417) !important;
+  color: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border-color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+
+/* ── Port rows — a bit more padding, hover surface tint back ── */
+.portRow {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 8px !important;
+  margin: 0 -8px !important;
+  border: none !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 0 !important;
+  transition: background-color 0.14s !important;
+}
+.portRow:last-child { border-bottom: none !important; }
+.portRow:hover,
+:global([data-theme='light']) .portRow:hover {
+  background: var(--md-surface-container, #FAFAFA) !important;
+}
+
+.portName { gap: 4px !important; }
+.portNameTop {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+.portName strong {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.005em !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.portName .subtle {
+  font-family: var(--font, inherit) !important;
+  font-size: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+  font-weight: 400 !important;
+}
+.portVlanLabel {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  line-height: 14px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.5 !important;
+}
+
+/* State pill — bigger glow on the dot, refined typography */
+.portState {
+  padding: 5px 10px !important;
+  border-radius: 9999px !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  text-transform: lowercase !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+.dotActive,
+:global([data-theme='light']) .dotActive {
+  width: 6px !important;
+  height: 6px !important;
+  background: #22c55e !important;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.55) !important;
+  flex-shrink: 0 !important;
+}
+.dotIdle,
+:global([data-theme='light']) .dotIdle {
+  width: 6px !important;
+  height: 6px !important;
+  background: #ef4444 !important;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.55) !important;
+  flex-shrink: 0 !important;
+}
+
+.macChip {
+  font-family: var(--font, inherit) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  padding: 3px 8px !important;
+  background: var(--md-surface-container, #FAFAFA) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  border-radius: 9999px !important;
+}
+.macChip:hover {
+  background: var(--md-on-surface, #121417) !important;
+  color: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border-color: var(--md-on-surface, #121417) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EDITORIAL — final replacement pass.
+   No cards. No grey containers. No pills. Each device is a typographic
+   block on the white page, separated only by a hairline rule. Big
+   confident names, mono detail line, status as a coloured dot + word.
+   Wins via cascade + `!important` over every earlier layer.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Section head — clean, full-width with bottom hairline ──── */
+.section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+.sectionHead {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  padding: 0 0 14px !important;
+  margin: 0 0 4px !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  background: transparent !important;
+}
+.sectionHead h3 {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
+  line-height: 16px !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  margin: 0 !important;
+}
+.headRight {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 14px !important;
+}
+.headRight .subtle {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.04em !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.7 !important;
+}
+.headRight .subtle b {
+  font-family: var(--font, inherit) !important;
+  font-weight: 700 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+}
+.syncBtn {
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+  border-radius: 0 !important;
+  padding: 4px !important;
+  box-shadow: none !important;
+}
+.syncBtn:hover {
+  background: transparent !important;
+  color: var(--md-on-surface, #121417) !important;
+  border-color: transparent !important;
+  opacity: 1 !important;
+}
+
+/* ── Device list — counter-numbered editorial list ───────────── */
+.deviceList {
+  counter-reset: dev !important;
+  display: block !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* ── Device "card" — NO card. Just a typographic block. ──────── */
+.deviceCard,
+.deviceCardOpen,
+:global([data-theme='light']) .deviceCard,
+:global([data-theme='light']) .deviceCardOpen {
+  counter-increment: dev !important;
+  position: relative !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+.deviceCard::before,
+:global([data-theme='light']) .deviceCard::before,
+.deviceCardOpen::before,
+:global([data-theme='light']) .deviceCardOpen::before {
+  /* The two-digit counter sits in the left margin as the "01 / 02 / 03"
+     editorial prefix. Pure black on white, mono, large. */
+  content: counter(dev, decimal-leading-zero) !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 22px !important;
+  width: 40px !important;
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.45 !important;
+  background: none !important;
+  border: none !important;
+}
+
+/* ── Header — flex row, big device name, mono detail line ───── */
+.deviceHead {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  padding: 22px 0 22px 44px !important;
+  background: transparent !important;
+  border: none !important;
+}
+.deviceHead::before { content: none !important; display: none !important; }
+
+.deviceTitle {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+.deviceName {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 24px !important;
+  letter-spacing: -0.015em !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.deviceClass { display: none !important; }
+
+.deviceSub {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin: 0 !important;
+}
+.modelTag {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.75 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.modelTag::after {
+  content: '/' !important;
+  margin-left: 10px !important;
+  opacity: 0.35 !important;
+}
+.ipTag {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.unmanaged {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.4 !important;
+  font-style: normal !important;
+  text-transform: lowercase !important;
+}
+
+/* Counts — large number to the right, tiny label under */
+.deviceCounts {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 2px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+}
+.cnt, .cntLive, .cntUp, .cntDown {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 2px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.cnt b, .cntLive b, .cntUp b, .cntDown b {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.cnt i, .cntLive i, .cntUp i, .cntDown i {
+  font-style: normal !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+}
+
+.chev {
+  display: none !important;
+}
+
+/* ── Expanded body — indented, full-width, no chrome ─────────── */
+.deviceBody {
+  border-top: none !important;
+  background: transparent !important;
+  padding: 0 0 24px 44px !important;
+}
+
+/* ── Filter — text-only tabs with underline active ───────────── */
+.portFilter {
+  display: flex !important;
+  gap: 22px !important;
+  padding: 0 0 14px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  margin-bottom: 0 !important;
+  overflow-x: auto !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.portFilter::-webkit-scrollbar { display: none !important; }
+.filterBtn,
+:global([data-theme='light']) .filterBtn {
+  flex: 0 0 auto !important;
+  padding: 4px 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.45 !important;
+  font-family: var(--font, inherit) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 18px !important;
+  letter-spacing: -0.005em !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  margin-bottom: -1px !important;
+  box-shadow: none !important;
+  transition: opacity 0.14s, border-color 0.14s !important;
+}
+.filterBtn:hover { opacity: 0.85 !important; }
+.filterBtnActive,
+:global([data-theme='light']) .filterBtnActive {
+  background: transparent !important;
+  color: var(--md-on-surface, #121417) !important;
+  border-bottom-color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+
+/* ── Port list — clean indented list, hairline dividers only ─ */
+.portTable, .portTable4, .portTable5 {
+  display: block !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.portRow,
+:global([data-theme='light']) .portRow {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  padding: 14px 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  transition: background-color 0.14s !important;
+}
+.portRow:last-child,
+:global([data-theme='light']) .portRow:last-child { border-bottom: none !important; }
+.portRow:hover,
+:global([data-theme='light']) .portRow:hover { background: transparent !important; }
+
+.portName {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+.portNameTop {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+}
+.portName strong {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.portName .subtle {
+  font-family: var(--font, inherit) !important;
+  font-size: 12px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+  font-weight: 400 !important;
+}
+.portVlanLabel {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.04em !important;
+  line-height: 14px !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.4 !important;
+  text-transform: none !important;
+}
+
+/* ── State indicator — coloured dot + lowercase word, NO pill ─ */
+.portState,
+:global([data-theme='light']) .portState {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  text-transform: lowercase !important;
+  box-shadow: none !important;
+  flex-shrink: 0 !important;
+}
+.dotActive,
+:global([data-theme='light']) .dotActive {
+  width: 7px !important;
+  height: 7px !important;
+  background: #22c55e !important;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.55) !important;
+  flex-shrink: 0 !important;
+}
+.dotIdle,
+:global([data-theme='light']) .dotIdle {
+  width: 7px !important;
+  height: 7px !important;
+  background: #ef4444 !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.55) !important;
+  flex-shrink: 0 !important;
+}
+
+/* ── MAC chip — bare text, no pill ───────────────────────────── */
+.macChip,
+:global([data-theme='light']) .macChip {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+  border-radius: 0 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+.macChip:hover,
+:global([data-theme='light']) .macChip:hover {
+  background: transparent !important;
+  color: var(--md-on-surface, #121417) !important;
+  border-color: transparent !important;
+  opacity: 1 !important;
+}
+
+/* End-of-row pair (state pill + MAC) — vertical stack, right-aligned */
+.portRowEnd {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FINAL REDESIGN — card-based layout from the new mockup.
+   Wipes the editorial counter list. Cards return as white surfaces with
+   hairline borders. Active card gets a thick black border + 4px left
+   accent strip. Ports lead with an Ethernet glyph and end with a clean
+   up/down arrow icon (no state pill).
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Section head — small uppercase label, no horizontal rule ─ */
+.section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+.sectionHead {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-bottom: none !important;
+  background: transparent !important;
+}
+.sectionHead h3 {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  line-height: 16px !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 1 !important;
+  margin: 0 !important;
+}
+.headRight {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 12px !important;
+}
+.headRight .subtle {
+  font-family: var(--font, inherit) !important;
+  font-size: 12px !important;
+  letter-spacing: 0.02em !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 1 !important;
+}
+.headRight .subtle b {
+  font-family: var(--font, inherit) !important;
+  font-weight: 700 !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.syncBtn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 9999px !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s !important;
+}
+.syncBtn:hover {
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border-color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+}
+
+/* ── Device list — card spacing ───────────────────────────────── */
+.deviceList {
+  counter-reset: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* ── Device card — WHITE surface, HAIRLINE border, real container ── */
+.deviceCard,
+:global([data-theme='light']) .deviceCard {
+  counter-increment: none !important;
+  position: relative !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s !important;
+  overflow: hidden !important;
+}
+.deviceCard:hover,
+:global([data-theme='light']) .deviceCard:hover {
+  border-color: var(--md-on-surface, #121417) !important;
+}
+.deviceCard::before,
+:global([data-theme='light']) .deviceCard::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* ── Active / expanded card — 2px black border + 4px left strip ── */
+.deviceCardOpen,
+:global([data-theme='light']) .deviceCardOpen {
+  position: relative !important;
+  background: var(--md-surface-container-lowest, #FFFFFF) !important;
+  border: 2px solid var(--md-on-surface, #121417) !important;
+  border-radius: 12px !important;
+  padding: 14px !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+.deviceCardOpen::before,
+:global([data-theme='light']) .deviceCardOpen::before {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 4px !important;
+  background: var(--md-on-surface, #121417) !important;
+  border-radius: 0 !important;
+  opacity: 1 !important;
+}
+
+/* ── Card header — proper 2-row grid so title and sub stack ──── */
+.deviceHead {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-areas:
+    "title counts"
+    "sub   sub" !important;
+  column-gap: 12px !important;
+  row-gap: 6px !important;
+  align-items: start !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+.deviceCardOpen .deviceHead {
+  padding-left: 8px !important;  /* Indent so the 4px left strip doesn't bump into text */
+}
+.deviceHead::before,
+:global([data-theme='light']) .deviceHead::before {
+  content: none !important;
+  display: none !important;
+}
+
+.deviceTitle {
+  grid-area: title !important;
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  min-width: 0 !important;
+  flex-direction: row !important;
+  margin: 0 !important;
+}
+.deviceName {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+  letter-spacing: -0.005em !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.deviceClass { display: none !important; }
+
+/* Sub row — model + IP stacked under the title */
+.deviceSub {
+  grid-area: sub !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  flex-wrap: nowrap !important;
+  gap: 2px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-width: 0 !important;
+}
+.deviceCardOpen .deviceSub { padding-left: 0 !important; }
+.modelTag {
+  font-family: var(--font, inherit) !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 20px !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.modelTag::after { content: none !important; margin: 0 !important; }
+.ipTag {
+  display: block !important;
+  width: auto !important;
+  font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 18px !important;
+  letter-spacing: 0 !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 0.85 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.unmanaged {
+  font-family: var(--font, inherit) !important;
+  font-size: 13px !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 0.7 !important;
+  font-style: normal !important;
+  text-transform: none !important;
+}
+
+/* ── LIVE pill — small, surface-container-high background ───── */
+.deviceCounts,
+:global([data-theme='light']) .deviceCounts {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 10px !important;
+  background: var(--md-surface-container-high, #ebe7e7) !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  flex-shrink: 0 !important;
+  grid-area: counts !important;
+  align-self: start !important;
+  justify-self: end !important;
+}
+.cnt, .cntLive, .cntUp, .cntDown {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+/* Small black dot before the count */
+.cnt::before, .cntLive::before, .cntUp::before, .cntDown::before {
+  content: '' !important;
+  display: inline-block !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: var(--md-on-surface, #121417) !important;
+  flex-shrink: 0 !important;
+}
+.cnt b, .cntLive b, .cntUp b, .cntDown b {
+  font-family: var(--font, inherit) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface, #121417) !important;
+  line-height: 14px !important;
+}
+.cnt i, .cntLive i, .cntUp i, .cntDown i {
+  font-style: normal !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+}
+
+.chev { display: none !important; }
+
+/* ── Expanded body — divider line above port list ────────────── */
+.deviceBody,
+:global([data-theme='light']) .deviceBody {
+  border-top: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  background: transparent !important;
+  padding: 16px 0 0 8px !important;
+  margin-top: 12px !important;
+}
+
+/* ── Filter row inside expanded card — text-only label header ── */
+.portFilter,
+:global([data-theme='light']) .portFilter {
+  display: flex !important;
+  gap: 20px !important;
+  padding: 0 0 12px !important;
+  background: transparent !important;
+  border: none !important;
+  margin: 0 0 4px !important;
+  overflow-x: auto !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.filterBtn,
+:global([data-theme='light']) .filterBtn {
+  flex: 0 0 auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 0.6 !important;
+  font-family: var(--font, inherit) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  line-height: 16px !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+  transition: opacity 0.14s, color 0.14s !important;
+}
+.filterBtn:hover { opacity: 0.9 !important; }
+.filterBtnActive,
+:global([data-theme='light']) .filterBtnActive {
+  background: transparent !important;
+  color: var(--md-on-surface, #121417) !important;
+  border: none !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+
+/* ── Port list — clean rows with leading ethernet icon ───────── */
+.portTable, .portTable4, .portTable5,
+:global([data-theme='light']) .portTable {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.portRow,
+:global([data-theme='light']) .portRow {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  padding: 12px 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+}
+.portRow:last-child,
+:global([data-theme='light']) .portRow:last-child {
+  border-bottom: none !important;
+}
+.portRow:hover,
+:global([data-theme='light']) .portRow:hover {
+  background: transparent !important;
+}
+
+/* Leading Ethernet icon */
+.portIcon {
+  flex-shrink: 0 !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 0.6 !important;
+  transition: opacity 0.14s, color 0.14s !important;
+}
+.portRow:hover .portIcon {
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+}
+
+.portName {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+.portNameTop {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+.portName strong {
+  font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  text-decoration: none !important;
+}
+.portName .subtle {
+  font-family: var(--font, inherit) !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 1 !important;
+  text-transform: none !important;
+}
+.portVlanLabel,
+:global([data-theme='light']) .portVlanLabel {
+  font-family: var(--font, inherit) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  line-height: 14px !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 0.7 !important;
+  text-decoration: none !important;
+}
+
+/* ── Up/Down arrow on the right ─────────────────────────────── */
+.portArrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  flex-shrink: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+.portArrowUp { color: #16a34a !important; }
+.portArrowDown { color: #dc2626 !important; opacity: 0.85 !important; }
+
+/* Hide the old state-pill scaffolding (dot + word + glow) — the arrow
+   replaces them now. */
+.portState,
+:global([data-theme='light']) .portState,
+.dotActive,
+:global([data-theme='light']) .dotActive,
+.dotIdle,
+:global([data-theme='light']) .dotIdle,
+.portRowEnd,
+:global([data-theme='light']) .portRowEnd {
+  display: none !important;
+}
+
+/* MAC chip — compact, optional ─────────────────────────────── */
+.macChip,
+:global([data-theme='light']) .macChip {
+  flex-shrink: 0 !important;
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  padding: 2px 8px !important;
+  background: var(--md-surface-container-high, #ebe7e7) !important;
+  border: none !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 1 !important;
+  border-radius: 9999px !important;
+  text-decoration: none !important;
+}
+.macChip:hover,
+:global([data-theme='light']) .macChip:hover {
+  background: var(--md-on-surface, #121417) !important;
+  color: var(--md-surface-container-lowest, #FFFFFF) !important;
+  opacity: 1 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   VLAN grouping — ports inside each switch detail are now grouped under
+   a small "VLAN N" header so the user reads them by VLAN, not as a flat
+   list with a repeated VLAN label on every row.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.vlanGroup {
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 16px !important;
+}
+.vlanGroup:last-child { margin-bottom: 0 !important; }
+
+.vlanGroupHead {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 8px 0 6px !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  margin-bottom: 4px !important;
+}
+.vlanGroupLabel {
+  font-family: var(--font, inherit) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.10em !important;
+  line-height: 14px !important;
+  text-transform: uppercase !important;
+  color: var(--md-on-surface, #121417) !important;
+}
+.vlanGroupCount {
+  font-family: var(--mono, ui-monospace, monospace) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  color: var(--md-on-surface, #121417) !important;
+  opacity: 0.55 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* ── Row reshape — 4-column grid: icon · port mono · desc · arrow ── */
+.portRow,
+:global([data-theme='light']) .portRow {
+  display: grid !important;
+  grid-template-columns: 22px minmax(72px, auto) 1fr auto auto !important;
+  align-items: center !important;
+  column-gap: 14px !important;
+  padding: 10px 4px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+}
+.vlanGroup .portRow:last-child {
+  border-bottom: none !important;
+}
+.portRow:hover,
+:global([data-theme='light']) .portRow:hover {
+  background: var(--md-surface-container-low, #f6f3f2) !important;
+}
+
+/* Reset old portName container — we now place the columns directly */
+.portName {
+  display: contents !important;
+}
+.portNameTop, .portVlanLabel {
+  display: none !important;
+}
+
+/* Port name (mono) — fixed minimum column width so they ALL align */
+.portMono {
+  font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  color: var(--md-on-surface, #121417) !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+
+/* Description — truncates with ellipsis if long */
+.portDesc {
+  font-family: var(--font, inherit) !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: var(--md-on-surface-variant, #4c4546) !important;
+  opacity: 1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 0 !important;
+}
+
+/* Empty spacer for the MAC column when this row has no MAC chip — keeps
+   the up/down arrow column aligned across rows that DO and DON'T have a
+   chip. */
+.macSpacer {
+  display: inline-block !important;
+  width: 0 !important;
+  height: 1px !important;
+}
+
+/* ── Summary dashboard — white, subtle black accents, compact ───────── */
+.netSummary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+@media (min-width: 700px) {
+  .netSummary { grid-template-columns: 1.5fr 1fr; align-items: stretch; }
+}
+.netTiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+@media (min-width: 1080px) { .netTiles { grid-template-columns: repeat(4, 1fr); } }
+
+.statTile {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.09);
+  border-radius: 10px;
+}
+.statTileIcon {
+  width: 28px; height: 28px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 7px;
+  background: rgba(0,0,0,0.05);
+  color: #1a1c1d;
+}
+.statTileText { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
+.statTileValue { font-size: 1.15rem; font-weight: 800; color: #1a1c1d; letter-spacing: -0.02em;
+                 font-variant-numeric: tabular-nums; }
+.statTileLabel { font-size: 0.66rem; font-weight: 600; color: rgba(0,0,0,0.45);
+                 text-transform: uppercase; letter-spacing: 0.05em; }
+
+.netPortsCard {
+  display: flex; flex-direction: column; gap: 8px; justify-content: center;
+  padding: 11px 13px;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.09);
+  border-radius: 10px;
+}
+.netPortsHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.netPortsTitle { font-size: 0.66rem; font-weight: 700; color: rgba(0,0,0,0.5);
+                 text-transform: uppercase; letter-spacing: 0.06em; }
+.netPortsNums { font-size: 0.8rem; color: rgba(0,0,0,0.55); font-variant-numeric: tabular-nums; }
+.netPortsNums b { color: #1a1c1d; font-weight: 700; }
+.netDot { margin: 0 5px; color: rgba(0,0,0,0.25); }
+.netMuted { color: rgba(0,0,0,0.4); }
+.netDownNum { color: rgba(0,0,0,0.45); }
+.netBar { height: 8px; border-radius: 5px; background: rgba(0,0,0,0.08); overflow: hidden; }
+.netBarUp { height: 100%; border-radius: 5px; background: #1a1c1d; transition: width .35s ease; }
+
+/* ── Device card enrichments ────────────────────────────────────────── */
+.deviceGlyph {
+  width: 22px; height: 22px; flex: none; margin-right: 7px;
+  display: grid; place-items: center; border-radius: 6px;
+  background: rgba(0,0,0,0.05); color: #1a1c1d;
+}
+.vendorTag {
+  font-size: 0.7rem; font-weight: 700; color: #1a1c1d;
+  background: rgba(0,0,0,0.06); padding: 1px 7px; border-radius: 5px;
+}
+.osTag {
+  font-size: 0.7rem; font-weight: 600; color: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.04); padding: 1px 7px; border-radius: 5px;
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+.utilRow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 14px 10px;
+}
+.utilBar { flex: 1; height: 6px; border-radius: 4px; background: rgba(0,0,0,0.08); overflow: hidden; min-width: 56px; }
+.utilBarUp { height: 100%; border-radius: 4px; background: #1a1c1d; transition: width .35s ease; }
+.utilLabel { font-size: 0.74rem; color: rgba(0,0,0,0.5); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.utilUp   { color: #1a1c1d; font-weight: 700; }
+.utilConn { color: #1a1c1d; font-weight: 700; }
+
+/* ── Port faceplate grid — monochrome ───────────────────────────────── */
+.faceplate {
+  padding: 11px 14px 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.faceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(22px, 1fr));
+  gap: 4px;
+  max-width: 560px;
+}
+.facePort {
+  aspect-ratio: 1 / 1; min-width: 0;
+  border: 1px solid rgba(0,0,0,0.14);
+  border-radius: 4px;
+  font-size: 0.56rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer; display: grid; place-items: center;
+  color: rgba(0,0,0,0.5); background: #ffffff;
+  transition: transform .1s ease;
+}
+.facePort:hover { transform: translateY(-1px); border-color: rgba(0,0,0,0.4); }
+.facePortDown   { background: #f2f2f3; border-color: rgba(0,0,0,0.08); color: rgba(0,0,0,0.28); }
+.facePortUp     { background: #ffffff; border-color: rgba(0,0,0,0.45); color: #1a1c1d; }
+.facePortLinked { background: #1a1c1d; border-color: #1a1c1d; color: #ffffff; }
+
+.faceLegend {
+  display: flex; gap: 12px; margin-top: 8px;
+  font-size: 0.68rem; color: rgba(0,0,0,0.45);
+}
+.faceLegend span { display: inline-flex; align-items: center; gap: 4px; }
+.legDot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.14); }
+.legLinked { background: #1a1c1d; border-color: #1a1c1d; }
+.legUp { background: #ffffff; border-color: rgba(0,0,0,0.45); }
+.legDown { background: #f2f2f3; }
+
+/* ── Compact + monochrome port rows (final override) ────────────────── */
+.portRow,
+:global([data-theme='light']) .portRow {
+  padding: 4px 4px !important;
+  column-gap: 10px !important;
+  grid-template-columns: 18px minmax(58px, auto) 1fr auto auto !important;
+}
+.portMono { font-size: 12px !important; }
+.portDesc { font-size: 11px !important; color: rgba(0,0,0,0.35) !important; }
+.portArrowUp   { color: #1a1c1d !important; }
+.portArrowDown { color: rgba(0,0,0,0.24) !important; opacity: 1 !important; }
+.portArrow { width: 16px !important; height: 16px !important; }
+.portArrow svg { width: 13px !important; height: 13px !important; }
+.portIcon { opacity: 0.3 !important; }
+.portIcon svg { width: 14px !important; height: 14px !important; }
+.vlanGroupHead { padding: 5px 0 3px !important; margin-bottom: 2px !important; }
+.vlanGroup { margin-bottom: 8px !important; }
+.portTable { max-height: 340px !important; }
+.portFilter { gap: 5px !important; margin-bottom: 8px !important; }
+.faceplate { padding: 10px 12px 7px !important; }
+
+/* ── Compact device table (layout A) ────────────────────────────────── */
+.netTableWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.netTable { width: 100%; border-collapse: collapse; min-width: 440px; }
+.netTable thead th {
+  text-align: left; font-size: 0.64rem; font-weight: 700; color: rgba(0,0,0,0.4);
+  text-transform: uppercase; letter-spacing: 0.06em; padding: 0 10px 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.10); white-space: nowrap;
+}
+.netTable thead th.tr_ { text-align: right; }
+.netTable .tr_ { text-align: right; }
+
+.devTr { cursor: pointer; }
+.devTr > td {
+  padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.06);
+  font-size: 0.82rem; vertical-align: middle; white-space: nowrap;
+}
+.devTr:hover > td { background: #fafafa; }
+.devTrOpen > td { background: #f5f5f6; }
+.devTrDim { cursor: default; }
+.devTrDim:hover > td { background: transparent; }
+
+.tdDevice .deviceName {
+  font-family: var(--mono, ui-monospace, monospace); font-weight: 700;
+  font-size: 0.84rem; color: #1a1c1d; margin-right: 8px;
+}
+.tdDevice .deviceClass {
+  font-size: 0.62rem; font-weight: 600; color: rgba(0,0,0,0.4);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.tdModel { color: #1a1c1d; max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+.tdIp { font-family: var(--mono, monospace); font-size: 0.78rem; color: rgba(0,0,0,0.55); }
+.tdPorts { font-family: var(--mono, monospace); font-variant-numeric: tabular-nums; color: rgba(0,0,0,0.5); }
+.tdPorts b { color: #1a1c1d; font-weight: 700; }
+.tdLinks { font-variant-numeric: tabular-nums; font-weight: 700; color: #1a1c1d; }
+.tdChev { color: rgba(0,0,0,0.35); width: 18px; }
+.unmanaged { color: rgba(0,0,0,0.35); font-size: 0.78rem; }
+
+.devExpandTd {
+  padding: 2px 4px 12px !important;
+  background: #fbfbfc;
+  border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* ── Device card grid (layout B) ────────────────────────────────────── */
+.bgrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+  align-items: start;
+}
+@media (max-width: 520px) { .bgrid { grid-template-columns: 1fr; } }
+
+.mcard {
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 11px;
+  background: #ffffff;
+  overflow: hidden;
+}
+.mcardOpen { grid-column: 1 / -1; border-color: rgba(0,0,0,0.22); }
+.mcardDim { opacity: 0.72; }
+
+.mcardHead {
+  display: block; width: 100%; text-align: left;
+  background: transparent; border: none; cursor: pointer;
+  padding: 11px 12px;
+}
+.mcardDim .mcardHead { cursor: default; }
+.mcard:not(.mcardDim) .mcardHead:hover { background: #fafafa; }
+
+.mcardTop { display: flex; align-items: center; gap: 7px; }
+.mGlyph {
+  width: 22px; height: 22px; flex: none; display: grid; place-items: center;
+  border-radius: 6px; background: rgba(0,0,0,0.05); color: #1a1c1d;
+}
+.mName { font-family: var(--mono, ui-monospace, monospace); font-weight: 700; font-size: 0.85rem; color: #1a1c1d; }
+.mClass { font-size: 0.6rem; font-weight: 600; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.05em; }
+.mChev { margin-left: auto; color: rgba(0,0,0,0.35); font-size: 0.8rem; }
+
+.mMeta { font-size: 0.76rem; color: rgba(0,0,0,0.6); margin: 8px 0 9px;
+         display: flex; gap: 5px; flex-wrap: wrap; overflow: hidden; }
+.mMeta > span { white-space: nowrap; }
+.mIp { font-family: var(--mono, monospace); color: rgba(0,0,0,0.45); }
+
+.mBarRow { display: flex; align-items: center; gap: 9px; }
+.mBar { flex: 1; height: 6px; border-radius: 4px; background: #ececef; overflow: hidden; min-width: 40px; }
+.mBar > i { display: block; height: 100%; background: #1a1c1d; border-radius: 4px; }
+.mNums { font-family: var(--mono, monospace); font-size: 0.72rem; color: rgba(0,0,0,0.5);
+         white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mNums b { color: #1a1c1d; font-weight: 700; }
+
+.mUnmanaged { font-size: 0.75rem; color: rgba(0,0,0,0.38); margin-top: 8px; }
+
+.mBody {
+  border-top: 1px solid rgba(0,0,0,0.07);
+  padding: 10px 12px 4px;
+  background: #fbfbfc;
+}
+
+/* ── Single column, wider, clearly separated cards (override) ────────── */
+.bgrid {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+  gap: 11px !important;
+}
+.mcard {
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.mcardOpen { border-color: rgba(0,0,0,0.2); }
+.mcardHead { padding: 14px 16px; }
+.mMeta { font-size: 0.8rem; margin: 9px 0 10px; }
+.mBar { height: 7px; }
+.mNums { font-size: 0.75rem; }
+.mBody { padding: 12px 16px 6px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   NETWORK VIEW — clean minimal redesign (nv*)
+   ═══════════════════════════════════════════════════════════════════════ */
+.nvSection { margin: 2px 0 0; }
+.nvHead {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin: 0 2px 14px;
+}
+.nvTitle { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; color: #1a1c1d; }
+.nvCount { font-size: 0.76rem; font-weight: 600; color: rgba(0,0,0,0.42); font-variant-numeric: tabular-nums; }
+
+.nvList {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.09);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.nvItem { border-bottom: 1px solid rgba(0,0,0,0.055); }
+.nvItem:last-child { border-bottom: none; }
+.nvItemOpen { background: #fbfbfc; }
+
+.nvRow {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  text-align: left; background: transparent; border: none;
+  cursor: pointer; padding: 14px 18px;
+}
+.nvItem:not(.nvItemDim) .nvRow:hover { background: #fafafa; }
+.nvItemDim .nvRow { cursor: default; }
+
+.nvIcon {
+  width: 34px; height: 34px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 9px; background: rgba(0,0,0,0.045); color: #1a1c1d;
+}
+.nvIcon svg { width: 17px; height: 17px; }
+
+.nvIdent { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.nvL1 { display: flex; align-items: baseline; gap: 9px; }
+.nvName { font-family: var(--mono, ui-monospace, monospace); font-weight: 700;
+          font-size: 0.92rem; color: #1a1c1d; letter-spacing: -0.01em; }
+.nvType { font-size: 0.6rem; font-weight: 600; color: rgba(0,0,0,0.38);
+          text-transform: uppercase; letter-spacing: 0.06em; }
+.nvL2 { font-size: 0.8rem; color: rgba(0,0,0,0.5); white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis; }
+.nvSep { margin: 0 6px; color: rgba(0,0,0,0.24); }
+.nvIp { font-family: var(--mono, monospace); color: rgba(0,0,0,0.42); }
+.nvOff { color: rgba(0,0,0,0.35); }
+
+.nvUtil { display: flex; align-items: center; gap: 11px; flex: none; }
+.nvBar { width: 84px; height: 5px; border-radius: 3px; background: #ececef; overflow: hidden; }
+.nvBar > i { display: block; height: 100%; background: #1a1c1d; border-radius: 3px; }
+.nvNums { font-family: var(--mono, monospace); font-size: 0.73rem; color: rgba(0,0,0,0.48);
+          white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nvNums b { color: #1a1c1d; font-weight: 700; }
+.nvSep2 { margin: 0 5px; color: rgba(0,0,0,0.24); }
+.nvChev { flex: none; color: rgba(0,0,0,0.3); font-size: 0.78rem; width: 12px; text-align: center; }
+
+.nvPorts { padding: 4px 18px 14px; border-top: 1px solid rgba(0,0,0,0.055); }
+
+@media (max-width: 600px) { .nvBar { display: none; } }
+
+/* Monochrome health pill — drop the green */
+.healthPill,
+:global([data-theme='light']) .healthPill {
+  border: 1px solid rgba(0,0,0,0.12) !important;
+  background: #ffffff !important;
+  color: rgba(0,0,0,0.6) !important;
+}
+.healthOk, :global([data-theme='light']) .healthOk,
+.healthBad, :global([data-theme='light']) .healthBad {
+  color: rgba(0,0,0,0.6) !important;
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.12) !important;
+}
+.healthOk .healthDot  { background: #1a1c1d !important; }
+.healthBad .healthDot { background: rgba(0,0,0,0.3) !important; }
+
+/* ═══ Option C — airy rows, zero lines (final) ═══════════════════════ */
+.nvList {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.nvItem { border-bottom: none !important; background: transparent !important; }
+.nvItemOpen { background: transparent !important; }
+
+.nvRow {
+  border-radius: 15px !important;
+  padding: 15px 15px !important;
+  gap: 16px !important;
+  transition: background .12s ease;
+}
+.nvItem:not(.nvItemDim) .nvRow:hover { background: #ececed !important; }
+.nvItemOpen .nvRow { background: #f1f1f3 !important; }
+
+.nvIcon { width: 36px; height: 36px; border-radius: 10px; }
+.nvIcon svg { width: 18px; height: 18px; }
+.nvName { font-size: 0.96rem; }
+.nvL2 { font-size: 0.82rem; }
+
+/* utilization: numbers on top, thin bar under, right-aligned */
+.nvUtil { flex-direction: column !important; align-items: flex-end !important; gap: 6px !important; }
+.nvNums { font-size: 0.76rem; }
+.nvBar { width: 100px !important; height: 5px; }
+
+.nvChev { font-size: 1rem; color: rgba(0,0,0,0.28); }
+
+/* expanded ports — no top line, indented under the name, subtle inset */
+.nvPorts {
+  border-top: none !important;
+  padding: 2px 16px 14px 67px !important;
+}
+@media (max-width: 600px) {
+  .nvBar { display: block !important; width: 84px !important; }
+  .nvPorts { padding-left: 16px !important; }
+}
+
+/* ═══ Airy port list inside an expanded device (nport*) ══════════════ */
+.nports { max-height: 320px; overflow-y: auto; margin-top: 2px; }
+.nports::-webkit-scrollbar { width: 4px; }
+.nports::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+
+.nvlan { margin-bottom: 12px; }
+.nvlan:last-child { margin-bottom: 0; }
+.nvlanHead {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 0.6rem; font-weight: 700; color: rgba(0,0,0,0.38);
+  text-transform: uppercase; letter-spacing: 0.08em; padding: 5px 8px 3px;
+}
+.nvlanCount { color: rgba(0,0,0,0.28); font-family: var(--mono, monospace); }
+
+.nport {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 8px; border-radius: 9px;
+}
+.nport:hover { background: #f1f1f3; }
+.nportName { font-family: var(--mono, monospace); font-weight: 700; font-size: 0.8rem; color: #1a1c1d; }
+.nportFill { flex: 1; }
+.nportMac {
+  font-family: var(--mono, monospace); font-size: 0.66rem; font-weight: 700;
+  color: #1a1c1d; background: rgba(0,0,0,0.06); border: none;
+  border-radius: 6px; padding: 2px 7px; cursor: pointer;
+}
+.nportMac:hover { background: rgba(0,0,0,0.11); }
+.nportState { font-size: 0.72rem; font-weight: 600; width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
+.nportUp { color: #1a1c1d; }
+.nportDown { color: rgba(0,0,0,0.28); }
+
+/* filter tabs — airy, no boxes */
+.portFilter { gap: 4px !important; margin: 2px 0 8px !important; }
+.filterBtn {
+  background: transparent !important; border: none !important;
+  color: rgba(0,0,0,0.4) !important; font-size: 0.72rem !important;
+  font-weight: 600 !important; padding: 4px 9px !important; border-radius: 8px !important;
+  cursor: pointer;
+}
+.filterBtn:hover { background: rgba(0,0,0,0.04) !important; color: rgba(0,0,0,0.7) !important; }
+.filterBtnActive { background: rgba(0,0,0,0.07) !important; color: #1a1c1d !important; }

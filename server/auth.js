@@ -1,0 +1,1380 @@
+/**
+ * Authentication module — SQLite + bcrypt + JWT.
+ *
+ * Storage:
+ *   server/data/auth.db       SQLite database (users + pending_signups)
+ *   server/data/jwt.secret    Random 64-byte secret, generated on first run
+ *
+ * Verification email goes out via SMTP with primary+fallback providers (see
+ * mailProviders below — primary is tried first, then the fallback). The 6-digit
+ * code is also logged to the server console for debugging. If SMTP isn't
+ * configured or the send fails, signup/resend return a 502 — the code is
+ * never leaked in the API response.
+ */
+
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const Database = require('better-sqlite3');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const audit = require('./audit');
+const { logger } = require('./lib/observability');
+
+const dataDir   = path.join(__dirname, 'data');
+const dbPath    = path.join(dataDir, 'auth.db');
+const secretPath = path.join(dataDir, 'jwt.secret');
+
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
+// ── JWT secret (generated once, persisted) ──────────────────
+function loadOrCreateSecret() {
+  if (fs.existsSync(secretPath)) return fs.readFileSync(secretPath, 'utf8').trim();
+  const secret = crypto.randomBytes(64).toString('hex');
+  fs.writeFileSync(secretPath, secret, { mode: 0o600 });
+  return secret;
+}
+const JWT_SECRET = process.env.JWT_SECRET || loadOrCreateSecret();
+const TOKEN_TTL  = '30d';
+
+// ── Database schema ──────────────────────────────────────────
+const db = new Database(dbPath);
+db.pragma('journal_mode = WAL');
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tenants (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug        TEXT    NOT NULL UNIQUE,
+    name        TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    email         TEXT NOT NULL UNIQUE,
+    username      TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    email_verified INTEGER NOT NULL DEFAULT 0,
+    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS pending_signups (
+    email           TEXT PRIMARY KEY,
+    username        TEXT NOT NULL,
+    password_hash   TEXT NOT NULL,
+    code            TEXT NOT NULL,
+    code_expires_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS password_resets (
+    email           TEXT PRIMARY KEY,
+    code            TEXT NOT NULL,
+    code_expires_at INTEGER NOT NULL,
+    requested_at    INTEGER NOT NULL
+  );
+`);
+
+// ── Tenant migration ─────────────────────────────────────────
+// Adds tenant_id to users (and the same column to other tables that
+// already exist). Idempotent: detects whether the column is already
+// there and skips the ALTER if so. On first run, creates a `default`
+// tenant and backfills every existing user / audit row into it so the
+// app keeps working for legacy data.
+function _hasColumn(table, col) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  return cols.some(c => c.name === col);
+}
+
+function _ensureColumn(table, col, ddl) {
+  if (!_hasColumn(table, col)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  }
+}
+
+(function migrateTenants() {
+  // Default tenant exists exactly once
+  let defTenant = db.prepare('SELECT * FROM tenants WHERE slug = ?').get('default');
+  if (!defTenant) {
+    const r = db.prepare(
+      'INSERT INTO tenants (slug, name) VALUES (?, ?)'
+    ).run('default', 'Default');
+    defTenant = { id: r.lastInsertRowid, slug: 'default', name: 'Default' };
+  }
+  const defaultTenantId = defTenant.id;
+
+  // users.tenant_id (per-user tenant membership). Default to the
+  // `default` tenant for any existing users so they don't get locked out.
+  _ensureColumn('users', 'tenant_id',
+    'tenant_id INTEGER REFERENCES tenants(id)');
+  db.prepare('UPDATE users SET tenant_id = ? WHERE tenant_id IS NULL')
+    .run(defaultTenantId);
+
+  // pending_signups.tenant_id — captured at the verify step so a user
+  // can sign up into a specific tenant (invite flow later).
+  _ensureColumn('pending_signups', 'tenant_id',
+    'tenant_id INTEGER REFERENCES tenants(id)');
+
+  // audit_log.tenant_id — every audit row carries the actor's tenant
+  // so org-wide audit queries are tenant-scoped.
+  if (db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='audit_log'`).get()) {
+    _ensureColumn('audit_log', 'tenant_id',
+      'tenant_id INTEGER REFERENCES tenants(id)');
+    db.prepare('UPDATE audit_log SET tenant_id = ? WHERE tenant_id IS NULL')
+      .run(defaultTenantId);
+  }
+
+  // rack_owners — many-to-many between tenants and racks. A rack id is
+  // a SHA-256 of the source image, so two tenants scanning the same
+  // image get the same RK-id; ownership is recorded per-tenant so the
+  // shared output dir doesn't leak.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS rack_owners (
+      tenant_id   INTEGER NOT NULL REFERENCES tenants(id),
+      rack_id     TEXT    NOT NULL,
+      created_by  INTEGER REFERENCES users(id),
+      created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (tenant_id, rack_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_rack_owners_rack ON rack_owners(rack_id);
+  `);
+
+  // rack_groups — a multi-rack scan: one video upload that produced N
+  // best-frames. Each member rack_id still lives independently in the
+  // outputs/ dir and the regular rack APIs work on it; the group is
+  // just a parent record so the UI can show "this rack was scanned
+  // alongside Rack 2 and Rack 3 in the same video".
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS rack_groups (
+      id           TEXT    PRIMARY KEY,
+      video_hash   TEXT    NOT NULL,
+      tenant_id    INTEGER NOT NULL REFERENCES tenants(id),
+      created_by   INTEGER REFERENCES users(id),
+      created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS rack_group_members (
+      group_id     TEXT    NOT NULL REFERENCES rack_groups(id) ON DELETE CASCADE,
+      rack_id      TEXT    NOT NULL,
+      position     INTEGER NOT NULL,
+      label        TEXT    NOT NULL,
+      device_count INTEGER,
+      score        REAL,
+      PRIMARY KEY (group_id, rack_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_rack_group_members_rack
+      ON rack_group_members(rack_id);
+    CREATE INDEX IF NOT EXISTS idx_rack_groups_tenant_created
+      ON rack_groups(tenant_id, created_at DESC);
+  `);
+
+  // ── Organizations (parent of "Sites" = tenants) ───────────────
+  // Hierarchy: Owner (platform) → Organization (+ Org Admin) → Site
+  // (a tenant row) → Users. Racks/scans are per-Site; active learning is
+  // shared across the whole Organization.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS organizations (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug        TEXT    NOT NULL UNIQUE,
+      name        TEXT    NOT NULL,
+      created_by  INTEGER REFERENCES users(id),
+      created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+  // Every tenant ("Site") belongs to an organization.
+  _ensureColumn('tenants', 'organization_id',
+    'organization_id INTEGER REFERENCES organizations(id)');
+  // Role governs what a user can do:
+  //   'owner'        — platform superadmin (creates orgs + org admins)
+  //   'org_admin'    — manages one organization (creates Sites + users)
+  //   'site_manager' — manages one Site (adds members, runs scans)
+  //   'member'       — regular user within a Site
+  _ensureColumn('users', 'role', "role TEXT NOT NULL DEFAULT 'member'");
+  // Denormalized org id on users so org-level scoping (incl. active
+  // learning) is a single indexed lookup rather than a tenant→org join.
+  _ensureColumn('users', 'organization_id',
+    'organization_id INTEGER REFERENCES organizations(id)');
+  // Soft-disable: a deactivated user keeps their data/history but can't sign in.
+  _ensureColumn('users', 'active', 'active INTEGER NOT NULL DEFAULT 1');
+  // Org lifecycle: owner-created orgs are 'active'; a self-signup creates a
+  // 'pending' request the owner must approve before it can add members / scan.
+  _ensureColumn('organizations', 'status', "status TEXT NOT NULL DEFAULT 'active'");
+  // Invites let an org admin / site manager add people to a specific Site.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS invites (
+      code            TEXT PRIMARY KEY,
+      email           TEXT NOT NULL,
+      role            TEXT NOT NULL DEFAULT 'member',
+      organization_id INTEGER NOT NULL REFERENCES organizations(id),
+      tenant_id       INTEGER REFERENCES tenants(id),
+      invited_by      INTEGER REFERENCES users(id),
+      created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+      expires_at      INTEGER,
+      accepted_at     TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_invites_email ON invites(email);
+    CREATE INDEX IF NOT EXISTS idx_tenants_org ON tenants(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_users_org ON users(organization_id);
+  `);
+
+  logger.info({
+    event: 'auth.tenant_migration',
+    defaultTenantId, defaultTenantSlug: defTenant.slug,
+  }, 'tenant + organization schema ready');
+})();
+
+// Public so other modules (lib/tenant.js, audit.js) can resolve the
+// default tenant when migrating legacy rows.
+function getDefaultTenantId() {
+  const t = db.prepare('SELECT id FROM tenants WHERE slug = ?').get('default');
+  return t?.id;
+}
+
+// Tenant CRUD — the bare minimum to support signup. A full tenant
+// admin UI (name change, member invite, deletion) is a later add.
+function findTenantBySlug(slug) {
+  return db.prepare('SELECT * FROM tenants WHERE slug = ?').get(slug);
+}
+
+function _slug(name, fallback) {
+  const base = String(name || '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || fallback;
+  return `${base}-${crypto.randomBytes(2).toString('hex')}`; // 4-char suffix = unique
+}
+
+// A Site is a tenant row that belongs to an organization.
+function createTenant(name, organizationId = null) {
+  const slug = _slug(name, 'site');
+  const r = db.prepare(
+    'INSERT INTO tenants (slug, name, organization_id) VALUES (?, ?, ?)'
+  ).run(slug, String(name).trim().slice(0, 120), organizationId);
+  return { id: r.lastInsertRowid, slug, name, organization_id: organizationId };
+}
+
+function createOrganization(name, createdBy = null) {
+  const slug = _slug(name, 'org');
+  const r = db.prepare(
+    'INSERT INTO organizations (slug, name, created_by) VALUES (?, ?, ?)'
+  ).run(slug, String(name).trim().slice(0, 120), createdBy);
+  return { id: r.lastInsertRowid, slug, name };
+}
+
+// ── Validation ───────────────────────────────────────────────
+const EMAIL_RE    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,32}$/;
+
+// ≥ 8 chars, an upper, a lower, a digit, a special
+function validatePassword(pw) {
+  if (typeof pw !== 'string' || pw.length < 8) return 'Password must be at least 8 characters';
+  if (!/[A-Z]/.test(pw)) return 'Password must contain an uppercase letter';
+  if (!/[a-z]/.test(pw)) return 'Password must contain a lowercase letter';
+  if (!/[0-9]/.test(pw)) return 'Password must contain a digit';
+  if (!/[^A-Za-z0-9]/.test(pw)) return 'Password must contain a special character';
+  return null;
+}
+
+// ── Email (nodemailer) with automatic failover ───────────────
+// Two providers can be configured; the primary is tried first and, if the send
+// errors (auth failure, rate-limit, outage), we automatically retry through the
+// fallback — so no single mail provider can block sign-in / reset codes.
+//
+//   PRIMARY   SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_FROM
+//   FALLBACK  SMTP_FALLBACK_HOST / _PORT / _USER / _PASS / _FROM   (optional)
+//
+// For Gmail use a 16-char App Password (needs 2-Step Verification). Port 465 =
+// SSL, port 587 = STARTTLS (e.g. Brevo / Mailjet / SendGrid).
+const _transporters = {};   // cache keyed by env prefix
+function buildTransporter(prefix, label) {
+  if (prefix in _transporters) return _transporters[prefix];
+  const user = process.env[`${prefix}USER`];
+  const pass = process.env[`${prefix}PASS`];
+  if (!user || !pass) { _transporters[prefix] = false; return false; }
+  const host = process.env[`${prefix}HOST`] || 'smtp.gmail.com';
+  const port = parseInt(process.env[`${prefix}PORT`], 10) || 465;
+  const from = process.env[`${prefix}FROM`] || user;
+  const tx = nodemailer.createTransport({
+    host, port, secure: port === 465,
+    auth: { user, pass: pass.replace(/\s+/g, '') }, // strip spaces from App Passwords
+  });
+  logger.info(`[auth] ${label} SMTP ready: ${user} via ${host}:${port}`);
+  _transporters[prefix] = { tx, from, host, label };
+  return _transporters[prefix];
+}
+
+// Configured providers in send-order: primary first, then optional fallback.
+function mailProviders() {
+  const list = [
+    buildTransporter('SMTP_', 'primary'),
+    buildTransporter('SMTP_FALLBACK_', 'fallback'),
+  ].filter(Boolean);
+  if (!list.length) {
+    logger.warn('[auth] no SMTP configured — verification codes are only logged to the server console (dev mode).');
+  }
+  return list;
+}
+
+function emailHtml(code) {
+  return `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#F0EFF5;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;padding:48px 20px;">
+    <div style="background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(75,69,160,0.08),0 1px 3px rgba(75,69,160,0.06);">
+      <div style="background:linear-gradient(135deg,#5B54B0 0%,#7B75C0 100%);padding:28px 32px;text-align:center;">
+        <div style="display:inline-block;font-size:.78rem;letter-spacing:.22em;text-transform:uppercase;color:#FFFFFF;font-weight:700;">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:999px;background:#FFFFFF;vertical-align:middle;margin-right:10px;margin-bottom:2px;opacity:.85;"></span>RackTrack
+        </div>
+      </div>
+      <div style="padding:40px 36px 36px;text-align:center;">
+        <h1 style="margin:0 0 10px;font-size:1.5rem;font-weight:700;color:#1A1A2E;letter-spacing:-0.015em;">Verify your email</h1>
+        <p style="margin:0 0 32px;color:#4A4A5A;font-size:.94rem;line-height:1.6;">Enter this code in the app to finish creating your account.<br>It expires in 1 minute.</p>
+        <div style="display:inline-block;padding:20px 28px;border-radius:12px;background:#F8F7FB;border:1px solid rgba(200,196,228,0.55);">
+          <div style="font-family:'SF Mono','Roboto Mono',Menlo,Consolas,monospace;font-size:2rem;font-weight:700;letter-spacing:.42em;color:#5B54B0;padding-left:.42em;">${code}</div>
+        </div>
+        <div style="margin:32px auto 0;width:36px;height:2px;background:linear-gradient(90deg,transparent,rgba(91,84,176,0.35),transparent);"></div>
+        <p style="margin:24px 0 0;color:#6B6B7A;font-size:.82rem;line-height:1.5;">Didn't request this? You can safely ignore this email — your account stays untouched.</p>
+      </div>
+    </div>
+    <p style="text-align:center;color:#8A8A99;font-size:.74rem;margin-top:22px;letter-spacing:.02em;">Sent automatically by RackTrack — please do not reply.</p>
+  </div>
+</body></html>`;
+}
+
+// Tries the primary provider, then the fallback. Returns true if ANY delivered.
+async function sendVerificationEmail(email, code) {
+  logger.info(`[auth] verification code for ${email}: ${code}`);
+  const providers = mailProviders();
+  if (!providers.length) return false;
+  for (const p of providers) {
+    try {
+      await p.tx.sendMail({
+        from: p.from,
+        to: email,
+        subject: `Your RackTrack verification code: ${code}`,
+        text: `Your RackTrack verification code is ${code}. It expires in 1 minute.`,
+        html: emailHtml(code),
+      });
+      logger.info(`[auth] verification email sent to ${email} via ${p.label} (${p.host})`);
+      return true;
+    } catch (err) {
+      logger.error(`[auth] ${p.label} send to ${email} failed (${p.host}): ${err.message} — trying next provider`);
+      // fall through to the next configured provider
+    }
+  }
+  logger.error(`[auth] ALL providers failed to send verification email to ${email}`);
+  return false;
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function genCode() {
+  // 6-digit zero-padded
+  return String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+}
+
+function makeToken(user) {
+  // tenantId baked into the JWT so middleware can read it without a DB
+  // round-trip on every request.
+  return jwt.sign(
+    { sub: user.id, username: user.username, tenantId: user.tenant_id,
+      organizationId: user.organization_id || null, role: user.role || 'member' },
+    JWT_SECRET,
+    { expiresIn: TOKEN_TTL }
+  );
+}
+
+function publicUser(user, tenant = null) {
+  const out = {
+    id: user.id, email: user.email, username: user.username,
+    created_at: user.created_at,
+    tenant_id: user.tenant_id,
+    role: user.role || 'member',
+    organization_id: user.organization_id || null,
+  };
+  if (tenant) {
+    out.tenant = { id: tenant.id, slug: tenant.slug, name: tenant.name };
+  } else if (user.tenant_id) {
+    const t = db.prepare('SELECT id, slug, name FROM tenants WHERE id = ?')
+                .get(user.tenant_id);
+    if (t) out.tenant = t;
+  }
+  // Attach the organization ("Site" belongs to it) so the client can route
+  // to the right console (owner / org-admin / site) after login.
+  const orgId = user.organization_id
+    || (out.tenant && db.prepare('SELECT organization_id FROM tenants WHERE id = ?')
+          .get(out.tenant.id)?.organization_id);
+  if (orgId) {
+    const org = db.prepare('SELECT id, slug, name, status FROM organizations WHERE id = ?').get(orgId);
+    if (org) out.organization = org;
+  }
+  return out;
+}
+
+// Express middleware: attaches req.user when a valid Bearer token is present.
+// req.user is the full user row PLUS .tenant ({id, slug, name}) so route
+// handlers don't have to look it up themselves.
+function requireAuth(req, res, next) {
+  const header = req.headers.authorization || '';
+  const match  = header.match(/^Bearer\s+(.+)$/i);
+  if (!match) return res.status(401).json({ error: 'Authentication required' });
+  try {
+    const payload = jwt.verify(match[1], JWT_SECRET);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(payload.sub);
+    if (!user) return res.status(401).json({ error: 'User no longer exists' });
+    // Defensive: a token issued before tenancy landed won't carry tenantId.
+    // Use the user's row value (backfilled to default tenant) instead.
+    if (user.tenant_id) {
+      const t = db.prepare('SELECT id, slug, name FROM tenants WHERE id = ?')
+                  .get(user.tenant_id);
+      user.tenant = t || null;
+    }
+    req.user = user;
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+// Role gate — runs requireAuth first, then checks req.user.role is allowed.
+function requireRole(...roles) {
+  return (req, res, next) => requireAuth(req, res, () => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    next();
+  });
+}
+
+// Owner sees any org; an org_admin only their own.
+function canManageOrg(user, orgId) {
+  if (user.role === 'owner') return true;
+  return user.role === 'org_admin' && Number(user.organization_id) === Number(orgId);
+}
+
+// Is an organization approved & active? (owner-created = active; a self-signup
+// stays 'pending' until the owner approves it — pending/rejected orgs can't
+// add members or scan.)
+function isOrgActive(orgId) {
+  if (!orgId) return false;
+  const o = db.prepare('SELECT status FROM organizations WHERE id = ?').get(Number(orgId));
+  return !!o && o.status === 'active';
+}
+
+// Can this user manage a given Site (add/edit/deactivate its members)?
+// owner → any; org_admin → sites in their org; site_manager → their own site.
+function canManageSite(user, siteId) {
+  if (user.role === 'owner') return true;
+  const site = db.prepare('SELECT organization_id FROM tenants WHERE id = ?').get(Number(siteId));
+  if (!site) return false;
+  if (user.role === 'org_admin') return Number(user.organization_id) === Number(site.organization_id);
+  if (user.role === 'site_manager') return Number(user.tenant_id) === Number(siteId);
+  return false;
+}
+
+// ── Routes ───────────────────────────────────────────────────
+// Resolve a scan's original-image URL + device count from the outputs dir, so
+// the dashboard can show a thumbnail and how many devices were found.
+const OUTPUTS_DIR = path.join(__dirname, '..', 'outputs');
+function scanImageUrl(rackId) {
+  for (const ext of ['jpg', 'jpeg', 'png']) {
+    if (fs.existsSync(path.join(OUTPUTS_DIR, rackId, `original_image.${ext}`)))
+      return `/outputs/${rackId}/original_image.${ext}`;
+  }
+  return null;
+}
+function scanDeviceCount(rackId) {
+  try {
+    const p = path.join(OUTPUTS_DIR, rackId, 'device_unit_map.json');
+    if (fs.existsSync(p)) {
+      const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+      return Array.isArray(d.devices) ? d.devices.length : 0;
+    }
+  } catch (_) { /* ignore */ }
+  return 0;
+}
+
+function registerRoutes(app) {
+  // ── Sign up: stage 1 — create pending signup, send code ────
+  // Now takes an optional `company` field. If absent / blank, the user
+  // joins the `default` tenant (preserves the legacy behavior). If
+  // present, the verify step creates a fresh tenant for that company.
+  app.post('/api/auth/signup', async (req, res) => {
+    const { email, username, password, company } = req.body || {};
+    if (!email || !EMAIL_RE.test(String(email).trim())) {
+      audit.log({ req, action: 'auth.signup.start', status: 'fail', error: 'invalid email', payload: { email } });
+      return res.status(400).json({ error: 'Valid email required' });
+    }
+    if (!username || !USERNAME_RE.test(String(username).trim())) {
+      audit.log({ req, action: 'auth.signup.start', status: 'fail', error: 'invalid username', payload: { email, username } });
+      return res.status(400).json({ error: 'Username must be 3–32 chars (letters, digits, . _ -)' });
+    }
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+      audit.log({ req, action: 'auth.signup.start', status: 'fail', error: pwErr, payload: { email, username } });
+      return res.status(400).json({ error: pwErr });
+    }
+    // Company name is REQUIRED — every user must belong to a real tenant.
+    // Without this, blank-company signups would all collapse into the
+    // shared `default` tenant, which is exactly the data-leak multi-
+    // tenancy is supposed to prevent.
+    const companyNorm = String(company || '').trim().slice(0, 120);
+    if (!companyNorm || companyNorm.length < 2) {
+      audit.log({ req, action: 'auth.signup.start', status: 'fail',
+        error: 'company required', payload: { email, username } });
+      return res.status(400).json({ error: 'Company name is required (at least 2 characters)' });
+    }
+
+    const emailNorm = String(email).trim().toLowerCase();
+    const userNorm  = String(username).trim();
+
+    // Reject if either email or username already maps to a verified user
+    const dupEmail = db.prepare('SELECT 1 FROM users WHERE email = ?').get(emailNorm);
+    if (dupEmail) {
+      audit.log({ req, action: 'auth.signup.start', status: 'fail', error: 'email taken', payload: { email: emailNorm } });
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+    const dupUser = db.prepare('SELECT 1 FROM users WHERE username = ? COLLATE NOCASE').get(userNorm);
+    if (dupUser) {
+      audit.log({ req, action: 'auth.signup.start', status: 'fail', error: 'username taken', payload: { username: userNorm } });
+      return res.status(409).json({ error: 'That username is taken' });
+    }
+
+    const code = genCode();
+    const passwordHash = bcrypt.hashSync(password, 10);
+    const expiresAt = Date.now() + 60 * 1000; // 1 minute
+
+    // Stash the company name on the pending row so the verify step
+    // (which is the only place that actually creates persistent records)
+    // has it without re-reading from request input.
+    db.prepare(`
+      INSERT INTO pending_signups (email, username, password_hash, code, code_expires_at, tenant_id)
+      VALUES (?, ?, ?, ?, ?, NULL)
+      ON CONFLICT(email) DO UPDATE SET
+        username = excluded.username,
+        password_hash = excluded.password_hash,
+        code = excluded.code,
+        code_expires_at = excluded.code_expires_at,
+        tenant_id = NULL
+    `).run(emailNorm, userNorm, passwordHash, code, expiresAt);
+    // We use a side-channel column (we don't have a `company` column on
+    // pending_signups) — easiest is to reuse the `username` row. Add a
+    // dedicated `company` column the cheap way: only if pending wasn't
+    // already that shape.
+    if (!_hasColumn('pending_signups', 'company')) {
+      db.exec('ALTER TABLE pending_signups ADD COLUMN company TEXT');
+    }
+    db.prepare('UPDATE pending_signups SET company = ? WHERE email = ?')
+      .run(companyNorm || null, emailNorm);
+
+    const sent = await sendVerificationEmail(emailNorm, code);
+    if (!sent) {
+      audit.log({ req, action: 'auth.signup.start', status: 'fail', error: 'smtp send failed', payload: { email: emailNorm } });
+      return res.status(502).json({ error: 'Could not send verification email — try again in a minute' });
+    }
+    audit.log({ req, action: 'auth.signup.start', status: 'ok', payload: { email: emailNorm, username: userNorm, company: companyNorm || null } });
+    res.json({ ok: true, email: emailNorm, sent: true });
+  });
+
+  // ── Sign up: stage 2 — verify code → create user ───────────
+  app.post('/api/auth/verify', (req, res) => {
+    const { email, code } = req.body || {};
+    if (!email || !code) {
+      audit.log({ req, action: 'auth.signup.verify', status: 'fail', error: 'missing fields' });
+      return res.status(400).json({ error: 'email and code required' });
+    }
+    const emailNorm = String(email).trim().toLowerCase();
+
+    const pending = db.prepare('SELECT * FROM pending_signups WHERE email = ?').get(emailNorm);
+    if (!pending) {
+      audit.log({ req, action: 'auth.signup.verify', status: 'fail', error: 'no pending', payload: { email: emailNorm } });
+      return res.status(404).json({ error: 'No pending signup for that email' });
+    }
+    if (Date.now() > pending.code_expires_at) {
+      db.prepare('DELETE FROM pending_signups WHERE email = ?').run(emailNorm);
+      audit.log({ req, action: 'auth.signup.verify', status: 'fail', error: 'code expired', payload: { email: emailNorm } });
+      return res.status(410).json({ error: 'Verification code has expired — sign up again' });
+    }
+    if (String(code).trim() !== pending.code) {
+      audit.log({ req, action: 'auth.signup.verify', status: 'fail', error: 'wrong code', payload: { email: emailNorm } });
+      return res.status(400).json({ error: 'Incorrect verification code' });
+    }
+
+    // Final dup check (someone else may have raced us)
+    if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(emailNorm)) {
+      audit.log({ req, action: 'auth.signup.verify', status: 'fail', error: 'email taken (race)', payload: { email: emailNorm } });
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+    if (db.prepare('SELECT 1 FROM users WHERE username = ? COLLATE NOCASE').get(pending.username)) {
+      audit.log({ req, action: 'auth.signup.verify', status: 'fail', error: 'username taken (race)', payload: { username: pending.username } });
+      return res.status(409).json({ error: 'That username is taken' });
+    }
+
+    // Every user MUST belong to a real tenant. Signup validates that
+    // `company` is non-empty, so a pending row without one means a
+    // pre-tenancy client somehow snuck in — refuse and force a fresh
+    // signup. The `default` tenant exists only as a backstop for
+    // legacy users that pre-date this migration.
+    if (!pending.company || !String(pending.company).trim()) {
+      audit.log({ req, action: 'auth.signup.verify', status: 'fail',
+        error: 'pending row missing company', payload: { email: emailNorm } });
+      db.prepare('DELETE FROM pending_signups WHERE email = ?').run(emailNorm);
+      return res.status(400).json({
+        error: 'Signup is missing a company name. Please sign up again.',
+      });
+    }
+    // Self-signup provisions a full Organization → Site → admin, not an orphan
+    // tenant: the person registering their company becomes that org's admin,
+    // with a default "Main Site" to start scanning into. Additional sites and
+    // members are then added from the console (or via invite links).
+    // Self-signup is a REQUEST: the org starts 'pending' and can't add members
+    // or scan until the platform owner approves it. Owner-created orgs (POST
+    // /api/orgs) stay 'active'.
+    const org    = createOrganization(pending.company);
+    db.prepare("UPDATE organizations SET status = 'pending' WHERE id = ?").run(org.id);
+    const tenant = createTenant('Main Site', org.id);
+
+    const result = db.prepare(`
+      INSERT INTO users (email, username, password_hash, email_verified,
+                         role, organization_id, tenant_id, active)
+      VALUES (?, ?, ?, 1, 'org_admin', ?, ?, 1)
+    `).run(emailNorm, pending.username, pending.password_hash, org.id, tenant.id);
+    db.prepare('DELETE FROM pending_signups WHERE email = ?').run(emailNorm);
+
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+    user.tenant = tenant;  // attach so audit + token + response see it
+    audit.log({
+      req, user, action: 'auth.signup.verify', status: 'ok',
+      targetType: 'user', targetId: user.id,
+      payload: { tenant_id: tenant.id, tenant_slug: tenant.slug, new_tenant: !!pending.company },
+    });
+    res.json({ ok: true, token: makeToken(user), user: publicUser(user, tenant) });
+  });
+
+  // ── Resend verification code ───────────────────────────────
+  app.post('/api/auth/resend-code', async (req, res) => {
+    const { email } = req.body || {};
+    if (!email) {
+      audit.log({ req, action: 'auth.resend', status: 'fail', error: 'missing email' });
+      return res.status(400).json({ error: 'email required' });
+    }
+    const emailNorm = String(email).trim().toLowerCase();
+    const pending = db.prepare('SELECT * FROM pending_signups WHERE email = ?').get(emailNorm);
+    if (!pending) {
+      audit.log({ req, action: 'auth.resend', status: 'fail', error: 'no pending', payload: { email: emailNorm } });
+      return res.status(404).json({ error: 'No pending signup for that email' });
+    }
+
+    const code = genCode();
+    const expiresAt = Date.now() + 60 * 1000; // 1 minute
+    db.prepare('UPDATE pending_signups SET code = ?, code_expires_at = ? WHERE email = ?')
+      .run(code, expiresAt, emailNorm);
+    const sent = await sendVerificationEmail(emailNorm, code);
+    if (!sent) {
+      audit.log({ req, action: 'auth.resend', status: 'fail', error: 'smtp send failed', payload: { email: emailNorm } });
+      return res.status(502).json({ error: 'Could not send verification email — try again in a minute' });
+    }
+    audit.log({ req, action: 'auth.resend', status: 'ok', payload: { email: emailNorm } });
+    res.json({ ok: true, sent: true });
+  });
+
+  // ── Login: username OR email + password (+ optional tenant) ─
+  // Tenant is optional but, when provided, scopes the lookup so that the
+  // same username can exist in different orgs without ambiguity (the
+  // existing UNIQUE constraint on users.username still applies globally,
+  // but the per-tenant scoping prevents one org's user from signing in
+  // with another org's stolen credentials if uniqueness is ever relaxed).
+  // Match is case-insensitive against tenant name OR slug.
+  app.post('/api/auth/login', (req, res) => {
+    const { username, password, tenant } = req.body || {};
+    if (!username || !password) {
+      audit.log({ req, action: 'auth.login', status: 'fail', error: 'missing fields' });
+      return res.status(400).json({ error: 'username and password required' });
+    }
+    const ident = String(username).trim();
+    const tenantArg = String(tenant || '').trim();
+
+    // The "Organization" field on the sign-in form is resolved against the
+    // org hierarchy in priority order:
+    //   1. an organization (name or slug) → match any user in that org. Org
+    //      admins have tenant_id = NULL while members also carry a tenant_id,
+    //      so we key off organization_id, which every org member has.
+    //   2. a Site / tenant (name or slug) → match a user scoped to that Site.
+    // Owner accounts sit above every org and sign in with the field left
+    // blank (global username lookup — usernames are globally unique).
+    let scope = null; // { kind: 'org' | 'tenant', id }
+    if (tenantArg) {
+      const orgRow = db.prepare(`
+        SELECT id FROM organizations
+        WHERE slug = ? COLLATE NOCASE OR name = ? COLLATE NOCASE
+      `).get(tenantArg, tenantArg);
+      if (orgRow) {
+        scope = { kind: 'org', id: orgRow.id };
+      } else {
+        const tenantRow = db.prepare(`
+          SELECT id FROM tenants
+          WHERE slug = ? COLLATE NOCASE OR name = ? COLLATE NOCASE
+        `).get(tenantArg, tenantArg);
+        if (tenantRow) scope = { kind: 'tenant', id: tenantRow.id };
+      }
+      if (!scope) {
+        audit.log({ req, action: 'auth.login', status: 'fail',
+          error: 'unknown organization', payload: { ident, tenant: tenantArg } });
+        return res.status(401).json({ error: 'Invalid organization or credentials' });
+      }
+    }
+
+    const user = !scope
+      ? db.prepare(`SELECT * FROM users WHERE email = ? OR username = ? COLLATE NOCASE`)
+          .get(ident.toLowerCase(), ident)
+      : scope.kind === 'org'
+        ? db.prepare(`
+            SELECT * FROM users
+            WHERE (email = ? OR username = ? COLLATE NOCASE)
+              AND organization_id = ?
+          `).get(ident.toLowerCase(), ident, scope.id)
+        : db.prepare(`
+            SELECT * FROM users
+            WHERE (email = ? OR username = ? COLLATE NOCASE)
+              AND tenant_id = ?
+          `).get(ident.toLowerCase(), ident, scope.id);
+
+    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+      audit.log({ req, action: 'auth.login', status: 'fail',
+        error: 'invalid credentials',
+        payload: { ident, tenant: tenantArg || null } });
+      return res.status(401).json({ error: tenantArg ? 'Invalid organization or credentials' : 'Invalid username or password' });
+    }
+    if (user.active === 0) {
+      audit.log({ req, user, action: 'auth.login', status: 'fail', error: 'deactivated',
+        targetType: 'user', targetId: user.id });
+      return res.status(403).json({ error: 'This account has been deactivated. Contact your administrator.' });
+    }
+    audit.log({ req, user, action: 'auth.login', status: 'ok',
+      targetType: 'user', targetId: user.id,
+      payload: { tenant_id: user.tenant_id } });
+    res.json({ ok: true, token: makeToken(user), user: publicUser(user) });
+  });
+
+  // ── Forgot password — stage 1: request a reset code ─────────
+  // Always returns 200 (even when the email is unknown) so attackers can't
+  // enumerate registered emails. The code is only created/sent when a user
+  // actually exists for that email. 1-minute expiry to match signup.
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    const { email } = req.body || {};
+    if (!email || !EMAIL_RE.test(String(email).trim())) {
+      audit.log({ req, action: 'auth.forgot_password.start', status: 'fail',
+        error: 'invalid email', payload: { email } });
+      return res.status(400).json({ error: 'Valid email required' });
+    }
+    const emailNorm = String(email).trim().toLowerCase();
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(emailNorm);
+
+    if (user) {
+      const code = genCode();
+      const expiresAt = Date.now() + 60 * 1000; // 1 minute
+      db.prepare(`
+        INSERT INTO password_resets (email, code, code_expires_at, requested_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(email) DO UPDATE SET
+          code = excluded.code,
+          code_expires_at = excluded.code_expires_at,
+          requested_at = excluded.requested_at
+      `).run(emailNorm, code, expiresAt, Date.now());
+
+      // Reuse the verification email template — same look, different copy
+      // would be nicer but for now the user just sees a 6-digit code.
+      const sent = await sendVerificationEmail(emailNorm, code);
+      audit.log({ req, action: 'auth.forgot_password.start',
+        status: sent ? 'ok' : 'partial',
+        payload: { email: emailNorm, sent } });
+    } else {
+      // Don't reveal that the email isn't registered.
+      audit.log({ req, action: 'auth.forgot_password.start',
+        status: 'ok', payload: { email: emailNorm, sent: false, reason: 'no_user' } });
+    }
+
+    // Always 200 with the same shape — silent on existence.
+    res.json({ ok: true, email: emailNorm });
+  });
+
+  // ── Forgot password — stage 1.5: verify the code WITHOUT consuming it ─
+  // The UI uses this after the user enters the 6-digit code, so it can show
+  // a "Do you want to change your password?" confirmation step before
+  // collecting the new password. The reset row stays in the DB and is
+  // consumed by /reset-password later if the user proceeds.
+  app.post('/api/auth/verify-reset-code', (req, res) => {
+    const { email, code } = req.body || {};
+    if (!email || !code) {
+      audit.log({ req, action: 'auth.forgot_password.verify', status: 'fail',
+        error: 'missing fields' });
+      return res.status(400).json({ error: 'email and code required' });
+    }
+    const emailNorm = String(email).trim().toLowerCase();
+    const reset = db.prepare('SELECT * FROM password_resets WHERE email = ?').get(emailNorm);
+    if (!reset) {
+      audit.log({ req, action: 'auth.forgot_password.verify', status: 'fail',
+        error: 'no pending reset', payload: { email: emailNorm } });
+      return res.status(404).json({ error: 'No pending reset for that email — request a new code' });
+    }
+    if (Date.now() > reset.code_expires_at) {
+      db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailNorm);
+      audit.log({ req, action: 'auth.forgot_password.verify', status: 'fail',
+        error: 'code expired', payload: { email: emailNorm } });
+      return res.status(410).json({ error: 'Reset code has expired — request a new one' });
+    }
+    if (String(code).trim() !== reset.code) {
+      audit.log({ req, action: 'auth.forgot_password.verify', status: 'fail',
+        error: 'wrong code', payload: { email: emailNorm } });
+      return res.status(400).json({ error: 'Incorrect reset code' });
+    }
+    audit.log({ req, action: 'auth.forgot_password.verify', status: 'ok',
+      payload: { email: emailNorm } });
+    res.json({ ok: true });
+  });
+
+  // ── Forgot password — alternative stage 2: skip the password change and
+  // sign in directly with the OTP. The 6-digit code is treated as proof of
+  // identity (the user controls the inbox), so we issue a fresh token
+  // without touching password_hash. The reset row is consumed so the same
+  // code can't be replayed for another login.
+  app.post('/api/auth/login-with-code', (req, res) => {
+    const { email, code } = req.body || {};
+    if (!email || !code) {
+      audit.log({ req, action: 'auth.forgot_password.login_with_code', status: 'fail',
+        error: 'missing fields' });
+      return res.status(400).json({ error: 'email and code required' });
+    }
+    const emailNorm = String(email).trim().toLowerCase();
+    const reset = db.prepare('SELECT * FROM password_resets WHERE email = ?').get(emailNorm);
+    if (!reset) {
+      audit.log({ req, action: 'auth.forgot_password.login_with_code', status: 'fail',
+        error: 'no pending reset', payload: { email: emailNorm } });
+      return res.status(404).json({ error: 'No pending reset for that email — request a new code' });
+    }
+    if (Date.now() > reset.code_expires_at) {
+      db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailNorm);
+      audit.log({ req, action: 'auth.forgot_password.login_with_code', status: 'fail',
+        error: 'code expired', payload: { email: emailNorm } });
+      return res.status(410).json({ error: 'Reset code has expired — request a new one' });
+    }
+    if (String(code).trim() !== reset.code) {
+      audit.log({ req, action: 'auth.forgot_password.login_with_code', status: 'fail',
+        error: 'wrong code', payload: { email: emailNorm } });
+      return res.status(400).json({ error: 'Incorrect reset code' });
+    }
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(emailNorm);
+    if (!user) {
+      db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailNorm);
+      audit.log({ req, action: 'auth.forgot_password.login_with_code', status: 'fail',
+        error: 'user gone', payload: { email: emailNorm } });
+      return res.status(404).json({ error: 'No account exists for that email' });
+    }
+
+    // Consume the reset row — same code can't be replayed.
+    db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailNorm);
+
+    audit.log({ req, user, action: 'auth.forgot_password.login_with_code',
+      status: 'ok', targetType: 'user', targetId: user.id });
+
+    res.json({ ok: true, token: makeToken(user), user: publicUser(user) });
+  });
+
+  // ── Forgot password — stage 2: verify code + set new password ─
+  app.post('/api/auth/reset-password', (req, res) => {
+    const { email, code, password } = req.body || {};
+    if (!email || !code || !password) {
+      audit.log({ req, action: 'auth.forgot_password.reset', status: 'fail',
+        error: 'missing fields' });
+      return res.status(400).json({ error: 'email, code, and new password required' });
+    }
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+      audit.log({ req, action: 'auth.forgot_password.reset', status: 'fail',
+        error: pwErr, payload: { email } });
+      return res.status(400).json({ error: pwErr });
+    }
+    const emailNorm = String(email).trim().toLowerCase();
+    const reset = db.prepare('SELECT * FROM password_resets WHERE email = ?').get(emailNorm);
+    if (!reset) {
+      audit.log({ req, action: 'auth.forgot_password.reset', status: 'fail',
+        error: 'no pending reset', payload: { email: emailNorm } });
+      return res.status(404).json({ error: 'No pending reset for that email — request a new code' });
+    }
+    if (Date.now() > reset.code_expires_at) {
+      db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailNorm);
+      audit.log({ req, action: 'auth.forgot_password.reset', status: 'fail',
+        error: 'code expired', payload: { email: emailNorm } });
+      return res.status(410).json({ error: 'Reset code has expired — request a new one' });
+    }
+    if (String(code).trim() !== reset.code) {
+      audit.log({ req, action: 'auth.forgot_password.reset', status: 'fail',
+        error: 'wrong code', payload: { email: emailNorm } });
+      return res.status(400).json({ error: 'Incorrect reset code' });
+    }
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(emailNorm);
+    if (!user) {
+      // Pending reset for a user that was deleted between stages.
+      db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailNorm);
+      audit.log({ req, action: 'auth.forgot_password.reset', status: 'fail',
+        error: 'user gone', payload: { email: emailNorm } });
+      return res.status(404).json({ error: 'No account exists for that email' });
+    }
+
+    const newHash = bcrypt.hashSync(password, 10);
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, user.id);
+    db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailNorm);
+
+    audit.log({ req, user, action: 'auth.forgot_password.reset',
+      status: 'ok', targetType: 'user', targetId: user.id });
+
+    // Issue a fresh token so the client can sign the user in immediately
+    // after they reset — no second login round-trip needed.
+    res.json({ ok: true, token: makeToken(user), user: publicUser(user) });
+  });
+
+  // ── Whoami ─────────────────────────────────────────────────
+  app.get('/api/auth/me', requireAuth, (req, res) => {
+    res.json({ ok: true, user: publicUser(req.user) });
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // Organization workflow:  Owner → Org (+ Admin) → Site → Members
+  // ══════════════════════════════════════════════════════════════
+
+  // Owner: list every organization with counts.
+  app.get('/api/orgs', requireRole('owner'), (req, res) => {
+    const organizations = db.prepare(`
+      SELECT o.id, o.slug, o.name, o.created_at,
+        (SELECT COUNT(*) FROM tenants t WHERE t.organization_id = o.id) AS site_count,
+        (SELECT COUNT(*) FROM users u WHERE u.organization_id = o.id)   AS member_count,
+        (SELECT username FROM users u WHERE u.organization_id = o.id AND u.role = 'org_admin'
+           ORDER BY u.created_at LIMIT 1) AS admin_username
+      FROM organizations o ORDER BY o.created_at DESC
+    `).all();
+    res.json({ ok: true, organizations });
+  });
+
+  // Owner: create an organization + its first Org Admin.
+  app.post('/api/orgs', requireRole('owner'), (req, res) => {
+    const { name, adminUsername, adminEmail, adminPassword } = req.body || {};
+    if (!name || !adminUsername || !adminEmail || !adminPassword) {
+      return res.status(400).json({ error: 'name, adminUsername, adminEmail and adminPassword are required' });
+    }
+    if (!EMAIL_RE.test(String(adminEmail))) return res.status(400).json({ error: 'Invalid admin email' });
+    if (!USERNAME_RE.test(String(adminUsername))) return res.status(400).json({ error: 'Admin username must be 3–32 chars (letters, numbers, . _ -)' });
+    const pwErr = validatePassword(adminPassword);
+    if (pwErr) return res.status(400).json({ error: pwErr });
+    const emailN = String(adminEmail).trim().toLowerCase();
+    if (db.prepare('SELECT 1 FROM users WHERE email = ? COLLATE NOCASE').get(emailN))
+      return res.status(409).json({ error: 'That admin email is already registered' });
+    if (db.prepare('SELECT 1 FROM users WHERE username = ? COLLATE NOCASE').get(adminUsername))
+      return res.status(409).json({ error: 'That admin username is taken' });
+
+    const out = db.transaction(() => {
+      const org = createOrganization(name, req.user.id);
+      const hash = bcrypt.hashSync(adminPassword, 10);
+      db.prepare(`INSERT INTO users (email, username, password_hash, email_verified, role, organization_id)
+                  VALUES (?, ?, ?, 1, 'org_admin', ?)`)
+        .run(emailN, adminUsername, hash, org.id);
+      return org;
+    })();
+    audit.log({ req, user: req.user, action: 'org.create', status: 'ok', targetType: 'organization', targetId: out.id, payload: { name } });
+    res.json({ ok: true, organization: out, admin: { username: adminUsername, email: emailN } });
+  });
+
+  // Owner/Org-admin: what org am I managing? (console bootstrap)
+  app.get('/api/my-org', requireRole('owner', 'org_admin'), (req, res) => {
+    if (req.user.role === 'owner') return res.json({ ok: true, owner: true });
+    const organization = db.prepare('SELECT id, slug, name, status FROM organizations WHERE id = ?')
+                           .get(req.user.organization_id);
+    res.json({ ok: true, organization });
+  });
+
+  // Owner: organizations awaiting approval (self-signup requests).
+  app.get('/api/orgs/pending', requireRole('owner'), (req, res) => {
+    const pending = db.prepare(`
+      SELECT o.id, o.name, o.slug, o.created_at,
+        (SELECT username FROM users u WHERE u.organization_id = o.id AND u.role = 'org_admin' ORDER BY u.created_at LIMIT 1) AS admin_username,
+        (SELECT email    FROM users u WHERE u.organization_id = o.id AND u.role = 'org_admin' ORDER BY u.created_at LIMIT 1) AS admin_email
+      FROM organizations o WHERE o.status = 'pending' ORDER BY o.created_at DESC
+    `).all();
+    res.json({ ok: true, pending });
+  });
+
+  // Owner: approve a pending organization → active (its admin can now add
+  // members and its users can scan).
+  app.post('/api/orgs/:orgId/approve', requireRole('owner'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(orgId);
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+    db.prepare("UPDATE organizations SET status = 'active' WHERE id = ?").run(orgId);
+    audit.log({ req, user: req.user, action: 'org.approve', status: 'ok', targetType: 'organization', targetId: orgId });
+    res.json({ ok: true });
+  });
+
+  // Owner: reject a pending organization request.
+  app.post('/api/orgs/:orgId/reject', requireRole('owner'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(orgId);
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+    db.prepare("UPDATE organizations SET status = 'rejected' WHERE id = ?").run(orgId);
+    audit.log({ req, user: req.user, action: 'org.reject', status: 'ok', targetType: 'organization', targetId: orgId });
+    res.json({ ok: true });
+  });
+
+  // Owner: permanently remove an organization — its members, sites, invites,
+  // and the org row — plus clean up references (rack ownership, audit rows).
+  // Used to clear stray self-signup orgs from the owner dashboard.
+  // Owner: rename an organization and/or change its status (active <-> inactive).
+  app.patch('/api/orgs/:orgId', requireRole('owner'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(orgId);
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+    const { name, status } = req.body || {};
+    const sets = [], vals = [];
+    if (typeof name === 'string' && name.trim()) { sets.push('name = ?'); vals.push(name.trim()); }
+    if (typeof status === 'string') {
+      if (!['active', 'inactive'].includes(status)) {
+        return res.status(400).json({ error: 'status must be "active" or "inactive"' });
+      }
+      sets.push('status = ?'); vals.push(status);
+    }
+    if (!sets.length) return res.status(400).json({ error: 'Nothing to update' });
+    vals.push(orgId);
+    db.prepare(`UPDATE organizations SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+    audit.log({ req, user: req.user, action: 'org.update', status: 'ok', targetType: 'organization', targetId: orgId, payload: { name: name || undefined, status: status || undefined } });
+    const organization = db.prepare('SELECT id, slug, name, status FROM organizations WHERE id = ?').get(orgId);
+    res.json({ ok: true, organization });
+  });
+
+  app.delete('/api/orgs/:orgId', requireRole('owner'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(orgId);
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+
+    const run = db.transaction(() => {
+      const tenantIds = db.prepare('SELECT id FROM tenants WHERE organization_id = ?').all(orgId).map(r => r.id);
+      const userIds   = db.prepare('SELECT id FROM users WHERE organization_id = ?').all(orgId).map(r => r.id);
+      const has = (t) => !!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`).get(t);
+      for (const tid of tenantIds) {
+        if (has('rack_owners')) db.prepare('DELETE FROM rack_owners WHERE tenant_id = ?').run(tid);
+        if (has('rack_groups')) db.prepare('DELETE FROM rack_groups WHERE tenant_id = ?').run(tid);
+        try { db.prepare('UPDATE audit_log SET tenant_id = NULL WHERE tenant_id = ?').run(tid); } catch (_) {}
+      }
+      for (const uid of userIds) {
+        try { db.prepare('UPDATE rack_owners SET created_by = NULL WHERE created_by = ?').run(uid); } catch (_) {}
+        try { db.prepare('UPDATE invites SET invited_by = NULL WHERE invited_by = ?').run(uid); } catch (_) {}
+      }
+      const invites = db.prepare('DELETE FROM invites WHERE organization_id = ?').run(orgId).changes;
+      const members = db.prepare('DELETE FROM users WHERE organization_id = ?').run(orgId).changes;
+      const sites   = db.prepare('DELETE FROM tenants WHERE organization_id = ?').run(orgId).changes;
+      db.prepare('DELETE FROM organizations WHERE id = ?').run(orgId);
+      return { members, sites, invites };
+    });
+    const counts = run();
+    audit.log({ req, user: req.user, action: 'org.remove', status: 'ok',
+      targetType: 'organization', targetId: orgId,
+      payload: { name: org.name, slug: org.slug, ...counts } });
+    res.json({ ok: true, removed: { id: orgId, name: org.name, ...counts } });
+  });
+
+  // List Sites in an org.
+  app.get('/api/orgs/:orgId/sites', requireRole('owner', 'org_admin'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    if (!canManageOrg(req.user, orgId)) return res.status(403).json({ error: 'Not your organization' });
+    const sites = db.prepare(`
+      SELECT t.id, t.slug, t.name, t.created_at,
+        (SELECT COUNT(*) FROM users u WHERE u.tenant_id = t.id) AS member_count
+      FROM tenants t WHERE t.organization_id = ? ORDER BY t.created_at DESC
+    `).all(orgId);
+    res.json({ ok: true, sites });
+  });
+
+  // Create a Site in an org.
+  app.post('/api/orgs/:orgId/sites', requireRole('owner', 'org_admin'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    if (!canManageOrg(req.user, orgId)) return res.status(403).json({ error: 'Not your organization' });
+    const { name } = req.body || {};
+    if (!name || !String(name).trim()) return res.status(400).json({ error: 'Site name is required' });
+    if (!db.prepare('SELECT 1 FROM organizations WHERE id = ?').get(orgId))
+      return res.status(404).json({ error: 'Organization not found' });
+    const site = createTenant(String(name).trim(), orgId);
+    audit.log({ req, user: req.user, action: 'site.create', status: 'ok', targetType: 'site', targetId: site.id, payload: { orgId, name } });
+    res.json({ ok: true, site });
+  });
+
+  // List members of an org (with their Site).
+  app.get('/api/orgs/:orgId/members', requireRole('owner', 'org_admin'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    if (!canManageOrg(req.user, orgId)) return res.status(403).json({ error: 'Not your organization' });
+    const members = db.prepare(`
+      SELECT u.id, u.username, u.email, u.role, u.tenant_id, u.active, u.created_at, t.name AS site_name,
+        (SELECT COUNT(*)         FROM rack_owners r WHERE r.created_by = u.id) AS scans,
+        (SELECT MAX(created_at)  FROM rack_owners r WHERE r.created_by = u.id) AS last_scan
+      FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id
+      WHERE u.organization_id = ? ORDER BY u.created_at DESC
+    `).all(orgId);
+    res.json({ ok: true, members });
+  });
+
+  // Add a member to a Site. Owner / org-admin / site-manager (of that Site).
+  app.post('/api/sites/:siteId/members', requireRole('owner', 'org_admin', 'site_manager'), (req, res) => {
+    const siteId = Number(req.params.siteId);
+    const site = db.prepare('SELECT * FROM tenants WHERE id = ?').get(siteId);
+    if (!site || !site.organization_id) return res.status(404).json({ error: 'Site not found' });
+    if (!canManageSite(req.user, siteId)) return res.status(403).json({ error: 'Not your site' });
+    if (req.user.role !== 'owner' && !isOrgActive(site.organization_id))
+      return res.status(403).json({ error: 'Your organization is awaiting owner approval.' });
+    const { username, email, password, role } = req.body || {};
+    // A site manager can only create plain members, not other managers.
+    let memberRole = ['site_manager', 'member'].includes(role) ? role : 'member';
+    if (req.user.role === 'site_manager') memberRole = 'member';
+    if (!username || !email || !password) return res.status(400).json({ error: 'username, email and password are required' });
+    if (!EMAIL_RE.test(String(email))) return res.status(400).json({ error: 'Invalid email' });
+    if (!USERNAME_RE.test(String(username))) return res.status(400).json({ error: 'Username must be 3–32 chars (letters, numbers, . _ -)' });
+    const pwErr = validatePassword(password);
+    if (pwErr) return res.status(400).json({ error: pwErr });
+    const emailN = String(email).trim().toLowerCase();
+    if (db.prepare('SELECT 1 FROM users WHERE email = ? COLLATE NOCASE').get(emailN))
+      return res.status(409).json({ error: 'That email is already registered' });
+    if (db.prepare('SELECT 1 FROM users WHERE username = ? COLLATE NOCASE').get(username))
+      return res.status(409).json({ error: 'That username is taken' });
+    const hash = bcrypt.hashSync(password, 10);
+    const r = db.prepare(`INSERT INTO users (email, username, password_hash, email_verified, role, organization_id, tenant_id)
+                          VALUES (?, ?, ?, 1, ?, ?, ?)`)
+      .run(emailN, username, hash, memberRole, site.organization_id, siteId);
+    audit.log({ req, user: req.user, action: 'member.create', status: 'ok', targetType: 'user', targetId: r.lastInsertRowid, payload: { siteId, role: memberRole } });
+    res.json({ ok: true, member: { id: r.lastInsertRowid, username, email: emailN, role: memberRole, site: site.name } });
+  });
+
+  // Edit a member's personal info (username / email / role / site / password).
+  // Partial update — only the fields present in the body are changed. Owner or
+  // the org's admin only; org scoping means an admin can only touch users in
+  // their own org, an owner account can never be edited here, and only the
+  // owner may edit an org admin.
+  app.patch('/api/orgs/:orgId/members/:memberId', requireRole('owner', 'org_admin', 'site_manager'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    const memberId = Number(req.params.memberId);
+
+    const member = db.prepare('SELECT * FROM users WHERE id = ?').get(memberId);
+    if (!member || member.organization_id !== orgId) return res.status(404).json({ error: 'Member not found' });
+    if (member.role === 'owner') return res.status(403).json({ error: 'Cannot edit an owner account' });
+
+    const isSiteMgr = req.user.role === 'site_manager';
+    if (isSiteMgr) {
+      // A site manager may only manage plain members within their own Site,
+      // and only their status (active) or password — not identity/role/site.
+      if (Number(member.tenant_id) !== Number(req.user.tenant_id) || member.role !== 'member')
+        return res.status(403).json({ error: 'Not a member of your site' });
+    } else {
+      if (!canManageOrg(req.user, orgId)) return res.status(403).json({ error: 'Not your organization' });
+      if (member.role === 'org_admin' && req.user.role !== 'owner')
+        return res.status(403).json({ error: 'Only the owner can edit an organization admin' });
+    }
+
+    let { username, email, password, role, siteId, active } = req.body || {};
+    if (isSiteMgr) { username = email = role = siteId = undefined; }
+    const sets = [];
+    const vals = [];
+
+    if (username !== undefined) {
+      const u = String(username).trim();
+      if (!USERNAME_RE.test(u)) return res.status(400).json({ error: 'Username must be 3–32 chars (letters, numbers, . _ -)' });
+      if (db.prepare('SELECT 1 FROM users WHERE username = ? COLLATE NOCASE AND id <> ?').get(u, memberId))
+        return res.status(409).json({ error: 'That username is taken' });
+      sets.push('username = ?'); vals.push(u);
+    }
+    if (email !== undefined) {
+      const e = String(email).trim().toLowerCase();
+      if (!EMAIL_RE.test(e)) return res.status(400).json({ error: 'Invalid email' });
+      if (db.prepare('SELECT 1 FROM users WHERE email = ? COLLATE NOCASE AND id <> ?').get(e, memberId))
+        return res.status(409).json({ error: 'That email is already registered' });
+      sets.push('email = ?'); vals.push(e);
+    }
+    if (role !== undefined) {
+      if (!['site_manager', 'member'].includes(role)) return res.status(400).json({ error: 'Role must be member or site_manager' });
+      sets.push('role = ?'); vals.push(role);
+    }
+    if (siteId !== undefined && siteId !== null && siteId !== '') {
+      const site = db.prepare('SELECT * FROM tenants WHERE id = ?').get(Number(siteId));
+      if (!site || site.organization_id !== orgId) return res.status(400).json({ error: 'Invalid site' });
+      sets.push('tenant_id = ?'); vals.push(site.id);
+    }
+    if (password !== undefined && password !== '') {
+      const pwErr = validatePassword(password);
+      if (pwErr) return res.status(400).json({ error: pwErr });
+      sets.push('password_hash = ?'); vals.push(bcrypt.hashSync(password, 10));
+    }
+    if (active !== undefined) {
+      sets.push('active = ?'); vals.push(active ? 1 : 0);
+    }
+
+    if (!sets.length) return res.status(400).json({ error: 'Nothing to update' });
+    vals.push(memberId);
+    db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+    audit.log({ req, user: req.user, action: 'member.update', status: 'ok', targetType: 'user', targetId: memberId, payload: { fields: sets.map(s => s.split(' ')[0]) } });
+
+    const updated = db.prepare(`
+      SELECT u.id, u.username, u.email, u.role, u.tenant_id, u.active, u.created_at, t.name AS site_name
+      FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id WHERE u.id = ?
+    `).get(memberId);
+    res.json({ ok: true, member: updated });
+  });
+
+  // Owner / Org-admin / Site-manager: permanently remove a member. Their past
+  // scans stay (created_by cleared to NULL) so the scan history isn't lost.
+  app.delete('/api/orgs/:orgId/members/:memberId', requireRole('owner', 'org_admin', 'site_manager'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    const memberId = Number(req.params.memberId);
+    if (memberId === req.user.id) return res.status(400).json({ error: 'You cannot remove your own account' });
+
+    const member = db.prepare('SELECT * FROM users WHERE id = ?').get(memberId);
+    if (!member || member.organization_id !== orgId) return res.status(404).json({ error: 'Member not found' });
+    if (member.role === 'owner') return res.status(403).json({ error: 'Cannot remove an owner account' });
+
+    if (req.user.role === 'site_manager') {
+      if (Number(member.tenant_id) !== Number(req.user.tenant_id) || member.role !== 'member')
+        return res.status(403).json({ error: 'Not a member of your site' });
+    } else {
+      if (!canManageOrg(req.user, orgId)) return res.status(403).json({ error: 'Not your organization' });
+      if (member.role === 'org_admin' && req.user.role !== 'owner')
+        return res.status(403).json({ error: 'Only the owner can remove an organization admin' });
+    }
+
+    const tx = db.transaction(() => {
+      db.prepare('UPDATE rack_owners SET created_by = NULL WHERE created_by = ?').run(memberId);
+      db.prepare('UPDATE invites SET invited_by = NULL WHERE invited_by = ?').run(memberId);
+      db.prepare('DELETE FROM users WHERE id = ?').run(memberId);
+    });
+    try { tx(); }
+    catch (e) { logger.error('member.remove failed:', e.message); return res.status(500).json({ error: 'Failed to remove member' }); }
+    audit.log({ req, user: req.user, action: 'member.remove', status: 'ok', targetType: 'user', targetId: memberId, payload: { username: member.username } });
+    res.json({ ok: true, removed: memberId });
+  });
+
+  // ── Invite links ──────────────────────────────────────────────
+  // Instead of an admin hand-setting a member's password, they can mint an
+  // invite for a Site + role; the invitee opens the link and chooses their
+  // own username + password. Owner / org-admin / site-manager (of the Site).
+  app.post('/api/sites/:siteId/invites', requireRole('owner', 'org_admin', 'site_manager'), (req, res) => {
+    const siteId = Number(req.params.siteId);
+    const site = db.prepare('SELECT * FROM tenants WHERE id = ?').get(siteId);
+    if (!site || !site.organization_id) return res.status(404).json({ error: 'Site not found' });
+    if (!canManageSite(req.user, siteId)) return res.status(403).json({ error: 'Not your site' });
+    if (req.user.role !== 'owner' && !isOrgActive(site.organization_id))
+      return res.status(403).json({ error: 'Your organization is awaiting owner approval.' });
+    const { email, role } = req.body || {};
+    if (!email || !EMAIL_RE.test(String(email))) return res.status(400).json({ error: 'A valid email is required' });
+    let inviteRole = ['site_manager', 'member'].includes(role) ? role : 'member';
+    if (req.user.role === 'site_manager') inviteRole = 'member';  // managers invite members only
+    const emailN = String(email).trim().toLowerCase();
+    if (db.prepare('SELECT 1 FROM users WHERE email = ? COLLATE NOCASE').get(emailN))
+      return res.status(409).json({ error: 'Someone with that email already has an account' });
+
+    const code = crypto.randomBytes(18).toString('base64url');
+    const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+    db.prepare(`INSERT INTO invites (code, email, role, organization_id, tenant_id, invited_by, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      .run(code, emailN, inviteRole, site.organization_id, siteId, req.user.id, expiresAt);
+    audit.log({ req, user: req.user, action: 'invite.create', status: 'ok', payload: { siteId, role: inviteRole, email: emailN } });
+    res.json({ ok: true, invite: { code, email: emailN, role: inviteRole, site: site.name, path: `/invite/${code}`, expires_at: expiresAt } });
+  });
+
+  // Public: read an invite (for the accept page to show who/what).
+  app.get('/api/invites/:code', (req, res) => {
+    const inv = db.prepare(`
+      SELECT i.*, o.name AS org_name, t.name AS site_name
+      FROM invites i
+      LEFT JOIN organizations o ON o.id = i.organization_id
+      LEFT JOIN tenants t ON t.id = i.tenant_id
+      WHERE i.code = ?`).get(String(req.params.code));
+    if (!inv) return res.status(404).json({ ok: false, error: 'Invite not found' });
+    if (inv.accepted_at) return res.status(410).json({ ok: false, error: 'This invite has already been used' });
+    if (inv.expires_at && Date.now() > inv.expires_at) return res.status(410).json({ ok: false, error: 'This invite has expired' });
+    res.json({ ok: true, invite: { email: inv.email, role: inv.role, organization: inv.org_name, site: inv.site_name } });
+  });
+
+  // Public: accept an invite — invitee sets their own username + password.
+  app.post('/api/invites/:code/accept', (req, res) => {
+    const code = String(req.params.code);
+    const inv = db.prepare('SELECT * FROM invites WHERE code = ?').get(code);
+    if (!inv) return res.status(404).json({ error: 'Invite not found' });
+    if (inv.accepted_at) return res.status(410).json({ error: 'This invite has already been used' });
+    if (inv.expires_at && Date.now() > inv.expires_at) return res.status(410).json({ error: 'This invite has expired' });
+
+    const { username, password } = req.body || {};
+    if (!username || !USERNAME_RE.test(String(username).trim()))
+      return res.status(400).json({ error: 'Username must be 3–32 chars (letters, numbers, . _ -)' });
+    const pwErr = validatePassword(password);
+    if (pwErr) return res.status(400).json({ error: pwErr });
+    const uname = String(username).trim();
+    if (db.prepare('SELECT 1 FROM users WHERE username = ? COLLATE NOCASE').get(uname))
+      return res.status(409).json({ error: 'That username is taken' });
+    if (db.prepare('SELECT 1 FROM users WHERE email = ? COLLATE NOCASE').get(inv.email))
+      return res.status(409).json({ error: 'An account already exists for this email' });
+
+    const hash = bcrypt.hashSync(password, 10);
+    const r = db.prepare(`INSERT INTO users (email, username, password_hash, email_verified, role, organization_id, tenant_id, active)
+                          VALUES (?, ?, ?, 1, ?, ?, ?, 1)`)
+      .run(inv.email, uname, hash, inv.role, inv.organization_id, inv.tenant_id);
+    db.prepare("UPDATE invites SET accepted_at = datetime('now') WHERE code = ?").run(code);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(r.lastInsertRowid);
+    audit.log({ req, user, action: 'invite.accept', status: 'ok', targetType: 'user', targetId: user.id, payload: { code } });
+    res.json({ ok: true, token: makeToken(user), user: publicUser(user) });
+  });
+
+  // ── Dashboards ────────────────────────────────────────────────
+  // Scans are recorded in rack_owners (one row per tenant+rack claim), so
+  // scan counts roll up: site → org → platform. Users come from the users
+  // table; "active" users are those who actually recorded a scan.
+
+  // Owner: platform-wide dashboard.
+  app.get('/api/dashboard/owner', requireRole('owner'), (req, res) => {
+    const totals = {
+      organizations: db.prepare('SELECT COUNT(*) c FROM organizations').get().c,
+      sites:  db.prepare('SELECT COUNT(*) c FROM tenants WHERE organization_id IS NOT NULL').get().c,
+      users:  db.prepare("SELECT COUNT(*) c FROM users WHERE role != 'owner'").get().c,
+      scans:  db.prepare('SELECT COUNT(*) c FROM rack_owners').get().c,
+    };
+    const organizations = db.prepare(`
+      SELECT o.id, o.name, o.slug, o.status,
+        (SELECT COUNT(*) FROM tenants t WHERE t.organization_id = o.id) AS sites,
+        (SELECT COUNT(*) FROM users u WHERE u.organization_id = o.id)   AS users,
+        (SELECT COUNT(*) FROM rack_owners r
+           WHERE r.tenant_id IN (SELECT id FROM tenants WHERE organization_id = o.id)) AS scans
+      FROM organizations o ORDER BY scans DESC, o.created_at DESC
+    `).all();
+    const recentScans = db.prepare(`
+      SELECT r.rack_id, r.created_at, t.name AS site, o.name AS org, u.username AS by_user
+      FROM rack_owners r
+      JOIN tenants t ON t.id = r.tenant_id
+      LEFT JOIN organizations o ON o.id = t.organization_id
+      LEFT JOIN users u ON u.id = r.created_by
+      ORDER BY r.created_at DESC LIMIT 15
+    `).all();
+    res.json({ ok: true, totals, organizations, recentScans });
+  });
+
+  // Owner / Org-admin: one organization's dashboard.
+  app.get('/api/orgs/:orgId/dashboard', requireRole('owner', 'org_admin'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    if (!canManageOrg(req.user, orgId)) return res.status(403).json({ error: 'Not your organization' });
+    const siteIds = db.prepare('SELECT id FROM tenants WHERE organization_id = ?').all(orgId).map(r => r.id);
+    const inList = siteIds.length ? siteIds.join(',') : '0'; // ids are ints → injection-safe
+    const totals = {
+      sites: siteIds.length,
+      users: db.prepare('SELECT COUNT(*) c FROM users WHERE organization_id = ?').get(orgId).c,
+      scans: db.prepare(`SELECT COUNT(*) c FROM rack_owners WHERE tenant_id IN (${inList})`).get().c,
+      activeUsers: db.prepare(`SELECT COUNT(DISTINCT created_by) c FROM rack_owners WHERE tenant_id IN (${inList}) AND created_by IS NOT NULL`).get().c,
+    };
+    const sites = db.prepare(`
+      SELECT t.id, t.name,
+        (SELECT COUNT(*) FROM users u WHERE u.tenant_id = t.id)          AS users,
+        (SELECT COUNT(*) FROM rack_owners r WHERE r.tenant_id = t.id)    AS scans,
+        (SELECT MAX(created_at) FROM rack_owners r WHERE r.tenant_id = t.id) AS last_scan
+      FROM tenants t WHERE t.organization_id = ? ORDER BY scans DESC, t.created_at DESC
+    `).all(orgId);
+    const recentScans = db.prepare(`
+      SELECT r.rack_id, r.created_at, r.created_by AS by_user_id, t.name AS site, u.username AS by_user
+      FROM rack_owners r JOIN tenants t ON t.id = r.tenant_id
+      LEFT JOIN users u ON u.id = r.created_by
+      WHERE r.tenant_id IN (${inList})
+      ORDER BY r.created_at DESC LIMIT 40
+    `).all().map(s => ({ ...s, image: scanImageUrl(s.rack_id), devices: scanDeviceCount(s.rack_id) }));
+    res.json({ ok: true, totals, sites, recentScans });
+  });
+}
+
+module.exports = { registerRoutes, requireAuth, isOrgActive };

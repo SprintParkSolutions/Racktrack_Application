@@ -1,0 +1,79 @@
+# requirements.lock.txt — pinned, reproducible Python dependency set.
+#
+# HOW THIS WAS GENERATED
+#   The project ships a virtualenv at .venv/, but it is a *Windows* venv
+#   (pyvenv.cfg -> Python 3.13 on C:\...) and cannot be executed on this
+#   host, so `pip freeze` could not be run directly. Instead these exact
+#   versions were read from the installed package metadata in
+#   .venv/Lib/site-packages/*.dist-info — i.e. the same versions `pip freeze`
+#   would emit for the packages that are actually installed there.
+#
+# CAVEATS (read before trusting this as a full lock):
+#   1. The source .venv is the CV/ML working env and does NOT contain five of
+#      the direct requirements: easyocr, openpyxl, msal, psycopg2-binary,
+#      python-dotenv. Those are listed at the bottom at their requirements.txt
+#      floor and should be re-pinned after a clean `pip install -r
+#      requirements.txt && pip freeze` on the target (Linux/Python 3.11) image.
+#   2. numpy in the .venv is 2.4.6, which VIOLATES the `numpy>=1.26,<2.0`
+#      constraint in requirements.txt. Reconcile before shipping: either lift
+#      the ceiling in requirements.txt or install numpy 1.26.x here.
+#   3. requirements.txt asks for opencv-python-HEADLESS; the .venv has the GUI
+#      build (opencv-python). The headless variant at the same version is
+#      pinned below (correct for a server/Docker runtime with no display).
+#
+# USAGE (reproducible install on the runtime image):
+#   pip install --extra-index-url https://download.pytorch.org/whl/cpu \
+#       -r requirements.lock.txt
+
+# ---------------------------------------------------------------------------
+# Direct dependencies (mirror of requirements.txt), pinned from .venv metadata
+# ---------------------------------------------------------------------------
+opencv-python-headless==4.13.0.92   # .venv had opencv-python (GUI) @ same ver
+numpy==2.4.6                         # NOTE: conflicts with requirements.txt <2.0
+Pillow==12.2.0
+torch==2.12.0
+torchvision==0.27.0
+ultralytics==8.4.53
+beautifulsoup4==4.14.3
+requests==2.34.2
+urllib3==2.7.0
+
+# ---------------------------------------------------------------------------
+# Key transitive pins observed in .venv (torch / ultralytics / scrape stack)
+# ---------------------------------------------------------------------------
+certifi==2026.5.20
+charset-normalizer==3.4.7
+contourpy==1.3.3
+cycler==0.12.1
+filelock==3.29.0
+fonttools==4.63.0
+fsspec==2026.4.0
+idna==3.16
+Jinja2==3.1.6
+kiwisolver==1.5.0
+lxml==6.1.1
+MarkupSafe==3.0.3
+matplotlib==3.10.9
+mpmath==1.3.0
+networkx==3.6.1
+packaging==26.2
+psutil==7.2.2
+pyparsing==3.3.2
+python-dateutil==2.9.0.post0
+PyYAML==6.0.3
+scipy==1.17.1
+six==1.17.0
+soupsieve==2.8.4
+sympy==1.14.0
+typing_extensions==4.15.0
+ultralytics-thop==2.0.19
+
+# ---------------------------------------------------------------------------
+# Direct deps NOT present in the source .venv — floor from requirements.txt.
+# Re-pin these to exact versions after a clean install on the target image.
+# ---------------------------------------------------------------------------
+easyocr>=1.7.1
+openpyxl>=3.1.2
+msal>=1.30.0
+psycopg2-binary>=2.9.9
+python-dotenv>=1.0.0

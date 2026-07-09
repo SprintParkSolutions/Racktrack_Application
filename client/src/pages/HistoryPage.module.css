@@ -1,0 +1,125 @@
+﻿.history {
+  background: #ffffff;
+  position: relative;
+}
+
+/* ── Ambient (removed for the all-white design system) ── */
+.amb {
+  display: none;
+}
+
+/* ── Header ── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 12px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+  z-index: 10; position: relative;
+}
+
+.title {
+  font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em;
+  text-align: center; flex: 1; min-width: 0;
+  color: #121417;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 6px;
+}
+@media (max-width: 420px) {
+  .header { padding: 12px 10px 10px; }
+  .title { font-size: .95rem; }
+}
+@media (max-width: 360px) {
+  .title { font-size: .85rem; }
+}
+
+/* ── Body ── */
+.body {
+  position: relative; z-index: 1;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  min-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; color: #717171; text-align: center;
+}
+
+.list {
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+/* ── History card — white surface, hairline border ── */
+.card {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 18px;
+  border-radius: var(--r4);
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: transform .18s, border-color .18s, box-shadow .18s;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+.card:hover {
+  transform: translateY(-2px);
+  border-color: #121417;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.16);
+}
+
+.cardTop {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+
+.cardTitle {
+  font-size: .95rem; font-weight: 700; color: #121417;
+}
+
+.cardMeta {
+  font-size: .72rem; color: #717171;
+}
+
+.cardInfo {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+
+.cardChip {
+  display: inline-flex; align-items: center; padding: 5px 11px;
+  border-radius: 999px;
+  font-size: .72rem; font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  color: #717171;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES
+   ══════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='light']) .history { background: #ffffff; }
+:global([data-theme='light']) .amb { display: none; }
+:global([data-theme='light']) .empty { color: #717171; }
+
+:global([data-theme='light']) .card {
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+:global([data-theme='light']) .card:hover {
+  background: #ffffff;
+  border-color: #121417;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.16);
+}
+:global([data-theme='light']) .cardTitle { color: #121417; }
+:global([data-theme='light']) .cardMeta  { color: #717171; }
+:global([data-theme='light']) .cardChip {
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  color: #717171;
+}

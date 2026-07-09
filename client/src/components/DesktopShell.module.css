@@ -1,0 +1,222 @@
+/* ══════════════════════════════════════════════════════════════════════
+   DesktopShell — full-viewport landscape chrome for ≥1024px renders.
+   Portalled to <body> so it escapes #root's max-width:540px / overflow:hidden.
+
+   Layout:  [ Left sidebar (240px) ][ Main content (rest of viewport) ]
+   ══════════════════════════════════════════════════════════════════════ */
+
+.shell {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  background:
+    radial-gradient(ellipse 55% 45% at 18% 18%, rgba(0,0,0,0.16), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 82% 28%, rgba(0,0,0,0.14), transparent 65%),
+    radial-gradient(ellipse 60% 45% at 50% 100%, rgba(0,0,0,0.14), transparent 65%),
+    transparent;
+  color: #cfc4c5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+}
+:global([data-theme='light']) .shell {
+  background: #ffffff;
+  color: #0b0c0e;
+}
+
+/* ── LEFT SIDEBAR ─────────────────────────────────────────────────── */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 14px 16px;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-right: 1px solid rgba(0,0,0,0.08);
+  z-index: 5;
+  overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
+:global([data-theme='light']) .sidebar {
+  background: #ffffff;
+  border-right: 1px solid #f0f0f0;
+}
+
+/* ── Brand ── */
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  /* Left padding matches .navSection / .navLink (14px) so the logo chip shares
+     the same left rail as the nav icons below it. */
+  padding: 4px 14px 24px;
+  font-weight: 800; font-size: 1.1rem;
+  letter-spacing: -0.015em;
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+}
+.brandMark {
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  background: #0b0c0e;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #ffffff;
+  box-shadow:
+    0 8px 18px rgba(0,0,0,0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20);
+  flex-shrink: 0;
+}
+
+/* ── Section header — small caps title with a subtle line ── */
+.navSection {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.38);
+  padding: 0 14px;
+  margin: 20px 0 6px;
+}
+.navSection::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.10), transparent);
+}
+.navSection:first-child { margin-top: 0; }
+:global([data-theme='light']) .navSection { color: #4c4546; }
+:global([data-theme='light']) .navSection::after {
+  background: linear-gradient(90deg, rgba(0,0,0,0.18), transparent);
+}
+
+/* ── Nav list & link ── */
+.navLinks {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.navLink {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.88rem; font-weight: 600;
+  color: rgba(232,232,232,0.70);
+  text-decoration: none;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease;
+  position: relative;
+}
+.navLink:hover {
+  background: rgba(255, 255, 255, 0.045);
+  color: #ffffff;
+}
+.navLink:active { transform: scale(0.985); }
+.navLink.active {
+  background: linear-gradient(135deg,
+    rgba(0,0,0,0.22) 0%,
+    rgba(0,0,0,0.14) 100%);
+  color: #ffffff;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.navLink svg {
+  width: 17px; height: 17px;
+  opacity: 0.72;
+  flex-shrink: 0;
+  transition: opacity 0.18s ease;
+}
+.navLink:hover svg { opacity: 0.95; }
+.navLink.active svg { opacity: 1; color: #cfc4c5; }
+
+:global([data-theme='light']) .navLink { color: #4c4546; }
+:global([data-theme='light']) .navLink:hover {
+  background: rgba(0,0,0,0.07);
+  color: #000000;
+}
+:global([data-theme='light']) .navLink.active {
+  background: #0b0c0e;
+  color: #ffffff;
+  box-shadow: none;
+}
+:global([data-theme='light']) .navLink.active svg { color: #ffffff; opacity: 1; }
+
+/* ── Bottom anchor (theme toggle / user) ── */
+.sidebarBottom {
+  margin-top: auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+  padding: 14px 12px 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+:global([data-theme='light']) .sidebarBottom { border-top-color: #f1f1f1; }
+
+/* ── MAIN CONTENT AREA ───────────────────────────────────────────── */
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  background: #ffffff;
+  overflow: hidden;          /* main itself doesn't scroll */
+}
+
+/* Top page-title bar */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(0,0,0,0.40);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+:global([data-theme='light']) .topBar {
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+.crumbBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.crumbTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--t1, #f7f7f7);
+  line-height: 1.2;
+}
+:global([data-theme='light']) .crumbTitle { color: #1a1c1d; }
+.crumbSub {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(0,0,0,0.5);
+  letter-spacing: 0.02em;
+}
+:global([data-theme='light']) .crumbSub { color: #4c4546; }
+
+/* Content canvas — pages render full-width below the topbar. Scrolling
+   lives here (rather than on .main) so the topbar stays sticky and only
+   the page itself moves under the user's wheel/trackpad. */
+.fluid {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.fluid::-webkit-scrollbar { width: 6px; }
+.fluid::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.20); border-radius: 6px; }
+.fluid::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
+:global([data-theme='light']) .fluid::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+}
