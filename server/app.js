@@ -1080,7 +1080,6 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
     .portCard { break-inside:auto; page-break-inside:auto; }
   }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 </head><body>
 
 <div class="topBar">
@@ -1097,55 +1096,27 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
 
 <script>
 (function () {
-  const btn = document.getElementById('pdfBtn');
-  const label = document.getElementById('pdfBtnLabel');
-  const filename = 'rack-report-${htmlEscape(d.rackId)}.pdf';
+  var btn = document.getElementById('pdfBtn');
 
-  btn.addEventListener('click', async () => {
-    if (typeof html2pdf === 'undefined') {
-      // Library failed to load (offline?) — fall back to the print dialog.
-      window.print();
-      return;
-    }
-    btn.disabled = true;
-    const original = label.textContent;
-    label.textContent = 'Generating…';
-    document.body.classList.add('pdfMode');
-    try {
-      await html2pdf().set({
-        margin: [8, 8, 10, 8],
-        filename,
-        image: { type: 'jpeg', quality: 0.92 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        // Let content flow naturally — only honor explicit CSS hints, no
-        // global "avoid" that creates half-empty pages.
-        pagebreak: { mode: ['css'] },
-      }).from(document.querySelector('.wrap')).save();
-    } catch (err) {
-      logger.error('PDF generation failed:', err);
-      window.print(); // last-ditch fallback
-    } finally {
-      document.body.classList.remove('pdfMode');
-      label.textContent = original;
-      btn.disabled = false;
-    }
-  });
-
-  // Auto-trigger PDF download when the report is opened with #download
-  // in the URL hash. Lets external callers (e.g. the results page) link
-  // straight to a PDF without showing the report first.
-  function maybeAutoDownload() {
-    if (window.location.hash !== '#download') return;
-    const fire = () => btn.click();
-    if (typeof html2pdf !== 'undefined') {
-      // Slight delay so all images and fonts have a chance to settle
-      setTimeout(fire, 250);
-    } else {
-      window.addEventListener('load', () => setTimeout(fire, 350), { once: true });
-    }
+  // Hand the user a REAL PDF, rendered server-side (format=pdf → headless
+  // Chromium). An Android WebView can't save/display a PDF itself, so we open
+  // it in the device's browser / PDF viewer where it can be saved or shared.
+  // The URL is this report's URL with format=html swapped for format=pdf (keeps
+  // any app_key), hash stripped. Replaces the old html2pdf-from-CDN button,
+  // which needed an external script and rendered blank on mobile.
+  function openPdf() {
+    var url = location.href.replace('format=html', 'format=pdf').replace(/#.*$/, '');
+    window.open(url, '_blank');
   }
-  maybeAutoDownload();
+
+  if (btn) btn.addEventListener('click', openPdf);
+
+  // Auto-open when the report is loaded with #download in the hash — the app's
+  // "Download" button links here so one tap goes straight to the PDF.
+  if (window.location.hash === '#download') {
+    if (document.readyState === 'complete') setTimeout(openPdf, 300);
+    else window.addEventListener('load', function () { setTimeout(openPdf, 300); }, { once: true });
+  }
 })();
 </script>
 
@@ -4628,6 +4599,16 @@ app.get('/api/scan/:rackId/report', async (req, res) => {
       // only — clickjacking protection stays on for every other route.
       res.removeHeader('X-Frame-Options');
       return res.send(html);
+    }
+    if (format === 'pdf') {
+      // Real PDF, rendered server-side by headless Chromium (puppeteer) — the
+      // same path the Slack/email share uses. Reliable everywhere, unlike the
+      // in-WebView print sheet. Served inline so a browser/viewer can show it.
+      const { pdfPath } = await buildScanReportPDF(rackId);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="rack-report-${rackId}.pdf"`);
+      res.removeHeader('X-Frame-Options');
+      return res.sendFile(pdfPath);
     }
     if (format === 'json') {
       const data = buildScanReportData(rackId);
