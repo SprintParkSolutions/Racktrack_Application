@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, Line } from '@react-three/drei';
+import * as THREE from 'three';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './MultiRackTopologyPage.module.css';
 
@@ -512,6 +513,33 @@ function _portWorldPos(place, ep, computePortPositions, U_HEIGHT, floorY) {
   return [place.xOffset + px, devCenterY + py, _FRONT_Z];
 }
 
+// A connector plug (RJ-45/SFP-style dark body with a coloured boot) sitting on
+// a device port, pointing out of the face along the cable — the "natural
+// connector" instead of a glowing dot.
+function CablePlug({ pos, dir, color }) {
+  const quat = useMemo(() => {
+    const from = new THREE.Vector3(0, 1, 0);           // cylinder's default axis
+    const to = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize();
+    return new THREE.Quaternion().setFromUnitVectors(from, to);
+  }, [dir]);
+  // Seat the plug body just off the face, centred a touch along the cable.
+  const bodyPos = [pos[0] + dir[0] * 0.06, pos[1] + dir[1] * 0.06, pos[2] + dir[2] * 0.06];
+  return (
+    <group>
+      {/* plug body */}
+      <mesh position={bodyPos} quaternion={quat}>
+        <cylinderGeometry args={[0.045, 0.05, 0.13, 10]} />
+        <meshStandardMaterial color="#20242c" roughness={0.5} metalness={0.35} />
+      </mesh>
+      {/* coloured strain-relief boot at the base */}
+      <mesh position={[pos[0] + dir[0] * 0.14, pos[1] + dir[1] * 0.14, pos[2] + dir[2] * 0.14]} quaternion={quat}>
+        <cylinderGeometry args={[0.03, 0.038, 0.09, 10]} />
+        <meshStandardMaterial color={color} roughness={0.55} />
+      </mesh>
+    </group>
+  );
+}
+
 function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, computePortPositions, palette }) {
   const cables = useMemo(() => {
     if (!links?.length) return [];
@@ -528,29 +556,29 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, comput
       const L  = leftIsA ? a : b,        R  = leftIsA ? b : a;
       const Le = leftIsA ? lnk.src : lnk.dst, Re = leftIsA ? lnk.dst : lnk.src;
 
-      // Anchor each end at the ACTUAL port on the device face.
-      const start = _portWorldPos(L, Le, computePortPositions, U_HEIGHT, floorY);
-      const end   = _portWorldPos(R, Re, computePortPositions, U_HEIGHT, floorY);
-      // Nudge each end just outside the rack it leaves so the cable clears the
-      // frame, then bow FORWARD across the gap (small downward sag) like a real
-      // patch cable. Each cable in a pair rides a slightly different lane.
-      const zLane = (k % 3) * 0.06;
-      start[2] += 0.03 + zLane; end[2] += 0.03 + zLane;
-      const bow = 0.5 + (k % 3) * 0.2;
-      const mid = [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2 - 0.08, Math.max(start[2], end[2]) + bow];
-
-      const pts = [];
-      const N = 28;
-      for (let t = 0; t <= N; t++) {
-        const u = t / N, iu = 1 - u;
-        pts.push([
-          iu * iu * start[0] + 2 * iu * u * mid[0] + u * u * end[0],
-          iu * iu * start[1] + 2 * iu * u * mid[1] + u * u * end[1],
-          iu * iu * start[2] + 2 * iu * u * mid[2] + u * u * end[2],
-        ]);
-      }
-      const color = lnk.cable_type === 'fiber' ? '#f2c94c' : '#38bdf8';
-      out.push({ key: lnk.cable_id || `irl-${i}`, pts, color, start, end });
+      // Actual port on each device face.
+      const p0 = _portWorldPos(L, Le, computePortPositions, U_HEIGHT, floorY);
+      const p1 = _portWorldPos(R, Re, computePortPositions, U_HEIGHT, floorY);
+      // Cables leave the face forwards (a plug sticks out), then run across the
+      // gap with a gravity-style SAG (control point pulled DOWN + slightly
+      // forward), so it reads as a real patch cable — not a straight ruled line.
+      const zLane = (k % 3) * 0.05;
+      const s = new THREE.Vector3(p0[0], p0[1], p0[2] + 0.19 + zLane);   // just past the plug
+      const e = new THREE.Vector3(p1[0], p1[1], p1[2] + 0.19 + zLane);
+      const span = s.distanceTo(e);
+      const sag = Math.min(0.35 + span * 0.10, 0.9) + (k % 3) * 0.06;
+      const mid = new THREE.Vector3(
+        (s.x + e.x) / 2,
+        Math.min(s.y, e.y) - sag,             // droop below the lower endpoint
+        (s.x !== e.x ? Math.max(s.z, e.z) + 0.22 : Math.max(s.z, e.z)),
+      );
+      const curve = new THREE.QuadraticBezierCurve3(s, mid, e);
+      const color = lnk.cable_type === 'fiber' ? '#f2c94c' : '#3b82f6';
+      out.push({
+        key: lnk.cable_id || `irl-${i}`, curve, color,
+        plugA: p0, plugB: p1,
+        dirA: [0, 0, 1], dirB: [0, 0, 1],   // plugs face straight out of the front
+      });
     });
     return out;
   }, [links, placeById, floorY, U_HEIGHT, DEV_WIDTH, computePortPositions]);
@@ -560,16 +588,13 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, comput
     <group>
       {cables.map(c => (
         <group key={c.key}>
-          <Line points={c.pts} color={c.color} lineWidth={2.8} transparent opacity={0.95} />
-          {/* connector nubs where the cable plugs into each switch */}
-          <mesh position={c.start}>
-            <sphereGeometry args={[0.055, 12, 12]} />
-            <meshStandardMaterial color={c.color} emissive={c.color} emissiveIntensity={0.6} />
+          {/* the cable itself — a real tube with volume, so it catches light */}
+          <mesh>
+            <tubeGeometry args={[c.curve, 32, 0.026, 8, false]} />
+            <meshStandardMaterial color={c.color} roughness={0.62} metalness={0.08} />
           </mesh>
-          <mesh position={c.end}>
-            <sphereGeometry args={[0.055, 12, 12]} />
-            <meshStandardMaterial color={c.color} emissive={c.color} emissiveIntensity={0.6} />
-          </mesh>
+          <CablePlug pos={c.plugA} dir={c.dirA} color={c.color} />
+          <CablePlug pos={c.plugB} dir={c.dirB} color={c.color} />
         </group>
       ))}
     </group>

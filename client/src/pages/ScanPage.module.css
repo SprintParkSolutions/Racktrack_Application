@@ -853,7 +853,7 @@
 .camWrapFull {
   position:fixed;
   inset:0;
-  z-index:150;
+  z-index:1000;   /* above the bottom nav (200) so fullscreen camera covers it */
   background:#000000;
   border-radius:0;
 }
