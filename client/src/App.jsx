@@ -32,7 +32,9 @@ import MarketplacePage from './pages/MarketplacePage.jsx';
 import MarketplaceNewPage from './pages/MarketplaceNewPage.jsx';
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import LogsPage from './pages/LogsPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
+import MultiRackReportPage from './pages/MultiRackReportPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
 import { AuthProvider, useAuth } from './AuthContext.jsx';
 import { getPendingScan, clearPendingScan, fetchScanJob } from './utils/pendingScan';
@@ -241,6 +243,10 @@ export default function App() {
             <Route path="/multi-rack/:groupId/topology" element={
               <ProtectedRoute><ResponsiveLayout><MultiRackTopologyPage /></ResponsiveLayout></ProtectedRoute>
             } />
+            {/* Side-by-side two-rack report (Overview / Ports / Switches / …). */}
+            <Route path="/multi-rack/:groupId/report" element={
+              <ProtectedRoute><ResponsiveLayout><MultiRackReportPage /></ResponsiveLayout></ProtectedRoute>
+            } />
             <Route path="/profile" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ProfilePage /></ResponsiveLayout></ProtectedRoute>
             } />
@@ -253,6 +259,10 @@ export default function App() {
                 itself shows a clear message if a non-owner reaches it. */}
             <Route path="/dashboard" element={
               <AdminRoute><ResponsiveLayout><DashboardPage /></ResponsiveLayout></AdminRoute>
+            } />
+            {/* Server log viewer — same admin gate as the ops dashboard. */}
+            <Route path="/logs" element={
+              <AdminRoute><ResponsiveLayout><LogsPage /></ResponsiveLayout></AdminRoute>
             } />
             <Route path="/connections" element={
               <AdminRoute><ResponsiveLayout><ConnectionsPage /></ResponsiveLayout></AdminRoute>

@@ -65,19 +65,36 @@ const loggerOpts = {
   },
 };
 
+// Fan the log stream out to two sinks:
+//   1. the console — pretty & colorized in dev, raw JSON to stdout in prod
+//   2. a durable SQLite mirror (log-store) the /api/logs dashboard reads
+// We use multistream (rather than the `transport` worker) so the DB sink runs
+// in-process and shares the same already-redacted serialized line. If the
+// store fails to load we degrade to console-only rather than lose logging.
+const streams = [];
 if (isDev) {
-  loggerOpts.transport = {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'HH:MM:ss.l',
-      singleLine: false,
-      ignore: 'pid,hostname,service,env,version',
-    },
-  };
+  const pretty = require('pino-pretty')({
+    colorize: true,
+    translateTime: 'HH:MM:ss.l',
+    singleLine: false,
+    ignore: 'pid,hostname,service,env,version',
+  });
+  streams.push({ stream: pretty });
+} else {
+  streams.push({ stream: process.stdout });
+}
+try {
+  const logStore = require('./log-store');
+  logStore.init();
+  // Persist info+ only — debug/trace (span start/end, etc.) stay console-only
+  // so the dashboard table isn't drowned in dev noise.
+  streams.push({ level: 'info', stream: logStore.stream });
+} catch (err) {
+  // eslint-disable-next-line no-console
+  console.error('[o11y] log-store unavailable, dashboard persistence off:', err.message);
 }
 
-const logger = pino(loggerOpts);
+const logger = pino(loggerOpts, pino.multistream(streams, { dedupe: false }));
 
 // ── Metrics registry ──────────────────────────────────────────────────
 const registry = new promClient.Registry();

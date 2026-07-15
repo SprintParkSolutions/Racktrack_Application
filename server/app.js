@@ -1640,6 +1640,67 @@ app.get('/api/audit', auth.requireAuth, (req, res) => {
   }
 });
 
+// ── Application log dashboard (admin-gated) ───────────────────────────
+//
+// The pino log stream is mirrored into SQLite by lib/log-store.js. These
+// endpoints back the LogsPage: a filterable, auto-refreshing view of what the
+// server has actually been logging (email/SMTP results, errors, HTTP, etc.).
+// Gated to owners or the AUDIT_ADMINS allow-list — same bar as the ops
+// dashboard — since logs can carry operational detail members shouldn't see.
+const logStore = require('./lib/log-store');
+
+function requireLogAdmin(req, res) {
+  const adminUsers = String(process.env.AUDIT_ADMINS || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  const allowed = req.user.role === 'owner' || adminUsers.includes(req.user.username);
+  if (!allowed) { res.status(403).json({ error: 'Admin access required' }); return false; }
+  return true;
+}
+
+// GET /api/logs?level=&q=&requestId=&since=&until=&limit=&offset=
+app.get('/api/logs', auth.requireAuth, (req, res) => {
+  if (!requireLogAdmin(req, res)) return;
+  try {
+    const { rows, total } = logStore.queryLogs({
+      level:     req.query.level     || undefined,
+      q:         req.query.q         || undefined,
+      requestId: req.query.requestId || undefined,
+      since:     req.query.since     || undefined,
+      until:     req.query.until     || undefined,
+      limit:     req.query.limit     || 200,
+      offset:    req.query.offset    || 0,
+    });
+    res.json({ ok: true, count: rows.length, total, logs: rows });
+  } catch (err) {
+    logger.error({ err: err.message }, '[logs] query failed');
+    res.status(500).json({ ok: false, error: 'Log query failed' });
+  }
+});
+
+// GET /api/logs/stats?since=  → level histogram + totals for the stat tiles.
+app.get('/api/logs/stats', auth.requireAuth, (req, res) => {
+  if (!requireLogAdmin(req, res)) return;
+  try {
+    res.json({ ok: true, ...logStore.logStats(req.query.since || undefined) });
+  } catch (err) {
+    logger.error({ err: err.message }, '[logs] stats failed');
+    res.status(500).json({ ok: false, error: 'Log stats failed' });
+  }
+});
+
+// GET /api/logs/:id  → one row with its full parsed JSON line (row detail).
+app.get('/api/logs/:id', auth.requireAuth, (req, res) => {
+  if (!requireLogAdmin(req, res)) return;
+  try {
+    const row = logStore.getLog(parseInt(req.params.id, 10));
+    if (!row) return res.status(404).json({ ok: false, error: 'Not found' });
+    res.json({ ok: true, log: row });
+  } catch (err) {
+    logger.error({ err: err.message }, '[logs] detail failed');
+    res.status(500).json({ ok: false, error: 'Log detail failed' });
+  }
+});
+
 // ── Live operations dashboard ────────────────────────────────────────
 // GET /api/admin/dashboard → one JSON snapshot the DashboardPage polls every
 // few seconds. Aggregates the audit log (who did what, ok/fail, errors),
@@ -3775,6 +3836,70 @@ app.get('/api/rack-group/:groupId/links', auth.requireAuth, (req, res) => {
   } catch (err) {
     logger.error({ err: err.message }, 'inter-rack links failed');
     res.status(500).json({ error: 'Failed to derive inter-rack links' });
+  }
+});
+
+/**
+ * GET /api/rack-group/:groupId/report?format=html
+ * One combined report document covering EVERY rack in the group — each rack's
+ * standard scan report stacked in order under a cover page. Reuses the per-rack
+ * report renderer; splices each rack's <body> into a shared shell so it's a
+ * single printable page (browser Print → PDF for a PDF).
+ */
+app.get('/api/rack-group/:groupId/report', auth.requireAuth, async (req, res) => {
+  const data = rackGroups.get(req.params.groupId);
+  if (!data || data.group.tenant_id !== req.user.tenant_id) {
+    return res.status(404).json({ error: 'Group not found' });
+  }
+  const members = data.members || [];
+  if (!members.length) return res.status(404).json({ error: 'Group has no racks' });
+
+  try {
+    let head = '';
+    const sections = [];
+    for (const m of members) {
+      try {
+        try { await shrinkImagesForReport(path.join(outputsDir, m.rack_id)); } catch (_) {}
+        const { html } = buildScanReport(m.rack_id);
+        if (!head) {
+          const hm = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+          head = hm ? hm[1] : '';
+        }
+        const bm = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        sections.push({ member: m, body: bm ? bm[1] : html });
+      } catch (e) {
+        sections.push({ member: m, body: `<p style="padding:20px;color:#b00">Report unavailable for ${m.rack_id}: ${e.message}</p>` });
+      }
+    }
+
+    const cover = `
+      <div style="padding:28px 24px;font-family:system-ui,-apple-system,sans-serif">
+        <div style="font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#888">RackTrack · Combined report</div>
+        <h1 style="font-size:2rem;font-weight:850;margin:8px 0 4px">Two-Rack Report</h1>
+        <div style="color:#666">${members.length} racks · ${new Date().toISOString().slice(0, 10)}</div>
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px">
+          ${members.map(m => `<span style="font-size:.82rem;font-weight:600;background:#f0f0f0;border-radius:999px;padding:5px 12px">#${m.position} ${htmlEscape(m.label || m.rack_id)} <code style="color:#888">${m.rack_id}</code></span>`).join('')}
+        </div>
+      </div>`;
+    const rackHdr = (m) => `
+      <div style="page-break-before:always;border-top:4px solid #1a1c1d;margin-top:8px"></div>
+      <div style="padding:16px 24px;background:#1a1c1d;color:#fff;font-family:system-ui,sans-serif;font-weight:800;font-size:1.15rem">
+        Rack #${m.position} — ${htmlEscape(m.label || m.rack_id)}
+        <span style="font-weight:500;font-size:.8rem;opacity:.7;margin-left:8px">${m.rack_id}</span>
+      </div>`;
+
+    const combined =
+      `<!DOCTYPE html><html><head>${head}</head><body>` +
+      cover +
+      sections.map((s, i) => (i > 0 ? rackHdr(s.member) : rackHdr(s.member)) + s.body).join('') +
+      `</body></html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.removeHeader('X-Frame-Options');
+    return res.send(combined);
+  } catch (err) {
+    logger.error({ err: err.message }, 'combined report failed');
+    res.status(500).json({ error: 'Failed to build combined report' });
   }
 });
 

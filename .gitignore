@@ -127,3 +127,8 @@ server/.env
 server/.env.key
 acc.md
 apple.txt
+
+# Runtime server logs DB (LogsPage)
+server/data/logs.db
+server/data/logs.db-shm
+server/data/logs.db-wal

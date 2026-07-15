@@ -247,8 +247,19 @@ export default function MultiRackTopologyPage() {
         onBack={() => navigate(-1)}
         title="Combined topology"
         extra={
-          <span className={styles.groupTag}>
-            {layout.placed.length} {layout.placed.length === 1 ? 'rack' : 'racks'}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className={styles.groupTag}>
+              {layout.placed.length} {layout.placed.length === 1 ? 'rack' : 'racks'}
+            </span>
+            <button
+              onClick={() => navigate(`/multi-rack/${encodeURIComponent(groupId)}/report`)}
+              style={{
+                fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
+                padding: '5px 12px', borderRadius: 999, border: '1px solid rgba(128,128,128,0.4)',
+                background: 'transparent', color: 'inherit', fontFamily: 'inherit',
+              }}
+              title="Both racks' info side by side"
+            >Report ⇆</button>
           </span>
         }
       />
