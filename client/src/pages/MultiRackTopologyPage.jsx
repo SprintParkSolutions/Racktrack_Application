@@ -468,16 +468,25 @@ function SceneFloor({ chassisU, fadeDistance = 60, palette }) {
   );
 }
 
-// Draws the synthesized rack-to-rack uplinks as arcing overhead cables between
-// the tops of the two racks — the visible "connection between racks". Each
-// rack's own intra-rack cabling is drawn by its RackBundle; these are only the
-// few links that cross. Fiber = amber, DAC/copper = cyan.
+// Draws the synthesized rack-to-rack uplinks as real cables that leave the
+// FRONT of a specific switch inside rack A (at that switch's U-height), route
+// across the gap, and land on a specific switch inside rack B — not floating
+// arcs over the top. Each rack's own intra-rack cabling is drawn by its
+// RackBundle; these are only the few links that cross. Fiber = amber, DAC = cyan.
+const _FLOOR_CLEARANCE = 0.4;   // matches TopologyScene3D
+const _FRONT_Z = 0.72;          // ≈ DEV_DEPTH/2, cables ride just in front of the faces
 function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, palette }) {
   const cables = useMemo(() => {
     if (!links?.length) return [];
-    const hw = (DEV_WIDTH || 1) * 0.42;
-    // Per-pair index so multiple cables between the same two racks fan out
-    // instead of overlapping into one line.
+    const hw = (DEV_WIDTH || 3) / 2;
+    // A switch endpoint's world Y from its u_position (same formula the rack
+    // renderer uses); falls back to the rack top when u_position is unknown.
+    const yOf = (place, ep) => {
+      if (ep && ep.u_position != null) {
+        return floorY + _FLOOR_CLEARANCE + (ep.u_position - 1 + (ep.u_size || 1) / 2) * U_HEIGHT;
+      }
+      return floorY + _FLOOR_CLEARANCE + ((place.chassisU || 1) - 0.5) * U_HEIGHT;
+    };
     const pairSeen = {};
     const out = [];
     links.forEach((lnk, i) => {
@@ -488,18 +497,21 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, palett
       const k = pairSeen[pairKey] = (pairSeen[pairKey] ?? -1) + 1;
 
       const leftIsA = a.xOffset <= b.xOffset;
-      const L = leftIsA ? a : b, R = leftIsA ? b : a;
-      const topL = floorY + 0.4 + (L.chassisU || 1) * U_HEIGHT;
-      const topR = floorY + 0.4 + (R.chassisU || 1) * U_HEIGHT;
+      const L  = leftIsA ? a : b,        R  = leftIsA ? b : a;
+      const Le = leftIsA ? lnk.src : lnk.dst, Re = leftIsA ? lnk.dst : lnk.src;
+      const yL = yOf(L, Le), yR = yOf(R, Re);
 
-      const lift = 0.55 + (k % 3) * 0.30;
-      const z    = 0.30 + (k % 3) * 0.14;
-      const start = [L.xOffset + hw, topL + 0.05, z];
-      const end   = [R.xOffset - hw, topR + 0.05, z];
-      const mid   = [(start[0] + end[0]) / 2, Math.max(topL, topR) + lift, z + 0.12];
+      // Each cable rides a slightly different Z lane so redundant runs separate.
+      const z = _FRONT_Z + 0.06 + (k % 3) * 0.07;
+      const start = [L.xOffset + hw + 0.04, yL, z];
+      const end   = [R.xOffset - hw - 0.04, yR, z];
+      // Bow the cable FORWARD (toward the viewer) across the gap, with a small
+      // downward sag — reads as a patch cable running between the racks.
+      const bow = 0.55 + (k % 3) * 0.22;
+      const mid = [(start[0] + end[0]) / 2, (yL + yR) / 2 - 0.10, z + bow];
 
       const pts = [];
-      const N = 26;
+      const N = 28;
       for (let t = 0; t <= N; t++) {
         const u = t / N, iu = 1 - u;
         pts.push([
@@ -509,7 +521,7 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, palett
         ]);
       }
       const color = lnk.cable_type === 'fiber' ? '#f2c94c' : '#38bdf8';
-      out.push({ key: lnk.cable_id || `irl-${i}`, pts, color });
+      out.push({ key: lnk.cable_id || `irl-${i}`, pts, color, start, end });
     });
     return out;
   }, [links, placeById, floorY, U_HEIGHT, DEV_WIDTH]);
@@ -519,13 +531,14 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, palett
     <group>
       {cables.map(c => (
         <group key={c.key}>
-          <Line points={c.pts} color={c.color} lineWidth={2.6} transparent opacity={0.96} />
-          <mesh position={c.pts[0]}>
-            <sphereGeometry args={[0.05, 12, 12]} />
+          <Line points={c.pts} color={c.color} lineWidth={2.8} transparent opacity={0.95} />
+          {/* connector nubs where the cable plugs into each switch */}
+          <mesh position={c.start}>
+            <sphereGeometry args={[0.055, 12, 12]} />
             <meshStandardMaterial color={c.color} emissive={c.color} emissiveIntensity={0.6} />
           </mesh>
-          <mesh position={c.pts[c.pts.length - 1]}>
-            <sphereGeometry args={[0.05, 12, 12]} />
+          <mesh position={c.end}>
+            <sphereGeometry args={[0.055, 12, 12]} />
             <meshStandardMaterial color={c.color} emissive={c.color} emissiveIntensity={0.6} />
           </mesh>
         </group>

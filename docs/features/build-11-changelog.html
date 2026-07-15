@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>RackTrack — Build 11 Changelog &amp; Technical Summary</title>
+<style>
+  :root{
+    --paper:#ffffff; --panel:#fafafa; --panel-2:#f4f5f4;
+    --ink:#15171c; --sub:#3f444b; --muted:#6a7078; --faint:#9aa0a6;
+    --line:#e7e8ea; --line-2:#eef0f1;
+    --green:#0f9d6b; --green-bg:#e8f6ef; --green-ink:#0a6b49;
+    --blue:#2563c9; --blue-bg:#e9effc; --blue-ink:#1c4ea3;
+    --amber:#b07d0c; --amber-bg:#faf1da; --amber-ink:#8a6208;
+    --violet:#6741cf; --violet-bg:#efeafc; --violet-ink:#4e2fb0;
+    --accent:#0f9d6b;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.62; font-size:16px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:900px; margin:0 auto; padding:44px 24px 96px;}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  code{
+    background:var(--panel-2); border:1px solid var(--line);
+    padding:1px 6px; border-radius:5px; font-size:.86em; color:#334;
+    white-space:nowrap;
+  }
+  a{color:var(--blue-ink); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  /* Header */
+  .kicker{font-size:.74rem; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--muted);}
+  h1{font-size:2.35rem; font-weight:850; letter-spacing:-0.03em; line-height:1.08; margin:12px 0 8px; text-wrap:balance;}
+  .sub{font-size:1.08rem; color:var(--muted); max-width:64ch; margin:0 0 20px;}
+  .meta{display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; font-size:.85rem; color:var(--muted);}
+  .badge{display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; font-weight:700; font-size:.78rem;}
+  .badge.ship{background:var(--green-bg); color:var(--green-ink); border:1px solid #bfe6d3;}
+  .badge.plain{background:var(--panel-2); color:var(--sub); border:1px solid var(--line);}
+
+  hr{border:0; border-top:1px solid var(--line); margin:36px 0;}
+
+  /* TOC */
+  .toc{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin:30px 0 8px;}
+  .toc h4{margin:0 0 10px; font-size:.76rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted);}
+  .toc ol{margin:0; padding-left:22px; columns:2; column-gap:34px; font-size:.93rem;}
+  @media(max-width:620px){ .toc ol{columns:1;} }
+  .toc li{margin:5px 0; break-inside:avoid;}
+
+  /* Sections */
+  section{margin-top:52px; scroll-margin-top:20px;}
+  .sec-eyebrow{font-family:ui-monospace,Menlo,monospace; font-size:.78rem; font-weight:700; color:var(--faint);}
+  h2{font-size:1.55rem; font-weight:820; letter-spacing:-0.02em; margin:4px 0 4px;}
+  h2 .em{color:var(--accent);}
+  .sec-lead{color:var(--sub); font-size:1rem; margin:0 0 22px; max-width:66ch;}
+
+  h3{font-size:1.12rem; font-weight:750; letter-spacing:-0.01em; margin:30px 0 6px; display:flex; align-items:center; gap:9px;}
+  .chip{font-size:.62rem; font-weight:800; letter-spacing:.07em; text-transform:uppercase; padding:3px 8px; border-radius:6px; white-space:nowrap;}
+  .chip.g{background:var(--green-bg); color:var(--green-ink);}
+  .chip.b{background:var(--blue-bg); color:var(--blue-ink);}
+  .chip.a{background:var(--amber-bg); color:var(--amber-ink);}
+  .chip.v{background:var(--violet-bg); color:var(--violet-ink);}
+  p{margin:8px 0;}
+  .lbl{font-weight:700; color:var(--ink);}
+
+  ul.plain{margin:8px 0; padding-left:20px;}
+  ul.plain li{margin:5px 0; color:var(--sub);}
+
+  /* "Under the hood" tables */
+  .hood{margin:14px 0 4px; border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  .hood table{width:100%; border-collapse:collapse; font-size:.87rem;}
+  .hood caption{
+    text-align:left; padding:9px 14px; font-size:.68rem; font-weight:800; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--muted); background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  .hood th,.hood td{padding:8px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line-2);}
+  .hood tr:last-child td{border-bottom:0;}
+  .hood th{width:180px; color:var(--muted); font-weight:600;}
+  .hood td .mono{font-size:.85em; color:#334;}
+  .hood-scroll{overflow-x:auto;}
+
+  /* callout */
+  .note{background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:10px; padding:12px 16px; margin:16px 0; font-size:.92rem; color:var(--sub);}
+  .note.warn{border-left-color:var(--amber);}
+  .note .lbl{color:var(--ink);}
+
+  /* release grid */
+  .rel{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;}
+  @media(max-width:620px){ .rel{grid-template-columns:1fr;} }
+  .rel .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+  .rel .card h4{margin:0 0 6px; font-size:.95rem;}
+  .rel .card p{margin:0; font-size:.88rem; color:var(--sub);}
+  .ok{color:var(--green-ink); font-weight:700;}
+
+  ol.steps{counter-reset:s; list-style:none; padding:0; margin:12px 0;}
+  ol.steps li{position:relative; padding:10px 0 10px 44px; border-bottom:1px solid var(--line-2); color:var(--sub);}
+  ol.steps li:last-child{border-bottom:0;}
+  ol.steps li::before{
+    counter-increment:s; content:counter(s); position:absolute; left:0; top:10px;
+    width:28px; height:28px; border-radius:50%; background:var(--ink); color:#fff;
+    font-size:.82rem; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  ol.steps b{color:var(--ink);}
+
+  footer{margin-top:60px; padding-top:22px; border-top:1px solid var(--line); font-size:.82rem; color:var(--faint);}
+
+  @media print{
+    body{font-size:12px;} .wrap{padding:0;} .toc{break-inside:avoid;}
+    section{break-inside:avoid-page;} a{color:var(--ink);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">RackTrack · Engineering changelog</div>
+    <h1>Build 11 — Technical Summary</h1>
+    <p class="sub">A detailed record of the nine improvements shipped on July 15, 2026 — what each does, how it works under the hood, and the files, endpoints, and models involved.</p>
+    <div class="meta">
+      <span class="badge ship">✓ Shipped to testers</span>
+      <span class="badge plain">iOS build 11</span>
+      <span class="badge plain">Android versionCode 11</span>
+      <span class="badge plain">July 15, 2026</span>
+    </div>
+  </header>
+
+  <div class="toc">
+    <h4>Contents</h4>
+    <ol>
+      <li><a href="#cable">Cable identification on every port</a></li>
+      <li><a href="#porttype">Port-type correction (active learning)</a></li>
+      <li><a href="#confirm">Confirmed-rack bypass</a></li>
+      <li><a href="#nonrack">Non-rack input guard</a></li>
+      <li><a href="#tworack">Two-rack scan &amp; inter-rack topology</a></li>
+      <li><a href="#dashboard">Live Operations dashboard</a></li>
+      <li><a href="#camera">Camera &amp; video fixes</a></li>
+      <li><a href="#sfp">SFP procurement advisor</a></li>
+      <li><a href="#release">Release, versions &amp; builds</a></li>
+      <li><a href="#deploy">Deployment steps</a></li>
+    </ol>
+  </div>
+
+  <!-- 1 -->
+  <section id="cable">
+    <div class="sec-eyebrow">01 — Vision / Active learning</div>
+    <h2>Cable identification on <span class="em">every</span> connected port</h2>
+    <p class="sec-lead">Previously the app only classified the cable in the single port a user tapped. Now it identifies the connector and colour of the cable in every occupied port of the rack.</p>
+
+    <h3><span class="chip g">What it does</span> Whole-rack cable inventory</h3>
+    <p>After a scan completes, each connected port is tagged with its cable <span class="lbl">type</span>, <span class="lbl">connector</span> (RJ-45, LC, SC…) and <span class="lbl">colour</span>. The device cards show these grouped as chips — e.g. <em>RJ-45 Blue ×12</em>, <em>LC Aqua ×2</em> — with a real colour swatch.</p>
+
+    <h3><span class="chip g">How it works</span> Background enrichment</h3>
+    <ul class="plain">
+      <li>Runs as a <span class="lbl">background pass</span> after analyze, so the scan response stays fast; chips appear a moment later once enrichment lands.</li>
+      <li>Reuses the existing cable classifier and the exact 4× crop recipe already used for the single-port path — applied to every port whose status is <code>connected</code> (RJ-45 on copper, LC/SC on fibre). Empty and synthesised “ghost” ports are never given a fake cable.</li>
+      <li>Idempotent — a <code>cables_enriched</code> flag prevents redundant re-runs.</li>
+    </ul>
+
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Pipeline</th><td><span class="mono">pipeline/runner.py</span> — new <span class="mono">enrich_cables_on_map()</span> + <span class="mono">--enrich_cables</span> mode; worker command <span class="mono">enrich_cables</span> in <span class="mono">pipeline/worker.py</span></td></tr>
+        <tr><th>Classifier</th><td><span class="mono">pipeline/cable.py</span> · model <span class="mono">Models/cable_eff_best</span> (EfficientNet-B0, connector+colour)</td></tr>
+        <tr><th>Server</th><td><span class="mono">scheduleCableEnrichment(rackId)</span> in <span class="mono">server/app.js</span>, fired from the canonical refresh; rewrites <span class="mono">scan_result.json</span> when done</td></tr>
+        <tr><th>Client</th><td><span class="mono">cableChips()</span> + per-device chips in <span class="mono">ResultsPage.jsx</span>; short poll so enrichment appears without a manual refresh</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section id="porttype">
+    <div class="sec-eyebrow">02 — Vision / Active learning</div>
+    <h2>Port-type correction that <span class="em">sticks</span></h2>
+    <p class="sec-lead">Technicians can now correct a port's physical type, and the system remembers and re-applies that correction on future scans of the same port.</p>
+
+    <h3><span class="chip v">What it does</span> Tag &amp; correct the port type</h3>
+    <p>In the selected-port panel, a control lets the user set/correct the physical type from nine options — <span class="mono">RJ45, SFP, QSFP, CONSOLE, AUX, MANAGEMENT_PORT, USB_A, USB_B, USB_C</span>. Each correction is saved and feeds retraining.</p>
+
+    <h3><span class="chip v">How it works</span> Closed learning loop</h3>
+    <ul class="plain">
+      <li>The correction is logged to <code>feedback.jsonl</code> and persisted as a perceptual-hash + embedding memory, keyed to the port's cropped image.</li>
+      <li>On a later scan, detection looks the port crop up in that memory and applies the learned type — mirroring the existing cable-colour learned-correction path.</li>
+    </ul>
+
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Store</th><td><span class="mono">port_type</span> added to <span class="mono">VALID_MODELS</span> in <span class="mono">pipeline/active_learning/store.py</span></td></tr>
+        <tr><th>Endpoint</th><td><span class="mono">POST /api/feedback/port-type</span> — crops the port, logs feedback, fires the memory correction</td></tr>
+        <tr><th>Consumption</th><td><span class="mono">pipeline/runner.py</span> select path — <span class="mono">find_match("port_type", crop)</span> applies the learned type</td></tr>
+        <tr><th>Client</th><td>Port-type tag/correct control in <span class="mono">ResultsPage.jsx</span></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section id="confirm">
+    <div class="sec-eyebrow">03 — Vision / Active learning</div>
+    <h2>Stop re-detecting a rack you've <span class="em">already confirmed</span></h2>
+    <p class="sec-lead">Once a technician confirms a rack is correct, re-scanning it serves the confirmed result instantly instead of re-running detection.</p>
+
+    <h3><span class="chip b">What it does</span> Confirm once, reuse forever</h3>
+    <p>A <span class="lbl">Confirm rack</span> button fingerprints the rack photo. A later upload that perceptually matches returns the confirmed rack's result — no pipeline run — so the fixes already made are exactly what's shown.</p>
+
+    <h3><span class="chip b">How it works</span> A perceptual cache</h3>
+    <ul class="plain">
+      <li>Extends RackTrack's existing content-hash cache into a <span class="lbl">perceptual</span> one: a re-shot photo gets a new content hash (misses the plain cache), but a perceptual hash + ResNet embedding match it to the confirmed rack.</li>
+      <li><span class="lbl">Safety:</span> deliberately strict (near-duplicate only, 0.96 embedding threshold), organisation-scoped, and only paid for when the org actually has confirmed racks. A <code>forceFresh</code> flag always allows a fresh detection.</li>
+    </ul>
+
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Store</th><td><span class="mono">add_confirmed_rack</span> / <span class="mono">find_confirmed_rack</span> in <span class="mono">store.py</span> (pHash + embedding); CLI commands in <span class="mono">cli.py</span></td></tr>
+        <tr><th>Endpoint</th><td><span class="mono">POST /api/scan/:rackId/confirm-layout</span></td></tr>
+        <tr><th>Bypass</th><td>Guarded lookup in <span class="mono">/api/analyze</span> (<span class="mono">hasConfirmedRacks()</span> gate + <span class="mono">forceFresh</span> escape); response carries <span class="mono">servedFromConfirmed</span></td></tr>
+        <tr><th>Client</th><td><span class="mono">ConfirmRackButton</span> in the All Components header</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section id="nonrack">
+    <div class="sec-eyebrow">04 — Input handling</div>
+    <h2>Reject non-racks <span class="em">at the door</span></h2>
+    <p class="sec-lead">A photo of a person, laptop, or random object is now turned away before the full pipeline runs.</p>
+    <ul class="plain">
+      <li>After the tilt/quality check, a fast detect-only pass runs. If zero rack devices are found, the upload is rejected with a clear message (<code>kind: "not_a_rack"</code>) instead of spinning through a full analysis that returns nothing.</li>
+      <li>Runs on the normalised frame, so it works for both photos and videos. Best-effort: if detection errors, it falls through to the pipeline (whose own zero-device check still catches it).</li>
+    </ul>
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Server</th><td>Rack-presence gate in <span class="mono">/api/analyze</span> (<span class="mono">server/app.js</span>) using the worker's <span class="mono">detect_only</span> command</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section id="tworack">
+    <div class="sec-eyebrow">05 — New feature</div>
+    <h2>Two-rack scan &amp; <span class="em">inter-rack</span> topology</h2>
+    <p class="sec-lead">Scan two racks — as two photos or one video — and see them side by side in 3D with the cabling that runs between them.</p>
+
+    <h3><span class="chip g">What it does</span> Combined view with cross-rack links</h3>
+    <p>The app detects each rack, groups them, and renders both in one 3D scene with the <span class="lbl">uplink cables spanning between racks</span> plus a panel listing every inter-rack connection (device, port, cable type).</p>
+
+    <h3><span class="chip g">How it works</span> Realistic synthesised uplinks</h3>
+    <ul class="plain">
+      <li>Most cabling stays inside each rack; only a realistic handful (2–3 core-to-core / ToR uplinks) cross between racks — deterministic, so the same racks always produce the same wiring.</li>
+      <li>Each rack's uplink end is its aggregation/core switch; adjacent racks are chained.</li>
+      <li>Optionally pushed to ServiceNow CMDB as dummy “Connects to” relationships between the two racks' switch CIs.</li>
+    </ul>
+
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Endpoints</th><td><span class="mono">POST /api/rack-groups</span> (pair two images) · <span class="mono">GET /api/rack-group/:id/links</span> (synthesised inter-rack uplinks)</td></tr>
+        <tr><th>Client</th><td><span class="mono">MultiRackNewPage.jsx</span> (two-photo / video flow) · spanning cables + connections panel in <span class="mono">MultiRackTopologyPage.jsx</span></td></tr>
+        <tr><th>CMDB</th><td><span class="mono">servicenow/cmdb_interrack_link.py</span> — best-effort “Connects to” push</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section id="dashboard">
+    <div class="sec-eyebrow">06 — New feature</div>
+    <h2>Live Operations <span class="em">dashboard</span></h2>
+    <p class="sec-lead">An owner-only, real-time view of everything happening across RackTrack.</p>
+    <ul class="plain">
+      <li>Headline stats (scans today, active users, success rate, feedback accuracy), a <span class="lbl">live activity feed</span>, recent failures with error text, top scanners, scans-by-organisation, and an ok/fail action mix.</li>
+      <li>Aggregates the audit log, the users/organisations tables, and the feedback log; the page polls every few seconds with a live/pause toggle.</li>
+    </ul>
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Endpoint</th><td><span class="mono">GET /api/admin/dashboard</span> (owner-gated) in <span class="mono">server/app.js</span></td></tr>
+        <tr><th>Client</th><td><span class="mono">DashboardPage.jsx</span> — sidebar entry “Live Ops” (owner only)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section id="camera">
+    <div class="sec-eyebrow">07 — Capture</div>
+    <h2>Camera &amp; video, <span class="em">fixed</span></h2>
+    <ul class="plain">
+      <li><span class="lbl">Full-screen camera</span> via a React portal that escapes any transformed ancestor.</li>
+      <li><span class="lbl">Capture matches the preview</span> — the saved image is cropped to the exact region shown on screen (fixes the object-fit:cover vs full-frame mismatch).</li>
+      <li><span class="lbl">Video uploads analyse correctly</span> — routed to the best-frame analyze path.</li>
+    </ul>
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Client</th><td><span class="mono">ScanPage.jsx</span> — portal fullscreen, crop-to-visible capture, video re-route</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section id="sfp">
+    <div class="sec-eyebrow">08 — Procurement</div>
+    <h2>Sharper <span class="em">SFP</span> procurement advice</h2>
+    <p class="sec-lead">The transceiver advisor is now more honest about when it can help — and more useful when there's no exact match.</p>
+    <ul class="plain">
+      <li><span class="lbl">Requires make &amp; model.</span> Without both it can't identify the switch, so it prompts for them (<code>status: need_make_model</code>) instead of guessing.</li>
+      <li><span class="lbl">“No SFP required.”</span> When a real datasheet shows only copper ports and no fibre/SFP slots, it returns <code>status: no_sfp</code> and the UI shows a clear message — it never claims “no SFP” without datasheet evidence.</li>
+      <li><span class="lbl">Nearest match.</span> When there's no exact listing, it falls back to a vendor-only search and then a generic reference model for the slot type, returning real, compatible modules (<code>status: nearest_match</code>).</li>
+    </ul>
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Pipeline</th><td><span class="mono">pipeline/sfp_recommend.py</span> — make/model gate, <span class="mono">specs_have_sfp()</span> copper-only detection, restored two-stage fallback (<span class="mono">search_sfp_vendor_only</span> + generic reference)</td></tr>
+        <tr><th>Endpoint</th><td><span class="mono">POST /api/sfp/analyze</span> now requires both vendor and model</td></tr>
+        <tr><th>Client</th><td><span class="mono">SfpAdvisor.jsx</span> — prompt / “No SFP required” / nearest-match note</td></tr>
+      </table>
+    </div>
+    <div class="note"><span class="lbl">Detection nuance:</span> the copper-only check keys on concrete optical signals (SFP, QSFP, fibre, <span class="mono">…BASE-SR/LR/LX/SX</span>, combo) — deliberately <em>not</em> the word “uplink”, since copper uplinks exist. A 10GBASE-T (copper) switch correctly reads as “no SFP required.”</div>
+  </section>
+
+  <!-- 9 -->
+  <section id="release">
+    <div class="sec-eyebrow">09 — Release</div>
+    <h2>Release, versions &amp; builds</h2>
+    <div class="rel">
+      <div class="card"><h4>Pulled fix</h4><p>Report download now opens the real server-rendered <span class="mono">PDF</span> (<span class="mono">format=pdf</span>) instead of the browser converter. (commit <span class="mono">8677836</span>)</p></div>
+      <div class="card"><h4>Versions</h4><p>iOS build <b>10 → 11</b> · Android versionCode <b>1 → 11</b> — so Firebase treats it as a new release and notifies testers.</p></div>
+      <div class="card"><h4>iOS</h4><p><span class="ok">✓ IPA built</span> → <span class="mono">client/build/ipa/App.ipa</span>. Local build only; upload to TestFlight via Transporter.</p></div>
+      <div class="card"><h4>Android</h4><p><span class="ok">✓ Shipped</span> — APK built and distributed to the <b>testers</b> group via Firebase App Distribution; testers notified.</p></div>
+    </div>
+  </section>
+
+  <!-- deploy -->
+  <section id="deploy">
+    <div class="sec-eyebrow">— To go fully live</div>
+    <h2>Deployment steps</h2>
+    <ol class="steps">
+      <li>On the <b>Windows GPU server</b>: <code>git pull</code> and restart the Node backend. The pipeline and server changes — cable enrichment, the active-learning stores, the SFP logic, and the report-PDF fix — take effect on worker/server start.</li>
+      <li>Upload the iOS <code>App.ipa</code> to <b>TestFlight</b> (Transporter) so iOS testers receive build 11. (Android testers are already notified.)</li>
+    </ol>
+    <div class="note warn"><span class="lbl">Note:</span> the ServiceNow inter-rack CMDB push and any live-CMDB features only run if <span class="mono">SN_INSTANCE</span> / <span class="mono">SN_USER</span> / <span class="mono">SN_PASSWORD</span> are configured on the server. All in-app views work regardless.</div>
+  </section>
+
+  <footer>
+    RackTrack — Build 11 technical summary · Generated July 15, 2026 · <span class="mono">docs/features/build-11-changelog.html</span>
+  </footer>
+
+</div>
+</body>
+</html>

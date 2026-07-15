@@ -3614,22 +3614,31 @@ function readMemberTopo(rackId) {
 // aggregation/core switch, then the top-most in-rack switches. Only a few of
 // these ever cross to the neighbour — the rest of each switch's ports stay
 // wired inside its own rack (those edges live in the rack's own topology.json).
-function _uplinkPorts(topo, max = 4) {
+// The switch endpoints in a rack that cross-rack cables attach to. Prefers the
+// REAL in-rack switches (so cables originate from actual devices inside the
+// rack, at their real U-heights) over the out-of-rack aggregation box. Each
+// endpoint carries its u_position/u_size so the 3D view can anchor the cable to
+// that switch's exact height. Up to 2 uplink ports per switch → redundant runs.
+function _uplinkPorts(topo, max = 6) {
   if (!topo || !Array.isArray(topo.devices)) return [];
   const switches = topo.devices.filter(d => d.class === 'switch');
   if (!switches.length) return [];
-  const ordered = switches.slice().sort((a, b) => {
-    const ax = a.in_rack === false ? 1 : 0, bx = b.in_rack === false ? 1 : 0;
-    if (ax !== bx) return bx - ax;                     // aggregation/core first
-    return (b.u_position || 0) - (a.u_position || 0);  // then highest-mounted
-  });
+  const inRack = switches.filter(d => d.in_rack !== false && d.u_position != null);
+  // In-rack switches, top-of-rack first; fall back to any switch if none are racked.
+  const ordered = (inRack.length ? inRack : switches).slice().sort((a, b) =>
+    (b.u_position || 0) - (a.u_position || 0));
   const eps = [];
   for (const sw of ordered) {
     const role = sw.in_rack === false ? 'core' : 'tor';
     const ups  = (sw.ports || []).filter(p => p.is_uplink);
-    const pool = ups.length ? ups : (sw.ports || []);
+    const pool = (ups.length ? ups : (sw.ports || [])).slice(0, 2);  // ≤2 ports/switch
     for (const p of pool) {
-      eps.push({ device: sw.name, port: p.label || p.name, role, model: sw.model || null });
+      eps.push({
+        device: sw.name, port: p.label || p.name, role, model: sw.model || null,
+        u_position: sw.u_position ?? null,
+        u_size: sw.u_size || 1,
+        in_rack: sw.in_rack !== false,
+      });
       if (eps.length >= max) return eps;
     }
   }
@@ -3646,9 +3655,12 @@ function _hashInt(str) {
 
 const _LINK_ROLES = ['Primary uplink', 'Redundant uplink', 'Cross-connect', 'Backup link'];
 
-// Synthesize a realistic HANDFUL of rack-to-rack cables (not a one-to-one mesh):
-// 2–3 uplinks per adjacent pair — core↔core redundant fibers plus the odd
-// ToR→neighbour-core link — mirroring how real rows are cabled.
+// Synthesize a realistic set of rack-to-rack cables — one per in-rack switch
+// pair (each rack's switches uplink to the neighbour's), plus a redundant run
+// on the primary pair. NOT a one-to-one mesh: most cabling stays inside each
+// rack (drawn from that rack's own topology); these are only the few links that
+// cross. Endpoints carry u_position so the 3D view anchors each cable to the
+// actual switch inside the rack, not a floating box on top.
 function deriveInterRackLinks(members) {
   const withTopo = members
     .map(m => ({ ...m, topo: readMemberTopo(m.rack_id) }))
@@ -3658,18 +3670,24 @@ function deriveInterRackLinks(members) {
     const A = withTopo[i], B = withTopo[i + 1];
     const ea = _uplinkPorts(A.topo), eb = _uplinkPorts(B.topo);
     if (!ea.length || !eb.length) continue;
-    // 2 or 3 cross-rack cables, decided deterministically from the rack pair.
-    const want = 2 + (_hashInt(A.rack_id + B.rack_id) % 2);
-    const n = Math.min(want, ea.length, eb.length);
+    // One cross-rack cable per switch pair, +1 redundant on the primary pair;
+    // capped so a dense rack doesn't produce a mesh.
+    const pairs = Math.min(ea.length, eb.length);
+    const n = Math.min(pairs + 1, 5);
     for (let k = 0; k < n; k++) {
-      const s = ea[k], d = eb[k];
+      // k == pairs → the redundant run: reuse switch 0 with its 2nd uplink port.
+      const si = k < pairs ? k : 0;
+      const s = ea[si], d = eb[si];
+      const redundant = k >= pairs;
       links.push({
         cable_id:   `IRL-${A.rack_id.replace(/^RK-/, '')}-${B.rack_id.replace(/^RK-/, '')}-${k + 1}`,
-        cable_type: (s.role === 'core' && d.role === 'core') ? 'fiber' : 'dac',
-        role:       _LINK_ROLES[k] || 'Uplink',
+        cable_type: (s.role === 'core' || d.role === 'core') ? 'fiber' : 'dac',
+        role:       redundant ? 'Redundant uplink' : (_LINK_ROLES[k] || `Uplink ${k + 1}`),
         synthetic:  true,
-        src: { rackId: A.rack_id, position: A.position, label: A.label, device: s.device, port: s.port, endRole: s.role },
-        dst: { rackId: B.rack_id, position: B.position, label: B.label, device: d.device, port: d.port, endRole: d.role },
+        src: { rackId: A.rack_id, position: A.position, label: A.label, device: s.device,
+               port: s.port, endRole: s.role, u_position: s.u_position, u_size: s.u_size, in_rack: s.in_rack },
+        dst: { rackId: B.rack_id, position: B.position, label: B.label, device: d.device,
+               port: d.port, endRole: d.role, u_position: d.u_position, u_size: d.u_size, in_rack: d.in_rack },
       });
     }
   }
