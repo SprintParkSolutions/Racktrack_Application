@@ -514,6 +514,8 @@ def handle_pipeline(req):
     ]
     if req.get("command") == "analyze":
         argv.append("--detect_only")
+    elif req.get("command") == "enrich_cables":
+        argv.append("--enrich_cables")
     elif req.get("command") == "select":
         argv += ["--device_index", str(req["device_index"]),
                  "--port", str(req["port"])]
@@ -774,7 +776,7 @@ def handle_request(req):
         return handle_proactive_refresh(req)
     if command == "post_work_note":
         return handle_post_work_note(req)
-    if command in ("analyze", "select"):
+    if command in ("analyze", "select", "enrich_cables"):
         return handle_pipeline(req)
     return {"ok": False, "error": f"Unknown command: {command}"}
 

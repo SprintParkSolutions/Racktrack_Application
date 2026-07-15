@@ -8,7 +8,7 @@
   position: relative;
   display: flex; flex-direction: column;
   gap: 14px;
-  min-height: 100dvh;
+  min-height: 100vh;
   padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
   background: #ffffff;
 }

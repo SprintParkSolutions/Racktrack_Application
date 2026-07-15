@@ -5,10 +5,9 @@ const API_BASE = import.meta.env.VITE_API_BASE || '';
 const APP_KEY  = import.meta.env.VITE_APP_KEY  || '';
 
 // Append ?app_key=... to a URL so the server's app-key gate accepts it.
-// fetch() requests already get the X-App-Key header via the global interceptor
-// in main.jsx, but <img>/<video>/<a download> URLs bypass that — they need the
-// key in the query string. We append on every URL so a single path works for
-// both fetches and tag-driven media loads.
+// The key rides in the query string rather than a header because <img>/<video>/
+// <a download> URLs can't carry custom headers. Appending on every URL means a
+// single code path works for both fetches and tag-driven media loads.
 function withAppKey(url) {
   if (!APP_KEY) return url;
   const sep = url.includes('?') ? '&' : '?';
@@ -19,6 +18,41 @@ export function apiUrl(path) {
   if (!path) return path;
   if (/^https?:\/\//i.test(path)) return withAppKey(path); // already absolute
   return withAppKey(API_BASE + path);
+}
+
+// Free ngrok tunnels serve an HTML interstitial ("You are about to visit...")
+// instead of the real response to clients that look like a browser — which a
+// Capacitor WebView does. Any request carrying this header skips it. Scoped to
+// our own backend so third-party fetches are untouched (a custom header on a
+// cross-origin request forces a CORS preflight).
+//
+// Harmless once off ngrok: the header is simply ignored by any other host.
+export function installFetchInterceptor() {
+  if (typeof window === 'undefined' || window.__rtFetchPatched) return;
+  window.__rtFetchPatched = true;
+
+  const nativeFetch = window.fetch.bind(window);
+
+  const isOurBackend = (url) => {
+    const u = String(url);
+    if (!/^https?:\/\//i.test(u)) return true;        // relative → same origin
+    return API_BASE ? u.startsWith(API_BASE) : false; // absolute → only our API
+  };
+
+  window.fetch = (input, init = {}) => {
+    const url = input instanceof Request ? input.url : input;
+    if (!isOurBackend(url)) return nativeFetch(input, init);
+
+    // A Request's headers live on the Request, not on init.
+    if (input instanceof Request) {
+      const headers = new Headers(input.headers);
+      headers.set('ngrok-skip-browser-warning', 'true');
+      return nativeFetch(new Request(input, { headers }), init);
+    }
+    const headers = new Headers(init.headers || {});
+    headers.set('ngrok-skip-browser-warning', 'true');
+    return nativeFetch(input, { ...init, headers });
+  };
 }
 
 // Wrapper around fetch that automatically attaches the auth Bearer token

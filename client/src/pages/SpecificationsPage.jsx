@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSmartBack } from '../hooks/useSmartBack';
 import styles from './SpecificationsPage.module.css';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { apiUrl, authFetch } from '../utils/api';
@@ -44,6 +45,7 @@ function pickHighlights(specs, max = 5) {
 
 export default function SpecificationsPage() {
   const navigate = useNavigate();
+  const goBack = useSmartBack();
   const location = useLocation();
   const deviceClass = location.state?.deviceClass || null;
   const [vendor, setVendor] = useState('');
@@ -128,7 +130,7 @@ export default function SpecificationsPage() {
       <header className={styles.header}>
         <button
           className={styles.backBtn}
-          onClick={() => navigate(-1)}
+          onClick={() => goBack()}
           aria-label="Back"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

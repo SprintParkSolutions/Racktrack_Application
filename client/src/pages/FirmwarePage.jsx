@@ -1,68 +1,43 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSmartBack } from '../hooks/useSmartBack';
 import styles from './FirmwarePage.module.css';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 
-const SEVERITY_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, NONE: 4 };
-
 // Plain-English headline + body for the summary card. Keeps the
-// "what should I do" answer above the fold; raw CVE/changelog detail
+// "what should I do" answer above the fold; the changelog detail
 // is hidden behind the "Show details" toggle.
-function buildSummary(result, sortedCves) {
+function buildSummary(result) {
   if (!result || !result.ok) return null;
   const cur = result.currentVersion;
   const latest = result.latestVersion;
-  const counts = sortedCves.reduce((acc, c) => {
-    const sev = (c.severity || 'NONE').toUpperCase();
-    acc[sev] = (acc[sev] || 0) + 1;
-    return acc;
-  }, {});
-  const critical = counts.CRITICAL || 0;
-  const high = counts.HIGH || 0;
-  const totalCves = sortedCves.length;
-  const matches = sortedCves.filter(c => c.matchesCurrentVersion).length;
 
   let tone = 'neutral';
   let headline = '';
   let body = '';
 
   if (result.upToDate === true) {
-    tone = totalCves > 0 ? 'warn' : 'ok';
+    tone = 'ok';
     headline = "You're up to date.";
-    body = totalCves === 0
-      ? `No known security issues found for ${result.vendor} ${result.model}.`
-      : `You're on the latest version (${cur}), but we found ${totalCves} known security ${totalCves === 1 ? 'issue' : 'issues'} for this product.`;
+    body = `${result.vendor} ${result.model} is on the latest version we can see (${cur}).`;
   } else if (result.upToDate === false) {
-    tone = critical > 0 || high > 0 ? 'critical' : 'warn';
-    headline = critical > 0
-      ? "Upgrade strongly recommended."
-      : "An upgrade is available.";
-    const verPart = `Latest is ${latest}, you're on ${cur}.`;
-    const cvePart = totalCves === 0
-      ? "No known security issues were reported for this product."
-      : `${totalCves} known security ${totalCves === 1 ? 'issue' : 'issues'} were reported${
-          (critical + high) > 0
-            ? ` (${critical} critical, ${high} high)`
-            : ''
-        }${matches > 0 ? `, and ${matches} mentions your version directly` : ''}.`;
-    body = `${verPart} ${cvePart}`;
+    tone = 'warn';
+    headline = 'An upgrade is available.';
+    body = `Latest is ${latest}, you're on ${cur}. Check the release notes to see what changed before you upgrade.`;
   } else {
-    tone = totalCves > 0 ? 'warn' : 'neutral';
+    tone = 'neutral';
     headline = "We couldn't confirm the latest version.";
-    const verPart = latest
+    body = latest
       ? `The newest version we saw was ${latest}, but we couldn't compare it to ${cur}.`
-      : `The vendor's site didn't show a clear latest version.`;
-    const cvePart = totalCves === 0
-      ? ' No known security issues were reported.'
-      : ` We did find ${totalCves} reported security ${totalCves === 1 ? 'issue' : 'issues'} for this product.`;
-    body = verPart + cvePart;
+      : "The vendor's site didn't show a clear latest version. Check the vendor's site yourself — this is not the same as being up to date.";
   }
-  return { tone, headline, body, totalCves, critical, high };
+  return { tone, headline, body };
 }
 
 export default function FirmwarePage() {
   const navigate = useNavigate();
+  const goBack = useSmartBack();
   const location = useLocation();
   const deviceClass = location.state?.deviceClass || null;
 
@@ -100,17 +75,7 @@ export default function FirmwarePage() {
       .slice(0, 6);
   }, [vendor, vendorList]);
 
-  const sortedCves = useMemo(() => {
-    const cves = result?.cves || [];
-    return [...cves].sort((a, b) => {
-      const sa = SEVERITY_ORDER[(a.severity || 'NONE').toUpperCase()] ?? 5;
-      const sb = SEVERITY_ORDER[(b.severity || 'NONE').toUpperCase()] ?? 5;
-      if (sa !== sb) return sa - sb;
-      return (b.score || 0) - (a.score || 0);
-    });
-  }, [result]);
-
-  const summary = useMemo(() => buildSummary(result, sortedCves), [result, sortedCves]);
+  const summary = useMemo(() => buildSummary(result), [result]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -160,7 +125,7 @@ export default function FirmwarePage() {
       <header className={styles.header}>
         <button
           className={styles.backBtn}
-          onClick={() => navigate(-1)}
+          onClick={() => goBack()}
           aria-label="Back"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -174,14 +139,14 @@ export default function FirmwarePage() {
 
       <section className={styles.intro}>
         <p className={styles.eyebrow}>
-          Version & known issues{deviceClass ? ` · ${deviceClass}` : ''}
+          Version check{deviceClass ? ` · ${deviceClass}` : ''}
         </p>
         <h2 className={styles.h2}>
-          Check what's broken in your version — and what's new in the next.
+          Check whether you're on the latest version — and what's new in it.
         </h2>
         <p className={styles.sub}>
-          We scrape the vendor's release notes and look up CVEs from the
-          NIST National Vulnerability Database.
+          We look up the newest firmware for your model and scrape the vendor's
+          release notes so you can see what changed.
         </p>
       </section>
 
@@ -326,8 +291,8 @@ export default function FirmwarePage() {
 
                 {/* When we couldn't detect a latest version, give the user
                     direct search links so they have a one-click path to
-                    find the current firmware on the vendor's site / NVD /
-                    Google instead of a dead-end "unknown". */}
+                    find the current firmware on the vendor's site instead of
+                    a dead-end "unknown". */}
                 {!result.latestVersion && (() => {
                   const v = result.vendor || vendor;
                   const m = result.model || model;
@@ -340,10 +305,6 @@ export default function FirmwarePage() {
                       url: `https://www.google.com/search?q=site:${encodeURIComponent(
                         new URL(result.vendorUrl).hostname.replace(/^www\./, '')
                       )}+${encodeURIComponent(`${m} release notes`)}`,
-                    },
-                    {
-                      label: 'NVD CVEs',
-                      url: `https://nvd.nist.gov/vuln/search/results?form_type=Basic&query=${encodeURIComponent(`${v} ${m}`)}`,
                     },
                     {
                       label: 'Google search',
@@ -371,51 +332,6 @@ export default function FirmwarePage() {
                     </div>
                   );
                 })()}
-              </section>
-
-              {/* CVEs */}
-              <section className={styles.section}>
-                <div className={styles.sectionHead}>
-                  <h3 className={styles.sectionTitle}>
-                    Known vulnerabilities
-                    <span className={styles.count}>{sortedCves.length}</span>
-                  </h3>
-                  <span className={styles.sectionSub}>
-                    from NIST NVD · keywords <code>{result.cvesKeywords || '—'}</code>
-                  </span>
-                </div>
-                {sortedCves.length === 0 ? (
-                  <p className={styles.empty}>
-                    No CVEs returned for this product/version. NVD's keyword search
-                    may not cover every model — check the vendor's security advisories
-                    directly for the most accurate picture.
-                  </p>
-                ) : (
-                  <ul className={styles.cveList}>
-                    {sortedCves.map(c => (
-                      <li key={c.id} className={styles.cveItem}>
-                        <div className={styles.cveHead}>
-                          <a
-                            className={styles.cveId}
-                            href={c.url}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                          >
-                            {c.id}
-                          </a>
-                          <span className={`${styles.sevPill} ${styles[`sev${(c.severity || 'NONE').toUpperCase()}`] || ''}`}>
-                            {c.severity || 'unrated'}
-                            {c.score != null ? ` · ${c.score}` : ''}
-                          </span>
-                          {c.matchesCurrentVersion && (
-                            <span className={styles.matchPill}>mentions your version</span>
-                          )}
-                        </div>
-                        <p className={styles.cveDesc}>{c.description}</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </section>
 
               {/* Changelog snippets */}

@@ -995,8 +995,10 @@
 }
 .viewBtnActive,
 :global([data-theme='light']) .viewBtnActive {
-  background: var(--md-surface-container-lowest) !important;
-  color: var(--md-on-surface) !important;
+  /* Solid inverted fill so the selected mode is unmistakable: dark pill +
+     light text on a light bar, and the reverse in dark mode. */
+  background: var(--md-on-surface) !important;
+  color: var(--md-surface-container-lowest) !important;
   border: 1px solid var(--md-on-surface) !important;
   box-shadow: none !important;
   filter: none !important;

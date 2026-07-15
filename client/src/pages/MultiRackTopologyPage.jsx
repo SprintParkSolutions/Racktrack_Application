@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, Environment, Grid } from '@react-three/drei';
+import { OrbitControls, Environment, Grid, Line } from '@react-three/drei';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './MultiRackTopologyPage.module.css';
 
@@ -26,6 +26,12 @@ let _topoModule = null;
 async function loadTopoModule() {
   if (!_topoModule) _topoModule = await import('./TopologyScene3D.jsx');
   return _topoModule;
+}
+
+// Friendly rack label ("Rack 1" / "#2") for an inter-rack link endpoint.
+function labelForRack(placed, rackId) {
+  const p = placed.find(x => x.member.rack_id === rackId);
+  return p ? (p.member.label || `Rack ${p.member.position}`) : rackId;
 }
 
 // Live theme palette hook — same source TopologyScene3D uses internally.
@@ -75,6 +81,7 @@ export default function MultiRackTopologyPage() {
 
   const [group, setGroup] = useState(null);
   const [topos, setTopos] = useState({});  // rackId → topo JSON
+  const [links, setLinks] = useState([]);  // synthesized inter-rack uplinks
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
   // Per-rack selection so highlights stay scoped to one rack
@@ -118,6 +125,13 @@ export default function MultiRackTopologyPage() {
         if (!alive) return;
         setTopos(topoMap);
         setErrors(errMap);
+
+        // Synthesized rack-to-rack uplinks (a realistic handful, not a mesh).
+        try {
+          const lRes = await authFetch(apiUrl(`/api/rack-group/${encodeURIComponent(groupId)}/links`));
+          const lJson = await lRes.json().catch(() => ({}));
+          if (alive && lRes.ok && Array.isArray(lJson.links)) setLinks(lJson.links);
+        } catch (_) { /* non-fatal — racks still render without cross links */ }
       } catch (e) {
         if (alive) setErrors({ __group: e.message });
       } finally {
@@ -188,6 +202,8 @@ export default function MultiRackTopologyPage() {
       camDistBound,
       floorY,
       targetY,
+      U_HEIGHT,
+      DEV_WIDTH,
     };
   }, [layoutConsts, members, topos]);
 
@@ -241,6 +257,7 @@ export default function MultiRackTopologyPage() {
           <Suspense fallback={<div className={styles.spinner}>Rendering scene…</div>}>
             {palette && (
               <SharedScene layout={layout} palette={palette}
+                links={links}
                 selectedByRack={selectedByRack}
                 setSelectedByRack={setSelectedByRack} />
             )}
@@ -263,16 +280,52 @@ export default function MultiRackTopologyPage() {
             </button>
           ))}
         </div>
+
+        {/* Inter-rack connections — the cables that cross between racks. Most
+            cabling stays inside each rack; only these few uplinks span racks. */}
+        {links.length > 0 && (
+          <div className={styles.linksPanel}>
+            <div className={styles.linksHead}>
+              <span className={styles.linksTitle}>Inter-rack connections</span>
+              <span className={styles.linksCount}>{links.length} cross-rack cable{links.length === 1 ? '' : 's'}</span>
+            </div>
+            <div className={styles.linksList}>
+              {links.map((l, i) => (
+                <div key={l.cable_id || i} className={styles.linkRow}>
+                  <span className={`${styles.cableDot} ${l.cable_type === 'fiber' ? styles.dotFiber : styles.dotDac}`} />
+                  <span className={styles.linkRole}>{l.role || 'Uplink'}</span>
+                  <span className={styles.linkEnd}>
+                    <b>{labelForRack(layout.placed, l.src?.rackId)}</b> · {l.src?.device}
+                    <code>{l.src?.port}</code>
+                  </span>
+                  <span className={styles.linkArrow}>⇄</span>
+                  <span className={styles.linkEnd}>
+                    <b>{labelForRack(layout.placed, l.dst?.rackId)}</b> · {l.dst?.device}
+                    <code>{l.dst?.port}</code>
+                  </span>
+                  <span className={styles.linkType}>{(l.cable_type || '').toUpperCase()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
 }
 
-function SharedScene({ layout, palette, selectedByRack, setSelectedByRack }) {
-  const { placed, maxChassisU, camDistBound, sceneW, sceneH, floorY, targetY } = layout;
+function SharedScene({ layout, palette, links = [], selectedByRack, setSelectedByRack }) {
+  const { placed, maxChassisU, camDistBound, sceneW, sceneH, floorY, targetY, U_HEIGHT, DEV_WIDTH } = layout;
   const fogNear = Math.max(camDistBound * 1.20, 40);
   const fogFar  = Math.max(camDistBound * 3.0,  150);
   const gridFade = Math.max(camDistBound * 2.2, sceneW * 2.0, 80);
+
+  // Map rackId → its placement so an inter-rack link can find both endpoints.
+  const placeById = useMemo(() => {
+    const m = {};
+    placed.forEach(p => { m[p.member.rack_id] = p; });
+    return m;
+  }, [placed]);
 
   return (
     <Canvas
@@ -302,6 +355,14 @@ function SharedScene({ layout, palette, selectedByRack, setSelectedByRack }) {
           }
         />
       ))}
+      <InterRackCables
+        links={links}
+        placeById={placeById}
+        floorY={floorY}
+        U_HEIGHT={U_HEIGHT}
+        DEV_WIDTH={DEV_WIDTH}
+        palette={palette}
+      />
       <OrbitControls
         target={[0, targetY, 0]}
         enablePan
@@ -403,6 +464,72 @@ function SceneFloor({ chassisU, fadeDistance = 60, palette }) {
         infiniteGrid
         followCamera={false}
       />
+    </group>
+  );
+}
+
+// Draws the synthesized rack-to-rack uplinks as arcing overhead cables between
+// the tops of the two racks — the visible "connection between racks". Each
+// rack's own intra-rack cabling is drawn by its RackBundle; these are only the
+// few links that cross. Fiber = amber, DAC/copper = cyan.
+function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, palette }) {
+  const cables = useMemo(() => {
+    if (!links?.length) return [];
+    const hw = (DEV_WIDTH || 1) * 0.42;
+    // Per-pair index so multiple cables between the same two racks fan out
+    // instead of overlapping into one line.
+    const pairSeen = {};
+    const out = [];
+    links.forEach((lnk, i) => {
+      const a = placeById[lnk.src?.rackId];
+      const b = placeById[lnk.dst?.rackId];
+      if (!a || !b) return;
+      const pairKey = [lnk.src.rackId, lnk.dst.rackId].sort().join('|');
+      const k = pairSeen[pairKey] = (pairSeen[pairKey] ?? -1) + 1;
+
+      const leftIsA = a.xOffset <= b.xOffset;
+      const L = leftIsA ? a : b, R = leftIsA ? b : a;
+      const topL = floorY + 0.4 + (L.chassisU || 1) * U_HEIGHT;
+      const topR = floorY + 0.4 + (R.chassisU || 1) * U_HEIGHT;
+
+      const lift = 0.55 + (k % 3) * 0.30;
+      const z    = 0.30 + (k % 3) * 0.14;
+      const start = [L.xOffset + hw, topL + 0.05, z];
+      const end   = [R.xOffset - hw, topR + 0.05, z];
+      const mid   = [(start[0] + end[0]) / 2, Math.max(topL, topR) + lift, z + 0.12];
+
+      const pts = [];
+      const N = 26;
+      for (let t = 0; t <= N; t++) {
+        const u = t / N, iu = 1 - u;
+        pts.push([
+          iu * iu * start[0] + 2 * iu * u * mid[0] + u * u * end[0],
+          iu * iu * start[1] + 2 * iu * u * mid[1] + u * u * end[1],
+          iu * iu * start[2] + 2 * iu * u * mid[2] + u * u * end[2],
+        ]);
+      }
+      const color = lnk.cable_type === 'fiber' ? '#f2c94c' : '#38bdf8';
+      out.push({ key: lnk.cable_id || `irl-${i}`, pts, color });
+    });
+    return out;
+  }, [links, placeById, floorY, U_HEIGHT, DEV_WIDTH]);
+
+  if (!cables.length) return null;
+  return (
+    <group>
+      {cables.map(c => (
+        <group key={c.key}>
+          <Line points={c.pts} color={c.color} lineWidth={2.6} transparent opacity={0.96} />
+          <mesh position={c.pts[0]}>
+            <sphereGeometry args={[0.05, 12, 12]} />
+            <meshStandardMaterial color={c.color} emissive={c.color} emissiveIntensity={0.6} />
+          </mesh>
+          <mesh position={c.pts[c.pts.length - 1]}>
+            <sphereGeometry args={[0.05, 12, 12]} />
+            <meshStandardMaterial color={c.color} emissive={c.color} emissiveIntensity={0.6} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }

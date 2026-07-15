@@ -7,7 +7,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --max-warnings=99999",
-    "format": "prettier --write \"src/**/*.{js,jsx,css}\""
+    "format": "prettier --write \"src/**/*.{js,jsx,css}\"",
+    "build:mobile": "node scripts/check-api-base.mjs && vite build",
+    "sync:ios": "npm run build:mobile && npx cap sync ios"
   },
   "engines": {
     "node": ">=18"

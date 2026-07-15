@@ -58,10 +58,9 @@
 .brandMark {
   width: 36px; height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #000000 0%, #000000 100%);
-  display: inline-flex; align-items: center; justify-content: center;
-  font-weight: 800; color: #ffffff;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.28);
 }
 .navLinks {
   display: inline-flex; align-items: center; gap: 8px;

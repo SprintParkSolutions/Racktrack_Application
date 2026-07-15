@@ -40,7 +40,7 @@ from concurrent.futures import TimeoutError as _FuturesTimeoutError
 # Default to the spreadsheet shipped with the repo.
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
-DEFAULT_EXCEL = os.path.join(_PROJECT_ROOT, r"H:\SERVICENOW\SERVICENOW\dark_mobile\Switch_Vendors_Websites.xlsx")
+DEFAULT_EXCEL = os.path.join(_PROJECT_ROOT, "Switch_Vendors_Websites.xlsx")
 
 
 # ─────────────────────────────────────────────

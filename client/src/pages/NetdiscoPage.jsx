@@ -220,6 +220,17 @@ function NetdiscoInner({ rackId, embedded }) {
               ))}
             </div>
           )}
+
+          {/* Reachable, done loading, but nothing to show — say so instead of
+              rendering a blank panel. Covers both "no matches at all" and
+              "everything found was a patch panel (filtered out above)". */}
+          {match && match.netdisco_reachable !== false && !matchLoading && !matchError &&
+            (match.matches || []).filter(m => m.scan.class_name !== 'Patch Panel').length === 0 && (
+            <div className={styles.warn}>
+              <strong>No switches detected</strong>
+              <br />No network switches were found for this rack yet. When one is discovered it will appear here.
+            </div>
+          )}
         </section>
 
 

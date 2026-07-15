@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSmartBack } from '../hooks/useSmartBack';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './PortHistoryPage.module.css';
 
@@ -227,11 +228,12 @@ export function PortHistoryContent() {
 
 export default function PortHistoryPage() {
   const navigate = useNavigate();
+  const goBack = useSmartBack();
   return (
     <div className={styles.page}>
       <div className={styles.amb} aria-hidden />
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Back">‹</button>
+        <button className={styles.backBtn} onClick={() => goBack()} aria-label="Back">‹</button>
         <div className={styles.headerCenter}>
           <h1 className={styles.headerTitle}>Port history &amp; drift</h1>
           <p className={styles.headerSub}>Continuous SSH telemetry</p>

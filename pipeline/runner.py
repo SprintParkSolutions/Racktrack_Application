@@ -104,6 +104,81 @@ def save_unit_device_report(path, lines):
             f.write(line + "\n")
 
 
+def enrich_cables_on_map(img, output_dir, cable_model_path):
+    """Classify the cable on every CONNECTED port of an already-analyzed rack
+    and write cable_type / cable_connector / cable_color / cable_confidence
+    back into device_unit_map.json.
+
+    Reuses the same recipe the single-port /api/select path uses: crop the
+    port box enlarged to ~4× (connector + a chunk of cable body) out of the
+    device crop, run the cable classifier, parse into connector + colour.
+    Idempotent — re-running just recomputes the same fields.
+    """
+    json_path = os.path.join(output_dir, "device_unit_map.json")
+    if not os.path.exists(json_path):
+        print(f"[enrich_cables] no device_unit_map.json at {json_path}; nothing to do")
+        return
+    if not cable_model_path:
+        print("[enrich_cables] no cable_classifier configured; skipping")
+        return
+
+    with open(json_path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    cable_model = load_cable_model(cable_model_path, device="cpu")
+    devices = payload.get("devices") or []
+
+    def _classify_port(dev_crop, port):
+        box = port.get("box")
+        if not box or len(box) != 4:
+            return False
+        bx1, by1, bx2, by2 = [int(v) for v in box]
+        box_w = max(1, bx2 - bx1)
+        box_h = max(1, by2 - by1)
+        crop = crop_box(dev_crop, [bx1, by1, bx2, by2],
+                        pad_x=(box_w * 3) // 2, pad_y=(box_h * 3) // 2)
+        if crop is None or crop.size == 0:
+            return False
+        cable_class, cable_conf = classify_cable(crop, cable_model)
+        connector, color = parse_cable_type_color(cable_class)
+        port["cable_type"] = cable_class
+        port["cable_connector"] = connector
+        port["cable_color"] = color
+        port["cable_confidence"] = float(cable_conf)
+        return True
+
+    enriched = 0
+    for dev in devices:
+        # Any occupied port can carry a cable — RJ45 on main, fiber (LC/SC) on
+        # SFP. Console/other rarely, but classify whatever reads 'connected'.
+        port_lists = ["ports", "sfp_ports", "other_ports"]
+        has_connected = any(
+            p.get("status") == "connected"
+            for lst in port_lists for p in (dev.get(lst) or [])
+        )
+        if not has_connected:
+            continue
+        try:
+            dev_crop, _ = crop_device_with_origin(img, dev["box"])
+        except Exception:
+            continue
+        for lst in port_lists:
+            for port in (dev.get(lst) or []):
+                if port.get("status") == "connected":
+                    if _classify_port(dev_crop, port):
+                        enriched += 1
+        # connected_ports is a snapshot list — rebuild it so it carries the
+        # freshly-attached cable_* fields too.
+        dev["connected_ports"] = [
+            p for p in (dev.get("ports") or []) if p.get("status") == "connected"
+        ]
+
+    payload["cables_enriched"] = True
+    save_json(json_path, payload)
+    print(f"[enrich_cables] classified cable on {enriched} connected port(s) "
+          f"across {len(devices)} device(s); saved {json_path}")
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Run rack unit and device detection, then highlight ports.")
     parser.add_argument("--image", required=True, help="Input rack image path.")
@@ -120,6 +195,11 @@ def parse_args():
     parser.add_argument("--ports_conf", type=float, help="Confidence threshold for port detection.")
     parser.add_argument("--detect_only", action="store_true",
                         help="Run detection and annotation only; skip device and port selection.")
+    parser.add_argument("--enrich_cables", action="store_true",
+                        help="Post-analyze pass: classify the cable (type + colour) on every "
+                             "connected port in an existing device_unit_map.json and write the "
+                             "cable_* fields back. Runs no detection; meant to be scheduled in "
+                             "the background right after analyze.")
     parser.add_argument("--org_id", default=None,
                         help="Organization id for org-scoped active-learning (cable) lookups.")
     parser.add_argument("--target_count", type=int, default=0,
@@ -195,6 +275,17 @@ def main():
     img = cv2.imread(args.image)
     if img is None:
         raise FileNotFoundError(f"Unable to open input image: {args.image}")
+
+    # ── Background cable-enrichment mode ─────────────────────────────
+    # Classify the cable (connector + colour) on every CONNECTED port of an
+    # already-analyzed rack and write the cable_* fields back into
+    # device_unit_map.json. No detection runs here — this reuses the exact
+    # same crop recipe + classifier the per-port /api/select path uses, just
+    # applied to every connected port instead of one. Scheduled in the
+    # background so the initial analyze stays fast.
+    if args.enrich_cables:
+        enrich_cables_on_map(img, output_dir, cable_model_path)
+        return
 
     img_h, img_w = img.shape[:2]
 
@@ -741,6 +832,35 @@ def main():
             port_type, port_type_conf = classify_port_type(port_crop, port_id_model)
             selected_port_info["port_type"] = port_type
             selected_port_info["port_type_confidence"] = port_type_conf
+
+        # Learned port-TYPE correction: if this port's crop matches a prior
+        # user type-tag in the org's active-learning memory, apply it. Mirrors
+        # the cable-colour learned lookup above; best-effort, any status.
+        try:
+            _org2 = getattr(args, "org_id", None)
+            if _org2 and selected_port_box is not None:
+                from pipeline.active_learning import store as _al2
+                import tempfile as _tf2mod
+                _al2.set_org(_org2)
+                _tbx1, _tby1, _tbx2, _tby2 = selected_port_box
+                _tbw = max(1, _tbx2 - _tbx1)
+                _tbh = max(1, _tby2 - _tby1)
+                _tcrop = crop_box(img, selected_port_box,
+                                  pad_x=max(2, _tbw // 4), pad_y=max(2, _tbh // 4))
+                with _tf2mod.NamedTemporaryFile(suffix=".jpg", delete=False) as _ttf:
+                    _tpath = _ttf.name
+                cv2.imwrite(_tpath, _tcrop)
+                _tmatch = _al2.find_match("port_type", _tpath)
+                try:
+                    os.unlink(_tpath)
+                except OSError:
+                    pass
+                if _tmatch and _tmatch.get("label"):
+                    selected_port_info["port_type"] = _tmatch["label"]
+                    selected_port_info["port_type_corrected"] = True
+                    print(f"  Port type set to '{_tmatch['label']}' (learned)")
+        except Exception as _e:
+            print(f"  (port-type learning lookup skipped: {_e})")
     else:
         selected_port_info["status"] = "invalid"
 

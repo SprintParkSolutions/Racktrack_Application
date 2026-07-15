@@ -56,6 +56,29 @@ except ImportError:
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 
+
+# ── Nearest-match reference models (slot-type only) ──────────
+# Used only when BOTH the model-specific search AND the vendor-only search
+# return 0 modules. These are the most-covered models on SFP retailer sites;
+# their results are all generic third-party modules compatible with any switch
+# of the same slot type. No per-vendor list — works for every vendor.
+_SLOT_GENERIC_FALLBACK = {
+    "SFP":     ("Cisco",  "WS-C2960X-24TS-L"),
+    "SFP+":    ("Cisco",  "C9300-24T"),
+    "SFP28":   ("Cisco",  "C9300-24T"),
+    "QSFP+":   ("Cisco",  "N9K-C9300-GX"),
+    "QSFP28":  ("Cisco",  "N9K-C9300-GX"),
+    "QSFP-DD": ("Arista", "DCS-7060DX4-32"),
+}
+
+
+def _get_generic_reference(slot_type):
+    """Return (ref_vendor, ref_model) for the given slot type, or None."""
+    return (
+        _SLOT_GENERIC_FALLBACK.get(slot_type)
+        or _SLOT_GENERIC_FALLBACK.get("SFP+")
+    )
+
 # ── SFP Standards (IEEE / MSA — these are physics, not "static data") ─
 SFP_STANDARDS = {
     "SFP":      {"speed": "1 Gbps",   "standard": "1000BASE-X",  "connector": "LC Duplex",   "form": "SFP"},
@@ -504,6 +527,48 @@ def search_sfp_modules(vendor, model, slot_type):
                 "snippet": (hit.get("body") or "").strip(),
             })
         # Stop once we have plenty of URLs — keeps total runtime bounded
+        if len(results) >= 18:
+            break
+    return results
+
+
+def search_sfp_vendor_only(vendor, slot_type):
+    """Vendor-only SFP search — no model number in queries.
+
+    Used as the first nearest-match fallback when the model-specific search
+    yields 0 scraped modules. Dropping the model name broadens the net to any
+    page that mentions '{vendor} compatible SFP', which is exactly the language
+    third-party optic retailers (FS.com, 10Gtek, …) use for modules that work
+    in any switch from that vendor.
+    """
+    queries = [
+        f"{vendor} compatible {slot_type} transceiver buy",
+        f"site:fs.com {slot_type} transceiver {vendor} compatible",
+        f"site:10gtek.com {slot_type} {vendor} compatible module",
+        f"{vendor} {slot_type} SFP compatible optic module price",
+        f"third-party {vendor} compatible {slot_type} SFP module 850nm 1310nm",
+    ]
+    seen = set()
+    results = []
+    for q in queries:
+        try:
+            hits = _ddg_search(q, max_results=6)
+        except Exception:
+            continue
+        for hit in hits:
+            url = (hit.get("href") or hit.get("url") or "").strip()
+            if not url or url in seen:
+                continue
+            if re.search(r"reddit\.com|youtube\.com|wikipedia\.org|forum\.|"
+                         r"community\.|discuss\.|stackoverflow\.|quora\.com",
+                         url, re.I):
+                continue
+            seen.add(url)
+            results.append({
+                "url": url,
+                "title": (hit.get("title") or "").strip(),
+                "snippet": (hit.get("body") or "").strip(),
+            })
         if len(results) >= 18:
             break
     return results
@@ -1022,8 +1087,47 @@ def _parse_module_text(text, source_url=""):
 
 # ── Step 4: Assemble the recommendation ──────────────────────
 
-def recommend(vendor, model, interfaces=None):
+# Any of these anywhere in the datasheet text means the switch HAS optical /
+# uplink capability. If real specs are present and NONE of these appear, the
+# switch is copper-only → no SFP transceiver is required.
+# Concrete optical/SFP signals only. Deliberately NOT "uplink" (copper uplinks
+# exist) and NOT bare speed hints — a fiber PHY standard must specify an optical
+# medium (…BASE-SR/LR/LX/SX/ER/CX), so 1000BASE-T / 10GBASE-T (copper) don't
+# count. "combo" means an SFP+RJ45 combo port, so it does count.
+_SFP_PRESENCE_RE = re.compile(
+    r"(sfp|qsfp|transceiver|fibre|fiber|optical|combo|mini-?gbic|gbic|xfp|"
+    r"1000base-?[lsx]|10gbase-?[lsce]r?|25gbase-?[lsce]r|"
+    r"40gbase-?[lsce]r|100gbase-?[lsce]r)",
+    re.I,
+)
+
+
+def specs_have_sfp(specs):
+    """True if the datasheet mentions any SFP/fiber/uplink capability, False if
+    it has specs but none, None if there are no specs to judge from."""
+    if not specs:
+        return None
+    text = " ".join(f"{k} {v}" for k, v in specs.items())
+    return bool(_SFP_PRESENCE_RE.search(text))
+
+
+def _is_blank_id(s):
+    return not s or str(s).strip().lower() in ("", "unknown", "n/a", "none", "-")
+
+
+def recommend(vendor, model, interfaces=None, _is_fallback=False):
     """Full dynamic recommendation pipeline."""
+    # Make AND model are both required to identify the switch. Without both we
+    # advise nothing — the UI shows a "add make & model" prompt instead of a
+    # misleading generic recommendation.
+    if _is_blank_id(vendor) or _is_blank_id(model):
+        return {
+            "ok": True, "status": "need_make_model",
+            "vendor": vendor, "model": model,
+            "message": "Add the switch make and model to get SFP advice.",
+            "modules": [], "cables": [], "recommended": None, "budget": None,
+        }
+
     key = _cache_key(vendor, model)
     cached = _cache_load(key)
     if cached is not None:
@@ -1048,6 +1152,18 @@ def recommend(vendor, model, interfaces=None):
                     slot_source = "datasheet"
         except Exception as e:
             print(f"[sfp] spec fetch failed: {e}", file=sys.stderr)
+
+    # No-SFP detection: real datasheet present, but NO slot type parsed AND no
+    # SFP/fiber/uplink signal anywhere → this is a copper-only switch. Advise
+    # "no SFP required" instead of guessing a slot type and recommending optics.
+    if spec_data and not slot_type and specs_have_sfp(spec_data) is False:
+        return {
+            "ok": True, "status": "no_sfp",
+            "vendor": vendor, "model": model,
+            "message": "This switch has no SFP/fiber slots — no SFP transceiver required.",
+            "productUrl": product_url,
+            "modules": [], "cables": [], "recommended": None, "budget": None,
+        }
 
     # 4b. Fallback: infer from model name.
     if not slot_type:
@@ -1185,9 +1301,89 @@ def recommend(vendor, model, interfaces=None):
                     break
     modules = diverse
 
-    # No fallback to a static/generic module list — if we couldn't find real
-    # products via live scraping, we return an empty list so the UI can show
-    # an honest "no results" state instead of phantom or pre-baked entries.
+    # ── Nearest-match fallback when 0 modules found ──────────────────────
+    # Stage 1: Vendor-only search (drop the model number) — "{vendor} compatible
+    #   SFP" hits retailer listings covering the vendor's whole range, keeping
+    #   results vendor-relevant instead of tied to one obscure SKU.
+    # Stage 2: Reference-model fallback (only if vendor-only also fails) — a
+    #   neutral, most-documented model for the slot type whose results are all
+    #   generic third-party SFPs that fit any switch of that slot type.
+    # Every fallback module is still a REAL scraped product (with a working
+    # image); we never fabricate entries. _is_fallback caps recursion at one.
+    if not modules and not _is_fallback:
+        print(f"[sfp] 0 modules for {vendor} {model} → trying vendor-only search",
+              file=sys.stderr)
+        try:
+            vo_results = search_sfp_vendor_only(vendor, slot_type)
+        except Exception as e:
+            print(f"[sfp] vendor-only search failed: {e}", file=sys.stderr)
+            vo_results = []
+
+        vo_modules = []
+        if vo_results:
+            try:
+                vo_urls = [r["url"] for r in vo_results[:12]]
+                with ThreadPoolExecutor(max_workers=10) as ex:
+                    futs = {ex.submit(_scrape_page, u): u for u in vo_urls}
+                    for fut in as_completed(futs, timeout=45):
+                        try:
+                            scraped = fut.result()
+                            if scraped:
+                                vo_modules.extend(scraped)
+                        except Exception:
+                            pass
+            except Exception as e:
+                print(f"[sfp] vendor-only scrape failed: {e}", file=sys.stderr)
+
+            for hit in vo_results:
+                snippet = hit.get("snippet", "") + " " + hit.get("title", "")
+                if not re.search(r"(SFP|QSFP|transceiver|optic)", snippet, re.I):
+                    continue
+                mod = _parse_module_text(snippet, hit.get("url", ""))
+                if mod and mod.get("brand"):
+                    mod["sourceUrl"] = hit.get("url", "")
+                    vo_modules.append(mod)
+
+            seen_vo = {}
+            for m in vo_modules:
+                pn = m["partNumber"]
+                if pn not in seen_vo:
+                    seen_vo[pn] = m
+                elif sum(1 for v in m.values() if v) > sum(1 for v in seen_vo[pn].values() if v):
+                    seen_vo[pn] = m
+            vo_modules = [m for m in seen_vo.values() if m.get("brand")]
+
+            try:
+                with ThreadPoolExecutor(max_workers=8) as ex:
+                    for mod, img in ex.map(_resolve, vo_modules):
+                        if img:
+                            mod["imageUrl"] = img
+                        elif mod.get("imageUrl"):
+                            mod.pop("imageUrl", None)
+            except Exception as e:
+                print(f"[sfp] vendor-only image enrichment failed: {e}", file=sys.stderr)
+
+            vo_modules = [m for m in vo_modules if m.get("imageUrl")]
+
+        if vo_modules:
+            print(f"[sfp] vendor-only search found {len(vo_modules)} modules for {vendor}",
+                  file=sys.stderr)
+            modules = vo_modules[:15]
+        else:
+            ref = _get_generic_reference(slot_type)
+            if ref:
+                ref_vendor, ref_model = ref
+                print(f"[sfp] vendor-only also empty → retrying with generic "
+                      f"{ref_vendor} {ref_model} (slot={slot_type})", file=sys.stderr)
+                fb = recommend(ref_vendor, ref_model, interfaces, _is_fallback=True)
+                if fb.get("modules"):
+                    fb["vendor"]        = vendor
+                    fb["model"]         = model
+                    fb["fallbackModel"] = ref_model
+                    fb["slotType"]      = slot_type
+                    fb["slotSource"]    = slot_source
+                    fb["status"]        = "nearest_match"
+                    return fb
 
     # (Cap of 15 already enforced by the diversity round-robin above.)
 
@@ -1243,6 +1439,7 @@ def recommend(vendor, model, interfaces=None):
 
     payload = {
         "ok": True,
+        "status": "ok",
         "vendor": vendor,
         "model": model,
         "slotType": slot_type,

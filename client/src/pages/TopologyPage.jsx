@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useSmartBack } from '../hooks/useSmartBack';
 import { apiUrl, authFetch } from '../utils/api';
 import { getCached, setCached, cacheKey } from '../utils/scanPrefetch';
 import RackTabs from '../components/RackTabs.jsx';
@@ -92,6 +93,7 @@ export function TopologyContent({ rackId }) {
 // ── Standalone page (used by /results/:rackId/topology route) ───
 export default function TopologyPage() {
   const { rackId } = useParams();
+  const goBack = useSmartBack(rackId ? `/results/${rackId}` : '/scan');
   return <TopologyInner rackId={rackId} embedded={false} />;
 }
 
@@ -318,7 +320,7 @@ function TopologyInner({ rackId, embedded }) {
     if (embedded) return errBody;
     return (
       <div className={styles.page}>
-        <PageHeader rackId={rackId} onBack={() => navigate(-1)} />
+        <PageHeader rackId={rackId} onBack={() => goBack()} />
         {errBody}
       </div>
     );
@@ -327,7 +329,7 @@ function TopologyInner({ rackId, embedded }) {
     if (embedded) return <div className={styles.loading}>Loading topology…</div>;
     return (
       <div className={styles.page}>
-        <PageHeader rackId={rackId} onBack={() => navigate(-1)} />
+        <PageHeader rackId={rackId} onBack={() => goBack()} />
         <div className={styles.loading}>Loading topology…</div>
       </div>
     );
@@ -338,7 +340,7 @@ function TopologyInner({ rackId, embedded }) {
       {!embedded && (
         <PageHeader
           rackId={rackId}
-          onBack={() => navigate(-1)}
+          onBack={() => goBack()}
           stats={topo.stats}
           view={view}
           setView={(v) => { setView(v); setSelected(null); }}

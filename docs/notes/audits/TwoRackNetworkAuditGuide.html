@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two-Rack Network Audit &amp; Cable-Trace Guide — SPP-DC1</title>
+<style>
+/* ===== Design tokens (validated dataviz light palette) ===== */
+:root{
+  --plane:#f4f4f1;        /* page background */
+  --surface:#ffffff;      /* cards */
+  --surface-2:#fcfcfb;    /* subtle panels */
+  --ink:#0b0b0b;          /* primary text */
+  --ink-2:#52514e;        /* secondary text */
+  --muted:#898781;        /* axis / faint labels */
+  --hair:#e1e0d9;         /* hairline gridline */
+  --line:#c3c2b7;         /* stronger rule */
+  --ring:rgba(11,11,11,.10);
+  /* status palette (fixed, never themed) */
+  --good:#0ca30c; --good-ink:#046804; --good-bg:#e6f5e6;
+  --warn:#fab219; --warn-ink:#8a5a00; --warn-bg:#fdf1d6;
+  --serious:#ec835a; --serious-ink:#8f3f1c; --serious-bg:#fbe7dd;
+  --crit:#d03b3b; --crit-ink:#8f1f1f; --crit-bg:#f8e0e0;
+  /* categorical accents (roles/media) */
+  --blue:#2a78d6; --blue-bg:#e5eefb;
+  --aqua:#1baf7a; --aqua-bg:#dcf3ea;
+  --violet:#4a3aa7; --violet-bg:#e7e3f4;
+  --orange:#eb6834; --orange-bg:#fce3d9;
+  --yellow:#eda100;
+  /* neutral "free" */
+  --free-bg:#eef0f1; --free-br:#d6d8da; --free-ink:#6b6f73;
+  --shut-bg:#e7e6e3; --shut-br:#c9c7c1; --shut-ink:#6f6d68;
+  --radius:12px; --radius-sm:8px;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--plane);color:var(--ink);
+  font-family:var(--sans);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* ===== Header ===== */
+header.masthead{
+  background:linear-gradient(180deg,#ffffff 0%,#fbfbf9 100%);
+  border-bottom:1px solid var(--hair);
+}
+.masthead .wrap{padding:34px 20px 26px}
+.eyebrow{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:700;margin:0 0 8px}
+h1.title{font-size:32px;line-height:1.18;margin:0 0 10px;font-weight:800;letter-spacing:-.01em}
+.subtitle{font-size:17px;color:var(--ink-2);margin:0;max-width:70ch}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:18px}
+.meta-chip{font-size:12.5px;background:var(--surface-2);border:1px solid var(--hair);border-radius:999px;padding:5px 12px;color:var(--ink-2)}
+.meta-chip b{color:var(--ink);font-weight:600}
+
+/* ===== Layout with sticky TOC ===== */
+.shell{display:grid;grid-template-columns:230px 1fr;gap:30px;align-items:start;padding:30px 0 80px}
+nav.toc{position:sticky;top:16px;font-size:14px;border:1px solid var(--hair);background:var(--surface);border-radius:var(--radius);padding:14px 12px;max-height:calc(100vh - 32px);overflow:auto}
+nav.toc .toc-h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:2px 8px 8px}
+nav.toc a{display:block;color:var(--ink-2);text-decoration:none;padding:6px 8px;border-radius:7px;line-height:1.3}
+nav.toc a:hover{background:var(--surface-2);color:var(--ink)}
+nav.toc a.sub{padding-left:20px;font-size:13px;color:var(--muted)}
+main{min-width:0}
+
+/* ===== Sections & typography ===== */
+section{margin:0 0 46px;scroll-margin-top:16px}
+h2{font-size:24px;font-weight:800;letter-spacing:-.01em;margin:0 0 6px;padding-top:6px}
+h2 .num{color:var(--blue);font-variant-numeric:tabular-nums;margin-right:10px}
+h3{font-size:18px;font-weight:700;margin:26px 0 8px}
+h4{font-size:15px;font-weight:700;margin:18px 0 6px;color:var(--ink)}
+.lead{color:var(--ink-2);font-size:16.5px;margin:0 0 14px;max-width:74ch}
+p{margin:0 0 12px;max-width:78ch}
+.section-rule{height:3px;width:54px;background:var(--blue);border-radius:2px;margin:0 0 16px}
+a.inline{color:var(--blue);text-decoration:none;border-bottom:1px solid var(--blue-bg)}
+
+/* ===== Cards / callouts ===== */
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:20px 22px;margin:16px 0;box-shadow:0 1px 2px rgba(11,11,11,.03)}
+.card.pad-lg{padding:24px 26px}
+.note{border-left:4px solid var(--blue);background:var(--blue-bg);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:12px 16px;margin:14px 0;font-size:14.5px;color:var(--ink)}
+.note.tip{border-left-color:var(--good);background:var(--good-bg)}
+.note.warnbox{border-left-color:var(--warn);background:var(--warn-bg)}
+.note.crit{border-left-color:var(--crit);background:var(--crit-bg)}
+.note .lbl{font-weight:700;text-transform:uppercase;font-size:11.5px;letter-spacing:.08em;display:block;margin-bottom:3px}
+
+/* ===== Stat tiles ===== */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.tile{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden}
+.tile .cap{font-size:12px;color:var(--ink-2);font-weight:600;letter-spacing:.01em}
+.tile .val{font-size:30px;font-weight:800;line-height:1.05;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.tile .sub{font-size:12px;color:var(--muted)}
+.tile .bar{height:6px;border-radius:4px;background:var(--free-bg);margin-top:10px;overflow:hidden}
+.tile .bar>i{display:block;height:100%;border-radius:4px}
+.tile.accent-b{border-top:3px solid var(--blue)}
+.tile.accent-g{border-top:3px solid var(--good)}
+.tile.accent-w{border-top:3px solid var(--warn)}
+.tile.accent-o{border-top:3px solid var(--orange)}
+
+/* ===== Legend chips ===== */
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 0;font-size:13.5px;align-items:center}
+.lg{display:inline-flex;align-items:center;gap:7px;color:var(--ink-2)}
+.sw{width:16px;height:16px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:1px solid var(--ring)}
+
+/* ===== Port map grid ===== */
+.portwrap{overflow-x:auto;padding:4px 0 8px}
+.pmap{display:grid;gap:5px;margin:8px 0}
+.prow-label{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin:8px 0 2px}
+.port{
+  width:44px;height:40px;border-radius:7px;border:1px solid var(--ring);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;line-height:1;position:relative;cursor:default;
+  font-variant-numeric:tabular-nums;
+}
+.port .pn{font-size:11px;font-weight:800}
+.port .rb{position:absolute;top:2px;right:3px;font-size:8px;font-weight:800;opacity:.85}
+.port .gl{font-size:11px;margin-top:1px}
+.p-up{background:var(--good-bg);border-color:#9bd39b;color:var(--good-ink)}
+.p-nolink{background:var(--warn-bg);border-color:#eccf86;color:var(--warn-ink)}
+.p-err{background:var(--crit-bg);border-color:#e39a9a;color:var(--crit-ink)}
+.p-shut{background:var(--shut-bg);border-color:var(--shut-br);color:var(--shut-ink)}
+.p-free{background:var(--free-bg);border-color:var(--free-br);color:var(--free-ink)}
+.p-trunk{background:var(--blue-bg);border-color:#9cc0ee;color:#1a4f95}
+.grid24{grid-template-columns:repeat(12,44px)}
+.grid-sfp{grid-template-columns:repeat(4,44px)}
+
+/* ===== Tables ===== */
+.tbl-scroll{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
+th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--hair);vertical-align:top}
+thead th{background:var(--surface-2);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);font-weight:700;border-bottom:2px solid var(--line);position:sticky;top:0}
+tbody tr:hover{background:var(--surface-2)}
+td.mono,th.mono{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;line-height:1.5;white-space:nowrap}
+.pill-up{background:var(--good-bg);color:var(--good-ink)}
+.pill-free{background:var(--free-bg);color:var(--free-ink)}
+.pill-nolink{background:var(--warn-bg);color:var(--warn-ink)}
+.pill-err{background:var(--crit-bg);color:var(--crit-ink)}
+.pill-trunk{background:var(--blue-bg);color:#1a4f95}
+.pill-shut{background:var(--shut-bg);color:var(--shut-ink)}
+
+/* ===== Terminal / command blocks ===== */
+.term{background:#fbfbfa;border:1px solid var(--line);border-radius:10px;margin:14px 0;overflow:hidden;box-shadow:0 1px 2px rgba(11,11,11,.03)}
+.term .bar{display:flex;align-items:center;gap:8px;padding:8px 13px;background:#f1f1ee;border-bottom:1px solid var(--hair);font-size:12px;color:var(--ink-2)}
+.term .dot{width:10px;height:10px;border-radius:50%}
+.term .dot.r{background:#e06c6c}.term .dot.y{background:#e3b341}.term .dot.g{background:#5ab85a}
+.term .bar .who{margin-left:6px;font-family:var(--mono);font-weight:600;color:var(--ink)}
+.term .bar .tag{margin-left:auto;font-size:11px;background:#fff;border:1px solid var(--hair);border-radius:5px;padding:1px 8px}
+.term pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55;color:#141413;white-space:pre}
+.term pre .cmd{color:#0b57b8;font-weight:700}
+.term pre .prompt{color:#a25a00;font-weight:700}
+.term pre .cmt{color:#6f8a5a;font-style:italic}
+.term pre .hl{background:#fff3cf;border-radius:3px;padding:0 2px}
+.term pre .k{color:#046804;font-weight:600}
+.term pre .b{color:#8f1f1f;font-weight:600}
+.cmd-goal{font-size:13px;color:var(--ink-2);margin:2px 0 0}
+.cmd-goal b{color:var(--ink)}
+
+/* ===== Rack elevation ===== */
+.racks{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:16px 0}
+.rack{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:16px}
+.rack .rk-title{font-weight:800;font-size:15px;margin:0 0 3px}
+.rack .rk-sub{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+.rk-body{display:grid;grid-template-columns:34px 1fr 30px;gap:6px;align-items:stretch}
+.rk-uax{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.rk-slots{display:flex;flex-direction:column;gap:4px}
+.ru{border:1px solid var(--ring);border-radius:7px;padding:7px 10px;font-size:12.5px;display:flex;align-items:center;gap:8px;min-height:34px}
+.ru .badge{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:5px}
+.ru.sw-cisco{background:#eaf1fb;border-color:#bcd3f2}
+.ru.sw-tpl{background:#e8f5ee;border-color:#bfe3cd}
+.ru.pp{background:#f3eefb;border-color:#dccef2}
+.ru.blank{background:var(--surface-2);border-style:dashed;color:var(--muted);font-size:11.5px}
+.ru .dev{font-weight:700}
+.ru .desc{color:var(--ink-2);font-size:11.5px}
+.badge.b-cisco{background:var(--blue);color:#fff}
+.badge.b-tpl{background:var(--good);color:#fff}
+.badge.b-pp{background:var(--violet);color:#fff}
+.rk-pdu{display:flex;flex-direction:column;gap:4px}
+.pdu-strip{flex:1;background:linear-gradient(180deg,#2b2b29,#3a3a37);border-radius:7px;color:#e8e8e4;font-size:9px;writing-mode:vertical-rl;text-orientation:mixed;display:flex;align-items:center;justify-content:center;padding:6px 0;letter-spacing:.06em;font-weight:600}
+
+/* ===== SVG figure frames ===== */
+figure{margin:16px 0;background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:18px}
+figure svg{display:block;width:100%;height:auto}
+figcaption{font-size:13px;color:var(--ink-2);margin-top:10px;text-align:center}
+figcaption b{color:var(--ink)}
+
+/* ===== Trace hop chain ===== */
+.hops{display:flex;flex-direction:column;gap:0;margin:10px 0}
+.hop{display:grid;grid-template-columns:38px 1fr;gap:14px;align-items:start}
+.hop .rail{display:flex;flex-direction:column;align-items:center}
+.hop .node{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--ring);flex:none}
+.hop .stem{width:2px;flex:1;background:var(--line);min-height:20px}
+.hop .body{padding-bottom:16px}
+.hop .body .t{font-weight:700;font-size:14.5px}
+.hop .body .d{font-size:13px;color:var(--ink-2)}
+.hop .body .m{font-family:var(--mono);font-size:12px;color:var(--blue)}
+.n-active{background:var(--good-bg);color:var(--good-ink)}
+.n-passive{background:var(--violet-bg);color:var(--violet)}
+.n-trunk{background:var(--blue-bg);color:#1a4f95}
+
+/* ===== misc ===== */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.kv{font-size:13.5px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}
+.kv dt{color:var(--muted);font-weight:600}
+.kv dd{margin:0;font-family:var(--mono);font-size:12.5px}
+.checklist{list-style:none;padding:0;margin:10px 0}
+.checklist li{padding:7px 0 7px 30px;position:relative;border-bottom:1px solid var(--hair);font-size:14.5px}
+.checklist li:before{content:"";position:absolute;left:4px;top:12px;width:14px;height:14px;border:2px solid var(--blue);border-radius:4px}
+footer.foot{border-top:1px solid var(--hair);background:var(--surface);padding:26px 0;color:var(--muted);font-size:13px}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  nav.toc{position:static;max-height:none;order:-1}
+  .racks{grid-template-columns:1fr}
+  .two-col{grid-template-columns:1fr}
+}
+@media print{
+  body{background:#fff}
+  nav.toc{display:none}
+  .shell{grid-template-columns:1fr;padding-top:0}
+  .card,.term,.rack,figure,table{break-inside:avoid}
+  a.inline,nav{color:inherit}
+}
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Network Rack Audit &middot; Site SPP-DC1 &middot; Row R</p>
+    <h1 class="title">Two Network Racks, End to End:<br>Devices, Ports, Cables &amp; Power</h1>
+    <p class="subtitle">A complete, plain-language field guide to auditing two adjacent network racks with admin access — every device and port, which ports are free vs. cabled, a full cable trace from one end to the other (through every device in between), the links running between the two racks, and the exact commands and expected outputs to retrieve it all.</p>
+    <div class="meta-row">
+      <span class="meta-chip"><b>Racks:</b> R1 (distribution) &amp; R2 (access)</span>
+      <span class="meta-chip"><b>Switches:</b> Cisco Catalyst + TP-Link JetStream</span>
+      <span class="meta-chip"><b>Also covers:</b> patch panels &amp; PDUs</span>
+      <span class="meta-chip"><b>Style:</b> methodology + worked example</span>
+      <span class="meta-chip"><b>Prepared:</b> 10 Jul 2026</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="shell">
+
+<nav class="toc" aria-label="Contents">
+  <div class="toc-h">Contents</div>
+  <a href="#s1">1 &nbsp;Overview &amp; the big picture</a>
+  <a href="#s2">2 &nbsp;Getting admin access (safely)</a>
+  <a href="#s3">3 &nbsp;The two racks &amp; device inventory</a>
+  <a href="#s4">4 &nbsp;Port inventory &amp; status maps</a>
+  <a href="#s5">5 &nbsp;Commands &amp; outputs — Cisco</a>
+  <a href="#s5b" class="sub">5b &nbsp;Commands &amp; outputs — TP-Link</a>
+  <a href="#s6">6 &nbsp;Neighbour discovery (LLDP/CDP)</a>
+  <a href="#s7">7 &nbsp;End-to-end cable trace</a>
+  <a href="#s8">8 &nbsp;Cables between the two racks</a>
+  <a href="#s9">9 &nbsp;Structured cabling &amp; labels</a>
+  <a href="#s10">10 &nbsp;Power: PDUs &amp; outlets</a>
+  <a href="#s11">11 &nbsp;Physical tracing toolkit</a>
+  <a href="#s12">12 &nbsp;Master checklist &amp; templates</a>
+</nav>
+
+<main>
+
+<!-- ============ SECTION 1 ============ -->
+<section id="s1">
+  <h2><span class="num">1</span>Overview &amp; the big picture</h2>
+  <div class="section-rule"></div>
+  <p class="lead">This guide documents two network racks the way a careful engineer would: first the physical picture, then every port and its state, then the cables — including the ones that cross between the racks — and finally the power. Everything is shown twice: as a <b>method you can repeat on your own racks</b>, and as a <b>filled-in worked example</b> you can copy and adapt.</p>
+
+  <p>The example site is <b>SPP-DC1</b>, a small server room with two adjacent 42U racks standing side by side in Row R. <b>Rack R1</b> is the distribution rack (it holds the main switch that everything else hangs off). <b>Rack R2</b> is an access rack for nearby users and devices. Each rack holds two managed switches (one Cisco, one TP-Link), two patch panels (copper and fibre), and a pair of power strips (PDUs). The two racks are joined by a fibre trunk and a couple of copper cross-connects.</p>
+
+  <h3>The whole site at a glance</h3>
+  <div class="tiles">
+    <div class="tile accent-b"><div class="cap">Racks audited</div><div class="val">2</div><div class="sub">R1 + R2, 42U each</div></div>
+    <div class="tile accent-b"><div class="cap">Managed switches</div><div class="val">4</div><div class="sub">2 Cisco + 2 TP-Link</div></div>
+    <div class="tile"><div class="cap">Total switch ports</div><div class="val">136</div><div class="sub">access + uplink/SFP</div></div>
+    <div class="tile accent-g"><div class="cap">Ports in use (cabled)</div><div class="val">90</div><div class="sub">66% utilisation<div class="bar"><i style="width:66%;background:var(--good)"></i></div></div></div>
+    <div class="tile"><div class="cap">Free / available</div><div class="val">35</div><div class="sub">ready for new devices</div></div>
+    <div class="tile accent-w"><div class="cap">Reserved / shut</div><div class="val">11</div><div class="sub">disabled on purpose</div></div>
+    <div class="tile accent-o"><div class="cap">PoE load</div><div class="val">609<span style="font-size:15px;font-weight:600"> W</span></div><div class="sub">of 1,494 W budget<div class="bar"><i style="width:41%;background:var(--orange)"></i></div></div></div>
+    <div class="tile accent-b"><div class="cap">Inter-rack links</div><div class="val">3</div><div class="sub">1 fibre trunk + 2 copper</div></div>
+  </div>
+
+  <div class="note"><span class="lbl">What "a port's state" means here</span>Throughout this guide every port is one of five states, always shown with a colour <em>and</em> a word/icon so it is never colour-only: <b>Up</b> (a device is connected and the link is live), <b>No-link</b> (a cable is plugged in but there is no link), <b>Err</b> (the port faulted itself, e.g. a security violation), <b>Reserved</b> (deliberately shut down, usually no cable), and <b>Free</b> (empty and available).</p></div>
+
+  <h3>How this guide is organised</h3>
+  <p>Sections 3–4 answer "<b>what is in the racks and what is every port doing?</b>". Section 5 is the command reference — the exact CLI to type on Cisco and TP-Link and the output to expect. Sections 6–8 answer "<b>where does each cable go?</b>", building from protocol discovery (LLDP/CDP) to a full physical trace, and then to the cables that run between the two racks. Sections 9–11 cover the passive world — labels, patch panels, power — and the tools for tracing a cable you cannot see. Section 12 is a reusable checklist and blank templates.</p>
+</section>
+
+<!-- ============ SECTION 2 ============ -->
+<section id="s2">
+  <h2><span class="num">2</span>Getting admin access — safely</h2>
+  <div class="section-rule"></div>
+  <p class="lead">You cannot document what you cannot log into. There are three normal ways onto a managed switch, and a short list of habits that keep an audit from causing an outage.</p>
+
+  <div class="two-col">
+    <div class="card">
+      <h4>Three ways in</h4>
+      <p style="margin-bottom:8px"><b>1. Console (out-of-band).</b> A rollover or USB-C cable from your laptop to the switch's <span class="mono">CON</span> port. Always works, even if the network is down. Terminal settings <b>9600 8-N-1</b> (Cisco) — TP-Link consoles are usually <b>38400 8-N-1</b>.</p>
+      <p style="margin-bottom:8px"><b>2. SSH (in-band).</b> <span class="mono">ssh admin@10.10.0.11</span> to the switch's management IP over the network. The everyday method once the switch has a management address on VLAN 99.</p>
+      <p style="margin:0"><b>3. Web GUI (HTTPS).</b> <span class="mono">https://10.10.0.12</span> in a browser. TP-Link switches are often managed this way first; Cisco Catalyst also offers a web UI, but the CLI is faster for auditing.</p>
+    </div>
+    <div class="card">
+      <h4>The management address plan</h4>
+      <dl class="kv">
+        <dt>CSW-A1 (Cisco)</dt><dd>10.10.0.11 &nbsp;VLAN 99</dd>
+        <dt>ASW-A2 (TP-Link)</dt><dd>10.10.0.12 &nbsp;VLAN 99</dd>
+        <dt>ASW-B1 (Cisco)</dt><dd>10.10.0.21 &nbsp;VLAN 99</dd>
+        <dt>ASW-B2 (TP-Link)</dt><dd>10.10.0.22 &nbsp;VLAN 99</dd>
+        <dt>PDUs (4)</dt><dd>10.10.0.31–34</dd>
+      </dl>
+      <p style="font-size:13px;color:var(--ink-2);margin:10px 0 0">Keep this table in your password manager alongside credentials. Management (VLAN 99) is deliberately separate from user data so an audit never touches production traffic.</p>
+    </div>
+  </div>
+
+  <div class="note tip"><span class="lbl">Golden rule — read first</span>Every command in Section 5 is <b>read-only</b> (<span class="mono">show&hellip;</span>). None of them change anything. Do your whole audit with <span class="mono">show</span> commands before you ever type <span class="mono">configure terminal</span>. On Cisco, enter privileged mode with <span class="mono">enable</span>; the <span class="mono">show</span> commands are safe from there.</div>
+
+  <div class="note warnbox"><span class="lbl">Safety notes that matter physically</span>Never attach a <b>tone generator</b> to a live switch or PoE port (voltage can damage the toner and the port) — see §11. Treat "blink/locate" and "shut/no shut" as change-control actions. If you re-patch anything, update the cable schedule (§9) the same day, or the documentation silently rots.</div>
+</section>
+
+<!-- ============ SECTION 3 ============ -->
+<section id="s3">
+  <h2><span class="num">3</span>The two racks &amp; device inventory</h2>
+  <div class="section-rule"></div>
+  <p class="lead">Start with a picture. A <b>rack elevation</b> is a simple front-view map that shows what sits at each rack-unit (U) height. Racks are numbered <b>bottom-up</b> — U01 at the floor to U42 at the top — and a device is named by its lowest U. Both example racks are populated only near the top (U37–U42), so that is what the diagrams show; the PDUs are "0U", mounted vertically down the side.</p>
+
+  <div class="legend">
+    <span class="lg"><span class="sw" style="background:#eaf1fb;border-color:#bcd3f2;color:var(--blue)">C</span> Cisco switch</span>
+    <span class="lg"><span class="sw" style="background:#e8f5ee;border-color:#bfe3cd;color:var(--good)">T</span> TP-Link switch</span>
+    <span class="lg"><span class="sw" style="background:#f3eefb;border-color:#dccef2;color:var(--violet)">P</span> Patch panel (passive)</span>
+    <span class="lg"><span class="sw" style="background:#333;border-color:#333;color:#fff">▮</span> PDU (power)</span>
+    <span class="lg"><span class="sw" style="background:var(--surface-2);border:1px dashed var(--line);color:var(--muted)">·</span> Cable manager / blank</span>
+  </div>
+
+  <div class="racks">
+    <div class="rack">
+      <div class="rk-title">Rack R1 — Distribution (MDF side)</div>
+      <div class="rk-sub">42U &middot; front view &middot; populated U37–U42 &middot; 2× 0U PDU on the side</div>
+      <div class="rk-body" style="grid-template-columns:1fr 34px">
+        <div class="rk-slots">
+          <div class="ru pp"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U42</span><span class="badge b-pp">PP</span><span class="dev">PP-A-CU</span><span class="desc">24× Cat6 copper panel</span></div>
+          <div class="ru pp"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U41</span><span class="badge b-pp">PP</span><span class="dev">PP-A-FO</span><span class="desc">12× LC fibre (OM4) panel</span></div>
+          <div class="ru blank"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U40</span>horizontal cable manager</div>
+          <div class="ru sw-cisco"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U39</span><span class="badge b-cisco">Cisco</span><span class="dev">CSW-A1</span><span class="desc">Catalyst 9300-48P · 48×1G PoE+ + 4×10G</span></div>
+          <div class="ru sw-tpl"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U38</span><span class="badge b-tpl">TP-Link</span><span class="dev">ASW-A2</span><span class="desc">TL-SG3428MP · 24×1G PoE+ + 4×SFP</span></div>
+          <div class="ru blank"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U37</span>horizontal cable manager</div>
+        </div>
+        <div class="rk-pdu">
+          <div class="pdu-strip">PDU-A-L · Feed A</div>
+          <div class="pdu-strip">PDU-A-R · Feed B</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rack">
+      <div class="rk-title">Rack R2 — Access (IDF side)</div>
+      <div class="rk-sub">42U &middot; front view &middot; populated U37–U42 &middot; 2× 0U PDU on the side</div>
+      <div class="rk-body" style="grid-template-columns:1fr 34px">
+        <div class="rk-slots">
+          <div class="ru pp"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U42</span><span class="badge b-pp">PP</span><span class="dev">PP-B-CU</span><span class="desc">24× Cat6 copper panel</span></div>
+          <div class="ru pp"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U41</span><span class="badge b-pp">PP</span><span class="dev">PP-B-FO</span><span class="desc">12× LC fibre (OM4) panel</span></div>
+          <div class="ru blank"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U40</span>horizontal cable manager</div>
+          <div class="ru sw-cisco"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U39</span><span class="badge b-cisco">Cisco</span><span class="dev">ASW-B1</span><span class="desc">Catalyst 9200L-24P · 24×1G PoE+ + 4×10G</span></div>
+          <div class="ru sw-tpl"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U38</span><span class="badge b-tpl">TP-Link</span><span class="dev">ASW-B2</span><span class="desc">TL-SG3428 · 24×1G + 4×SFP</span></div>
+          <div class="ru blank"><span style="font-size:10px;color:var(--muted);font-weight:700;min-width:26px;font-variant-numeric:tabular-nums">U37</span>horizontal cable manager</div>
+        </div>
+        <div class="rk-pdu">
+          <div class="pdu-strip">PDU-B-L · Feed A</div>
+          <div class="pdu-strip">PDU-B-R · Feed B</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Full device inventory</h3>
+  <p>Twelve assets across the two racks. The passive items (patch panels) and PDUs matter as much as the switches — they are the "invisible" hops a cable trace has to pass through. The <span class="mono">Get&nbsp;it&nbsp;with</span> column names the command or method that produces each row (detailed in §5).</p>
+
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Device</th><th>Rack&middot;U</th><th>Type / model</th><th>Role</th><th>Ports</th><th>Mgmt IP</th><th>Get it with</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">CSW-A1</td><td class="mono">R1·U39</td><td>Cisco Catalyst 9300-48P</td><td>Distribution + access, L3 gateway</td><td class="mono">48×1G PoE+ · 4×10G SFP+</td><td class="mono">10.10.0.11</td><td><span class="mono">show version / inventory</span></td></tr>
+      <tr><td class="mono">ASW-A2</td><td class="mono">R1·U38</td><td>TP-Link JetStream TL-SG3428MP</td><td>Access (PoE)</td><td class="mono">24×1G PoE+ · 4×SFP</td><td class="mono">10.10.0.12</td><td><span class="mono">show system-info</span></td></tr>
+      <tr><td class="mono">ASW-B1</td><td class="mono">R2·U39</td><td>Cisco Catalyst 9200L-24P-4X</td><td>Access (PoE)</td><td class="mono">24×1G PoE+ · 4×10G SFP+</td><td class="mono">10.10.0.21</td><td><span class="mono">show version / inventory</span></td></tr>
+      <tr><td class="mono">ASW-B2</td><td class="mono">R2·U38</td><td>TP-Link JetStream TL-SG3428</td><td>Access (no PoE)</td><td class="mono">24×1G · 4×SFP</td><td class="mono">10.10.0.22</td><td><span class="mono">show system-info</span></td></tr>
+      <tr><td class="mono">PP-A-CU</td><td class="mono">R1·U42</td><td>24-port Cat6 copper patch panel</td><td>Passive cross-connect</td><td class="mono">24× RJ45</td><td>—</td><td>Label / cable schedule</td></tr>
+      <tr><td class="mono">PP-A-FO</td><td class="mono">R1·U41</td><td>12-fibre LC/UPC OM4 panel</td><td>Passive fibre cross-connect</td><td class="mono">12× LC (6 duplex)</td><td>—</td><td>Label / cable schedule</td></tr>
+      <tr><td class="mono">PP-B-CU</td><td class="mono">R2·U42</td><td>24-port Cat6 copper patch panel</td><td>Passive cross-connect</td><td class="mono">24× RJ45</td><td>—</td><td>Label / cable schedule</td></tr>
+      <tr><td class="mono">PP-B-FO</td><td class="mono">R2·U41</td><td>12-fibre LC/UPC OM4 panel</td><td>Passive fibre cross-connect</td><td class="mono">12× LC (6 duplex)</td><td>—</td><td>Label / cable schedule</td></tr>
+      <tr><td class="mono">PDU-A-L / -R</td><td class="mono">R1·0U</td><td>Switched/metered PDU, 230 V 32 A</td><td>Power feed A / feed B</td><td class="mono">24×C13 · 6×C19 ea.</td><td class="mono">10.10.0.31/32</td><td>Web UI / SNMP (§10)</td></tr>
+      <tr><td class="mono">PDU-B-L / -R</td><td class="mono">R2·0U</td><td>Switched/metered PDU, 230 V 32 A</td><td>Power feed A / feed B</td><td class="mono">24×C13 · 6×C19 ea.</td><td class="mono">10.10.0.33/34</td><td>Web UI / SNMP (§10)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:13px;color:var(--muted)">Model note: the featured "how many ports / which are free" detail in §4 uses CSW-A1 (Cisco, 48-port) and ASW-B2 (TP-Link, 24-port) as the two fully worked examples; the other two switches are summarised.</p>
+</section>
+
+<!-- ============ SECTION 4 ============ -->
+<section id="s4">
+  <h2><span class="num">4</span>Port inventory &amp; status maps</h2>
+  <div class="section-rule"></div>
+  <p class="lead">This is the heart of the audit: for every switch, how many ports exist, which are <b>live</b>, which have a <b>cable but no link</b>, which are <b>faulted</b>, which are <b>deliberately off</b>, and which are <b>free</b>. Each switch gets a colour-coded port map plus four or five summary tiles. The maps are built directly from the <span class="mono">show interfaces status</span> / <span class="mono">show power inline</span> output in §5.</p>
+
+  <h3>How to read a port cell</h3>
+  <div class="card">
+    <div class="legend" style="gap:14px 22px">
+      <span class="lg"><span class="port p-up" style="width:38px;height:34px"><span class="pn">7</span><span class="gl">●</span></span> <b>Up</b> — live link, device connected</span>
+      <span class="lg"><span class="port p-trunk" style="width:38px;height:34px"><span class="rb">T</span><span class="pn">T1</span><span class="gl">⇅</span></span> <b>Trunk/Uplink</b> — link to another switch</span>
+      <span class="lg"><span class="port p-nolink" style="width:38px;height:34px"><span class="pn">9</span><span class="gl">◍</span></span> <b>No-link</b> — cable in, no link</span>
+      <span class="lg"><span class="port p-err" style="width:38px;height:34px"><span class="pn">30</span><span class="gl">✕</span></span> <b>Err</b> — port faulted/disabled itself</span>
+      <span class="lg"><span class="port p-shut" style="width:38px;height:34px"><span class="pn">20</span><span class="gl">▢</span></span> <b>Reserved</b> — admin shut, usually no cable</span>
+      <span class="lg"><span class="port p-free" style="width:38px;height:34px"><span class="pn">16</span><span class="gl">○</span></span> <b>Free</b> — empty, available</span>
+    </div>
+    <p style="font-size:13px;color:var(--ink-2);margin:12px 0 0">The small letter in the top-right corner is the port's <b>role</b>, independent of colour: <b>P</b> = PoE power is being delivered, <b>T</b> = trunk/uplink, <b>L</b> = member of a link-aggregation bundle (LAG), <b>M</b> = management. "Cabled / in use" counts any port with a cable in it (Up, Trunk, No-link, or Err). "Free" and "Reserved" are the ports you can hand out to new devices — Free immediately, Reserved after someone confirms why it was shut.</p>
+  </div>
+
+  <h3>Per-switch port maps</h3>
+<div class="card pad-lg" id="csw-a1">
+  <h3 style="margin-top:2px">CSW-A1 — <span style="font-weight:600;color:var(--ink-2)">Cisco Catalyst 9300-48P (Rack R1·U39)</span> <span style="font-size:12px;color:var(--blue);font-weight:700">★ fully worked example</span></h3>
+  <p style="font-size:13.5px;color:var(--ink-2);margin:0 0 6px">Distribution switch and Layer-3 gateway. 48× 1G PoE+ access ports plus a 4×10G SFP+ uplink module (Te1/1/1–4).</p>
+  <div class="tiles">
+  <div class="tile"><div class="cap">Total ports</div><div class="val">52</div><div class="sub">incl. uplink/SFP</div></div>
+  <div class="tile accent-g"><div class="cap">In use (cabled)</div><div class="val">38</div><div class="sub">73% used<div class="bar"><i style="width:73%;background:var(--good)"></i></div></div></div>
+  <div class="tile"><div class="cap">Free / available</div><div class="val">11</div><div class="sub">empty &amp; ready</div></div>
+  <div class="tile accent-w"><div class="cap">Reserved (shut)</div><div class="val">3</div><div class="sub">disabled on purpose</div></div>
+  <div class="tile accent-o"><div class="cap">PoE load</div><div class="val">296<span style="font-size:14px;font-weight:600"> W</span></div><div class="sub">of 740 W (40%)<div class="bar"><i style="width:40%;background:var(--orange)"></i></div></div></div>
+</div>
+  <div class="prow-label">Access ports 1–48</div>
+  <div class="portwrap">
+<div class="pmap grid24"><div class="port p-up" title="1 — up (P)"><span class="rb">P</span><span class="pn">1</span><span class="gl">●</span></div><div class="port p-up" title="2 — up (P)"><span class="rb">P</span><span class="pn">2</span><span class="gl">●</span></div><div class="port p-up" title="3 — up (P)"><span class="rb">P</span><span class="pn">3</span><span class="gl">●</span></div><div class="port p-up" title="4 — up (P)"><span class="rb">P</span><span class="pn">4</span><span class="gl">●</span></div><div class="port p-up" title="5 — up"><span class="pn">5</span><span class="gl">●</span></div><div class="port p-up" title="6 — up (P)"><span class="rb">P</span><span class="pn">6</span><span class="gl">●</span></div><div class="port p-up" title="7 — up"><span class="pn">7</span><span class="gl">●</span></div><div class="port p-up" title="8 — up"><span class="pn">8</span><span class="gl">●</span></div><div class="port p-nolink" title="9 — nolink"><span class="pn">9</span><span class="gl">◍</span></div><div class="port p-up" title="10 — up (P)"><span class="rb">P</span><span class="pn">10</span><span class="gl">●</span></div><div class="port p-up" title="11 — up"><span class="pn">11</span><span class="gl">●</span></div><div class="port p-up" title="12 — up (P)"><span class="rb">P</span><span class="pn">12</span><span class="gl">●</span></div></div>
+<div class="pmap grid24"><div class="port p-up" title="13 — up"><span class="pn">13</span><span class="gl">●</span></div><div class="port p-up" title="14 — up (P)"><span class="rb">P</span><span class="pn">14</span><span class="gl">●</span></div><div class="port p-up" title="15 — up"><span class="pn">15</span><span class="gl">●</span></div><div class="port p-free" title="16 — free"><span class="pn">16</span><span class="gl">○</span></div><div class="port p-up" title="17 — up (P)"><span class="rb">P</span><span class="pn">17</span><span class="gl">●</span></div><div class="port p-up" title="18 — up"><span class="pn">18</span><span class="gl">●</span></div><div class="port p-up" title="19 — up"><span class="pn">19</span><span class="gl">●</span></div><div class="port p-shut" title="20 — shut"><span class="pn">20</span><span class="gl">▢</span></div><div class="port p-up" title="21 — up (P)"><span class="rb">P</span><span class="pn">21</span><span class="gl">●</span></div><div class="port p-nolink" title="22 — nolink"><span class="pn">22</span><span class="gl">◍</span></div><div class="port p-up" title="23 — up (P)"><span class="rb">P</span><span class="pn">23</span><span class="gl">●</span></div><div class="port p-up" title="24 — up"><span class="pn">24</span><span class="gl">●</span></div></div>
+<div class="pmap grid24"><div class="port p-up" title="25 — up (P)"><span class="rb">P</span><span class="pn">25</span><span class="gl">●</span></div><div class="port p-up" title="26 — up"><span class="pn">26</span><span class="gl">●</span></div><div class="port p-free" title="27 — free"><span class="pn">27</span><span class="gl">○</span></div><div class="port p-up" title="28 — up (P)"><span class="rb">P</span><span class="pn">28</span><span class="gl">●</span></div><div class="port p-up" title="29 — up"><span class="pn">29</span><span class="gl">●</span></div><div class="port p-err" title="30 — err"><span class="pn">30</span><span class="gl">✕</span></div><div class="port p-up" title="31 — up (P)"><span class="rb">P</span><span class="pn">31</span><span class="gl">●</span></div><div class="port p-up" title="32 — up"><span class="pn">32</span><span class="gl">●</span></div><div class="port p-free" title="33 — free"><span class="pn">33</span><span class="gl">○</span></div><div class="port p-up" title="34 — up (P)"><span class="rb">P</span><span class="pn">34</span><span class="gl">●</span></div><div class="port p-up" title="35 — up"><span class="pn">35</span><span class="gl">●</span></div><div class="port p-up" title="36 — up (P)"><span class="rb">P</span><span class="pn">36</span><span class="gl">●</span></div></div>
+<div class="pmap grid24"><div class="port p-up" title="37 — up (P)"><span class="rb">P</span><span class="pn">37</span><span class="gl">●</span></div><div class="port p-shut" title="38 — shut"><span class="pn">38</span><span class="gl">▢</span></div><div class="port p-free" title="39 — free"><span class="pn">39</span><span class="gl">○</span></div><div class="port p-free" title="40 — free"><span class="pn">40</span><span class="gl">○</span></div><div class="port p-up" title="41 — up (P)"><span class="rb">P</span><span class="pn">41</span><span class="gl">●</span></div><div class="port p-shut" title="42 — shut"><span class="pn">42</span><span class="gl">▢</span></div><div class="port p-free" title="43 — free"><span class="pn">43</span><span class="gl">○</span></div><div class="port p-free" title="44 — free"><span class="pn">44</span><span class="gl">○</span></div><div class="port p-free" title="45 — free"><span class="pn">45</span><span class="gl">○</span></div><div class="port p-free" title="46 — free"><span class="pn">46</span><span class="gl">○</span></div><div class="port p-trunk" title="47 — trunk (L)"><span class="rb">L</span><span class="pn">47</span><span class="gl">⇅</span></div><div class="port p-trunk" title="48 — trunk (L)"><span class="rb">L</span><span class="pn">48</span><span class="gl">⇅</span></div></div>
+  </div>
+  <div class="prow-label">Uplinks — 10G SFP+ (Te1/1/1–4)</div>
+  <div class="portwrap">
+    <div class="pmap grid-sfp"><div class="port p-trunk" title="T1/1 — trunk (T)"><span class="rb">T</span><span class="pn">T1/1</span><span class="gl">⇅</span></div><div class="port p-free" title="T1/2 — free"><span class="pn">T1/2</span><span class="gl">○</span></div><div class="port p-free" title="T1/3 — free"><span class="pn">T1/3</span><span class="gl">○</span></div><div class="port p-trunk" title="T1/4 — trunk (T)"><span class="rb">T</span><span class="pn">T1/4</span><span class="gl">⇅</span></div></div>
+  </div>
+</div>
+<div class="card pad-lg" id="asw-b2">
+  <h3 style="margin-top:2px">ASW-B2 — <span style="font-weight:600;color:var(--ink-2)">TP-Link JetStream TL-SG3428 (Rack R2·U38)</span> <span style="font-size:12px;color:var(--blue);font-weight:700">★ fully worked example</span></h3>
+  <p style="font-size:13.5px;color:var(--ink-2);margin:0 0 6px">Access switch, no PoE. 24× 1G access ports plus 4× SFP (Gi1/0/25–28). Host SRV-B-07 lives on port 7; port 24 is the copper uplink to ASW-B1.</p>
+  <div class="tiles">
+  <div class="tile"><div class="cap">Total ports</div><div class="val">28</div><div class="sub">incl. uplink/SFP</div></div>
+  <div class="tile accent-g"><div class="cap">In use (cabled)</div><div class="val">15</div><div class="sub">54% used<div class="bar"><i style="width:54%;background:var(--good)"></i></div></div></div>
+  <div class="tile"><div class="cap">Free / available</div><div class="val">9</div><div class="sub">empty &amp; ready</div></div>
+  <div class="tile accent-w"><div class="cap">Reserved (shut)</div><div class="val">4</div><div class="sub">disabled on purpose</div></div>
+</div>
+  <div class="prow-label">Access ports 1–24</div>
+  <div class="portwrap">
+<div class="pmap grid24"><div class="port p-up" title="1 — up"><span class="pn">1</span><span class="gl">●</span></div><div class="port p-up" title="2 — up"><span class="pn">2</span><span class="gl">●</span></div><div class="port p-up" title="3 — up"><span class="pn">3</span><span class="gl">●</span></div><div class="port p-free" title="4 — free"><span class="pn">4</span><span class="gl">○</span></div><div class="port p-up" title="5 — up"><span class="pn">5</span><span class="gl">●</span></div><div class="port p-free" title="6 — free"><span class="pn">6</span><span class="gl">○</span></div><div class="port p-up" title="7 — up"><span class="pn">7</span><span class="gl">●</span></div><div class="port p-up" title="8 — up"><span class="pn">8</span><span class="gl">●</span></div><div class="port p-nolink" title="9 — nolink"><span class="pn">9</span><span class="gl">◍</span></div><div class="port p-shut" title="10 — shut"><span class="pn">10</span><span class="gl">▢</span></div><div class="port p-up" title="11 — up"><span class="pn">11</span><span class="gl">●</span></div><div class="port p-up" title="12 — up"><span class="pn">12</span><span class="gl">●</span></div></div>
+<div class="pmap grid24"><div class="port p-shut" title="13 — shut"><span class="pn">13</span><span class="gl">▢</span></div><div class="port p-free" title="14 — free"><span class="pn">14</span><span class="gl">○</span></div><div class="port p-up" title="15 — up"><span class="pn">15</span><span class="gl">●</span></div><div class="port p-up" title="16 — up"><span class="pn">16</span><span class="gl">●</span></div><div class="port p-free" title="17 — free"><span class="pn">17</span><span class="gl">○</span></div><div class="port p-up" title="18 — up"><span class="pn">18</span><span class="gl">●</span></div><div class="port p-up" title="19 — up"><span class="pn">19</span><span class="gl">●</span></div><div class="port p-shut" title="20 — shut"><span class="pn">20</span><span class="gl">▢</span></div><div class="port p-free" title="21 — free"><span class="pn">21</span><span class="gl">○</span></div><div class="port p-up" title="22 — up"><span class="pn">22</span><span class="gl">●</span></div><div class="port p-shut" title="23 — shut"><span class="pn">23</span><span class="gl">▢</span></div><div class="port p-trunk" title="24 — trunk (T)"><span class="rb">T</span><span class="pn">24</span><span class="gl">⇅</span></div></div>
+  </div>
+  <div class="prow-label">SFP slots (Gi1/0/25–28)</div>
+  <div class="portwrap">
+    <div class="pmap grid-sfp"><div class="port p-free" title="25 — free"><span class="pn">25</span><span class="gl">○</span></div><div class="port p-free" title="26 — free"><span class="pn">26</span><span class="gl">○</span></div><div class="port p-free" title="27 — free"><span class="pn">27</span><span class="gl">○</span></div><div class="port p-free" title="28 — free"><span class="pn">28</span><span class="gl">○</span></div></div>
+  </div>
+</div>
+<div class="card pad-lg" id="asw-a2">
+  <h3 style="margin-top:2px">ASW-A2 — <span style="font-weight:600;color:var(--ink-2)">TP-Link JetStream TL-SG3428MP (Rack R1·U38)</span></h3>
+  <p style="font-size:13.5px;color:var(--ink-2);margin:0 0 6px">PoE access switch. 24× 1G PoE+ ports plus 4× SFP. Ports 27–28 form LAG "ag1" up to CSW-A1.</p>
+  <div class="tiles">
+  <div class="tile"><div class="cap">Total ports</div><div class="val">28</div><div class="sub">incl. uplink/SFP</div></div>
+  <div class="tile accent-g"><div class="cap">In use (cabled)</div><div class="val">19</div><div class="sub">68% used<div class="bar"><i style="width:68%;background:var(--good)"></i></div></div></div>
+  <div class="tile"><div class="cap">Free / available</div><div class="val">6</div><div class="sub">empty &amp; ready</div></div>
+  <div class="tile accent-w"><div class="cap">Reserved (shut)</div><div class="val">3</div><div class="sub">disabled on purpose</div></div>
+  <div class="tile accent-o"><div class="cap">PoE load</div><div class="val">172<span style="font-size:14px;font-weight:600"> W</span></div><div class="sub">of 384 W (45%)<div class="bar"><i style="width:45%;background:var(--orange)"></i></div></div></div>
+</div>
+  <div class="prow-label">Access ports 1–24</div>
+  <div class="portwrap">
+<div class="pmap grid24"><div class="port p-up" title="1 — up (P)"><span class="rb">P</span><span class="pn">1</span><span class="gl">●</span></div><div class="port p-up" title="2 — up (P)"><span class="rb">P</span><span class="pn">2</span><span class="gl">●</span></div><div class="port p-up" title="3 — up (P)"><span class="rb">P</span><span class="pn">3</span><span class="gl">●</span></div><div class="port p-up" title="4 — up"><span class="pn">4</span><span class="gl">●</span></div><div class="port p-up" title="5 — up (P)"><span class="rb">P</span><span class="pn">5</span><span class="gl">●</span></div><div class="port p-free" title="6 — free"><span class="pn">6</span><span class="gl">○</span></div><div class="port p-up" title="7 — up (P)"><span class="rb">P</span><span class="pn">7</span><span class="gl">●</span></div><div class="port p-up" title="8 — up (P)"><span class="rb">P</span><span class="pn">8</span><span class="gl">●</span></div><div class="port p-up" title="9 — up (P)"><span class="rb">P</span><span class="pn">9</span><span class="gl">●</span></div><div class="port p-up" title="10 — up (P)"><span class="rb">P</span><span class="pn">10</span><span class="gl">●</span></div><div class="port p-shut" title="11 — shut"><span class="pn">11</span><span class="gl">▢</span></div><div class="port p-up" title="12 — up"><span class="pn">12</span><span class="gl">●</span></div></div>
+<div class="pmap grid24"><div class="port p-nolink" title="13 — nolink"><span class="pn">13</span><span class="gl">◍</span></div><div class="port p-up" title="14 — up (P)"><span class="rb">P</span><span class="pn">14</span><span class="gl">●</span></div><div class="port p-free" title="15 — free"><span class="pn">15</span><span class="gl">○</span></div><div class="port p-up" title="16 — up"><span class="pn">16</span><span class="gl">●</span></div><div class="port p-free" title="17 — free"><span class="pn">17</span><span class="gl">○</span></div><div class="port p-up" title="18 — up (P)"><span class="rb">P</span><span class="pn">18</span><span class="gl">●</span></div><div class="port p-shut" title="19 — shut"><span class="pn">19</span><span class="gl">▢</span></div><div class="port p-up" title="20 — up (P)"><span class="rb">P</span><span class="pn">20</span><span class="gl">●</span></div><div class="port p-up" title="21 — up"><span class="pn">21</span><span class="gl">●</span></div><div class="port p-free" title="22 — free"><span class="pn">22</span><span class="gl">○</span></div><div class="port p-up" title="23 — up"><span class="pn">23</span><span class="gl">●</span></div><div class="port p-shut" title="24 — shut"><span class="pn">24</span><span class="gl">▢</span></div></div>
+  </div>
+  <div class="prow-label">SFP slots (Gi1/0/25–28)</div>
+  <div class="portwrap">
+    <div class="pmap grid-sfp"><div class="port p-free" title="25 — free"><span class="pn">25</span><span class="gl">○</span></div><div class="port p-free" title="26 — free"><span class="pn">26</span><span class="gl">○</span></div><div class="port p-trunk" title="27 — trunk (L)"><span class="rb">L</span><span class="pn">27</span><span class="gl">⇅</span></div><div class="port p-trunk" title="28 — trunk (L)"><span class="rb">L</span><span class="pn">28</span><span class="gl">⇅</span></div></div>
+  </div>
+</div>
+<div class="card pad-lg" id="asw-b1">
+  <h3 style="margin-top:2px">ASW-B1 — <span style="font-weight:600;color:var(--ink-2)">Cisco Catalyst 9200L-24P-4X (Rack R2·U39)</span></h3>
+  <p style="font-size:13.5px;color:var(--ink-2);margin:0 0 6px">PoE access switch. 24× 1G PoE+ ports plus 4×10G SFP+. Te1/1/1 is the fibre uplink to CSW-A1; port 23 is the copper downlink to ASW-B2.</p>
+  <div class="tiles">
+  <div class="tile"><div class="cap">Total ports</div><div class="val">28</div><div class="sub">incl. uplink/SFP</div></div>
+  <div class="tile accent-g"><div class="cap">In use (cabled)</div><div class="val">18</div><div class="sub">64% used<div class="bar"><i style="width:64%;background:var(--good)"></i></div></div></div>
+  <div class="tile"><div class="cap">Free / available</div><div class="val">9</div><div class="sub">empty &amp; ready</div></div>
+  <div class="tile accent-w"><div class="cap">Reserved (shut)</div><div class="val">1</div><div class="sub">disabled on purpose</div></div>
+  <div class="tile accent-o"><div class="cap">PoE load</div><div class="val">141<span style="font-size:14px;font-weight:600"> W</span></div><div class="sub">of 370 W (38%)<div class="bar"><i style="width:38%;background:var(--orange)"></i></div></div></div>
+</div>
+  <div class="prow-label">Access ports 1–24</div>
+  <div class="portwrap">
+<div class="pmap grid24"><div class="port p-up" title="1 — up (P)"><span class="rb">P</span><span class="pn">1</span><span class="gl">●</span></div><div class="port p-up" title="2 — up (P)"><span class="rb">P</span><span class="pn">2</span><span class="gl">●</span></div><div class="port p-up" title="3 — up (P)"><span class="rb">P</span><span class="pn">3</span><span class="gl">●</span></div><div class="port p-up" title="4 — up (P)"><span class="rb">P</span><span class="pn">4</span><span class="gl">●</span></div><div class="port p-free" title="5 — free"><span class="pn">5</span><span class="gl">○</span></div><div class="port p-up" title="6 — up"><span class="pn">6</span><span class="gl">●</span></div><div class="port p-up" title="7 — up (P)"><span class="rb">P</span><span class="pn">7</span><span class="gl">●</span></div><div class="port p-free" title="8 — free"><span class="pn">8</span><span class="gl">○</span></div><div class="port p-up" title="9 — up (P)"><span class="rb">P</span><span class="pn">9</span><span class="gl">●</span></div><div class="port p-up" title="10 — up"><span class="pn">10</span><span class="gl">●</span></div><div class="port p-up" title="11 — up (P)"><span class="rb">P</span><span class="pn">11</span><span class="gl">●</span></div><div class="port p-nolink" title="12 — nolink"><span class="pn">12</span><span class="gl">◍</span></div></div>
+<div class="pmap grid24"><div class="port p-up" title="13 — up"><span class="pn">13</span><span class="gl">●</span></div><div class="port p-free" title="14 — free"><span class="pn">14</span><span class="gl">○</span></div><div class="port p-up" title="15 — up (P)"><span class="rb">P</span><span class="pn">15</span><span class="gl">●</span></div><div class="port p-shut" title="16 — shut"><span class="pn">16</span><span class="gl">▢</span></div><div class="port p-free" title="17 — free"><span class="pn">17</span><span class="gl">○</span></div><div class="port p-nolink" title="18 — nolink"><span class="pn">18</span><span class="gl">◍</span></div><div class="port p-up" title="19 — up"><span class="pn">19</span><span class="gl">●</span></div><div class="port p-up" title="20 — up (P)"><span class="rb">P</span><span class="pn">20</span><span class="gl">●</span></div><div class="port p-free" title="21 — free"><span class="pn">21</span><span class="gl">○</span></div><div class="port p-free" title="22 — free"><span class="pn">22</span><span class="gl">○</span></div><div class="port p-trunk" title="23 — trunk (T)"><span class="rb">T</span><span class="pn">23</span><span class="gl">⇅</span></div><div class="port p-up" title="24 — up"><span class="pn">24</span><span class="gl">●</span></div></div>
+  </div>
+  <div class="prow-label">Uplinks — 10G SFP+ (Te1/1/1–4)</div>
+  <div class="portwrap">
+    <div class="pmap grid-sfp"><div class="port p-trunk" title="T1/1 — trunk (T)"><span class="rb">T</span><span class="pn">T1/1</span><span class="gl">⇅</span></div><div class="port p-free" title="T1/2 — free"><span class="pn">T1/2</span><span class="gl">○</span></div><div class="port p-free" title="T1/3 — free"><span class="pn">T1/3</span><span class="gl">○</span></div><div class="port p-free" title="T1/4 — free"><span class="pn">T1/4</span><span class="gl">○</span></div></div>
+  </div>
+</div>
+
+  <h3>Port inventory — all four switches</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Switch</th><th>Total</th><th>Up</th><th>Trunk/Uplink</th><th>No-link</th><th>Err</th><th>Reserved</th><th>Free</th><th>Cabled %</th><th>PoE</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">CSW-A1</td><td class="mono">52</td><td class="mono">31</td><td class="mono">4</td><td class="mono">2</td><td class="mono">1</td><td class="mono">3</td><td class="mono">11</td><td><span class="pill pill-up">73%</span></td><td class="mono">296/740 W</td></tr>
+      <tr><td class="mono">ASW-A2</td><td class="mono">28</td><td class="mono">16</td><td class="mono">2</td><td class="mono">1</td><td class="mono">0</td><td class="mono">3</td><td class="mono">6</td><td><span class="pill pill-up">68%</span></td><td class="mono">172/384 W</td></tr>
+      <tr><td class="mono">ASW-B1</td><td class="mono">28</td><td class="mono">14</td><td class="mono">2</td><td class="mono">2</td><td class="mono">0</td><td class="mono">1</td><td class="mono">9</td><td><span class="pill pill-up">64%</span></td><td class="mono">141/370 W</td></tr>
+      <tr><td class="mono">ASW-B2</td><td class="mono">28</td><td class="mono">13</td><td class="mono">1</td><td class="mono">1</td><td class="mono">0</td><td class="mono">4</td><td class="mono">9</td><td><span class="pill pill-up">54%</span></td><td class="mono">— (no PoE)</td></tr>
+      <tr style="font-weight:700;background:var(--surface-2)"><td class="mono">TOTAL</td><td class="mono">136</td><td class="mono">74</td><td class="mono">9</td><td class="mono">6</td><td class="mono">1</td><td class="mono">11</td><td class="mono">35</td><td><span class="pill pill-up">66%</span></td><td class="mono">609/1494 W</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:13px;color:var(--muted)">"Up" counts live access ports; "Trunk/Uplink" is counted separately so you can see access load vs. backbone load. Cabled % = (Up + Trunk + No-link + Err) ÷ Total.</p>
+</section>
+
+<!-- ============ SECTION 5 (Cisco) ============ -->
+<section id="s5">
+  <h2><span class="num">5</span>Commands &amp; expected outputs — Cisco</h2>
+  <div class="section-rule"></div>
+  <p class="lead">Every fact in the tables and maps above comes from a handful of <span class="mono">show</span> commands. This section gives the exact command to type and a realistic output for our worked example, on <b>CSW-A1</b> (Cisco Catalyst, IOS-XE). All commands are read-only. The TP-Link equivalents follow in §5b, and the quick-map below lets you jump between vendors.</p>
+
+  <h3>Cross-vendor quick-map — "I want to know&hellip;"</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Audit question</th><th>Cisco IOS / IOS-XE</th><th>TP-Link JetStream</th></tr></thead>
+    <tbody>
+      <tr><td>Model, firmware, serial, uptime</td><td class="mono">show version · show inventory</td><td class="mono">show system-info</td></tr>
+      <tr><td>Which ports are up/down, speed, duplex</td><td class="mono">show interfaces status</td><td class="mono">show interface status</td></tr>
+      <tr><td>Admin intent + port description</td><td class="mono">show interfaces description</td><td class="mono">show interface configuration</td></tr>
+      <tr><td>Who is on the other end of a cable</td><td class="mono">show cdp/lldp neighbors detail</td><td class="mono">show lldp neighbor-information</td></tr>
+      <tr><td>Which device (MAC) is on which port</td><td class="mono">show mac address-table</td><td class="mono">show mac address-table</td></tr>
+      <tr><td>Fibre optical light levels (DOM)</td><td class="mono">show interfaces transceiver detail</td><td>GUI / DDM (model-dependent)</td></tr>
+      <tr><td>PoE per-port draw + budget</td><td class="mono">show power inline</td><td class="mono">show power inline information interface</td></tr>
+      <tr><td>VLAN membership per port</td><td class="mono">show vlan brief · show interfaces trunk</td><td class="mono">show vlan</td></tr>
+      <tr><td>Uplink bundle (LAG) health</td><td class="mono">show etherchannel summary</td><td class="mono">show etherchannel · show lacp</td></tr>
+      <tr><td>Cable error counters</td><td class="mono">show interfaces counters errors</td><td class="mono">show interface counters</td></tr>
+      <tr><td>Cable fault distance (copper TDR)</td><td class="mono">test cable-diagnostics tdr int &lt;p&gt;</td><td>MAINTENANCE&nbsp;›&nbsp;Cable&nbsp;Test</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>5.1 &nbsp;Identity — <span class="mono">show version</span> &amp; <span class="mono">show inventory</span></h3>
+  <p class="cmd-goal">Goal: pin down <b>exactly what the box is</b> — model, software, chassis serial, uplink module and every optic — the anchor record for each device row in §3.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 &middot; Cisco IOS-XE</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">show version</span>
+Cisco IOS XE Software, Version 17.09.04a
+Cisco IOS Software [Cupertino], Catalyst L3 Switch Software (CAT9K_IOSXE), Version 17.9.4a
+
+CSW-A1 uptime is 12 weeks, 3 days, 5 hours, 12 minutes
+System returned to ROM by Reload Command
+System image file is "flash:packages.conf"
+Last reload reason: Reload Command
+
+cisco <span class="hl">C9300-48P</span> (X86) processor with 1331521K/6147K bytes of memory.
+Base Ethernet MAC Address       : 00:1e:bd:12:34:00
+Model Number                    : C9300-48P
+System Serial Number            : <span class="hl">FCW2145L0N8</span>
+License Level: network-advantage</pre>
+  </div>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 &middot; Cisco IOS-XE</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">show inventory</span>
+NAME: "Chassis", DESCR: "Cisco Catalyst 9300 48-port PoE+ switch"
+PID: C9300-48P         , VID: V03  , SN: FCW2145L0N8
+
+NAME: "Switch 1 FRU Uplink Module 1", DESCR: "4x10G Uplink Module"
+PID: <span class="hl">C9300-NM-4X</span>       , VID: V02  , SN: FOC21471K9W
+
+NAME: "TenGigabitEthernet1/1/1", DESCR: "SFP-10GBase-SR"
+PID: <span class="hl">SFP-10G-SR</span>        , VID: V03  , SN: AVD2043A1BC   <span class="cmt">← the optic feeding the inter-rack fibre</span>
+
+NAME: "Power Supply Module 1", DESCR: "715W AC Config 1 Power Supply"
+PID: PWR-C1-715WAC     , VID: V01  , SN: DTN2043V0RT</pre>
+  </div>
+  <div class="note"><span class="lbl">Reads as</span>CSW-A1 is a Catalyst 9300-48P, serial FCW2145L0N8, with a 4×10G uplink module and an SFP-10G-SR optic in Te1/1/1 — that optic is one end of the fibre run to Rack R2 that we trace in §7.</div>
+
+  <h3>5.2 &nbsp;The port-map source — <span class="mono">show interfaces status</span></h3>
+  <p class="cmd-goal">Goal: the single most useful audit command — one line per port with <b>state, VLAN, negotiated speed/duplex, and media</b>. This is exactly what the colour map in §4 is drawn from.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 &middot; Cisco IOS-XE</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">show interfaces status</span>
+Port      Name               Status       Vlan       Duplex  Speed Type
+Gi1/0/1   AP-R1-lobby        <span class="k">connected</span>    30         a-full a-1000 10/100/1000BaseTX
+Gi1/0/2   Phone-recept       <span class="k">connected</span>    20         a-full  a-100 10/100/1000BaseTX
+Gi1/0/7   SRV-A-app01        <span class="k">connected</span>    10         a-full a-1000 10/100/1000BaseTX
+Gi1/0/9   (patched-spare)    <span class="b">notconnect</span>   10           auto   auto 10/100/1000BaseTX
+Gi1/0/20  RESERVED-lab       disabled     1            auto   auto 10/100/1000BaseTX
+Gi1/0/30  CAM-dock           <span class="b">err-disabled</span> 40           auto   auto 10/100/1000BaseTX
+Gi1/0/47  ASW-A2-lag         <span class="k">connected</span>    trunk        full   1000 10/100/1000BaseTX
+Gi1/0/48  ASW-A2-lag         <span class="k">connected</span>    trunk        full   1000 10/100/1000BaseTX
+Te1/1/1   ASW-B1-uplink      <span class="k">connected</span>    trunk        full    10G SFP-10GBase-SR
+Te1/1/4   Router-uplink      <span class="k">connected</span>    trunk        full    10G SFP-10GBase-SR
+<span class="cmt">     … 48 access + 4 SFP+ ports total (output trimmed to the interesting rows)</span></pre>
+  </div>
+  <div class="note"><span class="lbl">Decode the states</span><b>connected</b> = Up (green in §4). <b>notconnect</b> = no link even though the port is enabled → our No-link/amber (Gi1/0/9). <b>disabled</b> = someone ran <span class="mono">shutdown</span> → Reserved/grey (Gi1/0/20). <b>err-disabled</b> = the port shut <em>itself</em> (here a port-security violation on the CCTV port) → Err/red (Gi1/0/30). The <span class="mono">a-</span> prefix means auto-negotiated; a gigabit device stuck at <span class="mono">a-100</span>/<span class="mono">half</span> is the classic bad-cable signature.</div>
+
+  <h3>5.3 &nbsp;Layer-3 gateways — <span class="mono">show ip interface brief</span></h3>
+  <p class="cmd-goal">Goal: list the routed interfaces (the VLAN gateways this switch owns). This is why the host trace in §7 <em>ends</em> at CSW-A1.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 &middot; Cisco IOS-XE</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">show ip interface brief | exclude unassigned</span>
+Interface              IP-Address      OK? Method Status                Protocol
+Vlan10                 10.10.10.1      YES NVRAM  up                    up
+Vlan20                 10.10.20.1      YES NVRAM  up                    up
+Vlan30                 10.10.30.1      YES NVRAM  up                    up
+Vlan40                 10.10.40.1      YES NVRAM  up                    up
+Vlan99                 <span class="hl">10.10.0.11</span>      YES NVRAM  up                    up   <span class="cmt">← management IP</span></pre>
+  </div>
+  <div class="note"><span class="lbl">Reads as</span>CSW-A1 is the Layer-3 <b>gateway</b> for VLANs 10/20/30/40. That is why the host trace ends here: <span class="mono">10.10.10.1</span> (the <span class="mono">Vlan10</span> SVI) is SRV-B-07's default gateway.</div>
+
+  <h3>5.4 &nbsp;Optical light levels — <span class="mono">show interfaces transceiver</span></h3>
+  <p class="cmd-goal">Goal: read the <b>transmit/receive light</b> on every fibre optic. Essential before and after tracing a fibre run — weak Rx means a dirty connector, bent fibre, or a dying laser.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 &middot; Cisco IOS-XE</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">show interfaces transceiver</span>
+           Temperature  Voltage  Current   Optical    Optical
+Port       (Celsius)    (Volts)  (mA)      Tx (dBm)   Rx (dBm)
+---------  -----------  -------  --------  ---------  ---------
+Te1/1/1      36.9       3.25     6.5        -2.3       <span class="hl">-4.1</span>       <span class="cmt">← fibre to ASW-B1 (Rack R2)</span>
+Te1/1/4      35.8       3.22     6.4        -2.4       -3.9
+
+<span class="prompt">CSW-A1#</span> <span class="cmd">show interfaces transceiver detail</span>   <span class="cmt">(adds the alarm/warning thresholds)</span>
+                              High Alarm  High Warn  Low Warn   Low Alarm
+           Optical Rx Power   Threshold   Threshold  Threshold  Threshold
+Port       (dBm)              (dBm)       (dBm)      (dBm)      (dBm)
+---------  -----------------  ----------  ---------  ---------  ---------
+Te1/1/1     -4.1                    2.0        -1.0      -14.4      -17.1</pre>
+  </div>
+  <div class="note tip"><span class="lbl">Reads as</span>Rx of <b>−4.1 dBm</b> sits comfortably between the low-warning (−14.4) and high-warning (−1.0) thresholds — a healthy 10G-SR link with plenty of budget across the two patch panels and the trunk. Record this number; if it later drifts toward −10 dBm, a connector on the traced path is getting dirty.</div>
+
+  <h3>5.5 &nbsp;PoE — <span class="mono">show power inline</span></h3>
+  <p class="cmd-goal">Goal: see which ports are <b>delivering power</b>, to what class of device, how many watts, and how much of the chassis budget is left.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 &middot; Cisco IOS-XE</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">show power inline</span>
+Available:<span class="hl">740.0</span>(w)  Used:<span class="hl">296.0</span>(w)  Remaining:444.0(w)
+
+Interface Admin  Oper       Power   Device              Class Max
+                            (Watts)
+--------- ------ ---------- ------- ------------------- ----- ----
+Gi1/0/1   auto   on         18.5    AIR-AP9130          4     30.0
+Gi1/0/2   auto   on         6.5     IP Phone 8841       2     30.0
+Gi1/0/4   auto   on         12.9    AXIS-CAM            4     30.0
+Gi1/0/9   auto   off        0.0     n/a                 n/a   30.0
+Gi1/0/20  static off        0.0     n/a                 n/a   30.0
+<span class="cmt">     … 18 powered ports, 296.0 W drawn of the 740 W budget (matches the PoE tile in §4)</span></pre>
+  </div>
+
+  <h3>5.6 &nbsp;VLANs &amp; trunks — <span class="mono">show vlan brief</span> &amp; <span class="mono">show interfaces trunk</span></h3>
+  <p class="cmd-goal">Goal: confirm which access ports are in which VLAN, and which uplinks carry which VLANs (and their native VLAN).</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 &middot; Cisco IOS-XE</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">show vlan brief</span>
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Gi1/0/16, Gi1/0/27, Gi1/0/33
+10   STAFF-DATA                       active    Gi1/0/7, Gi1/0/8, Gi1/0/11
+20   VOICE                            active    Gi1/0/2, Gi1/0/5
+30   WIFI                             active    Gi1/0/1, Gi1/0/6
+40   CCTV                             active    Gi1/0/4, Gi1/0/30
+99   MGMT                             active
+
+<span class="prompt">CSW-A1#</span> <span class="cmd">show interfaces trunk</span>
+Port        Mode         Encapsulation  Status        Native vlan
+Te1/1/1     on           802.1q         trunking      99
+Po1         on           802.1q         trunking      99
+Te1/1/4     on           802.1q         trunking      99
+
+Port        Vlans allowed on trunk
+Te1/1/1     1,10,20,30,40,99
+Po1         1,10,20,30,40,99</pre>
+  </div>
+  <div class="note"><span class="lbl">Note</span>Access ports appear under <span class="mono">show vlan brief</span>; trunk/uplink ports do <em>not</em> — they are listed by <span class="mono">show interfaces trunk</span> instead. A native-VLAN mismatch between the two ends of a trunk shows up here instantly.</div>
+
+  <h3>5.7 &nbsp;Uplink bundles — <span class="mono">show etherchannel summary</span></h3>
+  <p class="cmd-goal">Goal: verify every cable in a LAG is actually carrying traffic. Here <b>Po1</b> bundles Gi1/0/47 + Gi1/0/48 up to the TP-Link ASW-A2.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 &middot; Cisco IOS-XE</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">show etherchannel summary</span>
+Flags:  D - down        P - bundled in port-channel
+        I - stand-alone  s - suspended
+        S - Layer2       U - in use
+
+Number of channel-groups in use: 1
+Number of aggregators:           1
+
+Group  Port-channel  Protocol    Ports
+------+-------------+-----------+------------------------------------------
+1      <span class="hl">Po1(SU)</span>         LACP      Gi1/0/47<span class="k">(P)</span>   Gi1/0/48<span class="k">(P)</span></pre>
+  </div>
+  <div class="note"><span class="lbl">Reads as</span><span class="mono">Po1(SU)</span> = Layer-2 bundle, in use; both members show <span class="mono">(P)</span> = bundled and forwarding. If one leg showed <span class="mono">(s)</span> or <span class="mono">(D)</span>, that cable is the problem — a single dead patch cord in the pair.</div>
+
+  <h3>5.8 &nbsp;Cable health — <span class="mono">show interfaces counters errors</span></h3>
+  <p class="cmd-goal">Goal: a rack-wide "which cables are dirty" scan. Non-zero <b>FCS-Err / Align-Err / Runts</b> point at bad terminations, EMI, or duplex mismatch.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 &middot; Cisco IOS-XE</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">show interfaces counters errors</span>
+Port        Align-Err    FCS-Err   Xmit-Err    Rcv-Err  UnderSize  OutDiscards
+Gi1/0/7             0          0          0          0          0            0
+Gi1/0/13    <span class="b">       14</span>   <span class="b">      41</span>          0          6          0            0   <span class="cmt">← suspect cable/crimp</span>
+Te1/1/1             0          0          0          0          0            0</pre>
+  </div>
+  <div class="note warnbox"><span class="lbl">Action</span>Gi1/0/13 is <em>up</em> and passing traffic, but climbing FCS/Align errors mean a marginal run. Re-seat, then re-terminate or replace the patch cord, then <span class="mono">clear counters Gi1/0/13</span> and re-check. For copper fault distance run <span class="mono">test cable-diagnostics tdr interface Gi1/0/13</span>, then <span class="mono">show cable-diagnostics tdr interface Gi1/0/13</span>.</div>
+
+  <div class="note"><span class="lbl">Nexus (NX-OS) differences</span>Data-centre Nexus switches use the <b>singular</b> forms: <span class="mono">show interface status</span>, <span class="mono">show interface brief</span> (with a handy <em>Reason</em> column like "SFP not inserted"), <span class="mono">show interface eth1/1 transceiver details</span> (plural "details"), and <span class="mono">show port-channel summary</span> instead of etherchannel. LLDP needs <span class="mono">feature lldp</span> first; CDP is on by default.</div>
+</section>
+
+<!-- ============ SECTION 5b (TP-Link) ============ -->
+<section id="s5b">
+  <h2><span class="num">5b</span>Commands &amp; expected outputs — TP-Link</h2>
+  <div class="section-rule"></div>
+  <p class="lead">TP-Link JetStream switches (here <b>ASW-B2</b>, and <b>ASW-A2</b> for PoE) run a Cisco-like CLI, but with enough differences to trip up an auditor. The web GUI (standalone or Omada) reaches the same data — paths are tabled at the end. Everything below is read-only.</p>
+
+  <div class="note warnbox"><span class="lbl">Five ways TP-Link differs from Cisco</span>
+  <b>1.</b> Enter config with <span class="mono">configure</span>, <em>not</em> <span class="mono">configure terminal</span>. &nbsp;
+  <b>2.</b> The <span class="mono">enable</span> password is often blank by default — just press Enter to reach <span class="mono">Switch#</span>. &nbsp;
+  <b>3.</b> Interfaces are <span class="mono">gigabitEthernet 1/0/1</span> (unit/slot/port) — you must type the media word; <span class="mono">int gi1/0/1</span> shorthand is not accepted. &nbsp;
+  <b>4.</b> Many <span class="mono">show</span> commands need the <span class="mono">interface</span> keyword (e.g. <span class="mono">show lldp neighbor-information interface gigabitEthernet 1/0/24</span>). &nbsp;
+  <b>5.</b> Save with <span class="mono">copy running-config startup-config</span> — config is lost on reboot otherwise.</div>
+
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-B2 &middot; TP-Link JetStream</span><span class="tag">mode ladder</span></div>
+<pre><span class="prompt">ASW-B2&gt;</span> <span class="cmd">enable</span>                  <span class="cmt"># User EXEC → Privileged EXEC (blank password: press Enter)</span>
+<span class="prompt">ASW-B2#</span> <span class="cmd">configure</span>               <span class="cmt"># NOT "configure terminal"</span>
+<span class="prompt">ASW-B2(config)#</span> <span class="cmd">interface gigabitEthernet 1/0/7</span>
+<span class="prompt">ASW-B2(config-if)#</span> <span class="cmd">end</span>
+<span class="prompt">ASW-B2#</span> <span class="cmd">copy running-config startup-config</span>   <span class="cmt"># SAVE</span></pre>
+  </div>
+  <div class="note"><span class="lbl">SSH to an Omada-managed switch</span>Adopted switches keep SSH but with legacy crypto. If your client refuses to connect, use:
+  <span class="mono">ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 -oHostKeyAlgorithms=+ssh-dss -oCiphers=+aes128-cbc admin@10.10.0.22</span></div>
+
+  <h3>5b.1 &nbsp;Identity — <span class="mono">show system-info</span></h3>
+  <p class="cmd-goal">Goal: model, hardware revision, firmware baseline, MAC OUI, and uptime in one screen.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-B2 &middot; TP-Link JetStream</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">ASW-B2#</span> <span class="cmd">show system-info</span>
+
+ System Description     - JetStream 28-Port Gigabit L2 Managed Switch
+ Device Name            - <span class="hl">ASW-B2</span>
+ Device Location        - SPP-DC1 Rack R2 U38
+ System Contact         - netops@sprintpark
+ Hardware Version       - TL-SG3428 2.0
+ Firmware Version       - <span class="hl">3.0.6 Build 20240118 Rel.42152(s)</span>
+ MAC Address            - 00-0A-EB-22-B2-01
+ System Time            - 2026-07-10 09:14:23
+ Run Time               - 41 day - 6 hour - 41 min - 08 sec</pre>
+  </div>
+
+  <h3>5b.2 &nbsp;Live vs. intended state — <span class="mono">show interface status</span> + <span class="mono">show interface configuration</span></h3>
+  <p class="cmd-goal">Goal: <b>status</b> shows the <em>operational</em> link; <b>configuration</b> shows the <em>admin intent</em>. You need both, because TP-Link's status shows only <span class="mono">LinkUp/LinkDown</span> — it does <em>not</em> distinguish "admin-disabled" from "cable-in-but-no-link". The configuration view resolves it.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-B2 &middot; TP-Link JetStream</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">ASW-B2#</span> <span class="cmd">show interface status</span>
+Port      Status      Speed     Duplex    FlowCtrl
+--------  ----------  --------  --------  --------
+Gi1/0/1   <span class="k">LinkUp</span>      1000M     Full      Disable
+Gi1/0/7   <span class="k">LinkUp</span>      1000M     Full      Disable    <span class="cmt">← SRV-B-07</span>
+Gi1/0/9   <span class="b">LinkDown</span>    Auto      Auto      Disable    <span class="cmt">← cable in, no link (No-link)</span>
+Gi1/0/10  <span class="b">LinkDown</span>    Auto      Auto      Disable    <span class="cmt">← but is this admin-off? check config ↓</span>
+Gi1/0/24  <span class="k">LinkUp</span>      1000M     Full      Disable    <span class="cmt">← uplink to ASW-B1</span>
+Gi1/0/25  <span class="b">LinkDown</span>    Auto      Auto      Disable    <span class="cmt">← empty SFP slot</span>
+<span class="cmt">     … 24 access (Gi1/0/1-24) + 4 SFP (Gi1/0/25-28)</span></pre>
+  </div>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-B2 &middot; TP-Link JetStream</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">ASW-B2#</span> <span class="cmd">show interface configuration gigabitEthernet 1/0/9</span>
+Port     State   Speed    Duplex  FlowCtrl  Description
+-------- ------  -------- ------  --------  -----------
+Gi1/0/9  <span class="k">Enable</span>  Auto     Auto    Disable   patched-spare      <span class="cmt">← State Enable + LinkDown = No-link</span>
+
+<span class="prompt">ASW-B2#</span> <span class="cmd">show interface configuration gigabitEthernet 1/0/10</span>
+Port     State    Speed    Duplex  FlowCtrl  Description
+-------- ------   -------- ------  --------  -----------
+Gi1/0/10 <span class="b">Disable</span>  Auto     Auto    Disable   RESERVED           <span class="cmt">← State Disable = admin-off (Reserved)</span></pre>
+  </div>
+  <div class="note tip"><span class="lbl">The rule</span><b>LinkUp</b> → Up. <b>LinkDown + State Enable</b> → No-link (amber). <b>LinkDown + State Disable</b> → Reserved (grey). That two-command check is how the §4 map colours every TP-Link port correctly.</div>
+
+  <h3>5b.3 &nbsp;Who's on the other end — <span class="mono">show lldp neighbor-information</span></h3>
+  <p class="cmd-goal">Goal: read the neighbour on a port. LLDP is vendor-neutral, so a TP-Link switch happily sees its Cisco neighbour — here ASW-B2's uplink lands on the Cisco ASW-B1.</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-B2 &middot; TP-Link JetStream</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">ASW-B2#</span> <span class="cmd">show lldp neighbor-information interface gigabitEthernet 1/0/24</span>
+
+LLDP Neighbor Information:
+Interface Gi1/0/24 has 1 neighbor(s):
+
+Neighbor index 1:
+  Chassis type                  : MAC address
+  Chassis ID                    : 00-1e-bd-99-21-00
+  Port ID type                  : Interface name
+  Port ID                       : <span class="hl">Gi1/0/23</span>
+  Port description              : ASW-B2-downlink
+  TTL                           : 120
+  System name                   : <span class="hl">ASW-B1</span>
+  System description            : Cisco IOS Software, C9200L, Version 17.9.4a
+  System capabilities enabled   : Bridge, Router
+  Management address            : <span class="hl">10.10.0.21</span></pre>
+  </div>
+  <div class="note"><span class="lbl">Reads as</span>ASW-B2 port Gi1/0/24 connects to <b>ASW-B1 port Gi1/0/23</b> (mgmt 10.10.0.21). That single edge is one hop of the host trace in §7 — and no toner was needed.</div>
+
+  <h3>5b.4 &nbsp;Which device is where — <span class="mono">show mac address-table</span></h3>
+  <p class="cmd-goal">Goal: find which port a MAC lives on. A port with <b>one</b> MAC = a device directly attached; a port with <b>many</b> = a downstream switch (the uplink).</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-B2 &middot; TP-Link JetStream</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">ASW-B2#</span> <span class="cmd">show mac address-table address 8c-16-45-22-02-07</span>
+
+  MAC                VLAN     Port        Type       Aging
+-----------------  ------  -----------  ---------  --------
+<span class="hl">8c-16-45-22-02-07</span>    10     <span class="hl">Gi1/0/7</span>      dynamic    enable
+
+Total MAC Address: 1
+
+<span class="prompt">ASW-B2#</span> <span class="cmd">show mac address-table interface gigabitEthernet 1/0/24 count</span>
+Total MAC Address on port Gi1/0/24: 34      <span class="cmt">← many MACs = this is the uplink, devices are downstream</span></pre>
+  </div>
+
+  <h3>5b.5 &nbsp;VLAN membership — <span class="mono">show vlan</span></h3>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-B2 &middot; TP-Link JetStream</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">ASW-B2#</span> <span class="cmd">show vlan</span>
+ VLAN  Name              Status    Ports
+-----  ----------------  --------  --------------------------------------
+    1  System-VLAN       active    Gi1/0/1-6, Gi1/0/8, Gi1/0/11-23, Gi1/0/25-28
+   10  STAFF-DATA        active    Gi1/0/7, <span class="hl">Gi1/0/24(t)</span>
+   99  MGMT              active    Gi1/0/24(t)</pre>
+  </div>
+  <div class="note"><span class="lbl">Reads as</span><span class="mono">Gi1/0/7</span> is an untagged (access) member of VLAN 10 → SRV-B-07 is on Staff data. <span class="mono">Gi1/0/24(t)</span> — the <span class="mono">(t)</span> means tagged — carries VLAN 10 and 99, confirming it is the trunk uplink.</div>
+
+  <h3>5b.6 &nbsp;Link aggregation — <span class="mono">show etherchannel</span> &amp; <span class="mono">show lacp</span> (on ASW-A2)</h3>
+  <p class="cmd-goal">Goal: confirm every leg of a bundle is active. On TP-Link a LAG is called an EtherChannel. ASW-A2's bundle uses 1000BASE-T SFPs in Gi1/0/27–28, patched up to CSW-A1's Po1 (Gi1/0/47–48).</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-A2 &middot; TP-Link JetStream (PoE)</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">ASW-A2#</span> <span class="cmd">show etherchannel</span>
+Group  Mode    Member-Ports                Active-Ports
+-----  ------  --------------------------  --------------------------
+1      LACP    Gi1/0/27, Gi1/0/28          <span class="k">Gi1/0/27, Gi1/0/28</span>
+
+<span class="prompt">ASW-A2#</span> <span class="cmd">show lacp</span>
+Port      LACP-State  Mode     Priority  Aggregated
+--------  ----------  -------  --------  ----------
+Gi1/0/27  <span class="k">Up</span>          Active   32768     Yes
+Gi1/0/28  <span class="k">Up</span>          Active   32768     Yes</pre>
+  </div>
+  <div class="note"><span class="lbl">Reads as</span>Both members appear under <em>Active-Ports</em> and are <span class="mono">Aggregated: Yes</span> — the whole 2 Gbps bundle is healthy. If Gi1/0/28 were missing from Active-Ports, that one patch cord (or its SFP) is the fault.</div>
+
+  <h3>5b.7 &nbsp;PoE — <span class="mono">show power inline information interface</span> (on ASW-A2)</h3>
+  <p class="cmd-goal">Goal: per-port watts, current, voltage, PD class, ON/OFF, and the system budget. (ASW-B2 has no PoE; ASW-A2 is the TL-SG3428MP PoE model.)</p>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-A2 &middot; TP-Link JetStream (PoE)</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">ASW-A2#</span> <span class="cmd">show power inline information interface</span>
+Interface  Power(W)  Current(mA)  Voltage(V)  PD-Class   Power-Status
+---------  --------  -----------  ----------  ---------  ------------
+Gi1/0/1    4.1       78           54.2        Class 2    <span class="k">ON</span>
+Gi1/0/2    7.3       135          54.1        Class 3    <span class="k">ON</span>
+Gi1/0/6    0.0       0            0.0         N/A        OFF
+Gi1/0/7    12.9      239          54.0        Class 4    <span class="k">ON</span>
+
+System Power Limit        : <span class="hl">384.0</span> W
+System Power Consumption  : <span class="hl">172.0</span> W
+System Power Remain       : 212.0 W</pre>
+  </div>
+  <div class="note"><span class="lbl">Also useful</span><span class="mono">show power inline configuration interface</span> shows the <em>policy</em> (per-port Enable/priority/power-limit/time-range) — handy for spotting a device that should be powered but is capped or scheduled off.</div>
+
+  <h3>5b.8 &nbsp;Cable health — <span class="mono">show interface counters</span> &amp; the built-in cable test</h3>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">ASW-B2 &middot; TP-Link JetStream</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">ASW-B2#</span> <span class="cmd">show interface counters gigabitEthernet 1/0/7</span>
+Port: Gi1/0/7
+ InOctets           : 1245789632
+ InErrors           : 0
+ InDiscards         : 0
+ OutOctets          : 987654321
+ OutErrors          : 0
+ OutDiscards        : 0</pre>
+  </div>
+  <div class="note tip"><span class="lbl">Find a broken cable's distance</span>JetStream switches include a copper TDR cable test: GUI <span class="mono">MAINTENANCE › Device Diagnostics › Cable Test</span> (or the CLI diagnostics on many models). It reports each pair as <b>Normal / Open / Short</b> and the approximate fault distance in metres — invaluable for a run that vanishes inside a wall or tray.</div>
+
+  <h3>5b.9 &nbsp;Same data from the web GUI</h3>
+  <p>Many TP-Link racks are managed by browser first. These paths reach the same facts.</p>
+  <div class="two-col">
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Audit target</th><th>Standalone JetStream UI</th></tr></thead>
+      <tbody>
+        <tr><td>Model / firmware / uptime</td><td class="mono">SYSTEM › System Info › System Summary</td></tr>
+        <tr><td>Port status / speed / description</td><td class="mono">L2 FEATURES › Switching › Port › Port Config</td></tr>
+        <tr><td>MAC address table</td><td class="mono">L2 FEATURES › MAC Address Table</td></tr>
+        <tr><td>VLAN membership &amp; tags</td><td class="mono">VLAN › 802.1Q VLAN</td></tr>
+        <tr><td>LAG / aggregation</td><td class="mono">L2 FEATURES › LAG</td></tr>
+        <tr><td>LLDP neighbour info</td><td class="mono">L2 FEATURES › LLDP › Neighbor Info</td></tr>
+        <tr><td>PoE per-port + budget</td><td class="mono">PoE › PoE Config</td></tr>
+        <tr><td>Error counters</td><td class="mono">MAINTENANCE › Traffic Monitor</td></tr>
+        <tr><td>Cable test (TDR)</td><td class="mono">MAINTENANCE › Device Diagnostics › Cable Test</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Audit target</th><th>Omada SDN Controller</th></tr></thead>
+      <tbody>
+        <tr><td>Port status / link / speed</td><td class="mono">Devices › [switch] › Ports</td></tr>
+        <tr><td>PoE consumption</td><td class="mono">Device Config › Switch Ports › PoE</td></tr>
+        <tr><td>Switch overview / uptime</td><td class="mono">Devices › [switch] › Details</td></tr>
+        <tr><td>VLAN</td><td class="mono">Config › VLAN Interface</td></tr>
+        <tr><td>LAG</td><td class="mono">Devices › [switch] › Ports › LAG</td></tr>
+        <tr><td>LLDP / topology</td><td class="mono">Map / Topology view</td></tr>
+        <tr><td>MAC address table</td><td style="color:var(--crit-ink)"><b>Not in UI — SSH only</b></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class="note warnbox"><span class="lbl">Omada gap to plan for</span>The Omada controller does <b>not</b> expose the MAC-address table, and gives only a topology picture rather than raw per-port LLDP fields. For a real cable audit you still need SSH to the switch (with the legacy-crypto flags above) to run <span class="mono">show mac address-table</span> and <span class="mono">show lldp neighbor-information</span>.</div>
+</section>
+
+<!-- ============ SECTION 6 ============ -->
+<section id="s6">
+  <h2><span class="num">6</span>Neighbour discovery — building the map</h2>
+  <div class="section-rule"></div>
+  <p class="lead">Before tracing a single cable by hand, let the switches tell you how they are wired. <b>LLDP</b> (vendor-neutral) and Cisco's <b>CDP</b> make every switch announce who is on the other end of each port. Walk the command on all four switches and you have the whole backbone map — no ladder, no toner.</p>
+
+  <div class="two-col">
+    <div class="card">
+      <h4>The method (repeat on every switch)</h4>
+      <ol style="margin:0;padding-left:20px;font-size:14.5px">
+        <li>Run <span class="mono">show lldp neighbors</span> (Cisco) / <span class="mono">show lldp neighbor-information</span> (TP-Link).</li>
+        <li>Each line is one <b>edge</b>: local port ↔ remote device + remote port.</li>
+        <li>Add <span class="mono">show cdp neighbors detail</span> on Cisco for neighbour IP, platform and duplex.</li>
+        <li>Repeat on the neighbour you just found, until you reach the edge (a host).</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4>Two things LLDP will not show</h4>
+      <p style="margin:0 0 8px"><b>Passive panels.</b> Patch panels and trunks have no chip and no MAC — they are invisible. LLDP reports the two switches as "directly connected" even when two patch panels sit between them. You fill those in from the cable schedule (§9).</p>
+      <p style="margin:0"><b>Silent hosts.</b> A server or camera only appears if it runs an LLDP agent — most do not. For those, use the <b>MAC address-table</b> (§7).</p>
+    </div>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 920 500" role="img" aria-label="Logical topology diagram of racks R1 and R2 showing switches, uplinks and the inter-rack fibre">
+      <!-- rack zones -->
+      <rect x="20" y="86" width="430" height="398" rx="14" fill="#eef4fc" stroke="#cfe0f6"/>
+      <rect x="470" y="86" width="430" height="398" rx="14" fill="#e9f5ee" stroke="#c8e6d3"/>
+      <text x="38" y="112" font-family="system-ui,sans-serif" font-size="13" font-weight="800" fill="#1a4f95">RACK R1 · Distribution</text>
+      <text x="488" y="112" font-family="system-ui,sans-serif" font-size="13" font-weight="800" fill="#0a6b3a">RACK R2 · Access</text>
+
+      <!-- links (drawn first, under nodes) -->
+      <g stroke-linecap="round" font-family="system-ui,sans-serif" font-size="11.5" fill="#52514e">
+        <!-- router to CSW-A1 -->
+        <line x1="460" y1="70" x2="250" y2="150" stroke="#898781" stroke-width="2.5"/>
+        <text x="322" y="100" text-anchor="middle">10G · Te1/1/4</text>
+        <!-- CSW-A1 to ASW-A2 (LAG) -->
+        <line x1="200" y1="220" x2="150" y2="298" stroke="#2a78d6" stroke-width="3.5"/>
+        <text x="120" y="266" text-anchor="middle" fill="#1a4f95" font-weight="700">Po1 · 2×1G LAG</text>
+        <!-- CSW-A1 to ASW-B1 : INTER-RACK fibre -->
+        <line x1="348" y1="185" x2="560" y2="185" stroke="#2a78d6" stroke-width="5"/>
+        <rect x="428" y="168" width="64" height="34" rx="7" fill="#f3eefb" stroke="#c9b8ee"/>
+        <text x="460" y="189" text-anchor="middle" font-size="10.5" fill="#4a3aa7" font-weight="700">2× panels</text>
+        <text x="460" y="150" text-anchor="middle" fill="#1a4f95" font-weight="800" font-size="12">10G FIBRE · inter-rack trunk</text>
+        <text x="360" y="205" text-anchor="start" font-size="10.5">Te1/1/1</text>
+        <text x="552" y="205" text-anchor="end" font-size="10.5">Te1/1/1</text>
+        <!-- ASW-B1 to ASW-B2 -->
+        <line x1="668" y1="220" x2="700" y2="298" stroke="#898781" stroke-width="2.5"/>
+        <text x="712" y="266" text-anchor="start">1G copper</text>
+        <text x="636" y="240" text-anchor="end" font-size="10.5">Gi1/0/23</text>
+        <text x="708" y="292" text-anchor="start" font-size="10.5">Gi1/0/24</text>
+        <!-- ASW-B2 to SRV -->
+        <line x1="700" y1="356" x2="700" y2="408" stroke="#0ca30c" stroke-width="2.5"/>
+        <text x="712" y="386" text-anchor="start" fill="#046804" font-weight="700">Gi1/0/7 · VLAN10</text>
+      </g>
+
+      <!-- nodes -->
+      <g font-family="system-ui,sans-serif">
+        <!-- router -->
+        <rect x="390" y="24" width="140" height="46" rx="10" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
+        <text x="460" y="46" text-anchor="middle" font-size="13" font-weight="800" fill="#0b0b0b">RTR-EDGE1</text>
+        <text x="460" y="61" text-anchor="middle" font-size="10.5" fill="#898781">edge router / firewall</text>
+        <!-- CSW-A1 -->
+        <rect x="150" y="150" width="198" height="70" rx="10" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+        <text x="249" y="176" text-anchor="middle" font-size="14" font-weight="800" fill="#0b0b0b">CSW-A1</text>
+        <text x="249" y="193" text-anchor="middle" font-size="10.5" fill="#52514e">Cisco 9300-48P</text>
+        <text x="249" y="209" text-anchor="middle" font-size="10.5" fill="#1a4f95" font-weight="700">L3 gateway · distribution</text>
+        <!-- ASW-A2 -->
+        <rect x="60" y="298" width="176" height="60" rx="10" fill="#ffffff" stroke="#0ca30c" stroke-width="2"/>
+        <text x="148" y="322" text-anchor="middle" font-size="13" font-weight="800" fill="#0b0b0b">ASW-A2</text>
+        <text x="148" y="339" text-anchor="middle" font-size="10.5" fill="#52514e">TP-Link SG3428MP · PoE</text>
+        <!-- ASW-B1 -->
+        <rect x="560" y="150" width="198" height="70" rx="10" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+        <text x="659" y="176" text-anchor="middle" font-size="14" font-weight="800" fill="#0b0b0b">ASW-B1</text>
+        <text x="659" y="193" text-anchor="middle" font-size="10.5" fill="#52514e">Cisco 9200L-24P</text>
+        <text x="659" y="209" text-anchor="middle" font-size="10.5" fill="#0a6b3a" font-weight="700">access · PoE</text>
+        <!-- ASW-B2 -->
+        <rect x="612" y="298" width="176" height="60" rx="10" fill="#ffffff" stroke="#0ca30c" stroke-width="2"/>
+        <text x="700" y="322" text-anchor="middle" font-size="13" font-weight="800" fill="#0b0b0b">ASW-B2</text>
+        <text x="700" y="339" text-anchor="middle" font-size="10.5" fill="#52514e">TP-Link SG3428</text>
+        <!-- SRV -->
+        <rect x="636" y="408" width="128" height="44" rx="10" fill="#eaf6ee" stroke="#0ca30c" stroke-width="1.5"/>
+        <text x="700" y="428" text-anchor="middle" font-size="12.5" font-weight="800" fill="#046804">SRV-B-07</text>
+        <text x="700" y="443" text-anchor="middle" font-size="10" fill="#0a6b3a">10.10.10.77</text>
+      </g>
+    </svg>
+    <figcaption><b>Logical topology.</b> Blue links are the backbone (trunks/LAG); the thick blue line is the <b>inter-rack</b> 10G fibre, which physically passes through <b>two patch panels</b> (§7–8). Green is the host drop we trace. Cisco switches are outlined blue, TP-Link green.</figcaption>
+  </figure>
+
+  <h3>The adjacency table (from LLDP/CDP across all four switches)</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Local device · port</th><th>Neighbour · port</th><th>Link</th><th>Seen by</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">CSW-A1 · Te1/1/4</td><td class="mono">RTR-EDGE1 · Gi0/0/1</td><td>10G fibre</td><td>CDP + LLDP</td><td><span class="pill pill-trunk">uplink</span></td></tr>
+      <tr><td class="mono">CSW-A1 · Te1/1/1</td><td class="mono">ASW-B1 · Te1/1/1</td><td>10G fibre <b>(inter-rack)</b></td><td>CDP + LLDP</td><td><span class="pill pill-trunk">trunk</span></td></tr>
+      <tr><td class="mono">CSW-A1 · Gi1/0/47–48</td><td class="mono">ASW-A2 · Gi1/0/27–28</td><td>2×1G LAG (Po1/ag1)</td><td><b>LLDP only</b> (TP-Link)</td><td><span class="pill pill-trunk">trunk</span></td></tr>
+      <tr><td class="mono">ASW-B1 · Gi1/0/23</td><td class="mono">ASW-B2 · Gi1/0/24</td><td>1G copper</td><td>LLDP</td><td><span class="pill pill-trunk">trunk</span></td></tr>
+      <tr><td class="mono">CSW-A1 · Gi1/0/1</td><td class="mono">AP-R1-lobby</td><td>1G copper (PoE)</td><td>CDP + LLDP-MED</td><td><span class="pill pill-up">WiFi AP</span></td></tr>
+      <tr><td class="mono">ASW-B2 · Gi1/0/7</td><td class="mono">SRV-B-07</td><td>1G copper</td><td><b>MAC table</b> (no LLDP)</td><td><span class="pill pill-up">host</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note"><span class="lbl">Cross-vendor catch</span>The CSW-A1 ↔ ASW-A2 link is discovered by <b>LLDP only</b> — CDP is Cisco-proprietary, so the TP-Link switch is invisible to <span class="mono">show cdp neighbors</span>. Whenever a Cisco port shows nothing in CDP but the port is clearly up and trunking, check LLDP: the neighbour is almost always a non-Cisco device.</div>
+</section>
+
+<!-- ============ SECTION 7 ============ -->
+<section id="s7">
+  <h2><span class="num">7</span>End-to-end cable trace</h2>
+  <div class="section-rule"></div>
+  <p class="lead">A trace answers "if I unplug <em>here</em>, where does the other end come out — and what does the cable pass through on the way?" We do it twice: first a <b>physical fibre trace</b> that walks every device in between (the two patch panels and the trunk that LLDP cannot see), then a <b>host trace</b> that follows one server across three switches using only the MAC table and LLDP.</p>
+
+  <h3>Trace A — the inter-rack fibre, element by element</h3>
+  <p>LLDP reports <span class="mono">CSW-A1 Te1/1/1 ↔ ASW-B1 Te1/1/1</span> as a single direct link. Physically it is <b>seven elements</b>. Reading top to bottom is Rack&nbsp;R1 → Rack&nbsp;R2:</p>
+
+  <div class="card">
+  <div class="hops">
+    <div class="hop">
+      <div class="rail"><div class="node n-active">◉</div><div class="stem"></div></div>
+      <div class="body"><div class="t">CSW-A1 · Te1/1/1 <span class="pill pill-up">active endpoint</span></div><div class="d">SFP+ 10G-SR optic (SN AVD2043A1BC). Measured Rx −4.1 dBm — healthy.</div><div class="m">R1·U39 · label R1.U39-CSWA1:Te1/1/1</div></div>
+    </div>
+    <div class="hop">
+      <div class="rail"><div class="node" style="background:var(--free-bg);color:var(--free-ink)">⌇</div><div class="stem"></div></div>
+      <div class="body"><div class="t">Patch cord PC-A-014</div><div class="d">LC–LC duplex, OM4 (aqua jacket), 2 m — from the switch optic to the fibre panel, inside Rack R1.</div><div class="m">cord ID PC-A-014</div></div>
+    </div>
+    <div class="hop">
+      <div class="rail"><div class="node n-passive">▤</div><div class="stem"></div></div>
+      <div class="body"><div class="t">PP-A-FO · fibre patch panel <span class="pill" style="background:var(--violet-bg);color:var(--violet)">passive · invisible to LLDP</span></div><div class="d">Front ports <b>F1/F2</b> ⇄ rear ports <b>F1/F2</b>. The cord lands on the front; the building trunk is punched to the rear.</div><div class="m">R1·U41 · PP-A-FO/F1–F2</div></div>
+    </div>
+    <div class="hop">
+      <div class="rail"><div class="node n-trunk">⇄</div><div class="stem"></div></div>
+      <div class="body"><div class="t">Trunk TRK-FO-01 · pair 1 <span class="pill pill-trunk">inter-rack</span></div><div class="d">12-fibre OM4 pre-terminated trunk through the overhead ladder tray, Rack R1 → Rack R2. This trace uses fibre pair 1 (F1/F2); the other five pairs are spare.</div><div class="m">trunk TRK-FO-01 (F1/F2)</div></div>
+    </div>
+    <div class="hop">
+      <div class="rail"><div class="node n-passive">▤</div><div class="stem"></div></div>
+      <div class="body"><div class="t">PP-B-FO · fibre patch panel <span class="pill" style="background:var(--violet-bg);color:var(--violet)">passive · invisible to LLDP</span></div><div class="d">Rear ports <b>F1/F2</b> ⇄ front ports <b>F1/F2</b> — the mirror of PP-A-FO in the far rack.</div><div class="m">R2·U41 · PP-B-FO/F1–F2</div></div>
+    </div>
+    <div class="hop">
+      <div class="rail"><div class="node" style="background:var(--free-bg);color:var(--free-ink)">⌇</div><div class="stem"></div></div>
+      <div class="body"><div class="t">Patch cord PC-B-009</div><div class="d">LC–LC duplex, OM4, 2 m — from the fibre panel front to the switch optic, inside Rack R2.</div><div class="m">cord ID PC-B-009</div></div>
+    </div>
+    <div class="hop">
+      <div class="rail"><div class="node n-active">◉</div></div>
+      <div class="body"><div class="t">ASW-B1 · Te1/1/1 <span class="pill pill-up">active endpoint</span></div><div class="d">SFP+ 10G-SR optic (SN FIN777A22B). The far end of the same fibre pair.</div><div class="m">R2·U39 · label R2.U39-ASWB1:Te1/1/1</div></div>
+    </div>
+  </div>
+  </div>
+
+  <div class="note"><span class="lbl">The key lesson</span>Protocol discovery gives you the <b>two ends</b>; the <b>cable schedule</b> (§9) gives you the <b>middle</b>. Joining them on the port labels (<span class="mono">PP-A-FO/F1</span>, <span class="mono">TRK-FO-01</span>, <span class="mono">PP-B-FO/F1</span>) is what turns "they're connected" into a true end-to-end trace you can hand to a technician.</div>
+
+  <h3>Trace B — follow a host across three switches (MAC + LLDP)</h3>
+  <p>Goal: where is <b>SRV-B-07</b> (IP 10.10.10.77) physically, and what is the full path to its gateway? We never leave the keyboard. Each step names the command and what it revealed.</p>
+
+  <div class="card">
+    <ol style="margin:0;padding-left:22px;font-size:14.5px;line-height:1.7">
+      <li><b>Turn the IP into a MAC.</b> On the gateway CSW-A1: <span class="mono">show ip arp | include 10.10.10.77</span> → MAC <span class="mono">8c16.4522.0207</span>.</li>
+      <li><b>Ask the gateway where that MAC is.</b> <span class="mono">show mac address-table address 8c16.4522.0207</span> → VLAN 10 on <b>Te1/1/1</b> — an <em>uplink</em> (many MACs), so the host is <b>downstream</b>. Follow Te1/1/1.</li>
+      <li><b>Te1/1/1 goes where?</b> <span class="mono">show lldp neighbors | include Te1/1/1</span> → <b>ASW-B1 Te1/1/1</b> (across the inter-rack fibre from Trace A). Hop to ASW-B1.</li>
+      <li><b>On ASW-B1:</b> <span class="mono">show mac address-table address 8c16.4522.0207</span> → learned on <b>Gi1/0/23</b>, also an uplink. <span class="mono">show lldp neighbors</span> → Gi1/0/23 ↔ <b>ASW-B2 Gi1/0/24</b>. Hop to ASW-B2.</li>
+      <li><b>On ASW-B2 (TP-Link):</b> <span class="mono">show mac address-table address 8c-16-45-22-02-07</span> → <b>Gi1/0/7</b>, and <span class="mono">... interface gi 1/0/7 count</span> = <b>1</b>. One MAC on an access port = <b>the device is right here</b>. Trace ends.</li>
+    </ol>
+  </div>
+
+  <figure style="padding:14px 18px">
+    <svg viewBox="0 0 900 96" role="img" aria-label="Host path from SRV-B-07 to gateway across three switches">
+      <g font-family="system-ui,sans-serif" font-size="11">
+        <!-- boxes -->
+        <g>
+          <rect x="8" y="30" width="150" height="40" rx="8" fill="#eaf6ee" stroke="#0ca30c"/>
+          <text x="83" y="47" text-anchor="middle" font-weight="800" font-size="12" fill="#046804">SRV-B-07</text>
+          <text x="83" y="61" text-anchor="middle" fill="#0a6b3a">10.10.10.77</text>
+        </g>
+        <g>
+          <rect x="212" y="30" width="140" height="40" rx="8" fill="#fff" stroke="#0ca30c"/>
+          <text x="282" y="47" text-anchor="middle" font-weight="800" font-size="12">ASW-B2</text>
+          <text x="282" y="61" text-anchor="middle" fill="#52514e">Gi1/0/7 → Gi1/0/24</text>
+        </g>
+        <g>
+          <rect x="406" y="30" width="140" height="40" rx="8" fill="#fff" stroke="#2a78d6"/>
+          <text x="476" y="47" text-anchor="middle" font-weight="800" font-size="12">ASW-B1</text>
+          <text x="476" y="61" text-anchor="middle" fill="#52514e">Gi1/0/23 → Te1/1/1</text>
+        </g>
+        <g>
+          <rect x="600" y="30" width="140" height="40" rx="8" fill="#fff" stroke="#2a78d6"/>
+          <text x="670" y="47" text-anchor="middle" font-weight="800" font-size="12">CSW-A1</text>
+          <text x="670" y="61" text-anchor="middle" fill="#52514e">Te1/1/1 · gateway</text>
+        </g>
+        <g>
+          <rect x="792" y="34" width="100" height="32" rx="8" fill="#e5eefb" stroke="#2a78d6"/>
+          <text x="842" y="54" text-anchor="middle" font-weight="700" fill="#1a4f95">10.10.10.1</text>
+        </g>
+        <!-- arrows -->
+        <g stroke="#898781" stroke-width="2" marker-end="url(#ah)">
+          <line x1="158" y1="50" x2="208" y2="50"/>
+          <line x1="352" y1="50" x2="402" y2="50"/>
+          <line x1="546" y1="50" x2="596" y2="50"/>
+          <line x1="740" y1="50" x2="788" y2="50"/>
+        </g>
+        <text x="378" y="20" text-anchor="middle" fill="#1a4f95" font-weight="700" font-size="10.5">1G copper</text>
+        <text x="572" y="20" text-anchor="middle" fill="#1a4f95" font-weight="700" font-size="10.5">10G fibre (inter-rack)</text>
+      </g>
+      <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#898781"/></marker></defs>
+    </svg>
+    <figcaption><b>Host path:</b> SRV-B-07 → ASW-B2 → ASW-B1 → CSW-A1 (gateway). The ASW-B1→CSW-A1 leg is the very fibre traced element-by-element in Trace A.</figcaption>
+  </figure>
+
+  <div class="note tip"><span class="lbl">Trace-any-cable recipe</span><b>Protocol first:</b> LLDP/CDP for switch-to-switch, MAC table for hosts, iterate toward the edge. <b>Physical second:</b> for the passive middle (panels, trunks) read the labels and the cable schedule; if a label is missing, fall back to the toner or the port-blink locate in §11. <b>Validate:</b> on fibre, confirm the Rx light (§5.4) is in range end-to-end.</div>
+</section>
+
+<!-- ============ SECTION 8 ============ -->
+<section id="s8">
+  <h2><span class="num">8</span>Cables between the two racks</h2>
+  <div class="section-rule"></div>
+  <p class="lead">The links that cross from Rack R1 to Rack R2 deserve their own record — they are the backbone, they run through shared pathways, and they are where spare capacity lives. There are three physical runs between the racks: one fibre trunk (carrying the 10G we traced in §7) and two copper cross-connects.</p>
+
+  <figure>
+    <svg viewBox="0 0 900 300" role="img" aria-label="Inter-rack cabling between rack R1 and R2 patch panels through an overhead tray">
+      <!-- tray band -->
+      <rect x="228" y="24" width="444" height="252" rx="12" fill="#faf7ef" stroke="#e7dfc7"/>
+      <text x="450" y="44" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#8a6d1e">Overhead ladder tray (shared pathway)</text>
+
+      <!-- left panels -->
+      <g font-family="system-ui,sans-serif">
+        <rect x="60" y="70" width="168" height="52" rx="9" fill="#f3eefb" stroke="#c9b8ee"/>
+        <text x="144" y="92" text-anchor="middle" font-size="12.5" font-weight="800">PP-A-FO</text>
+        <text x="144" y="108" text-anchor="middle" font-size="10" fill="#52514e">R1·U41 · 12F OM4</text>
+        <rect x="60" y="182" width="168" height="52" rx="9" fill="#f3eefb" stroke="#c9b8ee"/>
+        <text x="144" y="204" text-anchor="middle" font-size="12.5" font-weight="800">PP-A-CU</text>
+        <text x="144" y="220" text-anchor="middle" font-size="10" fill="#52514e">R1·U42 · 24× Cat6</text>
+        <!-- right panels -->
+        <rect x="672" y="70" width="168" height="52" rx="9" fill="#f3eefb" stroke="#c9b8ee"/>
+        <text x="756" y="92" text-anchor="middle" font-size="12.5" font-weight="800">PP-B-FO</text>
+        <text x="756" y="108" text-anchor="middle" font-size="10" fill="#52514e">R2·U41 · 12F OM4</text>
+        <rect x="672" y="182" width="168" height="52" rx="9" fill="#f3eefb" stroke="#c9b8ee"/>
+        <text x="756" y="204" text-anchor="middle" font-size="12.5" font-weight="800">PP-B-CU</text>
+        <text x="756" y="220" text-anchor="middle" font-size="10" fill="#52514e">R2·U42 · 24× Cat6</text>
+      </g>
+
+      <!-- runs -->
+      <g font-family="system-ui,sans-serif" font-size="11">
+        <!-- fibre trunk -->
+        <line x1="228" y1="90" x2="672" y2="90" stroke="#1baf7a" stroke-width="6"/>
+        <text x="450" y="82" text-anchor="middle" font-weight="800" fill="#0a6b3a">TRK-FO-01 · 12-fibre OM4 trunk</text>
+        <circle cx="450" cy="90" r="7" fill="#0ca30c"/>
+        <text x="450" y="112" text-anchor="middle" fill="#0a6b3a">pair 1 lit → 10G · 5 pairs spare</text>
+        <!-- copper x-connect 1 -->
+        <line x1="228" y1="200" x2="672" y2="200" stroke="#d03b3b" stroke-width="3"/>
+        <text x="450" y="192" text-anchor="middle" font-weight="700" fill="#8f1f1f">X-CU-01 · Cat6 · OOB management</text>
+        <!-- copper x-connect 2 (spare) -->
+        <line x1="228" y1="224" x2="672" y2="224" stroke="#898781" stroke-width="2.5" stroke-dasharray="7 5"/>
+        <text x="450" y="242" text-anchor="middle" fill="#6f6d68">X-CU-02 · Cat6 · spare</text>
+      </g>
+    </svg>
+    <figcaption><b>Inter-rack runs.</b> One fibre trunk (green) carrying the 10G backbone, plus two copper cross-connects (one live out-of-band management link, one spare) — all sharing the overhead tray.</figcaption>
+  </figure>
+
+  <h3>Inter-rack cable register</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Cable ID</th><th>Type</th><th>From (R1)</th><th>To (R2)</th><th>Capacity</th><th>Status</th><th>Carries</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">TRK-FO-01</td><td>12-fibre OM4 LC trunk</td><td class="mono">PP-A-FO rear F1–F12</td><td class="mono">PP-B-FO rear F1–F12</td><td>6 duplex pairs</td><td><span class="pill pill-up">1 lit</span> <span class="pill pill-free">5 spare</span></td><td>CSW-A1 ↔ ASW-B1 (10G)</td></tr>
+      <tr><td class="mono">X-CU-01</td><td>Cat6 U/UTP cross-connect</td><td class="mono">PP-A-CU/23</td><td class="mono">PP-B-CU/23</td><td>1 link</td><td><span class="pill pill-up">lit</span></td><td>Out-of-band mgmt bridge</td></tr>
+      <tr><td class="mono">X-CU-02</td><td>Cat6 U/UTP cross-connect</td><td class="mono">PP-A-CU/24</td><td class="mono">PP-B-CU/24</td><td>1 link</td><td><span class="pill pill-free">spare</span></td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Fibre trunk — pair allocation (TRK-FO-01)</h3>
+  <p>A trunk is only useful if you know which strands are lit. Document every pair, not just the live one — the spares are your growth budget.</p>
+  <div class="two-col">
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Pair</th><th>Fibres</th><th>Status</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">1</td><td class="mono">F1 / F2</td><td><span class="pill pill-up">lit</span></td><td>CSW-A1 Te1/1/1 ↔ ASW-B1 Te1/1/1 (10G)</td></tr>
+        <tr><td class="mono">2</td><td class="mono">F3 / F4</td><td><span class="pill pill-nolink">provisioned</span></td><td>reserved for 2nd 10G (dark)</td></tr>
+        <tr><td class="mono">3</td><td class="mono">F5 / F6</td><td><span class="pill pill-free">dark</span></td><td>spare</td></tr>
+        <tr><td class="mono">4</td><td class="mono">F7 / F8</td><td><span class="pill pill-free">dark</span></td><td>spare</td></tr>
+        <tr><td class="mono">5</td><td class="mono">F9 / F10</td><td><span class="pill pill-free">dark</span></td><td>spare</td></tr>
+        <tr><td class="mono">6</td><td class="mono">F11 / F12</td><td><span class="pill pill-free">dark</span></td><td>spare</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div>
+      <div class="tiles" style="grid-template-columns:1fr 1fr">
+        <div class="tile accent-g"><div class="cap">Fibre trunk lit</div><div class="val">1<span style="font-size:15px;font-weight:600"> / 6</span></div><div class="sub">17% used<div class="bar"><i style="width:17%;background:var(--good)"></i></div></div></div>
+        <div class="tile accent-b"><div class="cap">Copper crossings</div><div class="val">1<span style="font-size:15px;font-weight:600"> / 2</span></div><div class="sub">50% used<div class="bar"><i style="width:50%;background:var(--blue)"></i></div></div></div>
+      </div>
+      <div class="note" style="margin-top:6px"><span class="lbl">Growth headroom</span>Five dark fibre pairs and one spare copper run cross the racks today. That is plenty for a second 10G uplink or a storage link without pulling new cable through the tray — provided the pairs are polarity-correct (fibre "Method B") and tested before use.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 9 ============ -->
+<section id="s9">
+  <h2><span class="num">9</span>Structured cabling &amp; labels</h2>
+  <div class="section-rule"></div>
+  <p class="lead">Every trace above only works because the passive world is labelled and recorded. Two things make that possible: a consistent <b>label scheme</b> (so a technician reads the same identifier at both ends and in the record) and a <b>cable schedule</b> (one row per cable). This is the ANSI/TIA-606 discipline, kept deliberately simple.</p>
+
+  <h3>Reading a label</h3>
+  <p>Our scheme is <span class="mono">Rack.U-Device:Port</span> — self-describing, so a label tells you where to stand without opening a database:</p>
+  <div class="card" style="text-align:center">
+    <div style="display:inline-flex;flex-wrap:wrap;gap:6px;align-items:stretch;justify-content:center;font-family:var(--mono);font-weight:700">
+      <div style="background:var(--blue-bg);border:1px solid #9cc0ee;border-radius:8px;padding:10px 14px">
+        <div style="font-size:18px;color:#1a4f95">R1</div>
+        <div style="font-size:10.5px;color:var(--ink-2);font-family:var(--sans);font-weight:600;margin-top:4px">Rack</div>
+      </div>
+      <div style="display:flex;align-items:center;font-size:18px;color:var(--muted)">.</div>
+      <div style="background:var(--violet-bg);border:1px solid #c9b8ee;border-radius:8px;padding:10px 14px">
+        <div style="font-size:18px;color:#4a3aa7">U39</div>
+        <div style="font-size:10.5px;color:var(--ink-2);font-family:var(--sans);font-weight:600;margin-top:4px">Rack unit</div>
+      </div>
+      <div style="display:flex;align-items:center;font-size:18px;color:var(--muted)">-</div>
+      <div style="background:var(--good-bg);border:1px solid #9bd39b;border-radius:8px;padding:10px 14px">
+        <div style="font-size:18px;color:#046804">CSWA1</div>
+        <div style="font-size:10.5px;color:var(--ink-2);font-family:var(--sans);font-weight:600;margin-top:4px">Device</div>
+      </div>
+      <div style="display:flex;align-items:center;font-size:18px;color:var(--muted)">:</div>
+      <div style="background:var(--orange-bg);border:1px solid #f0b79c;border-radius:8px;padding:10px 14px">
+        <div style="font-size:18px;color:#8f3f1c">Te1/1/1</div>
+        <div style="font-size:10.5px;color:var(--ink-2);font-family:var(--sans);font-weight:600;margin-top:4px">Port</div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--ink-2);margin:14px 0 0">Reads: <b>Rack R1, rack-unit 39, switch CSW-A1, port Te1/1/1.</b> A patch-panel port is written the same way: <span class="mono">R1.U41-PPAFO:F1</span>. Both ends of a cable, both faces of a panel, and the cable jacket all carry the identifier.</p>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h4>Formal TIA-606 (for larger sites)</h4>
+      <p style="margin:0 0 6px">The standard's horizontal-link format is <span class="mono">Floor/Space.Rack-position:Port</span>, e.g. <span class="mono">1A.AD03-40:14</span> = floor 1, room A, rack grid <b>AD03</b>, panel at U40, port 14. A permanent link is written <b>near-end / far-end</b>: <span class="mono">1A.AD03-40:14 / 1A.AD07-40:14</span>.</p>
+      <p style="margin:0;font-size:13px;color:var(--ink-2)">Identifier "classes" scale it: Class 1 = one room, Class 2 = one building, Class 3 = campus, Class 4 = multi-site.</p>
+    </div>
+    <div class="card">
+      <h4>Two philosophies — pick one</h4>
+      <p style="margin:0 0 6px"><b>Self-describing</b> (used here): <span class="mono">R1.U39-CSWA1:Te1/1/1</span>. Human-readable, but must be <b>relabelled when re-patched</b>.</p>
+      <p style="margin:0"><b>Stable cable ID:</b> <span class="mono">CBL-A047</span> — never changes; the meaning lives in the schedule/DCIM. Better for large or frequently-repatched racks. Many sites use both: a stable ID on the jacket, a self-describing label on the port.</p>
+    </div>
+  </div>
+
+  <h3>Jacket colour code (this site)</h3>
+  <div class="legend" style="gap:10px 20px">
+    <span class="lg"><span class="sw" style="background:#2a78d6;border-color:#2a78d6"></span> Blue — access / data drop</span>
+    <span class="lg"><span class="sw" style="background:#eda100;border-color:#eda100"></span> Yellow — copper uplink / trunk</span>
+    <span class="lg"><span class="sw" style="background:#1baf7a;border-color:#1baf7a"></span> Aqua — OM4 fibre</span>
+    <span class="lg"><span class="sw" style="background:#d03b3b;border-color:#d03b3b"></span> Red — out-of-band / mgmt</span>
+    <span class="lg"><span class="sw" style="background:#008300;border-color:#008300"></span> Green — cross-connect</span>
+  </div>
+
+  <h3>The cable schedule (worked example)</h3>
+  <p>One row per cable. This is the single most valuable artefact of the whole audit: it is what fills the "invisible middle" of every trace in §7. Keep it in a spreadsheet or DCIM so it survives re-patching.</p>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Cable ID</th><th>Type</th><th>From</th><th>To</th><th>Len</th><th>Role / VLAN</th><th>Test</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">PC-A-014</td><td>OM4 LC-LC duplex</td><td class="mono">R1.U39-CSWA1:Te1/1/1</td><td class="mono">R1.U41-PPAFO:F1/F2</td><td>2 m</td><td>10G uplink</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">TRK-FO-01·p1</td><td>OM4 12F trunk</td><td class="mono">R1.U41-PPAFO:rF1/F2</td><td class="mono">R2.U41-PPBFO:rF1/F2</td><td>18 m</td><td>10G inter-rack</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">PC-B-009</td><td>OM4 LC-LC duplex</td><td class="mono">R2.U41-PPBFO:F1/F2</td><td class="mono">R2.U39-ASWB1:Te1/1/1</td><td>2 m</td><td>10G uplink</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">CBL-A047</td><td>Cat6 U/UTP (yellow)</td><td class="mono">R1.U39-CSWA1:Gi1/0/47</td><td class="mono">R1.U38-ASWA2:Gi1/0/27</td><td>1.5 m</td><td>LAG Po1</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">CBL-A048</td><td>Cat6 U/UTP (yellow)</td><td class="mono">R1.U39-CSWA1:Gi1/0/48</td><td class="mono">R1.U38-ASWA2:Gi1/0/28</td><td>1.5 m</td><td>LAG Po1</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">CBL-B024</td><td>Cat6 U/UTP (yellow)</td><td class="mono">R2.U38-ASWB2:Gi1/0/24</td><td class="mono">R2.U39-ASWB1:Gi1/0/23</td><td>1.5 m</td><td>trunk</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">CBL-B007</td><td>Cat6 U/UTP (blue)</td><td class="mono">R2.U38-ASWB2:Gi1/0/7</td><td class="mono">R2.U42-PPBCU:07</td><td>3 m</td><td>VLAN10 host</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">DROP-B-07</td><td>Cat6 permanent link</td><td class="mono">R2.U42-PPBCU:07</td><td class="mono">WO-B-07 (desk)</td><td>14 m</td><td>VLAN10 → SRV-B-07</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">CBL-A001</td><td>Cat6 U/UTP (blue)</td><td class="mono">R1.U39-CSWA1:Gi1/0/1</td><td class="mono">R1.U42-PPACU:01</td><td>3 m</td><td>VLAN30 AP (PoE)</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">X-CU-01</td><td>Cat6 U/UTP (red)</td><td class="mono">R1.U42-PPACU:23</td><td class="mono">R2.U42-PPBCU:23</td><td>16 m</td><td>OOB mgmt</td><td><span class="pill pill-up">PASS</span></td><td>in&nbsp;use</td></tr>
+      <tr><td class="mono">X-CU-02</td><td>Cat6 U/UTP (red)</td><td class="mono">R1.U42-PPACU:24</td><td class="mono">R2.U42-PPBCU:24</td><td>16 m</td><td>spare</td><td><span class="pill pill-up">PASS</span></td><td><span class="pill pill-free">spare</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note"><span class="lbl">A full schedule row also records</span>wiring scheme/polarity (T568B for copper, Method B for fibre), termination/test date, the tester result (e.g. "Cat6A permanent link PASS"), and the pathway (which tray). Those columns are trimmed here for width but belong in your master sheet — §12 has the blank template.</div>
+</section>
+
+<!-- ============ SECTION 10 ============ -->
+<section id="s10">
+  <h2><span class="num">10</span>Power — PDUs &amp; outlet mapping</h2>
+  <div class="section-rule"></div>
+  <p class="lead">A rack audit is not complete until you know what feeds each device and how loaded the power strips are. Each rack has an <b>A feed</b> and a <b>B feed</b> (two PDUs), and every switch is <b>dual-corded</b> — one PSU to each — so losing a feed does not drop the rack. Here is how to read the load and map every outlet.</p>
+
+  <div class="note"><span class="lbl">Know your PDU class</span><b>Metered</b> shows total (and often per-bank) current. <b>Metered-by-outlet</b> adds per-outlet current/power. <b>Switched</b> adds remote on/off/reboot per outlet. Our example PDUs are <b>switched, metered-by-outlet</b> — the richest kind, reachable by web UI and SNMP.</div>
+
+  <h3>Load right now</h3>
+  <div class="tiles">
+    <div class="tile accent-b"><div class="cap">PDU-A-L · Feed A (R1)</div><div class="val">6.4<span style="font-size:15px;font-weight:600"> A</span></div><div class="sub">1.47 kW · 20% of 32 A<div class="bar"><i style="width:20%;background:var(--blue)"></i></div></div></div>
+    <div class="tile accent-b"><div class="cap">PDU-A-R · Feed B (R1)</div><div class="val">6.1<span style="font-size:15px;font-weight:600"> A</span></div><div class="sub">1.40 kW · 19% of 32 A<div class="bar"><i style="width:19%;background:var(--blue)"></i></div></div></div>
+    <div class="tile accent-g"><div class="cap">PDU-B-L · Feed A (R2)</div><div class="val">4.9<span style="font-size:15px;font-weight:600"> A</span></div><div class="sub">1.13 kW · 15% of 32 A<div class="bar"><i style="width:15%;background:var(--good)"></i></div></div></div>
+    <div class="tile accent-g"><div class="cap">PDU-B-R · Feed B (R2)</div><div class="val">4.7<span style="font-size:15px;font-weight:600"> A</span></div><div class="sub">1.08 kW · 15% of 32 A<div class="bar"><i style="width:15%;background:var(--good)"></i></div></div></div>
+  </div>
+  <div class="note tip"><span class="lbl">Redundancy check</span>Because gear is dual-corded, each feed carries only about half the total. The audit rule: <b>no single feed should exceed ~40%</b> of its breaker, so that if its partner fails it can absorb the whole load without tripping. At ~20% here, there is comfortable headroom.</div>
+
+  <h3>Outlet map (power schedule)</h3>
+  <p>One row per power connection, mirroring the cable schedule. Dual-corded devices appear on <b>both</b> an A-feed and a B-feed outlet so redundancy is auditable.</p>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Device</th><th>Rack</th><th>PSU1 → A feed</th><th>PSU2 → B feed</th><th>Draw (per feed)</th><th>Outlet label</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">CSW-A1</td><td class="mono">R1</td><td class="mono">PDU-A-L : 01</td><td class="mono">PDU-A-R : 01</td><td class="mono">≈1.6 A</td><td class="mono">CSWA1-PSU1/2</td></tr>
+      <tr><td class="mono">ASW-A2</td><td class="mono">R1</td><td class="mono">PDU-A-L : 03</td><td class="mono">PDU-A-R : 03</td><td class="mono">≈0.7 A</td><td class="mono">ASWA2-PSU1/2</td></tr>
+      <tr><td class="mono">ASW-B1</td><td class="mono">R2</td><td class="mono">PDU-B-L : 01</td><td class="mono">PDU-B-R : 01</td><td class="mono">≈1.1 A</td><td class="mono">ASWB1-PSU1/2</td></tr>
+      <tr><td class="mono">ASW-B2</td><td class="mono">R2</td><td class="mono">PDU-B-L : 03</td><td class="mono">PDU-B-R : 03</td><td class="mono">≈0.5 A</td><td class="mono">ASWB2-PSU1/2</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:13px;color:var(--muted)">Patch panels and cable managers draw no power, so they have no rows. Set the outlet <b>name</b> on the PDU itself (web UI or SNMP) to match this label — then the PDU screen reads "CSWA1-PSU1", not "Outlet 1".</p>
+
+  <h3>Pulling power data — SNMP &amp; web</h3>
+  <p>The web UI is easiest for a human; SNMP is how you script it or feed a monitoring tool. These OIDs are real (APC PowerNet-MIB); mind the scaling factor.</p>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>What</th><th>OID</th><th>Returns</th></tr></thead>
+    <tbody>
+      <tr><td>Bank/phase load (classic)</td><td class="mono">1.3.6.1.4.1.318.1.1.12.2.3.1.1.2</td><td><span class="mono">rPDULoadStatusLoad</span> — tenths of A (<span class="mono">64</span> = 6.4 A)</td></tr>
+      <tr><td>Total power (rPDU2)</td><td class="mono">1.3.6.1.4.1.318.1.1.26.4.3.1.5</td><td><span class="mono">rPDU2DeviceStatusPower</span> — hundredths of kW (<span class="mono">147</span> = 1.47 kW)</td></tr>
+      <tr><td>Per-outlet on/off state</td><td class="mono">1.3.6.1.4.1.318.1.1.12.3.5.1.1.4</td><td><span class="mono">rPDUOutletStatusOutletState</span> — 1=on, 2=off</td></tr>
+      <tr><td>Per-outlet name</td><td class="mono">1.3.6.1.4.1.318.1.1.12.3.3.1.1.2</td><td><span class="mono">rPDUOutletControlOutletName</span> — string</td></tr>
+      <tr><td>Raritan PX equivalent</td><td class="mono">1.3.6.1.4.1.13742.6.5.4.3.1.4.x</td><td><span class="mono">outletSensorValue</span> — scale by DecimalDigits; sensor 1=rmsCurrent</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">your laptop · SNMP</span><span class="tag">read-only</span></div>
+<pre><span class="prompt">$</span> <span class="cmd">snmpwalk -v2c -c public 10.10.0.31 1.3.6.1.4.1.318.1.1.12.2.3.1.1.2</span>
+PowerNet-MIB::rPDULoadStatusLoad.1 = Gauge32: <span class="hl">64</span>       <span class="cmt"># 6.4 A on PDU-A-L</span>
+
+<span class="prompt">$</span> <span class="cmd">snmpget -v2c -c public 10.10.0.31 1.3.6.1.4.1.318.1.1.26.4.3.1.5.1</span>
+PowerNet-MIB::rPDU2DeviceStatusPower.1 = Gauge32: <span class="hl">147</span>      <span class="cmt"># 1.47 kW total</span></pre>
+  </div>
+  <div class="note warnbox"><span class="lbl">Two cautions</span><b>Scaling:</b> always confirm whether the value is tenths of A, hundredths of kW, or governed by a "decimal digits" field — a raw <span class="mono">64</span> is 6.4 A, not 64 A. <b>Community strings:</b> <span class="mono">public</span> is a lab default; a real audit should note weak/again-default SNMP as a finding and move to SNMPv3.</div>
+</section>
+
+<!-- ============ SECTION 11 ============ -->
+<section id="s11">
+  <h2><span class="num">11</span>Physical tracing toolkit</h2>
+  <div class="section-rule"></div>
+  <p class="lead">When there is no protocol data — an unmanaged device, an unlabelled patch cord, a run that vanishes into a wall — you fall back to the physical world. These are the tools, fastest and safest first.</p>
+
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Method</th><th>How it works</th><th>Best for</th><th>Caveat</th></tr></thead>
+    <tbody>
+      <tr><td><b>Read the label</b></td><td>Read the TIA-606 ID at each end, confirm against the cable schedule (§9).</td><td>Any well-documented run — always try this first.</td><td>Only as good as your labelling discipline.</td></tr>
+      <tr><td><b>Port blink / "locate"</b></td><td>Tell the switch to flash a specific port LED (or the whole chassis) in a recognisable pattern.</td><td>Finding which switch port a known cable lands on, hands-free.</td><td>Needs admin access to the switch.</td></tr>
+      <tr><td><b>Link-light toggle</b></td><td>A tester at the far end pulses the link so the near-end port LED blinks.</td><td>Matching a wall drop to a switch port.</td><td>Both ends must be reachable.</td></tr>
+      <tr><td><b>Cable identifiers</b></td><td>Numbered remote plugs (1–8+) at one end; a reader IDs each at the other.</td><td>Mapping a bundle of dead (unpowered) copper drops at a panel.</td><td>Passive cable only — nothing powered.</td></tr>
+      <tr><td><b>Tone &amp; probe (toner)</b></td><td>A generator injects an audio tone onto a pair; a probe finds it by ear inside bundles/walls.</td><td>Chasing an unlabelled cable through trays and walls.</td><td><b>Never on a live/PoE port</b> — see below.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Beacon / locate commands</h3>
+  <div class="two-col">
+    <div class="term">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="who">CSW-A1 · Cisco IOS-XE</span><span class="tag">changes LED only</span></div>
+<pre><span class="prompt">CSW-A1#</span> <span class="cmd">hw-module beacon port Gi1/0/13 on</span>
+% Port beacon LED on Gi1/0/13 is now ON
+
+<span class="cmt">! whole-chassis locator (find the box in a row):</span>
+<span class="prompt">CSW-A1#</span> <span class="cmd">hw-module beacon slot 1 on</span>
+<span class="cmt">! turn off when done</span>
+<span class="prompt">CSW-A1#</span> <span class="cmd">hw-module beacon port Gi1/0/13 off</span></pre>
+    </div>
+    <div class="card">
+      <h4>TP-Link locate</h4>
+      <p style="margin:0 0 8px">Standalone JetStream and Omada expose a <b>Locate / LED flash</b> in the UI rather than a per-port CLI beacon: in Omada, <span class="mono">Devices › [switch] › ⋯ › Locate</span> flashes the system LED so you can find the chassis in a row.</p>
+      <p style="margin:0;font-size:13px;color:var(--ink-2)">For the port itself, use the physical link LED: unplug/replug the far end (or toggle it with a tester) and watch which port LED changes.</p>
+    </div>
+  </div>
+
+  <div class="note crit"><span class="lbl">Safety — do not tone a live port</span>Never attach a tone generator to a switch port, a PoE port, or any cable that may carry voltage — the injected signal (and any PoE voltage) can damage the toner <em>and</em> the port. Toning is for <b>de-energised, disconnected</b> copper only. Unplug the run at both ends first, or use a digital-signature toner rated to reject live-line voltage — and even then, unplug the switch end. Treat <span class="mono">beacon</span>, <span class="mono">shutdown</span>/<span class="mono">no shutdown</span>, and re-patching as change-control actions with a note in the schedule.</div>
+</section>
+
+<!-- ============ SECTION 12 ============ -->
+<section id="s12">
+  <h2><span class="num">12</span>Master checklist &amp; templates</h2>
+  <div class="section-rule"></div>
+  <p class="lead">Run the audit in this order on any pair of racks, then fill the two blank templates. Do it once and you have living documentation; repeat quarterly and you catch drift before it becomes an outage.</p>
+
+  <h3>Audit run-order</h3>
+  <ul class="checklist">
+    <li><b>Access</b> — reach each device read-only (console / SSH / web); record every management IP and how you got in. <span style="color:var(--muted)">(§2)</span></li>
+    <li><b>Identity</b> — <span class="mono">show version</span> · <span class="mono">show inventory</span> (Cisco) / <span class="mono">show system-info</span> (TP-Link); note model, firmware, serial, optics. <span style="color:var(--muted)">(§3, §5)</span></li>
+    <li><b>Ports</b> — <span class="mono">show interfaces status</span> (+ TP-Link <span class="mono">show interface configuration</span>); paint the colour map, tally free vs. cabled. <span style="color:var(--muted)">(§4, §5)</span></li>
+    <li><b>Neighbours</b> — LLDP on every switch (CDP too on Cisco); build the adjacency table. <span style="color:var(--muted)">(§6)</span></li>
+    <li><b>Depth</b> — MAC table, optical light (<span class="mono">transceiver</span>), PoE, VLAN, LAG, and error counters on each switch. <span style="color:var(--muted)">(§5)</span></li>
+    <li><b>Trace</b> — walk the key links end-to-end; fill the passive middle from labels + schedule. <span style="color:var(--muted)">(§7)</span></li>
+    <li><b>Inter-rack</b> — record every run between racks and its spare capacity. <span style="color:var(--muted)">(§8)</span></li>
+    <li><b>Label &amp; schedule</b> — verify/repair labels; complete the cable schedule. <span style="color:var(--muted)">(§9)</span></li>
+    <li><b>Power</b> — read PDU load, map outlets, confirm dual-feed balance. <span style="color:var(--muted)">(§10)</span></li>
+    <li><b>Findings &amp; save</b> — list issues, export/back up configs, store the schedule in a DCIM or shared sheet.</li>
+  </ul>
+
+  <div class="note tip"><span class="lbl">What this worked example surfaced</span>A real audit produces a punch-list. Ours found: <b>Gi1/0/30 err-disabled</b> on CSW-A1 (port-security violation on the CCTV drop — investigate before clearing); <b>Gi1/0/13 climbing FCS/align errors</b> (re-terminate that run); <b>SNMP community "public"</b> on the PDUs (move to SNMPv3); and <b>X-CU-02</b> physically present but previously undocumented (now recorded as a spare). None are outages today — all are cheap to fix now and expensive to discover later.</div>
+
+  <h3>Template A — cable schedule (blank)</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Cable ID</th><th>Type</th><th>From (Rack.U-Dev:Port)</th><th>To (Rack.U-Dev:Port)</th><th>Len</th><th>Polarity</th><th>Role/VLAN</th><th>Test / date</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="mono" style="color:var(--muted)">CBL-____</td><td style="color:var(--muted)">Cat6 / OM4</td><td class="mono" style="color:var(--muted)">R_.U__-____:__</td><td class="mono" style="color:var(--muted)">R_.U__-____:__</td><td style="color:var(--muted)">__ m</td><td style="color:var(--muted)">T568B / B</td><td style="color:var(--muted)">____</td><td style="color:var(--muted)">PASS / ____</td><td style="color:var(--muted)">in use</td></tr>
+      <tr><td colspan="9" style="color:var(--muted);text-align:center">— one row per cable —</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Template B — port inventory (blank, per switch)</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>Switch</th><th>Total</th><th>Up</th><th>Trunk/Uplink</th><th>No-link</th><th>Err</th><th>Reserved</th><th>Free</th><th>Cabled %</th><th>PoE used/budget</th></tr></thead>
+    <tbody>
+      <tr><td class="mono" style="color:var(--muted)">________</td><td style="color:var(--muted)">__</td><td style="color:var(--muted)">__</td><td style="color:var(--muted)">__</td><td style="color:var(--muted)">__</td><td style="color:var(--muted)">__</td><td style="color:var(--muted)">__</td><td style="color:var(--muted)">__</td><td style="color:var(--muted)">__%</td><td style="color:var(--muted)">__/__ W</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note"><span class="lbl">Make it yours</span>Every device name, IP, port count, and value in this guide is a worked sample for site SPP-DC1. Replace them with your own <span class="mono">show</span> output and the diagrams, maps, and schedules become live documentation for your two racks. Keep the colour/label conventions — they are what make the next person's trace fast.</div>
+</section>
+
+</main>
+</div>
+</div>
+
+<footer class="foot">
+  <div class="wrap">
+    <p style="margin:0 0 4px"><b>Two-Rack Network Audit &amp; Cable-Trace Guide</b> — worked example for site SPP-DC1. Colours follow an accessibility-validated status palette; every colour is paired with a word or icon.</p>
+    <p style="margin:0">Replace the sample device names, ports, and values with your own to turn this into live documentation for your racks.</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -27,14 +27,16 @@ import MultiRackTopologyPage from './pages/MultiRackTopologyPage.jsx';
 import MultiRackRedirect from './pages/MultiRackRedirect.jsx';
 import PortHistoryPage from './pages/PortHistoryPage.jsx';
 import TenantMatPage from './pages/TenantMatPage.jsx';
-import VRPage from './pages/VRPage.jsx';
-import VRInspectPage from './pages/VRInspectPage.jsx';
 import ConnectionsPage from './pages/ConnectionsPage.jsx';
 import MarketplacePage from './pages/MarketplacePage.jsx';
 import MarketplaceNewPage from './pages/MarketplaceNewPage.jsx';
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
 import { AuthProvider, useAuth } from './AuthContext.jsx';
+import { getPendingScan, clearPendingScan, fetchScanJob } from './utils/pendingScan';
+import OnboardingTour from './components/OnboardingTour.jsx';
 import { ConnectionsProvider } from './ConnectionsContext.jsx';
 import { ThemeProvider } from './ThemeContext.jsx';
 
@@ -123,25 +125,81 @@ function AndroidBackHandler() {
   return null;
 }
 
-// On reopening the app, the WebView keeps the last page it was on — which can
-// be a finished scan's Overview. Rather than drop the user back into a stale
-// past scan, send them to the Scan/upload screen to start fresh.
-function ResumeToScan() {
+// NOTE: there used to be a ResumeToScan handler here that, on every native
+// resume, bounced the user from /results back to /scan "to start fresh". In
+// practice that threw away the scan they had just run: switch to another app,
+// come back, and their results were gone. Leaving the WebView on whatever page
+// the user was on is the correct behaviour — an in-flight scan is separately
+// reclaimed by PendingScanResumer below.
+
+// Reclaims a scan that was analyzing when the app got suspended. ScanPage left
+// a marker (see utils/pendingScan); here we poll the server for that scan and,
+// once it's done, drop the user straight on its results — instead of the empty
+// upload screen they'd otherwise see. Runs on cold start (leftover marker) and
+// on every native resume.
+function PendingScanResumer() {
   const navigate = useNavigate();
   const { isAuthed } = useAuth();
+  const [resuming, setResuming] = useState(false);
+
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    let sub;
-    (async () => {
-      sub = await CapApp.addListener('resume', () => {
-        if (isAuthed && window.location.pathname.startsWith('/results')) {
-          navigate('/scan', { replace: true });
+    let cancelled = false;
+    let pollTimer = null;
+    let sub = null;
+
+    const tryResume = () => {
+      const pending = getPendingScan();
+      if (!pending || !isAuthed || resuming) return;
+      setResuming(true);
+      const deadline = Date.now() + 45000;
+      const poll = async () => {
+        if (cancelled) return;
+        const job = await fetchScanJob(pending.id);
+        if (cancelled) return;
+        if (job.status === 'done' && job.rackId) {
+          clearPendingScan(); setResuming(false);
+          navigate(`/results/${encodeURIComponent(job.rackId)}`, { replace: true });
+          return;
         }
-      });
-    })();
-    return () => { sub?.remove?.(); };
-  }, [navigate, isAuthed]);
-  return null;
+        if (job.status === 'error' || job.status === 'missing') {
+          clearPendingScan(); setResuming(false);
+          return;   // fall back to whatever screen they're on (usually /scan)
+        }
+        if (Date.now() > deadline) { setResuming(false); return; }  // keep marker; let them retry
+        pollTimer = setTimeout(poll, 1500);   // 'running' or transient error — keep waiting
+      };
+      poll();
+    };
+
+    tryResume();  // cold start with a leftover marker
+    if (Capacitor.isNativePlatform()) {
+      (async () => { sub = await CapApp.addListener('resume', () => tryResume()); })();
+    }
+    return () => { cancelled = true; if (pollTimer) clearTimeout(pollTimer); sub?.remove?.(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthed]);
+
+  if (!resuming) return null;
+  return (
+    <div role="status" aria-live="polite" style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: '18px', background: 'rgba(8,11,18,0.82)', backdropFilter: 'blur(6px)',
+      color: '#eaf0fa', textAlign: 'center',
+      padding: 'max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left))',
+    }}>
+      <div style={{
+        width: '46px', height: '46px', borderRadius: '50%',
+        border: '3px solid rgba(255,255,255,0.18)', borderTopColor: '#5fa0ff',
+        animation: 'rtspin 0.8s linear infinite',
+      }} />
+      <div style={{ fontSize: '16px', fontWeight: 600 }}>Bringing your scan back&hellip;</div>
+      <div style={{ fontSize: '13.5px', opacity: 0.7, maxWidth: '32ch' }}>
+        We&rsquo;re finishing the analysis you started. This takes a moment.
+      </div>
+      <style>{`@keyframes rtspin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 }
 
 export default function App() {
@@ -152,7 +210,8 @@ export default function App() {
           <ConnectionsProvider>
           <ShutterProvider>
             <AndroidBackHandler />
-            <ResumeToScan />
+            <PendingScanResumer />
+            <OnboardingTour />
             <PointerGlow />
             <Routes>
             {/* HomePage has its own desktop branch (HomeDesktop) via
@@ -166,6 +225,12 @@ export default function App() {
             <Route path="/pending" element={<PendingRoute><PendingApprovalPage /></PendingRoute>} />
             <Route path="/scan" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ScanPage /></ResponsiveLayout></ProtectedRoute>
+            } />
+            {/* Two-rack scan: pick 2 images (or a video) → detect both →
+                combined topology with the uplinks that cross between racks.
+                Static segment, so it out-ranks /multi-rack/:groupId. */}
+            <Route path="/multi-rack/new" element={
+              <ProtectedRoute><ResponsiveLayout><MultiRackNewPage /></ResponsiveLayout></ProtectedRoute>
             } />
             {/* Legacy multi-rack landing → redirect to first member rack's
                 Ports page (the rack-tabs strip there lets the user reach
@@ -183,6 +248,11 @@ export default function App() {
                 Organizations → Sites → Members. Full-page (no app chrome). */}
             <Route path="/organizations" element={
               <ProtectedRoute><OrgConsolePage /></ProtectedRoute>
+            } />
+            {/* Live operations dashboard — owner-gated on the server; the page
+                itself shows a clear message if a non-owner reaches it. */}
+            <Route path="/dashboard" element={
+              <AdminRoute><ResponsiveLayout><DashboardPage /></ResponsiveLayout></AdminRoute>
             } />
             <Route path="/connections" element={
               <AdminRoute><ResponsiveLayout><ConnectionsPage /></ResponsiveLayout></AdminRoute>
@@ -221,15 +291,6 @@ export default function App() {
             } />
             <Route path="/results/:rackId/ports" element={
               <ProtectedRoute><ResponsiveLayout><PortsPage /></ResponsiveLayout></ProtectedRoute>
-            } />
-            <Route path="/vr" element={
-              <ProtectedRoute><ResponsiveLayout><VRPage /></ResponsiveLayout></ProtectedRoute>
-            } />
-            <Route path="/results/:rackId/vr" element={
-              <ProtectedRoute><ResponsiveLayout><VRPage /></ResponsiveLayout></ProtectedRoute>
-            } />
-            <Route path="/results/:rackId/vr-inspect" element={
-              <ProtectedRoute><ResponsiveLayout><VRInspectPage /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/results/:rackId/topology" element={
               <ProtectedRoute><ResponsiveLayout><TopologyPage /></ResponsiveLayout></ProtectedRoute>

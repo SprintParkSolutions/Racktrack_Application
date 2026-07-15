@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>RackTrack</string>
+	<string>RackTrack</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,10 +22,27 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>RackTrack uses your camera to scan and photograph your equipment racks.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>RackTrack needs microphone access to record video scans of your rack.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>RackTrack saves annotated rack scans to your photo library when you choose to.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>RackTrack reads photos you select for offline rack analysis.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -41,25 +58,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<!-- Camera + ARKit usage strings: required for the AR rack overlay.
-	     iOS will hard-crash the app if AR / camera APIs are touched
-	     without these. -->
-	<key>NSCameraUsageDescription</key>
-	<string>RackTrack uses your camera to scan racks and overlay device labels in AR.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>RackTrack reads photos you select for offline rack analysis.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>RackTrack saves annotated rack scans to your photo library when you choose to.</string>
-	<!-- ARKit-capable device requirement (required for the AR overlay) -->
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-		<string>arkit</string>
-	</array>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
 </dict>
 </plist>

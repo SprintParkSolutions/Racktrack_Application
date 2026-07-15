@@ -3,7 +3,7 @@
 
 .wrap {
   flex: 1 1 auto;
-  min-height: 100dvh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: transparent; /* body paints the off-white + vignette */
@@ -48,13 +48,12 @@
 }
 
 .brandName {
-  font-family: var(--font);
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
   color: var(--md-primary);
-  text-transform: uppercase;
 }
 
 .signInBtn {
@@ -106,7 +105,7 @@
 }
 
 /* Short phones (~360×640): the fixed-height hero + title + CTA can exceed
-   100dvh and clip the sign-in CTA (#root is overflow:hidden). Shrink the
+   100vh and clip the sign-in CTA (#root is overflow:hidden). Shrink the
    hero so the full column fits without touching the tall-phone look. */
 @media (max-height: 680px) {
   .hero { height: 44vh; }

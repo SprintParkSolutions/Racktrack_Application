@@ -1,0 +1,145 @@
+<meta charset="utf-8">
+<title>RackTrack — Today's Progress & What's Left</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#fff; --ink:#0f1826; --soft:#4a5876; --line:#e4e9f2; --line2:#eef2f8;
+    --accent:#5b3fd1; --accent-bg:#efeaff; --accent-line:#dbcdf7;
+    --green:#0d7a3c; --green-bg:#e7f6ec; --green-line:#bde5cc;
+    --amber:#a85b06; --amber-bg:#fff4e2; --amber-line:#f2d6a4;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#080b12; --panel:#111826; --ink:#eef3fb; --soft:#9db0cd; --line:#222c3d; --line2:#19212f;
+    --accent:#a98bf5; --accent-bg:#1d1636; --accent-line:#382a5c; --green:#63d197; --green-bg:#0d2418; --green-line:#1e4830;
+    --amber:#f0b665; --amber-bg:#271d0e; --amber-line:#463719; }}
+  :root[data-theme="dark"]{--bg:#080b12; --panel:#111826; --ink:#eef3fb; --soft:#9db0cd; --line:#222c3d; --line2:#19212f;
+    --accent:#a98bf5; --accent-bg:#1d1636; --accent-line:#382a5c; --green:#63d197; --green-bg:#0d2418; --green-line:#1e4830;
+    --amber:#f0b665; --amber-bg:#271d0e; --amber-line:#463719;}
+  :root[data-theme="light"]{--bg:#f5f7fb; --panel:#fff; --ink:#0f1826; --soft:#4a5876; --line:#e4e9f2; --line2:#eef2f8;
+    --accent:#5b3fd1; --accent-bg:#efeaff; --accent-line:#dbcdf7; --green:#0d7a3c; --green-bg:#e7f6ec; --green-line:#bde5cc;
+    --amber:#a85b06; --amber-bg:#fff4e2; --amber-line:#f2d6a4;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink); line-height:1.5;
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:980px; margin:0 auto; padding:clamp(18px,3.5vw,40px);}
+  .pill{display:inline-block; font-size:11.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--accent);
+    background:var(--accent-bg); border:1px solid var(--accent-line); padding:5px 11px; border-radius:999px;}
+  h1{margin:12px 0 6px; font-size:clamp(24px,3.6vw,34px); letter-spacing:-.02em;}
+  .lead{margin:0; color:var(--soft); font-size:15.5px; max-width:74ch;}
+
+  .say{margin-top:20px; background:var(--accent-bg); border:1px solid var(--accent-line); border-radius:14px; padding:18px 20px;}
+  .say .cap{font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:8px; display:flex; align-items:center; gap:7px;}
+  .say p{margin:0 0 10px; font-size:15px; line-height:1.6;} .say p:last-child{margin:0;}
+  .say b{font-weight:700;}
+
+  .flow{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:20px 0 4px;}
+  .n{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:9px 13px; font-size:13px; font-weight:600;}
+  .n small{display:block; color:var(--soft); font-weight:500; font-size:11.5px;}
+  .ar{color:var(--soft); font-weight:800;}
+
+  .grid{display:grid; gap:14px; margin-top:20px;}
+  @media(min-width:820px){.grid{grid-template-columns:1fr 1fr;} .full{grid-column:1 / -1;}}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px;}
+  .card h2{margin:0 0 12px; font-size:15px; letter-spacing:-.01em; display:flex; align-items:center; gap:8px;}
+  .tag{font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; padding:2px 8px; border-radius:6px;}
+  .tag.done{background:var(--green-bg); color:var(--green); border:1px solid var(--green-line);}
+  .tag.todo{background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-line);}
+  ul{list-style:none; margin:0; padding:0; display:grid; gap:9px;}
+  li{display:flex; gap:10px; align-items:flex-start; font-size:14px;}
+  .mk{flex:0 0 auto; width:18px; height:18px; border-radius:6px; display:grid; place-items:center; font-size:11px; font-weight:800; margin-top:1px;}
+  .mk.d{background:var(--green-bg); color:var(--green); border:1px solid var(--green-line);}
+  .mk.t{background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-line);}
+  li b{font-weight:650}
+  .use{display:grid; gap:8px;}
+  .use div{display:flex; gap:10px; font-size:14px; align-items:baseline;}
+  .use .k{flex:0 0 120px; font-weight:700;}
+  .use .v{color:var(--soft);}
+  code{font-family:ui-monospace,Menlo,monospace; background:var(--line2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px;}
+  .refs{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;}
+  .ref{flex:1 1 220px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:13px 16px; font-size:13.5px;}
+  .ref b{display:block; margin-bottom:2px;}
+  .ref span{color:var(--soft);}
+  .note{margin-top:18px; background:var(--amber-bg); border:1px solid var(--amber-line); border-radius:12px; padding:14px 18px; font-size:14px;}
+  .note b{color:var(--amber)}
+  footer{margin-top:22px; color:var(--soft); font-size:12.5px; text-align:center;}
+</style>
+
+<div class="wrap">
+  <span class="pill">RackTrack &middot; Overview</span>
+  <h1>Today&rsquo;s progress &amp; what&rsquo;s left</h1>
+  <p class="lead">RackTrack scans a server rack from a photo and shows every device, its position, and live switch-port
+    info. Today we got it running on <b>both iPhone and Android</b> for testers, and fixed the issues testers hit.</p>
+
+  <!-- Read this out loud -->
+  <div class="say">
+    <div class="cap">&#128172; Summary to read out</div>
+    <p>&ldquo;RackTrack now runs on <b>both iPhone and Android</b>. On iPhone it&rsquo;s on Apple TestFlight; on Android we
+      have an installable app file. Today I put our <b>real logo</b> on both apps and fixed the main issues testers were
+      hitting &mdash; <b>scans no longer get lost</b> when you switch apps, the <b>&lsquo;load failed&rsquo; error is
+      gone</b>, and <b>back buttons, scrolling, and a first-time walkthrough</b> all work now.</p>
+    <p>The one thing left before we open it to testers: right now the app <b>depends on my Mac being switched on</b>,
+      because the AI and the live switch-reading run there. I <b>can&rsquo;t keep my Mac on all the time</b>, so the key
+      next step is moving that part to an <b>always-on server</b> with a <b>permanent web address</b>. Once that&rsquo;s
+      done, testers can use the app <b>anytime, on their own</b> &mdash; without needing my machine running.&rdquo;</p>
+  </div>
+
+  <!-- How it works, one line -->
+  <div class="flow">
+    <div class="n">&#128241; The app<small>iPhone / Android</small></div>
+    <span class="ar">&rarr;</span>
+    <div class="n">&#127760; Tunnel<small>temporary web link</small></div>
+    <span class="ar">&rarr;</span>
+    <div class="n">&#128187; Our Mac<small>AI + reads the switch</small></div>
+    <span class="ar">&rarr;</span>
+    <div class="n">&#128225; The switch<small>live, read-only</small></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>What we did today <span class="tag done">Done</span></h2>
+      <ul>
+        <li><span class="mk d">&#10003;</span><span>Put the <b>RackTrack logo</b> on both apps (was a placeholder).</span></li>
+        <li><span class="mk d">&#10003;</span><span><b>iPhone:</b> signed &amp; live on <b>TestFlight</b> (build 4).</span></li>
+        <li><span class="mk d">&#10003;</span><span><b>Android:</b> built the installable <b>APK</b>.</span></li>
+        <li><span class="mk d">&#10003;</span><span><b>Scan no longer lost</b> when switching apps &mdash; it comes back with the result.</span></li>
+        <li><span class="mk d">&#10003;</span><span>Fixed testers&rsquo; <b>&ldquo;load failed&rdquo;</b> (backend was restarting mid-scan).</span></li>
+        <li><span class="mk d">&#10003;</span><span>Fixed <b>Android scrolling</b>; <b>back buttons</b> never stick.</span></li>
+        <li><span class="mk d">&#10003;</span><span>Added a <b>first-time walkthrough</b>; made the <b>Ports</b> screen compact; <b>Network</b> shows &ldquo;No switches detected&rdquo; instead of blank.</span></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>What&rsquo;s left <span class="tag todo">Pending</span></h2>
+      <ul>
+        <li><span class="mk t">&rarr;</span><span><b>iPhone:</b> upload build 4 &amp; assign testers.</span></li>
+        <li><span class="mk t">&rarr;</span><span><b>Android:</b> send the APK to testers to install.</span></li>
+        <li><span class="mk t">&rarr;</span><span><b>Confirm on real devices</b> &mdash; scan-resume, scrolling, walkthrough.</span></li>
+        <li><span class="mk t">&rarr;</span><span><b>Key step:</b> move the backend to an <b>always-on server</b> &mdash; because the Mac can&rsquo;t stay on all the time. This is what lets testers use the app anytime.</span></li>
+        <li><span class="mk t">&rarr;</span><span>Give it a <b>permanent web address</b> (<code>api.racktrack.ai</code>) so the apps don&rsquo;t break when the Mac restarts.</span></li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>What we&rsquo;re using</h2>
+      <div class="use">
+        <div><span class="k">iPhone side</span><span class="v">Apple Developer (SPRINTPARK LLC) &middot; TestFlight &middot; Transporter</span></div>
+        <div><span class="k">Android side</span><span class="v">Android Studio &middot; APK sideload (no store, no account, no fee)</span></div>
+        <div><span class="k">The app</span><span class="v">One shared app wrapped for both phones &middot; ID <code>com.racktrack.app</code></span></div>
+        <div><span class="k">Backend</span><span class="v">Runs on our Mac &middot; reached over a <b>temporary Cloudflare tunnel</b></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="refs">
+    <div class="ref"><b>&#128241; iOS details</b><span>See <code>status-iOS.html</code> for the full iPhone breakdown.</span></div>
+    <div class="ref"><b>&#129302; Android details</b><span>See <code>status-Android.html</code> for the full APK breakdown.</span></div>
+  </div>
+
+  <div class="note">
+    <b>The blocker before wide tester use.</b> Both apps currently need <b>my Mac switched on</b> &mdash; the AI and the
+    live switch-reading run there. Since the Mac <b>can&rsquo;t stay on all the time</b>, testers can only use the app
+    when it happens to be running. Moving the backend to an <b>always-on server</b> with a <b>permanent address</b> is
+    the one step that turns this from &ldquo;works during a demo&rdquo; into &ldquo;testers can use it whenever.&rdquo;
+  </div>
+
+  <footer>RackTrack overview &middot; 13 Jul 2026</footer>
+</div>

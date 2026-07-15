@@ -149,6 +149,7 @@
 
 html {
   font-size: 16px;
+  height: 100%;
   -webkit-text-size-adjust: 100%;
   /* Match the app surface so the rubber-band / overscroll area reads white
      instead of the browser's default (which renders black when the OS is in
@@ -170,24 +171,30 @@ html {
 body {
   font-family: var(--font);
   background: var(--md-background);
-  background-attachment: fixed;
   color: var(--t1);
-  min-height: 100dvh;
+  /* Lock the document so it never becomes the scroller. On Android's WebView,
+     document/body scrolling is unreliable (it was requiring two fingers). All
+     scrolling happens inside #root, an explicit overflow:auto container, which
+     single-finger-scrolls reliably on both iOS and Android. */
+  height: 100%;
+  overflow: hidden;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  -webkit-overflow-scrolling: touch;
   letter-spacing: -0.005em;
 }
 
 #root {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100%;
   max-width: 540px;
   margin: 0 auto;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
@@ -226,11 +233,11 @@ svg { max-width: 100%; }
 .page {
   flex: 1; display: flex; flex-direction: column;
   overflow: hidden; position: relative;
-  height: calc(100dvh - 80px);
+  height: calc(100vh - 80px);
 }
 .page-full {
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100vh;
+  height: 100vh;
 }
 
 @media (min-width: 1180px) {

@@ -1,0 +1,204 @@
+<meta charset="utf-8">
+<title>RackTrack — Status &amp; Plan A (racktrack.ai)</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#ffffff; --ink:#0f1826; --soft:#4a5876; --line:#e4e9f2; --line2:#eef2f8;
+    --blue:#2b6fed; --blue-bg:#eaf2ff;
+    --amber:#a85b06; --amber-bg:#fff4e2; --amber-line:#f2d6a4;
+    --green:#0d7a3c; --green-bg:#e6f6ec; --green-line:#bde5cc;
+    --code-bg:#0d1526; --code-ink:#dbe6f7; --code-dim:#7f93b6; --code-hi:#8fe0a8; --r:16px;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#080b12; --panel:#111826; --ink:#eef3fb; --soft:#9db0cd; --line:#222c3d; --line2:#19212f;
+    --blue:#6aa4ff; --blue-bg:#132540; --amber:#f0b665; --amber-bg:#271d0e; --amber-line:#463719;
+    --green:#63d197; --green-bg:#0d2418; --green-line:#1e4830; --code-bg:#060a12; --code-dim:#7286a8;}}
+  :root[data-theme="dark"]{--bg:#080b12; --panel:#111826; --ink:#eef3fb; --soft:#9db0cd; --line:#222c3d; --line2:#19212f;
+    --blue:#6aa4ff; --blue-bg:#132540; --amber:#f0b665; --amber-bg:#271d0e; --amber-line:#463719;
+    --green:#63d197; --green-bg:#0d2418; --green-line:#1e4830; --code-bg:#060a12; --code-dim:#7286a8;}
+  :root[data-theme="light"]{--bg:#f5f7fb; --panel:#ffffff; --ink:#0f1826; --soft:#4a5876; --line:#e4e9f2; --line2:#eef2f8;
+    --blue:#2b6fed; --blue-bg:#eaf2ff; --amber:#a85b06; --amber-bg:#fff4e2; --amber-line:#f2d6a4;
+    --green:#0d7a3c; --green-bg:#e6f6ec; --green-line:#bde5cc; --code-bg:#0d1526; --code-dim:#7f93b6;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink); line-height:1.6;
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1100px; margin:0 auto; padding:clamp(20px,4vw,52px);}
+  code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+
+  .tag{display:inline-block; font-size:12px; letter-spacing:.12em; text-transform:uppercase; font-weight:800;
+    color:var(--green); background:var(--green-bg); border:1px solid var(--green-line); padding:5px 12px; border-radius:999px;}
+  h1{margin:14px 0 10px; font-size:clamp(27px,4.4vw,42px); line-height:1.07; letter-spacing:-.025em; text-wrap:balance;}
+  .lead{margin:0; max-width:66ch; color:var(--soft); font-size:clamp(16px,1.4vw,18px);}
+  .facts{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;}
+  .facts span{font-size:12.5px; padding:6px 11px; border-radius:999px; border:1px solid var(--line); background:var(--line2); color:var(--soft); font-weight:600;}
+  .facts b{color:var(--ink)}
+
+  .sec{margin-top:clamp(34px,5vw,60px);}
+  .sh{display:flex; align-items:center; gap:12px; margin:0 0 18px;}
+  .sh .d{width:34px; height:34px; border-radius:10px; background:var(--blue-bg); color:var(--blue); display:grid; place-items:center; font-weight:800; font-size:16px; flex:0 0 auto;}
+  .sh h2{margin:0; font-size:clamp(20px,2.3vw,27px); letter-spacing:-.02em;}
+
+  .row{display:grid; gap:16px;}
+  @media(min-width:720px){.r2{grid-template-columns:1fr 1fr} .r3{grid-template-columns:repeat(3,1fr)}}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:20px 22px;}
+  .card h3{margin:0 0 13px; font-size:16.5px; letter-spacing:-.01em;}
+  ul.done{list-style:none; margin:0; padding:0; display:grid; gap:11px;}
+  ul.done li{display:flex; gap:12px; align-items:flex-start; font-size:15px;}
+  .tick{flex:0 0 auto; width:22px; height:22px; border-radius:7px; display:grid; place-items:center; font-size:12px; font-weight:800;
+    background:var(--green-bg); color:var(--green); border:1px solid var(--green-line);}
+  .tick.now{background:var(--amber-bg); color:var(--amber); border-color:var(--amber-line);}
+  li b{font-weight:650}
+
+  .flow{display:flex; flex-wrap:wrap; gap:12px; align-items:stretch;}
+  .step{flex:1 1 180px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:17px;}
+  .step.temp{border-color:var(--amber-line); background:var(--amber-bg);}
+  .step .ic{font-size:23px} .step .lab{margin-top:9px; font-weight:700; font-size:15.5px} .step .t{margin-top:4px; color:var(--soft); font-size:13.5px}
+  .flow .to{align-self:center; color:var(--soft); font-size:21px; font-weight:800}
+  @media(max-width:660px){.flow .to{transform:rotate(90deg)}}
+
+  .note{border-radius:var(--r); padding:20px 24px; font-size:15.5px;}
+  .note.warn{background:var(--amber-bg); border:1px solid var(--amber-line);}
+  .note.info{background:var(--blue-bg); border:1px solid var(--line);}
+  .note.good{background:var(--green-bg); border:1px solid var(--green-line);}
+  .note .cap{font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; display:block;}
+  .note.warn .cap{color:var(--amber)} .note.info .cap{color:var(--blue)} .note.good .cap{color:var(--green)}
+  .note p{margin:0 0 10px} .note p:last-child{margin:0}
+
+  .addr{display:grid; gap:10px; margin-top:14px;}
+  .addr div{display:flex; gap:12px; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 16px; flex-wrap:wrap;}
+  .addr .u{font-weight:800; min-width:200px} .addr .u code{background:none; border:none; padding:0; color:var(--blue); font-size:15px}
+  .addr .m{color:var(--soft); font-size:14px}
+
+  ol.plan{margin:0; padding:0; counter-reset:p;}
+  ol.plan li{list-style:none; position:relative; padding:0 0 22px 56px;}
+  ol.plan li:not(:last-child)::after{content:""; position:absolute; left:19px; top:34px; bottom:0; width:2px; background:var(--line);}
+  ol.plan li::before{counter-increment:p; content:counter(p); position:absolute; left:5px; top:0; width:30px; height:30px; border-radius:9px;
+    background:var(--blue); color:#fff; font-weight:800; font-size:15px; display:grid; place-items:center; box-shadow:0 0 0 4px var(--bg);}
+  ol.plan h3{margin:2px 0 6px; font-size:16.5px} ol.plan p{margin:0 0 9px; color:var(--soft); font-size:14.5px} ol.plan p:last-child{margin:0}
+  pre{background:var(--code-bg); color:var(--code-ink); border-radius:11px; padding:12px 15px; overflow-x:auto; font-size:13px; line-height:1.65; margin:6px 0 0;}
+  pre .c{color:var(--code-dim)} pre b{color:var(--code-hi); font-weight:600}
+  p code,li code{background:var(--line2); border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:13px}
+
+  .mini{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px;}
+  .mini .ic{font-size:20px} .mini h3{margin:8px 0 4px; font-size:15px} .mini p{margin:0; color:var(--soft); font-size:13.5px}
+  footer{margin-top:52px; padding-top:18px; border-top:1px solid var(--line); text-align:center; color:var(--soft); font-size:13px}
+</style>
+
+<div class="wrap">
+
+  <span class="tag">Plan A &middot; You already own racktrack.ai</span>
+  <h1>RackTrack: what we did, how it works, and the plan</h1>
+  <p class="lead">The RackTrack app is built, branded, and installable on TestFlight today. It reaches your equipment
+    through a <b>temporary</b> internet connection. This document covers the whole picture and ends with the plan to
+    make that connection permanent using your domain <b>racktrack.ai</b>.</p>
+  <div class="facts">
+    <span>App build <b>1.0 (2)</b></span><span>Apple team <b>SPRINTPARK LLC</b></span>
+    <span>On <b>TestFlight</b></span><span>Backend on <b>your Mac</b></span><span>Switch read <b>read-only</b></span>
+  </div>
+
+  <!-- WHAT WE DID -->
+  <div class="sec">
+    <div class="sh"><span class="d">&#10003;</span><h2>What we did</h2></div>
+    <div class="row r2">
+      <div class="card">
+        <h3>Built &amp; branded the app</h3>
+        <ul class="done">
+          <li><span class="tick">&#10003;</span><span>Put the real <b>RackTrack "R" logo</b> on the app icon and inside the app.</span></li>
+          <li><span class="tick">&#10003;</span><span>Built and <b>signed it for Apple</b> as an official RackTrack app.</span></li>
+          <li><span class="tick">&#10003;</span><span>Verified on a real iPhone — it installs and shows the logo correctly.</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Put it on TestFlight</h3>
+        <ul class="done">
+          <li><span class="tick">&#10003;</span><span>Uploaded the app and created its listing in <b>App Store Connect</b>.</span></li>
+          <li><span class="tick">&#10003;</span><span>Cleared Apple's <b>encryption question</b> (standard HTTPS only).</span></li>
+          <li><span class="tick now">&#8250;</span><span><b>Now:</b> adding testers to the group — internal testers install instantly, no Apple review.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="sec">
+    <div class="sh"><span class="d">&#8594;</span><h2>How it works</h2></div>
+    <div class="flow">
+      <div class="step"><div class="ic">&#128241;</div><div class="lab">The app</div><div class="t">On the tester's iPhone. Just needs internet.</div></div>
+      <div class="to">&#8594;</div>
+      <div class="step temp"><div class="ic">&#127760;</div><div class="lab">A tunnel</div><div class="t">A web address linking the app to your Mac. This is the temporary part.</div></div>
+      <div class="to">&#8594;</div>
+      <div class="step"><div class="ic">&#128187;</div><div class="lab">Your Mac</div><div class="t">Runs the app's brain and the AI. Does the real work.</div></div>
+      <div class="to">&#8594;</div>
+      <div class="step"><div class="ic">&#128225;</div><div class="lab">Your switch</div><div class="t">The Mac reads it live (read-only) for port &amp; cable info.</div></div>
+    </div>
+    <p style="color:var(--soft); font-size:14.5px; margin:14px 2px 0;">Only the Mac can reach your switch — so the
+      <b>Mac must stay on and running</b> for testers to see live data. The phones just need internet.</p>
+  </div>
+
+  <!-- WHY TEMPORARY -->
+  <div class="sec">
+    <div class="sh"><span class="d">!</span><h2>Why the connection is only temporary</h2></div>
+    <div class="note warn">
+      <span class="cap">The catch with today's tunnel</span>
+      <p>The tunnel's web address is <b>random</b>, and it <b>changes whenever the Mac restarts</b> (a reboot, sleep, or
+        closing the window). That address is <b>locked inside the installed app</b> and can't be changed after install.</p>
+      <p>So if it changes, <b>every tester's app stops working</b> until we rebuild the app with the new address and
+        upload it again. Fine for a quick demo — not fine for ongoing testing. That's what the plan below fixes.</p>
+    </div>
+  </div>
+
+  <!-- THE PLAN -->
+  <div class="sec">
+    <div class="sh"><span class="d">&#9733;</span><h2>The plan: a permanent address on racktrack.ai</h2></div>
+
+    <div class="note good">
+      <span class="cap">Website and app live side by side</span>
+      <p>Your website already lives at <b>racktrack.ai</b>. The app just needs its own address on a <b>subdomain</b> —
+        adding one <b>never affects</b> the main website.</p>
+    </div>
+    <div class="addr">
+      <div><span class="u"><code>racktrack.ai</code></span><span class="m">&rarr; your <b>website</b> — untouched, stays where it is</span></div>
+      <div><span class="u"><code>www.racktrack.ai</code></span><span class="m">&rarr; your <b>website</b> — untouched</span></div>
+      <div><span class="u"><code>api.racktrack.ai</code></span><span class="m">&rarr; the <b>app</b> — new subdomain pointing to your Mac</span></div>
+    </div>
+
+    <div class="note warn" style="margin-top:16px;">
+      <span class="cap">The one thing to be careful about</span>
+      <p>The tunnel needs <b>Cloudflare</b> to manage racktrack.ai's addresses, which means pointing the domain's
+        <b>nameservers</b> at Cloudflare — that moves DNS for the whole domain, website included. It's <b>safe in the
+        right order</b>: Cloudflare copies your existing website records first, you confirm they all came across, and
+        only then switch the nameservers. The website's content and hosting don't change.</p>
+    </div>
+
+    <ol class="plan" style="margin-top:20px;">
+      <li><h3>Add racktrack.ai to a free Cloudflare account</h3>
+        <p>Sign up, click <b>Add a site</b>, enter <code>racktrack.ai</code>. Cloudflare imports your current website records automatically.</p></li>
+      <li><h3>Check the website records carried over</h3>
+        <p>Compare the imported list with GoDaddy — the records pointing <code>racktrack.ai</code> and <code>www</code> at your site must all be present. This keeps the site up.</p></li>
+      <li><h3>Point the nameservers to Cloudflare</h3>
+        <p>In GoDaddy, set the domain's nameservers to Cloudflare's two. Wait until it shows <b>Active</b>. The website keeps serving throughout.</p></li>
+      <li><h3>Create the tunnel and claim api.racktrack.ai</h3>
+        <pre>cloudflared tunnel login
+cloudflared tunnel create racktrack
+cloudflared tunnel route dns racktrack <b>api.racktrack.ai</b></pre></li>
+      <li><h3>Forward it to the app's backend and keep it running</h3>
+        <p>Send <code>api.racktrack.ai</code> to the Mac's server (port 3001) and install it as a service so it <b>restarts by itself</b> after a reboot.</p>
+        <pre><span class="c"># ~/.cloudflared/config.yml points the hostname to localhost:3001</span>
+sudo cloudflared service install</pre></li>
+      <li><h3>Rebuild the app once with the new address</h3>
+        <p>The <b>last</b> rebuild just for the address. Upload it and point testers at the new build.</p>
+        <pre>./make-ipa.sh 6GS882NNAX <b>https://api.racktrack.ai</b></pre></li>
+    </ol>
+  </div>
+
+  <!-- RESULT -->
+  <div class="sec">
+    <div class="sh"><span class="d">&#10003;</span><h2>The result</h2></div>
+    <div class="row r3">
+      <div class="mini"><div class="ic">&#127760;</div><h3>Website</h3><p>Still at racktrack.ai, exactly as before.</p></div>
+      <div class="mini"><div class="ic">&#128241;</div><h3>App</h3><p>Reaches the Mac at api.racktrack.ai — a fixed address.</p></div>
+      <div class="mini"><div class="ic">&#128260;</div><h3>Restarts</h3><p>Mac reboots no longer break the app. No more rebuilds for the address.</p></div>
+    </div>
+  </div>
+
+  <footer>RackTrack &middot; Status &amp; Plan A (racktrack.ai / GoDaddy) &middot; 13 Jul 2026</footer>
+</div>

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RackTrack — Working notes</title>
+<style>
+*{box-sizing:border-box}
+:root{--ink:#141820;--soft:#5a6674;--line:#e3e8ef;--accent:#2f6bd8;--bg:#f6f8fb}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+header{background:#fff;border-bottom:1px solid var(--line);padding:34px 0 30px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 8px}
+h1{font-size:38px;line-height:1.1;margin:0;font-weight:800;letter-spacing:-.02em}
+.sub{color:var(--soft);font-size:17px;margin:12px 0 0;max-width:62ch}
+.warn{margin-top:18px;border-left:3px solid #d97706;background:#fff7ed;padding:11px 14px;
+  border-radius:0 8px 8px 0;font-size:14.5px;max-width:70ch}
+.warn b{color:#b45309;display:block;font-size:10.5px;letter-spacing:.09em;margin-bottom:3px}
+section{margin:40px 0 0}
+h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);
+  margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.card{display:block;background:#fff;border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;margin:0 0 10px;text-decoration:none;color:inherit;transition:.12s}
+.card:hover{border-color:var(--accent);transform:translateY(-1px);
+  box-shadow:0 3px 10px rgba(16,24,40,.06)}
+.card h3{margin:0;font-size:16.5px;font-weight:700}
+.card p{margin:5px 0 0;color:var(--soft);font-size:14.5px;line-height:1.5}
+.tag{float:right;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:#b45309;background:#fff7ed;border-radius:999px;padding:3px 9px}
+.tag.cur{color:#166534;background:#f0fdf4}
+footer{color:var(--soft);font-size:13.5px;text-align:center;padding:44px 0 60px}
+a.back{color:var(--accent);text-decoration:none;font-size:14px;font-weight:600}
+</style></head>
+<body>
+<header><div class="wrap">
+  <p class="eyebrow">RackTrack</p>
+  <h1>Working notes</h1>
+  <p class="sub">Design explorations, requirements write-ups and explainers built during
+     development. Grouped by subject — click any card to open it.</p>
+  <div class="warn"><b>Read me first</b>
+     These are <strong>working notes, not published documentation</strong>. They capture thinking at a
+     moment in time, and some have been overtaken by later work. Where two notes cover the same
+     ground, the newer one is marked <em>current</em>. For documentation that is kept up to date,
+     use the <a href="../user-guide/RackTrack-User-Guide-iPad.html">user guide</a>.</div>
+</div></header>
+
+<main class="wrap">
+
+<section>
+  <h2>Start here</h2>
+  <a class="card" href="system-overview.html">
+    <h3>System overview</h3>
+    <p>How the whole thing fits together — the app, the pipeline, the server, and the
+       integrations. The best single page to hand a newcomer.</p></a>
+</section>
+
+<section>
+  <h2>Switch access</h2>
+  <a class="card" href="switch-access/switch-access-requirements.html">
+    <span class="tag cur">Current</span>
+    <h3>Switch access we need (tested)</h3>
+    <p>The access RackTrack actually requires from a switch, confirmed against real hardware.
+       This is the one to send a network admin.</p></a>
+  <a class="card" href="switch-access/switch-access-status-scale-plan.html">
+    <h3>Switch access — status &amp; scale plan</h3>
+    <p>Where switch access stood, and how it would scale beyond the bench switch.</p></a>
+  <a class="card" href="switch-access/switch-access-diagnostic.html">
+    <h3>Switch access — diagnostic</h3>
+    <p>Working through what was and was not reachable, and why.</p></a>
+</section>
+
+<section>
+  <h2>Audits</h2>
+  <a class="card" href="audits/SingleSwitchAuditTLSG2428P.html">
+    <h3>Single-switch audit — TL-SG2428P</h3>
+    <p>A full audit of the bench switch at 192.168.1.33: identity, ports, PoE, VLANs, neighbours.</p></a>
+  <a class="card" href="audits/TwoRackNetworkAuditGuide.html">
+    <h3>Two-rack network audit &amp; cable-trace guide — SPP-DC1</h3>
+    <p>Auditing two racks end to end, including tracing the cables between them.</p></a>
+</section>
+
+<section>
+  <h2>Ports &amp; cabling</h2>
+  <a class="card" href="ports-and-cabling/ports-and-cable-tracing.html">
+    <h3>Ports &amp; cable tracing</h3>
+    <p>How RackTrack reads ports and follows cables — and the hard limit that a passive patch
+       panel is invisible to the switch.</p></a>
+  <a class="card" href="ports-and-cabling/cable-trace-requirements.html">
+    <h3>Cable path tracing — requirements for the network admin</h3>
+    <p>What has to be true on the network before a cable path can be traced.</p></a>
+  <a class="card" href="ports-and-cabling/expanded-ports-options.html">
+    <h3>Expanded ports — options</h3>
+    <p>Design options for showing more port detail.</p></a>
+  <a class="card" href="ports-and-cabling/traceroute-explained.html">
+    <h3>Traceroute — what it's for, in plain English</h3>
+    <p>Why traceroute run <em>from the switch</em> answers a question your laptop cannot.</p></a>
+</section>
+
+<section>
+  <h2>Design explorations</h2>
+  <a class="card" href="design/network-page-layout-options.html">
+    <h3>Network page — layout options</h3>
+    <p>Alternative layouts considered for the Network view.</p></a>
+  <a class="card" href="design/brand-wordmark-options.html">
+    <h3>Wordmark options</h3>
+    <p>Candidate RackTrack wordmarks.</p></a>
+  <a class="card" href="design/brand-font-options.html">
+    <h3>Font options</h3>
+    <p>Candidate typefaces for the brand.</p></a>
+</section>
+
+<section>
+  <h2>Status &amp; demo</h2>
+  <a class="card" href="status-and-demo/demo-feedback-explained-v2.html">
+    <span class="tag cur">Current</span>
+    <h3>Demo feedback — where we stand today</h3>
+    <p>The demo feedback, and what has been done about it. Supersedes the note below.</p></a>
+  <a class="card" href="status-and-demo/demo-feedback-explained.html">
+    <span class="tag">Superseded</span>
+    <h3>Demo feedback, explained</h3>
+    <p>The first pass at the same material. Kept for the record.</p></a>
+  <a class="card" href="status-and-demo/progress-and-demo.html">
+    <h3>Progress &amp; demo</h3>
+    <p>Where the product had got to, and what the demo would show.</p></a>
+</section>
+
+<section>
+  <h2>Delivery</h2>
+  <a class="card" href="delivery/testflight-readiness.html">
+    <h3>TestFlight readiness</h3>
+    <p>What has to be in place before the iOS build can go to TestFlight.</p></a>
+  <a class="card" href="delivery/cloudflare-tunnel.html">
+    <h3>Cloudflare tunnel — what it is, and why the URL matters</h3>
+    <p>How the tunnel exposes a local build for phone testing, and why the URL keeps changing.</p></a>
+</section>
+
+</main>
+<footer>
+  <a class="back" href="../README.md">← All RackTrack documentation</a><br><br>
+  Working notes · 18 documents
+</footer>
+</body></html>

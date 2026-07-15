@@ -115,6 +115,21 @@ const MarketIcon = () => (
   </svg>
 );
 
+const DashboardIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3v18h18"/>
+    <path d="M7 15l4-5 3 3 4-6"/>
+  </svg>
+);
+
+const TwoRackIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="18" rx="1"/>
+    <rect x="14" y="3" width="7" height="18" rx="1"/>
+    <path d="M10 8h4"/>
+  </svg>
+);
+
 // Extract rackId from any /results/<id>/* or /switch-info/<id> path so we
 // can build contextual rack-section links in the sidebar.
 function extractRackId(pathname) {
@@ -129,11 +144,13 @@ const PAGE_TITLE = {
   '/connections':      { title: 'Connections',         sub: 'Active data sources' },
   '/results':          { title: 'Scan results',        sub: 'Devices & ports' },
   '/specifications':   { title: 'Specifications',      sub: 'Vendor & model lookup' },
-  '/firmware':         { title: 'Firmware',            sub: 'Version & CVE check' },
+  '/firmware':         { title: 'Firmware',            sub: 'Version check' },
   '/switch-info':      { title: 'Switch info',         sub: 'CMDB switch list' },
   '/port-history':     { title: 'Port history',        sub: 'Change log' },
   '/marketplace':      { title: 'Marketplace',         sub: 'Buy, sell & swap surplus gear' },
   '/marketplace/new':  { title: 'New listing',         sub: 'List surplus equipment' },
+  '/dashboard':        { title: 'Live Operations',     sub: 'Real-time activity & health' },
+  '/multi-rack/new':   { title: 'Scan two racks',      sub: 'Detect both + the cabling between them' },
 };
 
 function deriveTitle(pathname) {
@@ -143,9 +160,7 @@ function deriveTitle(pathname) {
   if (pathname.startsWith('/results') && pathname.endsWith('/netdisco'))
     return { title: 'Network view',  sub: 'Live device + port table' };
   if (pathname.startsWith('/results') && pathname.endsWith('/ports'))
-    return { title: 'Ports',         sub: 'Available ports' };
-  if (pathname.startsWith('/results') && pathname.endsWith('/vr'))
-    return { title: 'VR walkthrough',sub: 'Immersive rack' };
+    return { title: 'Live Network Switch', sub: 'Available ports' };
   if (pathname.startsWith('/results'))
     return { title: 'Scan results',  sub: 'Devices & ports' };
   if (pathname.startsWith('/switch-info'))
@@ -161,10 +176,14 @@ export default function DesktopShell({ children }) {
   const crumb = deriveTitle(location.pathname);
   const { user } = useAuth();
   const isAdmin = user?.role === 'org_admin' || user?.role === 'owner';
+  const isOwner = user?.role === 'owner';
 
   const links = [
     { to: '/',            label: 'Home',        icon: <HomeIcon />,    end: true  },
     { to: '/scan',        label: 'Scan',        icon: <ScanIcon />,    end: false },
+    { to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false },
+    // Live operations dashboard — owner-only.
+    ...(isOwner ? [{ to: '/dashboard', label: 'Live Ops', icon: <DashboardIcon />, end: false }] : []),
     // Marketplace is organization-admin only.
     ...(isAdmin ? [{ to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false }] : []),
     { to: '/profile',     label: 'Profile',     icon: <ProfileIcon />, end: false },
@@ -235,7 +254,7 @@ export default function DesktopShell({ children }) {
       {/* ── Sidebar ─────────────────────────────────────────────── */}
       <aside className={styles.sidebar}>
         <a className={styles.brand} onClick={(e) => { e.preventDefault(); navigate('/'); }} href="/">
-          <span className={styles.brandMark}>R</span>
+          <img src="/logo.jpg" alt="" className={styles.brandMark} />
           <span>RackTrack</span>
         </a>
 
@@ -275,6 +294,16 @@ export default function DesktopShell({ children }) {
       {/* ── Main area ───────────────────────────────────────────── */}
       <section className={styles.main}>
         <header className={styles.topBar}>
+          {location.pathname.endsWith('/ports') && (
+            <button
+              type="button"
+              className={styles.topBack}
+              aria-label="Back"
+              onClick={() => navigate(-1)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+          )}
           <div className={styles.crumbBlock}>
             <span className={styles.crumbTitle}>{crumb.title}</span>
             {crumb.sub && <span className={styles.crumbSub}>{crumb.sub}</span>}

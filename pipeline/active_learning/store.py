@@ -38,7 +38,7 @@ _LOCK = threading.Lock()
 # set_org(); when unset, falls back to the shared root (legacy / no-org calls).
 _ACTIVE_ORG = None
 
-VALID_MODELS = ("cable", "devices", "ports")
+VALID_MODELS = ("cable", "devices", "ports", "port_type")
 
 
 def set_org(org_id) -> None:
@@ -225,3 +225,86 @@ def find_verified_port_layout(image_path: str) -> Optional[dict]:
     if best is None:
         return None
     return {**best, "match_type": "embedding", "match_score": best_s}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Confirmed-rack alias store — a perceptual cache so a re-uploaded photo of
+# a rack the user already CONFIRMED serves the confirmed result instead of
+# re-detecting it. Keyed by the rack image's pHash (fast) + ResNet embedding
+# (robust to angle/lighting), value is the prior rackId. Rack-level matching
+# uses a STRICTER embedding threshold than crop matching so two different
+# racks in similar rooms don't collide.
+# ─────────────────────────────────────────────────────────────────────
+
+# Near-duplicate only. A false match shows the WRONG rack's data, which is
+# worse than just re-detecting, so this is deliberately strict — a re-shoot
+# from a very different angle will (safely) fall through to fresh detection
+# rather than risk serving another rack.
+_RACK_SIM_THRESH = 0.96
+
+
+def _confirmed_racks_path() -> Path:
+    d = _root() / "confirmed_racks"
+    d.mkdir(parents=True, exist_ok=True)
+    return d / "confirmed_racks.json"
+
+
+def load_confirmed_racks() -> dict:
+    p = _confirmed_racks_path()
+    if not p.exists():
+        return {}
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_confirmed_racks(v: dict) -> None:
+    _confirmed_racks_path().write_text(json.dumps(v, indent=2), encoding="utf-8")
+
+
+def add_confirmed_rack(image_path: str, rack_id: str, image_name=None) -> dict:
+    """Register a rack image's fingerprint → rackId so a future upload that
+    perceptually matches serves this confirmed rack instead of re-detecting."""
+    with _LOCK:
+        h = memory.phash(image_path)
+        emb = memory.embed(image_path)
+        confirmed = load_confirmed_racks()
+        confirmed[h] = {
+            "rack_id": rack_id,
+            "image_name": image_name or Path(image_path).name,
+            "embedding": emb,
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+        }
+        save_confirmed_racks(confirmed)
+        return {"phash": h, "rack_id": rack_id}
+
+
+def find_confirmed_rack(image_path: str) -> Optional[dict]:
+    """Look up a confirmed rackId whose image perceptually matches. None if
+    no confident match. pHash first (cheap), then a strict embedding pass."""
+    confirmed = load_confirmed_racks()
+    if not confirmed:
+        return None
+    h = memory.phash(image_path)
+    best, best_d = None, memory.HAMMING_TOL + 1
+    for stored_h, rec in confirmed.items():
+        d = memory.hamming(h, stored_h)
+        if d < best_d:
+            best, best_d = rec, d
+    if best is not None:
+        return {"rack_id": best.get("rack_id"), "match_type": "phash",
+                "match_distance": best_d}
+    emb = memory.embed(image_path)
+    best, best_s = None, _RACK_SIM_THRESH
+    for rec in confirmed.values():
+        v = rec.get("embedding")
+        if not v:
+            continue
+        s = memory.cos_sim(emb, v)
+        if s > best_s:
+            best, best_s = rec, s
+    if best is None:
+        return None
+    return {"rack_id": best.get("rack_id"), "match_type": "embedding",
+            "match_score": best_s}

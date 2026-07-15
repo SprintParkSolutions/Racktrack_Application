@@ -9,10 +9,18 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <!-- Light-only (was DayNight) + force-dark disabled. On a phone in dark
+         mode, a DayNight theme makes Android's WebView algorithmically darken
+         any content that doesn't opt out — which black-screened the scan
+         report (its color-scheme:light opt-out isn't honored for the report
+         iframe on every WebView version). Killing force-dark at the OS level
+         fixes it for the whole WebView, iframes included. The app content is
+         already light, so a light theme is consistent. -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <item name="android:forceDarkAllowed">false</item>
     </style>
 
 

@@ -90,6 +90,49 @@ export default function SfpAdvisor({ rackId, vendor: vendorProp, model: modelPro
 
   if (!advice) return null;
 
+  // ── Make + model missing → prompt, don't guess ──
+  if (advice.status === 'need_make_model') {
+    return (
+      <section className={styles.advisorSection}>
+        <div className={styles.advisorHead}>
+          <div className={styles.advisorTitleRow}>
+            <svg className={styles.advisorIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <h3 className={styles.advisorTitle}>SFP Procurement Advisor</h3>
+          </div>
+        </div>
+        <div className={styles.emptyHint}>
+          {advice.message || 'Add the switch make and model to get SFP advice.'}
+        </div>
+      </section>
+    );
+  }
+
+  // ── Copper-only switch → no SFP required ──
+  if (advice.status === 'no_sfp') {
+    return (
+      <section className={styles.advisorSection}>
+        <div className={styles.advisorHead}>
+          <div className={styles.advisorTitleRow}>
+            <svg className={styles.advisorIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <h3 className={styles.advisorTitle}>SFP Procurement Advisor</h3>
+          </div>
+        </div>
+        <div className={styles.noSfpMsg}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
+          </svg>
+          <span><b>No SFP required.</b>{' '}
+            {advice.message || 'This switch has no SFP/fiber slots — only copper (RJ45) ports.'}
+          </span>
+        </div>
+      </section>
+    );
+  }
+
   const slotInfo = advice.slotInfo || SFP_SLOT_TYPES[advice.slotType] || SFP_SLOT_TYPES['SFP'];
   const sfpsToProcure = sfpCounts?.avail || 0;
 
@@ -279,6 +322,13 @@ export default function SfpAdvisor({ rackId, vendor: vendorProp, model: modelPro
           </span>
         </div>
       </div>
+
+      {(advice.status === 'nearest_match' || advice.fallbackModel) && (
+        <div className={styles.nearestNote}>
+          No exact listings for <b>{advice.model}</b> — showing nearest-match {slotKey} modules
+          compatible with this switch's slot type.
+        </div>
+      )}
 
       <div className={styles.advisorContent}>
         {/* EMPTY STATE — couldn't find live listings. Cause is usually one of:

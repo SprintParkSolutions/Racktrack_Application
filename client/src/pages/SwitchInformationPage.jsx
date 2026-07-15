@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useSmartBack } from '../hooks/useSmartBack';
 import styles from './SpecificationsPage.module.css';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { apiUrl, authFetch } from '../utils/api';
@@ -231,7 +232,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
   const [firmware, setFirmware] = useState(null);
   const [firmwareStatus, setFirmwareStatus] = useState('idle');
   // In-card tab strip — Specifications first (the vendor spec sheet),
-  // then Firmware (version + CVEs), then the SFP Advisor (which optics
+  // then Firmware (version check), then the SFP Advisor (which optics
   // fit this chassis). Order chosen by the user.
   const [swTab, setSwTab] = useState('hardware');
 
@@ -436,31 +437,19 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     setFirmwareStatus('idle');
   };
 
-  const cves = firmware?.cves || [];
-  const crit = cves.filter(c => (c.severity || '').toUpperCase() === 'CRITICAL').length;
-  const high = cves.filter(c => (c.severity || '').toUpperCase() === 'HIGH').length;
-  // Severity drives the pill colour even when `upToDate` is null — a known
-  // CVE matters whether or not we could confirm the latest version.
   const fwTone =
-    firmware?.upToDate === true && cves.length === 0 ? 'ok'
-    : crit > 0 ? 'critical'
-    : (firmware?.upToDate === false && high > 0) ? 'critical'
+    firmware?.upToDate === true ? 'ok'
     : firmware?.upToDate === false ? 'warn'
-    : (firmware?.upToDate == null && high > 0) ? 'warn'
     : 'neutral';
   // Headline. When the vendor scrape couldn't confirm the latest version
-  // (upToDate === null), the agent often still surfaces CVE data, a
-  // recommended min version, or a portal pointer — use those instead of
-  // dead-ending with "couldn't reach vendor right now".
+  // (upToDate === null), the agent often still surfaces a recommended min
+  // version or a portal pointer — use those instead of dead-ending with
+  // "couldn't reach vendor right now".
   let fwHeadline;
   if (firmware?.upToDate === true) {
     fwHeadline = 'Up to date';
   } else if (firmware?.upToDate === false) {
-    fwHeadline = crit > 0 ? 'Upgrade strongly recommended' : 'Upgrade available';
-  } else if (cves.length > 0) {
-    fwHeadline = crit > 0
-      ? `${cves.length} CVE${cves.length > 1 ? 's' : ''} — upgrade strongly recommended`
-      : `${cves.length} CVE${cves.length > 1 ? 's' : ''} known — latest version unknown`;
+    fwHeadline = 'Upgrade available';
   } else if (firmware?.recommendedMinVersion) {
     fwHeadline = `Recommended min: ${firmware.recommendedMinVersion}`;
   } else if (firmware?.releaseNotesGated || firmware?.portalUrl) {
@@ -847,9 +836,6 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                     </a>
                   ) : (
                     <MiniField label="Latest" value={firmware.latestVersion || '—'} accent={accent} fieldBg={fieldBg} fieldBorder={fieldBorder} valueColor={valueColor} />
-                  )}
-                  {cves.length > 0 && (
-                    <MiniField label="CVEs" value={`${cves.length}${(crit+high)>0?` (${crit}c/${high}h)`:''}`} accent={crit>0?'#1a1c1d':high>0?'#4c4546':accent} fieldBg={fieldBg} fieldBorder={fieldBorder} valueColor={valueColor} />
                   )}
                   {firmware.recommendedMinVersion && firmware.recommendedMinVersion !== firmware.latestVersion && (
                     <MiniField label="Min safe" value={firmware.recommendedMinVersion} accent={'#4c4546'} fieldBg={fieldBg} fieldBorder={fieldBorder} valueColor={valueColor} />
@@ -1435,6 +1421,7 @@ export function SwitchInfoContent({ rackId }) {
 // ── Standalone page (used by /switch-info route) ─────────────
 export default function SwitchInformationPage() {
   const navigate = useNavigate();
+  const goBack = useSmartBack();
   const location = useLocation();
   const params = useParams();
   const rackId = params.rackId || location.state?.rackId || null;
@@ -1454,7 +1441,7 @@ export default function SwitchInformationPage() {
       <div className={styles.amb2} />
 
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Back">
+        <button className={styles.backBtn} onClick={() => goBack()} aria-label="Back">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/>
             <polyline points="12 19 5 12 12 5"/>

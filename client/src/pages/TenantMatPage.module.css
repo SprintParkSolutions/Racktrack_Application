@@ -1,6 +1,6 @@
 /* ─── Page shell ────────────────────────────────────────────────────── */
 .page {
-  height: 100vh; height: 100dvh;
+  height: 100vh; height: 100vh;
   background: #ffffff;
   color: #0b0c0e;
   display: flex; flex-direction: column;

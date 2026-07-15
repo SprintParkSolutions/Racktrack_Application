@@ -1,5 +1,12 @@
 {
   "appId": "com.racktrack.app",
   "appName": "RackTrack",
-  "webDir": "dist"
+  "webDir": "dist",
+  "overrideUserAgent": "RackTrack/1.0 (native app)",
+  "android": {
+    "overrideUserAgent": "RackTrack/1.0 (native app; Android)"
+  },
+  "ios": {
+    "overrideUserAgent": "RackTrack/1.0 (native app; iOS)"
+  }
 }

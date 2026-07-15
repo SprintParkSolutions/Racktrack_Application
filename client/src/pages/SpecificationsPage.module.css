@@ -1,7 +1,7 @@
 .specs {
   position: relative;
   /* Flex column so the header stays put and .scrollBody owns the scroll.
-     The page root is `.page.page-full` (height:100dvh, overflow:hidden), so
+     The page root is `.page.page-full` (height:100vh, overflow:hidden), so
      scrolling MUST live in an inner container — otherwise long spec tables
      are clipped and the page can't scroll on mobile. */
   display: flex;
@@ -628,39 +628,6 @@
   border-color: #f59e0b !important;
 }
 
-/* ── CVE severity badges — red / amber / black-at-70% / black-at-50%. ── */
-[data-severity="critical"],
-[data-severity="CRITICAL"] {
-  color: #ef4444 !important;
-  background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  background-image: none !important;
-  border: 1px solid #ef4444 !important;
-  box-shadow: none !important;
-}
-[data-severity="high"],
-[data-severity="HIGH"] {
-  color: #f59e0b !important;
-  background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  background-image: none !important;
-  border: 1px solid #f59e0b !important;
-  box-shadow: none !important;
-}
-[data-severity="medium"],
-[data-severity="MEDIUM"] {
-  color: rgba(18, 20, 23, 0.7) !important;
-  background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  background-image: none !important;
-  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  box-shadow: none !important;
-}
-[data-severity="low"],
-[data-severity="LOW"] {
-  color: rgba(18, 20, 23, 0.5) !important;
-  background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  background-image: none !important;
-  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  box-shadow: none !important;
-}
 
 /* ── Generic chip / pill / tag fallbacks inside the Switches page. ── */
 .specs [class*="chip"],
@@ -730,7 +697,7 @@
   scrollbar-color: var(--md-outline-variant, #E0E0E0) transparent;
 }
 
-/* CVE list containers — when authored as <ul>/<ol> inside switch cards. */
+/* List containers — when authored as <ul>/<ol> inside switch cards. */
 .specs article ul,
 .specs article ol {
   list-style: none;

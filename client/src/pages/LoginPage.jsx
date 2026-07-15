@@ -59,6 +59,11 @@ export default function LoginPage() {
 
       <main className={styles.authShell}>
 
+        <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'22px' }}>
+          <img src="/logo.jpg" alt="" style={{ width:'40px', height:'40px', borderRadius:'11px', objectFit:'cover', boxShadow:'0 6px 16px rgba(0,0,0,0.18)' }} />
+          <span style={{ fontFamily:"'Manrope', system-ui, sans-serif", fontWeight:800, fontSize:'1.15rem', letterSpacing:'-0.01em' }}>RackTrack</span>
+        </div>
+
         <h1 className={styles.heading}>Welcome back</h1>
         <p className={styles.subheading}>Sign in to continue.</p>
 
@@ -136,6 +141,28 @@ export default function LoginPage() {
         <div className={styles.altRow}>
           New here?
           <Link to="/signup" state={{ from }} className={styles.altLink}>Create an organization</Link>
+        </div>
+
+        {/* A brand-new user otherwise has no way to know that joining an
+            existing team is invite/credentials-only — spell out the paths. */}
+        <div style={{
+          marginTop: 16, padding: '13px 15px', borderRadius: 11,
+          background: 'var(--md-surface-container, rgba(0,0,0,0.045))',
+          border: '1px solid var(--md-outline-variant, rgba(0,0,0,0.10))',
+          fontSize: '0.82rem', lineHeight: 1.55,
+          color: 'var(--muted, #4c4546)',
+        }}>
+          <div style={{ fontWeight: 700, color: 'var(--md-on-surface, #1a1c1d)', marginBottom: 5 }}>
+            How to get access
+          </div>
+          <div style={{ marginBottom: 6 }}>
+            <b>Setting up your own team?</b> Tap <b>Create an organization</b> above.
+          </div>
+          <div>
+            <b>Joining an existing team?</b> Ask your organization admin for an
+            <b> invite link</b>, or a <b>username &amp; password</b> — new sign-ups can’t
+            join an existing organization on their own.
+          </div>
         </div>
       </main>
     </div>

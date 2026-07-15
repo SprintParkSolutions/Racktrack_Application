@@ -5,6 +5,8 @@ import { useAuth } from '../AuthContext.jsx';
 import { useConnections } from '../ConnectionsContext.jsx';
 import { TYPE_INFO } from '../utils/connectionsApi';
 import { apiUrl, authFetch } from '../utils/api';
+import Avatar from '../components/Avatar.jsx';
+import { AVATARS, resolveAvatarIndex } from '../utils/avatars';
 
 function formatJoined(d) {
   if (!d) return null;
@@ -29,13 +31,29 @@ function formatRelative(d) {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { active: activeConnection } = useConnections();
   const [scans, setScans] = useState([]);
   const [scansLoading, setScansLoading] = useState(true);
   const [scansError, setScansError] = useState(null);
   const [showAllScans, setShowAllScans] = useState(false);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+
+  const currentAvatar = resolveAvatarIndex(user);
+  const chooseAvatar = async (idx) => {
+    setSavingAvatar(true);
+    try {
+      const r = await authFetch(apiUrl('/api/auth/avatar'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar: idx }),
+      });
+      if (r.ok) { await refreshUser?.(); setPickerOpen(false); }
+    } catch (_) { /* keep the sheet open so they can retry */ }
+    finally { setSavingAvatar(false); }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -94,9 +112,21 @@ export default function ProfilePage() {
       <main className={styles.main}>
         {/* ── Hero: centered avatar + identity ── */}
         <section className={styles.hero}>
-          <div className={styles.avatar}>
-            <span className={styles.avatarInitial}>{initial}</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            aria-label="Change profile picture"
+            style={{ background: 'none', border: 'none', padding: 0, position: 'relative', cursor: 'pointer' }}
+          >
+            <Avatar user={user} size={96} ring />
+            <span style={{
+              position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: '50%',
+              background: '#2b6fed', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '3px solid var(--md-background, #fff)', boxShadow: '0 2px 6px rgba(0,0,0,.2)',
+            }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }} aria-hidden="true">edit</span>
+            </span>
+          </button>
           <h2 className={styles.name}>{user?.username || 'Guest'}</h2>
           {user?.email && <p className={styles.email}>{user.email}</p>}
           <p className={styles.metaLine}>
@@ -242,6 +272,47 @@ export default function ProfilePage() {
               <button className={styles.confirmCancel} onClick={() => setConfirmingSignOut(false)}>Cancel</button>
               <button className={styles.confirmGo} onClick={onSignOut}>Sign out</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Avatar picker ── */}
+      {pickerOpen && (
+        <div
+          onClick={() => !savingAvatar && setPickerOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 400, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            background: 'rgba(8,11,18,.55)', backdropFilter: 'blur(4px)' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: 440, background: 'var(--md-background, #fff)', color: 'var(--md-on-surface, #0f1826)',
+              borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: '20px 22px calc(24px + env(safe-area-inset-bottom))',
+              boxShadow: '0 -10px 40px rgba(0,0,0,.28)' }}
+          >
+            <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(128,128,128,.35)', margin: '0 auto 16px' }} />
+            <h3 style={{ margin: '0 0 4px', fontSize: 17, fontWeight: 750, textAlign: 'center' }}>Choose your picture</h3>
+            <p style={{ margin: '0 0 18px', fontSize: 13.5, opacity: .6, textAlign: 'center' }}>Pick a look — tap to save.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, justifyItems: 'center' }}>
+              {AVATARS.map((_, idx) => (
+                <Avatar
+                  key={idx}
+                  index={idx}
+                  initial={(user?.username || user?.email || '?').charAt(0).toUpperCase()}
+                  size={64}
+                  ring={idx === currentAvatar}
+                  title={idx === currentAvatar ? 'Current' : 'Select'}
+                  onClick={() => !savingAvatar && chooseAvatar(idx)}
+                  style={savingAvatar ? { opacity: .5, pointerEvents: 'none' } : undefined}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => !savingAvatar && setPickerOpen(false)}
+              style={{ width: '100%', marginTop: 22, padding: '13px', borderRadius: 13, border: '1px solid rgba(128,128,128,.28)',
+                background: 'transparent', color: 'inherit', fontSize: 15, fontWeight: 650, cursor: 'pointer' }}
+            >
+              {savingAvatar ? 'Saving…' : 'Close'}
+            </button>
           </div>
         </div>
       )}

@@ -115,3 +115,15 @@ THE-TESTERS_INVITES.txt
 
 # Local secrets/credentials — never version control
 .secrets/
+
+# Atlassian API token — never commit
+atl_api.md
+atl_token.txt
+
+# Confluence page backup (local safety copy)
+.confluence_backup_*/
+client/.firebase-app-id
+server/.env
+server/.env.key
+acc.md
+apple.txt

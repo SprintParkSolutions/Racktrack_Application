@@ -106,6 +106,18 @@ def _handle(req: dict) -> dict:
             rec = {k: v for k, v in rec.items() if k != "embedding"}
         return {"ok": True, "verified": rec}
 
+    if cmd == "add_confirmed_rack":
+        res = store.add_confirmed_rack(
+            image_path=req["image_path"],
+            rack_id=req["rack_id"],
+            image_name=req.get("image_name"),
+        )
+        return {"ok": True, "confirmed": res}
+
+    if cmd == "find_confirmed_rack":
+        rec = store.find_confirmed_rack(req["image_path"])
+        return {"ok": True, "confirmed": rec}
+
     if cmd == "apply_to_scan":
         return _apply_to_scan(req["rack_dir"])
 

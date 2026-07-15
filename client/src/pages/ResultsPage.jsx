@@ -104,6 +104,14 @@ const CABLE_COLOR_OPTIONS = [
   'Pink', 'Red', 'White', 'Yellow', 'Violet', 'Aqua',
 ];
 
+// Physical port types the type model knows (ports_9.pt). Used by the port-type
+// correction control; values must match the server's PORT_TYPE_OPTIONS.
+const PORT_TYPE_OPTIONS = [
+  'RJ45', 'SFP', 'QSFP', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
+  'USB_A', 'USB_B', 'USB_C',
+];
+const prettyPortType = (t) => t ? t.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ') : '';
+
 // Real cable colours so the swatch matches the detected colour name (the
 // monochrome theme applies to the app chrome, not to physical cable colours —
 // showing an orange cable as a black dot is confusing/wrong).
@@ -129,6 +137,31 @@ function parseCableType(label) {
   const displayParts = found ? parts.filter(part => part.toLowerCase() !== found.toLowerCase()) : parts;
   const display = displayParts.join(' ');
   return { raw, display, colorName };
+}
+
+// Aggregate a device's CONNECTED ports (main + SFP + other) into
+// connector+colour groups with counts — e.g. [{connector:'RJ-45', color:'Blue',
+// count:12}, {connector:'LC', color:'Aqua', count:2}]. Fed by the background
+// cable enrichment (cable_connector / cable_color on each connected port);
+// returns [] until enrichment has run, so the chips simply appear when ready.
+function cableChips(dev) {
+  const lists = [dev?.ports, dev?.sfp_ports, dev?.other_ports];
+  const map = new Map();
+  for (const lst of lists) {
+    if (!Array.isArray(lst)) continue;
+    for (const p of lst) {
+      if (!p || p.status !== 'connected') continue;
+      const parsed = (!p.cable_connector && !p.cable_color) ? parseCableType(p.cable_type) : null;
+      const connector = p.cable_connector || parsed?.display || '';
+      const color     = p.cable_color     || parsed?.colorName || '';
+      if (!connector && !color) continue;     // this port not enriched yet
+      const key = `${connector}|${color}`;
+      const cur = map.get(key) || { connector, color, count: 0 };
+      cur.count += 1;
+      map.set(key, cur);
+    }
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count);
 }
 
 // ── Port report builder ──────────────────────────────────────
@@ -432,26 +465,16 @@ function SwitchInfoModal({
                   <p className={styles.prEmpty}>Could not check: {firmwareError || 'lookup failed'}</p>
                 )}
                 {firmwareStatus === 'ready' && firmware && (() => {
-                  const cves = firmware.cves || [];
-                  const counts = cves.reduce((a, c) => {
-                    const s = (c.severity || 'NONE').toUpperCase();
-                    a[s] = (a[s] || 0) + 1;
-                    return a;
-                  }, {});
-                  const crit = counts.CRITICAL || 0;
-                  const high = counts.HIGH || 0;
                   const tone =
-                    firmware.upToDate === true && cves.length === 0 ? 'ok'
-                    : (crit > 0 || (firmware.upToDate === false && high > 0)) ? 'critical'
+                    firmware.upToDate === true ? 'ok'
                     : firmware.upToDate === false ? 'warn'
                     : 'neutral';
                   const headline =
-                    firmware.upToDate === true ? "Up to date"
-                    : firmware.upToDate === false
-                      ? (crit > 0 ? 'Upgrade strongly recommended' : 'Upgrade available')
-                      : 'Could not determine latest version';
+                    firmware.upToDate === true ? 'Up to date'
+                    : firmware.upToDate === false ? 'Upgrade available'
+                    : 'Could not determine latest version';
                   const icon =
-                    tone === 'ok' ? '✓' : tone === 'critical' ? '!' : tone === 'warn' ? '↑' : '?';
+                    tone === 'ok' ? '✓' : tone === 'warn' ? '↑' : '?';
                   return (
                     <>
                       <div className={`${styles.siBadge} ${styles[`siBadge_${tone}`]}`}>
@@ -466,14 +489,6 @@ function SwitchInfoModal({
                         <div className={styles.siRow}>
                           <span>Latest version</span>
                           <span>{firmware.latestVersion || '—'}</span>
-                        </div>
-                        <div className={styles.siRow}>
-                          <span>Known CVEs</span>
-                          <span>
-                            {cves.length === 0 ? 'None' : (
-                              <>{cves.length}{(crit + high) > 0 && <span className={styles.siCveSub}> ({crit} critical, {high} high)</span>}</>
-                            )}
-                          </span>
                         </div>
                       </div>
                       {firmware.releaseNotesUrl && (
@@ -836,6 +851,30 @@ function powerSummary(dev) {
 }
 
 // ── All components ───────────────────────────────────────────
+// Marks a rack as confirmed by the user — a later re-upload that perceptually
+// matches will serve this confirmed result instead of re-detecting it.
+function ConfirmRackButton({ scanId }) {
+  const [state, setState] = useState('idle'); // 'idle' | 'saving' | 'done' | 'error'
+  const confirm = async () => {
+    if (!scanId || state === 'saving') return;
+    setState('saving');
+    try {
+      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(scanId)}/confirm-layout`), { method: 'POST' });
+      if (!r.ok) throw new Error('failed');
+      setState('done');
+    } catch { setState('error'); }
+  };
+  if (state === 'done') {
+    return <span className={styles.confirmDone} title="Future scans of this rack will show this confirmed result">✓ Confirmed</span>;
+  }
+  return (
+    <button className={styles.confirmBtn} onClick={confirm} disabled={state === 'saving'}
+      title="Mark this rack as correct — a re-scan will show this instead of re-detecting">
+      {state === 'saving' ? 'Saving…' : state === 'error' ? 'Retry' : 'Confirm rack'}
+    </button>
+  );
+}
+
 function AllDevicesView({ devices, labels, rackId, scanId, originalExt, onBack, embedded = false }) {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -996,6 +1035,22 @@ function AllDevicesView({ devices, labels, rackId, scanId, originalExt, onBack, 
                         )}
                       </span>
                     </div>
+                    {(() => {
+                      const chips = cableChips(dev);
+                      if (!chips.length) return null;
+                      return (
+                        <div className={styles.cableChipRow} onClick={(e) => e.stopPropagation()}>
+                          {chips.map((ch, k) => (
+                            <span key={k} className={styles.cableChip}
+                              title={`${ch.count} × ${ch.connector} ${ch.color} cable${ch.count === 1 ? '' : 's'}`}>
+                              <span className={styles.cableChipSwatch} style={{ background: cableColorCSS(ch.color) }} />
+                              {[ch.connector, ch.color].filter(Boolean).join(' ')}
+                              <b className={styles.cableChipCount}>×{ch.count}</b>
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );
@@ -1020,7 +1075,7 @@ function AllDevicesView({ devices, labels, rackId, scanId, originalExt, onBack, 
           <h2 className={styles.headerTitle}>All Components</h2>
           <span className={styles.headerMono}>{rackId ? `${rackId} · ` : ''}{visible.length} devices</span>
         </div>
-        <div style={{ width: 40 }} />
+        <ConfirmRackButton scanId={scanId || rackId} />
       </header>
       {allBody}
     </div>
@@ -1188,6 +1243,9 @@ export default function ResultsPage() {
   const [feedbackError, setFeedbackError] = useState(null);
   // Cable-only feedback (separate Yes/No block below the port one)
   const [cableFbStatus, setCableFbStatus] = useState('idle'); // 'idle' | 'wrong' | 'submitting' | 'submitted' | 'hidden'
+  // Port-TYPE correction (RJ45/SFP/USB/…) — tags the physical port type,
+  // feeding the active-learning memory + retraining dataset.
+  const [portTypeStatus, setPortTypeStatus] = useState('idle'); // 'idle' | 'picking' | 'submitting' | 'submitted' | 'error'
   const [cableFbColor, setCableFbColor] = useState('');
   const [cableFbError, setCableFbError] = useState(null);
   // Device-classification feedback (separate flow)
@@ -1207,6 +1265,11 @@ export default function ResultsPage() {
     try { localStorage.setItem('rt_devOpen', devOpen ? '1' : '0'); } catch { /* ignore */ }
   }, [devOpen]);
   const [reportOpen, setReportOpen] = useState(false);
+  // When true, the in-app report iframe loads with the #download hash, which
+  // makes the report auto-trigger window.print() (Save-as-PDF) INSIDE the
+  // WebView. Opening the report in an external browser instead would expose the
+  // raw ngrok URL + its browser-warning interstitial to the user.
+  const [reportDownload, setReportDownload] = useState(false);
   const [sessionPorts, setSessionPorts] = useState([]); // [{deviceIdx, port, deviceLabel, deviceClass, status}]
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
   const [shareMsg, setShareMsg] = useState(null);
@@ -1222,7 +1285,7 @@ export default function ResultsPage() {
   // Host defaults to the in-office switch so the LLDP pre-fetch can fire
   // automatically as soon as a port is picked. Username/password still come
   // from the encrypted server-side store or the creds modal.
-  const [switchCreds, setSwitchCreds] = useState({ host: '192.168.1.14', username: '', password: '', vendor: 'tplink', enablePassword: '' });
+  const [switchCreds, setSwitchCreds] = useState({ host: '192.168.1.33', username: '', password: '', vendor: 'tplink', enablePassword: '' });
   // Track which port the in-flight LLDP call belongs to, so a rapid port
   // switch doesn't overwrite the current result with a stale one.
   const neighborPortRef = useRef(null);
@@ -1487,16 +1550,30 @@ export default function ResultsPage() {
   useEffect(() => {
     if (!scanId) return;
     let cancelled = false;
-    (async () => {
+    let tries = 0;
+    const MAX_TRIES = 7;          // ~30s of polling, then give up
+    // Cable enrichment runs in the background after analyze; poll a few times
+    // so the per-port cable chips appear once it finishes, then stop.
+    const hasCable = (devs) => Array.isArray(devs) && devs.some(d =>
+      [d?.ports, d?.sfp_ports, d?.other_ports].some(l =>
+        Array.isArray(l) && l.some(p => p?.status === 'connected' && (p.cable_connector || p.cable_color))));
+    let timer = null;
+    const poll = async () => {
       try {
         const r = await authFetch(apiUrl(`/api/scan/${scanId}`));
-        if (!r.ok) return;
-        const fresh = await r.json();
-        if (cancelled) return;
-        if (Array.isArray(fresh.devices)) setDevices(fresh.devices);
+        if (r.ok) {
+          const fresh = await r.json();
+          if (cancelled) return;
+          if (Array.isArray(fresh.devices)) {
+            setDevices(fresh.devices);
+            if (hasCable(fresh.devices)) return;    // enriched — stop polling
+          }
+        }
       } catch { /* network blip — keep what we have */ }
-    })();
-    return () => { cancelled = true; };
+      if (!cancelled && ++tries < MAX_TRIES) timer = setTimeout(poll, 5000);
+    };
+    poll();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
   }, [scanId]);
 
   // Always fetch /api/ocr/labels/:rackId on mount so refresh, deep-link, and
@@ -1796,11 +1873,19 @@ export default function ResultsPage() {
     // Whole numbers only (reject "1.23" → the value must equal its integer
     // parse) and within the device's port count.
     const p = parseInt(portArg, 10);
-    if (isNaN(p) || p < 1 || String(p) !== String(portArg).trim()
-        || (portMaxLimit > 0 && p > portMaxLimit)) {
-      setError(portMaxLimit > 0
-        ? `Port must be a whole number between 1 and ${portMaxLimit}`
-        : 'Enter a valid whole port number');
+    if (isNaN(p) || p < 1 || String(p) !== String(portArg).trim()) {
+      setError('Enter a valid whole port number');
+      return;
+    }
+    if (portMaxLimit > 0 && p > portMaxLimit) {
+      setError(`This device has ${portMaxLimit} ports — enter a number between 1 and ${portMaxLimit}.`);
+      return;
+    }
+    // Port count unknown → we have no upper bound, so we cannot honestly locate
+    // a port. Don't silently accept any number (that's how "port 34" on a
+    // 24-port switch got through). Ask for the real count first.
+    if (portMaxLimit === 0) {
+      setError("We couldn't read how many ports this device has. Set the port count below, then pick a port.");
       return;
     }
     if (forcedPort != null) setPortNum(String(forcedPort));
@@ -1867,11 +1952,16 @@ export default function ResultsPage() {
     // Whole numbers only (reject "1.23" → the value must equal its integer
     // parse) and within the device's port count.
     const p = parseInt(portArg, 10);
-    if (isNaN(p) || p < 1 || String(p) !== String(portArg).trim()
-        || (portMaxLimit > 0 && p > portMaxLimit)) {
-      setError(portMaxLimit > 0
-        ? `Port must be a whole number between 1 and ${portMaxLimit}`
-        : 'Enter a valid whole port number');
+    if (isNaN(p) || p < 1 || String(p) !== String(portArg).trim()) {
+      setError('Enter a valid whole port number');
+      return;
+    }
+    if (portMaxLimit > 0 && p > portMaxLimit) {
+      setError(`This device has ${portMaxLimit} ports — enter a number between 1 and ${portMaxLimit}.`);
+      return;
+    }
+    if (portMaxLimit === 0) {
+      setError("We couldn't read how many ports this device has. Set the port count below, then pick a port.");
       return;
     }
     setLoading(true); setError(null);
@@ -2476,7 +2566,10 @@ export default function ResultsPage() {
   };
 
   const reportUrl = (format) => apiUrl(`/api/scan/${scanId}/report?format=${format}`);
-  const viewReport = () => setReportOpen(true);
+  const viewReport = () => { setReportDownload(false); setReportOpen(true); };
+  // Same in-app modal as View, but with the auto-print hash — keeps the whole
+  // download flow inside the app (no external browser, no ngrok URL shown).
+  const openReportForDownload = () => { setReportDownload(true); setReportOpen(true); };
   const downloadReport = async (format) => {
     try {
       const res = await fetch(reportUrl(format));
@@ -2689,6 +2782,36 @@ export default function ResultsPage() {
     }
   };
 
+  // Tag / correct the physical PORT TYPE of the selected port. Feeds the
+  // active-learning memory + retraining dataset via /api/feedback/port-type.
+  const submitPortTypeFeedback = async (actualType) => {
+    if (!selectedIdx || !actualType) return;
+    setPortTypeStatus('submitting');
+    try {
+      const res = await authFetch(apiUrl('/api/feedback/port-type'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scanId,
+          device_index: selectedIdx,
+          port: portNum ? parseInt(portNum, 10) : null,
+          predicted_type: portInfo?.port_type || null,
+          actual_type: actualType,
+          port_location: portInfo?.location || null,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || 'save failed');
+      }
+      setPortInfo(prev => (prev ? { ...prev, port_type: actualType, _port_type_user: true } : prev));
+      setPortTypeStatus('submitted');
+      setTimeout(() => setPortTypeStatus('idle'), 2000);
+    } catch (err) {
+      setPortTypeStatus('error');
+    }
+  };
+
   const submitDeviceFeedback = async (isCorrect) => {
     if (!selectedDevice) return;
     if (!isCorrect && !actualDeviceClass) {
@@ -2766,6 +2889,13 @@ export default function ResultsPage() {
         if (data.relabel.image_updated) {
           setResultImg(prev => (prev ? prev.split('?')[0] + '?t=' + Date.now() : prev));
         }
+      } else if (!isCorrect && actualNum > 0) {
+        // The server didn't relabel, but the user still told us the real count.
+        // Reflect it locally so the port-number input's 1–N bound follows the
+        // correction straight away (correct it to 28 → only 1–28 is accepted).
+        setDevices(prev => prev.map((d, i) => (
+          i + 1 === selectedIdx ? { ...d, port_count: actualNum } : d
+        )));
       }
       setPortCountFbStatus('submitted');
       setTimeout(() => {
@@ -2868,38 +2998,6 @@ export default function ResultsPage() {
               <strong style={{color:'var(--text, #cfc4c5)'}}>Next steps:</strong> either the CMDB is stale (device was moved/replaced) or someone installed the wrong hardware. Verify physically at rack <strong>{ticket?.cmdb?.rack_name || '?'}</strong>, then update whichever side is wrong.
             </div>
 
-            {/* Raise a ServiceNow ticket for this drift */}
-            <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',marginTop:6}}>
-              <button
-                type="button"
-                onClick={raiseDriftTicket}
-                disabled={raiseTicket.status === 'loading' || raiseTicket.status === 'done'}
-                style={{
-                  display:'inline-flex',alignItems:'center',gap:8,
-                  padding:'9px 16px',borderRadius:8,border:'none',cursor: (raiseTicket.status === 'loading' || raiseTicket.status === 'done') ? 'default' : 'pointer',
-                  background: raiseTicket.status === 'done' ? '#1f7a3d' : '#1a1c1d',
-                  color:'#fff',fontSize:13,fontWeight:600,opacity: raiseTicket.status === 'loading' ? 0.7 : 1,
-                }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {raiseTicket.status === 'done'
-                    ? <polyline points="20 6 9 17 4 12"/>
-                    : (<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>)}
-                </svg>
-                {raiseTicket.status === 'loading' ? 'Raising ticket…'
-                  : raiseTicket.status === 'done' ? 'Ticket raised'
-                  : 'Raise ticket'}
-              </button>
-              {raiseTicket.status === 'done' && raiseTicket.number && (
-                <span style={{fontSize:12.5,color:'var(--text, #cfc4c5)'}}>
-                  Incident <strong>{raiseTicket.number}</strong> opened.
-                </span>
-              )}
-              {raiseTicket.status === 'error' && (
-                <span style={{fontSize:12.5,color:'#b3261e'}}>
-                  Couldn’t raise ticket: {raiseTicket.error}
-                </span>
-              )}
-            </div>
           </div>
 
           {/* Annotated rack scan so the tech can eyeball what the camera saw */}
@@ -3455,6 +3553,45 @@ export default function ResultsPage() {
             );
           })()}
 
+          {/* Port-TYPE tag / correction — record the physical port type
+              (RJ45 / SFP / USB / …). Feeds active-learning memory + retraining.
+              Only shown once a port is selected. */}
+          {portInfo && portInfo.status !== 'invalid' && (
+            <div className={styles.prTypeBlock}>
+              <div className={styles.prTypeHead}>
+                <span className={styles.prTypeLabel}>Port type</span>
+                <span className={styles.prTypeCurrent}>
+                  {portInfo.port_type ? prettyPortType(portInfo.port_type) : 'not tagged'}
+                  {portInfo._port_type_user && <UserTag />}
+                </span>
+                {portTypeStatus !== 'picking' && portTypeStatus !== 'submitted' && (
+                  <button className={styles.prTypeEdit}
+                    onClick={() => setPortTypeStatus('picking')}>
+                    {portInfo.port_type ? 'Wrong? Fix' : 'Set type'}
+                  </button>
+                )}
+              </div>
+              {portTypeStatus === 'submitted' && (
+                <div className={styles.prTypeDone}>Saved — thanks, this trains the model.</div>
+              )}
+              {portTypeStatus === 'error' && (
+                <div className={styles.prTypeErr}>Couldn’t save — try again.</div>
+              )}
+              {portTypeStatus === 'picking' && (
+                <div className={styles.prTypeGrid}>
+                  {PORT_TYPE_OPTIONS.map(t => (
+                    <button key={t}
+                      className={`${styles.prTypeTile} ${portInfo.port_type === t ? styles.prTypeTileOn : ''}`}
+                      onClick={() => submitPortTypeFeedback(t)}
+                      disabled={portTypeStatus === 'submitting'}>
+                      {prettyPortType(t)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Low-confidence nudge — when the cable read is uncertain (usually a
               low-resolution / poorly-lit photo), tell the tech plainly and ask
               them to verify and correct it with the feedback below. */}
@@ -3473,10 +3610,19 @@ export default function ResultsPage() {
             </div>
           )}
 
-          {/* End device — shown ONLY when a live neighbour actually resolves.
-              The "resolving…", "no end device responded", and error/retry
-              states are suppressed so a port with no LLDP data stays clean. */}
-          {portInfo?.status !== 'empty' && neighborStatus === 'ok' && neighbor && (
+          {/* End device (LLDP) — shown for any non-empty port. The inner states
+              cover the whole flow: idle → a "Find end device" button, loading,
+              resolved neighbour, none-found, and error/retry. Previously the
+              outer gate also required neighborStatus==='ok', which meant the
+              button (and every other state) could never render — so the LLDP
+              lookup was unreachable unless it happened to auto-resolve.
+              We ALSO show it when the switch found a live neighbour (or is
+              resolving one) even if the photo called the port empty — the live
+              switch is ground truth, so a real endpoint must never be hidden by
+              a mis-classified photo. */}
+          {(portInfo?.status !== 'empty'
+            || neighborStatus === 'loading'
+            || (neighborStatus === 'ok' && neighbor?.found)) && (
           <div className={styles.prEnd} style={{ '--ac': rc }}>
             {neighborStatus === 'loading' && (
               <>
@@ -3490,25 +3636,24 @@ export default function ResultsPage() {
               // like "System description:" by mistake).
               const isLabelish = (v) => !v || /:\s*$/.test(String(v).trim());
               const cleanOrNull = (v) => (v && !isLabelish(v) ? String(v).trim() : null);
-              const name = cleanOrNull(neighbor.chassis_id)
-                || cleanOrNull(neighbor.system_name)
-                || cleanOrNull(neighbor.port_id)
-                || 'End device';
-              const metaRaw = [
-                cleanOrNull(neighbor.port_id) !== name ? cleanOrNull(neighbor.port_id) : null,
-                cleanOrNull(neighbor.port_description),
-              ].filter(Boolean);
-              const chips = metaRaw
-                .flatMap(m => String(m).split(/\s*·\s*/))
-                .map(s => s.trim())
-                .filter(Boolean)
-                .map((text, i) => {
-                  const isMac = /^(?:[0-9a-f]{2}[:\-]){5}[0-9a-f]{2}$/i.test(text);
-                  const ttlMatch = text.match(/^TTL\s*[:=]?\s*(\d+)/i);
-                  if (isMac) return { key: `c${i}`, kind: 'mac', label: 'MAC', value: text };
-                  if (ttlMatch) return { key: `c${i}`, kind: 'ttl', label: 'TTL', value: `${ttlMatch[1]}s` };
-                  return { key: `c${i}`, kind: 'info', label: null, value: text };
-                });
+              const MAC_RE = /^(?:[0-9a-f]{2}[:\-]){5}[0-9a-f]{2}$/i;
+              const chassis = cleanOrNull(neighbor.chassis_id);
+              const sysname = cleanOrNull(neighbor.system_name);
+              const portId  = cleanOrNull(neighbor.port_id);
+              // Prefer a human-readable name; a bare MAC is only a fallback name.
+              const humanName = (chassis && !MAC_RE.test(chassis) ? chassis : null)
+                             || (sysname && !MAC_RE.test(sysname) ? sysname : null);
+              const macAddr = [portId, chassis].find(v => v && MAC_RE.test(v)) || null;
+              const name = humanName || macAddr || 'End device';
+              const desc = cleanOrNull(neighbor.port_description);
+              const mgmt = cleanOrNull(neighbor.management_address);
+              // Always surface the identifying facts as their own labelled chips.
+              const chips = [
+                macAddr && macAddr !== name && { kind: 'mac',  label: 'MAC',  value: macAddr },
+                neighbor.vlan_id            && { kind: 'vlan', label: 'VLAN', value: String(neighbor.vlan_id) },
+                mgmt                        && { kind: 'ip',   label: 'IP',   value: mgmt },
+                desc && !MAC_RE.test(desc)  && { kind: 'info', label: null,   value: desc },
+              ].filter(Boolean).map((c, i) => ({ key: `c${i}`, ...c }));
               return (
                 <div className={styles.prEndCreative}>
                   <div className={styles.prEndIcon} aria-hidden>
@@ -3540,6 +3685,18 @@ export default function ResultsPage() {
                                 <polyline points="12 7 12 12 15 14"/>
                               </svg>
                             )}
+                            {chip.kind === 'vlan' && (
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
+                                <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
+                              </svg>
+                            )}
+                            {chip.kind === 'ip' && (
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/>
+                                <path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>
+                              </svg>
+                            )}
                             {chip.label && <span className={styles.prEndChipKey}>{chip.label}</span>}
                             <span className={styles.prEndChipVal}>{chip.value}</span>
                           </span>
@@ -3551,7 +3708,12 @@ export default function ResultsPage() {
               );
             })()}
             {neighborStatus === 'empty' && (
-              <span className={styles.prEndDim}>No end device responded on this port</span>
+              <>
+                <span className={styles.prEndDim}>
+                  No end device responded — the endpoint doesn’t advertise LLDP, or LLDP is disabled on the switch.
+                </span>
+                <button className={styles.prEndAction} onClick={() => findNeighbor()}>Retry</button>
+              </>
             )}
             {neighborStatus === 'error' && (
               <>
@@ -3818,23 +3980,6 @@ export default function ResultsPage() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               View
             </button>
-            <button className={styles.reportChip}
-              onClick={ticketMode
-                ? () => setTicketReportOpen(true)
-                : () => window.open(reportUrl('html') + '#download', '_blank')}
-              title={ticketMode ? 'View ticket report' : `Download rack-report-${rackId || scanId}.pdf`}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Report
-            </button>
-            <button className={`${styles.reportChip} ${styles.reportChipConsole}`}
-              onClick={() => openConsole()}
-              title="Open SSH console for this port">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="4 17 10 11 4 5"/>
-                <line x1="12" y1="19" x2="20" y2="19"/>
-              </svg>
-              Console
-            </button>
             <div className={styles.shareWrap}>
               <button className={`${styles.reportChip} ${styles.reportChipShare} ${shareStatus === 'sent' ? styles.reportChipSlackSent : ''} ${shareStatus === 'error' ? styles.reportChipSlackErr : ''}`}
                 onClick={() => { if (shareStatus !== 'sending') setShareMenuOpen(v => !v); }}
@@ -3870,11 +4015,8 @@ export default function ResultsPage() {
                 </>
               )}
             </div>
-          </div>
-
-          {/* Nav actions — change device / new scan */}
-          <div className={styles.pActions} style={{ '--ac': rc }}>
-            <button className={styles.pActionBtn} onClick={() => {
+            {/* Change Device + New Scan sit in the same 4-column row as View + Share. */}
+            <button className={styles.reportChip} onClick={() => {
               setPhase('detect');
               setTab('overview');
               setSelectedIdx(null);
@@ -3890,11 +4032,11 @@ export default function ResultsPage() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="10" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="10" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/></svg>
               Change Device
             </button>
-            <button className={styles.pActionBtn} onClick={() => navigate('/scan')}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            <button className={styles.reportChip} onClick={() => navigate('/scan')}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
               New Scan
             </button>
           </div>
@@ -3999,7 +4141,7 @@ export default function ResultsPage() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
-              <iframe className={styles.reportModalFrame} src={reportUrl('html')} title="Scan report" />
+              <iframe className={styles.reportModalFrame} src={reportUrl('html') + (reportDownload ? '#download' : '')} title="Scan report" />
             </div>
           </div>
         )}
@@ -4143,11 +4285,11 @@ export default function ResultsPage() {
                 width:'min(560px, 100%)',
                 maxHeight:'90vh',
                 overflow:'auto',
-                background:'#161616',
-                border:'1px solid rgba(255,255,255,0.12)',
+                background:'#ffffff',
+                border:'1px solid rgba(0,0,0,0.12)',
                 borderRadius:14,
                 padding:18,
-                color:'var(--text, #cfc4c5)',
+                color:'#1a1c1d',
               }}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
                 <div>
@@ -4189,7 +4331,7 @@ export default function ResultsPage() {
               <div style={{marginBottom:14}}>
                 <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #4c4546)',textTransform:'uppercase',marginBottom:4}}>Output</div>
                 {liveSnapshot?.ok ? (
-                  <div style={{fontSize:13,lineHeight:1.6,fontFamily:'ui-monospace, monospace',background:'rgba(255,255,255,0.03)',padding:10,borderRadius:6}}>
+                  <div style={{fontSize:13,lineHeight:1.6,fontFamily:'ui-monospace, monospace',background:'#f4f6f9',border:'1px solid rgba(0,0,0,0.08)',color:'#1a1c1d',padding:10,borderRadius:6}}>
                     <div>link        : <strong style={{color: liveSnapshot.link_active ? '#1a1c1d' : '#4c4546'}}>{liveSnapshot.link_active ? 'active' : 'idle'}</strong></div>
                     <div>neighbor    : {liveSnapshot.has_neighbor ? (liveSnapshot.neighbor?.sysname || 'present') : 'none'}</div>
                     {liveSnapshot.neighbor?.port_id && <div>remote port : {liveSnapshot.neighbor.port_id}</div>}
@@ -4334,6 +4476,7 @@ export default function ResultsPage() {
       {/* ── Hero image ── */}
       <div className={styles.heroWrap}>
         <div className={styles.zoomViewport}
+          style={{ touchAction: zoom > 1 ? 'none' : 'pan-y' }}
           onWheel={handleWheel}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -4343,6 +4486,7 @@ export default function ResultsPage() {
         >
           <div className={styles.heroImgWrap} style={focusFx || { transform: imageTransform, cursor: cursorStyle }}>
             <img src={heroImgSrc} alt="Rack scan" className={styles.heroImg}
+              style={{ touchAction: zoom > 1 ? 'none' : 'pan-y' }}
               onLoad={e => setImgNat({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
               draggable="false"
             />
@@ -4945,7 +5089,7 @@ export default function ResultsPage() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
-            <iframe className={styles.reportModalFrame} src={reportUrl('html')} title="Scan report" />
+            <iframe className={styles.reportModalFrame} src={reportUrl('html') + (reportDownload ? '#download' : '')} title="Scan report" />
           </div>
         </div>
       )}

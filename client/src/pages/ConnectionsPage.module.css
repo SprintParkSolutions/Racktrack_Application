@@ -10,7 +10,7 @@
   width: 100%;
   max-width: 1100px;
   margin: 0 auto;
-  min-height: 100dvh;
+  min-height: 100vh;
   padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
   background:
     radial-gradient(90% 55% at 50% 8%, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0) 58%),
@@ -349,7 +349,7 @@
 .modal {
   width: 100%;
   max-width: 480px;
-  max-height: 90dvh;
+  max-height: 90vh;
   overflow-y: auto;
   padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
   border-radius: 18px 18px 0 0;

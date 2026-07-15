@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useSmartBack } from '../hooks/useSmartBack';
 import { apiUrl, authFetch } from '../utils/api';
 import {
   subscribeProbe,
@@ -7,6 +8,7 @@ import {
   logicalVerdict,
 } from '../utils/portsProbe';
 import RackTabs from '../components/RackTabs.jsx';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 import styles from './PortsPage.module.css';
 
 function fmtMs(ms) {
@@ -202,7 +204,7 @@ export function PortsContent({ rackId }) {
   const [probe, setProbe] = useState({ status: 'idle' });
   useEffect(() => subscribeProbe(setProbe), []);
   useEffect(() => {
-    triggerBackgroundProbe();
+    triggerBackgroundProbe({ force: true });
   }, []);
 
   useEffect(() => {
@@ -231,6 +233,7 @@ export function PortsContent({ rackId }) {
 export default function PortsPage() {
   const { rackId } = useParams();
   const navigate = useNavigate();
+  const goBack = useSmartBack(rackId ? `/results/${rackId}` : '/scan');
   const { state } = useLocation();
 
   const [scan, setScan] = useState(null);
@@ -241,7 +244,7 @@ export default function PortsPage() {
   const [probe, setProbe] = useState({ status: 'idle' });
   useEffect(() => subscribeProbe(setProbe), []);
   useEffect(() => {
-    triggerBackgroundProbe();
+    triggerBackgroundProbe({ force: true });
   }, []);
 
   useEffect(() => {
@@ -263,7 +266,7 @@ export default function PortsPage() {
   if (scanErr) {
     return (
       <div className={styles.page}>
-        <PageHeader rackId={rackId} onBack={() => navigate(-1)} />
+        <PageHeader rackId={rackId} onBack={goBack} />
         <div className={styles.error}>Failed to load scan: {scanErr}</div>
       </div>
     );
@@ -271,7 +274,7 @@ export default function PortsPage() {
   if (!scan) {
     return (
       <div className={styles.page}>
-        <PageHeader rackId={rackId} onBack={() => navigate(-1)} />
+        <PageHeader rackId={rackId} onBack={goBack} />
         <div className={styles.loading}>Loading rack...</div>
       </div>
     );
@@ -279,24 +282,30 @@ export default function PortsPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader rackId={rackId} onBack={() => navigate(-1)} />
+      <PageHeader rackId={rackId} onBack={goBack} />
       <LogicalView probe={probe} scan={scan} scanDurationMs={scanDurationMs} />
     </div>
   );
 }
 
 // ── Header ───────────────────────────────────────────────────
+// On desktop the DesktopShell already renders the single top bar (title +
+// back button), so this page must NOT draw a second one. On mobile there is
+// no shell, so this header is the one bar.
 function PageHeader({ rackId, onBack }) {
+  const isDesktop = useIsDesktop();
   return (
     <>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={onBack}>← Back</button>
-        <div className={styles.headerCenter}>
-          <h2>Available Ports</h2>
-          <span className={styles.headerMono}>{rackId}</span>
-        </div>
-        <div style={{ width: 64 }} />
-      </header>
+      {!isDesktop && (
+        <header className={styles.header}>
+          <button className={styles.backBtn} onClick={onBack}>← Back</button>
+          <div className={styles.headerCenter}>
+            <h2>Live Network Switch</h2>
+            <span className={styles.headerMono}>{rackId}</span>
+          </div>
+          <div style={{ width: 64 }} />
+        </header>
+      )}
       {/* Renders nothing when this rack is standalone */}
       <RackTabs rackId={rackId} />
     </>
@@ -367,8 +376,57 @@ function PortDetail({ port, onClose }) {
 }
 
 // ── Logical view ─────────────────────────────────────────────
+// "Gi1/0/1" / "gigabitEthernet 1/0/1" → "1/0/1" so we can join the interface
+// list to the LLDP neighbor map (which is keyed by port number path).
+function portNumKey(iface) {
+  const m = String(iface || '').match(/(\d+\/\d+(?:\/\d+)?)\s*$/);
+  return m ? m[1] : null;
+}
+
 function LogicalView({ probe, scan, scanDurationMs }) {
   const [filter, setFilter] = useState('all');
+  const [view, setView] = useState('ports');   // 'ports' (faceplate + list) | 'cables'
+  const [neighbors, setNeighbors] = useState({});
+  const [portMacs, setPortMacs] = useState({});
+  const [audit, setAudit] = useState(null);     // { identity, ifstatus, poe, vlans }
+
+  // Pull the full switch audit in one pass — identity, per-port live status,
+  // PoE, VLANs, LLDP neighbours and the MAC table — then join it into the port
+  // list so each view shows what's really on the switch. We query the CURRENT
+  // switch (server default-host) rather than probe.host, which can be a stale
+  // cached IP from an earlier scan — the port numbers (Gi1/0/N) match regardless.
+  useEffect(() => {
+    if (probe.status !== 'ok') return;
+    let cancelled = false;
+    (async () => {
+      // The probe already succeeded, so probe.host is a known-reachable switch —
+      // use it directly. (Never the /default-host "suggested" value: that's the
+      // network gateway, not the switch, and would send the audit to the wrong box.)
+      const host = probe.host;
+      if (!host) return;
+      // The switch allows ~1 SSH session, so this can lose to the port probe /
+      // poller and come back empty. Retry a few times — once the switch frees
+      // the session it succeeds.
+      for (let attempt = 0; attempt < 4 && !cancelled; attempt++) {
+        try {
+          const r = await authFetch(apiUrl('/api/switch/audit'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ host, vendor: 'tplink' }),
+          });
+          const d = await r.json();
+          if (!cancelled && d?.ok) {
+            setNeighbors(d.neighbors || {});
+            setPortMacs(d.macs || {});
+            setAudit({ identity: d.identity || {}, ifstatus: d.ifstatus || {}, ifconfig: d.ifconfig || {}, poe: d.poe || null, vlans: d.vlans || [] });
+            return;
+          }
+        } catch { /* transient — retry */ }
+        if (!cancelled) await new Promise(res => setTimeout(res, 4000));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [probe.status, probe.host]);
 
   if (probe.status === 'running' || probe.status === 'idle') {
     return <OrbitalLoader startedAt={probe.startedAt} />;
@@ -382,20 +440,28 @@ function LogicalView({ probe, scan, scanDurationMs }) {
     );
   }
 
-  const ports = Array.isArray(probe.ports) ? probe.ports : [];
+  const ports = (Array.isArray(probe.ports) ? probe.ports : []).map(p => {
+    const k = portNumKey(p.iface);
+    const patch = {};
+    if (k && neighbors[k]?.found) patch.neighbor = neighbors[k];
+    if (k && portMacs[k]) patch.macInfo = portMacs[k];
+    return Object.keys(patch).length ? { ...p, ...patch } : p;
+  });
   const { rj45, sfp } = classifyPorts(ports, scan);
   const sfpPortIfaces = new Set(sfp.map(p => p.iface));
 
   const verdicts = ports.map(p => ({ p, v: logicalVerdict(p) }));
+  const linkedCount = ports.filter(p => p.neighbor?.found).length;
   const counts = {
     all:       ports.length,
     available: verdicts.filter(x => x.v === 'available').length,
     used:      verdicts.filter(x => x.v === 'used').length,
     reserved:  verdicts.filter(x => x.v === 'reserved').length,
+    linked:    linkedCount,
   };
 
-  const filtered = filter === 'all'
-    ? ports
+  const filtered = filter === 'all'    ? ports
+    : filter === 'linked'              ? ports.filter(p => p.neighbor?.found)
     : ports.filter(p => logicalVerdict(p) === filter);
 
   const ethFiltered = filtered.filter(p => !sfpPortIfaces.has(p.iface));
@@ -403,40 +469,305 @@ function LogicalView({ probe, scan, scanDurationMs }) {
 
   return (
     <div className={styles.invWrap}>
-      <header className={styles.invHead}>
-        <h2 className={styles.invTitle}>Ports Inventory</h2>
-        <p className={styles.invSub}>
-          {counts.available} available · {counts.used} in use · {counts.all} total
-        </p>
-      </header>
-
-      <div className={styles.invFilters}>
-        <FilterPill label="All Ports"  count={counts.all}       active={filter === 'all'}       onClick={() => setFilter('all')} />
-        <FilterPill label="Available"  count={counts.available} active={filter === 'available'} onClick={() => setFilter('available')} />
-        <FilterPill label="In Use"     count={counts.used}      active={filter === 'used'}      onClick={() => setFilter('used')} />
-        <FilterPill label="Errors"     count={counts.reserved}  active={filter === 'reserved'}  onClick={() => setFilter('reserved')} />
+      <div className={styles.hero}>
+        {audit?.identity && <IdentityCard identity={audit.identity} host={probe.host} poe={audit.poe} />}
+        <div className={styles.ptStats}>
+          <div className={styles.ptStat}>
+            <span className={styles.ptStatV}>{counts.used}<small> / {counts.all}</small></span>
+            <span className={styles.ptStatK}>In use</span>
+          </div>
+          <div className={styles.ptStat}>
+            <span className={styles.ptStatV}>{counts.available}</span>
+            <span className={styles.ptStatK}>Available</span>
+          </div>
+          <div className={styles.ptStat}>
+            <span className={styles.ptStatV}>{linkedCount}</span>
+            <span className={styles.ptStatK}>Identified</span>
+          </div>
+        </div>
       </div>
 
-      {ethFiltered.length > 0 && (
-        <PortGroup
-          title="Ethernet (ETH) Modules"
-          ports={ethFiltered}
-          variant="eth"
-        />
-      )}
+      <div className={styles.viewTabs} role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === 'ports'}
+          className={`${styles.viewTab} ${view === 'ports' ? styles.viewTabActive : ''}`}
+          onClick={() => setView('ports')}
+        >Ports</button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === 'cables'}
+          className={`${styles.viewTab} ${view === 'cables' ? styles.viewTabActive : ''}`}
+          onClick={() => setView('cables')}
+        >Cables<span className={styles.viewTabCount}>{linkedCount || counts.used}</span></button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === 'trace'}
+          className={`${styles.viewTab} ${view === 'trace' ? styles.viewTabActive : ''}`}
+          onClick={() => setView('trace')}
+        >Ping</button>
+      </div>
 
-      {sfpFiltered.length > 0 && (
-        <PortGroup
-          title="SFP Modules"
-          ports={sfpFiltered}
-          variant="sfp"
-        />
-      )}
+      {view === 'ports' ? (
+        <>
+          <FaceplateMap ports={ports} sfpPortIfaces={sfpPortIfaces} />
 
-      {ethFiltered.length === 0 && sfpFiltered.length === 0 && (
-        <div className={styles.invEmpty}>No ports match this filter.</div>
+          <div className={styles.invFilters}>
+            <FilterPill label="All"        count={counts.all}       active={filter === 'all'}       onClick={() => setFilter('all')} />
+            <FilterPill label="In Use"     count={counts.used}      active={filter === 'used'}      onClick={() => setFilter('used')} />
+            <FilterPill label="Available"  count={counts.available} active={filter === 'available'} onClick={() => setFilter('available')} />
+            <FilterPill label="Linked"     count={counts.linked}    active={filter === 'linked'}    onClick={() => setFilter('linked')} />
+            {counts.reserved > 0 && (
+              <FilterPill label="Errors"   count={counts.reserved}  active={filter === 'reserved'}  onClick={() => setFilter('reserved')} />
+            )}
+          </div>
+
+          <div className={styles.portsLayout}>
+            <div className={styles.portsMain}>
+              {ethFiltered.length > 0 && (
+                <PortGroup title="Ethernet (ETH) Modules" ports={ethFiltered} variant="eth" />
+              )}
+              {sfpFiltered.length > 0 && (
+                <PortGroup title="SFP Modules" ports={sfpFiltered} variant="sfp" />
+              )}
+              {ethFiltered.length === 0 && sfpFiltered.length === 0 && (
+                <div className={styles.invEmpty}>No ports match this filter.</div>
+              )}
+            </div>
+            <PoeVlanAside audit={audit} />
+          </div>
+        </>
+      ) : view === 'cables' ? (
+        <CablesView ports={ports} sfpPortIfaces={sfpPortIfaces} switchName={audit?.identity?.name || probe.host} />
+      ) : (
+        <ReachabilityTool host={probe.host} />
       )}
     </div>
+  );
+}
+
+// ── Reachability check — ping / traceroute from the switch ───
+function ReachabilityTool({ host }) {
+  const [target, setTarget] = useState('');
+  const [running, setRunning] = useState(null);   // 'ping' | 'traceroute' | null
+  const [result, setResult] = useState(null);     // { kind, command, output } | { error }
+
+  // Suggested targets: the internet (shows the full multi-hop path) and the
+  // switch's own gateway (the local .1) for a quick local-link check.
+  const gateway = host && /^\d+\.\d+\.\d+\.\d+$/.test(host) ? host.replace(/\.\d+$/, '.1') : null;
+  const presets = [
+    { ip: '8.8.8.8', label: '8.8.8.8 · internet' },
+    ...(gateway ? [{ ip: gateway, label: `${gateway} · gateway` }] : []),
+  ];
+
+  const run = async (kind, override) => {
+    const t = (override != null ? override : target).trim();
+    if (override != null) setTarget(override);
+    if (!t) { setResult({ error: 'Enter an IP address or hostname first.' }); return; }
+    if (!host) { setResult({ error: 'The switch isn’t reachable yet — wait for it to load.' }); return; }
+    setRunning(kind); setResult(null);
+    try {
+      const r = await authFetch(apiUrl('/api/switch/trace'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host, vendor: 'tplink', target: t, kind }),
+      });
+      const d = await r.json();
+      setResult(d.ok ? { kind: d.kind, command: d.command, output: d.output } : { error: d.error || 'Check failed.' });
+    } catch (e) {
+      setResult({ error: e.message });
+    } finally {
+      setRunning(null);
+    }
+  };
+
+  return (
+    <section className={styles.rchCard}>
+      <div className={styles.rchHead}>
+        <span className={styles.rchTitle}>Reachability check</span>
+        <span className={styles.rchSub}>ping, run from the switch</span>
+      </div>
+      {/* Ping only. Traceroute is deliberately not offered: on TP-Link `tracert`
+          requires a privilege above the read-only "User" role, and we run the
+          switch with a read-only account. `ping` works at that level. */}
+      <p className={styles.rchHintLine}>
+        Type where you want to test <b>to</b> — an IP or hostname — and RackTrack pings it
+        <b> from the switch</b>, so you can confirm the switch itself can reach it.
+      </p>
+      <div className={styles.rchRow}>
+        <input
+          className={styles.rchInput}
+          value={target}
+          onChange={e => setTarget(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !running) run('ping'); }}
+          placeholder="IP or hostname — e.g. 192.168.1.1"
+          spellCheck="false"
+          autoCapitalize="off"
+        />
+        <button type="button" className={`${styles.rchBtn} ${styles.rchBtnPrimary}`} disabled={!!running} onClick={() => run('ping')}>
+          {running === 'ping' ? 'Pinging…' : 'Ping'}
+        </button>
+      </div>
+      {presets.length > 0 && (
+        <div className={styles.rchPresets}>
+          <span className={styles.rchPresetLbl}>Quick ping:</span>
+          {presets.map(p => (
+            <button key={p.ip} type="button" className={styles.rchChip} disabled={!!running} onClick={() => run('ping', p.ip)}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {result && (
+        result.error
+          ? <div className={styles.rchErr}>{result.error}</div>
+          : <pre className={styles.rchOut}>{result.output || '(no output)'}</pre>
+      )}
+    </section>
+  );
+}
+
+// ── Switch identity card ─────────────────────────────────────
+// Model / firmware / uptime / mgmt IP pulled live from system-info, plus the
+// live PoE draw. No raw command text — just the parsed facts.
+function IdentityCard({ identity, host, poe }) {
+  const model = identity.name || (identity.description || '').replace(/JetStream\s*/i, '') || 'Switch';
+  const poeUsed = poe && typeof poe.used === 'number' ? poe.used : null;
+  const rows = [
+    identity.fwVersion && { k: 'Firmware', v: identity.fwVersion },
+    identity.uptime    && { k: 'Uptime',   v: identity.uptime },
+    host               && { k: 'Mgmt IP',  v: host, mono: true },
+    identity.mac       && { k: 'MAC',      v: identity.mac, mono: true },
+    poeUsed != null    && { k: 'PoE draw', v: `${poeUsed} W${poe.budget ? ` / ${poe.budget} W` : ''}` },
+  ].filter(Boolean);
+  return (
+    <section className={styles.idCard}>
+      <div className={styles.idTop}>
+        <span className={styles.idName}>{model}</span>
+        <span className={styles.idLive}><i className={styles.idDot} aria-hidden="true" />live</span>
+      </div>
+      {identity.description && <p className={styles.idDesc}>{identity.description}</p>}
+      <dl className={styles.idRows}>
+        {rows.map(r => (
+          <div key={r.k} className={styles.idRow}>
+            <dt className={styles.idK}>{r.k}</dt>
+            <dd className={`${styles.idV} ${r.mono ? styles.idMono : ''}`}>{r.v}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+// ── Faceplate map + PoE + VLAN ───────────────────────────────
+function portNumOf(iface) {
+  const m = String(iface || '').match(/(\d+)\s*$/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+// The physical faceplate: one cell per port, coloured by live state. Ethernet
+// and SFP split into their own rows, mirroring the real switch front panel.
+function FaceplateMap({ ports, sfpPortIfaces }) {
+  const cells = ports.map(p => {
+    const linkUp = /(linkup|connected|^up$)/i.test((p.status || '').trim());
+    const mi = p.macInfo, n = p.neighbor;
+    const uplink = !!(mi && mi.count > 1);
+    const endpoint = n?.found ? (n.system_name || n.chassis_id) : null;
+    return {
+      iface: p.iface,
+      num: portNumOf(p.iface),
+      isSfp: sfpPortIfaces.has(p.iface),
+      state: uplink ? 'uplink' : linkUp ? 'up' : 'down',
+      endpoint,
+    };
+  }).filter(c => c.num != null).sort((a, b) => a.num - b.num);
+
+  const eth = cells.filter(c => !c.isSfp);
+  const sfp = cells.filter(c => c.isSfp);
+
+  const cell = (c) => (
+    <div
+      key={c.iface}
+      className={`${styles.fpPort} ${
+        c.state === 'up' ? styles.fpUp : c.state === 'uplink' ? styles.fpUplink : styles.fpDown
+      }`}
+      title={`${c.iface} · ${c.state === 'uplink' ? 'uplink' : c.state}${c.endpoint ? ' · ' + c.endpoint : ''}`}
+    >
+      <span className={styles.fpNum}>{c.num}</span>
+    </div>
+  );
+
+  return (
+    <section className={styles.fpCard}>
+      <div className={styles.fpHead}>
+        <span className={styles.fpTitle}>Faceplate</span>
+        <div className={styles.fpLegend}>
+          <span className={styles.fpLg}><i className={`${styles.fpSw} ${styles.fpUp}`} />Up</span>
+          <span className={styles.fpLg}><i className={`${styles.fpSw} ${styles.fpUplink}`} />Uplink</span>
+          <span className={styles.fpLg}><i className={`${styles.fpSw} ${styles.fpDown}`} />Free</span>
+        </div>
+      </div>
+      <div className={styles.fpBody}>
+        {eth.length > 0 && (
+          <div className={styles.fpZone}>
+            <div className={styles.fpRowLabel}>Ethernet · {eth.length}</div>
+            <div className={styles.fpWrap}><div className={styles.fpGrid}>{eth.map(cell)}</div></div>
+          </div>
+        )}
+        {sfp.length > 0 && (
+          <div className={styles.fpZoneSfp}>
+            <div className={styles.fpRowLabel}>SFP · {sfp.length}</div>
+            <div className={styles.fpWrap}><div className={styles.fpGridSfp}>{sfp.map(cell)}</div></div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// Sidebar next to the port list: PoE draw per powered port + VLAN membership.
+function PoeVlanAside({ audit }) {
+  const vlans = audit?.vlans || [];
+  const poePorts = audit?.poe?.ports || {};
+  const powered = Object.entries(poePorts).filter(([, v]) => v.on).map(([k, v]) => ({ port: k, ...v }));
+
+  if (!audit) return <aside className={styles.portsAside}><div className={styles.cblFoot}>Reading the switch…</div></aside>;
+  if (powered.length === 0 && vlans.length === 0) return null;
+
+  return (
+    <aside className={styles.portsAside}>
+      {powered.length > 0 && (
+        <div className={styles.asideBlock}>
+          <div className={styles.asideHead}>PoE · powered</div>
+          <div className={styles.asideList}>
+            {powered.map(pp => (
+              <div key={pp.port} className={styles.asideRow}>
+                <span className={styles.asidePort}>{shortLabel(pp.port)}</span>
+                <span className={styles.asideMid}>{pp.class || 'Powered'}</span>
+                <span className={styles.asideVal}>{pp.power} W</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {vlans.length > 0 && (
+        <div className={styles.asideBlock}>
+          <div className={styles.asideHead}>VLANs</div>
+          <div className={styles.asideList}>
+            {vlans.map(v => (
+              <div key={v.id} className={styles.asideRow}>
+                <span className={styles.asidePort}>VLAN {v.id}</span>
+                <span className={styles.asideMid}>{v.name}</span>
+                <span className={styles.asideVal}>{v.ports.length}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </aside>
   );
 }
 
@@ -464,7 +795,7 @@ function PortGroup({ title, ports, variant }) {
           {ports.length} {ports.length === 1 ? 'PORT' : 'PORTS'}
         </span>
       </div>
-      <div className={styles.invCardGrid}>
+      <div className={styles.ptList}>
         {ports.map(p => <PortCard key={p.iface} port={p} variant={variant} />)}
       </div>
     </section>
@@ -499,30 +830,358 @@ function PortCard({ port, variant }) {
   const medium     = port.medium === 'fiber' ? 'Fiber'
                    : port.medium === 'copper' ? 'Copper'
                    : (variant === 'sfp' ? 'Fiber' : 'Copper');
-  const desc = (port.description || '').trim();
+  const linkUp     = /(linkup|connected|^up$)/i.test((port.status || '').trim());
+  const n          = port.neighbor;
+  const mi         = port.macInfo;                 // { macs:[], vlan, count }
+  const endpoint   = n?.found ? (n.system_name || n.chassis_id || 'device') : null;
+  const vlan       = n?.vlan_id || mi?.vlan || null;
+  const primaryMac = n?.port_id || mi?.macs?.[0] || null;
+
+  // Build the "who's on the other end" line, logical layer only.
+  let title, sub;
+  if (endpoint) {                                  // LLDP-identified device
+    title = endpoint;
+    sub = [primaryMac, vlan && `VLAN ${vlan}`, medium].filter(Boolean).join(' · ');
+  } else if (mi && mi.count > 1) {                 // many MACs = uplink / trunk
+    title = `${mi.count} devices`;
+    sub = ['uplink', vlan && `VLAN ${vlan}`, medium].filter(Boolean).join(' · ');
+  } else if (mi && mi.count === 1) {               // single MAC, no LLDP name
+    title = mi.macs[0];
+    sub = [vlan && `VLAN ${vlan}`, medium].filter(Boolean).join(' · ');
+  } else if (linkUp) {
+    title = null; sub = null;                       // connected but silent
+  } else {
+    title = null; sub = null;                       // down
+  }
 
   return (
-    <article className={styles.invRow} title={`${port.iface} · ${verdictLabel}`}>
-      <span className={`${styles.invAccent} ${accentClass}`} aria-hidden="true" />
+    <article className={styles.ptRow} title={`${port.iface} · ${verdictLabel}`}>
+      {/* status rail: filled = link up, faint = down */}
+      <span className={`${styles.ptRail} ${linkUp ? styles.ptRailUp : styles.ptRailDown}`} aria-hidden="true" />
 
-      {/* Left — port number + interface */}
-      <div className={styles.invRowLeft}>
-        <span className={styles.invRowNum}>{shortName}</span>
-        <span className={styles.invRowIface}>{port.iface}</span>
+      {/* port number + interface */}
+      <div className={styles.ptNumCol}>
+        <span className={styles.ptNum}>{shortName}</span>
+        <span className={styles.ptIf}>{port.iface}</span>
       </div>
 
-      {/* Center — human-readable description */}
-      <div className={styles.invRowMid}>
-        <span className={styles.invRowDesc}>{desc || '—'}</span>
-        <span className={styles.invRowMedium}>{medium}</span>
+      {/* logical endpoint on this port */}
+      <div className={styles.ptMid}>
+        {title ? (
+          <>
+            <span className={styles.ptLink}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>
+              </svg>
+              {title}
+            </span>
+            {sub && <span className={styles.ptSub}>{sub}</span>}
+          </>
+        ) : linkUp ? (
+          <span className={styles.ptNone}>Connected device<span className={styles.ptMed}> · {medium}</span></span>
+        ) : (
+          <span className={styles.ptNone}>—<span className={styles.ptMed}> · {medium}</span></span>
+        )}
       </div>
 
-      {/* Right — status text + verdict label */}
-      <div className={styles.invRowRight}>
-        <span className={`${styles.invRowStatus} ${statusClass}`}>{statusText}</span>
-        <span className={styles.invRowVerdict}>{verdictLabel}</span>
+      {/* link state + verdict */}
+      <div className={styles.ptRight}>
+        <span className={`${styles.ptStatTxt} ${linkUp ? styles.ptUp : styles.ptDown}`}>{linkUp ? 'Up' : 'Down'}</span>
+        <span className={styles.ptVerdict}>{verdictLabel}</span>
       </div>
     </article>
+  );
+}
+
+// ── Cables view ──────────────────────────────────────────────
+// A cable is a live port with something identified on the other end. We only
+// know the LOGICAL layer (LLDP neighbour + MAC table) — passive patch panels
+// have no chip and are invisible — so each row is: this switch port ↔ the
+// endpoint we can see, with its kind, VLAN and medium.
+const MAC_RE = /^[0-9a-f]{2}([:.-])[0-9a-f]{2}(?:\1?[0-9a-f]{2}){4}$/i;
+
+function deriveCables(ports, sfpPortIfaces) {
+  return ports
+    .filter(p => {
+      const up = /(linkup|connected|^up$)/i.test((p.status || '').trim());
+      return up && (p.neighbor?.found || p.macInfo);
+    })
+    .map(p => {
+      const n  = p.neighbor;
+      const mi = p.macInfo;
+      const medium = p.medium === 'fiber' ? 'Fiber'
+                   : p.medium === 'copper' ? 'Copper'
+                   : (sfpPortIfaces.has(p.iface) ? 'Fiber' : 'Copper');
+      const vlan = n?.vlan_id || mi?.vlan || null;
+
+      let remoteName, remotePort = null, mac = null, kind;
+      if (n?.found) {
+        remoteName = n.system_name || n.chassis_id || 'Unknown device';
+        remotePort = n.port_id && !MAC_RE.test(n.port_id) ? n.port_id : null;
+        mac = MAC_RE.test(n.chassis_id || '') ? n.chassis_id : (mi?.macs?.[0] || null);
+        const infra = /switch|bridge|router|jetstream|catalyst|mikrotik|ubiquiti|\bios\b/i
+          .test([n.system_description, n.system_name].filter(Boolean).join(' '));
+        kind = infra ? 'trunk' : (mi && mi.count > 1 ? 'uplink' : 'device');
+      } else if (mi && mi.count > 1) {
+        remoteName = `${mi.count} devices`;
+        kind = 'uplink';
+      } else {
+        remoteName = mi.macs[0];
+        mac = mi.macs[0];
+        kind = 'device';
+      }
+      return {
+        iface: p.iface,
+        num: shortLabel(p.iface).padStart(2, '0'),
+        remoteName, remotePort, mac, vlan, medium, kind,
+        // trace extras
+        macs: (mi?.macs || []),
+        mgmt: (n?.management_address && !/^\s*$/.test(n.management_address)) ? n.management_address : null,
+        desc: n?.system_description || null,
+      };
+    })
+    .sort((a, b) => a.num.localeCompare(b.num, undefined, { numeric: true }));
+}
+
+const KIND_META = {
+  device: { label: 'Device', cls: 'kindDevice' },
+  uplink: { label: 'Uplink', cls: 'kindUplink' },
+  trunk:  { label: 'Switch link', cls: 'kindTrunk' },
+};
+
+function CablesView({ ports, sfpPortIfaces, switchName }) {
+  const cables = deriveCables(ports, sfpPortIfaces);
+  const [open, setOpen] = useState(null);   // iface of the expanded trace
+
+  if (cables.length === 0) {
+    return (
+      <div className={styles.invEmpty}>
+        No cables identified yet — reading the switch. Live ports with an
+        LLDP neighbour or a known MAC appear here.
+      </div>
+    );
+  }
+
+  return (
+    <section className={styles.invSection}>
+      <div className={styles.invSectionHead}>
+        <h3 className={styles.invSectionTitle}>Connected cables</h3>
+        <span className={styles.invSectionCount}>
+          {cables.length} {cables.length === 1 ? 'LINK' : 'LINKS'}
+        </span>
+      </div>
+      <div className={styles.cblList}>
+        {cables.map(c => {
+          const meta = KIND_META[c.kind] || KIND_META.device;
+          const remoteMeta = [c.remotePort, c.mac, c.vlan && `VLAN ${c.vlan}`, c.medium]
+            .filter(Boolean).join(' · ');
+          const isOpen = open === c.iface;
+          return (
+            <div key={c.iface} className={styles.cblItem}>
+              <button
+                type="button"
+                className={`${styles.cblRow} ${styles.cblRowBtn} ${isOpen ? styles.cblRowOpen : ''}`}
+                aria-expanded={isOpen}
+                onClick={() => setOpen(isOpen ? null : c.iface)}
+              >
+                <div className={styles.cblLocal}>
+                  <span className={styles.cblNum}>{c.num}</span>
+                  <span className={styles.cblIf}>{c.iface}</span>
+                </div>
+                <span className={styles.cblArrow} aria-hidden="true">→</span>
+                <div className={styles.cblRemote}>
+                  <span className={styles.cblName}>{c.remoteName}</span>
+                  {remoteMeta && <span className={styles.cblMeta}>{remoteMeta}</span>}
+                </div>
+                <span className={`${styles.cblKind} ${styles[meta.cls]}`}>{meta.label}</span>
+                <span className={`${styles.cblChev} ${isOpen ? styles.cblChevOpen : ''}`} aria-hidden="true">⌄</span>
+              </button>
+              {isOpen && <CableTrace cable={c} switchName={switchName} />}
+            </div>
+          );
+        })}
+      </div>
+      <p className={styles.cblFoot}>
+        Logical layer only — read live from the switch (LLDP + MAC table).
+        Passive patch panels and wall cabling between the ends have no chip, so
+        they aren't visible to the switch.
+      </p>
+    </section>
+  );
+}
+
+// The first three octets of a MAC are the manufacturer's IEEE-registered block.
+// Pull them out so each downstream device can be labelled with who built it.
+function ouiKey(mac) {
+  const hex = String(mac).replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+  return hex.length === 12 ? hex.slice(0, 6) : null;
+}
+
+// Vendor names are looked up once per prefix and memoised for the session — the
+// switch re-reports the same MACs on every poll, and the table lives server-side.
+const vendorCache = new Map();
+
+async function lookupVendors(prefixes) {
+  const missing = prefixes.filter(p => !vendorCache.has(p));
+  if (missing.length) {
+    try {
+      const r = await authFetch(apiUrl('/api/oui/lookup'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefixes: missing }),
+      });
+      const d = await r.json();
+      // Cache misses too, as null — an unregistered prefix must not be re-asked.
+      for (const p of missing) vendorCache.set(p, d?.vendors?.[p] || null);
+    } catch (_) {
+      for (const p of missing) vendorCache.set(p, null);
+    }
+  }
+  return Object.fromEntries(prefixes.map(p => [p, vendorCache.get(p) || null]));
+}
+
+const DEVICES_SHOWN = 12;
+
+function DownstreamMacs({ macs }) {
+  const [vendors, setVendors] = useState(() => Object.fromEntries(
+    macs.map(m => [ouiKey(m), vendorCache.get(ouiKey(m)) || null]).filter(([k]) => k)));
+  const [showAll, setShowAll] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const prefixes = useMemo(
+    () => [...new Set(macs.map(ouiKey).filter(Boolean))], [macs]);
+
+  useEffect(() => {
+    let cancelled = false;
+    lookupVendors(prefixes).then(v => { if (!cancelled) setVendors(v); });
+    return () => { cancelled = true; };
+  }, [prefixes]);
+
+  // One row per device — each MAC is a distinct machine on the far side. Sorting
+  // by vendor puts same-make devices together without merging their identities.
+  const devices = useMemo(() => macs
+    .map(mac => {
+      const up = String(mac).toUpperCase();
+      const key = ouiKey(up);
+      return { mac: up, vendor: (key && vendors[key]) || null };
+    })
+    .sort((a, b) =>
+      // Named vendors first, alphabetical; unknown makers sink to the bottom.
+      (!a.vendor - !b.vendor) ||
+      (a.vendor || '').localeCompare(b.vendor || '') ||
+      a.mac.localeCompare(b.mac)), [macs, vendors]);
+
+  const hidden = showAll ? 0 : Math.max(0, devices.length - DEVICES_SHOWN);
+  const shown = hidden ? devices.slice(0, DEVICES_SHOWN) : devices;
+
+  // "4 Dell · 3 Realtek · …" — the make-up of the far side at a glance.
+  const mix = useMemo(() => {
+    const counts = new Map();
+    for (const d of devices) {
+      const name = d.vendor || 'Unknown';
+      counts.set(name, (counts.get(name) || 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [devices]);
+
+  async function copyAll() {
+    try {
+      await navigator.clipboard.writeText(devices.map(d => d.mac).join('\n'));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch (_) { /* clipboard unavailable */ }
+  }
+
+  return (
+    <>
+      <div className={styles.dsHead}>
+        <div className={styles.dsHeadText}>
+          <div className={styles.traceT}>
+            Downstream network · {devices.length} device{devices.length === 1 ? '' : 's'}
+          </div>
+          <div className={styles.dsSub}>Reachable through this port — one row per device</div>
+        </div>
+        <button type="button" className={styles.dsCopy} onClick={copyAll}>
+          {copied ? 'Copied' : 'Copy MACs'}
+        </button>
+      </div>
+
+      {mix.length > 1 && (
+        <div className={styles.dsMix}>
+          {mix.map(([name, n]) => (
+            <span key={name} className={styles.dsMixChip}>
+              <span className={styles.dsMixNum}>{n}</span>{name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className={styles.dsList}>
+        {shown.map(d => (
+          <div key={d.mac} className={styles.dsRow}>
+            <span className={styles.dsMac}>{d.mac}</span>
+            <span className={`${styles.dsVendor} ${d.vendor ? '' : styles.dsVendorNone}`}>
+              {d.vendor || 'Unknown maker'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {(hidden > 0 || showAll) && (
+        <button type="button" className={styles.dsMore} onClick={() => setShowAll(!showAll)}>
+          {hidden > 0 ? `Show ${hidden} more device${hidden === 1 ? '' : 's'}` : 'Show fewer'}
+        </button>
+      )}
+    </>
+  );
+}
+
+// The end-to-end logical trace for one cable: this switch · port → endpoint.
+// For an uplink, the endpoint is a downstream network and we list every MAC
+// reachable through the port (the "everything on the far side").
+function CableTrace({ cable, switchName }) {
+  const c = cable;
+  const isUplink = c.kind === 'uplink' || c.kind === 'trunk' || c.macs.length > 1;
+  const endMeta = [c.remotePort && `port ${c.remotePort}`, c.mgmt, c.vlan && `VLAN ${c.vlan}`]
+    .filter(Boolean).join(' · ');
+
+  return (
+    <div className={styles.trace}>
+      <div className={styles.traceHop}>
+        <div className={styles.traceRail}>
+          <span className={`${styles.traceNode} ${styles.traceNodeSw}`}>▤</span>
+          <span className={styles.traceStem} />
+        </div>
+        <div className={styles.traceBody}>
+          <div className={styles.traceT}>{switchName || 'This switch'}</div>
+          <div className={styles.traceD}>{c.iface} · {c.medium}{c.vlan ? ` · VLAN ${c.vlan}` : ''}</div>
+        </div>
+      </div>
+
+      <div className={styles.traceHop}>
+        <div className={styles.traceRail}>
+          <span className={`${styles.traceNode} ${isUplink ? styles.traceNodeUp : styles.traceNodeDev}`}>
+            {isUplink ? '⇅' : '▢'}
+          </span>
+        </div>
+        <div className={styles.traceBody}>
+          {isUplink ? (
+            <DownstreamMacs macs={c.macs} />
+          ) : (
+            <>
+              <div className={styles.traceT}>{c.remoteName}</div>
+              <div className={styles.traceD}>{[c.mac, endMeta].filter(Boolean).join(' · ') || 'endpoint device'}</div>
+              {c.desc && <div className={styles.traceDesc}>{c.desc}</div>}
+            </>
+          )}
+        </div>
+      </div>
+
+      <p className={styles.traceNote}>
+        Any patch panel or wall outlet along this run is passive — invisible to the
+        switch — so it can't appear here. Add those from the port label if you keep a cable schedule.
+      </p>
+    </div>
   );
 }
 

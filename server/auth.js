@@ -191,6 +191,9 @@ function _ensureColumn(table, col, ddl) {
     'organization_id INTEGER REFERENCES organizations(id)');
   // Soft-disable: a deactivated user keeps their data/history but can't sign in.
   _ensureColumn('users', 'active', 'active INTEGER NOT NULL DEFAULT 1');
+  // Profile avatar: index into the client's preset-avatar set (0-based). Null
+  // means "not chosen yet" — the client auto-assigns one from the initial.
+  _ensureColumn('users', 'avatar', 'avatar INTEGER');
   // Org lifecycle: owner-created orgs are 'active'; a self-signup creates a
   // 'pending' request the owner must approve before it can add members / scan.
   _ensureColumn('organizations', 'status', "status TEXT NOT NULL DEFAULT 'active'");
@@ -382,6 +385,7 @@ function publicUser(user, tenant = null) {
     tenant_id: user.tenant_id,
     role: user.role || 'member',
     organization_id: user.organization_id || null,
+    avatar: (user.avatar === null || user.avatar === undefined) ? null : Number(user.avatar),
   };
   if (tenant) {
     out.tenant = { id: tenant.id, slug: tenant.slug, name: tenant.name };
@@ -927,6 +931,17 @@ function registerRoutes(app) {
   // ── Whoami ─────────────────────────────────────────────────
   app.get('/api/auth/me', requireAuth, (req, res) => {
     res.json({ ok: true, user: publicUser(req.user) });
+  });
+
+  // Set the profile avatar — an index into the client's preset-avatar set.
+  app.post('/api/auth/avatar', requireAuth, (req, res) => {
+    const idx = Number(req.body?.avatar);
+    if (!Number.isInteger(idx) || idx < 0 || idx > 23) {
+      return res.status(400).json({ error: 'avatar must be a preset index (0-23)' });
+    }
+    db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(idx, req.user.id);
+    const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    res.json({ ok: true, user: publicUser(fresh) });
   });
 
   // ══════════════════════════════════════════════════════════════

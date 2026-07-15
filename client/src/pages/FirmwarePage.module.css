@@ -321,7 +321,7 @@
   background: var(--card);
 }
 
-/* ── Section blocks (CVEs, changelog) ── */
+/* ── Section blocks (changelog) ── */
 .section {
   position: relative; z-index: 5;
   margin-top: 18px;
@@ -373,85 +373,6 @@
   line-height: 1.5;
 }
 
-/* ── CVE list ── */
-.cveList {
-  list-style: none;
-  margin: 0; padding: 0;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.cveItem {
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  border-radius: 14px;
-  padding: 12px 14px;
-}
-.cveHead {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.cveId {
-  font-family: var(--mono);
-  font-weight: 700;
-  font-size: .82rem;
-  color: var(--c2);
-  text-decoration: none;
-  letter-spacing: -0.01em;
-}
-.cveId:hover { color: var(--c1); text-decoration: underline; }
-.cveDesc {
-  font-size: .82rem;
-  line-height: 1.5;
-  color: var(--t1);
-  word-break: break-word;
-}
-.sevPill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: .65rem;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  border: 1px solid var(--gb);
-  background: var(--cg2);
-  color: var(--c2);
-}
-.sevCRITICAL {
-  background: #fff;
-  color: #b91c1c;
-  border-color: #f3caca;
-}
-.sevHIGH {
-  background: #fff;
-  color: #b45309;
-  border-color: #f0dcb0;
-}
-.sevMEDIUM {
-  background: var(--cg2);
-  color: var(--c2);
-  border-color: var(--gbc);
-}
-.sevLOW {
-  background: var(--gg);
-  color: var(--green);
-  border-color: var(--green);
-}
-.matchPill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: .65rem;
-  font-weight: 700;
-  background: #fff;
-  color: #b91c1c;
-  border: 1px solid #f3caca;
-  letter-spacing: .02em;
-}
 
 /* ── Changelog list ── */
 .changelogList {

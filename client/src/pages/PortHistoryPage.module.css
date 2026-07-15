@@ -6,7 +6,7 @@
 
 .page {
   display: flex; flex-direction: column;
-  min-height: 100dvh;
+  min-height: 100vh;
   background: rgba(0,0,0,0.42);
   color: #cfc4c5;
   position: relative;

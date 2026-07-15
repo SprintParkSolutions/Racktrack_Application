@@ -1,7 +1,7 @@
 ﻿/* ── Page shell ── */
 .results {
   display: flex; flex-direction: column;
-  min-height: 100dvh; height: 100dvh;
+  min-height: 100vh; height: 100vh;
   background: rgba(0,0,0,0.42); overflow: hidden;
   /* Reserve space at the bottom so the fixed ScanTabBar (64px + safe area)
      doesn't overlap the last row of content. */
@@ -91,9 +91,9 @@
 }
 
 /* ── Desktop shell (≥1024px) — free the non-overview / drift views from the
-   fixed 100dvh + internal scroll. DesktopShell activates at ≥1024px and wraps
+   fixed 100vh + internal scroll. DesktopShell activates at ≥1024px and wraps
    pages in its own `.fluid` scroller, but ResultsPage's base `.results` stays
-   locked to `height:100dvh; overflow:hidden` until 1180px. Between 1024–1179px
+   locked to `height:100vh; overflow:hidden` until 1180px. Between 1024–1179px
    that clips tall content (e.g. the drift view's annotated rack image) at the
    fold. This extends the existing ≥1180 non-overview release down to 1024 so
    `.results` grows to its natural height and `.fluid` handles the scroll — the
@@ -168,6 +168,33 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Confirm-rack button in the All Components header */
+.confirmBtn {
+  flex: none;
+  font-size: .72rem; font-weight: 700;
+  padding: 7px 13px; border-radius: 999px;
+  background: var(--md-on-surface, #1a1c1d); color: var(--md-surface-container-lowest, #fff);
+  border: none; cursor: pointer; font-family: inherit;
+  white-space: nowrap;
+}
+.confirmBtn:disabled { opacity: .5; cursor: default; }
+.confirmDone {
+  flex: none;
+  font-size: .72rem; font-weight: 800; white-space: nowrap;
+  padding: 7px 12px; border-radius: 999px;
+  color: #0f7040; background: #e5f4ec; border: 1px solid #b7e0c7;
+}
+
+/* Confirmed-bypass banner */
+.confirmedBanner {
+  display: flex; align-items: center; gap: 8px;
+  margin: 10px 14px 0; padding: 10px 14px;
+  border-radius: 12px;
+  background: #eaf5ee; border: 1px solid #b7e0c7; color: #0f5132;
+  font-size: .8rem; font-weight: 600;
+}
+:global([data-theme='dark']) .confirmedBanner { background: #12281c; border-color: #1f5133; color: #86efac; }
 
 /* Action group (Netdisco / Topology pills) */
 .headerActions {
@@ -246,7 +273,7 @@
   width: 100%; height: 100%;
   object-fit: contain; display: block;
   user-select: none;
-  touch-action: none;
+  touch-action: pan-y;
 }
 
 /* SVG overlay for device highlight — same viewBox as image, scales identically */
@@ -276,7 +303,7 @@
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   background: #000000;
-  touch-action: none;
+  touch-action: pan-y;
 }
 
 .zoomControls {
@@ -895,6 +922,12 @@
   position: relative; z-index: 10;
   background: var(--md-background, #fafafb);
 }
+/* This is a scrolling flex column — its children must keep their natural
+   height and let the column scroll, never compress to fit. Without this the
+   flex algorithm shrinks tall blocks (e.g. the linked-endpoint card) below
+   their content height, so the content overflows and the next block (the
+   feedback prompt) renders on top of it. */
+.portBody > * { flex-shrink: 0; }
 
 /* Port image — grows to fill remaining space, capped slightly so it's not overwhelming */
 .portImgWrap {
@@ -1829,7 +1862,6 @@
   color: rgba(0,0,0,0.85);
 }
 .siBadge_neutral .siBadgeIcon { background: rgba(255,255,255,0.1); }
-.siCveSub { color: rgba(0,0,0,0.85); font-size: .72rem; font-weight: 500; }
 
 /* Links */
 .siLink {
@@ -2185,7 +2217,9 @@
   color: #4c4546;
 }
 .reportModalFrame {
-  flex: 1; width: 100%; border: 0; background: #000000;
+  /* White (was #000000) so there's no black flash before the light report
+     paints — the report itself is a white document. */
+  flex: 1; width: 100%; border: 0; background: #ffffff;
 }
 
 /* ── Report view/download row ── */
@@ -2787,7 +2821,7 @@
 ══════════════════════════════════════════════════════════════ */
 .allPage {
   display: flex; flex-direction: column;
-  min-height: 100dvh; height: 100dvh;
+  min-height: 100vh; height: 100vh;
   background: var(--bg);
   width: 100%;
   max-width: 540px;
@@ -2874,6 +2908,31 @@
   border-radius: 100px; padding: 2px 8px;
 }
 .noPorts { color: rgba(0,0,0,0.2); font-size: .72rem; }
+
+/* Inline cable chips — one per connector+colour group of connected ports,
+   filled in by the background cable enrichment. */
+.cableChipRow {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin-top: 8px; padding-top: 8px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+.cableChip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .62rem; font-weight: 600;
+  color: #1a1c1d;
+  background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.14);
+  border-radius: 100px; padding: 2px 8px 2px 5px;
+}
+.cableChipSwatch {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.25);
+  flex: none;
+}
+.cableChipCount { font-family: var(--mono); font-weight: 800; opacity: 0.7; }
+:global([data-theme='light']) .cableChipRow { border-top-color: rgba(0,0,0,0.10); }
+:global([data-theme='light']) .cableChip {
+  color: #1a1c1d; background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.14);
+}
 
 /* ── Next port card (find another port) ── */
 .nextPortCard {
@@ -3703,22 +3762,23 @@
   flex-shrink: 0;
 }
 
-/* ── Creative "linked endpoint" block ── */
+/* ── "Linked endpoint" card — neutral surface, green "live" accent ── */
 .prEndCreative {
   flex: 1; min-width: 0;
   display: flex; align-items: flex-start; gap: 12px;
   position: relative;
-  padding-left: 6px;
+  padding: 12px 14px 12px 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
 }
 .prEndCreative::before {
   content: '';
   position: absolute;
-  left: -2px; top: 4px; bottom: 4px;
-  width: 2px; border-radius: 2px;
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--ac, #000000) 85%, transparent),
-    color-mix(in srgb, var(--ac, #000000) 10%, transparent));
-  box-shadow: 0 0 8px color-mix(in srgb, var(--ac, #000000) 45%, transparent);
+  left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 12px 0 0 12px;
+  background: #16a34a;
 }
 .prEndIcon {
   position: relative;
@@ -3726,28 +3786,22 @@
   width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 10px;
-  color: var(--ac, #000000);
-  background:
-    radial-gradient(circle at 30% 20%,
-      color-mix(in srgb, var(--ac, #000000) 22%, transparent),
-      color-mix(in srgb, var(--ac, #000000) 6%, transparent) 70%);
-  border: 1px solid color-mix(in srgb, var(--ac, #000000) 35%, rgba(255,255,255,0.08));
-  box-shadow:
-    inset 0 0 8px color-mix(in srgb, var(--ac, #000000) 18%, transparent),
-    0 0 12px color-mix(in srgb, var(--ac, #000000) 20%, transparent);
+  color: #16a34a;
+  background: rgba(22,163,74,0.12);
+  border: 1px solid rgba(22,163,74,0.30);
 }
 .prEndLiveDot {
   position: absolute;
   top: -2px; right: -2px;
   width: 8px; height: 8px; border-radius: 50%;
-  background: #1a1c1d;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.7);
+  background: #16a34a;
+  box-shadow: 0 0 0 2px var(--md-surface, #17181b), 0 0 8px rgba(22,163,74,0.7);
   animation: prEndLivePulse 1.6s ease-out infinite;
 }
 @keyframes prEndLivePulse {
-  0%   { box-shadow: 0 0 0 2px rgba(0,0,0,0.95), 0 0 0 0 rgba(0,0,0,0.55); }
-  70%  { box-shadow: 0 0 0 2px rgba(0,0,0,0.95), 0 0 0 6px rgba(0,0,0,0); }
-  100% { box-shadow: 0 0 0 2px rgba(0,0,0,0.95), 0 0 0 0 rgba(0,0,0,0); }
+  0%   { box-shadow: 0 0 0 2px var(--md-surface, #17181b), 0 0 0 0 rgba(22,163,74,0.55); }
+  70%  { box-shadow: 0 0 0 2px var(--md-surface, #17181b), 0 0 0 6px rgba(22,163,74,0); }
+  100% { box-shadow: 0 0 0 2px var(--md-surface, #17181b), 0 0 0 0 rgba(22,163,74,0); }
 }
 .prEndBody {
   flex: 1; min-width: 0;
@@ -3757,15 +3811,21 @@
   display: flex; align-items: center; gap: 8px;
 }
 .prEndTag {
+  display: inline-flex; align-items: center; gap: 4px;
   font-family: var(--mono);
-  font-size: .6rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: #4c4546;
-  background: rgba(0,0,0,0.12);
-  border: 1px solid rgba(0,0,0,0.35);
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #4ade80;
+  background: rgba(22,163,74,0.16);
+  border: 1px solid rgba(22,163,74,0.38);
+}
+.prEndTag::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 6px rgba(22,163,74,0.8);
 }
 .prEndChips {
   display: flex; flex-wrap: wrap; gap: 6px;
@@ -3803,6 +3863,20 @@
 }
 .prEndChip_ttl .prEndChipKey { color: rgba(0,0,0,0.85); }
 .prEndChip_ttl .prEndChipVal { color: #f3f3f5; }
+.prEndChip_vlan {
+  color: #cfe0f6;
+  background: color-mix(in srgb, #2a78d6 22%, rgba(0,0,0,0.5));
+  border-color: color-mix(in srgb, #2a78d6 40%, transparent);
+}
+.prEndChip_vlan .prEndChipKey { color: color-mix(in srgb, #2a78d6 55%, #ffffff); }
+.prEndChip_vlan .prEndChipVal { color: #eef4fc; }
+.prEndChip_ip {
+  color: #cdeede;
+  background: color-mix(in srgb, #16a34a 20%, rgba(0,0,0,0.5));
+  border-color: color-mix(in srgb, #16a34a 40%, transparent);
+}
+.prEndChip_ip .prEndChipKey { color: color-mix(in srgb, #16a34a 55%, #ffffff); }
+.prEndChip_ip .prEndChipVal { color: #eafaf0; }
 .prEndPulse {
   width: 10px; height: 10px; border-radius: 50%;
   background: var(--ac, #000000);
@@ -3819,8 +3893,10 @@
 .prEndName {
   color: #ffffff;
   font-family: var(--mono);
-  letter-spacing: 0.01em;
-  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-weight: 800;
+  font-size: .98rem;
+  line-height: 1.2;
   /* Long unbreakable tokens (MAC / FQDN) were overflowing and pushing the reset
      button off-screen — shrink + ellipsis inside the flex row instead. */
   min-width: 0;
@@ -3997,6 +4073,45 @@
 .prFbSubmit:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Cable color tile grid */
+/* Port-TYPE tag / correction control */
+.prTypeBlock {
+  margin-top: 12px; padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.prTypeHead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.prTypeLabel { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: .65; }
+.prTypeCurrent { font-size: .86rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.prTypeEdit {
+  margin-left: auto;
+  font-size: .74rem; font-weight: 700;
+  padding: 5px 12px; border-radius: 999px;
+  background: transparent; color: inherit;
+  border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
+}
+.prTypeEdit:hover { border-color: rgba(255,255,255,0.45); }
+.prTypeGrid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 10px;
+}
+.prTypeTile {
+  padding: 9px 6px; border-radius: 9px;
+  font-size: .78rem; font-weight: 600;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: inherit; cursor: pointer;
+  transition: border-color .15s, transform .1s;
+}
+.prTypeTile:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.4); }
+.prTypeTile:disabled { opacity: .5; cursor: default; }
+.prTypeTileOn { border-color: var(--md-primary, #3b82f6) !important; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+.prTypeDone { margin-top: 8px; font-size: .78rem; color: #34d399; font-weight: 600; }
+.prTypeErr  { margin-top: 8px; font-size: .78rem; color: #f87171; font-weight: 600; }
+:global([data-theme='light']) .prTypeBlock { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.12); }
+:global([data-theme='light']) .prTypeEdit { border-color: rgba(0,0,0,0.2); }
+:global([data-theme='light']) .prTypeTile { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.14); }
+:global([data-theme='light']) .prTypeDone { color: #0f7040; }
+
 .prColorGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -4753,23 +4868,46 @@
 :global([data-theme='light']) .prEndDim { color: #4c4546; }
 :global([data-theme='light']) .prEndCreative {
   background: #ffffff;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+  border: 1px solid #ececec;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.07);
 }
-:global([data-theme='light']) .prEndLabel { color: #000000; }
+:global([data-theme='light']) .prEndIcon {
+  color: #16a34a;
+  background: rgba(22,163,74,0.10);
+  border-color: rgba(22,163,74,0.28);
+}
+:global([data-theme='light']) .prEndLiveDot {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 8px rgba(22,163,74,0.6);
+}
+:global([data-theme='light']) .prEndLabel { color: #55565b; }
 :global([data-theme='light']) .prEndTag {
-  background: rgba(0,0,0,0.12);
-  color: #1a1c1d;
-  border-color: rgba(0,0,0,0.32);
+  background: rgba(22,163,74,0.12);
+  color: #15803d;
+  border-color: rgba(22,163,74,0.38);
 }
-:global([data-theme='light']) .prEndName { color: #1a1c1d; }
+:global([data-theme='light']) .prEndName { color: #16171a; }
 :global([data-theme='light']) .prEndChip {
-  background: rgba(0,0,0,0.08);
-  border: 1px solid rgba(0,0,0,0.20);
-  color: #4c4546;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.14);
+  color: #3a3c42;
 }
-:global([data-theme='light']) .prEndChipKey { color: #000000; }
-:global([data-theme='light']) .prEndChipVal { color: #1a1c1d; }
+:global([data-theme='light']) .prEndChipKey { color: #6b6d73; }
+:global([data-theme='light']) .prEndChipVal { color: #16171a; }
+:global([data-theme='light']) .prEndChip_mac { background: rgba(0,0,0,0.06); }
+:global([data-theme='light']) .prEndChip_mac .prEndChipKey,
+:global([data-theme='light']) .prEndChip_mac .prEndChipVal { color: #16171a; }
+:global([data-theme='light']) .prEndChip_vlan {
+  background: color-mix(in srgb, #2a78d6 12%, #ffffff);
+  border-color: color-mix(in srgb, #2a78d6 32%, transparent); color: #1a4f95;
+}
+:global([data-theme='light']) .prEndChip_vlan .prEndChipKey { color: #2a78d6; }
+:global([data-theme='light']) .prEndChip_vlan .prEndChipVal { color: #1a4f95; }
+:global([data-theme='light']) .prEndChip_ip {
+  background: color-mix(in srgb, #16a34a 12%, #ffffff);
+  border-color: color-mix(in srgb, #16a34a 32%, transparent); color: #14612e;
+}
+:global([data-theme='light']) .prEndChip_ip .prEndChipKey { color: #16a34a; }
+:global([data-theme='light']) .prEndChip_ip .prEndChipVal { color: #14612e; }
 :global([data-theme='light']) .prEndAction {
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.30);

@@ -1,13 +1,14 @@
 import { useState, useRef, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import styles from './ScanPage.module.css';
 import { validateMedia } from '../utils/validateMedia';
 import { apiUrl, authFetch } from '../utils/api';
 import { triggerBackgroundProbe } from '../utils/portsProbe';
 import { prefetchScan } from '../utils/scanPrefetch';
+import { newJobId, setPendingScan, clearPendingScan } from '../utils/pendingScan';
 import { useShutter } from '../ShutterContext.jsx';
 import MiniRack3D from '../components/MiniRack3D.jsx';
-import { RackAR } from '../plugins/RackAR';
 import { useTheme } from '../ThemeContext.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 
@@ -265,7 +266,7 @@ function CameraCapture({ onCapture, onCancel }) {
   const [ready,    setReady]    = useState(false);
   const [error,    setError]    = useState(null);
   const [flash,    setFlash]    = useState(false);
-  const [mode,     setMode]     = useState('photo');   // 'photo' | 'video' | 'ar' | 'vr'
+  const [mode,     setMode]     = useState('photo');   // 'photo' | 'video'
   const [recording, setRecording] = useState(false);
   const [recordSecs, setRecordSecs] = useState(0);
   const [quality,  setQuality]  = useState({ sharp: false, framed: false, lit: false });
@@ -322,12 +323,8 @@ function CameraCapture({ onCapture, onCancel }) {
     streamRef.current = null; setReady(false);
   }, []);
 
-  // Photo/Video use the web getUserMedia stream. AR launches a native
-  // ARCore/ARKit session, so release the webcam first to avoid contention
-  // for the camera resource and restart it when the user toggles back.
-  // VR renders a WebXR scene and likewise doesn't need the live webcam.
+  // Photo and Video both use the web getUserMedia stream.
   useEffect(() => {
-    if (mode === 'ar' || mode === 'vr') { stopCamera(); return; }
     startCamera();
     return () => stopCamera();
   }, [mode, startCamera, stopCamera]);
@@ -384,8 +381,20 @@ function CameraCapture({ onCapture, onCancel }) {
   const capturePhoto = useCallback(() => {
     const video = videoRef.current, canvas = canvasRef.current;
     if (!video || !canvas || !video.videoWidth) return;
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
+    const vW = video.videoWidth, vH = video.videoHeight;
+    // The preview uses object-fit:cover, which crops the camera frame to the
+    // element's shape. Capture ONLY that visible region so the saved photo is
+    // exactly what the user framed — otherwise the still includes the edges
+    // that were cropped out on screen ("it shows more than I saw").
+    const rect = video.getBoundingClientRect();
+    const dW = rect.width || vW, dH = rect.height || vH;
+    const scale = Math.max(dW / vW, dH / vH);
+    const srcW = Math.min(vW, Math.round(dW / scale));
+    const srcH = Math.min(vH, Math.round(dH / scale));
+    const srcX = Math.round((vW - srcW) / 2);
+    const srcY = Math.round((vH - srcH) / 2);
+    canvas.width = srcW; canvas.height = srcH;
+    canvas.getContext('2d').drawImage(video, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
     setFlash(true);
     setTimeout(() => setFlash(false), 160);
     canvas.toBlob((blob) => {
@@ -622,14 +631,13 @@ function CameraCapture({ onCapture, onCancel }) {
     return () => { cancelled = true; clearInterval(interval); };
   }, [ready]);
 
-  // Expose capture/record toggle to the BottomNav's middle button via context.
-  // AR and VR modes own their own start/stop UI — leave the shutter unbound
-  // there so the bottom button doesn't show a stale capture action.
+  // The shutter now lives in the camera view itself (a real, visible button)
+  // rather than hijacking the bottom nav's Scan tab, which left users with no
+  // obvious way to capture. Make sure nothing stays bound to the nav button.
   useEffect(() => {
-    if (mode === 'ar' || mode === 'vr') { clearShutter(); return; }
-    registerShutter(handleShutter, canShoot);
+    clearShutter();
     return () => clearShutter();
-  }, [mode, handleShutter, canShoot, registerShutter, clearShutter]);
+  }, [clearShutter]);
 
   if (error) return (
     <div className={styles.camError}>
@@ -666,41 +674,37 @@ function CameraCapture({ onCapture, onCancel }) {
     return `${m}:${r}`;
   };
 
-  return (
+  // Portal to <body> so camWrapFull (position:fixed) is truly fullscreen — a
+  // transformed ancestor in the scan page otherwise traps the fixed layer and
+  // the camera renders as a small letterboxed box.
+  return createPortal(
     <div className={`${styles.camWrap} ${styles.camWrapFull}`}>
-      {mode !== 'ar' && mode !== 'vr' && (
-        <>
-          <div className={`${styles.flashLayer} ${flash ? styles.flashOn : ''}`} />
-          <video ref={videoRef} className={styles.camVideo} playsInline muted autoPlay />
-          <canvas ref={canvasRef} style={{display:'none'}} />
-          <canvas ref={sampleRef} style={{display:'none'}} />
+      <div className={`${styles.flashLayer} ${flash ? styles.flashOn : ''}`} />
+      <video ref={videoRef} className={styles.camVideo} playsInline muted autoPlay />
+      <canvas ref={canvasRef} style={{display:'none'}} />
+      <canvas ref={sampleRef} style={{display:'none'}} />
 
-          {/* Live detection labels — positioned absolutely on top of the
-              video. Hidden during the photo flash so they don't leak into
-              the captured still (they wouldn't anyway since canvas pulls
-              from the <video> element directly, but it looks cleaner). */}
-          <div className={styles.liveOverlay} aria-hidden="true">
-            {liveDevices.map(d => (
-              <div key={d.id} className={styles.liveBox}
-                style={{
-                  left:        d.left,
-                  top:         d.top,
-                  width:       d.width,
-                  height:      d.height,
-                  borderColor: d.color,
-                }}>
-                <div className={styles.liveChip}
-                  style={{ background: d.color }}>
-                  {d.label}
-                </div>
-              </div>
-            ))}
+      {/* Live detection labels — positioned absolutely on top of the
+          video. Hidden during the photo flash so they don't leak into
+          the captured still (they wouldn't anyway since canvas pulls
+          from the <video> element directly, but it looks cleaner). */}
+      <div className={styles.liveOverlay} aria-hidden="true">
+        {liveDevices.map(d => (
+          <div key={d.id} className={styles.liveBox}
+            style={{
+              left:        d.left,
+              top:         d.top,
+              width:       d.width,
+              height:      d.height,
+              borderColor: d.color,
+            }}>
+            <div className={styles.liveChip}
+              style={{ background: d.color }}>
+              {d.label}
+            </div>
           </div>
-        </>
-      )}
-
-      {mode === 'ar' && <ARMode />}
-      {mode === 'vr' && <VRMode />}
+        ))}
+      </div>
 
       {onCancel && (
         <button className={styles.camCloseBtn} onClick={onCancel} aria-label="Close camera">
@@ -711,329 +715,65 @@ function CameraCapture({ onCapture, onCancel }) {
       )}
 
       <div className={styles.hud}>
-        {mode !== 'ar' && mode !== 'vr' && (
-          <>
-            <div className={styles.hudGrid} />
+        <div className={styles.hudGrid} />
 
-            {/* Rack-shaped guide box. Photo mode: green when all checks pass. Video mode: red while recording. */}
-            <div className={`${styles.guideBox} ${
-              mode === 'photo' && canShoot ? styles.guideBoxOn : ''
-            } ${recording ? styles.guideBoxRec : ''}`} />
+        {/* Rack-shaped guide box. Photo mode: green when all checks pass. Video mode: red while recording. */}
+        <div className={`${styles.guideBox} ${
+          mode === 'photo' && canShoot ? styles.guideBoxOn : ''
+        } ${recording ? styles.guideBoxRec : ''}`} />
 
-            <div className={styles.hudTop}>
-              <span className={styles.hudBadge}>
-                {recording
-                  ? <><span className={styles.recDot}/> REC {fmtTimer(recordSecs)}</>
-                  : <><span className="dot dot-cyan" style={{width:5,height:5}}/> RACK SCAN</>}
-              </span>
-            </div>
-          </>
-        )}
-
-        <div className={styles.modeToggle}>
-          <button type="button"
-            className={`${styles.modeBtn} ${mode === 'photo' ? styles.modeBtnOn : ''}`}
-            onClick={() => setMode('photo')}
-            disabled={recording}>
-            Photo
-          </button>
-          <button type="button"
-            className={`${styles.modeBtn} ${mode === 'video' ? styles.modeBtnOn : ''}`}
-            onClick={() => setMode('video')}>
-            Video
-          </button>
-          <button type="button"
-            className={`${styles.modeBtn} ${mode === 'ar' ? styles.modeBtnOn : ''}`}
-            onClick={() => setMode('ar')}
-            disabled={recording}>
-            AR
-          </button>
-          <button type="button"
-            className={`${styles.modeBtn} ${mode === 'vr' ? styles.modeBtnOn : ''}`}
-            onClick={() => setMode('vr')}
-            disabled={recording}>
-            VR
-          </button>
+        <div className={styles.hudTop}>
+          <span className={styles.hudBadge}>
+            {recording
+              ? <><span className={styles.recDot}/> REC {fmtTimer(recordSecs)}</>
+              : <><span className="dot dot-cyan" style={{width:5,height:5}}/> RACK SCAN</>}
+          </span>
         </div>
 
-        {mode !== 'ar' && mode !== 'vr' && (
-          <div className={styles.hudBottom}>
-            <p className={styles.hudHint}>{hintText}</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+        {/* ── Bottom control bar: hint → Photo|Video → shutter ── */}
+        <div className={styles.camControls}>
+          <p className={styles.hudHint}>{hintText}</p>
 
-// ── AR Mode ──────────────────────────────────────────────────
-// Launches the native fullscreen ARCore session (Android) / ARKit (iOS) via
-// the RackAR Capacitor plugin. While running, each emitted camera frame is
-// POSTed to /api/detect; the returned bounding boxes are pushed back into
-// the AR view via RackAR.setOverlay so labels track the live scene.
-function ARMode() {
-  const [support, setSupport]   = useState(null);  // { ar, camera, platform } | null while probing
-  const [running, setRunning]   = useState(false);
-  const [error,   setError]     = useState(null);
-  const [lastN,   setLastN]     = useState(0);     // last detection count (status chip)
-  const inflightRef = useRef(false);
-  const frameSubRef = useRef(null);
-  const endedSubRef = useRef(null);
-  const tapSubRef   = useRef(null);
-  const runningRef  = useRef(false);
-
-  // Probe on mount.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const s = await RackAR.isSupported();
-        if (!cancelled) setSupport(s);
-      } catch (e) {
-        if (!cancelled) setError(`Probe failed: ${e?.message || e}`);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const teardownListeners = useCallback(() => {
-    try { frameSubRef.current?.remove?.(); } catch {}
-    try { endedSubRef.current?.remove?.(); } catch {}
-    try { tapSubRef.current?.remove?.();   } catch {}
-    frameSubRef.current = endedSubRef.current = tapSubRef.current = null;
-  }, []);
-
-  const handleStart = useCallback(async () => {
-    setError(null);
-    try {
-      const perm = await RackAR.requestPermissions();
-      setSupport(perm);
-      if (!perm.ar) {
-        setError(`AR not available on this device (platform: ${perm.platform})`);
-        return;
-      }
-      if (perm.camera === 'denied') {
-        setError('Camera permission denied — enable in system settings');
-        return;
-      }
-
-      // Subscribe BEFORE start so we don't miss early frame/ended events.
-      frameSubRef.current = await RackAR.addListener('frame', async (f) => {
-        if (inflightRef.current || !runningRef.current) return;
-        inflightRef.current = true;
-        try {
-          const blob = base64ToBlob(f.jpegBase64, 'image/jpeg');
-          const fd = new FormData();
-          fd.append('image', blob, 'ar-frame.jpg');
-          const r = await authFetch(apiUrl('/api/detect'), { method: 'POST', body: fd });
-          const data = await r.json().catch(() => ({}));
-          const rawDevices = data?.devices || [];
-          const devices = rawDevices
-            .map((d, i) => {
-              const bb = normalizeBbox(d);
-              if (!bb) return null;
-              const conf = Number(d.confidence ?? d.score ?? 1);
-              if (conf < 0.45) return null;
-              return {
-                id:    `ar_${i}`,
-                label: String(d.class_name || d.class || 'Device'),
-                bbox:  bb,
-                color: colorForClass(d.class_name || d.class || ''),
-              };
-            })
-            .filter(Boolean)
-            .slice(0, 32);
-          await RackAR.setOverlay({ devices });
-          setLastN(devices.length);
-        } catch (e) {
-          // Network blips are expected during a long AR session — keep going.
-          console.warn('ar detect failed:', e?.message || e);
-        } finally {
-          inflightRef.current = false;
-        }
-      });
-
-      endedSubRef.current = await RackAR.addListener('ended', () => {
-        runningRef.current = false;
-        setRunning(false);
-        teardownListeners();
-      });
-
-      tapSubRef.current = await RackAR.addListener('tap', () => {
-        // tap handling reserved for future UI affordance
-      });
-
-      await RackAR.start({ frameRateHz: 1 });
-      runningRef.current = true;
-      setRunning(true);
-    } catch (e) {
-      setError(`Start failed: ${e?.message || e}`);
-      teardownListeners();
-    }
-  }, [teardownListeners]);
-
-  const handleStop = useCallback(async () => {
-    try { await RackAR.stop(); } catch {}
-    runningRef.current = false;
-    setRunning(false);
-    teardownListeners();
-  }, [teardownListeners]);
-
-  // Tear down on unmount.
-  useEffect(() => () => {
-    teardownListeners();
-    if (runningRef.current) RackAR.stop().catch(() => {});
-  }, [teardownListeners]);
-
-  const wrap = {
-    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-    gap:14, padding:'28px 20px', minHeight:280, textAlign:'center',
-  };
-
-  if (!support) {
-    return <div style={wrap}><p style={{color:'#4c4546'}}>Probing AR capabilities…</p></div>;
-  }
-  if (!support.ar) {
-    return (
-      <div style={wrap}>
-        <div style={{fontSize:36}}>🚫</div>
-        <p style={{fontSize:15, fontWeight:600, color:'#cfc4c5'}}>AR unavailable on this device</p>
-        <p style={{fontSize:12, color:'#4c4546', lineHeight:1.5}}>
-          Platform: {support.platform}<br/>
-          Camera permission: {support.camera}<br/>
-          {support.platform === 'web'
-            ? 'Open the app on an ARCore/ARKit-capable phone.'
-            : 'Device is not on the ARCore certified list, or ARCore service is missing.'}
-        </p>
-      </div>
-    );
-  }
-  return (
-    <div style={wrap}>
-      <div style={{
-        fontSize:10, fontWeight:700, letterSpacing:'0.10em', color:'#1a1c1d',
-        textTransform:'uppercase',
-      }}>
-        AR ready
-      </div>
-      <p style={{fontSize:13, color:'#4c4546'}}>
-        Platform: {support.platform} · camera: {support.camera}
-        {running && <> · last frame: <b style={{color:'#cfc4c5'}}>{lastN}</b> devices</>}
-      </p>
-      {error && (
-        <p style={{fontSize:12, color:'#1a1c1d', maxWidth:320, lineHeight:1.4}}>{error}</p>
-      )}
-      {!running ? (
-        <button className="btn btn-primary btn-lg" onClick={handleStart}>
-          Start AR
-        </button>
-      ) : (
-        <>
-          <p style={{fontSize:12, color:'#4c4546'}}>
-            AR view active. Back-press on the phone to end.
-          </p>
-          <button className="btn btn-ghost" onClick={handleStop}>
-            Stop AR
-          </button>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ── VR Mode ──────────────────────────────────────────────────
-// Loads the user's most recent scan from rackTrackHistory and renders it in
-// 3D via the existing TopologyScene3D (same scene used on the Topology tab).
-// On a non-VR phone this is a touch-orbit 3D walkthrough; the WebXR headset
-// path is a follow-up.
-function VRMode() {
-  const navigate = useNavigate();
-  const [topo, setTopo]     = useState(null);
-  const [error, setError]   = useState(null);
-  const [empty, setEmpty]   = useState(false);
-  const [rackId, setRackId] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      let history = [];
-      try {
-        history = JSON.parse(localStorage.getItem('rackTrackHistory') || '[]');
-      } catch { history = []; }
-      const recent = Array.isArray(history) && history.length ? history[0] : null;
-      if (!recent?.scanId) { if (!cancelled) setEmpty(true); return; }
-      if (!cancelled) setRackId(recent.scanId);
-
-      try {
-        const r = await authFetch(apiUrl(`/api/topology/${recent.scanId}`));
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        if (!cancelled) setTopo(data);
-      } catch (e) {
-        if (!cancelled) setError(e?.message || String(e));
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const msgWrap = {
-    position:'absolute', inset:0,
-    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-    gap:14, padding:'28px 20px', textAlign:'center',
-  };
-
-  return (
-    <div style={{ position:'absolute', inset:0, background:'#1a1c1d' }}>
-      {topo ? (
-        <Suspense fallback={<div style={msgWrap}><p style={{color:'#4c4546'}}>Initializing 3D scene…</p></div>}>
-          <TopologyScene3D topo={topo} setSelected={() => {}} />
-        </Suspense>
-      ) : empty ? (
-        <div style={msgWrap}>
-          <div style={{fontSize:36}}>🗄️</div>
-          <p style={{fontSize:15, fontWeight:600, color:'#cfc4c5'}}>No scans yet</p>
-          <p style={{fontSize:12, color:'#4c4546', lineHeight:1.5, maxWidth:300}}>
-            Scan a rack first using Photo or Video, then come back here to walk
-            through it in 3D.
-          </p>
-        </div>
-      ) : error ? (
-        <div style={msgWrap}>
-          <div style={{fontSize:36}}>⚠️</div>
-          <p style={{fontSize:15, fontWeight:600, color:'#1a1c1d'}}>Couldn't load your rack</p>
-          <p style={{fontSize:12, color:'#4c4546', maxWidth:300}}>{error}</p>
-          {rackId && (
-            <button className="btn btn-ghost" onClick={() => navigate(`/results/${rackId}/topology`)}>
-              Open in Topology tab
+          <div className={styles.modeToggle}>
+            <button type="button"
+              className={`${styles.modeBtn} ${mode === 'photo' ? styles.modeBtnOn : ''}`}
+              onClick={() => setMode('photo')}
+              disabled={recording}>
+              Photo
             </button>
-          )}
-        </div>
-      ) : (
-        <div style={msgWrap}><p style={{color:'#4c4546'}}>Loading your last scan…</p></div>
-      )}
+            <button type="button"
+              className={`${styles.modeBtn} ${mode === 'video' ? styles.modeBtnOn : ''}`}
+              onClick={() => setMode('video')}>
+              Video
+            </button>
+          </div>
 
-      <div style={{
-        position:'absolute', top:14, left:'50%', transform:'translateX(-50%)',
-        fontSize:10, fontWeight:700, letterSpacing:'0.10em',
-        color: topo ? '#1a1c1d' : '#4c4546', textTransform:'uppercase',
-        pointerEvents:'none', textShadow:'0 1px 2px rgba(0,0,0,0.6)',
-      }}>
-        {topo ? '3D walkthrough · your last scan' : 'VR mode'}
+          {/* The shutter. Previously this was hidden inside the bottom nav's
+              Scan tab, so there was no obvious way to capture. */}
+          <button
+            type="button"
+            className={`${styles.shutter} ${recording ? styles.shutterRec : ''}`}
+            onClick={handleShutter}
+            disabled={!canShoot && !recording}
+            aria-label={
+              mode === 'video'
+                ? (recording ? 'Stop recording' : 'Start recording')
+                : 'Take photo'
+            }
+          >
+            <span className={`${styles.shutterInner} ${
+              mode === 'video'
+                ? (recording ? styles.shutterSquare : styles.shutterRed)
+                : ''
+            }`} />
+          </button>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
-// ── AR helpers ───────────────────────────────────────────────
-function base64ToBlob(b64, mime) {
-  const bytes = atob(b64);
-  const buf = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
-  return new Blob([buf], { type: mime });
-}
-
-// /api/analyze returns devices in one of three bbox shapes — normalize
-// to [x, y, w, h] image-pixel space for the native overlay re-projector.
 function normalizeBbox(d) {
   if (d.bbox && typeof d.bbox === 'object' && !Array.isArray(d.bbox) &&
       'x' in d.bbox && 'y' in d.bbox && 'w' in d.bbox && 'h' in d.bbox) {
@@ -1271,7 +1011,12 @@ export default function ScanPage() {
       // and returns a group with N member rackIds.
       const isVideoUpload = (file?.type || '').startsWith('video/');
       const ticketActive = !!ticket && ticket.target && ticket.target.device && ticket.target.port != null;
-      const useMultiRack = isVideoUpload && !ticketActive;
+      // A rack video now goes through /api/analyze, whose normalizeImage
+      // extracts the single best frame and analyzes it like a photo. The old
+      // multi-rack path (/api/analyze-video) required a tenant — so owner
+      // accounts got a 401 and video "didn't work" — and was overkill for the
+      // common one-rack video. (Multi-rack pan can return as an explicit mode.)
+      const useMultiRack = false;
 
       const body = new FormData();
       body.append(useMultiRack ? 'video' : 'image', file);
@@ -1291,8 +1036,19 @@ export default function ScanPage() {
         ? '/api/analyze-video'
         : (useTicketMode ? '/api/analyze-for-ticket' : '/api/analyze');
 
+      // Remember this scan so it can be reclaimed if iOS suspends the app
+      // mid-analysis (the request below dies, but the scan finishes on the
+      // server). PendingScanResumer polls for it on resume.
+      const clientJobId = newJobId();
+      body.append('clientJobId', clientJobId);
+      setPendingScan(clientJobId, useMultiRack ? 'video' : 'image');
+
       const res  = await authFetch(apiUrl(endpoint), { method: 'POST', body });
       const data = await res.json().catch(() => ({}));
+      // We got a response, so the resume path is no longer needed. (If the app
+      // was backgrounded the await throws instead, landing in catch, and we
+      // intentionally KEEP the marker so resume can recover the result.)
+      clearPendingScan();
       if (!res.ok) {
         if (data.retryable) {
           clearInterval(ticker); setLoading(false); setProgress(0);
@@ -1394,8 +1150,13 @@ export default function ScanPage() {
       multiFiles.forEach((f) => body.append('images', f));
       if (override) body.append('skipQualityCheck', '1');
 
+      const clientJobId = newJobId();
+      body.append('clientJobId', clientJobId);
+      setPendingScan(clientJobId, 'stitch');
+
       const res  = await authFetch(apiUrl('/api/stitch'), { method: 'POST', body });
       const data = await res.json().catch(() => ({}));
+      clearPendingScan();
       if (!res.ok) {
         if (data.retryable) {
           clearInterval(ticker); setLoading(false); setProgress(0);
@@ -1542,6 +1303,29 @@ export default function ScanPage() {
                     />}
         </div>
 
+        {/* Two-rack entry — a separate flow that detects both racks and shows
+            the uplink cabling that runs between them. */}
+        <button
+          type="button"
+          onClick={() => navigate('/multi-rack/new')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+            margin: '12px 0 0', padding: '12px 14px', borderRadius: 12,
+            border: '1px solid var(--md-outline-variant, rgba(0,0,0,0.12))',
+            background: 'var(--md-surface-container, rgba(0,0,0,0.04))',
+            color: 'inherit', cursor: 'pointer', font: 'inherit', textAlign: 'left',
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', opacity: 0.8 }}>
+            <rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/><path d="M10 8h4"/>
+          </svg>
+          <span style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem' }}>Scanning two racks?</span>
+            <span style={{ display: 'block', fontSize: '0.76rem', opacity: 0.7 }}>Detect both and see the cabling between them</span>
+          </span>
+          <span aria-hidden="true" style={{ opacity: 0.5, fontSize: '1.1rem' }}>›</span>
+        </button>
+
         {/* Selected-incident description — compact single line so the user
             sees what they picked without pushing the page off-screen. */}
         {ticket && (() => {
@@ -1648,7 +1432,7 @@ export default function ScanPage() {
                   left: incidentMenuRect ? incidentMenuRect.left : 0,
                   width: incidentMenuRect ? incidentMenuRect.width : 'auto',
                   maxHeight: incidentMenuRect
-                    ? `calc(100dvh - ${incidentMenuRect.bottom + 4}px - 120px - env(safe-area-inset-bottom))`
+                    ? `calc(100vh - ${incidentMenuRect.bottom + 4}px - 120px - env(safe-area-inset-bottom))`
                     : '50vh',
                   zIndex:250,
                   background: pickerPanelBg,

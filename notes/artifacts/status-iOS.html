@@ -1,0 +1,157 @@
+<meta charset="utf-8">
+<title>RackTrack iOS — Detailed Status</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#fff; --ink:#0f1826; --soft:#4a5876; --line:#e4e9f2; --line2:#eef2f8;
+    --accent:#2b6fed; --accent-bg:#eaf2ff;
+    --amber:#a85b06; --amber-bg:#fff4e2; --amber-line:#f2d6a4;
+    --green:#0d7a3c; --green-bg:#e7f6ec; --green-line:#bde5cc;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#080b12; --panel:#111826; --ink:#eef3fb; --soft:#9db0cd; --line:#222c3d; --line2:#19212f;
+    --accent:#6aa4ff; --accent-bg:#132540; --amber:#f0b665; --amber-bg:#271d0e; --amber-line:#463719;
+    --green:#63d197; --green-bg:#0d2418; --green-line:#1e4830; }}
+  :root[data-theme="dark"]{--bg:#080b12; --panel:#111826; --ink:#eef3fb; --soft:#9db0cd; --line:#222c3d; --line2:#19212f;
+    --accent:#6aa4ff; --accent-bg:#132540; --amber:#f0b665; --amber-bg:#271d0e; --amber-line:#463719;
+    --green:#63d197; --green-bg:#0d2418; --green-line:#1e4830;}
+  :root[data-theme="light"]{--bg:#f5f7fb; --panel:#fff; --ink:#0f1826; --soft:#4a5876; --line:#e4e9f2; --line2:#eef2f8;
+    --accent:#2b6fed; --accent-bg:#eaf2ff; --amber:#a85b06; --amber-bg:#fff4e2; --amber-line:#f2d6a4;
+    --green:#0d7a3c; --green-bg:#e7f6ec; --green-line:#bde5cc;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink); line-height:1.55;
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:900px; margin:0 auto; padding:clamp(18px,3.5vw,42px);}
+  .pill{display:inline-block; font-size:11.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--accent);
+    background:var(--accent-bg); border:1px solid var(--line); padding:5px 11px; border-radius:999px;}
+  h1{margin:12px 0 6px; font-size:clamp(23px,3.3vw,32px); letter-spacing:-.02em;}
+  .lead{margin:0; color:var(--soft); font-size:15px; max-width:74ch;}
+  .facts{display:flex; flex-wrap:wrap; gap:7px; margin-top:14px;}
+  .facts span{font-size:12px; padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:var(--line2); color:var(--soft); font-weight:600;}
+  .facts b{color:var(--ink)}
+
+  .topic{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 20px; margin-top:14px;}
+  .th{display:flex; align-items:center; gap:11px; margin-bottom:12px;}
+  .tnum{width:28px; height:28px; border-radius:8px; background:var(--accent-bg); color:var(--accent); font-weight:800; display:grid; place-items:center; font-size:13px; flex:0 0 auto;}
+  .th h3{margin:0; font-size:16px; letter-spacing:-.01em;}
+  dl{margin:0; display:grid; gap:8px;}
+  dl > div{display:grid; grid-template-columns:150px 1fr; gap:14px; align-items:start;}
+  @media(max-width:620px){ dl > div{grid-template-columns:1fr; gap:2px;} dt{padding-top:6px;} }
+  dt{font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--soft);}
+  dt.eff{color:var(--accent);} dt.fix{color:var(--amber);}
+  dd{margin:0; font-size:14px;}
+  dd b{font-weight:650}
+  code{font-family:ui-monospace,Menlo,monospace; background:var(--line2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px;}
+
+  .stable{margin-top:22px; background:var(--amber-bg); border:1px solid var(--amber-line); border-radius:14px; padding:18px 20px;}
+  .stable h2{margin:0 0 10px; font-size:16px; color:var(--amber); display:flex; align-items:center; gap:8px;}
+  .stable ol{margin:0; padding-left:20px; display:grid; gap:7px; font-size:14px;}
+  .stable li b{font-weight:700}
+  footer{margin-top:22px; color:var(--soft); font-size:12.5px; text-align:center;}
+</style>
+
+<div class="wrap">
+  <span class="pill">RackTrack &middot; iPhone / iPad (iOS) &middot; Detailed</span>
+  <h1>iOS app &mdash; detailed status</h1>
+  <p class="lead">For each thing we did: <b>what</b> it is, <b>how</b> it works, <b>what we&rsquo;re using</b>, the
+    <b>effect</b> it has, and <b>what&rsquo;s needed to make it permanent &amp; stable</b>.</p>
+  <div class="facts">
+    <span>On <b>TestFlight</b></span><span>Build <b>1.0 (4)</b></span><span>ID <b>com.racktrack.app</b></span>
+    <span>Team <b>SPRINTPARK LLC</b></span>
+  </div>
+
+  <!-- 1 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">1</span><h3>App branding &amp; icon</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>Replaced the default placeholder icon with the real <b>RackTrack &ldquo;R&rdquo; logo</b> at every size, and confirmed the logo inside the app.</dd></div>
+      <div><dt>How it works</dt><dd>A 1024&times;1024 logo (no transparency, as Apple requires) is generated into the app&rsquo;s icon set and compiled into the app.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>The app&rsquo;s icon catalog + macOS image tools.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Testers see a finished, branded product on the home screen and inside the app &mdash; not a demo placeholder.</dd></div>
+      <div><dt class="fix">To keep stable</dt><dd>Nothing further &mdash; it&rsquo;s baked into every build.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 2 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">2</span><h3>Signed build on TestFlight</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>Built &amp; Apple-signed the app, created its store listing, uploaded it, cleared the encryption question, and set up the tester group. Now on <b>build 4</b>.</dd></div>
+      <div><dt>How it works</dt><dd>The shared web app is wrapped into a native iPhone app, signed with the company&rsquo;s Apple certificate, and uploaded. TestFlight then delivers it to invited testers.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>Apple Developer (SPRINTPARK LLC) &middot; App Store Connect &middot; TestFlight &middot; Transporter &middot; Capacitor build.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Any invited tester installs RackTrack on a real iPhone with one tap &mdash; no cables, no setup.</dd></div>
+      <div><dt class="fix">To keep stable</dt><dd>Each fix needs a new build number + re-upload (normal). The real stability item is the backend address &mdash; see #8.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 3 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">3</span><h3>Scan is no longer lost when you switch apps</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>Previously, leaving the app mid-scan lost the scan and dumped you on the upload screen. Now it reconnects and shows the finished result.</dd></div>
+      <div><dt>How it works</dt><dd>Each scan gets a hidden <b>ticket</b> the app remembers. The scan still finishes on the Mac even if the phone pauses the app; on return, the app asks the server for that ticket and jumps to the result (&ldquo;Bringing your scan back&hellip;&rdquo;).</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>A small job-ticket tracker on the Mac server + resume logic in the app.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>No lost scans and no wasted re-scans &mdash; removes a common, frustrating failure.</dd></div>
+      <div><dt class="fix">To keep stable</dt><dd>Stable as-is. A fuller version would be a full background-job queue, but the current fix covers the real-world case.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 4 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">4</span><h3>&ldquo;Load failed&rdquo; during scans &mdash; fixed</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>Testers were hitting &ldquo;load failed&rdquo; while scanning. We found and fixed the cause.</dd></div>
+      <div><dt>How it works</dt><dd>The Mac&rsquo;s dev-runner was set to restart whenever a data file changed. Our new scan feature writes such a file on <b>every scan</b> &mdash; so the server restarted mid-scan and dropped the connection. We changed it to restart only on real code changes.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>The Mac server (Node) + its file-watcher settings.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Scans now complete reliably; the connection is no longer dropped mid-scan.</dd></div>
+      <div><dt class="fix">To make stable</dt><dd>Run the backend as a proper <b>always-on service</b> (plain <code>node</code>, not the auto-restart dev runner) &mdash; part of the always-on-server step in #8.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 5 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">5</span><h3>Back buttons never get stuck</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>On some screens the back button could do nothing. Now it always goes somewhere sensible.</dd></div>
+      <div><dt>How it works</dt><dd>A smart-back helper: if there&rsquo;s history, go back; if not (e.g. opened fresh), go to a sensible default screen.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>In-app navigation logic (applied across the main screens).</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Users never feel trapped on a screen.</dd></div>
+      <div><dt class="fix">To keep stable</dt><dd>Stable &mdash; no further work.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 6 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">6</span><h3>First-time walkthrough + UI polish</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>Added a 4-step intro for new users (scan &rarr; review &rarr; ports). Made the <b>Ports</b> screen top compact, and the <b>Network</b> screen now says &ldquo;No switches detected&rdquo; instead of showing blank.</dd></div>
+      <div><dt>How it works</dt><dd>The walkthrough shows once per device on first launch (skippable), then never again. The Network screen now has a clear message when nothing is found.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>In-app screens + a saved &ldquo;already seen&rdquo; flag.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>New testers understand the app instead of guessing; screens never look empty or broken.</dd></div>
+      <div><dt class="fix">To keep stable</dt><dd>Stable &mdash; content can be expanded later if we add features.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 7 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">7</span><h3>The backend &amp; the temporary tunnel <span style="font-weight:600;color:var(--amber);font-size:12px;">&larr; the important one</span></h3></div>
+    <dl>
+      <div><dt>What it is</dt><dd>The app doesn&rsquo;t do the heavy work itself &mdash; it talks to <b>our Mac</b>, which runs the AI and reads the switch, over an internet link.</dd></div>
+      <div><dt>How it works</dt><dd>The app has a web address <b>baked in</b>. That address points, through a Cloudflare tunnel, to the Mac&rsquo;s server. The server runs the AI and reads the switch (read-only).</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>Mac server (Node) &middot; a <b>temporary</b> Cloudflare tunnel &middot; the TP-Link switch.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Works well <b>while</b> the Mac + server + tunnel are running. But the address is <b>random and changes if the Mac restarts</b> &mdash; then every installed app can&rsquo;t reach the server and we must rebuild &amp; re-upload.</dd></div>
+      <div><dt class="fix">To make permanent &amp; stable</dt><dd>See the plan below &mdash; a fixed address + an always-on server.</dd></div>
+    </dl>
+  </div>
+
+  <div class="stable">
+    <h2>&#9888; To make it permanent &amp; stable</h2>
+    <ol>
+      <li><b>Fixed web address.</b> Point <code>api.racktrack.ai</code> (our GoDaddy domain) to a <b>permanent</b> Cloudflare tunnel. The address then never changes &mdash; a Mac restart no longer breaks the apps, and we stop rebuilding just for the address.</li>
+      <li><b>Always-on backend.</b> Run the server as a proper service (auto-starts, auto-restarts on crash) instead of the developer runner. This also permanently prevents the &ldquo;load failed&rdquo; class of issue.</li>
+      <li><b>Move off the Mac (later).</b> Put the backend + AI on a dedicated always-on machine so the app doesn&rsquo;t depend on this Mac being awake and online at all.</li>
+      <li><b>Real-device sign-off.</b> Testers confirm on real iPhones: scan-resume, walkthrough, and scrolling.</li>
+    </ol>
+  </div>
+
+  <footer>RackTrack iOS &middot; detailed status &middot; 13 Jul 2026</footer>
+</div>

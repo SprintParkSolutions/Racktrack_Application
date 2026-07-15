@@ -181,6 +181,11 @@ export default function SignupPage() {
 
       <main className={styles.authShell}>
 
+        <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'22px' }}>
+          <img src="/logo.jpg" alt="" style={{ width:'40px', height:'40px', borderRadius:'11px', objectFit:'cover', boxShadow:'0 6px 16px rgba(0,0,0,0.18)' }} />
+          <span style={{ fontFamily:"'Manrope', system-ui, sans-serif", fontWeight:800, fontSize:'1.15rem', letterSpacing:'-0.01em' }}>RackTrack</span>
+        </div>
+
         {step === 'details' ? (
           <>
             <h1 className={styles.heading}>Create an organization</h1>
