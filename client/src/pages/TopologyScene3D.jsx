@@ -500,7 +500,7 @@ function cableColor(cable_type) {
 //   - switches: 2 rows of N/2 ports
 //   - patch panels: 1 row of N jacks
 //   - servers: 2-column NIC cluster on the right
-function computePortPositions(dev, h) {
+export function computePortPositions(dev, h) {
   const map = new Map();
   const ports = dev.ports || [];
   const n = ports.length;

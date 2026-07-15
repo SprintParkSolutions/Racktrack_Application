@@ -96,7 +96,8 @@ export default function MultiRackTopologyPage() {
       DEV_WIDTH:    m.DEV_WIDTH,
       FOV_DEG:      m.FOV_DEG,
       RACK_SPACING: m.RACK_SPACING,
-      computeRackLayout: m.computeRackLayout,
+      computeRackLayout:    m.computeRackLayout,
+      computePortPositions: m.computePortPositions,
     }));
   }, []);
 
@@ -204,6 +205,7 @@ export default function MultiRackTopologyPage() {
       targetY,
       U_HEIGHT,
       DEV_WIDTH,
+      computePortPositions: layoutConsts.computePortPositions,
     };
   }, [layoutConsts, members, topos]);
 
@@ -361,6 +363,7 @@ function SharedScene({ layout, palette, links = [], selectedByRack, setSelectedB
         floorY={floorY}
         U_HEIGHT={U_HEIGHT}
         DEV_WIDTH={DEV_WIDTH}
+        computePortPositions={layout.computePortPositions}
         palette={palette}
       />
       <OrbitControls
@@ -475,18 +478,43 @@ function SceneFloor({ chassisU, fadeDistance = 60, palette }) {
 // RackBundle; these are only the few links that cross. Fiber = amber, DAC = cyan.
 const _FLOOR_CLEARANCE = 0.4;   // matches TopologyScene3D
 const _FRONT_Z = 0.72;          // ≈ DEV_DEPTH/2, cables ride just in front of the faces
-function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, palette }) {
+
+// World position of a specific PORT on a device face inside a placed rack:
+// device X (rack offset) + the port's x-offset on the face, device-centre Y
+// (from u_position) + the port's row offset, at the front face. This is what
+// lets an inter-rack cable start at an actual port and land on an actual port.
+function _portWorldPos(place, ep, computePortPositions, U_HEIGHT, floorY) {
+  const topo = place.topo;
+  const dev  = (topo?.devices || []).find(d => d.name === ep.device);
+  const uPos  = (ep.u_position != null ? ep.u_position : dev?.u_position);
+  const uSize = ep.u_size || dev?.u_size || 1;
+  const devCenterY = (uPos != null)
+    ? floorY + _FLOOR_CLEARANCE + (uPos - 1 + uSize / 2) * U_HEIGHT
+    : floorY + _FLOOR_CLEARANCE + ((place.chassisU || 1) - 0.5) * U_HEIGHT;
+
+  let px = 0, py = 0;
+  if (dev && typeof computePortPositions === 'function') {
+    const posMap = computePortPositions(dev, uSize * U_HEIGHT);
+    // Match the link's named port; fall back to an uplink/edge port so a
+    // synthesized port label that doesn't map still lands on a real jack.
+    let pos = posMap.get(ep.port);
+    if (!pos) {
+      const ports = dev.ports || [];
+      const m = ports.find(p => p.label === ep.port || p.name === ep.port);
+      if (m) pos = posMap.get(m.name);
+      if (!pos) {
+        const up = ports.find(p => p.is_uplink) || ports[ports.length - 1];
+        if (up) pos = posMap.get(up.name);
+      }
+    }
+    if (pos) { px = pos[0]; py = pos[1]; }
+  }
+  return [place.xOffset + px, devCenterY + py, _FRONT_Z];
+}
+
+function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, computePortPositions, palette }) {
   const cables = useMemo(() => {
     if (!links?.length) return [];
-    const hw = (DEV_WIDTH || 3) / 2;
-    // A switch endpoint's world Y from its u_position (same formula the rack
-    // renderer uses); falls back to the rack top when u_position is unknown.
-    const yOf = (place, ep) => {
-      if (ep && ep.u_position != null) {
-        return floorY + _FLOOR_CLEARANCE + (ep.u_position - 1 + (ep.u_size || 1) / 2) * U_HEIGHT;
-      }
-      return floorY + _FLOOR_CLEARANCE + ((place.chassisU || 1) - 0.5) * U_HEIGHT;
-    };
     const pairSeen = {};
     const out = [];
     links.forEach((lnk, i) => {
@@ -499,16 +527,17 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, palett
       const leftIsA = a.xOffset <= b.xOffset;
       const L  = leftIsA ? a : b,        R  = leftIsA ? b : a;
       const Le = leftIsA ? lnk.src : lnk.dst, Re = leftIsA ? lnk.dst : lnk.src;
-      const yL = yOf(L, Le), yR = yOf(R, Re);
 
-      // Each cable rides a slightly different Z lane so redundant runs separate.
-      const z = _FRONT_Z + 0.06 + (k % 3) * 0.07;
-      const start = [L.xOffset + hw + 0.04, yL, z];
-      const end   = [R.xOffset - hw - 0.04, yR, z];
-      // Bow the cable FORWARD (toward the viewer) across the gap, with a small
-      // downward sag — reads as a patch cable running between the racks.
-      const bow = 0.55 + (k % 3) * 0.22;
-      const mid = [(start[0] + end[0]) / 2, (yL + yR) / 2 - 0.10, z + bow];
+      // Anchor each end at the ACTUAL port on the device face.
+      const start = _portWorldPos(L, Le, computePortPositions, U_HEIGHT, floorY);
+      const end   = _portWorldPos(R, Re, computePortPositions, U_HEIGHT, floorY);
+      // Nudge each end just outside the rack it leaves so the cable clears the
+      // frame, then bow FORWARD across the gap (small downward sag) like a real
+      // patch cable. Each cable in a pair rides a slightly different lane.
+      const zLane = (k % 3) * 0.06;
+      start[2] += 0.03 + zLane; end[2] += 0.03 + zLane;
+      const bow = 0.5 + (k % 3) * 0.2;
+      const mid = [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2 - 0.08, Math.max(start[2], end[2]) + bow];
 
       const pts = [];
       const N = 28;
@@ -524,7 +553,7 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, palett
       out.push({ key: lnk.cable_id || `irl-${i}`, pts, color, start, end });
     });
     return out;
-  }, [links, placeById, floorY, U_HEIGHT, DEV_WIDTH]);
+  }, [links, placeById, floorY, U_HEIGHT, DEV_WIDTH, computePortPositions]);
 
   if (!cables.length) return null;
   return (

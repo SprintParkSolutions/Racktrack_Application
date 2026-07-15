@@ -259,6 +259,69 @@ export default function DashboardPage() {
           </section>
         </div>
       </div>
+
+      {/* ── Authentication activity ── */}
+      <section className={styles.card} style={{ marginTop: 16 }}>
+        <div className={styles.cardHead}><h2>Authentication</h2></div>
+        <div className={styles.authRow}>
+          <div className={styles.authStat}><b>{data?.auth?.logins_ok ?? 0}</b><span>logins</span></div>
+          <div className={styles.authStat}><b className={styles.authFail}>{data?.auth?.logins_fail ?? 0}</b><span>failed logins</span></div>
+          <div className={styles.authStat}><b>{data?.auth?.signups ?? 0}</b><span>sign-ups</span></div>
+          <div className={styles.authStat}><b>{data?.auth?.invites ?? 0}</b><span>invites accepted</span></div>
+          <div className={styles.authStat}><b>{data?.auth?.resets ?? 0}</b><span>password resets</span></div>
+        </div>
+      </section>
+
+      {/* ── Every user ── */}
+      <section className={styles.card} style={{ marginTop: 16 }}>
+        <div className={styles.cardHead}>
+          <h2>All users</h2>
+          <span className={styles.cardMeta}>{(data?.allUsers || []).length} total</span>
+        </div>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr><th>User</th><th>Role</th><th>Org</th><th className={styles.thNum}>Scans</th><th className={styles.thNum}>Events</th><th className={styles.thNum}>Fails</th><th>Last active</th></tr></thead>
+            <tbody>
+              {(data?.allUsers || []).map((u, i) => (
+                <tr key={i}>
+                  <td>{u.username}{u.active === 0 && <span className={styles.inactive}> · inactive</span>}</td>
+                  <td><span className={styles.roleTag}>{u.role}</span></td>
+                  <td>{u.org || '—'}</td>
+                  <td className={styles.num}>{u.scans}</td>
+                  <td className={styles.num}>{u.events}</td>
+                  <td className={styles.num}>{u.fails ? <b className={styles.authFail}>{u.fails}</b> : 0}</td>
+                  <td className={styles.dim}>{u.last_active ? relTime(u.last_active) : 'never'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!(data?.allUsers || []).length && <div className={styles.empty}>No users.</div>}
+        </div>
+      </section>
+
+      {/* ── Every organization ── */}
+      <section className={styles.card} style={{ marginTop: 16 }}>
+        <div className={styles.cardHead}>
+          <h2>All organizations</h2>
+          <span className={styles.cardMeta}>{(data?.allOrgs || []).length} total</span>
+        </div>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr><th>Organization</th><th>Status</th><th className={styles.thNum}>Members</th><th className={styles.thNum}>Scans</th></tr></thead>
+            <tbody>
+              {(data?.allOrgs || []).map((o, i) => (
+                <tr key={i}>
+                  <td>{o.name}</td>
+                  <td><span className={styles.roleTag}>{o.status}</span></td>
+                  <td className={styles.num}>{o.members}</td>
+                  <td className={styles.num}>{o.scans}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!(data?.allOrgs || []).length && <div className={styles.empty}>No organizations.</div>}
+        </div>
+      </section>
     </div>
   );
 }

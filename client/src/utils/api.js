@@ -1,8 +1,25 @@
 // In dev, VITE_API_BASE is empty → Vite's proxy routes /api, /outputs, /uploads.
 // In the APK build, we set VITE_API_BASE=https://<public-host> so the WebView
 // can reach the real backend instead of its own (non-existent) origin.
-const API_BASE = import.meta.env.VITE_API_BASE || '';
+let API_BASE = import.meta.env.VITE_API_BASE || '';
 const APP_KEY  = import.meta.env.VITE_APP_KEY  || '';
+
+// Self-heal a common misbuild: the web dist gets built with a LOCALHOST API
+// base (e.g. from a leftover .env.production.local pointing at localhost:3001),
+// then served publicly through a tunnel. On the https tunnel page, every call
+// to http://localhost:3001 is blocked as mixed content → "Load failed"
+// everywhere. If we detect a localhost base but the page is actually served
+// from a real host, drop to same-origin (relative) so the app talks to whatever
+// host is serving it. Native (capacitor://localhost) and real dev on localhost
+// are untouched — they only trigger when the SERVING host is also localhost.
+try {
+  if (typeof window !== 'undefined' && /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(API_BASE)) {
+    const host = window.location.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      API_BASE = '';   // same origin as the served page
+    }
+  }
+} catch (_) { /* non-browser */ }
 
 // Append ?app_key=... to a URL so the server's app-key gate accepts it.
 // The key rides in the query string rather than a header because <img>/<video>/

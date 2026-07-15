@@ -1710,12 +1710,40 @@ app.get('/api/admin/dashboard', auth.requireAuth, (req, res) => {
       FROM audit_log a WHERE a.action='scan.create' AND a.status='ok'
       GROUP BY a.tenant_id ORDER BY scans DESC LIMIT 10`);
 
-    // Action mix — what users are actually doing (ok vs fail per action).
+    // Action mix — EVERY action type (ok vs fail), nothing capped.
     const actions = many(`
       SELECT action,
              SUM(CASE WHEN status='ok'   THEN 1 ELSE 0 END) AS ok,
              SUM(CASE WHEN status='fail' THEN 1 ELSE 0 END) AS fail
-      FROM audit_log GROUP BY action ORDER BY (ok+fail) DESC LIMIT 14`);
+      FROM audit_log GROUP BY action ORDER BY (ok+fail) DESC`);
+
+    // EVERY user with their full activity — role, org, scans, total events,
+    // failures, and when they were last seen.
+    const allUsers = many(`
+      SELECT u.username, u.email, u.role, u.active,
+             (SELECT o.name FROM organizations o WHERE o.id = u.organization_id) AS org,
+             (SELECT COUNT(*) FROM audit_log a WHERE a.user_id = u.id AND a.action='scan.create' AND a.status='ok') AS scans,
+             (SELECT COUNT(*) FROM audit_log a WHERE a.user_id = u.id) AS events,
+             (SELECT COUNT(*) FROM audit_log a WHERE a.user_id = u.id AND a.status='fail') AS fails,
+             (SELECT MAX(a.ts) FROM audit_log a WHERE a.user_id = u.id) AS last_active
+      FROM users u ORDER BY events DESC, scans DESC`);
+
+    // EVERY organization with members + scans + status.
+    const allOrgs = many(`
+      SELECT o.name, o.status,
+             (SELECT COUNT(*) FROM users u WHERE u.organization_id = o.id) AS members,
+             (SELECT COUNT(*) FROM audit_log a WHERE a.action='scan.create' AND a.status='ok'
+                AND a.tenant_id IN (SELECT t.id FROM tenants t WHERE t.organization_id = o.id)) AS scans
+      FROM organizations o ORDER BY scans DESC`);
+
+    // Auth activity.
+    const auth_ = {
+      logins_ok:   one("SELECT COUNT(*) n FROM audit_log WHERE action='auth.login' AND status='ok'").n,
+      logins_fail: one("SELECT COUNT(*) n FROM audit_log WHERE action='auth.login' AND status='fail'").n,
+      signups:     one("SELECT COUNT(*) n FROM audit_log WHERE action LIKE 'auth.signup%' AND status='ok'").n,
+      resets:      one("SELECT COUNT(*) n FROM audit_log WHERE action LIKE 'auth.forgot_password%'").n,
+      invites:     one("SELECT COUNT(*) n FROM audit_log WHERE action='invite.accept'").n,
+    };
 
     res.json({
       ok: true,
@@ -1729,7 +1757,9 @@ app.get('/api/admin/dashboard', auth.requireAuth, (req, res) => {
         right: fbRight, wrong: fbWrong,
         accuracy: (fbRight + fbWrong) ? Math.round(fbRight / (fbRight + fbWrong) * 100) : null,
       },
+      auth: auth_,
       recent, errors, topUsers, byOrg, actions,
+      allUsers, allOrgs,
     });
   } catch (err) {
     logger.error('[dashboard] query failed:', err);

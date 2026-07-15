@@ -192,3 +192,35 @@
 .actionFailNum { color: #c0392b; font-style: normal; font-weight: 600; font-size: 0.72rem; }
 
 .empty { color: var(--muted, #9a9092); font-size: 0.82rem; padding: 8px 0; }
+
+/* ── Authentication strip ── */
+.authRow { display: flex; flex-wrap: wrap; gap: 22px; }
+.authStat { display: flex; flex-direction: column; }
+.authStat b { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.authStat span { font-size: 0.74rem; color: var(--muted, #6b6466); margin-top: 2px; }
+.authFail { color: #c0392b; }
+
+/* ── Full data tables (all users / all orgs) ── */
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.table thead th {
+  text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--muted, #8a8082);
+  padding: 6px 10px; border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.1));
+  white-space: nowrap; position: sticky; top: 0;
+  background: var(--md-surface-container-lowest, #fff);
+}
+.table .thNum { text-align: right; }
+.table td {
+  padding: 7px 10px; border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.05));
+  white-space: nowrap;
+}
+.table tbody tr:hover { background: var(--md-surface-container, rgba(0,0,0,0.03)); }
+.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.dim { color: var(--muted, #8a8082); }
+.roleTag {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 2px 7px; border-radius: 5px;
+  background: var(--md-surface-container, rgba(0,0,0,0.06)); color: var(--md-on-surface-variant, #4c4546);
+}
+.inactive { color: #c0392b; font-size: 0.72rem; font-weight: 600; }
