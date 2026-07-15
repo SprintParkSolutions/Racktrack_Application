@@ -8043,6 +8043,13 @@ app.get('/api/feedback/stats', (req, res) => {
 });
 
 app.get(/^\/(?!api|uploads|outputs).*/, (req, res, next) => {
+  // SPA fallback for client-side routes ONLY. A request that looks like a file
+  // (has an extension, e.g. /assets/TopologyScene3D-abc.js) must NOT fall back
+  // to index.html — express.static already served it if it exists, so reaching
+  // here means it's MISSING (e.g. a stale hashed chunk after a rebuild). Return
+  // 404 so the browser fails cleanly and can reload, instead of getting HTML
+  // where it expects a JS module ("Load failed" on a dynamic import).
+  if (path.extname(req.path)) return next();
   const indexPath = path.join(clientDist, 'index.html');
   if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
   next();
