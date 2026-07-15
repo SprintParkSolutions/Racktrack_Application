@@ -875,7 +875,7 @@ function ConfirmRackButton({ scanId }) {
   );
 }
 
-function AllDevicesView({ devices, labels, rackId, scanId, originalExt, onBack, embedded = false }) {
+export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, onBack, embedded = false }) {
   const navigate = useNavigate();
   const { state } = useLocation();
   const safeDevices = Array.isArray(devices) ? devices : [];

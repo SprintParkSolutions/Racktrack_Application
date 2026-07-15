@@ -86,8 +86,10 @@ export default function MultiRackNewPage() {
       });
       const gJson = await gRes.json().catch(() => ({}));
       if (!gRes.ok || !gJson.groupId) throw new Error(gJson.error || 'Could not link the racks.');
-      setStep('Opening combined view…');
-      navigate(`/multi-rack/${encodeURIComponent(gJson.groupId)}/topology`, { replace: true });
+      setStep('Opening results…');
+      // Land on the normal Overview of the first rack; it renders BOTH racks
+      // side by side because they're in a group.
+      navigate(`/results/${encodeURIComponent(id1)}`, { replace: true });
     } catch (err) {
       setError(err.kind === 'not_a_rack'
         ? "One of the photos doesn't look like a server rack. Point the camera at the front of a rack."
@@ -109,8 +111,10 @@ export default function MultiRackNewPage() {
       if ((data.count || 0) < 2) {
         throw new Error(`Only ${data.count || 0} rack detected — pan across both racks so each is clearly visible.`);
       }
-      setStep('Opening combined view…');
-      navigate(`/multi-rack/${encodeURIComponent(data.groupId)}/topology`, { replace: true });
+      setStep('Opening results…');
+      const firstRack = data.racks?.[0]?.rackId;
+      navigate(firstRack ? `/results/${encodeURIComponent(firstRack)}`
+                         : `/multi-rack/${encodeURIComponent(data.groupId)}/topology`, { replace: true });
     } catch (err) {
       setError(err.message);
       setBusy(false); setStep('');

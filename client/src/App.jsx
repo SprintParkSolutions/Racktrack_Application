@@ -9,6 +9,7 @@ import { useIsDesktop } from './hooks/useIsDesktop';
 import HomePage from './pages/HomePage.jsx';
 import ScanPage from './pages/ScanPage.jsx';
 import ResultsPage from './pages/ResultsPage.jsx';
+import RackResultsRoute from './pages/RackResultsRoute.jsx';
 import PortsPage from './pages/PortsPage.jsx';
 import TopologyPage from './pages/TopologyPage.jsx';
 import NetdiscoPage from './pages/NetdiscoPage.jsx';
@@ -34,7 +35,6 @@ import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import LogsPage from './pages/LogsPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
-import MultiRackReportPage from './pages/MultiRackReportPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
 import { AuthProvider, useAuth } from './AuthContext.jsx';
 import { getPendingScan, clearPendingScan, fetchScanJob } from './utils/pendingScan';
@@ -243,10 +243,6 @@ export default function App() {
             <Route path="/multi-rack/:groupId/topology" element={
               <ProtectedRoute><ResponsiveLayout><MultiRackTopologyPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Side-by-side two-rack report (Overview / Ports / Switches / …). */}
-            <Route path="/multi-rack/:groupId/report" element={
-              <ProtectedRoute><ResponsiveLayout><MultiRackReportPage /></ResponsiveLayout></ProtectedRoute>
-            } />
             <Route path="/profile" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ProfilePage /></ResponsiveLayout></ProtectedRoute>
             } />
@@ -297,7 +293,7 @@ export default function App() {
                 or rack-tab switch in a multi-rack scan), ResultsPage uses
                 useParams + /api/scan/:rackId to populate itself. */}
             <Route path="/results/:rackId" element={
-              <ProtectedRoute><ResponsiveLayout><ResultsPage /></ResponsiveLayout></ProtectedRoute>
+              <ProtectedRoute><ResponsiveLayout><RackResultsRoute /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/results/:rackId/ports" element={
               <ProtectedRoute><ResponsiveLayout><PortsPage /></ResponsiveLayout></ProtectedRoute>
