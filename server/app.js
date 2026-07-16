@@ -198,6 +198,22 @@ app.use('/outputs', express.static(outputsDir));
 app.get('/healthz', o11y.healthHandler);
 app.get('/metrics', o11y.metricsHandler);
 
+// Which build is actually running — no auth, so you can hit
+//   https://<tunnel>/api/version
+// and instantly see the live commit + when the server last started. Ends the
+// "did my push deploy?" guesswork.
+const BUILD_COMMIT = (() => {
+  try {
+    return require('child_process')
+      .execSync('git rev-parse --short HEAD', { cwd: path.join(__dirname, '..') })
+      .toString().trim();
+  } catch { return 'unknown'; }
+})();
+const SERVER_STARTED_AT = new Date().toISOString();
+app.get('/api/version', (req, res) => {
+  res.json({ commit: BUILD_COMMIT, startedAt: SERVER_STARTED_AT });
+});
+
 // Netdisco integration — read-only proxy onto the local Netdisco docker
 // stack so the UI can join scan output with live-network truth (LLDP
 // neighbours, learned MACs, etc). All routes under /api/netdisco/*.
