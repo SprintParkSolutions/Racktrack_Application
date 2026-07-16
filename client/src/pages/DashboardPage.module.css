@@ -178,6 +178,16 @@
 .feedBody { flex: 1; min-width: 0; }
 .feedLine { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
 .feedUser   { font-weight: 700; font-size: 0.86rem; }
+.feedId {
+  font-family: ui-monospace, Menlo, monospace; font-size: 0.66rem; font-weight: 700;
+  color: var(--md-primary, #2563c9); background: rgba(37,99,201,0.09);
+  border-radius: 5px; padding: 1px 6px;
+}
+.feedGuest {
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--muted, #6b6466); background: rgba(0,0,0,0.05); border-radius: 5px; padding: 1px 6px;
+}
+.userId { font-family: ui-monospace, Menlo, monospace; font-size: 0.72rem; font-weight: 700; }
 .feedAction { font-size: 0.86rem; color: var(--md-on-surface-variant, #4c4546); }
 .feedOrg {
   font-size: 0.68rem; font-weight: 600;

@@ -88,6 +88,29 @@ function _ensureColumn(table, col, ddl) {
   }
 }
 
+// Public member-ID prefix by role. owner→OWN, org admin / site manager→ADM,
+// everyone else→USR. The ID (e.g. USR-0142) is assigned once and kept stable
+// even if the user's role later changes.
+function _pubPrefix(role) {
+  if (role === 'owner') return 'OWN';
+  if (role === 'org_admin' || role === 'site_manager') return 'ADM';
+  return 'USR';
+}
+
+// Assign the next sequential public_id for a user's role prefix. Idempotent:
+// a user who already has one keeps it.
+function assignPublicId(userId, role) {
+  const existing = db.prepare('SELECT public_id FROM users WHERE id = ?').get(userId);
+  if (existing && existing.public_id) return existing.public_id;
+  const p = _pubPrefix(role);
+  const row = db.prepare(
+    `SELECT MAX(CAST(SUBSTR(public_id, 5) AS INTEGER)) AS m
+       FROM users WHERE public_id LIKE ?`).get(`${p}-%`);
+  const pid = `${p}-${String((row?.m || 0) + 1).padStart(4, '0')}`;
+  db.prepare('UPDATE users SET public_id = ? WHERE id = ?').run(pid, userId);
+  return pid;
+}
+
 (function migrateTenants() {
   // Default tenant exists exactly once
   let defTenant = db.prepare('SELECT * FROM tenants WHERE slug = ?').get('default');
@@ -194,6 +217,27 @@ function _ensureColumn(table, col, ddl) {
   // Profile avatar: index into the client's preset-avatar set (0-based). Null
   // means "not chosen yet" — the client auto-assigns one from the initial.
   _ensureColumn('users', 'avatar', 'avatar INTEGER');
+  // Stable per-user public ID (member number), role-prefixed (OWN/ADM/USR).
+  // Assigned once and never renumbered. Backfill existing users in id order.
+  _ensureColumn('users', 'public_id', 'public_id TEXT');
+  (function backfillPublicIds() {
+    const counters = { OWN: 0, ADM: 0, USR: 0 };
+    for (const r of db.prepare(
+      "SELECT public_id FROM users WHERE public_id IS NOT NULL AND public_id <> ''").all()) {
+      const m = String(r.public_id).match(/^(OWN|ADM|USR)-(\d+)$/);
+      if (m) counters[m[1]] = Math.max(counters[m[1]], parseInt(m[2], 10));
+    }
+    const need = db.prepare(
+      "SELECT id, role FROM users WHERE public_id IS NULL OR public_id = '' ORDER BY id").all();
+    const upd = db.prepare('UPDATE users SET public_id = ? WHERE id = ?');
+    db.transaction((rows) => {
+      for (const u of rows) {
+        const p = _pubPrefix(u.role);
+        counters[p] += 1;
+        upd.run(`${p}-${String(counters[p]).padStart(4, '0')}`, u.id);
+      }
+    })(need);
+  })();
   // Org lifecycle: owner-created orgs are 'active'; a self-signup creates a
   // 'pending' request the owner must approve before it can add members / scan.
   _ensureColumn('organizations', 'status', "status TEXT NOT NULL DEFAULT 'active'");
@@ -379,8 +423,15 @@ function makeToken(user) {
 }
 
 function publicUser(user, tenant = null) {
+  // Ensure a stable public ID exists (covers users created before this feature
+  // or a moment before the row is serialized).
+  let publicId = user.public_id || null;
+  if (!publicId && user.id) {
+    try { publicId = assignPublicId(user.id, user.role || 'member'); } catch { /* non-fatal */ }
+  }
   const out = {
     id: user.id, email: user.email, username: user.username,
+    public_id: publicId,
     created_at: user.created_at,
     tenant_id: user.tenant_id,
     role: user.role || 'member',

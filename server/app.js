@@ -1755,6 +1755,7 @@ app.get('/api/admin/dashboard', auth.requireAuth, (req, res) => {
     const recent = many(`
       SELECT a.ts,
              COALESCE(NULLIF(a.username,''), json_extract(a.payload,'$.ident')) AS username,
+             (SELECT public_id FROM users u WHERE u.id = a.user_id) AS actor_id,
              CASE WHEN COALESCE(a.username,'') = '' THEN 1 ELSE 0 END AS guest,
              a.action, a.target_id, a.status, a.error, ${orgOf} AS org
       FROM audit_log a ORDER BY a.id DESC LIMIT 80`);
@@ -1791,7 +1792,7 @@ app.get('/api/admin/dashboard', auth.requireAuth, (req, res) => {
     // EVERY user with their full activity — role, org, scans, total events,
     // failures, and when they were last seen.
     const allUsers = many(`
-      SELECT u.username, u.email, u.role, u.active,
+      SELECT u.username, u.email, u.role, u.active, u.public_id,
              (SELECT o.name FROM organizations o WHERE o.id = u.organization_id) AS org,
              (SELECT COUNT(*) FROM audit_log a WHERE a.user_id = u.id AND a.action='scan.create' AND a.status='ok') AS scans,
              (SELECT COUNT(*) FROM audit_log a WHERE a.user_id = u.id) AS events,

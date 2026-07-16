@@ -149,7 +149,10 @@ function OperationsView({ live = true, refreshTick = 0 }) {
                 </span>
                 <div className={styles.feedBody}>
                   <div className={styles.feedLine}>
-                    <span className={styles.feedUser}>{e.username || 'anonymous'}</span>
+                    <span className={styles.feedUser}>{e.username || 'guest'}</span>
+                    {e.actor_id
+                      ? <span className={styles.feedId}>{e.actor_id}</span>
+                      : e.guest ? <span className={styles.feedGuest}>not signed in</span> : null}
                     <span className={styles.feedAction}>{labelFor(e.action)}</span>
                     {e.org && <span className={styles.feedOrg}>{e.org}</span>}
                   </div>
@@ -266,10 +269,11 @@ function OperationsView({ live = true, refreshTick = 0 }) {
         </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <thead><tr><th>User</th><th>Role</th><th>Org</th><th className={styles.thNum}>Scans</th><th className={styles.thNum}>Events</th><th className={styles.thNum}>Fails</th><th>Last active</th></tr></thead>
+            <thead><tr><th>ID</th><th>User</th><th>Role</th><th>Org</th><th className={styles.thNum}>Scans</th><th className={styles.thNum}>Events</th><th className={styles.thNum}>Fails</th><th>Last active</th></tr></thead>
             <tbody>
               {(data?.allUsers || []).map((u, i) => (
                 <tr key={i}>
+                  <td><code className={styles.userId}>{u.public_id || '—'}</code></td>
                   <td>{u.username}{u.active === 0 && <span className={styles.inactive}> · inactive</span>}</td>
                   <td><span className={styles.roleTag}>{u.role}</span></td>
                   <td>{u.org || '—'}</td>
