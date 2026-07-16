@@ -11,9 +11,10 @@ import { useRackGroup } from '../components/useRackGroup';
 // of what you uploaded": a single-rack scan always shows a single report, a
 // two-rack scan shows the group. Membership alone never triggers the group view.
 export function useGroupView(rackId) {
-  const { data, loading, error } = useRackGroup(rackId);
   const [searchParams] = useSearchParams();
   const groupParam = searchParams.get('group');
+  // Pass the expected group so a stale cached `null` is bypassed and refetched.
+  const { data, loading, error } = useRackGroup(rackId, groupParam);
   const members = data?.members || [];
   const isGroup = !!(
     data?.group?.id &&

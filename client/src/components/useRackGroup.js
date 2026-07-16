@@ -12,15 +12,27 @@ const _cache = new Map(); // rackId → { group, members } | null
  * scan this rackId belongs to (if any). When the rack is standalone,
  * `group` is null — callers should treat that as "no rack tabs".
  */
-export function useRackGroup(rackId) {
-  const cached = rackId ? _cache.get(rackId) : undefined;
-  const [data, setData] = useState(cached === undefined ? null : cached);
-  const [loading, setLoading] = useState(cached === undefined);
+// A cached entry is only trustworthy if we aren't expecting a specific group
+// that it doesn't contain. Otherwise a stale `null` (cached when the rack had
+// no group yet, or during the old dedupe behaviour) would hide a real group —
+// which is exactly what made two-rack scans show as single on mobile, where the
+// in-memory cache isn't cleared by a page refresh.
+function _cacheValid(rackId, expectedGroupId) {
+  if (!_cache.has(rackId)) return false;
+  if (!expectedGroupId) return true;
+  const c = _cache.get(rackId);
+  return c?.group?.id === expectedGroupId;
+}
+
+export function useRackGroup(rackId, expectedGroupId = null) {
+  const valid = rackId ? _cacheValid(rackId, expectedGroupId) : false;
+  const [data, setData] = useState(valid ? _cache.get(rackId) : null);
+  const [loading, setLoading] = useState(!valid);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!rackId) { setData(null); setLoading(false); return; }
-    if (_cache.has(rackId)) {
+    if (_cacheValid(rackId, expectedGroupId)) {
       setData(_cache.get(rackId));
       setLoading(false);
       return;
@@ -42,7 +54,7 @@ export function useRackGroup(rackId) {
       }
     })();
     return () => { alive = false; };
-  }, [rackId]);
+  }, [rackId, expectedGroupId]);
 
   return { data, loading, error };
 }
