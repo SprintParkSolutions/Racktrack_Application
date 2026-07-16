@@ -36,6 +36,34 @@
 .title { font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; }
 .id { font-family: ui-monospace, Menlo, monospace; font-size: 0.7rem; color: var(--muted, #8a8082); }
 
+.colBody { min-width: 0; }
+
+/* Topology 2D/3D toggle bar */
+.topoBar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; position: sticky; top: 0; z-index: 6;
+  background: var(--md-surface, #fafafa);
+  border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.08));
+}
+.back {
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
+  border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.12));
+  background: transparent; color: inherit; font-size: 17px; cursor: pointer;
+}
+.topoTitle { font-size: 0.92rem; font-weight: 800; flex: 1; letter-spacing: -0.01em; }
+.toggle {
+  display: inline-flex; gap: 3px; padding: 3px;
+  background: var(--md-surface-container, rgba(0,0,0,0.05)); border-radius: 999px;
+}
+.tglBtn {
+  border: none; background: transparent; cursor: pointer; font-family: inherit;
+  padding: 6px 16px; border-radius: 999px; font-size: 0.82rem; font-weight: 800;
+  color: var(--muted, #6b6466);
+}
+.tglOn { background: var(--md-on-surface, #1a1c1d); color: var(--md-surface-container-lowest, #fff); }
+.scene3d { position: relative; height: calc(100dvh - 56px); }
+.scene3d > * { height: 100%; }
+
 .center { padding: 48px 0; text-align: center; color: var(--muted, #6b6466); }
 .err {
   margin: 16px; padding: 12px 14px; border-radius: 10px;

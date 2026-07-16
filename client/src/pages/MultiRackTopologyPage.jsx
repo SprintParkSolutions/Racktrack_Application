@@ -76,8 +76,9 @@ function usePaletteHook() {
  * Selection is scoped per-rack (a click on rack 2's switch doesn't dim
  * rack 1's devices) by keying selection state on rackId.
  */
-export default function MultiRackTopologyPage() {
-  const { groupId } = useParams();
+export default function MultiRackTopologyPage({ groupId: groupIdProp, hideHeader = false } = {}) {
+  const { groupId: groupIdParam } = useParams();
+  const groupId = groupIdProp || groupIdParam;
   const navigate = useNavigate();
 
   const [group, setGroup] = useState(null);
@@ -243,15 +244,17 @@ export default function MultiRackTopologyPage() {
 
   return (
     <div className={styles.page}>
-      <Header
-        onBack={() => navigate(-1)}
-        title="Combined topology"
-        extra={
-          <span className={styles.groupTag}>
-            {layout.placed.length} {layout.placed.length === 1 ? 'rack' : 'racks'}
-          </span>
-        }
-      />
+      {!hideHeader && (
+        <Header
+          onBack={() => navigate(-1)}
+          title="Combined topology"
+          extra={
+            <span className={styles.groupTag}>
+              {layout.placed.length} {layout.placed.length === 1 ? 'rack' : 'racks'}
+            </span>
+          }
+        />
+      )}
       <main className={styles.fullscreen}>
         <div
           className={styles.canvasShell}

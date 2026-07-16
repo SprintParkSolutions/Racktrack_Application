@@ -678,7 +678,7 @@ function RackElevLegend() {
 
 // Physical rack elevation: numbered U slots (incl. empties), every device at
 // its real U position with its ports, off-rack uplink devices, and cables.
-function RackElevation({ topo, selected, setSelected }) {
+export function RackElevation({ topo, selected, setSelected }) {
   const U = Math.max(1, topo.u_size || 24);
   const U_H = 34, PAD = 18, TITLE_H = 34;
   const GUTTER = 42, RACK_X = PAD + GUTTER, RACK_W = 440, CHANNEL = 80;

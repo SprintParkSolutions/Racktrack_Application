@@ -10,6 +10,8 @@ import HomePage from './pages/HomePage.jsx';
 import ScanPage from './pages/ScanPage.jsx';
 import ResultsPage from './pages/ResultsPage.jsx';
 import RackResultsRoute from './pages/RackResultsRoute.jsx';
+import { RackSwitchesRoute, RackNetworkRoute } from './pages/SideBySideRacks.jsx';
+import RackTopologyRoute from './pages/RackTopologyRoute.jsx';
 import PortsPage from './pages/PortsPage.jsx';
 import TopologyPage from './pages/TopologyPage.jsx';
 import NetdiscoPage from './pages/NetdiscoPage.jsx';
@@ -282,7 +284,7 @@ export default function App() {
               <ProtectedRoute><ResponsiveLayout withBottomNav><SwitchInformationPage /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/switch-info/:rackId" element={
-              <ProtectedRoute><ResponsiveLayout withBottomNav><SwitchInformationPage /></ResponsiveLayout></ProtectedRoute>
+              <ProtectedRoute><ResponsiveLayout withBottomNav><RackSwitchesRoute /></ResponsiveLayout></ProtectedRoute>
             } />
             {/* Old /history URLs redirect to the new combined profile page. */}
             <Route path="/history" element={<Navigate to="/profile" replace />} />
@@ -299,10 +301,10 @@ export default function App() {
               <ProtectedRoute><ResponsiveLayout><PortsPage /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/results/:rackId/topology" element={
-              <ProtectedRoute><ResponsiveLayout><TopologyPage /></ResponsiveLayout></ProtectedRoute>
+              <ProtectedRoute><ResponsiveLayout><RackTopologyRoute /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/results/:rackId/netdisco" element={
-              <ProtectedRoute><ResponsiveLayout><NetdiscoPage /></ResponsiveLayout></ProtectedRoute>
+              <ProtectedRoute><ResponsiveLayout><RackNetworkRoute /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/port-history" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><PortHistoryPage /></ResponsiveLayout></ProtectedRoute>
