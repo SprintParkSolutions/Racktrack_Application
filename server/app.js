@@ -3634,7 +3634,14 @@ app.get('/api/rack-group/:groupId', auth.requireAuth, (req, res) => {
  * top. Returns { ok: true, group: null } when the rack is standalone.
  */
 app.get('/api/rack/:rackId/group', auth.requireAuth, (req, res) => {
-  const groupId = rackGroups.findGroupForRack(req.params.rackId);
+  // A rack can belong to several groups (same photo scanned in multiple
+  // two-rack sessions). Honour an explicit ?group=<id> hint when the rack is
+  // actually a member of it — that's the group the caller just created and is
+  // asking about. Otherwise fall back to the most recent group.
+  const hint = req.query.group ? String(req.query.group) : null;
+  const groupId = (hint && rackGroups.isMember(hint, req.params.rackId))
+    ? hint
+    : rackGroups.findGroupForRack(req.params.rackId);
   if (!groupId) return res.json({ ok: true, group: null });
   const data = rackGroups.get(groupId);
   if (!data) return res.json({ ok: true, group: null });

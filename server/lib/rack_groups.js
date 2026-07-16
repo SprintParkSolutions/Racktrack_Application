@@ -25,7 +25,7 @@ const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
 let _stmtInsertGroup, _stmtInsertMember, _stmtGetGroup, _stmtListMembers,
-    _stmtListGroupsForTenant, _stmtFindGroupForRack;
+    _stmtListGroupsForTenant, _stmtFindGroupForRack, _stmtIsMember;
 function _prep() {
   if (_stmtInsertGroup) return;
   _stmtInsertGroup = db.prepare(
@@ -50,8 +50,19 @@ function _prep() {
       GROUP BY g.id
       ORDER BY g.created_at DESC
       LIMIT ?`);
+  // A rack can belong to SEVERAL groups — the rack id is a fingerprint of the
+  // photo, so re-using the same photo in multiple two-rack scans adds a member
+  // row per group. Always resolve to the MOST RECENT group, otherwise an old
+  // group wins and the caller's freshly-created group is never found.
   _stmtFindGroupForRack = db.prepare(
-    `SELECT group_id FROM rack_group_members WHERE rack_id = ? LIMIT 1`);
+    `SELECT m.group_id
+       FROM rack_group_members m
+       JOIN rack_groups g ON g.id = m.group_id
+      WHERE m.rack_id = ?
+      ORDER BY g.created_at DESC
+      LIMIT 1`);
+  _stmtIsMember = db.prepare(
+    `SELECT 1 FROM rack_group_members WHERE group_id = ? AND rack_id = ? LIMIT 1`);
 }
 
 function create({ tenantId, userId = null, videoHash }) {
@@ -95,4 +106,11 @@ function findGroupForRack(rackId) {
   return r ? r.group_id : null;
 }
 
-module.exports = { create, addMember, get, listForTenant, findGroupForRack };
+// Is this rack a member of this specific group? Lets callers ask for the exact
+// group they just created rather than whichever one findGroupForRack picks.
+function isMember(groupId, rackId) {
+  _prep();
+  return !!_stmtIsMember.get(String(groupId), String(rackId));
+}
+
+module.exports = { create, addMember, get, listForTenant, findGroupForRack, isMember };

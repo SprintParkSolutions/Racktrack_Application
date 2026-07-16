@@ -41,7 +41,10 @@ export function useRackGroup(rackId, expectedGroupId = null) {
     setLoading(true);
     (async () => {
       try {
-        const r = await authFetch(apiUrl(`/api/rack/${encodeURIComponent(rackId)}/group`));
+        // Pass the expected group so the server returns THAT group rather than
+        // whichever one it happens to find first (a rack can be in several).
+        const q = expectedGroupId ? `?group=${encodeURIComponent(expectedGroupId)}` : '';
+        const r = await authFetch(apiUrl(`/api/rack/${encodeURIComponent(rackId)}/group${q}`));
         const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
         const payload = j.group ? { group: j.group, members: j.members || [] } : null;
