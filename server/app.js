@@ -3593,6 +3593,41 @@ app.post('/api/analyze-video', scanLimit, upload.single('video'), async (req, re
   }
 });
 
+// A device-layout signature for a rack, from its analysis output. Two video
+// frames of the SAME physical rack produce the same signature (same devices at
+// the same U positions), even though their frame hashes — and thus RK-ids —
+// differ. Used to collapse duplicate members below.
+function _rackDeviceSig(rackId) {
+  try {
+    const dm = JSON.parse(fs.readFileSync(
+      path.join(outputsDir, String(rackId), 'device_unit_map.json'), 'utf8'));
+    const devs = Array.isArray(dm.devices) ? dm.devices
+               : (dm.units ? Object.values(dm.units) : []);
+    if (!devs.length) return null;
+    const parts = devs.map(d => `${d.class_name || '?'}@${d.u_position ?? '?'}`).sort();
+    return `${devs.length}|${parts.join(',')}`;
+  } catch { return null; }
+}
+
+// A single-rack video sometimes splits into two near-identical best-frames, so
+// the group ends up with two members that are really the SAME rack — which the
+// UI then shows side by side. Collapse members that share a device signature.
+// Image-pair groups (the user explicitly chose distinct photos) are left as-is,
+// and any member we can't read a signature for is kept (never over-collapse).
+function dedupeGroupMembers(group, members) {
+  if (!Array.isArray(members) || members.length < 2) return members;
+  if (String(group?.video_hash || '').startsWith('imgpair-')) return members;
+  const seen = new Set();
+  const out = [];
+  for (const m of members) {
+    const sig = _rackDeviceSig(m.rack_id);
+    if (sig && seen.has(sig)) continue;   // same rack as an earlier frame
+    if (sig) seen.add(sig);
+    out.push(m);
+  }
+  return out.map((m, i) => ({ ...m, position: i + 1 }));
+}
+
 /**
  * GET /api/rack-group/:groupId
  *
@@ -3606,6 +3641,7 @@ app.get('/api/rack-group/:groupId', auth.requireAuth, (req, res) => {
     // 404 not 403 — don't reveal cross-tenant existence
     return res.status(404).json({ error: 'Group not found' });
   }
+  data.members = dedupeGroupMembers(data.group, data.members);
   res.json({ ok: true, ...data });
 });
 
@@ -3626,6 +3662,9 @@ app.get('/api/rack/:rackId/group', auth.requireAuth, (req, res) => {
   if (data.group.tenant_id !== req.user.tenant_id) {
     return res.json({ ok: true, group: null });
   }
+  data.members = dedupeGroupMembers(data.group, data.members);
+  // Collapsed to a single real rack → it's not a multi-rack scan at all.
+  if (data.members.length < 2) return res.json({ ok: true, group: null });
   res.json({ ok: true, ...data });
 });
 
