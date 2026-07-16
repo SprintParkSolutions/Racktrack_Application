@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
-import { useRackGroup } from '../components/useRackGroup';
+import { useGroupView } from '../hooks/useGroupView';
 import TopologyPage, { RackElevation } from './TopologyPage.jsx';
 import MultiRackTopologyPage from './MultiRackTopologyPage.jsx';
 import styles from './SideBySideRacks.module.css';
@@ -13,9 +13,7 @@ import styles from './SideBySideRacks.module.css';
 export default function RackTopologyRoute() {
   const { rackId } = useParams();
   const navigate = useNavigate();
-  const { data, loading } = useRackGroup(rackId);
-  const members = data?.members || [];
-  const isGroup = members.length >= 2;
+  const { data, loading, isGroup, members } = useGroupView(rackId);
 
   const [view, setView] = useState(() => {
     try { return localStorage.getItem('rt_topo_view') || '2d'; } catch { return '2d'; }

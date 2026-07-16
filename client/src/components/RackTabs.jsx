@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './RackTabs.module.css';
-import { useRackGroup } from './useRackGroup';
+import { useGroupView } from '../hooks/useGroupView';
 
 /**
  * RackTabs — when the current rack belongs to a multi-rack scan group,
@@ -18,22 +18,20 @@ import { useRackGroup } from './useRackGroup';
 export default function RackTabs({ rackId }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { data, loading } = useRackGroup(rackId);
+  const { data, loading, isGroup, members, groupParam } = useGroupView(rackId);
 
-  // Only render when there's actually a multi-rack group worth navigating
-  // between. A single-rack "group" (e.g., the splitter only found 1 rack
-  // in a video) would render a meaningless tab strip with one item, so
-  // hide the whole bar when count <= 1.
-  if (loading || !data || !data.members || data.members.length < 2) return null;
-
-  const members = data.members;
-  // Preserve the sub-page suffix when switching racks.
+  // Only render for an actual two-rack scan the user is viewing AS a group
+  // (the ?group signal is present). A single-rack scan — even of a photo that
+  // was once part of a group — never shows the rack strip.
+  if (loading || !isGroup) return null;
+  // Preserve the sub-page suffix + the ?group signal when switching racks.
   //   /results/:rackId             → no suffix (overview)
   //   /results/:rackId/ports       → /ports
   //   /results/:rackId/topology    → /topology
   const segments = location.pathname.split('/').filter(Boolean);
   const rest = segments.slice(2).join('/');
   const suffix = rest ? `/${rest}` : '';
+  const gq = groupParam ? `?group=${encodeURIComponent(groupParam)}` : '';
 
   return (
     <nav className={styles.bar} aria-label="Racks in this scan">
@@ -55,7 +53,7 @@ export default function RackTabs({ rackId }) {
                 className={`${styles.rack} ${isCurrent ? styles.rackActive : ''}`}
                 disabled={isCurrent}
                 onClick={() =>
-                  navigate(`/results/${encodeURIComponent(m.rack_id)}${suffix}`)}
+                  navigate(`/results/${encodeURIComponent(m.rack_id)}${suffix}${gq}`)}
                 title={m.rack_id}
               >
                 <span className={styles.rackBadge} aria-hidden="true">

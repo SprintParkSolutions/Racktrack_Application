@@ -253,15 +253,20 @@ export default function DesktopShell({ children }) {
   // sub-page and showed active everywhere.)
   const onRackRoot  = location.pathname === `/results/${rackId}`;
   const isDriftView = onRackRoot && location.hash === '#drift';
+  // Preserve the ?group signal across the rack's sub-pages so a two-rack scan
+  // keeps its side-by-side / toggle view while navigating. Single scans have no
+  // ?group, so they stay single everywhere.
+  const groupParam = new URLSearchParams(location.search).get('group');
+  const gq = groupParam ? `?group=${encodeURIComponent(groupParam)}` : '';
   const rackLinks = rackId ? [
-    { to: `/results/${rackId}`,           label: 'Overview', icon: <OverviewIcon />, end: true,  active: onRackRoot && !isDriftView },
-    { to: `/results/${rackId}/ports`,     label: 'Ports',    icon: <PortsIcon />,    end: false },
-    { to: `/results/${rackId}/topology`,  label: 'Topology', icon: <TopologyIcon />, end: false },
-    { to: `/results/${rackId}/netdisco`,  label: 'Network',  icon: <NetworkIcon />,  end: false },
-    { to: `/switch-info/${rackId}`,       label: 'Switches', icon: <SwitchesIcon />, end: false },
+    { to: `/results/${rackId}${gq}`,           label: 'Overview', icon: <OverviewIcon />, end: true,  active: onRackRoot && !isDriftView },
+    { to: `/results/${rackId}/ports${gq}`,     label: 'Ports',    icon: <PortsIcon />,    end: false },
+    { to: `/results/${rackId}/topology${gq}`,  label: 'Topology', icon: <TopologyIcon />, end: false },
+    { to: `/results/${rackId}/netdisco${gq}`,  label: 'Network',  icon: <NetworkIcon />,  end: false },
+    { to: `/switch-info/${rackId}${gq}`,       label: 'Switches', icon: <SwitchesIcon />, end: false },
     // Drift has no separate route today — it's a sub-view inside ResultsPage
     // activated by the #drift hash; its active state comes from that hash.
-    { to: `/results/${rackId}#drift`,     label: 'Drift',    icon: <DriftIcon />,    end: false, active: isDriftView },
+    { to: `/results/${rackId}${gq}#drift`,     label: 'Drift',    icon: <DriftIcon />,    end: false, active: isDriftView },
   ] : [];
 
   return createPortal(

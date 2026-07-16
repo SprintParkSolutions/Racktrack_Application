@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useRackGroup } from '../components/useRackGroup';
+import { useGroupView } from '../hooks/useGroupView';
 import { NetdiscoContent } from './NetdiscoPage.jsx';
 import NetdiscoPage from './NetdiscoPage.jsx';
 import { SwitchInfoContent } from './SwitchInformationPage.jsx';
@@ -15,11 +15,11 @@ import styles from './SideBySideRacks.module.css';
 // normal single page.
 export function RackToggle({ Single, render }) {
   const { rackId } = useParams();
-  const { data, loading } = useRackGroup(rackId);
+  const { loading, isGroup, members } = useGroupView(rackId);
   const [active, setActive] = useState(0);
-  const members = data?.members || [];
 
-  if (loading || members.length < 2) return <Single />;
+  // Group view only when the ?group signal is present (two-rack workflow).
+  if (loading || !isGroup) return <Single />;
   const idx = Math.min(active, members.length - 1);
   const m = members[idx];
 

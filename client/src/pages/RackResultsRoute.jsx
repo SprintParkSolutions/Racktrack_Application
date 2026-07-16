@@ -1,5 +1,5 @@
 import { useParams, useLocation } from 'react-router-dom';
-import { useRackGroup } from '../components/useRackGroup';
+import { useGroupView } from '../hooks/useGroupView';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import ResultsPage from './ResultsPage.jsx';
 import { RackToggle } from './SideBySideRacks.jsx';
@@ -14,13 +14,12 @@ import styles from './SideBySideRacks.module.css';
 export default function RackResultsRoute() {
   const { rackId } = useParams();
   const location = useLocation();
-  const { data, loading } = useRackGroup(rackId);
+  const { data, loading, isGroup, members } = useGroupView(rackId);
   const isDesktop = useIsDesktop();
-  const members = data?.members || [];
-  const isGroup = members.length >= 2;
   const isDrift = location.hash === '#drift';
 
-  // Mobile / standalone → normal single page (its own rack switcher + tabs).
+  // Single scan (or no ?group signal) → normal single page. Group view is only
+  // shown when the two-rack workflow opted in via ?group.
   if (loading || !isGroup || !isDesktop) return <ResultsPage />;
   // Drift → toggle between racks (not side by side), same as the other tabs.
   if (isDrift) {

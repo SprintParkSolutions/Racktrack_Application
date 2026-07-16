@@ -87,9 +87,10 @@ export default function MultiRackNewPage() {
       const gJson = await gRes.json().catch(() => ({}));
       if (!gRes.ok || !gJson.groupId) throw new Error(gJson.error || 'Could not link the racks.');
       setStep('Opening results…');
-      // Land on the normal Overview of the first rack; it renders BOTH racks
-      // side by side because they're in a group.
-      navigate(`/results/${encodeURIComponent(id1)}`, { replace: true });
+      // Land on the Overview of the first rack WITH the ?group signal so it
+      // renders both racks side by side. (Without the signal, a rack always
+      // shows as a single report — see useGroupView.)
+      navigate(`/results/${encodeURIComponent(id1)}?group=${encodeURIComponent(gJson.groupId)}`, { replace: true });
     } catch (err) {
       setError(err.kind === 'not_a_rack'
         ? "One of the photos doesn't look like a server rack. Point the camera at the front of a rack."
@@ -113,8 +114,9 @@ export default function MultiRackNewPage() {
       }
       setStep('Opening results…');
       const firstRack = data.racks?.[0]?.rackId;
-      navigate(firstRack ? `/results/${encodeURIComponent(firstRack)}`
-                         : `/multi-rack/${encodeURIComponent(data.groupId)}/topology`, { replace: true });
+      const g = encodeURIComponent(data.groupId);
+      navigate(firstRack ? `/results/${encodeURIComponent(firstRack)}?group=${g}`
+                         : `/multi-rack/${g}/topology`, { replace: true });
     } catch (err) {
       setError(err.message);
       setBusy(false); setStep('');
