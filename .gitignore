@@ -128,6 +128,10 @@ server/.env.key
 acc.md
 apple.txt
 
+# Apple App Store Connect API private key(s) — NEVER commit (grants build upload)
+*.p8
+AuthKey_*.p8
+
 # Runtime server logs DB (LogsPage)
 server/data/logs.db
 server/data/logs.db-shm
