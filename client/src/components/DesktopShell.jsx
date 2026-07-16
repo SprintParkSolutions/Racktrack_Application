@@ -122,13 +122,6 @@ const DashboardIcon = () => (
   </svg>
 );
 
-const LogsIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 4h16v16H4z"/>
-    <path d="M8 9h5M8 12h8M8 15h6"/>
-  </svg>
-);
-
 const TwoRackIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="7" height="18" rx="1"/>
@@ -156,8 +149,7 @@ const PAGE_TITLE = {
   '/port-history':     { title: 'Port history',        sub: 'Change log' },
   '/marketplace':      { title: 'Marketplace',         sub: 'Buy, sell & swap surplus gear' },
   '/marketplace/new':  { title: 'New listing',         sub: 'List surplus equipment' },
-  '/dashboard':        { title: 'Live Operations',     sub: 'Real-time activity & health' },
-  '/logs':             { title: 'Server logs',         sub: 'Live application log' },
+  '/dashboard':        { title: 'Operations Console',  sub: 'Live activity, health & server logs' },
   '/multi-rack/new':   { title: 'Scan two racks',      sub: 'Detect both + the cabling between them' },
 };
 
@@ -190,10 +182,8 @@ export default function DesktopShell({ children }) {
     { to: '/',            label: 'Home',        icon: <HomeIcon />,    end: true  },
     { to: '/scan',        label: 'Scan',        icon: <ScanIcon />,    end: false },
     { to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false },
-    // Live operations dashboard — owner-only.
-    ...(isOwner ? [{ to: '/dashboard', label: 'Live Ops', icon: <DashboardIcon />, end: false }] : []),
-    // Server log viewer — owner-only in nav (server also allows AUDIT_ADMINS).
-    ...(isOwner ? [{ to: '/logs', label: 'Logs', icon: <LogsIcon />, end: false }] : []),
+    // Operations Console (live ops + server logs) — owner-only.
+    ...(isOwner ? [{ to: '/dashboard', label: 'Console', icon: <DashboardIcon />, end: false }] : []),
     // Marketplace is organization-admin only.
     ...(isAdmin ? [{ to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false }] : []),
     { to: '/profile',     label: 'Profile',     icon: <ProfileIcon />, end: false },

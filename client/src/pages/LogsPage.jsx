@@ -117,14 +117,17 @@ function LogDetail({ id }) {
   );
 }
 
-export default function LogsPage() {
+// Embeddable logs view — the shared console (DashboardPage) owns the outer
+// page chrome, the title, and the Live / Refresh controls, and drives this
+// via the `live` and `refreshTick` props. Level filtering and search stay
+// here because they are logs-specific.
+export function LogsView({ live = true, refreshTick = 0 }) {
   const [logs, setLogs]       = useState([]);
   const [stats, setStats]     = useState(null);
   const [total, setTotal]     = useState(0);
   const [level, setLevel]     = useState('');
   const [q, setQ]             = useState('');
   const [queryInput, setQueryInput] = useState('');
-  const [live, setLive]       = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [expanded, setExpanded] = useState(null);
@@ -160,6 +163,8 @@ export default function LogsPage() {
   useEffect(() => { load(); }, [load]);
   // Reload immediately when the level or committed search changes.
   useEffect(() => { load(); }, [level, q, load]);
+  // Reload when the console's Refresh button is pressed.
+  useEffect(() => { if (refreshTick) load(); }, [refreshTick, load]);
   // Poll every 4s while live.
   useEffect(() => {
     const id = setInterval(() => { if (liveRef.current) load(); }, 4000);
@@ -177,35 +182,14 @@ export default function LogsPage() {
   const byLevel = stats?.byLevel || {};
 
   if (loading) {
-    return <div className={styles.page}><div className={styles.center}>Loading logs…</div></div>;
+    return <div className={styles.center}>Loading logs…</div>;
   }
   if (error && !logs.length) {
-    return <div className={styles.page}><div className={styles.center}>{error}</div></div>;
+    return <div className={styles.center}>{error}</div>;
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Server logs</h1>
-          <p className={styles.subtitle}>
-            Live application log — email delivery, errors, and requests as the server records them.
-            {stats?.retentionDays ? ` Kept for ${stats.retentionDays} days.` : ''}
-          </p>
-        </div>
-        <div className={styles.headerRight}>
-          <button
-            className={`${styles.liveBtn} ${live ? styles.liveOn : ''}`}
-            onClick={() => setLive(v => !v)}
-            title={live ? 'Pause auto-refresh' : 'Resume auto-refresh'}
-          >
-            <span className={styles.liveDot} />
-            {live ? 'Live' : 'Paused'}
-          </button>
-          <button className={styles.refreshBtn} onClick={load}>Refresh</button>
-        </div>
-      </div>
-
+    <div className={styles.logsWrap}>
       <div className={styles.tiles}>
         <StatTile label="Total kept" value={stats?.total} />
         <StatTile label="Info"  value={byLevel.info}  tone="info" />
@@ -237,6 +221,7 @@ export default function LogsPage() {
       <div className={styles.countLine}>
         Showing {logs.length}{total > logs.length ? ` of ${total}` : ''} entries
         {q ? ` matching “${q}”` : ''}
+        {stats?.retentionDays ? ` · kept ${stats.retentionDays} days` : ''}
       </div>
 
       <div className={styles.tableWrap}>

@@ -35,7 +35,6 @@ import MarketplacePage from './pages/MarketplacePage.jsx';
 import MarketplaceNewPage from './pages/MarketplaceNewPage.jsx';
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
-import LogsPage from './pages/LogsPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
 import { AuthProvider, useAuth } from './AuthContext.jsx';
@@ -258,10 +257,9 @@ export default function App() {
             <Route path="/dashboard" element={
               <AdminRoute><ResponsiveLayout><DashboardPage /></ResponsiveLayout></AdminRoute>
             } />
-            {/* Server log viewer — same admin gate as the ops dashboard. */}
-            <Route path="/logs" element={
-              <AdminRoute><ResponsiveLayout><LogsPage /></ResponsiveLayout></AdminRoute>
-            } />
+            {/* Logs are now a tab inside the Operations Console; keep the old
+                path working for existing bookmarks. */}
+            <Route path="/logs" element={<Navigate to="/dashboard" replace />} />
             <Route path="/connections" element={
               <AdminRoute><ResponsiveLayout><ConnectionsPage /></ResponsiveLayout></AdminRoute>
             } />

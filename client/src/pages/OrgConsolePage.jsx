@@ -196,7 +196,7 @@ export default function OrgConsolePage() {
         <div className={styles.headActions}>
           <span className={styles.roleBadge}>{roleLabel(user?.role)}</span>
           {isOwner && (
-            <button className={styles.ghostBtn} onClick={() => navigate('/dashboard')}>Live Ops</button>
+            <button className={styles.ghostBtn} onClick={() => navigate('/dashboard')}>Console</button>
           )}
           <button className={styles.ghostBtn} onClick={() => navigate('/')}>App</button>
           <button className={styles.ghostBtn} onClick={logout}>Sign out</button>

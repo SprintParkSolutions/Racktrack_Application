@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { apiUrl, authFetch } from '../utils/api';
+import { LogsView } from './LogsPage.jsx';
 import styles from './DashboardPage.module.css';
 
 // A short, human label for each audit action so the feed reads in plain
@@ -61,12 +62,14 @@ function StatCard({ label, value, sub, tone }) {
   );
 }
 
-export default function DashboardPage() {
+// The operations view — headline stats, live feed, errors, rankings, users,
+// and organizations. The console (below) owns the page chrome and the
+// Live / Refresh controls, driving this via `live` and `refreshTick`.
+function OperationsView({ live = true, refreshTick = 0 }) {
   const [data,    setData]    = useState(null);
   const [error,   setError]   = useState(null);
   const [loading, setLoading] = useState(true);
-  const [live,    setLive]    = useState(true);
-  const [tick,    setTick]    = useState(0);   // re-render so "x ago" stays fresh
+  const [, setTick]           = useState(0);   // re-render so "x ago" stays fresh
   const liveRef = useRef(live);
   liveRef.current = live;
 
@@ -87,6 +90,9 @@ export default function DashboardPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Reload when the console's Refresh button is pressed.
+  useEffect(() => { if (refreshTick) load(); }, [refreshTick, load]);
+
   // Poll every 5s while "live" is on.
   useEffect(() => {
     const id = setInterval(() => { if (liveRef.current) load(); }, 5000);
@@ -100,37 +106,17 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) {
-    return <div className={styles.page}><div className={styles.center}>Loading dashboard…</div></div>;
+    return <div className={styles.center}>Loading dashboard…</div>;
   }
   if (error && !data) {
-    return <div className={styles.page}><div className={styles.center}>{error}</div></div>;
+    return <div className={styles.center}>{error}</div>;
   }
 
   const t  = data?.totals   || {};
   const fb = data?.feedback || {};
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Live Operations</h1>
-          <p className={styles.subtitle}>
-            Everything happening across RackTrack — who's scanning, what's working, what's failing.
-          </p>
-        </div>
-        <div className={styles.headerRight}>
-          <button
-            className={`${styles.liveBtn} ${live ? styles.liveOn : ''}`}
-            onClick={() => setLive(v => !v)}
-            title={live ? 'Auto-refresh on (every 5s)' : 'Auto-refresh paused'}
-          >
-            <span className={styles.liveDot} />
-            {live ? 'Live' : 'Paused'}
-          </button>
-          <button className={styles.refreshBtn} onClick={load}>Refresh</button>
-        </div>
-      </header>
-
+    <div className={styles.opsWrap}>
       {/* Headline stats */}
       <section className={styles.stats}>
         <StatCard label="Scans today"      value={t.scansToday ?? 0} tone="accent" />
@@ -322,6 +308,59 @@ export default function DashboardPage() {
           {!(data?.allOrgs || []).length && <div className={styles.empty}>No organizations.</div>}
         </div>
       </section>
+    </div>
+  );
+}
+
+const TABS = [
+  { key: 'ops',  label: 'Operations', sub: "Everything happening across RackTrack — who's scanning, what's working, what's failing." },
+  { key: 'logs', label: 'Logs',       sub: 'Live application log — email delivery, errors, and requests as the server records them.' },
+];
+
+// The owner console: one place for all operations AND logs. A shared header
+// (title + Live / Refresh) sits above a tab switcher; each tab mounts its own
+// self-contained view, so only the visible tab polls.
+export default function DashboardPage() {
+  const [tab,  setTab]  = useState('ops');
+  const [live, setLive] = useState(true);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const active = TABS.find(t => t.key === tab) || TABS[0];
+
+  return (
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Operations Console</h1>
+          <p className={styles.subtitle}>{active.sub}</p>
+        </div>
+        <div className={styles.headerRight}>
+          <button
+            className={`${styles.liveBtn} ${live ? styles.liveOn : ''}`}
+            onClick={() => setLive(v => !v)}
+            title={live ? 'Auto-refresh on' : 'Auto-refresh paused'}
+          >
+            <span className={styles.liveDot} />
+            {live ? 'Live' : 'Paused'}
+          </button>
+          <button className={styles.refreshBtn} onClick={() => setRefreshTick(n => n + 1)}>Refresh</button>
+        </div>
+      </header>
+
+      <nav className={styles.tabBar}>
+        {TABS.map(t => (
+          <button
+            key={t.key}
+            className={`${styles.tab} ${tab === t.key ? styles.tabActive : ''}`}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
+      {tab === 'ops'
+        ? <OperationsView live={live} refreshTick={refreshTick} />
+        : <LogsView live={live} refreshTick={refreshTick} />}
     </div>
   );
 }
