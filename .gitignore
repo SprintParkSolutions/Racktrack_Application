@@ -132,3 +132,9 @@ apple.txt
 server/data/logs.db
 server/data/logs.db-shm
 server/data/logs.db-wal
+
+# Retraining image artifacts — regenerable training data / run outputs.
+# The retraining .py scripts and .md docs stay tracked; only the data is ignored.
+retraining_learning/Devices_Retraining/temp/
+retraining_learning/Devices_Retraining/runs/
+retraining_learning/Devices_Retraining/review_dataset/images/
