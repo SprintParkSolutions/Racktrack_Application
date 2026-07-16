@@ -174,6 +174,11 @@ export default function DesktopShell({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const crumb = deriveTitle(location.pathname);
+  // These pages render their own full page header (title + controls). Showing
+  // the shell's topbar crumb on top of that produced a duplicate header on
+  // wide screens (iPad landscape / desktop), so we let the page own it.
+  const SELF_HEADED = ['/dashboard', '/marketplace', '/marketplace/new', '/profile'];
+  const selfHeaded = SELF_HEADED.includes(location.pathname);
   const { user } = useAuth();
   const isAdmin = user?.role === 'org_admin' || user?.role === 'owner';
   const isOwner = user?.role === 'owner';
@@ -293,22 +298,24 @@ export default function DesktopShell({ children }) {
 
       {/* ── Main area ───────────────────────────────────────────── */}
       <section className={styles.main}>
-        <header className={styles.topBar}>
-          {location.pathname.endsWith('/ports') && (
-            <button
-              type="button"
-              className={styles.topBack}
-              aria-label="Back"
-              onClick={() => navigate(-1)}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            </button>
-          )}
-          <div className={styles.crumbBlock}>
-            <span className={styles.crumbTitle}>{crumb.title}</span>
-            {crumb.sub && <span className={styles.crumbSub}>{crumb.sub}</span>}
-          </div>
-        </header>
+        {!selfHeaded && (
+          <header className={styles.topBar}>
+            {location.pathname.endsWith('/ports') && (
+              <button
+                type="button"
+                className={styles.topBack}
+                aria-label="Back"
+                onClick={() => navigate(-1)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
+            )}
+            <div className={styles.crumbBlock}>
+              <span className={styles.crumbTitle}>{crumb.title}</span>
+              {crumb.sub && <span className={styles.crumbSub}>{crumb.sub}</span>}
+            </div>
+          </header>
+        )}
 
         <div className={styles.fluid}>{children}</div>
       </section>

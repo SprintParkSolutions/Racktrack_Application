@@ -121,7 +121,7 @@ export default function ConnectionsPage() {
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 className={styles.title}>Connections</h1>
+        <h1 className={styles.title}>Data Sources</h1>
         <ThemeToggle />
       </header>
 

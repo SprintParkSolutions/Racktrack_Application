@@ -168,11 +168,11 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {/* ── Integrations (org admin only) ── */}
+        {/* ── Data Sources (org admin only) ── */}
         {(user?.role === 'owner' || user?.role === 'org_admin') && (
         <section className={styles.section}>
           <div className={styles.sectionHead}>
-            <h3 className={styles.sectionLabel}>Integrations</h3>
+            <h3 className={styles.sectionLabel}>Data Sources</h3>
             <span className={styles.sectionDot} aria-hidden="true"/>
           </div>
           <ul className={styles.rowList}>

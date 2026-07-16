@@ -1748,13 +1748,23 @@ app.get('/api/admin/dashboard', auth.requireAuth, (req, res) => {
     } catch (_) {}
 
     // Live activity feed — most recent events, org-resolved.
+    // Events at the auth gate (sign-in / sign-up / reset) have no logged-in
+    // session, so username is NULL. We fall back to the *attempted* identifier
+    // captured in the payload and flag the row as a guest so the UI can label
+    // it clearly instead of showing a bare "anonymous".
     const recent = many(`
-      SELECT a.ts, a.username, a.action, a.target_id, a.status, a.error, ${orgOf} AS org
+      SELECT a.ts,
+             COALESCE(NULLIF(a.username,''), json_extract(a.payload,'$.ident')) AS username,
+             CASE WHEN COALESCE(a.username,'') = '' THEN 1 ELSE 0 END AS guest,
+             a.action, a.target_id, a.status, a.error, ${orgOf} AS org
       FROM audit_log a ORDER BY a.id DESC LIMIT 80`);
 
     // Recent failures with their error text.
     const errors = many(`
-      SELECT a.ts, a.username, a.action, a.error, ${orgOf} AS org
+      SELECT a.ts,
+             COALESCE(NULLIF(a.username,''), json_extract(a.payload,'$.ident')) AS username,
+             CASE WHEN COALESCE(a.username,'') = '' THEN 1 ELSE 0 END AS guest,
+             a.action, a.error, ${orgOf} AS org
       FROM audit_log a
       WHERE a.status='fail' AND a.error IS NOT NULL AND a.error <> ''
       ORDER BY a.id DESC LIMIT 30`);
