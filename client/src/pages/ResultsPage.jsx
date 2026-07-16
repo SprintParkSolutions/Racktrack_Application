@@ -1083,11 +1083,14 @@ export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, o
 }
 
 // ── Main page ─────────────────────────────────────────────────
-export default function ResultsPage() {
+export default function ResultsPage({ rackId: propRackId = null, embedded: embeddedProp = false } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = location;
-  const { rackId: urlRackId } = useParams();
+  const { rackId: paramRackId } = useParams();
+  // When rendered side-by-side (a rack group), the rackId comes in as a prop
+  // and there's no navigation state — the cold-link fetch path populates it.
+  const urlRackId = propRackId || paramRackId;
   // The in-page tab strip (ScanTabBar) is redundant on desktop because
   // the DesktopShell sidebar already shows the same OVERVIEW / PORTS /
   // TOPOLOGY / NETWORK / SWITCHES / DRIFT links. Mobile keeps it.
@@ -4396,6 +4399,7 @@ export default function ResultsPage() {
          data-device={selectedIdx ? 'sel' : 'none'}>
       <div className={styles.amb} />
 
+      {!embeddedProp && (
       <header className={styles.header}>
         <button className="btn btn-ghost btn-icon" onClick={handleHeaderBack}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -4419,11 +4423,12 @@ export default function ResultsPage() {
         </div>
         <div style={{ width: 40 }} />
       </header>
+      )}
 
       {/* Rack-tab strip — only renders when this rack is part of a multi-rack scan */}
-      <RackTabs rackId={rackId || scanId} />
+      {!embeddedProp && <RackTabs rackId={rackId || scanId} />}
 
-      {!isDesktop && (
+      {!isDesktop && !embeddedProp && (
         <ScanTabBar
           activeTab={tab}
           onTabChange={handleTabChange}
