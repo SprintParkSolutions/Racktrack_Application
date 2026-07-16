@@ -6,6 +6,7 @@ import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import RackTabs from '../components/RackTabs.jsx';
+import StandardFeedback from '../components/StandardFeedback.jsx';
 import { PortsContent } from './PortsPage.jsx';
 import { TopologyContent } from './TopologyPage.jsx';
 import { NetdiscoContent } from './NetdiscoPage.jsx';
@@ -1259,6 +1260,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const [portCountFbStatus, setPortCountFbStatus] = useState('idle');
   const [actualPortCount, setActualPortCount] = useState('');
   const [portCountFbError, setPortCountFbError] = useState(null);
+  // Items the user has already given feedback on THIS session, so the standard
+  // feedback prompts don't re-ask. Keyed per (device, port, kind); reset per scan.
+  const [answeredKeys, setAnsweredKeys] = useState(() => new Set());
+  const markAnswered = (key) => setAnsweredKeys(s => { const n = new Set(s); n.add(key); return n; });
   // Developer diagnostics (timings + confidences)
   const [portTimings, setPortTimings] = useState(null);
   const [devOpen, setDevOpen] = useState(() => {
@@ -2662,6 +2667,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Feedback failed');
+      markAnswered(`${scanId}:p:${selectedIdx}:${portNum}:loc`);
       // Helper: apply a cable-color override to a portInfo object.
       const _applyColor = (pi, color) => {
         if (!pi || !color) return pi;
@@ -2731,6 +2737,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     } catch (err) {
       setFeedbackError(err.message);
       setFeedbackStatus(isCorrect ? 'idle' : 'wrong-port');
+      throw err;   // let StandardFeedback surface the failure
     }
   };
 
@@ -2760,6 +2767,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Feedback failed');
+      markAnswered(`${scanId}:p:${selectedIdx}:${portNum}:cable`);
       // Optimistic: paint the new cable color into portInfo immediately.
       if (!isCorrect && color) {
         setPortInfo(prev => {
@@ -2782,6 +2790,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     } catch (err) {
       setCableFbError(err.message);
       setCableFbStatus(isCorrect ? 'idle' : 'wrong');
+      throw err;
     }
   };
 
@@ -2807,17 +2816,20 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || 'save failed');
       }
+      markAnswered(`${scanId}:p:${selectedIdx}:${portNum}:type`);
       setPortInfo(prev => (prev ? { ...prev, port_type: actualType, _port_type_user: true } : prev));
       setPortTypeStatus('submitted');
       setTimeout(() => setPortTypeStatus('idle'), 2000);
     } catch (err) {
       setPortTypeStatus('error');
+      throw err;
     }
   };
 
-  const submitDeviceFeedback = async (isCorrect) => {
+  const submitDeviceFeedback = async (isCorrect, valueArg = '') => {
     if (!selectedDevice) return;
-    if (!isCorrect && !actualDeviceClass) {
+    const cls = valueArg || actualDeviceClass;   // valueArg from StandardFeedback, else state
+    if (!isCorrect && !cls) {
       setDeviceFbError('Pick the actual device type.');
       return;
     }
@@ -2830,18 +2842,19 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           scanId,
           device_index: selectedIdx,
           is_correct: isCorrect,
-          actual_device_class: isCorrect ? null : actualDeviceClass,
+          actual_device_class: isCorrect ? null : cls,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Feedback failed');
+      markAnswered(`${scanId}:d:${selectedIdx}:class`);
       // Optimistic: reflect the user's device-class correction in the
       // local devices[] so the picker / "Selected Device" line updates
       // without a refresh. Server overlays the same change into
       // scan_result.json via applyFeedbackOverrides.
-      if (!isCorrect && actualDeviceClass) {
+      if (!isCorrect && cls) {
         setDevices(prev => prev.map((d, i) =>
-          (i + 1 === selectedIdx) ? { ...d, class_name: actualDeviceClass } : d
+          (i + 1 === selectedIdx) ? { ...d, class_name: cls, class_name_source: 'user_corrected' } : d
         ));
       }
       setDeviceFbStatus('submitted');
@@ -2853,14 +2866,15 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     } catch (err) {
       setDeviceFbError(err.message);
       setDeviceFbStatus(isCorrect ? 'idle' : 'wrong-pending');
+      throw err;
     }
   };
 
-  const submitPortCountFeedback = async (isCorrect) => {
+  const submitPortCountFeedback = async (isCorrect, valueArg = null) => {
     if (!selectedDevice) return;
     let actualNum = null;
     if (!isCorrect) {
-      const a = parseInt(actualPortCount, 10);
+      const a = parseInt(valueArg != null ? valueArg : actualPortCount, 10);
       if (isNaN(a) || a < 0) {
         setPortCountFbError('Enter a valid port count (0 or more).');
         return;
@@ -2881,6 +2895,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Feedback failed');
+      markAnswered(`${scanId}:d:${selectedIdx}:count`);
       // If the server re-labeled the device with the user's target count,
       // patch the local devices array so the picker reflects the new count
       // immediately — no page refresh needed.
@@ -2909,6 +2924,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     } catch (err) {
       setPortCountFbError(err.message);
       setPortCountFbStatus(isCorrect ? 'idle' : 'wrong-pending');
+      throw err;
     }
   };
 
@@ -3559,40 +3575,20 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           {/* Port-TYPE tag / correction — record the physical port type
               (RJ45 / SFP / USB / …). Feeds active-learning memory + retraining.
               Only shown once a port is selected. */}
-          {portInfo && portInfo.status !== 'invalid' && (
-            <div className={styles.prTypeBlock}>
-              <div className={styles.prTypeHead}>
-                <span className={styles.prTypeLabel}>Port type</span>
-                <span className={styles.prTypeCurrent}>
-                  {portInfo.port_type ? prettyPortType(portInfo.port_type) : 'not tagged'}
-                  {portInfo._port_type_user && <UserTag />}
-                </span>
-                {portTypeStatus !== 'picking' && portTypeStatus !== 'submitted' && (
-                  <button className={styles.prTypeEdit}
-                    onClick={() => setPortTypeStatus('picking')}>
-                    {portInfo.port_type ? 'Wrong? Fix' : 'Set type'}
-                  </button>
-                )}
-              </div>
-              {portTypeStatus === 'submitted' && (
-                <div className={styles.prTypeDone}>Saved — thanks, this trains the model.</div>
-              )}
-              {portTypeStatus === 'error' && (
-                <div className={styles.prTypeErr}>Couldn’t save — try again.</div>
-              )}
-              {portTypeStatus === 'picking' && (
-                <div className={styles.prTypeGrid}>
-                  {PORT_TYPE_OPTIONS.map(t => (
-                    <button key={t}
-                      className={`${styles.prTypeTile} ${portInfo.port_type === t ? styles.prTypeTileOn : ''}`}
-                      onClick={() => submitPortTypeFeedback(t)}
-                      disabled={portTypeStatus === 'submitting'}>
-                      {prettyPortType(t)}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          {portInfo && portInfo.status !== 'invalid' && portInfo.port_type && (
+            <StandardFeedback
+              key={`${scanId}:${selectedIdx}:${portNum}:type`}
+              accent={rc}
+              prompt={`Port type: ${prettyPortType(portInfo.port_type)} — right?`}
+              options={PORT_TYPE_OPTIONS.map(t => ({ value: t, label: prettyPortType(t) }))}
+              otherInput={null}
+              submitLabel="Save"
+              thanks="Saved — thanks, this trains the model."
+              answered={answeredKeys.has(`${scanId}:p:${selectedIdx}:${portNum}:type`) || !!portInfo._port_type_user}
+              answeredText={`Port type: ${prettyPortType(portInfo.port_type)} — you set this`}
+              onYes={async () => { markAnswered(`${scanId}:p:${selectedIdx}:${portNum}:type`); }}
+              onSubmit={(v) => submitPortTypeFeedback(v)}
+            />
           )}
 
           {/* Low-confidence nudge — when the cable read is uncertain (usually a
@@ -3735,165 +3731,34 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           </div>
           )}
 
-          {/* Feedback — clear natural-language question with inline expansion */}
-          {!ticketMode && feedbackStatus !== 'hidden' && (
-            <div className={styles.prFb} style={{ '--ac': rc }}>
-              {feedbackStatus === 'idle' && (
-                <>
-                  <span className={styles.fbPrompt}>
-                    Port {portNum}{selectedDevice?.class_name ? ` on ${selectedDevice.class_name}` : ''}. Right?
-                  </span>
-                  <div className={styles.fbBtnRow}>
-                    <button className={`${styles.fbBtn} ${styles.fbBtnYes}`}
-                      disabled={!selectedDevice || !portNum}
-                      onClick={() => submitFeedback(true)}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      Yes
-                    </button>
-                    <button className={`${styles.fbBtn} ${styles.fbBtnNo}`}
-                      onClick={() => { setFeedbackStatus('wrong-port'); setFeedbackError(null); }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      No
-                    </button>
-                  </div>
-                </>
-              )}
-              {feedbackStatus === 'wrong-port' && (
-                <>
-                  <div className={styles.prFbHead}>
-                    <span className={styles.prFbHeadQ}>Which port is it actually?</span>
-                    <button className={styles.prFbClose}
-                      onClick={() => { setFeedbackStatus('idle'); setActualPortInput(''); setFeedbackError(null); }}
-                      aria-label="Close">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-
-                  {/* Port number only — cable color has its own separate Yes/No block below. */}
-                  <div className={styles.portInputRow}>
-                    <input
-                      className={`input ${styles.portInput}`}
-                      type="text" inputMode="numeric" pattern="[0-9]*"
-                      style={{ '--focus-color': rc }}
-                      placeholder={selectedDevice?.port_count > 0 ? `Port # (1–${selectedDevice.port_count})` : 'Port #'}
-                      value={actualPortInput}
-                      onChange={e => { setActualPortInput(sanitizePortInput(e.target.value)); setFeedbackError(null); }}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && actualPortInput) submitFeedback(false);
-                      }}
-                      autoFocus />
-                    <button
-                      type="button"
-                      className={`btn btn-primary ${styles.findBtn}`}
-                      style={{ '--btn-glow': rc }}
-                      disabled={!actualPortInput}
-                      onClick={() => submitFeedback(false)}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      Submit
-                    </button>
-                  </div>
-                </>
-              )}
-              {feedbackStatus === 'submitting' && (
-                <div className={styles.prFbSaving}>
-                  <span className={styles.btnSpinner} />
-                  <span>Saving…</span>
-                </div>
-              )}
-              {feedbackStatus === 'submitted' && (
-                <div className={styles.prFbDone}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Thanks — feedback saved
-                </div>
-              )}
-              {feedbackError && (
-                <span className={styles.prFbErr}>{feedbackError}</span>
-              )}
-            </div>
+          {/* Port-location feedback — standard Yes/No → dropdown of ports + Other# */}
+          {!ticketMode && selectedDevice && portNum && (
+            <StandardFeedback
+              key={`${scanId}:${selectedIdx}:${portNum}:loc`}
+              accent={rc}
+              prompt={`Port ${portNum}${selectedDevice?.class_name ? ` on ${selectedDevice.class_name}` : ''} — right?`}
+              options={Array.from({ length: Math.max(0, selectedDevice?.port_count || 0) }, (_, i) => ({ value: i + 1, label: `Port ${i + 1}` }))}
+              otherInput="number"
+              answered={answeredKeys.has(`${scanId}:p:${selectedIdx}:${portNum}:loc`) || !!portInfo?._port_shift}
+              answeredText="Port number corrected — you set this"
+              onYes={() => submitFeedback(true)}
+              onSubmit={(v) => submitFeedback(false, { actualPort: parseInt(v, 10) })}
+            />
           )}
 
-          {/* ── Cable color Yes/No — separate prompt, only when port is connected ── */}
-          {!ticketMode
-            && portInfo?.status === 'connected'
-            && portInfo?.cable_color
-            && cableFbStatus !== 'hidden'
-            && feedbackStatus !== 'wrong-port' && (
-            <div className={styles.prFb} style={{ '--ac': rc }}>
-              {cableFbStatus === 'idle' && (
-                <>
-                  <span className={styles.fbPrompt}>
-                    Cable color is {portInfo.cable_color}. Right?
-                  </span>
-                  <div className={styles.fbBtnRow}>
-                    <button className={`${styles.fbBtn} ${styles.fbBtnYes}`}
-                      onClick={() => submitCableFeedback(true)}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      Yes
-                    </button>
-                    <button className={`${styles.fbBtn} ${styles.fbBtnNo}`}
-                      onClick={() => { setCableFbStatus('wrong'); setCableFbError(null); }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      No
-                    </button>
-                  </div>
-                </>
-              )}
-              {cableFbStatus === 'wrong' && (
-                <>
-                  <div className={styles.prFbHead}>
-                    <span className={styles.prFbHeadQ}>What color is the cable?</span>
-                    <button className={styles.prFbClose}
-                      onClick={() => { setCableFbStatus('idle'); setCableFbColor(''); setCableFbError(null); }}
-                      aria-label="Close">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-                  <div className={styles.prColorGrid}>
-                    {CABLE_COLOR_OPTIONS.map(c => {
-                      const isSel = cableFbColor === c;
-                      return (
-                        <button key={c}
-                          type="button"
-                          className={`${styles.prColorTile} ${isSel ? styles.prColorTileOn : ''}`}
-                          style={{ '--c': cableColorCSS(c) }}
-                          onClick={() => { setCableFbColor(c); setCableFbError(null); }}>
-                          <span className={styles.prColorSwatch} />
-                          <span className={styles.prColorName}>{c}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                    <button
-                      type="button"
-                      className={`btn btn-primary ${styles.findBtn}`}
-                      style={{ '--btn-glow': rc }}
-                      disabled={!cableFbColor}
-                      onClick={() => submitCableFeedback(false, cableFbColor)}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      Submit
-                    </button>
-                  </div>
-                </>
-              )}
-              {cableFbStatus === 'submitting' && (
-                <div className={styles.prFbSaving}>
-                  <span className={styles.btnSpinner} />
-                  <span>Saving…</span>
-                </div>
-              )}
-              {cableFbStatus === 'submitted' && (
-                <div className={styles.prFbDone}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Thanks — cable feedback saved
-                </div>
-              )}
-              {cableFbError && (
-                <span className={styles.prFbErr}>{cableFbError}</span>
-              )}
-            </div>
+          {/* Cable-colour feedback — standard Yes/No → colour dropdown + Other */}
+          {!ticketMode && portInfo?.status === 'connected' && portInfo?.cable_color && (
+            <StandardFeedback
+              key={`${scanId}:${selectedIdx}:${portNum}:cable`}
+              accent={rc}
+              prompt={`Cable colour is ${portInfo.cable_color} — right?`}
+              options={CABLE_COLOR_OPTIONS.map(c => ({ value: c, label: c }))}
+              otherInput="text"
+              answered={answeredKeys.has(`${scanId}:p:${selectedIdx}:${portNum}:cable`)}
+              answeredText={`Cable colour: ${portInfo.cable_color} — you set this`}
+              onYes={() => submitCableFeedback(true)}
+              onSubmit={(v) => submitCableFeedback(false, v)}
+            />
           )}
 
           {/* Jump to another port — optional type switch, then a compact input.
@@ -4868,72 +4733,19 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           </div>
         )}
 
-        {/* Device-classification feedback — shown below the port picker */}
-        {selectedDevice && deviceFbStatus !== 'hidden' && (
-          <div className={styles.fbCard} style={{ '--ac': selColor }}>
-            {deviceFbStatus === 'idle' && (
-              <>
-                <span className={styles.fbPrompt}>
-                  Detected as {selectedDevice.class_name}. Right?
-                </span>
-                <div className={styles.fbBtnRow}>
-                  <button className={`${styles.fbBtn} ${styles.fbBtnYes}`}
-                    onClick={() => submitDeviceFeedback(true)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    Yes
-                  </button>
-                  <button className={`${styles.fbBtn} ${styles.fbBtnNo}`}
-                    onClick={() => { setDeviceFbStatus('wrong-pending'); setDeviceFbError(null); }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    No
-                  </button>
-                </div>
-              </>
-            )}
-            {deviceFbStatus === 'wrong-pending' && (
-              <>
-                <span className={styles.fbPrompt}>What's the actual device type?</span>
-                <div className={styles.fbInputRow}>
-                  <select className={`input ${styles.fbInput}`}
-                    style={{ '--focus-color': selColor }}
-                    value={actualDeviceClass}
-                    onChange={e => { setActualDeviceClass(e.target.value); setDeviceFbError(null); }}
-                    autoFocus>
-                    <option value="">Pick actual type…</option>
-                    {DEVICE_CLASS_OPTIONS.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                    {/* For devices that aren't any known type (and can't be
-                        identified) — lets the tech still mark the detection
-                        wrong without forcing a label they can't verify. */}
-                    <option value="Other">Other / Unknown</option>
-                  </select>
-                  <button className={`${styles.fbBtn} ${styles.fbBtnSubmit}`}
-                    style={{ '--btn-glow': selColor }}
-                    disabled={!actualDeviceClass}
-                    onClick={() => submitDeviceFeedback(false)}>
-                    Submit
-                  </button>
-                  <button className={`${styles.fbBtn} ${styles.fbBtnCancel}`}
-                    onClick={() => { setDeviceFbStatus('idle'); setActualDeviceClass(''); setDeviceFbError(null); }}>
-                    Cancel
-                  </button>
-                </div>
-              </>
-            )}
-            {deviceFbStatus === 'submitting' && (
-              <span className={styles.fbPrompt}>Saving…</span>
-            )}
-            {deviceFbStatus === 'submitted' && (
-              <span className={styles.fbDone}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Thanks — device feedback saved
-              </span>
-            )}
-            {deviceFbError && (
-              <span className={styles.fbErr}>{deviceFbError}</span>
-            )}
-          </div>
+        {/* Device-classification feedback — standard Yes/No → type dropdown + Other */}
+        {selectedDevice && (
+          <StandardFeedback
+            key={`${scanId}:${selectedIdx}:class`}
+            accent={selColor}
+            prompt={`Detected as ${selectedDevice.class_name} — right?`}
+            options={DEVICE_CLASS_OPTIONS.map(c => ({ value: c, label: c }))}
+            otherInput="text"
+            answered={answeredKeys.has(`${scanId}:d:${selectedIdx}:class`) || selectedDevice.class_name_source === 'user_corrected'}
+            answeredText={`Device: ${selectedDevice.class_name} — you set this`}
+            onYes={() => submitDeviceFeedback(true)}
+            onSubmit={(v) => submitDeviceFeedback(false, v)}
+          />
         )}
 
         {/* Port-count feedback — shown independently once the device feedback is
@@ -4941,74 +4753,30 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             the chain robust even if the device fb is skipped. PDUs have power
             outlets, not RJ45 ports, so the "Detected N RJ45 ports" confirmation
             is irrelevant for them — the Power card already summarises outlets. */}
-        {selectedDevice && !isPdu(selectedDevice) && (deviceFbStatus === 'hidden' || deviceFbStatus === 'submitted') && portCountFbStatus !== 'hidden' && (
-          <div className={styles.fbCard} style={{ '--ac': selColor }}>
-            {portCountFbStatus === 'idle' && (
-              <>
-                <span className={styles.fbPrompt}>
-                  {(() => {
-                    const rj = selectedDevice.port_count ?? 0;
-                    const total = totalPortCount(selectedDevice);
-                    const breakdown = portBreakdown(selectedDevice); // e.g. "48 RJ45 · 4 SFP · 1 USB"
-                    // Mixed port types → lead with the total, then spell out every
-                    // detected type so it's clear all of them are being confirmed.
-                    if (total > rj && breakdown) {
-                      return `Detected ${total} total port${total === 1 ? '' : 's'} (${breakdown.replace(/ · /g, ', ')}). Right?`;
-                    }
-                    return `Detected ${rj} RJ45 port${rj === 1 ? '' : 's'}. Right?`;
-                  })()}
-                </span>
-                <div className={styles.fbBtnRow}>
-                  <button className={`${styles.fbBtn} ${styles.fbBtnYes}`}
-                    onClick={() => submitPortCountFeedback(true)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    Yes
-                  </button>
-                  <button className={`${styles.fbBtn} ${styles.fbBtnNo}`}
-                    onClick={() => { setPortCountFbStatus('wrong-pending'); setPortCountFbError(null); }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    No
-                  </button>
-                </div>
-              </>
-            )}
-            {portCountFbStatus === 'wrong-pending' && (
-              <>
-                <span className={styles.fbPrompt}>What's the actual port count?</span>
-                <div className={styles.fbInputRow}>
-                  <input className={`input ${styles.fbInput}`} type="number" min="0"
-                    style={{ '--focus-color': selColor }}
-                    placeholder="e.g. 24"
-                    value={actualPortCount}
-                    onChange={e => { setActualPortCount(e.target.value); setPortCountFbError(null); }}
-                    onKeyDown={e => e.key === 'Enter' && actualPortCount !== '' && submitPortCountFeedback(false)}
-                    autoFocus />
-                  <button className={`${styles.fbBtn} ${styles.fbBtnSubmit}`}
-                    style={{ '--btn-glow': selColor }}
-                    disabled={actualPortCount === ''}
-                    onClick={() => submitPortCountFeedback(false)}>
-                    Submit
-                  </button>
-                  <button className={`${styles.fbBtn} ${styles.fbBtnCancel}`}
-                    onClick={() => { setPortCountFbStatus('idle'); setActualPortCount(''); setPortCountFbError(null); }}>
-                    Cancel
-                  </button>
-                </div>
-              </>
-            )}
-            {portCountFbStatus === 'submitting' && (
-              <span className={styles.fbPrompt}>Saving…</span>
-            )}
-            {portCountFbStatus === 'submitted' && (
-              <span className={styles.fbDone}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Thanks — port-count feedback saved
-              </span>
-            )}
-            {portCountFbError && (
-              <span className={styles.fbErr}>{portCountFbError}</span>
-            )}
-          </div>
+        {/* Port-count feedback — standard Yes/No → count dropdown + Other#. Shown
+            after the device-class question is answered (keeps it to one prompt at
+            a time). PDUs have power outlets, not RJ45 ports, so it's skipped. */}
+        {selectedDevice && !isPdu(selectedDevice)
+          && (answeredKeys.has(`${scanId}:d:${selectedIdx}:class`) || selectedDevice.class_name_source === 'user_corrected') && (
+          <StandardFeedback
+            key={`${scanId}:${selectedIdx}:count`}
+            accent={selColor}
+            prompt={(() => {
+              const rj = selectedDevice.port_count ?? 0;
+              const total = totalPortCount(selectedDevice);
+              const breakdown = portBreakdown(selectedDevice);
+              if (total > rj && breakdown) {
+                return `Detected ${total} total port${total === 1 ? '' : 's'} (${breakdown.replace(/ · /g, ', ')}) — right?`;
+              }
+              return `Detected ${rj} RJ45 port${rj === 1 ? '' : 's'} — right?`;
+            })()}
+            options={[8, 12, 16, 24, 48].map(n => ({ value: n, label: `${n} ports` }))}
+            otherInput="number"
+            answered={answeredKeys.has(`${scanId}:d:${selectedIdx}:count`)}
+            answeredText="Port count corrected — you set this"
+            onYes={() => submitPortCountFeedback(true)}
+            onSubmit={(v) => submitPortCountFeedback(false, parseInt(v, 10))}
+          />
         )}
 
         {error && (
