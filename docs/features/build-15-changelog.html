@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>RackTrack — Build 11 Changelog &amp; Technical Summary</title>
+<title>RackTrack — Build 15 Changelog &amp; Technical Summary</title>
 <style>
   :root{
     --paper:#ffffff; --panel:#fafafa; --panel-2:#f4f5f4;
@@ -119,24 +119,26 @@
 
   <header>
     <div class="kicker">RackTrack · Engineering changelog</div>
-    <h1>Build 11 — Technical Summary</h1>
-    <p class="sub">A detailed record of the nine improvements shipped on July 15, 2026 — what each does, how it works under the hood, and the files, endpoints, and models involved.</p>
+    <h1>Build 15 — Technical Summary</h1>
+    <p class="sub">The current state of RackTrack as shipped to testers. Builds 12–15 unified the two-rack workflow into the standard single-rack screens and hardened web delivery over the ngrok tunnel; the vision, active-learning, dashboard, and procurement work from build 11 all carry forward unchanged.</p>
     <div class="meta">
       <span class="badge ship">✓ Shipped to testers</span>
-      <span class="badge plain">iOS build 11</span>
-      <span class="badge plain">Android versionCode 11</span>
-      <span class="badge plain">July 15, 2026</span>
+      <span class="badge plain">iOS build 15</span>
+      <span class="badge plain">Android versionCode 15</span>
+      <span class="badge plain">July 16, 2026</span>
     </div>
   </header>
 
   <div class="toc">
     <h4>Contents</h4>
     <ol>
+      <li><a href="#tworack">Two racks, in the same screens</a></li>
+      <li><a href="#interrack">Inter-rack topology (2D &amp; 3D)</a></li>
+      <li><a href="#web">Web delivery over the tunnel</a></li>
       <li><a href="#cable">Cable identification on every port</a></li>
       <li><a href="#porttype">Port-type correction (active learning)</a></li>
       <li><a href="#confirm">Confirmed-rack bypass</a></li>
       <li><a href="#nonrack">Non-rack input guard</a></li>
-      <li><a href="#tworack">Two-rack scan &amp; inter-rack topology</a></li>
       <li><a href="#dashboard">Live Operations dashboard</a></li>
       <li><a href="#camera">Camera &amp; video fixes</a></li>
       <li><a href="#sfp">SFP procurement advisor</a></li>
@@ -146,10 +148,89 @@
   </div>
 
   <!-- 1 -->
+  <section id="tworack">
+    <div class="sec-eyebrow">01 — New in build 15</div>
+    <h2>Two racks, in the <span class="em">same screens</span></h2>
+    <p class="sec-lead">Scanning two racks — as two photos or one video — now runs the exact same pipeline and the exact same screens as a single rack. There are no separate multi-rack pages to learn: every tab simply shows two racks instead of one.</p>
+
+    <h3><span class="chip g">What it does</span> One rack becomes two, everywhere</h3>
+    <ul class="plain">
+      <li><span class="lbl">Overview</span> — on desktop, the full Scan-Results view (rack photo + device boxes + device picker) is shown for <span class="lbl">both racks side by side</span>, each in its own column with the photo stacked full-width above its picker. On a phone, the two racks share one column with a <span class="lbl">Rack 1 / Rack 2</span> toggle.</li>
+      <li><span class="lbl">Ports, Switches, Network, Drift</span> — each keeps its normal single-rack layout with a <span class="lbl">Rack 1 / Rack 2</span> pill toggle at the top to switch which rack you're looking at (one at a time, so the live port probe never double-counts).</li>
+      <li>Nothing about the single-rack experience changed — a standalone rack still opens exactly as before.</li>
+    </ul>
+
+    <h3><span class="chip g">How it works</span> Reuse the page, gate the chrome</h3>
+    <ul class="plain">
+      <li>Racks scanned together are grouped (<code>rack_groups</code> / <code>rack_group_members</code>); a <code>useRackGroup(rackId)</code> hook tells each screen whether it's part of a pair.</li>
+      <li>The Results page and each tab's content were factored into <span class="lbl">chrome-free content components</span> that accept a <code>rackId</code> and an <code>embedded</code> flag. Route wrappers render that content once per rack — side by side (Overview, desktop) or behind a toggle (all other tabs, and mobile Overview) — so a single code path drives both the one-rack and two-rack views.</li>
+    </ul>
+
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Grouping</th><td><span class="mono">rack_groups</span> / <span class="mono">rack_group_members</span> tables · <span class="mono">POST /api/rack-groups</span> · <span class="mono">useRackGroup()</span> hook</td></tr>
+        <tr><th>Overview</th><td><span class="mono">RackResultsRoute.jsx</span> — desktop side-by-side vs. mobile / Drift toggle; <span class="mono">ResultsPage.jsx</span> takes <span class="mono">{ rackId, embedded }</span> and hides its own header/tabs when embedded</td></tr>
+        <tr><th>Tabbed views</th><td><span class="mono">SideBySideRacks.jsx</span> — <span class="mono">RackToggle</span> + route wrappers over the exported <span class="mono">PortsContent</span> / <span class="mono">SwitchInfoContent</span> / <span class="mono">NetdiscoContent</span></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section id="interrack">
+    <div class="sec-eyebrow">02 — New in build 15</div>
+    <h2>Inter-rack topology, in <span class="em">both</span> 2D and 3D</h2>
+    <p class="sec-lead">The topology tab shows the two racks together and draws the cabling that runs between them — in a combined 3D scene and in the flat 2D elevation.</p>
+
+    <h3><span class="chip b">What it does</span> See the link between the racks</h3>
+    <ul class="plain">
+      <li><span class="lbl">3D</span> — both racks are rendered in one space with the uplink cables spanning between them, anchored to the real switch ports (tube geometry + connector plugs).</li>
+      <li><span class="lbl">2D</span> — each rack's flat elevation sits side by side with a <span class="lbl">connector rail</span> down the gap and an <span class="lbl">Inter-rack connections</span> panel listing every cross-rack cable: role, source rack · device · port ⇄ destination rack · device · port, and cable type (fibre in amber, DAC in blue).</li>
+      <li>A single <span class="lbl">2D / 3D toggle</span> sits above both racks; the choice is remembered.</li>
+    </ul>
+
+    <h3><span class="chip b">How it works</span> Realistic synthesised uplinks</h3>
+    <ul class="plain">
+      <li>Most cabling stays inside each rack; only a realistic handful (2–3 core/ToR uplinks, capped at 5) cross between racks — derived deterministically from the in-rack switches with a <code>u_position</code>, so the same racks always produce the same wiring.</li>
+      <li>Each link endpoint carries <code>{ rackId, device, port, u_position, endRole }</code>, letting the 3D scene anchor cables to the exact port face and the 2D panel label each end precisely.</li>
+      <li>Optionally pushed to ServiceNow CMDB as dummy “Connects to” relationships between the two racks' switch CIs.</li>
+    </ul>
+
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Endpoint</th><td><span class="mono">GET /api/rack-group/:id/links</span> — <span class="mono">deriveInterRackLinks()</span> in <span class="mono">server/app.js</span></td></tr>
+        <tr><th>3D</th><td><span class="mono">MultiRackTopologyPage.jsx</span> — spanning tube cables + <span class="mono">CablePlug</span> connectors anchored via <span class="mono">computePortPositions()</span></td></tr>
+        <tr><th>2D</th><td><span class="mono">RackTopologyRoute.jsx</span> — two <span class="mono">RackElevation</span> columns + connector rail + connections panel</td></tr>
+        <tr><th>CMDB</th><td><span class="mono">servicenow/cmdb_interrack_link.py</span> — best-effort “Connects to” push</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section id="web">
+    <div class="sec-eyebrow">03 — Reliability</div>
+    <h2>Web delivery over the <span class="em">tunnel</span></h2>
+    <p class="sec-lead">Two fixes that made the browser build load reliably when served from the Windows GPU box through the permanent ngrok domain.</p>
+    <ul class="plain">
+      <li><span class="lbl">Self-healing API base.</span> If a build was compiled with an API base pointing at <code>localhost</code> but the page is being served from a real host, the client drops to same-origin at runtime — so an accidental <code>.env.production.local</code> can no longer cause mixed-content “Load failed” errors on the https page.</li>
+      <li><span class="lbl">Single JS bundle.</span> The Vite build inlines dynamic imports into one bundle, so the ngrok browser-warning interstitial can't break a lazily-loaded chunk mid-navigation; a SPA fallback serves <code>index.html</code> for unmatched routes.</li>
+    </ul>
+    <div class="hood hood-scroll">
+      <table>
+        <caption>Under the hood</caption>
+        <tr><th>Client</th><td>Same-origin self-heal in <span class="mono">client/src/utils/api.js</span></td></tr>
+        <tr><th>Build</th><td><span class="mono">inlineDynamicImports: true</span> in <span class="mono">vite.config</span> · SPA fallback for unmatched paths</td></tr>
+      </table>
+    </div>
+    <div class="note"><span class="lbl">Owner tooling:</span> a <span class="mono">Logs</span> page surfaces the server-side action log directly in the app for the owner account, complementing the Live Ops dashboard.</div>
+  </section>
+
+  <!-- 4 -->
   <section id="cable">
-    <div class="sec-eyebrow">01 — Vision / Active learning</div>
+    <div class="sec-eyebrow">04 — Vision / Active learning</div>
     <h2>Cable identification on <span class="em">every</span> connected port</h2>
-    <p class="sec-lead">Previously the app only classified the cable in the single port a user tapped. Now it identifies the connector and colour of the cable in every occupied port of the rack.</p>
+    <p class="sec-lead">The app identifies the connector and colour of the cable in every occupied port of the rack — not just the single port a user taps.</p>
 
     <h3><span class="chip g">What it does</span> Whole-rack cable inventory</h3>
     <p>After a scan completes, each connected port is tagged with its cable <span class="lbl">type</span>, <span class="lbl">connector</span> (RJ-45, LC, SC…) and <span class="lbl">colour</span>. The device cards show these grouped as chips — e.g. <em>RJ-45 Blue ×12</em>, <em>LC Aqua ×2</em> — with a real colour swatch.</p>
@@ -157,26 +238,26 @@
     <h3><span class="chip g">How it works</span> Background enrichment</h3>
     <ul class="plain">
       <li>Runs as a <span class="lbl">background pass</span> after analyze, so the scan response stays fast; chips appear a moment later once enrichment lands.</li>
-      <li>Reuses the existing cable classifier and the exact 4× crop recipe already used for the single-port path — applied to every port whose status is <code>connected</code> (RJ-45 on copper, LC/SC on fibre). Empty and synthesised “ghost” ports are never given a fake cable.</li>
+      <li>Reuses the existing cable classifier and the exact 4× crop recipe already used for the single-port path — applied to every port whose status is <code>connected</code>. Empty and synthesised “ghost” ports are never given a fake cable.</li>
       <li>Idempotent — a <code>cables_enriched</code> flag prevents redundant re-runs.</li>
     </ul>
 
     <div class="hood hood-scroll">
       <table>
         <caption>Under the hood</caption>
-        <tr><th>Pipeline</th><td><span class="mono">pipeline/runner.py</span> — new <span class="mono">enrich_cables_on_map()</span> + <span class="mono">--enrich_cables</span> mode; worker command <span class="mono">enrich_cables</span> in <span class="mono">pipeline/worker.py</span></td></tr>
+        <tr><th>Pipeline</th><td><span class="mono">pipeline/runner.py</span> — <span class="mono">enrich_cables_on_map()</span> + <span class="mono">--enrich_cables</span> mode</td></tr>
         <tr><th>Classifier</th><td><span class="mono">pipeline/cable.py</span> · model <span class="mono">Models/cable_eff_best</span> (EfficientNet-B0, connector+colour)</td></tr>
-        <tr><th>Server</th><td><span class="mono">scheduleCableEnrichment(rackId)</span> in <span class="mono">server/app.js</span>, fired from the canonical refresh; rewrites <span class="mono">scan_result.json</span> when done</td></tr>
-        <tr><th>Client</th><td><span class="mono">cableChips()</span> + per-device chips in <span class="mono">ResultsPage.jsx</span>; short poll so enrichment appears without a manual refresh</td></tr>
+        <tr><th>Server</th><td><span class="mono">scheduleCableEnrichment(rackId)</span> in <span class="mono">server/app.js</span>; rewrites <span class="mono">scan_result.json</span> when done</td></tr>
+        <tr><th>Client</th><td><span class="mono">cableChips()</span> + per-device chips in <span class="mono">ResultsPage.jsx</span></td></tr>
       </table>
     </div>
   </section>
 
-  <!-- 2 -->
+  <!-- 5 -->
   <section id="porttype">
-    <div class="sec-eyebrow">02 — Vision / Active learning</div>
+    <div class="sec-eyebrow">05 — Vision / Active learning</div>
     <h2>Port-type correction that <span class="em">sticks</span></h2>
-    <p class="sec-lead">Technicians can now correct a port's physical type, and the system remembers and re-applies that correction on future scans of the same port.</p>
+    <p class="sec-lead">Technicians can correct a port's physical type, and the system remembers and re-applies that correction on future scans of the same port.</p>
 
     <h3><span class="chip v">What it does</span> Tag &amp; correct the port type</h3>
     <p>In the selected-port panel, a control lets the user set/correct the physical type from nine options — <span class="mono">RJ45, SFP, QSFP, CONSOLE, AUX, MANAGEMENT_PORT, USB_A, USB_B, USB_C</span>. Each correction is saved and feeds retraining.</p>
@@ -192,15 +273,14 @@
         <caption>Under the hood</caption>
         <tr><th>Store</th><td><span class="mono">port_type</span> added to <span class="mono">VALID_MODELS</span> in <span class="mono">pipeline/active_learning/store.py</span></td></tr>
         <tr><th>Endpoint</th><td><span class="mono">POST /api/feedback/port-type</span> — crops the port, logs feedback, fires the memory correction</td></tr>
-        <tr><th>Consumption</th><td><span class="mono">pipeline/runner.py</span> select path — <span class="mono">find_match("port_type", crop)</span> applies the learned type</td></tr>
-        <tr><th>Client</th><td>Port-type tag/correct control in <span class="mono">ResultsPage.jsx</span></td></tr>
+        <tr><th>Consumption</th><td><span class="mono">pipeline/runner.py</span> select path — <span class="mono">find_match("port_type", crop)</span></td></tr>
       </table>
     </div>
   </section>
 
-  <!-- 3 -->
+  <!-- 6 -->
   <section id="confirm">
-    <div class="sec-eyebrow">03 — Vision / Active learning</div>
+    <div class="sec-eyebrow">06 — Vision / Active learning</div>
     <h2>Stop re-detecting a rack you've <span class="em">already confirmed</span></h2>
     <p class="sec-lead">Once a technician confirms a rack is correct, re-scanning it serves the confirmed result instantly instead of re-running detection.</p>
 
@@ -209,26 +289,25 @@
 
     <h3><span class="chip b">How it works</span> A perceptual cache</h3>
     <ul class="plain">
-      <li>Extends RackTrack's existing content-hash cache into a <span class="lbl">perceptual</span> one: a re-shot photo gets a new content hash (misses the plain cache), but a perceptual hash + ResNet embedding match it to the confirmed rack.</li>
+      <li>Extends RackTrack's content-hash cache into a <span class="lbl">perceptual</span> one: a re-shot photo gets a new content hash (misses the plain cache), but a perceptual hash + ResNet embedding match it to the confirmed rack.</li>
       <li><span class="lbl">Safety:</span> deliberately strict (near-duplicate only, 0.96 embedding threshold), organisation-scoped, and only paid for when the org actually has confirmed racks. A <code>forceFresh</code> flag always allows a fresh detection.</li>
     </ul>
 
     <div class="hood hood-scroll">
       <table>
         <caption>Under the hood</caption>
-        <tr><th>Store</th><td><span class="mono">add_confirmed_rack</span> / <span class="mono">find_confirmed_rack</span> in <span class="mono">store.py</span> (pHash + embedding); CLI commands in <span class="mono">cli.py</span></td></tr>
+        <tr><th>Store</th><td><span class="mono">add_confirmed_rack</span> / <span class="mono">find_confirmed_rack</span> in <span class="mono">store.py</span> (pHash + embedding)</td></tr>
         <tr><th>Endpoint</th><td><span class="mono">POST /api/scan/:rackId/confirm-layout</span></td></tr>
         <tr><th>Bypass</th><td>Guarded lookup in <span class="mono">/api/analyze</span> (<span class="mono">hasConfirmedRacks()</span> gate + <span class="mono">forceFresh</span> escape); response carries <span class="mono">servedFromConfirmed</span></td></tr>
-        <tr><th>Client</th><td><span class="mono">ConfirmRackButton</span> in the All Components header</td></tr>
       </table>
     </div>
   </section>
 
-  <!-- 4 -->
+  <!-- 7 -->
   <section id="nonrack">
-    <div class="sec-eyebrow">04 — Input handling</div>
+    <div class="sec-eyebrow">07 — Input handling</div>
     <h2>Reject non-racks <span class="em">at the door</span></h2>
-    <p class="sec-lead">A photo of a person, laptop, or random object is now turned away before the full pipeline runs.</p>
+    <p class="sec-lead">A photo of a person, laptop, or random object is turned away before the full pipeline runs.</p>
     <ul class="plain">
       <li>After the tilt/quality check, a fast detect-only pass runs. If zero rack devices are found, the upload is rejected with a clear message (<code>kind: "not_a_rack"</code>) instead of spinning through a full analysis that returns nothing.</li>
       <li>Runs on the normalised frame, so it works for both photos and videos. Best-effort: if detection errors, it falls through to the pipeline (whose own zero-device check still catches it).</li>
@@ -241,35 +320,9 @@
     </div>
   </section>
 
-  <!-- 5 -->
-  <section id="tworack">
-    <div class="sec-eyebrow">05 — New feature</div>
-    <h2>Two-rack scan &amp; <span class="em">inter-rack</span> topology</h2>
-    <p class="sec-lead">Scan two racks — as two photos or one video — and see them side by side in 3D with the cabling that runs between them.</p>
-
-    <h3><span class="chip g">What it does</span> Combined view with cross-rack links</h3>
-    <p>The app detects each rack, groups them, and renders both in one 3D scene with the <span class="lbl">uplink cables spanning between racks</span> plus a panel listing every inter-rack connection (device, port, cable type).</p>
-
-    <h3><span class="chip g">How it works</span> Realistic synthesised uplinks</h3>
-    <ul class="plain">
-      <li>Most cabling stays inside each rack; only a realistic handful (2–3 core-to-core / ToR uplinks) cross between racks — deterministic, so the same racks always produce the same wiring.</li>
-      <li>Each rack's uplink end is its aggregation/core switch; adjacent racks are chained.</li>
-      <li>Optionally pushed to ServiceNow CMDB as dummy “Connects to” relationships between the two racks' switch CIs.</li>
-    </ul>
-
-    <div class="hood hood-scroll">
-      <table>
-        <caption>Under the hood</caption>
-        <tr><th>Endpoints</th><td><span class="mono">POST /api/rack-groups</span> (pair two images) · <span class="mono">GET /api/rack-group/:id/links</span> (synthesised inter-rack uplinks)</td></tr>
-        <tr><th>Client</th><td><span class="mono">MultiRackNewPage.jsx</span> (two-photo / video flow) · spanning cables + connections panel in <span class="mono">MultiRackTopologyPage.jsx</span></td></tr>
-        <tr><th>CMDB</th><td><span class="mono">servicenow/cmdb_interrack_link.py</span> — best-effort “Connects to” push</td></tr>
-      </table>
-    </div>
-  </section>
-
-  <!-- 6 -->
+  <!-- 8 -->
   <section id="dashboard">
-    <div class="sec-eyebrow">06 — New feature</div>
+    <div class="sec-eyebrow">08 — Operations</div>
     <h2>Live Operations <span class="em">dashboard</span></h2>
     <p class="sec-lead">An owner-only, real-time view of everything happening across RackTrack.</p>
     <ul class="plain">
@@ -280,33 +333,33 @@
       <table>
         <caption>Under the hood</caption>
         <tr><th>Endpoint</th><td><span class="mono">GET /api/admin/dashboard</span> (owner-gated) in <span class="mono">server/app.js</span></td></tr>
-        <tr><th>Client</th><td><span class="mono">DashboardPage.jsx</span> — sidebar entry “Live Ops” (owner only)</td></tr>
+        <tr><th>Client</th><td><span class="mono">DashboardPage.jsx</span> (“Live Ops”) &amp; <span class="mono">LogsPage.jsx</span> (“Logs”) — owner only</td></tr>
       </table>
     </div>
   </section>
 
-  <!-- 7 -->
+  <!-- 9 -->
   <section id="camera">
-    <div class="sec-eyebrow">07 — Capture</div>
+    <div class="sec-eyebrow">09 — Capture</div>
     <h2>Camera &amp; video, <span class="em">fixed</span></h2>
     <ul class="plain">
-      <li><span class="lbl">Full-screen camera</span> via a React portal that escapes any transformed ancestor.</li>
+      <li><span class="lbl">Full-screen camera</span> via a React portal that escapes any transformed ancestor, and now covers the bottom nav bar while open.</li>
       <li><span class="lbl">Capture matches the preview</span> — the saved image is cropped to the exact region shown on screen (fixes the object-fit:cover vs full-frame mismatch).</li>
       <li><span class="lbl">Video uploads analyse correctly</span> — routed to the best-frame analyze path.</li>
     </ul>
     <div class="hood hood-scroll">
       <table>
         <caption>Under the hood</caption>
-        <tr><th>Client</th><td><span class="mono">ScanPage.jsx</span> — portal fullscreen, crop-to-visible capture, video re-route</td></tr>
+        <tr><th>Client</th><td><span class="mono">ScanPage.jsx</span> — portal fullscreen (z-index over nav), crop-to-visible capture, video re-route</td></tr>
       </table>
     </div>
   </section>
 
-  <!-- 8 -->
+  <!-- 10 -->
   <section id="sfp">
-    <div class="sec-eyebrow">08 — Procurement</div>
+    <div class="sec-eyebrow">10 — Procurement</div>
     <h2>Sharper <span class="em">SFP</span> procurement advice</h2>
-    <p class="sec-lead">The transceiver advisor is now more honest about when it can help — and more useful when there's no exact match.</p>
+    <p class="sec-lead">The transceiver advisor is more honest about when it can help — and more useful when there's no exact match.</p>
     <ul class="plain">
       <li><span class="lbl">Requires make &amp; model.</span> Without both it can't identify the switch, so it prompts for them (<code>status: need_make_model</code>) instead of guessing.</li>
       <li><span class="lbl">“No SFP required.”</span> When a real datasheet shows only copper ports and no fibre/SFP slots, it returns <code>status: no_sfp</code> and the UI shows a clear message — it never claims “no SFP” without datasheet evidence.</li>
@@ -315,7 +368,7 @@
     <div class="hood hood-scroll">
       <table>
         <caption>Under the hood</caption>
-        <tr><th>Pipeline</th><td><span class="mono">pipeline/sfp_recommend.py</span> — make/model gate, <span class="mono">specs_have_sfp()</span> copper-only detection, restored two-stage fallback (<span class="mono">search_sfp_vendor_only</span> + generic reference)</td></tr>
+        <tr><th>Pipeline</th><td><span class="mono">pipeline/sfp_recommend.py</span> — make/model gate, <span class="mono">specs_have_sfp()</span> copper-only detection, two-stage fallback (<span class="mono">search_sfp_vendor_only</span> + generic reference)</td></tr>
         <tr><th>Endpoint</th><td><span class="mono">POST /api/sfp/analyze</span> now requires both vendor and model</td></tr>
         <tr><th>Client</th><td><span class="mono">SfpAdvisor.jsx</span> — prompt / “No SFP required” / nearest-match note</td></tr>
       </table>
@@ -323,13 +376,13 @@
     <div class="note"><span class="lbl">Detection nuance:</span> the copper-only check keys on concrete optical signals (SFP, QSFP, fibre, <span class="mono">…BASE-SR/LR/LX/SX</span>, combo) — deliberately <em>not</em> the word “uplink”, since copper uplinks exist. A 10GBASE-T (copper) switch correctly reads as “no SFP required.”</div>
   </section>
 
-  <!-- 9 -->
+  <!-- 11 -->
   <section id="release">
-    <div class="sec-eyebrow">09 — Release</div>
+    <div class="sec-eyebrow">11 — Release</div>
     <h2>Release, versions &amp; builds</h2>
     <div class="rel">
-      <div class="card"><h4>Pulled fix</h4><p>Report download now opens the real server-rendered <span class="mono">PDF</span> (<span class="mono">format=pdf</span>) instead of the browser converter. (commit <span class="mono">8677836</span>)</p></div>
-      <div class="card"><h4>Versions</h4><p>iOS build <b>10 → 11</b> · Android versionCode <b>1 → 11</b> — so Firebase treats it as a new release and notifies testers.</p></div>
+      <div class="card"><h4>Versions</h4><p>iOS build <b>14 → 15</b> · Android versionCode <b>14 → 15</b> — so Firebase treats it as a new release and notifies testers.</p></div>
+      <div class="card"><h4>Two-rack polish</h4><p>Side-by-side Overview with larger stacked photos, per-tab Rack 1 / Rack 2 toggle, and the 2D inter-rack link — all on the standard screens.</p></div>
       <div class="card"><h4>iOS</h4><p><span class="ok">✓ IPA built</span> → <span class="mono">client/build/ipa/App.ipa</span>. Local build only; upload to TestFlight via Transporter.</p></div>
       <div class="card"><h4>Android</h4><p><span class="ok">✓ Shipped</span> — APK built and distributed to the <b>testers</b> group via Firebase App Distribution; testers notified.</p></div>
     </div>
@@ -340,14 +393,14 @@
     <div class="sec-eyebrow">— To go fully live</div>
     <h2>Deployment steps</h2>
     <ol class="steps">
-      <li>On the <b>Windows GPU server</b>: <code>git pull</code> and restart the Node backend. The pipeline and server changes — cable enrichment, the active-learning stores, the SFP logic, and the report-PDF fix — take effect on worker/server start.</li>
-      <li>Upload the iOS <code>App.ipa</code> to <b>TestFlight</b> (Transporter) so iOS testers receive build 11. (Android testers are already notified.)</li>
+      <li>On the <b>Windows GPU server</b>: <code>git pull</code> (branch <span class="mono">july9_full</span>) and rebuild the client (<code>cd client &amp;&amp; npm run build</code>), then restart the Node backend. The pipeline and server changes take effect on worker/server start.</li>
+      <li>Upload the iOS <code>App.ipa</code> to <b>TestFlight</b> (Transporter) so iOS testers receive build 15. (Android testers are already notified.)</li>
     </ol>
     <div class="note warn"><span class="lbl">Note:</span> the ServiceNow inter-rack CMDB push and any live-CMDB features only run if <span class="mono">SN_INSTANCE</span> / <span class="mono">SN_USER</span> / <span class="mono">SN_PASSWORD</span> are configured on the server. All in-app views work regardless.</div>
   </section>
 
   <footer>
-    RackTrack — Build 11 technical summary · Generated July 15, 2026 · <span class="mono">docs/features/build-11-changelog.html</span>
+    RackTrack — Build 15 technical summary · Generated July 16, 2026 · <span class="mono">docs/features/build-15-changelog.html</span>
   </footer>
 
 </div>
