@@ -5,7 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import BottomNav from './components/BottomNav.jsx';
 import DesktopShell from './components/DesktopShell.jsx';
 import PointerGlow from './components/PointerGlow.jsx';
-import { useIsDesktop } from './hooks/useIsDesktop';
+import { useHasSidebar } from './hooks/useIsDesktop';
 import HomePage from './pages/HomePage.jsx';
 import ScanPage from './pages/ScanPage.jsx';
 import ResultsPage from './pages/ResultsPage.jsx';
@@ -97,8 +97,8 @@ function PendingRoute({ children }) {
 // Below the breakpoint the page renders bare, exactly as the mobile
 // build does today — so the mobile experience is untouched.
 function ResponsiveLayout({ children, withBottomNav = false }) {
-  const isDesktop = useIsDesktop();
-  if (isDesktop) {
+  const showSidebar = useHasSidebar();
+  if (showSidebar) {
     return <DesktopShell>{children}</DesktopShell>;
   }
   return <>{children}{withBottomNav && <BottomNav />}</>;

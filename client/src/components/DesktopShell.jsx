@@ -122,6 +122,14 @@ const DashboardIcon = () => (
   </svg>
 );
 
+const DataSourcesIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <ellipse cx="12" cy="5" rx="8" ry="3"/>
+    <path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/>
+    <path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/>
+  </svg>
+);
+
 const TwoRackIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="7" height="18" rx="1"/>
@@ -177,7 +185,7 @@ export default function DesktopShell({ children }) {
   // These pages render their own full page header (title + controls). Showing
   // the shell's topbar crumb on top of that produced a duplicate header on
   // wide screens (iPad landscape / desktop), so we let the page own it.
-  const SELF_HEADED = ['/dashboard', '/marketplace', '/marketplace/new', '/profile'];
+  const SELF_HEADED = ['/dashboard', '/marketplace', '/marketplace/new', '/profile', '/connections'];
   const selfHeaded = SELF_HEADED.includes(location.pathname);
   const { user } = useAuth();
   const isAdmin = user?.role === 'org_admin' || user?.role === 'owner';
@@ -189,7 +197,9 @@ export default function DesktopShell({ children }) {
     { to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false },
     // Operations Console (live ops + server logs) — owner-only.
     ...(isOwner ? [{ to: '/dashboard', label: 'Console', icon: <DashboardIcon />, end: false }] : []),
-    // Marketplace is organization-admin only.
+    // Data Sources (connect ServiceNow / NetBox / Orion …) + Marketplace are
+    // organization-admin features.
+    ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false }] : []),
     ...(isAdmin ? [{ to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false }] : []),
     { to: '/profile',     label: 'Profile',     icon: <ProfileIcon />, end: false },
   ];

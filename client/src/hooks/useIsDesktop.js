@@ -13,24 +13,37 @@ import { useEffect, useState } from 'react';
 // better experience.
 const DESKTOP_BREAKPOINT = 1024;
 
-export function useIsDesktop() {
-  const initial = typeof window !== 'undefined'
-    && window.innerWidth >= DESKTOP_BREAKPOINT;
-  const [isDesktop, setIsDesktop] = useState(initial);
+// The sidebar shell wants LESS room than the side-by-side content layouts —
+// a tablet in portrait (iPad ≈ 768–834px) comfortably fits sidebar + one
+// column, so it gets the shell too. Content that needs real width for a
+// two-up layout (e.g. side-by-side racks) keeps using useIsDesktop (1024).
+const SIDEBAR_BREAKPOINT = 768;
 
+// Shared matchMedia hook so DevTools/orientation changes re-evaluate live.
+function useMinWidth(px) {
+  const initial = typeof window !== 'undefined' && window.innerWidth >= px;
+  const [matches, setMatches] = useState(initial);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const mql = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
-    const handler = (e) => setIsDesktop(e.matches);
-    // matchMedia in older Safari uses addListener; modern uses addEventListener.
+    const mql = window.matchMedia(`(min-width: ${px}px)`);
+    const handler = (e) => setMatches(e.matches);
     if (mql.addEventListener) mql.addEventListener('change', handler);
     else mql.addListener(handler);
-    setIsDesktop(mql.matches);
+    setMatches(mql.matches);
     return () => {
       if (mql.removeEventListener) mql.removeEventListener('change', handler);
       else mql.removeListener(handler);
     };
-  }, []);
+  }, [px]);
+  return matches;
+}
 
-  return isDesktop;
+export function useIsDesktop() {
+  return useMinWidth(DESKTOP_BREAKPOINT);
+}
+
+// True once the viewport is wide enough for the sidebar shell (incl. iPad
+// portrait). Used to decide DesktopShell vs. the bare mobile layout.
+export function useHasSidebar() {
+  return useMinWidth(SIDEBAR_BREAKPOINT);
 }
