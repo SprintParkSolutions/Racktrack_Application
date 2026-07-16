@@ -4396,6 +4396,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // ── Detect view ──────────────────────────────────────────
   return (
     <div className={`page page-full ${styles.results}`} data-tab={tab}
+         data-embedded={embeddedProp ? 'true' : undefined}
          data-device={selectedIdx ? 'sel' : 'none'}>
       <div className={styles.amb} />
 

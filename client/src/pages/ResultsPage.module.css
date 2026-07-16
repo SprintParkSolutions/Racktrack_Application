@@ -34,6 +34,29 @@
     min-height: 0;
     overflow: hidden;
   }
+
+  /* Embedded (two-rack side-by-side column): the 2-col grid would squeeze the
+     photo into ~300px. Stack instead — photo full column width on top, the
+     device picker below — so each rack's photo is large and readable. */
+  .results[data-embedded='true'][data-tab='overview'] {
+    grid-template-columns: 1fr !important;
+    grid-template-areas: "hero" "sheet" !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .results[data-embedded='true'][data-tab='overview'] > .heroWrap {
+    min-height: 46vh;
+    max-height: 60vh;
+  }
+  .results[data-embedded='true'][data-tab='overview'] > .sheet {
+    grid-area: sheet;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border-left: none !important;
+    background: transparent !important;
+  }
+  .results[data-embedded='true'] { min-height: 0 !important; }
   .results[data-tab='overview'] > .header { grid-area: header; }
   .results[data-tab='overview'] > .heroWrap {
     grid-area: hero;

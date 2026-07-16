@@ -1,19 +1,34 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { useRackGroup } from '../components/useRackGroup';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 import ResultsPage from './ResultsPage.jsx';
+import { RackToggle } from './SideBySideRacks.jsx';
 import styles from './SideBySideRacks.module.css';
 
-// The Overview route. When the rack is part of a multi-rack group we render the
-// SAME full ResultsPage (rack photo + device boxes + picker) once per rack,
-// side by side. A standalone rack falls through to the normal single page.
+// The Overview route.
+//   Desktop + group → the full ResultsPage (photo + device boxes + picker) for
+//                     BOTH racks, side by side.
+//   Mobile / standalone → the normal single ResultsPage, which already carries
+//                     a rack-switcher (RackTabs) to toggle between racks — side
+//                     by side is too cramped on a phone.
 export default function RackResultsRoute() {
   const { rackId } = useParams();
+  const location = useLocation();
   const { data, loading } = useRackGroup(rackId);
+  const isDesktop = useIsDesktop();
   const members = data?.members || [];
   const isGroup = members.length >= 2;
+  const isDrift = location.hash === '#drift';
 
-  if (loading || !isGroup) return <ResultsPage />;
+  // Mobile / standalone → normal single page (its own rack switcher + tabs).
+  if (loading || !isGroup || !isDesktop) return <ResultsPage />;
+  // Drift → toggle between racks (not side by side), same as the other tabs.
+  if (isDrift) {
+    return <RackToggle Single={ResultsPage}
+      render={(rid) => <ResultsPage rackId={rid} embedded />} />;
+  }
 
+  // Desktop Overview → both racks side by side.
   return (
     <div className={styles.wrap}>
       <div className={styles.cols}>

@@ -10,7 +10,7 @@ import HomePage from './pages/HomePage.jsx';
 import ScanPage from './pages/ScanPage.jsx';
 import ResultsPage from './pages/ResultsPage.jsx';
 import RackResultsRoute from './pages/RackResultsRoute.jsx';
-import { RackSwitchesRoute, RackNetworkRoute } from './pages/SideBySideRacks.jsx';
+import { RackSwitchesRoute, RackNetworkRoute, RackPortsRoute } from './pages/SideBySideRacks.jsx';
 import RackTopologyRoute from './pages/RackTopologyRoute.jsx';
 import PortsPage from './pages/PortsPage.jsx';
 import TopologyPage from './pages/TopologyPage.jsx';
@@ -298,7 +298,7 @@ export default function App() {
               <ProtectedRoute><ResponsiveLayout><RackResultsRoute /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/results/:rackId/ports" element={
-              <ProtectedRoute><ResponsiveLayout><PortsPage /></ResponsiveLayout></ProtectedRoute>
+              <ProtectedRoute><ResponsiveLayout><RackPortsRoute /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/results/:rackId/topology" element={
               <ProtectedRoute><ResponsiveLayout><RackTopologyRoute /></ResponsiveLayout></ProtectedRoute>
