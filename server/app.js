@@ -6367,7 +6367,11 @@ function parseSystemInfo(raw) {
   };
 }
 
-const PORT_TOK = /^(?:gigabitethernet|tengigabitethernet|fastethernet|gi|te|fa)(\d+\/\d+(?:\/\d+)?)$/i;
+// Longest-first: 'ethernet' must precede 'et', or "Ethernet0/0" matches 'et'
+// and then fails on "hernet0/0". Cisco IOL (the EVE-NG lab switches) names its
+// ports Et0/0..Et0/3 — without the ethernet|et alternatives every parser keyed
+// off this regex silently returned zero rows for them.
+const PORT_TOK = /^(?:gigabitethernet|tengigabitethernet|fastethernet|ethernet|gi|te|fa|et)(\d+\/\d+(?:\/\d+)?)$/i;
 
 // Live vs admin state per port: { key: { up, statusRaw, speed, duplex, medium } }.
 function parseInterfaceStatus(raw) {
@@ -6507,14 +6511,62 @@ async function auditSwitchHost({ host, sshPort, vendorKey, username, password, e
   const lldpRaw = await runOne(lldpCmd);
   const macRaw  = await runOne(macCmd);
   return {
-    identity:  parseSystemInfo(out.sysinfo || ''),
-    ifstatus:  parseInterfaceStatus(out.ifstatus || ''),
+    identity:  parseIdentityFor(vendorKey, out.sysinfo || ''),
+    ifstatus:  parseIfStatusFor(vendorKey, out.ifstatus || ''),
     ifconfig:  parseInterfaceConfig(out.ifconfig || ''),
     poe:       parsePoe(out.poe || ''),
     vlans:     parseVlan(out.vlan || ''),
     neighbors: parseAllLldpNeighbors(lldpRaw || ''),
     macs:      parseMacTable(macRaw || ''),
   };
+}
+
+// parseSystemInfo() reads TP-Link's "System Name - value" shape. Cisco's
+// `show version` looks nothing like that (the hostname only appears as
+// "<name> uptime is ..."), so every identity field came back null for the lab
+// switches. cisco_parser already handles that format and is exercised by the
+// poller, so reuse it and map onto the same field names the UI expects.
+function parseIdentityFor(vendorKey, raw) {
+  if (vendorKey !== 'cisco-ios') return parseSystemInfo(raw);
+  const m = require('./lib/cisco_parser').parseSystemInfo(raw);
+  return {
+    name:     m.system_name,
+    model:    m.model,
+    serial:   m.serial,
+    mac:      m.mac,
+    firmware: m.sw_version,
+    hardware: m.hw_version,
+    description: m.system_description,
+  };
+}
+
+// parseInterfaceStatus() splits on whitespace and assumes token[1] is the
+// status. That holds only while the Name column is empty: on a port WITH a
+// description ("Et0/3  RACKTRACK-MGMT  connected"), token[1] is the
+// description, so the port is reported down with statusRaw="RACKTRACK-MGMT".
+// cisco_parser slices by the header's column offsets instead, so it reads
+// described ports correctly — and it's already exercised by the poller.
+//
+// Keys are normalised to app.js's stripped form (Et0/0 -> 0/0) so ifstatus,
+// ifconfig, poe, neighbors and macs all agree; the UI joins them by that key.
+function parseIfStatusFor(vendorKey, raw) {
+  if (vendorKey !== 'cisco-ios') return parseInterfaceStatus(raw);
+  const rows = require('./lib/cisco_parser').parseInterfaceStatus(raw);
+  const out = {};
+  for (const [port, r] of rows) {
+    const km = String(port).match(PORT_TOK);
+    if (!km) continue;   // skip anything that isn't a physical port
+    out[km[1]] = {
+      up:        r.oper === 'up',
+      statusRaw: r.oper,
+      // IOL never negotiates a real link, so these are usually null — the
+      // column shows "—" and that is the truth, not a parse failure.
+      speed:     r.speed_mbps == null ? null : `${r.speed_mbps}M`,
+      duplex:    r.duplex,
+      medium:    r.medium ? r.medium.toLowerCase() : null,
+    };
+  }
+  return out;
 }
 
 // POST /api/lab/devices/:id/audit — same full audit as /api/switch/audit, but

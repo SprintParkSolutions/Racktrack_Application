@@ -50,6 +50,14 @@ function operClass(oper) {
   return styles.unknown;
 }
 
+// parseInterfaceStatus returns { up: boolean, statusRaw: string, ... } — there
+// is no `link` or `status` field. Reading those (as this did first) made the
+// Link column render "—" for every port, including the live TP-Link's 28.
+function linkOf(s) {
+  if (!s || s.up === undefined) return null;
+  return s.up ? 'up' : 'down';
+}
+
 const dash = (v) => (v === null || v === undefined || v === '' ? '—' : v);
 
 const cell = { padding: '6px 10px', verticalAlign: 'top' };
@@ -143,9 +151,12 @@ export default function LabPage() {
   const ports = Object.keys(ifstatus).length
     ? Object.keys(ifstatus)
     : Object.keys(ifconfig);
+  // parseMacTable returns { port: { macs: [...], vlan, count } } — one row per
+  // port, not per MAC. Flatten to one row per MAC; reading `.mac` off the port
+  // object (as this did first) yields undefined and renders every MAC as "—".
   const macs = audit?.macs || {};
-  const macRows = Object.entries(macs).flatMap(([port, list]) =>
-    (Array.isArray(list) ? list : [list]).map((m) => ({ port, ...(typeof m === 'string' ? { mac: m } : m) })));
+  const macRows = Object.entries(macs).flatMap(([port, e]) =>
+    (e?.macs || []).map((mac) => ({ port, mac, vlan: e.vlan })));
 
   return (
     <div className={styles.page}>
@@ -246,11 +257,11 @@ export default function LabPage() {
                       return (
                         <tr key={p}>
                           <td style={cell}><code>{p}</code></td>
-                          <td style={cell}><span className={operClass(s.link || s.status)}>{dash(s.link || s.status)}</span></td>
+                          <td style={cell}><span className={operClass(linkOf(s))}>{dash(linkOf(s))}</span></td>
                           <td style={cell}>{c.enabled === undefined ? '—' : (c.enabled ? 'enabled' : 'disabled')}</td>
                           <td style={cell}>{dash(s.speed)}</td>
                           <td style={cell}>{dash(s.duplex)}</td>
-                          <td style={cell}>{dash(s.medium || s.type)}</td>
+                          <td style={cell}>{dash(s.medium)}</td>
                           <td style={cell}>{dash(pe.power ?? pe.watts)}</td>
                           <td style={cell}>{dash(c.description || s.description)}</td>
                           <td style={cell}>{dash(n.system_name || n.name)}</td>
