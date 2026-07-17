@@ -1,0 +1,202 @@
+{
+  "incidents": [
+    {
+      "sys_id": "sn001aaa0001bbbb0001cccc0001dddd01",
+      "number": "INC0010001",
+      "short_description": "SW-U06 port 1 err-disabled on rack RACK-A01",
+      "description": "Port 1 (Gi0/1) on SW-U06 in rack RACK-A01 entered err-disabled state due to BPDU guard violation. Technician needs to verify physical connection at U6.",
+      "state": "1",
+      "priority": "2",
+      "category": "network",
+      "cmdb_ci": { "display_value": "SW-U06", "value": "ci001aaa0001bbbb0001cccc0001dddd01" },
+      "assignment_group": { "display_value": "Network Operations", "value": "grp001" },
+      "assigned_to": { "display_value": "Jane Smith", "value": "usr001" },
+      "opened_at": "2026-07-14T08:30:00Z",
+      "sys_updated_on": "2026-07-14T09:00:00Z"
+    },
+    {
+      "sys_id": "sn002aaa0002bbbb0002cccc0002dddd02",
+      "number": "INC0010002",
+      "short_description": "PP-U18 port 12 CRC errors in RACK-B02",
+      "description": "High CRC error count detected on port 12 of patch panel PP-U18 located at U18 in rack RACK-B02. Possible bad cables.",
+      "state": "2",
+      "priority": "3",
+      "category": "network",
+      "cmdb_ci": { "display_value": "PP-U18", "value": "ci002aaa0002bbbb0002cccc0002dddd02" },
+      "assignment_group": { "display_value": "Network Operations", "value": "grp001" },
+      "assigned_to": { "display_value": "John Doe", "value": "usr002" },
+      "opened_at": "2026-07-13T14:15:00Z",
+      "sys_updated_on": "2026-07-14T10:20:00Z"
+    },
+    {
+      "sys_id": "sn003aaa0003bbbb0003cccc0003dddd03",
+      "number": "INC0010003",
+      "short_description": "FW-U01 port 1 link flapping on WAN interface",
+      "description": "WAN port 1 on FW-U01 (rack RACK-A01, U1) is intermittently dropping. Possible SFP module failure or cable issue.",
+      "state": "1",
+      "priority": "1",
+      "category": "network",
+      "cmdb_ci": { "display_value": "FW-U01", "value": "ci003aaa0003bbbb0003cccc0003dddd03" },
+      "assignment_group": { "display_value": "Security Operations", "value": "grp002" },
+      "assigned_to": { "display_value": "Alice Chen", "value": "usr003" },
+      "opened_at": "2026-07-15T06:45:00Z",
+      "sys_updated_on": "2026-07-15T07:00:00Z"
+    },
+    {
+      "sys_id": "sn004aaa0004bbbb0004cccc0004dddd04",
+      "number": "INC0010004",
+      "short_description": "UPS-U40 battery low alert in RACK-C03",
+      "description": "UPS at U40 in RACK-C03 reporting battery at 15% charge. Estimated runtime 8 minutes. Immediate replacement needed.",
+      "state": "1",
+      "priority": "1",
+      "category": "hardware",
+      "cmdb_ci": { "display_value": "UPS-U40", "value": "ci004aaa0004bbbb0004cccc0004dddd04" },
+      "assignment_group": { "display_value": "Data Center Ops", "value": "grp003" },
+      "assigned_to": { "display_value": "Bob Miller", "value": "usr004" },
+      "opened_at": "2026-07-15T03:10:00Z",
+      "sys_updated_on": "2026-07-15T03:30:00Z"
+    },
+    {
+      "sys_id": "sn005aaa0005bbbb0005cccc0005dddd05",
+      "number": "INC0010005",
+      "short_description": "MAC flap detected on SW-U10 port 24",
+      "description": "Rogue device detected on port 24 (Gi0/24) — MAC AA:BB:CC:11:22:33 is flapping between ports 24 and 25 on switch SW-U10 in RACK-A01 U10.",
+      "state": "2",
+      "priority": "2",
+      "category": "security",
+      "cmdb_ci": { "display_value": "SW-U10", "value": "ci005aaa0005bbbb0005cccc0005dddd05" },
+      "assignment_group": { "display_value": "Security Operations", "value": "grp002" },
+      "assigned_to": { "display_value": "Alice Chen", "value": "usr003" },
+      "opened_at": "2026-07-14T22:00:00Z",
+      "sys_updated_on": "2026-07-15T00:15:00Z"
+    }
+  ],
+  "cmdb_ci_rack": [
+    {
+      "sys_id": "rack001aaa001bbbb001cccc001dddd001",
+      "name": "RACK-A01",
+      "sys_class_name": "cmdb_ci_rack",
+      "location": { "display_value": "DataCenter-1 / Row-A", "value": "loc001" },
+      "u_racktrack_scan_id": "RK-MOCK001",
+      "u_height": "42",
+      "asset_tag": "RACK-A01-TAG",
+      "serial_number": "RACK-SN-001",
+      "install_status": "1",
+      "short_description": "Primary networking rack — Row A"
+    },
+    {
+      "sys_id": "rack002aaa002bbbb002cccc002dddd002",
+      "name": "RACK-B02",
+      "sys_class_name": "cmdb_ci_rack",
+      "location": { "display_value": "DataCenter-1 / Row-B", "value": "loc001" },
+      "u_racktrack_scan_id": "RK-MOCK002",
+      "u_height": "42",
+      "asset_tag": "RACK-B02-TAG",
+      "serial_number": "RACK-SN-002",
+      "install_status": "1",
+      "short_description": "Secondary networking rack — Row B"
+    },
+    {
+      "sys_id": "rack003aaa003bbbb003cccc003dddd003",
+      "name": "RACK-C03",
+      "sys_class_name": "cmdb_ci_rack",
+      "location": { "display_value": "DataCenter-1 / Row-C", "value": "loc001" },
+      "u_racktrack_scan_id": "RK-MOCK003",
+      "u_height": "42",
+      "asset_tag": "RACK-C03-TAG",
+      "serial_number": "RACK-SN-003",
+      "install_status": "1",
+      "short_description": "Power & server rack — Row C"
+    }
+  ],
+  "cmdb_ci_netgear": [
+    {
+      "sys_id": "ci001aaa0001bbbb0001cccc0001dddd01",
+      "name": "SW-U06",
+      "sys_class_name": "cmdb_ci_netgear",
+      "model_id": { "display_value": "Cisco Catalyst 2960X-48FPS-L", "value": "mdl001" },
+      "serial_number": "FCW2143A00J",
+      "ip_address": "10.0.1.10",
+      "mac_address": "AA:BB:CC:10:10:06",
+      "u_rack_name": "RACK-A01",
+      "u_u_position": "6",
+      "install_status": "1",
+      "short_description": "48-port PoE switch at U6"
+    },
+    {
+      "sys_id": "ci002aaa0002bbbb0002cccc0002dddd02",
+      "name": "PP-U18",
+      "sys_class_name": "cmdb_ci_netgear",
+      "model_id": { "display_value": "Panduit NetKey 24-Port Cat6", "value": "mdl002" },
+      "serial_number": "PND-PP-0018",
+      "u_rack_name": "RACK-B02",
+      "u_u_position": "18",
+      "install_status": "1",
+      "short_description": "24-port Cat6 patch panel at U18"
+    },
+    {
+      "sys_id": "ci003aaa0003bbbb0003cccc0003dddd03",
+      "name": "FW-U01",
+      "sys_class_name": "cmdb_ci_netgear",
+      "model_id": { "display_value": "Fortinet FortiGate 100F", "value": "mdl003" },
+      "serial_number": "FGT100F3X19000001",
+      "ip_address": "10.0.0.1",
+      "mac_address": "AA:BB:CC:00:00:01",
+      "u_rack_name": "RACK-A01",
+      "u_u_position": "1",
+      "install_status": "1",
+      "short_description": "WAN/Core firewall at U1"
+    },
+    {
+      "sys_id": "ci005aaa0005bbbb0005cccc0005dddd05",
+      "name": "SW-U10",
+      "sys_class_name": "cmdb_ci_netgear",
+      "model_id": { "display_value": "Cisco Catalyst 9300-48P", "value": "mdl004" },
+      "serial_number": "FCW2143B00K",
+      "ip_address": "10.0.1.14",
+      "mac_address": "AA:BB:CC:10:10:10",
+      "u_rack_name": "RACK-A01",
+      "u_u_position": "10",
+      "install_status": "1",
+      "short_description": "48-port PoE+ distribution switch at U10"
+    }
+  ],
+  "sc_requests": [
+    {
+      "sys_id": "req001aaa001bbbb001cccc001dddd001",
+      "number": "REQ0012345",
+      "short_description": "CMDB sync — RACK-A01 scan update",
+      "state": "3",
+      "approval": "approved",
+      "u_rack_id": "RK-MOCK001",
+      "opened_at": "2026-07-13T10:00:00Z",
+      "closed_at": "2026-07-13T11:30:00Z"
+    }
+  ],
+  "cmdb_rel_ci": [
+    {
+      "sys_id": "rel001",
+      "parent": { "display_value": "RACK-A01", "value": "rack001aaa001bbbb001cccc001dddd001", "sys_class_name": "cmdb_ci_rack" },
+      "child":  { "display_value": "SW-U06",   "value": "ci001aaa0001bbbb0001cccc0001dddd01" },
+      "type":   { "display_value": "Contains::Contained by" }
+    },
+    {
+      "sys_id": "rel002",
+      "parent": { "display_value": "RACK-A01", "value": "rack001aaa001bbbb001cccc001dddd001", "sys_class_name": "cmdb_ci_rack" },
+      "child":  { "display_value": "FW-U01",   "value": "ci003aaa0003bbbb0003cccc0003dddd03" },
+      "type":   { "display_value": "Contains::Contained by" }
+    },
+    {
+      "sys_id": "rel003",
+      "parent": { "display_value": "RACK-A01", "value": "rack001aaa001bbbb001cccc001dddd001", "sys_class_name": "cmdb_ci_rack" },
+      "child":  { "display_value": "SW-U10",   "value": "ci005aaa0005bbbb0005cccc0005dddd05" },
+      "type":   { "display_value": "Contains::Contained by" }
+    },
+    {
+      "sys_id": "rel004",
+      "parent": { "display_value": "RACK-B02", "value": "rack002aaa002bbbb002cccc002dddd002", "sys_class_name": "cmdb_ci_rack" },
+      "child":  { "display_value": "PP-U18",   "value": "ci002aaa0002bbbb0002cccc0002dddd02" },
+      "type":   { "display_value": "Contains::Contained by" }
+    }
+  ]
+}

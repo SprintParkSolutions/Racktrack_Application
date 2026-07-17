@@ -255,7 +255,8 @@ def poll_once():
     env_file = load_env()
     instance = os.environ["SN_INSTANCE"]
     auth = (os.environ["SN_USER"], os.environ["SN_PASSWORD"])
-    base = f"https://{instance}.service-now.com/api/now"
+    # SN_BASE_URL lets callers override the URL (e.g. mock server on localhost).
+    base = os.environ.get("SN_BASE_URL") or f"https://{instance}.service-now.com/api/now"
     headers = {"Accept": "application/json"}
 
     incs = fetch_open_incidents(base, auth, headers)

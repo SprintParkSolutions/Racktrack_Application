@@ -45,7 +45,7 @@ export default function HomeDesktop() {
       {/* ── Top nav ─────────────────────────────────────────────── */}
       <nav className={styles.nav}>
         <div className={styles.brand}>
-          <span className={styles.brandMark}>R</span>
+          <img src="/logo.jpg" alt="" className={styles.brandMark} />
           <span>RackTrack</span>
         </div>
         <ul className={styles.navLinks}>

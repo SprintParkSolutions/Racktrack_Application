@@ -143,7 +143,7 @@ function deriveTitle(pathname) {
   if (pathname.startsWith('/results') && pathname.endsWith('/netdisco'))
     return { title: 'Network view',  sub: 'Live device + port table' };
   if (pathname.startsWith('/results') && pathname.endsWith('/ports'))
-    return { title: 'Ports',         sub: 'Available ports' };
+    return { title: 'Live Network Switch', sub: 'Available ports' };
   if (pathname.startsWith('/results') && pathname.endsWith('/vr'))
     return { title: 'VR walkthrough',sub: 'Immersive rack' };
   if (pathname.startsWith('/results'))
@@ -235,7 +235,7 @@ export default function DesktopShell({ children }) {
       {/* ── Sidebar ─────────────────────────────────────────────── */}
       <aside className={styles.sidebar}>
         <a className={styles.brand} onClick={(e) => { e.preventDefault(); navigate('/'); }} href="/">
-          <span className={styles.brandMark}>R</span>
+          <img src="/logo.jpg" alt="" className={styles.brandMark} />
           <span>RackTrack</span>
         </a>
 
@@ -275,6 +275,16 @@ export default function DesktopShell({ children }) {
       {/* ── Main area ───────────────────────────────────────────── */}
       <section className={styles.main}>
         <header className={styles.topBar}>
+          {location.pathname.endsWith('/ports') && (
+            <button
+              type="button"
+              className={styles.topBack}
+              aria-label="Back"
+              onClick={() => navigate(-1)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+          )}
           <div className={styles.crumbBlock}>
             <span className={styles.crumbTitle}>{crumb.title}</span>
             {crumb.sub && <span className={styles.crumbSub}>{crumb.sub}</span>}

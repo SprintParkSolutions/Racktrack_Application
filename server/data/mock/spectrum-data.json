@@ -1,0 +1,14 @@
+{
+  "landscapes": [
+    { "mh": "0x100000", "landscapeHandle": "0x100000", "modelName": "DataCenter-1", "modelClass": "0x21000b" }
+  ],
+  "devices": [
+    { "mh": "0x10001", "landscapeHandle": "0x100000", "modelHandle": "0x10001", "modelName": "SW-U06", "modelClass": "0x11000a", "modelTypeString": "Switch", "networkAddress": "10.0.1.10", "condition": "0", "conditionStr": "GREEN", "vendorName": "Cisco", "modelType": "Catalyst 2960X-48FPS-L", "serialNumber": "FCW2143A00J", "location": "RACK-A01 / U6", "contact": "Network Ops", "deviceDescription": "48-port PoE access switch" },
+    { "mh": "0x10002", "landscapeHandle": "0x100000", "modelHandle": "0x10002", "modelName": "FW-U01", "modelClass": "0x11000b", "modelTypeString": "Firewall", "networkAddress": "10.0.0.1", "condition": "0", "conditionStr": "GREEN", "vendorName": "Fortinet", "modelType": "FortiGate 100F", "serialNumber": "FGT100F3X19000001", "location": "RACK-A01 / U1", "contact": "Security Ops", "deviceDescription": "WAN/Core firewall" },
+    { "mh": "0x10003", "landscapeHandle": "0x100000", "modelHandle": "0x10003", "modelName": "SW-U10", "modelClass": "0x11000a", "modelTypeString": "Switch", "networkAddress": "10.0.1.14", "condition": "0", "conditionStr": "GREEN", "vendorName": "Cisco", "modelType": "Catalyst 9300-48P", "serialNumber": "FCW2143B00K", "location": "RACK-A01 / U10", "contact": "Network Ops", "deviceDescription": "48-port PoE+ distribution switch" },
+    { "mh": "0x10004", "landscapeHandle": "0x100000", "modelHandle": "0x10004", "modelName": "UPS-U40", "modelClass": "0x11000c", "modelTypeString": "Power", "networkAddress": "10.0.2.40", "condition": "2", "conditionStr": "YELLOW", "vendorName": "APC", "modelType": "Smart-UPS 3000VA", "serialNumber": "AS2201001234", "location": "RACK-C03 / U40", "contact": "DC Ops", "deviceDescription": "3000VA rack UPS" }
+  ],
+  "alarms": [
+    { "alarmHandle": "0x20001", "modelHandle": "0x10004", "modelName": "UPS-U40", "severity": 4, "severityStr": "MAJOR", "title": "Battery Level Low", "cause": "Battery at 15% - immediate replacement required", "occurrences": 1, "creationTime": 1752553800000, "acknowledgedBy": null }
+  ]
+}

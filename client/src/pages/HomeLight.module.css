@@ -48,13 +48,12 @@
 }
 
 .brandName {
-  font-family: var(--font);
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
   color: var(--md-primary);
-  text-transform: uppercase;
 }
 
 .signInBtn {

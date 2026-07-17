@@ -402,19 +402,31 @@ def _empty_result():
 # Public API
 # ────────────────────────────────────────────────────────────────
 
+def status_detections(status_model, img, conf=CONF):
+    """Run the status model (port_count.pt) and return its connected/empty
+    boxes. Exposed so a caller can run it ONCE and reuse the detections for
+    both model-detected ports and code-drawn (synthesized) ones."""
+    if status_model is None:
+        return []
+    return _nms(_detections_from(status_model, img, conf=conf), iou_thresh=0.5)
+
+
 def classify_ports_by_pattern(img, model, conf=CONF, skip_first_n_ports=0,
-                              status_model=None):
+                              status_model=None, status_dets=None):
     """Detect typed ports + bind a status to each, return the legacy bucket
     shape. `model` is ports_9.pt; `status_model` is port_count.pt.
+
+    `status_dets` lets a caller pass in already-computed status detections so
+    the status model isn't run twice.
 
     `skip_first_n_ports` is accepted for API compatibility but ignored —
     the typed model handles SFP/console placement directly, so the old
     leading-SFP skip is no longer meaningful.
     """
     typed = _nms(_detections_from(model, img, conf=conf), iou_thresh=0.5)
-    if status_model is not None:
-        status_dets = _nms(_detections_from(status_model, img, conf=conf),
-                           iou_thresh=0.5)
+    if status_dets is None:
+        status_dets = status_detections(status_model, img, conf=conf)
+    if status_dets:
         _bind_status(typed, status_dets, iou_thresh=0.3)
     else:
         for tp in typed:
@@ -440,15 +452,27 @@ def classify_ports_by_pattern(img, model, conf=CONF, skip_first_n_ports=0,
     }
 
 
-def grid_ports(img, target_count, existing=None):
+def grid_ports(img, target_count, existing=None, status_dets=None):
     """Lay out exactly `target_count` main ports as a clean grid across the crop
     — two rows when the count is even and the face is short & wide (a typical
-    switch), else a single row — numbered column-major. Each cell copies its
-    status from the nearest real detection so connected/empty survives. Shared
-    by the relabel handler and the select path so both agree on the layout.
+    switch), else a single row — numbered column-major. Shared by the relabel
+    handler and the select path so both agree on the layout.
+
+    These cells are drawn by CODE, not detected by the type model, so they get
+    their connected/empty status the same way a real port does — by matching
+    against the STATUS model (port_count.pt) detections. Order of preference:
+
+      1. the status model box that overlaps this cell  ← the real signal
+      2. the nearest real typed detection (if the status model saw nothing here)
+      3. 'unknown'
+
+    Previously only (2) existed, so a code-drawn port with no detected neighbour
+    was left 'unknown' even when the status model clearly saw connected/empty
+    right there.
     """
     h, w = img.shape[:2]
     real = list(existing or [])
+    sdets = list(status_dets or [])
     rows = 2 if (target_count % 2 == 0 and w > h * 2.5) else 1
     per_row = max(1, target_count // rows)
     cell_w = w / per_row
@@ -464,6 +488,27 @@ def grid_ports(img, target_count, existing=None):
                 bd, best = d, p
         return best.get('status', 'unknown') if best else 'unknown'
 
+    def _status_from_model(box, cx, cy):
+        """Bind this synthesized cell to the status model's connected/empty
+        boxes — the same signal real ports get, matched geometrically."""
+        if not sdets:
+            return None
+        best, best_iou = None, 0.0
+        for s in sdets:
+            i = _box_iou(box, s['bbox'])
+            if i > best_iou:
+                best_iou, best = i, s
+        # A synthesized cell is a geometric approximation of the real port, so
+        # accept a looser overlap than the 0.3 used for model-detected boxes.
+        if best is not None and best_iou >= 0.20:
+            return _status_from_name(best['class_name'])
+        # Fallback: this cell's centre sits inside a status box.
+        for s in sdets:
+            sx1, sy1, sx2, sy2 = s['bbox']
+            if sx1 <= cx <= sx2 and sy1 <= cy <= sy2:
+                return _status_from_name(s['class_name'])
+        return None
+
     grid, idx = [], 1
     for c in range(per_row):
         cx = int(cell_w * (c + 0.5))
@@ -471,9 +516,13 @@ def grid_ports(img, target_count, existing=None):
         for r in range(rows):
             cy = int(cell_h * (r + 0.5))
             py1, py2 = max(0, int(cy - cell_h * 0.34)), min(h, int(cy + cell_h * 0.34))
+            box = [px1, py1, px2, py2]
+            status = _status_from_model(box, cx, cy)
+            if status in (None, 'unknown'):
+                status = _status_near(cx, cy)
             grid.append({
-                'index': idx, 'box': [px1, py1, px2, py2], 'center': [cx, cy],
-                'status': _status_near(cx, cy), 'class_name': 'RJ45',
+                'index': idx, 'box': box, 'center': [cx, cy],
+                'status': status, 'class_name': 'RJ45',
                 'confidence': 0.0, 'port_category': 'main', 'synthesized': True,
             })
             idx += 1
@@ -488,8 +537,13 @@ def classify_ports_with_target_count(img, model, target_count, conf=CONF,
     select path so the numbering the user confirmed is the numbering they get
     when they later pick a port (port 24 = the 24th position, not the 20th).
     """
+    # Run the status model ONCE and reuse its detections for both the real
+    # ports and any code-drawn grid cells — so a synthesized port gets a real
+    # connected/empty status instead of falling through to 'unknown'.
+    sdets = status_detections(status_model, img, conf=conf)
+
     classified = classify_ports_by_pattern(
-        img, model, conf=conf, status_model=status_model)
+        img, model, conf=conf, status_model=status_model, status_dets=sdets)
     main = classified.get('main_ports', [])
 
     if not target_count or target_count <= 0 or len(main) == target_count:
@@ -501,8 +555,9 @@ def classify_ports_with_target_count(img, model, target_count, conf=CONF,
         main = main[:target_count]
         _index_in_place(main)
     else:
-        # Fewer detected than target → lay out exactly target_count as a grid.
-        main = grid_ports(img, target_count, existing=main)
+        # Fewer detected than target → lay out exactly target_count as a grid,
+        # each cell statused from the port_count model (not just a neighbour).
+        main = grid_ports(img, target_count, existing=main, status_dets=sdets)
 
     classified['main_ports'] = main
     classified['pattern_info']['main_cluster_size'] = len(main)

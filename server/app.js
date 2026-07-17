@@ -230,6 +230,17 @@ try {
     'demo tenant-mat router not loaded');
 }
 
+// Mock data-source routes — simulates ServiceNow, NetBox, Orion, Spectrum,
+// and Generic REST APIs so the app works without real external services.
+// Routes: /api/now/*, /api/dcim/*, /SolarWinds/*, /spectrum/*, /api/v1/*
+try {
+  app.use(require('./mock_routes'));
+  logger.info({ event: 'router.loaded', router: 'mock_routes' }, 'mock data-source routes loaded');
+} catch (err) {
+  logger.warn({ event: 'router.load_failed', router: 'mock_routes', err: err.message },
+    'mock data-source routes not loaded');
+}
+
 // CMDB-ticket integration — every CMDB write is gated behind an SR
 // (sc_request) approval. Routes under /api/cmdb/ticket/*; the poller
 // runs every 5 min.
@@ -3348,6 +3359,11 @@ app.post('/api/incidents/refresh', auth.requireAuth, async (req, res) => {
     return res.status(500).json({ ok: false, error: `poll.py not found at ${POLL_SCRIPT}` });
   }
   const { spawn } = require('child_process');
+  // When MOCK_SERVER_URL is set in .env, ALL ServiceNow connections route
+  // through the integrated mock routes so the app works without a real PDI.
+  // The mock routes are now mounted in this same server, so the URL points
+  // back to ourselves (http://localhost:<PORT>/api/now).
+  const mockUrl = process.env.MOCK_SERVER_URL;  // e.g. http://localhost:3001
   const env = {
     ...process.env,
     PYTHONIOENCODING: 'utf-8',
@@ -3355,6 +3371,7 @@ app.post('/api/incidents/refresh', auth.requireAuth, async (req, res) => {
     SN_INSTANCE: creds.instance,
     SN_USER:     creds.user,
     SN_PASSWORD: creds.password,
+    ...(mockUrl ? { SN_BASE_URL: `${mockUrl}/api/now` } : {}),
   };
   // If a previous poll is still running, cancel it. The user has chosen a
   // new active profile (or hit Refresh again), and waiting on the old poll
@@ -3428,9 +3445,12 @@ app.post('/api/incidents/refresh', auth.requireAuth, async (req, res) => {
   child.on('close', (code) => {
     clearTimeout(killer);
     // If this child was cancelled (because the user switched profiles
-    // mid-poll), the global state has already been replaced — don't
-    // overwrite the new poll's status with our late-arriving result.
-    if (_refreshState?.instance !== myInstance || _refreshState?.state !== 'running') {
+    // mid-poll, or hit Refresh again for the same profile), the global
+    // state has already been replaced — don't overwrite the new poll's
+    // status with our late-arriving result. The `child !== _refreshChild`
+    // check catches the same-instance double-refresh case that the
+    // instance-name guard alone would miss.
+    if (child !== _refreshChild || _refreshState?.state !== 'running') {
       logger.info(`[incidents.refresh] ignoring close from cancelled poll for ${myInstance}`);
       return;
     }
@@ -4141,6 +4161,7 @@ app.get('/api/scans', auth.requireAuth, (req, res) => {
 app.get('/api/scan/:rackId/report', (req, res) => {
   const { rackId } = req.params;
   const format = (req.query.format || 'meta').toLowerCase();
+  res.setHeader('Cache-Control', 'no-store');
   try {
     if (format === 'html') {
       const { html } = buildScanReport(rackId);
@@ -4265,6 +4286,7 @@ app.get('/api/cmdb/rack/:rackId/switches', auth.requireAuth, (req, res) => {
 // Snapshot lives at outputs/<rackId>/topology.json.
 app.get('/api/topology/:rackId', (req, res) => {
   const { rackId } = req.params;
+  res.setHeader('Cache-Control', 'no-store');
   const snapPath = path.join(outputsDir, rackId, 'topology.json');
   if (!fs.existsSync(snapPath)) {
     // Fire-and-forget: try to (re)generate the snapshot in the background so a
@@ -4287,6 +4309,7 @@ app.get('/api/topology/:rackId', (req, res) => {
 // underlying device_unit_map.json after re-detection runs.
 app.get('/api/scan/:rackId', (req, res) => {
   const { rackId } = req.params;
+  res.setHeader('Cache-Control', 'no-store');
   const rackDir = path.join(outputsDir, rackId);
   const jsonPath = path.join(rackDir, 'device_unit_map.json');
   if (!fs.existsSync(jsonPath)) {
@@ -4301,6 +4324,7 @@ app.get('/api/scan/:rackId', (req, res) => {
 
 app.get('/api/scan/:rackId/result', (req, res) => {
   const { rackId } = req.params;
+  res.setHeader('Cache-Control', 'no-store');
   const rackDir = path.join(outputsDir, rackId);
   if (!fs.existsSync(rackDir)) {
     return res.status(404).json({ error: `Rack ${rackId} not found` });
@@ -4829,14 +4853,14 @@ function parseLooseNeighbor(raw) {
   const text = (raw || '').replace(/\r/g, '');
   const pick = (re) => { const m = text.match(re); return m ? m[1].trim() : null; };
   const result = {
-    system_name:        pick(/(?:^|\n)\s*(?:System Name|Device ID|Remote System Name|SysName|System name|Neighbor name)\s*[:=]\s*([^\n]+)/i),
-    port_id:            pick(/(?:^|\n)\s*(?:Port ID|Remote Port|Port id|Port Identifier|Neighbor port|PortID)\s*[:=]\s*([^\n]+)/i),
-    port_description:   pick(/(?:^|\n)\s*(?:Port Description|Port Desc|Remote Port Description)\s*[:=]\s*([^\n]+)/i),
-    chassis_id:         pick(/(?:^|\n)\s*(?:Chassis ID|Chassis Identifier|Chassis Id|Neighbor chassis)\s*[:=]\s*([^\n]+)/i),
+    system_name:        pick(/(?:^|\n)\s*(?:System Name|Device ID|Remote System Name|SysName|System name|Neighbor name)\s*[:=][ \t]*([^\n]+)/i),
+    port_id:            pick(/(?:^|\n)\s*(?:Port ID|Remote Port|Port id|Port Identifier|Neighbor port|PortID)\s*[:=][ \t]*([^\n]+)/i),
+    port_description:   pick(/(?:^|\n)\s*(?:Port Description|Port Desc|Remote Port Description)\s*[:=][ \t]*([^\n]+)/i),
+    chassis_id:         pick(/(?:^|\n)\s*(?:Chassis ID|Chassis Identifier|Chassis Id|Neighbor chassis)\s*[:=][ \t]*([^\n]+)/i),
     system_description: pick(/(?:System Description|Version|Remote System Description)\s*[:=]\s*([\s\S]*?)(?:\n\s*\n|\n[A-Z][^:\n]{0,40}:)/i),
     management_address: pick(/(?:Management Address|Management IP|Management Addresses?|Mgmt IP|Address)\s*[:=]?[^\n]{0,80}?\b((?:\d{1,3}\.){3}\d{1,3})\b/i),
-    vlan_id:            pick(/(?:Vlan ID|VLAN|Native VLAN|Port VLAN ID|PVID)\s*[:=]\s*(\d+)/i),
-    capabilities:       pick(/(?:System Capabilities|Capabilities|Enabled Capabilities)\s*[:=]\s*([^\n]+)/i),
+    vlan_id:            pick(/(?:Vlan ID|VLAN|Native VLAN|Port VLAN ID|PVID)\s*[:=][ \t]*(\d+)/i),
+    capabilities:       pick(/(?:System Capabilities|Capabilities|Enabled Capabilities)\s*[:=][ \t]*([^\n]+)/i),
   };
   const noData = /no (?:lldp|cdp) neighbors|no entries|no entry|not found/i.test(text);
   const found = !noData && !!(result.system_name || result.port_id || result.management_address || result.chassis_id);
@@ -5048,6 +5072,37 @@ function writeLastHost(userId, host) {
     fs.writeFileSync(path.join(lastHostDir, `${userId}.txt`), String(host).trim());
   } catch (err) { logger.error('[last-host] write failed:', err.message); }
 }
+
+// ── MAC vendor lookup (IEEE OUI registry) ────────────────────
+// The first three octets of a MAC are the manufacturer's IEEE-assigned block,
+// so a downstream MAC can be labelled with the company that built the device.
+// The registry is ~1 MB, so it stays here and the client asks only for the
+// prefixes it is about to draw — the APK never ships the table.
+// Regenerate with: node server/refresh-oui.js
+let ouiTable = null;
+function loadOuiTable() {
+  if (ouiTable) return ouiTable;
+  try {
+    ouiTable = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'oui-vendors.json'), 'utf8'));
+  } catch (err) {
+    logger.error('[oui] table unavailable:', err.message);
+    ouiTable = {};
+  }
+  return ouiTable;
+}
+
+app.post('/api/oui/lookup', (req, res) => {
+  const prefixes = Array.isArray(req.body?.prefixes) ? req.body.prefixes : [];
+  if (prefixes.length > 512) return res.status(400).json({ error: 'Too many prefixes.' });
+  const table = loadOuiTable();
+  const out = {};
+  for (const p of prefixes) {
+    // Accept 5C:35:48, 5C-35-48 or 5C3548 — normalise to the registry's key.
+    const key = String(p).replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 6);
+    if (key.length === 6 && table[key]) out[key] = table[key];
+  }
+  res.json({ vendors: out });
+});
 
 app.get('/api/switch/default-host', (req, res) => {
   const userId = softAuthUserId(req);
@@ -5483,6 +5538,373 @@ app.post('/api/switch/lldp-neighbor', async (req, res) => {
     res.json({ ok: true, host, interface: iface, vendor: vendorKey, method, neighbor, chain });
   } catch (err) {
     res.status(502).json({ ok: false, error: err.message });
+  }
+});
+
+// Split all-ports LLDP output into per-interface blocks and parse each with
+// parseLooseNeighbor (the same field extractor the per-port lookup uses).
+// Returns { "<portKey>": {found, system_name, port_id, ...} } keyed by the
+// interface's port number (e.g. "1/0/1"), so the client can join by port.
+function parseAllLldpNeighbors(raw) {
+  const text = (raw || '')
+    .replace(/\r/g, '')
+    .replace(/\x00/g, '\n')
+    // Strip pager prompts so "Press any key to continue" can't be captured as
+    // a field value when it lands mid-record.
+    .replace(/Press any key to continue(?:\s*\(Q to quit\))?[ \t]*/gi, '')
+    .replace(/--More--[ \t]*/g, '')
+    .replace(/<--- More --->[ \t]*/g, '');
+  const out = {};
+  // Boundary = a line that names an interface. Tolerant to TP-Link
+  // ("Interface Name : gigabitEthernet 1/0/1") and Cisco-ish ("Gi1/0/1",
+  // "GigabitEthernet1/0/1", "Local Intf: Gi1/0/1") layouts. The captured
+  // group is the port number path (1/0/1, 0/1, etc.).
+  const re = /(?:^|\n)[^\S\n]*(?:Interface(?:\s*Name)?|Local\s*(?:Intf|Port|Interface))?\s*[:=]?\s*(?:gigabitethernet|tengigabitethernet|fastethernet|Gi|Te|Fa|Eth)\s*[:=]?\s*(\d+\/\d+(?:\/\d+)?)/gi;
+  const marks = [];
+  let m;
+  while ((m = re.exec(text)) !== null) marks.push({ key: m[1], idx: m.index });
+  for (let i = 0; i < marks.length; i++) {
+    const start = marks[i].idx;
+    const end = i + 1 < marks.length ? marks[i + 1].idx : text.length;
+    const parsed = parseLooseNeighbor(text.slice(start, end));
+    if (parsed.found) out[marks[i].key] = parsed;
+  }
+  return out;
+}
+
+// Vendor commands that dump LLDP neighbors for ALL ports in one shot.
+const LLDP_ALL_CMD = {
+  // TP-Link JetStream: the bare command errors "Incomplete command"; it needs
+  // the literal "interface" keyword (no port) to dump every port's neighbours.
+  'tplink':    'show lldp neighbor-information interface',
+  'cisco-ios': 'show lldp neighbors detail',
+  'dlink':     'show lldp remote_ports',
+};
+// The forwarding (MAC) table — the logical layer: which MAC(s) are learned on
+// each port, so even non-LLDP devices are identified and uplink ports (many
+// MACs) are obvious.
+const MAC_TABLE_CMD = {
+  'tplink':    'show mac address-table',
+  'cisco-ios': 'show mac address-table',
+  'dlink':     'show fdb',
+};
+
+// Parse a MAC address-table into { portKey: { macs:[...], vlan, count } }.
+// Handles rows like: "6c:3c:8c:23:24:0a  1  Gi1/0/4  dynamic  aging".
+function parseMacTable(raw) {
+  const text = (raw || '').replace(/\r/g, '').replace(/\x00/g, '\n');
+  const out = {};
+  for (const line of text.split('\n')) {
+    const m = line.match(/^\s*([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})\s+(\d+)\s+(?:gigabitethernet|tengigabitethernet|fastethernet|Gi|Te|Fa|Eth)?\s*(\d+\/\d+(?:\/\d+)?)\b/);
+    if (!m) continue;
+    const mac = m[1].toUpperCase(), vlan = m[2], port = m[3];
+    if (!out[port]) out[port] = { macs: [], vlan };
+    if (!out[port].macs.includes(mac)) out[port].macs.push(mac);
+  }
+  for (const k of Object.keys(out)) out[k].count = out[k].macs.length;
+  return out;
+}
+
+// POST /api/switch/neighbors — LLDP neighbours + MAC table for every port, in
+// ONE SSH session (respects the switch's ~1-session limit). Returns
+// { neighbors: {portKey:{...}}, macs: {portKey:{macs,vlan,count}} }.
+app.post('/api/switch/neighbors', auth.requireAuth, async (req, res) => {
+  const { host, sshPort, vendor } = req.body || {};
+  const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
+  if (!host || !username || !password) {
+    return res.status(400).json({ error: 'host and credentials (body or env) required' });
+  }
+  const vendorKey = VENDORS[vendor] ? vendor : 'cisco-ios';
+  const vconf = VENDORS[vendorKey];
+  const lldpCmd = LLDP_ALL_CMD[vendorKey] || LLDP_ALL_CMD['cisco-ios'];
+  const macCmd  = MAC_TABLE_CMD[vendorKey] || MAC_TABLE_CMD['cisco-ios'];
+  const runOne = (command) => runSwitchCommand({
+    host, port: sshPort, username, password,
+    command, pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
+    timeoutMs: 30000,
+  });
+  try {
+    // Two single-command runs (serialized per host by runSwitchCommand's lock).
+    // The single-command path auto-advances the switch's pager, so long output
+    // isn't truncated — unlike the sequential shell, which cut it off at page 1.
+    const lldpRaw = await runOne(lldpCmd);
+    const macRaw  = await runOne(macCmd);
+    const neighbors = parseAllLldpNeighbors(lldpRaw || '');
+    const macs = parseMacTable(macRaw || '');
+    res.json({
+      ok: true, host, vendor: vendorKey,
+      neighborCount: Object.keys(neighbors).length,
+      macPortCount: Object.keys(macs).length,
+      neighbors, macs,
+    });
+  } catch (err) {
+    res.json({ ok: false, error: err.message, host, neighbors: {}, macs: {} });
+  }
+});
+
+// ── Full single-switch audit ──────────────────────────────────
+// Commands that fill the audit sheet (identity, port faceplate, PoE, VLAN),
+// per vendor. TP-Link JetStream is the primary target; others degrade to a
+// best-effort equivalent and any unsupported command just parses to empty.
+const AUDIT_CMDS = {
+  tplink: {
+    sysinfo: 'show system-info',
+    ifstatus: 'show interface status',
+    ifconfig: 'show interface configuration',
+    poe: 'show power inline information interface',
+    vlan: 'show vlan',
+  },
+  'cisco-ios': {
+    sysinfo: 'show version',
+    ifstatus: 'show interfaces status',
+    ifconfig: 'show interfaces description',
+    poe: 'show power inline',
+    vlan: 'show vlan brief',
+  },
+  dlink: {
+    sysinfo: 'show switch',
+    ifstatus: 'show ports',
+    ifconfig: null,
+    poe: null,
+    vlan: 'show vlan',
+  },
+};
+
+// Parse TP-Link/Cisco "Key - Value" or "Key : Value" system-info into fields.
+function parseSystemInfo(raw) {
+  const text = (raw || '').replace(/\r/g, '');
+  const get = (re) => { const m = text.match(re); return m ? m[1].trim() : null; };
+  return {
+    description: get(/System Description\s*[-:]\s*(.+)/i),
+    name:       get(/(?:Device Name|System Name|hostname)\s*[-:]\s*(.+)/i),
+    location:   get(/(?:Device |System )?Location\s*[-:]\s*(.+)/i),
+    hwVersion:  get(/Hardware Version\s*[-:]\s*(.+)/i),
+    fwVersion:  get(/(?:Firmware|Software) Version\s*[-:]\s*(.+)/i),
+    mac:        get(/Mac Address\s*[-:]\s*([0-9A-Fa-f:-]{11,17})/i),
+    serial:     get(/Serial Number\s*[-:]\s*(.+)/i),
+    uptime:     get(/(?:Running Time|Run Time|System Uptime|uptime is)\s*[-:]?\s*(.+)/i),
+  };
+}
+
+const PORT_TOK = /^(?:gigabitethernet|tengigabitethernet|fastethernet|gi|te|fa)(\d+\/\d+(?:\/\d+)?)$/i;
+
+// Live vs admin state per port: { key: { up, statusRaw, speed, duplex, medium } }.
+function parseInterfaceStatus(raw) {
+  const out = {};
+  for (const line of (raw || '').replace(/\r/g, '').replace(/\x00/g, '\n').split('\n')) {
+    const t = line.trim().split(/\s+/);
+    if (t.length < 2) continue;
+    const pm = t[0].match(PORT_TOK);
+    if (!pm) continue;
+    const status = t[1];
+    const medium = t.find(x => /^(copper|fiber)$/i.test(x)) || null;
+    out[pm[1]] = {
+      up: /linkup|^up$|connected/i.test(status),
+      statusRaw: status,
+      speed:  (t[2] && t[2] !== 'N/A') ? t[2] : null,
+      duplex: (t[3] && t[3] !== 'N/A') ? t[3] : null,
+      medium: medium ? medium.toLowerCase() : null,
+    };
+  }
+  return out;
+}
+
+// Admin intent + description: { key: { enabled, description } }.
+function parseInterfaceConfig(raw) {
+  const out = {};
+  for (const line of (raw || '').replace(/\r/g, '').replace(/\x00/g, '\n').split('\n')) {
+    const t = line.trim().split(/\s+/);
+    if (!t[0]) continue;
+    const pm = t[0].match(PORT_TOK);
+    if (!pm) continue;
+    out[pm[1]] = {
+      enabled: /enable|up|connected/i.test(t[1] || ''),
+      description: t.slice(5).join(' ') || null,
+    };
+  }
+  return out;
+}
+
+// PoE: { ports:{key:{power,class,on}}, used, budget }. Budget is null when the
+// firmware doesn't print a system summary line (used is summed from per-port).
+function parsePoe(raw) {
+  const text = (raw || '').replace(/\r/g, '').replace(/\x00/g, '\n');
+  const ports = {};
+  let summed = 0;
+  for (const line of text.split('\n')) {
+    const t = line.trim().split(/\s+/);
+    if (!t[0]) continue;
+    const pm = t[0].match(PORT_TOK);
+    if (!pm) continue;
+    const power = parseFloat(t[1]) || 0;
+    const cls = (line.match(/Class\s*\d+/i) || [])[0] || null;
+    const on = /\bon\b/i.test(t[t.length - 1]);
+    ports[pm[1]] = { power, class: cls, on };
+    summed += power;
+  }
+  const bm = text.match(/System Power (?:Limit|Budget)\s*[:=]?\s*([\d.]+)/i);
+  const cm = text.match(/System Power Consumption\s*[:=]?\s*([\d.]+)/i);
+  return {
+    ports,
+    used: cm ? parseFloat(cm[1]) : Math.round(summed * 10) / 10,
+    budget: bm ? parseFloat(bm[1]) : null,
+  };
+}
+
+// VLAN membership: [{ id, name, status, ports:[{port,tagged}] }]. Handles
+// TP-Link's wrapped continuation lines and Gi1/0/1-24 ranges.
+function parseVlan(raw) {
+  const out = [];
+  let cur = null;
+  const add = (s, v) => {
+    const seen = new Map(v.ports.map(p => [p.port, p.tagged]));
+    // ranges first: 1/0/1-24
+    s.replace(/(\d+)\/(\d+)\/(\d+)\s*-\s*(\d+)/g, (_, a, b, c, d) => {
+      for (let p = +c; p <= +d; p++) if (!seen.has(`${a}/${b}/${p}`)) seen.set(`${a}/${b}/${p}`, false);
+      return ' ';
+    });
+    const re = /(\d+\/\d+\/\d+)(\((?:t|u)\))?/gi;
+    let m;
+    while ((m = re.exec(s))) {
+      const tagged = /t/i.test(m[2] || '');
+      seen.set(m[1], seen.get(m[1]) || tagged);
+    }
+    v.ports = [...seen.entries()].map(([port, tagged]) => ({ port, tagged }));
+  };
+  for (const line of (raw || '').replace(/\r/g, '').replace(/\x00/g, '\n').split('\n')) {
+    const idm = line.match(/^\s*(\d+)\s+(\S+)\s+(active|inactive|\S+)\s+(.*)$/);
+    if (idm && !/^VLAN$/i.test(idm[2])) {
+      cur = { id: idm[1], name: idm[2], status: idm[3], ports: [] };
+      out.push(cur);
+      add(idm[4], cur);
+    } else if (cur && /\d+\/\d+\/\d+/.test(line) && !/VLAN\s+Name/i.test(line)) {
+      add(line, cur);
+    }
+  }
+  return out;
+}
+
+// POST /api/switch/audit — one pass over the switch for the full Ports-tab
+// audit: identity, per-port status/admin/medium, PoE, VLANs, LLDP neighbours,
+// and the MAC table. Runs each read-only command serialized on the host lock
+// (the single-command path auto-advances the pager, so nothing truncates).
+app.post('/api/switch/audit', auth.requireAuth, async (req, res) => {
+  const { host, sshPort, vendor } = req.body || {};
+  const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
+  const _dbg = (m) => { try { require('fs').appendFileSync('/tmp/rt-audit.log', `${new Date().toISOString()} ${m}\n`); } catch (_) {} };
+  _dbg(`REQ host=${host} vendor=${vendor} hasUser=${!!username} hasPass=${!!password}`);
+  const _t0 = Date.now();
+  if (!host || !username || !password) {
+    _dbg(`400 missing host/creds`);
+    return res.status(400).json({ error: 'host and credentials (body or env) required' });
+  }
+  const vendorKey = VENDORS[vendor] ? vendor : 'cisco-ios';
+  const vconf = VENDORS[vendorKey];
+  const cmds = AUDIT_CMDS[vendorKey] || AUDIT_CMDS['cisco-ios'];
+  const lldpCmd = LLDP_ALL_CMD[vendorKey] || LLDP_ALL_CMD['cisco-ios'];
+  const macCmd  = MAC_TABLE_CMD[vendorKey] || MAC_TABLE_CMD['cisco-ios'];
+  // The short outputs (identity, port status, admin config, PoE, VLAN) all fit
+  // one page, so batch them in a SINGLE SSH session — fast, no truncation.
+  // LLDP and the MAC table are long and paginate; the sequential shell truncates
+  // paginated output (we saw 2 of 6 neighbours, 0 MACs), so fetch those two with
+  // the single-command runner, which auto-advances the pager (proven by the
+  // /neighbors endpoint). Net: one session + two reconnects — fast AND complete.
+  const shortCmds = [
+    cmds.sysinfo  && { name: 'sysinfo',  cmd: cmds.sysinfo },
+    cmds.ifstatus && { name: 'ifstatus', cmd: cmds.ifstatus },
+    cmds.ifconfig && { name: 'ifconfig', cmd: cmds.ifconfig },
+    cmds.poe      && { name: 'poe',      cmd: cmds.poe },
+    cmds.vlan     && { name: 'vlan',     cmd: cmds.vlan },
+  ].filter(Boolean);
+
+  // Gather the whole audit against ONE host. Short outputs batch in a single
+  // session; LLDP + MAC use the auto-paging single-command runner (the
+  // sequential shell truncates their long output).
+  const gather = async (h) => {
+    const out = {};
+    await runSwitchCommandsSequential({
+      host: h, port: sshPort, username, password,
+      commands: shortCmds,
+      pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
+      timeoutMsPerCmd: 15000,
+      onEntry: (i, entry) => { out[entry.name] = entry.output || ''; },
+    });
+    const runOne = (command) => command ? runSwitchCommand({
+      host: h, port: sshPort, username, password,
+      command, pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
+      timeoutMs: 30000,
+    }) : Promise.resolve('');
+    const lldpRaw = await runOne(lldpCmd);
+    const macRaw  = await runOne(macCmd);
+    return {
+      identity:  parseSystemInfo(out.sysinfo || ''),
+      ifstatus:  parseInterfaceStatus(out.ifstatus || ''),
+      ifconfig:  parseInterfaceConfig(out.ifconfig || ''),
+      poe:       parsePoe(out.poe || ''),
+      vlans:     parseVlan(out.vlan || ''),
+      neighbors: parseAllLldpNeighbors(lldpRaw || ''),
+      macs:      parseMacTable(macRaw || ''),
+    };
+  };
+
+  // Self-heal: try the requested host, then the in-office bench switch. A stale
+  // or changed client IP (e.g. .14 → .33) recovers here without any user action.
+  const benchHost = (process.env.TPLINK_BENCH_HOST || '').trim();
+  const candidates = [...new Set([host, benchHost].filter(Boolean))];
+  let lastErr = null;
+  for (const h of candidates) {
+    try {
+      const data = await gather(h);
+      _dbg(`OK ${Date.now() - _t0}ms host=${h} neighbors=${Object.keys(data.neighbors).length} macs=${Object.keys(data.macs).length} identity=${data.identity.name || '?'}`);
+      return res.json({ ok: true, host: h, vendor: vendorKey, ...data });
+    } catch (err) {
+      lastErr = err;
+      _dbg(`FAIL host=${h} ${err.message}`);
+    }
+  }
+  _dbg(`ERR ${Date.now() - _t0}ms ${lastErr && lastErr.message}`);
+  res.json({ ok: false, error: lastErr ? lastErr.message : 'audit failed', host });
+});
+
+// Vendor commands for reachability checks. TP-Link uses `tracert` (not
+// `traceroute`, which errors "Bad command"); Cisco/D-Link use `traceroute`.
+// TP-Link's `tracert` defaults to only 4 hops — append a max-hop count so it
+// walks the full path and reaches the destination, like Cisco's 30-hop default.
+const NET_CMD = {
+  tplink:      { ping: 'ping {t}', traceroute: 'tracert {t} 30' },
+  'cisco-ios': { ping: 'ping {t}', traceroute: 'traceroute {t}' },
+  dlink:       { ping: 'ping {t}', traceroute: 'traceroute {t}' },
+};
+
+// POST /api/switch/trace — quick verification from the switch itself: run a
+// ping or traceroute to a target and return the raw output. Rides the same SSH
+// console plumbing as every other switch command.
+app.post('/api/switch/trace', auth.requireAuth, async (req, res) => {
+  const { host, sshPort, vendor, target, kind } = req.body || {};
+  const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
+  if (!host || !username || !password) {
+    return res.status(400).json({ error: 'host and credentials (body or env) required' });
+  }
+  const tgt = String(target || '').trim();
+  // Injection guard: the target is spliced into a shell command on the switch,
+  // so allow only an IP or hostname — letters, digits, dot, hyphen, colon.
+  if (!/^[A-Za-z0-9._:-]{1,64}$/.test(tgt)) {
+    return res.status(400).json({ error: 'Enter a valid IP address or hostname.' });
+  }
+  const vendorKey = VENDORS[vendor] ? vendor : 'cisco-ios';
+  const vconf = VENDORS[vendorKey];
+  const k = kind === 'ping' ? 'ping' : 'traceroute';
+  const tmpl = (NET_CMD[vendorKey] || NET_CMD['cisco-ios'])[k];
+  const command = tmpl.replace('{t}', tgt);
+  try {
+    const raw = await runSwitchCommand({
+      host, port: sshPort, username, password, command,
+      pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
+      timeoutMs: 45000,   // ping/traceroute can take a while to walk hops
+    });
+    res.json({ ok: true, host, target: tgt, kind: k, command, output: (raw || '').trim() });
+  } catch (err) {
+    res.json({ ok: false, error: err.message, host, target: tgt, kind: k });
   }
 });
 
@@ -5982,6 +6404,7 @@ app.post('/api/scan/:rackId/ocr-devices', (req, res) => {
 // Information page to know whether OCR has been run for this rack.
 app.get('/api/scan/:rackId/ocr-devices', (req, res) => {
   const { rackId } = req.params;
+  res.setHeader('Cache-Control', 'no-store');
   const p = path.join(outputsDir, rackId, 'ocr_devices.json');
   if (!fs.existsSync(p)) {
     return res.status(404).json({ ok: false, error: 'OCR not yet run for this rack', rackId });

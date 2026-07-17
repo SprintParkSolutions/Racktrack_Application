@@ -107,8 +107,8 @@ export default function MarketplaceNewPage() {
   const handleFilePick = async (file) => {
     if (!file) return;
     setImageError(null);
-    if (!/^image\/(jpe?g|png|webp)$/i.test(file.type)) {
-      setImageError('Only JPG, PNG, or WebP images are accepted.');
+    if (!/^image\//i.test(file.type) && !/\.(heic|heif)$/i.test(file.name)) {
+      setImageError('Only image files are accepted (JPG, PNG, WebP, HEIC).');
       return;
     }
     if (file.size > 8 * 1024 * 1024) {
@@ -148,6 +148,7 @@ export default function MarketplaceNewPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
+    if (imageUploading) { setError('Please wait for the image to finish uploading.'); return; }
     setError(null);
     const t = title.trim();
     if (!t) { setError('Title is required.'); return; }
@@ -327,7 +328,7 @@ export default function MarketplaceNewPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*,image/heic,image/heif,.heic,.heif"
             style={{ display: 'none' }}
             onChange={(e) => handleFilePick(e.target.files && e.target.files[0])}
           />
@@ -357,7 +358,7 @@ export default function MarketplaceNewPage() {
                     onClick={() => fileInputRef.current && fileInputRef.current.click()}>
               <span className={styles.photoIcon} aria-hidden="true">📷</span>
               <span className={styles.photoMain}>Upload a photo</span>
-              <span className={styles.photoSub}>JPG · PNG · WebP &middot; up to 8 MB</span>
+              <span className={styles.photoSub}>JPG · PNG · WebP · HEIC &middot; up to 8 MB</span>
             </button>
           )}
           {imageError && <span className={styles.hintError}>{imageError}</span>}

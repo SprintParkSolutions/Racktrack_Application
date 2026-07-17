@@ -895,6 +895,12 @@
   position: relative; z-index: 10;
   background: var(--md-background, #fafafb);
 }
+/* This is a scrolling flex column — its children must keep their natural
+   height and let the column scroll, never compress to fit. Without this the
+   flex algorithm shrinks tall blocks (e.g. the linked-endpoint card) below
+   their content height, so the content overflows and the next block (the
+   feedback prompt) renders on top of it. */
+.portBody > * { flex-shrink: 0; }
 
 /* Port image — grows to fill remaining space, capped slightly so it's not overwhelming */
 .portImgWrap {
@@ -2751,7 +2757,7 @@
 
 /* ── Action buttons ── */
 .pActions {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
   margin: 0 14px 14px;
 }
 .pActionBtn {
@@ -2773,6 +2779,16 @@
   color: #0a0a0b;
   border-color: #0a0a0b;
   box-shadow: var(--shadow-soft, 0 4px 12px rgba(0,0,0,0.08));
+}
+.pActionBtnSell {
+  background: rgba(99,102,241,0.9);
+  color: #fff;
+  border-color: rgba(99,102,241,0.5);
+}
+.pActionBtnSell:hover {
+  background: rgba(99,102,241,1);
+  color: #fff;
+  border-color: rgba(99,102,241,0.7);
 }
 
 .cableDot {
@@ -2874,6 +2890,59 @@
   border-radius: 100px; padding: 2px 8px;
 }
 .noPorts { color: rgba(0,0,0,0.2); font-size: .72rem; }
+
+/* ── Sell button inside device card ── */
+.sellBtn {
+  display: flex; align-items: center; gap: 5px;
+  align-self: flex-end;
+  margin-top: 4px;
+  padding: 4px 14px;
+  font-family: var(--mono); font-size: .72rem; font-weight: 700;
+  color: #fff;
+  background: rgba(99,102,241,0.85);
+  border: 1px solid rgba(99,102,241,0.5);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.sellBtn:hover  { background: rgba(99,102,241,1); transform: translateY(-1px); }
+.sellBtn:active { transform: scale(0.97); }
+:global([data-theme='light']) .sellBtn {
+  background: rgba(99,102,241,0.9);
+  border-color: rgba(99,102,241,0.35);
+}
+
+/* ── Pagination controls ── */
+.pagination {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 10px 0 4px;
+}
+.pageBtn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 14px;
+  font-family: var(--mono); font-size: .74rem; font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.pageBtn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: #fff; }
+.pageBtn:disabled { opacity: 0.3; cursor: default; }
+.pageInfo {
+  font-family: var(--mono); font-size: .74rem; font-weight: 600;
+  color: rgba(255,255,255,0.45);
+}
+:global([data-theme='light']) .pageBtn {
+  color: #4c4546;
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.12);
+}
+:global([data-theme='light']) .pageBtn:hover:not(:disabled) {
+  background: rgba(0,0,0,0.1); color: #1a1c1d;
+}
+:global([data-theme='light']) .pageInfo { color: #4c4546; }
 
 /* ── Next port card (find another port) ── */
 .nextPortCard {
@@ -3703,22 +3772,23 @@
   flex-shrink: 0;
 }
 
-/* ── Creative "linked endpoint" block ── */
+/* ── "Linked endpoint" card — neutral surface, green "live" accent ── */
 .prEndCreative {
   flex: 1; min-width: 0;
   display: flex; align-items: flex-start; gap: 12px;
   position: relative;
-  padding-left: 6px;
+  padding: 12px 14px 12px 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
 }
 .prEndCreative::before {
   content: '';
   position: absolute;
-  left: -2px; top: 4px; bottom: 4px;
-  width: 2px; border-radius: 2px;
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--ac, #000000) 85%, transparent),
-    color-mix(in srgb, var(--ac, #000000) 10%, transparent));
-  box-shadow: 0 0 8px color-mix(in srgb, var(--ac, #000000) 45%, transparent);
+  left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 12px 0 0 12px;
+  background: #16a34a;
 }
 .prEndIcon {
   position: relative;
@@ -3726,28 +3796,22 @@
   width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 10px;
-  color: var(--ac, #000000);
-  background:
-    radial-gradient(circle at 30% 20%,
-      color-mix(in srgb, var(--ac, #000000) 22%, transparent),
-      color-mix(in srgb, var(--ac, #000000) 6%, transparent) 70%);
-  border: 1px solid color-mix(in srgb, var(--ac, #000000) 35%, rgba(255,255,255,0.08));
-  box-shadow:
-    inset 0 0 8px color-mix(in srgb, var(--ac, #000000) 18%, transparent),
-    0 0 12px color-mix(in srgb, var(--ac, #000000) 20%, transparent);
+  color: #16a34a;
+  background: rgba(22,163,74,0.12);
+  border: 1px solid rgba(22,163,74,0.30);
 }
 .prEndLiveDot {
   position: absolute;
   top: -2px; right: -2px;
   width: 8px; height: 8px; border-radius: 50%;
-  background: #1a1c1d;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.7);
+  background: #16a34a;
+  box-shadow: 0 0 0 2px var(--md-surface, #17181b), 0 0 8px rgba(22,163,74,0.7);
   animation: prEndLivePulse 1.6s ease-out infinite;
 }
 @keyframes prEndLivePulse {
-  0%   { box-shadow: 0 0 0 2px rgba(0,0,0,0.95), 0 0 0 0 rgba(0,0,0,0.55); }
-  70%  { box-shadow: 0 0 0 2px rgba(0,0,0,0.95), 0 0 0 6px rgba(0,0,0,0); }
-  100% { box-shadow: 0 0 0 2px rgba(0,0,0,0.95), 0 0 0 0 rgba(0,0,0,0); }
+  0%   { box-shadow: 0 0 0 2px var(--md-surface, #17181b), 0 0 0 0 rgba(22,163,74,0.55); }
+  70%  { box-shadow: 0 0 0 2px var(--md-surface, #17181b), 0 0 0 6px rgba(22,163,74,0); }
+  100% { box-shadow: 0 0 0 2px var(--md-surface, #17181b), 0 0 0 0 rgba(22,163,74,0); }
 }
 .prEndBody {
   flex: 1; min-width: 0;
@@ -3757,15 +3821,21 @@
   display: flex; align-items: center; gap: 8px;
 }
 .prEndTag {
+  display: inline-flex; align-items: center; gap: 4px;
   font-family: var(--mono);
-  font-size: .6rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: #4c4546;
-  background: rgba(0,0,0,0.12);
-  border: 1px solid rgba(0,0,0,0.35);
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #4ade80;
+  background: rgba(22,163,74,0.16);
+  border: 1px solid rgba(22,163,74,0.38);
+}
+.prEndTag::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 6px rgba(22,163,74,0.8);
 }
 .prEndChips {
   display: flex; flex-wrap: wrap; gap: 6px;
@@ -3803,6 +3873,20 @@
 }
 .prEndChip_ttl .prEndChipKey { color: rgba(0,0,0,0.85); }
 .prEndChip_ttl .prEndChipVal { color: #f3f3f5; }
+.prEndChip_vlan {
+  color: #cfe0f6;
+  background: color-mix(in srgb, #2a78d6 22%, rgba(0,0,0,0.5));
+  border-color: color-mix(in srgb, #2a78d6 40%, transparent);
+}
+.prEndChip_vlan .prEndChipKey { color: color-mix(in srgb, #2a78d6 55%, #ffffff); }
+.prEndChip_vlan .prEndChipVal { color: #eef4fc; }
+.prEndChip_ip {
+  color: #cdeede;
+  background: color-mix(in srgb, #16a34a 20%, rgba(0,0,0,0.5));
+  border-color: color-mix(in srgb, #16a34a 40%, transparent);
+}
+.prEndChip_ip .prEndChipKey { color: color-mix(in srgb, #16a34a 55%, #ffffff); }
+.prEndChip_ip .prEndChipVal { color: #eafaf0; }
 .prEndPulse {
   width: 10px; height: 10px; border-radius: 50%;
   background: var(--ac, #000000);
@@ -3819,8 +3903,10 @@
 .prEndName {
   color: #ffffff;
   font-family: var(--mono);
-  letter-spacing: 0.01em;
-  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-weight: 800;
+  font-size: .98rem;
+  line-height: 1.2;
   /* Long unbreakable tokens (MAC / FQDN) were overflowing and pushing the reset
      button off-screen — shrink + ellipsis inside the flex row instead. */
   min-width: 0;
@@ -4753,23 +4839,46 @@
 :global([data-theme='light']) .prEndDim { color: #4c4546; }
 :global([data-theme='light']) .prEndCreative {
   background: #ffffff;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+  border: 1px solid #ececec;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.07);
 }
-:global([data-theme='light']) .prEndLabel { color: #000000; }
+:global([data-theme='light']) .prEndIcon {
+  color: #16a34a;
+  background: rgba(22,163,74,0.10);
+  border-color: rgba(22,163,74,0.28);
+}
+:global([data-theme='light']) .prEndLiveDot {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 8px rgba(22,163,74,0.6);
+}
+:global([data-theme='light']) .prEndLabel { color: #55565b; }
 :global([data-theme='light']) .prEndTag {
-  background: rgba(0,0,0,0.12);
-  color: #1a1c1d;
-  border-color: rgba(0,0,0,0.32);
+  background: rgba(22,163,74,0.12);
+  color: #15803d;
+  border-color: rgba(22,163,74,0.38);
 }
-:global([data-theme='light']) .prEndName { color: #1a1c1d; }
+:global([data-theme='light']) .prEndName { color: #16171a; }
 :global([data-theme='light']) .prEndChip {
-  background: rgba(0,0,0,0.08);
-  border: 1px solid rgba(0,0,0,0.20);
-  color: #4c4546;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.14);
+  color: #3a3c42;
 }
-:global([data-theme='light']) .prEndChipKey { color: #000000; }
-:global([data-theme='light']) .prEndChipVal { color: #1a1c1d; }
+:global([data-theme='light']) .prEndChipKey { color: #6b6d73; }
+:global([data-theme='light']) .prEndChipVal { color: #16171a; }
+:global([data-theme='light']) .prEndChip_mac { background: rgba(0,0,0,0.06); }
+:global([data-theme='light']) .prEndChip_mac .prEndChipKey,
+:global([data-theme='light']) .prEndChip_mac .prEndChipVal { color: #16171a; }
+:global([data-theme='light']) .prEndChip_vlan {
+  background: color-mix(in srgb, #2a78d6 12%, #ffffff);
+  border-color: color-mix(in srgb, #2a78d6 32%, transparent); color: #1a4f95;
+}
+:global([data-theme='light']) .prEndChip_vlan .prEndChipKey { color: #2a78d6; }
+:global([data-theme='light']) .prEndChip_vlan .prEndChipVal { color: #1a4f95; }
+:global([data-theme='light']) .prEndChip_ip {
+  background: color-mix(in srgb, #16a34a 12%, #ffffff);
+  border-color: color-mix(in srgb, #16a34a 32%, transparent); color: #14612e;
+}
+:global([data-theme='light']) .prEndChip_ip .prEndChipKey { color: #16a34a; }
+:global([data-theme='light']) .prEndChip_ip .prEndChipVal { color: #14612e; }
 :global([data-theme='light']) .prEndAction {
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.30);
@@ -4940,6 +5049,15 @@
   background: #fafafa;
   border-color: #4c4546;
   color: #000000;
+}
+:global([data-theme='light']) .pActionBtnSell {
+  background: rgba(99,102,241,0.9);
+  color: #fff;
+  border-color: rgba(99,102,241,0.35);
+}
+:global([data-theme='light']) .pActionBtnSell:hover {
+  background: rgba(99,102,241,1);
+  color: #fff;
 }
 
 /* Report row chips */

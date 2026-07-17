@@ -24,7 +24,7 @@ export default function HomeLight() {
       <header className={styles.appBar}>
         <div className={styles.brand}>
           <img src="/logo.jpg" alt="" className={styles.brandLogo} aria-hidden="true" />
-          <span className={styles.brandName}>RACKTRACK</span>
+          <span className={styles.brandName}>RackTrack</span>
         </div>
         {!isAuthed && (
           <button type="button" className={styles.signInBtn} onClick={handleSignIn}>

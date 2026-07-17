@@ -47,7 +47,7 @@ export default function HomeStudio() {
       <header className={styles.top}>
         <div className={styles.brand}>
           <img src="/logo.jpg" alt="" className={styles.mark} aria-hidden="true" />
-          <span className={styles.word}>RACKTRACK</span>
+          <span className={styles.word}>RackTrack</span>
         </div>
         <button
           type="button"

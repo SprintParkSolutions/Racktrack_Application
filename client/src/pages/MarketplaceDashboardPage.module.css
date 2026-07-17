@@ -1,0 +1,130 @@
+.page {
+  position: relative;
+  display: flex; flex-direction: column;
+  gap: 14px;
+  min-height: 100dvh;
+  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  background: #ffffff;
+}
+.header {
+  display: flex; align-items: center; gap: 10px;
+  padding: max(20px, calc(env(safe-area-inset-top, 0px) + 16px)) 16px 6px;
+}
+.backBtn {
+  width: 38px; height: 38px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: rgba(0,0,0,0.10);
+  border: 1px solid rgba(0,0,0,0.18); color: var(--text); cursor: pointer;
+}
+.backBtn:hover { background: rgba(0,0,0,0.18); }
+.title {
+  flex: 1; margin: 0; font-size: 1.25rem; font-weight: 700;
+  letter-spacing: -0.02em; color: var(--text);
+}
+
+/* Stats grid */
+.statsGrid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; padding: 0 16px;
+}
+.statCard {
+  padding: 16px 14px; border-radius: 14px;
+  background: #ffffff; border: 1px solid #f0f0f0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.statValue {
+  font-size: 1.8rem; font-weight: 800;
+  letter-spacing: -0.02em; color: var(--text);
+  line-height: 1;
+}
+.statLabel {
+  font-size: .75rem; font-weight: 600;
+  color: rgba(0,0,0,0.45); text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* Revenue */
+.revenueRow {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; padding: 0 16px;
+}
+.revCard {
+  background: #f0fdf4; border-color: #a7f3d0;
+}
+.revValue {
+  font-size: 1.4rem; font-weight: 800;
+  color: #065f46; line-height: 1.2;
+}
+.revMeta { font-size: .72rem; color: #065f46; opacity: .7; }
+
+/* Section */
+.section { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+.sectionLabel {
+  margin: 0; font-size: .78rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--text);
+}
+.purchaseRow {
+  display: flex; justify-content: space-between;
+  padding: 12px; border-radius: 12px;
+  background: #f7f7f8; font-size: .88rem; color: var(--text);
+}
+.bold { font-weight: 700; }
+
+/* Listing list */
+.listingList { display: flex; flex-direction: column; gap: 6px; }
+.listingCard {
+  display: flex; gap: 10px; align-items: center;
+  padding: 10px 12px; border-radius: 12px;
+  background: #ffffff; border: 1px solid #f0f0f0;
+}
+.listingIcon { font-size: 1.3rem; flex-shrink: 0; }
+.listingInfo { flex: 1; min-width: 0; }
+.listingTitle {
+  margin: 0; font-size: .85rem; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.listingPrice { font-size: .88rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+
+/* Status badges */
+.statusBadge {
+  display: inline-block; padding: 2px 6px; border-radius: 999px;
+  font-size: .65rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.active { background: #ecfdf5; color: #065f46; }
+.sold   { background: #f3f4f6; color: #6b7280; }
+.closed { background: #fff7ed; color: #9a3412; }
+
+/* Quick links */
+.quickLinks {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px;
+}
+
+/* Buttons */
+.btnPrimary {
+  padding: 10px 14px; border-radius: 10px;
+  background: #0b0c0e; border: 1px solid #0b0c0e;
+  color: white; font-size: .85rem; font-weight: 600;
+  cursor: pointer;
+}
+.btnSecondary {
+  padding: 9px 14px; border-radius: 10px;
+  background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.15);
+  color: var(--text); font-size: .85rem; font-weight: 500; cursor: pointer;
+}
+
+/* Util */
+.center { display: flex; align-items: center; justify-content: center; padding: 40px; }
+.spinner {
+  width: 26px; height: 26px;
+  border: 2px solid rgba(0,0,0,0.20);
+  border-top-color: rgba(0,0,0,0.85);
+  border-radius: 50%; animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.errBanner {
+  margin: 0 16px; padding: 10px 12px; border-radius: 10px;
+  background: #fff5f5; border: 1px solid #ffd9d9;
+  color: #b42318; font-size: .85rem;
+}
+.emptySmall { margin: 0; font-size: .82rem; color: rgba(0,0,0,0.4); }

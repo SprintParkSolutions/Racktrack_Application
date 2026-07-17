@@ -1,0 +1,7 @@
+{
+  "watch": ["*.js", "lib/"],
+  "ignore": ["node_modules/", "uploads/", "data/", "test/", "feedback/"],
+  "ext": "js,json",
+  "delay": 500,
+  "legacyWatch": true
+}

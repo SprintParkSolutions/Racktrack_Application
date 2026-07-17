@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cable Path Tracing — Requirements for the Network Admin</title>
+<style>
+  :root {
+    --ground:  #F7F7F5;
+    --surface: #FFFFFF;
+    --sunk:    #F0F0EC;
+    --ink:     #1A1B18;
+    --ink-2:   #5C5F58;
+    --ink-3:   #86897F;
+    --rule:    #DDDED8;
+    --rule-2:  #EAEBE5;
+    /* semantic: discovered vs asserted. not decoration. */
+    --seen:    #0F6B70;
+    --seen-bg: #E2F0F0;
+    --blind:   #8A5A16;
+    --blind-bg:#F5EBD9;
+    --stop:    #93382F;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:#131412; --surface:#1B1C19; --sunk:#212320; --ink:#E8E9E3; --ink-2:#9DA098;
+      --ink-3:#787B72; --rule:#2E302B; --rule-2:#262824;
+      --seen:#4FAFB4; --seen-bg:#14292A; --blind:#D3A251; --blind-bg:#2A2216; --stop:#E08276;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#131412; --surface:#1B1C19; --sunk:#212320; --ink:#E8E9E3; --ink-2:#9DA098;
+    --ink-3:#787B72; --rule:#2E302B; --rule-2:#262824;
+    --seen:#4FAFB4; --seen-bg:#14292A; --blind:#D3A251; --blind-bg:#2A2216; --stop:#E08276;
+  }
+  :root[data-theme="light"] {
+    --ground:#F7F7F5; --surface:#FFFFFF; --sunk:#F0F0EC; --ink:#1A1B18; --ink-2:#5C5F58;
+    --ink-3:#86897F; --rule:#DDDED8; --rule-2:#EAEBE5;
+    --seen:#0F6B70; --seen-bg:#E2F0F0; --blind:#8A5A16; --blind-bg:#F5EBD9; --stop:#93382F;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; }
+  body {
+    background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* Fixed, viewport-sized pane that scrolls its own contents. Resolved against
+     the viewport, so it escapes any clipped or height-pinned ancestor. */
+  #scroller {
+    position:fixed; top:0; right:0; bottom:0; left:0;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    background:var(--ground);
+  }
+  .wrap { max-width:62rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; }
+
+  .eyebrow {
+    font-family:var(--mono); font-size:0.7rem; letter-spacing:0.15em;
+    text-transform:uppercase; color:var(--ink-3); margin:0 0 0.7rem;
+  }
+  h1 { font-size:clamp(1.8rem,4vw,2.5rem); line-height:1.15; letter-spacing:-0.02em;
+       font-weight:650; text-wrap:balance; margin:0 0 1rem; }
+  h2 { font-size:1.35rem; font-weight:620; letter-spacing:-0.01em; margin:0 0 0.5rem; text-wrap:balance; }
+  h3 { font-size:1.02rem; font-weight:620; margin:0 0 0.4rem; }
+  .lede { font-size:1.08rem; color:var(--ink-2); max-width:64ch; margin:0; }
+  header { border-bottom:1px solid var(--rule); padding-bottom:2.25rem; margin-bottom:2.75rem; }
+
+  section { margin-bottom:3.25rem; }
+  .sec-head { margin-bottom:1.5rem; }
+  .sec-head p { margin:0; color:var(--ink-2); max-width:66ch; }
+
+  p { max-width:68ch; }
+
+  /* ---------- the core diagram ---------- */
+  .layers { border:1px solid var(--rule); background:var(--surface); }
+  .layer { padding:1.5rem; overflow-x:auto; }
+  .layer + .layer { border-top:1px solid var(--rule); }
+  .layer.blindband { background:var(--blind-bg); }
+  .layer-tag {
+    font-family:var(--mono); font-size:0.66rem; letter-spacing:0.12em; text-transform:uppercase;
+    margin:0 0 1rem; display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;
+  }
+  .layer-tag .who { color:var(--ink-3); }
+  .chain { display:flex; align-items:center; gap:0; min-width:min-content; }
+  .node {
+    font-family:var(--mono); font-size:0.78rem; line-height:1.35;
+    padding:0.55rem 0.75rem; border:1px solid var(--seen); color:var(--seen);
+    background:var(--surface); white-space:nowrap; border-radius:2px; text-align:center;
+  }
+  .node b { display:block; font-weight:600; color:var(--ink); }
+  .node.ghost {
+    border-style:dashed; border-color:var(--blind); color:var(--blind); background:transparent;
+  }
+  .node.ghost b { color:var(--blind); }
+  .wire { height:1px; background:var(--seen); flex:1; min-width:2rem; }
+  .wire.dash {
+    height:0; border-top:1px dashed var(--blind); background:none;
+  }
+  .verdict {
+    font-family:var(--mono); font-size:0.72rem; margin:1rem 0 0; letter-spacing:0.02em;
+  }
+  .verdict.seen  { color:var(--seen); }
+  .verdict.blind { color:var(--blind); }
+
+  /* ---------- callouts ---------- */
+  .callout { border:1px solid var(--rule); border-left:2px solid var(--stop);
+             background:var(--surface); padding:1.4rem 1.5rem; }
+  .callout p:last-child { margin-bottom:0; }
+  .callout p { margin:0 0 0.8rem; }
+
+  /* ---------- cards ---------- */
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(17rem,1fr)); gap:1rem; }
+  .card { background:var(--surface); border:1px solid var(--rule); padding:1.25rem; }
+  .card p { margin:0; color:var(--ink-2); font-size:0.92rem; }
+  .card .why { margin-top:0.6rem; font-size:0.86rem; color:var(--ink-3); }
+
+  /* ---------- ask blocks ---------- */
+  .bucket { background:var(--surface); border:1px solid var(--rule); margin-bottom:1.25rem; }
+  .bucket-head { padding:1.1rem 1.4rem; border-bottom:1px solid var(--rule); display:flex;
+                 align-items:baseline; gap:0.8rem; flex-wrap:wrap; }
+  .bucket-head h3 { margin:0; flex:1; min-width:12rem; }
+  .bucket-body { padding:1.4rem; }
+  .tag {
+    font-family:var(--mono); font-size:0.64rem; letter-spacing:0.09em; text-transform:uppercase;
+    padding:0.2rem 0.5rem; border:1px solid currentColor; border-radius:2px; white-space:nowrap;
+  }
+  .tag.seen { color:var(--seen); background:var(--seen-bg); }
+  .tag.blind{ color:var(--blind); background:var(--blind-bg); }
+
+  ol.asks, ul.asks { margin:0; padding-left:1.2rem; }
+  ol.asks li, ul.asks li { margin-bottom:0.85rem; }
+  ol.asks li:last-child, ul.asks li:last-child { margin-bottom:0; }
+  .why-inline { display:block; color:var(--ink-3); font-size:0.87rem; margin-top:0.15rem; }
+
+  pre {
+    font-family:var(--mono); font-size:0.79rem; line-height:1.75;
+    background:var(--sunk); border:1px solid var(--rule-2); padding:1rem 1.1rem;
+    overflow-x:auto; margin:0.8rem 0 0; color:var(--ink);
+  }
+  code {
+    font-family:var(--mono); font-size:0.85em; background:var(--sunk);
+    border:1px solid var(--rule-2); padding:0.06em 0.32em; border-radius:2px;
+  }
+  pre code { background:none; border:none; padding:0; }
+  .cmt { color:var(--ink-3); }
+
+  /* ---------- message block ---------- */
+  .msg { background:var(--surface); border:1px solid var(--rule); padding:1.6rem 1.75rem; }
+  .msg p { margin:0 0 0.9rem; }
+  .msg p:last-child { margin-bottom:0; }
+  .msg ul { margin:0.2rem 0 0.9rem; padding-left:1.2rem; }
+  .msg li { margin-bottom:0.3rem; }
+
+  /* ---------- phases ---------- */
+  .phase { display:flex; gap:1.25rem; padding:1.25rem 0; border-bottom:1px solid var(--rule-2); }
+  .phase:last-child { border-bottom:none; }
+  .phase-n {
+    font-family:var(--mono); font-size:0.75rem; font-weight:600; color:var(--seen);
+    padding-top:0.25rem; white-space:nowrap; font-variant-numeric:tabular-nums;
+  }
+  .phase-b { flex:1; min-width:0; }
+  .phase-b p { margin:0.25rem 0 0; color:var(--ink-2); font-size:0.93rem; }
+
+  hr.sep { border:none; border-top:1px solid var(--rule); margin:3rem 0; }
+  footer { color:var(--ink-2); font-size:0.88rem; }
+  footer p { margin:0 0 0.7rem; }
+  a { color:var(--seen); text-underline-offset:2px; }
+  :focus-visible { outline:2px solid var(--seen); outline-offset:2px; }
+
+  @media (max-width:34rem) {
+    .wrap { padding:2.25rem 1.05rem 4rem; }
+    .phase { flex-direction:column; gap:0.35rem; }
+  }
+</style>
+</head>
+<body>
+<div id="scroller">
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">RackTrack · Requirements Request · One Network Rack, Two Switches</p>
+    <h1>Tracing a cable end to end — what we can discover, and what we must be told</h1>
+    <p class="lede">
+      Your network admin is right to ask for a complete requirement. Here it is — along with the
+      reason the request has to come in two halves, because half of what you need cannot be
+      discovered from a switch at all.
+    </p>
+  </header>
+
+  <!-- ============ THE BOUNDARY ============ -->
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">The problem</p>
+      <h2>Patch panels are invisible to the logical layer</h2>
+      <p>
+        You asked about the logical layer. The logical layer is exactly where this breaks — so it's worth
+        being precise about the boundary before asking anyone for anything.
+      </p>
+    </div>
+
+    <div class="layers">
+      <div class="layer">
+        <p class="layer-tag"><span style="color:var(--seen)">Logical layer</span>
+          <span class="who">— what LLDP, CDP, MAC and ARP return</span></p>
+        <div class="chain">
+          <div class="node"><b>Switch&#8209;01</b>Gi0/1</div>
+          <div class="wire"></div>
+          <div class="node"><b>Switch&#8209;02</b>Gi0/24</div>
+        </div>
+        <p class="verdict seen">▸ one edge, two endpoints. Complete, correct, and useless for finding the cable.</p>
+      </div>
+
+      <div class="layer blindband">
+        <p class="layer-tag"><span style="color:var(--blind)">Physical layer</span>
+          <span class="who">— what the cable actually does</span></p>
+        <div class="chain">
+          <div class="node"><b>Switch&#8209;01</b>Gi0/1</div>
+          <div class="wire dash"></div>
+          <div class="node ghost"><b>PP&#8209;A</b>port 12</div>
+          <div class="wire dash"></div>
+          <div class="node ghost"><b>PP&#8209;B</b>port 12</div>
+          <div class="wire dash"></div>
+          <div class="node"><b>Switch&#8209;02</b>Gi0/24</div>
+        </div>
+        <p class="verdict blind">▸ the two dashed nodes have no MAC, no IP, no power, and no voice. Nothing on the network can see them.</p>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:1.5rem;">
+      <p>
+        <strong>A patch panel is passive copper.</strong> It cannot announce itself over LLDP, respond to SNMP,
+        appear in a MAC table, or answer an ARP. Both diagrams above describe the same cable. The logical layer is
+        not <em>wrong</em> — it is complete for what it measures. It simply does not measure cable paths.
+      </p>
+      <p>
+        This is why no amount of switch access will let you trace through a patch panel, and why
+        <strong>“give me read access to the switches” is only half a requirement.</strong> The other half is
+        physical records that live in a spreadsheet, on a label, or in someone's head.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ WHAT WE HAVE ============ -->
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Current setup</p>
+      <h2>What RackTrack has today</h2>
+      <p>Both halves already exist in the codebase. Nothing joins them.</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3><span class="tag seen">Discovered</span></h3>
+        <p style="margin-top:0.7rem;"><strong>Logical discovery works.</strong> An authenticated SSH console with
+        per-vendor command intents, an LLDP/CDP parser spanning Cisco, Aruba, Juniper, D-Link and TP-Link,
+        interface and MAC polling, plus Netdisco over SNMP.</p>
+        <p class="why">Topology edges are built from LLDP/CDP only. A port's state is
+        <code>link_active = has_neighbor || mac_count &gt; 0</code> — meaning a port can be known-active while its
+        far end stays unknown.</p>
+      </div>
+
+      <div class="card">
+        <h3><span class="tag blind">Seen, not linked</span></h3>
+        <p style="margin-top:0.7rem;"><strong>Physical detection works too.</strong> The vision pipeline already
+        classifies <code>Patch Panel</code> as a device type, detects individual ports on a device face, and runs
+        OCR over labels.</p>
+        <p class="why">So RackTrack can see <em>that</em> a panel is in the rack, and where. It has no idea which
+        front port maps to which rear port, or where either one goes.</p>
+      </div>
+
+      <div class="card">
+        <h3><span class="tag blind">Missing</span></h3>
+        <p style="margin-top:0.7rem;"><strong>The join.</strong> There is no cable record, no passive-node concept,
+        no bulk import for a patch schedule, and no path-resolution service.</p>
+        <p class="why">The topology endpoint is also scoped to a single rack —
+        <code>GET /api/topology/:rackId</code> — which happens not to matter yet, since you only have one rack.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONSTRAINT ============ -->
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Scope</p>
+      <h2>What one rack and two switches actually gets you</h2>
+    </div>
+    <p>
+      Be honest with the admin about scope — it makes the ask credible and much easier to say yes to.
+      With login on two switches, the discoverable graph is small and its edges are of three kinds:
+    </p>
+    <ul class="asks" style="margin-top:0.8rem;">
+      <li><strong>Switch ↔ switch.</strong> If LLDP or CDP is enabled on both, you get this edge precisely, with
+        interface names on each end.</li>
+      <li><strong>Switch ↔ anything that speaks LLDP.</strong> Many servers, APs and IP phones do. These appear as
+        proper neighbors with a chassis ID and port ID.
+        <span class="why-inline">Anything that doesn't speak LLDP will not appear as a neighbor, no matter what it is.</span></li>
+      <li><strong>Switch ↔ a MAC address.</strong> Everything else. You learn that <em>something</em> is on port
+        Gi0/7, and from ARP you may learn its IP. You do not learn what it is, and you never learn the cable path.
+        <span class="why-inline">This is the majority of ports in most racks.</span></li>
+    </ul>
+    <p style="margin-top:1rem;">
+      Patch panels appear in <em>none</em> of those three categories. That is the whole problem, and it does not
+      get better with more switches.
+    </p>
+  </section>
+
+  <!-- ============ CHANGES ============ -->
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">The changes</p>
+      <h2>What has to change to trace through a patch panel — and why</h2>
+      <p>Five changes. Only one of them is a conversation with the admin, but it's the one everything else depends on.</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>1 &nbsp;Model passive nodes</h3>
+        <p>Add a node type that is <em>asserted</em> rather than discovered, and a <code>segment</code> record:
+        one physical cable run between two ports.</p>
+        <p class="why"><strong>Why:</strong> today every node in the graph got there by announcing itself. A patch
+        panel never will. The data model has to admit facts that no protocol can confirm.</p>
+      </div>
+
+      <div class="card">
+        <h3>2 &nbsp;Import the patch schedule</h3>
+        <p>A CSV import mapping <code>device:port → panel:port</code> and <code>panel:rear → panel:rear</code>.
+        <code>multer</code> currently accepts image uploads only.</p>
+        <p class="why"><strong>Why:</strong> this is the sole source of truth for passive segments. Everything
+        downstream is a rendering of this file. <em>This is the artifact to ask the admin for.</em></p>
+      </div>
+
+      <div class="card">
+        <h3>3 &nbsp;Bind vision to the record</h3>
+        <p>Tie the detected <code>Patch Panel</code> — its rack unit, its detected ports, its OCR'd labels — to the
+        imported panel record.</p>
+        <p class="why"><strong>Why:</strong> so physical truth is refreshed by re-scanning the rack rather than by
+        re-typing a spreadsheet. This is what makes the whole thing survive contact with reality.</p>
+      </div>
+
+      <div class="card">
+        <h3>4 &nbsp;Resolve paths</h3>
+        <p>Walk from an active port across segments until the next active port is reached. Return the ordered hops,
+        passive nodes included.</p>
+        <p class="why"><strong>Why:</strong> this is the actual feature — “trace this cable” — and it is a graph
+        walk, not a discovery problem. It's cheap once (1) and (2) exist.</p>
+      </div>
+
+      <div class="card">
+        <h3>5 &nbsp;Reconcile against LLDP</h3>
+        <p>The logical edge says <code>Sw1:Gi0/1 ↔ Sw2:Gi0/24</code>. The resolved physical path must have those
+        same two endpoints. If it doesn't, the documentation is wrong.</p>
+        <p class="why"><strong>Why:</strong> patch schedules rot the moment someone moves a cable at 2am. LLDP is
+        the only thing that can catch it. This turns a static document into a monitored one.</p>
+      </div>
+
+      <div class="card">
+        <h3>6 &nbsp;Agree a labeling standard</h3>
+        <p>Panels and ports labelled consistently — <a href="https://en.wikipedia.org/wiki/ANSI/TIA-606">ANSI/TIA-606</a>
+        is the usual choice.</p>
+        <p class="why"><strong>Why:</strong> OCR can only read labels that exist and follow a pattern. Without this,
+        step (3) degrades into manual data entry forever. <strong>This is a process change, not code</strong> — and
+        it's the real question for your admin.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ THE ASK ============ -->
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">The request</p>
+      <h2>What to ask for, in two buckets</h2>
+      <p>
+        Splitting the ask this way is the single most useful thing you can do. It shows you understand what he can
+        and cannot give you, and it stops the conversation stalling on the impossible half.
+      </p>
+    </div>
+
+    <div class="bucket">
+      <div class="bucket-head">
+        <span class="tag seen">Bucket 1</span>
+        <h3>Things the switches can tell us</h3>
+      </div>
+      <div class="bucket-body">
+        <ol class="asks">
+          <li><strong>A read-only account on both switches, reachable over SSH from the RackTrack host.</strong>
+            <span class="why-inline">Privilege level 1 / read-only role. No configuration access is needed or wanted.</span></li>
+          <li><strong>The management IP of each switch, and an ACL permitting the RackTrack host.</strong>
+            <span class="why-inline">Without the ACL entry, the account is useless.</span></li>
+          <li><strong>Confirmation that LLDP is enabled globally and per-interface</strong> — and CDP too, if Cisco.
+            <span class="why-inline">This is the one setting that decides whether we see any topology at all. If LLDP is off, every port becomes an anonymous MAC address.</span></li>
+          <li><strong>SNMP read-only access</strong> — v3 credentials preferred, v2c community acceptable.
+            <span class="why-inline">Netdisco needs this. It's an independent cross-check on what the CLI reports.</span></li>
+          <li><strong>Confirmation we may run these read-only commands</strong> (Cisco IOS shown; equivalents on other platforms):</li>
+        </ol>
+        <pre><code>show lldp neighbors detail      <span class="cmt"># the logical edges — the important one</span>
+show cdp neighbors detail      <span class="cmt"># Cisco-to-Cisco fallback</span>
+show interfaces status         <span class="cmt"># which ports are up, speed, VLAN</span>
+show interfaces description    <span class="cmt"># whatever humans wrote about each port</span>
+show mac address-table         <span class="cmt"># the silent devices — MAC per port</span>
+show ip arp                    <span class="cmt"># MAC to IP, so silent devices get names</span>
+show vlan brief                <span class="cmt"># segmentation</span>
+show etherchannel summary      <span class="cmt"># LAG members read as one logical link</span>
+show interfaces transceiver    <span class="cmt"># optics: fibre vs copper, DOM levels</span>
+show inventory                 <span class="cmt"># model and serial, for the asset record</span></code></pre>
+        <p class="why-inline" style="margin-top:0.9rem;">
+          Every one of these is read-only and non-disruptive. Saying so explicitly is usually what gets the yes.
+        </p>
+      </div>
+    </div>
+
+    <div class="bucket">
+      <div class="bucket-head">
+        <span class="tag blind">Bucket 2</span>
+        <h3>Things only a human can tell us</h3>
+      </div>
+      <div class="bucket-body">
+        <p style="margin-top:0;">Nothing in this bucket can be obtained from a switch. If he cannot supply it,
+        cable tracing through the panels is not possible — and that is a finding worth knowing early rather than late.</p>
+        <ol class="asks" style="margin-top:1rem;">
+          <li><strong>The patch schedule</strong> — for every switch port in use, which patch panel and port it lands on,
+            and where that panel's rear port goes. Any format: spreadsheet, Visio, a photo of a whiteboard.
+            <span class="why-inline">This is the single most valuable artifact in the entire request. It <em>is</em> the physical layer.</span></li>
+          <li><strong>The panel naming and port numbering scheme.</strong> Is port 1 top-left or bottom-left? Do panels have unique names?
+            <span class="why-inline">Determines whether OCR of the panel face can be parsed automatically or must be hand-checked.</span></li>
+          <li><strong>Whether panel rear ports connect straight through to another panel, or via couplers, cassettes, or MPO breakouts.</strong>
+            <span class="why-inline">Each of these is another invisible hop. A single MPO breakout turns one physical run into twelve.</span></li>
+          <li><strong>A rack elevation</strong> — what occupies each U, top to bottom.
+            <span class="why-inline">We can generate this from a scan, but his version is the check on ours.</span></li>
+          <li><strong>Whether cables carry unique IDs, and whether labelling follows a standard.</strong>
+            <span class="why-inline">Decides whether this stays accurate on its own, or rots the first time someone repatches.</span></li>
+          <li><strong>Which switch ports are trunks or uplinks, and which run to structured cabling rather than direct to a device.</strong>
+            <span class="why-inline">A direct-attach cable has no panel in the path at all. Knowing which ports those are saves us tracing paths that don't exist.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ THE MESSAGE ============ -->
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">How to ask</p>
+      <h2>A message you can send as-is</h2>
+      <p>Lead with what you're doing and why, state plainly what you already understand, then make the ask specific and bounded.</p>
+    </div>
+
+    <div class="msg">
+      <p>Hi &lt;name&gt;,</p>
+      <p>
+        We're building an accurate map of the network rack in RackTrack — both the logical topology and the physical
+        cable paths — so we can trace any cable from one end to the other, including what it passes through.
+      </p>
+      <p>
+        I want to be upfront about one thing so we don't talk past each other: <strong>I know the switches can't tell
+        us about the patch panels.</strong> Panels are passive, so they'll never show up in LLDP, SNMP, or a MAC table.
+        That means the request comes in two parts — one you can answer from the switches, one only you or your records can.
+      </p>
+      <p><strong>From the switches</strong> (read-only, non-disruptive):</p>
+      <ul>
+        <li>A read-only SSH account on both switches, plus their management IPs</li>
+        <li>An ACL entry permitting our host to reach them</li>
+        <li>Confirmation that LLDP is enabled globally and on the interfaces — and CDP if they're Cisco</li>
+        <li>SNMP read-only access (v3 preferred, v2c fine)</li>
+        <li>Sign-off to run: <code>show lldp neighbors detail</code>, <code>show cdp neighbors detail</code>,
+            <code>show interfaces status</code>, <code>show interfaces description</code>,
+            <code>show mac address-table</code>, <code>show ip arp</code>, <code>show vlan brief</code>,
+            <code>show etherchannel summary</code>, <code>show interfaces transceiver</code>, <code>show inventory</code></li>
+      </ul>
+      <p><strong>From you or your documentation:</strong></p>
+      <ul>
+        <li>The patch schedule — which switch port lands on which panel port, and where each rear port goes.
+            Any format at all, including a photo of a whiteboard.</li>
+        <li>The panel naming and port numbering convention</li>
+        <li>Whether panel rears go straight through, or via couplers, cassettes, or MPO breakouts</li>
+        <li>A rack elevation, if one exists</li>
+        <li>Whether cables carry unique IDs, and whether labelling follows a standard such as TIA-606</li>
+        <li>Which ports are trunks or uplinks, and which are direct-attach rather than through structured cabling</li>
+      </ul>
+      <p>
+        Scope is small: one network rack, and only the two switches we can log into. If the patch schedule doesn't
+        exist in any usable form, tell me — that changes the approach, and I'd rather know now than build on a guess.
+      </p>
+      <p>Happy to walk the rack with you if it's faster than writing it down.</p>
+      <p>Thanks,<br>&lt;you&gt;</p>
+    </div>
+  </section>
+
+  <!-- ============ PLAN ============ -->
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">The plan</p>
+      <h2>Tracing everything, in order</h2>
+      <p>Each phase produces something usable on its own, so a stall in one doesn't strand the others.</p>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--rule);padding:0.5rem 1.4rem;">
+      <div class="phase">
+        <div class="phase-n">PHASE 0</div>
+        <div class="phase-b">
+          <h3>Establish logical truth</h3>
+          <p>With read-only access, pull LLDP, CDP, interface status, MAC and ARP from both switches. Build the
+          logical graph. <strong>No RackTrack changes needed</strong> — this works today. Output: every active port,
+          its neighbor if it has one, its MAC if it doesn't.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-n">PHASE 1</div>
+        <div class="phase-b">
+          <h3>Capture physical truth</h3>
+          <p>Scan the rack. The vision pipeline already yields the elevation, the <code>Patch Panel</code> detections
+          with their rack units, the ports on each face, and OCR of whatever is printed on them. In parallel, get the
+          patch schedule from the admin. Output: what is physically in the rack, and the claimed cable map.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-n">PHASE 2</div>
+        <div class="phase-b">
+          <h3>Join the layers</h3>
+          <p>Build changes 1, 2 and 3 — passive nodes, patch-schedule import, and the binding from detected panel to
+          panel record. Output: a graph where a passive node sits between two active ports.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-n">PHASE 3</div>
+        <div class="phase-b">
+          <h3>Resolve and verify</h3>
+          <p>Implement the path walk (change 4), then reconcile against LLDP (change 5). Every logical edge should
+          have a physical path with matching endpoints. <strong>The mismatches are the deliverable</strong> — they are
+          precisely the cables whose documentation is wrong. Spot-check a few with a toner or by watching link state.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-n">PHASE 4</div>
+        <div class="phase-b">
+          <h3>Keep it true</h3>
+          <p>Agree the labeling standard (change 6), and re-scan on a cadence. Reconciliation runs on every poll, so
+          drift surfaces the day it happens rather than the next time someone goes looking.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="sep">
+
+  <footer>
+    <p><strong>The one thing to take away.</strong> If the patch schedule does not exist, no feature will conjure it.
+    The choice at that point is to create it once by hand — walking the rack, panel by panel — or to accept that
+    tracing stops at the panel face. Establish which it is before writing any code.</p>
+    <p><strong>Grounding.</strong> Claims about RackTrack reflect the repository as of 9 July 2026: topology edges are
+    built from LLDP/CDP in <code>server/app.js</code>; <code>link_active = has_neighbor || mac_count &gt; 0</code>;
+    <code>Patch Panel</code> is a detector class in <code>pipeline/detection.py</code>; OCR lives in
+    <code>pipeline/ocr_labels.py</code> and port detection in <code>pipeline/port.py</code>; no cable-record import exists.</p>
+  </footer>
+
+</div>
+</div>
+</body>
+</html>

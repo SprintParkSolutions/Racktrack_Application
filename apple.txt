@@ -1,0 +1,6 @@
+apple developer account creds:
+
+ssh root@82.29.164.213
+ 
+SprintParkAdmin@762#
+ 

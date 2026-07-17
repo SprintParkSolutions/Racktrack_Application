@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RackTrack — Demo Feedback, Explained</title>
+<style>
+  :root {
+    --ground:   #F6F8F9;
+    --surface:  #FFFFFF;
+    --ink:      #171C22;
+    --ink-2:    #56616F;
+    --ink-3:    #7C8896;
+    --rule:     #DBE1E6;
+    --rule-2:   #EAEEF1;
+    --accent:   #0E6E78;
+    --accent-bg:#E4F1F2;
+    --ok:       #33684A;
+    --ok-bg:    #E3EFE6;
+    --warn:     #855D16;
+    --warn-bg:  #F4EBDA;
+    --gap:      #93382F;
+    --gap-bg:   #F5E4E2;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:   #11151A;
+      --surface:  #181D24;
+      --ink:      #E5EAEF;
+      --ink-2:    #9BA6B3;
+      --ink-3:    #74808E;
+      --rule:     #29313B;
+      --rule-2:   #212832;
+      --accent:   #4FB3BE;
+      --accent-bg:#152A2E;
+      --ok:       #6FBF8B;
+      --ok-bg:    #16281D;
+      --warn:     #D6A244;
+      --warn-bg:  #2A2216;
+      --gap:      #E08276;
+      --gap-bg:   #2C1A18;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#11151A; --surface:#181D24; --ink:#E5EAEF; --ink-2:#9BA6B3; --ink-3:#74808E;
+    --rule:#29313B; --rule-2:#212832; --accent:#4FB3BE; --accent-bg:#152A2E;
+    --ok:#6FBF8B; --ok-bg:#16281D; --warn:#D6A244; --warn-bg:#2A2216; --gap:#E08276; --gap-bg:#2C1A18;
+  }
+  :root[data-theme="light"] {
+    --ground:#F6F8F9; --surface:#FFFFFF; --ink:#171C22; --ink-2:#56616F; --ink-3:#7C8896;
+    --rule:#DBE1E6; --rule-2:#EAEEF1; --accent:#0E6E78; --accent-bg:#E4F1F2;
+    --ok:#33684A; --ok-bg:#E3EFE6; --warn:#855D16; --warn-bg:#F4EBDA; --gap:#93382F; --gap-bg:#F5E4E2;
+  }
+
+  * { box-sizing: border-box; }
+  /* The host frame may pin body to the viewport with overflow:hidden, which
+     stops a normally-flowing page from ever scrolling. Force normal flow. */
+  html, body {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 650;
+    text-wrap: balance;
+    margin: 0 0 1rem;
+  }
+  .lede { font-size: 1.1rem; color: var(--ink-2); max-width: 62ch; margin: 0; }
+
+  header { border-bottom: 1px solid var(--rule); padding-bottom: 2.5rem; margin-bottom: 3rem; }
+
+  h2 {
+    font-size: 1.35rem; font-weight: 620; letter-spacing: -0.01em;
+    margin: 0 0 0.4rem; text-wrap: balance;
+  }
+  h3 { font-size: 1.1rem; font-weight: 620; margin: 0; letter-spacing: -0.005em; }
+
+  /* ---- Thesis callout ---- */
+  .thesis {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 2px solid var(--accent);
+    padding: 1.75rem;
+    margin-bottom: 3.5rem;
+  }
+  .thesis p { margin: 0 0 0.9rem; max-width: 68ch; }
+  .thesis p:last-child { margin-bottom: 0; }
+
+  .tally { display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; margin: 1.25rem 0 0; padding: 0; list-style: none; }
+  .tally li { display: flex; align-items: baseline; gap: 0.5rem; }
+  .tally .n {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 1.5rem; font-weight: 600; color: var(--ink);
+  }
+  .tally .lbl { font-size: 0.85rem; color: var(--ink-2); }
+
+  /* ---- Summary table ---- */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); margin-bottom: 3.5rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 40rem; }
+  th, td { text-align: left; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule-2); vertical-align: middle; }
+  thead th {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 500; border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.id { font-family: var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; width: 3rem; }
+  td.what { color: var(--ink); }
+  td.eff { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-2); white-space: nowrap; }
+
+  /* ---- Status chips ---- */
+  .chip {
+    display: inline-block; white-space: nowrap;
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.22rem 0.5rem; border: 1px solid currentColor; border-radius: 2px; font-weight: 500;
+  }
+  .chip.built   { color: var(--ok);     background: var(--ok-bg); }
+  .chip.partial { color: var(--warn);   background: var(--warn-bg); }
+  .chip.none    { color: var(--gap);    background: var(--gap-bg); }
+  .chip.soft    { color: var(--accent); background: var(--accent-bg); }
+
+  /* ---- Group headings ---- */
+  .group { margin: 0 0 1.5rem; padding-top: 1rem; }
+  .group .eyebrow { margin-bottom: 0.35rem; }
+  .group p { margin: 0; color: var(--ink-2); max-width: 66ch; }
+
+  /* ---- Item cards ---- */
+  .item { background: var(--surface); border: 1px solid var(--rule); padding: 1.75rem; margin-bottom: 1.25rem; }
+  .item-head { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+  .item-id {
+    font-family: var(--mono); font-size: 0.8rem; font-weight: 600; color: var(--accent);
+    padding-top: 0.2rem; font-variant-numeric: tabular-nums;
+  }
+  .item-title { flex: 1; min-width: 0; }
+  .item-title h3 { margin-bottom: 0.3rem; }
+  .quote { color: var(--ink-2); font-size: 0.9rem; font-style: italic; margin: 0; max-width: 62ch; }
+
+  .field { margin-bottom: 1.1rem; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3); margin: 0 0 0.35rem;
+  }
+  .field p { margin: 0; max-width: 68ch; }
+  .field ul { margin: 0.3rem 0 0; padding-left: 1.1rem; }
+  .field li { margin-bottom: 0.25rem; }
+
+  code {
+    font-family: var(--mono); font-size: 0.84em;
+    background: var(--ground); border: 1px solid var(--rule-2);
+    padding: 0.08em 0.32em; border-radius: 2px; color: var(--ink);
+  }
+  .evidence {
+    background: var(--ground); border: 1px solid var(--rule-2);
+    padding: 0.85rem 1rem; font-family: var(--mono); font-size: 0.78rem;
+    line-height: 1.7; overflow-x: auto; color: var(--ink-2);
+  }
+  .evidence .ok  { color: var(--ok); }
+  .evidence .no  { color: var(--gap); }
+
+  hr.sep { border: none; border-top: 1px solid var(--rule); margin: 3.5rem 0; }
+
+  footer { color: var(--ink-2); font-size: 0.88rem; max-width: 66ch; }
+  footer p { margin: 0 0 0.7rem; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 34rem) {
+    .wrap { padding: 2.5rem 1.1rem 4rem; }
+    .item { padding: 1.25rem; }
+    .item-head { flex-wrap: wrap; gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Demo Feedback · 9 Items · Reviewed 10 July 2026</p>
+    <h1>What the demo feedback is actually asking for</h1>
+    <p class="lede">
+      Nine points came back from the demo. Read individually they look like nine feature requests.
+      Checked against the codebase, they aren't — and the difference changes what you should do next.
+    </p>
+  </header>
+
+  <section class="thesis">
+    <h2>The short version</h2>
+    <p>
+      Only <strong>two</strong> of the nine items are genuinely new engineering, and one of those is half-built already.
+      <strong>Three</strong> are about how the product was presented, not what it does. Switch login — the very first
+      item — is fully implemented today across five API endpoints; the reviewer simply never saw it.
+    </p>
+    <p>
+      When a reviewer asks you to “confirm” a feature exists, and separately asks you to “ensure existing capabilities
+      are clearly demonstrated,” they are telling you the same thing twice: <strong>RackTrack does more than the demo
+      conveyed.</strong> The most valuable fix on this list costs no engineering at all.
+    </p>
+    <ul class="tally">
+      <li><span class="n">1</span><span class="lbl">built, not surfaced</span></li>
+      <li><span class="n">1</span><span class="lbl">half built</span></li>
+      <li><span class="n">2</span><span class="lbl">not built</span></li>
+      <li><span class="n">4</span><span class="lbl">no code needed</span></li>
+      <li><span class="n">1</span><span class="lbl">ongoing</span></li>
+    </ul>
+  </section>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Item</th>
+          <th>Where it stands</th>
+          <th>Effort</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="id">F1</td><td class="what">Expose switch login for all devices</td><td><span class="chip built">Built, hidden</span></td><td class="eff">UI only</td></tr>
+        <tr><td class="id">F2</td><td class="what">Traceroute / quick troubleshooting actions</td><td><span class="chip none">Not built</span></td><td class="eff">Small</td></tr>
+        <tr><td class="id">F3</td><td class="what">Lead the pitch with pain points</td><td><span class="chip soft">No code</span></td><td class="eff">Narrative</td></tr>
+        <tr><td class="id">F4</td><td class="what">Reorganize UI by user goal</td><td><span class="chip soft">No code</span></td><td class="eff">Design</td></tr>
+        <tr><td class="id">F5</td><td class="what">Guided onboarding</td><td><span class="chip none">Not built</span></td><td class="eff">Medium</td></tr>
+        <tr><td class="id">F6</td><td class="what">Cross-rack topology visualization</td><td><span class="chip partial">Half built</span></td><td class="eff">Medium</td></tr>
+        <tr><td class="id">F7</td><td class="what">Clarify cable endpoints &amp; paths</td><td><span class="chip soft">No code</span></td><td class="eff">Presentation</td></tr>
+        <tr><td class="id">F8</td><td class="what">More vendors for firmware / EOL</td><td><span class="chip partial">10 vendors</span></td><td class="eff">Ongoing</td></tr>
+        <tr><td class="id">F9</td><td class="what">Refine demo story order</td><td><span class="chip soft">No code</span></td><td class="eff">Narrative</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================= GROUP 1 ================= -->
+  <div class="group">
+    <p class="eyebrow">Group one</p>
+    <h2>Things that already work</h2>
+    <p>Two items ask for capabilities RackTrack has shipped. Both are visibility problems wearing the costume of feature requests.</p>
+  </div>
+
+  <article class="item">
+    <div class="item-head">
+      <span class="item-id">F1</span>
+      <div class="item-title">
+        <h3>Confirm and fully expose switch login</h3>
+        <p class="quote">“Confirm and fully expose switch login functionality for all supported devices directly from RackTrack.”</p>
+      </div>
+      <span class="chip built">Built, hidden</span>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What they're asking</p>
+      <p>Let me log into a switch from inside RackTrack, and show me it works for every device you claim to support — not just the one you demoed.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Where RackTrack stands</p>
+      <p>This is built. The server exposes a full authenticated SSH console today, with an encrypted credential vault behind it:</p>
+      <div class="evidence">
+<span class="ok">✓</span> GET&nbsp;&nbsp;/api/switch/creds-status<br>
+<span class="ok">✓</span> GET&nbsp;&nbsp;/api/switch/console/intents<br>
+<span class="ok">✓</span> POST /api/switch/console/run<br>
+<span class="ok">✓</span> POST /api/switch/console/run-auto<br>
+<span class="ok">✓</span> POST /api/switch/console/run-auto-stream<br>
+<span class="ok">✓</span> server/lib/ssh-creds.js · encrypt-creds.js · connection_profiles.js
+      </div>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Read between the lines</p>
+      <p>The word <em>“confirm”</em> is the signal. The reviewer wasn't sure the feature existed. A capability nobody can find is, from the buyer's seat, a capability you don't have.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What it takes</p>
+      <p>No new backend. Put an entry point in the rack view and show per-device state — credentials stored, device reachable, session live — so support is legible at a glance rather than asserted in a slide. <strong>This is the cheapest high-impact item on the list.</strong></p>
+    </div>
+  </article>
+
+  <article class="item">
+    <div class="item-head">
+      <span class="item-id">F7</span>
+      <div class="item-title">
+        <h3>Review how cable endpoints and paths are presented</h3>
+        <p class="quote">“Review how cable endpoints and path information are presented to ensure existing capabilities are clearly demonstrated.”</p>
+      </div>
+      <span class="chip soft">No code</span>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What they're asking</p>
+      <p>Make it obvious where a cable starts and ends, and what it passes through. Note that they wrote <em>“existing capabilities”</em> — they are not asking you to build cable tracking. They're asking you to show the cable tracking you have.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Read between the lines</p>
+      <p>This is F1's twin. Two of nine items independently report the same failure: a real capability that didn't land. When that happens twice, the problem is in the demo, not the backlog.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What it takes</p>
+      <p>Audit the cable and endpoint views for legibility — is the A-side/B-side relationship readable? Is the port identified? Is the path traceable? Then rehearse it explicitly, alongside <strong>F9</strong>.</p>
+    </div>
+  </article>
+
+  <!-- ================= GROUP 2 ================= -->
+  <div class="group">
+    <p class="eyebrow">Group two</p>
+    <h2>Things to build</h2>
+    <p>Three items need engineering. Two of them lean heavily on infrastructure you already own, which makes them far cheaper than they first appear.</p>
+  </div>
+
+  <article class="item">
+    <div class="item-head">
+      <span class="item-id">F2</span>
+      <div class="item-title">
+        <h3>Quick verification actions, e.g. a Traceroute button</h3>
+        <p class="quote">“Add quick verification/troubleshooting actions (for example, a ‘Traceroute’ button) accessible from the rack view.”</p>
+      </div>
+      <span class="chip none">Not built</span>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Where RackTrack stands</p>
+      <p>Nothing exists. Searching the entire codebase for <code>traceroute</code> or <code>tracert</code> returns zero matches.</p>
+      <div class="evidence"><span class="no">✗</span> traceroute — 0 matches across server, client, pipeline</div>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Read between the lines</p>
+      <p>Traceroute is the example, not the requirement. The real ask is <em>in-context verification</em>: prove this device is reachable, right here, without leaving the rack view and opening a terminal.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What it takes</p>
+      <p>Less than it looks. You already have an authenticated command channel to the device — the same <code>run-auto</code> plumbing behind F1 — plus a defined <code>console/intents</code> concept. Ping and traceroute can ride that path as new intents rather than as new infrastructure.</p>
+      <p><strong>Build F1's surface first; F2 then costs a fraction of what it would standalone.</strong></p>
+    </div>
+  </article>
+
+  <article class="item">
+    <div class="item-head">
+      <span class="item-id">F6</span>
+      <div class="item-title">
+        <h3>Cross-rack topology visualization</h3>
+        <p class="quote">“Consider implementing cross-rack topology visualization, showing logical connections between devices in different racks.”</p>
+      </div>
+      <span class="chip partial">Half built</span>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Where RackTrack stands</p>
+      <p>The hard part — the data — is already collected. The easy part — the scope of one endpoint — is what's blocking you.</p>
+      <div class="evidence">
+<span class="no">✗</span> GET /api/topology/<strong>:rackId</strong> &nbsp;← scoped to a single rack<br>
+<span class="ok">✓</span> LLDP neighbor data &nbsp;server/lib/port_poller.js · client/src/utils/portsProbe.js<br>
+<span class="ok">✓</span> rack-group concept &nbsp;server/app.js · client/src/components/useRackGroup.js
+      </div>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Read between the lines</p>
+      <p>LLDP neighbor tables are precisely the adjacency data you need to draw a link from a device in rack A to a device in rack B. You are already polling them. The topology endpoint just never asks across a rack boundary.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What it takes</p>
+      <p>Generalize <code>/api/topology/:rackId</code> to a group scope, then join LLDP neighbors across the racks in that group. The rack-group concept already exists to hang it on. <strong>This is the highest-value item on the list that is mostly already paid for</strong> — and the most credible answer to the AI-scale story in F3.</p>
+    </div>
+  </article>
+
+  <article class="item">
+    <div class="item-head">
+      <span class="item-id">F5</span>
+      <div class="item-title">
+        <h3>Guided onboarding</h3>
+        <p class="quote">“Improve onboarding so users are smoothly guided to the appropriate feature or solution.”</p>
+      </div>
+      <span class="chip none">Not built</span>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Where RackTrack stands</p>
+      <p>No onboarding flow exists in the client. There is an <em>Accounts &amp; Onboarding</em> document, but documentation is not a product surface.</p>
+      <div class="evidence"><span class="no">✗</span> onboard — 0 matches in client/src</div>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Read between the lines</p>
+      <p>Adjacent to F4 but distinct. F4 decides <em>where things live</em>. F5 decides <em>how a new user reaches the right place the first time</em>. Building F5 before F4 means building a guide to a map you're about to redraw.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What it takes</p>
+      <p>A first-run goal picker — “What are you trying to do?” — routing into the categories F4 establishes. <strong>Sequence it after F4.</strong></p>
+    </div>
+  </article>
+
+  <!-- ================= GROUP 3 ================= -->
+  <div class="group">
+    <p class="eyebrow">Group three</p>
+    <h2>Things to say differently</h2>
+    <p>Four items ask you to change nothing about the software. Given that three of them describe the same demo, they may be the highest-leverage work on this page.</p>
+  </div>
+
+  <article class="item">
+    <div class="item-head">
+      <span class="item-id">F3</span>
+      <div class="item-title">
+        <h3>Lead the pitch with data center pain points</h3>
+        <p class="quote">“Revise the product pitch to start with broader data center pain points … before discussing individual features.”</p>
+      </div>
+      <span class="chip soft">No code</span>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What they're asking</p>
+      <p>Open on the problem, not the machinery. They even named the problems for you: asset tracking, cabling, procurement, auditing, and AI-scale operations.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Read between the lines</p>
+      <p>The demo almost certainly opened on rack scanning — the most technically impressive thing RackTrack does. That's the classic feature-first trap: the audience sees a clever capability before they have a reason to care about it.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What it takes</p>
+      <p>Rewrite the opening minutes so each named pain point maps to the feature that answers it:</p>
+      <ul>
+        <li>Asset tracking &rarr; rack scanning, device detection</li>
+        <li>Cabling &rarr; cable classifier, port detection (see <strong>F7</strong>)</li>
+        <li>Procurement &rarr; SFP advisor, marketplace</li>
+        <li>Auditing &rarr; CMDB reconciliation, port history &amp; drift</li>
+        <li>AI-scale operations &rarr; cross-rack topology (see <strong>F6</strong>)</li>
+      </ul>
+      <p>The <em>Executive Overview</em> page in the RackTrack space already drafts parts of this argument.</p>
+    </div>
+  </article>
+
+  <article class="item">
+    <div class="item-head">
+      <span class="item-id">F4</span>
+      <div class="item-title">
+        <h3>Reorganize the UI by user goal</h3>
+        <p class="quote">“Reorganize the UI into clear categories with intuitive naming and a guided workflow based on the user's goal or pain point.”</p>
+      </div>
+      <span class="chip soft">No code</span>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What they're asking</p>
+      <p>Navigation organized by what a person is trying to accomplish, not by how the system is built. Users don't arrive wanting “device detection”; they arrive wanting to know what's in the rack.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">A head start you already have</p>
+      <p>The seventeen feature docs were just grouped into five goal-based clusters for the docs space. That grouping is a ready-made hypothesis for the product's own navigation:</p>
+      <ul>
+        <li><strong>Scanning &amp; Capture</strong> — getting racks into RackTrack</li>
+        <li><strong>Racks &amp; Ports</strong> — what's racked, what's free</li>
+        <li><strong>Network &amp; Discovery</strong> — seeing the live network</li>
+        <li><strong>Intelligence &amp; Advice</strong> — where RackTrack recommends</li>
+        <li><strong>Admin &amp; Data</strong> — accounts, orgs, CMDB</li>
+      </ul>
+      <p>Treat it as a starting point to test with users, not a conclusion.</p>
+    </div>
+  </article>
+
+  <article class="item">
+    <div class="item-head">
+      <span class="item-id">F9</span>
+      <div class="item-title">
+        <h3>Refine the demo's story order</h3>
+        <p class="quote">“Refine the presentation flow and story order for demos to better showcase the application's value.”</p>
+      </div>
+      <span class="chip soft">No code</span>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Read between the lines</p>
+      <p>Taken with F3 and F7, three of nine items are about the demo rather than the product. That is the single loudest signal in this feedback, and it is worth saying plainly: <strong>the software under-sold itself.</strong></p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">A story order that follows the evidence</p>
+      <ul>
+        <li><strong>Pain</strong> — open on the five problems from F3</li>
+        <li><strong>Existing strength</strong> — scan a rack, detect devices, show the cabling clearly (F7)</li>
+        <li><strong>Live proof</strong> — log into a switch on stage, run a check (F1, then F2)</li>
+        <li><strong>Forward story</strong> — cross-rack topology as the AI-scale answer (F6)</li>
+      </ul>
+      <p>Note that this order costs one UI surface and one small feature. Everything else is already built.</p>
+    </div>
+  </article>
+
+  <article class="item">
+    <div class="item-head">
+      <span class="item-id">F8</span>
+      <div class="item-title">
+        <h3>Validate firmware / EOL and procurement across more vendors</h3>
+        <p class="quote">“Continue validating firmware/EOL and procurement features across additional vendors.”</p>
+      </div>
+      <span class="chip partial">10 vendors</span>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Where RackTrack stands</p>
+      <p>Ten vendors are covered in <code>pipeline/all_vendor.py</code> today:</p>
+      <div class="evidence">
+<span class="ok">✓</span> aruba · cisco · dell · fortinet · hpe · huawei · juniper · mikrotik · netgear · ubiquiti<br>
+<span class="no">✗</span> arista · extreme · palo alto · brocade · nokia
+      </div>
+    </div>
+
+    <div class="field">
+      <p class="field-label">Read between the lines</p>
+      <p>The word is <em>“continue”</em> — this works, and they want more of it. This is not a defect, and it should not compete for attention with F1 or F6.</p>
+    </div>
+
+    <div class="field">
+      <p class="field-label">What it takes</p>
+      <p>Prioritize by the fleet mix of the customers you're chasing. <strong>Arista is the most conspicuous absence</strong> given the AI-scale data center story F3 asks you to lead with — that's where those switches live.</p>
+    </div>
+  </article>
+
+  <hr class="sep">
+
+  <footer>
+    <p><strong>How to read this.</strong> Item numbers <code>F1</code>–<code>F9</code> are reference handles in the order the feedback arrived, so the team can cite them. They are not a priority order.</p>
+    <p><strong>Suggested sequence.</strong> F1 (surface what exists) &rarr; F2 (rides F1's plumbing) &rarr; F3 + F9 (rewrite the story) &rarr; F4 (goal-based navigation) &rarr; F5 (onboarding onto F4) &rarr; F6 (cross-rack, the flagship) &rarr; F8 (ongoing).</p>
+    <p><strong>Evidence.</strong> Every status claim is grounded in the RackTrack repository as of 9 July 2026 — endpoint listings from <code>server/app.js</code>, vendor coverage from <code>pipeline/all_vendor.py</code>, and searches across <code>server</code>, <code>client/src</code>, and <code>pipeline</code>. Where something is marked <em>not built</em>, the search returned zero matches.</p>
+  </footer>
+
+</div>
+</body>
+</html>

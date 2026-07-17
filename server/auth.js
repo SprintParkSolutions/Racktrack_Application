@@ -1377,4 +1377,4 @@ function registerRoutes(app) {
   });
 }
 
-module.exports = { registerRoutes, requireAuth, isOrgActive };
+module.exports = { registerRoutes, requireAuth, requireRole, isOrgActive };

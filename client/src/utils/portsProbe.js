@@ -142,50 +142,60 @@ export async function triggerBackgroundProbe({ force = false } = {}) {
   const watchdog = setTimeout(() => controller.abort(), WATCHDOG_MS);
 
   try {
-    // Resolve the switch host. Prefer the user's last successful SSH host
-    // (server-side, per-user). NEVER fall back to the default gateway —
-    // that's almost never the managed switch and produces a 20-second
-    // ETIMEDOUT. If `last_host` is empty, use the in-office default the
-    // ResultsPage flow has been using (192.168.1.14).
-    const FALLBACK_SWITCH_HOST = '192.168.1.14';
-    let host = state.host;
-    if (!host) {
-      try {
-        const hr = await fetch(apiUrl('/api/switch/default-host'));
-        const hj = hr.ok ? await hr.json() : null;
-        host = hj?.last_host || FALLBACK_SWITCH_HOST;
-      } catch (_) { host = FALLBACK_SWITCH_HOST; }
-    }
-    if (!host) {
-      setState({ status: 'error', error: 'No network switch host configured.', finishedAt: Date.now() });
-      return;
-    }
+    // Resolve the switch host as an ORDERED candidate list so a stale/changed
+    // IP self-heals with NO user action. The bench switch DHCP-flaps between
+    // .14 and .33; if the last-used address is dead we automatically try the
+    // server-remembered host and the in-office default before giving up.
+    // NEVER the gateway — that's not the switch.
+    const FALLBACK_SWITCH_HOST = '192.168.1.33';
+    let resolved = null;
+    try {
+      const hr = await fetch(apiUrl('/api/switch/default-host'));
+      const hj = hr.ok ? await hr.json() : null;
+      resolved = hj?.last_host || null;
+    } catch (_) { /* ignore — fall through to defaults */ }
+    const candidates = [...new Set([
+      force ? null : state.host,   // host that worked earlier this session
+      resolved,                    // server-remembered last_host
+      FALLBACK_SWITCH_HOST,        // in-office default
+    ].filter(Boolean))];
 
-    const r = await authFetch(apiUrl('/api/switch/console/run'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        host,
-        command: 'show interface status',
-        vendor: 'tplink',
-        timeoutMs: SERVER_TIMEOUT_MS,
-      }),
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`);
-    const entry = data.entry || {};
-    if (entry.error) throw new Error(entry.error);
-    const parsed = parseInterfaceStatusTable(entry.output || '');
-    if (parsed.length === 0) {
-      setState({ status: 'error', error: 'Probe returned no port rows.', host, finishedAt: Date.now() });
-      return;
+    // Per-attempt timeout kept short so a dead address fails fast and the next
+    // candidate is tried well within the watchdog ceiling.
+    const PER_TRY_MS = 10000;
+    let lastErr = null;
+    for (const host of candidates) {
+      try {
+        const r = await authFetch(apiUrl('/api/switch/console/run'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            host,
+            command: 'show interface status',
+            vendor: 'tplink',
+            timeoutMs: PER_TRY_MS,
+          }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`);
+        const entry = data.entry || {};
+        if (entry.error) throw new Error(entry.error);
+        const parsed = parseInterfaceStatusTable(entry.output || '');
+        if (parsed.length === 0) throw new Error('Probe returned no port rows.');
+        setState({ status: 'ok', ports: parsed, host, finishedAt: Date.now() });
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') throw err;   // watchdog fired — stop
+        lastErr = err;                               // dead host — try the next
+      }
     }
-    setState({ status: 'ok', ports: parsed, host, finishedAt: Date.now() });
+    throw (lastErr || new Error('No network switch host configured.'));
   } catch (err) {
     const aborted = err?.name === 'AbortError';
     setState({
       status: 'error',
+      host: null,   // drop the cached host so the next probe re-resolves cleanly
       error: aborted
         ? 'The switch didn’t respond in time. Check you’re on the same network as it, then tap Retry.'
         : friendlyProbeError(err.message || String(err)),

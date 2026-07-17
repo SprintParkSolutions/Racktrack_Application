@@ -836,6 +836,13 @@ function powerSummary(dev) {
 }
 
 // ── All components ───────────────────────────────────────────
+const DEVICE_TO_MARKET_CAT = {
+  Switch: 'switch', Router: 'router', Firewall: 'firewall', Server: 'server',
+  PDU: 'pdu', 'Patch Panel': 'patch_panel', Gateway: 'router',
+  'Load Balancer': 'server', Modem: 'other', Controller: 'other',
+  Recorder: 'other', Amplifier: 'other', PSU: 'pdu', UPS: 'pdu',
+};
+
 function AllDevicesView({ devices, labels, rackId, scanId, originalExt, onBack, embedded = false }) {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -846,6 +853,12 @@ function AllDevicesView({ devices, labels, rackId, scanId, originalExt, onBack, 
   const visible = safeDevices
     .map((dev, i) => ({ dev: dev || {}, label: safeLabels[i], idx: i }))
     .filter(({ dev }) => isDevicePickable(dev));
+
+  // Pagination — 2 devices per page
+  const PAGE_SIZE = 2;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const paged = visible.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const [selectedCard, setSelectedCard] = useState(null);
   const [imgNat, setImgNat] = useState(null);
@@ -966,7 +979,7 @@ function AllDevicesView({ devices, labels, rackId, scanId, originalExt, onBack, 
           </div>
         ) : (
           <div className={styles.allCards}>
-            {visible.map(({ dev, label, idx }, i) => {
+            {paged.map(({ dev, label, idx }, i) => {
               const c = getColor(dev.class_name);
               const units = formatUnitsRange(dev.units)?.toUpperCase() || '—';
               const active = selectedCard === idx;
@@ -996,10 +1009,56 @@ function AllDevicesView({ devices, labels, rackId, scanId, originalExt, onBack, 
                         )}
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      className={styles.sellBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const cat = DEVICE_TO_MARKET_CAT[dev.class_name] || 'other';
+                        const qp = new URLSearchParams({ category: cat });
+                        if (dev.vendor || dev.brand) qp.set('vendor', dev.vendor || dev.brand);
+                        if (dev.model) qp.set('model', dev.model);
+                        if (rackId) qp.set('rackId', rackId);
+                        navigate(`/marketplace/new?${qp.toString()}`);
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                      </svg>
+                      Sell
+                    </button>
                   </div>
                 </div>
               );
             })}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className={styles.pagination}>
+                <button
+                  className={styles.pageBtn}
+                  disabled={page <= 1}
+                  onClick={() => { setPage(p => p - 1); setSelectedCard(null); }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                  Prev
+                </button>
+                <span className={styles.pageInfo}>{page} / {totalPages}</span>
+                <button
+                  className={styles.pageBtn}
+                  disabled={page >= totalPages}
+                  onClick={() => { setPage(p => p + 1); setSelectedCard(null); }}
+                >
+                  Next
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1207,6 +1266,15 @@ export default function ResultsPage() {
     try { localStorage.setItem('rt_devOpen', devOpen ? '1' : '0'); } catch { /* ignore */ }
   }, [devOpen]);
   const [reportOpen, setReportOpen] = useState(false);
+  // The report is fetched and rendered via <iframe srcDoc> rather than
+  // <iframe src={reportUrl(...)}> — the app runs from its own origin
+  // (capacitor://localhost / https://localhost on native), never the API's
+  // origin, and framing a cross-origin URL directly would depend on the
+  // server's X-Frame-Options policy. srcDoc sidesteps that: the HTML is
+  // fetched with our own auth first, then handed to the iframe as inert
+  // content, no framing request involved.
+  const [reportHtml, setReportHtml] = useState(null);
+  const [reportHtmlError, setReportHtmlError] = useState(null);
   const [sessionPorts, setSessionPorts] = useState([]); // [{deviceIdx, port, deviceLabel, deviceClass, status}]
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
   const [shareMsg, setShareMsg] = useState(null);
@@ -1222,7 +1290,7 @@ export default function ResultsPage() {
   // Host defaults to the in-office switch so the LLDP pre-fetch can fire
   // automatically as soon as a port is picked. Username/password still come
   // from the encrypted server-side store or the creds modal.
-  const [switchCreds, setSwitchCreds] = useState({ host: '192.168.1.14', username: '', password: '', vendor: 'tplink', enablePassword: '' });
+  const [switchCreds, setSwitchCreds] = useState({ host: '192.168.1.33', username: '', password: '', vendor: 'tplink', enablePassword: '' });
   // Track which port the in-flight LLDP call belongs to, so a rapid port
   // switch doesn't overwrite the current result with a stale one.
   const neighborPortRef = useRef(null);
@@ -1796,11 +1864,19 @@ export default function ResultsPage() {
     // Whole numbers only (reject "1.23" → the value must equal its integer
     // parse) and within the device's port count.
     const p = parseInt(portArg, 10);
-    if (isNaN(p) || p < 1 || String(p) !== String(portArg).trim()
-        || (portMaxLimit > 0 && p > portMaxLimit)) {
-      setError(portMaxLimit > 0
-        ? `Port must be a whole number between 1 and ${portMaxLimit}`
-        : 'Enter a valid whole port number');
+    if (isNaN(p) || p < 1 || String(p) !== String(portArg).trim()) {
+      setError('Enter a valid whole port number');
+      return;
+    }
+    if (portMaxLimit > 0 && p > portMaxLimit) {
+      setError(`This device has ${portMaxLimit} ports — enter a number between 1 and ${portMaxLimit}.`);
+      return;
+    }
+    // Port count unknown → we have no upper bound, so we cannot honestly locate
+    // a port. Don't silently accept any number (that's how "port 34" on a
+    // 24-port switch got through). Ask for the real count first.
+    if (portMaxLimit === 0) {
+      setError("We couldn't read how many ports this device has. Set the port count below, then pick a port.");
       return;
     }
     if (forcedPort != null) setPortNum(String(forcedPort));
@@ -1867,11 +1943,16 @@ export default function ResultsPage() {
     // Whole numbers only (reject "1.23" → the value must equal its integer
     // parse) and within the device's port count.
     const p = parseInt(portArg, 10);
-    if (isNaN(p) || p < 1 || String(p) !== String(portArg).trim()
-        || (portMaxLimit > 0 && p > portMaxLimit)) {
-      setError(portMaxLimit > 0
-        ? `Port must be a whole number between 1 and ${portMaxLimit}`
-        : 'Enter a valid whole port number');
+    if (isNaN(p) || p < 1 || String(p) !== String(portArg).trim()) {
+      setError('Enter a valid whole port number');
+      return;
+    }
+    if (portMaxLimit > 0 && p > portMaxLimit) {
+      setError(`This device has ${portMaxLimit} ports — enter a number between 1 and ${portMaxLimit}.`);
+      return;
+    }
+    if (portMaxLimit === 0) {
+      setError("We couldn't read how many ports this device has. Set the port count below, then pick a port.");
       return;
     }
     setLoading(true); setError(null);
@@ -2476,7 +2557,15 @@ export default function ResultsPage() {
   };
 
   const reportUrl = (format) => apiUrl(`/api/scan/${scanId}/report?format=${format}`);
-  const viewReport = () => setReportOpen(true);
+  const viewReport = () => {
+    setReportOpen(true);
+    setReportHtml(null);
+    setReportHtmlError(null);
+    authFetch(reportUrl('html'))
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
+      .then(html => setReportHtml(html))
+      .catch(err => setReportHtmlError(err.message || 'Failed to load report'));
+  };
   const downloadReport = async (format) => {
     try {
       const res = await fetch(reportUrl(format));
@@ -2766,6 +2855,13 @@ export default function ResultsPage() {
         if (data.relabel.image_updated) {
           setResultImg(prev => (prev ? prev.split('?')[0] + '?t=' + Date.now() : prev));
         }
+      } else if (!isCorrect && actualNum > 0) {
+        // The server didn't relabel, but the user still told us the real count.
+        // Reflect it locally so the port-number input's 1–N bound follows the
+        // correction straight away (correct it to 28 → only 1–28 is accepted).
+        setDevices(prev => prev.map((d, i) => (
+          i + 1 === selectedIdx ? { ...d, port_count: actualNum } : d
+        )));
       }
       setPortCountFbStatus('submitted');
       setTimeout(() => {
@@ -3473,10 +3569,19 @@ export default function ResultsPage() {
             </div>
           )}
 
-          {/* End device — shown ONLY when a live neighbour actually resolves.
-              The "resolving…", "no end device responded", and error/retry
-              states are suppressed so a port with no LLDP data stays clean. */}
-          {portInfo?.status !== 'empty' && neighborStatus === 'ok' && neighbor && (
+          {/* End device (LLDP) — shown for any non-empty port. The inner states
+              cover the whole flow: idle → a "Find end device" button, loading,
+              resolved neighbour, none-found, and error/retry. Previously the
+              outer gate also required neighborStatus==='ok', which meant the
+              button (and every other state) could never render — so the LLDP
+              lookup was unreachable unless it happened to auto-resolve.
+              We ALSO show it when the switch found a live neighbour (or is
+              resolving one) even if the photo called the port empty — the live
+              switch is ground truth, so a real endpoint must never be hidden by
+              a mis-classified photo. */}
+          {(portInfo?.status !== 'empty'
+            || neighborStatus === 'loading'
+            || (neighborStatus === 'ok' && neighbor?.found)) && (
           <div className={styles.prEnd} style={{ '--ac': rc }}>
             {neighborStatus === 'loading' && (
               <>
@@ -3490,25 +3595,24 @@ export default function ResultsPage() {
               // like "System description:" by mistake).
               const isLabelish = (v) => !v || /:\s*$/.test(String(v).trim());
               const cleanOrNull = (v) => (v && !isLabelish(v) ? String(v).trim() : null);
-              const name = cleanOrNull(neighbor.chassis_id)
-                || cleanOrNull(neighbor.system_name)
-                || cleanOrNull(neighbor.port_id)
-                || 'End device';
-              const metaRaw = [
-                cleanOrNull(neighbor.port_id) !== name ? cleanOrNull(neighbor.port_id) : null,
-                cleanOrNull(neighbor.port_description),
-              ].filter(Boolean);
-              const chips = metaRaw
-                .flatMap(m => String(m).split(/\s*·\s*/))
-                .map(s => s.trim())
-                .filter(Boolean)
-                .map((text, i) => {
-                  const isMac = /^(?:[0-9a-f]{2}[:\-]){5}[0-9a-f]{2}$/i.test(text);
-                  const ttlMatch = text.match(/^TTL\s*[:=]?\s*(\d+)/i);
-                  if (isMac) return { key: `c${i}`, kind: 'mac', label: 'MAC', value: text };
-                  if (ttlMatch) return { key: `c${i}`, kind: 'ttl', label: 'TTL', value: `${ttlMatch[1]}s` };
-                  return { key: `c${i}`, kind: 'info', label: null, value: text };
-                });
+              const MAC_RE = /^(?:[0-9a-f]{2}[:\-]){5}[0-9a-f]{2}$/i;
+              const chassis = cleanOrNull(neighbor.chassis_id);
+              const sysname = cleanOrNull(neighbor.system_name);
+              const portId  = cleanOrNull(neighbor.port_id);
+              // Prefer a human-readable name; a bare MAC is only a fallback name.
+              const humanName = (chassis && !MAC_RE.test(chassis) ? chassis : null)
+                             || (sysname && !MAC_RE.test(sysname) ? sysname : null);
+              const macAddr = [portId, chassis].find(v => v && MAC_RE.test(v)) || null;
+              const name = humanName || macAddr || 'End device';
+              const desc = cleanOrNull(neighbor.port_description);
+              const mgmt = cleanOrNull(neighbor.management_address);
+              // Always surface the identifying facts as their own labelled chips.
+              const chips = [
+                macAddr && macAddr !== name && { kind: 'mac',  label: 'MAC',  value: macAddr },
+                neighbor.vlan_id            && { kind: 'vlan', label: 'VLAN', value: String(neighbor.vlan_id) },
+                mgmt                        && { kind: 'ip',   label: 'IP',   value: mgmt },
+                desc && !MAC_RE.test(desc)  && { kind: 'info', label: null,   value: desc },
+              ].filter(Boolean).map((c, i) => ({ key: `c${i}`, ...c }));
               return (
                 <div className={styles.prEndCreative}>
                   <div className={styles.prEndIcon} aria-hidden>
@@ -3540,6 +3644,18 @@ export default function ResultsPage() {
                                 <polyline points="12 7 12 12 15 14"/>
                               </svg>
                             )}
+                            {chip.kind === 'vlan' && (
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
+                                <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
+                              </svg>
+                            )}
+                            {chip.kind === 'ip' && (
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/>
+                                <path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>
+                              </svg>
+                            )}
                             {chip.label && <span className={styles.prEndChipKey}>{chip.label}</span>}
                             <span className={styles.prEndChipVal}>{chip.value}</span>
                           </span>
@@ -3551,7 +3667,12 @@ export default function ResultsPage() {
               );
             })()}
             {neighborStatus === 'empty' && (
-              <span className={styles.prEndDim}>No end device responded on this port</span>
+              <>
+                <span className={styles.prEndDim}>
+                  No end device responded — the endpoint doesn’t advertise LLDP, or LLDP is disabled on the switch.
+                </span>
+                <button className={styles.prEndAction} onClick={() => findNeighbor()}>Retry</button>
+              </>
             )}
             {neighborStatus === 'error' && (
               <>
@@ -3897,6 +4018,20 @@ export default function ResultsPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
               New Scan
             </button>
+            <button className={`${styles.pActionBtn} ${styles.pActionBtnSell}`} onClick={() => {
+              const cat = DEVICE_TO_MARKET_CAT[selectedDevice?.class_name] || 'other';
+              const qp = new URLSearchParams({ category: cat });
+              if (selectedDevice?.vendor || selectedDevice?.brand) qp.set('vendor', selectedDevice.vendor || selectedDevice.brand);
+              if (selectedDevice?.model) qp.set('model', selectedDevice.model);
+              if (rackId) qp.set('rackId', rackId);
+              navigate(`/marketplace/new?${qp.toString()}`);
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+              </svg>
+              Sell
+            </button>
           </div>
         </div>
 
@@ -3999,7 +4134,16 @@ export default function ResultsPage() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
-              <iframe className={styles.reportModalFrame} src={reportUrl('html')} title="Scan report" />
+              {reportHtmlError ? (
+                <div className={styles.errBox} style={{ margin: 20 }}>{reportHtmlError}</div>
+              ) : reportHtml == null ? (
+                <div className={styles.portLoadingRow} style={{ padding: 20 }}>
+                  <span className={styles.btnSpinner} />
+                  <span>Loading report…</span>
+                </div>
+              ) : (
+                <iframe className={styles.reportModalFrame} srcDoc={reportHtml} title="Scan report" />
+              )}
             </div>
           </div>
         )}
