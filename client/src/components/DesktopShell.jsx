@@ -169,6 +169,8 @@ function deriveTitle(pathname) {
     return { title: 'Network view',  sub: 'Live device + port table' };
   if (pathname.startsWith('/results') && pathname.endsWith('/ports'))
     return { title: 'Live Network Switch', sub: 'Available ports' };
+  if (pathname.startsWith('/results') && pathname.endsWith('/vr'))
+    return { title: 'VR walkthrough', sub: 'Immersive rack' };
   if (pathname.startsWith('/results'))
     return { title: 'Scan results',  sub: 'Devices & ports' };
   if (pathname.startsWith('/switch-info'))

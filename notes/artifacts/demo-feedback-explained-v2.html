@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RackTrack — Demo Feedback · Where We Stand Today</title>
+<style>
+  :root {
+    --ground:   #F6F8F9;
+    --surface:  #FFFFFF;
+    --ink:      #171C22;
+    --ink-2:    #56616F;
+    --ink-3:    #7C8896;
+    --rule:     #DBE1E6;
+    --rule-2:   #EAEEF1;
+    --accent:   #0E6E78;
+    --accent-bg:#E4F1F2;
+    --ok:       #33684A;
+    --ok-bg:    #E3EFE6;
+    --warn:     #855D16;
+    --warn-bg:  #F4EBDA;
+    --gap:      #93382F;
+    --gap-bg:   #F5E4E2;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:   #11151A;
+      --surface:  #181D24;
+      --ink:      #E5EAEF;
+      --ink-2:    #9BA6B3;
+      --ink-3:    #74808E;
+      --rule:     #29313B;
+      --rule-2:   #212832;
+      --accent:   #4FB3BE;
+      --accent-bg:#152A2E;
+      --ok:       #6FBF8B;
+      --ok-bg:    #16281D;
+      --warn:     #D6A244;
+      --warn-bg:  #2A2216;
+      --gap:      #E08276;
+      --gap-bg:   #2C1A18;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#11151A; --surface:#181D24; --ink:#E5EAEF; --ink-2:#9BA6B3; --ink-3:#74808E;
+    --rule:#29313B; --rule-2:#212832; --accent:#4FB3BE; --accent-bg:#152A2E;
+    --ok:#6FBF8B; --ok-bg:#16281D; --warn:#D6A244; --warn-bg:#2A2216; --gap:#E08276; --gap-bg:#2C1A18;
+  }
+  :root[data-theme="light"] {
+    --ground:#F6F8F9; --surface:#FFFFFF; --ink:#171C22; --ink-2:#56616F; --ink-3:#7C8896;
+    --rule:#DBE1E6; --rule-2:#EAEEF1; --accent:#0E6E78; --accent-bg:#E4F1F2;
+    --ok:#33684A; --ok-bg:#E3EFE6; --warn:#855D16; --warn-bg:#F4EBDA; --gap:#93382F; --gap-bg:#F5E4E2;
+  }
+
+  * { box-sizing: border-box; }
+  /* The host frame may pin body to the viewport with overflow:hidden, which
+     stops a normally-flowing page from ever scrolling. Force normal flow. */
+  html, body {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: none; width: 100%; margin: 0; padding: 3rem clamp(1.25rem, 4vw, 4rem) 6rem; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 650;
+    text-wrap: balance;
+    margin: 0 0 1rem;
+  }
+  .lede { font-size: 1.1rem; color: var(--ink-2); max-width: 62ch; margin: 0; }
+
+  header { border-bottom: 1px solid var(--rule); padding-bottom: 2.5rem; margin-bottom: 3rem; }
+
+  h2 {
+    font-size: 1.35rem; font-weight: 620; letter-spacing: -0.01em;
+    margin: 0 0 0.4rem; text-wrap: balance;
+  }
+  h3 { font-size: 1.1rem; font-weight: 620; margin: 0; letter-spacing: -0.005em; }
+
+  /* ---- Thesis callout ---- */
+  .thesis {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 2px solid var(--accent);
+    padding: 1.75rem;
+    margin-bottom: 3.5rem;
+  }
+  .thesis p { margin: 0 0 0.9rem; max-width: 68ch; }
+  .thesis p:last-child { margin-bottom: 0; }
+
+  .tally { display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; margin: 1.25rem 0 0; padding: 0; list-style: none; }
+  .tally li { display: flex; align-items: baseline; gap: 0.5rem; }
+  .tally .n {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 1.5rem; font-weight: 600; color: var(--ink);
+  }
+  .tally .lbl { font-size: 0.85rem; color: var(--ink-2); }
+
+  /* ---- Summary table ---- */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); margin-bottom: 3.5rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 40rem; }
+  th, td { text-align: left; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule-2); vertical-align: middle; }
+  thead th {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 500; border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.id { font-family: var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; width: 3rem; }
+  td.what { color: var(--ink); }
+  td.eff { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-2); white-space: nowrap; }
+
+  /* ---- Status chips ---- */
+  .chip {
+    display: inline-block; white-space: nowrap;
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.22rem 0.5rem; border: 1px solid currentColor; border-radius: 2px; font-weight: 500;
+  }
+  .chip.built   { color: var(--ok);     background: var(--ok-bg); }
+  .chip.partial { color: var(--warn);   background: var(--warn-bg); }
+  .chip.none    { color: var(--gap);    background: var(--gap-bg); }
+  .chip.soft    { color: var(--accent); background: var(--accent-bg); }
+
+  /* ---- Group headings ---- */
+  .group { margin: 0 0 1.5rem; padding-top: 1rem; }
+  .group .eyebrow { margin-bottom: 0.35rem; }
+  .group p { margin: 0; color: var(--ink-2); max-width: 66ch; }
+
+  /* ---- Item cards ---- */
+  .item { background: var(--surface); border: 1px solid var(--rule); padding: 1.75rem; margin-bottom: 1.25rem; }
+  .item-head { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+  .item-id {
+    font-family: var(--mono); font-size: 0.8rem; font-weight: 600; color: var(--accent);
+    padding-top: 0.2rem; font-variant-numeric: tabular-nums;
+  }
+  .item-title { flex: 1; min-width: 0; }
+  .item-title h3 { margin-bottom: 0.3rem; }
+  .quote { color: var(--ink-2); font-size: 0.9rem; font-style: italic; margin: 0; max-width: 62ch; }
+
+  .field { margin-bottom: 1.1rem; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3); margin: 0 0 0.35rem;
+  }
+  .field p { margin: 0; max-width: 68ch; }
+  .field ul { margin: 0.3rem 0 0; padding-left: 1.1rem; }
+  .field li { margin-bottom: 0.25rem; }
+
+  code {
+    font-family: var(--mono); font-size: 0.84em;
+    background: var(--ground); border: 1px solid var(--rule-2);
+    padding: 0.08em 0.32em; border-radius: 2px; color: var(--ink);
+  }
+  .evidence {
+    background: var(--ground); border: 1px solid var(--rule-2);
+    padding: 0.85rem 1rem; font-family: var(--mono); font-size: 0.78rem;
+    line-height: 1.7; overflow-x: auto; color: var(--ink-2);
+  }
+  .evidence .ok  { color: var(--ok); }
+  .evidence .no  { color: var(--gap); }
+
+  hr.sep { border: none; border-top: 1px solid var(--rule); margin: 3.5rem 0; }
+
+  footer { color: var(--ink-2); font-size: 0.88rem; max-width: 66ch; }
+  footer p { margin: 0 0 0.7rem; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 34rem) {
+    .wrap { padding: 2.5rem 1.1rem 4rem; }
+    .item { padding: 1.25rem; }
+    .item-head { flex-wrap: wrap; gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Demo Feedback · Status as of 10 July 2026</p>
+    <h1>Where we stand on the demo feedback — and what to tell</h1>
+    <p class="lede">
+      The nine points exactly as they came back, in their own numbering. For each: where it stood,
+      what we moved today, and what's still needed. Today's work landed on
+      <strong>F1, F2, F3, F7</strong> (and part of <strong>F9</strong>) — the switch view, the cables /
+      endpoints / trace, and the pitch. The other five are untouched, each waiting on access,
+      direction, or vendor data — not on engineering.
+    </p>
+  </header>
+
+  <section class="thesis">
+    <h2>Today, in one line</h2>
+    <p>
+      We <strong>surfaced the switch login &amp; live detail (F1)</strong>, <strong>built and showed the
+      cable endpoints, the Cables view, and the end-to-end trace (F7)</strong>, a working <strong>ping / traceroute from the switch (F2)</strong>, and <strong>reworked the
+      pitch to open on the five pain points (F3)</strong> — with the new master demo script also
+      reordering the story (F9). Everything else is as it was.
+    </p>
+    <ul class="tally">
+      <li><span class="n">4</span><span class="lbl">moved today (F1, F2, F3, F7)</span></li>
+      <li><span class="n">1</span><span class="lbl">partly moved (F9)</span></li>
+      <li><span class="n">4</span><span class="lbl">unchanged (F4,F5,F6,F8)</span></li>
+    </ul>
+  </section>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>The ask (as written)</th><th>Stood that day</th><th>Today</th><th>What's left / what to tell</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="id">F1</td><td class="what">Fully expose switch login for all supported devices</td><td><span class="chip partial">Built, hidden</span></td><td><span class="chip built">Surfaced</span></td><td class="eff">Test more models · needs real switches</td></tr>
+        <tr><td class="id">F2</td><td class="what">Quick-check actions (Traceroute button) in rack view</td><td><span class="chip none">Not built</span></td><td><span class="chip built">Built</span></td><td class="eff">Ping + traceroute live on the switch page</td></tr>
+        <tr><td class="id">F3</td><td class="what">Open the pitch on data-center pain points</td><td><span class="chip soft">Narrative</span></td><td><span class="chip built">Reworked</span></td><td class="eff">Your review of the script</td></tr>
+        <tr><td class="id">F4</td><td class="what">Reorganize the UI by goal</td><td><span class="chip soft">Design</span></td><td class="eff">&mdash;</td><td class="eff">A goal structure — what belongs where</td></tr>
+        <tr><td class="id">F5</td><td class="what">Guided onboarding</td><td><span class="chip none">Not built</span></td><td class="eff">&mdash;</td><td class="eff">A written, defined scope</td></tr>
+        <tr><td class="id">F6</td><td class="what">Cross-rack topology visualization</td><td><span class="chip partial">Half built</span></td><td class="eff">&mdash;</td><td class="eff">2 complete network racks</td></tr>
+        <tr><td class="id">F7</td><td class="what">Clarify cable endpoints &amp; paths</td><td><span class="chip soft">Presentation</span></td><td><span class="chip built">Built &amp; shown</span></td><td class="eff">Full physical trace · multi-switch + panel labels</td></tr>
+        <tr><td class="id">F8</td><td class="what">Validate firmware/EOL &amp; procurement, more vendors</td><td><span class="chip partial">~10 vendors</span></td><td class="eff">&mdash;</td><td class="eff">Sanctioned data source · vendors block scraping</td></tr>
+        <tr><td class="id">F9</td><td class="what">Refine the demo's story order</td><td><span class="chip soft">Narrative</span></td><td><span class="chip partial">Partly</span></td><td class="eff">Finalize alongside F3</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="group">
+    <p class="eyebrow">What we moved today</p>
+    <h2>The four (plus a half) we advanced</h2>
+    <p>Detail on the items that changed, and the exact line to say for each.</p>
+  </div>
+
+  <article class="item">
+    <div class="item-head"><span class="item-id">F1</span>
+      <div class="item-title"><h3>Switch login &amp; live detail — surfaced</h3>
+        <p class="quote">“Confirm and fully expose switch login functionality for all supported devices directly from RackTrack.”</p></div>
+      <span class="chip built">Surfaced today</span></div>
+    <div class="field"><p class="field-label">What we did today</p>
+      <p>Built the “Live Network Switch” (Ports) page: it logs into the switch and shows the full live read — identity (model, firmware, uptime), the port faceplate, PoE draw, VLANs, and neighbours — all over SSH. The capability existed on the backend; now it's visible on screen for a real device.</p></div>
+    <div class="field"><p class="field-label">What's left</p>
+      <p>Prove it across the full list of supported models — which needs real switch hardware in hand. We can only show one today because that's the one switch we can reach.</p></div>
+    <div class="field"><p class="field-label">What to tell</p>
+      <p>“Switch login is live and on screen — you're seeing a real switch read end to end. Covering every vendor model is a testing pass once we have the devices.”</p></div>
+  </article>
+
+  <article class="item">
+    <div class="item-head"><span class="item-id">F2</span>
+      <div class="item-title"><h3>Traceroute / ping — built today</h3>
+        <p class="quote">“Add quick verification/troubleshooting actions (for example, a ‘Traceroute’ button) accessible from the rack view.”</p></div>
+      <span class="chip built">Built today</span></div>
+    <div class="field"><p class="field-label">What we did today</p>
+      <p>Added a <strong>Reachability check</strong> to the switch page: type an IP or hostname and hit <strong>Ping</strong> or <strong>Traceroute</strong>, and it runs from the switch itself over the SSH channel we already have, showing the live result and hops. It rode the console plumbing exactly as expected — no new infrastructure.</p></div>
+    <div class="field"><p class="field-label">Live output (from the switch)</p>
+      <div class="evidence"><span class="ok">TL-SG2428P#</span> tracert 8.8.8.8 30<br>
+Tracing route to 8.8.8.8 over a maximum of 30 hops<br>
+&nbsp;1&nbsp;&nbsp;&nbsp;1 ms&nbsp;&nbsp;192.168.1.1&nbsp;&nbsp;&larr; your gateway<br>
+&nbsp;2&nbsp;&nbsp;&nbsp;1 ms&nbsp;&nbsp;183.82.0.1&nbsp;&nbsp;&larr; ISP<br>
+&nbsp;3&nbsp;&nbsp;<span class="no">*&nbsp;&nbsp;*&nbsp;&nbsp;*</span>&nbsp;&nbsp;Request timed out.<br>
+&nbsp;4&nbsp;&nbsp;10 ms&nbsp;&nbsp;183.82.14.78<br>
+&nbsp;&hellip;&nbsp;&nbsp;(Google's routers)<br>
+&nbsp;8&nbsp;&nbsp;10 ms&nbsp;&nbsp;<span class="ok">8.8.8.8</span>&nbsp;&nbsp;&larr; reached<br>
+Trace complete.</div></div>
+    <div class="field"><p class="field-label">What's left</p>
+      <p>The commands are vendor-aware (TP-Link uses <code>tracert</code>, Cisco/D-Link use <code>traceroute</code>); the Cisco form is wired and will be confirmed once we have that hardware to test on.</p></div>
+    <div class="field"><p class="field-label">What to tell</p>
+      <p>“You can ping or traceroute any target straight from the switch view and watch the hops live — the quick verification action, done.”</p></div>
+  </article>
+
+  <article class="item">
+    <div class="item-head"><span class="item-id">F7</span>
+      <div class="item-title"><h3>Cable endpoints, Cables view &amp; trace — built and shown</h3>
+        <p class="quote">“Review how cable endpoints and path information are presented to ensure existing capabilities are clearly demonstrated.”</p></div>
+      <span class="chip built">Built today</span></div>
+    <div class="field"><p class="field-label">What we did today</p>
+      <p>Three things: the <strong>endpoint card</strong> on a located port (the device on the other end, by name or MAC, with VLAN); the <strong>Cables view</strong> that lists every live link; and the <strong>expandable end-to-end trace</strong> — a hop chain from the switch, through the port, to the endpoint, with the uplink expanding to every device behind it. All live from the switch.</p></div>
+    <div class="field"><p class="field-label">What's left</p>
+      <p>This is the full <em>logical</em> trace. A complete <em>physical</em> trace needs two things one switch can't give: reachability to the neighbouring switches (to walk hop to hop) and patch-panel port labels (to fill the passive panels the network can't see).</p></div>
+    <div class="field"><p class="field-label">What to tell</p>
+      <p>“Every port shows what's on the other end, and you can expand any cable into its full path. The logical trace is done; extending it through patch panels and across switches needs those switches reachable and the panels labelled.”</p></div>
+  </article>
+
+  <article class="item">
+    <div class="item-head"><span class="item-id">F3</span>
+      <div class="item-title"><h3>The pitch — reworked to open on the pain</h3>
+        <p class="quote">“Revise the product pitch to start with broader data center pain points … before discussing individual features.”</p></div>
+      <span class="chip built">Reworked today</span></div>
+    <div class="field"><p class="field-label">What we did today</p>
+      <p>Rewrote the opening so it leads with the five data-center pains — asset tracking, cabling, procurement, auditing, and operating at AI scale — and maps each to the feature that answers it, before any feature is shown. It's in the demo script (Act 1 “The five problems”) and the Step 1 rewrite.</p></div>
+    <div class="field"><p class="field-label">What's left</p>
+      <p>Your review of the script — <code>notes/artifacts/racktrack-client-demo-script.md</code> — to confirm the framing and the numbers before it's presented.</p></div>
+    <div class="field"><p class="field-label">What to tell</p>
+      <p>“The pitch now opens on the five problems every operator feels, then shows each feature as the answer — nothing leads with the machinery. Please review the script.”</p></div>
+  </article>
+
+  <article class="item">
+    <div class="item-head"><span class="item-id">F9</span>
+      <div class="item-title"><h3>Demo story order — reordered in the new script</h3>
+        <p class="quote">“Refine the presentation flow and story order for demos to better showcase the application's value.”</p></div>
+      <span class="chip partial">Partly today</span></div>
+    <div class="field"><p class="field-label">What we did today</p>
+      <p>The master demo script now runs a deliberate arc — cold open, the five problems, the data moat, then one photo that closes all five, the ROI math, objections, and the close. Story order is addressed there.</p></div>
+    <div class="field"><p class="field-label">What's left / what to tell</p>
+      <p>Lock it in the same review as F3. “The story now builds from problem to proof to math — review it alongside the pitch.”</p></div>
+  </article>
+
+  <hr class="sep">
+
+  <div class="group">
+    <p class="eyebrow">Not touched today</p>
+    <h2>The five still waiting — and on what</h2>
+    <p>None are blocked by engineering. Each waits on an input from outside the code.</p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>#</th><th>The ask</th><th>Blocked on</th><th>What to tell</th></tr></thead>
+      <tbody>
+        <tr><td class="id">F4</td><td class="what">Reorganize UI by goal</td><td class="eff">A goal structure</td><td class="eff">“Ready to reshape once we know which goals matter and what belongs where.”</td></tr>
+        <tr><td class="id">F5</td><td class="what">Guided onboarding</td><td class="eff">A defined scope</td><td class="eff">“Not built; a short written scope and we build it.”</td></tr>
+        <tr><td class="id">F6</td><td class="what">Cross-rack topology</td><td class="eff">2 real racks</td><td class="eff">“Half there; finishing it needs two complete network racks to work against.”</td></tr>
+        <tr><td class="id">F8</td><td class="what">More vendors (firmware/EOL)</td><td class="eff">Vendor data path</td><td class="eff">“Works where vendors allow; the rest block the site reads — needs an API or licensed feed.”</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="sep">
+  <footer>
+    <p><strong>Net for the room:</strong> of nine points, four (F1, F2, F3, F7) are answered and demonstrable today, one (F9) is folded into the new script, and four are waiting on inputs from outside the codebase — a direction (F4, F5), rack access (F6), and vendor data (F8).</p>
+  </footer>
+
+</div>
+</body>
+</html>

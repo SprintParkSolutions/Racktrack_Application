@@ -1,0 +1,17 @@
+{
+  "nodes": [
+    { "NodeID": 1, "Caption": "SW-U06", "IPAddress": "10.0.1.10", "Vendor": "Cisco", "MachineType": "Cisco Catalyst 2960X-48FPS-L", "Location": "RACK-A01 U6", "SysName": "SW-U06", "Status": 1, "StatusDescription": "Node is Up", "CPUCount": 1, "MemoryUsed": null, "MemoryAvailable": null, "ResponseTime": 1.2, "PercentLoss": 0, "Rack": "RACK-A01", "RackPosition": 6 },
+    { "NodeID": 2, "Caption": "FW-U01", "IPAddress": "10.0.0.1",  "Vendor": "Fortinet", "MachineType": "FortiGate 100F", "Location": "RACK-A01 U1", "SysName": "FW-U01", "Status": 1, "StatusDescription": "Node is Up", "CPUCount": 2, "MemoryUsed": null, "MemoryAvailable": null, "ResponseTime": 0.8, "PercentLoss": 0, "Rack": "RACK-A01", "RackPosition": 1 },
+    { "NodeID": 3, "Caption": "SW-U10", "IPAddress": "10.0.1.14", "Vendor": "Cisco", "MachineType": "Cisco Catalyst 9300-48P", "Location": "RACK-A01 U10", "SysName": "SW-U10", "Status": 1, "StatusDescription": "Node is Up", "CPUCount": 1, "MemoryUsed": null, "MemoryAvailable": null, "ResponseTime": 1.5, "PercentLoss": 0, "Rack": "RACK-A01", "RackPosition": 10 },
+    { "NodeID": 4, "Caption": "UPS-U40", "IPAddress": "10.0.2.40", "Vendor": "APC", "MachineType": "APC Smart-UPS 3000VA", "Location": "RACK-C03 U40", "SysName": "UPS-U40", "Status": 2, "StatusDescription": "Node is Warning", "CPUCount": null, "MemoryUsed": null, "MemoryAvailable": null, "ResponseTime": 3.1, "PercentLoss": 0, "Rack": "RACK-C03", "RackPosition": 40 }
+  ],
+  "interfaces": [
+    { "InterfaceID": 1, "NodeID": 1, "Caption": "SW-U06 - Gi0/1", "InterfaceName": "GigabitEthernet0/1", "InterfaceAlias": "Uplink-to-FW", "Status": 1, "InBps": 125000000, "OutBps": 80000000, "InErrors": 0, "OutErrors": 0, "Speed": 1000000000, "Duplex": "FullDuplex" },
+    { "InterfaceID": 2, "NodeID": 1, "Caption": "SW-U06 - Gi0/24", "InterfaceName": "GigabitEthernet0/24", "InterfaceAlias": "Client-Port-24", "Status": 2, "InBps": 0, "OutBps": 0, "InErrors": 145, "OutErrors": 23, "Speed": 1000000000, "Duplex": "FullDuplex" },
+    { "InterfaceID": 3, "NodeID": 2, "Caption": "FW-U01 - wan1", "InterfaceName": "wan1", "InterfaceAlias": "WAN-ISP1", "Status": 1, "InBps": 50000000, "OutBps": 30000000, "InErrors": 0, "OutErrors": 0, "Speed": 1000000000, "Duplex": "FullDuplex" }
+  ],
+  "alerts": [
+    { "AlertID": 1, "NodeID": 4, "Caption": "UPS-U40", "AlertMessage": "Battery low — 15% remaining (8 min runtime)", "Severity": 1, "AcknowledgedBy": null, "AlertTime": "2026-07-15T03:10:00Z" },
+    { "AlertID": 2, "NodeID": 1, "Caption": "SW-U06", "AlertMessage": "Interface GigabitEthernet0/24 error rate exceeds threshold", "Severity": 2, "AcknowledgedBy": null, "AlertTime": "2026-07-14T22:30:00Z" }
+  ]
+}

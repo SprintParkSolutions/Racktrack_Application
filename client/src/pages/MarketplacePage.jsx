@@ -55,6 +55,8 @@ const CONDITION_LABEL = {
   'for-parts': 'For parts',
 };
 
+const PAGE_SIZE = 2;
+
 function formatPrice(listing) {
   if (listing.priceCents == null) return 'Make an offer';
   const n = listing.priceCents / 100;
@@ -83,7 +85,9 @@ function formatRelative(d) {
   return `${Math.floor(days/30)}mo ago`;
 }
 
-function ListingCard({ listing, onOpen }) {
+/* ── Listing card (browse tab) ─────────────────────────────────────── */
+function ListingCard({ listing, onOpen, onBuy }) {
+  const [amazonPosted, setAmazonPosted] = useState(false);
   return (
     <button type="button" className={styles.card} onClick={() => onOpen(listing)}>
       <div className={styles.cardThumb}>
@@ -124,12 +128,112 @@ function ListingCard({ listing, onOpen }) {
             {listing.location && <span>{listing.location}</span>}
           </div>
         )}
+        {listing.status === 'active' && listing.kind === 'want' && listing.priceCents != null && (
+          <div
+            className={styles.cardBuyRow}
+            onClick={(e) => {
+              e.stopPropagation();
+              onBuy(listing.id);
+            }}
+          >
+            <span className={styles.cardBuyBtn}>Buy Now</span>
+          </div>
+        )}
+        {listing.status === 'active' && listing.kind === 'sell' && (
+          <div
+            className={styles.cardBuyRow}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!amazonPosted) setAmazonPosted(true);
+            }}
+          >
+            <span className={amazonPosted ? styles.cardAmazonBtnPosted : styles.cardAmazonBtn}>
+              {amazonPosted ? 'Posted to Amazon' : 'Post to Amazon'}
+            </span>
+          </div>
+        )}
       </div>
     </button>
   );
 }
 
-function ListingDetailModal({ listing, partners, onClose, onPatch, onDelete, isMine }) {
+/* ── My-listings card (mine tab) — with inline Edit / Mark Sold / Delete ─ */
+function MyListingCard({ listing, onOpen, onPatch, onDelete, onEdit }) {
+  const [amazonPosted, setAmazonPosted] = useState(false);
+  const handlePatch = async (e, status) => {
+    e.stopPropagation();
+    if (!confirm(`Mark this listing as "${status}"?`)) return;
+    await onPatch(listing.id, { status });
+  };
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    if (!confirm('Delete this listing? This cannot be undone.')) return;
+    await onDelete(listing.id);
+  };
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    onEdit(listing);
+  };
+  const handlePostAmazon = (e) => {
+    e.stopPropagation();
+    setAmazonPosted(true);
+  };
+  return (
+    <div className={styles.mineCard} onClick={() => onOpen(listing)} role="button" tabIndex={0}>
+      <div className={styles.mineThumb}>
+        {listing.imageUrl
+          ? <img src={listing.imageUrl} alt="" loading="lazy" />
+          : <span>{CATEGORY_ICON[listing.category] || '📦'}</span>}
+      </div>
+      <div className={styles.mineInfo}>
+        <div className={styles.mineTitleRow}>
+          <h3 className={styles.mineTitle}>{listing.title}</h3>
+          <span className={`${styles.statusBadge} ${styles[`sb_${listing.status}`] || ''}`}>
+            {listing.status}
+          </span>
+        </div>
+        <p className={styles.mineMeta}>
+          {CATEGORY_LABEL[listing.category] || listing.category}
+          {' · '}{CONDITION_LABEL[listing.condition] || listing.condition}
+          {listing.location && <> · {listing.location}</>}
+        </p>
+        <div className={styles.mineActions}>
+          <button className={`${styles.mineBtn} ${styles.mineBtnEdit}`} onClick={handleEdit}>
+            Edit
+          </button>
+          {listing.status === 'active' && (
+            <button className={`${styles.mineBtn} ${styles.mineBtnSold}`}
+                    onClick={(e) => handlePatch(e, 'sold')}>
+              Mark Sold
+            </button>
+          )}
+          {listing.status !== 'active' && (
+            <button className={`${styles.mineBtn} ${styles.mineBtnEdit}`}
+                    onClick={(e) => handlePatch(e, 'active')}>
+              Reactivate
+            </button>
+          )}
+          <button className={`${styles.mineBtn} ${styles.mineBtnDel}`} onClick={handleDelete}>
+            Delete
+          </button>
+          {listing.status === 'active' && (
+            <button
+              className={`${styles.mineBtn} ${amazonPosted ? styles.mineBtnPosted : styles.mineBtnAmazon}`}
+              onClick={handlePostAmazon}
+              disabled={amazonPosted}
+            >
+              {amazonPosted ? 'Posted to Amazon' : 'Post to Amazon'}
+            </button>
+          )}
+        </div>
+      </div>
+      <span className={styles.minePrice}>{formatPrice(listing)}</span>
+    </div>
+  );
+}
+
+function ListingDetailModal({ listing, partners, onClose, onPatch, onDelete, isMine, onBuy, onFlag }) {
+  const [amazonPosted, setAmazonPosted] = useState(false);
   if (!listing) return null;
   const handlePatchStatus = async (status) => {
     if (!confirm(`Mark this listing as ${status}?`)) return;
@@ -208,15 +312,61 @@ function ListingDetailModal({ listing, partners, onClose, onPatch, onDelete, isM
               <button className={styles.btnDanger} onClick={handleDelete}>
                 Delete
               </button>
+              {listing.status === 'active' && (
+                <button
+                  className={amazonPosted ? styles.btnPosted : styles.btnAmazon}
+                  onClick={() => setAmazonPosted(true)}
+                  disabled={amazonPosted}
+                >
+                  {amazonPosted ? 'Posted to Amazon' : 'Post to Amazon'}
+                </button>
+              )}
             </div>
           ) : (
-            <p className={styles.contactHint}>
-              Contact the seller through their RackTrack profile (@{listing.seller?.username})
-              to negotiate price and shipping.
-            </p>
+            <div className={styles.modalBuyerActions}>
+              {listing.status === 'active' && listing.kind === 'want' && listing.priceCents != null && (
+                <button className={styles.btnPrimary} onClick={() => onBuy(listing.id)}
+                        style={{ width: '100%', padding: '13px', fontSize: '.95rem' }}>
+                  Buy Now — {formatPrice(listing)}
+                </button>
+              )}
+              {listing.status === 'active' && listing.kind === 'sell' && (
+                <button
+                  className={amazonPosted ? styles.btnPosted : styles.btnAmazon}
+                  onClick={() => setAmazonPosted(true)}
+                  disabled={amazonPosted}
+                >
+                  {amazonPosted ? 'Posted to Amazon' : 'Post to Amazon'}
+                </button>
+              )}
+              {listing.priceCents == null && (
+                <p className={styles.contactHint}>
+                  This listing has no set price — contact @{listing.seller?.username} to negotiate.
+                </p>
+              )}
+              <button className={styles.flagBtn} onClick={() => onFlag(listing.id)}>
+                Report listing
+              </button>
+            </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Pagination control ────────────────────────────────────────────── */
+function Pagination({ page, hasMore, onPrev, onNext }) {
+  if (page <= 1 && !hasMore) return null;
+  return (
+    <div className={styles.pagination}>
+      <button className={styles.pageBtn} disabled={page <= 1} onClick={onPrev}>
+        ← Previous
+      </button>
+      <span className={styles.pageLabel}>Page {page}</span>
+      <button className={styles.pageBtn} disabled={!hasMore} onClick={onNext}>
+        Next →
+      </button>
     </div>
   );
 }
@@ -231,7 +381,9 @@ export default function MarketplacePage() {
   const [kind, setKind]           = useState(params.get('kind') === 'want' ? 'want' : 'sell');
   const [q, setQ]                 = useState(params.get('q') || '');
   const [category, setCategory]   = useState(params.get('category') || '');
+  const [page, setPage]           = useState(parseInt(params.get('page'), 10) || 1);
   const [listings, setListings]   = useState([]);
+  const [hasMore, setHasMore]     = useState(false);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
   const [detail, setDetail]       = useState(null);   // {listing, partners}
@@ -247,6 +399,8 @@ export default function MarketplacePage() {
       } else {
         const usp = new URLSearchParams();
         usp.set('kind', kind);
+        usp.set('limit', String(PAGE_SIZE));
+        usp.set('page', String(page));
         if (category) usp.set('category', category);
         if (q)        usp.set('q', q);
         url = apiUrl('/api/marketplace/listings?' + usp.toString());
@@ -254,16 +408,22 @@ export default function MarketplacePage() {
       const res  = await authFetch(url);
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setListings(data.listings || []);
+      const items = data.listings || [];
+      setListings(items);
+      setHasMore(tab !== 'mine' && items.length >= PAGE_SIZE);
     } catch (err) {
       setError(err.message);
       setListings([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, [tab, kind, q, category]);
+  }, [tab, kind, q, category, page]);
 
   useEffect(() => { fetchListings(); }, [fetchListings]);
+
+  // Reset page to 1 when filters change
+  useEffect(() => { setPage(1); }, [tab, kind, q, category]);
 
   // Reflect filter state into the URL so bookmarks / Back work.
   useEffect(() => {
@@ -272,8 +432,9 @@ export default function MarketplacePage() {
     if (kind === 'want') usp.set('kind', 'want');
     if (q)        usp.set('q', q);
     if (category) usp.set('category', category);
+    if (page > 1) usp.set('page', String(page));
     setParams(usp, { replace: true });
-  }, [tab, kind, q, category, setParams]);
+  }, [tab, kind, q, category, page, setParams]);
 
   const openDetail = async (listing) => {
     try {
@@ -310,6 +471,31 @@ export default function MarketplacePage() {
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setDetail(null);
+      fetchListings();
+    } catch (err) { alert(err.message); }
+  };
+
+  // Inline patch / delete from My Listings cards (no modal needed)
+  const patchListingInline = async (id, patch) => {
+    try {
+      const res = await authFetch(apiUrl(`/api/marketplace/listings/${id}`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      fetchListings();
+    } catch (err) { alert(err.message); }
+  };
+
+  const deleteListingInline = async (id) => {
+    try {
+      const res = await authFetch(apiUrl(`/api/marketplace/listings/${id}`), {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       fetchListings();
     } catch (err) { alert(err.message); }
   };
@@ -436,7 +622,7 @@ export default function MarketplacePage() {
         </div>
       )}
 
-      {/* ─── Listings grid ────────────────────────────────────────── */}
+      {/* ─── Listings ──────────────────────────────────────────────── */}
       <section className={styles.gridWrap}>
         {error && <div className={styles.errBanner}>{error}</div>}
         {loading && <div className={styles.empty}><span className={styles.spinner}/></div>}
@@ -454,10 +640,39 @@ export default function MarketplacePage() {
             </button>
           </div>
         )}
-        {!loading && listings.length > 0 && (
-          <div className={styles.grid}>
+
+        {/* Browse tab → card grid + pagination */}
+        {!loading && listings.length > 0 && tab === 'browse' && (
+          <>
+            <div className={styles.grid}>
+              {listings.map(l => (
+                <ListingCard key={l.id} listing={l} onOpen={openDetail} onBuy={(id) => {
+                  if (!isAuthed) { navigate('/login', { state: { from: `/marketplace/checkout/${id}` } }); return; }
+                  navigate(`/marketplace/checkout/${id}`);
+                }} />
+              ))}
+            </div>
+            <Pagination
+              page={page}
+              hasMore={hasMore}
+              onPrev={() => setPage(p => Math.max(1, p - 1))}
+              onNext={() => setPage(p => p + 1)}
+            />
+          </>
+        )}
+
+        {/* Mine tab → list with inline Edit / Mark Sold / Delete */}
+        {!loading && listings.length > 0 && tab === 'mine' && (
+          <div className={styles.mineList}>
             {listings.map(l => (
-              <ListingCard key={l.id} listing={l} onOpen={openDetail} />
+              <MyListingCard
+                key={l.id}
+                listing={l}
+                onOpen={openDetail}
+                onPatch={patchListingInline}
+                onDelete={deleteListingInline}
+                onEdit={(listing) => navigate(`/marketplace/new?editId=${listing.id}`)}
+              />
             ))}
           </div>
         )}
@@ -470,6 +685,24 @@ export default function MarketplacePage() {
         onClose={() => setDetail(null)}
         onPatch={patchDetail}
         onDelete={deleteDetail}
+        onBuy={(id) => {
+          if (!isAuthed) { navigate('/login', { state: { from: `/marketplace/checkout/${id}` } }); return; }
+          navigate(`/marketplace/checkout/${id}`);
+        }}
+        onFlag={async (id) => {
+          const reason = prompt('Why are you reporting this listing?');
+          if (!reason) return;
+          try {
+            const res = await authFetch(apiUrl(`/api/marketplace/listings/${id}/flag`), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reason }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Failed');
+            alert('Listing reported. An admin will review it.');
+          } catch (err) { alert(err.message); }
+        }}
       />
     </div>
   );

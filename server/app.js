@@ -258,6 +258,17 @@ try {
     'demo tenant-mat router not loaded');
 }
 
+// Mock data-source routes — simulates ServiceNow, NetBox, Orion, Spectrum,
+// and Generic REST APIs so the app works without real external services.
+// Routes: /api/now/*, /api/dcim/*, /SolarWinds/*, /spectrum/*, /api/v1/*
+try {
+  app.use(require('./mock_routes'));
+  logger.info({ event: 'router.loaded', router: 'mock_routes' }, 'mock data-source routes loaded');
+} catch (err) {
+  logger.warn({ event: 'router.load_failed', router: 'mock_routes', err: err.message },
+    'mock data-source routes not loaded');
+}
+
 // CMDB-ticket integration — every CMDB write is gated behind an SR
 // (sc_request) approval. Routes under /api/cmdb/ticket/*; the poller
 // runs every 5 min.
@@ -4010,6 +4021,11 @@ app.post('/api/incidents/refresh', auth.requireAuth, async (req, res) => {
     return res.status(500).json({ ok: false, error: `poll.py not found at ${POLL_SCRIPT}` });
   }
   const { spawn } = require('child_process');
+  // When MOCK_SERVER_URL is set in .env, ALL ServiceNow connections route
+  // through the integrated mock routes so the app works without a real PDI.
+  // The mock routes are now mounted in this same server, so the URL points
+  // back to ourselves (http://localhost:<PORT>/api/now).
+  const mockUrl = process.env.MOCK_SERVER_URL;  // e.g. http://localhost:3001
   const env = {
     ...process.env,
     PYTHONIOENCODING: 'utf-8',
@@ -4017,6 +4033,7 @@ app.post('/api/incidents/refresh', auth.requireAuth, async (req, res) => {
     SN_INSTANCE: creds.instance,
     SN_USER:     creds.user,
     SN_PASSWORD: creds.password,
+    ...(mockUrl ? { SN_BASE_URL: `${mockUrl}/api/now` } : {}),
   };
   // If a previous poll is still running, cancel it. The user has chosen a
   // new active profile (or hit Refresh again), and waiting on the old poll
@@ -4090,9 +4107,12 @@ app.post('/api/incidents/refresh', auth.requireAuth, async (req, res) => {
   child.on('close', (code) => {
     clearTimeout(killer);
     // If this child was cancelled (because the user switched profiles
-    // mid-poll), the global state has already been replaced — don't
-    // overwrite the new poll's status with our late-arriving result.
-    if (_refreshState?.instance !== myInstance || _refreshState?.state !== 'running') {
+    // mid-poll, or hit Refresh again for the same profile), the global
+    // state has already been replaced — don't overwrite the new poll's
+    // status with our late-arriving result. The `child !== _refreshChild`
+    // check catches the same-instance double-refresh case that the
+    // instance-name guard alone would miss.
+    if (child !== _refreshChild || _refreshState?.state !== 'running') {
       logger.info(`[incidents.refresh] ignoring close from cancelled poll for ${myInstance}`);
       return;
     }
@@ -4804,6 +4824,7 @@ app.get('/api/scans', auth.requireAuth, (req, res) => {
 app.get('/api/scan/:rackId/report', async (req, res) => {
   const { rackId } = req.params;
   const format = (req.query.format || 'meta').toLowerCase();
+  res.setHeader('Cache-Control', 'no-store');
   try {
     if (format === 'html') {
       // Downscale big renders first so the report renders on phones.
@@ -4946,6 +4967,7 @@ app.get('/api/cmdb/rack/:rackId/switches', auth.requireAuth, (req, res) => {
 // Snapshot lives at outputs/<rackId>/topology.json.
 app.get('/api/topology/:rackId', (req, res) => {
   const { rackId } = req.params;
+  res.setHeader('Cache-Control', 'no-store');
   const snapPath = path.join(outputsDir, rackId, 'topology.json');
   if (!fs.existsSync(snapPath)) {
     // Fire-and-forget: try to (re)generate the snapshot in the background so a
@@ -4968,6 +4990,7 @@ app.get('/api/topology/:rackId', (req, res) => {
 // underlying device_unit_map.json after re-detection runs.
 app.get('/api/scan/:rackId', (req, res) => {
   const { rackId } = req.params;
+  res.setHeader('Cache-Control', 'no-store');
   const rackDir = path.join(outputsDir, rackId);
   const jsonPath = path.join(rackDir, 'device_unit_map.json');
   if (!fs.existsSync(jsonPath)) {
@@ -4982,6 +5005,7 @@ app.get('/api/scan/:rackId', (req, res) => {
 
 app.get('/api/scan/:rackId/result', (req, res) => {
   const { rackId } = req.params;
+  res.setHeader('Cache-Control', 'no-store');
   const rackDir = path.join(outputsDir, rackId);
   if (!fs.existsSync(rackDir)) {
     return res.status(404).json({ error: `Rack ${rackId} not found` });
@@ -7043,6 +7067,7 @@ app.post('/api/scan/:rackId/ocr-devices', (req, res) => {
 // Information page to know whether OCR has been run for this rack.
 app.get('/api/scan/:rackId/ocr-devices', (req, res) => {
   const { rackId } = req.params;
+  res.setHeader('Cache-Control', 'no-store');
   const p = path.join(outputsDir, rackId, 'ocr_devices.json');
   if (!fs.existsSync(p)) {
     return res.status(404).json({ ok: false, error: 'OCR not yet run for this rack', rackId });

@@ -1,0 +1,35 @@
+{
+  "incident_number": "INC0010001",
+  "sys_id": "sn001aaa0001bbbb0001cccc0001dddd01",
+  "state": "1",
+  "priority": "2",
+  "urgency": null,
+  "category": "network",
+  "opened_at": "2026-07-14T08:30:00Z",
+  "opened_by": null,
+  "short_description": "SW-U06 port 1 err-disabled on rack RACK-A01",
+  "description": "Port 1 (Gi0/1) on SW-U06 in rack RACK-A01 entered err-disabled state due to BPDU guard violation. Technician needs to verify physical connection at U6.",
+  "target": {
+    "device": "SW-U06",
+    "port": 1,
+    "device_source": "cmdb_ci",
+    "port_source": "parsed_text"
+  },
+  "cmdb": {
+    "mgmt_ip": "10.0.1.10",
+    "mac": "AA:BB:CC:10:10:06",
+    "model": null,
+    "serial": "FCW2143A00J",
+    "os_version": null,
+    "vendor": null,
+    "sys_class_name": "cmdb_ci_netgear",
+    "interface_name": null,
+    "interface_alias": null,
+    "port_short_description": null,
+    "rack_name": null,
+    "rack_scan_id": null,
+    "u_position": 6
+  },
+  "instance_url": "https://dev2653.service-now.com/incident.do?sys_id=sn001aaa0001bbbb0001cccc0001dddd01",
+  "polled_at": "2026-07-16T13:34:11Z"
+}

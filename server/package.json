@@ -28,6 +28,7 @@
     "puppeteer": "^24.42.0",
     "sharp": "^0.34.5",
     "ssh2": "^1.17.0",
+    "stripe": "^22.3.2",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

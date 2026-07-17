@@ -1,0 +1,23 @@
+{
+  "racks": [
+    { "id": "rack-a01", "name": "RACK-A01", "location": "DataCenter-1 / Row-A", "height_u": 42, "status": "active", "description": "Primary networking rack" },
+    { "id": "rack-b02", "name": "RACK-B02", "location": "DataCenter-1 / Row-B", "height_u": 42, "status": "active", "description": "Secondary networking rack" },
+    { "id": "rack-c03", "name": "RACK-C03", "location": "DataCenter-1 / Row-C", "height_u": 42, "status": "active", "description": "Power and server rack" }
+  ],
+  "devices": [
+    { "id": "dev-sw-u06",  "name": "SW-U06",  "type": "Switch",      "vendor": "Cisco",    "model": "Catalyst 2960X-48FPS-L", "serial": "FCW2143A00J",       "ip": "10.0.1.10", "rack": "rack-a01", "rack_unit": 6,  "status": "online",  "port_count": 48 },
+    { "id": "dev-fw-u01",  "name": "FW-U01",  "type": "Firewall",    "vendor": "Fortinet", "model": "FortiGate 100F",          "serial": "FGT100F3X19000001", "ip": "10.0.0.1",  "rack": "rack-a01", "rack_unit": 1,  "status": "online",  "port_count": 4  },
+    { "id": "dev-sw-u10",  "name": "SW-U10",  "type": "Switch",      "vendor": "Cisco",    "model": "Catalyst 9300-48P",       "serial": "FCW2143B00K",       "ip": "10.0.1.14", "rack": "rack-a01", "rack_unit": 10, "status": "online",  "port_count": 48 },
+    { "id": "dev-pp-u18",  "name": "PP-U18",  "type": "Patch Panel", "vendor": "Panduit",  "model": "NetKey 24-Port Cat6",     "serial": "PND-PP-0018",       "ip": null,        "rack": "rack-b02", "rack_unit": 18, "status": "online",  "port_count": 24 },
+    { "id": "dev-ups-u40", "name": "UPS-U40", "type": "UPS",         "vendor": "APC",      "model": "Smart-UPS 3000VA RM",     "serial": "AS2201001234",      "ip": "10.0.2.40", "rack": "rack-c03", "rack_unit": 40, "status": "warning", "port_count": 0  }
+  ],
+  "cables": [
+    { "id": "cable-001", "from_device": "dev-sw-u06", "from_port": "GigabitEthernet0/1", "to_device": "dev-fw-u01",  "to_port": "port1", "type": "cat6",   "color": "blue",   "length_m": 2 },
+    { "id": "cable-002", "from_device": "dev-sw-u06", "from_port": "GigabitEthernet0/2", "to_device": "dev-pp-u18",  "to_port": "port1", "type": "cat6",   "color": "green",  "length_m": 3 },
+    { "id": "cable-003", "from_device": "dev-sw-u10", "from_port": "GigabitEthernet1/0/1","to_device": "dev-pp-u18",  "to_port": "port12","type": "cat6a",  "color": "yellow", "length_m": 4 }
+  ],
+  "alerts": [
+    { "id": "alert-001", "device_id": "dev-ups-u40", "severity": "critical", "message": "Battery level at 15%, 8 minutes runtime remaining", "time": "2026-07-15T03:10:00Z", "acknowledged": false },
+    { "id": "alert-002", "device_id": "dev-sw-u06",  "severity": "warning",  "message": "Interface Gi0/24 CRC errors exceeding threshold (145 errors)", "time": "2026-07-14T22:30:00Z", "acknowledged": false }
+  ]
+}

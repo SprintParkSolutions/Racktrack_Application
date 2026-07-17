@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{color-scheme:light dark}
+  body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}
+  img{max-width:100%}
+</style>
+</head>
+<body>
+<title>Network Page — Layout Options</title>
+<style>
+  :root {
+    --bg: #eeeef0;
+    --ink: #1a1c1d;
+    --muted: #6b6b70;
+    --faint: #9a9aa0;
+    --line: #e3e3e6;
+    --line-strong: #d3d3d8;
+    --card: #ffffff;
+    --chip: #f2f2f4;
+    --accent: #1a1c1d;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans);
+         -webkit-font-smoothing: antialiased; line-height: 1.5; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 28px 18px 80px; }
+
+  .head { margin-bottom: 6px; }
+  .head h1 { margin: 0; font-size: 1.4rem; letter-spacing: -0.02em; }
+  .head p { margin: 4px 0 0; color: var(--muted); font-size: 0.92rem; }
+
+  .opt { margin-top: 28px; }
+  .optHead { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .optTag { font-family: var(--mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
+            color: #fff; background: var(--ink); padding: 3px 8px; border-radius: 5px; }
+  .optTitle { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
+  .optDesc { color: var(--muted); font-size: 0.85rem; margin-left: auto; text-align: right; max-width: 300px; }
+  @media (max-width: 560px){ .optDesc { display: none; } }
+
+  /* the "screen" the mockup lives on — always white (the app is white) */
+  .screen { background: var(--card); border: 1px solid var(--line-strong); border-radius: 14px;
+            padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .scLabel { font-size: 0.72rem; font-weight: 700; color: var(--muted);
+             text-transform: uppercase; letter-spacing: 0.06em; margin: 0 2px 12px; }
+
+  /* shared bits */
+  .dev { font-family: var(--mono); font-weight: 700; font-size: 0.86rem; }
+  .cls { font-size: 0.66rem; font-weight: 600; color: var(--faint); text-transform: uppercase;
+         letter-spacing: 0.05em; }
+  .ip  { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+  .model { font-size: 0.78rem; color: var(--ink); }
+  .num { font-variant-numeric: tabular-nums; }
+  .chev { color: var(--faint); }
+
+  .bar { height: 6px; border-radius: 4px; background: #ececef; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--ink); border-radius: 4px; }
+  .glyph { width: 24px; height: 24px; flex: none; display: grid; place-items: center;
+           border-radius: 6px; background: var(--chip); }
+  .glyph svg { width: 14px; height: 14px; }
+
+  /* ── Option A: compact table ── */
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th { text-align: left; font-size: 0.64rem; font-weight: 700; color: var(--faint);
+            text-transform: uppercase; letter-spacing: 0.06em; padding: 0 10px 8px;
+            border-bottom: 1px solid var(--line); }
+  .tbl th.r, .tbl td.r { text-align: right; }
+  .tbl td { padding: 9px 10px; border-bottom: 1px solid var(--line); font-size: 0.82rem; vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr.exp td { background: #fafafb; }
+  .tbl .ports { font-family: var(--mono); font-size: 0.78rem; }
+  .portmini { padding: 4px 10px 10px !important; }
+  .portmini .prow { display: flex; justify-content: space-between; font-family: var(--mono);
+                    font-size: 0.72rem; color: var(--muted); padding: 3px 0; }
+  .portmini .up { color: var(--ink); font-weight: 700; }
+
+  /* ── Option B: 2-col cards ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px){ .grid2 { grid-template-columns: 1fr; } }
+  .bcard { border: 1px solid var(--line); border-radius: 11px; padding: 11px 12px; }
+  .bcard .top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .bcard .meta { font-size: 0.76rem; color: var(--muted); margin-bottom: 9px; display: flex;
+                 gap: 6px; flex-wrap: wrap; }
+  .bcard .vend { font-weight: 700; color: var(--ink); }
+  .bcard .barrow { display: flex; align-items: center; gap: 9px; }
+  .bcard .barrow .bar { flex: 1; }
+  .bcard .barrow .n { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+
+  /* ── Option C: grouped ── */
+  .grpHead { display: flex; align-items: baseline; gap: 8px; font-size: 0.68rem; font-weight: 700;
+             color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em;
+             padding: 12px 4px 6px; }
+  .grpHead:first-child { padding-top: 2px; }
+  .grpHead .c { color: var(--faint); }
+  .grow { display: grid; grid-template-columns: 22px 1fr auto auto; align-items: center; gap: 12px;
+          padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  .grow:last-child { border-bottom: none; }
+  .grow .mm { font-size: 0.76rem; color: var(--muted); }
+  .grow .pp { font-family: var(--mono); font-size: 0.76rem; }
+
+  .foot { margin-top: 30px; color: var(--muted); font-size: 0.85rem; text-align: center; }
+</style>
+
+<div class="wrap">
+  <div class="head">
+    <h1>Network page — layout options</h1>
+    <p>Same data, three structures. White + subtle black, compact. Tell me A, B, or C.</p>
+  </div>
+
+  <!-- OPTION A -->
+  <section class="opt">
+    <div class="optHead">
+      <span class="optTag">A</span>
+      <span class="optTitle">Compact table</span>
+      <span class="optDesc">Densest &amp; most scannable. One row per device; click to expand its ports.</span>
+    </div>
+    <div class="screen">
+      <p class="scLabel">Devices in this rack · 4 live</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Device</th><th>Model</th><th>IP</th><th class="r">Ports</th><th class="r">Links</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="dev">SW-U08</span></td>
+            <td class="model">Cisco Catalyst 9300-48P</td>
+            <td class="ip">10.44.108.8</td>
+            <td class="r ports num">21/26</td>
+            <td class="r num">21</td>
+            <td class="r chev">▾</td>
+          </tr>
+          <tr class="exp"><td class="portmini" colspan="6">
+            <div class="prow"><span>Gi0/2 · SW-U08 port 2</span><span class="up">up</span></div>
+            <div class="prow"><span>Gi0/4 · SW-U08 port 4</span><span class="up">up</span></div>
+            <div class="prow"><span>Gi0/16</span><span>down</span></div>
+          </td></tr>
+          <tr>
+            <td><span class="dev">SW-U06</span></td>
+            <td class="model">TP-Link TL-SG3428</td>
+            <td class="ip">10.44.108.6</td>
+            <td class="r ports num">5/28</td>
+            <td class="r num">5</td>
+            <td class="r chev">▸</td>
+          </tr>
+          <tr>
+            <td><span class="dev">SW-U09</span></td>
+            <td class="model">Ubiquiti USW-24-PoE</td>
+            <td class="ip">10.44.108.9</td>
+            <td class="r ports num">18/24</td>
+            <td class="r num">18</td>
+            <td class="r chev">▸</td>
+          </tr>
+          <tr>
+            <td><span class="dev">SRV-U02</span></td>
+            <td class="model">Dell PowerEdge R750</td>
+            <td class="ip">10.44.108.2</td>
+            <td class="r ports num">2/4</td>
+            <td class="r num">2</td>
+            <td class="r chev">▸</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- OPTION B -->
+  <section class="opt">
+    <div class="optHead">
+      <span class="optTag">B</span>
+      <span class="optTitle">2-column cards</span>
+      <span class="optDesc">Cards, but tighter and two per row so more fit. Thin utilization bar each.</span>
+    </div>
+    <div class="screen">
+      <p class="scLabel">Devices in this rack · 4 live</p>
+      <div class="grid2">
+        <div class="bcard">
+          <div class="top">
+            <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" stroke-width="1.9"><rect x="2" y="8" width="20" height="8" rx="2"/><circle cx="6" cy="12" r="1"/><circle cx="10" cy="12" r="1"/></svg></span>
+            <span class="dev">SW-U08</span><span class="cls">Switch</span>
+          </div>
+          <div class="meta"><span class="vend">Cisco</span><span>Catalyst 9300-48P</span><span class="ip">· 10.44.108.8</span></div>
+          <div class="barrow"><div class="bar"><i style="width:81%"></i></div><span class="n">21/26 · 21 links</span></div>
+        </div>
+        <div class="bcard">
+          <div class="top">
+            <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" stroke-width="1.9"><rect x="2" y="8" width="20" height="8" rx="2"/><circle cx="6" cy="12" r="1"/><circle cx="10" cy="12" r="1"/></svg></span>
+            <span class="dev">SW-U06</span><span class="cls">Switch</span>
+          </div>
+          <div class="meta"><span class="vend">TP-Link</span><span>TL-SG3428</span><span class="ip">· 10.44.108.6</span></div>
+          <div class="barrow"><div class="bar"><i style="width:18%"></i></div><span class="n">5/28 · 5 links</span></div>
+        </div>
+        <div class="bcard">
+          <div class="top">
+            <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" stroke-width="1.9"><rect x="2" y="8" width="20" height="8" rx="2"/><circle cx="6" cy="12" r="1"/><circle cx="10" cy="12" r="1"/></svg></span>
+            <span class="dev">SW-U09</span><span class="cls">Switch</span>
+          </div>
+          <div class="meta"><span class="vend">Ubiquiti</span><span>USW-24-PoE</span><span class="ip">· 10.44.108.9</span></div>
+          <div class="barrow"><div class="bar"><i style="width:75%"></i></div><span class="n">18/24 · 18 links</span></div>
+        </div>
+        <div class="bcard">
+          <div class="top">
+            <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" stroke-width="1.9"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="7" y2="8"/><line x1="7" y1="12" x2="7" y2="12"/></svg></span>
+            <span class="dev">SRV-U02</span><span class="cls">Server</span>
+          </div>
+          <div class="meta"><span class="vend">Dell</span><span>PowerEdge R750</span><span class="ip">· 10.44.108.2</span></div>
+          <div class="barrow"><div class="bar"><i style="width:50%"></i></div><span class="n">2/4 · 2 links</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPTION C -->
+  <section class="opt">
+    <div class="optHead">
+      <span class="optTag">C</span>
+      <span class="optTitle">Grouped by type</span>
+      <span class="optDesc">Section per device class, compact rows underneath. Organized, still tight.</span>
+    </div>
+    <div class="screen">
+      <div class="grpHead">Switches <span class="c">· 3</span></div>
+      <div class="grow">
+        <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" stroke-width="1.9"><rect x="2" y="8" width="20" height="8" rx="2"/><circle cx="6" cy="12" r="1"/><circle cx="10" cy="12" r="1"/></svg></span>
+        <span><span class="dev">SW-U08</span> &nbsp;<span class="mm">Cisco Catalyst 9300-48P</span></span>
+        <span class="pp num">21/26</span><span class="chev">▸</span>
+      </div>
+      <div class="grow">
+        <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" stroke-width="1.9"><rect x="2" y="8" width="20" height="8" rx="2"/><circle cx="6" cy="12" r="1"/><circle cx="10" cy="12" r="1"/></svg></span>
+        <span><span class="dev">SW-U06</span> &nbsp;<span class="mm">TP-Link TL-SG3428</span></span>
+        <span class="pp num">5/28</span><span class="chev">▸</span>
+      </div>
+      <div class="grow">
+        <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" stroke-width="1.9"><rect x="2" y="8" width="20" height="8" rx="2"/><circle cx="6" cy="12" r="1"/><circle cx="10" cy="12" r="1"/></svg></span>
+        <span><span class="dev">SW-U09</span> &nbsp;<span class="mm">Ubiquiti USW-24-PoE</span></span>
+        <span class="pp num">18/24</span><span class="chev">▸</span>
+      </div>
+      <div class="grpHead">Servers <span class="c">· 1</span></div>
+      <div class="grow">
+        <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" stroke-width="1.9"><rect x="3" y="4" width="18" height="16" rx="2"/></svg></span>
+        <span><span class="dev">SRV-U02</span> &nbsp;<span class="mm">Dell PowerEdge R750</span></span>
+        <span class="pp num">2/4</span><span class="chev">▸</span>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">Reply <b>A</b>, <b>B</b>, or <b>C</b> — or mix (e.g. “C but rows like A”). I'll build it in the app.</p>
+</div>
+
+</body>
+</html>

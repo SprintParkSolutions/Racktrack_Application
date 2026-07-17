@@ -34,6 +34,11 @@ import TenantMatPage from './pages/TenantMatPage.jsx';
 import ConnectionsPage from './pages/ConnectionsPage.jsx';
 import MarketplacePage from './pages/MarketplacePage.jsx';
 import MarketplaceNewPage from './pages/MarketplaceNewPage.jsx';
+import MarketplaceCheckoutPage from './pages/MarketplaceCheckoutPage.jsx';
+import MarketplaceOrdersPage from './pages/MarketplaceOrdersPage.jsx';
+import MarketplaceAlertsPage from './pages/MarketplaceAlertsPage.jsx';
+import MarketplaceDashboardPage from './pages/MarketplaceDashboardPage.jsx';
+import MarketplacePartnerAccountsPage from './pages/MarketplacePartnerAccountsPage.jsx';
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
@@ -264,12 +269,30 @@ export default function App() {
             <Route path="/connections" element={
               <AdminRoute><ResponsiveLayout><ConnectionsPage /></ResponsiveLayout></AdminRoute>
             } />
-            {/* Integrations + Marketplace are organization-admin only. */}
+            {/* Marketplace — restricted to Admin / Owner only. */}
             <Route path="/marketplace" element={
               <AdminRoute><ResponsiveLayout withBottomNav><MarketplacePage /></ResponsiveLayout></AdminRoute>
             } />
             <Route path="/marketplace/new" element={
               <AdminRoute><ResponsiveLayout withBottomNav><MarketplaceNewPage /></ResponsiveLayout></AdminRoute>
+            } />
+            <Route path="/marketplace/checkout/:listingId" element={
+              <AdminRoute><ResponsiveLayout withBottomNav><MarketplaceCheckoutPage /></ResponsiveLayout></AdminRoute>
+            } />
+            <Route path="/marketplace/orders" element={
+              <AdminRoute><ResponsiveLayout withBottomNav><MarketplaceOrdersPage /></ResponsiveLayout></AdminRoute>
+            } />
+            <Route path="/marketplace/orders/:orderId" element={
+              <AdminRoute><ResponsiveLayout withBottomNav><MarketplaceOrdersPage /></ResponsiveLayout></AdminRoute>
+            } />
+            <Route path="/marketplace/alerts" element={
+              <AdminRoute><ResponsiveLayout withBottomNav><MarketplaceAlertsPage /></ResponsiveLayout></AdminRoute>
+            } />
+            <Route path="/marketplace/dashboard" element={
+              <AdminRoute><ResponsiveLayout withBottomNav><MarketplaceDashboardPage /></ResponsiveLayout></AdminRoute>
+            } />
+            <Route path="/marketplace/partners" element={
+              <AdminRoute><ResponsiveLayout withBottomNav><MarketplacePartnerAccountsPage /></ResponsiveLayout></AdminRoute>
             } />
             <Route path="/specifications" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><SpecificationsPage /></ResponsiveLayout></ProtectedRoute>

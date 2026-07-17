@@ -25,6 +25,10 @@ export default defineConfig({
     // Allow any Host header so a public tunnel (e.g. *.trycloudflare.com) can
     // reach the dev server — otherwise Vite blocks unknown hosts.
     allowedHosts: true,
+    watch: {
+      usePolling: true,
+      interval: 1000,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
