@@ -79,11 +79,17 @@ function checkSnAuth(req, res) {
   }
   const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
   const profile = SN_USERS[user];
-  if (profile && profile.password !== pass) {
+  // `if (profile && ...)` short-circuited for an UNKNOWN user — the password was
+  // never checked — and the old `return profile ? user : 'sn_admin'` then
+  // promoted that unknown user to admin. `curl -u bogus:wrongpw` returned 200
+  // and the full incident table. This mirrors checkOrionAuth/checkSpectrumAuth,
+  // which both already fail closed with `!profile ||`; this checker was the
+  // only one of the five missing it.
+  if (!profile || profile.password !== pass) {
     res.status(401).json({ error: { message: 'Invalid credentials' } });
     return null;
   }
-  return profile ? user : 'sn_admin';
+  return user;
 }
 
 const NB_USERS = {

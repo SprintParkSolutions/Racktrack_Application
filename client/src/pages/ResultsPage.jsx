@@ -1278,6 +1278,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // WebView. Opening the report in an external browser instead would expose the
   // raw ngrok URL + its browser-warning interstitial to the user.
   const [reportDownload, setReportDownload] = useState(false);
+  // The report <iframe src> can't send an Authorization header, which is why
+  // /api/scan/:rackId/report used to be public — and therefore served any
+  // tenant's rack to anyone with an id. It now needs a short-lived token scoped
+  // to this one rack, fetched (authenticated) whenever the modal opens.
+  const [reportToken, setReportToken] = useState(null);
+  const [reportTokenErr, setReportTokenErr] = useState(null);
   const [sessionPorts, setSessionPorts] = useState([]); // [{deviceIdx, port, deviceLabel, deviceClass, status}]
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
   const [shareMsg, setShareMsg] = useState(null);
@@ -2573,11 +2579,25 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     }
   };
 
-  const reportUrl = (format) => apiUrl(`/api/scan/${scanId}/report?format=${format}`);
-  const viewReport = () => { setReportDownload(false); setReportOpen(true); };
+  const reportUrl = (format) =>
+    apiUrl(`/api/scan/${scanId}/report?format=${format}`) +
+    (reportToken ? `&t=${encodeURIComponent(reportToken)}` : '');
+  // Tokens are short-lived, so mint one per open rather than caching.
+  const fetchReportToken = async () => {
+    setReportToken(null); setReportTokenErr(null);
+    try {
+      const r = await authFetch(apiUrl(`/api/scan/${scanId}/report-token`));
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const { token } = await r.json();
+      setReportToken(token);
+    } catch (err) {
+      setReportTokenErr(err.message || 'could not authorise report');
+    }
+  };
+  const viewReport = () => { setReportDownload(false); setReportOpen(true); fetchReportToken(); };
   // Same in-app modal as View, but with the auto-print hash — keeps the whole
   // download flow inside the app (no external browser, no ngrok URL shown).
-  const openReportForDownload = () => { setReportDownload(true); setReportOpen(true); };
+  const openReportForDownload = () => { setReportDownload(true); setReportOpen(true); fetchReportToken(); };
   const downloadReport = async (format) => {
     try {
       const res = await fetch(reportUrl(format));
@@ -4009,7 +4029,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
-              <iframe className={styles.reportModalFrame} src={reportUrl('html') + (reportDownload ? '#download' : '')} title="Scan report" />
+              {reportTokenErr ? (
+                <div className={styles.errBox} style={{ margin: 20 }}>Could not open report: {reportTokenErr}</div>
+              ) : !reportToken ? (
+                <div className={styles.portLoadingRow} style={{ padding: 20 }}>Preparing report…</div>
+              ) : (
+                <iframe className={styles.reportModalFrame} src={reportUrl('html') + (reportDownload ? '#download' : '')} title="Scan report" />
+              )}
             </div>
           </div>
         )}
@@ -4863,7 +4889,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
-            <iframe className={styles.reportModalFrame} src={reportUrl('html') + (reportDownload ? '#download' : '')} title="Scan report" />
+            {reportTokenErr ? (
+                <div className={styles.errBox} style={{ margin: 20 }}>Could not open report: {reportTokenErr}</div>
+              ) : !reportToken ? (
+                <div className={styles.portLoadingRow} style={{ padding: 20 }}>Preparing report…</div>
+              ) : (
+                <iframe className={styles.reportModalFrame} src={reportUrl('html') + (reportDownload ? '#download' : '')} title="Scan report" />
+              )}
           </div>
         </div>
       )}

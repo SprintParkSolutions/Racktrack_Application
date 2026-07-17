@@ -18,6 +18,15 @@ for ($i = 0; $i -lt 20; $i++) {
 
 # Start server (4 workers — i9-14900K 24-core, 128GB RAM)
 $env:RACKTRACK_WORKERS = "4"
+# This box serves real users over the tunnel, so it is production. Without this
+# observability.js treats it as dev (isDev = NODE_ENV !== 'production') and
+# returns raw err.message on every 500 — better-sqlite3 is synchronous, so
+# "SQLITE_CONSTRAINT: UNIQUE constraint failed: users.email" and SSH errors
+# carrying internal switch IPs went straight back to whoever triggered them.
+# It also locks CORS down. Set here rather than in .env because app.js's loader
+# does "real env wins", and a stray inline comment in .env would silently make
+# the value !== "production".
+if (-not $env:NODE_ENV) { $env:NODE_ENV = "production" }
 Start-Process "node" -ArgumentList "app.js" -WorkingDirectory "$ProjectRoot\server" -WindowStyle Minimized
 
 # Start tunnel (skip silently if cloudflared.exe isn't here — local testing
