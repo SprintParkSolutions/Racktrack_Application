@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSmartBack } from '../hooks/useSmartBack';
+import { useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext';
 import styles from './PortHistoryPage.module.css';
@@ -46,8 +46,12 @@ function deviceState(d) {
   return { label: 'Polling', tone: 'ok' };
 }
 
+// Plain navigate(-1) rather than the useSmartBack hook: this page needs to
+// build on branches that don't carry that hook yet, and there's no
+// deep-link entry into /lab that would need the smarter behaviour.
 export default function LabPage() {
-  const goBack = useSmartBack();
+  const navigate = useNavigate();
+  const goBack = () => navigate(-1);
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
 
