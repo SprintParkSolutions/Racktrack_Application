@@ -1,4 +1,6 @@
-$ProjectRoot = "F:\dark_mobile"
+# Derived from where this script lives — see deploy.ps1. Hardcoding the drive
+# breaks every time the checkout moves.
+$ProjectRoot = $PSScriptRoot
 
 # Kill all existing node + cloudflared (the worker pool spawns child node
 # processes that don't always die with the parent — wipe them all).

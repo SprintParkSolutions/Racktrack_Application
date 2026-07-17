@@ -7,7 +7,10 @@
 # "my fix isn't showing" problem, which is caused by the Node process not being
 # restarted after a pull.
 
-$ProjectRoot = "F:\dark_mobile"
+# Derived from where this script lives, not hardcoded: the checkout has moved
+# drives more than once (F:\ -> D:\racktrack\), and a stale literal here means
+# deploy silently runs against the wrong tree — or dies on Set-Location.
+$ProjectRoot = $PSScriptRoot
 $Remote = "july9"
 $Branch = "july9_full"
 

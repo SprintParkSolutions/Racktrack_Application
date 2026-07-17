@@ -130,6 +130,25 @@ export default function LabPage() {
   // Re-render on a timer so the "as of" ages visibly without refetching.
   useEffect(() => { const t = setInterval(bump, 10_000); return () => clearInterval(t); }, []);
 
+  // The poller skips disabled devices entirely, and nothing in the UI could
+  // re-enable one — the TP-Link sat Disabled for days with no way to notice why
+  // or fix it without hand-editing SQLite. PATCH /api/lab/devices/:id exists;
+  // this just reaches it.
+  const toggleEnabled = async (d) => {
+    try {
+      const r = await authFetch(apiUrl(`/api/lab/devices/${d.id}`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !d.enabled }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const { device } = await r.json();
+      setDevices((list) => list.map((x) => (x.id === device.id ? { ...x, ...device } : x)));
+    } catch (err) {
+      setLoadErr(`Could not ${d.enabled ? 'disable' : 'enable'} ${d.display_name}: ${err.message}`);
+    }
+  };
+
   const runAudit = async (id) => {
     if (!id || busyId) return;
     setBusyId(id);
@@ -223,10 +242,24 @@ export default function LabPage() {
                   {selected.host} · {selected.vendor} · polled {fmtAgo(selected.last_seen)}
                 </div>
               </div>
-              <button className={styles.ghostBtn} disabled={busy} onClick={() => runAudit(selectedId)}>
-                {busy ? 'Connecting…' : audit ? 'Refresh audit' : 'Run full audit'}
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className={styles.ghostBtn} onClick={() => toggleEnabled(selected)}>
+                  {selected.enabled ? 'Disable polling' : 'Enable polling'}
+                </button>
+                <button className={styles.ghostBtn} disabled={busy || !selected.enabled}
+                        title={!selected.enabled ? 'Polling is disabled for this device' : undefined}
+                        onClick={() => runAudit(selectedId)}>
+                  {busy ? 'Connecting…' : audit ? 'Refresh audit' : 'Run full audit'}
+                </button>
+              </div>
             </div>
+
+            {!selected.enabled && (
+              <p className={styles.errorLine} style={{ marginTop: 10 }}>
+                Polling is disabled — the poller skips this device entirely, so its data will go
+                stale and no drift is recorded. Enable it to resume.
+              </p>
+            )}
 
             {selected.last_error && (
               <p className={styles.errorLine} style={{ marginTop: 10 }}>

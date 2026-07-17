@@ -1,4 +1,6 @@
-$ProjectRoot = "H:\SERVICENOW\SERVICENOW\dark_mobile"
+# Derived from where this script lives — see deploy.ps1. This one pointed at
+# H:\SERVICENOW\SERVICENOW\dark_mobile, a path that no longer exists at all.
+$ProjectRoot = $PSScriptRoot
 $urlFile = "$ProjectRoot\current-url.txt"
 
 if (-not (Test-Path $urlFile)) {
