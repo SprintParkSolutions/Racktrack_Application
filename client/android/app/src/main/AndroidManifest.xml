@@ -21,20 +21,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Fullscreen AR rack-overlay activity. Launched by RackARPlugin.start().
-             Uses AppTheme.AR (plain black) instead of the splash theme so the
-             RackTrack logo doesn't bleed through behind the GL camera backdrop. -->
-        <activity
-            android:name=".RackARActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:theme="@style/AppTheme.AR"
-            android:screenOrientation="portrait" />
-
-        <!-- ARCore: tells Google Play to gate downloads to AR-capable devices.
-             Use 'optional' if AR is a feature, not a requirement of the app. -->
-        <meta-data android:name="com.google.ar.core" android:value="optional" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
