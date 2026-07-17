@@ -476,10 +476,48 @@ function requireAuth(req, res, next) {
       user.tenant = t || null;
     }
     req.user = user;
+
+    // Central org-status gate.
+    //
+    // Self-signup issues a working token immediately with the org left
+    // 'pending', and isOrgActive() had only three call sites — /api/analyze
+    // plus two site routes — so EVERY other endpoint accepted a token from an
+    // unapproved account. The only thing holding those users back was
+    // client-side routing (App.jsx:69), which is not a control: the token works
+    // perfectly well against curl.
+    //
+    // /api/auth/* is exempt because PendingApprovalPage polls /api/auth/me to
+    // notice the moment an owner approves. Gating that would strand every
+    // pending user on a screen that could never advance.
+    if (!String(req.originalUrl || '').startsWith('/api/auth/') && orgBlocked(user)) {
+      return res.status(403).json({
+        error: 'Your organization is awaiting approval',
+        org_status: orgStatusOf(user),
+      });
+    }
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
+}
+
+// Mirrors the client's orgNotActive() (App.jsx:69) exactly, and deliberately:
+// owners have no organization, and isOrgActive(null) returns false, so gating
+// on isOrgActive alone would lock the owner out of their own platform. A user
+// with no organization_id is likewise not gated — there is nothing to check,
+// and that's the pre-tenancy shape.
+function orgBlocked(user) {
+  if (!user) return false;
+  if (user.role === 'owner') return false;
+  if (!user.organization_id) return false;
+  return !isOrgActive(user.organization_id);
+}
+
+function orgStatusOf(user) {
+  if (!user || !user.organization_id) return null;
+  const o = db.prepare('SELECT status FROM organizations WHERE id = ?')
+              .get(Number(user.organization_id));
+  return o ? o.status : null;
 }
 
 // Role gate — runs requireAuth first, then checks req.user.role is allowed.
