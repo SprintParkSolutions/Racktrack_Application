@@ -335,6 +335,6 @@ async function forceReset({ deviceId } = {}) {
 
 module.exports = {
   start, stop, setSshRunner, pollAll, pollDevice,
-  isBusy, VENDOR_RECIPES, forceReset,
+  isBusy, VENDOR_RECIPES, forceReset, normalizeVendor,
   noteManualProbe, isManualProbeActive,
 };

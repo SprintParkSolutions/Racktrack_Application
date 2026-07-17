@@ -6465,6 +6465,111 @@ function parseVlan(raw) {
   return out;
 }
 
+// One full audit pass against a single host: identity, per-port
+// status/admin/medium, PoE, VLANs, LLDP neighbours, MAC table.
+//
+// Extracted from the /api/switch/audit route so /api/lab/devices/:id/audit can
+// run the SAME collection without the client ever sending (or seeing) a host or
+// credentials — the lab path resolves both server-side from monitored_devices +
+// the encrypted cred store. Behaviour is unchanged for the original route.
+//
+// Short outputs (identity, port status, admin config, PoE, VLAN) all fit one
+// page, so they batch into a SINGLE SSH session. LLDP and the MAC table are
+// long and paginate; the sequential shell truncates paginated output (we saw
+// 2 of 6 neighbours, 0 MACs), so those two use the single-command runner, which
+// auto-advances the pager. Net: one session + two reconnects — fast AND complete.
+async function auditSwitchHost({ host, sshPort, vendorKey, username, password, enablePassword }) {
+  const vconf   = VENDORS[vendorKey];
+  const cmds    = AUDIT_CMDS[vendorKey] || AUDIT_CMDS['cisco-ios'];
+  const lldpCmd = LLDP_ALL_CMD[vendorKey] || LLDP_ALL_CMD['cisco-ios'];
+  const macCmd  = MAC_TABLE_CMD[vendorKey] || MAC_TABLE_CMD['cisco-ios'];
+  const shortCmds = [
+    cmds.sysinfo  && { name: 'sysinfo',  cmd: cmds.sysinfo },
+    cmds.ifstatus && { name: 'ifstatus', cmd: cmds.ifstatus },
+    cmds.ifconfig && { name: 'ifconfig', cmd: cmds.ifconfig },
+    cmds.poe      && { name: 'poe',      cmd: cmds.poe },
+    cmds.vlan     && { name: 'vlan',     cmd: cmds.vlan },
+  ].filter(Boolean);
+
+  const out = {};
+  await runSwitchCommandsSequential({
+    host, port: sshPort, username, password,
+    commands: shortCmds,
+    pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
+    timeoutMsPerCmd: 15000,
+    onEntry: (i, entry) => { out[entry.name] = entry.output || ''; },
+  });
+  const runOne = (command) => command ? runSwitchCommand({
+    host, port: sshPort, username, password,
+    command, pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
+    timeoutMs: 30000,
+  }) : Promise.resolve('');
+  const lldpRaw = await runOne(lldpCmd);
+  const macRaw  = await runOne(macCmd);
+  return {
+    identity:  parseSystemInfo(out.sysinfo || ''),
+    ifstatus:  parseInterfaceStatus(out.ifstatus || ''),
+    ifconfig:  parseInterfaceConfig(out.ifconfig || ''),
+    poe:       parsePoe(out.poe || ''),
+    vlans:     parseVlan(out.vlan || ''),
+    neighbors: parseAllLldpNeighbors(lldpRaw || ''),
+    macs:      parseMacTable(macRaw || ''),
+  };
+}
+
+// POST /api/lab/devices/:id/audit — same full audit as /api/switch/audit, but
+// addressed by monitored_devices id instead of a client-supplied host.
+//
+// Owner-only, and deliberately so: it returns the host it audited, and
+// monitored_devices has no tenant_id, so any lower role could enumerate every
+// tenant's switches. The client sends only an id — host, ssh_port, vendor and
+// credentials are all resolved here, which is the whole point (the live Ports
+// page resolves hosts client-side against a hardcoded IP; this doesn't).
+app.post('/api/lab/devices/:id/audit', auth.requireRole('owner'), async (req, res) => {
+  const portsDb  = require('./lib/port_history_db');
+  const sshCreds = require('./lib/ssh-creds');
+  const poller   = require('./lib/port_poller');
+
+  const device = portsDb.getDevice(Number(req.params.id));
+  if (!device) return res.status(404).json({ error: 'device not found' });
+
+  // Fold the legacy 'cisco_ios' spelling the same way the poller does, then
+  // fall back only if the vendor has no VENDORS entry at all.
+  const vendor    = poller.normalizeVendor(device.vendor);
+  const vendorKey = VENDORS[vendor] ? vendor : 'cisco-ios';
+
+  // Per-host creds win over per-vendor — same precedence the poller uses.
+  const hostCreds = sshCreds.getForHost(device.host);
+  const creds = hostCreds
+    ? { ...(sshCreds.getForVendor(vendor) || {}), ...hostCreds }
+    : sshCreds.getForVendor(vendor);
+  if (!creds || !creds.username) {
+    return res.status(409).json({
+      error: `no SSH credentials stored for vendor '${vendor}' — run: node encrypt-creds.js set ${vendor}`,
+    });
+  }
+
+  // Yield the host to this request: these switches allow ~1 SSH session, so a
+  // background poll landing mid-audit makes the switch drop both.
+  poller.noteManualProbe?.(device.host);
+
+  try {
+    const data = await auditSwitchHost({
+      host: device.host,
+      sshPort: device.ssh_port || 22,
+      vendorKey,
+      username: creds.username,
+      password: creds.password,
+      enablePassword: creds.enablePassword || creds.password,
+    });
+    res.json({ ok: true, device: portsDb.toClientView(device), host: device.host, vendor: vendorKey, ...data });
+  } catch (err) {
+    logger?.warn?.({ event: 'lab_audit.failed', host: device.host, err: err.message },
+      'lab device audit failed');
+    res.json({ ok: false, error: err.message, host: device.host, vendor: vendorKey });
+  }
+});
+
 // POST /api/switch/audit — one pass over the switch for the full Ports-tab
 // audit: identity, per-port status/admin/medium, PoE, VLANs, LLDP neighbours,
 // and the MAC table. Runs each read-only command serialized on the host lock
@@ -6480,53 +6585,9 @@ app.post('/api/switch/audit', auth.requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'host and credentials (body or env) required' });
   }
   const vendorKey = VENDORS[vendor] ? vendor : 'cisco-ios';
-  const vconf = VENDORS[vendorKey];
-  const cmds = AUDIT_CMDS[vendorKey] || AUDIT_CMDS['cisco-ios'];
-  const lldpCmd = LLDP_ALL_CMD[vendorKey] || LLDP_ALL_CMD['cisco-ios'];
-  const macCmd  = MAC_TABLE_CMD[vendorKey] || MAC_TABLE_CMD['cisco-ios'];
-  // The short outputs (identity, port status, admin config, PoE, VLAN) all fit
-  // one page, so batch them in a SINGLE SSH session — fast, no truncation.
-  // LLDP and the MAC table are long and paginate; the sequential shell truncates
-  // paginated output (we saw 2 of 6 neighbours, 0 MACs), so fetch those two with
-  // the single-command runner, which auto-advances the pager (proven by the
-  // /neighbors endpoint). Net: one session + two reconnects — fast AND complete.
-  const shortCmds = [
-    cmds.sysinfo  && { name: 'sysinfo',  cmd: cmds.sysinfo },
-    cmds.ifstatus && { name: 'ifstatus', cmd: cmds.ifstatus },
-    cmds.ifconfig && { name: 'ifconfig', cmd: cmds.ifconfig },
-    cmds.poe      && { name: 'poe',      cmd: cmds.poe },
-    cmds.vlan     && { name: 'vlan',     cmd: cmds.vlan },
-  ].filter(Boolean);
-
-  // Gather the whole audit against ONE host. Short outputs batch in a single
-  // session; LLDP + MAC use the auto-paging single-command runner (the
-  // sequential shell truncates their long output).
-  const gather = async (h) => {
-    const out = {};
-    await runSwitchCommandsSequential({
-      host: h, port: sshPort, username, password,
-      commands: shortCmds,
-      pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
-      timeoutMsPerCmd: 15000,
-      onEntry: (i, entry) => { out[entry.name] = entry.output || ''; },
-    });
-    const runOne = (command) => command ? runSwitchCommand({
-      host: h, port: sshPort, username, password,
-      command, pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
-      timeoutMs: 30000,
-    }) : Promise.resolve('');
-    const lldpRaw = await runOne(lldpCmd);
-    const macRaw  = await runOne(macCmd);
-    return {
-      identity:  parseSystemInfo(out.sysinfo || ''),
-      ifstatus:  parseInterfaceStatus(out.ifstatus || ''),
-      ifconfig:  parseInterfaceConfig(out.ifconfig || ''),
-      poe:       parsePoe(out.poe || ''),
-      vlans:     parseVlan(out.vlan || ''),
-      neighbors: parseAllLldpNeighbors(lldpRaw || ''),
-      macs:      parseMacTable(macRaw || ''),
-    };
-  };
+  const gather = (h) => auditSwitchHost({
+    host: h, sshPort, vendorKey, username, password, enablePassword,
+  });
 
   // Self-heal: try the requested host, then the in-office bench switch. A stale
   // or changed client IP (e.g. .14 → .33) recovers here without any user action.
