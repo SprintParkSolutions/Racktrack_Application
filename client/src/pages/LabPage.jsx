@@ -80,11 +80,26 @@ function Card({ title, count, right, children }) {
   );
 }
 
+// Identity fields vary wildly in length — a MAC, a 32-char IOL image name, a
+// firmware string. The shared kvRow is a rigid `160px 1fr` grid, so long values
+// overflowed their cell and collided with the next field's label (the live
+// "192.168.1.VENDOR" / mangled-firmware bug). Stack label over value instead,
+// and let the value wrap, so nothing can ever overlap regardless of length.
+const kvTile = {
+  display: 'flex', flexDirection: 'column', gap: 2,
+  padding: '8px 12px', minWidth: 0,
+  borderBottom: '1px solid rgba(128,128,128,.14)',
+};
+const kvValueStyle = {
+  fontWeight: 600, minWidth: 0,
+  overflowWrap: 'anywhere', wordBreak: 'break-word',
+};
+
 function KV({ label, value, mono }) {
   return (
-    <div className={styles.kvRow}>
+    <div style={kvTile}>
       <span className={styles.kvLabel}>{label}</span>
-      <span className={`${styles.kvValue} ${mono ? styles.kvMono : ''}`}>{dash(value)}</span>
+      <span className={mono ? styles.kvMono : undefined} style={kvValueStyle}>{dash(value)}</span>
     </div>
   );
 }
@@ -203,30 +218,36 @@ export default function LabPage() {
       <main className={styles.main}>
         {loadErr && <p className={styles.errorLine}>Device list stale — {loadErr}</p>}
 
-        {/* Device switcher. Each tile keeps its own cached audit, so moving
-            between switches never loses what you were looking at. */}
-        <div role="tablist" aria-label="Lab devices" className={styles.detailTabs} style={{ marginBottom: 14 }}>
+        {/* Device switcher. Purpose-built selectable tiles — NOT the detailTab
+            underline-tab class, which is a single-line uppercase tab and mangled
+            this multi-line card into a misaligned grey box. Each tile keeps its
+            own cached audit, so switching never loses what you were looking at. */}
+        <div role="tablist" aria-label="Lab devices"
+             style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
           {devices.map((d) => {
             const st = deviceState(d);
             const active = d.id === selectedId;
             const cached = auditsRef.current.get(d.id);
             return (
               <button key={d.id} role="tab" aria-selected={active}
-                      className={active ? styles.detailTabActive : styles.detailTab}
-                      onClick={() => setSelected(d.id)}>
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
-                  <span style={{ fontWeight: 700 }}>{d.display_name}</span>
-                  <span className={styles.muted} style={{ fontSize: 11 }}>{d.host}</span>
-                  <span className={`${styles.switchStatus} ${st.cls}`}>
-                    <span className={styles.switchStatusDot} />
-                    {busyId === d.id ? 'Connecting…' : st.label}
-                  </span>
-                  {cached?.data && (
-                    <span className={styles.muted} style={{ fontSize: 10 }}>
-                      audit {fmtAgo(cached.at)}
-                    </span>
-                  )}
+                      onClick={() => setSelected(d.id)}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4,
+                        minWidth: 150, padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
+                        font: 'inherit', textAlign: 'left', background: 'transparent',
+                        border: '1px solid rgba(128,128,128,.28)',
+                        outline: active ? '2px solid currentColor' : 'none',
+                        outlineOffset: -1,
+                      }}>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>{d.display_name}</span>
+                <span className={styles.muted} style={{ fontSize: 11 }}>{d.host}</span>
+                <span className={`${styles.switchStatus} ${st.cls}`}>
+                  <span className={styles.switchStatusDot} />
+                  {busyId === d.id ? 'Connecting…' : st.label}
                 </span>
+                {cached?.data && (
+                  <span className={styles.muted} style={{ fontSize: 10 }}>audit {fmtAgo(cached.at)}</span>
+                )}
               </button>
             );
           })}
@@ -235,14 +256,18 @@ export default function LabPage() {
 
         {selected && (
           <div className={styles.switchHero} style={{ marginBottom: 14 }}>
-            <div className={styles.switchHeroRow}>
-              <div>
+            {/* Plain flex row, NOT switchHeroRow — that class is a `44px 1fr auto`
+                grid whose first column expects a device icon. With no icon the
+                name/subtitle got crushed into 44px (the live "192.168 / · cisc…"
+                wrap) and the buttons ballooned to fill 1fr. */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                 <div className={styles.switchHeroName}>{selected.display_name}</div>
                 <div className={styles.switchHeroSub}>
                   {selected.host} · {selected.vendor} · polled {fmtAgo(selected.last_seen)}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 <button className={styles.ghostBtn} onClick={() => toggleEnabled(selected)}>
                   {selected.enabled ? 'Disable polling' : 'Enable polling'}
                 </button>
@@ -293,7 +318,11 @@ export default function LabPage() {
         {audit && (
           <>
             <Card title="Identity">
-              <div className={styles.kvGrid}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                border: '1px solid rgba(128,128,128,.2)', borderRadius: 10, overflow: 'hidden',
+              }}>
                 <KV label="Name"     value={audit.identity?.name} />
                 <KV label="Model"    value={audit.identity?.model} />
                 <KV label="Serial"   value={audit.identity?.serial} mono />
