@@ -150,7 +150,7 @@ export async function triggerBackgroundProbe({ force = false } = {}) {
     const FALLBACK_SWITCH_HOST = '192.168.1.33';
     let resolved = null;
     try {
-      const hr = await fetch(apiUrl('/api/switch/default-host'));
+      const hr = await authFetch(apiUrl('/api/switch/default-host'));
       const hj = hr.ok ? await hr.json() : null;
       resolved = hj?.last_host || null;
     } catch (_) { /* ignore — fall through to defaults */ }

@@ -697,7 +697,7 @@ function CredsModal({ initial, onCancel, onSubmit }) {
   useEffect(() => {
     let cancelled = false;
     setCredsStatus(null);
-    fetch(apiUrl(`/api/switch/creds-status?vendor=${encodeURIComponent(vendor)}`))
+    authFetch(apiUrl(`/api/switch/creds-status?vendor=${encodeURIComponent(vendor)}`))
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => { if (!cancelled) setCredsStatus(data); })
       .catch(() => { if (!cancelled) setCredsStatus({ has_username: false, has_password: false, has_enable: false }); });
@@ -1358,7 +1358,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   useEffect(() => {
     const vendor = switchCreds.vendor || 'tplink';
     let cancelled = false;
-    fetch(apiUrl(`/api/switch/creds-status?vendor=${encodeURIComponent(vendor)}`))
+    authFetch(apiUrl(`/api/switch/creds-status?vendor=${encodeURIComponent(vendor)}`))
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(d => { if (!cancelled) setCredsStatus(d); })
       .catch(() => {});
@@ -1497,7 +1497,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       if (cancelled || liveInFlightRef.current) return;
       liveInFlightRef.current = true;
       try {
-        const res = await fetch(apiUrl('/api/switch/port-status'), {
+        const res = await authFetch(apiUrl('/api/switch/port-status'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: ac.signal,
@@ -2072,7 +2072,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     try {
       const vendor = creds.vendor || 'tplink';
       const ifaceFn = VENDOR_IFACE[vendor] || VENDOR_IFACE['tplink'];
-      const res = await fetch(apiUrl('/api/switch/lldp-neighbor'), {
+      const res = await authFetch(apiUrl('/api/switch/lldp-neighbor'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

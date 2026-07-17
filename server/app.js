@@ -5681,7 +5681,7 @@ function cleanShellOutput(raw, cmd) {
 // GET /api/switch/console/intents?vendor=cisco-ios
 // Returns the user-facing dropdown list for the console (intent id + English
 // label + command template). Used by the client to populate the picker.
-app.get('/api/switch/console/intents', (req, res) => {
+app.get('/api/switch/console/intents', auth.requireAuth, (req, res) => {
   const vendor = String(req.query.vendor || 'cisco-ios');
   res.json({ vendor, intents: loadConsoleIntentsForVendor(vendor) });
 });
@@ -5691,7 +5691,7 @@ app.get('/api/switch/console/intents', (req, res) => {
 // know whether the encrypted env store already has username / password /
 // enable for this vendor, so the login modal can hide those fields and ask
 // the user for only the switch IP.
-app.get('/api/switch/creds-status', (req, res) => {
+app.get('/api/switch/creds-status', auth.requireAuth, (req, res) => {
   const vendor = String(req.query.vendor || 'cisco-ios');
   const v = sshCreds.getForVendor(vendor) || {};
   res.json({
@@ -5785,7 +5785,7 @@ app.post('/api/oui/lookup', (req, res) => {
   res.json({ vendors: out });
 });
 
-app.get('/api/switch/default-host', (req, res) => {
+app.get('/api/switch/default-host', auth.requireAuth, (req, res) => {
   const userId = softAuthUserId(req);
   const last    = readLastHost(userId);
   const gateway = defaultGateway();
@@ -6146,7 +6146,7 @@ async function findNeighborChain({ host, port, username, password, enablePasswor
  * We reuse findNeighborChain() + the existing VENDORS.mac_table command —
  * no new vendor-specific parsers needed. One SSH roundtrip, ~1-3s per poll.
  */
-app.post('/api/switch/port-status', async (req, res) => {
+app.post('/api/switch/port-status', auth.requireAuth, async (req, res) => {
   const { host, sshPort, interface: iface, vendor } = req.body || {};
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !iface) {
@@ -6204,7 +6204,7 @@ app.post('/api/switch/port-status', async (req, res) => {
   }
 });
 
-app.post('/api/switch/lldp-neighbor', async (req, res) => {
+app.post('/api/switch/lldp-neighbor', auth.requireAuth, async (req, res) => {
   const { host, sshPort, interface: iface, vendor } = req.body || {};
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !iface) {
