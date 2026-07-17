@@ -35,7 +35,15 @@ const PORT_ABBREV = [
   [/^Ethernet/i,           'Et'],
   [/^Port-channel/i,       'Po'],
   [/^Vlan/i,               'Vl'],
+  // Virtual interfaces. Normalised here purely so the VIRTUAL_RE filter in
+  // parseInterfaceConfiguration can match one consistent form.
+  [/^Loopback/i,           'Lo'],
+  [/^Tunnel/i,             'Tu'],
+  [/^Null/i,               'Nu'],
 ];
+// Virtual (non-port) interfaces, in normalised form: Vl99, Lo0, Tu1, Nu0.
+const VIRTUAL_RE = /^(Vl|Lo|Tu|Nu)\d/;
+
 function normalizePort(raw) {
   const s = String(raw || '').trim();
   if (!s) return null;
@@ -164,6 +172,12 @@ function parseInterfaceConfiguration(raw) {
     if (!nameMatch) continue;
     const port = normalizePort(nameMatch[1]);
     if (!port) continue;
+    // Skip SVIs and other virtual interfaces. running-config lists
+    // `interface Vlan99` alongside the physical ports, but an SVI is an L3
+    // interface, not a port — it never appears in `show interfaces status`,
+    // so it would merge in with oper='unknown' and render as a phantom
+    // greyed-out port on the faceplate. Loopbacks/tunnels same story.
+    if (VIRTUAL_RE.test(port)) continue;
 
     // Only look at this stanza's own lines — stop at the closing "!".
     const body = blk.split(/^!/m)[0];

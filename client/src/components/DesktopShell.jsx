@@ -197,6 +197,8 @@ export default function DesktopShell({ children }) {
     { to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false },
     // Operations Console (live ops + server logs) — owner-only.
     ...(isOwner ? [{ to: '/dashboard', label: 'Console', icon: <DashboardIcon />, end: false }] : []),
+    // EVE-NG lab switches — owner-only while the Cisco path is shaken out.
+    ...(isOwner ? [{ to: '/lab', label: 'Lab', icon: <DashboardIcon />, end: false }] : []),
     // Data Sources (connect ServiceNow / NetBox / Orion …) + Marketplace are
     // organization-admin features.
     ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false }] : []),

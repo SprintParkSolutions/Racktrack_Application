@@ -29,6 +29,7 @@ import SwitchInformationPage from './pages/SwitchInformationPage.jsx';
 import MultiRackTopologyPage from './pages/MultiRackTopologyPage.jsx';
 import MultiRackRedirect from './pages/MultiRackRedirect.jsx';
 import PortHistoryPage from './pages/PortHistoryPage.jsx';
+import LabPage from './pages/LabPage.jsx';
 import TenantMatPage from './pages/TenantMatPage.jsx';
 import ConnectionsPage from './pages/ConnectionsPage.jsx';
 import MarketplacePage from './pages/MarketplacePage.jsx';
@@ -306,6 +307,13 @@ export default function App() {
             } />
             <Route path="/port-history" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><PortHistoryPage /></ResponsiveLayout></ProtectedRoute>
+            } />
+            {/* Owner-only EVE-NG lab view. The role gate that matters is
+                server-side (requireRole('owner') on /api/lab/*); LabPage
+                renders a refusal for non-owners so the route isn't a
+                confusing blank. */}
+            <Route path="/lab" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><LabPage /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/compare" element={<LogoCompare />} />
             {/* Demo: unified tenant rack-layout view. No auth — backed by
