@@ -236,6 +236,17 @@ try {
     'port history router not loaded');
 }
 
+// Owner-only device admin for the same monitored_devices table (/api/lab/*).
+// Split from port_history because it returns host/ssh_port, which the
+// /api/ports views intentionally strip — see lab_devices.js for why.
+try {
+  app.use(require('./lab_devices'));
+  logger.info({ event: 'router.loaded', router: 'lab_devices' }, 'lab devices router loaded');
+} catch (err) {
+  logger.warn({ event: 'router.load_failed', router: 'lab_devices', err: err.message },
+    'lab devices router not loaded');
+}
+
 // Demo tenant-mat — isolated, no-auth, file-backed dataset used by the
 // /demo/topology UI to prototype the unified rack-layout view. Reads
 // server/data/demo_tenant.json; touches no real tenant data.
