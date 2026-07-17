@@ -23,6 +23,7 @@ const { logger } = require('./observability');
 const sshCreds   = require('./ssh-creds');
 const portsDb    = require('./port_history_db');
 const tplink     = require('./tplink_parser');
+const cisco      = require('./cisco_parser');
 
 const DEFAULT_INTERVAL_MS    = 60_000;
 const DEFAULT_CONCURRENCY    = 4;
@@ -57,24 +58,40 @@ const VENDOR_RECIPES = {
       return { rows: tplink.mergePortRows(status, config, lldp), meta };
     },
   },
-  // Cisco IOS placeholder — the recipe shape is here so adding real
-  // support is a parser swap rather than a wiring exercise. Parsing
-  // isn't implemented; the poller logs and skips devices with this
-  // vendor until a parser ships.
-  cisco_ios: {
+  // Key matches the 'cisco-ios' spelling app.js already uses for VENDORS
+  // and AUDIT_CMDS — see normalizeVendor() for the legacy underscore form.
+  'cisco-ios': {
     enable:    'enable',
     pagingOff: 'terminal length 0',
     commands: [
       { key: 'sysinfo', cmd: 'show version' },
       { key: 'status',  cmd: 'show interfaces status' },
       { key: 'config',  cmd: 'show running-config | section interface' },
+      // LLDP is off by default on IOS (`lldp run`) and the IOL l2-ipbase
+      // image may not support it at all — CDP is the Cisco default. The
+      // parser returns an empty map for unsupported/absent output rather
+      // than throwing, so a switch without LLDP still polls fine; it just
+      // never emits lldp_* drift events.
       { key: 'lldp',    cmd: 'show lldp neighbors detail' },
     ],
-    parse(_outputs) {
-      throw new Error('cisco_ios parser not implemented yet');
+    parse(outputs) {
+      const status = cisco.parseInterfaceStatus(outputs.status || '');
+      const config = cisco.parseInterfaceConfiguration(outputs.config || '');
+      const lldp   = cisco.parseLldpNeighbors(outputs.lldp || '');
+      const meta   = cisco.parseSystemInfo(outputs.sysinfo || '');
+      return { rows: cisco.mergePortRows(status, config, lldp), meta };
     },
   },
 };
+
+// The DB's vendor column is free text and predates the recipe table, so a
+// row may carry the older 'cisco_ios' spelling. Fold it onto the canonical
+// hyphenated key rather than keeping two entries in sync.
+const VENDOR_ALIASES = { cisco_ios: 'cisco-ios' };
+function normalizeVendor(v) {
+  const key = String(v || '').trim();
+  return VENDOR_ALIASES[key] || key;
+}
 
 let _timer = null;
 let _retentionTimer = null;
@@ -117,7 +134,8 @@ async function pollDevice(device) {
 }
 
 async function _pollDeviceInner(device) {
-  const recipe = VENDOR_RECIPES[device.vendor];
+  const vendor = normalizeVendor(device.vendor);
+  const recipe = VENDOR_RECIPES[vendor];
   if (!recipe) {
     logger?.warn?.(`[port_poller] no recipe for vendor=${device.vendor}, skipping ${device.host}`);
     portsDb.touchPolled(device.id);
@@ -132,8 +150,8 @@ async function _pollDeviceInner(device) {
   // still inherits the vendor's.
   const hostCreds = sshCreds.getForHost(device.host);
   const creds = hostCreds
-    ? { ...(sshCreds.getForVendor(device.vendor) || {}), ...hostCreds }
-    : sshCreds.getForVendor(device.vendor);
+    ? { ...(sshCreds.getForVendor(vendor) || {}), ...hostCreds }
+    : sshCreds.getForVendor(vendor);
   if (!creds || !creds.username) {
     logger?.warn?.(`[port_poller] no SSH creds for vendor=${device.vendor}, skipping ${device.host}`);
     // No creds isn't a transient SSH failure — don't enter the backoff
