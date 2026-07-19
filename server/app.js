@@ -8554,7 +8554,7 @@ if (require.main === module) {
   // output, and writes snapshot + change events into auth.db.
   try {
     const portPoller = require('./lib/port_poller');
-    const intervalMs = Number(process.env.PORT_POLL_INTERVAL_MS) || 60_000;
+    const intervalMs = Number(process.env.PORT_POLL_INTERVAL_MS) || 3_600_000; // 1h — see port_poller DEFAULT_INTERVAL_MS
     portPoller.start({ intervalMs, sshRunner: runSwitchCommandsSequential });
   } catch (err) {
     logger.warn({ event: 'port_poller.start_failed', err: err.message },

@@ -1,6 +1,6 @@
 // Port-state poller.
 //
-// On a fixed interval (default 60s), SSHes into every enabled row in
+// On a fixed interval (default 1h), SSHes into every enabled row in
 // monitored_devices that's not in a backoff window, runs the vendor's
 // "hot" commands, parses the output, and feeds each per-port row to
 // port_history_db.writePoll — which handles diff vs the prior snapshot
@@ -25,7 +25,19 @@ const portsDb    = require('./port_history_db');
 const tplink     = require('./tplink_parser');
 const cisco      = require('./cisco_parser');
 
-const DEFAULT_INTERVAL_MS    = 60_000;
+// Hourly, NOT every 60s. The Ports page reads stored snapshots, so it does not
+// need a live SSH pass to render — it shows the last known state either way.
+// Only drift detection and the Lab view actually care about fresh polls, and
+// hourly granularity is enough for both.
+//
+// The 60s default was actively harmful: these switches (TP-Link JetStream, IOL)
+// allow ONE SSH session, and they don't free it when the TCP connection drops —
+// only on idle timeout. Polling every minute meant the poller was holding that
+// single session most of the time, so a user's manual probe or an audit had to
+// fight it for access, and a burst of retries could saturate the switch until
+// it was rebooted. An hour between passes leaves the session free for the
+// interactive paths that need it. Override with PORT_POLL_INTERVAL_MS.
+const DEFAULT_INTERVAL_MS    = 3_600_000;
 const DEFAULT_CONCURRENCY    = 4;
 const DEFAULT_RETENTION_MS   = 60 * 60_000;  // sweep every hour
 const DEFAULT_EVENT_DAYS     = 30;
