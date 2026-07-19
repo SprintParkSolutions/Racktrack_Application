@@ -185,8 +185,14 @@ export default function DesktopShell({ children }) {
   // These pages render their own full page header (title + controls). Showing
   // the shell's topbar crumb on top of that produced a duplicate header on
   // wide screens (iPad landscape / desktop), so we let the page own it.
-  const SELF_HEADED = ['/dashboard', '/marketplace', '/marketplace/new', '/profile', '/connections'];
-  const selfHeaded = SELF_HEADED.includes(location.pathname);
+  const SELF_HEADED = ['/dashboard', '/profile', '/connections'];
+  // Every /marketplace/* route now renders MarketplaceShell, which draws
+  // the section header and nav itself. Matching on the prefix rather than
+  // listing each path keeps Orders / Alerts / Dashboard / Partners /
+  // Checkout from growing a second, duplicate title bar on wide screens.
+  const selfHeaded = SELF_HEADED.includes(location.pathname)
+    || location.pathname === '/marketplace'
+    || location.pathname.startsWith('/marketplace/');
   const { user } = useAuth();
   const isAdmin = user?.role === 'org_admin' || user?.role === 'owner';
   const isOwner = user?.role === 'owner';

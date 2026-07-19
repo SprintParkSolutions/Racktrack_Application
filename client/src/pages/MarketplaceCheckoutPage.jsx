@@ -3,12 +3,23 @@ import { useNavigate, useParams } from 'react-router-dom';
 import styles from './MarketplaceCheckoutPage.module.css';
 import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext.jsx';
+import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
+import CategoryIcon from '../components/marketplace/CategoryIcon.jsx';
 
-const CATEGORY_ICON = {
-  cable: '🔌', switch: '🔁', router: '🌐', rack: '🗄️',
-  optic: '✨', server: '🖥️', pdu: '⚡', firewall: '🛡️',
-  patch_panel: '🧩', other: '📦',
-};
+/* ──────────────────────────────────────────────────────────────────────
+   MarketplaceCheckoutPage — buy a listing.
+
+   This is the only screen in the section where a user parts with money,
+   so it is deliberately the calmest one: no colour, no emoji, one
+   primary action, and every figure in the breakdown set in tabular
+   numerals so the column of prices lines up against the total.
+
+   The old version stacked item → quantity → address → totals → pay in a
+   single narrow column, which put the amount being charged a full
+   screen below the item it was for. Item, quantity and money now travel
+   together in one summary block beside the address form on desktop, and
+   the total sits directly above the button that commits to it.
+   ────────────────────────────────────────────────────────────────────── */
 
 const CONDITION_LABEL = {
   'new': 'New', 'refurb': 'Refurbished', 'used': 'Used', 'for-parts': 'For parts',
@@ -109,110 +120,167 @@ export default function MarketplaceCheckoutPage() {
     finally { setSubmitting(false); }
   };
 
-  return (
-    <div className={`page page-full ${styles.page}`}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
-        <h1 className={styles.title}>Checkout</h1>
-      </header>
+  const currency = listing?.currency;
 
-      {loading && <div className={styles.center}><span className={styles.spinner}/></div>}
-      {!loading && error && !listing && <div className={styles.errBanner}>{error}</div>}
+  return (
+    <MarketplaceShell title="Checkout" subtitle="Review the order and confirm shipping"
+                      action={null} backTo="/marketplace">
+      {loading && (
+        <div className={styles.center}><span className="mkt-spinner" /></div>
+      )}
+
+      {!loading && error && !listing && (
+        <div className="mkt-banner mkt-banner--error" role="alert">{error}</div>
+      )}
 
       {listing && (
-        <form className={styles.form} onSubmit={onSubmit}>
-          {/* Item summary */}
-          <div className={styles.itemCard}>
-            <div className={styles.itemThumb}>
-              {listing.imageUrl
-                ? <img src={listing.imageUrl} alt="" />
-                : <span>{CATEGORY_ICON[listing.category] || '📦'}</span>}
+        <form className={styles.layout} onSubmit={onSubmit}>
+          {/* ── What is being bought ───────────────────────────────── */}
+          <section className={`mkt-card mkt-card--pad ${styles.item}`}>
+            <div className={styles.itemHead}>
+              <div className={styles.itemThumb}>
+                {listing.imageUrl
+                  ? <img src={listing.imageUrl} alt="" />
+                  : <CategoryIcon category={listing.category} size={28}
+                                  className={styles.itemThumbIcon} />}
+              </div>
+              <div className={styles.itemInfo}>
+                <h2 className={styles.itemTitle}>{listing.title}</h2>
+                <p className="mkt-meta">
+                  {[
+                    CONDITION_LABEL[listing.condition] || listing.condition,
+                    listing.seller?.username && `@${listing.seller.username}`,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              </div>
             </div>
-            <div className={styles.itemInfo}>
-              <h2 className={styles.itemTitle}>{listing.title}</h2>
-              <p className={styles.itemMeta}>
-                {CONDITION_LABEL[listing.condition] || listing.condition}
-                {listing.seller?.username && <> · @{listing.seller.username}</>}
-              </p>
-            </div>
-            <div className={styles.itemPrice}>
-              {formatCurrency(listing.priceCents, listing.currency)}
-            </div>
-          </div>
 
-          {/* Quantity */}
-          {listing.quantity > 1 && (
-            <label className={styles.field}>
-              <span className={styles.label}>Quantity (max {listing.quantity})</span>
-              <input type="number" className={styles.input} value={qty}
-                     min={1} max={listing.quantity}
-                     onChange={(e) => setQty(Math.max(1, Math.min(listing.quantity, parseInt(e.target.value, 10) || 1)))} />
-            </label>
-          )}
+            {listing.quantity > 1 && (
+              <div className={`mkt-fieldGroup ${styles.qty}`}>
+                <label className="mkt-label" htmlFor="mkt-checkout-qty">
+                  Quantity — {listing.quantity} available
+                </label>
+                <input
+                  id="mkt-checkout-qty"
+                  type="number"
+                  className={`mkt-field ${styles.qtyField}`}
+                  value={qty}
+                  min={1}
+                  max={listing.quantity}
+                  onChange={(e) => setQty(Math.max(1, Math.min(listing.quantity, parseInt(e.target.value, 10) || 1)))}
+                />
+              </div>
+            )}
+          </section>
 
-          {/* Shipping address */}
-          <div className={styles.section}>
-            <h3 className={styles.sectionLabel}>Shipping Address</h3>
-            <label className={styles.field}>
-              <input className={styles.input} placeholder="Full name" value={name}
-                     onChange={(e) => setName(e.target.value)} required />
-            </label>
-            <label className={styles.field}>
-              <input className={styles.input} placeholder="Street address" value={street}
-                     onChange={(e) => setStreet(e.target.value)} required />
-            </label>
-            <div className={styles.row2}>
-              <input className={styles.input} placeholder="City" value={city}
-                     onChange={(e) => setCity(e.target.value)} required />
-              <input className={styles.input} placeholder="State" value={state}
-                     onChange={(e) => setState(e.target.value)} />
+          {/* ── Shipping ───────────────────────────────────────────── */}
+          <section className={styles.shipping}>
+            <div className="mkt-sectionHead">
+              <h2 className="mkt-sectionTitle">Shipping address</h2>
+              <span className="mkt-meta">Where the seller sends the item</span>
             </div>
-            <div className={styles.row2}>
-              <input className={styles.input} placeholder="ZIP" value={zip}
-                     onChange={(e) => setZip(e.target.value)} />
-              <input className={styles.input} placeholder="Country" value={country}
-                     onChange={(e) => setCountry(e.target.value)} />
-            </div>
-          </div>
 
-          {/* Total */}
-          <div className={styles.totalBox}>
-            <div className={styles.totalRow}>
-              <span>Subtotal</span>
-              <span>{formatCurrency(subtotal, listing.currency)}</span>
-            </div>
-            <div className={styles.totalRow}>
-              <span>Platform fee (3%)</span>
-              <span>{formatCurrency(fee, listing.currency)}</span>
-            </div>
-            <div className={`${styles.totalRow} ${styles.totalBold}`}>
-              <span>Total</span>
-              <span>{formatCurrency(total, listing.currency)}</span>
-            </div>
-          </div>
+            <div className={styles.fields}>
+              <div className={`mkt-fieldGroup ${styles.span2}`}>
+                <label className="mkt-label" htmlFor="mkt-ship-name">Full name *</label>
+                <input id="mkt-ship-name" className="mkt-field" autoComplete="name"
+                       value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
 
-          {error && <div className={styles.errBanner}>{error}</div>}
+              <div className={`mkt-fieldGroup ${styles.span2}`}>
+                <label className="mkt-label" htmlFor="mkt-ship-street">Street address *</label>
+                <input id="mkt-ship-street" className="mkt-field" autoComplete="street-address"
+                       value={street} onChange={(e) => setStreet(e.target.value)} required />
+              </div>
 
-          <button type="submit" className={styles.btnPrimary} disabled={submitting}>
-            {submitting
-              ? 'Processing…'
-              : stripeEnabled
-                ? `Pay with Stripe — ${formatCurrency(total, listing.currency)}`
-                : `Complete Purchase — ${formatCurrency(total, listing.currency)}`}
-          </button>
+              <div className="mkt-fieldGroup">
+                <label className="mkt-label" htmlFor="mkt-ship-city">City *</label>
+                <input id="mkt-ship-city" className="mkt-field" autoComplete="address-level2"
+                       value={city} onChange={(e) => setCity(e.target.value)} required />
+              </div>
 
-          <p className={styles.hint}>
-            {stripeEnabled
-              ? 'You\u2019ll be redirected to Stripe for secure payment. The seller will be notified once payment is confirmed.'
-              : 'Payment is processed securely. The seller will be notified and can ship once payment is confirmed.'}
-          </p>
+              <div className="mkt-fieldGroup">
+                <label className="mkt-label" htmlFor="mkt-ship-state">State / region</label>
+                <input id="mkt-ship-state" className="mkt-field" autoComplete="address-level1"
+                       value={state} onChange={(e) => setState(e.target.value)} />
+              </div>
+
+              <div className="mkt-fieldGroup">
+                <label className="mkt-label" htmlFor="mkt-ship-zip">ZIP / postcode</label>
+                <input id="mkt-ship-zip" className="mkt-field" autoComplete="postal-code"
+                       value={zip} onChange={(e) => setZip(e.target.value)} />
+              </div>
+
+              <div className="mkt-fieldGroup">
+                <label className="mkt-label" htmlFor="mkt-ship-country">Country</label>
+                <input id="mkt-ship-country" className="mkt-field" autoComplete="country"
+                       value={country} onChange={(e) => setCountry(e.target.value)} />
+              </div>
+            </div>
+          </section>
+
+          {/* ── Money ──────────────────────────────────────────────────
+              The breakdown, the error and the commit button share one
+              card: a user should never have to look away from the total
+              to find the control that charges it. */}
+          <aside className={`mkt-card mkt-card--pad ${styles.totals}`}>
+            <div className="mkt-sectionHead">
+              <h2 className="mkt-sectionTitle">Order summary</h2>
+            </div>
+
+            <div className={styles.rows}>
+              <div className="mkt-row">
+                <span className="mkt-row__key">Unit price</span>
+                <span className="mkt-row__val">{formatCurrency(listing.priceCents, currency)}</span>
+              </div>
+              <div className="mkt-row">
+                <span className="mkt-row__key">Quantity</span>
+                <span className="mkt-row__val">× {qty}</span>
+              </div>
+              <div className="mkt-row">
+                <span className="mkt-row__key">Subtotal</span>
+                <span className="mkt-row__val">{formatCurrency(subtotal, currency)}</span>
+              </div>
+              <div className="mkt-row">
+                <span className="mkt-row__key">Platform fee (3%)</span>
+                <span className="mkt-row__val">{formatCurrency(fee, currency)}</span>
+              </div>
+              <div className="mkt-row mkt-row--total">
+                <span className="mkt-row__key">Total</span>
+                <span className="mkt-row__val">{formatCurrency(total, currency)}</span>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mkt-banner mkt-banner--error" role="alert">{error}</div>
+            )}
+
+            <button type="submit"
+                    className="mkt-btn mkt-btn--primary mkt-btn--tall mkt-btn--block"
+                    disabled={submitting}>
+              {submitting
+                ? 'Processing…'
+                : stripeEnabled
+                  ? `Pay with Stripe — ${formatCurrency(total, currency)}`
+                  : `Complete purchase — ${formatCurrency(total, currency)}`}
+            </button>
+
+            <p className={`mkt-meta ${styles.assurance}`}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                   aria-hidden="true">
+                <path d="M12 3 4.5 6v6c0 4.4 3.1 8.2 7.5 9.5 4.4-1.3 7.5-5.1 7.5-9.5V6Z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+              <span>
+                {stripeEnabled
+                  ? 'You’ll be redirected to Stripe for secure payment. The seller is notified once payment is confirmed.'
+                  : 'Payment is processed securely. The seller is notified and can ship once payment is confirmed.'}
+              </span>
+            </p>
+          </aside>
         </form>
       )}
-    </div>
+    </MarketplaceShell>
   );
 }

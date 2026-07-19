@@ -1,641 +1,400 @@
-/* Marketplace — secondary market for surplus networking/datacenter gear.
-   Layout: header band → partner-search card → tabs+sell → filters →
-   listings grid → modal detail.
-   Uses the same theme-token pattern as ConnectionsPage so light + dark
-   themes flip automatically via index.css. */
+/* Marketplace browse + my-listings layout.
 
-.page {
-  position: relative;
-  display: flex; flex-direction: column;
-  gap: 14px;
-  min-height: 100vh;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
-  background: #ffffff;
-}
-:global([data-theme='light']) .page {
-  background: #ffffff;
-}
+   Buttons, fields, pills, cards, empty states and fact grids come from
+   marketplace-theme.css (the mkt- classes). This file only does what is
+   specific to this page: the toolbar, the listing grid, the card, the
+   my-listings row, the detail modal and the partner strip.
 
-/* ── Header ── */
-.header {
-  display: flex; align-items: center; gap: 10px;
-  padding: max(20px, calc(env(safe-area-inset-top, 0px) + 16px)) 16px 6px;
-}
-.backBtn {
-  width: 38px; height: 38px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.10);
-  border: 1px solid rgba(0,0,0,0.18);
-  color: var(--text);
-  cursor: pointer;
-}
-.backBtn:hover { background: rgba(0,0,0,0.18); }
-.title {
-  flex: 1;
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-.intro {
-  margin: 0 16px;
-  font-size: .9rem;
-  line-height: 1.5;
-  color: var(--muted, rgba(0,0,0,0.85));
+   CORE RULE OF THIS PAGE: exactly one accent — ink on white. A card
+   earns attention through the weight of its title and price, and hover
+   is always the same gesture (hairline → ink). Nothing on a resting
+   card is coloured. */
+
+.srOnly {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-/* ── Partner-search card ── */
-.partnerCard {
-  margin: 6px 16px 0;
-  padding: 14px 14px 12px;
-  border-radius: 14px;
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.partnerHead {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
-}
-.partnerLabel {
-  font-size: .9rem; font-weight: 600;
-  color: var(--text);
-}
-.partnerHint {
-  font-size: .72rem;
-  color: var(--muted, rgba(0,0,0,0.7));
-}
-.partnerSearchRow {
-  display: flex; gap: 8px;
-}
-.partnerInput {
-  flex: 1; min-width: 0;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  color: var(--text);
-  font-size: .9rem;
-  font-family: inherit;
-}
-.partnerInput:focus {
-  outline: none;
-  border-color: #0b0c0e;
-}
-.partnerRow {
-  display: flex; flex-wrap: wrap; gap: 6px;
-}
-.partnerBtn, .partnerBtnSm {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: var(--card2, rgba(255,255,255,0.04));
-  border: 1px solid var(--glass, rgba(0,0,0,0.22));
-  color: var(--text);
-  font-size: .8rem; font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-}
-.partnerBtnSm { font-size: .75rem; padding: 6px 10px; }
-.partnerBtn:hover, .partnerBtnSm:hover {
-  border-color: rgba(0,0,0,0.55);
-}
-
-/* ── Toolbar (tabs + sell button) ── */
+/* ── Toolbar ─────────────────────────────────────────────────────────
+   Search, category and kind on one line. This replaces a tab row plus
+   a separate two-row filter grid — same controls, one band. */
 .toolbar {
-  display: flex; align-items: center; gap: 10px;
-  margin: 6px 16px 0;
-}
-.tabs {
-  flex: 1;
-  display: inline-flex;
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  border-radius: 999px;
-  padding: 3px;
-}
-.tab {
-  flex: 1;
-  padding: 8px 14px;
-  border: none;
-  background: transparent;
-  border-radius: 999px;
-  color: var(--muted, rgba(0,0,0,0.75));
-  font-size: .85rem; font-weight: 500;
-  cursor: pointer;
-}
-.tab:disabled { cursor: not-allowed; opacity: .5; }
-.tabActive {
-  background: var(--card, rgba(255,255,255,0.10));
-  color: var(--text);
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 
-/* ── Buttons ── */
-.btnPrimary {
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #0b0c0e;
-  border: 1px solid #0b0c0e;
-  color: white;
-  font-size: .85rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
+.searchWrap { position: relative; flex: 1 1 260px; min-width: 0; display: flex; }
+.searchIcon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--mkt-muted, #717171); pointer-events: none;
 }
-.btnPrimary:disabled { opacity: .5; cursor: not-allowed; }
-.btnSecondary {
-  padding: 9px 14px;
-  border-radius: 10px;
-  background: var(--card, rgba(255,255,255,0.06));
-  border: 1px solid var(--glass, rgba(0,0,0,0.25));
-  color: var(--text);
-  font-size: .85rem;
-  font-weight: 500;
-  cursor: pointer;
+/* Two classes deep on purpose: .mkt-field sets `padding` as a shorthand,
+   which resets padding-left and would drop the text under the magnifier
+   if this were a single-class selector. */
+.searchWrap .searchInput { padding-left: 34px; padding-right: 34px; }
+.searchClear {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 22px; height: 22px; display: inline-flex;
+  align-items: center; justify-content: center;
+  border: none; border-radius: 50%; background: transparent;
+  color: var(--mkt-muted, #717171); cursor: pointer;
+  transition: color .14s ease, background-color .14s ease;
 }
-.btnSecondary:hover { border-color: rgba(0,0,0,0.55); }
-.btnDanger {
-  padding: 9px 14px;
-  border-radius: 10px;
-  background: #fff5f5;
-  border: 1px solid #ffd9d9;
-  color: #b42318;
-  font-size: .85rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-.btnAmazon {
-  padding: 9px 14px;
-  border-radius: 10px;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  color: #b45309;
-  font-size: .85rem;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
-  text-align: center;
-}
-.btnAmazon:hover { background: #fef3c7; }
-.btnPosted {
-  padding: 9px 14px;
-  border-radius: 10px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
-  font-size: .85rem;
-  font-weight: 600;
-  cursor: default;
-  opacity: 0.85;
-  width: 100%;
-  text-align: center;
+.searchClear:hover { color: var(--mkt-ink, #121417); background: var(--mkt-raised, #fafafa); }
+
+.categorySelect { flex: 0 1 180px; }
+
+/* ── Results ─────────────────────────────────────────────────────── */
+.results { display: flex; flex-direction: column; }
+
+.count {
+  margin-left: 10px; font-size: 12px; font-weight: 500;
+  color: var(--mkt-muted, #717171);
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── Filters ── */
-.filters {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 0 16px;
-}
-.searchInput, .select {
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  color: var(--text);
-  font-size: .88rem;
-  font-family: inherit;
-}
-.searchInput { grid-column: span 2; }
-.searchInput:focus, .select:focus {
-  outline: none;
-  border-color: #0b0c0e;
-}
-.kindToggle {
-  grid-column: span 2;
-  display: inline-flex;
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  border-radius: 999px;
-  padding: 3px;
-}
-.kindBtn {
-  flex: 1;
-  padding: 7px 14px;
-  border: none;
-  background: transparent;
-  border-radius: 999px;
-  color: var(--muted, rgba(0,0,0,0.75));
-  font-size: .82rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-.kindActive {
-  background: var(--card, rgba(255,255,255,0.10));
-  color: var(--text);
-  font-weight: 600;
+.loading {
+  display: flex; align-items: center; justify-content: center;
+  padding: 72px 0;
 }
 
-/* ── Grid + cards ── */
-.gridWrap {
-  margin: 6px 0 0;
-  padding: 0 16px;
-}
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
-@media (min-width: 720px) {
-  .grid { grid-template-columns: repeat(3, 1fr); }
-}
-@media (min-width: 1024px) {
-  .grid { grid-template-columns: repeat(4, 1fr); }
+@media (min-width: 640px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); gap: 14px; }
 }
 
+/* ── Listing card ────────────────────────────────────────────────────
+   <article> + a stretched overlay button. The overlay carries the
+   "open detail" hit target so Buy can be a real, focusable button
+   instead of a click-handling <span> nested inside another button. */
 .card {
-  text-align: left;
+  position: relative;
   display: flex; flex-direction: column;
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  border-radius: 14px;
+  min-width: 0;
+  border: 1px solid var(--mkt-line, #e0e0e0);
+  border-radius: var(--mkt-r-md, 12px);
+  background: var(--mkt-surface, #ffffff);
   overflow: hidden;
-  cursor: pointer;
-  transition: transform .15s, border-color .15s;
-  padding: 0;
-  color: inherit;
-  font-family: inherit;
+  transition: border-color .14s ease;
 }
-.card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(0,0,0,0.45);
+.card:hover,
+.card:focus-within { border-color: var(--mkt-ink, #121417); }
+
+.cardOpen {
+  position: absolute; inset: 0; z-index: 1;
+  border: none; background: transparent; padding: 0;
+  cursor: pointer;
+}
+.cardOpen:focus-visible {
+  outline: 2px solid var(--mkt-ink, #121417); outline-offset: -3px;
+  border-radius: var(--mkt-r-md, 12px);
 }
 
 .cardThumb {
   position: relative;
   aspect-ratio: 4 / 3;
-  background: #fcfcfc;
-  border: 1px solid #f0f0f0;
   display: flex; align-items: center; justify-content: center;
+  background: var(--mkt-raised, #fafafa);
+  border-bottom: 1px solid var(--mkt-line, #e0e0e0);
   overflow: hidden;
 }
-.cardThumb img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-}
-.cardThumbIcon {
-  font-size: 2.4rem;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.20));
-}
-.cardBadge {
-  position: absolute;
-  top: 8px; right: 8px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(0,0,0,0.45);
-  color: white;
-  font-size: .65rem;
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-.badge_sold   { background: rgba(0,0,0,0.85); }
-.badge_closed { background: rgba(0,0,0,0.85); }
+.cardThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* The glyph is a placeholder, not an illustration — it sits well back
+   so a card without a photo reads as quiet, never as broken. */
+.cardThumbIcon { color: var(--mkt-ink, #121417); opacity: 0.16; }
+
+.cardBadge { position: absolute; top: 8px; right: 8px; z-index: 2; }
 
 .cardBody {
-  padding: 10px 12px 12px;
-  display: flex; flex-direction: column; gap: 4px;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 11px 12px 12px;
+  min-width: 0;
 }
-.cardTopRow {
-  display: flex; justify-content: space-between; gap: 8px;
-  font-size: .65rem;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  color: var(--muted, rgba(0,0,0,0.7));
+
+/* Deliberately not a flex row: as flex, an over-long "SWITCHES ·
+   REFURBISHED" at two-up mobile clipped mid-word with no ellipsis,
+   because the text nodes were flex items rather than one text run. */
+.cardEyebrow {
+  display: block;
+  margin: 0 0 1px;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
-.cardCategory { font-weight: 600; }
-.cardCondition { color: rgba(0,0,0,0.85); font-weight: 600; }
+.cardEyebrowSep { opacity: 0.45; padding: 0 3px; }
+
 .cardTitle {
-  margin: 2px 0 0;
-  font-size: .95rem;
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--text);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  margin: 0;
+  font-size: 13.5px; font-weight: 650; line-height: 1.3;
+  letter-spacing: -0.005em;
+  color: var(--mkt-ink, #121417);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.cardMeta {
-  margin-top: 2px;
-  font-size: .78rem;
-  color: var(--muted, rgba(0,0,0,0.75));
-  min-height: 1em;
+
+.cardVendor {
+  margin: 0; font-size: 11.5px; line-height: 1.35;
+  color: var(--mkt-muted, #717171);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
-.cardFootRow {
-  margin-top: 6px;
-  display: flex; justify-content: space-between; align-items: baseline;
+
+.cardFoot {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 8px; margin-top: 6px;
 }
 .cardPrice {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: 15.5px; font-weight: 700; letter-spacing: -0.015em;
+  color: var(--mkt-ink, #121417);
+  font-variant-numeric: tabular-nums;
 }
-.cardAge {
-  font-size: .7rem;
-  color: var(--muted, rgba(0,0,0,0.6));
-}
-.cardSub {
-  margin-top: 4px;
-  font-size: .72rem;
-  color: var(--muted, rgba(0,0,0,0.7));
-}
-.cardBuyRow {
-  margin-top: 8px;
-}
-.cardBuyBtn {
-  display: inline-block;
-  padding: 6px 18px;
-  border-radius: 8px;
-  background: #4f46e5;
-  color: #fff;
-  font-size: .78rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .15s;
-}
-.cardBuyBtn:hover { background: #4338ca; }
-.cardAmazonBtn {
-  display: inline-block;
-  padding: 6px 18px;
-  border-radius: 8px;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  color: #b45309;
-  font-size: .78rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .15s;
-}
-.cardAmazonBtn:hover { background: #fef3c7; }
-.cardAmazonBtnPosted {
-  display: inline-block;
-  padding: 6px 18px;
-  border-radius: 8px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
-  font-size: .78rem;
-  font-weight: 700;
-  cursor: default;
-  opacity: 0.85;
+.cardAge { font-size: 11px; color: var(--mkt-muted, #717171); white-space: nowrap; }
+
+.cardSeller {
+  margin: 0; font-size: 11px; color: var(--mkt-muted, #717171);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 
-/* ── Empty + error ── */
-.empty {
-  margin: 12px 0;
-  padding: 28px 16px;
-  border-radius: 14px;
-  background: #ffffff;
-  border: 1px dashed #f0f0f0;
-  text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
+.cardBuy { position: relative; z-index: 2; margin-top: 9px; }
+
+/* ── My-listings rows ───────────────────────────────────────────────
+   A list, not a grid: these are records the owner manages, so they get
+   a scannable single-column layout with the actions at the end. */
+.rows { display: flex; flex-direction: column; gap: 8px; }
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'thumb info  price'
+    'thumb actions actions';
+  align-items: center;
+  gap: 4px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--mkt-line, #e0e0e0);
+  border-radius: var(--mkt-r-md, 12px);
+  background: var(--mkt-surface, #ffffff);
+  transition: border-color .14s ease;
 }
-.emptyText {
-  margin: 0;
-  font-size: .9rem;
-  color: var(--muted, rgba(0,0,0,0.85));
+.row:hover,
+.row:focus-within { border-color: var(--mkt-ink, #121417); }
+
+.rowOpen {
+  position: absolute; inset: 0; z-index: 1;
+  border: none; background: transparent; padding: 0; cursor: pointer;
 }
-.errBanner {
-  margin: 0 0 8px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #fff5f5;
-  border: 1px solid #ffd9d9;
-  color: #b42318;
-  font-size: .85rem;
-}
-.spinner {
-  width: 26px; height: 26px;
-  border: 2px solid rgba(0,0,0,0.20);
-  border-top-color: rgba(0,0,0,0.85);
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.rowOpen:focus-visible {
+  outline: 2px solid var(--mkt-ink, #121417); outline-offset: -3px;
+  border-radius: var(--mkt-r-md, 12px);
 }
 
-/* ── Modal ── */
-.modalBackdrop {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(4px);
-  z-index: 50;
-  display: flex; align-items: flex-end; justify-content: center;
-  padding: 0;
-}
-@media (min-width: 720px) {
-  .modalBackdrop { align-items: center; padding: 20px; }
-}
-.modal {
-  position: relative;
-  width: 100%;
-  max-width: 560px;
-  max-height: 90vh;
-  overflow: auto;
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  border-radius: 20px 20px 0 0;
-}
-@media (min-width: 720px) {
-  .modal { border-radius: 20px; }
-}
-.modalClose {
-  position: absolute;
-  top: 12px; right: 12px;
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.45);
-  color: white;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  z-index: 2;
-}
-.modalThumb {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  background: #fcfcfc;
-  border: 1px solid #f0f0f0;
+.rowThumb {
+  grid-area: thumb; align-self: start;
+  width: 44px; height: 44px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--mkt-line, #e0e0e0);
+  border-radius: var(--mkt-r-sm, 8px);
+  background: var(--mkt-raised, #fafafa);
   overflow: hidden;
 }
-.modalThumb img { width: 100%; height: 100%; object-fit: cover; }
-.modalThumbIcon {
-  font-size: 4rem;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+.rowThumb img { width: 100%; height: 100%; object-fit: cover; }
+.rowThumbIcon { color: var(--mkt-ink, #121417); opacity: 0.2; }
+
+.rowInfo { grid-area: info; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rowTitleLine { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rowTitle {
+  margin: 0; font-size: 13.5px; font-weight: 650;
+  color: var(--mkt-ink, #121417);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  min-width: 0;
 }
+.rowMeta {
+  margin: 0; font-size: 11.5px; color: var(--mkt-muted, #717171);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+
+.rowPrice {
+  grid-area: price; align-self: start;
+  font-size: 14px; font-weight: 700; white-space: nowrap;
+  color: var(--mkt-ink, #121417);
+  font-variant-numeric: tabular-nums;
+}
+
+.rowActions {
+  grid-area: actions;
+  position: relative; z-index: 2;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  margin-top: 6px;
+}
+.rowConfirmText {
+  font-size: 12px; font-weight: 600;
+  color: var(--mkt-ink, #121417);
+}
+
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-areas:
+      'thumb info'
+      'price price'
+      'actions actions';
+  }
+  .rowThumb { width: 40px; height: 40px; }
+  .rowPrice { align-self: center; }
+}
+
+/* ── Detail modal ────────────────────────────────────────────────────
+   Sheet on mobile, centred dialog from 640px up. */
+.modalBackdrop {
+  position: fixed; inset: 0; z-index: 80;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(18, 20, 23, 0.45);
+  backdrop-filter: blur(3px);
+  animation: fade .16s ease;
+}
+@keyframes fade { from { opacity: 0; } }
+
+.modal {
+  position: relative;
+  width: 100%; max-width: 560px; max-height: 92vh;
+  overflow-y: auto; overscroll-behavior: contain;
+  background: var(--mkt-surface, #ffffff);
+  border: 1px solid var(--mkt-line, #e0e0e0);
+  border-radius: var(--mkt-r-lg, 16px) var(--mkt-r-lg, 16px) 0 0;
+}
+@media (min-width: 640px) {
+  .modalBackdrop { align-items: center; padding: 24px; }
+  .modal { border-radius: var(--mkt-r-lg, 16px); }
+}
+
+.modalClose {
+  position: absolute; top: 12px; right: 12px; z-index: 3;
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--mkt-line, #e0e0e0);
+  background: var(--mkt-surface, #ffffff);
+  color: var(--mkt-ink, #121417);
+  cursor: pointer;
+  transition: var(--mkt-t);
+}
+.modalClose:hover { border-color: var(--mkt-ink, #121417); background: var(--mkt-raised, #fafafa); }
+
+.modalThumb {
+  aspect-ratio: 16 / 9;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--mkt-raised, #fafafa);
+  border-bottom: 1px solid var(--mkt-line, #e0e0e0);
+  overflow: hidden;
+}
+/* A real photo earns 16:9. A placeholder glyph does not — at that ratio
+   it pushed the title and price below the fold and gave four-tenths of
+   the dialog to an icon. */
+.modalThumbEmpty { aspect-ratio: auto; height: 116px; }
+.modalThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.modalThumbIcon { color: var(--mkt-ink, #121417); opacity: 0.14; }
+
 .modalBody {
-  padding: 18px 18px 22px;
-  display: flex; flex-direction: column; gap: 6px;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 18px 20px 24px;
+}
+.modalHead {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
 }
 .modalTitle {
-  margin: 4px 0 2px;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text);
+  margin: 0; font-size: 20px; font-weight: 700;
+  line-height: 1.25; letter-spacing: -0.02em;
+  color: var(--mkt-ink, #121417);
+  overflow-wrap: anywhere;
 }
-.modalVendor {
-  margin: 0;
-  font-size: .9rem;
-  color: var(--muted, rgba(0,0,0,0.85));
-}
+.modalVendor { margin: -4px 0 0; font-size: 13px; color: var(--mkt-muted, #717171); }
 .modalPrice {
-  margin: 8px 0 4px;
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--text);
-}
-.modalQty, .modalLoc, .modalSeller, .modalRack {
-  margin: 0;
-  font-size: .82rem;
-  color: var(--muted, rgba(0,0,0,0.85));
+  margin: 2px 0 4px;
+  font-size: 26px; font-weight: 700; letter-spacing: -0.025em;
+  color: var(--mkt-ink, #121417);
+  font-variant-numeric: tabular-nums;
 }
 .modalDesc {
-  margin: 10px 0;
-  font-size: .92rem;
-  line-height: 1.5;
-  color: var(--text);
-  white-space: pre-wrap;
+  margin: 0; font-size: 13.5px; line-height: 1.6;
+  color: var(--mkt-ink, #121417);
+  white-space: pre-wrap; overflow-wrap: anywhere;
 }
-.modalRack code {
-  background: var(--card2, rgba(255,255,255,0.06));
-  padding: 1px 6px;
-  border-radius: 5px;
-  font-family: monospace;
-  font-size: .8rem;
-}
-.partners {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--glass, rgba(0,0,0,0.18));
-}
-.partnersHead {
-  margin: 0 0 8px;
-  font-size: .82rem;
-  font-weight: 600;
-  color: var(--text);
-}
-.contactHint {
-  margin-top: 12px;
-  padding: 10px 12px;
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  border-radius: 10px;
-  font-size: .82rem;
-  color: var(--muted, rgba(0,0,0,0.9));
-}
-.modalOwnerActions {
-  margin-top: 14px;
-  display: flex; gap: 8px; flex-wrap: wrap;
-}
-.modalBuyerActions {
-  margin-top: 14px;
+
+.modalActions { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.modalBtnRow  { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.offerNote { margin: 0; }
+
+/* Inline confirm — replaces window.confirm(). */
+.confirmBar {
   display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(180, 35, 24, 0.35);
+  border-radius: var(--mkt-r-sm, 8px);
+  background: var(--mkt-surface, #ffffff);
 }
-.flagBtn {
-  background: none; border: none; padding: 0;
-  font-family: inherit; font-size: .78rem;
-  color: rgba(0,0,0,0.4); cursor: pointer;
-  text-decoration: underline; text-underline-offset: 3px;
-  align-self: center;
-}
-.flagBtn:hover { color: #b42318; }
+.confirmText { font-size: 12.5px; line-height: 1.5; color: var(--mkt-ink, #121417); }
+.confirmBtns { display: flex; gap: 8px; justify-content: flex-end; }
 
-/* ── My-listings card (mine tab) ── */
-.mineList {
+/* Inline report form — replaces window.prompt(). */
+.reportBox {
   display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--mkt-line, #e0e0e0);
+  border-radius: var(--mkt-r-sm, 8px);
 }
-.mineCard {
-  display: flex; gap: 12px; align-items: flex-start;
-  padding: 12px; border-radius: 14px;
-  background: #ffffff; border: 1px solid #f0f0f0;
-  cursor: pointer; transition: border-color .15s;
+.reportLink { align-self: center; }
+
+.modalPartners {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-top: 6px; padding-top: 14px;
+  border-top: 1px solid var(--mkt-line, #e0e0e0);
 }
-.mineCard:hover { border-color: rgba(0,0,0,0.35); }
-.mineThumb {
-  width: 56px; height: 56px; flex-shrink: 0;
-  border-radius: 10px; overflow: hidden;
-  background: #fcfcfc; border: 1px solid #f0f0f0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.6rem;
+.partnerLinks { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ── Pagination ─────────────────────────────────────────────────── */
+.pagination {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  padding: 22px 0 4px;
 }
-.mineThumb img { width: 100%; height: 100%; object-fit: cover; }
-.mineInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.mineTitleRow { display: flex; align-items: center; gap: 8px; }
-.mineTitle {
-  margin: 0; font-size: .88rem; font-weight: 600; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  flex: 1; min-width: 0;
-}
-.statusBadge {
-  display: inline-block; padding: 2px 7px; border-radius: 999px;
-  font-size: .62rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .04em; flex-shrink: 0;
-}
-.sb_active { background: #ecfdf5; color: #065f46; }
-.sb_sold   { background: #f3f4f6; color: #6b7280; }
-.sb_closed { background: #fff7ed; color: #9a3412; }
-.mineMeta {
-  margin: 0; font-size: .75rem; color: rgba(0,0,0,0.45);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.mineActions {
-  display: flex; gap: 6px; margin-top: 4px;
-}
-.mineBtn {
-  padding: 4px 10px; border-radius: 6px;
-  font-size: .72rem; font-weight: 600;
-  border: 1px solid rgba(0,0,0,0.12); background: #f7f7f8;
-  color: var(--text); cursor: pointer;
-}
-.mineBtn:hover { background: #eeeeef; }
-.mineBtnEdit { color: #1d4ed8; border-color: #c9d3ff; background: #eef2ff; }
-.mineBtnEdit:hover { background: #dde4ff; }
-.mineBtnSold { color: #065f46; border-color: #a7f3d0; background: #ecfdf5; }
-.mineBtnSold:hover { background: #d1fae5; }
-.mineBtnDel { color: #b42318; border-color: #fecaca; background: #fef2f2; }
-.mineBtnDel:hover { background: #fee2e2; }
-.mineBtnAmazon { color: #b45309; border-color: #fde68a; background: #fffbeb; }
-.mineBtnAmazon:hover { background: #fef3c7; }
-.mineBtnPosted { color: #065f46; border-color: #a7f3d0; background: #ecfdf5; cursor: default; opacity: 0.85; }
-.minePrice {
-  font-size: .95rem; font-weight: 700; color: var(--text);
-  white-space: nowrap; flex-shrink: 0; align-self: flex-start;
-  margin-top: 2px;
+.pageLabel {
+  font-size: 12px; font-weight: 600; min-width: 64px; text-align: center;
+  color: var(--mkt-muted, #717171);
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── Pagination ── */
-.pagination {
-  display: flex; align-items: center; justify-content: center;
-  gap: 14px; padding: 16px 0 4px;
+/* ── Partner strip ───────────────────────────────────────────────────
+   Was a large card above the listings, which put "leave RackTrack"
+   ahead of "shop RackTrack". Demoted to a quiet footer band: still one
+   keystroke away, no longer the first thing on the page. */
+.partnerStrip {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px 20px; flex-wrap: wrap;
+  padding: 16px 18px;
+  border: 1px solid var(--mkt-line, #e0e0e0);
+  border-radius: var(--mkt-r-md, 12px);
+  background: var(--mkt-raised, #fafafa);
 }
-.pageBtn {
-  padding: 8px 16px; border-radius: 8px;
-  background: #f7f7f8; border: 1px solid #f0f0f0;
-  color: var(--text); font-size: .82rem; font-weight: 600;
-  cursor: pointer;
+.partnerCopy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.partnerText {
+  margin: 0; font-size: 12.5px; line-height: 1.45;
+  color: var(--mkt-muted, #717171);
 }
-.pageBtn:hover:not(:disabled) { background: #eeeeef; border-color: rgba(0,0,0,0.25); }
-.pageBtn:disabled { opacity: .35; cursor: not-allowed; }
-.pageLabel {
-  font-size: .82rem; font-weight: 600; color: rgba(0,0,0,0.5);
-  min-width: 60px; text-align: center;
+.partnerControls {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  flex: 1 1 380px; justify-content: flex-end;
+}
+.partnerInput { flex: 1 1 200px; max-width: 280px; background: var(--mkt-surface, #ffffff); }
+.partnerDisabled { opacity: 0.4; pointer-events: none; }
+
+@media (max-width: 560px) {
+  .toolbar { gap: 8px; }
+  .searchWrap { flex: 1 1 100%; }
+  .categorySelect { flex: 1 1 auto; }
+  .partnerControls { justify-content: flex-start; }
+  .partnerInput { max-width: none; }
+  .modalBody { padding: 16px 16px 22px; }
+  .modalPrice { font-size: 23px; }
 }

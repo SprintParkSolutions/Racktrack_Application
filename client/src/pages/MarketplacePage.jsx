@@ -1,25 +1,24 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './MarketplacePage.module.css';
 import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext.jsx';
-import ThemeToggle from '../components/ThemeToggle.jsx';
+import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
+import CategoryIcon from '../components/marketplace/CategoryIcon.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
-   MarketplacePage — RackTrack Marketplace browse + my-listings.
+   MarketplacePage — browse + my-listings.
 
-   Three sell paths surfaced to the user:
-     1. Direct on RackTrack — listings live in the marketplace_listings
-        table and show up in the BROWSE tab.
-     2. Partner redirect (eBay etc.) — the "Find on eBay" quick search
-        bar at the top hands a vendor+model query off to partner sites
-        without ever creating a RackTrack listing.
-     3. Buyer matching — kind='want' listings. The kind toggle next to
-        the search input switches between "for sale" and "wanted".
+   Layout note: this page used to stack five full-width bands before a
+   user saw a single listing — header, intro paragraph, a large partner
+   search card, a tab row, then a filter row. The partner search sat at
+   the very top, which put "leave RackTrack" above "shop RackTrack".
 
-   Tabs:
-     BROWSE  — public active listings (anyone can see)
-     MINE    — this user's own listings (requires auth; all statuses)
+   It is now one toolbar (search + category + kind + result count) and
+   then the grid. The partner search still exists, demoted to a quiet
+   strip beneath the results where it reads as a fallback — which is
+   what it is. Browse / My listings moved up into the shell nav so this
+   page owns one level of controls instead of two.
    ────────────────────────────────────────────────────────────────────── */
 
 const CATEGORY_LABEL = {
@@ -35,19 +34,6 @@ const CATEGORY_LABEL = {
   other:       'Other',
 };
 
-const CATEGORY_ICON = {
-  cable:       '🔌',
-  switch:      '🔁',
-  router:      '🌐',
-  rack:        '🗄️',
-  optic:       '✨',
-  server:      '🖥️',
-  pdu:         '⚡',
-  firewall:    '🛡️',
-  patch_panel: '🧩',
-  other:       '📦',
-};
-
 const CONDITION_LABEL = {
   'new':       'New',
   'refurb':    'Refurbished',
@@ -55,7 +41,24 @@ const CONDITION_LABEL = {
   'for-parts': 'For parts',
 };
 
-const PAGE_SIZE = 2;
+const STATUS_PILL = {
+  active: 'mkt-pill--active',
+  sold:   'mkt-pill--neutral',
+  closed: 'mkt-pill--neutral',
+};
+
+/* Was 2 — the grid could never look like a marketplace, and because
+   "has more" was inferred from a full page, Next stayed live on the
+   last page and landed the user on an empty one. We now ask for one
+   extra row and render all but that, so the control reflects reality. */
+const PAGE_SIZE = 24;
+
+const PARTNER_SITES = [
+  { name: 'eBay',      url: (q) => `https://www.ebay.com/sch/i.html?_nkw=${q}` },
+  { name: 'Amazon',    url: (q) => `https://www.amazon.com/s?k=${q}` },
+  { name: 'FS.com',    url: (q) => `https://www.fs.com/search.html?keyword=${q}` },
+  { name: 'Curvature', url: (q) => `https://www.curvature.com/search?keyword=${q}` },
+];
 
 function formatPrice(listing) {
   if (listing.priceCents == null) return 'Make an offer';
@@ -81,184 +84,237 @@ function formatRelative(d) {
   if (h < 24)  return `${h}h ago`;
   const days = Math.floor(h / 24);
   if (days < 7)  return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days/7)}w ago`;
-  return `${Math.floor(days/30)}mo ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
 }
 
-/* ── Listing card (browse tab) ─────────────────────────────────────── */
-function ListingCard({ listing, onOpen, onBuy }) {
-  const [amazonPosted, setAmazonPosted] = useState(false);
+function StatusPill({ status }) {
   return (
-    <button type="button" className={styles.card} onClick={() => onOpen(listing)}>
-      <div className={styles.cardThumb}>
-        {listing.imageUrl
-          ? <img src={listing.imageUrl} alt="" loading="lazy" />
-          : <span className={styles.cardThumbIcon}>{CATEGORY_ICON[listing.category] || '📦'}</span>}
-        {listing.status !== 'active' && (
-          <span className={`${styles.cardBadge} ${styles[`badge_${listing.status}`] || ''}`}>
-            {listing.status}
-          </span>
-        )}
-      </div>
-      <div className={styles.cardBody}>
-        <div className={styles.cardTopRow}>
-          <span className={styles.cardCategory}>
-            {CATEGORY_LABEL[listing.category] || listing.category}
-          </span>
-          <span className={styles.cardCondition}>
-            {CONDITION_LABEL[listing.condition] || listing.condition}
-          </span>
-        </div>
-        <h3 className={styles.cardTitle}>{listing.title}</h3>
-        <div className={styles.cardMeta}>
-          {(listing.vendor || listing.model) && (
-            <span className={styles.cardVendor}>
-              {[listing.vendor, listing.model].filter(Boolean).join(' · ')}
-            </span>
-          )}
-        </div>
-        <div className={styles.cardFootRow}>
-          <span className={styles.cardPrice}>{formatPrice(listing)}</span>
-          <span className={styles.cardAge}>{formatRelative(listing.createdAt)}</span>
-        </div>
-        {(listing.location || listing.seller?.username) && (
-          <div className={styles.cardSub}>
-            {listing.seller?.username && <span>@{listing.seller.username}</span>}
-            {listing.seller?.username && listing.location && <span> · </span>}
-            {listing.location && <span>{listing.location}</span>}
-          </div>
-        )}
-        {listing.status === 'active' && listing.kind === 'want' && listing.priceCents != null && (
-          <div
-            className={styles.cardBuyRow}
-            onClick={(e) => {
-              e.stopPropagation();
-              onBuy(listing.id);
-            }}
-          >
-            <span className={styles.cardBuyBtn}>Buy Now</span>
-          </div>
-        )}
-        {listing.status === 'active' && listing.kind === 'sell' && (
-          <div
-            className={styles.cardBuyRow}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!amazonPosted) setAmazonPosted(true);
-            }}
-          >
-            <span className={amazonPosted ? styles.cardAmazonBtnPosted : styles.cardAmazonBtn}>
-              {amazonPosted ? 'Posted to Amazon' : 'Post to Amazon'}
-            </span>
-          </div>
-        )}
-      </div>
-    </button>
+    <span className={`mkt-pill ${STATUS_PILL[status] || 'mkt-pill--neutral'}`}>
+      <span className="mkt-pill__dot" />{status}
+    </span>
   );
 }
 
-/* ── My-listings card (mine tab) — with inline Edit / Mark Sold / Delete ─ */
-function MyListingCard({ listing, onOpen, onPatch, onDelete, onEdit }) {
-  const [amazonPosted, setAmazonPosted] = useState(false);
-  const handlePatch = async (e, status) => {
-    e.stopPropagation();
-    if (!confirm(`Mark this listing as "${status}"?`)) return;
-    await onPatch(listing.id, { status });
-  };
-  const handleDelete = async (e) => {
-    e.stopPropagation();
-    if (!confirm('Delete this listing? This cannot be undone.')) return;
-    await onDelete(listing.id);
-  };
-  const handleEdit = (e) => {
-    e.stopPropagation();
-    onEdit(listing);
-  };
-  const handlePostAmazon = (e) => {
-    e.stopPropagation();
-    setAmazonPosted(true);
-  };
+/* ── Listing card (browse) ─────────────────────────────────────────────
+   An <article> with a stretched overlay button rather than a <button>
+   wrapping everything: the old markup nested the Buy control inside the
+   card button, which is invalid HTML and unreachable by keyboard. Here
+   the overlay opens the detail and Buy sits above it on its own. */
+function ListingCard({ listing, onOpen, onBuy }) {
+  const canBuy = listing.status === 'active'
+    && listing.kind === 'sell'
+    && listing.priceCents != null;
+
   return (
-    <div className={styles.mineCard} onClick={() => onOpen(listing)} role="button" tabIndex={0}>
-      <div className={styles.mineThumb}>
+    <article className={styles.card}>
+      <button
+        type="button"
+        className={styles.cardOpen}
+        onClick={() => onOpen(listing)}
+      >
+        <span className={styles.srOnly}>View {listing.title}</span>
+      </button>
+
+      <div className={styles.cardThumb}>
         {listing.imageUrl
           ? <img src={listing.imageUrl} alt="" loading="lazy" />
-          : <span>{CATEGORY_ICON[listing.category] || '📦'}</span>}
+          : <CategoryIcon category={listing.category} size={34} className={styles.cardThumbIcon} />}
+        {listing.status !== 'active' && (
+          <span className={`mkt-pill mkt-pill--solid ${styles.cardBadge}`}>{listing.status}</span>
+        )}
       </div>
-      <div className={styles.mineInfo}>
-        <div className={styles.mineTitleRow}>
-          <h3 className={styles.mineTitle}>{listing.title}</h3>
-          <span className={`${styles.statusBadge} ${styles[`sb_${listing.status}`] || ''}`}>
-            {listing.status}
-          </span>
-        </div>
-        <p className={styles.mineMeta}>
+
+      <div className={styles.cardBody}>
+        <p className={`mkt-label ${styles.cardEyebrow}`}>
           {CATEGORY_LABEL[listing.category] || listing.category}
-          {' · '}{CONDITION_LABEL[listing.condition] || listing.condition}
-          {listing.location && <> · {listing.location}</>}
+          <span className={styles.cardEyebrowSep}>·</span>
+          {CONDITION_LABEL[listing.condition] || listing.condition}
         </p>
-        <div className={styles.mineActions}>
-          <button className={`${styles.mineBtn} ${styles.mineBtnEdit}`} onClick={handleEdit}>
-            Edit
-          </button>
-          {listing.status === 'active' && (
-            <button className={`${styles.mineBtn} ${styles.mineBtnSold}`}
-                    onClick={(e) => handlePatch(e, 'sold')}>
-              Mark Sold
-            </button>
-          )}
-          {listing.status !== 'active' && (
-            <button className={`${styles.mineBtn} ${styles.mineBtnEdit}`}
-                    onClick={(e) => handlePatch(e, 'active')}>
-              Reactivate
-            </button>
-          )}
-          <button className={`${styles.mineBtn} ${styles.mineBtnDel}`} onClick={handleDelete}>
-            Delete
-          </button>
-          {listing.status === 'active' && (
-            <button
-              className={`${styles.mineBtn} ${amazonPosted ? styles.mineBtnPosted : styles.mineBtnAmazon}`}
-              onClick={handlePostAmazon}
-              disabled={amazonPosted}
-            >
-              {amazonPosted ? 'Posted to Amazon' : 'Post to Amazon'}
-            </button>
-          )}
+
+        <h3 className={styles.cardTitle}>{listing.title}</h3>
+
+        {(listing.vendor || listing.model) && (
+          <p className={styles.cardVendor}>
+            {[listing.vendor, listing.model].filter(Boolean).join(' · ')}
+          </p>
+        )}
+
+        <div className={styles.cardFoot}>
+          <span className={styles.cardPrice}>{formatPrice(listing)}</span>
+          <span className={styles.cardAge}>{formatRelative(listing.createdAt)}</span>
         </div>
+
+        {(listing.seller?.username || listing.location) && (
+          <p className={styles.cardSeller}>
+            {[listing.seller?.username && `@${listing.seller.username}`, listing.location]
+              .filter(Boolean).join(' · ')}
+          </p>
+        )}
+
+        {canBuy && (
+          <button
+            type="button"
+            className={`mkt-btn mkt-btn--primary mkt-btn--sm mkt-btn--block ${styles.cardBuy}`}
+            onClick={(e) => { e.stopPropagation(); onBuy(listing.id); }}
+          >
+            Buy now
+          </button>
+        )}
       </div>
-      <span className={styles.minePrice}>{formatPrice(listing)}</span>
+    </article>
+  );
+}
+
+/* ── My-listings row ────────────────────────────────────────────────── */
+function MyListingRow({ listing, onOpen, onPatch, onDelete, onEdit }) {
+  // Two-step inline delete instead of window.confirm — the confirmation
+  // stays inside the page and inside the design.
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
+
+  return (
+    <div className={styles.row}>
+      <button type="button" className={styles.rowOpen} onClick={() => onOpen(listing)}>
+        <span className={styles.srOnly}>View {listing.title}</span>
+      </button>
+
+      <div className={styles.rowThumb}>
+        {listing.imageUrl
+          ? <img src={listing.imageUrl} alt="" loading="lazy" />
+          : <CategoryIcon category={listing.category} size={20} className={styles.rowThumbIcon} />}
+      </div>
+
+      <div className={styles.rowInfo}>
+        <div className={styles.rowTitleLine}>
+          <h3 className={styles.rowTitle}>{listing.title}</h3>
+          <StatusPill status={listing.status} />
+        </div>
+        <p className={styles.rowMeta}>
+          {[
+            CATEGORY_LABEL[listing.category] || listing.category,
+            CONDITION_LABEL[listing.condition] || listing.condition,
+            listing.location,
+            formatRelative(listing.createdAt),
+          ].filter(Boolean).join(' · ')}
+        </p>
+      </div>
+
+      <span className={styles.rowPrice}>{formatPrice(listing)}</span>
+
+      <div className={styles.rowActions}>
+        {confirmDelete ? (
+          <>
+            <span className={styles.rowConfirmText}>Delete?</span>
+            <button
+              className="mkt-btn mkt-btn--sm mkt-btn--danger"
+              onClick={stop(() => onDelete(listing.id))}
+            >
+              Yes, delete
+            </button>
+            <button
+              className="mkt-btn mkt-btn--sm"
+              onClick={stop(() => setConfirmDelete(false))}
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="mkt-btn mkt-btn--sm" onClick={stop(() => onEdit(listing))}>
+              Edit
+            </button>
+            {listing.status === 'active' ? (
+              <button
+                className="mkt-btn mkt-btn--sm"
+                onClick={stop(() => onPatch(listing.id, { status: 'sold' }))}
+              >
+                Mark sold
+              </button>
+            ) : (
+              <button
+                className="mkt-btn mkt-btn--sm"
+                onClick={stop(() => onPatch(listing.id, { status: 'active' }))}
+              >
+                Relist
+              </button>
+            )}
+            <button
+              className="mkt-btn mkt-btn--sm mkt-btn--danger"
+              onClick={stop(() => setConfirmDelete(true))}
+            >
+              Delete
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
+/* ── Detail modal ───────────────────────────────────────────────────── */
 function ListingDetailModal({ listing, partners, onClose, onPatch, onDelete, isMine, onBuy, onFlag }) {
-  const [amazonPosted, setAmazonPosted] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [reporting, setReporting]         = useState(false);
+  const [reason, setReason]               = useState('');
+  const [reported, setReported]           = useState(false);
+  // The modal sits above the page's error banner, so a failed report has
+  // to say so inside the modal or it looks like nothing happened.
+  const [reportErr, setReportErr]         = useState(null);
+
+  // Reset per-listing UI whenever a different listing is opened.
+  const id = listing?.id;
+  useEffect(() => {
+    setConfirmDelete(false); setReporting(false);
+    setReason(''); setReported(false); setReportErr(null);
+  }, [id]);
+
+  useEffect(() => {
+    if (!listing) return;
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [listing, onClose]);
+
   if (!listing) return null;
-  const handlePatchStatus = async (status) => {
-    if (!confirm(`Mark this listing as ${status}?`)) return;
-    await onPatch({ status });
-  };
-  const handleDelete = async () => {
-    if (!confirm('Delete this listing? This cannot be undone.')) return;
-    await onDelete();
-  };
+
+  const canBuy = listing.status === 'active'
+    && listing.kind === 'sell'
+    && listing.priceCents != null;
+
   return (
-    <div className={styles.modalBackdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.modalClose} onClick={onClose} aria-label="Close">×</button>
-        <div className={styles.modalThumb}>
+    <div className={styles.modalBackdrop} onClick={onClose} role="presentation">
+      <div
+        className={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={listing.title}
+      >
+        <button className={styles.modalClose} onClick={onClose} aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               strokeWidth="2" strokeLinecap="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className={`${styles.modalThumb} ${listing.imageUrl ? '' : styles.modalThumbEmpty}`}>
           {listing.imageUrl
             ? <img src={listing.imageUrl} alt="" />
-            : <span className={styles.modalThumbIcon}>
-                {CATEGORY_ICON[listing.category] || '📦'}
-              </span>}
+            : <CategoryIcon category={listing.category} size={40} className={styles.modalThumbIcon} />}
         </div>
+
         <div className={styles.modalBody}>
-          <span className={styles.cardCategory}>
-            {CATEGORY_LABEL[listing.category] || listing.category}
-            {' · '}{CONDITION_LABEL[listing.condition] || listing.condition}
-          </span>
+          <div className={styles.modalHead}>
+            <p className={`mkt-label ${styles.cardEyebrow}`}>
+              {CATEGORY_LABEL[listing.category] || listing.category}
+              <span className={styles.cardEyebrowSep}>·</span>
+              {CONDITION_LABEL[listing.condition] || listing.condition}
+            </p>
+            {listing.status !== 'active' && <StatusPill status={listing.status} />}
+          </div>
+
           <h2 className={styles.modalTitle}>{listing.title}</h2>
           {(listing.vendor || listing.model) && (
             <p className={styles.modalVendor}>
@@ -266,87 +322,152 @@ function ListingDetailModal({ listing, partners, onClose, onPatch, onDelete, isM
             </p>
           )}
           <p className={styles.modalPrice}>{formatPrice(listing)}</p>
-          {listing.quantity > 1 && (
-            <p className={styles.modalQty}>Qty available: {listing.quantity}</p>
-          )}
-          {listing.location && <p className={styles.modalLoc}>📍 {listing.location}</p>}
-          {listing.description && <p className={styles.modalDesc}>{listing.description}</p>}
-          <p className={styles.modalSeller}>
-            Listed by <strong>@{listing.seller?.username || 'unknown'}</strong>
-            {' · '}{formatRelative(listing.createdAt)}
-          </p>
-          {listing.sourceRackId && (
-            <p className={styles.modalRack}>
-              From scan <code>{listing.sourceRackId}</code>
-            </p>
-          )}
 
-          {partners && partners.length > 0 && (
-            <div className={styles.partners}>
-              <p className={styles.partnersHead}>Or search partner marketplaces:</p>
-              <div className={styles.partnerRow}>
-                {partners.map(p => (
-                  <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer"
-                     className={styles.partnerBtn}>
-                    {p.name} ↗
-                  </a>
-                ))}
-              </div>
+          <div className="mkt-facts mkt-facts--2">
+            <div className="mkt-fact">
+              <span className="mkt-fact__key">Seller</span>
+              <span className="mkt-fact__val">@{listing.seller?.username || 'unknown'}</span>
             </div>
+            <div className="mkt-fact">
+              <span className="mkt-fact__key">Listed</span>
+              <span className="mkt-fact__val">{formatRelative(listing.createdAt)}</span>
+            </div>
+            {listing.quantity > 1 && (
+              <div className="mkt-fact">
+                <span className="mkt-fact__key">Quantity</span>
+                <span className="mkt-fact__val">{listing.quantity} available</span>
+              </div>
+            )}
+            {listing.location && (
+              <div className="mkt-fact">
+                <span className="mkt-fact__key">Location</span>
+                <span className="mkt-fact__val">{listing.location}</span>
+              </div>
+            )}
+            {listing.sourceRackId && (
+              <div className="mkt-fact">
+                <span className="mkt-fact__key">From scan</span>
+                <span className="mkt-fact__val mkt-mono">{listing.sourceRackId}</span>
+              </div>
+            )}
+          </div>
+
+          {listing.description && (
+            <p className={styles.modalDesc}>{listing.description}</p>
           )}
 
           {isMine ? (
-            <div className={styles.modalOwnerActions}>
-              {listing.status === 'active' && (
-                <button className={styles.btnSecondary}
-                        onClick={() => handlePatchStatus('sold')}>
-                  Mark sold
-                </button>
-              )}
-              {listing.status !== 'active' && (
-                <button className={styles.btnSecondary}
-                        onClick={() => handlePatchStatus('active')}>
-                  Reactivate
-                </button>
-              )}
-              <button className={styles.btnDanger} onClick={handleDelete}>
-                Delete
-              </button>
-              {listing.status === 'active' && (
-                <button
-                  className={amazonPosted ? styles.btnPosted : styles.btnAmazon}
-                  onClick={() => setAmazonPosted(true)}
-                  disabled={amazonPosted}
-                >
-                  {amazonPosted ? 'Posted to Amazon' : 'Post to Amazon'}
-                </button>
+            <div className={styles.modalActions}>
+              {confirmDelete ? (
+                <div className={styles.confirmBar}>
+                  <span className={styles.confirmText}>
+                    Delete this listing? This cannot be undone.
+                  </span>
+                  <div className={styles.confirmBtns}>
+                    <button className="mkt-btn mkt-btn--sm" onClick={() => setConfirmDelete(false)}>
+                      Cancel
+                    </button>
+                    <button className="mkt-btn mkt-btn--sm mkt-btn--danger" onClick={onDelete}>
+                      Yes, delete
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.modalBtnRow}>
+                  {listing.status === 'active' ? (
+                    <button className="mkt-btn" onClick={() => onPatch({ status: 'sold' })}>
+                      Mark sold
+                    </button>
+                  ) : (
+                    <button className="mkt-btn" onClick={() => onPatch({ status: 'active' })}>
+                      Relist
+                    </button>
+                  )}
+                  <button className="mkt-btn mkt-btn--danger" onClick={() => setConfirmDelete(true)}>
+                    Delete
+                  </button>
+                </div>
               )}
             </div>
           ) : (
-            <div className={styles.modalBuyerActions}>
-              {listing.status === 'active' && listing.kind === 'want' && listing.priceCents != null && (
-                <button className={styles.btnPrimary} onClick={() => onBuy(listing.id)}
-                        style={{ width: '100%', padding: '13px', fontSize: '.95rem' }}>
-                  Buy Now — {formatPrice(listing)}
-                </button>
-              )}
-              {listing.status === 'active' && listing.kind === 'sell' && (
+            <div className={styles.modalActions}>
+              {canBuy && (
                 <button
-                  className={amazonPosted ? styles.btnPosted : styles.btnAmazon}
-                  onClick={() => setAmazonPosted(true)}
-                  disabled={amazonPosted}
+                  className="mkt-btn mkt-btn--primary mkt-btn--tall mkt-btn--block"
+                  onClick={() => onBuy(listing.id)}
                 >
-                  {amazonPosted ? 'Posted to Amazon' : 'Post to Amazon'}
+                  Buy now — {formatPrice(listing)}
                 </button>
               )}
               {listing.priceCents == null && (
-                <p className={styles.contactHint}>
-                  This listing has no set price — contact @{listing.seller?.username} to negotiate.
+                <p className={`mkt-banner ${styles.offerNote}`}>
+                  No set price on this listing — contact @{listing.seller?.username} to
+                  make an offer.
                 </p>
               )}
-              <button className={styles.flagBtn} onClick={() => onFlag(listing.id)}>
-                Report listing
-              </button>
+
+              {/* Report — an inline form, replacing window.prompt(). */}
+              {reported ? (
+                <p className="mkt-banner mkt-banner--success">
+                  Reported. An admin will review this listing.
+                </p>
+              ) : reporting ? (
+                <div className={styles.reportBox}>
+                  <label className="mkt-label" htmlFor="mkt-report-reason">
+                    Why are you reporting this?
+                  </label>
+                  <textarea
+                    id="mkt-report-reason"
+                    className="mkt-field"
+                    rows={3}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Tell us what's wrong with this listing…"
+                  />
+                  {reportErr && (
+                    <p className="mkt-banner mkt-banner--error">{reportErr}</p>
+                  )}
+                  <div className={styles.confirmBtns}>
+                    <button className="mkt-btn mkt-btn--sm" onClick={() => setReporting(false)}>
+                      Cancel
+                    </button>
+                    <button
+                      className="mkt-btn mkt-btn--sm mkt-btn--primary"
+                      disabled={!reason.trim()}
+                      onClick={async () => {
+                        setReportErr(null);
+                        const err = await onFlag(listing.id, reason.trim());
+                        if (err) setReportErr(err);
+                        else { setReporting(false); setReported(true); }
+                      }}
+                    >
+                      Submit report
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button className={`mkt-linkBtn ${styles.reportLink}`} onClick={() => setReporting(true)}>
+                  Report listing
+                </button>
+              )}
+            </div>
+          )}
+
+          {partners && partners.length > 0 && (
+            <div className={styles.modalPartners}>
+              <p className="mkt-label">Compare elsewhere</p>
+              <div className={styles.partnerLinks}>
+                {partners.map(p => (
+                  <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer"
+                     className="mkt-btn mkt-btn--sm">
+                    {p.name}
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 17 17 7M9 7h8v8" />
+                    </svg>
+                  </a>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -355,39 +476,92 @@ function ListingDetailModal({ listing, partners, onClose, onPatch, onDelete, isM
   );
 }
 
-/* ── Pagination control ────────────────────────────────────────────── */
+/* ── Pagination ─────────────────────────────────────────────────────── */
 function Pagination({ page, hasMore, onPrev, onNext }) {
   if (page <= 1 && !hasMore) return null;
   return (
     <div className={styles.pagination}>
-      <button className={styles.pageBtn} disabled={page <= 1} onClick={onPrev}>
-        ← Previous
+      <button className="mkt-btn mkt-btn--sm" disabled={page <= 1} onClick={onPrev}>
+        Previous
       </button>
       <span className={styles.pageLabel}>Page {page}</span>
-      <button className={styles.pageBtn} disabled={!hasMore} onClick={onNext}>
-        Next →
+      <button className="mkt-btn mkt-btn--sm" disabled={!hasMore} onClick={onNext}>
+        Next
       </button>
     </div>
   );
 }
 
+/* ── Partner strip ──────────────────────────────────────────────────── */
+function PartnerStrip() {
+  const [query, setQuery] = useState('');
+  const term = query.trim();
+  const enc  = encodeURIComponent(term);
+
+  return (
+    <section className={styles.partnerStrip}>
+      <div className={styles.partnerCopy}>
+        <p className="mkt-label">Can’t find it here?</p>
+        <p className={styles.partnerText}>
+          Run the same part number across the partner marketplaces.
+        </p>
+      </div>
+      <div className={styles.partnerControls}>
+        <input
+          className={`mkt-field ${styles.partnerInput}`}
+          placeholder="e.g. Cisco WS-C3850-48T"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search partner marketplaces"
+        />
+        <div className={styles.partnerLinks}>
+          {PARTNER_SITES.map(site => (
+            <a
+              key={site.name}
+              className={`mkt-btn mkt-btn--sm ${!term ? styles.partnerDisabled : ''}`}
+              href={term ? site.url(enc) : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-disabled={!term}
+              tabIndex={term ? 0 : -1}
+              onClick={(e) => { if (!term) e.preventDefault(); }}
+            >
+              {site.name}
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════ */
 export default function MarketplacePage() {
   const navigate = useNavigate();
   const { isAuthed } = useAuth();
   const [params, setParams] = useSearchParams();
 
-  const initialTab = params.get('tab') === 'mine' ? 'mine' : 'browse';
-  const [tab, setTab]             = useState(initialTab);
-  const [kind, setKind]           = useState(params.get('kind') === 'want' ? 'want' : 'sell');
-  const [q, setQ]                 = useState(params.get('q') || '');
-  const [category, setCategory]   = useState(params.get('category') || '');
-  const [page, setPage]           = useState(parseInt(params.get('page'), 10) || 1);
-  const [listings, setListings]   = useState([]);
-  const [hasMore, setHasMore]     = useState(false);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState(null);
-  const [detail, setDetail]       = useState(null);   // {listing, partners}
-  const [partnerQuery, setPartnerQuery] = useState('');
+  // The shell nav owns Browse / My listings, so the tab is read from the
+  // URL rather than held here — otherwise the two would drift apart.
+  const tab = params.get('tab') === 'mine' ? 'mine' : 'browse';
+
+  const [kind, setKind]         = useState(params.get('kind') === 'want' ? 'want' : 'sell');
+  const [q, setQ]               = useState(params.get('q') || '');
+  const [category, setCategory] = useState(params.get('category') || '');
+  const [page, setPage]         = useState(parseInt(params.get('page'), 10) || 1);
+  const [listings, setListings] = useState([]);
+  const [hasMore, setHasMore]   = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+  const [detail, setDetail]     = useState(null);
+
+  // Typing used to fire one request per keystroke; hold the query for a
+  // beat so a part number is one search, not fourteen.
+  const [debouncedQ, setDebouncedQ] = useState(q);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -399,18 +573,26 @@ export default function MarketplacePage() {
       } else {
         const usp = new URLSearchParams();
         usp.set('kind', kind);
-        usp.set('limit', String(PAGE_SIZE));
+        // Ask for one more than we show: if it comes back, there really
+        // is a next page. Inferring it from a full page left Next live
+        // on the last page.
+        usp.set('limit', String(PAGE_SIZE + 1));
         usp.set('page', String(page));
-        if (category) usp.set('category', category);
-        if (q)        usp.set('q', q);
+        if (category)   usp.set('category', category);
+        if (debouncedQ) usp.set('q', debouncedQ);
         url = apiUrl('/api/marketplace/listings?' + usp.toString());
       }
       const res  = await authFetch(url);
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      const items = data.listings || [];
-      setListings(items);
-      setHasMore(tab !== 'mine' && items.length >= PAGE_SIZE);
+      const all = data.listings || [];
+      if (tab === 'mine') {
+        setListings(all);
+        setHasMore(false);
+      } else {
+        setListings(all.slice(0, PAGE_SIZE));
+        setHasMore(all.length > PAGE_SIZE);
+      }
     } catch (err) {
       setError(err.message);
       setListings([]);
@@ -418,23 +600,33 @@ export default function MarketplacePage() {
     } finally {
       setLoading(false);
     }
-  }, [tab, kind, q, category, page]);
+  }, [tab, kind, debouncedQ, category, page]);
 
   useEffect(() => { fetchListings(); }, [fetchListings]);
 
-  // Reset page to 1 when filters change
-  useEffect(() => { setPage(1); }, [tab, kind, q, category]);
+  // Reset to page 1 when the filters change — but not on first render,
+  // or a bookmarked ?page=3 would be thrown away before it loaded.
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) { firstRun.current = false; return; }
+    setPage(1);
+  }, [tab, kind, debouncedQ, category]);
 
-  // Reflect filter state into the URL so bookmarks / Back work.
+  // Reflect filter state into the URL so bookmarks and Back work.
   useEffect(() => {
     const usp = new URLSearchParams();
-    if (tab === 'mine') usp.set('tab', 'mine');
+    if (tab === 'mine')  usp.set('tab', 'mine');
     if (kind === 'want') usp.set('kind', 'want');
-    if (q)        usp.set('q', q);
-    if (category) usp.set('category', category);
-    if (page > 1) usp.set('page', String(page));
+    if (q)         usp.set('q', q);
+    if (category)  usp.set('category', category);
+    if (page > 1)  usp.set('page', String(page));
     setParams(usp, { replace: true });
   }, [tab, kind, q, category, page, setParams]);
+
+  const requireAuthThen = (to) => {
+    if (!isAuthed) { navigate('/login', { state: { from: to } }); return; }
+    navigate(to);
+  };
 
   const openDetail = async (listing) => {
     try {
@@ -443,7 +635,7 @@ export default function MarketplacePage() {
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setDetail({ listing: data.listing, partners: data.partners });
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     }
   };
 
@@ -459,7 +651,7 @@ export default function MarketplacePage() {
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setDetail({ listing: data.listing, partners: detail.partners });
       fetchListings();
-    } catch (err) { alert(err.message); }
+    } catch (err) { setError(err.message); }
   };
 
   const deleteDetail = async () => {
@@ -472,10 +664,9 @@ export default function MarketplacePage() {
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setDetail(null);
       fetchListings();
-    } catch (err) { alert(err.message); }
+    } catch (err) { setError(err.message); }
   };
 
-  // Inline patch / delete from My Listings cards (no modal needed)
   const patchListingInline = async (id, patch) => {
     try {
       const res = await authFetch(apiUrl(`/api/marketplace/listings/${id}`), {
@@ -486,170 +677,168 @@ export default function MarketplacePage() {
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       fetchListings();
-    } catch (err) { alert(err.message); }
+    } catch (err) { setError(err.message); }
   };
 
   const deleteListingInline = async (id) => {
     try {
-      const res = await authFetch(apiUrl(`/api/marketplace/listings/${id}`), {
-        method: 'DELETE',
-      });
+      const res = await authFetch(apiUrl(`/api/marketplace/listings/${id}`), { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       fetchListings();
-    } catch (err) { alert(err.message); }
+    } catch (err) { setError(err.message); }
   };
 
-  const partnerLinks = useMemo(() => {
-    const term = partnerQuery.trim();
-    if (!term) return [];
-    const enc = encodeURIComponent(term);
-    return [
-      { name: 'eBay',      url: `https://www.ebay.com/sch/i.html?_nkw=${enc}` },
-      { name: 'Amazon',    url: `https://www.amazon.com/s?k=${enc}` },
-      { name: 'FS.com',    url: `https://www.fs.com/search.html?keyword=${enc}` },
-      { name: 'Curvature', url: `https://www.curvature.com/search?keyword=${enc}` },
-    ];
-  }, [partnerQuery]);
-
-  const onSubmitNew = () => {
-    if (!isAuthed) {
-      navigate('/login', { state: { from: '/marketplace/new' } });
-      return;
-    }
-    navigate('/marketplace/new');
+  // Resolves to null on success, or the message to show inside the modal.
+  const flagListing = async (id, reason) => {
+    try {
+      const res = await authFetch(apiUrl(`/api/marketplace/listings/${id}/flag`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to report listing');
+      return null;
+    } catch (err) { return err.message || 'Failed to report listing'; }
   };
+
+  const hasFilters = Boolean(q || category);
+  const clearFilters = () => { setQ(''); setCategory(''); };
+
+  const countLabel = useMemo(() => {
+    if (loading) return 'Loading…';
+    const n = listings.length;
+    if (tab === 'mine') return `${n} listing${n === 1 ? '' : 's'}`;
+    const noun = kind === 'want' ? 'request' : 'listing';
+    const more = hasMore ? '+' : '';
+    return `${n}${more} ${noun}${n === 1 && !more ? '' : 's'}`;
+  }, [loading, listings.length, tab, kind, hasMore]);
 
   return (
-    <div className={`page page-full ${styles.page}`}>
-      {/* ─── Header band ──────────────────────────────────────────── */}
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/')} aria-label="Back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
-        <h1 className={styles.title}>Marketplace</h1>
-        <ThemeToggle />
-      </header>
-      <p className={styles.intro}>
-        Buy, sell, or swap surplus networking and data-center gear. List
-        directly here, or jump out to partner marketplaces with a
-        pre-filled search.
-      </p>
-
-      {/* ─── Quick partner search ─────────────────────────────────── */}
-      <section className={styles.partnerCard}>
-        <div className={styles.partnerHead}>
-          <span className={styles.partnerLabel}>Search partner marketplaces</span>
-          <span className={styles.partnerHint}>eBay · Amazon · FS.com · Curvature</span>
+    <MarketplaceShell
+      title="Marketplace"
+      subtitle="Buy, sell and swap surplus network and data-center gear"
+    >
+      {error && (
+        <div className="mkt-banner mkt-banner--error" role="alert">
+          <span>{error}</span>
+          <button className="mkt-linkBtn" onClick={() => setError(null)}>Dismiss</button>
         </div>
-        <div className={styles.partnerSearchRow}>
-          <input
-            className={styles.partnerInput}
-            placeholder="e.g. Cisco WS-C3850-48T"
-            value={partnerQuery}
-            onChange={(e) => setPartnerQuery(e.target.value)}
-          />
-          <button
-            type="button"
-            className={styles.btnPrimary}
-            disabled={!partnerQuery.trim()}
-            onClick={() => {
-              if (partnerLinks[0]) window.open(partnerLinks[0].url, '_blank', 'noopener');
-            }}>
-            Search eBay ↗
-          </button>
-        </div>
-        {partnerLinks.length > 0 && (
-          <div className={styles.partnerRow}>
-            {partnerLinks.slice(1).map(p => (
-              <a key={p.name} href={p.url} target="_blank" rel="noopener noreferrer"
-                 className={styles.partnerBtnSm}>{p.name} ↗</a>
-            ))}
-          </div>
-        )}
-      </section>
+      )}
 
-      {/* ─── Tabs + Sell button ───────────────────────────────────── */}
-      <div className={styles.toolbar}>
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${tab === 'browse' ? styles.tabActive : ''}`}
-            onClick={() => setTab('browse')}>
-            Browse
-          </button>
-          <button
-            className={`${styles.tab} ${tab === 'mine' ? styles.tabActive : ''}`}
-            onClick={() => setTab('mine')}
-            disabled={!isAuthed}
-            title={isAuthed ? '' : 'Sign in to see your listings'}>
-            My listings
-          </button>
-        </div>
-        <button className={styles.btnPrimary} onClick={onSubmitNew}>
-          + Sell something
-        </button>
-      </div>
-
-      {/* ─── Filters (browse tab only) ────────────────────────────── */}
+      {/* ── One toolbar: search, category, kind, count ───────────────── */}
       {tab === 'browse' && (
-        <div className={styles.filters}>
-          <input
-            className={styles.searchInput}
-            placeholder="Search title, vendor, model…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+        <section className={styles.toolbar}>
+          <div className={styles.searchWrap}>
+            <svg className={styles.searchIcon} width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              className={`mkt-field ${styles.searchInput}`}
+              placeholder="Search by title, vendor or model…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              aria-label="Search listings"
+            />
+            {q && (
+              <button className={styles.searchClear} onClick={() => setQ('')} aria-label="Clear search">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
           <select
-            className={styles.select}
+            className={`mkt-field ${styles.categorySelect}`}
             value={category}
-            onChange={(e) => setCategory(e.target.value)}>
+            onChange={(e) => setCategory(e.target.value)}
+            aria-label="Filter by category"
+          >
             <option value="">All categories</option>
             {Object.entries(CATEGORY_LABEL).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
-          <div className={styles.kindToggle}>
+
+          <div className="mkt-segmented" role="group" aria-label="Listing kind">
             <button
-              className={`${styles.kindBtn} ${kind === 'sell' ? styles.kindActive : ''}`}
-              onClick={() => setKind('sell')}>For sale</button>
+              className="mkt-segment"
+              aria-pressed={kind === 'sell'}
+              onClick={() => setKind('sell')}
+            >
+              For sale
+            </button>
             <button
-              className={`${styles.kindBtn} ${kind === 'want' ? styles.kindActive : ''}`}
-              onClick={() => setKind('want')}>Wanted</button>
+              className="mkt-segment"
+              aria-pressed={kind === 'want'}
+              onClick={() => setKind('want')}
+            >
+              Wanted
+            </button>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* ─── Listings ──────────────────────────────────────────────── */}
-      <section className={styles.gridWrap}>
-        {error && <div className={styles.errBanner}>{error}</div>}
-        {loading && <div className={styles.empty}><span className={styles.spinner}/></div>}
-        {!loading && !error && listings.length === 0 && (
-          <div className={styles.empty}>
-            <p className={styles.emptyText}>
+      {/* ── Results ──────────────────────────────────────────────────── */}
+      <section className={styles.results}>
+        <div className="mkt-sectionHead">
+          <h2 className="mkt-sectionTitle">
+            {tab === 'mine' ? 'My listings' : kind === 'want' ? 'Wanted' : 'For sale'}
+            <span className={styles.count}>{countLabel}</span>
+          </h2>
+          {tab === 'browse' && hasFilters && (
+            <button className="mkt-linkBtn" onClick={clearFilters}>Clear filters</button>
+          )}
+        </div>
+
+        {loading && (
+          <div className={styles.loading}><span className="mkt-spinner" /></div>
+        )}
+
+        {!loading && listings.length === 0 && (
+          <div className="mkt-empty">
+            <CategoryIcon category="other" size={40} className="mkt-empty__icon" />
+            <p className="mkt-empty__title">
               {tab === 'mine'
-                ? 'You have no listings yet.'
-                : kind === 'want'
-                  ? 'No wanted-listings yet — be the first to post what you need.'
-                  : 'No listings match those filters.'}
+                ? 'You haven’t listed anything yet'
+                : hasFilters
+                  ? 'Nothing matches those filters'
+                  : kind === 'want'
+                    ? 'No open requests'
+                    : 'No listings yet'}
             </p>
-            <button className={styles.btnPrimary} onClick={onSubmitNew}>
-              {kind === 'want' ? 'Post a want' : 'List the first item'}
-            </button>
+            <p className="mkt-empty__text">
+              {tab === 'mine'
+                ? 'List surplus gear from a scan or add it manually — it takes about a minute.'
+                : hasFilters
+                  ? 'Try a broader search, or clear the filters to see everything on offer.'
+                  : kind === 'want'
+                    ? 'Post what you’re looking for and sellers can respond directly.'
+                    : 'Be the first to list surplus gear for your organization.'}
+            </p>
+            {hasFilters
+              ? <button className="mkt-btn" onClick={clearFilters}>Clear filters</button>
+              : <button className="mkt-btn mkt-btn--primary"
+                        onClick={() => requireAuthThen('/marketplace/new')}>
+                  {kind === 'want' && tab === 'browse' ? 'Post a request' : 'List an item'}
+                </button>}
           </div>
         )}
 
-        {/* Browse tab → card grid + pagination */}
         {!loading && listings.length > 0 && tab === 'browse' && (
           <>
             <div className={styles.grid}>
               {listings.map(l => (
-                <ListingCard key={l.id} listing={l} onOpen={openDetail} onBuy={(id) => {
-                  if (!isAuthed) { navigate('/login', { state: { from: `/marketplace/checkout/${id}` } }); return; }
-                  navigate(`/marketplace/checkout/${id}`);
-                }} />
+                <ListingCard
+                  key={l.id}
+                  listing={l}
+                  onOpen={openDetail}
+                  onBuy={(id) => requireAuthThen(`/marketplace/checkout/${id}`)}
+                />
               ))}
             </div>
             <Pagination
@@ -661,11 +850,10 @@ export default function MarketplacePage() {
           </>
         )}
 
-        {/* Mine tab → list with inline Edit / Mark Sold / Delete */}
         {!loading && listings.length > 0 && tab === 'mine' && (
-          <div className={styles.mineList}>
+          <div className={styles.rows}>
             {listings.map(l => (
-              <MyListingCard
+              <MyListingRow
                 key={l.id}
                 listing={l}
                 onOpen={openDetail}
@@ -678,6 +866,8 @@ export default function MarketplacePage() {
         )}
       </section>
 
+      {tab === 'browse' && <PartnerStrip />}
+
       <ListingDetailModal
         listing={detail?.listing}
         partners={detail?.partners}
@@ -685,25 +875,9 @@ export default function MarketplacePage() {
         onClose={() => setDetail(null)}
         onPatch={patchDetail}
         onDelete={deleteDetail}
-        onBuy={(id) => {
-          if (!isAuthed) { navigate('/login', { state: { from: `/marketplace/checkout/${id}` } }); return; }
-          navigate(`/marketplace/checkout/${id}`);
-        }}
-        onFlag={async (id) => {
-          const reason = prompt('Why are you reporting this listing?');
-          if (!reason) return;
-          try {
-            const res = await authFetch(apiUrl(`/api/marketplace/listings/${id}/flag`), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reason }),
-            });
-            const data = await res.json();
-            if (!res.ok || !data.ok) throw new Error(data.error || 'Failed');
-            alert('Listing reported. An admin will review it.');
-          } catch (err) { alert(err.message); }
-        }}
+        onBuy={(id) => requireAuthThen(`/marketplace/checkout/${id}`)}
+        onFlag={flagListing}
       />
-    </div>
+    </MarketplaceShell>
   );
 }

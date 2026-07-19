@@ -3,6 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import styles from './MarketplaceAlertsPage.module.css';
 import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext.jsx';
+import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
+
+/* ──────────────────────────────────────────────────────────────────────
+   MarketplaceAlertsPage — saved-search matches and the searches
+   themselves.
+
+   The old page announced an unread alert with an indigo badge, a
+   periwinkle card, a blue eyebrow and a blue link — four shades to say
+   one thing. Unread is now a single ink dot on a slightly raised row,
+   which is legible without turning the list into a colour chart, and
+   leaves the coloured pill vocabulary free for genuine status.
+
+   The two sections are deliberately ordered matches-then-searches: the
+   reason to open this page is almost always "what came in", not "what
+   am I watching".
+   ────────────────────────────────────────────────────────────────────── */
 
 const CATEGORY_LABEL = {
   cable: 'Cables', switch: 'Switches', router: 'Routers', rack: 'Racks',
@@ -33,6 +49,107 @@ function formatCurrency(cents, currency = 'USD') {
   } catch { return `${currency} ${(cents / 100).toFixed(0)}`; }
 }
 
+function CloseIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+/* ── Alert row ───────────────────────────────────────────────────────
+   Unread carries a raised background plus one ink dot. No colour: the
+   row already differs from its neighbours by tone, and a coloured
+   highlight would outrank the status pills elsewhere in the section. */
+function AlertRow({ alert, onView, onDismiss }) {
+  const { listing } = alert;
+  return (
+    <div className={`${styles.alert} ${alert.read ? '' : styles.alertUnread}`}>
+      <span className={styles.alertDot} aria-hidden={alert.read ? 'true' : undefined}>
+        {!alert.read && <span className={styles.alertDotMark} />}
+      </span>
+
+      <div className={styles.alertMain}>
+        <p className="mkt-label">
+          New match · {alert.searchLabel}
+          {!alert.read && <span className={styles.srOnly}> (unread)</span>}
+        </p>
+        <h3 className={styles.alertTitle}>{listing.title}</h3>
+        <p className={styles.alertMeta}>
+          {[
+            CATEGORY_LABEL[listing.category] || listing.category,
+            listing.condition,
+            formatCurrency(listing.priceCents, listing.currency),
+            listing.sellerUsername && `@${listing.sellerUsername}`,
+            formatRelative(alert.createdAt),
+          ].filter(Boolean).join(' · ')}
+        </p>
+      </div>
+
+      <div className={styles.alertActions}>
+        <button className="mkt-btn mkt-btn--sm" onClick={onView}>View</button>
+        <button
+          className={`mkt-btn mkt-btn--sm ${styles.iconBtn}`}
+          onClick={onDismiss}
+          aria-label={`Dismiss alert for ${listing.title}`}
+        >
+          <CloseIcon />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Saved-search row ────────────────────────────────────────────────
+   The filters are the content here, so they render as pills rather than
+   as a run-on sentence — a user scanning six saved searches is looking
+   for one facet, not reading prose. */
+function SavedSearchRow({ search, confirming, onConfirm, onCancel, onDelete }) {
+  return (
+    <div className={styles.search}>
+      <div className={styles.searchMain}>
+        <h3 className={styles.searchTitle}>{search.label}</h3>
+        <div className={styles.chips}>
+          {search.query && (
+            /* A keyword is a literal the user typed, so it keeps its own
+               casing instead of being shouted in the pill's uppercase. */
+            <span className={`mkt-pill mkt-pill--neutral ${styles.chipQuery}`}>“{search.query}”</span>
+          )}
+          <span className="mkt-pill mkt-pill--neutral">
+            {search.category ? CATEGORY_LABEL[search.category] || search.category : 'Any category'}
+          </span>
+          <span className="mkt-pill mkt-pill--neutral">
+            {search.kind === 'want' ? 'Wanted' : 'For sale'}
+          </span>
+          {search.maxPrice != null && (
+            <span className="mkt-pill mkt-pill--neutral">Under ${search.maxPrice}</span>
+          )}
+        </div>
+      </div>
+
+      {confirming ? (
+        <div className={styles.searchConfirm}>
+          <span className={styles.confirmText}>Stop alerts and delete?</span>
+          <button className="mkt-btn mkt-btn--sm" onClick={onCancel}>Cancel</button>
+          <button className="mkt-btn mkt-btn--sm mkt-btn--danger" onClick={onDelete}>
+            Yes, delete
+          </button>
+        </div>
+      ) : (
+        <button
+          className={`mkt-btn mkt-btn--sm mkt-btn--danger ${styles.iconBtn}`}
+          onClick={onConfirm}
+          aria-label={`Delete saved search ${search.label}`}
+        >
+          <CloseIcon />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════ */
 export default function MarketplaceAlertsPage() {
   const navigate = useNavigate();
   const { isAuthed } = useAuth();
@@ -41,6 +158,8 @@ export default function MarketplaceAlertsPage() {
   const [searches, setSearches]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showNew, setShowNew]     = useState(false);
+  // Replaces confirm() on delete — holds the id awaiting confirmation.
+  const [confirmId, setConfirmId] = useState(null);
 
   // New search form
   const [label, setLabel]         = useState('');
@@ -83,10 +202,10 @@ export default function MarketplaceAlertsPage() {
   };
 
   const deleteSavedSearch = async (id) => {
-    if (!confirm('Delete this saved search? You will stop receiving alerts for it.')) return;
     await authFetch(apiUrl(`/api/marketplace/saved-searches/${id}`), { method: 'DELETE' });
     setSearches(prev => prev.filter(s => s.id !== id));
     setAlerts(prev => prev.filter(a => a.searchLabel !== searches.find(s => s.id === id)?.label));
+    setConfirmId(null);
   };
 
   const saveSearch = async (e) => {
@@ -117,138 +236,202 @@ export default function MarketplaceAlertsPage() {
   const unreadCount = alerts.filter(a => !a.read).length;
 
   return (
-    <div className={`page page-full ${styles.page}`}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/marketplace')} aria-label="Back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
-        <h1 className={styles.title}>
-          Alerts
-          {unreadCount > 0 && <span className={styles.unreadBadge}>{unreadCount} new</span>}
-        </h1>
-        {unreadCount > 0 && (
-          <button className={styles.markReadBtn} onClick={markAllRead}>Mark all read</button>
-        )}
-      </header>
-
-      {loading && <div className={styles.center}><span className={styles.spinner}/></div>}
+    <MarketplaceShell
+      title="Alerts"
+      subtitle="Saved searches and matches"
+      action={null}
+      backTo="/marketplace"
+    >
+      {loading && <div className={styles.loading}><span className="mkt-spinner" /></div>}
 
       {!loading && (
         <>
-          {/* Alerts */}
-          <div className={styles.section}>
+          {/* ── Matches ────────────────────────────────────────────── */}
+          <section>
+            <div className="mkt-sectionHead">
+              <h2 className="mkt-sectionTitle">
+                Matches
+                {unreadCount > 0 && (
+                  <span className={styles.unreadCount}>{unreadCount} new</span>
+                )}
+              </h2>
+              {unreadCount > 0 && (
+                <button className="mkt-linkBtn" onClick={markAllRead}>Mark all read</button>
+              )}
+            </div>
+
             {alerts.length === 0 ? (
-              <div className={styles.empty}>
-                <p>No alerts yet. Save a search below and you'll be notified when new listings match.</p>
+              <div className="mkt-empty">
+                <svg className="mkt-empty__icon" width="40" height="40" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" strokeWidth="1.5"
+                     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18 8.5a6 6 0 1 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14.5 18 8.5" />
+                  <path d="M13.7 20a2 2 0 0 1-3.4 0" />
+                </svg>
+                <p className="mkt-empty__title">No matches yet</p>
+                <p className="mkt-empty__text">
+                  Save a search below and every new listing that fits it lands here —
+                  usually within a few minutes of being posted.
+                </p>
               </div>
             ) : (
-              <div className={styles.alertList}>
+              <div className={styles.alerts}>
                 {alerts.map(a => (
-                  <div key={a.id} className={`${styles.alertCard} ${a.read ? styles.alertRead : ''}`}>
-                    <div className={styles.alertMain}>
-                      <p className={styles.alertLabel}>New match for "{a.searchLabel}"</p>
-                      <h3 className={styles.alertTitle}>{a.listing.title}</h3>
-                      <p className={styles.alertMeta}>
-                        {CATEGORY_LABEL[a.listing.category] || a.listing.category}
-                        {a.listing.condition && <> · {a.listing.condition}</>}
-                        {' · '}{formatCurrency(a.listing.priceCents, a.listing.currency)}
-                        {a.listing.sellerUsername && <> · @{a.listing.sellerUsername}</>}
-                        {' · '}{formatRelative(a.createdAt)}
-                      </p>
-                    </div>
-                    <div className={styles.alertActions}>
-                      <button className={styles.linkBtn}
-                              onClick={() => navigate(`/marketplace?q=${encodeURIComponent(a.listing.title)}`)}>
-                        View
-                      </button>
-                      <button className={styles.dismissBtn} onClick={() => dismissAlert(a.id)}>×</button>
-                    </div>
-                  </div>
+                  <AlertRow
+                    key={a.id}
+                    alert={a}
+                    onView={() => navigate(`/marketplace?q=${encodeURIComponent(a.listing.title)}`)}
+                    onDismiss={() => dismissAlert(a.id)}
+                  />
                 ))}
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Saved Searches */}
-          <div className={styles.divider} />
-          <div className={styles.section}>
-            <h3 className={styles.sectionLabel}>My Saved Searches</h3>
-            {searches.length === 0 && !showNew && (
-              <p className={styles.emptySmall}>No saved searches yet.</p>
-            )}
-            <div className={styles.searchList}>
-              {searches.map(s => (
-                <div key={s.id} className={styles.searchCard}>
-                  <div className={styles.searchInfo}>
-                    <h4 className={styles.searchLabel}>{s.label}</h4>
-                    <p className={styles.searchMeta}>
-                      {s.category ? CATEGORY_LABEL[s.category] || s.category : 'Any category'}
-                      {' · '}{s.kind === 'want' ? 'Wanted' : 'For Sale'}
-                      {s.maxPrice != null && <> · under ${s.maxPrice}</>}
-                    </p>
-                  </div>
-                  <button className={styles.deleteBtn} onClick={() => deleteSavedSearch(s.id)}>×</button>
-                </div>
-              ))}
+          {/* ── Saved searches ─────────────────────────────────────── */}
+          <section>
+            <div className="mkt-sectionHead">
+              <h2 className="mkt-sectionTitle">
+                Saved searches
+                {searches.length > 0 && (
+                  <span className={styles.unreadCount}>{searches.length}</span>
+                )}
+              </h2>
+              {!showNew && (
+                <button className="mkt-btn mkt-btn--sm" onClick={() => setShowNew(true)}>
+                  New search
+                </button>
+              )}
             </div>
 
-            {showNew ? (
-              <form className={styles.newForm} onSubmit={saveSearch}>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Label *</span>
-                  <input className={styles.input} placeholder='e.g. "Cisco Switch under $2k"'
-                         value={label} onChange={(e) => setLabel(e.target.value)} required />
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Keyword (optional)</span>
-                  <input className={styles.input} placeholder="Cisco, Dell, SFP…"
-                         value={query} onChange={(e) => setQuery(e.target.value)} />
-                </label>
-                <div className={styles.row2}>
-                  <label className={styles.field}>
-                    <span className={styles.fieldLabel}>Category</span>
-                    <select className={styles.input} value={category}
-                            onChange={(e) => setCategory(e.target.value)}>
+            {searches.length === 0 && !showNew && (
+              <div className="mkt-empty">
+                <svg className="mkt-empty__icon" width="40" height="40" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" strokeWidth="1.5"
+                     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+                <p className="mkt-empty__title">Nothing saved yet</p>
+                <p className="mkt-empty__text">
+                  A saved search is a standing order — describe the gear you want once
+                  and we watch every new listing for you.
+                </p>
+                <button className="mkt-btn mkt-btn--primary" onClick={() => setShowNew(true)}>
+                  Save a search
+                </button>
+              </div>
+            )}
+
+            {searches.length > 0 && (
+              <div className={styles.searches}>
+                {searches.map(s => (
+                  <SavedSearchRow
+                    key={s.id}
+                    search={s}
+                    confirming={confirmId === s.id}
+                    onConfirm={() => setConfirmId(s.id)}
+                    onCancel={() => setConfirmId(null)}
+                    onDelete={() => deleteSavedSearch(s.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {showNew && (
+              <form className={`mkt-card mkt-card--pad ${styles.form}`} onSubmit={saveSearch}>
+                <div className="mkt-fieldGroup">
+                  <label className="mkt-label" htmlFor="mkt-search-label">Label *</label>
+                  <input
+                    id="mkt-search-label"
+                    className="mkt-field"
+                    placeholder="e.g. Cisco switch under $2k"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    required
+                  />
+                  <span className="mkt-hint">How this search is named in your alerts.</span>
+                </div>
+
+                <div className="mkt-fieldGroup">
+                  <label className="mkt-label" htmlFor="mkt-search-query">Keyword</label>
+                  <input
+                    id="mkt-search-query"
+                    className="mkt-field"
+                    placeholder="Cisco, Dell, SFP…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.formRow}>
+                  <div className="mkt-fieldGroup">
+                    <label className="mkt-label" htmlFor="mkt-search-category">Category</label>
+                    <select
+                      id="mkt-search-category"
+                      className="mkt-field"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
                       <option value="">Any</option>
                       {Object.entries(CATEGORY_LABEL).map(([k, v]) => (
                         <option key={k} value={k}>{v}</option>
                       ))}
                     </select>
-                  </label>
-                  <label className={styles.field}>
-                    <span className={styles.fieldLabel}>Max price</span>
-                    <input type="number" className={styles.input} placeholder="No limit"
-                           value={maxPrice} min={0} onChange={(e) => setMaxPrice(e.target.value)} />
-                  </label>
+                  </div>
+                  <div className="mkt-fieldGroup">
+                    <label className="mkt-label" htmlFor="mkt-search-price">Max price</label>
+                    <input
+                      id="mkt-search-price"
+                      type="number"
+                      className="mkt-field"
+                      placeholder="No limit"
+                      value={maxPrice}
+                      min={0}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className={styles.kindToggle}>
-                  <button type="button"
-                          className={`${styles.kindBtn} ${kind === 'sell' ? styles.kindActive : ''}`}
-                          onClick={() => setKind('sell')}>For Sale</button>
-                  <button type="button"
-                          className={`${styles.kindBtn} ${kind === 'want' ? styles.kindActive : ''}`}
-                          onClick={() => setKind('want')}>Wanted</button>
+
+                <div className="mkt-fieldGroup">
+                  <span className="mkt-label">Listing kind</span>
+                  <div className="mkt-segmented" role="group" aria-label="Listing kind">
+                    <button
+                      type="button"
+                      className="mkt-segment"
+                      aria-pressed={kind === 'sell'}
+                      onClick={() => setKind('sell')}
+                    >
+                      For sale
+                    </button>
+                    <button
+                      type="button"
+                      className="mkt-segment"
+                      aria-pressed={kind === 'want'}
+                      onClick={() => setKind('want')}
+                    >
+                      Wanted
+                    </button>
+                  </div>
                 </div>
-                {error && <div className={styles.errBanner}>{error}</div>}
+
+                {error && (
+                  <div className="mkt-banner mkt-banner--error" role="alert">{error}</div>
+                )}
+
                 <div className={styles.formActions}>
-                  <button type="button" className={styles.btnSecondary}
-                          onClick={() => setShowNew(false)}>Cancel</button>
-                  <button type="submit" className={styles.btnPrimary} disabled={saving}>
-                    {saving ? 'Saving…' : 'Save Search'}
+                  <button type="button" className="mkt-btn" onClick={() => setShowNew(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="mkt-btn mkt-btn--primary" disabled={saving}>
+                    {saving ? 'Saving…' : 'Save search'}
                   </button>
                 </div>
               </form>
-            ) : (
-              <button className={styles.btnPrimary} onClick={() => setShowNew(true)}>
-                + Save New Search
-              </button>
             )}
-          </div>
+          </section>
         </>
       )}
-    </div>
+    </MarketplaceShell>
   );
 }

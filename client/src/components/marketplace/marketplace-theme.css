@@ -1,0 +1,274 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Marketplace design primitives.
+
+   Imported once, by MarketplaceShell. Every /marketplace/* page composes
+   its layout from these, so a button, an input and a card are the same
+   object on all seven screens. Before this file the section had 86
+   hardcoded hex values across seven stylesheets and no shared vocabulary
+   at all — Edit was blue, Mark Sold was green, Delete was red, Buy Now
+   was indigo and "Post to Amazon" was amber, all on the same card.
+
+   THE RULE OF THIS SECTION: the interface is white, black and one
+   hairline. Colour is reserved for state that a user must not misread —
+   a status dot, a destructive confirm — and never used for decoration.
+   Everything else earns emphasis through weight, size and space.
+
+   These are deliberately global (not CSS-module) classes so the pages
+   share one definition instead of seven copies. The mkt- prefix keeps
+   them out of the rest of the app's namespace.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.mkt-root {
+  /* Surfaces + ink. Fall back to literals so the section still renders
+     correctly if it is ever mounted outside the app's token scope. */
+  --mkt-surface:  var(--md-surface-container-lowest, #ffffff);
+  --mkt-raised:   var(--md-surface-container, #fafafa);
+  --mkt-line:     var(--md-outline-variant, #e0e0e0);
+  --mkt-ink:      var(--md-on-surface, #121417);
+  --mkt-muted:    var(--md-on-surface-variant, #717171);
+
+  /* Semantic — small doses only. */
+  --mkt-pos:      #16a34a;
+  --mkt-warn:     #b45309;
+  --mkt-neg:      #b42318;
+
+  /* Geometry. Three radii, no more. */
+  --mkt-r-sm:     8px;
+  --mkt-r-md:     12px;
+  --mkt-r-lg:     16px;
+
+  --mkt-gap:      16px;
+  --mkt-maxw:     1180px;
+
+  --mkt-t:        border-color .14s ease, background-color .14s ease, color .14s ease;
+}
+
+/* ── Type scale ──────────────────────────────────────────────────────
+   Four steps. Labels are the small uppercase key, meta is secondary
+   text, body is readable copy, and only headings go large. */
+.mkt-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--mkt-muted);
+}
+.mkt-meta  { font-size: 12px; color: var(--mkt-muted); line-height: 1.45; }
+.mkt-body  { font-size: 13.5px; color: var(--mkt-ink); line-height: 1.55; }
+.mkt-mono  {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────
+   One shape. Secondary is the default (hairline on white); primary is
+   the same object filled with ink. Destructive actions stay neutral
+   until hover so a delete never shouts from a resting card. */
+.mkt-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; padding: 0 14px;
+  border-radius: var(--mkt-r-sm);
+  border: 1px solid var(--mkt-line);
+  background: var(--mkt-surface);
+  color: var(--mkt-ink);
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  white-space: nowrap; cursor: pointer; text-decoration: none;
+  transition: var(--mkt-t);
+}
+.mkt-btn:hover:not(:disabled) { border-color: var(--mkt-ink); background: var(--mkt-raised); }
+.mkt-btn:focus-visible { outline: 2px solid var(--mkt-ink); outline-offset: 2px; }
+.mkt-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.mkt-btn--primary {
+  background: var(--mkt-ink);
+  border-color: var(--mkt-ink);
+  color: var(--md-on-primary, #ffffff);
+}
+.mkt-btn--primary:hover:not(:disabled) {
+  background: #000000; border-color: #000000;
+  color: var(--md-on-primary, #ffffff);
+}
+
+.mkt-btn--danger:hover:not(:disabled) {
+  border-color: var(--mkt-neg); color: var(--mkt-neg);
+  background: var(--mkt-surface);
+}
+
+.mkt-btn--sm    { height: 28px; padding: 0 10px; font-size: 11.5px; }
+.mkt-btn--block { width: 100%; }
+.mkt-btn--tall  { height: 42px; font-size: 13.5px; }
+
+/* Quiet text button — for tertiary actions like "Report listing". */
+.mkt-linkBtn {
+  background: none; border: none; padding: 0;
+  font: inherit; font-size: 12px; font-weight: 500;
+  color: var(--mkt-muted); cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+  transition: color .14s ease;
+}
+.mkt-linkBtn:hover { color: var(--mkt-ink); }
+
+/* ── Fields ──────────────────────────────────────────────────────────
+   Inputs read as hairline wells; focus is a black border, never a glow. */
+.mkt-field {
+  width: 100%; height: 38px; padding: 0 12px;
+  border-radius: var(--mkt-r-sm);
+  border: 1px solid var(--mkt-line);
+  background: var(--mkt-surface);
+  color: var(--mkt-ink);
+  font: inherit; font-size: 13.5px;
+  transition: var(--mkt-t);
+}
+.mkt-field::placeholder { color: var(--mkt-muted); opacity: 0.8; }
+.mkt-field:hover  { border-color: color-mix(in srgb, var(--mkt-ink) 30%, var(--mkt-line)); }
+.mkt-field:focus  { outline: none; border-color: var(--mkt-ink); }
+textarea.mkt-field { height: auto; min-height: 96px; padding: 10px 12px; line-height: 1.55; resize: vertical; }
+select.mkt-field {
+  appearance: none; cursor: pointer; padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23717171' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center;
+}
+
+.mkt-fieldGroup { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mkt-hint { font-size: 11.5px; color: var(--mkt-muted); line-height: 1.45; }
+
+/* ── Surfaces ────────────────────────────────────────────────────────
+   One card. Hover darkens the hairline to ink — the whole interaction
+   vocabulary of this section, used identically on every clickable
+   surface, replacing the old translateY lift. */
+.mkt-card {
+  border: 1px solid var(--mkt-line);
+  border-radius: var(--mkt-r-md);
+  background: var(--mkt-surface);
+  color: var(--mkt-ink);
+}
+.mkt-card--pad  { padding: 16px; }
+.mkt-card--hover { transition: var(--mkt-t); }
+.mkt-card--hover:hover { border-color: var(--mkt-ink); }
+
+/* Section header — a title with an optional right-aligned control. */
+.mkt-sectionHead {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.mkt-sectionTitle {
+  margin: 0; font-size: 14px; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--mkt-ink);
+}
+
+/* ── Pills ───────────────────────────────────────────────────────────
+   Status reads through a dot, not a filled colour block. */
+.mkt-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 22px; padding: 0 9px; border-radius: 999px;
+  border: 1px solid var(--mkt-line);
+  background: var(--mkt-surface);
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; white-space: nowrap; color: var(--mkt-ink);
+}
+.mkt-pill__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.mkt-pill--active   { color: var(--mkt-pos); }
+.mkt-pill--pending  { color: var(--mkt-warn); }
+.mkt-pill--neutral  { color: var(--mkt-muted); }
+.mkt-pill--negative { color: var(--mkt-neg); }
+/* Solid variant, for badges that sit on top of imagery. */
+.mkt-pill--solid {
+  background: var(--mkt-ink); border-color: var(--mkt-ink);
+  color: var(--md-on-primary, #ffffff);
+}
+
+/* ── Segmented control ───────────────────────────────────────────────
+   Replaces the pill-in-pill toggles. The selected segment is filled
+   with ink, so the state is unmistakable at a glance. */
+.mkt-segmented {
+  display: inline-flex; padding: 3px; gap: 3px;
+  border: 1px solid var(--mkt-line);
+  border-radius: var(--mkt-r-sm);
+  background: var(--mkt-surface);
+}
+.mkt-segment {
+  height: 30px; padding: 0 14px;
+  border: none; border-radius: 6px; background: transparent;
+  color: var(--mkt-muted);
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  transition: var(--mkt-t);
+}
+.mkt-segment:hover:not(:disabled) { color: var(--mkt-ink); }
+.mkt-segment[aria-pressed='true'] {
+  background: var(--mkt-ink); color: var(--md-on-primary, #ffffff);
+}
+.mkt-segment:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Feedback ────────────────────────────────────────────────────────  */
+.mkt-banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 14px; border-radius: var(--mkt-r-sm);
+  border: 1px solid var(--mkt-line);
+  background: var(--mkt-surface);
+  font-size: 12.5px; line-height: 1.5; color: var(--mkt-ink);
+}
+.mkt-banner--error   { border-color: rgba(180, 35, 24, 0.35); color: var(--mkt-neg); }
+.mkt-banner--success { border-color: rgba(22, 163, 74, 0.35); color: var(--mkt-pos); }
+
+.mkt-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 56px 24px; text-align: center;
+  border: 1px dashed var(--mkt-line);
+  border-radius: var(--mkt-r-md);
+  background: var(--mkt-surface);
+}
+.mkt-empty__icon  { color: var(--mkt-ink); opacity: 0.18; }
+.mkt-empty__title { margin: 0; font-size: 14px; font-weight: 700; color: var(--mkt-ink); }
+.mkt-empty__text  { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--mkt-muted); max-width: 42ch; }
+
+.mkt-spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--mkt-line);
+  border-top-color: var(--mkt-ink);
+  animation: mkt-spin 0.8s linear infinite;
+}
+@keyframes mkt-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .mkt-spinner { animation-duration: 2.4s; }
+  .mkt-btn, .mkt-field, .mkt-card--hover, .mkt-segment { transition: none; }
+}
+
+/* ── Definition rows ─────────────────────────────────────────────────
+   Hairline-separated key/value grid, used by checkout, orders and the
+   listing detail.
+
+   Separators are drawn by each cell's own top/left border pulled back
+   1px, NOT by the "1px gap over a coloured container" trick. That trick
+   paints any cell the content doesn't reach — an odd number of facts in
+   a two-column grid, which the listing detail produces routinely — as a
+   solid grey block. Here an unfilled cell is simply white. */
+.mkt-facts {
+  display: grid;
+  background: var(--mkt-surface);
+  border: 1px solid var(--mkt-line);
+  border-radius: var(--mkt-r-md);
+  overflow: hidden;
+}
+.mkt-facts--2 { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.mkt-fact {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 11px 14px; min-width: 0;
+  background: var(--mkt-surface);
+  border-top: 1px solid var(--mkt-line);
+  border-inline-start: 1px solid var(--mkt-line);
+  margin-top: -1px;
+  margin-inline-start: -1px;
+}
+.mkt-fact__key { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--mkt-muted); }
+.mkt-fact__val { font-size: 13px; font-weight: 600; color: var(--mkt-ink); overflow-wrap: anywhere; }
+
+/* A single-column key→value row, right-aligned value (totals, receipts). */
+.mkt-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 9px 0; font-size: 13px;
+  border-bottom: 1px solid var(--mkt-line);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-row__key { color: var(--mkt-muted); }
+.mkt-row__val { font-weight: 600; color: var(--mkt-ink); text-align: right; overflow-wrap: anywhere; }
+.mkt-row--total { padding-top: 13px; font-size: 15px; }
+.mkt-row--total .mkt-row__key { color: var(--mkt-ink); font-weight: 600; }
+.mkt-row--total .mkt-row__val { font-weight: 700; font-size: 18px; }

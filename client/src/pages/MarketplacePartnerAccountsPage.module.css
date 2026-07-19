@@ -1,106 +1,85 @@
-.page {
-  position: relative;
-  display: flex; flex-direction: column;
-  gap: 14px;
-  min-height: 100dvh;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
-  background: #ffffff;
-}
-.header {
-  display: flex; align-items: center; gap: 10px;
-  padding: max(20px, calc(env(safe-area-inset-top, 0px) + 16px)) 16px 6px;
-}
-.backBtn {
-  width: 38px; height: 38px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%; background: rgba(0,0,0,0.10);
-  border: 1px solid rgba(0,0,0,0.18); color: var(--text); cursor: pointer;
-}
-.backBtn:hover { background: rgba(0,0,0,0.18); }
-.title {
-  flex: 1; margin: 0; font-size: 1.25rem; font-weight: 700;
-  letter-spacing: -0.02em; color: var(--text);
-}
-.intro {
-  margin: 0 16px; font-size: .9rem;
-  line-height: 1.5; color: rgba(0,0,0,0.55);
-}
+/* Partner accounts layout.
 
-/* Card list */
-.list { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
-.card {
-  padding: 16px; border-radius: 16px;
-  background: #ffffff; border: 1px solid #f0f0f0;
-  display: flex; flex-direction: column; gap: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
-.cardTop {
-  display: flex; gap: 10px; align-items: center;
-}
-.iconWrap {
-  width: 40px; height: 40px; border-radius: 10px;
+   The card, the pill, the field, the buttons and both banners are theme
+   primitives (marketplace-theme.css). This file only lays the cards out
+   and positions the pieces inside one.
+
+   CORE RULE OF THIS PAGE: the three cards are interchangeable. They are
+   the same width, the same object and the same ink; nothing but the
+   status dot and the body sentence distinguishes eBay from Discord. That
+   is why the actions are pinned to the card foot — a connected Discord
+   card carries two extra rows of detail, and without the pin its buttons
+   would sit a centimetre above its neighbours'. */
+
+.loading {
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.icon { font-size: 1.2rem; }
-.cardInfo { flex: 1; min-width: 0; }
-.cardName { margin: 0; font-size: .95rem; font-weight: 700; color: var(--text); }
-.cardId { margin: 0; font-size: .72rem; color: rgba(0,0,0,0.4); }
-.cardDesc { margin: 0; font-size: .82rem; color: rgba(0,0,0,0.5); line-height: 1.5; }
-.cardMeta { margin: 0; font-size: .75rem; color: rgba(0,0,0,0.45); }
-
-/* Status badge */
-.statusBadge {
-  padding: 4px 10px; border-radius: 999px;
-  font-size: .72rem; font-weight: 700;
-  white-space: nowrap; flex-shrink: 0;
-}
-.connected { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-.disconnected { background: #f7f7f8; color: #555; border: 1px solid #e8e8ea; }
-
-/* Input */
-.input {
-  width: 100%; padding: 9px 12px; border-radius: 10px;
-  background: #ffffff; border: 1px solid #e8e8ea;
-  color: var(--text); font-size: .85rem; font-family: inherit;
-}
-.input:focus { outline: none; border-color: #0b0c0e; }
-
-/* Actions */
-.cardActions { display: flex; gap: 8px; }
-
-/* Buttons */
-.btnPrimary {
-  padding: 9px 14px; border-radius: 10px;
-  background: #0b0c0e; border: 1px solid #0b0c0e;
-  color: white; font-size: .85rem; font-weight: 600;
-  cursor: pointer;
-}
-.btnPrimary:disabled { opacity: .5; cursor: not-allowed; }
-.btnSecondary {
-  padding: 8px 14px; border-radius: 10px;
-  background: #f7f7f8; border: 1px solid #e8e8ea;
-  color: var(--text); font-size: .82rem; font-weight: 600;
-  cursor: pointer;
-}
-.btnSecondary:disabled { opacity: .5; cursor: not-allowed; }
-.btnDanger {
-  padding: 8px 14px; border-radius: 10px;
-  background: #fef2f2; border: 1px solid #fecaca;
-  color: #991b1b; font-size: .82rem; font-weight: 600;
-  cursor: pointer;
-}
-.oauthNote {
-  font-size: .75rem; color: rgba(0,0,0,0.4);
-  align-self: center; font-style: italic;
+  padding: 72px 0;
 }
 
-/* Util */
-.center { display: flex; align-items: center; justify-content: center; padding: 40px; }
-.spinner {
-  width: 26px; height: 26px;
-  border: 2px solid rgba(0,0,0,0.20);
-  border-top-color: rgba(0,0,0,0.85);
-  border-radius: 50%; animation: spin 0.9s linear infinite;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  align-items: stretch;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+
+.card {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+
+/* ── Card head ───────────────────────────────────────────────────────
+   Glyph, name and status on one line. The pill is pushed to the end so
+   connected state is scannable down the right edge of the grid. */
+.cardHead {
+  display: flex; align-items: center; gap: 10px;
+  min-width: 0;
+}
+/* Held back from full ink: it identifies the card, it is not the point
+   of it — the platform name and the status pill are. */
+.glyph { color: var(--mkt-ink, #121417); opacity: 0.55; flex-shrink: 0; }
+
+.cardName {
+  flex: 1; min-width: 0;
+  margin: 0; font-size: 15px; font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--mkt-ink, #121417);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+
+.cardDesc {
+  margin: 0; font-size: 12.5px; line-height: 1.5;
+  color: var(--mkt-muted, #717171);
+}
+
+/* Connected detail rows. A webhook URL is ~120 characters, so the value
+   wraps rather than truncating — a half-shown URL is worse than useless
+   when it is the only way to tell which channel is wired up. */
+.cardFacts {
+  display: flex; flex-direction: column;
+  padding: 0 12px;
+  border: 1px solid var(--mkt-line, #e0e0e0);
+  border-radius: var(--mkt-r-sm, 8px);
+  background: var(--mkt-raised, #fafafa);
+}
+/* :global — .mkt-row__val is a theme class, so the module must be told
+   not to hash it, or this rule would target a name that never renders. */
+.cardFacts :global(.mkt-row__val) { font-size: 12px; overflow-wrap: anywhere; }
+
+/* ── Actions ─────────────────────────────────────────────────────── */
+.cardActions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-top: auto; padding-top: 4px;
+}
+
+.confirmText {
+  flex-basis: 100%;
+  font-size: 12.5px; font-weight: 600;
+  color: var(--mkt-ink, #121417);
+}
+
+.actionNote {
+  font-size: 11.5px; line-height: 1.4;
+  color: var(--mkt-muted, #717171);
+}

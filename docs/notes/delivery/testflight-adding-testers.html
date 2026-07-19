@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RackTrack — Adding TestFlight Testers</title>
+<style>
+:root{
+  --page:#FFFFFF;
+  --panel:#FCFDFD;
+  --ink:#16191D;
+  --ink-2:#4A5560;
+  --ink-3:#78838F;
+  --rule:#E2E6EA;
+  --rule-2:#EEF1F3;
+  --accent:#0E6E78;
+  --accent-bg:#EDF5F6;
+  --ok:#2E6A47;
+  --ok-bg:#EFF6F1;
+  --warn:#8A5D14;
+  --warn-bg:#FAF4E8;
+  --stop:#93382F;
+  --stop-bg:#FAEFED;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;margin:0;}
+.wrap{max-width:58rem;margin:0 auto;padding:3rem clamp(1rem,3vw,2.25rem) 4rem;}
+
+.masthead{border-bottom:2px solid var(--ink);padding-bottom:1.1rem;margin-bottom:1.6rem;}
+.eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 .55rem;}
+h1{font-size:1.8rem;letter-spacing:-.02em;margin:0 0 .4rem;font-weight:650;text-wrap:balance;}
+.lede{color:var(--ink-2);margin:0;font-size:1rem;max-width:70ch;}
+
+h2{font-size:.72rem;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);
+  margin:2.4rem 0 .7rem;font-weight:600;}
+h3{font-size:1rem;margin:1.3rem 0 .4rem;font-weight:650;text-wrap:balance;}
+p{margin:0 0 .7rem;max-width:74ch;}
+strong{font-weight:620;}
+code{font-family:var(--mono);font-size:.86em;background:var(--rule-2);border:1px solid var(--rule);
+  padding:.05em .35em;border-radius:3px;word-break:break-word;}
+ul{margin:.2rem 0 .7rem;padding-left:1.15rem;max-width:74ch;}
+li{margin:.3rem 0;}
+a{color:var(--accent);}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px;}
+
+.tablewrap{overflow-x:auto;margin:.5rem 0 .9rem;}
+table{border-collapse:collapse;width:100%;font-size:.87rem;background:var(--page);
+  border:1px solid var(--rule);border-radius:8px;overflow:hidden;}
+td,th{text-align:left;padding:.62rem .85rem;border-bottom:1px solid var(--rule-2);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+th{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;background:var(--panel);}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap;}
+.yes{color:var(--ok);font-weight:650;}
+.no{color:var(--warn);font-weight:650;}
+
+ol.step{list-style:none;counter-reset:s;padding:0;margin:.6rem 0 1rem;}
+ol.step > li{counter-increment:s;position:relative;padding:.6rem 0 .7rem 2.3rem;border-bottom:1px solid var(--rule-2);}
+ol.step > li:last-child{border-bottom:none;}
+ol.step > li::before{content:counter(s);position:absolute;left:0;top:.62rem;width:1.5rem;height:1.5rem;border-radius:5px;
+  background:var(--accent-bg);color:var(--accent);font-family:var(--mono);font-size:.72rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;}
+ol.step p{margin:.15rem 0 0;color:var(--ink-2);font-size:.93rem;}
+ol.step > li > strong{display:block;}
+
+.note{background:var(--warn-bg);border:1px solid var(--rule);border-left:3px solid var(--warn);
+  border-radius:0 8px 8px 0;padding:.85rem 1.05rem;margin:.7rem 0;font-size:.94rem;}
+.note > :last-child{margin-bottom:0;}
+.note .tag{color:var(--warn);font-weight:650;}
+.note.ok{background:var(--ok-bg);border-left-color:var(--ok);}
+.note.ok .tag{color:var(--ok);}
+.note.stop{background:var(--stop-bg);border-left-color:var(--stop);}
+.note.stop .tag{color:var(--stop);}
+
+.path{font-family:var(--mono);font-size:.8rem;background:var(--panel);border:1px solid var(--rule);border-radius:6px;
+  padding:.55rem .75rem;margin:.4rem 0 .7rem;overflow-x:auto;white-space:nowrap;color:var(--ink-2);}
+.path b{color:var(--ink);font-weight:600;}
+
+.foot{margin-top:2.6rem;padding-top:1rem;border-top:1px solid var(--rule);color:var(--ink-3);font-size:.82rem;}
+
+@media print{
+  body{font-size:10.5pt;}
+  .wrap{max-width:none;padding:0;}
+  h2{margin-top:1.4rem;}
+  ol.step > li, table, .note{break-inside:avoid;}
+  h2, h3{break-after:avoid;}
+  a{color:var(--ink);text-decoration:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">RackTrack &middot; TestFlight administration &middot; 16 July 2026</p>
+  <h1>Adding testers to TestFlight</h1>
+  <p class="lede">For whoever holds the App Store Connect account. This covers getting a new person from
+  &ldquo;we should show them the app&rdquo; to RackTrack running on their iPhone — and the one step that
+  trips everyone up.</p>
+</header>
+
+<div class="note stop">
+<p><span class="tag">The thing that trips everyone up.</span> An <strong>internal</strong> tester is not
+just an email address. You must first invite the person into App Store Connect as a <em>user</em>, they must
+<em>accept</em> that invite, and only then can you add them to the internal tester group. Two separate
+invitations, two separate emails. Skip step one and their name simply won't appear in the tester list.</p>
+</div>
+
+<h2>Which kind of tester</h2>
+<p>Pick before you start — it changes the steps, the wait, and what you need from the person.</p>
+
+<div class="tablewrap">
+<table>
+<tr><th>&nbsp;</th><th>Internal</th><th>External</th></tr>
+<tr>
+  <td><strong>Who it's for</strong></td>
+  <td>Your own team — SprintPark staff, anyone with an App Store Connect seat</td>
+  <td>Customers, prospects, pilot sites — anyone outside the account</td>
+</tr>
+<tr>
+  <td><strong>Cap</strong></td>
+  <td class="num">100 people</td>
+  <td class="num">10,000 people</td>
+</tr>
+<tr>
+  <td><strong>Apple review?</strong></td>
+  <td><span class="yes">No</span> — build lands as soon as it finishes processing</td>
+  <td><span class="no">Yes</span> — Beta App Review on the first build of each version</td>
+</tr>
+<tr>
+  <td><strong>Setup per person</strong></td>
+  <td>App Store Connect user invite, then tester group</td>
+  <td>Email address into the group. That's it.</td>
+</tr>
+<tr>
+  <td><strong>Time to hands-on</strong></td>
+  <td>Minutes</td>
+  <td>Hours to ~2 days on the first build, minutes after</td>
+</tr>
+</table>
+</div>
+
+<div class="note ok">
+<p><span class="tag">Default to internal.</span> RackTrack's tester group is already set up as internal, which
+is why builds reach the team without waiting on Apple. Only reach for external when you're past 100 people or
+inviting someone you can't give an App Store Connect seat.</p>
+</div>
+
+<h2>Internal — part one: the App Store Connect seat</h2>
+<p>Do this once per person. What you need from them: <strong>the email address their Apple ID uses</strong>.
+Not a work alias that forwards somewhere — the actual Apple ID. If they don't have one, they'll be walked
+through creating it when they accept.</p>
+
+<div class="path">appstoreconnect.apple.com &rarr; <b>Users and Access</b> &rarr; <b>People</b> &rarr; <b>+</b></div>
+
+<ol class="step">
+<li><strong>Fill in first name, last name, email</strong>
+  <p>The email is the part that matters. Getting it wrong means the invite lands in a mailbox that can't accept it.</p></li>
+<li><strong>Choose a role</strong>
+  <p><strong>Developer</strong> or <strong>Marketing</strong> both work and are the usual pick for someone who's
+  only there to test. Use <strong>App Manager</strong> only if they also need to manage the listing or upload builds.
+  Avoid <strong>Admin</strong> unless you mean it.</p></li>
+<li><strong>Leave &ldquo;Access to Certificates, Identifiers &amp; Profiles&rdquo; unchecked</strong>
+  <p>Testers don't need it, and it's the checkbox that lets someone revoke your signing certificates by accident.</p></li>
+<li><strong>Under Apps, grant access to RackTrack</strong>
+  <p>If you restrict a user to specific apps, RackTrack must be one of them or they won't see the build.</p></li>
+<li><strong>Send the invite</strong>
+  <p>They get an email from Apple. <strong>They must accept it before part two will work.</strong> The invite
+  expires — if it goes stale, delete the pending user and re-send.</p></li>
+</ol>
+
+<h2>Internal — part two: the tester group</h2>
+<p>Once they've accepted and show up as an active user, they become selectable as a tester.</p>
+
+<div class="path">App Store Connect &rarr; <b>Apps</b> &rarr; <b>RackTrack</b> &rarr; <b>TestFlight</b> &rarr; Internal Testing &rarr; <i>your group</i> &rarr; Testers <b>+</b></div>
+
+<ol class="step">
+<li><strong>Tick their name in the list, then Add</strong>
+  <p>The list only contains App Store Connect users who have accepted. Missing name? They haven't accepted — go back to part one.</p></li>
+<li><strong>Apple emails them a TestFlight invitation</strong>
+  <p>That's the second email, and it's the one the tester guide walks them through. Send them that guide alongside it.</p></li>
+<li><strong>Confirm the group has a build attached</strong>
+  <p>An empty group invites people to install nothing. If the group shows no build, add the latest one to it.</p></li>
+</ol>
+
+<h2>External testers</h2>
+<p>No App Store Connect seat, no acceptance step — but Apple reviews the build.</p>
+
+<div class="path">TestFlight &rarr; <b>External Testing</b> &rarr; <b>+</b> to create a group &rarr; add testers by email</div>
+
+<ul>
+<li>Add people by email address directly, or paste a CSV for a batch.</li>
+<li>Attach a build to the group. The first build of each new version goes to <strong>Beta App Review</strong> — typically
+under a day, sometimes a couple. Later builds of that same version skip it.</li>
+<li>A <strong>public link</strong> lets anyone install without you collecting emails first. Convenient, and worth thinking
+twice about — RackTrack points at your infrastructure, and a public link is a link anyone can forward.</li>
+</ul>
+
+<h2>Shipping a build to whoever's already in the group</h2>
+<p>Adding testers is a one-time act. Getting them a <em>new version</em> is a different loop, and it's already automated.</p>
+
+<ol class="step">
+<li><strong>Build and upload</strong>
+  <p>On the Mac: <code>./make-ipa.sh</code> then <code>./ship-ipa.sh</code> with the release notes as its argument.
+  The notes become the &ldquo;What to Test&rdquo; text testers read in TestFlight — see <code>client/ship-ipa.sh</code>.</p></li>
+<li><strong>Wait for Apple to process it</strong>
+  <p>Usually 5–30 minutes. You get an email when it clears. Until then it shows as processing and no one can install it.</p></li>
+<li><strong>Answer the export compliance prompt if it appears</strong>
+  <p>RackTrack uses standard HTTPS only — nothing exotic. Already answered for existing versions; a new
+  <em>version number</em> can ask again.</p></li>
+<li><strong>Internal testers get it automatically</strong>
+  <p>No review, no action from you. Their TestFlight shows an Update button. External groups need the build attached
+  to the group, and the review on a first build.</p></li>
+</ol>
+
+<h2>Limits worth knowing before someone hits them</h2>
+<div class="tablewrap">
+<table>
+<tr><th>Limit</th><th>Value</th><th>What happens at the edge</th></tr>
+<tr><td>Internal testers</td><td class="num">100</td><td>Add the 101st and you can't — prune, or move them to external.</td></tr>
+<tr><td>External testers</td><td class="num">10,000</td><td>Not a limit you'll meet.</td></tr>
+<tr><td>Devices per internal tester</td><td class="num">30</td><td>Per person, across their own iPhones and iPads.</td></tr>
+<tr><td>Build lifespan</td><td class="num">90 days</td><td>The build expires and testers are locked out until you ship a new one.</td></tr>
+</table>
+</div>
+
+<div class="note">
+<p><span class="tag">The 90-day clock is real.</span> A build that testers were happily using will stop opening
+with no warning from anyone. If RackTrack is in someone's hands long-term, ship a fresh build before the old one
+lapses — even if nothing changed.</p>
+</div>
+
+<h2>When it doesn't work</h2>
+<div class="tablewrap">
+<table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+<tr>
+  <td>Their name isn't in the tester picker</td>
+  <td>They never accepted the App Store Connect user invite</td>
+  <td>Users and Access &rarr; check for Pending &rarr; re-send</td>
+</tr>
+<tr>
+  <td>They got the invite but TestFlight says nothing to install</td>
+  <td>No build attached to the group</td>
+  <td>Add the latest build to the group</td>
+</tr>
+<tr>
+  <td>&ldquo;This beta isn't accepting new testers&rdquo;</td>
+  <td>Internal group at 100, or build expired</td>
+  <td>Remove inactive testers, or upload a fresh build</td>
+</tr>
+<tr>
+  <td>Invite went to the wrong mailbox</td>
+  <td>Work alias used instead of the Apple ID email</td>
+  <td>Remove the user, re-invite with the real Apple ID address</td>
+</tr>
+<tr>
+  <td>App installs, then every screen fails</td>
+  <td>Backend unreachable — not a TestFlight problem</td>
+  <td>Check the Windows server and the tunnel URL baked into the build</td>
+</tr>
+</table>
+</div>
+
+<p class="foot">RackTrack &middot; <code>com.racktrack.app</code> &middot; companion to the tester install guide.
+Upload path documented in <code>client/ship-ipa.sh</code> and <code>MAC-IPA-SETUP.md</code>.</p>
+
+</div>
+</body>
+</html>

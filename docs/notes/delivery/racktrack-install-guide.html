@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RackTrack — Installing the App on your iPhone</title>
+<style>
+:root{
+  --page:#FFFFFF;
+  --panel:#FCFDFD;
+  --ink:#16191D;
+  --ink-2:#4A5560;
+  --ink-3:#78838F;
+  --rule:#E2E6EA;
+  --rule-2:#EEF1F3;
+  --accent:#0E6E78;
+  --accent-bg:#EDF5F6;
+  --ok:#2E6A47;
+  --ok-bg:#EFF6F1;
+  --warn:#8A5D14;
+  --warn-bg:#FAF4E8;
+  --stop:#93382F;
+  --stop-bg:#FAEFED;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;margin:0;}
+.wrap{max-width:50rem;margin:0 auto;padding:3rem clamp(1rem,3vw,2.25rem) 4rem;}
+
+.masthead{border-bottom:2px solid var(--ink);padding-bottom:1.1rem;margin-bottom:1.6rem;}
+.eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 .55rem;}
+h1{font-size:1.8rem;letter-spacing:-.02em;margin:0 0 .4rem;font-weight:650;text-wrap:balance;}
+.lede{color:var(--ink-2);margin:0;font-size:1rem;max-width:66ch;}
+
+h2{font-size:.72rem;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);
+  margin:2.4rem 0 .7rem;font-weight:600;}
+h3{font-size:1rem;margin:1.3rem 0 .4rem;font-weight:650;text-wrap:balance;}
+p{margin:0 0 .7rem;max-width:66ch;}
+strong{font-weight:620;}
+code{font-family:var(--mono);font-size:.86em;background:var(--rule-2);border:1px solid var(--rule);
+  padding:.05em .35em;border-radius:3px;word-break:break-word;}
+ul{margin:.2rem 0 .7rem;padding-left:1.15rem;max-width:66ch;}
+li{margin:.3rem 0;}
+a{color:var(--accent);}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px;}
+
+.kit{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:1rem 1.2rem;margin:.5rem 0 1rem;}
+.kit ul{margin:0;}
+
+ol.step{list-style:none;counter-reset:s;padding:0;margin:.6rem 0 1rem;}
+ol.step > li{counter-increment:s;position:relative;padding:.9rem 0 .95rem 2.6rem;border-bottom:1px solid var(--rule-2);}
+ol.step > li:last-child{border-bottom:none;}
+ol.step > li::before{content:counter(s);position:absolute;left:0;top:.95rem;width:1.7rem;height:1.7rem;border-radius:6px;
+  background:var(--accent-bg);color:var(--accent);font-family:var(--mono);font-size:.78rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;}
+ol.step h3{margin:0 0 .2rem;font-size:1rem;}
+ol.step p{margin:.2rem 0 0;color:var(--ink-2);font-size:.94rem;}
+ol.step p + p{margin-top:.4rem;}
+ol.step ul{margin:.35rem 0 0;color:var(--ink-2);font-size:.94rem;}
+
+.note{background:var(--warn-bg);border:1px solid var(--rule);border-left:3px solid var(--warn);
+  border-radius:0 8px 8px 0;padding:.85rem 1.05rem;margin:.7rem 0;font-size:.94rem;}
+.note > :last-child{margin-bottom:0;}
+.note .tag{color:var(--warn);font-weight:650;}
+.note.ok{background:var(--ok-bg);border-left-color:var(--ok);}
+.note.ok .tag{color:var(--ok);}
+.note.stop{background:var(--stop-bg);border-left-color:var(--stop);}
+.note.stop .tag{color:var(--stop);}
+
+.tablewrap{overflow-x:auto;margin:.5rem 0 .9rem;}
+table{border-collapse:collapse;width:100%;font-size:.87rem;background:var(--page);
+  border:1px solid var(--rule);border-radius:8px;overflow:hidden;}
+td,th{text-align:left;padding:.62rem .85rem;border-bottom:1px solid var(--rule-2);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+th{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;background:var(--panel);}
+
+.foot{margin-top:2.6rem;padding-top:1rem;border-top:1px solid var(--rule);color:var(--ink-3);font-size:.82rem;}
+
+@media print{
+  body{font-size:10.5pt;}
+  .wrap{max-width:none;padding:0;}
+  h2{margin-top:1.4rem;}
+  ol.step > li, table, .note, .kit{break-inside:avoid;}
+  h2, h3{break-after:avoid;}
+  a{color:var(--ink);text-decoration:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">RackTrack &middot; iPhone install guide &middot; 16 July 2026</p>
+  <h1>Installing RackTrack on your iPhone</h1>
+  <p class="lede">RackTrack isn't in the App Store yet — it's a beta, so it arrives through Apple's
+  testing app, <strong>TestFlight</strong>. Two emails, one free download, about five minutes. This guide
+  covers the install, and how to get updates afterwards.</p>
+</header>
+
+<h2>Before you start</h2>
+<div class="kit">
+<ul>
+<li><strong>An iPhone</strong> — RackTrack runs on iOS 13 and later. TestFlight itself needs a newer iOS than
+that, so if the App Store won't let you install TestFlight, that's the reason.</li>
+<li><strong>Your Apple ID email</strong> — the address you actually sign into the App Store with. Your invitation
+is tied to it. If you gave us a work alias that forwards elsewhere, tell us; it won't work.</li>
+<li><strong>Internet.</strong> Wi-Fi or cellular, both fine.</li>
+</ul>
+</div>
+
+<h2>The install</h2>
+
+<ol class="step">
+
+<li>
+<h3>Look for the invitation email</h3>
+<p>It comes from Apple, subject line along the lines of <em>&ldquo;You're invited to test RackTrack.&rdquo;</em>
+Inside is a <strong>View in TestFlight</strong> button and a <strong>redeem code</strong> — a short string of
+letters and numbers. Either one gets you in; the button is easier.</p>
+<p><strong>Not there?</strong> Check spam and any Promotions tab before asking us to re-send — it lands there
+more often than not.</p>
+</li>
+
+<li>
+<h3>Install TestFlight from the App Store — do this first</h3>
+<p>Open the <strong>App Store</strong> on your iPhone, search <strong>TestFlight</strong>, and install it. It's
+free, made by Apple, and it's the thing RackTrack installs <em>through</em>.</p>
+<p>Do this before tapping anything in the email. Tapping the invite without TestFlight installed just sends you
+to a webpage that tells you to go install TestFlight.</p>
+</li>
+
+<li>
+<h3>Open the email on the iPhone itself</h3>
+<p>This is the step people get wrong: the invite has to be opened <strong>on the phone you're installing on</strong>.
+Clicking it on a laptop does nothing useful. If the email only lives on your desktop, forward it to yourself and
+open it on the phone.</p>
+<p>Tap <strong>View in TestFlight</strong>. TestFlight opens on the RackTrack page.</p>
+<p><strong>If the button doesn't work:</strong> open TestFlight yourself, tap <strong>Redeem</strong> in the top
+corner, and type the code from the email by hand.</p>
+</li>
+
+<li>
+<h3>Accept, then tap Install</h3>
+<p>TestFlight shows you what you're joining and asks you to accept. Then a blue <strong>Install</strong> button —
+tap it. RackTrack downloads and lands on your home screen like any other app, with a small orange dot beside the
+name marking it as a beta.</p>
+</li>
+
+<li>
+<h3>Open RackTrack and sign in</h3>
+<p>Launch it from the home screen — you don't need to go back through TestFlight. First run asks permission to
+use the camera, which RackTrack needs to scan racks. Say yes, or scanning won't work.</p>
+</li>
+
+</ol>
+
+<div class="note stop">
+<p><span class="tag">Sign in with the invited address.</span> TestFlight matches your invitation against the
+Apple ID signed into the phone. If your iPhone is signed into a personal Apple ID but the invite went to your
+work address, TestFlight won't find it — and the error it gives you won't say so. Tell us which address to use
+and we'll re-issue.</p>
+</div>
+
+<h2>Getting the latest version</h2>
+<p>RackTrack updates often, and beta apps don't update themselves through the App Store. New builds arrive through
+TestFlight instead.</p>
+
+<ol class="step">
+<li>
+<h3>Turn on automatic updates once</h3>
+<p>Open <strong>TestFlight</strong> &rarr; tap <strong>RackTrack</strong> &rarr; switch on
+<strong>Automatic Updates</strong>. New builds then install on their own and you can forget this section exists.
+This is the recommended setup.</p>
+</li>
+<li>
+<h3>Or update by hand when you want</h3>
+<p>Open <strong>TestFlight</strong>. If a new build is waiting, RackTrack shows an <strong>Update</strong> button —
+tap it. Apple also emails you when a build goes out.</p>
+</li>
+<li>
+<h3>Read &ldquo;What to Test&rdquo;</h3>
+<p>Each build comes with notes on the RackTrack page in TestFlight saying what changed and what we'd like you to
+look at. Worth ten seconds before you dive in.</p>
+</li>
+</ol>
+
+<div class="note">
+<p><span class="tag">Builds expire after 90 days.</span> Apple's rule, not ours. When one lapses, RackTrack stops
+opening and TestFlight says the build has expired. Nothing is broken and you've lost nothing — open TestFlight and
+install the current build. If there isn't one, tell us and we'll ship it.</p>
+</div>
+
+<h2>Telling us something's wrong</h2>
+<p>Beta feedback goes further than a message in a thread, because it arrives with the device, the iOS version and
+the exact build attached.</p>
+<ul>
+<li><strong>Screenshot anything odd</strong> — take a screenshot while RackTrack is open, then share it. iOS offers
+to send it as TestFlight feedback and it reaches us with the diagnostics attached.</li>
+<li><strong>Or from TestFlight</strong> — open TestFlight &rarr; RackTrack &rarr; <strong>Send Beta Feedback</strong>.</li>
+<li><strong>What helps most:</strong> what you tapped, what you expected, what happened instead. A screenshot of a
+wrong number beats a description of it.</li>
+</ul>
+
+<h2>If something goes wrong</h2>
+<div class="tablewrap">
+<table>
+<tr><th>What you see</th><th>What to do</th></tr>
+<tr>
+  <td>No invitation email</td>
+  <td>Check spam and Promotions. Still nothing — confirm with us which address we sent it to.</td>
+</tr>
+<tr>
+  <td>The invite link opens a webpage, not TestFlight</td>
+  <td>TestFlight isn't installed yet, or you opened the email on a computer. Install TestFlight on the iPhone, then reopen the email there.</td>
+</tr>
+<tr>
+  <td>&ldquo;This invitation is no longer valid&rdquo;</td>
+  <td>The invite expired or is tied to a different Apple ID. Ask us to re-send to the right address.</td>
+</tr>
+<tr>
+  <td>RackTrack won't open — build expired</td>
+  <td>Open TestFlight and install the current build.</td>
+</tr>
+<tr>
+  <td>App opens, screens are blank or error</td>
+  <td>Not your phone. RackTrack talks to a server on our side — tell us and we'll check it.</td>
+</tr>
+<tr>
+  <td>Camera does nothing</td>
+  <td>Settings &rarr; RackTrack &rarr; turn <strong>Camera</strong> on. Easy to decline on first launch.</td>
+</tr>
+</table>
+</div>
+
+<div class="note ok">
+<p><span class="tag">One thing to know about the live data.</span> RackTrack's photo scanning works anywhere you
+have internet. The live switch screens — ports, cables, trace — read your actual equipment through a server on our
+network. If those screens are empty while scanning works fine, it's our server, not your phone.</p>
+</div>
+
+<p class="foot">RackTrack beta &middot; questions to <code>racktrackteam@sprintpark.com</code></p>
+
+</div>
+</body>
+</html>

@@ -184,11 +184,19 @@ const httpLogger = pinoHttp({
     res: (res) => ({ statusCode: res.statusCode }),
     err: pino.stdSerializers.err,
   },
-  // Skip noisy paths from logs (still measured by metrics middleware)
+  // Skip noisy paths from logs (still measured by metrics middleware).
+  //
+  // This deliberately includes the endpoints the Operations Console polls to
+  // DISPLAY this log: /api/logs* refreshes every 4s and /api/admin/dashboard
+  // every 5s, so without this the log fills with nothing but its own polling
+  // ("GET /api/logs/stats 200" over and over) and buries the real activity.
   autoLogging: {
     ignore: (req) => {
       const u = req.url || '';
       return u === '/metrics' || u === '/healthz' || u === '/api/health'
+          || u === '/api/version'
+          || u.startsWith('/api/logs')             // the log viewer reading the log
+          || u.startsWith('/api/admin/dashboard')  // the console's live polling
           || u.startsWith('/uploads/') || u.startsWith('/outputs/')
           || u.startsWith('/assets/');
     },
