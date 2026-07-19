@@ -158,6 +158,28 @@ export default function LabPage() {
   // Re-render on a timer so the "as of" ages visibly without refetching.
   useEffect(() => { const t = setInterval(bump, 10_000); return () => clearInterval(t); }, []);
 
+  // Auto-run the audit the first time a device is selected, so the report just
+  // appears instead of needing a click.
+  //
+  // Deliberately ONCE per device, then cached in auditsRef: an audit is a live
+  // SSH pass and these switches allow only ONE session, which the 60s poller is
+  // already using. Re-auditing on every tab switch would fight the poller and
+  // saturate that single session (the failure mode where the switch stops
+  // accepting connections until it's rebooted). Re-running is the explicit
+  // "Refresh audit" button.
+  //
+  // Skipped when the poller already can't reach the device: the SSH attempt
+  // would just hang for the full timeout on every selection. Showing the
+  // offline diagnosis immediately is more useful, and the button still forces
+  // a retry by hand.
+  useEffect(() => {
+    if (!selectedId || busyId) return;             // one SSH pass at a time
+    const d = devices.find((x) => x.id === selectedId);
+    if (!d || !d.enabled || d.last_error) return;  // disabled / known-unreachable
+    if (auditsRef.current.has(selectedId)) return; // already have a result (or a logged failure)
+    runAudit(selectedId);
+  }, [selectedId, devices, busyId]);               // eslint-disable-line react-hooks/exhaustive-deps
+
   const toggleEnabled = async (d) => {
     try {
       const r = await authFetch(apiUrl(`/api/lab/devices/${d.id}`), {
@@ -505,18 +527,19 @@ export default function LabPage() {
             ) : (
               <div className={styles.section}>
                 {busy ? (
-                  <p className={styles.sectionNote}>Connecting to {selected.host} over SSH…</p>
+                  <p className={styles.sectionNote}>Auditing {selected.host} over SSH — identity, ports, PoE, VLANs, LLDP and the MAC table…</p>
                 ) : selected.last_error ? (
                   <p className={styles.sectionNote}>
                     {offlineExplain?.hint
                       || 'The poller can’t currently reach this switch. A full audit opens the same SSH session and will fail the same way until it’s back online.'}
                   </p>
-                ) : (
+                ) : !selected.enabled ? (
                   <p className={styles.sectionNote}>
-                    Hit <strong>Run full audit</strong> for identity, ports, PoE, VLANs, LLDP and the MAC
-                    table. It opens a live SSH session, so it runs on demand rather than on a timer —
-                    these switches allow only one session and the poller is already using it.
+                    Polling is disabled for this switch, so it isn’t audited automatically.
+                    Enable polling to run one.
                   </p>
+                ) : (
+                  <p className={styles.sectionNote}>Starting audit…</p>
                 )}
               </div>
             )}
