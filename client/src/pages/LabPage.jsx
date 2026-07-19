@@ -2,32 +2,29 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext';
-import styles from './PortHistoryPage.module.css';
+import styles from './LabPage.module.css';
 
 // Owner-only lab view — the client side of /api/lab/*.
 //
 // Shows the SAME audit the live-switch Ports tab shows (identity, port
 // faceplate, PoE, VLANs, LLDP neighbours, MAC table), addressed by
 // monitored_devices id: the browser sends only an id and never sees or sends a
-// host or credentials. The live Ports page resolves hosts client-side against a
-// hardcoded IP; this resolves them server-side from the devices table plus the
-// encrypted cred store.
-//
-// Separate from PortHistoryPage because that page reads /api/ports/devices (any
-// authenticated user) and hard-selects devices[0] — it can only ever show one
-// switch and can't be scoped to an audience. This reads /api/lab/devices, which
-// is requireRole('owner'), keeping the lab invisible to testers.
+// host or credentials. This reads /api/lab/devices, which is
+// requireRole('owner'), keeping the lab invisible to testers.
 //
 // Results are CACHED PER DEVICE (auditsRef): an audit is a live SSH pass that
 // takes seconds and competes with the 60s poller for the switch's single SSH
 // session, so flipping between devices must never silently re-run it or throw
 // the previous result away. Switching back shows what we last saw, stamped with
-// how old it is. Nothing is ever blanked just because a refresh is in flight —
-// stale data plus an honest "as of" beats an empty screen.
+// how old it is. Nothing is ever blanked just because a refresh is in flight.
 //
 // EXPECT EMPTY SPEED/DUPLEX/PoE ON LAB SWITCHES: Cisco IOL is virtual. It never
 // negotiates a link and has no PoE hardware, so those read "—". That is the
 // truth, not a parse failure. The real TP-Link fills them in.
+//
+// LAYOUT CONTRACT: no value is ever clipped. Fields wrap (overflow-wrap set in
+// the stylesheet), tables scroll in their own wrapper. The detail is split into
+// a summary head + tabbed sections rather than one long scroll of cards.
 
 function fmtAgo(iso) {
   if (!iso) return 'never';
@@ -39,70 +36,85 @@ function fmtAgo(iso) {
   return `${Math.floor(secs / 86400)}d ago`;
 }
 
+// The poller stores a raw library error in last_error ("Timed out while waiting
+// for handshake", "connect ECONNREFUSED", ...). For an owner staring at dead
+// lab switches that's noise, so translate the common shapes into what's actually
+// wrong + what to do. These are EVE-NG IOL nodes whose running-config (its
+// management IP + SSH host key) is VOLATILE — it evaporates when the node is
+// stopped or the EVE-NG VM reboots. So "was Live, now dark on :22" almost always
+// means the node is stopped or came back unconfigured, not a RackTrack fault.
+function explainSshError(raw) {
+  const m = String(raw || '').toLowerCase();
+  if (!m) return null;
+  if (m.includes('handshake') || m.includes('timed out') || m.includes('etimedout')) {
+    return {
+      plain: 'The switch isn’t answering on SSH at all.',
+      hint: 'The EVE-NG node is most likely stopped, or it rebooted and came back without its config — IOL running-config (its IP and SSH host key) is volatile and is lost on stop. Start the node in the EVE-NG topology and re-apply its config; polling then recovers on its own.',
+    };
+  }
+  if (m.includes('econnrefused') || m.includes('refused')) {
+    return {
+      plain: 'The switch is up, but nothing is listening on SSH.',
+      hint: 'The node is running yet its SSH server isn’t — no crypto key / `ip ssh` in the running-config. Re-apply the switch config (crypto key generate rsa, ip ssh version 2, transport input ssh) from the EVE-NG console.',
+    };
+  }
+  if (m.includes('ehostunreach') || m.includes('enetunreach') || m.includes('no route')) {
+    return {
+      plain: 'No network route to the switch.',
+      hint: 'The node has no management IP — its config didn’t persist, or the pnet bridge isn’t attached to it. Check the node’s interface config in EVE-NG.',
+    };
+  }
+  if (m.includes('authentication') || m.includes('all configured auth') || m.includes('password')) {
+    return {
+      plain: 'Reached the switch, but the login was rejected.',
+      hint: 'The stored credentials don’t match the switch’s local account. Fix the username/password in the encrypted cred store.',
+    };
+  }
+  return null; // unknown shape — caller falls back to showing the raw string
+}
+
 // A device is only healthy once a poll has SUCCEEDED. last_seen is stamped on
 // metadata write, so null means "never got data" even with zero failures —
 // exactly what a missing-credentials device looks like, because the poller
 // early-returns there without recording a failure.
-function deviceState(d) {
-  if (d.last_error) return { label: 'Offline',  cls: styles.switchStatusOff };
-  if (!d.enabled)   return { label: 'Disabled', cls: styles.switchStatusOff };
-  if (!d.last_seen) return { label: 'No data',  cls: styles.switchStatusOff };
-  return { label: 'Live', cls: styles.switchStatusOk };
+function statusMeta(d, connecting) {
+  if (connecting)    return { label: 'Connecting…', cls: styles.stWarn };
+  if (!d.enabled)    return { label: 'Disabled',    cls: styles.stIdle };
+  if (d.last_error)  return { label: 'Offline',     cls: styles.stOff };
+  if (!d.last_seen)  return { label: 'No data',     cls: styles.stIdle };
+  return { label: 'Live', cls: styles.stLive };
 }
 
-function operClass(oper) {
-  if (oper === 'up')   return styles.up;
-  if (oper === 'down') return styles.down;
-  return styles.unknown;
-}
-
-// parseInterfaceStatus returns { up: boolean, statusRaw: string, ... } — there
-// is no `link`/`status` field. Reading those made every port render "—".
+// parseInterfaceStatus returns { up: boolean, ... } — there is no `link`/`status`
+// field. Reading those made every port render "—".
 function linkOf(s) {
   if (!s || s.up === undefined) return null;
   return s.up ? 'up' : 'down';
 }
+function linkClass(l) {
+  if (l === 'up')   return styles.up;
+  if (l === 'down') return styles.down;
+  return styles.unknown;
+}
 
 const dash = (v) => (v === null || v === undefined || v === '' ? '—' : v);
 
-function Card({ title, count, right, children }) {
+function Pill({ meta }) {
   return (
-    <section className={styles.card} style={{ marginBottom: 14 }}>
-      <div className={styles.cardHead}>
-        <h2 className={styles.cardTitle}>
-          {title}
-          {count !== undefined && <span className={styles.muted}>({count})</span>}
-        </h2>
-        {right}
-      </div>
-      {children}
-    </section>
+    <span className={`${styles.statusPill} ${meta.cls}`}>
+      <span className={styles.statusDot} />
+      {meta.label}
+    </span>
   );
 }
 
-// Identity fields vary wildly in length — a MAC, a 32-char IOL image name, a
-// firmware string. The shared kvRow is a rigid `160px 1fr` grid, so long values
-// overflowed their cell and collided with the next field's label (the live
-// "192.168.1.VENDOR" / mangled-firmware bug). Stack label over value instead,
-// and let the value wrap, so nothing can ever overlap regardless of length.
-const kvTile = {
-  display: 'flex', flexDirection: 'column', gap: 2,
-  padding: '8px 12px', minWidth: 0,
-  borderBottom: '1px solid rgba(128,128,128,.14)',
-};
-const kvValueStyle = {
-  fontWeight: 600, minWidth: 0,
-  overflowWrap: 'anywhere', wordBreak: 'break-word',
-};
-
-function KV({ label, value, mono }) {
-  return (
-    <div style={kvTile}>
-      <span className={styles.kvLabel}>{label}</span>
-      <span className={mono ? styles.kvMono : undefined} style={kvValueStyle}>{dash(value)}</span>
-    </div>
-  );
-}
+const SECTIONS = [
+  { key: 'identity', label: 'Identity' },
+  { key: 'ports',    label: 'Ports' },
+  { key: 'vlans',    label: 'VLANs' },
+  { key: 'lldp',     label: 'LLDP' },
+  { key: 'macs',     label: 'MAC' },
+];
 
 export default function LabPage() {
   const navigate = useNavigate();
@@ -113,6 +125,7 @@ export default function LabPage() {
   const [loadErr, setLoadErr] = useState(null);
   const [selectedId, setSelected] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [tab, setTab] = useState('ports');
   const [, forceRender] = useState(0);
 
   // deviceId -> { data, at, error }. A ref, not state: it must survive device
@@ -145,10 +158,6 @@ export default function LabPage() {
   // Re-render on a timer so the "as of" ages visibly without refetching.
   useEffect(() => { const t = setInterval(bump, 10_000); return () => clearInterval(t); }, []);
 
-  // The poller skips disabled devices entirely, and nothing in the UI could
-  // re-enable one — the TP-Link sat Disabled for days with no way to notice why
-  // or fix it without hand-editing SQLite. PATCH /api/lab/devices/:id exists;
-  // this just reaches it.
   const toggleEnabled = async (d) => {
     try {
       const r = await authFetch(apiUrl(`/api/lab/devices/${d.id}`), {
@@ -185,7 +194,7 @@ export default function LabPage() {
   if (!isOwner) {
     return (
       <div className={styles.page}>
-        <main className={styles.main}><p className={styles.muted}>Restricted to platform owners.</p></main>
+        <main className={styles.main}><p className={styles.sectionNote}>Restricted to platform owners.</p></main>
       </div>
     );
   }
@@ -203,75 +212,78 @@ export default function LabPage() {
   const macRows = Object.entries(audit?.macs || {})
     .flatMap(([port, e]) => (e?.macs || []).map((mac) => ({ port, mac, vlan: e.vlan })));
 
+  // Fleet tallies for the strip.
+  const liveN = devices.filter((d) => d.enabled && !d.last_error && d.last_seen).length;
+  const offN  = devices.filter((d) => d.enabled && d.last_error).length;
+  const offlineExplain = selected?.last_error ? explainSshError(selected.last_error) : null;
+
+  // No badge on Identity — it's a fixed field set, not a collection.
+  const counts = {
+    ports: ports.length,
+    vlans: audit?.vlans?.length || 0,
+    lldp: Object.keys(neighbors).length,
+    macs: macRows.length,
+  };
+
   return (
     <div className={styles.page}>
-      <div className={styles.amb} aria-hidden />
       <header className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Back">‹</button>
         <div className={styles.headerCenter}>
           <h1 className={styles.headerTitle}>Lab</h1>
           <p className={styles.headerSub}>Owner-only · EVE-NG switches</p>
         </div>
-        <span className={styles.spacer} />
       </header>
 
       <main className={styles.main}>
-        {loadErr && <p className={styles.errorLine}>Device list stale — {loadErr}</p>}
+        {/* Fleet strip — one-line health summary. */}
+        <div className={styles.fleetBar}>
+          <span className={styles.fleetCount}>{devices.length} switch{devices.length === 1 ? '' : 'es'}</span>
+          {!!devices.length && (
+            <>
+              <span className={styles.fleetSep}>·</span>
+              <span className={`${styles.fleetStat} ${styles.stLive}`}><span className={`${styles.statusDot}`} style={{ background: '#22c55e' }} />{liveN} live</span>
+              <span className={`${styles.fleetStat} ${styles.stOff}`}><span className={`${styles.statusDot}`} style={{ background: '#ef4444' }} />{offN} offline</span>
+            </>
+          )}
+        </div>
 
-        {/* Device switcher. Purpose-built selectable tiles — NOT the detailTab
-            underline-tab class, which is a single-line uppercase tab and mangled
-            this multi-line card into a misaligned grey box. Each tile keeps its
-            own cached audit, so switching never loses what you were looking at. */}
-        <div role="tablist" aria-label="Lab devices"
-             style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+        {loadErr && <p className={styles.errLine}>Device list stale — {loadErr}</p>}
+
+        {/* Device cards. */}
+        <div role="tablist" aria-label="Lab devices" className={styles.deviceGrid}>
           {devices.map((d) => {
-            const st = deviceState(d);
+            const meta = statusMeta(d, busyId === d.id);
             const active = d.id === selectedId;
             const cached = auditsRef.current.get(d.id);
             return (
               <button key={d.id} role="tab" aria-selected={active}
                       onClick={() => setSelected(d.id)}
-                      style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4,
-                        minWidth: 150, padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
-                        font: 'inherit', textAlign: 'left', background: 'transparent',
-                        border: '1px solid rgba(128,128,128,.28)',
-                        outline: active ? '2px solid currentColor' : 'none',
-                        outlineOffset: -1,
-                      }}>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>{d.display_name}</span>
-                <span className={styles.muted} style={{ fontSize: 11 }}>{d.host}</span>
-                <span className={`${styles.switchStatus} ${st.cls}`}>
-                  <span className={styles.switchStatusDot} />
-                  {busyId === d.id ? 'Connecting…' : st.label}
-                </span>
-                {cached?.data && (
-                  <span className={styles.muted} style={{ fontSize: 10 }}>audit {fmtAgo(cached.at)}</span>
-                )}
+                      className={`${styles.deviceCard} ${active ? styles.deviceCardActive : ''}`}>
+                <span className={styles.dName}>{d.display_name}</span>
+                <span className={styles.dHost}>{d.host}</span>
+                <Pill meta={meta} />
+                {cached?.data && <span className={styles.dFoot}>audit {fmtAgo(cached.at)}</span>}
               </button>
             );
           })}
-          {!devices.length && !loadErr && <p className={styles.muted}>No lab devices registered.</p>}
+          {!devices.length && !loadErr && <p className={styles.sectionNote}>No lab devices registered.</p>}
         </div>
 
+        {/* Detail. */}
         {selected && (
-          <div className={styles.switchHero} style={{ marginBottom: 14 }}>
-            {/* Plain flex row, NOT switchHeroRow — that class is a `44px 1fr auto`
-                grid whose first column expects a device icon. With no icon the
-                name/subtitle got crushed into 44px (the live "192.168 / · cisc…"
-                wrap) and the buttons ballooned to fill 1fr. */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                <div className={styles.switchHeroName}>{selected.display_name}</div>
-                <div className={styles.switchHeroSub}>
-                  {selected.host} · {selected.vendor} · polled {fmtAgo(selected.last_seen)}
-                </div>
+          <div className={styles.detail}>
+            <div className={styles.detailHead}>
+              <div className={styles.detailTitleWrap}>
+                <span className={styles.detailName}>{selected.display_name}</span>
+                <Pill meta={statusMeta(selected, busy)} />
               </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                <button className={styles.ghostBtn} onClick={() => toggleEnabled(selected)}>
+              <div className={styles.detailActions}>
+                <button className={styles.btn} onClick={() => toggleEnabled(selected)}>
                   {selected.enabled ? 'Disable polling' : 'Enable polling'}
                 </button>
-                <button className={styles.ghostBtn} disabled={busy || !selected.enabled}
+                <button className={`${styles.btn} ${styles.btnPrimary}`}
+                        disabled={busy || !selected.enabled}
                         title={!selected.enabled ? 'Polling is disabled for this device' : undefined}
                         onClick={() => runAudit(selectedId)}>
                   {busy ? 'Connecting…' : audit ? 'Refresh audit' : 'Run full audit'}
@@ -279,193 +291,247 @@ export default function LabPage() {
               </div>
             </div>
 
+            {/* Key facts — every value complete, wraps instead of truncating. */}
+            <div className={styles.factGrid}>
+              <div className={styles.fact}>
+                <span className={styles.factKey}>IP address</span>
+                <span className={`${styles.factVal} ${styles.factMono}`}>{dash(selected.host)}</span>
+              </div>
+              <div className={styles.fact}>
+                <span className={styles.factKey}>Vendor</span>
+                <span className={styles.factVal}>{dash(selected.vendor)}</span>
+              </div>
+              <div className={styles.fact}>
+                <span className={styles.factKey}>Model</span>
+                <span className={`${styles.factVal} ${styles.factMono}`}>{dash(audit?.identity?.model)}</span>
+              </div>
+              <div className={styles.fact}>
+                <span className={styles.factKey}>Firmware</span>
+                <span className={`${styles.factVal} ${styles.factMono}`}>{dash(audit?.identity?.firmware)}</span>
+              </div>
+              <div className={styles.fact}>
+                <span className={styles.factKey}>Last polled</span>
+                <span className={styles.factVal}>{fmtAgo(selected.last_seen)}</span>
+              </div>
+            </div>
+
             {!selected.enabled && (
-              <p className={styles.errorLine} style={{ marginTop: 10 }}>
-                Polling is disabled — the poller skips this device entirely, so its data will go
-                stale and no drift is recorded. Enable it to resume.
+              <p className={`${styles.banner} ${styles.bannerWarn}`}>
+                <span className={styles.bannerStrong}>Polling disabled.</span> The poller skips this
+                device entirely, so its data goes stale and no drift is recorded. Enable it to resume.
               </p>
             )}
 
             {selected.last_error && (
-              <p className={styles.errorLine} style={{ marginTop: 10 }}>
-                Poller can’t reach it ({selected.consecutive_failures} attempts): <code>{selected.last_error}</code>
-              </p>
+              <div className={`${styles.banner} ${styles.bannerWarn}`}>
+                <span className={styles.bannerStrong}>
+                  Poller can’t reach it{selected.consecutive_failures ? ` — ${selected.consecutive_failures} failed attempts` : ''}.
+                </span>
+                {offlineExplain && <> {offlineExplain.plain}</>}
+                {offlineExplain && <div className={styles.bannerHint}>{offlineExplain.hint}</div>}
+                <div className={styles.bannerRaw}>SSH error: {selected.last_error}</div>
+              </div>
             )}
+
             {entry?.error && (
-              <p className={styles.errorLine} style={{ marginTop: 10 }}>
-                Last audit failed — {entry.error}
-                {audit && ' · showing the previous result below'}
+              <p className={`${styles.banner} ${styles.bannerWarn}`}>
+                <span className={styles.bannerStrong}>Last audit failed.</span> {entry.error}
+                {audit && ' — showing the previous result below.'}
               </p>
             )}
-            {audit && (
-              <p className={styles.muted} style={{ marginTop: 10, fontSize: 11 }}>
-                {busy ? 'Refreshing…' : `Audit as of ${fmtAgo(entry.at)}`} · live SSH pass, not polled
-              </p>
+
+            {/* Sections — tabs when we have data; a prompt otherwise. */}
+            {audit ? (
+              <>
+                <div role="tablist" aria-label="Audit sections" className={styles.tabs}>
+                  {SECTIONS.map((s) => (
+                    <button key={s.key} role="tab" aria-selected={tab === s.key}
+                            className={`${styles.tab} ${tab === s.key ? styles.tabActive : ''}`}
+                            onClick={() => setTab(s.key)}>
+                      {s.label}
+                      {counts[s.key] !== undefined && <span className={styles.tabCount}>{counts[s.key]}</span>}
+                    </button>
+                  ))}
+                </div>
+
+                <div className={styles.section}>
+                  <p className={styles.asOf}>
+                    {busy ? 'Refreshing…' : `Audit as of ${fmtAgo(entry.at)}`} · live SSH pass, not polled
+                  </p>
+
+                  {tab === 'identity' && (
+                    <div className={styles.idGrid}>
+                      <Id label="Name"     value={audit.identity?.name} />
+                      <Id label="Model"    value={audit.identity?.model} mono />
+                      <Id label="Serial"   value={audit.identity?.serial} mono />
+                      <Id label="MAC"      value={audit.identity?.mac} mono />
+                      <Id label="Firmware" value={audit.identity?.firmware} mono />
+                      <Id label="Hardware" value={audit.identity?.hardware} />
+                      <Id label="Host"     value={audit.host} mono />
+                      <Id label="Vendor"   value={audit.vendor} />
+                    </div>
+                  )}
+
+                  {tab === 'ports' && (
+                    <>
+                      <div className={styles.legend}>
+                        <span className={styles.legendItem}><span className={`${styles.legendPeg} ${styles.pegUp}`} /> up</span>
+                        <span className={styles.legendItem}><span className={`${styles.legendPeg} ${styles.pegDown}`} /> down</span>
+                        <span className={styles.legendItem}><span className={`${styles.legendPeg} ${styles.pegUnknown}`} /> unknown</span>
+                      </div>
+                      <div className={styles.portGrid}>
+                        {ports.map((p) => {
+                          const l = linkOf(ifstatus[p]);
+                          return (
+                            <div key={p} className={`${styles.portCell} ${l === 'up' ? styles.up : l === 'down' ? styles.down : ''}`}
+                                 title={`${p} — ${dash(l)}`}>
+                              <span className={styles.portName}>{p}</span>
+                            </div>
+                          );
+                        })}
+                        {!ports.length && <p className={styles.sectionNote}>No ports returned.</p>}
+                      </div>
+                      {!!ports.length && (
+                        <div className={styles.tableWrap}>
+                          <table className={styles.table}>
+                            <thead><tr>
+                              {['Port', 'Link', 'Admin', 'Speed', 'Duplex', 'Type', 'PoE (W)', 'Description', 'Neighbour'].map((h) => (
+                                <th key={h}>{h}</th>
+                              ))}
+                            </tr></thead>
+                            <tbody>
+                              {ports.map((p) => {
+                                const s = ifstatus[p] || {}, c = ifconfig[p] || {};
+                                const pe = poePorts[p] || {}, n = neighbors[p] || {};
+                                const l = linkOf(s);
+                                return (
+                                  <tr key={p}>
+                                    <td className={styles.mono}>{p}</td>
+                                    <td><span className={linkClass(l)}>{dash(l)}</span></td>
+                                    <td>{c.enabled === undefined ? '—' : (c.enabled ? 'enabled' : 'disabled')}</td>
+                                    <td>{dash(s.speed)}</td>
+                                    <td>{dash(s.duplex)}</td>
+                                    <td>{dash(s.medium)}</td>
+                                    <td>{dash(pe.power)}</td>
+                                    <td>{dash(c.description)}</td>
+                                    <td>{dash(n.system_name || n.chassis_id)}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      {audit.poe?.budget != null && (
+                        <p className={styles.asOf} style={{ marginTop: 8, marginBottom: 0 }}>
+                          PoE budget {audit.poe.budget}W · used {audit.poe.used ?? 0}W
+                        </p>
+                      )}
+                    </>
+                  )}
+
+                  {tab === 'vlans' && (
+                    audit.vlans?.length ? (
+                      <div className={styles.tableWrap}>
+                        <table className={styles.table}>
+                          <thead><tr>{['VLAN', 'Name', 'Status', 'Ports'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+                          <tbody>
+                            {audit.vlans.map((v) => (
+                              <tr key={v.id}>
+                                <td className={styles.mono}>{v.id}</td>
+                                <td>{dash(v.name)}</td>
+                                <td>{dash(v.status)}</td>
+                                <td>{(v.ports || []).map((p) => (typeof p === 'string' ? p : `${p.port}${p.tagged ? ' (T)' : ''}`)).join(', ') || '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className={styles.sectionNote}>
+                        None. Expected on CoreSW — it runs the L3 IOL image, where interfaces are routed
+                        and there are no switchports to put in a VLAN.
+                      </p>
+                    )
+                  )}
+
+                  {tab === 'lldp' && (
+                    Object.keys(neighbors).length ? (
+                      <div className={styles.tableWrap}>
+                        <table className={styles.table}>
+                          <thead><tr>{['Local port', 'System', 'Chassis', 'Remote port'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+                          <tbody>
+                            {Object.entries(neighbors).map(([p, n]) => (
+                              <tr key={p}>
+                                <td className={styles.mono}>{p}</td>
+                                <td>{dash(n.system_name)}</td>
+                                <td>{dash(n.chassis_id)}</td>
+                                <td className={styles.mono}>{dash(n.port_id)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className={styles.sectionNote}>
+                        None. IOS needs <code>lldp run</code> globally, and the IOL l2-ipbase image may
+                        not support LLDP at all — Cisco defaults to CDP.
+                      </p>
+                    )
+                  )}
+
+                  {tab === 'macs' && (
+                    macRows.length ? (
+                      <div className={styles.tableWrap}>
+                        <table className={styles.table}>
+                          <thead><tr>{['Port', 'MAC', 'VLAN'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+                          <tbody>
+                            {macRows.map((m, i) => (
+                              <tr key={`${m.port}-${m.mac}-${i}`}>
+                                <td className={styles.mono}>{m.port}</td>
+                                <td className={styles.mono}>{dash(m.mac)}</td>
+                                <td>{dash(m.vlan)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className={styles.sectionNote}>No MAC entries returned.</p>
+                    )
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className={styles.section}>
+                {busy ? (
+                  <p className={styles.sectionNote}>Connecting to {selected.host} over SSH…</p>
+                ) : selected.last_error ? (
+                  <p className={styles.sectionNote}>
+                    {offlineExplain?.hint
+                      || 'The poller can’t currently reach this switch. A full audit opens the same SSH session and will fail the same way until it’s back online.'}
+                  </p>
+                ) : (
+                  <p className={styles.sectionNote}>
+                    Hit <strong>Run full audit</strong> for identity, ports, PoE, VLANs, LLDP and the MAC
+                    table. It opens a live SSH session, so it runs on demand rather than on a timer —
+                    these switches allow only one session and the poller is already using it.
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}
-
-        {!audit && !busy && selected && (
-          <Card title="No audit yet">
-            <p className={styles.muted} style={{ margin: 0 }}>
-              Hit <strong>Run full audit</strong> for identity, ports, PoE, VLANs, LLDP and the MAC
-              table. It opens a live SSH session, so it runs on demand rather than on a timer —
-              these switches allow only one session and the poller is already using it.
-            </p>
-          </Card>
-        )}
-
-        {audit && (
-          <>
-            <Card title="Identity">
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                border: '1px solid rgba(128,128,128,.2)', borderRadius: 10, overflow: 'hidden',
-              }}>
-                <KV label="Name"     value={audit.identity?.name} />
-                <KV label="Model"    value={audit.identity?.model} />
-                <KV label="Serial"   value={audit.identity?.serial} mono />
-                <KV label="MAC"      value={audit.identity?.mac} mono />
-                <KV label="Firmware" value={audit.identity?.firmware} />
-                <KV label="Hardware" value={audit.identity?.hardware} />
-                <KV label="Host"     value={audit.host} mono />
-                <KV label="Vendor"   value={audit.vendor} />
-              </div>
-            </Card>
-
-            <Card title="Ports" count={ports.length}
-                  right={<span className={styles.legend}>
-                    <span className={`${styles.dot} ${styles.up}`} /> up
-                    <span className={`${styles.dot} ${styles.down}`} /> down
-                  </span>}>
-              {/* Faceplate first — the shape of the switch at a glance. */}
-              <div className={styles.portGrid} style={{ marginBottom: 12 }}>
-                {ports.map((p) => {
-                  const l = linkOf(ifstatus[p]);
-                  return (
-                    <div key={p} className={`${styles.portCell} ${l === 'up' ? styles.up : l === 'down' ? styles.down : styles.unknown}`}
-                         title={`${p} — ${dash(l)}`}>
-                      <span className={styles.portName}>{p}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className={styles.offsetTableWrap}>
-                <table className={styles.offsetTable}>
-                  <thead><tr>
-                    {['Port', 'Link', 'Admin', 'Speed', 'Duplex', 'Type', 'PoE (W)', 'Description', 'Neighbour'].map((h) => (
-                      <th key={h} style={{ textAlign: 'left', padding: '6px 10px' }}>{h}</th>
-                    ))}
-                  </tr></thead>
-                  <tbody>
-                    {ports.map((p) => {
-                      const s = ifstatus[p] || {}, c = ifconfig[p] || {};
-                      const pe = poePorts[p] || {}, n = neighbors[p] || {};
-                      const l = linkOf(s);
-                      return (
-                        <tr key={p}>
-                          <td style={{ padding: '6px 10px' }} className={styles.kvMono}>{p}</td>
-                          <td style={{ padding: '6px 10px' }}><span className={operClass(l)}>{dash(l)}</span></td>
-                          <td style={{ padding: '6px 10px' }}>{c.enabled === undefined ? '—' : (c.enabled ? 'enabled' : 'disabled')}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(s.speed)}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(s.duplex)}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(s.medium)}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(pe.power)}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(c.description)}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(n.system_name || n.chassis_id)}</td>
-                        </tr>
-                      );
-                    })}
-                    {!ports.length && <tr><td colSpan={9} style={{ padding: 10 }} className={styles.muted}>No ports returned.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-              {audit.poe?.budget != null && (
-                <p className={styles.muted} style={{ marginTop: 8, fontSize: 11 }}>
-                  PoE budget {audit.poe.budget}W · used {audit.poe.used ?? 0}W
-                </p>
-              )}
-            </Card>
-
-            <Card title="VLANs" count={audit.vlans?.length || 0}>
-              {audit.vlans?.length ? (
-                <div className={styles.offsetTableWrap}>
-                  <table className={styles.offsetTable}>
-                    <thead><tr>{['VLAN', 'Name', 'Status', 'Ports'].map((h) => (
-                      <th key={h} style={{ textAlign: 'left', padding: '6px 10px' }}>{h}</th>))}</tr></thead>
-                    <tbody>
-                      {audit.vlans.map((v) => (
-                        <tr key={v.id}>
-                          <td style={{ padding: '6px 10px' }} className={styles.kvMono}>{v.id}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(v.name)}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(v.status)}</td>
-                          <td style={{ padding: '6px 10px' }}>
-                            {(v.ports || []).map((p) => (typeof p === 'string' ? p : `${p.port}${p.tagged ? ' (T)' : ''}`)).join(', ') || '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className={styles.muted} style={{ margin: 0 }}>
-                  None. Expected on CoreSW — it runs the L3 IOL image, where interfaces are routed
-                  and there are no switchports to put in a VLAN.
-                </p>
-              )}
-            </Card>
-
-            <Card title="LLDP neighbours" count={Object.keys(neighbors).length}>
-              {Object.keys(neighbors).length ? (
-                <div className={styles.offsetTableWrap}>
-                  <table className={styles.offsetTable}>
-                    <thead><tr>{['Local port', 'System', 'Chassis', 'Remote port'].map((h) => (
-                      <th key={h} style={{ textAlign: 'left', padding: '6px 10px' }}>{h}</th>))}</tr></thead>
-                    <tbody>
-                      {Object.entries(neighbors).map(([p, n]) => (
-                        <tr key={p}>
-                          <td style={{ padding: '6px 10px' }} className={styles.kvMono}>{p}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(n.system_name)}</td>
-                          <td style={{ padding: '6px 10px' }} >{dash(n.chassis_id)}</td>
-                          <td style={{ padding: '6px 10px' }} className={styles.kvMono}>{dash(n.port_id)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className={styles.muted} style={{ margin: 0 }}>
-                  None. IOS needs <code>lldp run</code> globally, and the IOL l2-ipbase image may not
-                  support LLDP at all — Cisco defaults to CDP.
-                </p>
-              )}
-            </Card>
-
-            <Card title="MAC table" count={macRows.length}>
-              {macRows.length ? (
-                <div className={styles.offsetTableWrap}>
-                  <table className={styles.offsetTable}>
-                    <thead><tr>{['Port', 'MAC', 'VLAN'].map((h) => (
-                      <th key={h} style={{ textAlign: 'left', padding: '6px 10px' }}>{h}</th>))}</tr></thead>
-                    <tbody>
-                      {macRows.map((m, i) => (
-                        <tr key={`${m.port}-${m.mac}-${i}`}>
-                          <td style={{ padding: '6px 10px' }} className={styles.kvMono}>{m.port}</td>
-                          <td style={{ padding: '6px 10px' }} className={styles.kvMono}>{dash(m.mac)}</td>
-                          <td style={{ padding: '6px 10px' }}>{dash(m.vlan)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className={styles.muted} style={{ margin: 0 }}>No MAC entries returned.</p>
-              )}
-            </Card>
-          </>
-        )}
       </main>
+    </div>
+  );
+}
+
+function Id({ label, value, mono }) {
+  return (
+    <div className={styles.idTile}>
+      <span className={styles.idKey}>{label}</span>
+      <span className={`${styles.idVal} ${mono ? styles.idMono : ''}`}>{dash(value)}</span>
     </div>
   );
 }
