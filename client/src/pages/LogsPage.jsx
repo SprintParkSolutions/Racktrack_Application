@@ -131,6 +131,7 @@ export function LogsView({ live = true, refreshTick = 0 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [expanded, setExpanded] = useState(null);
+  const [clearing, setClearing] = useState(false);
   const [, setTick]           = useState(0);
 
   const liveRef = useRef(live);   liveRef.current = live;
@@ -179,6 +180,22 @@ export function LogsView({ live = true, refreshTick = 0 }) {
   const submitSearch = (e) => { e.preventDefault(); setQ(queryInput.trim()); };
   const clearSearch = () => { setQueryInput(''); setQ(''); };
 
+  // Wipe every stored log line. Destructive and not undoable, so confirm first.
+  const clearLogs = async () => {
+    const n = stats?.total ?? logs.length;
+    if (!window.confirm(`Delete all ${n} stored log entries and start fresh?\n\nThis cannot be undone.`)) return;
+    setClearing(true);
+    try {
+      const res = await authFetch(apiUrl('/api/logs/clear'), { method: 'POST' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await load();
+    } catch (e) {
+      setError(e.message || 'Could not clear the log');
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const byLevel = stats?.byLevel || {};
 
   if (loading) {
@@ -219,9 +236,20 @@ export function LogsView({ live = true, refreshTick = 0 }) {
       </div>
 
       <div className={styles.countLine}>
-        Showing {logs.length}{total > logs.length ? ` of ${total}` : ''} entries
-        {q ? ` matching “${q}”` : ''}
-        {stats?.retentionDays ? ` · kept ${stats.retentionDays} days` : ''}
+        <span>
+          Showing {logs.length}{total > logs.length ? ` of ${total}` : ''} entries
+          {q ? ` matching “${q}”` : ''}
+          {stats?.retentionDays ? ` · kept ${stats.retentionDays} days` : ''}
+        </span>
+        <button
+          type="button"
+          className={styles.clearLogsBtn}
+          disabled={clearing || !logs.length}
+          onClick={clearLogs}
+          title="Delete every stored log entry and start fresh"
+        >
+          {clearing ? 'Clearing…' : 'Clear log'}
+        </button>
       </div>
 
       <div className={styles.tableWrap}>

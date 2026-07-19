@@ -1814,6 +1814,23 @@ app.get('/api/logs/stats', auth.requireAuth, (req, res) => {
   }
 });
 
+// POST /api/logs/clear  → wipe every stored log line ("start fresh").
+// Same admin gate as reading them. Audited, and we log one line immediately
+// afterwards so the fresh log records who cleared it and when.
+app.post('/api/logs/clear', auth.requireAuth, (req, res) => {
+  if (!requireLogAdmin(req, res)) return;
+  try {
+    const removed = logStore.clearAll();
+    audit.log({ req, action: 'logs.clear', status: 'ok', payload: { removed } });
+    logger.info({ event: 'logs.cleared', removed, by: req.user?.username },
+      `logs cleared (${removed} entries removed)`);
+    res.json({ ok: true, removed });
+  } catch (err) {
+    logger.error({ err: err.message }, '[logs] clear failed');
+    res.status(500).json({ ok: false, error: 'Could not clear logs' });
+  }
+});
+
 // GET /api/logs/:id  → one row with its full parsed JSON line (row detail).
 app.get('/api/logs/:id', auth.requireAuth, (req, res) => {
   if (!requireLogAdmin(req, res)) return;

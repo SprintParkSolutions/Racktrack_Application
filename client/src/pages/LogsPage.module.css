@@ -105,7 +105,23 @@
   border: none; background: transparent; cursor: pointer;
   color: var(--muted, #6b6466); font-size: 0.9rem; padding: 4px 6px;
 }
-.countLine { font-size: 0.78rem; color: var(--muted, #6b6466); margin-bottom: 8px; }
+.countLine {
+  font-size: 0.78rem; color: var(--muted, #6b6466); margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+/* Destructive, so it stays quiet until hovered rather than shouting in red. */
+.clearLogsBtn {
+  flex: none; font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+  color: var(--muted, #6b6466);
+  background: transparent;
+  border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.12));
+  padding: 4px 11px; border-radius: 999px;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.clearLogsBtn:hover:not(:disabled) {
+  color: #c0392b; border-color: #c0392b; background: rgba(192,57,43,0.06);
+}
+.clearLogsBtn:disabled { opacity: 0.4; cursor: default; }
 
 /* ── Table ──────────────────────────────────────────────── */
 .tableWrap {

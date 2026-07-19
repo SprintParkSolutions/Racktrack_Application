@@ -146,6 +146,18 @@ function prune() {
   } catch (_) { /* best-effort */ }
 }
 
+// Wipe every stored log line and reclaim the file space — "start fresh".
+// Done through the live connection (rather than deleting logs.db on disk)
+// so the running server keeps a valid handle and nothing is corrupted.
+// Returns how many rows were removed.
+function clearAll() {
+  if (!db) return 0;
+  const before = db.prepare('SELECT COUNT(*) c FROM app_logs').get().c;
+  db.prepare('DELETE FROM app_logs').run();
+  try { db.exec('VACUUM'); } catch (_) { /* not fatal — space just isn't reclaimed */ }
+  return before;
+}
+
 // The pino multistream target. pino writes one newline-terminated JSON string
 // per log; we persist each. objectMode:false → chunks arrive as Buffers.
 const stream = new Writable({
@@ -222,4 +234,4 @@ function logStats(since) {
   return { total, byLevel, oldest: bounds.oldest, newest: bounds.newest, retentionDays: RETENTION_DAYS };
 }
 
-module.exports = { stream, queryLogs, getLog, logStats, prune, init, _dbPath: DB_PATH };
+module.exports = { stream, queryLogs, getLog, logStats, prune, clearAll, init, _dbPath: DB_PATH };
