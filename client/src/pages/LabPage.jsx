@@ -347,7 +347,10 @@ export default function LabPage() {
             {selected.last_error && (
               <div className={`${styles.banner} ${styles.bannerWarn}`}>
                 <span className={styles.bannerStrong}>
-                  Poller can’t reach it{selected.consecutive_failures ? ` — ${selected.consecutive_failures} failed attempts` : ''}.
+                  Poller can’t reach it
+                  {selected.consecutive_failures
+                    ? ` — ${selected.consecutive_failures} failed attempt${selected.consecutive_failures === 1 ? '' : 's'}`
+                    : ''}.
                 </span>
                 {offlineExplain && <> {offlineExplain.plain}</>}
                 {offlineExplain && <div className={styles.bannerHint}>{offlineExplain.hint}</div>}
@@ -355,7 +358,10 @@ export default function LabPage() {
               </div>
             )}
 
-            {entry?.error && (
+            {/* Only worth its own line when it says something the poller banner
+                above doesn't: either it's annotating cached data we're still
+                showing, or there's no poller banner up to explain the failure. */}
+            {entry?.error && (audit || !selected.last_error) && (
               <p className={`${styles.banner} ${styles.bannerWarn}`}>
                 <span className={styles.bannerStrong}>Last audit failed.</span> {entry.error}
                 {audit && ' — showing the previous result below.'}
@@ -525,23 +531,20 @@ export default function LabPage() {
                 </div>
               </>
             ) : (
-              <div className={styles.section}>
-                {busy ? (
-                  <p className={styles.sectionNote}>Auditing {selected.host} over SSH — identity, ports, PoE, VLANs, LLDP and the MAC table…</p>
-                ) : selected.last_error ? (
+              /* No audit data. The offline / polling-disabled cases already have
+                 a banner above saying exactly why, so don't repeat it here —
+                 only render a section when there's something new to say. */
+              busy ? (
+                <div className={styles.section}>
                   <p className={styles.sectionNote}>
-                    {offlineExplain?.hint
-                      || 'The poller can’t currently reach this switch. A full audit opens the same SSH session and will fail the same way until it’s back online.'}
+                    Auditing {selected.host} over SSH — identity, ports, PoE, VLANs, LLDP and the MAC table…
                   </p>
-                ) : !selected.enabled ? (
-                  <p className={styles.sectionNote}>
-                    Polling is disabled for this switch, so it isn’t audited automatically.
-                    Enable polling to run one.
-                  </p>
-                ) : (
+                </div>
+              ) : selected.enabled && !selected.last_error ? (
+                <div className={styles.section}>
                   <p className={styles.sectionNote}>Starting audit…</p>
-                )}
-              </div>
+                </div>
+              ) : null
             )}
           </div>
         )}

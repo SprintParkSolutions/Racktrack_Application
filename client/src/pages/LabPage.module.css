@@ -134,9 +134,12 @@
 .btnPrimary { border-color: var(--md-on-surface, #121417); }
 
 /* ── fact grid (summary key facts) ───────────────────────────────── */
+/* auto-FIT, not auto-fill: the 1px gaps expose the grey backdrop, so an
+   unfilled trailing track renders as an empty grey cell. auto-fit collapses
+   the empty tracks and lets the real tiles stretch instead. */
 .factGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1px;
   background: var(--md-outline-variant, #e0e0e0);
   border-top: 1px solid var(--md-outline-variant, #e0e0e0);
@@ -198,7 +201,7 @@
 /* ── identity tiles ──────────────────────────────────────────────── */
 .idGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1px;
   background: var(--md-outline-variant, #e0e0e0);
   border: 1px solid var(--md-outline-variant, #e0e0e0);
