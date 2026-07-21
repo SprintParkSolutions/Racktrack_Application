@@ -1,0 +1,285 @@
+{
+ "domain": "getting-help",
+ "entries": [
+  {
+   "question": "How do I open the in-app help assistant?",
+   "answer": "1. Tap the round blue speech-bubble button in the bottom-right corner (\"Get help\").\n2. The panel opens titled \"Help\" / \"Answers about using RackTrack\".\n3. Type into \"Describe what's happening…\" and tap Send, or tap a starter chip such as \"I can't log in\" or \"My scan came back empty\".\n\nThe X button or Escape closes it. If there is no button at all, the assistant is unavailable on your server.",
+   "symptoms": [
+    "Where is help in RackTrack?",
+    "I need help but can't find a help menu",
+    "There is no help button on my screen"
+   ],
+   "rootCause": "SupportBot renders a fixed floating launcher at right:16px / bottom:16px and only mounts it once GET /api/support/status reports ok; when the knowledge base failed to load the component returns null so no launcher appears.",
+   "evidence": [
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "106-120",
+     "snippet": "<button\n        type=\"button\"\n        className={styles.launcher}\n        onClick={() => setOpen(true)}\n        aria-label=\"Open support assistant\"\n        title=\"Get help\"\n      >"
+    },
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "124-133",
+     "snippet": "<div className={styles.title}>Help</div>\n          <div className={styles.sub}>Answers about using RackTrack</div>"
+    },
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "15-20",
+     "snippet": "const STARTERS = [\n  \"I can't log in\",\n  'My scan came back empty',\n  'How do I export a report?',\n  'My work disappeared',\n];"
+    },
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "187-197",
+     "snippet": "placeholder=\"Describe what's happening…\"\n          maxLength={1000}"
+    },
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "54-60",
+     "snippet": "// Escape closes the panel — expected on desktop, harmless on mobile.\n  useEffect(() => {\n    if (!open) return undefined;\n    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };"
+    },
+    {
+     "file": "client/src/components/SupportBot.module.css",
+     "lines": "2-11",
+     "snippet": ".launcher {\n  position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));"
+    }
+   ],
+   "userCanSelfFix": true,
+   "audience": "end-user",
+   "confidence": "certain"
+  },
+  {
+   "question": "What can the help assistant answer, and what will it not answer?",
+   "answer": "Ask in your own words about using RackTrack — signing in, scanning, reports, sync. Keep it under 1000 characters.\n\nThree things it will not answer, and says so:\n• Future releases, ETAs or roadmap — it only knows RackTrack as it works today.\n• Pricing, licensing or billing.\n• Comparisons with other products.\n\nFor those it points you to your administrator or account manager.",
+   "symptoms": [
+    "Can I ask the assistant when a feature is coming?",
+    "The assistant says it only covers how to use RackTrack",
+    "Asked about price and got redirected to my administrator"
+   ],
+   "rootCause": "detectOutOfScope() matches roadmap, commercial and comparison intents before retrieval runs and returns a fixed reply on route 'out-of-scope', because the knowledge base is mined from source code and can only describe current behaviour.",
+   "evidence": [
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "302-322",
+     "snippet": "function detectOutOfScope(text) {\n...\n      kind: 'roadmap',\n      reply:\n        \"I can only tell you how RackTrack works today - I don't have anything about future plans or release timing. \" +\n        'Your RackTrack administrator can raise a feature request with the product team.',"
+    },
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "324-337",
+     "snippet": "kind: 'commercial',\n      reply:\n        \"I only cover how to use RackTrack, so I don't have anything on pricing or billing. \" +\n        'Your RackTrack administrator or account manager can help with that.',\n...\n      kind: 'comparison',\n      reply:\n        \"I can explain what RackTrack does, but I can't compare it to other products - I don't have reliable information about them. \""
+    },
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "137-141",
+     "snippet": "<strong>What are you stuck on?</strong>\n            Ask in your own words. If I don&apos;t know something for certain, I&apos;ll\n            say so rather than guess."
+    },
+    {
+     "file": "server/support_routes.js",
+     "lines": "106-108",
+     "snippet": "if (message.length > MAX_QUESTION_CHARS) {\n      return res.status(413).json({ error: `message must be under ${MAX_QUESTION_CHARS} characters` });"
+    }
+   ],
+   "userCanSelfFix": true,
+   "audience": "end-user",
+   "confidence": "certain"
+  },
+  {
+   "question": "The assistant said \"I don't have reliable information about that.\" Is it broken?",
+   "answer": "No — that is deliberate. When nothing in the verified knowledge base matches, it refuses instead of inventing an answer that could send you the wrong way. Declined replies are styled differently so you never mistake one for advice.\n\n1. Re-ask using the exact on-screen error text or screen name.\n2. If it still declines, tap \"Reach a person\" under the reply.",
+   "symptoms": [
+    "I don't have reliable information about that. I'd rather not guess and send you the wrong way.",
+    "The assistant refuses to answer my question",
+    "The bot says it doesn't know"
+   ],
+   "rootCause": "ask() applies four independent gates (confidence, coverage, absolute score, and the fraction of query words absent from the whole corpus). If any gate fails it returns route 'refusal' with a fixed message rather than the best weak match.",
+   "evidence": [
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "537-552",
+     "snippet": "const gated =\n    !top ||\n    confidence < THRESHOLDS.GROUNDED ||\n    top.coverage < THRESHOLDS.MIN_COVERAGE ||\n    top.score < THRESHOLDS.MIN_SCORE ||\n    top.unknownRatio > THRESHOLDS.MAX_UNKNOWN;\n\n  if (gated) {\n    return {\n      answer: `I don't have reliable information about that. I'd rather not guess and send you the wrong way. ${ESCALATION[tier]}`,"
+    },
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "4-11",
+     "snippet": "*   verbatim  — search is confident; return the verified answer word for word.\n *               Generates nothing, so it cannot hallucinate.\n...\n *   refusal   — nothing relevant matched. Say so. Never guess."
+    },
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "22-24",
+     "snippet": "// Routes where the bot did not have an answer. Shown differently so a decline\n// is never mistaken for advice.\nconst DECLINED = new Set(['refusal', 'out-of-scope']);"
+    }
+   ],
+   "userCanSelfFix": true,
+   "audience": "end-user",
+   "confidence": "certain"
+  },
+  {
+   "question": "The assistant can't help me. How do I reach a real person?",
+   "answer": "Under any declined reply, tap \"Reach a person\" — it appears next to \"Still stuck?\".\n\nThe assistant then tells you what to do next:\n• Technicians: contact your RackTrack administrator, and say what you were doing when it happened.\n• Owners, org admins and site managers: capture the exact error text and steps to reproduce, then escalate to the engineering team.",
+   "symptoms": [
+    "How do I contact support?",
+    "Still stuck after asking the assistant",
+    "I need a human, not a bot"
+   ],
+   "rootCause": "Declined assistant messages render a 'Still stuck? Reach a person' affordance that re-asks the bot 'how do I contact support'; the escalation text appended to every refusal is chosen by the caller's tier from the ESCALATION map.",
+   "evidence": [
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "161-168",
+     "snippet": "{declined && (\n                  <div className={styles.escape}>\n                    Still stuck?{' '}\n                    <button type=\"button\" onClick={() => send('how do I contact support')}>\n                      Reach a person\n                    </button>"
+    },
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "406-409",
+     "snippet": "const ESCALATION = {\n  'end-user': 'Contact your RackTrack administrator with what you were doing when this happened.',\n  admin: 'Capture the exact error text and steps to reproduce, then escalate to the engineering team.',\n};"
+    },
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "40-42",
+     "snippet": "function tierForRole(role) {\n  return role === 'owner' || role === 'org_admin' || role === 'site_manager' ? 'admin' : 'end-user';\n}"
+    }
+   ],
+   "userCanSelfFix": true,
+   "audience": "end-user",
+   "confidence": "certain"
+  },
+  {
+   "question": "I pasted my password into the help chat by mistake — what now?",
+   "answer": "Change that secret now. The assistant stops and warns you instead of answering, because the message was already sent and may be stored in the conversation.\n\n1. Change the password, key or token immediately.\n2. Re-describe the problem without it and the assistant will help.\n\nNever put passwords, API keys, session tokens or SNMP community strings in the help chat — it never needs them.",
+   "symptoms": [
+    "Before anything else: it looks like you included your password in that message.",
+    "The assistant refused to answer and told me to change my password",
+    "I shared an API key in the support chat"
+   ],
+   "rootCause": "detectCredential() runs before anything else in ask() and matches volunteered secrets (password/passphrase, API key or token, SNMP community string, and unambiguous token shapes), returning route 'credential-guard' instead of an answer.",
+   "evidence": [
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "487-502",
+     "snippet": "const credential = detectCredential(q);\n  if (credential) {\n    return {\n      answer:\n        `Before anything else: it looks like you included ${credential} in that message. ` +\n        `Please change it now, and don't share it in a support chat — I don't need it and it may be stored in this conversation.\\n\\n` +\n        `Once you've changed it, describe the problem again without the ${credential} and I'll help.`,"
+    },
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "370-375",
+     "snippet": "const labelled = [\n    { re: /\\b(?:my\\s+)?(?:password|passwd|pwd|passphrase)\\s*(?:is|:|=)\\s*(\\S+)/i, label: 'your password' },\n    { re: /\\b(?:api[\\s_-]?key|secret|token|bearer)\\s*(?:is|:|=)\\s*(\\S+)/i, label: 'an API key or token' },\n    { re: /\\bcommunity\\s*(?:string)?\\s*(?:is|:|=)\\s*(\\S+)/i, label: 'an SNMP community string' },\n  ];"
+    }
+   ],
+   "userCanSelfFix": true,
+   "audience": "end-user",
+   "confidence": "certain"
+  },
+  {
+   "question": "INTERNAL: What is the support assistant's API surface?",
+   "answer": "Two routes, both behind auth.requireAuth:\n• POST /api/support/ask — body {message, history}; returns {answer, detail, sources, route, ms}. `matches` and `warnings` stay server-side (entry ids, internal state).\n• GET /api/support/status — {ok, tier, entries, mode}.\n\nErrors: 400 missing message, 413 over 1000 chars, 429 rate-limited, 503 KB unavailable. Tier comes from req.user.role, never the body.",
+   "symptoms": [
+    "Which endpoints does the support bot expose?",
+    "What does /api/support/ask return?",
+    "Can a client request a higher knowledge tier?"
+   ],
+   "rootCause": "support_routes.js mounts both routes under a requireAuth guard, resolves the knowledge tier with bot.tierForRole(req.user?.role), sanitises history to at most 6 well-formed turns of 1000 chars each, and rate-limits ask with uploadLimiter({ rate: 1, burst: 10 }) keyed per user.",
+   "evidence": [
+    {
+     "file": "server/support_routes.js",
+     "lines": "45-61",
+     "snippet": "router.use('/api/support', auth.requireAuth);\n...\n// Answering is cheap (local BM25) but the optional model is not free of CPU,\n// so keep a sane ceiling per user.\nconst askLimiter = uploadLimiter({ rate: 1, burst: 10 });"
+    },
+    {
+     "file": "server/support_routes.js",
+     "lines": "101-119",
+     "snippet": "if (typeof message !== 'string' || !message.trim()) {\n      return res.status(400).json({ error: 'message is required' });\n    }\n...\n    // Tier comes from the verified session, never the request body.\n    const tier = bot.tierForRole(req.user?.role);\n...\n          .slice(-MAX_HISTORY_TURNS)"
+    },
+    {
+     "file": "server/support_routes.js",
+     "lines": "134-144",
+     "snippet": "// `matches` and `warnings` are diagnostic — they can expose entry ids and\n    // internal state, so they stay server-side.\n    res.json({\n      answer: result.answer,\n      detail: result.detail || null,\n      sources: result.sources,\n      route: result.route,\n      ms,\n    });"
+    },
+    {
+     "file": "server/support_routes.js",
+     "lines": "149-162",
+     "snippet": "router.get(\n  '/api/support/status',\n...\n    res.json({\n      ok: true,\n      tier,\n      entries: counts[tier],\n      mode: model.ok ? 'search+model' : 'search-only',\n    });"
+    },
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "284-293",
+     "snippet": "const allowed = TIER_AUDIENCES[tier];\n    if (!allowed) throw new Error(`Unknown support tier \"${tier}\"`);\n    // Structural isolation: restricted entries never enter this index.\n    const visible = loadKB().entries.filter((e) => allowed.includes(e.audience));"
+    }
+   ],
+   "userCanSelfFix": false,
+   "audience": "internal-only",
+   "confidence": "certain"
+  },
+  {
+   "question": "INTERNAL: Where do unanswered support questions go, and how do we act on them?",
+   "answer": "Every refusal is appended to server/data/support-refusals.jsonl via appendJsonlWithRotation. Each line holds: at, userId, tier, route, confidence, the question text (truncated to 1000 chars) and nearMisses (matched entry ids). No answer body, nothing else identifying.\n\nTreat that file as the KB backlog: rank questions by frequency, write verified entries for the top ones, then re-tune thresholds.",
+   "symptoms": [
+    "Where are the questions the bot couldn't answer?",
+    "How do we decide what to add to the knowledge base?",
+    "[support] could not write refusal log"
+   ],
+   "rootCause": "logRefusal() is called on every route==='refusal' answer and writes one JSONL record per miss; failures to write are logged at warn level and never fail the request.",
+   "evidence": [
+    {
+     "file": "server/support_routes.js",
+     "lines": "10-13",
+     "snippet": "// Every refusal is logged. That log is the knowledge-base backlog: real\n// questions from real users that the bot could not answer, ranked by how\n// often they come up."
+    },
+    {
+     "file": "server/support_routes.js",
+     "lines": "80-94",
+     "snippet": "function logRefusal(req, question, result) {\n  try {\n    appendJsonlWithRotation(REFUSAL_LOG, {\n      at: new Date().toISOString(),\n      userId: req.user?.id ?? null,\n      tier: result.tier,\n      route: result.route,\n      confidence: result.confidence,\n      question: question.slice(0, MAX_QUESTION_CHARS),\n      nearMisses: (result.matches || []).map((m) => m.id),\n    });"
+    },
+    {
+     "file": "server/support_routes.js",
+     "lines": "125-127",
+     "snippet": "if (result.route === 'refusal') {\n      logRefusal(req, message, { ...result, tier });\n    }"
+    },
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "44-47",
+     "snippet": "// ── Routing thresholds ───────────────────────────────────────────────\n// Re-tune with support-bot/eval/tune.js whenever the KB changes size: IDF and\n// score distributions shift with the corpus."
+    }
+   ],
+   "userCanSelfFix": false,
+   "audience": "internal-only",
+   "confidence": "certain"
+  },
+  {
+   "question": "INTERNAL: The help launcher has disappeared for everyone, or /api/support returns 503.",
+   "answer": "The knowledge base failed to load at boot. Every /api/support route then returns 503 with a `reason` field, and the client hides the launcher rather than showing a button that cannot help. The rest of RackTrack keeps serving.\n\n1. Check the boot log for \"[support] disabled\".\n2. Restore a valid JSON KB at SUPPORT_KB_PATH (default server/data/support-kb.json).\n3. Restart the server.",
+   "symptoms": [
+    "Support assistant is unavailable right now. Please contact your administrator.",
+    "[support] disabled",
+    "No help button appears for any user"
+   ],
+   "rootCause": "bot.warmup() runs once at module load; if the KB file is missing or malformed the error is captured into kbError, kbReady stays false, and a guard middleware short-circuits every /api/support request with 503. The client only mounts its launcher when GET /api/support/status returns ok.",
+   "evidence": [
+    {
+     "file": "server/support_routes.js",
+     "lines": "29-57",
+     "snippet": "let kbReady = false;\nlet kbError = null;\ntry {\n  const counts = bot.warmup();\n  kbReady = true;\n...\n} catch (err) {\n  kbError = err.message;\n  logger?.warn?.(`[support] disabled — ${err.message}`);\n}\n...\n  if (!kbReady) {\n    return res.status(503).json({\n      error: 'Support assistant is unavailable right now. Please contact your administrator.',\n      reason: kbError,\n    });"
+    },
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "267-274",
+     "snippet": "if (!fs.existsSync(KB_PATH)) {\n    throw new Error(\n      `Support bot knowledge base missing at ${KB_PATH}. ` +\n        `The bot refuses to start ungrounded — an ungrounded support bot is worse than none.`\n    );"
+    },
+    {
+     "file": "server/lib/support_bot.js",
+     "lines": "25-25",
+     "snippet": "const KB_PATH = process.env.SUPPORT_KB_PATH || path.join(__dirname, '..', 'data', 'support-kb.json');"
+    },
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "36-44",
+     "snippet": "// Only mount the launcher if the assistant can actually answer.\n  useEffect(() => {\n    ...\n    authFetch(apiUrl('/api/support/status'))\n      .then((r) => (r.ok ? r.json() : null))\n      .then((d) => { if (!cancelled) setAvailable(Boolean(d && d.ok)); })"
+    },
+    {
+     "file": "client/src/components/SupportBot.jsx",
+     "lines": "104-104",
+     "snippet": "if (!available) return null;"
+    }
+   ],
+   "userCanSelfFix": false,
+   "audience": "internal-only",
+   "confidence": "certain"
+  }
+ ]
+}

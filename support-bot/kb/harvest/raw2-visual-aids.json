@@ -1,0 +1,214 @@
+{
+  "domain": "On-screen visual aids (scan 3D preview, SFP module images)",
+  "entries": [
+    {
+      "question": "During a scan there's a small spinning 3D rack above \"Analyzing rack…\" — what is it telling me?",
+      "answer": "It is a progress animation, not a picture of your rack. The glowing band and the lit shelf travel top-to-bottom as the percentage climbs, in step with the line of text under it (\"Preprocessing image…\", \"Detecting rack boundaries…\", \"Identifying components…\", \"Mapping ports and cables…\", \"Locating incident target…\"). Read the step text and the % — the 3D rack adds nothing else, and it ignores taps.",
+      "symptoms": [
+        "Small rotating rack shown above the words \"Analyzing rack…\"",
+        "Wondering whether the animation reflects the rack being scanned",
+        "Tapping the 3D rack does nothing"
+      ],
+      "rootCause": "MiniRack3D is a decorative WebGL animation driven only by the `progress` number; the scan beam and the lit unit are derived from progress, and the container sets pointerEvents: 'none'.",
+      "evidence": [
+        {
+          "file": "client/src/pages/ScanPage.jsx",
+          "lines": "828-841",
+          "snippet": "<div className={styles.ovRack3D}>\n  <MiniRack3D progress={progress} size={150} />\n...\n<p className={styles.ovTitle}>Analyzing rack…</p>\n<p className={styles.ovStep}>{step}</p>\n...\n<span className={styles.ovPct}>{progress}%</span>"
+        },
+        {
+          "file": "client/src/pages/ScanPage.jsx",
+          "lines": "893",
+          "snippet": "const STEPS = ['Preprocessing image…','Detecting rack boundaries…','Identifying components…','Mapping ports and cables…','Locating incident target…'];"
+        },
+        {
+          "file": "client/src/components/MiniRack3D.jsx",
+          "lines": "439-440",
+          "snippet": "// Top → bottom: progress 0% → top unit; progress 100% → bottom unit.\nconst scanIdx = Math.min(Math.floor((progress / 100) * 5), 4);"
+        },
+        {
+          "file": "client/src/components/MiniRack3D.jsx",
+          "lines": "459",
+          "snippet": "<div style={{ width: size, height: size, pointerEvents: 'none' }}>"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "The spinning rack shown while scanning doesn't look like the rack I photographed.",
+      "answer": "Expected. It is a fixed model, always the same five shelves (switch, patch panel, server, patch panel, switch), and it is drawn before your photo has been analysed — it can never match your rack. Your real rack appears in the results after the scan finishes, including the Topology tab's 2D / 3D view. Nothing is wrong.",
+      "symptoms": [
+        "Animated rack shows devices that aren't in the photographed rack",
+        "Always the same number of shelves regardless of the rack scanned",
+        "Technician worried the scan detected the wrong equipment"
+      ],
+      "rootCause": "The Scene in MiniRack3D hard-codes five units at fixed heights; it receives only the progress number, never any scan output.",
+      "evidence": [
+        {
+          "file": "client/src/components/MiniRack3D.jsx",
+          "lines": "444-449",
+          "snippet": "<RackFrame />\n<SwitchUnit  y={0.95}  scanLit={scanIdx === 0} />\n<PatchPanel  y={0.45}  scanLit={scanIdx === 1} />\n<ServerUnit  y={-0.05} scanLit={scanIdx === 2} />\n<PatchPanel  y={-0.55} scanLit={scanIdx === 3} />\n<SwitchUnit  y={-1.05} scanLit={scanIdx === 4} />"
+        },
+        {
+          "file": "client/src/components/MiniRack3D.jsx",
+          "lines": "457",
+          "snippet": "export default function MiniRack3D({ progress = 0, size = 150 }) {"
+        },
+        {
+          "file": "client/src/pages/ScanPage.jsx",
+          "lines": "831",
+          "snippet": "<MiniRack3D progress={progress} size={150} />"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "The scan overlay shows \"Analyzing rack…\", the bar and the percentage, but the 3D rack area is empty.",
+      "answer": "1. Let the scan finish — the 3D rack is decoration; the step text and % are the real status.\n2. If it is blank on every scan on this phone, that device can't start the 3D layer. There is no substitute drawing, so the slot simply stays empty.\nYour scan and its results are unaffected. Report the phone model if you want it chased.",
+      "symptoms": [
+        "Blank or black square where the spinning rack should be",
+        "Progress bar and percentage still update normally",
+        "Only happens on certain phones or tablets"
+      ],
+      "rootCause": "MiniRack3D renders a WebGL <Canvas> with a transparent background and <Suspense fallback={null}> — if the 3D context or scene fails to start, nothing at all is drawn while the rest of the overlay (bar, step, percent) keeps working.",
+      "evidence": [
+        {
+          "file": "client/src/components/MiniRack3D.jsx",
+          "lines": "460-472",
+          "snippet": "<Canvas\n  camera={{ position: [4.6, 2.4, 4.6], fov: 32 }}\n  dpr={[1, 2]}\n  gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}\n>\n...\n  <Suspense fallback={null}>\n    <Scene progress={progress} />\n  </Suspense>"
+        },
+        {
+          "file": "client/src/pages/ScanPage.jsx",
+          "lines": "830-840",
+          "snippet": "<div className={styles.ovRack3D}>\n  <MiniRack3D progress={progress} size={150} />\n  <div className={styles.ovRack3DGlow} aria-hidden=\"true\" />\n</div>\n...\n<span className={styles.ovPct}>{progress}%</span>"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "inferred"
+    },
+    {
+      "question": "Where does the product photo on an SFP Advisor card come from — is it the exact part I'd receive?",
+      "answer": "It is a photo of that SKU taken from the vendor or retailer listing the recommendation came from, then cached and served by RackTrack. It appears large on the ★ TOP PICK card and as a small thumbnail on the alternatives and cable rows. Use it as a shape/connector sanity check only — confirm the part by the part number and the buy link before ordering.",
+      "symptoms": [
+        "Unsure whether the picture is a real photo of the recommended module",
+        "Photo shows a slightly different label or revision than expected",
+        "Wanting to confirm a module before buying"
+      ],
+      "rootCause": "SfpModuleImage renders module.imageUrl, which the SFP recommender populates from the product page (or an image-search fallback) and re-hosts from the server's own image cache.",
+      "evidence": [
+        {
+          "file": "client/src/components/SfpModuleImage.jsx",
+          "lines": "96-110",
+          "snippet": "<img\n  src={module.imageUrl}\n  alt={`${module.brand || ''} ${module.partNumber || ''}`.trim()}\n  loading=\"lazy\"\n  referrerPolicy=\"no-referrer\"\n  onError={() => setImgFailed(true)}"
+        },
+        {
+          "file": "client/src/components/SfpAdvisor.jsx",
+          "lines": "396-398",
+          "snippet": "<div className={styles.heroPickImage}>\n  <SfpModuleImage module={recommended} size=\"hero\" />\n</div>"
+        },
+        {
+          "file": "client/src/components/SfpAdvisor.jsx",
+          "lines": "486-488",
+          "snippet": "<div className={styles.altsRowThumb}>\n  <SfpModuleImage module={m} size=\"compact\" />\n</div>"
+        },
+        {
+          "file": "pipeline/sfp_recommend.py",
+          "lines": "1246-1251",
+          "snippet": "# Image enrichment via server-side download + local cache. For each\n# module we collect candidate URLs (scraped first if trusted, then\n# DDG image search) and try to actually fetch each one to our\n# outputs/sfp_images/ cache. ... we hand the client a same-origin /outputs/... URL"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "likely"
+    },
+    {
+      "question": "An SFP module card has an empty box where the picture should be.",
+      "answer": "No usable photo for that module, so the image slot is simply left blank — RackTrack never draws a stand-in graphic. The recommendation is still valid: go by the part number, the spec chips (speed, type, distance) and the buy link. If it only happens on a restricted site network, reopen the SFP Advisor tab on a better connection.",
+      "symptoms": [
+        "Blank or white square in place of the module photo",
+        "Some rows have thumbnails and others don't",
+        "No broken-image icon, just empty space"
+      ],
+      "rootCause": "SfpModuleImage returns null when module.imageUrl is missing, and flips to the same null render if the image errors while loading (404 / CORS / decode); there is no placeholder artwork.",
+      "evidence": [
+        {
+          "file": "client/src/components/SfpModuleImage.jsx",
+          "lines": "89-90",
+          "snippet": "const [imgFailed, setImgFailed] = useState(false);\nif (module?.imageUrl && !imgFailed) {"
+        },
+        {
+          "file": "client/src/components/SfpModuleImage.jsx",
+          "lines": "114-118",
+          "snippet": "// No real image available — render nothing (used to draw an SVG\n// silhouette here but the user explicitly asked for no generated\n// graphics). The parent card layout still works because the image\n// slot collapses gracefully.\nreturn null;"
+        },
+        {
+          "file": "client/src/components/SfpModuleImage.jsx",
+          "lines": "102",
+          "snippet": "onError={() => setImgFailed(true)}"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "The photo on the ★ TOP PICK card looks cropped or zoomed in, but the small thumbnails don't.",
+      "answer": "By design. The large card fills its square slot with the photo, so edges can be trimmed; the small thumbnails fit the whole image inside their box instead. It says nothing about the part. Open the card's buy link to see the vendor's full product shot.",
+      "symptoms": [
+        "Edges of the module photo cut off on the large recommendation card",
+        "Same module looks complete in the small alternatives thumbnail"
+      ],
+      "rootCause": "SfpModuleImage uses objectFit 'cover' for size=\"hero\" and 'contain' for size=\"compact\", inside fixed-size slots defined in the stylesheet.",
+      "evidence": [
+        {
+          "file": "client/src/components/SfpModuleImage.jsx",
+          "lines": "95-108",
+          "snippet": "const hero = size === 'hero';\n...\n  objectFit: hero ? 'cover' : 'contain',"
+        },
+        {
+          "file": "client/src/pages/PortsPage.module.css",
+          "lines": "1246-1263",
+          "snippet": ".heroPickImage {\n  flex-shrink: 0;\n  width: 132px;\n  height: 132px;\n...\n.altsRowThumb {\n  grid-area: thumb;\n  width: 44px; height: 44px;"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "INTERNAL: why does the SFP Advisor return fewer modules than the source catalog lists?",
+      "answer": "Internal. The recommender drops every module whose image cannot be downloaded and cached server-side, on the rule that a part the user can't see is not worth recommending. Scraped image URLs are only tried when the host passes a trust gate (page's own domain or a known retailer/CDN); otherwise an image-search fallback runs. If outbound image fetching is blocked, recommendation lists come back short or empty.",
+      "symptoms": [
+        "Advisor shows only one or two options for a switch with many compatible SKUs",
+        "Empty SFP recommendation list in an environment without outbound internet",
+        "A known-good SKU never appears as an alternative"
+      ],
+      "rootCause": "pipeline/sfp_recommend.py filters modules to those with a successfully cached imageUrl after image enrichment, and routes untrusted scraped URLs through an image-search fallback.",
+      "evidence": [
+        {
+          "file": "pipeline/sfp_recommend.py",
+          "lines": "1279-1283",
+          "snippet": "# Hard requirement: a module without a working image is dropped.\n# The procurement card needs a photo so the user can identify what\n# they'd actually be buying; a silhouette is worse than not\n# recommending the part at all.\nmodules = [m for m in modules if m.get(\"imageUrl\")]"
+        },
+        {
+          "file": "pipeline/sfp_recommend.py",
+          "lines": "1252-1253",
+          "snippet": "# Modules whose images can't be downloaded are DROPPED entirely —\n# we never recommend a part the user can't see."
+        },
+        {
+          "file": "pipeline/sfp_recommend.py",
+          "lines": "446-453",
+          "snippet": "# Trust gate for scraped imageUrls. A scraped image is only safe to\n# use directly when it's *from the same domain as the page that listed\n# the product* (or from a well-known retailer/distributor CDN). ... Anything outside the trust gate gets a forced DDG\n# image-search fallback"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    }
+  ]
+}

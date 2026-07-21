@@ -472,6 +472,16 @@ const upload = multer({
 // Shared rate limiter for all upload-bound routes. Keyed by user id when
 // available so multiple techs behind one NAT aren't starved by each other.
 const scanLimit = uploadLimiter();
+// The live viewfinder polls /api/detect every 400ms (~150/min) while the camera
+// is open, but it shared the 20/min upload budget — so ~87% of frames were
+// encoded, uploaded and then rejected with 429, and live detection effectively
+// stopped a few seconds into every session. /api/detect is a lightweight
+// detect-only call (no scan is written), so it gets its own realistic budget.
+// Still bounded, so it remains a DoS guard rather than an open door.
+const detectLimit = uploadLimiter({
+  rate:  Number(process.env.RATE_LIMIT_DETECT_PER_MIN) || 180,
+  burst: Number(process.env.RATE_LIMIT_DETECT_BURST)   || 60,
+});
 
 // Stricter limiter for credential endpoints — throttles brute-force login /
 // password-reset attempts. Keyed by the ACCOUNT (username / email in the body),
@@ -2180,7 +2190,7 @@ setInterval(() => {
  * Response: { devices: [{ class_name, confidence, bbox:[x,y,w,h] }],
  *             image_size: { w, h } }
  */
-app.post('/api/detect', scanLimit, upload.single('image'), async (req, res) => {
+app.post('/api/detect', detectLimit, upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file provided' });
   const tmpPath = req.file.path;
   try {
@@ -4137,7 +4147,7 @@ app.get('/api/rack-group/:groupId/report', auth.requireAuth, async (req, res) =>
  * Returns the current list of RackTrack-actionable tickets pulled from
  * ServiceNow by the poller, plus the top one as a convenience field.
  */
-app.get('/api/incidents/active', (req, res) => {
+app.get('/api/incidents/active', auth.requireAuth, (req, res) => {
   const data = readActiveTickets();
   res.json({
     polled_at: data.polled_at || null,
@@ -4746,7 +4756,7 @@ function getSnCreds(user = null) {
  * GET /api/agent/feedback/scoreboard
  * Returns the agent accuracy scoreboard (local state — no SN call).
  */
-app.get('/api/agent/feedback/scoreboard', async (req, res) => {
+app.get('/api/agent/feedback/scoreboard', auth.requireAuth, async (req, res) => {
   try {
     const r = await pool.request('feedback_scoreboard', {});
     if (!r.ok) return res.status(500).json({ error: r.error || 'scoreboard failed' });
@@ -4778,7 +4788,7 @@ app.post('/api/agent/feedback/refresh', auth.requireAuth, async (req, res) => {
  * GET /api/agent/proactive/insights
  * Returns the most recently cached proactive insights (no SN call).
  */
-app.get('/api/agent/proactive/insights', async (req, res) => {
+app.get('/api/agent/proactive/insights', auth.requireAuth, async (req, res) => {
   try {
     const r = await pool.request('proactive_cached', {});
     if (!r.ok) return res.status(500).json({ error: r.error || 'cached fetch failed' });
@@ -8577,7 +8587,7 @@ app.post('/api/port-poller/reset', auth.requireRole('owner', 'org_admin'), async
 
 // GET /api/feedback/memory/stats
 // Aggregate counts across cable / device corrections + verified ports.
-app.get('/api/feedback/memory/stats', async (req, res) => {
+app.get('/api/feedback/memory/stats', auth.requireAuth, async (req, res) => {
   try {
     const r = await runActiveLearningCli({ cmd: 'stats' }, 60000);
     res.json({ ok: true, ...r.stats });
@@ -8586,7 +8596,7 @@ app.get('/api/feedback/memory/stats', async (req, res) => {
   }
 });
 
-app.get('/api/feedback/stats', (req, res) => {
+app.get('/api/feedback/stats', auth.requireAuth, (req, res) => {
   if (!fs.existsSync(feedbackLogPath)) {
     return res.json({ total: 0, correct: 0, wrong: 0, accuracy: null, by_device_class: {} });
   }

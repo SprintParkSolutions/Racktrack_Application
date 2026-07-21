@@ -1,0 +1,230 @@
+{
+  "domain": "Tenant topology demo page (/demo/topology, TenantMatPage)",
+  "entries": [
+    {
+      "question": "Internal: what is the /demo/topology \"Tenant topology\" page and who can reach it?",
+      "answer": "It is a demo prototype, not a customer feature. /demo/topology renders a fictional tenant (\"Acme Corp\") from server/data/demo_tenant.json. It is registered in App.jsx with no ProtectedRoute wrapper and no link from any nav, so it is reachable only by typing the URL. Use it for demos and design review; never present it to a customer as their inventory.",
+      "symptoms": [
+        "Someone found a rack floor-map page that is not in the menu",
+        "A page shows racks and buildings we do not own (Acme Corp, HQ Datacenter)",
+        "The page loads without logging in"
+      ],
+      "rootCause": "App.jsx mounts <Route path=\"/demo/topology\" element={<TenantMatPage />} /> outside ProtectedRoute/AdminRoute, and server/demo_topology.js is an isolated no-auth router serving a bundled JSON fixture.",
+      "evidence": [
+        {
+          "file": "client/src/App.jsx",
+          "lines": "342-344",
+          "snippet": "{/* Demo: unified tenant rack-layout view. No auth — backed by\n    server/data/demo_tenant.json, isolated from real scan data. */}\n<Route path=\"/demo/topology\" element={<TenantMatPage />} />"
+        },
+        {
+          "file": "server/demo_topology.js",
+          "lines": "1-11",
+          "snippet": "/**\n * Demo tenant-mat topology API — isolated module.\n *\n * Scope: serves a pre-seeded JSON file (server/data/demo_tenant.json) so the\n * tenant-mat UI has something to render before the real CMDB/scan ingestion\n * pipeline exists. NO writes, NO db, NO auth. Mounted at /api/demo/* so it\n * can never collide with the real tenant routes."
+        },
+        {
+          "file": "server/data/demo_tenant.json",
+          "lines": "2-8",
+          "snippet": "\"_comment\": \"Self-contained demo dataset for the tenant-mat topology view. Does not touch auth.db, rack_owners, rack_groups, or the outputs/ tree. Editing this file is the only way to change what the /demo/topology page shows.\",\n  \"schema\": \"tenant_mat.v1\",\n  \"tenant\": { \"id\": \"demo-acme\", \"slug\": \"acme\", \"name\": \"Acme Corp\", \"rack_count\": 15 }"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "Internal: on /demo/topology the \"3D rack\" view shows switches, models and management IPs — is any of it real?",
+      "answer": "No. The 3D rack devices are invented in the browser by synthTopology(): two ToR switches, servers and a PDU with hard-coded models (Catalyst 9300-48P, Dell PowerEdge R750 / HPE ProLiant DL380 Gen10, APC AP8941), fabricated 10.10.x.x mgmt IPs and random port link state. Every device carries synthetic: true. Never quote it as inventory or wiring.",
+      "symptoms": [
+        "Someone asks which switch is in DEMO rack X",
+        "Management IPs on the demo page do not exist on the network",
+        "Port lit/dark state changes for no reason"
+      ],
+      "rootCause": "Demo racks have no scan-derived topology.json, so Rack3DView feeds TopologyScene3D a topo object built by synthTopology(rack) from a seeded PRNG over the rack id — including connected: rng() < 0.55 per port.",
+      "evidence": [
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "432-442",
+          "snippet": "/* ─── Rack 3D view ───\n   ... We synthesize a\n   topo JSON from the rack metadata since demo racks don't have a\n   real scan-derived topology.json on disk. */\nfunction Rack3DView({ rack }) {\n  const topo = useMemo(() => (rack ? synthTopology(rack) : null), [rack?.id]);"
+        },
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "476-492",
+          "snippet": "ports.push({ name: `${name}:Gi1/0/${p}`, label: `Gi1/0/${p}`, kind: 'main',\n        is_uplink: p > portCount - 4, connected: rng() < 0.55 });\n...\n      model: 'Catalyst 9300-48P',\n      mgmt_ip: `10.10.${10 + (h & 0xff)}.${u}`,\n      in_rack: true, synthetic: true,"
+        },
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "516-521",
+          "snippet": "if (u > 1) {\n    devices.push({\n      name: 'PDU-U01', class: 'pdu',\n      u_position: 1, u_size: 1,\n      model: 'APC AP8941', in_rack: true, synthetic: true, ports: [],\n    });"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "Internal: /demo/topology shows \"CMDB not populated yet — showing Local data\" after I click CMDB. How do I fix it?",
+      "answer": "The CMDB fetch failed and the page silently fell back to Local. 1. Run servicenow/demo_tenant_bootstrap.py to create the demo CIs. 2. Click CMDB again. The server answers 502 \"CMDB source unavailable\" when demo_tenant_query.py is missing, exits non-zero, prints non-JSON, or runs past its 60000 ms timeout — the details field carries which.",
+      "symptoms": [
+        "Hourglass banner across the top of the demo topology page",
+        "CMDB button selected but the racks are the same as Local",
+        "/api/demo/tenant-mat?source=cmdb returns 502"
+      ],
+      "rootCause": "GET /api/demo/tenant-mat?source=cmdb spawns servicenow/demo_tenant_query.py; any spawn/parse/timeout failure returns 502 with hint 'Run servicenow/demo_tenant_bootstrap.py to populate CMDB first.', and the client catches j.error to re-request source=json and set cmdbPending.",
+      "evidence": [
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "57-64",
+          "snippet": "const j = await r.json();\n        if (j.error && source === 'cmdb') {\n          // Auto-fall-back to Local so the user is never on a blank error page.\n          setCmdbPending(true);\n          const r2 = await fetch(apiUrl('/api/demo/tenant-mat?source=json'));\n          return r2.json();\n        }"
+        },
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "85-90",
+          "snippet": "{cmdbPending && (\n        <div className={styles.banner}>\n          <span>⏳</span>\n          <span>CMDB not populated yet — showing Local data. The bootstrap script is still running; try CMDB again in a few minutes.</span>"
+        },
+        {
+          "file": "server/demo_topology.js",
+          "lines": "83-89",
+          "snippet": "} catch (err) {\n      return res.status(502).json({\n        error: 'CMDB source unavailable',\n        details: err.message,\n        hint: 'Run servicenow/demo_tenant_bootstrap.py to populate CMDB first.',\n      });"
+        },
+        {
+          "file": "server/demo_topology.js",
+          "lines": "31-42",
+          "snippet": "function runQueryScript(timeoutMs = 60_000) {\n  ...\n    if (!fs.existsSync(QUERY_SCRIPT)) {\n      return reject(new Error(`Query script missing at ${QUERY_SCRIPT}`));\n    }\n    ...\n      reject(new Error(`demo_tenant_query.py timed out (${timeoutMs}ms)`));"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "Internal: I changed the demo data but /demo/topology still shows the old racks.",
+      "answer": "Depends on the source. CMDB responses are cached in-process for 30 s — wait 30 s and reload. Local reads server/data/demo_tenant.json and re-reads it whenever the file's mtime changes, so edits to that file appear on the next request with no server restart. Editing that file is the only way to change what Local shows.",
+      "symptoms": [
+        "Re-ran demo_tenant_bootstrap.py, page unchanged",
+        "Edited demo_tenant.json, Local view unchanged for a moment",
+        "Response contains _cached: true"
+      ],
+      "rootCause": "demo_topology.js keeps _cmdbCache with CMDB_TTL_MS = 30_000 for source=cmdb, and loadDemo() caches the parsed JSON keyed on the file's stat.mtimeMs for source=json.",
+      "evidence": [
+        {
+          "file": "server/demo_topology.js",
+          "lines": "26-29",
+          "snippet": "// Cache the CMDB-sourced response for 30s — the query takes 1-3 s and the\n// data only changes when someone runs bootstrap/teardown.\nlet _cmdbCache = { ts: 0, data: null };\nconst CMDB_TTL_MS = 30_000;"
+        },
+        {
+          "file": "server/demo_topology.js",
+          "lines": "57-63",
+          "snippet": "function loadDemo() {\n  const stat = fs.statSync(DEMO_FILE);\n  if (_cache && stat.mtimeMs === _cacheMtime) return _cache;\n  _cache = JSON.parse(fs.readFileSync(DEMO_FILE, 'utf-8'));\n  _cacheMtime = stat.mtimeMs;\n  return _cache;\n}"
+        },
+        {
+          "file": "server/demo_topology.js",
+          "lines": "75-78",
+          "snippet": "const now = Date.now();\n      if (_cmdbCache.data && (now - _cmdbCache.ts) < CMDB_TTL_MS) {\n        return res.json({ ..._cmdbCache.data, _cached: true });\n      }"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "Internal: on the /demo/topology Floor map, OK, Drift and Orphan racks all look identical. Is the map broken?",
+      "answer": "It is a known cosmetic gap, not missing data. STATUS_META assigns ok, drift and scan_only the same colour (#1a1c1d); only cmdb_only (\"Unscanned\") gets a different one, and unscanned racks additionally render faded and dashed. To read status, switch to the List view and sort by the Status column, or use the header counts (racks / ok / drift / unscanned / orphan).",
+      "symptoms": [
+        "All rack tiles on the floor plan are the same dark colour",
+        "Legend dots look the same for three of the four statuses",
+        "Only pale, dashed racks stand out"
+      ],
+      "rootCause": "STATUS_META maps ok, drift and scan_only to colour '#1a1c1d' and only cmdb_only to '#cfc4c5'; the floor map differentiates further only by fillOpacity/strokeDasharray driven by rack.scanned, and the legend renders one dot per STATUS_META colour.",
+      "evidence": [
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "20-25",
+          "snippet": "const STATUS_META = {\n  ok:         { label: 'OK',         color: '#1a1c1d' },\n  drift:      { label: 'Drift',      color: '#1a1c1d' },\n  cmdb_only:  { label: 'Unscanned',  color: '#cfc4c5' },\n  scan_only:  { label: 'Orphan',     color: '#1a1c1d' },\n};"
+        },
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "297-303",
+          "snippet": "<rect width={RACK_W} height={RACK_D}\n              fill={STATUS_META[r.status]?.color || '#888888'}\n              fillOpacity={r.scanned ? 0.85 : 0.15}\n              stroke={STATUS_META[r.status]?.color || '#888888'}\n              strokeWidth=\"0.05\"\n              strokeDasharray={r.scanned ? 'none' : '0.12 0.08'}"
+        },
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "611-616",
+          "snippet": "<span className={styles.sm}><b>{summary.total}</b> racks</span>\n      <span className={`${styles.sm} ${styles.smOk}`}><b>{summary.ok}</b> ok</span>\n      <span className={`${styles.sm} ${styles.smWarn}`}><b>{summary.drift}</b> drift</span>\n      <span className={`${styles.sm} ${styles.smMute}`}><b>{summary.cmdb_only}</b> unscanned</span>\n      <span className={`${styles.sm} ${styles.smErr}`}><b>{summary.scan_only}</b> orphan</span>"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "Internal: clicking a rack in the /demo/topology tree jumps me into 3D — how do I narrow the Floor map instead?",
+      "answer": "Select a container, not a rack. In the left \"Containers\" tree, picking the tenant, a Building, a Floor or a Row filters Floor map, Hierarchy and List to that scope and leaves the current view alone; picking a rack also forces the view to \"3D rack\". The sidebar button hides/shows the tree. An empty scope shows \"No racks match the current selection.\"",
+      "symptoms": [
+        "View flips to 3D unexpectedly after a tree click",
+        "Floor map shows every floor instead of the one I wanted",
+        "Canvas reads 'No racks match the current selection.'"
+      ],
+      "rootCause": "onSelect sets selectedNode for every node, but for node.type === 'rack' it also calls setSelectedRack(node.id) and setMode('rack'); filterRacks() scopes by building_id / floor_id / (floorId,rowId) and MapView renders only floors that still contain visible racks.",
+      "evidence": [
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "114-120",
+          "snippet": "onSelect={(node) => {\n              setSelectedNode(node);\n              if (node?.type === 'rack') {\n                setSelectedRack(node.id);\n                setMode('rack');\n              }\n            }}"
+        },
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "701-707",
+          "snippet": "function filterRacks(racks, node) {\n  if (!node || node.type === 'tenant' || node.id === 'tenant') return racks;\n  if (node.type === 'building') return racks.filter(r => r.building_id === node.id);\n  if (node.type === 'floor')    return racks.filter(r => r.floor_id === node.id);\n  if (node.type === 'row')      return racks.filter(r => r.floor_id === node.floorId && r.row_id === node.rowId);"
+        },
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "254-256",
+          "snippet": "if (allFloors.length === 0) {\n    return <div className={styles.empty}>No racks match the current selection.</div>;\n  }"
+        },
+        {
+          "file": "client/src/pages/TenantMatPage.jsx",
+          "lines": "161-162",
+          "snippet": "<aside className={styles.tree}>\n      <div className={styles.treeHead}>Containers</div>"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "Internal: what has to be true before a build containing /demo/topology goes on an internet-facing host?",
+      "answer": "Treat the demo route and its API as public. /api/demo/tenant-mat and /api/demo/tenant-mat/rack/:rackId are mounted with a plain app.use — no requireAuth, no tenant scoping — and source=cmdb spawns a Python child process on every uncached request. Before exposing a host: block /demo/* and /api/demo/* at the proxy, or stop mounting the demo_topology router.",
+      "symptoms": [
+        "Demo dataset visible to anonymous visitors",
+        "Unauthenticated hits on /api/demo/tenant-mat in the access log",
+        "python3 processes spawned by web requests"
+      ],
+      "rootCause": "server/app.js mounts require('./demo_topology') unconditionally with app.use and the router declares its routes without any auth middleware; the cmdb branch calls spawn(PYTHON_CMD, [QUERY_SCRIPT]) from the request handler.",
+      "evidence": [
+        {
+          "file": "server/app.js",
+          "lines": "368-377",
+          "snippet": "// Demo tenant-mat — isolated, no-auth, file-backed dataset used by the\n// /demo/topology UI to prototype the unified rack-layout view. Reads\n// server/data/demo_tenant.json; touches no real tenant data.\ntry {\n  app.use(require('./demo_topology'));\n  logger.info({ event: 'router.loaded', router: 'demo_topology' }, 'demo tenant-mat router loaded');"
+        },
+        {
+          "file": "server/demo_topology.js",
+          "lines": "70-73",
+          "snippet": "router.get('/api/demo/tenant-mat', async (req, res) => {\n  const source = (req.query.source || 'json').toString();\n\n  if (source === 'cmdb') {"
+        },
+        {
+          "file": "server/demo_topology.js",
+          "lines": "36-37",
+          "snippet": "const env = { ...process.env, PYTHONIOENCODING: 'utf-8' };\n    const child = spawn(PYTHON_CMD, [QUERY_SCRIPT], { cwd: PROJECT_ROOT, env });"
+        },
+        {
+          "file": "server/demo_topology.js",
+          "lines": "110-114",
+          "snippet": "router.get('/api/demo/tenant-mat/rack/:rackId', (req, res) => {\n  try {\n    const data = loadDemo();\n    const rack = data.racks.find(r => r.id === req.params.rackId);\n    if (!rack) return res.status(404).json({ error: 'Rack not found' });"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    }
+  ]
+}
