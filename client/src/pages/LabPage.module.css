@@ -280,3 +280,12 @@
 
 .empty { text-align: center; padding: 8px 0; }
 .errLine { color: #b45309; font-size: 12.5px; line-height: 1.5; margin: 0; }
+
+/* Extra-neighbour count ("+3") next to the first device on a shared port.
+   Muted so the device name stays primary, but visible enough that the port
+   doesn't read as a point-to-point link when it isn't. */
+.alsoCount {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.55;
+}

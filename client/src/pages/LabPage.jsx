@@ -442,7 +442,18 @@ export default function LabPage() {
                                     <td>{dash(s.medium)}</td>
                                     <td>{dash(pe.power)}</td>
                                     <td>{dash(c.description)}</td>
-                                    <td>{dash(n.system_name || n.chassis_id)}</td>
+                                    {/* `also` counts extra neighbours on the same local port —
+                                        every lab switch's e0/3 shares one pnet0 bridge, so a port
+                                        can genuinely see several devices. Showing only the first
+                                        would misrepresent the link as point-to-point. */}
+                                    <td>
+                                      {dash(n.system_name || n.chassis_id)}
+                                      {n.also > 0 && (
+                                        <span className={styles.alsoCount} title={`${n.also} more device(s) seen on this port`}>
+                                          {` +${n.also}`}
+                                        </span>
+                                      )}
+                                    </td>
                                   </tr>
                                 );
                               })}

@@ -6426,6 +6426,43 @@ app.post('/api/switch/lldp-neighbor', auth.requireAuth, async (req, res) => {
 // parseLooseNeighbor (the same field extractor the per-port lookup uses).
 // Returns { "<portKey>": {found, system_name, port_id, ...} } keyed by the
 // interface's port number (e.g. "1/0/1"), so the client can join by port.
+// CDP entries are delimited by a ----- rule and, unlike LLDP, put "Device ID:"
+// BEFORE "Interface:". parseAllLldpNeighbors slices forward from the interface
+// marker, so it hands each entry's Device ID to the PREVIOUS neighbour: against
+// the lab switches that produced system=None for the last port and a
+// right-only-by-coincidence value for the one before it. Parse whole delimited
+// entries instead, which is CDP's actual structure.
+//
+// Several neighbours legitimately share ONE local port — every lab switch's
+// e0/3 lands on the same pnet0 management bridge, and a desk phone sits on it
+// too. A flat map silently kept whichever entry came last, so keep the first
+// and count the rest instead of pretending there was only one.
+function parseCdpNeighbors(raw) {
+  const text = (raw || '').replace(/\r/g, '');
+  const out = {};
+  for (const blk of text.split(/^-{10,}\s*$/m)) {
+    const local = blk.match(/^[ \t]*Interface:\s*([^,\n]+)/mi);
+    if (!local) continue;
+    const key = local[1].trim().match(/(\d+\/\d+(?:\/\d+)?)\s*$/);
+    if (!key) continue;
+    const port = key[1];
+    const pick = (re) => { const m = blk.match(re); return m ? m[1].trim() : null; };
+    const device = pick(/^[ \t]*Device ID:\s*([^\n]+)/mi);
+    const remote = pick(/Port ID\s*\([^)]*\):\s*([^\n]+)/i);
+    if (!device && !remote) continue;
+    if (out[port]) { out[port].also = (out[port].also || 0) + 1; continue; }
+    out[port] = {
+      found:              true,
+      system_name:        device,
+      port_id:            remote,
+      management_address: pick(/IP address:\s*((?:\d{1,3}\.){3}\d{1,3})/i),
+      platform:           pick(/^[ \t]*Platform:\s*([^,\n]+)/mi),
+      chassis_id:         null,
+    };
+  }
+  return out;
+}
+
 function parseAllLldpNeighbors(raw) {
   const text = (raw || '')
     .replace(/\r/g, '')
@@ -6737,7 +6774,7 @@ async function auditSwitchHost({ host, sshPort, vendorKey, username, password, e
   // rest, which on these Cisco IOL images is every port — they answer CDP and
   // return nothing for LLDP.
   const lldpN = parseAllLldpNeighbors(lldpRaw || '');
-  const cdpN  = parseAllLldpNeighbors(cdpRaw  || '');
+  const cdpN  = parseCdpNeighbors(cdpRaw || '');
   const neighbors = { ...cdpN, ...lldpN };
   return {
     identity:  parseIdentityFor(vendorKey, out.sysinfo || ''),
