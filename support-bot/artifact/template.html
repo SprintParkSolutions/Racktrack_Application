@@ -1,0 +1,439 @@
+<title>RackTrack Support Knowledge Base</title>
+<style>
+  /* ── Tokens ──────────────────────────────────────────────────────────
+     Machine-room palette: the blue-black inside a network cabinet, steel
+     neutrals biased toward that blue, and status-LED amber as the accent.
+     Tier colours (cyan / amber / red) are semantic and sit apart from it. */
+  /* Light is the default. Cool technical paper rather than plain white: the
+     list pane sits on a tinted ground so the two-pane split reads structurally,
+     and the reading panel is the brightest surface on the page. */
+  :root {
+    --ground:      #e9edf0;
+    --panel:       #ffffff;
+    --panel-2:     #f2f5f7;
+    --rule:        #c6d0d7;
+    --rule-soft:   #dde4e9;
+    --ink:         #101923;
+    --ink-2:       #35434f;
+    --steel:       #5b6b78;
+    --steel-dim:   #7e8d99;
+
+    --accent:      #a85c0a;
+    --accent-soft: #f6e6d2;
+
+    --tier-user:   #17707e;
+    --tier-admin:  #a85c0a;
+    --tier-int:    #a83a2e;
+
+    --ok:          #2a7148;
+    --warn:        #a85c0a;
+
+    --shadow: 0 1px 2px rgba(16,25,35,.07), 0 8px 24px rgba(16,25,35,.07);
+
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:      #0e1419;
+      --panel:       #151d24;
+      --panel-2:     #1b242c;
+      --rule:        #27333c;
+      --rule-soft:   #1f2a32;
+      --ink:         #e3eaef;
+      --ink-2:       #b3c1cb;
+      --steel:       #8496a3;
+      --steel-dim:   #5f7181;
+
+      --accent:      #e08c3c;
+      --accent-soft: #2e2317;
+
+      --tier-user:   #45b3c4;
+      --tier-admin:  #e08c3c;
+      --tier-int:    #e0705f;
+
+      --ok:          #4cb87a;
+      --warn:        #e08c3c;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  /* Viewer's explicit toggle must win over the OS preference, both ways. */
+  :root[data-theme="light"] {
+    --ground:#e9edf0; --panel:#fff; --panel-2:#f2f5f7; --rule:#c6d0d7; --rule-soft:#dde4e9;
+    --ink:#101923; --ink-2:#35434f; --steel:#5b6b78; --steel-dim:#7e8d99;
+    --accent:#a85c0a; --accent-soft:#f6e6d2;
+    --tier-user:#17707e; --tier-admin:#a85c0a; --tier-int:#a83a2e;
+    --ok:#2a7148; --warn:#a85c0a;
+    --shadow: 0 1px 2px rgba(16,25,35,.07), 0 8px 24px rgba(16,25,35,.07);
+  }
+  :root[data-theme="dark"] {
+    --ground:#0e1419; --panel:#151d24; --panel-2:#1b242c; --rule:#27333c; --rule-soft:#1f2a32;
+    --ink:#e3eaef; --ink-2:#b3c1cb; --steel:#8496a3; --steel-dim:#5f7181;
+    --accent:#e08c3c; --accent-soft:#2e2317;
+    --tier-user:#45b3c4; --tier-admin:#e08c3c; --tier-int:#e0705f;
+    --ok:#4cb87a; --warn:#e08c3c;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--ui); font-size: 15px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ── Masthead ─────────────────────────────────────────────────────── */
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    background: var(--panel);
+    padding: 20px 24px 0;
+  }
+  .mast-top { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+  h1 {
+    margin: 0; font-size: 21px; font-weight: 640; letter-spacing: -.022em;
+    text-wrap: balance;
+  }
+  .lede { margin: 5px 0 0; color: var(--steel); font-size: 13.5px; max-width: 62ch; }
+  .theme-btn {
+    margin-left: auto; border: 1px solid var(--rule); background: var(--panel-2);
+    color: var(--ink-2); border-radius: 7px; padding: 5px 9px; cursor: pointer;
+    font: inherit; font-size: 13px; line-height: 1;
+  }
+  .theme-btn:hover { border-color: var(--steel-dim); }
+  .theme-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Summary figures. The bar under each is the share of the whole. */
+  .figures { display: flex; gap: 30px; flex-wrap: wrap; margin: 18px 0 0; padding: 0 0 16px; }
+  .fig { min-width: 84px; }
+  .fig .n {
+    font-family: var(--mono); font-size: 25px; font-weight: 600;
+    letter-spacing: -.03em; line-height: 1.1; font-variant-numeric: tabular-nums;
+  }
+  .fig .k {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .085em;
+    color: var(--steel-dim); margin-top: 3px; font-weight: 600;
+  }
+  .fig .track { height: 3px; background: var(--rule-soft); border-radius: 2px; margin-top: 7px; overflow: hidden; }
+  .fig .track i { display: block; height: 100%; border-radius: 2px; }
+
+  /* ── Controls ─────────────────────────────────────────────────────── */
+  .controls {
+    display: flex; gap: 9px; flex-wrap: wrap; align-items: center;
+    padding: 12px 24px; border-bottom: 1px solid var(--rule);
+    background: var(--panel-2); position: sticky; top: 0; z-index: 20;
+  }
+  .search {
+    flex: 1 1 220px; min-width: 0; max-width: 380px;
+    border: 1px solid var(--rule); background: var(--panel); color: var(--ink);
+    border-radius: 8px; padding: 7px 11px; font: inherit; font-size: 14px;
+  }
+  .search:focus { outline: none; border-color: var(--accent); }
+  .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--panel); }
+  /* The topic filter has ten options and cannot fit a phone. It scrolls inside
+     its own track so the page body never scrolls sideways. A flex item defaults
+     to min-width:auto and refuses to shrink below its content, so min-width:0
+     is what actually lets overflow-x take effect here. */
+  #domSeg {
+    flex: 1 1 100%; min-width: 0; max-width: 100%;
+    overflow-x: auto; scrollbar-width: thin;
+    justify-content: flex-start;
+  }
+  #domSeg button { white-space: nowrap; flex: 0 0 auto; }
+  .seg button {
+    border: 0; background: transparent; color: var(--steel); cursor: pointer;
+    font: inherit; font-size: 12.5px; font-weight: 560; padding: 6px 11px;
+    border-right: 1px solid var(--rule-soft);
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); }
+  .seg button:hover { color: var(--ink); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .count { margin-left: auto; font-size: 12.5px; color: var(--steel-dim); font-family: var(--mono); }
+
+  /* ── Two-pane inspector ───────────────────────────────────────────── */
+  .stage { display: grid; grid-template-columns: minmax(310px, 400px) 1fr; height: calc(100vh - 190px); min-height: 440px; }
+  @media (max-width: 900px) { .stage { grid-template-columns: 1fr; height: auto; } }
+
+  /* The list sits recessed on the tinted ground; the reading panel to its right
+     is the brightest surface, so the eye lands there without being told to. */
+  .rack {
+    overflow-y: auto; border-right: 1px solid var(--rule); background: var(--ground);
+    box-shadow: inset -6px 0 10px -10px rgba(16, 25, 35, .35);
+  }
+  @media (max-width: 900px) { .rack { border-right: 0; max-height: 60vh; box-shadow: none; } }
+
+  /* Each entry is a rack unit: status stripe, asset-tag id, label. */
+  .unit {
+    display: block; width: 100%; text-align: left; border: 0; cursor: pointer;
+    background: transparent; color: inherit; font: inherit;
+    padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule-soft);
+    display: grid; grid-template-columns: 4px 74px 1fr; gap: 11px; align-items: baseline;
+  }
+  .unit:hover { background: var(--panel-2); }
+  .unit[aria-current="true"] { background: var(--panel); }
+  .unit:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .stripe { align-self: stretch; border-radius: 0 2px 2px 0; }
+  .uid { font-family: var(--mono); font-size: 11px; color: var(--steel-dim); letter-spacing: .01em; }
+  .uq { font-size: 13.5px; line-height: 1.4; color: var(--ink-2); }
+  .unit[aria-current="true"] .uq { color: var(--ink); }
+
+  /* ── Detail ───────────────────────────────────────────────────────── */
+  .detail { overflow-y: auto; padding: 26px 30px 60px; background: var(--panel); }
+  @media (max-width: 640px) { .detail { padding: 20px 18px 48px; } }
+  .empty { color: var(--steel-dim); font-size: 14px; margin-top: 40px; }
+
+  .d-tags { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin-bottom: 13px; }
+  .tag {
+    font-size: 10.5px; font-weight: 680; letter-spacing: .07em; text-transform: uppercase;
+    padding: 2.5px 8px; border-radius: 4px; border: 1px solid currentColor;
+  }
+  .tag.plain { border-color: var(--rule); color: var(--steel); font-family: var(--mono); letter-spacing: .02em; text-transform: none; font-weight: 500; }
+  .d-q { margin: 0 0 16px; font-size: 20px; font-weight: 620; letter-spacing: -.018em; line-height: 1.33; text-wrap: balance; }
+  .d-ans {
+    white-space: pre-wrap; font-size: 14.5px; line-height: 1.62; color: var(--ink-2);
+    max-width: 66ch; margin-bottom: 24px; overflow-wrap: anywhere;
+  }
+
+  h3 {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .085em;
+    color: var(--steel-dim); margin: 22px 0 9px; font-weight: 680;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 12.5px; padding: 3px 9px; border-radius: 20px;
+    background: var(--panel-2); color: var(--ink-2); border: 1px solid var(--rule-soft);
+  }
+  .cause { font-size: 13.5px; color: var(--steel); max-width: 66ch; }
+
+  .ev { display: flex; flex-direction: column; gap: 3px; }
+  .ev a, .ev span {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-2);
+    padding: 5px 9px; background: var(--panel-2); border: 1px solid var(--rule-soft);
+    border-radius: 6px; overflow-wrap: anywhere; text-decoration: none;
+  }
+  .ev .ln { color: var(--accent); }
+
+  /* ── Discarded panel ──────────────────────────────────────────────── */
+  .discard { border-top: 1px solid var(--rule); background: var(--panel-2); padding: 22px 24px 40px; }
+  .discard h2 { font-size: 15px; margin: 0 0 4px; font-weight: 620; letter-spacing: -.015em; }
+  .discard p { margin: 0 0 14px; font-size: 13px; color: var(--steel); max-width: 68ch; }
+  .drop { border-left: 2px solid var(--tier-int); padding: 7px 0 7px 12px; margin-bottom: 11px; }
+  /* Refutation reasons quote file paths and identifiers, which have no break
+     opportunities and would otherwise force the page wider than the phone. */
+  .drop .dq { font-size: 13.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+  .drop .dr { font-size: 12.5px; color: var(--steel-dim); margin-top: 3px; max-width: 74ch; overflow-wrap: anywhere; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div>
+      <h1>RackTrack Support Knowledge Base</h1>
+      <p class="lede">
+        Everything the support assistant knows, mined from the codebase and checked by
+        three independent reviewers per entry. Anything two of them refuted was thrown out.
+      </p>
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch light or dark theme">Theme</button>
+  </div>
+  <div class="figures" id="figures"></div>
+</header>
+
+<div class="controls">
+  <input class="search" id="q" type="search" placeholder="Search questions, answers, symptoms…" aria-label="Search the knowledge base" />
+  <div class="seg" role="group" aria-label="Filter by who can see the entry">
+    <button type="button" data-aud="" aria-pressed="true">All</button>
+    <button type="button" data-aud="end-user" aria-pressed="false">End user</button>
+    <button type="button" data-aud="admin" aria-pressed="false">Admin</button>
+    <button type="button" data-aud="internal-only" aria-pressed="false">Internal</button>
+  </div>
+  <div class="seg" id="domSeg" role="group" aria-label="Filter by topic"></div>
+  <span class="count" id="count"></span>
+</div>
+
+<div class="stage">
+  <div class="rack" id="rack" role="list" aria-label="Knowledge base entries"></div>
+  <div class="detail" id="detail">
+    <p class="empty">Pick an entry to read its answer and the source it was checked against.</p>
+  </div>
+</div>
+
+<section class="discard">
+  <h2>Thrown out during review</h2>
+  <p id="discardLede"></p>
+  <div id="dropped"></div>
+</section>
+
+<script id="kbdata" type="application/json">__KB_DATA__</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById('kbdata').textContent);
+  const E = DATA.entries;
+
+  const TIER = {
+    'end-user':      { label: 'End user',  color: 'var(--tier-user)' },
+    'admin':         { label: 'Admin',     color: 'var(--tier-admin)' },
+    'internal-only': { label: 'Internal',  color: 'var(--tier-int)' },
+  };
+  const DOMAIN = {
+    auth: 'Login', scan: 'Scanning', rpt: 'Reports', app: 'Mobile app',
+    sync: 'Offline', integ: 'Integrations', ops: 'Ops console',
+    acct: 'Accounts', accur: 'Accuracy', howto: 'How-to',
+  };
+
+  const el = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+  // ── Summary figures ────────────────────────────────────────────────
+  const counts = { 'end-user':0, admin:0, 'internal-only':0 };
+  E.forEach((e) => { counts[e.a] = (counts[e.a] || 0) + 1; });
+  const corrected = E.filter((e) => e.corr).length;
+
+  el('figures').innerHTML = [
+    { n: E.length, k: 'Verified entries', pct: 100, c: 'var(--ink)' },
+    { n: counts['end-user'], k: 'End user', pct: counts['end-user'] / E.length * 100, c: 'var(--tier-user)' },
+    { n: counts['admin'], k: 'Admin', pct: counts['admin'] / E.length * 100, c: 'var(--tier-admin)' },
+    { n: counts['internal-only'], k: 'Internal only', pct: counts['internal-only'] / E.length * 100, c: 'var(--tier-int)' },
+    { n: corrected, k: 'Sharpened in review', pct: corrected / E.length * 100, c: 'var(--accent)' },
+    { n: DATA.dropped.length, k: 'Refuted, removed', pct: DATA.dropped.length / (E.length + DATA.dropped.length) * 100, c: 'var(--tier-int)' },
+  ].map((f) => `
+    <div class="fig">
+      <div class="n">${f.n}</div>
+      <div class="k">${f.k}</div>
+      <div class="track"><i style="width:${f.pct.toFixed(1)}%;background:${f.c}"></i></div>
+    </div>`).join('');
+
+  // ── Topic filter, ordered by how much of the KB each covers ────────
+  const domCounts = {};
+  E.forEach((e) => { domCounts[e.d] = (domCounts[e.d] || 0) + 1; });
+  const domains = Object.keys(domCounts).sort((a, b) => domCounts[b] - domCounts[a]);
+  el('domSeg').innerHTML =
+    `<button type="button" data-dom="" aria-pressed="true">All topics</button>` +
+    domains.map((d) => `<button type="button" data-dom="${d}" aria-pressed="false">${DOMAIN[d] || d} ${domCounts[d]}</button>`).join('');
+
+  // ── State ──────────────────────────────────────────────────────────
+  let fAud = '', fDom = '', fQ = '', selected = null;
+
+  function visible() {
+    const q = fQ.trim().toLowerCase();
+    return E.filter((e) => {
+      if (fAud && e.a !== fAud) return false;
+      if (fDom && e.d !== fDom) return false;
+      if (!q) return true;
+      return (e.q + ' ' + e.ans + ' ' + e.s.join(' ') + ' ' + e.id).toLowerCase().includes(q);
+    });
+  }
+
+  function renderRack() {
+    const list = visible();
+    el('count').textContent = list.length === E.length
+      ? `${E.length} entries`
+      : `${list.length} of ${E.length}`;
+
+    if (!list.length) {
+      el('rack').innerHTML = `<p style="padding:24px;color:var(--steel-dim);font-size:14px">Nothing matches that. Try fewer words.</p>`;
+      return;
+    }
+    el('rack').innerHTML = list.map((e) => `
+      <button class="unit" type="button" role="listitem" data-id="${e.id}" aria-current="${selected === e.id}">
+        <span class="stripe" style="background:${TIER[e.a] ? TIER[e.a].color : 'var(--steel-dim)'}"></span>
+        <span class="uid">${e.id}</span>
+        <span class="uq">${esc(e.q)}</span>
+      </button>`).join('');
+  }
+
+  function renderDetail(id) {
+    const e = E.find((x) => x.id === id);
+    if (!e) return;
+    const t = TIER[e.a] || { label: e.a, color: 'var(--steel-dim)' };
+
+    el('detail').innerHTML = `
+      <div class="d-tags">
+        <span class="tag" style="color:${t.color}">${t.label}</span>
+        <span class="tag plain">${e.id}</span>
+        <span class="tag plain">${DOMAIN[e.d] || e.d}</span>
+        ${e.c === 'certain' ? '' : `<span class="tag" style="color:var(--warn)">${esc(e.c)}</span>`}
+        ${e.fix ? `<span class="tag" style="color:var(--ok)">User can fix</span>` : ''}
+      </div>
+
+      <h2 class="d-q">${esc(e.q)}</h2>
+      <div class="d-ans">${esc(e.ans)}</div>
+
+      ${e.s.length ? `<h3>What the user sees</h3><div class="chips">${e.s.map((s) => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
+      ${e.rc ? `<h3>Underlying cause</h3><p class="cause">${esc(e.rc)}</p>` : ''}
+
+      <h3>Checked against</h3>
+      <div class="ev">${
+        e.ev.length
+          ? e.ev.map((v) => `<span>${esc(v.f)}${v.l ? `<span class="ln">:${esc(v.l)}</span>` : ''}</span>`).join('')
+          : '<span>No source recorded</span>'
+      }</div>
+
+      <h3>Review</h3>
+      <p class="cause">
+        ${e.v} reviewer${e.v === 1 ? '' : 's'} checked this entry${e.r ? `, ${e.r} disagreed` : ' and none disagreed'}.
+        ${e.corr ? ' The wording was sharpened during review.' : ''}
+      </p>`;
+    el('detail').scrollTop = 0;
+  }
+
+  // ── Events ─────────────────────────────────────────────────────────
+  el('rack').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.unit');
+    if (!btn) return;
+    selected = btn.dataset.id;
+    el('rack').querySelectorAll('.unit').forEach((u) => u.setAttribute('aria-current', String(u.dataset.id === selected)));
+    renderDetail(selected);
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      el('detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+
+  el('q').addEventListener('input', (ev) => { fQ = ev.target.value; renderRack(); });
+
+  document.querySelectorAll('[data-aud]').forEach((b) => {
+    b.addEventListener('click', () => {
+      fAud = b.dataset.aud;
+      document.querySelectorAll('[data-aud]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      renderRack();
+    });
+  });
+  el('domSeg').addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-dom]');
+    if (!b) return;
+    fDom = b.dataset.dom;
+    el('domSeg').querySelectorAll('[data-dom]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    renderRack();
+  });
+
+  el('themeBtn').addEventListener('click', () => {
+    const now = document.documentElement.getAttribute('data-theme')
+      || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', now === 'dark' ? 'light' : 'dark');
+  });
+
+  // ── Discarded entries ──────────────────────────────────────────────
+  if (DATA.internalCount) {
+    const note = document.createElement('p');
+    note.style.cssText = 'margin:0 0 14px;font-size:13px;color:var(--steel);max-width:68ch';
+    note.textContent = `${DATA.internalCount} internal-only entries exist and are deliberately excluded from this page — they describe server internals and are not safe to share.`;
+    document.querySelector('.discard').insertBefore(note, document.getElementById('discardLede'));
+  }
+
+  el('discardLede').textContent =
+    `${DATA.dropped.length} entries were refuted by two or more reviewers and left out. `
+    + `A further ${DATA.pendingCount} were mined but never reviewed, so they are parked rather than shipped.`;
+  el('dropped').innerHTML = DATA.dropped.map((d) => `
+    <div class="drop">
+      <div class="dq">${esc(d.q)}</div>
+      <div class="dr">${esc((d.reasons || []).filter(Boolean)[0] || 'Refuted in review.')}</div>
+    </div>`).join('');
+
+  renderRack();
+})();
+</script>

@@ -23,7 +23,13 @@ const portsDb = require('./lib/port_history_db');
 const poller  = require('./lib/port_poller');
 const { logger } = require('./lib/observability');
 
-router.use('/api/ports', auth.requireAuth);
+// `monitored_devices` has NO tenant/org column, so requireAuth alone let any
+// logged-in member of any organisation read every tenant's switch inventory
+// (name, location, model, serial, chassis MAC), see their per-port state and
+// LLDP topology, and POST /poll to force the server to SSH into them with the
+// stored credentials. lab_devices.js gates the same table to owners for exactly
+// this reason. Match it until the table is tenant-scoped properly.
+router.use('/api/ports', auth.requireRole('owner', 'org_admin'));   // requireRole wraps requireAuth
 
 function safeAsync(handler) {
   return async (req, res) => {

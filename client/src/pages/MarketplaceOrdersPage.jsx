@@ -109,7 +109,7 @@ function OrderRow({ order, role, onOpen }) {
    hairline distinction, never by hue — the old thread used the same
    black bubble but there was no reason to give the section a second
    colour system when this one already reads at a glance. */
-function MessageThread({ messages, meId, endRef }) {
+function MessageThread({ messages = [], meId, endRef }) {
   if (messages.length === 0) {
     return (
       <div className={styles.thread}>
@@ -208,7 +208,7 @@ export default function MarketplaceOrdersPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setDetail(prev => ({ ...prev, messages: [...prev.messages, data.message] }));
+      setDetail(prev => (prev ? { ...prev, messages: [...(prev.messages || []), data.message] } : prev));
       setMsgBody('');
       setTimeout(() => msgsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     } catch (err) { setError(err.message); }
@@ -225,7 +225,7 @@ export default function MarketplaceOrdersPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setDetail(prev => ({ ...prev, order: data.order }));
+      setDetail(prev => (prev ? { ...prev, order: data.order } : prev));
       setConfirming(null);
       fetchOrders();
     } catch (err) { setError(err.message); }

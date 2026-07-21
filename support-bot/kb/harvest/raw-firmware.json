@@ -1,0 +1,611 @@
+{
+  "domain": "firmware",
+  "entries": [
+    {
+      "question": "What do the words on the Firmware tab mean — \"Up to date\", \"Upgrade available\", \"Latest version unknown\"?",
+      "answer": "The little pill next to the word Firmware is the whole verdict. There are exactly six things it can say, and they mean:\n\n1. \"Up to date\" — the version we have on file for this model is character-for-character the same as the version you are running.\n2. \"Upgrade available\" — the version we have on file is different from yours. Read it as \"different\", not \"newer\" — see the release notes before you act.\n3. \"Recommended min: <version>\" — we could not confirm a latest version, but we do have a minimum safe version to aim for.\n4. \"Check vendor portal\" — this vendor keeps its release notes behind a login, so we can only point you at their portal.\n5. \"Couldn't read latest — check vendor\" — we have a release-notes link but could not pull a version number out of it.\n6. \"Latest version unknown\" — we have nothing. This is NOT the same as being up to date.\n\nUnder the pill you get up to four cells: Current, Latest (or \"Check site ↗\" when Latest is unknown), \"Min safe\" when there is a recommended minimum version that differs from Latest, and a \"Release notes ↗\" or \"Vendor portal ↗\" link.",
+      "symptoms": [
+        "Up to date",
+        "Upgrade available",
+        "Latest version unknown",
+        "Check vendor portal",
+        "Recommended min",
+        "Min safe",
+        "what does the firmware badge mean"
+      ],
+      "rootCause": "SwitchCard derives fwHeadline from firmware.upToDate (true / false / null) and then falls through recommendedMinVersion → releaseNotesGated||portalUrl → releaseNotesUrl → 'Latest version unknown'. The cells below are Current / Latest / Min safe / notes link.",
+      "evidence": [
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "448-461",
+          "snippet": "let fwHeadline;\n  if (firmware?.upToDate === true) {\n    fwHeadline = 'Up to date';\n  } else if (firmware?.upToDate === false) {\n    fwHeadline = 'Upgrade available';\n  } else if (firmware?.recommendedMinVersion) {\n    fwHeadline = `Recommended min: ${firmware.recommendedMinVersion}`;\n  } else if (firmware?.releaseNotesGated || firmware?.portalUrl) {\n    fwHeadline = 'Check vendor portal';\n  } else if (firmware?.releaseNotesUrl) {\n    fwHeadline = \"Couldn't read latest — check vendor\";\n  } else {\n    fwHeadline = 'Latest version unknown';\n  }"
+        },
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "820-853",
+          "snippet": "<MiniField label=\"Current\" value={firmware.currentVersion} .../>\n                  {latestUnknown && fwUrl ? (\n...\n                        Check site ↗\n...\n                  {firmware.recommendedMinVersion && firmware.recommendedMinVersion !== firmware.latestVersion && (\n                    <MiniField label=\"Min safe\" value={firmware.recommendedMinVersion} .../>\n...\n                      Release notes ↗\n...\n                      Vendor portal ↗"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "It says \"Upgrade available\" — what am I supposed to do about it?",
+      "answer": "RackTrack cannot upgrade anything. It only compares two strings and shows you where to read. Do this:\n\n1. Tap \"Release notes ↗\" (or \"Vendor portal ↗\" if that is what the card shows) and read what changed before you touch the switch.\n2. Compare the Current and Latest numbers yourself. \"Upgrade available\" only means the two strings are not identical — it does not prove the one we show is newer.\n3. If the change matters, raise it through your normal change process and upgrade from the vendor's own download page. Nothing you do on this screen is pushed to the switch.\n4. If there is a \"Min safe\" number on the card, that is the lowest version worth aiming for.\n\nNothing on this screen writes to the switch, to your CMDB, or to a ticket.",
+      "symptoms": [
+        "Upgrade available",
+        "how do I update the firmware",
+        "does RackTrack upgrade the switch",
+        "Release notes",
+        "Vendor portal"
+      ],
+      "rootCause": "upToDate is a plain string equality between the agent's cached latest version and the version supplied by the caller; the UI exposes only outbound links (release notes / vendor portal) and has no write path to the device.",
+      "evidence": [
+        {
+          "file": "server/app.js",
+          "lines": "7186-7191",
+          "snippet": "let upToDate = null;\n  if (agentLatest) {\n    upToDate = String(agentLatest).trim() === String(req.currentVersion).trim();\n  }"
+        },
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "843-853",
+          "snippet": "{firmware.releaseNotesUrl && (\n                    <a href={firmware.releaseNotesUrl} target=\"_blank\" rel=\"noreferrer noopener\"\n...\n                      Release notes ↗\n...\n                  {!firmware.releaseNotesUrl && firmware.portalUrl && (\n...\n                      Vendor portal ↗"
+        },
+        {
+          "file": "client/src/pages/FirmwarePage.jsx",
+          "lines": "24-27",
+          "snippet": "} else if (result.upToDate === false) {\n    tone = 'warn';\n    headline = 'An upgrade is available.';\n    body = `Latest is ${latest}, you're on ${cur}. Check the release notes to see what changed before you upgrade.`;"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "It says \"Latest version unknown\" — does that mean my switch is fine?",
+      "answer": "No. It means RackTrack found nothing to compare against. Treat it as \"not checked\", not as \"safe\".\n\nOn a switch card: the Latest cell turns into a \"Check site ↗\" link straight to that vendor's download page — tap it and read the current release yourself.\n\nOn the Firmware Check screen the wording is \"We couldn't confirm the latest version.\" and the app spells it out: \"The vendor's site didn't show a clear latest version. Check the vendor's site yourself — this is not the same as being up to date.\" You also get \"Vendor support ↗\" and \"Google search ↗\" links under \"Find latest firmware:\".\n\nIf the card instead says \"Check vendor portal\", that vendor keeps its release notes behind a login, so you will need your vendor account.",
+      "symptoms": [
+        "Latest version unknown",
+        "We couldn't confirm the latest version",
+        "Check site",
+        "Find latest firmware",
+        "Latest shows a dash",
+        "Couldn't read latest — check vendor"
+      ],
+      "rootCause": "latestVersion is null when the agent has no cached firmware row and the live pointer lookup failed; the UI replaces the Latest cell with a vendor-download link and, on FirmwarePage, adds Google/vendor-site search fallbacks.",
+      "evidence": [
+        {
+          "file": "client/src/pages/FirmwarePage.jsx",
+          "lines": "28-34",
+          "snippet": "} else {\n    tone = 'neutral';\n    headline = \"We couldn't confirm the latest version.\";\n    body = latest\n      ? `The newest version we saw was ${latest}, but we couldn't compare it to ${cur}.`\n      : \"The vendor's site didn't show a clear latest version. Check the vendor's site yourself — this is not the same as being up to date.\";"
+        },
+        {
+          "file": "client/src/pages/FirmwarePage.jsx",
+          "lines": "296-318",
+          "snippet": "{!result.latestVersion && (() => {\n...\n                  const links = [\n                    result.vendorUrl && {\n                      label: 'Vendor support',\n...\n                      label: 'Google search',\n...\n                        Find latest firmware:"
+        },
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "816-866",
+          "snippet": "const latestUnknown = firmware.latestVersion == null;\n...\n                        Check site ↗\n...\n                      `Couldn't find a verified latest firmware for ${effectiveMake || displayVendor || 'this vendor'} ${effectiveModel || ''} in our database. Tap \"Check site ↗\" above to see the current release on the manufacturer's official site.`}"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "Does RackTrack show me CVEs or security advisories for my switch?",
+      "answer": "No. RackTrack does not list CVEs, severity badges, or vulnerability counts anywhere. Security-advisory reporting was removed from the product, and the server deliberately does not read the advisory rows the lookup engine still carries.\n\nThe closest thing you get is on the Firmware Check screen: after a successful check, tap \"Show details\" and look at \"Release notes excerpts\". If the vendor's own notes for the newer release listed security fixes, they appear there as a block titled \"Security fixes in <version>\", alongside \"Bug fixes\", \"New features\", \"Known issues\" and \"Deprecations\".\n\nSo: if you need a vulnerability assessment, use your vendor's advisory page or your own security tooling. RackTrack answers \"is there a newer firmware and what changed\", not \"am I vulnerable\".",
+      "symptoms": [
+        "where are the CVEs",
+        "no CVE badge",
+        "security advisory missing",
+        "vulnerability list empty",
+        "severity",
+        "Security fixes in"
+      ],
+      "rootCause": "server/app.js maps the agent's FirmwareAdvice onto the /api/firmware contract and explicitly skips advice.advisories; the only security-flavoured output is the target release's security_fixes list rendered as a changelog section.",
+      "evidence": [
+        {
+          "file": "server/app.js",
+          "lines": "7121-7126",
+          "snippet": "// POST /api/firmware  body: { vendor, model, currentVersion }\n// → Pure Switch Spec Agent (Agent_scrap, clean branch). The agent's\n//   FirmwareAdvice bundles version-compare and a vendor-level latest\n//   fallback. The Node side only re-shapes the response into the UI's\n//   contract. (The agent also carries security-advisory rows; we do not\n//   read them — CVE reporting was removed from the product.)"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "7192-7195",
+          "snippet": "// Security-advisory (CVE) reporting was removed from the product. The agent\n  // may still carry advisory rows in its cache; we deliberately do not read or\n  // surface them."
+        },
+        {
+          "file": "server/app.js",
+          "lines": "7205-7217",
+          "snippet": "const push = (label, list) => {\n      if (Array.isArray(list) && list.length) {\n        changelog.push({\n          section: v ? `${label} in ${v}` : label,\n...\n    push('Security fixes', target.security_fixes);\n    push('Bug fixes',      target.bug_fixes);\n    push('New features',   target.new_features);\n    push('Known issues',   target.known_issues);\n    push('Deprecations',   target.deprecations);"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "Where is the \"Firmware Check\" screen? I can't find it in the menu.",
+      "answer": "It is not in any menu. The Firmware Check page exists at the address /firmware, but there is no button or nav item that takes you there — the sidebar only has Home, Scan, Two racks, Profile (plus Console/Lab for the platform owner and Data Sources/Marketplace for admins), and the phone bottom bar only has HOME, SCAN, PROFILE.\n\nWhat to use instead, and what you normally want:\n\n1. Open the rack, then Switches, pick your switch, and use the Firmware tab on the card. That version is filled in for you from the scan or the CMDB.\n2. If you really want the standalone screen, type /firmware onto the end of the app address. You will have to type Make / Vendor, Model and Current version by hand — it knows nothing about your rack.\n\nYou still have to be signed in either way.",
+      "symptoms": [
+        "can't find Firmware Check",
+        "no firmware menu item",
+        "where is the firmware page",
+        "Firmware · Version check"
+      ],
+      "rootCause": "The /firmware route is registered in App.jsx and has a page title entry in DesktopShell, but no NavLink in the desktop sidebar links array or the mobile BottomNav items, so it is URL-only.",
+      "evidence": [
+        {
+          "file": "client/src/App.jsx",
+          "lines": "300-302",
+          "snippet": "<Route path=\"/firmware\" element={\n              <ProtectedRoute><ResponsiveLayout withBottomNav><FirmwarePage /></ResponsiveLayout></ProtectedRoute>"
+        },
+        {
+          "file": "client/src/components/DesktopShell.jsx",
+          "lines": "200-213",
+          "snippet": "const links = [\n    { to: '/',            label: 'Home',        icon: <HomeIcon />,    end: true  },\n    { to: '/scan',        label: 'Scan',        icon: <ScanIcon />,    end: false },\n    { to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false },\n...\n    { to: '/profile',     label: 'Profile',     icon: <ProfileIcon />, end: false },\n  ];"
+        },
+        {
+          "file": "client/src/components/BottomNav.jsx",
+          "lines": "14-16",
+          "snippet": "{ to: '/',        end: true,  icon: 'home',             label: 'HOME'    },\n  { to: '/scan',    end: false, icon: 'qr_code_scanner',  label: 'SCAN'    },\n  { to: '/profile', end: false, icon: 'person',           label: 'PROFILE' },"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "The Firmware tab says \"No firmware version recorded\" or \"Add a model to check for updates\" — why won't it check?",
+      "answer": "The check needs all three of vendor, model and current version. Whichever one is missing is what the message is telling you.\n\n1. If it says \"Add a model to check for updates.\", go up to the top of the card and use \"Enter make / model\" (or \"Add model\" / \"Add vendor\") to fill in what the scan missed.\n2. If it says \"No firmware version recorded.\", tap \"Enter version\" and type the version the switch is running, e.g. 1.0.6 Build 20210323. Press Save.\n3. The check starts as soon as you save — you will see \"Checking for updates…\".\n4. To change it later, use \"Edit version\" next to the Firmware heading.\n\nAnything you type here lives in this browser only.",
+      "symptoms": [
+        "No firmware version recorded",
+        "Add a model to check for updates",
+        "Enter version",
+        "Edit version",
+        "firmware tab does nothing",
+        "Checking for updates"
+      ],
+      "rootCause": "loadDetails() sets firmwareStatus='skipped' unless displayVendor and lookupModel resolve, and again unless a cleaned version exists; POST /api/firmware itself 400s with 'vendor, model, and currentVersion are required'.",
+      "evidence": [
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "765-786",
+          "snippet": "{firmwareStatus === 'loading' && <StatusLine color={statusColor}>Checking for updates…</StatusLine>}\n...\n            {firmwareStatus === 'skipped' && !lookupModel && (\n              <StatusLine color={statusColor}>Add a model to check for updates.</StatusLine>\n            )}"
+        },
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "936-948",
+          "snippet": "<StatusLine color={statusColor}>No firmware version recorded.</StatusLine>\n...\n        >Enter version</button>"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "7134-7139",
+          "snippet": "if (!vendor || !model || !currentVersion) {\n    return res.status(400).json({\n      ok: false,\n      error: 'vendor, model, and currentVersion are required',\n    });\n  }"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "The check worked but \"Release notes excerpts\" shows 0 and says it couldn't extract anything. Is that a bug?",
+      "answer": "No — it means we had a version number for you but no usable text from the vendor's notes. The excerpts only appear when the vendor release we have on file actually carries fixes or features written down for that release.\n\nWhat the screen does for you:\n\n1. Tap \"Show details\" to see the section. The number next to \"Release notes excerpts\" is how many blocks we found — 0 is normal for most vendors.\n2. If it says \"Couldn't fetch release notes: …\", the vendor page could not be read. If it says \"Couldn't extract any changelog sections from the page.\", the page was read but had nothing we could split up.\n3. Use \"Search release notes ↗\" or \"Open page ↗\" underneath to go read the vendor's page yourself.\n\nWhen excerpts do appear, they are grouped as Security fixes, Bug fixes, New features, Known issues and Deprecations for the newer version.",
+      "symptoms": [
+        "Release notes excerpts 0",
+        "Couldn't extract any changelog sections from the page",
+        "Couldn't fetch release notes",
+        "Show details empty",
+        "Search release notes",
+        "Open page"
+      ],
+      "rootCause": "changelog[] is synthesized only from the target release's security_fixes/bug_fixes/new_features/known_issues/deprecations arrays; when those are empty (the usual case for the live 'pointer tier' lookup, which never synthesizes bullets) the section falls back to the empty state plus search links.",
+      "evidence": [
+        {
+          "file": "client/src/pages/FirmwarePage.jsx",
+          "lines": "338-354",
+          "snippet": "Release notes excerpts\n                    <span className={styles.count}>{result.changelog?.length || 0}</span>\n...\n                      {result.releaseNotesError\n                        ? `Couldn't fetch release notes: ${result.releaseNotesError}`\n                        : \"Couldn't extract any changelog sections from the page.\"}"
+        },
+        {
+          "file": "client/src/pages/FirmwarePage.jsx",
+          "lines": "361-380",
+          "snippet": "Search release notes ↗\n...\n                              Open page ↗"
+        },
+        {
+          "file": "Agent/Agent_scrap/live_firmware.py",
+          "lines": "8-13",
+          "snippet": "Returns a *version pointer* (version, optional release_date, notes_url).\nBullet-level diff (security/features/bugs) is **not** synthesized — that\nrequires either a hand-built per-vendor fetcher (Cumulus / MikroTik) or\nan LLM, and we have neither for the long tail. Honest by design."
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "The Firmware Check screen says \"Vendor list unavailable: …\" under the Make / Vendor box.",
+      "answer": "Only the type-ahead list of vendor names failed to load. The check itself still works — you can type the vendor name in full and carry on.\n\n1. Type the vendor exactly as the manufacturer writes it (Cisco, Juniper, Aruba) instead of picking from the list.\n2. Fill in Model and Current version and tap \"Check firmware\" as normal.\n3. If you want the list back, pull down to reload the page — the list is fetched once when the screen opens.\n4. If it keeps failing for everyone, it is a server-side problem, not your phone: report it with the exact text after \"Vendor list unavailable:\".",
+      "symptoms": [
+        "Vendor list unavailable",
+        "no vendor suggestions",
+        "vendor autocomplete not working",
+        "Lookup took too long. Try again in a moment."
+      ],
+      "rootCause": "FirmwarePage fetches /api/specs/vendors once on mount; that endpoint shells out to pipeline.all_vendor --list-vendors, which reads Switch_Vendors_Websites.xlsx and is killed after PY_MOD_TIMEOUT_MS (90s). Failure only disables the suggestion list.",
+      "evidence": [
+        {
+          "file": "client/src/pages/FirmwarePage.jsx",
+          "lines": "57-68",
+          "snippet": "useEffect(() => {\n    let cancelled = false;\n    authFetch(apiUrl('/api/specs/vendors'))\n      .then(r => r.json())\n      .then(data => {\n        if (cancelled) return;\n        if (data.ok) setVendorList(data.vendors || []);\n        else setVendorListErr(data.error || 'Could not load vendors');"
+        },
+        {
+          "file": "client/src/pages/FirmwarePage.jsx",
+          "lines": "180-182",
+          "snippet": "{vendorListErr && (\n            <span className={styles.fieldHint}>Vendor list unavailable: {vendorListErr}</span>\n          )}"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "6887-6907",
+          "snippet": "const PY_MOD_TIMEOUT_MS = 90_000;\n...\n        error: 'Lookup took too long. Try again in a moment.',"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "6934-6940",
+          "snippet": "// GET /api/specs/vendors — vendor names from the Excel sheet.\napp.get('/api/specs/vendors', async (req, res) => {\n  const result = await runPipelineModule('pipeline.all_vendor', ['--list-vendors']);"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "RackTrack read the wrong firmware version off my photo, or didn't read one at all. How do I fix it?",
+      "answer": "Type it in yourself — your typed value wins over anything the photo produced, and it is what gets used for the check.\n\n1. Open the rack, then Switches, pick the switch, and go to the Firmware tab.\n2. Tap \"Enter version\" (or \"Edit version\" if something is already there), type the version, and Save. The lookup re-runs immediately with your value.\n\nWhy it happens: the version is read off the chassis label in your photo, and only three shapes of version are recognised — Huawei-style (V200R010C00), Cisco NX-OS style (9.3(7)I7(7)), and ordinary dotted numbers (16.9.5). Anything printed differently, too small, glare-covered or at an angle simply comes back blank. A blank version is not an error, it just means nothing matched.\n\nTo get a better read next time: photograph the label straight on, fill the frame with the chassis, and avoid direct glare.",
+      "symptoms": [
+        "wrong firmware version",
+        "version not detected",
+        "firmware blank after scan",
+        "OCR read the wrong version",
+        "Enter version",
+        "Edit version"
+      ],
+      "rootCause": "pipeline/ocr_devices.py parses the version out of the OCR text with three fixed regexes and returns null on no match; SwitchCard's effectiveVersionRaw prefers sw.os_version but falls back to the per-switch localStorage override the user types.",
+      "evidence": [
+        {
+          "file": "pipeline/ocr_devices.py",
+          "lines": "178-183",
+          "snippet": "# Firmware-version patterns inside a label region.\nVERSION_PATTERNS = [\n    re.compile(r\"\\bV\\d{3}R\\d{1,3}(?:C\\d{1,3})?\\b\"),                 # Huawei VRP\n    re.compile(r\"\\b\\d{1,3}\\.\\d{1,3}\\(\\d{1,3}[A-Za-z]?\\)(?:[A-Z]\\d{1,3})?\\b\"),  # NX-OS\n    re.compile(r\"\\b\\d{1,3}\\.\\d{1,3}(?:\\.\\d{1,3}){1,3}(?:[A-Za-z]\\d{0,3})?\\b\"),  # standard\n]"
+        },
+        {
+          "file": "pipeline/ocr_devices.py",
+          "lines": "346-353",
+          "snippet": "def parse_version(text: str) -> str | None:\n    if not text:\n        return None\n    for rx in VERSION_PATTERNS:\n        m = rx.search(text)\n        if m:\n            return m.group(0)\n    return None"
+        },
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "262-264",
+          "snippet": "const effectiveVersionRaw = sw.os_version || userVersion;\n  const lookupVersion = cleanVersion(effectiveVersionRaw);\n  const versionIsUserSupplied = !sw.os_version && !!userVersion;"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "The Switch Info pop-up has its own \"Firmware Update\" card — is that different from the Firmware tab on the switch card?",
+      "answer": "Same lookup, different source for your current version.\n\nThe \"Firmware Update\" card inside the Switch Info pop-up (opened from a scan result, header reads \"Switch Info · live · <host> · <vendor>\") takes the version straight off the switch over SSH — it parses \"Firmware Version\" / \"Software Version\" out of the device's own system output, cleans it up (\"5.0.2 Build 20220909 Rel.75392\" becomes \"5.0.2\") and then runs the same check.\n\nIts wording is slightly different from the switch card: \"Up to date\", \"Upgrade available\", or \"Could not determine latest version\", with Current version / Latest version rows and a \"Release notes\" link. While it runs it says \"Checking vendor site for newer firmware…\"; if the SSH read gave no model or version it says \"Need both model and firmware version to check for updates.\"; if the lookup failed it says \"Could not check: …\".\n\nThe Firmware tab on the switch card uses whatever the scan/CMDB recorded, or what you typed — it never talks to the switch.",
+      "symptoms": [
+        "Firmware Update card",
+        "Checking vendor site for newer firmware",
+        "Could not determine latest version",
+        "Need both model and firmware version to check for updates",
+        "Could not check:",
+        "Switch Info modal firmware"
+      ],
+      "rootCause": "ResultsPage's SwitchInfoModal parses firmware from the live SSH system-info output, runs cleanFirmwareVersion() on it and calls the same POST /api/firmware; it renders its own headline set independent of SwitchInformationPage's fwHeadline.",
+      "evidence": [
+        {
+          "file": "client/src/pages/ResultsPage.jsx",
+          "lines": "456-506",
+          "snippet": "{/* ── Firmware Update card ── */}\n...\n                  <h4>Firmware Update</h4>\n...\n                  <p className={styles.prEmpty}>Checking vendor site for newer firmware…</p>\n...\n                    firmware.upToDate === true ? 'Up to date'\n                    : firmware.upToDate === false ? 'Upgrade available'\n                    : 'Could not determine latest version';\n...\n                  <p className={styles.prEmpty}>Need both model and firmware version to check for updates.</p>"
+        },
+        {
+          "file": "client/src/pages/ResultsPage.jsx",
+          "lines": "366-378",
+          "snippet": "// Extract a clean dotted version from messy firmware strings.\n//   \"5.0.2 Build 20220909 Rel.75392\" → \"5.0.2\"\n...\nfunction cleanFirmwareVersion(raw) {"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "6513-6516",
+          "snippet": "hwVersion:  get(/Hardware Version\\s*[-:]\\s*(.+)/i),\n    fwVersion:  get(/(?:Firmware|Software) Version\\s*[-:]\\s*(.+)/i),"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "How current is the firmware data, and how often does it refresh?",
+      "answer": "There is no automatic refresh. Nothing in the server schedules a firmware or advisory update.\n\n• The \"latest version\" values come from the lookup agent's SQLite cache at Agent/Agent_scrap/data/switches.db. That cache is only filled when someone runs the fetcher by hand: `python3 scripts/fetch_firmware.py` (all public vendors), `… nvd` (CVE data from NIST NVD), `… kev` (CISA actively-exploited overlay). No cron job, timer or startup hook calls it.\n• Dedicated public fetchers exist for exactly three vendors — MikroTik (RouterOS), Ubiquiti (UniFi OS) and NVIDIA (Cumulus Linux). Everything else relies on a best-effort live web pointer lookup with a 8.5-second deadline, cached on success.\n• On the client, a firmware result is cached in memory for the browser tab, keyed by rack + vendor + model + version, with no expiry. Reload the page to force a fresh call.\n\nSo when you tell a customer a firmware answer is \"current\", it is only as current as the last manual fetcher run.",
+      "symptoms": [
+        "how old is the firmware data",
+        "firmware data stale",
+        "when does it refresh",
+        "latest version out of date",
+        "does it poll the vendor"
+      ],
+      "rootCause": "Firmware/advisory ingestion is a manually-invoked script (Agent_scrap/scripts/fetch_firmware.py); server/app.js has no scheduler for it, and the client cache in scanPrefetch.js is a module-level Map with no TTL.",
+      "evidence": [
+        {
+          "file": "Agent/Agent_scrap/scripts/fetch_firmware.py",
+          "lines": "5-9",
+          "snippet": "python3 scripts/fetch_firmware.py                 # all public vendors\n    python3 scripts/fetch_firmware.py mikrotik        # one vendor\n    python3 scripts/fetch_firmware.py mikrotik -v     # verbose\n    python3 scripts/fetch_firmware.py nvd             # CVE data from NIST NVD\n    python3 scripts/fetch_firmware.py kev             # CISA actively-exploited overlay"
+        },
+        {
+          "file": "Agent/Agent_scrap/firmware.py",
+          "lines": "539-551",
+          "snippet": "PUBLIC_FIRMWARE_VENDORS = {\n    \"MikroTik\": \"RouterOS\",\n    \"Ubiquiti\": \"UniFi OS\",\n    \"NVIDIA\": \"Cumulus Linux\",\n}\n\n# vendor -> fetch_firmware.py key (only where a fetcher actually exists)\nFETCHER_KEYS = {\n    \"MikroTik\": \"mikrotik\",\n    \"Ubiquiti\": \"ubiquiti\",\n    \"NVIDIA\": \"cumulus\",\n}"
+        },
+        {
+          "file": "Agent/Agent_scrap/firmware.py",
+          "lines": "556-563",
+          "snippet": "def _try_live_firmware(model: str, vendor: str):\n...\n        return live_firmware_lookup(model or vendor, vendor_hint=vendor,\n                                    deadline_sec=8.5)"
+        },
+        {
+          "file": "client/src/utils/scanPrefetch.js",
+          "lines": "177-186",
+          "snippet": "function _prefetchFirmware(rackId, vendor, model, version, scan) {\n  if (!vendor || !model || !version) return;\n  const key = _key(rackId, 'firmware', vendor, model, version);\n  if (scan.cache.has(key)) return;\n  const p = _fetchJson('/api/firmware', {"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "A switch shows \"Upgrade available\" but the Latest version we display is the same age or older than what the customer is running. Why?",
+      "answer": "Because upToDate is a literal string comparison, not a version comparison. The server does `String(agentLatest).trim() === String(currentVersion).trim()` — anything that is not byte-identical (16.12.1 vs 16.12.01, trailing build text, different case) evaluates to false and the UI paints \"Upgrade available\".\n\nOn top of that, the advisor deliberately surfaces its cached \"latest\" pointer even when the customer's version is newer: _synthetic_diff_from_latest() keeps releases_behind at 0 and returns the cached row anyway. So a stale or wrong cached pointer becomes a false \"Upgrade available\" rather than being suppressed.\n\nWhen a customer reports this: confirm the two strings on the card, tell them the badge means \"different from our cached value\", and point them at the release-notes/vendor link. Do not tell them they are behind.",
+      "symptoms": [
+        "false Upgrade available",
+        "Latest older than Current",
+        "version compare wrong",
+        "16.12.1 vs 16.12.01",
+        "says upgrade but we are newer"
+      ],
+      "rootCause": "firmwarePayloadFromAgent computes upToDate by exact trimmed string equality; the agent's _synthetic_diff_from_latest returns the cached vendor-level latest unconditionally with releases_behind=0.",
+      "evidence": [
+        {
+          "file": "server/app.js",
+          "lines": "7186-7191",
+          "snippet": "let upToDate = null;\n  if (agentLatest) {\n    upToDate = String(agentLatest).trim() === String(req.currentVersion).trim();\n  }"
+        },
+        {
+          "file": "Agent/Agent_scrap/firmware.py",
+          "lines": "750-767",
+          "snippet": "def _synthetic_diff_from_latest(latest_rec: FirmwareRecord) -> Optional[FirmwareDiff]:\n        # Surface the cached latest unconditionally — the advisor's job is\n        # to tell the user what we know, not to silently drop data when\n        # their current is newer than our cached pointer. If current ≥\n        # latest, releases_behind stays 0 ...\n            releases_behind=0,"
+        },
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "450-453",
+          "snippet": "if (firmware?.upToDate === true) {\n    fwHeadline = 'Up to date';\n  } else if (firmware?.upToDate === false) {\n    fwHeadline = 'Upgrade available';"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "Which vendors do we actually have firmware data for, and what does a customer see for the rest?",
+      "answer": "Three tiers:\n\n1. Public fetchers exist for MikroTik (RouterOS), Ubiquiti (UniFi OS) and NVIDIA (Cumulus Linux) only. These are the only vendors with a real per-release changelog path.\n2. Login-gated vendors — Cisco, Juniper, Arista, HPE Aruba, Dell, Fortinet, plus everything the vendor registry marks as gated (Huawei, H3C, Lenovo, Tejas, ZTE, NEC, Fujitsu, ALE, RUCKUS, Extreme, Ciena, Nokia). For these the advisor returns release_notes_gated and a portal URL, and the card shows \"Check vendor portal\" with a \"Vendor portal ↗\" link.\n3. Everything else — a best-effort live web lookup (8.5-second deadline) that can only produce a version pointer, never a changelog. If that fails the advisor returns \"No firmware data available for <vendor>\" or \"No NOS specified and no default known for <vendor>\", and the card shows \"Latest version unknown\" with the explanatory line under it.\n\nNothing here is a supported/unsupported device list — it is purely about whether we can reach that vendor's release information.",
+      "symptoms": [
+        "vendor not supported",
+        "No firmware data available for",
+        "No NOS specified and no default known for",
+        "Check vendor portal",
+        "which vendors are supported for firmware"
+      ],
+      "rootCause": "firmware.advise() branches on PUBLIC_FIRMWARE_VENDORS / LOGIN_GATED_VENDORS and otherwise falls through to live_firmware_lookup, returning has_data=False with a vendor-specific message when all tiers miss.",
+      "evidence": [
+        {
+          "file": "Agent/Agent_scrap/firmware.py",
+          "lines": "571-580",
+          "snippet": "LOGIN_GATED_VENDORS = {\n    \"Cisco\": \"https://software.cisco.com\",\n    \"Juniper\": \"https://support.juniper.net/support/downloads/\",\n    \"Arista\": \"https://www.arista.com/en/support/software-download\",\n    \"HPE Aruba\": \"https://asp.arubanetworks.com\",\n    \"Dell\": \"https://www.dell.com/support\",  # partially public\n    \"Fortinet\": \"https://support.fortinet.com\",\n}"
+        },
+        {
+          "file": "Agent/Agent_scrap/firmware.py",
+          "lines": "861-867",
+          "snippet": "key = FETCHER_KEYS.get(vendor)\n            if key:\n                msg = f\"No firmware data available for {vendor} {nos}.\"\n            else:\n                msg = f\"No firmware data available for {vendor}.\""
+        },
+        {
+          "file": "Agent/Agent_scrap/firmware.py",
+          "lines": "725-730",
+          "snippet": "return FirmwareAdvice(\n            vendor=vendor, nos=None,\n            current_version=current_version,\n            has_data=False,\n            message=f\"No NOS specified and no default known for {vendor}.\","
+        },
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "455-456",
+          "snippet": "} else if (firmware?.releaseNotesGated || firmware?.portalUrl) {\n    fwHeadline = 'Check vendor portal';"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "How much can we trust the \"Latest version\" values the shipped agent database returns?",
+      "answer": "Very little — treat the shipped cache as demo-grade, not authoritative. Do not quote it to a customer as a firmware recommendation.\n\nThe firmware_versions table in Agent/Agent_scrap/data/switches.db currently holds 16 rows, all written by the generic 'firmware_fetchers' path, and several are clearly mis-scraped: HPE Aruba Networking is stored as version \"802.3af\" (a PoE standard) with a picclick.com listing as its release-notes URL; Cisco is stored as \"16.2\" pointing at a Nexus 9336C-FX2 model page; MikroTik as \"25.6196C16\" pointing at a product page; Netgear as \"36.75ZM17\". Every row also has nos set to the vendor's own name rather than a real network OS, and release_date is null on all but one.\n\nConsequence: any customer whose vendor happens to be one of those 16 rows gets a bogus \"Latest\" and a false \"Upgrade available\", plus a junk \"Release notes\" link. Re-running the fetchers or curating the rows is the fix; there is no in-app override.",
+      "symptoms": [
+        "latest version is nonsense",
+        "802.3af shown as a version",
+        "release notes link goes to picclick",
+        "wrong vendor release notes URL",
+        "Latest version looks made up"
+      ],
+      "rootCause": "The generic live/pointer fetcher regex-matches any 'version-like' token on a search-result page and upserts it into firmware_versions with source='firmware_fetchers'; nothing validates the match against the real vendor NOS, and the shipped DB was populated from those runs.",
+      "evidence": [
+        {
+          "file": "Agent/Agent_scrap/data/switches.db",
+          "lines": "table firmware_versions (16 rows)",
+          "snippet": "sqlite> select vendor,nos,version,release_notes_url from firmware_versions;\nHPE Aruba Networking|HPE Aruba Networking|802.3af|https://picclick.com/Computers-Tablets-Networking/...\nCisco|Cisco|16.2|https://www.cisco.com/c/en/us/support/switches/nexus-9336c-fx2-switch/model.html\nMikroTik|MikroTik|25.6196C16|https://mikrotik.com/product/CRS326-24G-2SplusRM"
+        },
+        {
+          "file": "Agent/Agent_scrap/live_firmware.py",
+          "lines": "29-34",
+          "snippet": "# \"v1.2.3\" / \"Version 5.10.1\" / \"Firmware: 7.18.2\" / \"Release 22.4R3\"\n_VERSION_RE = re.compile(\n    r\"(?:version|firmware|release|build|software|nos|os|v)\\s*[:\\-]?\\s*\"\n    r\"v?(\\d+(?:\\.\\d+){1,3}[A-Za-z0-9\\-]*)\",\n    re.IGNORECASE,\n)"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "7186-7191",
+          "snippet": "let upToDate = null;\n  if (agentLatest) {\n    upToDate = String(agentLatest).trim() === String(req.currentVersion).trim();\n  }"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "If we re-enabled CVE reporting tomorrow, would there be anything to show?",
+      "answer": "No. Two independent blockers.\n\n1. The security_advisories table in the shipped Agent/Agent_scrap/data/switches.db has 0 rows, and 0 rows flagged actively_exploited. The NVD and CISA-KEV fetchers have never been run against it (`fetch_firmware.py nvd` / `… kev`).\n2. Even with data, the join would miss: advisories are bucketed per (vendor, nos), but every firmware_versions row in the shipped DB has nos set to the vendor name (\"Cisco|Cisco\", \"MikroTik|MikroTik\"), so advisories_for_version() would query a NOS bucket that never matches an NVD row.\n\nThe schema and code are complete — severity is stored as CRITICAL / HIGH / MEDIUM / LOW with a CVSS v3.1 base score, ranked CRITICAL=4 → LOW=1, with CISA KEV (actively_exploited) sorted above everything else regardless of CVSS. None of it reaches the API: server/app.js drops advice.advisories on the floor. Any restoration is a data-ingestion project, not a UI change.",
+      "symptoms": [
+        "can we turn CVE back on",
+        "security_advisories empty",
+        "no advisories returned",
+        "severity CRITICAL HIGH MEDIUM LOW",
+        "KEV actively exploited"
+      ],
+      "rootCause": "security_advisories is empty in the shipped DB, nos values in firmware_versions are vendor names rather than NOS identifiers so the per-NOS advisory bucket cannot match, and /api/firmware never reads advice.advisories anyway.",
+      "evidence": [
+        {
+          "file": "Agent/Agent_scrap/data/switches.db",
+          "lines": "table security_advisories (0 rows)",
+          "snippet": "sqlite> select count(*) from security_advisories;  -> 0\nsqlite> select count(*) from security_advisories where actively_exploited=1;  -> 0"
+        },
+        {
+          "file": "Agent/Agent_scrap/firmware.py",
+          "lines": "374-390",
+          "snippet": "severity: Optional[str] = None      # CRITICAL / HIGH / MEDIUM / LOW\n    cvss_score: Optional[float] = None\n...\n    # CISA \"Known Exploited Vulnerabilities\" overlay — True means\n    # attackers are using this CVE in the wild right now.\n    actively_exploited: bool = False\n...\n_SEVERITY_RANK = {\"CRITICAL\": 4, \"HIGH\": 3, \"MEDIUM\": 2, \"LOW\": 1, None: 0}"
+        },
+        {
+          "file": "Agent/Agent_scrap/firmware.py",
+          "lines": "429-449",
+          "snippet": "def list_advisories(\n    vendor: str, nos: Optional[str] = None, db_path: Path = DB_PATH,\n) -> list[Advisory]:\n...\n        if nos:\n            variants = _nos_match_variants(nos)\n            placeholders = \",\".join(\"?\" * len(variants))\n            rows = con.execute(\n                f\"SELECT * FROM security_advisories \"\n                f\"WHERE vendor=? AND nos IN ({placeholders})\","
+        },
+        {
+          "file": "server/app.js",
+          "lines": "7171-7172",
+          "snippet": "//   advice.portal_url, advice.release_notes_gated, advice.recommended_min_version\n// (advice.advisories[] also exists but is deliberately ignored — see above.)"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "\"Couldn't check for updates right now\" — what actually failed on the server?",
+      "answer": "The firmware endpoint shells out to the Python agent CLI and maps every failure to a single ok:false payload with an HTTP 404, which the switch card renders as the one generic line. The real cause is in the error string, which the Firmware Check page (unlike the switch card) prints verbatim in its red banner:\n\n• \"agent not installed at Agent/Agent_scrap\" — Agent/Agent_scrap/cli.py is missing on that host. The agent is cloned separately and is not part of this repo checkout.\n• \"Agent lookup took too long.\" — the CLI exceeded AGENT_TIMEOUT_MS = 60_000 ms and was SIGKILLed.\n• \"Agent failed to start.\" — spawn error (wrong pythonCmd, missing interpreter).\n• \"Agent returned no parsable JSON.\" — the last stdout line was not JSON; last 500 chars of stderr are attached as _stderr for the server log only.\n• \"Agent failed to return a firmware response.\" — agent responded but without a usable advice object.\n\nAlso note FirmwarePage can surface \"Backend returned a non-JSON response (HTTP <status>). Is the server running?\" and \"Request failed: <message>. Is the backend running on port 3001?\" — those are client-side network failures, not agent failures.",
+      "symptoms": [
+        "Couldn't check for updates right now",
+        "agent not installed at Agent/Agent_scrap",
+        "Agent lookup took too long",
+        "Agent returned no parsable JSON",
+        "Is the backend running on port 3001",
+        "HTTP 404 from /api/firmware"
+      ],
+      "rootCause": "runAgentCli() resolves a small set of fixed error strings; firmwarePayloadFromAgent passes them through as payload.error and the route replies 404 when ok is false. SwitchInformationPage collapses all of them to one generic status line; FirmwarePage prints the raw string.",
+      "evidence": [
+        {
+          "file": "server/app.js",
+          "lines": "7256-7288",
+          "snippet": "const AGENT_TIMEOUT_MS = 60_000;\n...\n      return resolve({ ok: false, error: 'agent not installed at Agent/Agent_scrap' });\n...\n      finish({ ok: false, error: 'Agent lookup took too long.', _stderr: stderr });\n...\n      finish({ ok: false, error: 'Agent failed to start.', _spawnError: err.message });\n...\n      finish({ ok: false, error: 'Agent returned no parsable JSON.',"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "7158-7162",
+          "snippet": "const payload = firmwarePayloadFromAgent(agentRes, {\n    vendor, model, currentVersion,\n  });\n...\n  res.status(payload.ok ? 200 : 404).json(payload);"
+        },
+        {
+          "file": "client/src/pages/FirmwarePage.jsx",
+          "lines": "103-115",
+          "snippet": "if (!data) {\n        setError(`Backend returned a non-JSON response (HTTP ${res.status}). Is the server running?`);\n        return;\n      }\n      if (!res.ok || !data.ok) {\n        setError(data.error || `HTTP ${res.status}`);\n...\n      setError(`Request failed: ${err.message}. Is the backend running on port 3001?`);"
+        },
+        {
+          "file": "client/src/pages/SwitchInformationPage.jsx",
+          "lines": "786",
+          "snippet": "{firmwareStatus === 'error'   && <StatusLine color={statusColor}>Couldn't check for updates right now.</StatusLine>}"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "Is pipeline/firmware_overrides.json still used for the \"latest known firmware\" values?",
+      "answer": "No. It is dead data. Nothing in the repo reads it.\n\nThe file's own header claims it is \"Consulted before web scraping in pipeline.firmware_check\" and calls itself \"the authoritative source for the 'latest known firmware' badge\", but there is no pipeline/firmware_check.py, and a repo-wide grep for firmware_overrides returns only the file itself. /api/firmware routes exclusively through the Agent_scrap CLI (`--firmware \"<vendor> <model>\" <version>`), which reads its own SQLite DB.\n\nPractical impact: editing entries such as the Cisco C9300 \"17.15.3\" / lastChecked 2026-05-08 rows changes nothing a customer sees, and the curated values there are not what the app returns. Either wire it into the agent's DB or delete it — right now it is a trap for whoever tries to fix a wrong \"Latest\" value.",
+      "symptoms": [
+        "I updated firmware_overrides.json and nothing changed",
+        "where do the latest firmware numbers come from",
+        "firmware override not applied",
+        "pipeline.firmware_check missing"
+      ],
+      "rootCause": "pipeline/firmware_overrides.json documents an integration with pipeline.firmware_check that does not exist in this repo; the live firmware path is server/app.js → runAgentCli('--firmware') → Agent/Agent_scrap.",
+      "evidence": [
+        {
+          "file": "pipeline/firmware_overrides.json",
+          "lines": "2",
+          "snippet": "\"_doc\": \"Curated firmware-version overrides. Consulted before web scraping in pipeline.firmware_check. Edit lastChecked when refreshing entries. Vendor sites block our scraper (Cisco/Aruba/Arista return 403, Dell pages are PDFs/JS-rendered) so this file is the authoritative source for the 'latest known firmware' badge.\""
+        },
+        {
+          "file": "server/app.js",
+          "lines": "7151-7157",
+          "snippet": "const agentRes = await runAgentCli(\n    ['--firmware', `${vendor} ${firmwareModel}`, currentVersion]);"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "7247-7252",
+          "snippet": "// ── Switch Spec Agent (Agent_scrap) ───────────────────────────────────────\n// Wraps the standalone agent at Agent/Agent_scrap (cloned separately).\n// Cached DB hits return in ~1ms; unknown vendor/model falls back to a free\n// multi-engine web fetch + extraction in ~4s. No LLM, no API keys."
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "Are the firmware and vendor lookup endpoints authenticated?",
+      "answer": "No. POST /api/firmware, POST /api/specs and GET /api/specs/vendors are all registered without auth.requireAuth, unlike the rack/scan/CMDB routes next to them. The client sends a token via authFetch, but the server does not require one.\n\nWhy this matters: each of these calls spawns a fresh Python process. /api/firmware allows the agent CLI up to AGENT_TIMEOUT_MS = 60_000 ms; /api/specs/vendors allows the pipeline module up to PY_MOD_TIMEOUT_MS = 90_000 ms. There is no per-caller rate limit on either. An unauthenticated caller can therefore hold open long-lived Python processes and drive outbound web scraping from our host.\n\nDo not mention this to customers. Treat it as a hardening item: add requireAuth plus a rate limit before any public exposure of the API host.",
+      "symptoms": [
+        "unauthenticated endpoint",
+        "no requireAuth on /api/firmware",
+        "python spawn per request",
+        "rate limit missing"
+      ],
+      "rootCause": "The spec/firmware routes were added without the auth.requireAuth middleware used elsewhere in app.js, while each handler shells out to a Python child process with a 60-90 second wall-clock budget and no throttling.",
+      "evidence": [
+        {
+          "file": "server/app.js",
+          "lines": "7127",
+          "snippet": "app.post('/api/firmware', async (req, res) => {"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "6935-6946",
+          "snippet": "app.get('/api/specs/vendors', async (req, res) => {\n...\napp.post('/api/specs', async (req, res) => {"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "5068",
+          "snippet": "app.get('/api/cmdb/rack/:rackId/switches', auth.requireAuth, (req, res) => {"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "6887-6888",
+          "snippet": "const PY_MOD_TIMEOUT_MS = 90_000;\n\nfunction runPipelineModule(moduleName, extraArgs) {"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    }
+  ]
+}

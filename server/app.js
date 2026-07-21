@@ -6496,7 +6496,6 @@ app.post('/api/switch/neighbors', auth.requireAuth, async (req, res) => {
   const vconf = VENDORS[vendorKey];
   const lldpCmd = LLDP_ALL_CMD[vendorKey] || LLDP_ALL_CMD['cisco-ios'];
   const macCmd  = MAC_TABLE_CMD[vendorKey] || MAC_TABLE_CMD['cisco-ios'];
-  const cdpCmd  = CDP_ALL_CMD[vendorKey];   // null for vendors without CDP
   const runOne = (command) => runSwitchCommand({
     host, port: sshPort, username, password,
     command, pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
@@ -6685,6 +6684,7 @@ async function auditSwitchHost({ host, sshPort, vendorKey, username, password, e
   const cmds    = AUDIT_CMDS[vendorKey] || AUDIT_CMDS['cisco-ios'];
   const lldpCmd = LLDP_ALL_CMD[vendorKey] || LLDP_ALL_CMD['cisco-ios'];
   const macCmd  = MAC_TABLE_CMD[vendorKey] || MAC_TABLE_CMD['cisco-ios'];
+  const cdpCmd  = CDP_ALL_CMD[vendorKey];   // null for vendors without CDP
   const shortCmds = [
     cmds.sysinfo  && { name: 'sysinfo',  cmd: cmds.sysinfo },
     cmds.ifstatus && { name: 'ifstatus', cmd: cmds.ifstatus },

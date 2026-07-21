@@ -233,7 +233,7 @@ def main():
         device_server_path  = config["models"].get("devices_server")
         device_seg_path     = None
         if not device_general_path or not device_server_path:
-            raise SystemExit(
+            raise RuntimeError(
                 "device_detect_mode='dual' requires 'devices_general' and "
                 "'devices_server' in config.json models (removed for seg-only "
                 "mode). Set mode to 'seg' or restore the dual model paths.")
@@ -646,7 +646,7 @@ def main():
     print(f"Saved unit/device mapping JSON to: {json_path}")
 
     if not devices:
-        raise SystemExit("No devices detected. Cannot continue to port detection.")
+        raise RuntimeError("No devices detected. Cannot continue to port detection.")
 
     if args.device_index is not None:
         if not 1 <= args.device_index <= len(devices):

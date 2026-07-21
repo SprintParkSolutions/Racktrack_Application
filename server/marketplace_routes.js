@@ -622,8 +622,12 @@ router.post('/api/marketplace/orders', requireAuth, safeAsync(async (req, res) =
   const listing = db.prepare(`SELECT * FROM marketplace_listings WHERE id = ?`).get(listingId);
   if (!listing) return res.status(404).json({ ok: false, error: 'listing not found' });
   if (listing.status !== 'active') return res.status(400).json({ ok: false, error: 'listing is not active' });
-  // TODO: re-enable before production
-  // if (listing.user_id === req.user.id) return res.status(400).json({ ok: false, error: 'cannot buy your own listing' });
+  // Re-enabled: buying your own listing creates a real order row, accrues a
+  // platform fee and — once Stripe is configured — starts a genuine payment
+  // flow, while inflating the revenue figures on the owner dashboard.
+  if (listing.user_id === req.user.id) {
+    return res.status(400).json({ ok: false, error: 'cannot buy your own listing' });
+  }
   if (listing.price_cents == null) return res.status(400).json({ ok: false, error: 'listing has no price — contact seller' });
 
   const qty = Math.max(1, Math.min(listing.quantity, parseInt(b.quantity, 10) || 1));

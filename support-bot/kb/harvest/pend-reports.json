@@ -1,0 +1,191 @@
+[
+  {
+    "question": "Sharing to Teams or Outlook fails with a message about \"No valid token\"",
+    "answer": "This is a server-side Microsoft sign-in that has lapsed — nothing is wrong with your phone or your account. RackTrack sends Teams messages and Outlook emails using a Microsoft login cached on the server (a shared MSAL token cache). When that cache is missing or its refresh token has expired, the server tries a silent refresh, fails, and cannot prompt for an interactive login, so every Teams/Outlook share fails until an administrator re-authorises it on a desktop.\n\nThe exact wording you will see is:\n- Teams: \"No valid Teams token. Run `python -m pipeline.teams_send --email X --file Y --interactive` once on a desktop to complete device-flow login and cache a refresh token.\"\n- Outlook: \"No valid Outlook token in the shared cache. Run `python -m pipeline.outlook_send --email X --file Y --interactive` once on a desktop to complete device-flow login.\"\nYou may also just see \"teams send failed\" / \"outlook send failed\", or a message starting \"login failed:\".\n\nWhat to do: report it to your RackTrack administrator and quote the message — only they can re-run the one-off device-flow login on the server.\n\nMeanwhile: Teams and Outlook share the same cached login, so if one is broken the other usually is too, but Slack sharing uses a separate sender and normally still works. To get the report out yourself, tap View on the report row, then use the \"Download PDF\" button at the top of the report — it opens the PDF in your device's browser/viewer where you can save it and attach it to an email or Teams chat manually.",
+    "symptoms": [
+      "No valid Teams token",
+      "No valid Outlook token in the shared cache",
+      "login failed: ",
+      "teams send failed",
+      "outlook send failed"
+    ],
+    "rootCause": "pipeline/teams_send.py and pipeline/outlook_send.py acquire tokens with MSAL from a SerializableTokenCache on disk (pipeline/shankar_teams_cache.json). Silent refresh is attempted first; with --interactive absent (the server never passes it) a missing/expired cache raises immediately.",
+    "evidence": [
+      {
+        "file": "pipeline/teams_send.py",
+        "lines": "77-83",
+        "snippet": "if not result:\n        if not interactive:\n            raise RuntimeError(\n                \"No valid Teams token. Run `python -m pipeline.teams_send --email X --file Y --interactive` \"\n                \"once on a desktop to complete device-flow login and cache a refresh token.\"\n            )"
+      },
+      {
+        "file": "pipeline/outlook_send.py",
+        "lines": "66-72",
+        "snippet": "if not result:\n        if not interactive:\n            raise RuntimeError(\n                \"No valid Outlook token in the shared cache. Run \"\n                \"`python -m pipeline.outlook_send --email X --file Y --interactive` \"\n                \"once on a desktop to complete device-flow login.\"\n            )"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7437-7442",
+        "snippet": "const args = ['-u', '-m', pyModule, '--email', email, '--file', pdfPath, ...extraArgs];\n  const child = spawnChild(pythonCmd, args, {"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-reports",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Is there a single report covering both racks in a two-rack scan?",
+    "answer": "Yes — there is a combined report endpoint, but nothing in the app links to it, so you have to open the address directly:\n\n`GET /api/rack-group/<groupId>/report`\n\nIt returns one HTML document: a cover page reading **\"RackTrack · Combined report\"** under the heading **\"Two-Rack Report\"** (that heading is fixed text — it still says \"Two-Rack Report\" even if the group holds more than two racks), followed by the rack count and today's date, plus one pill per rack showing its position, label and rack ID. Each rack's standard scan report then follows, each preceded by a dark **\"Rack #<n> — <label>\"** banner that starts on a new page, so browser Print → Save as PDF produces a clean multi-rack PDF. There is no server-rendered PDF for this one — HTML only.\n\nCaveats:\n- Requires sign-in, and the group must belong to your Site — otherwise **\"Group not found\"** (404). Any signed-in member of the Site can open it; it is not restricted to admins.\n- A group with no member racks returns **\"Group has no racks\"** (404).\n- If one rack's report cannot be built, that rack's slot shows **\"Report unavailable for <rackId>: <reason>\"** in red and the rest of the document still renders.",
+    "symptoms": [
+      "combined report for both racks",
+      "Two-Rack Report",
+      "Group not found",
+      "Group has no racks",
+      "Report unavailable for RK-..."
+    ],
+    "rootCause": "GET /api/rack-group/:groupId/report loops members, calls buildScanReport per rack, splices each <body> into a shared shell with the first rack's <head>, and returns text/html only. Tenant-checked against data.group.tenant_id.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "4003-4016",
+        "snippet": "/**\n * GET /api/rack-group/:groupId/report?format=html\n * One combined report document covering EVERY rack in the group — each rack's\n * standard scan report stacked in order under a cover page. Reuses the per-rack\n * report renderer; splices each rack's <body> into a shared shell so it's a\n * single printable page (browser Print → PDF for a PDF).\n */\napp.get('/api/rack-group/:groupId/report', auth.requireAuth, async (req, res) => {\n  const data = rackGroups.get(req.params.groupId);\n  if (!data || data.group.tenant_id !== req.user.tenant_id) {\n    return res.status(404).json({ error: 'Group not found' });\n  }\n  const members = data.members || [];\n  if (!members.length) return res.status(404).json({ error: 'Group has no racks' });"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4029-4031",
+        "snippet": "} catch (e) {\n        sections.push({ member: m, body: `<p style=\"padding:20px;color:#b00\">Report unavailable for ${m.rack_id}: ${e.message}</p>` });\n      }"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4036-4042",
+        "snippet": "<div style=\"font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#888\">RackTrack · Combined report</div>\n        <h1 style=\"font-size:2rem;font-weight:850;margin:8px 0 4px\">Two-Rack Report</h1>\n        <div style=\"color:#666\">${members.length} racks · ${new Date().toISOString().slice(0, 10)}</div>"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-reports",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "RackTrack was supposed to post an analysis note to my ServiceNow incident but nothing appeared",
+    "answer": "The automated ServiceNow work note (\"RackTrack Agent Analysis — auto-generated\") is deliberately held back in three situations, all silent from the field (pipeline/agent.py, auto_post_analysis):\n\n1. Low confidence. If the extracted confidence is below POST_CONFIDENCE_FLOOR = 0.5, nothing is posted. Status: skipped_low_confidence.\n2. Nothing changed. RackTrack hashes its conclusion (_analysis_hash: failure mode, affected device, affected port, confidence rounded to one decimal, and whether a detected_drift reasoning step is present). If that hash matches what was already posted for this incident, it does not repeat itself. Status: skipped_no_change.\n3. Rate limited. If the analysis DID change but the last post for that incident was under POST_RATE_LIMIT_HOURS = 24 hours ago, it is still held. Status: skipped_rate_limit. (The rate limit is only reached after the no-change check passes.)\n\nA ticket with no sys_id returns status \"error\" rather than a skip.\n\nThe note contains: the one-line incident summary, the confidence figure, the signals used, a numbered reasoning trail with per-step evidence and confidence, a \"Suggested action:\" block lifted from the reasoning step named suggested_action, and a \"Related incidents in same rack\" line — but only when the caller supplies related incidents, which happens on batch runs, not on a manual single-incident post.\n\nAn administrator can force past guards 2 and 3 with POST /api/incidents/<INC>/post-work-note and body {\"force\": true}; the worker implements this by deleting that incident's entry from the posted-state log, so the 0.5 confidence floor still applies. Other failures: \"No active ServiceNow connection. Add one under Profile → Connections.\" (400), \"Ticket <INC> not in inbox\" (404), \"inbox ticket is missing sys_id — cannot post\" (400), and \"agent extraction failed — try /api/analyze-for-ticket first\" (500) when no prior extraction exists.\n\nEvidence line fix: the server route is at server/app.js:4787-4794, not 4755-4762.",
+    "symptoms": [
+      "skipped_low_confidence",
+      "skipped_no_change",
+      "skipped_rate_limit",
+      "no work note on the incident",
+      "Ticket INC... not in inbox",
+      "inbox ticket is missing sys_id — cannot post"
+    ],
+    "rootCause": "pipeline/agent.py auto_post_analysis enforces POST_CONFIDENCE_FLOOR = 0.5, a stable _analysis_hash no-change guard, and POST_RATE_LIMIT_HOURS = 24 before calling sn_client.add_work_note. The Express route surfaces the resulting status verbatim.",
+    "evidence": [
+      {
+        "file": "pipeline/agent.py",
+        "lines": "593-594",
+        "snippet": "POST_CONFIDENCE_FLOOR = 0.5\nPOST_RATE_LIMIT_HOURS = 24"
+      },
+      {
+        "file": "pipeline/agent.py",
+        "lines": "674-693",
+        "snippet": "if confidence < POST_CONFIDENCE_FLOOR:\n        return {\"status\": \"skipped_low_confidence\", \"confidence\": confidence}\n...\n    if prev.get(\"hash\") == cur_hash:\n        return {\"status\": \"skipped_no_change\", \"hash\": cur_hash}\n...\n            if datetime.now(timezone.utc) - last_dt < timedelta(hours=POST_RATE_LIMIT_HOURS):\n                return {\"status\": \"skipped_rate_limit\",\n                        \"last_posted\": last_posted_iso}"
+      },
+      {
+        "file": "pipeline/agent.py",
+        "lines": "627-647",
+        "snippet": "lines.append(\"RackTrack Agent Analysis — auto-generated\")\n    lines.append(\"\")\n    lines.append(f\"Incident: {ext.get('one_line_summary', 'n/a')}\")\n    lines.append(f\"Confidence: {ext.get('confidence', 0)}\")\n    lines.append(f\"Signals: {', '.join(ext.get('signals_used', [])) or 'none'}\")\n...\n    lines.append(\"Reasoning:\")"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4755-4762",
+        "snippet": "app.post('/api/incidents/:inc/post-work-note', auth.requireAuth, async (req, res) => {\n  const incNumber = req.params.inc;\n  const sn_creds = getSnCreds(req.user);\n  if (!sn_creds) return res.status(400).json({ error: 'No active ServiceNow connection. Add one under Profile → Connections.' });\n\n  const ticket = readTicketByNumber(incNumber);\n  if (!ticket) return res.status(404).json({ error: `Ticket ${incNumber} not in inbox` });\n  if (!ticket.sys_id) return res.status(400).json({ error: 'inbox ticket is missing sys_id — cannot post' });"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-reports",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Is there a size limit on the report I email out?",
+    "answer": "Yes — only for **Outlook**.\n\nRackTrack renders the rack report to PDF and, for Outlook, base64-encodes that PDF straight into a Microsoft Graph `/me/sendMail` request. Graph caps that whole request at about **4 MB**, and base64 inflates the file by roughly a third, so in practice a report PDF over about **3 MB** will fail to send. The failure surfaces as a `sendMail failed (413 / RequestEntityTooLarge)` style error from the share action.\n\n**Slack and Teams have no such limit.** Slack uploads the file separately via `files.getUploadURLExternal`, and Teams PUTs the file to OneDrive, automatically switching to a chunked upload session for anything over 4 MB. If an Outlook share fails on a photo-heavy scan, re-send it through Slack or Teams.\n\nOne caveat about report size: RackTrack does create downscaled copies of scan images (anything over 500 KB is re-encoded to 1400 px wide JPEG), but that only runs when the **HTML** report is generated, not on the share/PDF path. The PDF reuses those shrunk copies only if they already exist — i.e. if the HTML report for that rack has been opened at least once. So a workaround for an oversized Outlook send is to open the rack's HTML report first, then retry the Outlook share.",
+    "symptoms": [
+      "outlook share fails on a big scan",
+      "attachment too large",
+      "Graph sendMail error",
+      "share works on Slack but not Outlook"
+    ],
+    "rootCause": "pipeline/outlook_send.py base64-encodes the PDF into the sendMail request body (the inline attachment path), which Graph caps at ~4 MB. slack_email.py uses Slack's external upload URL flow, which has no such request-body constraint.",
+    "evidence": [
+      {
+        "file": "pipeline/outlook_send.py",
+        "lines": "18-19",
+        "snippet": "Note: this uses the inline /me/sendMail path (base64 attachment), which caps the\nwhole request at ~4 MB. Rack report PDFs are well under that."
+      },
+      {
+        "file": "pipeline/outlook_send.py",
+        "lines": "93-99",
+        "snippet": "file_name = os.path.basename(file_path)\n    with open(file_path, \"rb\") as f:\n        content_b64 = base64.b64encode(f.read()).decode(\"utf-8\")"
+      },
+      {
+        "file": "pipeline/slack_email.py",
+        "lines": "82-92",
+        "snippet": "def get_upload_url(token: str, file_path: str):\n    file_name = os.path.basename(file_path)\n    file_size = os.path.getsize(file_path)\n    r = requests.post(\n        \"https://slack.com/api/files.getUploadURLExternal\","
+      },
+      {
+        "file": "server/app.js",
+        "lines": "891-909",
+        "snippet": "async function shrinkImagesForReport(rackDir) {\n...\n        if (src.size < 500 * 1024) return;   // already small enough — skip"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "likely",
+    "domain": "pend-reports",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Is the marketplace report a report I can generate from the app?",
+    "answer": "No — not in the sense of something the app produces. `docs/features/marketplace-report.md` (dated 2026-07-16) is an internal design document about the Marketplace feature: its three sell paths, its seven database tables and its endpoint list. It notes Stripe, eBay and Amazon are env-gated stubs awaiting credentials. It is not generated by the product and is not customer-facing.\n\nThere is, however, an in-app Marketplace Dashboard. `GET /api/marketplace/dashboard` (server/marketplace_routes.js:1199-1258, auth required) returns per-user listing counts (total/active/sold/closed), sales stats (total, completed and pending orders, plus completed-order revenue), purchase totals and spend, and the 10 most recent listings. It renders at /marketplace/dashboard (client/src/pages/MarketplaceDashboardPage.jsx). That is the closest thing to a seller statement and is what to point a customer at.\n\nWhat does not exist is any download or file export: grepping server/marketplace_routes.js for csv/export/download/xlsx matches only the trailing `module.exports = router;` on line 1427. No order CSV, no listing export, no downloadable seller statement. So a customer asking for \"the marketplace report\" means one of three things: the internal design doc (share the feature notes), the Marketplace Dashboard (exists, on-screen only), or a file export (does not exist yet — feature request).\n\nSeparately, \"report\" also appears in the Marketplace as flagging: `POST /api/marketplace/listings/:id/flag` lets a user report a listing and `POST /api/marketplace/listings/:id/moderate` lets an admin hide or restore it (marketplace_routes.js:1120+). Confirm which meaning the customer intends.",
+    "symptoms": [
+      "marketplace report",
+      "export my listings",
+      "download my orders",
+      "seller statement"
+    ],
+    "rootCause": "marketplace-report.md is a Markdown design write-up. Grepping marketplace_routes.js for csv/export/download/xlsx returns only the trailing `module.exports = router;` — there is no export route.",
+    "evidence": [
+      {
+        "file": "docs/features/marketplace-report.md",
+        "lines": "1-4",
+        "snippet": "# RackTrack Marketplace — Feature Report\n\n**Date:** 2026-07-16\n**Status:** Active development — Stripe, eBay, and Amazon integrations are env-gated stubs awaiting credentials."
+      },
+      {
+        "file": "docs/features/marketplace-report.md",
+        "lines": "22-32",
+        "snippet": "| Table | Purpose |\n|---|---|\n| `marketplace_listings` | All for-sale and wanted listings (kind: sell/want) |\n| `marketplace_orders` | Purchase orders linking buyer, seller, listing |"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1422",
+        "snippet": "module.exports = router;"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "pend-reports",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  }
+]

@@ -89,7 +89,10 @@ def _load_detector():
     import json
     cfg_path = Path(__file__).resolve().parents[1] / "config.json"
     cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-    model_path = cfg["models"]["devices"]
+    # config.json ships "devices_seg" — there has never been a plain "devices"
+    # key, so this raised KeyError on every call and the video split silently
+    # reported "multi-rack split failed: 'devices'". Accept either spelling.
+    model_path = cfg["models"].get("devices") or cfg["models"]["devices_seg"]
     if not os.path.isabs(model_path):
         model_path = str(Path(__file__).resolve().parents[1] / model_path)
     return YOLO(model_path)

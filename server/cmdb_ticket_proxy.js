@@ -158,15 +158,27 @@ router.post('/api/cmdb/ticket/:rackId/cancel', safeAsync(async (req, res) => {
   res.json(r);
 }));
 
-// POST poll — sweep all
-router.post('/api/cmdb/ticket/poll', safeAsync(async (req, res) => {
+// POST poll — sweep all. This iterates EVERY tenant's outputs/RK-* directory
+// and returns their rack ids + ticket numbers, so it is owner-only.
+router.post('/api/cmdb/ticket/poll', auth.requireRole('owner'), safeAsync(async (req, res) => {
   const r = await runTicketCmd(['poll'], { timeoutMs: 300_000, userId: req.user?.id, orgId: req.user?.organization_id });
   res.json(r);
 }));
 
-// POST dev-approve — demo flow: skip ServiceNow approval, apply scan to CMDB
-// immediately, return a `details` block summarising what was pushed.
-router.post('/api/cmdb/ticket/:rackId/dev-approve', safeAsync(async (req, res) => {
+// POST dev-approve — DEMO ONLY: skips the ServiceNow approval step, applies the
+// scan to the CMDB immediately and fabricates a DEV-<rackId> ticket if none
+// exists. The product's compliance claim is that every CMDB write is gated
+// behind an approved Service Request, so this must never be reachable by a
+// normal user in production: it let anyone self-approve a write against a fake
+// ticket. Enabled only when CMDB_DEV_APPROVE=1 is explicitly set, and only for
+// owners. The genuine flow (/refresh, /cancel, the 5-min poller) is unaffected.
+router.post('/api/cmdb/ticket/:rackId/dev-approve', auth.requireRole('owner'), safeAsync(async (req, res) => {
+  if (process.env.CMDB_DEV_APPROVE !== '1') {
+    return res.status(403).json({
+      ok: false,
+      error: 'Demo approval is disabled. Approve the Service Request in ServiceNow instead.',
+    });
+  }
   const r = await runTicketCmd(
     ['dev-approve', '--rack-id', req.params.rackId],
     { timeoutMs: 600_000, userId: req.user?.id, orgId: req.user?.organization_id }

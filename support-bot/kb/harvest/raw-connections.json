@@ -1,0 +1,591 @@
+{
+  "domain": "connections",
+  "entries": [
+    {
+      "question": "What exactly is a connection / data source in RackTrack, and what does \"Active\" mean?",
+      "answer": "A connection (the app calls them Data Sources) is one saved set of credentials for an external system RackTrack reads device and ticket data from — your CMDB/ITSM, NetBox, SolarWinds Orion, CA/DX Spectrum, or your own SQL or REST database.\n\nWhere to find it: the \"Data Sources\" item in the desktop sidebar, or Profile → Data Sources. The screen is titled \"Data Sources\" and explains: \"Saved databases this app can pull data from. The active connection is what every screen uses while you're signed in. Switch any time — the data refreshes from the new source.\"\n\nThe screen has two sections:\n• Active — one card showing the connection currently in use, with an \"Active\" badge.\n• Other saved — every other connection you have saved, each with a \"Use\" button.\n\nKey rules:\n1. Exactly one connection is active at a time. Pressing \"Use\" on another one switches every screen over to it; the previous one is deactivated but not deleted. The database enforces this with a unique index (one active row per user).\n2. There is no merging across sources — the active connection is the single source of truth for that session.\n3. Saved connections belong to the account that created them. The server scopes every read and write to your user id, so no one else can see or use your saved connections.\n\nOrganization-wide credentials are a separate thing — see the \"Organization integrations\" panel in the Organization Console.",
+      "symptoms": [
+        "What is a data source / connection profile",
+        "What does the Active badge mean",
+        "Which connection is the app using",
+        "Can I use two data sources at once"
+      ],
+      "rootCause": "Connection profiles are per-user rows in connection_profiles with a unique partial index allowing one is_active=1 row per user; the Data Sources page renders an Active card and an 'Other saved' list with a Use button that calls the activate route.",
+      "evidence": [
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "124-132",
+          "snippet": "<h1 className={styles.title}>Data Sources</h1>\n...\n      <p className={styles.intro}>\n        Saved databases this app can pull data from. The <strong>active</strong>\n        {' '}connection is what every screen uses while you're signed in.\n        Switch any time — the data refreshes from the new source.\n      </p>"
+        },
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "206-223",
+          "snippet": "<h2 className={styles.sectionTitle}>Other saved</h2>\n...\n                <button\n                  type=\"button\"\n                  className={styles.useBtn}\n                  onClick={() => onActivate(p.id)}>\n                  Use\n                </button>"
+        },
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "69-73",
+          "snippet": "CREATE INDEX IF NOT EXISTS idx_conn_profiles_user\n    ON connection_profiles(user_id);\n  CREATE UNIQUE INDEX IF NOT EXISTS uq_conn_profiles_active\n    ON connection_profiles(user_id) WHERE is_active = 1;"
+        },
+        {
+          "file": "server/connection_profiles_routes.js",
+          "lines": "4-7",
+          "snippet": "* All routes require auth (req.user populated by requireAuth). Profiles\n * are scoped to req.user.id; no user can see or touch another user's\n * profiles."
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "Which data sources can I connect, and exactly what do I have to type in for each one?",
+      "answer": "Six types are supported. The Type dropdown shows these labels, and the form changes to the fields that type needs:\n\n• ServiceNow / CMDB — Instance ID (e.g. dev266363), Username, Password. All required. Hint on the form: \"Use just the instance ID — the part before .service-now.com\". Do not paste the full https://…service-now.com URL; the server builds the hostname itself from what you type.\n• NetBox — Base URL (e.g. https://netbox.example.com) and API Token, both required. Hint: \"API token from your NetBox user profile\".\n• SolarWinds Orion — Host (e.g. orion.example.com), Username, Password, all required. Hint: \"SolarWinds Orion NPM / NCM server\".\n• CA / DX Spectrum — Base URL (e.g. https://spectrum.example.com:8443), Username, Password, all required. Hint: \"Spectrum OneClick / REST endpoint\".\n• My own database (SQL) — a single Connection string, required. Placeholder: postgresql://user:pass@host:5432/dbname. Hint: \"PostgreSQL or MySQL connection string\".\n• My own database (REST) — Base URL (e.g. https://cmdb.example.com/api), required, plus an optional API Token. Hint: \"Generic REST endpoint that returns device / interface JSON\".\n\nAnything not on this list is rejected by the server with \"unsupported profile type: <type>\".",
+      "symptoms": [
+        "What systems can RackTrack connect to",
+        "What do I put in the Instance ID field",
+        "Do I need an API token for NetBox",
+        "Which fields are required for Orion / Spectrum"
+      ],
+      "rootCause": "TYPE_INFO in connectionsApi.js defines the label, field schema and hint per type; SUPPORTED_TYPES in connection_profiles.js is the server-side allow-list and validateType rejects anything else.",
+      "evidence": [
+        {
+          "file": "client/src/utils/connectionsApi.js",
+          "lines": "120-146",
+          "snippet": "export const TYPE_INFO = {\n  servicenow: {\n    label: 'ServiceNow / CMDB',\n    fields: [\n      { key: 'instance', label: 'Instance ID',  placeholder: 'dev266363', required: true },\n      { key: 'user',     label: 'Username',     placeholder: 'admin',     required: true },\n      { key: 'password', label: 'Password',     type: 'password',         required: true },\n    ],\n    hint: 'Use just the instance ID — the part before .service-now.com',\n  },\n  netbox: {\n    label: 'NetBox',\n    fields: [\n      { key: 'base_url', label: 'Base URL', placeholder: 'https://netbox.example.com', required: true },\n      { key: 'token',    label: 'API Token', type: 'password',                         required: true },\n    ],"
+        },
+        {
+          "file": "client/src/utils/connectionsApi.js",
+          "lines": "147-172",
+          "snippet": "  spectrum: {\n    label: 'CA / DX Spectrum',\n...\n  generic_sql: {\n    label: 'My own database (SQL)',\n    fields: [\n      { key: 'connection_string', label: 'Connection string',\n        placeholder: 'postgresql://user:pass@host:5432/dbname', required: true },\n    ],\n...\n  generic_rest: {\n    label: 'My own database (REST)',\n    fields: [\n      { key: 'base_url', label: 'Base URL', placeholder: 'https://cmdb.example.com/api', required: true },\n      { key: 'token',    label: 'API Token (optional)', type: 'password' },\n    ],"
+        },
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "45-52",
+          "snippet": "const SUPPORTED_TYPES = new Set([\n  'servicenow',\n  'netbox',\n  'orion',         // SolarWinds Orion / NPM / NCM\n  'spectrum',      // CA / DX Spectrum\n  'generic_sql',   // user's own DB via SQL connection string\n  'generic_rest',  // user's own DB via REST endpoint\n]);"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "How do I add a new data source connection, step by step?",
+      "answer": "1. Open Data Sources (sidebar \"Data Sources\", or Profile → Data Sources).\n2. Tap \"Add connection\" at the bottom of the list. A panel titled \"New connection\" opens.\n3. Type a Name — this is just a label for you (placeholder: \"e.g. My ServiceNow Dev\"). It is required.\n4. Pick the Type. The credential fields below change to match the type you pick; switching type clears anything you already typed, so choose the type first.\n5. Fill in the credential fields marked with *. A hint under the form tells you what the field wants (for ServiceNow: \"Use just the instance ID — the part before .service-now.com\").\n6. Press \"Save & use\". The new connection is saved and becomes the active one immediately — that is what \"& use\" means.\n\nIf it is a ServiceNow connection, saving-and-using kicks off a background pull and you will see a \"Pulling fresh data from …\" banner, then either \"✓ Pulled N incidents from <instance>\" or \"Refresh failed: …\".\n\nCancel closes the panel without saving. You cannot cancel while it is saving.",
+      "symptoms": [
+        "How do I connect our CMDB",
+        "Where is the add connection button",
+        "What does Save & use do",
+        "My typed password disappeared when I changed the Type dropdown"
+      ],
+      "rootCause": "ConnectionsPage renders an 'Add connection' button that opens the create modal; a useEffect resets the secret fields whenever the chosen type changes, and the submit button posts to /api/connections which defaults make_active to true.",
+      "evidence": [
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "249-260",
+          "snippet": "        <button\n          type=\"button\"\n          className={styles.addBtn}\n          onClick={openCreateForm}\n          disabled={loading}>\n...\n          Add connection\n        </button>"
+        },
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "38-42",
+          "snippet": "  // Reset secret fields whenever the chosen type changes — different\n  // backends require different fields, so we don't want stale values.\n  useEffect(() => {\n    setSecret(emptySecretFor(type));\n  }, [type]);"
+        },
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "350-355",
+          "snippet": "                <button\n                  type=\"submit\"\n                  className={styles.btnPrimary}\n                  disabled={submitting}>\n                  {submitting ? 'Saving…' : (editingId ? 'Save changes' : 'Save & use')}\n                </button>"
+        },
+        {
+          "file": "server/connection_profiles_routes.js",
+          "lines": "60-65",
+          "snippet": "  const meta = profiles.create(\n    req.user.id,\n    { name, type, secret },\n    { makeActive: make_active !== false }   // default true\n  );"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "Saving a connection failed with a message like \"servicenow profile requires {instance, user, password}\" or \"name, type, secret are required\". What is wrong?",
+      "answer": "The server refused the save because a required field was empty. Fill in every field marked with * for the type you picked, then press save again.\n\nThe exact messages and what each one means:\n• \"name, type, secret are required\" — the Name box was empty, or no credential field was filled in at all.\n• \"servicenow profile requires {instance, user, password}\" — one of Instance ID, Username or Password is blank.\n• \"netbox profile requires {base_url, token}\" — Base URL or API Token is blank.\n• \"orion profile requires {host, user, password}\" — Host, Username or Password is blank.\n• \"spectrum profile requires {base_url, user, password}\" — Base URL, Username or Password is blank.\n• \"generic_sql profile requires {connection_string}\" — the Connection string is blank.\n• \"generic_rest profile requires {base_url}\" — the Base URL is blank (the API Token is genuinely optional for this type).\n• \"unsupported profile type: <type>\" — the type is not one of the six the server accepts. That only happens if the request did not come from the Data Sources form.\n\nIn the Organization Console panel the check happens in the browser first and reads \"Fill in: <field labels>\" before anything is sent.\n\nNote: whitespace alone does not count as filled in on the org panel, and on the Data Sources form the browser also blocks submit while a required field is empty on a new connection.",
+      "symptoms": [
+        "servicenow profile requires {instance, user, password}",
+        "name, type, secret are required",
+        "netbox profile requires {base_url, token}",
+        "unsupported profile type",
+        "Fill in: Instance ID, Username"
+      ],
+      "rootCause": "validateSecret in connection_profiles.js throws a per-type message when a required key is missing; the create route returns 400 'name, type, secret are required' before that; safeAsync maps messages starting with 'unsupported' to 400. OrgConnectionsPanel pre-validates client-side with a 'Fill in:' message.",
+      "evidence": [
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "127-163",
+          "snippet": "function validateSecret(type, secret) {\n  if (!secret || typeof secret !== 'object') {\n    throw new Error('secret must be an object');\n  }\n  switch (type) {\n    case 'servicenow':\n      if (!secret.instance || !secret.user || !secret.password) {\n        throw new Error('servicenow profile requires {instance, user, password}');\n      }\n      break;\n    case 'netbox':\n      if (!secret.base_url || !secret.token) {\n        throw new Error('netbox profile requires {base_url, token}');"
+        },
+        {
+          "file": "server/connection_profiles_routes.js",
+          "lines": "56-59",
+          "snippet": "  const { name, type, secret, make_active } = req.body || {};\n  if (!name || !type || !secret) {\n    return res.status(400).json({ ok: false, error: 'name, type, secret are required' });\n  }"
+        },
+        {
+          "file": "server/connection_profiles_routes.js",
+          "lines": "30-32",
+          "snippet": "      logger.error(`[connections] ${req.method} ${req.originalUrl} — ${err.message}`);\n      const status = err.status || (err.message?.startsWith('unsupported') ? 400 : 500);\n      res.status(status).json({ ok: false, error: err.message || 'request failed' });"
+        },
+        {
+          "file": "client/src/components/OrgConnectionsPanel.jsx",
+          "lines": "45-46",
+          "snippet": "    const missing = (info.fields || []).filter(f => f.required && !String(secret[f.key] || '').trim());\n    if (missing.length) { setFormError(`Fill in: ${missing.map(f => f.label).join(', ')}`); return; }"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "I only wanted to change the password on an existing connection, but saving fails with \"servicenow profile requires {instance, user, password}\". Why?",
+      "answer": "Because when you type into any credential field on the edit form, the whole set of credential fields is sent — and the ones you left blank are sent as blank, which wipes the stored values and then fails validation.\n\nFix: when you edit credentials, re-enter every required field for that type, not just the one you are changing. For ServiceNow that means Instance ID, Username and Password together.\n\nSteps:\n1. Open Data Sources, tap the ⋯ menu on the connection, choose \"Edit\".\n2. Either leave every credential field blank (the note on the form says \"Leave the credential fields blank to keep what's already saved\") and change only the Name — or fill in all of the starred fields.\n3. Press \"Save changes\".\n\nSo there are exactly two safe edits: rename only (all credential fields blank), or replace the credentials in full.",
+      "symptoms": [
+        "Changing just the password fails to save",
+        "servicenow profile requires {instance, user, password} when editing",
+        "Edit connection error after typing a new password",
+        "Save changes rejected on an existing connection"
+      ],
+      "rootCause": "ConnectionsPage sends the entire secret object when any field is non-empty (hasSecret check), so untouched fields go up as empty strings; the server's update() merges {...existing.secret, ...secret}, so the empty strings overwrite the stored values and validateSecret then throws the per-type 'requires' error.",
+      "evidence": [
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "75-82",
+          "snippet": "      if (editingId) {\n        // Edit: send name always; send secret only if user typed in any\n        // field (otherwise the stored credentials are kept).\n        const hasSecret = Object.values(secret).some(v => String(v || '').length > 0);\n        await update(editingId, {\n          name,\n          secret: hasSecret ? secret : undefined,\n        });"
+        },
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "285-286",
+          "snippet": "  const nextSecret = secret ? { ...existing.secret, ...secret } : existing.secret;\n  if (secret) validateSecret(existing.type, nextSecret);"
+        },
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "330-334",
+          "snippet": "              {editingId && (\n                <p className={styles.editHint}>\n                  Leave the credential fields blank to keep what's already saved.\n                </p>\n              )}"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "Where can I see the password I saved for a connection, and why is the Type dropdown greyed out when I edit?",
+      "answer": "You cannot see a saved credential again — not in the app, and not through the API. That is deliberate: RackTrack stores the credentials encrypted and only ever returns the connection's name, type, active flag and timestamps. When you open \"Edit connection\" the credential boxes are always empty; the code never pre-loads them.\n\nWhat that means in practice:\n• Lost the password? RackTrack cannot tell you what it was. Get it from the source system and re-enter it (all required fields together).\n• The Organization Console panel says the same thing: \"They're stored encrypted and are never shown again — not even to you. To change one, just re-enter it.\"\n\nThe Type dropdown is disabled while editing, with the note \"Type can't change after a connection is created.\" To move a connection to a different system, add a new connection of the right type (it becomes active on save) and then delete the old one.",
+      "symptoms": [
+        "Can't see the saved password",
+        "Credential fields are empty when editing",
+        "Type can't change after a connection is created",
+        "How do I recover the credentials I entered"
+      ],
+      "rootCause": "The API returns metadata only (rowToMeta has no secret field), openEditForm resets the secret state with the comment 'never preload secrets', and the Type <select> is disabled whenever editingId is set.",
+      "evidence": [
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "53-61",
+          "snippet": "  const openEditForm = (profile) => {\n    setEditingId(profile.id);\n    setName(profile.name);\n    setType(profile.type);\n    setSecret(emptySecretFor(profile.type)); // never preload secrets"
+        },
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "295-308",
+          "snippet": "                <select\n                  className={styles.input}\n                  value={type}\n                  onChange={(e) => setType(e.target.value)}\n                  disabled={!!editingId}>\n...\n                {editingId && (\n                  <span className={styles.fieldHint}>\n                    Type can't change after a connection is created.\n                  </span>\n                )}"
+        },
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "166-176",
+          "snippet": "function rowToMeta(row) {\n  if (!row) return null;\n  return {\n    id:         row.id,\n    name:       row.name,\n    type:       row.type,\n    is_active:  !!row.is_active,\n    created_at: row.created_at,\n    updated_at: row.updated_at,\n  };\n}"
+        },
+        {
+          "file": "client/src/components/OrgConnectionsPanel.jsx",
+          "lines": "79-83",
+          "snippet": "        Credentials for your CMDB/ITSM database, live network sources, etc. Set them once here for the\n        whole organization. They're stored <strong>encrypted</strong> and are <strong>never shown again</strong> —\n        not even to you. To change one, just re-enter it."
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "How do I test that a connection actually works? I can't find a \"Test connection\" button.",
+      "answer": "There is no Test button — RackTrack has no test endpoint for connection profiles. How you verify depends on the type:\n\nServiceNow / CMDB: when it is the active connection, a button appears under the Active card: \"Refresh data from this source\". Pressing it runs a real poll against the instance you entered, so it is the closest thing to a test.\n• While it runs: \"Pulling fresh data from <name>…\"\n• Success: \"✓ Pulled N incidents from <instance>\"\n• Failure: \"Refresh failed: <error from the poller>\"\nSaving with \"Save & use\", or pressing \"Use\" on a saved ServiceNow connection, starts the same poll automatically.\n\nEvery other type (NetBox, SolarWinds Orion, CA/DX Spectrum, own SQL, own REST): the refresh button is not shown, and nothing is contacted at save time — the credentials are simply stored. You confirm them by opening a screen that reads from that source and seeing whether data appears.\n\nSo a connection saving successfully proves only that the fields were filled in, never that the host, username or password are correct.",
+      "symptoms": [
+        "No Test connection button",
+        "How do I know the credentials are right",
+        "Refresh data from this source",
+        "Connection saved but no data appears",
+        "Refresh failed"
+      ],
+      "rootCause": "There is no test route in connection_profiles_routes.js; the only live verification is the ServiceNow poll, and ConnectionsPage renders the 'Refresh data from this source' button only when active.type === 'servicenow'. lastRefresh drives the success/failure banners.",
+      "evidence": [
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "195-203",
+          "snippet": "        {active && active.type === 'servicenow' && (\n          <button\n            type=\"button\"\n            className={styles.refreshBtn}\n            onClick={() => refreshActiveSource().catch(() => { /* error shown in banner */ })}\n            disabled={refreshing}>\n            {refreshing ? 'Refreshing…' : 'Refresh data from this source'}\n          </button>\n        )}"
+        },
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "143-155",
+          "snippet": "      {lastRefresh && !refreshing && (\n        lastRefresh.ok ? (\n          <div className={styles.successBanner}>\n            ✓ Pulled {lastRefresh.count ?? '—'} incident{lastRefresh.count === 1 ? '' : 's'}\n            {' '}from <strong>{lastRefresh.instance}</strong>\n          </div>\n        ) : (\n          <div className={styles.errorBanner}>\n            Refresh failed: {lastRefresh.error}\n          </div>\n        )\n      )}"
+        },
+        {
+          "file": "client/src/ConnectionsContext.jsx",
+          "lines": "121-130",
+          "snippet": "    // For ServiceNow profiles, kick off the inbox re-poll and watch it\n    // complete in the background. The activate call returns fast; the\n    // refreshing flag drives the \"Pulling fresh data…\" banner so the\n    // user can navigate around the app while it works.\n    if (profile?.type === 'servicenow') {\n      setRefreshing(true);\n      setLastRefresh(null);\n      try {\n        await api.refreshIncidents();   // returns immediately (202)"
+        },
+        {
+          "file": "server/connection_profiles_routes.js",
+          "lines": "9-17",
+          "snippet": " * Routes:\n *   GET    /api/connections              → list metadata for this user\n *   GET    /api/connections/active       → metadata for the active profile\n *   POST   /api/connections              → create {name, type, secret, make_active?}\n *   GET    /api/connections/:id          → metadata for one profile\n *   PATCH  /api/connections/:id          → update {name?, secret?}\n *   POST   /api/connections/:id/activate → make this profile active\n *   POST   /api/connections/deactivate   → clear active (no source for this user)\n *   DELETE /api/connections/:id          → delete one profile"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "What is the \"Organization integrations\" panel, and how is it different from my personal Data Sources?",
+      "answer": "\"Organization integrations\" is where an organization admin sets the credentials the WHOLE organization uses, so every member's scans read from the same CMDB without anyone entering credentials on their own account.\n\nWhere: Organization Console → scroll to the \"Organization integrations\" section. It appears for organization admins; the platform owner does not see it (an owner account has no organization context).\n\nTo add one:\n1. Press \"+ Add integration\".\n2. Choose the Integration type (same six types as personal Data Sources).\n3. Optionally type a Label — if you leave it blank the type's name is used.\n4. Fill in the credential fields marked *.\n5. Press \"Save (encrypted)\".\n\nEach configured integration then shows as a row with \"● Configured · encrypted\" and a \"Remove\" button. There is no edit — to change a credential you re-enter it.\n\nPrecedence: for ServiceNow the organization's credential is used first, and only if the organization has none does the server fall back to the signed-in admin's personal connection. Personal Data Sources remain private to the account that created them.",
+      "symptoms": [
+        "Where do I set credentials for the whole organization",
+        "Organization integrations panel",
+        "+ Add integration",
+        "Save (encrypted)",
+        "Configured · encrypted"
+      ],
+      "rootCause": "OrgConnectionsPanel is rendered in OrgConsolePage only when the viewer is not the platform owner; it posts to /api/org-connections, which is gated to org_admin/owner and requires an organization_id. getSnCreds prefers resolveCredsForOrg over the personal profile.",
+      "evidence": [
+        {
+          "file": "client/src/components/OrgConnectionsPanel.jsx",
+          "lines": "70-78",
+          "snippet": "        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1a1c1d' }}>Organization integrations</h3>\n        {!formOpen && (\n          <button type=\"button\" style={primaryBtn} onClick={() => { setFormError(null); setFormOpen(true); }}>\n            + Add integration\n          </button>"
+        },
+        {
+          "file": "client/src/components/OrgConnectionsPanel.jsx",
+          "lines": "94-114",
+          "snippet": "          <label style={label}>Label (optional)</label>\n          <input style={input} value={name} placeholder={info.label}\n...\n            <button type=\"submit\" style={primaryBtn} disabled={saving}>{saving ? 'Saving…' : 'Save (encrypted)'}</button>"
+        },
+        {
+          "file": "client/src/pages/OrgConsolePage.jsx",
+          "lines": "426-428",
+          "snippet": "          {/* Org-wide external access — admin sets encrypted credentials the\n              whole org's pipeline uses. Owner has no org context, so admin-only. */}\n          {!isOwner && <OrgConnectionsPanel />}"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "4693-4696",
+          "snippet": "    // Prefer the ORG-wide credential the admin configured; fall back to a\n    // personal profile only if the org has none.\n    const resolved = (orgId && profiles.resolveCredsForOrg(orgId, 'servicenow'))\n      || (userId && profiles.resolveCredsForType(userId, 'servicenow'));"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "I re-entered our CMDB credentials in Organization integrations and now the same integration is listed twice. Which one is being used?",
+      "answer": "The newest one is being used. The older row is kept but is no longer active — the panel simply lists every stored row for the organization, and each row displays \"● Configured · encrypted\" whether or not it is the one in use.\n\nWhat happens when you press \"+ Add integration\" for a type you already have: the server marks the previous credential of that type inactive and inserts a new active one. Nothing is overwritten in place, so the old row stays in the list.\n\nFix: press \"Remove\" on the stale row (you will be asked \"Remove the <type> integration for this organization?\"). Removing it does not affect the newest one. If you are not sure which is which, remove them all and add the integration once more.\n\nAn organization can hold one active credential per type at the same time — for example a live ServiceNow and a live SQL source together — so seeing two rows of *different* types is normal.",
+      "symptoms": [
+        "Duplicate integration rows",
+        "Two ServiceNow entries in Organization integrations",
+        "Which credential is actually used after re-entering",
+        "Remove the integration for this organization"
+      ],
+      "rootCause": "createForOrg deactivates the previous active row of that type and inserts a new one, but listForOrg selects all rows for the organization with no is_active filter, and the panel renders every row with the same 'Configured · encrypted' line.",
+      "evidence": [
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "394-410",
+          "snippet": "function createForOrg(orgId, adminUserId, { name, type, secret }) {\n  validateType(type);\n  validateSecret(type, secret);\n  const blob = encrypt(JSON.stringify(secret), getKey());\n  const tx = db.transaction(() => {\n    db.prepare(\n      `UPDATE connection_profiles SET is_active = 0, updated_at = datetime('now')\n        WHERE organization_id = ? AND type = ? AND is_active = 1`\n    ).run(Number(orgId), type);"
+        },
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "371-379",
+          "snippet": "/** List metadata only (no secrets) for an org's connection profiles. */\nfunction listForOrg(orgId) {\n  return db.prepare(\n    `SELECT id, name, type, is_active, created_at, updated_at\n       FROM connection_profiles\n      WHERE organization_id = ?\n      ORDER BY is_active DESC, type ASC, updated_at DESC`\n  ).all(Number(orgId)).map(orgRowToMeta);\n}"
+        },
+        {
+          "file": "client/src/components/OrgConnectionsPanel.jsx",
+          "lines": "126-133",
+          "snippet": "            <div key={p.id} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>\n...\n                <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 2 }}>● Configured · encrypted</div>\n              </div>\n              <button type=\"button\" style={dangerBtn} onClick={() => onRemove(p)}>Remove</button>"
+        },
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "89-93",
+          "snippet": "  -- one active profile per (org, type) so an org can have a live ServiceNow\n  -- AND a live SQL source at the same time.\n  CREATE UNIQUE INDEX IF NOT EXISTS uq_conn_profiles_org_active\n    ON connection_profiles(organization_id, type)\n    WHERE is_active = 1 AND organization_id IS NOT NULL;"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "Saving an organization integration returns \"organization admin only\" or \"no organization is associated with your account\". What now?",
+      "answer": "Two different refusals:\n\n• \"organization admin only\" (403) — your account is not an organization admin (and not the platform owner). Members and site managers cannot set organization-wide credentials. Ask your organization admin to do it; they set it once and everyone's scans then use it.\n\n• \"no organization is associated with your account\" (400) — your role is accepted but your account is not attached to any organization. This is what a platform-owner account hits, because an owner sits above organizations and has no organization of its own. The fix is to use an organization-admin account inside the organization you want to configure. That is also why the \"Organization integrations\" panel is not rendered for the owner.\n\nBoth checks run on the server, so they apply to any client, not just the console screen.",
+      "symptoms": [
+        "organization admin only",
+        "no organization is associated with your account",
+        "403 saving org integration",
+        "Owner cannot set organization credentials"
+      ],
+      "rootCause": "requireOrgAdmin in connection_profiles_routes.js returns 403 for roles outside org_admin/owner and 400 when req.user.organization_id is missing, which is the platform owner's case; OrgConsolePage hides the panel for owners.",
+      "evidence": [
+        {
+          "file": "server/connection_profiles_routes.js",
+          "lines": "112-123",
+          "snippet": "function requireOrgAdmin(req, res, next) {\n  if (!req.user || !['org_admin', 'owner'].includes(req.user.role)) {\n    return res.status(403).json({ ok: false, error: 'organization admin only' });\n  }\n  const orgId = req.user.organization_id;\n  if (!orgId) {\n    return res.status(400).json({ ok: false, error: 'no organization is associated with your account' });\n  }\n  req._orgId = orgId;\n  next();\n}\nrouter.use('/api/org-connections', requireAuth, requireOrgAdmin);"
+        },
+        {
+          "file": "client/src/pages/OrgConsolePage.jsx",
+          "lines": "426-428",
+          "snippet": "          {/* Org-wide external access — admin sets encrypted credentials the\n              whole org's pipeline uses. Owner has no org context, so admin-only. */}\n          {!isOwner && <OrgConnectionsPanel />}"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "How do I stop using a data source, or delete one? Is there an off switch?",
+      "answer": "There is no off switch on the Data Sources screen — your options are switch or delete.\n\nTo switch: press \"Use\" on another saved connection. The one you were on stops being active immediately and stays saved.\n\nTo delete:\n1. Tap the ⋯ menu on the connection's card.\n2. Choose \"Delete\".\n3. Confirm the prompt: Delete connection \"<name>\"?\n\nDeleting is permanent — the stored credentials go with the row and cannot be recovered, so you will have to type them in again if you want that source back.\n\nIf you delete the active connection and have no other, the screen shows \"No active connection.\" with the hint \"Add a connection below to start pulling data from your CMDB\", and CMDB-backed screens stop returning data until you add one.\n\n(For organization-wide credentials, the equivalent is the \"Remove\" button in Organization integrations.)",
+      "symptoms": [
+        "How do I disconnect a data source",
+        "Delete connection prompt",
+        "No active connection",
+        "How do I turn off a connection without deleting it"
+      ],
+      "rootCause": "ConnectionsPage exposes only Edit and Delete in the card menu plus the Use button; the /api/connections/deactivate route exists but no control on the page calls it, and remove() deletes the row (secret blob included).",
+      "evidence": [
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "99-103",
+          "snippet": "  const onDelete = async (profile) => {\n    setOpenMenuFor(null);\n    if (!confirm(`Delete connection \"${profile.name}\"?`)) return;\n    try { await remove(profile.id); } catch (err) { alert(err.message); }\n  };"
+        },
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "187-194",
+          "snippet": "          <div className={styles.emptyCard}>\n            <p>No active connection.</p>\n            <p className={styles.emptyHint}>\n              Add a connection below to start pulling data from your CMDB.\n            </p>\n          </div>"
+        },
+        {
+          "file": "client/src/pages/ConnectionsPage.jsx",
+          "lines": "23-26",
+          "snippet": "  const {\n    profiles, active, supportedTypes, loading, error, refreshing, lastRefresh,\n    refresh, create, update, activate, remove, refreshActiveSource,\n  } = useConnections();"
+        },
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "339-345",
+          "snippet": "/** Delete one profile. Returns true if a row was removed. */\nfunction remove(userId, profileId) {\n  const r = db.prepare(\n    `DELETE FROM connection_profiles WHERE user_id = ? AND id = ?`\n  ).run(Number(userId), Number(profileId));\n  return r.changes > 0;\n}"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "When I read live ports, the app only asks me for a Switch IP — where do the switch username and password come from?",
+      "answer": "They are already stored on the server, so you don't need them. When the login box opens, the app asks the server whether a username and password are on file for that switch type; if they are, the Username and Password boxes are hidden and only \"Switch IP\" is shown.\n\nWhat to do:\n1. Type the switch's management IP (the box shows an example like 10.0.0.5). RackTrack also suggests the last switch IP that worked for you.\n2. Press Enter or the confirm button. The server uses the stored login for that switch.\n3. If the Username and Password boxes DO appear, no login is stored for that switch type — enter the switch's own CLI username and password. The form tells you: \"Stored only in memory for this session. SSH is used to query LLDP / MAC table on the switch.\"\n\nImportant: this is a different thing from Data Sources / connection profiles. Data Sources are for your CMDB and other databases; switch logins are handled separately and can only be added or changed on the server by RackTrack staff or your platform owner — there is no screen for them. RackTrack never shows a stored switch password back to you.",
+      "symptoms": [
+        "Only asked for Switch IP, no password",
+        "Where do the switch credentials come from",
+        "Do I need the switch password to read ports",
+        "Switch login box asks for username and password"
+      ],
+      "rootCause": "CredsModal calls GET /api/switch/creds-status?vendor=… which returns booleans only; when has_username and has_password are true the modal hides those fields and submits just the host, and the server fills the credentials from its encrypted store.",
+      "evidence": [
+        {
+          "file": "client/src/pages/ResultsPage.jsx",
+          "lines": "694-708",
+          "snippet": "  // Does the encrypted env store already have user/password? If so, hide\n  // those fields and ask for only the switch IP.\n  const [credsStatus, setCredsStatus] = useState(null);\n...\n  const stored = !!(credsStatus?.has_username && credsStatus?.has_password);"
+        },
+        {
+          "file": "client/src/pages/ResultsPage.jsx",
+          "lines": "719-728",
+          "snippet": "        {!stored && (\n          <p className={styles.credsHint}>\n            Stored only in memory for this session. SSH is used to query LLDP / MAC table on the switch.\n          </p>\n        )}\n        <label className={styles.credsField}>\n          <span>Switch IP</span>\n          <input className=\"input\" type=\"text\" autoFocus value={host} onChange={e => setHost(e.target.value)} placeholder=\"e.g. 10.0.0.5\""
+        },
+        {
+          "file": "server/app.js",
+          "lines": "5841-5855",
+          "snippet": "// GET /api/switch/creds-status?vendor=X\n// Booleans only — never returns the actual secret values. Lets the client\n// know whether the encrypted env store already has username / password /\n// enable for this vendor, so the login modal can hide those fields and ask\n// the user for only the switch IP.\napp.get('/api/switch/creds-status', auth.requireAuth, (req, res) => {\n  const vendor = String(req.query.vendor || 'cisco-ios');\n  const v = sshCreds.getForVendor(vendor) || {};\n  res.json({\n    vendor,\n    has_username: !!(v.username && String(v.username).length),\n    has_password: !!(v.password && String(v.password).length),\n    has_enable:   !!(v.enablePassword && String(v.enablePassword).length),\n  });\n});"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "The ports screen says \"The switch refused the connection — is SSH enabled on it?\" What do I do?",
+      "answer": "That message means the switch answered on the network but nothing accepted the connection — so the address is reachable, it just isn't listening for RackTrack.\n\nTry these in order:\n1. Check the address you typed is the switch's management IP, not a server, an access point, or your default gateway. RackTrack suggests the last address that worked for you, so if you overtyped it, try the suggestion.\n2. Ask your network team whether SSH (rather than only Telnet or the web UI) is enabled on that switch. This is the most common cause — the switch is up, the SSH service is not running.\n3. If the switch runs SSH on a non-standard port, RackTrack has to be told: registered switches carry their own SSH port and default to 22. A switch listening on a different port with nothing on 22 gives exactly this message. Ask your admin to correct the registered SSH port.\n4. Retry once after any change. Don't hammer Retry — small managed switches allow very few SSH sessions.",
+      "symptoms": [
+        "The switch refused the connection — is SSH enabled on it?",
+        "ECONNREFUSED on the ports screen",
+        "Switch reachable but connection refused",
+        "Wrong SSH port"
+      ],
+      "rootCause": "friendlyProbeError maps an ECONNREFUSED from the SSH layer to that message; the connection targets device.ssh_port (default 22) for registered devices, so a switch with SSH disabled or on a different port refuses the TCP connect.",
+      "evidence": [
+        {
+          "file": "client/src/utils/portsProbe.js",
+          "lines": "106-107",
+          "snippet": "  if (/econnrefused/.test(m))\n    return 'The switch refused the connection — is SSH enabled on it?';"
+        },
+        {
+          "file": "server/lab_devices.js",
+          "lines": "79-86",
+          "snippet": "  const ssh_port = req.body?.ssh_port === undefined ? 22 : Number(req.body.ssh_port);\n...\n  if (!Number.isInteger(ssh_port) || ssh_port < 1 || ssh_port > 65535) {\n    return res.status(400).json({ error: 'ssh_port must be 1-65535' });\n  }"
+        },
+        {
+          "file": "server/lib/port_poller.js",
+          "lines": "178-182",
+          "snippet": "    await _runSwitchCommandsSequential({\n      _fromPoller: true,   // don't let the yield logic treat this as a manual probe\n      host:     device.host,\n      port:     device.ssh_port || 22,"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "5940-5949",
+          "snippet": "app.get('/api/switch/default-host', auth.requireAuth, (req, res) => {\n  const userId = softAuthUserId(req);\n  const last    = readLastHost(userId);\n  const gateway = defaultGateway();\n  // Suggested = last (preferred) → gateway (fallback). Either may be null.\n  res.json({\n    suggested: last || gateway || null,"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "\"The switch rejected the saved credentials\" — or it says the login was accepted but the session closed. How do I fix it?",
+      "answer": "Neither of these is something you can fix from the phone; the switch login RackTrack uses lives on the server. But which message you get tells your admin exactly what to change, so pass it on word for word.\n\n• \"The switch rejected the saved credentials.\" — the username or password RackTrack holds for this switch no longer matches the switch's local account (usually because the switch password was rotated). Ask whoever administers the RackTrack server to update the stored switch login.\n• \"The switch accepted the login but closed the session — the saved switch account may not have CLI access. Check the switch credentials.\" — the login is correct, but that account isn't allowed a CLI session. It needs an account with CLI/exec access on the switch.\n• \"The switch accepted the login but refused a CLI session — its concurrent-session limit is saturated by stuck sessions.\" — do NOT keep retrying; every attempt adds another stuck session. It has to be cleared on the switch itself (disable and re-enable SSH from the switch web UI, or reboot it), then one attempt will succeed.\n\nIf you typed the username and password yourself in the login box, re-open it and re-type them carefully first — a typo produces the same rejection.",
+      "symptoms": [
+        "The switch rejected the saved credentials",
+        "accepted the login but closed the session",
+        "concurrent-session limit is saturated",
+        "Authentication failed on the switch"
+      ],
+      "rootCause": "friendlyProbeError maps auth/denied/permission errors and session-closed errors to those strings; the SSH runner's close handler distinguishes post-auth channel refusal (session cap) from a pre-auth close.",
+      "evidence": [
+        {
+          "file": "client/src/utils/portsProbe.js",
+          "lines": "96-105",
+          "snippet": "function friendlyProbeError(msg) {\n  const m = (msg || '').toLowerCase();\n  if (/closed by the switch|session closed/.test(m))\n    return 'The switch accepted the login but closed the session — the saved switch account may not have CLI access. Check the switch credentials.';\n...\n  if (/auth|denied|permission|all configured authentication/.test(m))\n    return 'The switch rejected the saved credentials.';"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "5417-5419",
+          "snippet": "        const msg = authOk\n          ? 'The switch accepted the login but refused a CLI session — its concurrent-session limit is saturated by stuck sessions. Do NOT keep retrying (each attempt adds another session). Clear it out-of-band: log into the switch web UI and disable/enable SSH, or reboot the switch; then a single probe will succeed.'\n          : 'SSH session closed before login completed — the switch is unreachable, or the credentials are wrong (some switches drop the connection mid-handshake on a bad password instead of returning a clean auth failure).';"
+        },
+        {
+          "file": "client/src/utils/portsProbe.js",
+          "lines": "194-202",
+          "snippet": "    setState({\n      status: 'error',\n      host: null,   // drop the cached host so the next probe re-resolves cleanly\n      error: aborted\n        ? 'The switch didn’t respond in time. Check you’re on the same network as it, then tap Retry.'\n        : friendlyProbeError(err.message || String(err)),"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "INTERNAL: how are connection-profile credentials stored, and what may I say about it to a customer?",
+      "answer": "Storage model (do not paste this section to customers):\n• Credentials for every connection profile — personal and organization-wide — are serialised to JSON and sealed with AES-256-GCM before they touch the database. The row stores base64(iv|tag|ciphertext) in connection_profiles.secret_blob. Only name, type, is_active, organization_id and timestamps are queryable in cleartext.\n• The key is 32 bytes of hex, taken from the SSH_CREDS_KEY environment variable if set, otherwise from server/.env.key (written 0600). The same key protects the SSH credential store — one key, one rotation surface. On first run with no key present the store generates one.\n• Nothing decrypts on the client. Decryption happens only inside the server process, in getWithSecret / getActiveWithSecretForOrg, at the moment an outbound call is made.\n• No route returns plaintext. Create, update, list and get all reply with metadata only, including for the admin who set the credential.\n\nHandling rules for support staff:\n• Never read out, copy, screenshot, relay or \"confirm\" a stored secret, to anyone, including the account owner or an org admin. There is no supported way to retrieve one and you must not invent one.\n• Never ask a customer to send you a password, token or connection string in a ticket. If a credential must change, the customer re-enters it themselves in the app.\n• Do not discuss key file locations, environment variable names, or database column names with customers.\n\nSafe customer-facing phrasing: \"Your credentials are encrypted before they are stored, they are never shown again — not even to you — and the app can't display them back. To change one, just re-enter it.\"",
+      "symptoms": [
+        "How are credentials protected",
+        "Customer asks us to retrieve their stored password",
+        "Security question about credential storage",
+        "Where are connection secrets kept"
+      ],
+      "rootCause": "connection_profiles.js encrypts the secret JSON with the shared AES-256-GCM helper from ssh-creds.js and persists only the blob; all HTTP responses go through rowToMeta/orgRowToMeta, which omit secret_blob.",
+      "evidence": [
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "5-32",
+          "snippet": " * One row per saved connection. The actual credentials (instance URL,\n * username, password, API tokens, optional vendor-specific extras) live\n * in an AES-256-GCM blob; only metadata (name, type, created_at, etc.)\n * is queryable in cleartext.\n...\n * Encryption key is shared with the SSH creds store — same AES key file\n * (server/.env.key) or SSH_CREDS_KEY env var. One key, one rotation\n * surface."
+        },
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "96-112",
+          "snippet": "function loadKey() {\n  const envKey = process.env.SSH_CREDS_KEY && process.env.SSH_CREDS_KEY.trim();\n  if (envKey) return Buffer.from(envKey, 'hex');\n  if (!fs.existsSync(KEY_PATH)) {\n    // First-run convenience: generate a key so the store works out of the\n    // box. Same pattern auth.js uses for jwt.secret.\n    const hex = crypto.randomBytes(32).toString('hex');\n    fs.writeFileSync(KEY_PATH, hex + '\\n', { mode: 0o600 });"
+        },
+        {
+          "file": "server/lib/ssh-creds.js",
+          "lines": "42-48",
+          "snippet": "function encrypt(plaintext, key) {\n  const iv = crypto.randomBytes(12);\n  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);\n  const ct  = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);\n  const tag = cipher.getAuthTag();\n  return Buffer.concat([iv, tag, ct]).toString('base64');\n}"
+        },
+        {
+          "file": "server/connection_profiles_routes.js",
+          "lines": "106-111",
+          "snippet": "// ── Org-scoped connections (admin-set, org-wide, write-only) ──────────\n// An org_admin configures external access ONCE for the whole organization\n// (their CMDB/ITSM DB, live network sources, etc.). Every member's pipeline\n// uses them. Secrets are stored AES-256-GCM and are NEVER returned by any of\n// these routes — not even to the admin who set them. Only the server-side\n// pipeline decrypts them for outbound calls."
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "INTERNAL: every connection suddenly stopped working after a server change and the log shows decrypt failures. What happened?",
+      "answer": "The encryption key no longer matches the stored blobs. Symptoms and handling:\n\nWhat you see:\n• server log: \"[connection_profiles] decrypt failed for profile <id>: …\" or \"[connection_profiles] org decrypt failed for profile <id>: …\", after which the profile resolves to null and CMDB-backed endpoints behave as if no connection is configured.\n• SSH credential store: \"[ssh-creds] decrypt failed — ignoring env creds: …\", after which the server behaves as if no switch credentials exist at all (polls are skipped, audits return the no-credentials error).\n• Profiles still LIST normally — name, type and Active badge are unaffected, because only the blob fails. That is why it looks like \"the app forgot our password\" rather than an outage.\n\nCauses, in likelihood order:\n1. server/.env.key was not carried across a redeploy or was deleted. On the next start the connection-profile store silently generates a brand-new key, so every existing blob becomes undecryptable.\n2. SSH_CREDS_KEY is set in the environment to a different key — the env var takes precedence over the file, so an old file on disk will not save you.\n3. The key file content was truncated or reformatted; it must be exactly 64 hex characters, otherwise the loader throws \"<path> must contain a 32-byte hex key (64 chars)\".\n\nRecovery:\n• Restore the original key material (file or env var) from backup BEFORE restarting again, then restart the server. Nothing else is needed — the blobs are intact.\n• If the key is genuinely lost, the secrets are unrecoverable by design. Every connection profile and every switch credential must be re-entered: profiles by their owners/org admins in the app, switch credentials on the server. Do not attempt any other recovery path and never ask a customer for their credentials over a support channel — direct them to re-enter in the app.\n• The keying material is backed up separately from the blob for exactly this reason; the CLI's init command warns about it.",
+      "symptoms": [
+        "[connection_profiles] decrypt failed for profile",
+        "[ssh-creds] decrypt failed — ignoring env creds",
+        "must contain a 32-byte hex key (64 chars)",
+        "All connections stopped working after redeploy",
+        "Connections still listed but no data pulled"
+      ],
+      "rootCause": "Both stores decrypt with a key resolved from SSH_CREDS_KEY or server/.env.key; a missing/replaced key makes decrypt throw, and the code logs and degrades to null/empty credentials rather than failing loudly. connection_profiles.loadKey auto-generates a fresh key when the file is absent, permanently orphaning existing blobs.",
+      "evidence": [
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "220-225",
+          "snippet": "  try {\n    secret = JSON.parse(decrypt(row.secret_blob, getKey()));\n  } catch (err) {\n    logger.warn(`[connection_profiles] decrypt failed for profile ${row.id}: ${err.message}`);\n    return null;\n  }"
+        },
+        {
+          "file": "server/lib/ssh-creds.js",
+          "lines": "86-92",
+          "snippet": "  try {\n    cached = JSON.parse(decrypt(blob, key));\n  } catch (err) {\n    console.error('[ssh-creds] decrypt failed — ignoring env creds:', err.message);\n    cached = {};\n  }"
+        },
+        {
+          "file": "server/lib/ssh-creds.js",
+          "lines": "25-34",
+          "snippet": "function loadKey() {\n  const envKey = process.env.SSH_CREDS_KEY && process.env.SSH_CREDS_KEY.trim();\n  if (envKey) return Buffer.from(envKey, 'hex');\n  if (!fs.existsSync(KEY_PATH)) return null;\n  const hex = fs.readFileSync(KEY_PATH, 'utf8').trim();\n  if (!/^[0-9a-fA-F]{64}$/.test(hex)) {\n    throw new Error(`${KEY_PATH} must contain a 32-byte hex key (64 chars)`);\n  }"
+        },
+        {
+          "file": "server/encrypt-creds.js",
+          "lines": "102-111",
+          "snippet": "async function cmdInit() {\n  if (keyExists()) {\n    console.log(`Key already exists at ${KEY_PATH} — leaving it untouched.`);\n    return;\n  }\n  const hex = crypto.randomBytes(32).toString('hex');\n  writeKey(hex);\n  console.log(`Generated new 32-byte key at ${KEY_PATH} (mode 0600).`);\n  console.log('Back this file up separately from .env; losing it means re-entering every credential.');\n}"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "INTERNAL: is \"only admins can manage connections\" a real security boundary?",
+      "answer": "Partly. Be precise when answering security questionnaires:\n\n• Personal connection profiles (/api/connections/*) are protected by requireAuth only, then scoped to req.user.id. Any authenticated user — including a member — can create, list, update, activate and delete THEIR OWN profiles through the API. What they cannot do is see or touch anyone else's: every statement filters on user_id.\n• The \"admins only\" part is client-side presentation: the /connections route is wrapped in AdminRoute (redirects non-org_admin/owner to /), and the sidebar link plus the Profile row are rendered only for org_admin/owner. Treat this as a UI affordance, not an authorization control.\n• Organization-wide credentials (/api/org-connections/*) ARE server-enforced: requireOrgAdmin rejects any role outside org_admin/owner with 403 and requires an organization_id, and every query is scoped to that organization id.\n• Credential resolution has no environment or file fallback: resolveCredsForType and resolveCredsForOrg return null when there is no matching active profile, so a missing profile degrades to \"no data\" rather than quietly using someone else's credentials.\n\nSo: cross-tenant exposure of connection credentials is server-enforced; the admin-only *screen* is not. If a customer asks whether a technician can store their own CMDB credentials, the honest answer is that the app does not offer them the screen.",
+      "symptoms": [
+        "Security review question about connection permissions",
+        "Can a member create a connection profile",
+        "Is /api/connections admin-only",
+        "Cross-tenant access to credentials"
+      ],
+      "rootCause": "router.use('/api/connections', requireAuth) has no role check and all queries filter by user_id, while /api/org-connections adds requireOrgAdmin; the admin gate on the /connections page comes from AdminRoute and DesktopShell's isAdmin conditional.",
+      "evidence": [
+        {
+          "file": "server/connection_profiles_routes.js",
+          "lines": "37-46",
+          "snippet": "router.use('/api/connections', requireAuth);\n\n// GET /api/connections — list\nrouter.get('/api/connections', safeAsync(async (req, res) => {\n  res.json({\n    ok: true,\n    profiles: profiles.list(req.user.id),\n    supported_types: profiles.SUPPORTED_TYPES,\n  });\n}));"
+        },
+        {
+          "file": "client/src/App.jsx",
+          "lines": "77-90",
+          "snippet": "function AdminRoute({ children }) {\n  const { isAuthed, user } = useAuth();\n...\n  if (user?.role !== 'org_admin' && user?.role !== 'owner') {\n    return <Navigate to=\"/\" replace />;\n  }\n  return children;\n}"
+        },
+        {
+          "file": "client/src/components/DesktopShell.jsx",
+          "lines": "197-210",
+          "snippet": "  const isAdmin = user?.role === 'org_admin' || user?.role === 'owner';\n...\n    ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false }] : []),"
+        },
+        {
+          "file": "server/lib/connection_profiles.js",
+          "lines": "347-360",
+          "snippet": "/**\n * Resolve credentials for a given backend type from the user's active\n * connection profile. Returns null if there is no active profile or if\n * its type doesn't match. There is intentionally NO env/file fallback —\n * the connection profile is the sole source of truth.\n */\nfunction resolveCredsForType(userId, wantType) {\n  if (!userId) return null;\n  const active = getActiveWithSecret(userId);\n  if (active && active.type === wantType) {\n    return { source: 'profile', profileId: active.id, type: active.type, secret: active.secret };\n  }\n  return null;\n}"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    }
+  ]
+}

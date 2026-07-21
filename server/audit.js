@@ -51,6 +51,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_audit_user_ts   ON audit_log(user_id, ts DESC);
   CREATE INDEX IF NOT EXISTS idx_audit_action_ts ON audit_log(action, ts DESC);
   CREATE INDEX IF NOT EXISTS idx_audit_target    ON audit_log(target_type, target_id);
+  -- The owner console polls /api/admin/dashboard every 5s, and its queries
+  -- filter on status and ts. Without these, "failures" and "active today" were
+  -- full table scans of audit_log on every poll, forever.
+  CREATE INDEX IF NOT EXISTS idx_audit_status_id ON audit_log(status, id DESC);
+  CREATE INDEX IF NOT EXISTS idx_audit_ts        ON audit_log(ts);
 `);
 
 // tenant_id column is added by auth.js's tenant migration (idempotent

@@ -67,6 +67,17 @@ class Worker extends EventEmitter {
       wcount('spawn_error');
       wlog('error', { worker: index, err: err.message, kind: 'worker.spawn_error' },
         `worker ${index} spawn error: ${err.message}`);
+      // A failed spawn (e.g. python3 not on PATH) emits 'error' and 'close' but
+      // NEVER 'exit'. Without this, the dead worker stayed in the pool marked
+      // not-ready, the respawn/backoff path never ran, and every queued request
+      // hung forever with no response and no error — the server looked healthy
+      // while /api/analyze, /api/detect and /api/select silently stopped working.
+      for (const { reject } of this.pending.values()) {
+        reject(new Error(`worker failed to start: ${err.message}`));
+      }
+      this.pending.clear();
+      this.ready = false;
+      this.emit('exit', { code: null, signal: null });
     });
     wcount('spawn');
   }

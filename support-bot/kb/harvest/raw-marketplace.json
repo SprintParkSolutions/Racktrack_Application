@@ -1,0 +1,692 @@
+{
+  "domain": "market",
+  "entries": [
+    {
+      "question": "What is the Marketplace in RackTrack and what are all those tabs at the top?",
+      "answer": "The Marketplace is RackTrack's second-hand exchange for surplus network and data-centre gear. The header reads \"Marketplace — Buy, sell and swap surplus network and data-center gear\", and every screen in the section shares the same nav bar:\n\n• Browse — everything currently for sale (or, with the toggle flipped, everything Wanted).\n• My listings — the things you have posted, with Edit / Mark sold / Relist / Delete.\n• Orders — your Buying and Selling tabs, each order's status, tracking and the message thread with the other side.\n• Alerts — saved searches and the new listings that matched them.\n• Dashboard — your own selling and buying numbers.\n• Partners — connect eBay, Amazon or a Discord channel.\n\nTop right there is a \"List an item\" button on every screen except the new-listing form itself, and a back arrow top left.\n\nA listing is one of two kinds: For sale (you have gear) or Wanted (you need gear and sellers come to you). Everything is filed under one of ten categories — Cables, Switches, Routers, Racks, Optics / SFPs, Servers, PDUs, Firewalls, Patch panels, Other — and one of four conditions: New, Refurbished, Used, For parts.\n\nThe whole section is limited to organization admins and the RackTrack platform owner; other roles never see the link and are sent back to the home screen if they type the address.",
+      "symptoms": [
+        "What is the Marketplace",
+        "What do Browse / Orders / Alerts / Dashboard / Partners do",
+        "Difference between For sale and Wanted",
+        "What can I list on RackTrack"
+      ],
+      "rootCause": "MarketplaceShell renders a fixed six-item NAV for every /marketplace/* route; the server enumerates CATEGORIES, KINDS and CONDITIONS; all routes are wrapped in AdminRoute client-side and requireRole('owner','org_admin') server-side.",
+      "evidence": [
+        {
+          "file": "client/src/components/marketplace/MarketplaceShell.jsx",
+          "lines": "23-31",
+          "snippet": "const NAV = [\n  { key: 'browse',    label: 'Browse',     to: '/marketplace' },\n  { key: 'mine',      label: 'My listings', to: '/marketplace?tab=mine', authOnly: true },\n  { key: 'orders',    label: 'Orders',     to: '/marketplace/orders',    authOnly: true, badge: 'orders' },\n  { key: 'alerts',    label: 'Alerts',     to: '/marketplace/alerts',    authOnly: true, badge: 'alerts' },\n  { key: 'dashboard', label: 'Dashboard',  to: '/marketplace/dashboard', authOnly: true },\n  { key: 'partners',  label: 'Partners',   to: '/marketplace/partners',  authOnly: true },\n];"
+        },
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "719-722",
+          "snippet": "<MarketplaceShell\n      title=\"Marketplace\"\n      subtitle=\"Buy, sell and swap surplus network and data-center gear\"\n    >"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "95-109",
+          "snippet": "const CATEGORIES = [\n  'cable',\n  'switch',\n  'router',\n  'rack',\n  'optic',     // SFP / SFP+ / QSFP modules\n  'server',\n  'pdu',\n  'firewall',\n  'patch_panel',\n  'other',\n];\nconst KINDS      = new Set(['sell', 'want']);\nconst CONDITIONS = new Set(['new', 'refurb', 'used', 'for-parts']);\nconst STATUSES   = new Set(['active', 'sold', 'closed']);"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "279-280",
+          "snippet": "const requireAdminRole = requireRole('owner', 'org_admin');\nrouter.use('/api/marketplace', requireAdminRole);"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "How do I find a specific part in the Marketplace? My search isn't finding anything.",
+      "answer": "Search only looks at three things — the listing title, the vendor and the model — and it only ever shows listings that are still active. If a part number returns nothing, widen the search.\n\n1. Open Browse.\n2. Type into \"Search by title, vendor or model…\". It waits a moment after you stop typing before searching, so give it a beat.\n3. Use the \"All categories\" dropdown to narrow to Switches, Optics / SFPs, and so on.\n4. Use the For sale / Wanted toggle. \"For sale\" is what people are selling; \"Wanted\" is what people are looking for. They are separate lists — a part you cannot find under For sale will not appear under Wanted.\n5. If you get \"Nothing matches those filters\", press \"Clear filters\" and try fewer words. Search matches whole fragments of text, so \"WS-C3850\" works but a typo or extra spaces will not.\n\nResults come 24 to a page with Previous / Next at the bottom; Next is only live when there really is another page.\n\nStill nothing? Scroll past the results to \"Can't find it here?\" and type the part number there — that opens the same search on eBay, Amazon, FS.com or Curvature in a new tab. Those are plain links out; RackTrack is not involved in anything you buy there.",
+      "symptoms": [
+        "Search returns no results",
+        "Nothing matches those filters",
+        "No listings yet",
+        "No open requests",
+        "Can't find a part number",
+        "Next button greyed out"
+      ],
+      "rootCause": "GET /api/marketplace/listings hard-filters status='active' and matches q with LIKE %q% against title, vendor and model only; the client debounces the query 300ms, requests PAGE_SIZE+1 rows to decide hasMore, and renders distinct empty states for mine / filtered / want / none.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "323-344",
+          "snippet": "router.get('/api/marketplace/listings', (req, res) => {\n  const where = [`l.status = 'active'`];\n...\n  if (req.query.q) {\n    where.push(`(l.title LIKE @q OR l.vendor LIKE @q OR l.model LIKE @q)`);"
+        },
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "54",
+          "snippet": "const PAGE_SIZE = 24;"
+        },
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "738-782",
+          "snippet": "<input\n              className={`mkt-field ${styles.searchInput}`}\n              placeholder=\"Search by title, vendor or model…\"\n...\n            <option value=\"\">All categories</option>\n...\n              For sale\n...\n              Wanted"
+        },
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "802-828",
+          "snippet": "<p className=\"mkt-empty__title\">\n              {tab === 'mine'\n                ? 'You haven’t listed anything yet'\n                : hasFilters\n                  ? 'Nothing matches those filters'\n                  : kind === 'want'\n                    ? 'No open requests'\n                    : 'No listings yet'}"
+        },
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "504-508",
+          "snippet": "<p className=\"mkt-label\">Can’t find it here?</p>\n        <p className={styles.partnerText}>\n          Run the same part number across the partner marketplaces.\n        </p>"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "How do I put a piece of gear up for sale?",
+      "answer": "Use \"List an item\" — it is in the top right of every Marketplace screen.\n\n1. Tap List an item. The screen is titled \"New listing\".\n2. Leave the toggle on \"For sale\". (Switch it to \"Wanted\" if you are asking for gear instead of offering it — the screen retitles itself \"Post a request\".)\n3. Under Item, fill in Title (required, up to 140 characters), and optionally Vendor and Model. If you type a vendor and model first, RackTrack suggests the title for you and you can edit it.\n4. Pick a Category — it defaults to Switches.\n5. Under \"Condition & pricing\", choose New (sealed), Refurbished, Used — working, or For parts / not working. Fill in Price, or leave it blank: the hint says \"Leave the price blank to invite offers\" and the listing then shows \"Make an offer\" instead of a figure. Set Currency and Quantity if more than one.\n6. Add a Photo if you have one (optional).\n7. Add Location and a Description if useful — the description takes up to 2000 characters and counts down as you type.\n8. Tap \"Publish listing\" (or \"Post request\").\n\nYou land straight on My listings with the new item at the top. It is live immediately — there is no approval step and nobody reviews it before it appears.",
+      "symptoms": [
+        "How do I sell something",
+        "Where is the create listing form",
+        "How do I make an offer listing",
+        "How do I post a Wanted request",
+        "Does my listing need approval"
+      ],
+      "rootCause": "MarketplaceNewPage posts straight to POST /api/marketplace/listings, which inserts with status defaulting to 'active' — there is no review queue; on success the client replaces the route with /marketplace?tab=mine.",
+      "evidence": [
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "215-221",
+          "snippet": "<MarketplaceShell\n      title={wanted ? 'Post a request' : 'New listing'}\n      subtitle={wanted\n        ? 'Tell sellers what you’re looking for'\n        : 'List surplus equipment for other RackTrack orgs'}"
+        },
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "309-334",
+          "snippet": "<FormSection title=\"Condition & pricing\" hint=\"Leave the price blank to invite offers\">\n...\n              <label className=\"mkt-label\" htmlFor=\"mkt-new-price\">Price</label>\n              <input\n                id=\"mkt-new-price\"\n                type=\"number\"\n                className={`mkt-field ${styles.num}`}\n                placeholder=\"Make an offer\""
+        },
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "199-200",
+          "snippet": "if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);\n      navigate('/marketplace?tab=mine', { replace: true });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "83",
+          "snippet": "status        TEXT    NOT NULL DEFAULT 'active', -- 'active' | 'sold' | 'closed'"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "My listing won't publish — it says \"title is required\" / \"bad category\" / \"bad price\".",
+      "answer": "Those are the form's own checks. Fix the named field and press Publish listing again — nothing was saved, so you will not create a duplicate.\n\n• \"Title is required.\" or \"title is required\" — the Title box is empty or only spaces. Type a real title (a vendor plus model is enough).\n• \"bad price\" — the Price box has something that isn't a plain positive number. Remove currency symbols, commas and letters, or clear the box entirely to list it as \"Make an offer\".\n• \"bad category\" / \"bad condition\" / \"bad kind\" — the value sent wasn't one RackTrack accepts. Reselect Category and Condition from the dropdowns rather than typing, then submit again. If it keeps happening, reload the page — a stale tab can send an old value.\n• \"Please wait for the image to finish uploading.\" — your photo is still going up. Wait for the caption under it to change from \"Uploading…\" to \"Photo ready\" and press Publish again.\n\nOne thing that is NOT happening: nobody is rejecting your listing. There is no moderator queue on the way in — a listing that passes these checks goes live the moment you publish it.",
+      "symptoms": [
+        "Title is required.",
+        "bad price",
+        "bad category",
+        "bad condition",
+        "bad kind",
+        "Please wait for the image to finish uploading.",
+        "Listing rejected",
+        "Publish button does nothing"
+      ],
+      "rootCause": "POST /api/marketplace/listings validates kind/category/condition against fixed sets and requires a non-empty trimmed title and a finite non-negative price, returning 400 with a terse machine string that MarketplaceNewPage renders verbatim in its error banner.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "402-419",
+          "snippet": "if (!KINDS.has(kind))           return res.status(400).json({ ok: false, error: 'bad kind' });\n  if (!CATEGORIES.includes(category))\n    return res.status(400).json({ ok: false, error: 'bad category' });\n  if (!CONDITIONS.has(condition)) return res.status(400).json({ ok: false, error: 'bad condition' });\n  if (!title)                     return res.status(400).json({ ok: false, error: 'title is required' });\n...\n      return res.status(400).json({ ok: false, error: 'bad price' });"
+        },
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "173-180",
+          "snippet": "const onSubmit = async (e) => {\n    e.preventDefault();\n    if (submitting) return;\n    if (imageUploading) { setError('Please wait for the image to finish uploading.'); return; }\n    setError(null);\n    const t = title.trim();\n    if (!t) { setError('Title is required.'); return; }"
+        },
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "470-472",
+          "snippet": "{error && (\n          <div className=\"mkt-banner mkt-banner--error\" role=\"alert\">{error}</div>\n        )}"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "The photo on my listing won't upload — \"Only image files are accepted\" or \"Image must be 8 MB or smaller\".",
+      "answer": "RackTrack only takes real image files, and only up to 8 MB each. Fix the file, then re-pick it.\n\n1. On the New listing screen, under Photo, the box says which formats work: JPG · PNG · WebP · HEIC · up to 8 MB.\n2. \"Image must be 8 MB or smaller.\" — the picture is too big. Shoot it again at a lower resolution, or send it through your phone's own resize/share-as-smaller option, then pick it again.\n3. \"Only image files are accepted (JPG, PNG, WebP, HEIC).\" or \"Only jpg / png / webp / heic images are accepted\" — the file isn't one of those types. Screenshots and camera photos are fine; PDFs, GIFs and files that have lost their file extension are not. If you saved the picture without an extension, rename it so it ends in .jpg or .png and pick it again.\n4. If it says \"Upload failed\", tap Replace and try once more — the photo is uploaded separately from the listing, so a failure there doesn't lose anything you have typed.\n5. Tap Remove to drop the photo entirely. A photo is optional — the form only says listings with one sell faster.\n\nDon't press Publish while the caption still reads \"Uploading…\" — the form will stop you and ask you to wait.",
+      "symptoms": [
+        "Only image files are accepted (JPG, PNG, WebP, HEIC).",
+        "Image must be 8 MB or smaller.",
+        "Only jpg / png / webp / heic images are accepted",
+        "Upload failed",
+        "Photo stuck on Uploading…",
+        "no file"
+      ],
+      "rootCause": "The marketplace multer instance limits fileSize to 8 MB and its fileFilter rejects anything whose original filename does not end in jpg/jpeg/png/webp/heic/heif; MarketplaceNewPage repeats both checks client-side before it even calls POST /api/marketplace/uploads.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "238-256",
+          "snippet": "function _imgExt(originalName) {\n  const m = String(originalName || '').match(/\\.(jpe?g|png|webp|heic|heif)$/i);\n...\nconst imgUpload = multer({\n  storage: imgStorage,\n  limits: { fileSize: 8 * 1024 * 1024 },\n  fileFilter: (req, file, cb) => {\n    const ok = _imgExt(file.originalname) !== '';\n    cb(ok ? null : new Error('Only jpg / png / webp / heic images are accepted'), ok);\n  },\n});"
+        },
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "133-140",
+          "snippet": "if (!/^image\\//i.test(file.type) && !/\\.(heic|heif)$/i.test(file.name)) {\n      setImageError('Only image files are accepted (JPG, PNG, WebP, HEIC).');\n      return;\n    }\n    if (file.size > 8 * 1024 * 1024) {\n      setImageError('Image must be 8 MB or smaller.');\n      return;\n    }"
+        },
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "210-212",
+          "snippet": "const photoStatus = imageUploading ? 'Uploading…'\n    : imageError    ? 'Upload failed'\n    :                 'Photo ready';"
+        },
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "401-402",
+          "snippet": "<span className={styles.photoMain}>Upload a photo</span>\n              <span className=\"mkt-hint\">JPG · PNG · WebP · HEIC · up to 8 MB</span>"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "I pressed Edit on one of my listings and got a blank New listing form — where did my listing go?",
+      "answer": "Your listing is safe. Edit is currently broken: it opens the New listing form empty instead of loading the item, and if you fill it in and publish you will end up with a second, duplicate listing rather than an edited one.\n\nUntil it is fixed, do this instead:\n\n1. Go back to My listings (the back arrow, or the My listings tab).\n2. Check your original listing is still there — it will be, with its Edit / Mark sold / Delete buttons.\n3. If you only need to change the status, use the buttons that do work: \"Mark sold\" takes it off Browse, \"Relist\" puts a sold or closed one back on.\n4. If you need to change the price, title or description, tap Delete, confirm \"Yes, delete\", then use \"List an item\" to post it fresh.\n5. If you already published from the blank form, delete whichever of the two listings you don't want.\n\nPlease report it to your platform owner so it gets tracked — there is no setting on your side that causes this.",
+      "symptoms": [
+        "Edit opens an empty form",
+        "Editing a listing created a duplicate",
+        "Can't change the price of a listing",
+        "Edit button does nothing useful"
+      ],
+      "rootCause": "MyListingRow's onEdit navigates to /marketplace/new?editId=<id>, but MarketplaceNewPage only ever reads the kind, category, vendor, model and rackId query params — editId is never read, so the form initialises blank and submits as a fresh POST rather than a PATCH.",
+      "evidence": [
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "862",
+          "snippet": "onEdit={(listing) => navigate(`/marketplace/new?editId=${listing.id}`)}"
+        },
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "69-86",
+          "snippet": "const initialKind = params.get('kind') === 'want' ? 'want' : 'sell';\n  const [kind, setKind]             = useState(initialKind);\n  const [category, setCategory]     = useState(params.get('category') || 'switch');\n  const [title, setTitle]           = useState('');\n  const [vendor, setVendor]         = useState(params.get('vendor') || '');\n  const [model, setModel]           = useState(params.get('model')  || '');\n...\n  const [sourceRackId]              = useState(params.get('rackId') || '');"
+        },
+        {
+          "file": "client/src/pages/MarketplaceNewPage.jsx",
+          "lines": "193-196",
+          "snippet": "const res  = await authFetch(apiUrl('/api/marketplace/listings'), {\n        method: 'POST',"
+        },
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "225-248",
+          "snippet": "<button className=\"mkt-btn mkt-btn--sm\" onClick={stop(() => onEdit(listing))}>\n              Edit\n            </button>\n            {listing.status === 'active' ? (\n...\n                Mark sold\n...\n                Relist"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "How do I actually buy something? What happens after I tap \"Buy now\"?",
+      "answer": "Buy now takes you to the Checkout screen — \"Review the order and confirm shipping\". Nothing is charged until you press the button at the bottom.\n\n1. Tap \"Buy now\" on a listing card, or open the listing and use the big \"Buy now — <price>\" button inside it.\n2. If the seller has more than one, set Quantity — the label tells you how many are available and you cannot go above it.\n3. Fill in the Shipping address. Full name, Street address and City are required; State / region, ZIP / postcode and Country are optional (Country is pre-filled with US).\n4. Check the Order summary on the right (below the form on a phone): Unit price, Quantity, Subtotal, a platform fee line and the Total.\n5. Press the button at the bottom. It reads \"Pay with Stripe — <total>\" if your RackTrack server has card payments switched on, or \"Complete purchase — <total>\" if it doesn't. With Stripe you are handed off to Stripe's own payment page; without it the order is recorded straight away and you settle with the seller directly.\n6. You end up on the order screen, where you can message the seller and follow the status.\n\nIf you leave a required field blank the page tells you which one — \"Name is required.\", \"Street address is required.\", \"City is required.\" — and nothing is submitted.",
+      "symptoms": [
+        "How do I buy",
+        "What does Buy now do",
+        "Name is required.",
+        "Street address is required.",
+        "City is required.",
+        "Difference between Pay with Stripe and Complete purchase"
+      ],
+      "rootCause": "MarketplaceCheckoutPage validates name/street/city client-side, POSTs to /api/marketplace/orders, and either follows data.stripeSessionUrl or navigates to /marketplace/orders/<id>; the button label is driven by GET /api/marketplace/stripe/status.",
+      "evidence": [
+        {
+          "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+          "lines": "88-118",
+          "snippet": "if (!name.trim()) { setError('Name is required.'); return; }\n    if (!street.trim()) { setError('Street address is required.'); return; }\n    if (!city.trim()) { setError('City is required.'); return; }\n...\n      if (data.stripeSessionUrl) {\n        window.location.href = data.stripeSessionUrl;\n        return;\n      }\n      navigate(`/marketplace/orders/${data.order.id}`, { replace: true });"
+        },
+        {
+          "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+          "lines": "258-266",
+          "snippet": "<button type=\"submit\"\n                    className=\"mkt-btn mkt-btn--primary mkt-btn--tall mkt-btn--block\"\n                    disabled={submitting}>\n              {submitting\n                ? 'Processing…'\n                : stripeEnabled\n                  ? `Pay with Stripe — ${formatCurrency(total, currency)}`\n                  : `Complete purchase — ${formatCurrency(total, currency)}`}"
+        },
+        {
+          "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+          "lines": "158-171",
+          "snippet": "{listing.quantity > 1 && (\n              <div className={`mkt-fieldGroup ${styles.qty}`}>\n                <label className=\"mkt-label\" htmlFor=\"mkt-checkout-qty\">\n                  Quantity — {listing.quantity} available"
+        },
+        {
+          "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+          "lines": "231-243",
+          "snippet": "<div className=\"mkt-row\">\n                <span className=\"mkt-row__key\">Unit price</span>\n...\n                <span className=\"mkt-row__key\">Quantity</span>\n...\n                <span className=\"mkt-row__key\">Subtotal</span>"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "There's no \"Buy now\" button on a listing, or checkout says \"listing is not active\" / \"listing has no price — contact seller\".",
+      "answer": "Buy now only appears when all three of these are true: the listing is still active, it is a For sale listing (not a Wanted request), and the seller set a price.\n\nWhat to do in each case:\n\n• No price on the listing — the listing shows \"Make an offer\" and, inside the detail, \"No set price on this listing — contact @<seller> to make an offer.\" There is no way to check out; message the seller through their username. If you force the checkout address you get \"listing has no price — contact seller\".\n• \"listing is not active\" — somebody bought it, the seller marked it sold, or it was withdrawn while you had the page open. Go back to Browse and search again; sold and closed listings drop out of Browse.\n• \"listing not found\" — the seller deleted it. Nothing to recover.\n• It's a Wanted request, not a listing — those are people asking for gear. You can't buy one; if you have what they want, post your own For sale listing and they will find it.\n• The card shows a grey \"sold\" or \"closed\" badge — same thing: it is no longer purchasable.\n\nIf you were mid-checkout when it happened, nothing was charged and no order was created.",
+      "symptoms": [
+        "listing is not active",
+        "listing has no price — contact seller",
+        "listing not found",
+        "No Buy now button",
+        "Make an offer",
+        "No set price on this listing"
+      ],
+      "rootCause": "ListingCard/ListingDetailModal gate the Buy control on status==='active' && kind==='sell' && priceCents != null; POST /api/marketplace/orders re-checks the listing exists, is active and has a price, returning 404/400 with those exact strings.",
+      "evidence": [
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "104-107",
+          "snippet": "function ListingCard({ listing, onOpen, onBuy }) {\n  const canBuy = listing.status === 'active'\n    && listing.kind === 'sell'\n    && listing.priceCents != null;"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "622-627",
+          "snippet": "const listing = db.prepare(`SELECT * FROM marketplace_listings WHERE id = ?`).get(listingId);\n  if (!listing) return res.status(404).json({ ok: false, error: 'listing not found' });\n  if (listing.status !== 'active') return res.status(400).json({ ok: false, error: 'listing is not active' });\n...\n  if (listing.price_cents == null) return res.status(400).json({ ok: false, error: 'listing has no price — contact seller' });"
+        },
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "402-407",
+          "snippet": "{listing.priceCents == null && (\n                <p className={`mkt-banner ${styles.offerNote}`}>\n                  No set price on this listing — contact @{listing.seller?.username} to\n                  make an offer.\n                </p>\n              )}"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "What do the order statuses mean, and how do I mark an order shipped or cancel it?",
+      "answer": "Open Orders and pick Buying (things you bought) or Selling (things you sold). Each order shows one status pill:\n\n• Pending — the order exists but payment has not been confirmed yet.\n• Paid — payment is confirmed; the seller can ship.\n• Shipped — the seller has sent it, usually with a carrier and tracking number.\n• Completed — closed out for both sides.\n• Cancelled — called off; the pill shows red.\n\nWhat you can do, and when:\n\n1. Ship it (seller only, order must be Paid). Open the order, fill in Carrier (UPS, USPS, FedEx…) and Tracking number under \"Ship this order\", then press \"Mark shipped\". The tracking number then shows on the order for the buyer.\n2. Complete it (either side, order must be Shipped). Press \"Mark completed\", then confirm \"Yes, complete\" — the prompt warns it closes the order for both sides.\n3. Cancel it (either side, order must be Pending or Paid). Press \"Cancel order\", then \"Yes, cancel\". It cannot be undone.\n\nIf you see \"cannot cancel at this stage\" the order has already shipped or closed — you can no longer cancel it; message the other party instead. \"invalid status transition\" means the step you asked for isn't allowed from where the order is now (for example, only the seller can mark something shipped).",
+      "symptoms": [
+        "cannot cancel at this stage",
+        "invalid status transition",
+        "not your order",
+        "Where do I add tracking",
+        "What does Pending mean on an order",
+        "Mark shipped button missing"
+      ],
+      "rootCause": "PATCH /api/marketplace/orders/:id allows cancel only from pending|paid, 'shipped' only when isSeller, 'completed' from either party, and rejects anything else with 'invalid status transition'; the Ship block is rendered only when isSeller && order.status === 'paid'.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "776-793",
+          "snippet": "if (s === 'cancelled') {\n      if (!['pending', 'paid'].includes(existing.status))\n        return res.status(400).json({ ok: false, error: 'cannot cancel at this stage' });\n      updates.status = 'cancelled';\n      updates.cancelled_by = req.user.id;\n    } else if (s === 'shipped' && isSeller) {\n      updates.status = 'shipped';\n    } else if (s === 'completed' && (isBuyer || isSeller)) {\n      updates.status = 'completed';\n    } else {\n      return res.status(400).json({ ok: false, error: 'invalid status transition' });\n    }"
+        },
+        {
+          "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+          "lines": "26-29",
+          "snippet": "const STATUS_LABEL = {\n  pending: 'Pending', paid: 'Paid', shipped: 'Shipped',\n  completed: 'Completed', cancelled: 'Cancelled',\n};"
+        },
+        {
+          "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+          "lines": "386-420",
+          "snippet": "{isSeller && order.status === 'paid' && (\n              <div className={styles.ship}>\n                <p className=\"mkt-label\">Ship this order</p>\n...\n                      placeholder=\"UPS, USPS, FedEx…\"\n...\n                  Mark shipped"
+        },
+        {
+          "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+          "lines": "426-466",
+          "snippet": "{confirming === 'complete'\n                    ? 'Mark this order completed? This closes it for both sides.'\n                    : 'Cancel this order? This cannot be undone.'}\n...\n                      Mark completed\n...\n                      Cancel order"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "How do I message the buyer or seller about an order, and why does the Orders tab have a number on it?",
+      "answer": "Every order has its own message thread, and that number is how many messages you haven't read yet.\n\n1. Open Orders and tap the order. Scroll to Messages — it says who you're talking to (\"with @<username>\").\n2. Type in the \"Type a message…\" box and press Enter, or tap the send arrow. Shift+Enter does not send.\n3. Keep a message under 2000 characters — a longer one is refused with \"message too long\" and nothing is sent. Split it into two.\n4. An empty message is refused with \"message body required\".\n5. The thread refreshes itself about every half a minute while the order is open, so you'll see replies without reloading.\n6. Simply opening the order marks the other person's messages as read — that is what clears the badge on the Orders tab. The badge shows \"99+\" once you're past ninety-nine.\n\nMessages live on the order, so there is no way to message someone about a listing you haven't bought. For a listing with no price, contact the seller by the @username shown on the listing instead.\n\nIf you get \"not your order\", you are signed in as someone who is neither the buyer nor the seller on that order — check which account you're using.",
+      "symptoms": [
+        "message too long",
+        "message body required",
+        "not your order",
+        "Orders tab badge won't clear",
+        "How do I contact the seller",
+        "Messages not updating"
+      ],
+      "rootCause": "POST /api/marketplace/orders/:id/messages rejects an empty body and anything over 2000 chars; GET /api/marketplace/orders/:id marks the counterparty's messages read as a side effect; MarketplaceShell polls /orders/unread-count and /alerts/unread-count once per auth state and caps the badge at 99+.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "813-815",
+          "snippet": "const body = String(req.body?.body || '').trim();\n  if (!body) return res.status(400).json({ ok: false, error: 'message body required' });\n  if (body.length > 2000) return res.status(400).json({ ok: false, error: 'message too long' });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "748-750",
+          "snippet": "// Mark messages as read for this user\n  db.prepare(`UPDATE marketplace_messages SET read = 1 WHERE order_id = ? AND sender_id != ? AND read = 0`)\n    .run(id, req.user.id);"
+        },
+        {
+          "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+          "lines": "234-240",
+          "snippet": "// Auto-refresh messages every 30s when detail open\n  useEffect(() => {\n    if (!detail) return;\n    const iv = setInterval(() => openOrder(detail.order.id), 30000);\n    return () => clearInterval(iv);"
+        },
+        {
+          "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+          "lines": "486-493",
+          "snippet": "placeholder=\"Type a message…\"\n...\n                onKeyDown={(e) => {\n                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }\n                }}"
+        },
+        {
+          "file": "client/src/components/marketplace/MarketplaceShell.jsx",
+          "lines": "135",
+          "snippet": "{count > 0 && <span className={styles.navBadge}>{count > 99 ? '99+' : count}</span>}"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "How do Marketplace alerts work? I saved a search but I'm not getting any matches.",
+      "answer": "A saved search is a standing watch: when someone posts a NEW listing that fits it, a match appears under Alerts. It does not look backwards, so an empty Matches list usually just means nothing new has been posted yet.\n\nTo set one up:\n1. Open Alerts, then \"New search\" (or \"Save a search\" if you have none yet).\n2. Give it a Label — required, it's the name you'll see on each match (\"e.g. Cisco switch under $2k\").\n3. Optionally add a Keyword, a Category, a Max price, and choose For sale or Wanted.\n4. Press \"Save search\".\n\nWhy a search may never fire:\n• It only checks listings created after you saved it — existing listings are never matched retroactively.\n• Every filter you set must match. A Keyword only matches against the title, vendor or model. A Category set to Switches will ignore a switch someone filed under Other.\n• Listing kind must match. A \"For sale\" search never matches a Wanted post.\n• A Max price excludes anything priced above it. Listings with no price (\"Make an offer\") still come through.\n• You are never alerted about your own listings.\n\nHousekeeping: you can keep up to 20 saved searches — the 21st is refused with \"max 20 saved searches\". Alerts show the 50 most recent. \"Mark all read\" clears the badge; the small × on a row dismisses one match; deleting a saved search (\"Stop alerts and delete?\") also removes its matches.",
+      "symptoms": [
+        "No matches yet",
+        "Saved search never fires",
+        "max 20 saved searches",
+        "Label is required",
+        "Alerts badge won't clear",
+        "Nothing saved yet"
+      ],
+      "rootCause": "matchAlerts() runs only inside the POST /api/marketplace/listings response wrapper, so it evaluates saved searches against newly inserted rows only; it skips the listing's own owner, requires kind and (if set) category equality, a substring hit on title+vendor+model, and max_price_cents >= price. Saved searches are capped at 20 per user; GET /alerts is LIMIT 50; alerts cascade-delete with their saved search.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "985-1001",
+          "snippet": "function matchAlerts(listing) {\n  const searches = db.prepare(`SELECT * FROM marketplace_saved_searches`).all();\n  for (const s of searches) {\n    if (s.user_id === listing.user_id) continue; // don't alert yourself\n    if (s.kind !== listing.kind) continue;\n    if (s.category && s.category !== listing.category) continue;\n    if (s.max_price_cents != null && listing.price_cents != null && listing.price_cents > s.max_price_cents) continue;\n    if (s.query) {\n      const q = s.query.toLowerCase();\n      const haystack = [listing.title, listing.vendor, listing.model].filter(Boolean).join(' ').toLowerCase();\n      if (!haystack.includes(q)) continue;\n    }"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "884-888",
+          "snippet": "const label = String(b.label || '').trim();\n  if (!label) return res.status(400).json({ ok: false, error: 'label required' });\n  // Max 20\n  const cnt = db.prepare(`SELECT COUNT(*) AS c FROM marketplace_saved_searches WHERE user_id = ?`).get(req.user.id);\n  if (cnt.c >= 20) return res.status(400).json({ ok: false, error: 'max 20 saved searches' });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "942-943",
+          "snippet": "WHERE a.user_id = ?\n    ORDER BY a.created_at DESC LIMIT 50"
+        },
+        {
+          "file": "client/src/pages/MarketplaceAlertsPage.jsx",
+          "lines": "343-353",
+          "snippet": "<label className=\"mkt-label\" htmlFor=\"mkt-search-label\">Label *</label>\n                  <input\n                    id=\"mkt-search-label\"\n                    className=\"mkt-field\"\n                    placeholder=\"e.g. Cisco switch under $2k\"\n...\n                  <span className=\"mkt-hint\">How this search is named in your alerts.</span>"
+        },
+        {
+          "file": "client/src/pages/MarketplaceAlertsPage.jsx",
+          "lines": "194-209",
+          "snippet": "const markAllRead = async () => {\n    await authFetch(apiUrl('/api/marketplace/alerts/mark-read'), { method: 'POST' });\n...\n  const deleteSavedSearch = async (id) => {\n    await authFetch(apiUrl(`/api/marketplace/saved-searches/${id}`), { method: 'DELETE' });"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "My listing disappeared from Browse and now shows \"closed\" — I didn't touch it.",
+      "answer": "Listings retire themselves after about three months. Anything still active 90 days after it was posted is automatically set to closed, which takes it off Browse but leaves it in your My listings with a grey \"closed\" pill.\n\nTo put it back:\n1. Open My listings.\n2. Find the listing — closed ones stay in this list; they only vanish from public Browse.\n3. Press \"Relist\". It goes back to active immediately and reappears in Browse.\n4. If the gear is gone, press Delete instead, then \"Yes, delete\".\n\nOther reasons a listing can leave Browse:\n• It says \"sold\" — either you pressed \"Mark sold\", or somebody bought the last one, which marks it sold automatically.\n• The RackTrack platform owner hid it after it was reported. In that case it also shows as closed, and pressing Relist without fixing the reason will just get it hidden again — ask your platform owner what was wrong with it first.\n\nThe Dashboard's \"Closed\" tile is labelled \"Expired or withdrawn\", which covers both of these.",
+      "symptoms": [
+        "Listing disappeared from Browse",
+        "Listing shows closed",
+        "Listing expired",
+        "Old listing no longer visible",
+        "How do I relist"
+      ],
+      "rootCause": "maybeExpireListings() flips any active listing created more than 90 days ago to 'closed'. It is debounced to once an hour and is registered as router.use AFTER most /api/marketplace routes, so in practice it only fires on the later-registered endpoints (dashboard, stripe/status, partner OAuth status) rather than on every request.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1170-1180",
+          "snippet": "let _lastExpireRun = 0;\nfunction maybeExpireListings() {\n  const now = Date.now();\n  if (now - _lastExpireRun < 3600_000) return; // 1 hour debounce\n  _lastExpireRun = now;\n  try {\n    const info = db.prepare(`\n      UPDATE marketplace_listings SET status = 'closed', updated_at = datetime('now')\n      WHERE status = 'active'\n        AND created_at < datetime('now', '-90 days')\n    `).run();"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1188-1192",
+          "snippet": "// Hook into the browse route so it runs passively\nrouter.use('/api/marketplace', (req, res, next) => {\n  maybeExpireListings();\n  next();\n});"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1157-1162",
+          "snippet": "const action = String(req.body?.action || 'hide').toLowerCase();\n  if (action === 'hide') {\n    db.prepare(`UPDATE marketplace_listings SET status = 'closed', updated_at = datetime('now') WHERE id = ?`).run(id);\n  } else if (action === 'restore') {"
+        },
+        {
+          "file": "client/src/pages/MarketplaceDashboardPage.jsx",
+          "lines": "119",
+          "snippet": "<Stat label=\"Closed\"   value={d.listings.closed} meta=\"Expired or withdrawn\" />"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "question": "What do the numbers on the Marketplace Dashboard mean, and why is my revenue zero when I've sold things?",
+      "answer": "The Dashboard (\"Seller dashboard — Listings, sales and purchases\") is scoped to the signed-in account only, not to the whole organization, and Revenue counts completed orders only.\n\nThe three groups:\n• Listings — Total, Active, Sold, Closed (Closed is captioned \"Expired or withdrawn\").\n• Sales — Revenue, with \"From N completed orders\" underneath; plus Orders (all orders where you are the seller), Completed, and Pending, captioned \"Awaiting shipment\".\n• Purchases — Spent, \"Across N orders\", plus your order count as a buyer.\n\nWhy Revenue can read zero:\n1. Revenue only totals orders whose status is Completed. An order sitting at Paid or Shipped counts under Pending, not Revenue.\n2. Fix it by closing out the finished orders: Orders → Selling → open the order → \"Mark completed\" → \"Yes, complete\". Only orders that are already Shipped can be completed.\n3. Pending counts orders at Paid or Shipped — that number is your to-ship / to-close queue, not unpaid orders.\n\nEverything here is per-user. If your organization has several admins selling, each sees only their own figures — there is no combined org view. \"Recent listings\" below shows your last ten, and \"View all\" jumps to My listings.",
+      "symptoms": [
+        "Revenue is 0",
+        "Dashboard numbers look wrong",
+        "Pending orders count",
+        "Nothing listed yet on dashboard",
+        "Dashboard doesn't show my team's sales"
+      ],
+      "rootCause": "GET /api/marketplace/dashboard aggregates strictly by req.user.id: revenue_cents sums total_cents only WHERE status='completed', pending_orders counts status IN ('paid','shipped'), and there is no organization-level rollup.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1211-1218",
+          "snippet": "const orderStats = db.prepare(`\n    SELECT\n      COUNT(*)                                   AS total_orders,\n      SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_orders,\n      SUM(CASE WHEN status = 'completed' THEN total_cents ELSE 0 END) AS revenue_cents,\n      SUM(CASE WHEN status IN ('paid','shipped') THEN 1 ELSE 0 END)   AS pending_orders\n    FROM marketplace_orders WHERE seller_id = ?\n  `).get(uid);"
+        },
+        {
+          "file": "client/src/pages/MarketplaceDashboardPage.jsx",
+          "lines": "122-136",
+          "snippet": "<StatGroup title=\"Sales\">\n            <Stat\n              lead\n              label=\"Revenue\"\n              value={formatCurrency(d.sales.revenueCents)}\n              meta={`From ${plural(d.sales.completedOrders, 'completed order')}`}\n            />\n...\n            <Stat\n              label=\"Pending\"\n              value={d.sales.pendingOrders}\n              meta={d.sales.pendingOrders > 0 ? 'Awaiting shipment' : undefined}\n            />"
+        },
+        {
+          "file": "client/src/pages/MarketplaceDashboardPage.jsx",
+          "lines": "97-100",
+          "snippet": "<MarketplaceShell\n      title=\"Seller dashboard\"\n      subtitle=\"Listings, sales and purchases\"\n      backTo=\"/marketplace\""
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "What do Partner accounts do, and how do I get new listings posted into our Discord channel?",
+      "answer": "Partners (/marketplace/partners) offers three cards — eBay, Amazon and Discord — and each shows a Connected / Not connected pill. Only Discord does anything on its own today.\n\nDiscord — announce every new listing in a channel:\n1. In Discord: Channel settings → Integrations → Webhooks → Copy webhook URL. (That path is printed on the card.)\n2. In RackTrack: Partners → Discord → paste it into \"Webhook URL\" → \"Save webhook\".\n3. Press \"Send test\". You should see \"Test notification sent to Discord.\" here and a \"Webhook Test\" message in the channel.\n4. From then on, every listing anyone creates posts a card into that channel with the title, category, condition, price, equipment and location.\n\nIf the test fails you get \"Test failed: …\":\n• \"No Discord webhook connected\" — the webhook was disconnected; save it again.\n• \"Webhook failed: Discord returned 404\" — the webhook was deleted in Discord. Create a new one and save the new URL.\n\neBay and Amazon: if the Connect button is greyed out with \"API keys not configured on this server\", your RackTrack server has no eBay/Amazon credentials — nothing you can do from the app; ask your platform owner. Connecting them stores the link only; it does not cross-post anything yet.\n\nTo remove one, press Disconnect and then \"Yes, disconnect\". The webhook stops being used immediately.",
+      "symptoms": [
+        "API keys not configured on this server",
+        "No Discord webhook connected",
+        "Test failed",
+        "Webhook URL required",
+        "Discord notifications not arriving",
+        "Connect eBay greyed out"
+      ],
+      "rootCause": "POST /api/marketplace/partner-accounts stores one row per (user, platform); Discord requires a webhookUrl and is the only platform actually consumed — sendDiscordNotification() fans out to every connected discord webhook after a listing insert. eBay/Amazon Connect is disabled client-side when the corresponding /status endpoint reports configured:false.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1080-1086",
+          "snippet": "if (platform === 'discord') {\n    const url = String(b.webhookUrl || '').trim();\n    if (!url) return res.status(400).json({ ok: false, error: 'webhook URL required' });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1268-1291",
+          "snippet": "router.post('/api/marketplace/partner-accounts/discord/test', requireAuth, safeAsync(async (req, res) => {\n...\n  if (!acct || !acct.webhook_url) return res.status(400).json({ ok: false, error: 'No Discord webhook connected' });\n...\n    if (!r.ok) throw new Error(`Discord returned ${r.status}`);\n...\n    res.status(502).json({ ok: false, error: `Webhook failed: ${err.message}` });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "205-214",
+          "snippet": "fields: [\n      { name: 'Category', value: listing.category, inline: true },\n      { name: 'Condition', value: listing.condition, inline: true },\n      { name: 'Price', value: priceStr, inline: true },\n    ],\n    footer: { text: 'RackTrack Marketplace' },"
+        },
+        {
+          "file": "client/src/pages/MarketplacePartnerAccountsPage.jsx",
+          "lines": "253-259",
+          "snippet": "placeholder=\"https://discord.com/api/webhooks/…\"\n...\n                    <span className=\"mkt-hint\">\n                      Channel settings → Integrations → Webhooks → Copy webhook URL.\n                    </span>"
+        },
+        {
+          "file": "client/src/pages/MarketplacePartnerAccountsPage.jsx",
+          "lines": "315-319",
+          "snippet": "{needsKeys && (\n                        <span className={styles.actionNote}>\n                          API keys not configured on this server\n                        </span>\n                      )}"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "question": "INTERNAL: A buyer says they paid but the order is still Pending — how does Marketplace payment actually work?",
+      "answer": "Marketplace payments are env-gated on the server, and the order's initial status depends entirely on whether Stripe is wired up on that deployment.\n\nTwo modes:\n• STRIPE_SECRET_KEY unset (or the stripe package fails to load): no payment is taken at all. POST /api/marketplace/orders writes the order straight in as 'paid' — the code comments this as \"offline payment assumed\". The checkout button reads \"Complete purchase — …\". Treat every such order as an IOU settled outside RackTrack. Never tell a customer RackTrack charged them.\n• STRIPE_SECRET_KEY set: the order is written as 'pending', a Stripe Checkout Session is created with the order id in metadata, and the client is redirected to session.url. The order only flips to 'paid' when POST /api/marketplace/stripe/webhook receives checkout.session.completed and matches metadata.orderId — and the UPDATE is guarded by `AND status = 'pending'`.\n\nSo an order stuck at Pending means one of:\n1. The buyer abandoned or failed the Stripe page. Stripe's cancel_url returns them to /marketplace/orders/<id>?payment=cancelled — but the Orders page never reads the `payment` query param, so they get no message either way and often think it worked.\n2. The webhook never reached this server (no public URL, wrong endpoint, or STRIPE_WEBHOOK_SECRET set but signature mismatch → 400 \"Webhook verification failed: …\").\n3. Session creation itself failed: the API responds `{ ok: true, order, stripeError }` and the client, which only looks for `stripeSessionUrl`, silently lands the buyer on the order page with a pending order. Look for `marketplace.stripe_error` in the log.\n\nVerify with GET /api/marketplace/stripe/status ({configured:true|false}) before diagnosing anything else. There is no in-app way to re-drive payment for an existing order — cancel it and have the buyer check out again.",
+      "symptoms": [
+        "Order stuck on Pending",
+        "Buyer paid but status didn't change",
+        "Webhook verification failed",
+        "stripeError",
+        "marketplace.stripe_error",
+        "No confirmation after returning from Stripe"
+      ],
+      "rootCause": "initialStatus = stripe ? 'pending' : 'paid'. Without Stripe the order is fabricated as paid with no charge; with Stripe the only path to 'paid' is the checkout.session.completed webhook, and both a cancelled session and a failed session-creation leave the order pending with no user-visible message because MarketplaceOrdersPage ignores ?payment=.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "635-638",
+          "snippet": "// When Stripe is configured, orders start as 'pending' and move to\n  // 'paid' only after the Stripe webhook confirms payment. Without Stripe\n  // the order is created as 'paid' directly (offline payment assumed).\n  const initialStatus = stripe ? 'pending' : 'paid';"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "694-701",
+          "snippet": "success_url: `${STRIPE_BASE_URL}/marketplace/orders/${orderId}?payment=success`,\n        cancel_url:  `${STRIPE_BASE_URL}/marketplace/orders/${orderId}?payment=cancelled`,\n...\n      logger.error({ event: 'marketplace.stripe_error', error: err.message }, 'Stripe session creation failed');\n      // Fall through — order is created as pending, buyer can retry\n      return res.json({ ok: true, order: orderJson, stripeError: err.message });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1306-1322",
+          "snippet": "router.post('/api/marketplace/stripe/webhook', express.raw({ type: 'application/json' }), safeAsync(async (req, res) => {\n  if (!stripe) return res.status(404).json({ ok: false, error: 'Stripe not configured' });\n...\n    return res.status(400).json({ ok: false, error: `Webhook verification failed: ${err.message}` });\n...\n      db.prepare(\n        \"UPDATE marketplace_orders SET status = 'paid', updated_at = datetime('now') WHERE id = ? AND status = 'pending'\"\n      ).run(parseInt(orderId, 10));"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "38-49",
+          "snippet": "let stripe = null;\nconst STRIPE_SECRET   = process.env.STRIPE_SECRET_KEY   || '';\n...\nif (STRIPE_SECRET) {\n  try {\n    stripe = require('stripe')(STRIPE_SECRET);\n...\n    logger.warn(`[marketplace] stripe package not installed — payments disabled: ${e.message}`);"
+        },
+        {
+          "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+          "lines": "113-117",
+          "snippet": "// If Stripe is configured, redirect to Stripe Checkout\n      if (data.stripeSessionUrl) {\n        window.location.href = data.stripeSessionUrl;\n        return;\n      }"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "INTERNAL: A seller says their listing went \"sold\" but no payment ever came through, or a cancelled order never put the stock back.",
+      "answer": "Stock is decremented at order CREATION, before any payment is confirmed, and nothing ever reverses it.\n\nWhat POST /api/marketplace/orders does, in order: creates the order row, then either marks the listing 'sold' (when the ordered quantity meets or exceeds the listing quantity) or decrements marketplace_listings.quantity. This happens whether the order is 'pending' (Stripe) or 'paid' (no Stripe). Consequences to expect on tickets:\n\n1. Abandoned Stripe checkout → order pending forever AND the listing already reads sold / short. The seller sees a phantom sale.\n2. Cancelling the order (PATCH … status:'cancelled') only writes marketplace_orders.status and cancelled_by. It does not restore quantity and does not set the listing back to active.\n3. Remedy for the seller is manual: My listings → Relist (PATCH status:'active'). That restores visibility but NOT the decremented quantity — if they had 5 and one was taken, they must edit the quantity back, and the Edit button is currently broken, so in practice they delete and re-post.\n\nAlso note two disabled guards on this endpoint:\n• The \"cannot buy your own listing\" check is commented out with \"TODO: re-enable before production\", so a user can order from themselves. The Buy now button is also rendered on your own card in Browse (the isMine check exists only inside the detail modal), which makes accidental self-orders easy.\n• Quantity is clamped to the listing quantity server-side, so over-ordering is not possible.\n\nNever describe the phantom-sold state to a customer as a payment problem — it is an inventory bookkeeping gap.",
+      "symptoms": [
+        "Listing marked sold with no payment",
+        "Cancelled order didn't restore the listing",
+        "Quantity wrong after a cancelled order",
+        "User bought their own listing",
+        "Buy now shown on my own listing"
+      ],
+      "rootCause": "Order creation mutates the listing (status='sold' or quantity - qty) unconditionally and no code path ever reverses it; the self-purchase guard is commented out; ListingCard's canBuy does not consider listing.isMine.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "625-626",
+          "snippet": "// TODO: re-enable before production\n  // if (listing.user_id === req.user.id) return res.status(400).json({ ok: false, error: 'cannot buy your own listing' });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "670-675",
+          "snippet": "// Decrement listing quantity or mark sold\n  if (qty >= listing.quantity) {\n    db.prepare(`UPDATE marketplace_listings SET status = 'sold', updated_at = datetime('now') WHERE id = ?`).run(listingId);\n  } else {\n    db.prepare(`UPDATE marketplace_listings SET quantity = quantity - ?, updated_at = datetime('now') WHERE id = ?`).run(qty, listingId);\n  }"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "779-783",
+          "snippet": "if (s === 'cancelled') {\n      if (!['pending', 'paid'].includes(existing.status))\n        return res.status(400).json({ ok: false, error: 'cannot cancel at this stage' });\n      updates.status = 'cancelled';\n      updates.cancelled_by = req.user.id;"
+        },
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "155-163",
+          "snippet": "{canBuy && (\n          <button\n            type=\"button\"\n            className={`mkt-btn mkt-btn--primary mkt-btn--sm mkt-btn--block ${styles.cardBuy}`}\n            onClick={(e) => { e.stopPropagation(); onBuy(listing.id); }}\n          >\n            Buy now\n          </button>\n        )}"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "INTERNAL: An admin says \"Connect eBay\" (or Connect Amazon) just goes to a broken page even though the API keys are set.",
+      "answer": "This is a client bug, not a credentials problem. Confirm the keys first, then explain the workaround.\n\n1. Check GET /api/marketplace/partner-accounts/ebay/status (or …/amazon/status). If it returns configured:false the Connect button would be disabled with \"API keys not configured on this server\" — that is the credentials case, fix the .env (EBAY_APP_ID / EBAY_CERT_ID / EBAY_REDIRECT_URI, or AMAZON_SP_CLIENT_ID / AMAZON_SP_CLIENT_SECRET / AMAZON_REDIRECT_URI) and restart.\n2. If it returns configured:true, the button is enabled and the page calls …/auth-url, which responds `{ ok: true, url }`. The page then does `window.location.href = data.authUrl` — a field the API never sends — so the browser navigates to the literal string \"undefined\" relative to the current path. The user sees a not-found / blank page and never reaches the consent screen.\n3. There is no in-app workaround for the OAuth path. The row can still be created by POSTing to /api/marketplace/partner-accounts with `{platform:'ebay'}`, but that only stores a stub account id — it grants no eBay access.\n4. The OAuth callbacks themselves are implemented and, on failure, redirect to /marketplace/partners?error=ebay_auth_failed (or amazon_auth_failed) — the Partners page does not read that param either, so a failed exchange also shows nothing.\n\nEven once connected, neither eBay nor Amazon cross-posts anything: no code publishes a RackTrack listing to either platform. Do not promise cross-posting to customers.",
+      "symptoms": [
+        "Connect eBay goes to a blank page",
+        "Connect Amazon does nothing",
+        "URL ends in undefined",
+        "ebay_auth_failed",
+        "amazon_auth_failed",
+        "Cross-posting to eBay not working"
+      ],
+      "rootCause": "MarketplacePartnerAccountsPage reads data.authUrl from the /auth-url response, but the server returns the field as `url`, so window.location.href is assigned undefined. Separately, the ?error=…/?connected=… params the OAuth callbacks redirect with are never read by the page.",
+      "evidence": [
+        {
+          "file": "client/src/pages/MarketplacePartnerAccountsPage.jsx",
+          "lines": "122-131",
+          "snippet": "if ((platform === 'ebay' || platform === 'amazon') && oauthStatus[platform]) {\n      setConnecting(platform);\n      try {\n        const res = await authFetch(apiUrl(`/api/marketplace/partner-accounts/${platform}/auth-url`));\n        const data = await res.json();\n        if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);\n        window.location.href = data.authUrl;\n        return;"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1339-1345",
+          "snippet": "router.get('/api/marketplace/partner-accounts/ebay/auth-url', requireAuth, (req, res) => {\n  if (!EBAY_APP_ID || !EBAY_CERT_ID || !EBAY_REDIRECT_URI) {\n    return res.status(400).json({ ok: false, error: 'eBay API keys not configured. Set EBAY_APP_ID, EBAY_CERT_ID, EBAY_REDIRECT_URI in .env' });\n  }\n...\n  res.json({ ok: true, url });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1388-1393",
+          "snippet": "router.get('/api/marketplace/partner-accounts/amazon/auth-url', requireAuth, (req, res) => {\n  if (!AMAZON_SP_CLIENT || !AMAZON_REDIRECT) {\n    return res.status(400).json({ ok: false, error: 'Amazon API keys not configured. Set AMAZON_SP_CLIENT_ID, AMAZON_SP_CLIENT_SECRET, AMAZON_REDIRECT_URI in .env' });\n  }\n...\n  res.json({ ok: true, url });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1369",
+          "snippet": "return res.redirect(`${STRIPE_BASE_URL}/marketplace/partners?error=ebay_auth_failed`);"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    },
+    {
+      "question": "INTERNAL: A customer reported a listing and nothing happened. How does reporting and moderation work?",
+      "answer": "Reporting works; acting on reports effectively does not. Handle these tickets manually.\n\nWhat the customer did: opened a listing they don't own, tapped \"Report listing\", typed a reason and pressed \"Submit report\". They then saw \"Reported. An admin will review this listing.\" That inserts a row in marketplace_flags. A second report on the same listing from the same account is refused with \"already flagged\" shown in the modal.\n\nWhat does not exist:\n1. There is no endpoint that lists flags — nothing in the product surfaces reported listings to anyone. The only way to see them is querying marketplace_flags in server/data/auth.db directly.\n2. There is no notification of any kind on a flag (unlike listing creation, which fires the Discord webhook).\n3. POST /api/marketplace/listings/:id/moderate exists (action 'hide' → status 'closed', 'restore' → 'active') but its own check is `user.role === 'admin' || user.id === 1`. RackTrack has no 'admin' role — the roles are owner, org_admin, site_manager and member — so in practice only the very first user row can moderate; every other account, including the platform owner, gets 403 \"admin only\".\n\nSo the operational answer: escalate to whoever holds user id 1 on that deployment, or have the listing's own seller delete it (DELETE /api/marketplace/listings/:id is owner-only and always available to them). Never tell a customer a review is in progress — nobody is queued to see it.",
+      "symptoms": [
+        "Reported a listing, nothing happened",
+        "already flagged",
+        "admin only",
+        "Where do I review reported listings",
+        "Can't hide a listing as owner"
+      ],
+      "rootCause": "marketplace_flags is write-only — no list/read endpoint and no notification hook. The moderate endpoint gates on a role string ('admin') that the auth system never issues, falling back to user.id === 1, so owner/org_admin accounts receive 403 'admin only'.",
+      "evidence": [
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1135-1145",
+          "snippet": "router.post('/api/marketplace/listings/:id/flag', requireAuth, safeAsync(async (req, res) => {\n...\n    db.prepare(`INSERT INTO marketplace_flags (listing_id, user_id, reason) VALUES (?, ?, ?)`).run(id, req.user.id, reason);\n  } catch (e) {\n    if (e.message.includes('UNIQUE')) return res.status(400).json({ ok: false, error: 'already flagged' });"
+        },
+        {
+          "file": "server/marketplace_routes.js",
+          "lines": "1152-1155",
+          "snippet": "// Check if user is admin (role field or first user)\n  const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.user.id);\n  const isAdmin = user && (user.role === 'admin' || user.id === 1);\n  if (!isAdmin) return res.status(403).json({ ok: false, error: 'admin only' });"
+        },
+        {
+          "file": "server/auth.js",
+          "lines": "206-208",
+          "snippet": "//   'owner'        — platform superadmin (creates orgs + org admins)\n  //   'org_admin'    — manages one organization (creates Sites + users)\n  //   'site_manager' — manages one Site (adds members, runs scans)"
+        },
+        {
+          "file": "client/src/pages/MarketplacePage.jsx",
+          "lines": "410-413",
+          "snippet": "{reported ? (\n                <p className=\"mkt-banner mkt-banner--success\">\n                  Reported. An admin will review this listing.\n                </p>"
+        }
+      ],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    }
+  ]
+}

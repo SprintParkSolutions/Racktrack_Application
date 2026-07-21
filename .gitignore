@@ -142,3 +142,9 @@ server/data/logs.db-wal
 retraining_learning/Devices_Retraining/temp/
 retraining_learning/Devices_Retraining/runs/
 retraining_learning/Devices_Retraining/review_dataset/images/
+
+# Support assistant refusal log — real user questions, so treat as user data.
+# The knowledge base itself (server/data/support-kb.json) IS tracked: it is
+# product knowledge, not user data.
+server/data/support-refusals.jsonl
+server/data/support-refusals.*.jsonl

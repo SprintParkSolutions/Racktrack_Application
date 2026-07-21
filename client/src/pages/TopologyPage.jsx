@@ -93,12 +93,15 @@ export function TopologyContent({ rackId }) {
 // ── Standalone page (used by /results/:rackId/topology route) ───
 export default function TopologyPage() {
   const { rackId } = useParams();
-  const goBack = useSmartBack(rackId ? `/results/${rackId}` : '/scan');
   return <TopologyInner rackId={rackId} embedded={false} />;
 }
 
 function TopologyInner({ rackId, embedded }) {
   const navigate = useNavigate();
+  // Declared HERE, not in TopologyPage: this is the component that renders the
+  // Back button. It used to live in the parent, so every "← Back" tap threw
+  // ReferenceError: goBack is not defined and stranded the user on the page.
+  const goBack = useSmartBack(rackId ? `/results/${rackId}` : '/scan');
   // Hydrate from the prefetch cache so that a tab/page switch into
   // /results/:rackId/topology after a fresh analyze renders the 3D scene
   // immediately, without the "Loading topology…" spinner. ScanPage fired

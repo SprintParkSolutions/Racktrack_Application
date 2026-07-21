@@ -141,6 +141,11 @@ function assignPublicId(userId, role) {
       'tenant_id INTEGER REFERENCES tenants(id)');
     db.prepare('UPDATE audit_log SET tenant_id = ? WHERE tenant_id IS NULL')
       .run(defaultTenantId);
+    // Index the column we just added: the owner dashboard groups scans by
+    // tenant and counts per-org scans every 5s, which scanned the whole
+    // audit_log each time because no index was created alongside the ALTER.
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_tenant_action
+               ON audit_log(tenant_id, action, status)`);
   }
 
   // rack_owners — many-to-many between tenants and racks. A rack id is
@@ -382,7 +387,11 @@ function emailHtml(code) {
 
 // Tries the primary provider, then the fallback. Returns true if ANY delivered.
 async function sendVerificationEmail(email, code) {
-  logger.info(`[auth] verification code for ${email}: ${code}`);
+  // NEVER log the code itself. It used to be interpolated into this message,
+  // which persists it to the log store — and /api/logs is readable by owners
+  // and AUDIT_ADMINS, so anyone with log access could trigger a reset for any
+  // account, read the code, and take it over. Log only that a code was sent.
+  logger.info({ event: 'auth.code_sent', email }, '[auth] verification code sent');
   const providers = mailProviders();
   if (!providers.length) return false;
   for (const p of providers) {

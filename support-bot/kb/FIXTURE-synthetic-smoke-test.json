@@ -1,0 +1,114 @@
+{
+  "_WARNING": "SYNTHETIC TEST FIXTURE - NOT REAL RACKTRACK KNOWLEDGE. Every fact in this file is invented for the sole purpose of exercising the search, routing, and eval machinery. It must never be loaded as the production knowledge base. The real KB is kb/knowledge-base.json, mined and verified from source.",
+  "_purpose": "Smoke test. Run with: KB_PATH=kb/FIXTURE-synthetic-smoke-test.json npm run eval",
+  "entries": [
+    {
+      "id": "AUTH-001",
+      "domain": "auth",
+      "question": "Why does the app say my password is wrong when I know it is correct?",
+      "answer": "Check that you are pointed at the right server first. Open Settings and confirm the server address matches the one your administrator gave you. A wrong server address gives the same 'incorrect password' message as an actually wrong password.\n\n1. Open Settings\n2. Check the Server field\n3. Correct it if it is wrong, then try signing in again\n\nIf the address is right, your account may be locked after repeated failed attempts. Wait a few minutes and try once more.",
+      "symptoms": ["incorrect password message", "login rejected", "cannot sign in with correct credentials"],
+      "rootCause": "Wrong server address produces an authentication failure indistinguishable from bad credentials.",
+      "evidence": [{ "file": "SYNTHETIC", "lines": "0", "snippet": "fixture" }],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "id": "AUTH-002",
+      "domain": "auth",
+      "question": "Why am I getting logged out over and over?",
+      "answer": "This usually means your session expired while the app was in the background. Sign in again, and keep the app open while you work through a rack.\n\nIf it happens within a minute of signing in, your device clock may be wrong. Turn on automatic date and time in your device settings and try again.",
+      "symptoms": ["logged out repeatedly", "session expired", "keeps signing me out"],
+      "rootCause": "Session token expiry, or clock skew invalidating the token immediately.",
+      "evidence": [{ "file": "SYNTHETIC", "lines": "0", "snippet": "fixture" }],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "id": "SCAN-001",
+      "domain": "scanning",
+      "question": "Why did my scan come back empty with no ports detected?",
+      "answer": "Almost always lighting or distance. Try again with:\n\n1. More light on the front of the rack\n2. The whole unit in frame, straight on rather than at an angle\n3. About an arm's length away\n4. Hold still until the capture completes\n\nIf it is still empty, the label may be too worn to read. Enter the device manually using the Add Device button.",
+      "symptoms": ["scan empty", "no ports found", "nothing detected", "scan returned nothing"],
+      "rootCause": "Detection confidence below threshold due to image quality.",
+      "evidence": [{ "file": "SYNTHETIC", "lines": "0", "snippet": "fixture" }],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "id": "SCAN-002",
+      "domain": "scanning",
+      "question": "The camera will not open when I tap scan",
+      "answer": "The app needs camera permission. Open your device Settings, find RackTrack, and turn Camera on. Then reopen the app.\n\nIf camera permission is already on, fully close the app and reopen it — another app may still be holding the camera.",
+      "symptoms": ["camera will not open", "black screen when scanning", "scan button does nothing"],
+      "rootCause": "Camera permission denied, or camera held by another process.",
+      "evidence": [{ "file": "SYNTHETIC", "lines": "0", "snippet": "fixture" }],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "id": "RPT-001",
+      "domain": "reporting",
+      "question": "How do I export a report of a rack?",
+      "answer": "Open the rack, tap the menu in the top right, and choose Export. Pick your format and the file saves to your device downloads.\n\nIf Export is greyed out, the rack has no completed audit yet — run an audit first.",
+      "symptoms": ["how to export", "need a report", "download rack details"],
+      "rootCause": "N/A - how-to.",
+      "evidence": [{ "file": "SYNTHETIC", "lines": "0", "snippet": "fixture" }],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "id": "RPT-002",
+      "domain": "reporting",
+      "question": "My exported report is empty",
+      "answer": "An empty export means the rack has no saved audit data. Open the rack and check that at least one audit shows as completed. If your last audit is still showing as pending, it has not finished syncing — reconnect to the network and wait for the sync indicator to clear, then export again.",
+      "symptoms": ["empty report", "export has no data", "blank export file"],
+      "rootCause": "Export ran against a rack with no synced audit records.",
+      "evidence": [{ "file": "SYNTHETIC", "lines": "0", "snippet": "fixture" }],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "id": "SYNC-001",
+      "domain": "offline-sync",
+      "question": "I did a scan with no signal and now I cannot find it",
+      "answer": "Work done offline is saved on your device and uploads when you reconnect. Get back into signal range and open the app — the sync indicator will show the upload progress.\n\nDo not reinstall the app before the sync finishes, as that clears anything not yet uploaded.",
+      "symptoms": ["scan missing", "work disappeared", "offline scan lost", "cannot find my audit"],
+      "rootCause": "Offline queue not yet uploaded.",
+      "evidence": [{ "file": "SYNTHETIC", "lines": "0", "snippet": "fixture" }],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "certain"
+    },
+    {
+      "id": "ADM-001",
+      "domain": "account-admin",
+      "question": "How do I reset a technician's password as an administrator?",
+      "answer": "Open the Users screen in the admin console, find the technician, and choose Reset Password. They will be prompted to set a new one at next sign-in.",
+      "symptoms": ["reset user password", "technician locked out"],
+      "rootCause": "N/A - admin how-to.",
+      "evidence": [{ "file": "SYNTHETIC", "lines": "0", "snippet": "fixture" }],
+      "userCanSelfFix": false,
+      "audience": "admin",
+      "confidence": "certain"
+    },
+    {
+      "id": "INT-001",
+      "domain": "integrations",
+      "question": "How is the ServiceNow integration credential configured on the server?",
+      "answer": "The integration credential is stored server-side in the encrypted connection profile store and is rotated through the admin console. It is never exposed to the mobile client.",
+      "symptoms": ["servicenow credential", "integration auth setup"],
+      "rootCause": "N/A - internal configuration detail.",
+      "evidence": [{ "file": "SYNTHETIC", "lines": "0", "snippet": "fixture" }],
+      "userCanSelfFix": false,
+      "audience": "internal-only",
+      "confidence": "certain"
+    }
+  ]
+}

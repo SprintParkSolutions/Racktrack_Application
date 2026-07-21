@@ -1,0 +1,2244 @@
+[
+  {
+    "question": "The AR / 3D rack view doesn't work on my Android phone.",
+    "answer": "Everyday scanning works on any Android phone, but the AR overlay uses Google's ARCore. It only runs on ARCore-supported handsets that have \"Google Play Services for AR\" installed from the Play Store.\n\nIf your phone is not ARCore-capable, the app still installs and every normal feature \u2014 scanning, results, ports, topology \u2014 works exactly the same. RackTrack deliberately does not require the AR hardware, so a non-AR phone is never blocked from installing.\n\nTry installing \"Google Play Services for AR\" from the Play Store first; if your handset is not on Google's supported list, there is no fix and you should use the standard scan flow.",
+    "symptoms": [
+      "AR view doesn't open",
+      "AR overlay missing",
+      "3D/AR unavailable on Android"
+    ],
+    "rootCause": "ARCore requires OpenGL ES 3.0+ and the Google Play Services for AR package. The manifest marks the GLES 3.0 feature required=\"false\" so non-AR devices can still install.",
+    "evidence": [
+      {
+        "file": "client/android/app/src/main/AndroidManifest.xml",
+        "lines": "38-40",
+        "snippet": "<!-- ARCore needs OpenGL ES 3.0+. Marked not-required so non-AR\n     users can still install the app and use the regular scan flow. -->\n<uses-feature android:glEsVersion=\"0x00030000\" android:required=\"false\" />"
+      },
+      {
+        "file": "notes/artifacts/status-Android.html",
+        "lines": "108-111",
+        "snippet": "Normal photo/camera scanning works on any Android phone. The <b>AR overlay</b> uses Google&rsquo;s ARCore. ... AR needs an ARCore-supported phone with &ldquo;Google Play Services for AR&rdquo; installed. Regular scanning is unaffected."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Mobile app install, update & device issues"
+  },
+  {
+    "question": "How do I know if the app on my phone is the current version, and what happens if it isn't?",
+    "answer": "The app does not tell you. RackTrack has no built-in \"a new version is available\" check and no version banner \u2014 so a phone can sit on an old build indefinitely without warning.\n\nHow to check for yourself:\n- iPhone/iPad: open TestFlight and look at RackTrack. If an \"Update\" button is there, you are behind. Turn on Automatic Updates once and you never have to check again.\n- Android: open the \"App Tester\" app; new builds appear there with release notes.\n\nWhy it matters: the server address is compiled into each build. If the server moves, an old build stops working entirely rather than showing a \"please update\" message \u2014 you will see failing screens, not an update prompt. If your app has stopped working, installing the newest build is the first thing to try.",
+    "symptoms": [
+      "how do I know I'm on the latest version",
+      "no update prompt",
+      "old app keeps working then suddenly doesn't",
+      "version mismatch"
+    ],
+    "rootCause": "There is no client-side version check: nothing in client/src consumes the server's /api/version endpoint, which exists only for operators. API_BASE is frozen into the bundle at build time, so a stale client fails hard rather than degrading.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "280-293",
+        "snippet": "// Which build is actually running \u2014 no auth, so you can hit\n//   https://<tunnel>/api/version\n// and instantly see the live commit + when the server last started.\n...\napp.get('/api/version', (req, res) => {\n  res.json({ commit: BUILD_COMMIT, startedAt: SERVER_STARTED_AT });\n});"
+      },
+      {
+        "file": "client/src/utils/api.js",
+        "lines": "4",
+        "snippet": "let API_BASE = import.meta.env.VITE_API_BASE || '';"
+      },
+      {
+        "file": "docs/notes/delivery/racktrack-install-guide.html",
+        "lines": "176-183",
+        "snippet": "Open <strong>TestFlight</strong> &rarr; tap <strong>RackTrack</strong> &rarr; switch on <strong>Automatic Updates</strong>. ... If a new build is waiting, RackTrack shows an <strong>Update</strong> button"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "likely",
+    "domain": "Mobile app install, update & device issues"
+  },
+  {
+    "question": "The APK/IPA built fine but points at the wrong server. How is the backend URL set?",
+    "answer": "Admin/internal. The backend URL is compiled into the JS bundle at build time via VITE_API_BASE \u2014 there is no runtime setting and no way for a user to change it in the app.\n\nAndroid, when following a tunnel: run start.ps1 first (it writes the tunnel URL to current-url.txt), then update-apk-url.ps1 rewrites client/.env.production with `VITE_API_BASE=<url>`, runs `npm run build` and `npx cap sync android`. Build the APK afterwards.\n\niOS: the URL is the second argument to make-ipa.sh; it is not read from .env.\n\nTwo traps:\n1. client/.env.production.local currently contains `VITE_API_BASE=http://localhost:3001` and Vite's .local file overrides .env.production. This is exactly the misbuild that shipped a broken TestFlight build before. `npm run build:mobile` catches it (check-api-base.mjs reads the env var, and the scripts export it explicitly), but a plain `npm run build` does not.\n2. api.js has a self-heal for the web dist only: if API_BASE is a localhost URL but the page is served from a real host, it falls back to same-origin. That does not save a packaged app, where the serving origin is capacitor://localhost.",
+    "symptoms": [
+      "app points at localhost",
+      "app calls the wrong server",
+      "mixed content blocked",
+      "Load failed on every call in the packaged app"
+    ],
+    "rootCause": "VITE_API_BASE is an import.meta.env value inlined at build time. .env.production.local (localhost:3001) overrides .env.production in a plain vite build.",
+    "evidence": [
+      {
+        "file": "update-apk-url.ps1",
+        "lines": "11-27",
+        "snippet": "$url = (Get-Content $urlFile).Trim()\n...\n$content = $content -replace \"VITE_API_BASE=.*\", \"VITE_API_BASE=$url\"\n...\nnpm run build\nnpx cap sync android"
+      },
+      {
+        "file": "client/.env.production.local",
+        "lines": "1",
+        "snippet": "VITE_API_BASE=http://localhost:3001"
+      },
+      {
+        "file": "client/package.json",
+        "lines": "11",
+        "snippet": "\"build:mobile\": \"node scripts/check-api-base.mjs && vite build\","
+      },
+      {
+        "file": "client/src/utils/api.js",
+        "lines": "7-22",
+        "snippet": "// Self-heal a common misbuild: the web dist gets built with a LOCALHOST API base ... If we detect a localhost base but the page is actually served from a real host, drop to same-origin"
+      },
+      {
+        "file": "docs/notes/delivery/testflight-readiness.html",
+        "lines": "1-1",
+        "snippet": "API points at localhost .env.production.local \u2192 VITE_API_BASE=http://localhost:3001 \u2014 Vite's .local file overrides .env.production. In a packaged app, localhost is the phone itself"
+      },
+      {
+        "file": "client/make-ipa.sh",
+        "lines": "16-17",
+        "snippet": "# 1. Web build with the backend URL baked in (guarded: rejects localhost/http)\nVITE_API_BASE=\"$API\" npm run build:mobile"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Mobile app install, update & device issues"
+  },
+  {
+    "question": "I'm typing the right password but it keeps saying \"Invalid username or password\". What's wrong?",
+    "answer": "RackTrack shows that exact message for three different situations, and they look identical on screen:\n\n1. The password really is wrong. Tap the eye icon next to the Password box to reveal what you typed and check for a stray space or capital letter.\n2. The username or email doesn't exist on this server.\n3. You filled in the \"Organization (optional)\" box at the top of the Sign in screen and your account is not in that organization. In that case the message changes slightly to \"Invalid organization or credentials\".\n\nSteps to fix:\n- Leave the \"Organization (optional)\" box completely empty and try again. It is optional, and leaving it blank searches every account. Only fill it in if two people share the same username in different organizations.\n- Your username and email are both accepted in the \"Username or email\" box, and neither is case-sensitive \u2014 RACKTRACK and racktrack work the same.\n- Your password IS case-sensitive.\n- If it still fails, use \"Forgot password?\" to email yourself a 6-digit code.\n\nNote: RackTrack deliberately never tells you whether the account exists \u2014 that's to stop strangers from discovering who has an account. So \"Invalid username or password\" does not confirm your account exists.",
+    "symptoms": [
+      "Invalid username or password",
+      "Invalid organization or credentials",
+      "Red error bar under the password field on the Sign in screen"
+    ],
+    "rootCause": "POST /api/auth/login returns a single 401 for both 'user not found' and 'bcrypt compare failed'. When the optional tenant field is supplied the lookup is additionally scoped by organization_id or tenant_id, and an unmatched org string short-circuits to the same 401 with a different string.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/auth.js",
+        "lines": "826-831",
+        "snippet": "if (!user || !bcrypt.compareSync(password, user.password_hash)) {\n      audit.log({ req, action: 'auth.login', status: 'fail',\n        error: 'invalid credentials', ... });\n      return res.status(401).json({ error: tenantArg ? 'Invalid organization or credentials' : 'Invalid username or password' });"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/auth.js",
+        "lines": "811-824",
+        "snippet": "const user = !scope\n      ? db.prepare(`SELECT * FROM users WHERE email = ? OR username = ? COLLATE NOCASE`)\n          .get(ident.toLowerCase(), ident)"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/LoginPage.jsx",
+        "lines": "72-80",
+        "snippet": "<label className={styles.label} htmlFor=\"login-org\">Organization <span className={styles.labelOpt}>(optional)</span></label>"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/LoginPage.jsx",
+        "lines": "126-131",
+        "snippet": "{error && (\n            <div className={styles.errBox}> ... {error}\n            </div>\n          )}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Login & Authentication"
+  },
+  {
+    "question": "Sharing to Teams or Outlook fails with a message about \"No valid token\"",
+    "answer": "This is a server-side sign-in that has lapsed. RackTrack sends Teams and Outlook messages using a Microsoft login that is cached on the server; when that cache is missing or its refresh token has expired, every share to that channel fails until an administrator re-authorises it.\n\nThe exact wording you will see is:\n- Teams: **\"No valid Teams token. Run `python -m pipeline.teams_send --email X --file Y --interactive` once on a desktop to complete device-flow login and cache a refresh token.\"**\n- Outlook: **\"No valid Outlook token in the shared cache. Run `python -m pipeline.outlook_send --email X --file Y --interactive` once on a desktop to complete device-flow login.\"**\n\nThere is nothing to fix on your phone. Report it to your RackTrack administrator, quoting that message. Meanwhile, use **View \u2192 Download PDF** and attach the file to an email or Teams chat yourself, or share via a channel that still works.",
+    "symptoms": [
+      "No valid Teams token",
+      "No valid Outlook token in the shared cache",
+      "login failed: ",
+      "teams send failed",
+      "outlook send failed"
+    ],
+    "rootCause": "pipeline/teams_send.py and pipeline/outlook_send.py acquire tokens with MSAL from a SerializableTokenCache on disk (pipeline/shankar_teams_cache.json). Silent refresh is attempted first; with --interactive absent (the server never passes it) a missing/expired cache raises immediately.",
+    "evidence": [
+      {
+        "file": "pipeline/teams_send.py",
+        "lines": "77-83",
+        "snippet": "if not result:\n        if not interactive:\n            raise RuntimeError(\n                \"No valid Teams token. Run `python -m pipeline.teams_send --email X --file Y --interactive` \"\n                \"once on a desktop to complete device-flow login and cache a refresh token.\"\n            )"
+      },
+      {
+        "file": "pipeline/outlook_send.py",
+        "lines": "66-72",
+        "snippet": "if not result:\n        if not interactive:\n            raise RuntimeError(\n                \"No valid Outlook token in the shared cache. Run \"\n                \"`python -m pipeline.outlook_send --email X --file Y --interactive` \"\n                \"once on a desktop to complete device-flow login.\"\n            )"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7437-7442",
+        "snippet": "const args = ['-u', '-m', pyModule, '--email', email, '--file', pdfPath, ...extraArgs];\n  const child = spawnChild(pythonCmd, args, {"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Reports & Exports"
+  },
+  {
+    "question": "Is there a single report covering both racks in a two-rack scan?",
+    "answer": "Yes, but it is not wired into the app \u2014 an administrator has to open it directly. The address is:\n\n`GET /api/rack-group/<groupId>/report`\n\nIt returns one HTML document: a cover page reading **\"RackTrack \u00b7 Combined report\"** with the title **\"Two-Rack Report\"**, the rack count and today's date, plus a pill per rack showing its position, label and rack ID. Each rack's standard scan report then follows, each preceded by a dark **\"Rack #<n> \u2014 <label>\"** banner with a page break, so browser Print \u2192 Save as PDF produces a clean multi-rack PDF. There is no server-rendered PDF for this one \u2014 only HTML.\n\nCaveats:\n- Requires sign-in and the group must belong to your Site \u2014 otherwise **\"Group not found\"** (404).\n- A group with no member racks returns **\"Group has no racks\"** (404).\n- If one rack's report cannot be built, that rack's slot shows **\"Report unavailable for <rackId>: <reason>\"** in red and the rest of the document still renders.",
+    "symptoms": [
+      "combined report for both racks",
+      "Two-Rack Report",
+      "Group not found",
+      "Group has no racks",
+      "Report unavailable for RK-..."
+    ],
+    "rootCause": "GET /api/rack-group/:groupId/report loops members, calls buildScanReport per rack, splices each <body> into a shared shell with the first rack's <head>, and returns text/html only. Tenant-checked against data.group.tenant_id.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "4003-4016",
+        "snippet": "/**\n * GET /api/rack-group/:groupId/report?format=html\n * One combined report document covering EVERY rack in the group \u2014 each rack's\n * standard scan report stacked in order under a cover page. Reuses the per-rack\n * report renderer; splices each rack's <body> into a shared shell so it's a\n * single printable page (browser Print \u2192 PDF for a PDF).\n */\napp.get('/api/rack-group/:groupId/report', auth.requireAuth, async (req, res) => {\n  const data = rackGroups.get(req.params.groupId);\n  if (!data || data.group.tenant_id !== req.user.tenant_id) {\n    return res.status(404).json({ error: 'Group not found' });\n  }\n  const members = data.members || [];\n  if (!members.length) return res.status(404).json({ error: 'Group has no racks' });"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4029-4031",
+        "snippet": "} catch (e) {\n        sections.push({ member: m, body: `<p style=\"padding:20px;color:#b00\">Report unavailable for ${m.rack_id}: ${e.message}</p>` });\n      }"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4036-4042",
+        "snippet": "<div style=\"font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#888\">RackTrack \u00b7 Combined report</div>\n        <h1 style=\"font-size:2rem;font-weight:850;margin:8px 0 4px\">Two-Rack Report</h1>\n        <div style=\"color:#666\">${members.length} racks \u00b7 ${new Date().toISOString().slice(0, 10)}</div>"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Reports & Exports"
+  },
+  {
+    "question": "A report shows old information after I corrected the scan \u2014 how do I refresh it?",
+    "answer": "Tapping **View** always rebuilds the report from the current scan data, so corrections you made with the \"wrong?\" controls will be in it. Close the report and reopen it if you corrected something while it was on screen.\n\nThe one copy that can go stale is the file link `/outputs/<rack ID>/report.html`. That is a snapshot on disk, only as fresh as the last time a report was generated. If you or a colleague bookmarked that direct file address, it will not update on its own \u2014 open the scan and tap **View** instead, which regenerates it.\n\nAdministrators can also force a rebuild without opening the app by POSTing to `/api/scan/<rack ID>/report`; that returns the rebuilt path plus a summary (device count, feedback total, accuracy) and records a `report.regen` entry in the audit log.",
+    "symptoms": [
+      "report shows old data",
+      "my correction isn't in the report",
+      "stale report.html",
+      "report doesn't reflect feedback"
+    ],
+    "rootCause": "GET ?format=html and POST both call buildScanReport, which re-reads device_unit_map.json, port_identifications.jsonl and feedback.jsonl and overwrites report.html. The static /outputs copy is only refreshed by those calls.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "5004-5017",
+        "snippet": "app.post('/api/scan/:rackId/report', (req, res) => {\n  const { rackId } = req.params;\n  try {\n    const { reportPath, data } = buildScanReport(rackId);\n    audit.log({ req, action: 'report.regen', status: 'ok', targetType: 'rack', targetId: rackId });\n    res.json({\n      rackId,\n      reportPath,\n      htmlFileUrl: `/outputs/${rackId}/report.html`,\n      summary: {\n        devices: data.devices.length,\n        feedback_total: data.feedback.total,\n        accuracy: data.feedback.accuracy,\n      },"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "1343-1350",
+        "snippet": "function buildScanReport(rackId, { inlineImages = true } = {}) {\n  const data = buildScanReportData(rackId);\n  const html = renderHTMLReport(data, { inlineImages });\n  const reportPath = path.join(data._rackDir, 'report.html');\n  fs.writeFileSync(reportPath, html, 'utf8');\n  // Keep the canonical scan_result.json in sync whenever a report is built.\n  writeCanonicalScanResult(rackId, data);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Reports & Exports"
+  },
+  {
+    "question": "The user guide mentions a \"Report\" button that opens in a new tab, but I only see View and Share",
+    "answer": "The guide is out of date on this point. The row at the bottom of the scan result now has four chips: **View**, **Share**, **Change Device** and **New Scan**. There is no separate \"Report\" chip and no CSV or JSON download button.\n\nWhat replaced it: tap **View**, and the report itself carries a **Download PDF** button in its top bar, which opens the PDF in a new tab where you can save or share it. That is the modern equivalent of the guide's \"Report\" button.\n\nIf you specifically need CSV or JSON, open `/api/scan/<rack ID>/report?format=csv` or `?format=json` in a signed-in browser \u2014 there is no in-app control for those.",
+    "symptoms": [
+      "where is the Report button",
+      "guide says Report opens in a new tab",
+      "no CSV button",
+      "user guide doesn't match the app"
+    ],
+    "rootCause": "docs/user-guide lists a Report button; ResultsPage.jsx renders only View / Share / Change Device / New Scan chips. openReportForDownload() and downloadReport() exist in ResultsPage but are not bound to any rendered control, so the only download path is the Download PDF button inside the generated report HTML.",
+    "evidence": [
+      {
+        "file": "docs/user-guide/RackTrack-User-Guide-iPhone.md",
+        "lines": "315-320",
+        "snippet": "| **View** | Opens the full scan report without leaving the page. |\n| **Report** | Opens the report in a new tab, ready to save or print. |\n| **Share** | Sends it by **Teams**, **Outlook** or **Slack**. Your address is remembered. |"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "2600-2616",
+        "snippet": "const openReportForDownload = () => { setReportDownload(true); setReportOpen(true); fetchReportToken(); };\n  const downloadReport = async (format) => {\n    try {\n      const res = await fetch(reportUrl(format));\n      if (!res.ok) throw new Error(`Report request failed (${res.status})`);\n...\n      a.download = `${scanId}_report.${format}`;\n...\n      setError(`Download failed: ${err.message}`);"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "3863-3866",
+        "snippet": "{/* Report row \u2014 View / Download / Share as labeled chips */}\n          <div className={styles.reportRow} style={{ '--ac': rc }}>\n            <button className={`${styles.reportChip} ${styles.reportChipView}`}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Reports & Exports"
+  },
+  {
+    "question": "RackTrack was supposed to post an analysis note to my ServiceNow incident but nothing appeared",
+    "answer": "The automated ServiceNow work note (\"RackTrack Agent Analysis \u2014 auto-generated\") is deliberately held back in three situations, all silent from the field:\n\n1. **Low confidence.** If the agent's confidence in its own analysis is below **0.5**, nothing is posted. Status: `skipped_low_confidence`.\n2. **Nothing changed.** RackTrack hashes its conclusion (failure mode, device, port, confidence rounded to one decimal, whether drift was detected). If that hash matches what was already posted, it does not repeat itself. Status: `skipped_no_change`.\n3. **Rate limited.** Only one note per incident per **24 hours**. Status: `skipped_rate_limit`.\n\nThe note itself contains: the one-line incident summary, the confidence figure, the signals used, a numbered reasoning trail with per-step evidence and confidence, a \"Suggested action\" block, and a list of related incidents in the same rack when there are any.\n\nAn administrator can force a post past guards 2 and 3 by calling `POST /api/incidents/<INC>/post-work-note` with `{\"force\": true}` \u2014 the confidence floor still applies. Other failures: **\"No active ServiceNow connection. Add one under Profile \u2192 Connections.\"** (400), **\"Ticket <INC> not in inbox\"** (404), **\"inbox ticket is missing sys_id \u2014 cannot post\"** (400).",
+    "symptoms": [
+      "skipped_low_confidence",
+      "skipped_no_change",
+      "skipped_rate_limit",
+      "no work note on the incident",
+      "Ticket INC... not in inbox",
+      "inbox ticket is missing sys_id \u2014 cannot post"
+    ],
+    "rootCause": "pipeline/agent.py auto_post_analysis enforces POST_CONFIDENCE_FLOOR = 0.5, a stable _analysis_hash no-change guard, and POST_RATE_LIMIT_HOURS = 24 before calling sn_client.add_work_note. The Express route surfaces the resulting status verbatim.",
+    "evidence": [
+      {
+        "file": "pipeline/agent.py",
+        "lines": "593-594",
+        "snippet": "POST_CONFIDENCE_FLOOR = 0.5\nPOST_RATE_LIMIT_HOURS = 24"
+      },
+      {
+        "file": "pipeline/agent.py",
+        "lines": "674-693",
+        "snippet": "if confidence < POST_CONFIDENCE_FLOOR:\n        return {\"status\": \"skipped_low_confidence\", \"confidence\": confidence}\n...\n    if prev.get(\"hash\") == cur_hash:\n        return {\"status\": \"skipped_no_change\", \"hash\": cur_hash}\n...\n            if datetime.now(timezone.utc) - last_dt < timedelta(hours=POST_RATE_LIMIT_HOURS):\n                return {\"status\": \"skipped_rate_limit\",\n                        \"last_posted\": last_posted_iso}"
+      },
+      {
+        "file": "pipeline/agent.py",
+        "lines": "627-647",
+        "snippet": "lines.append(\"RackTrack Agent Analysis \u2014 auto-generated\")\n    lines.append(\"\")\n    lines.append(f\"Incident: {ext.get('one_line_summary', 'n/a')}\")\n    lines.append(f\"Confidence: {ext.get('confidence', 0)}\")\n    lines.append(f\"Signals: {', '.join(ext.get('signals_used', [])) or 'none'}\")\n...\n    lines.append(\"Reasoning:\")"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4755-4762",
+        "snippet": "app.post('/api/incidents/:inc/post-work-note', auth.requireAuth, async (req, res) => {\n  const incNumber = req.params.inc;\n  const sn_creds = getSnCreds(req.user);\n  if (!sn_creds) return res.status(400).json({ error: 'No active ServiceNow connection. Add one under Profile \u2192 Connections.' });\n\n  const ticket = readTicketByNumber(incNumber);\n  if (!ticket) return res.status(404).json({ error: `Ticket ${incNumber} not in inbox` });\n  if (!ticket.sys_id) return res.status(400).json({ error: 'inbox ticket is missing sys_id \u2014 cannot post' });"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Reports & Exports"
+  },
+  {
+    "question": "Can I export the Operations Console audit feed or the Logs tab?",
+    "answer": "No. Neither the audit feed nor the Logs tab on `/dashboard` has an export, download or CSV control \u2014 they are read-only views with paging, plus a **Clear log** button.\n\nLimits that matter when reading them:\n- Audit queries return **100 rows** by default and are hard-capped at **1000** per request.\n- Log queries return **200 rows** by default, also capped at **1000**.\n- Logs are pruned to **7 days** (`LOG_RETENTION_DAYS`) and hard-capped at **200,000 rows** (`LOG_MAX_ROWS`); whichever bites first wins. Anything older is gone and cannot be exported after the fact.\n\nOne gap to be aware of when reading the audit feed: report-related actions are logged as `report.regen` and `scan.share.slack`, but the console's `ACTION_LABELS` map only translates `scan.share.outlook` and `scan.share.teams`. Slack shares and report regenerations therefore render as raw dotted keys rather than plain English.",
+    "symptoms": [
+      "export the audit log",
+      "download logs",
+      "no CSV on the dashboard",
+      "report.regen appears as a raw key",
+      "scan.share.slack not translated"
+    ],
+    "rootCause": "No CSV/export route exists in audit.js, log-store.js or DashboardPage.jsx. audit.query clamps limit to 1..1000 (default 100); log-store query clamps to 1..1000 (default 200). ACTION_LABELS lacks 'report.regen' and 'scan.share.slack', so labelFor falls through to the raw key.",
+    "evidence": [
+      {
+        "file": "server/audit.js",
+        "lines": "212-249",
+        "snippet": "limit    = 100,\n...\n  params.limit  = Math.min(Math.max(1, Number(limit) || 100), 1000);"
+      },
+      {
+        "file": "server/lib/log-store.js",
+        "lines": "33-37",
+        "snippet": "// Retention: drop anything older than this many days, and hard-cap total rows\n// so a log storm can't fill the disk. Whichever bites first wins.\nconst RETENTION_DAYS = parseInt(process.env.LOG_RETENTION_DAYS, 10) || 7;\nconst MAX_ROWS = parseInt(process.env.LOG_MAX_ROWS, 10) || 200000;"
+      },
+      {
+        "file": "server/lib/log-store.js",
+        "lines": "178-197",
+        "snippet": " * @param {number} [f.limit=200]  1..1000\n...\n  const limit = Math.min(Math.max(parseInt(f.limit, 10) || 200, 1), 1000);"
+      },
+      {
+        "file": "client/src/pages/DashboardPage.jsx",
+        "lines": "7-31",
+        "snippet": "const ACTION_LABELS = {\n  'scan.create':            'Scanned a rack',\n  'scan.select_port':       'Located a port',\n  'scan.analyze_for_ticket':'Analyzed for ticket',\n  'scan.share.outlook':     'Shared (Outlook)',\n  'scan.share.teams':       'Shared (Teams)',\n...\nconst labelFor = (a) => ACTION_LABELS[a] || a;"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "5007-5008",
+        "snippet": "const { reportPath, data } = buildScanReport(rackId);\n    audit.log({ req, action: 'report.regen', status: 'ok', targetType: 'rack', targetId: rackId });"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Reports & Exports"
+  },
+  {
+    "question": "Is there a size limit on the report I email out?",
+    "answer": "For **Outlook** there is a practical cap: RackTrack attaches the PDF inline through Microsoft Graph's `/me/sendMail`, which limits the whole request to roughly **4 MB**. Rack report PDFs normally sit well under that, but a report with several large photos could exceed it and the send will fail.\n\nIf an Outlook share fails on a photo-heavy scan, try **Slack** or **Teams** instead \u2014 those upload the file separately rather than embedding it in the message, so the 4 MB ceiling does not apply.\n\nRackTrack already helps here: any scan image over 500 KB is downscaled to 1400 px wide JPEG before being embedded, which is what usually keeps the PDF small enough.",
+    "symptoms": [
+      "outlook share fails on a big scan",
+      "attachment too large",
+      "Graph sendMail error",
+      "share works on Slack but not Outlook"
+    ],
+    "rootCause": "pipeline/outlook_send.py base64-encodes the PDF into the sendMail request body (the inline attachment path), which Graph caps at ~4 MB. slack_email.py uses Slack's external upload URL flow, which has no such request-body constraint.",
+    "evidence": [
+      {
+        "file": "pipeline/outlook_send.py",
+        "lines": "18-19",
+        "snippet": "Note: this uses the inline /me/sendMail path (base64 attachment), which caps the\nwhole request at ~4 MB. Rack report PDFs are well under that."
+      },
+      {
+        "file": "pipeline/outlook_send.py",
+        "lines": "93-99",
+        "snippet": "file_name = os.path.basename(file_path)\n    with open(file_path, \"rb\") as f:\n        content_b64 = base64.b64encode(f.read()).decode(\"utf-8\")"
+      },
+      {
+        "file": "pipeline/slack_email.py",
+        "lines": "82-92",
+        "snippet": "def get_upload_url(token: str, file_path: str):\n    file_name = os.path.basename(file_path)\n    file_size = os.path.getsize(file_path)\n    r = requests.post(\n        \"https://slack.com/api/files.getUploadURLExternal\","
+      },
+      {
+        "file": "server/app.js",
+        "lines": "891-909",
+        "snippet": "async function shrinkImagesForReport(rackDir) {\n...\n        if (src.size < 500 * 1024) return;   // already small enough \u2014 skip"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "likely",
+    "domain": "Reports & Exports"
+  },
+  {
+    "question": "Is the marketplace report a report I can generate from the app?",
+    "answer": "No. `docs/features/marketplace-report.md` is an internal design document about the Marketplace feature \u2014 its three sell paths, its database tables and its endpoint list \u2014 not a report the product generates. It is dated 2026-07-16 and notes that Stripe, eBay and Amazon are env-gated stubs awaiting credentials.\n\nThere is no report or export feature in the Marketplace itself: no order export, no listing CSV, no seller statement. The Marketplace routes cover listing CRUD, orders, messages, saved searches, alerts and partner accounts only.\n\nIf a customer asks for \"the marketplace report\", they either mean this internal document (share the feature notes instead) or they want an order export that does not exist yet.",
+    "symptoms": [
+      "marketplace report",
+      "export my listings",
+      "download my orders",
+      "seller statement"
+    ],
+    "rootCause": "marketplace-report.md is a Markdown design write-up. Grepping marketplace_routes.js for csv/export/download/xlsx returns only the trailing `module.exports = router;` \u2014 there is no export route.",
+    "evidence": [
+      {
+        "file": "docs/features/marketplace-report.md",
+        "lines": "1-4",
+        "snippet": "# RackTrack Marketplace \u2014 Feature Report\n\n**Date:** 2026-07-16\n**Status:** Active development \u2014 Stripe, eBay, and Amazon integrations are env-gated stubs awaiting credentials."
+      },
+      {
+        "file": "docs/features/marketplace-report.md",
+        "lines": "22-32",
+        "snippet": "| Table | Purpose |\n|---|---|\n| `marketplace_listings` | All for-sale and wanted listings (kind: sell/want) |\n| `marketplace_orders` | Purchase orders linking buyer, seller, listing |"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1422",
+        "snippet": "module.exports = router;"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "Reports & Exports"
+  },
+  {
+    "question": "The rack is too tall to fit in one photo. How do I scan it?",
+    "answer": "Use MULTI mode, which joins several overlapping photos into one tall image before analysing it.\n\n1. Tap SCAN, then Upload, then MULTI.\n2. Tap Select photos and pick between 2 and 8 overlapping photos of the rack. The screen tells you \"Take 2-8 overlapping photos of the rack. Any order \u2014 we'll arrange them automatically.\"\n3. The button underneath shows Add 1 more photo until you have at least two, then changes to Stitch & Analyze with the number of photos in brackets. Tap it.\n\nYou can add more with Add more, reorder with the up/down arrows on each row, or remove one with the X \u2014 but you do not need to: the order is worked out for you. The counter in the corner shows how many of the 8 slots you have used.",
+    "symptoms": [
+      "rack too tall",
+      "how do I stitch photos",
+      "MULTI mode",
+      "Stitch & Analyze",
+      "Select photos"
+    ],
+    "rootCause": "MultiUploadZone caps the file list at 8 (slice(0,8)) and the CTA requires >= 2 files before it becomes Stitch & Analyze.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "132-136",
+        "snippet": "const merged = [...files, ...arr].slice(0, 8); // hard cap matches server\n    onChange(merged);"
+      },
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "175-182",
+        "snippet": "<div className={styles.multiEmptyTitle}>Tall rack \u2014 multi shot</div>\n          <div className={styles.multiEmptySub}>\n            Take 2-8 overlapping photos of the rack.<br/>\n            Any order \u2014 we'll arrange them automatically.\n          </div>\n          ...\n            Select photos"
+      },
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "1553-1558",
+        "snippet": "const canSubmit = isMulti\n            ? multiFiles.length >= 2\n            : !!file;\n          const ctaLabel = isMulti\n            ? (multiFiles.length < 2 ? `Add ${2 - multiFiles.length} more photo` : `Stitch & Analyze (${multiFiles.length})`)\n            : 'Analyze Rack';"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Core day-to-day workflows (\"how do I...?\")"
+  },
+  {
+    "question": "How do I scan a whole row of racks in one go with a video?",
+    "answer": "1. Tap SCAN, then Upload, then VIDEO.\n2. Pick a video that pans steadily across the row. It must be at least 1 second and no more than 120 seconds long \u2014 the app will refuse it and tell you \"Video is too short\" or \"Video is too long\" otherwise.\n3. Tap Analyze Rack.\n\nEach rack found in the footage gets its own result. You land on the first one, and a strip of rack buttons appears so you can jump between them; the strip keeps you on the same sub-page as you move. The small 3D button at the end of the strip opens every rack in the group in one scene.",
+    "symptoms": [
+      "scan a row of racks",
+      "video scan",
+      "Video is too short",
+      "Video is too long",
+      "how do I switch between racks"
+    ],
+    "rootCause": "VIDEO upload mode; validateMedia enforces MIN_DURATION 1.0s / MAX_DURATION 120s. RackTabs renders the per-rack pill strip plus a 3D jump to /multi-rack/:groupId/topology when the ?group signal is present.",
+    "evidence": [
+      {
+        "file": "client/src/utils/validateMedia.js",
+        "lines": "3-4",
+        "snippet": "const MIN_DURATION = 1.0;\nconst MAX_DURATION = 120;"
+      },
+      {
+        "file": "client/src/utils/validateMedia.js",
+        "lines": "95-102",
+        "snippet": "error: `Video is too short (${duration.toFixed(1)}s). Record at least ${MIN_DURATION}s panning across the racks.`,\n...\n      error: `Video is too long (${duration.toFixed(1)}s). Keep the multi-rack pan under ${MAX_DURATION}s.`,"
+      },
+      {
+        "file": "client/src/components/RackTabs.jsx",
+        "lines": "30-62",
+        "snippet": "{members.map((m) => {\n        const isCurrent = m.rack_id === rackId;\n        ... onClick={() => navigate(`/results/${encodeURIComponent(m.rack_id)}${suffix}${gq}`)}\n...\n        <button className={styles.threeD}\n          onClick={() => navigate(`/multi-rack/${encodeURIComponent(data.group.id)}/topology`)}\n          title=\"Open all racks in one 3D scene\">"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Core day-to-day workflows (\"how do I...?\")"
+  },
+  {
+    "question": "How do I see what's on the other end of a cable?",
+    "answer": "Open the rack, open Ports, then tap the Cables tab (it shows a count of how many cables it found).\n\nEach row is one cable. Click a row to expand it into a trace that shows both ends. Where a port feeds a whole downstream network, the trace lists every device behind it.\n\nOne thing that is not a fault: a patch panel or wall socket in the middle of a run has no electronics, so the switch cannot see it. The cable will look like it runs straight from the switch to the far-end device.",
+    "symptoms": [
+      "what's on the end of this cable",
+      "cable trace",
+      "Cables tab",
+      "patch panel missing from the trace"
+    ],
+    "rootCause": "PortsPage CablesView derives cable rows from live port data + LLDP neighbours; expanding a row mounts CableTrace.",
+    "evidence": [
+      {
+        "file": "client/src/pages/PortsPage.jsx",
+        "lines": "501-504",
+        "snippet": "aria-selected={view === 'cables'}\n...\n          onClick={() => setView('cables')}\n        >Cables<span className={styles.viewTabCount}>{linkedCount || counts.used}</span></button>"
+      },
+      {
+        "file": "client/src/pages/PortsPage.jsx",
+        "lines": "952-999",
+        "snippet": "function CablesView({ ports, sfpPortIfaces, switchName }) {\n  const cables = deriveCables(ports, sfpPortIfaces);\n...\n              {isOpen && <CableTrace cable={c} switchName={switchName} />}"
+      },
+      {
+        "file": "client/src/pages/PortsPage.jsx",
+        "lines": "946-949",
+        "snippet": "device: { label: 'Device', cls: 'kindDevice' },\n  uplink: { label: 'Uplink', cls: 'kindUplink' },\n  trunk:  { label: 'Switch link', cls: 'kindTrunk' },"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Core day-to-day workflows (\"how do I...?\")"
+  },
+  {
+    "question": "How do I see what the live network knows about this rack (the Network view)?",
+    "answer": "Open the rack, then Network. On a phone this is behind the More button in the rack tab strip.\n\n1. Check the pill at the top right says \"Network View online\". If it says \"Network View offline\", the discovery server is not reachable.\n2. Click a device that has an IP address. Devices tagged \"not in Network View\" cannot be opened \u2014 the network has no record of them.\n3. Filter that device's ports with the buttons Live, Up, Down and All. Each shows a count.\n\nTwo normal things that look like faults: patch panels never appear here (a passive panel has no electronics and cannot announce itself), and if the page permanently says \"Network view is being prepared\", it means no discovery server has been set up for your organization \u2014 ask an administrator.",
+    "symptoms": [
+      "Network view is being prepared",
+      "Network View offline",
+      "not in Network View",
+      "Live Up Down All filters",
+      "network page never loads"
+    ],
+    "rootCause": "NetdiscoPage proxies a Netdisco instance; without one configured the fetch never yields data and the page stays on the 'being prepared' state. Patch Panel class rows are filtered out of the match list.",
+    "evidence": [
+      {
+        "file": "client/src/pages/NetdiscoPage.jsx",
+        "lines": "433-436",
+        "snippet": "{ok ? 'Network View online' : 'Network View offline'}"
+      },
+      {
+        "file": "client/src/pages/NetdiscoPage.jsx",
+        "lines": "199-202",
+        "snippet": "<strong>Network view is being prepared.</strong>"
+      },
+      {
+        "file": "client/src/pages/NetdiscoPage.jsx",
+        "lines": "302-305",
+        "snippet": "<span className={styles.nvOff}>not in Network View</span>"
+      },
+      {
+        "file": "client/src/pages/NetdiscoPage.jsx",
+        "lines": "355-358",
+        "snippet": "<FilterBtn active={filter === 'live'} onClick={() => setFilter('live')}>Live ({liveCount})</FilterBtn>\n        <FilterBtn active={filter === 'up'}   onClick={() => setFilter('up')}>Up ({upCount})</FilterBtn>\n        <FilterBtn active={filter === 'down'} onClick={() => setFilter('down')}>Down ({downCount})</FilterBtn>\n        <FilterBtn active={filter === 'all'}  onClick={() => setFilter('all')}>All ({ports.length})</FilterBtn>"
+      },
+      {
+        "file": "client/src/pages/NetdiscoPage.jsx",
+        "lines": "207-210",
+        "snippet": ".filter(m => m.scan.class_name !== 'Patch Panel')"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Core day-to-day workflows (\"how do I...?\")"
+  },
+  {
+    "question": "How do I connect our CMDB or other data source?",
+    "answer": "This is an admin-only area. Open Data Sources \u2014 from Profile it is the row under the Data Sources heading, or use Data Sources in the sidebar.\n\n1. Tap Add connection.\n2. Give it a Name (for example \"My ServiceNow Dev\").\n3. Choose the Type. The fields below change to match it:\n   - ServiceNow / CMDB \u2014 Instance ID (just the part before .service-now.com), Username, Password.\n   - NetBox \u2014 Base URL, API Token (from your NetBox user profile).\n   - SolarWinds Orion \u2014 Host, Username, Password.\n   - CA / DX Spectrum \u2014 Base URL, Username, Password.\n   - My own database (SQL) \u2014 a PostgreSQL or MySQL connection string.\n   - My own database (REST) \u2014 Base URL, and an API token if it needs one.\n4. Tap Save & use.\n\nOnly one connection is active at a time, and every screen reads from that one \u2014 switching it switches the source of all your data. To switch, tap Use on any other saved connection. The three-dot menu on a connection gives Edit and Delete.\n\nWhen you Edit an existing connection the credential boxes open empty on purpose \u2014 the page tells you \"Leave the credential fields blank to keep what's already saved.\" There is no test button: saving is the test, so watch the message that follows.\n\nFor an active ServiceNow connection there is also a \"Refresh data from this source\" button, which reports how many incidents it pulled.",
+    "symptoms": [
+      "connect ServiceNow",
+      "add connection",
+      "Save & use",
+      "Data Sources",
+      "no test connection button",
+      "credentials are blank when I edit"
+    ],
+    "rootCause": "ConnectionsPage (/connections) behind AdminRoute; TYPE_INFO defines the per-type field schema; secrets are never preloaded into the edit form.",
+    "evidence": [
+      {
+        "file": "client/src/App.jsx",
+        "lines": "86-89",
+        "snippet": "if (user?.role !== 'org_admin' && user?.role !== 'owner') {\n    return <Navigate to=\"/\" replace />;\n  }"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "123-131",
+        "snippet": "<h1 className={styles.title}>Data Sources</h1>\n...\n        Saved databases this app can pull data from. The <strong>active</strong>\n        {' '}connection is what every screen uses while you're signed in."
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "250-259",
+        "snippet": "onClick={openCreateForm}\n...\n          Add connection"
+      },
+      {
+        "file": "client/src/utils/connectionsApi.js",
+        "lines": "120-170",
+        "snippet": "servicenow: { label: 'ServiceNow / CMDB', fields: [ { key: 'instance', label: 'Instance ID', placeholder: 'dev266363', required: true }, ... ], hint: 'Use just the instance ID \u2014 the part before .service-now.com' },\n  netbox: { label: 'NetBox', ... },\n  orion: { label: 'SolarWinds Orion', ... },\n  spectrum: { label: 'CA / DX Spectrum', ... },\n  generic_sql: { label: 'My own database (SQL)', ... },\n  generic_rest: { label: 'My own database (REST)', ... },"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "330-355",
+        "snippet": "Leave the credential fields blank to keep what's already saved.\n...\n                  {submitting ? 'Saving\u2026' : (editingId ? 'Save changes' : 'Save & use')}"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "56-57",
+        "snippet": "setSecret(emptySecretFor(profile.type)); // never preload secrets"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "218-223",
+        "snippet": "className={styles.useBtn}\n                  onClick={() => onActivate(p.id)}>\n                  Use"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Core day-to-day workflows (\"how do I...?\")"
+  },
+  {
+    "question": "How do I approve a new organization that has signed up?",
+    "answer": "Platform owner only. Open the Organizations console (/organizations). New signups appear under a heading \"Pending approvals\", tagged Pending, with who requested it and their email. They cannot use the app until you act.\n\nThree buttons on each row:\n- Approve \u2014 they get in immediately; their waiting screen lets them through on its own.\n- Reject \u2014 they are told the request was not approved. Their account survives, so this is reversible.\n- Remove \u2014 deletes the organization. Use Reject unless you are certain.\n\nOn the All organizations cards below, the three-dot menu gives Edit, Deactivate (or Reactivate), and Remove.\n\nImportant: nobody is emailed when a company signs up. You only find out by opening this console, so check it.",
+    "symptoms": [
+      "approve an organization",
+      "Pending approvals",
+      "new signup waiting",
+      "Approve Reject Remove"
+    ],
+    "rootCause": "OrgConsolePage owner branch renders the pending list with approveOrg/rejectOrg and a removeOrg confirm modal; per-org kebab menu offers Edit / Deactivate / Remove.",
+    "evidence": [
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "222-235",
+        "snippet": "<SecTitle icon=\"pending_actions\">Pending approvals</SecTitle>\n...\n                      <div className={styles.rowName}>{o.name} <span className={styles.tagOff}>Pending</span></div>\n...\n                      <button className={styles.dangerBtn} onClick={() => setModal({ kind: 'removeOrg', org: o })}>Remove</button>\n                      <button className={styles.smallBtn} onClick={() => rejectOrg(o)}>Reject</button>\n                      <button className={styles.primaryBtn} onClick={() => approveOrg(o)}>Approve</button>"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "243",
+        "snippet": "<button className={styles.primaryBtn} onClick={() => setModal('org')}>+ New organization</button>"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "278-283",
+        "snippet": "onClick={() => { setOrgMenuFor(null); onOrgMenu('edit', o); }}>Edit</button>\n...\n                          {o.status === 'active' ? 'Deactivate' : 'Reactivate'}</button>\n...\n                          onClick={() => { setOrgMenuFor(null); onOrgMenu('remove', o); }}>Remove</button>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Core day-to-day workflows (\"how do I...?\")"
+  },
+  {
+    "question": "How do I run an audit on a lab switch?",
+    "answer": "Platform owner only. Open Lab in the sidebar, or go to /lab. Anyone else sees \"Restricted to platform owners.\"\n\n1. The lab devices are shown as a grid of buttons, each tagged with its state: Live, Offline, No data, Disabled, or Connecting\u2026\n2. Click a device. The audit runs automatically the first time you select it \u2014 you do not need to press anything.\n3. Read the result using the tab strip: Identity, Ports, VLANs, LLDP, MAC.\n4. To re-run it later press Refresh audit (the button reads Run full audit if there is no result yet). Disable polling / Enable polling turns the background polling of that device on and off.\n\nTwo things that look wrong but are not. Results are kept per device, so flipping between devices shows you what was last seen with a note of how old it is \u2014 a stamp like \"Audit as of 4m ago \u00b7 live SSH pass, not polled\". And the virtual Cisco switches genuinely report \"\u2014\" for speed, duplex and PoE, because they have no physical link or PoE hardware.",
+    "symptoms": [
+      "lab switch audit",
+      "Run full audit",
+      "Refresh audit",
+      "Restricted to platform owners",
+      "speed and PoE show a dash"
+    ],
+    "rootCause": "LabPage is owner-gated (server requireRole('owner') on /api/lab/*). Audits auto-run on first selection, are cached per device in auditsRef, and one SSH pass runs at a time. Cisco IOL has no link negotiation or PoE hardware.",
+    "evidence": [
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "217-219",
+        "snippet": "<main className={styles.main}><p className={styles.sectionNote}>Restricted to platform owners.</p></main>"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "161-181",
+        "snippet": "// Auto-run the audit the first time a device is selected, so the report just\n...\n    if (!selectedId || busyId) return;             // one SSH pass at a time\n...\n    if (auditsRef.current.has(selectedId)) return; // already have a result (or a logged failure)\n    runAudit(selectedId);"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "304-312",
+        "snippet": "<button className={styles.btn} onClick={() => toggleEnabled(selected)}>\n                  {selected.enabled ? 'Disable polling' : 'Enable polling'}\n                </button>\n...\n                  {busy ? 'Connecting\u2026' : audit ? 'Refresh audit' : 'Run full audit'}"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "108-114",
+        "snippet": "const SECTIONS = [\n  { key: 'identity', label: 'Identity' },\n  { key: 'ports',    label: 'Ports' },\n  { key: 'vlans',    label: 'VLANs' },\n  { key: 'lldp',     label: 'LLDP' },\n  { key: 'macs',     label: 'MAC' },\n];"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "76-82",
+        "snippet": "if (connecting)    return { label: 'Connecting\u2026', cls: styles.stWarn };\n  if (!d.enabled)    return { label: 'Disabled',    cls: styles.stIdle };\n  if (d.last_error)  return { label: 'Offline',     cls: styles.stOff };\n  if (!d.last_seen)  return { label: 'No data',     cls: styles.stIdle };\n  return { label: 'Live', cls: styles.stLive };"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "21-23",
+        "snippet": "// EXPECT EMPTY SPEED/DUPLEX/PoE ON LAB SWITCHES: Cisco IOL is virtual. It never\n// negotiates a link and has no PoE hardware, so those read \"\u2014\"."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "Core day-to-day workflows (\"how do I...?\")"
+  },
+  {
+    "question": "How do I list surplus equipment for sale, and how do I search what's already listed?",
+    "answer": "Admin only. Open Marketplace.\n\nTo search and filter what is listed:\n- Type in the box marked \"Search by title, vendor or model\u2026\". The X inside it clears your text.\n- Use the category dropdown next to it \u2014 it opens on \"All categories\".\n- Use the For sale / Wanted pair to switch between things people are selling and things people are looking for.\n- When any filter is on, a \"Clear filters\" link appears next to the results heading.\nThe section headings across the top are Browse, My listings, Orders, Alerts, Dashboard and Partners.\n\nTo list something:\n1. Tap List an item (top right of the Marketplace header).\n2. Choose For sale, or Wanted if you are looking for something rather than selling it.\n3. Fill in Title (required), Vendor, Model and Category (required).\n4. Set Condition (required) and a Price \u2014 leave the price blank and buyers see \"Make an offer\". You can also set Currency and Quantity.\n5. Add a Location and Description if useful.\n6. Add a photo, up to 8 MB. Wait for it to say Photo ready (it shows Uploading\u2026 first, or Upload failed if something went wrong).\n7. Tap Publish listing (or Post request if you chose Wanted).",
+    "symptoms": [
+      "sell surplus gear",
+      "List an item",
+      "Publish listing",
+      "how do I search the marketplace",
+      "Photo ready",
+      "Make an offer"
+    ],
+    "rootCause": "MarketplacePage toolbar (search + category + kind segmented control) plus MarketplaceShell's default 'List an item' action into MarketplaceNewPage, which caps images at 8 MB.",
+    "evidence": [
+      {
+        "file": "client/src/components/marketplace/MarketplaceShell.jsx",
+        "lines": "24-29",
+        "snippet": "{ key: 'browse',    label: 'Browse',     to: '/marketplace' },\n  { key: 'mine',      label: 'My listings', to: '/marketplace?tab=mine', authOnly: true },\n  { key: 'orders',    label: 'Orders',     to: '/marketplace/orders',    authOnly: true, badge: 'orders' },\n  { key: 'alerts',    label: 'Alerts',     to: '/marketplace/alerts',    authOnly: true, badge: 'alerts' },\n  { key: 'dashboard', label: 'Dashboard',  to: '/marketplace/dashboard', authOnly: true },\n  { key: 'partners',  label: 'Partners',   to: '/marketplace/partners',  authOnly: true },"
+      },
+      {
+        "file": "client/src/components/marketplace/MarketplaceShell.jsx",
+        "lines": "84-86",
+        "snippet": "const defaultAction = location.pathname === '/marketplace/new'\n    ? null\n    : <button type=\"button\" className={styles.primaryBtn} onClick={onNew}>List an item</button>;"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "738-764",
+        "snippet": "placeholder=\"Search by title, vendor or model\u2026\"\n...\n              aria-label=\"Clear search\"\n...\n            <option value=\"\">All categories</option>"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "767-793",
+        "snippet": "aria-pressed={kind === 'sell'}\n...\n              For sale\n...\n              Wanted\n...\n            <button className=\"mkt-linkBtn\" onClick={clearFilters}>Clear filters</button>"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "227-234",
+        "snippet": "aria-pressed={!wanted} onClick={() => setKind('sell')}>\n                For sale\n...\n                      aria-pressed={wanted} onClick={() => setKind('want')}>\n                Wanted"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "137",
+        "snippet": "if (file.size > 8 * 1024 * 1024) {"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "209-212",
+        "snippet": "const photoStatus = imageUploading ? 'Uploading\u2026'\n    : imageError    ? 'Upload failed'\n    :                 'Photo ready';"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "480",
+        "snippet": "{submitting ? 'Publishing\u2026' : wanted ? 'Post request' : 'Publish listing'}"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "309-333",
+        "snippet": "<FormSection title=\"Condition & pricing\" hint=\"Leave the price blank to invite offers\">\n...\n                placeholder=\"Make an offer\""
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Core day-to-day workflows (\"how do I...?\")"
+  },
+  {
+    "question": "I asked for port 7 and the app highlighted the wrong physical port. How do I fix the numbering?",
+    "answer": "Answer **No** to **\"Port 7 on <device> \u2014 right?\"**, then tell RackTrack which port that highlighted position actually is (pick from the list, or type the number).\n\nHere is the important part, because it surprises people: **the number you asked for does not change**. You were looking for port 7 and you still want port 7. RackTrack learns the offset between its numbering and the real numbering, then immediately re-highlights the port that is genuinely port 7. So if you tell it \"the port you highlighted is really port 5\", the highlight will jump two positions to land on the true port 7.\n\nThe correction is remembered for that device on that scan and shows as **\"Port number corrected \u2014 you set this\"**. Repeated corrections don't stack up \u2014 only your most recent one counts, so you can correct it again if the first attempt was off.",
+    "symptoms": [
+      "Port 7 on Switch \u2014 right?",
+      "highlight on wrong port",
+      "port numbering is off by one",
+      "port numbers shifted",
+      "Port number corrected \u2014 you set this"
+    ],
+    "rootCause": "Port ordering comes from the geometric layout in pipeline/port_pattern.py (column-major for two rows, left-to-right for one). A missed or extra detection at the start of a row shifts every subsequent index. /api/feedback records an absolute offset (predicted_port is normalised back to RAW model space) and _latestPortShift uses only the newest correction so shifts cannot compound.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "3759-3763",
+        "snippet": "prompt={`Port ${portNum}${selectedDevice?.class_name ? ` on ${selectedDevice.class_name}` : ''} \u2014 right?`}\noptions={Array.from({ length: Math.max(0, selectedDevice?.port_count || 0) }, (_, i) => ({ value: i + 1, label: `Port ${i + 1}` }))}\notherInput=\"number\"\nansweredText=\"Port number corrected \u2014 you set this\""
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "2712-2720",
+        "snippet": "// The user said \"this position (model called it port N) is actually\n// port M\". Their goal hasn't changed \u2014 they were looking for port N\n// and still want port N. After saving the shift, re-select port N\n// so the highlight moves to where port N really lives under the new\n// numbering."
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7577-7591",
+        "snippet": "// A device's port-numbering offset from the user's LATEST renumber correction\n// ONLY. Each correction SETS the offset (predicted_port is normalized to RAW\n// model space at record time), so repeated corrections can't compound into a\n// runaway shift the way summing every delta chronologically did."
+      },
+      {
+        "file": "docs/user-guide/RackTrack-User-Guide-iPhone.md",
+        "lines": "310",
+        "snippet": "> **NOTE** \u2014 Correcting a port number does not change the number you asked for. Say \u201cport 7 is really port 5\u201d, and RackTrack learns the offset then shows you where **port 7** truly lives."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "The app says this port is RJ45 but it's actually an SFP slot. Can I change the port type?",
+    "answer": "Yes. On the port view, answer the question **\"Port type: <type> \u2014 right?\"**. Tap **No** and choose the correct one from the list. Nine types are available: RJ45, SFP, QSFP, Console, Aux, Management Port, USB A, USB B, USB C. There is no free-text option here \u2014 the list is the full set the model understands.\n\nWhen it saves you'll see **\"Saved \u2014 thanks, this trains the model.\"** and afterwards the port reads **\"Port type: <type> \u2014 you set this\"**.\n\nThis correction does more than fix the current scan: RackTrack stores a fingerprint of that port's picture, so on a future scan of the same port it re-applies your corrected type automatically.\n\nRJ45 and SFP are the pair most often confused, because an empty SFP cage and an empty RJ45 jack are close to the same dark rectangle at photo resolution.",
+    "symptoms": [
+      "Port type: RJ45 \u2014 right?",
+      "SFP shown as RJ45",
+      "wrong port type",
+      "Saved \u2014 thanks, this trains the model.",
+      "Port type: SFP \u2014 you set this"
+    ],
+    "rootCause": "Typed port detection uses Models/ports_9.pt at ports_conf 0.23; the visual difference between an unpopulated SFP cage and an RJ45 jack is small at typical photo resolution. /api/feedback/port-type validates against a fixed nine-value PORT_TYPE_OPTIONS list, crops the port, and calls fireMemoryCorrection('port_type', \u2026) for auto-apply on rescan.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "3602-3608",
+        "snippet": "prompt={`Port type: ${prettyPortType(portInfo.port_type)} \u2014 right?`}\noptions={PORT_TYPE_OPTIONS.map(t => ({ value: t, label: prettyPortType(t) }))}\notherInput={null}\nsubmitLabel=\"Save\"\nthanks=\"Saved \u2014 thanks, this trains the model.\"\n...\nansweredText={`Port type: ${prettyPortType(portInfo.port_type)} \u2014 you set this`}"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "110-113",
+        "snippet": "const PORT_TYPE_OPTIONS = [\n  'RJ45', 'SFP', 'QSFP', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',\n  'USB_A', 'USB_B', 'USB_C',\n];"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "8003-8009",
+        "snippet": "// Active-learning correction for a port's physical TYPE (RJ45 / SFP / QSFP /\n// CONSOLE / AUX / MANAGEMENT_PORT / USB_A / USB_B / USB_C). Mirrors the cable\n// path: crop the port, log to feedback.jsonl, and persist a pHash+embedding\n// memory so future scans of the same port auto-apply the corrected type."
+      },
+      {
+        "file": "server/app.js",
+        "lines": "8067-8074",
+        "snippet": "if (portCropSavedAs) {\n  const cropPath = path.join(feedbackWrongDir, portCropSavedAs);\n  fireMemoryCorrection('port_type', cropPath,\n    predicted_type || '', String(actual_type),"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "A port with a cable plugged in shows as Empty or Unknown. Why?",
+    "answer": "There are two different situations, and the word RackTrack uses tells you which:\n\n**\"Unknown\"** means RackTrack looked at the port and was not confident enough to call it either way, so it deliberately refused to guess. It only commits to \"Connected\" or \"Empty\" when it is at least 35% sure; below that it reports Unknown rather than risk being wrong. Cable colour and cable type are also skipped for these ports, which is why an Unknown port shows no cable detail.\n\n**\"Empty\"** on a port that visibly has a cable means the detector genuinely missed the cable \u2014 normally because the connector is in shadow, behind other cables, or shot from too far away.\n\nWhat to do: retake the photo closer and straight-on with more light, which fixes most of these. If you need certainty right now and the switch is reachable over the network, use the live ports view instead \u2014 that reads the switch itself rather than the photo, and it is the ground truth. RackTrack will show a live neighbour on the far end even when the photo called the port empty, precisely because the switch outranks the picture.",
+    "symptoms": [
+      "port shows Empty but has a cable",
+      "status Unknown",
+      "no cable colour shown",
+      "Status: Unknown"
+    ],
+    "rootCause": "pipeline/port.py sets PORT_STATUS_CONF_MIN = 0.35; infer_port_status returns 'unknown' below that so downstream cable/port-type classifiers never run, cutting false positives on blurry ports. A genuinely missed cable detection at ports_conf 0.23 yields 'empty'.",
+    "evidence": [
+      {
+        "file": "pipeline/port.py",
+        "lines": "27-31",
+        "snippet": "# Minimum confidence required to call a port 'connected' or 'empty'. Below\n# this we return 'unknown' \u2014 the downstream cable / port-type classifiers\n# only run on high-confidence calls, which cuts false positives on blurry\n# or ambiguous ports.\nPORT_STATUS_CONF_MIN = 0.35"
+      },
+      {
+        "file": "pipeline/port.py",
+        "lines": "67-71",
+        "snippet": "def infer_port_status(class_name: str, confidence: float = None):\n    if confidence is not None and confidence < PORT_STATUS_CONF_MIN:\n        return 'unknown'"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "3539",
+        "snippet": "const statusText = isOn ? 'Connected' : isEmpty ? 'Empty' : 'Unknown';"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "3639-3643",
+        "snippet": "We ALSO show it when the switch found a live neighbour (or is\nresolving one) even if the photo called the port empty \u2014 the live\nswitch is ground truth, so a real endpoint must never be hidden by\na mis-classified photo."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "My patch panel has 12 ports but RackTrack insists it has 24. Why won't it show the real number?",
+    "answer": "This is deliberate, not a bug. RackTrack only recognises two patch-panel sizes: **24 and 48**. Any detected count is rounded to whichever of those two is closest, and small counts always round **up** to 24.\n\nThe reasoning is that patch-panel jacks are missed far more often than they are invented \u2014 dark, dust-capped or cable-obscured jacks simply don't get detected \u2014 so RackTrack fills in missing slots rather than throwing away real detections. A panel that reads 18 becomes 24 with six slots filled in.\n\nThe side effect is that genuinely non-standard panels (12-port, 16-port) will always be reported as 24. If yours is one of those, correct it: change the device type if it is wrong, then use the port-count question to type the true number. Your typed number wins and the port picture is redrawn to match.",
+    "symptoms": [
+      "patch panel shows 24 ports",
+      "patch panel port count too high",
+      "12 port panel shows as 24",
+      "synthesized ports on patch panel"
+    ],
+    "rootCause": "pipeline/port_pattern.py::_pp_closest_standard snaps the combined connected+empty count to PATCHPANEL_STANDARD_COUNTS = (24, 48) using an asymmetric cost \u2014 synthesising a slot costs 1, discarding a real detection costs DROP_PENALTY = 3.0, and ties resolve to the larger standard. There is deliberately no 12 option.",
+    "evidence": [
+      {
+        "file": "pipeline/port_pattern.py",
+        "lines": "605-611",
+        "snippet": "# Patch panels are always a standard size. The status model can over- or\n# under-detect, so we snap the COMBINED (connected + empty) count to the\n# nearest standard...\nPATCHPANEL_STANDARD_COUNTS = (24, 48)"
+      },
+      {
+        "file": "pipeline/port_pattern.py",
+        "lines": "614-634",
+        "snippet": "\"\"\"Snap a detected port count to the nearest standard patch-panel size.\nWe only support 24 and 48 (there is deliberately no 12 option), so any\nsmall count rounds up to 24.\n...\novershoot (n <= c, synthesise) costs 1 per slot,\nundershoot (n > c, discard a real detection) costs 3 per slot.\n...\nDROP_PENALTY = 3.0"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "A device that is definitely in the rack is missing from my results. How do I add it?",
+    "answer": "You cannot add a missing device by hand \u2014 RackTrack has no \"add device\" control. The correction questions only let you re-label, re-count or re-number things it already found. So the fix is to get RackTrack to see it, which means a better photo.\n\nMost likely causes, in order:\n\n- **Cables blocking the front of the equipment.** A heavily-patched rack hides the very faces the detector needs.\n- **Shot from an angle, or too far away.** Stand directly in front, camera level with the middle of the rack.\n- **Low light or glare** on that part of the rack.\n- **You tapped \"Proceed anyway\"** past a quality warning. That switches the safety checks off and a genuinely bad photo comes back with devices missing \u2014 sometimes an empty rack. Retake is nearly always faster.\n- **The rack is taller than one frame.** Use the MULTI mode (2 to 8 photos) instead of trying to fit it all into one.\n\nAfter you retake and rescan, any corrections you already made to devices RackTrack did recognise are re-applied automatically, so you don't lose that work.",
+    "symptoms": [
+      "device missing from results",
+      "switch not shown in rack map",
+      "only some devices detected",
+      "empty rack after Proceed anyway",
+      "fewer devices than actually in rack"
+    ],
+    "rootCause": "Devices below devices_conf 0.20 are never emitted. Unclaimed rack rows become synthetic 'Unidentified' placeholders with confidence 0.0, which are hidden from the device picker. No API or UI path exists to insert a device \u2014 all feedback endpoints require an existing device_index.",
+    "evidence": [
+      {
+        "file": "pipeline/detection.py",
+        "lines": "971-986",
+        "snippet": "synthetic.append({\n    \"class_id\": -1,\n    \"class_name\": \"Unidentified\",\n    \"confidence\": 0.0,\n    ...\n    \"source\": \"synthetic_unidentified\",\n})"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "759-763",
+        "snippet": "// 'Unidentified' is a synthetic placeholder the pipeline inserts for rack\n// rows where no detector produced a class even at low confidence \u2014 hide\n// it from the picker (nothing to inspect) while keeping it on the rack\n// map / report so the row isn't lost visually.\nconst HIDDEN_DEVICE_TYPES = new Set(['Empty', 'Closed Unit', 'Unidentified']);"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "4353-4357",
+        "snippet": "<li>Stand directly in front of the rack \u2014 not at an angle.</li>\n<li>Keep the camera level with the middle of the rack.</li>\n<li>Make sure the full rack fits inside the frame.</li>"
+      },
+      {
+        "file": "docs/user-guide/RackTrack-User-Guide-iPhone.md",
+        "lines": "250",
+        "snippet": "> **IMPORTANT** \u2014 **Proceed anyway** switches the safety checks **off** and analyses the photo regardless. A genuinely bad photo then comes back with devices missing \u2014 or an empty rack. **Retake** is nearly always the faster route to a correct answer."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "My rack map has blank or \"Unidentified\" rows that I can't click on. What are they?",
+    "answer": "Those are rack slots where RackTrack could not identify anything. Three labels get treated this way \u2014 **Empty**, **Closed Unit** and **Unidentified** \u2014 and none of them can be selected from the Device list.\n\nThey are kept on the rack picture and in the report so the rack's shape stays honest (a 42U rack still shows 42 rows), but there is nothing to inspect inside them, so they are hidden from the picker on purpose.\n\n\"Unidentified\" specifically means: this row clearly belongs to the rack, but no detector produced any class for it at all, even at low confidence. That normally means the row was blocked by cables, in deep shadow, or cut off at the edge of the frame. If you know there is real equipment there, retake the photo of that section and rescan \u2014 there is no way to type the device in for a row RackTrack didn't classify.",
+    "symptoms": [
+      "Unidentified rows in rack map",
+      "blank rows in results",
+      "Closed Unit shown",
+      "can't select Empty row",
+      "device not in dropdown"
+    ],
+    "rootCause": "HIDDEN_DEVICE_TYPES excludes Empty / Closed Unit / Unidentified from the device picker and the hero overlay. 'Unidentified' entries are synthesised by detection.py for grid units no detected device claimed.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "759-763",
+        "snippet": "const HIDDEN_DEVICE_TYPES = new Set(['Empty', 'Closed Unit', 'Unidentified']);"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "4400-4407",
+        "snippet": "Placeholder Empty / Unidentified /\nClosed-Unit boxes are hidden \u2014 they're rack-slot fillers,\nnot actionable. The overlay is purely visual: device\nselection happens through the dropdown below, not by\ntapping the image."
+      },
+      {
+        "file": "pipeline/detection.py",
+        "lines": "974-976",
+        "snippet": "\"class_name\": \"Unidentified\",\n\"confidence\": 0.0,"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "The same device appears twice in my results, or there are phantom empty rows.",
+    "answer": "RackTrack already tries hard to prevent this, so a genuine duplicate is unusual \u2014 it usually means the detector fired twice on one physical device and the two boxes barely overlapped.\n\nWhat RackTrack does automatically: it drops any device box overlapping an already-kept one, forces every device to the same width, snaps neighbouring devices so they share an edge, and removes half-height grid rows that a device already covers so they don't appear as phantom \"Empty\" rows. Genuinely empty slots are always preserved \u2014 a real gap in your rack is not treated as an error.\n\nIf you still see a duplicate, the usual cause is a photo shot at an angle (where one chassis appears in two places due to perspective) or a MULTI stitch where two photos overlapped and RackTrack couldn't line the seam up. For a stitch, retake the photos with a clear overlapping band between them. For a single photo, stand square to the rack and retake.\n\nThere is no way to delete a duplicate row from the results by hand.",
+    "symptoms": [
+      "same switch listed twice",
+      "duplicate device in results",
+      "phantom empty rows",
+      "two entries for one device",
+      "device appears twice after MULTI stitch"
+    ],
+    "rootCause": "remove_overlapping_devices drops any device whose overlap ratio with a kept device exceeds max_overlap_ratio=0.01; normalize_device_stack snaps small gaps/overlaps (gap_close_factor=0.4); cleanup_duplicate_units removes over-detected grid units that overlap a device but weren't claimed. Residual duplicates come from perspective distortion or an unaccepted stitch seam.",
+    "evidence": [
+      {
+        "file": "pipeline/detection.py",
+        "lines": "588-597",
+        "snippet": "def remove_overlapping_devices(devices, max_overlap_ratio=0.01):\n    filtered = []\n    for dev in sorted(devices, key=lambda d: (d[\"box\"][1], -d[\"confidence\"])):\n        ...\n            print(f\"[info] removing overlapping device: {dev['class_name']} overlaps {kept['class_name']}\")"
+      },
+      {
+        "file": "pipeline/detection.py",
+        "lines": "739-747",
+        "snippet": "\"\"\"Drop grid units that overlap a device but weren't picked by any\ndevice in the top-N pass. These are the half-height duplicates that\nthe YOLO grid over-detected \u2014 keeping them around would show as\nphantom \"Empty\" rows in the unit report.\n\nTruly empty units (no overlap with any device) are preserved \u2014 they\nrepresent real rack gaps.\"\"\""
+      },
+      {
+        "file": "pipeline/detection.py",
+        "lines": "601-611",
+        "snippet": "(2) vertically adjacent devices share an edge (bottom of the upper =\n    top of the lower) with ZERO overlap.\n\nReal empty slots are preserved: only a SMALL overlap or gap \u2014 one under\n`gap_close_factor` \u00d7 the median device height \u2014 is snapped shut."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "likely",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "Do my corrections actually train the model, or do they only fix my own scan?",
+    "answer": "Both \u2014 but they take effect at different speeds, and it's worth knowing which is which.\n\n**Immediately (guaranteed):** your correction is overlaid onto your scan result. The rack map, the port view, the report and anything exported to your CMDB all show your corrected value. The original prediction is kept underneath as an audit trail, and corrected values are marked with a **\"Your correction\"** badge so nobody mistakes your value for the model's own guess.\n\n**On your next scan (usually):** RackTrack saves a visual fingerprint of what you corrected. When a later scan sees a device, port or cable that looks the same, it re-applies your label automatically. This is shared across every Site in your organization, but is never shared with other organizations.\n\n**Into the trained model itself (slowly, and not automatically):** every correction is queued for retraining, but a retrained model is never trusted just because it was trained. It must beat the current model on a held-out test set the trainer never saw, by at least half a percentage point, and even then a person has to deliberately promote it. If it doesn't win, the current model is left alone and your corrections stay queued for the next attempt.\n\nSo: the correction you make today fixes today's result for certain, tends to fix tomorrow's scan of the same kit, and contributes to a model improvement on a much longer timescale.",
+    "symptoms": [
+      "does correcting help",
+      "does the app learn",
+      "will it get it right next time",
+      "Your correction badge",
+      "Saved \u2014 thanks, this trains the model."
+    ],
+    "rootCause": "Three layers: (1) applyFeedbackOverrides overlays feedback.jsonl onto scan_result.json with a _correction audit trail; (2) fireMemoryCorrection writes a pHash + ResNet18 embedding into the org-scoped active_learning_Cache store for auto-apply; (3) triggerActiveLearning spawns retraining_learning.run_loop --once, which registers candidates gated by PROMOTION_MIN_DELTA (0.005 for devices/cable, 0.010 for port_count) and requires a manual `cli promote`.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "7548-7557",
+        "snippet": "// Reads server/feedback.jsonl for a given scan and overlays the user's\n// `actual_*` corrections on top of the model's predictions in the scan\n// result. Keeps a `_correction` audit trail so the original prediction\n// is never lost.\n//\n// Applied during writeCanonicalScanResult, so the corrected values land\n// in scan_result.json \u2014 every consumer (UI, exports, ServiceNow) sees\n// the same overlaid view."
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "765-770",
+        "snippet": "// Small badge shown next to a value that came from a USER correction (active\n// learning), not the model's own output \u2014 so a tester doesn't mistake their\n// own confirmed value for a model mistake.\nfunction UserTag({ label = 'Your correction' }) {"
+      },
+      {
+        "file": "retraining_learning/config.py",
+        "lines": "44-55",
+        "snippet": "# Promotion gate: a candidate must beat the production model's primary\n# metric by at least this much (absolute) to be promoted. Stops noisy\n# tiny improvements from churning the production model.\nPROMOTION_MIN_DELTA = {\n    \"devices\":    0.005,   # \u2265 +0.5pp accuracy on holdout\n    \"cable\":      0.005,\n    \"port_count\": 0.010,\n}"
+      },
+      {
+        "file": "retraining_learning/run_loop.py",
+        "lines": "17-21",
+        "snippet": "c. On success + gate pass \u2192 register as a CANDIDATE (kept under\n   Models/candidates/<model>-<run_id>.pt). DOES NOT change the\n   production model \u2014 promotion is a deliberate operator action\n   via `python -m retraining_learning.cli promote ...`."
+      },
+      {
+        "file": "pipeline/active_learning/store.py",
+        "lines": "36-41",
+        "snippet": "# Active learning is scoped at the ORGANIZATION level: each org keeps its own\n# corrections + retraining snapshots, so all Sites/tenants within one org share\n# a single model memory while different orgs stay isolated."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "How accurate is RackTrack supposed to be? What error rate should I expect?",
+    "answer": "RackTrack does not publish an accuracy figure, and support should not quote one. There is no measured accuracy, precision or recall number recorded anywhere in the product for device detection, port counting, cable colour or port typing \u2014 the model registry entries all carry empty metrics and are marked as the original baseline models, never retrained or re-measured in this deployment.\n\nWhat you can honestly tell a user:\n\n- The product is **pre-production**. The vision pipeline works end to end, but it is not a certified measuring instrument.\n- RackTrack **tells you when it is unsure**: cable reads below 50% confidence carry an explicit warning, and ports it can't call with at least 35% confidence are reported as \"Unknown\" rather than guessed.\n- Accuracy depends far more on the photo than on anything else. Straight-on, well-lit, full-rack-in-frame photos of racks whose fronts aren't buried in cables produce dramatically better results than angled or dim ones.\n- The correct posture is **verify, then correct**. RackTrack asks you to check its work with Yes/No questions for exactly this reason. For anything that matters operationally, the live switch view over SSH is ground truth, not the photo.\n\nIf a customer needs a number for a procurement or compliance conversation, escalate \u2014 do not invent one.",
+    "symptoms": [
+      "how accurate is it",
+      "what is the error rate",
+      "accuracy percentage",
+      "can I trust the results",
+      "is it certified"
+    ],
+    "rootCause": "No accuracy/precision/recall/mAP figure exists in the repository. retraining_learning/registry.json lists every model as version 'baseline' with \"metrics\": {} and promoted_ts null. README describes the deployment as pre-production. Grepping docs/ and README.md for published percentage accuracy claims returns nothing.",
+    "evidence": [
+      {
+        "file": "retraining_learning/registry.json",
+        "lines": "1-11",
+        "snippet": "{\n  \"_doc\": \"Production registry. Updated by retraining_learning.\",\n  \"devices\": {\n    \"production\": {\n      \"version\": \"baseline\",\n      \"model_path\": \"Models/seg_devices.pt\",\n      \"trained_on\": null,\n      \"metrics\": {},\n      \"promoted_ts\": null\n    },"
+      },
+      {
+        "file": "README.md",
+        "lines": "152",
+        "snippet": "Pre-production. The vision pipeline, mobile capture flow, ServiceNow bridge, and owner dashboard are working end-to-end on a single-tenant deployment."
+      },
+      {
+        "file": "pipeline/port.py",
+        "lines": "27-31",
+        "snippet": "# Minimum confidence required to call a port 'connected' or 'empty'. Below\n# this we return 'unknown' ...\nPORT_STATUS_CONF_MIN = 0.35"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "3617-3618",
+        "snippet": "{portInfo?.status === 'connected' && portInfo?.cable_confidence != null\n  && portInfo.cable_confidence < 0.5 && ("
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "I corrected a device last week, but a new scan of the same rack got it wrong again.",
+    "answer": "RackTrack does try to re-apply your past corrections to new scans, but the match has to be close enough visually to be safe.\n\nHow it works: when you correct something, RackTrack stores a fingerprint of that device's or port's picture. On a later scan it crops each device and looks for a stored correction that matches \u2014 first by a fast image hash, then by a deeper visual comparison. Only a confident match re-applies your label. A photo shot from a noticeably different angle, distance or light level may not match, and RackTrack will fall back to detecting it fresh rather than risk applying the wrong label.\n\nThings that stop a correction re-applying:\n\n- The new photo is framed very differently (much closer, from the side, much darker).\n- You are in a different organization from the one where the correction was made \u2014 corrections are shared across all Sites in your organization, but never between organizations.\n- The correction was for a *port number* or *port count*, which are tied to the specific scan rather than stored as a visual fingerprint. Device type, port type and cable colour are the ones with visual memory.\n\nThe fix is simply to correct it again on the new scan. That strengthens the memory.",
+    "symptoms": [
+      "correction didn't stick",
+      "had to correct the same device again",
+      "corrections lost on rescan",
+      "learned label not applied"
+    ],
+    "rootCause": "pipeline/active_learning/memory.py two-tier matching: pHash Hamming distance <= HAMMING_TOL (6) on a 16x16 hash, else ResNet18 cosine similarity >= SIM_THRESH (0.88). Below both, find_match returns None and detection proceeds normally. Stores are partitioned per organization via store.set_org(). Port-number shifts and port-count relabels are keyed to scanId in feedback.jsonl, not to a visual fingerprint.",
+    "evidence": [
+      {
+        "file": "pipeline/active_learning/memory.py",
+        "lines": "1-8",
+        "snippet": "\"\"\"Image fingerprint + nearest-correction lookup.\n\nTwo-tier matching identical to Active Learning CDP/*.py:\n  1. Perceptual hash (Hamming distance <= HAMMING_TOL) \u2014 fast/exact path\n  2. ResNet18 deep-feature cosine similarity (>= SIM_THRESH) \u2014 robust path"
+      },
+      {
+        "file": "pipeline/active_learning/memory.py",
+        "lines": "22-24",
+        "snippet": "HASH_SIZE = 16\nHAMMING_TOL = 6\nSIM_THRESH = 0.88"
+      },
+      {
+        "file": "pipeline/active_learning/cli.py",
+        "lines": "175-190",
+        "snippet": "match = store.find_match(\"devices\", str(crop_path))\nif match and match.get(\"label\"):\n    old = dev.get(\"class_name\") or \"\"\n    new = match[\"label\"]\n    if new != old:\n        dev[\"_al_correction\"] = {"
+      },
+      {
+        "file": "pipeline/active_learning/store.py",
+        "lines": "43-47",
+        "snippet": "def set_org(org_id) -> None:\n    \"\"\"Scope all subsequent store reads/writes to one organization.\"\"\""
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "My MULTI (stitched) scan failed or produced a rack with devices in the wrong place.",
+    "answer": "When you use MULTI, RackTrack joins your 2 to 8 photos into one tall rack image by finding the overlapping band between each consecutive pair. If it can't confidently find that overlap it stops and tells you: *\"seam N->M could not be detected (best score X%); retake those shots with more overlap\"*, and offers **Retake** or **Proceed anyway**.\n\nTo make stitching work reliably:\n\n- **Overlap generously.** Each photo should repeat a decent slice of what the previous one showed. This is the single biggest factor.\n- **Keep the same distance and angle** for every shot \u2014 don't step closer for one of them.\n- **Don't rotate the phone** between shots.\n- Shoot in order, top to bottom.\n\nIf you push past the warning with Proceed anyway, RackTrack butts the photos together without trimming the overlap, which is what produces devices that appear twice or at the wrong height in the rack. Retaking with more overlap is the reliable fix.",
+    "symptoms": [
+      "seam could not be detected",
+      "retake those shots with more overlap",
+      "stitch failed",
+      "Could not stitch the uploaded images.",
+      "devices duplicated in tall rack scan"
+    ],
+    "rootCause": "pipeline/rack_stitch.py::find_overlap uses edge-based template matching with max_overlap_ratio 0.60 (0.80 for order inference), x_search 12 and peak_margin 0.045; a flat scoring curve yields accepted=False. With require_all_seams the stitch returns ok:false and the server responds 400 kind:'stitch'. Unaccepted seams are butted flush, so the overlapping band's devices are detected twice.",
+    "evidence": [
+      {
+        "file": "pipeline/rack_stitch.py",
+        "lines": "326-336",
+        "snippet": "if not accepted:\n    uncertain.append(i - 1)\n    if require_all_seams:\n        return {\n            \"ok\": False,\n            ...\n            \"error\": f\"seam {i}->{i+1} could not be detected (best score {score:.2%}); retake those shots with more overlap\","
+      },
+      {
+        "file": "pipeline/rack_stitch.py",
+        "lines": "43-51",
+        "snippet": "def find_overlap(\n    img_prev, img_next, *,\n    max_overlap_ratio: float = 0.60,\n    probe_h_frac: float = 0.015,\n    probe_h_min: int = 16,\n    x_search: int = 12,\n    peak_margin: float = 0.045,"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "2523-2531",
+        "snippet": "if (!stitchResult.ok) {\n  tmpPaths.forEach(safeUnlink);\n  safeUnlink(stitchedPath);\n  return res.status(400).json({\n    error: stitchResult.error || 'Could not stitch the uploaded images.',\n    retryable: true,\n    kind: 'stitch',"
+      },
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "1536-1545",
+        "snippet": "<button className=\"btn btn-ghost\" onClick={handleRetake}>Retake</button>\n<button className=\"btn btn-primary\"\n  onClick={() => tab === 'multi'\n    ? analyzeMulti({ override: true })\n    : analyze({ override: true })\n  }>\n  Proceed anyway"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "I scanned a video of a row of racks and the devices ended up assigned to the wrong rack.",
+    "answer": "When you record a video panning across several racks, RackTrack has to decide where one rack ends and the next begins. It does that by watching two things as you pan: how far the equipment has shifted sideways in the frame, and how much the overall scene has changed. When either crosses its limit, it declares a new rack.\n\nThat guesswork is where it goes wrong. Devices land in the wrong rack when:\n\n- **You panned too fast**, so there aren't enough usable frames to place a rack boundary.\n- **You paused or drifted back and forth** mid-rack, which looks like a scene change.\n- **The racks look nearly identical and are tight together** \u2014 there is no visual break to split on.\n- **A frame caught no equipment at all** (a gap, a wall, a person walking through). Frames with no devices are treated as pan-transitions.\n\nHow to get a clean result: pan **slowly and steadily** left-to-right, pause briefly and squarely on each rack before moving on, and keep a consistent distance. If a row keeps splitting badly, scan the racks individually instead \u2014 a single photo per rack is the most reliable path.\n\nThere is no way to move a device from one rack to another after the fact.",
+    "symptoms": [
+      "devices in wrong rack",
+      "multi-rack video split incorrectly",
+      "racks merged into one",
+      "one rack split into two",
+      "wrong rack assignment"
+    ],
+    "rootCause": "pipeline/multi_rack_split.py samples at most 30 frames and declares a rack transition when adjacent samples' mean device X differs by more than TRANSITION_X_SHIFT_RATIO (0.25 of frame width) or the HSV-histogram correlation change exceeds VISUAL_CHANGE_THRESHOLD (0.35). Frames with fewer than MIN_DEVICES_FOR_RACK (1) detections at DETECTOR_CONF_THRESHOLD 0.20 are treated as pan-transitions. A rack needs only MIN_FRAMES_PER_RACK (1) sample to be emitted.",
+    "evidence": [
+      {
+        "file": "pipeline/multi_rack_split.py",
+        "lines": "54-63",
+        "snippet": "MAX_SAMPLED_FRAMES        = 30     # cap on how many frames we score\nMIN_DEVICES_FOR_RACK      = 1      # frames with 0 devices are pan-transitions\nTRANSITION_X_SHIFT_RATIO  = 0.25   # adjacent samples whose mean-X differs\n                                   # by > 25% of frame width = new rack\nVISUAL_CHANGE_THRESHOLD   = 0.35   # 1 - HSV-histogram correlation between\n                                   # adjacent samples. > 0.35 = scene changed\n                                   # (different rack), even if X stayed put.\nMIN_FRAMES_PER_RACK       = 1      # a \"rack\" must hold the camera for \u2265 N samples\nDETECTOR_CONF_THRESHOLD   = 0.20   # mirrors config.json's devices_conf"
+      },
+      {
+        "file": "pipeline/multi_rack_split.py",
+        "lines": "22-28",
+        "snippet": "4. Detect rack-transition points: split the frame sequence wherever\n...\n     + 0.35 * mean_detection_confidence"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "The switch make and model say \"Not detected\", or the model number is wrong.",
+    "answer": "That means RackTrack couldn't read the chassis label in the photo. It reads printed labels off the equipment face, and small, glossy, dusty, angled or shadowed labels frequently come back unreadable. You'll see a **Not detected** badge, or **Vendor not detected** / **Model not detected** if it got one but not the other.\n\nType it in yourself: expand the switch card on the Switch Information screen and use the **Identification** section's edit control. Once you save, the card shows a **Manual entry** badge. You can also use this to overwrite a make or model that OCR read incorrectly \u2014 the edit control is available even when RackTrack did detect something.\n\n**One important limitation:** what you type is saved in that browser only. It does not travel to your phone, to a colleague, or to another browser, and it is not stored on the server. If your entry seems to have vanished, that is why \u2014 re-enter it on the device you're using.\n\nYour typed value is keyed to the switch's serial number or MAC address where available, so it does survive a rescan that reads the label differently.",
+    "symptoms": [
+      "Not detected",
+      "Vendor not detected",
+      "Model not detected",
+      "make and model missing",
+      "Manual entry badge",
+      "the make/model I typed vanished"
+    ],
+    "rootCause": "pipeline/ocr_devices.py uses EasyOCR on the device crop and derives match_conf from the mean OCR confidence; unreadable labels yield ocr_conf 0.0 / match_conf 0.0 and no vendor/model. Manual overrides are written to browser localStorage via saveOverride() under a key derived from serial > mac > position \u2014 never persisted server-side.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "618-626",
+        "snippet": "{identMissing && !editingIdent && (\n  ... Not detected\n{identIncomplete && !editingIdent && !makeIsUserSupplied && !modelIsUserSupplied && (\n  ... {effectiveMake ? 'Model not detected' : 'Vendor not detected'}"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "206-220",
+        "snippet": "function userOverrideKey(rackId, sw, field) {\n  return `racktrack:${field}:${rackId || '_'}::${switchStableId(sw)}`;\n}\nfunction loadOverride(rackId, sw, field) {\n  try { return localStorage.getItem(userOverrideKey(rackId, sw, field)) || ''; }\n...\n    if (value) localStorage.setItem(k, value);"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "192-197",
+        "snippet": "// Stable per-switch identifier for localStorage keys. Uses serial > mac >\n// position as the primary key \u2014 deliberately NOT manufacturer/model\n// because those are exactly the fields the user can override, and the\n// key needs to be stable across edits so a saved override survives a\n// re-scan that returns different OCR text."
+      },
+      {
+        "file": "pipeline/ocr_devices.py",
+        "lines": "478-482",
+        "snippet": "\"ocr_conf\":   0.0,\n\"match_conf\": 0.0,"
+      },
+      {
+        "file": "docs/user-guide/RackTrack-User-Guide-iPhone.md",
+        "lines": "701",
+        "snippet": "| The make/model you typed vanished | It was saved in that browser only. | Re-enter it. It does not travel between devices. |"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "How do I see the model's actual confidence numbers for a scan?",
+    "answer": "Internal / support use only \u2014 do not walk an end user through this unless they are technical and you have a reason.\n\nA Diagnostics panel exists on the scan result page showing per-item confidences: **device class**, **port detection**, **cable color** and **port type**, each as a rounded percentage, alongside pipeline timings.\n\nThere is no button to open it. It is controlled purely by a browser storage flag: set `rt_devOpen` to `\"1\"` in localStorage for the app's origin and reload. Set it back to `\"0\"` to hide it. The setting persists per browser.\n\nReading the numbers: they are raw model confidences, not calibrated probabilities, and there is no published accuracy figure to compare them against. Useful reference points that are enforced in code \u2014 devices are detected at 0.20, ports at 0.23, PDU ports at 0.40; a port below 0.35 confidence is reported as \"Unknown\" instead of connected/empty; a cable below 0.50 triggers the visible low-confidence warning.",
+    "symptoms": [
+      "where do I see confidence scores",
+      "Diagnostics panel",
+      "debug scan accuracy",
+      "how confident was the model"
+    ],
+    "rootCause": "The Diagnostics panel renders behind `devOpen`, whose only source is localStorage key 'rt_devOpen'; no toggle control references setDevOpen(true) anywhere in the client.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "1269-1274",
+        "snippet": "const [devOpen, setDevOpen] = useState(() => {\n    try { return localStorage.getItem('rt_devOpen') === '1'; } catch { return false; }\n...\n    try { localStorage.setItem('rt_devOpen', devOpen ? '1' : '0'); } catch { /* ignore */ }"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "4943-4955",
+        "snippet": "<div className={styles.diagSectionLabel}>Confidences</div>\n<div className={styles.diagRow}><span>device class</span><span className={styles.diagVal}>{fmtPct(selectedDevice.confidence)}</span></div>\n...\n<div className={styles.diagRow}><span>port detection</span>...\n<div className={styles.diagRow}><span>cable color</span>...\n<div className={styles.diagRow}><span>port type</span>..."
+      },
+      {
+        "file": "config.json",
+        "lines": "14-20",
+        "snippet": "\"device_detect_mode\": \"seg\",\n\"units_conf\":   0.25,\n\"devices_conf\": 0.20,\n\"server_conf\":  0.25,\n\"iou_dedup\":    0.5,\n\"ports_conf\":   0.23,\n\"pdu_conf\":     0.40"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "Is the automatic retraining loop actually running in this deployment?",
+    "answer": "Internal / admin only \u2014 do not promise users that corrections are training the model on a schedule.\n\nThe retraining pipeline is wired but **cannot complete a cycle in the repository's current state**. Two things to know:\n\n1. **The `active_learning_Cache` Python package is missing.** Only its `data/` directory exists \u2014 there is no `config.py`, `store.py` or `cli.py`. Every code path that imports it fails: the retraining config can't resolve `RETRAIN_THRESHOLDS`, the run_loop's `ingest` step shells out to a module that isn't there, and the worker's low-confidence sampling hook swallows the ImportError silently (\"AL uncertainty hook failed (non-fatal)\"). So no low-confidence samples are being queued and no feedback is being ingested into the retrain queues.\n\n2. **Even when working, promotion is never automatic.** A retrained model is registered only as a *candidate*; it must beat production on a frozen holdout by at least the configured margin (0.005 for devices and cable, 0.010 for port_count), and a human must run `python -m retraining_learning.cli promote`. The registry confirms nothing has ever been promoted \u2014 every model is `\"version\": \"baseline\"` with empty metrics and `promoted_ts: null`.\n\nWhat **does** work today, and is safe to tell users: corrections are written to `server/feedback.jsonl`, overlaid onto their scan result, and stored as pHash+ResNet18 fingerprints in the org-scoped active-learning memory so future scans auto-apply them. That layer is independent of the retrain loop.\n\nAuto-triggering can be disabled entirely with `ACTIVE_LEARNING_AUTOTRAIN=0`.",
+    "symptoms": [
+      "AL uncertainty hook failed (non-fatal)",
+      "active_learning module not found",
+      "retrain never runs",
+      "no model versions promoted",
+      "ingest failed"
+    ],
+    "rootCause": "`active_learning_Cache` contains only `data/` \u2014 no Python module. retraining_learning/config.py does `from active_learning_Cache import config as cache_config` at import time; run_loop's ingest runs `python -m active_learning_Cache.cli ingest`; worker.py's _queue_low_confidence_samples imports `active_learning_Cache.config` and `.store` inside a try that logs and swallows on failure.",
+    "evidence": [
+      {
+        "file": "retraining_learning/config.py",
+        "lines": "7-8",
+        "snippet": "# Cache-side config is the single source of truth for thresholds + model list.\nfrom active_learning_Cache import config as cache_config"
+      },
+      {
+        "file": "pipeline/worker.py",
+        "lines": "435-450",
+        "snippet": "try:\n    from active_learning_Cache import config as al_cfg\n    from active_learning_Cache.store import Store\n...\nthr_dev = al_cfg.LOW_CONF_THRESHOLDS.get(\"devices\", 0.0)"
+      },
+      {
+        "file": "pipeline/worker.py",
+        "lines": "501-505",
+        "snippet": "except Exception as e:\n    # Anything goes wrong \u2192 swallow. Active learning is a side-channel,\n    # never a hard dependency of the analyze response.\n    log(f\"AL uncertainty hook failed (non-fatal): {e}\")"
+      },
+      {
+        "file": "retraining_learning/run_loop.py",
+        "lines": "54-61",
+        "snippet": "_log(\"ingest: pulling server/feedback.jsonl \u2026\")\nr1 = subprocess.run(\n    [sys.executable, \"-m\", \"active_learning_Cache.cli\", \"ingest\"],\n    cwd=config.REPO_ROOT,\n)\nif r1.returncode != 0:\n    _log(f\"ingest failed (exit {r1.returncode}); continuing with retrain anyway\")"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7793-7803",
+        "snippet": "// Each feedback POST kicks off a fire-and-forget run_loop --once:\n// ingest (cursor-tracked, idempotent) + threshold-check + retrain\n// when ready. ... Disable with ACTIVE_LEARNING_AUTOTRAIN=0.\n...\nif (process.env.ACTIVE_LEARNING_AUTOTRAIN === '0') return;"
+      },
+      {
+        "file": "retraining_learning/registry.json",
+        "lines": "3-11",
+        "snippet": "\"devices\": {\n    \"production\": {\n      \"version\": \"baseline\",\n      ...\n      \"metrics\": {},\n      \"promoted_ts\": null"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "Data correctness complaints \u2014 \"the app got it wrong\" (ML detection: devices, ports, cables, rack assignment)"
+  },
+  {
+    "question": "What does \"scan\" actually mean in RackTrack? I keep seeing scanning in two different places.",
+    "answer": "RackTrack uses the word \"scan\" for two completely separate things.\n\n1. **Rack scan (camera/photo)** \u2014 this is what the SCAN screen does. You photograph the front of a rack and RackTrack's image models work out the unit map, which device sits in each U, port layout and cables. Nothing touches the network. This is the flow behind the \"Analyze Rack\" button.\n\n2. **Network reads (live switch and Network View)** \u2014 these are separate features that talk to your equipment over the network:\n   \u2022 The **live switch screens** log into the switch over SSH and read its own port table, PoE, VLANs and neighbours.\n   \u2022 The **Network View** page reads from your Netdisco discovery server, which is what does the actual SNMP sweeping of your network.\n\nSo: if a photo scan fails, it's a camera/lighting/framing problem. If the live ports or Network View fail, it's a network, credentials or reachability problem. They never affect each other \u2014 you can get a perfect rack scan on a phone with no network access at all.",
+    "symptoms": [
+      "Confusion between \"Scan your Rack\" and the Network view",
+      "\"I scanned but no live port data appeared\"",
+      "\"Does scanning need me to be on the network?\""
+    ],
+    "rootCause": "Two unrelated subsystems share the word 'scan': the CV pipeline behind POST /api/analyze (worker pool \u2192 pipeline/runner.py) and the network-side SSH/Netdisco readers (portsProbe \u2192 /api/switch/console/run, netdisco_proxy.js).",
+    "evidence": [
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "1013-1015",
+        "snippet": "const endpoint = useMultiRack\n        ? '/api/analyze-video'\n        : (useTicketMode ? '/api/analyze-for-ticket' : '/api/analyze');"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "2141-2144",
+        "snippet": "* POST /api/analyze\n * 1. Hash the uploaded image \u2192 RK-XXXXXXXX\n * 2. If outputs/RK-XXXXXXXX/device_unit_map.json exists \u2192 return cached result\n * 3. Otherwise run pipeline --detect_only, save outputs, return fresh result"
+      },
+      {
+        "file": "client/src/utils/portsProbe.js",
+        "lines": "1-10",
+        "snippet": "// Singleton SSH probe of the user's network switch."
+      },
+      {
+        "file": "server/netdisco_proxy.js",
+        "lines": "1-8",
+        "snippet": "* Netdisco proxy router.\n *\n * Sits in front of the local Netdisco Docker stack"
+      },
+      {
+        "file": "netdisco-docker/README.md",
+        "lines": "4",
+        "snippet": "IP and MAC address data is collected into a PostgreSQL database using SNMP, CLI, or device APIs."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "scanning"
+  },
+  {
+    "question": "The round shutter button in the camera is greyed out and nothing happens when I tap it.",
+    "answer": "In **Photo** mode the shutter stays disabled until all three live quality checks pass. Look at the line of text just above the Photo/Video buttons \u2014 it names the single thing that is still wrong:\n\n\u2022 **\"Move closer so the rack fills the frame\"** \u2014 you are too far away; the guide box isn't seeing enough rack detail. Step closer until the rack fills the outlined box.\n\u2022 **\"Move to better lighting\"** \u2014 the shot is too dark or too blown-out. Move to better light, or turn away from a bright light behind the rack.\n\u2022 **\"Hold steady \u2014 keep still for focus\"** \u2014 the image is not sharp yet. Hold the phone still for a second and let it focus.\n\u2022 **\"Starting camera\u2026\"** \u2014 the camera hasn't opened yet, just wait a moment.\n\nWhen it reads **\"Looks great \u2014 tap the shutter below\"** the shutter turns on and the guide box highlights.\n\nTwo notes: **Video** mode does not require the checks \u2014 the shutter works as soon as the camera is ready. And if you genuinely cannot get all three green, use the **Upload** tab instead, which lets you pick a photo and shows a Retake / Proceed anyway choice.",
+    "symptoms": [
+      "Shutter button greyed out / not tappable",
+      "\"Move closer so the rack fills the frame\"",
+      "\"Move to better lighting\"",
+      "\"Hold steady \u2014 keep still for focus\"",
+      "\"Align full rack within the frame\""
+    ],
+    "rootCause": "CameraCapture computes canShoot = ready && allGood in photo mode, where allGood requires sharpness > 60, edgeDensity > 0.035 and meanLuma between 35 and 235 measured every 350 ms on a 192px-wide sample of the guide region.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "294",
+        "snippet": "const canShoot = mode === 'video' ? ready : ready && allGood;"
+      },
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "372-376",
+        "snippet": "setQuality({\n        sharp:  sharpness > 60,\n        framed: edgeDensity > 0.035,\n        lit:    meanLuma > 35 && meanLuma < 235,\n      });"
+      },
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "654-661",
+        "snippet": "const photoHint = !ready\n    ? 'Starting camera\u2026'\n    : allGood\n      ? 'Looks great \u2014 tap the shutter below'\n      : !quality.framed ? 'Move closer so the rack fills the frame'\n      : !quality.lit    ? 'Move to better lighting'\n      : !quality.sharp  ? 'Hold steady \u2014 keep still for focus'"
+      },
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "757",
+        "snippet": "disabled={!canShoot && !recording}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "scanning"
+  },
+  {
+    "question": "\"Image resolution is low (640\u00d7480). Results may be inaccurate.\"",
+    "answer": "The photo's shorter side is under 480 pixels, which is too small for RackTrack to read port detail reliably.\n\nThis almost never happens with a photo taken in the app \u2014 it usually means you uploaded a screenshot, a photo someone forwarded through a chat app (which compresses it), or a thumbnail.\n\n**Fix:** go back to the original full-size photo, or just retake the rack with the **Camera** tab. Choose **Retake**, not Proceed anyway \u2014 at this size the result will not be usable.",
+    "symptoms": [
+      "\"Image resolution is low (WIDTH\u00d7HEIGHT). Results may be inaccurate.\"",
+      "Happens with forwarded or screenshotted images"
+    ],
+    "rootCause": "validateImage rejects when Math.min(width, height) < MIN_DIM (480).",
+    "evidence": [
+      {
+        "file": "client/src/utils/validateMedia.js",
+        "lines": "1",
+        "snippet": "const MIN_DIM = 480;"
+      },
+      {
+        "file": "client/src/utils/validateMedia.js",
+        "lines": "29-36",
+        "snippet": "if (Math.min(width, height) < MIN_DIM) {\n    URL.revokeObjectURL(img.src);\n    return {\n      ok: false,\n      kind: 'resolution',\n      retryable: true,\n      error: `Image resolution is low (${width}\u00d7${height}). Results may be inaccurate.`,"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "scanning"
+  },
+  {
+    "question": "\"This doesn't look like a server rack. Point the camera at the front of a rack so its devices and ports are visible.\"",
+    "answer": "Before running the full analysis, RackTrack does a quick one-second look at your photo. If it finds no rack equipment at all, it stops there and gives you this message rather than leaving you watching a progress bar that returns nothing.\n\nThis normally means one of:\n\u2022 The photo is of something else entirely (a person, a laptop, a floor tile, a cabinet door).\n\u2022 You photographed the **back** of the rack \u2014 RackTrack needs the front, where the device faces and ports are.\n\u2022 The rack was behind a **closed or smoked-glass door**, or the shot is so dark or so far away that nothing is recognisable.\n\n**Fix:** open the rack door, stand in front of it, and reshoot so the equipment faces fill the guide box. Then tap **Analyze Rack** again.",
+    "symptoms": [
+      "\"This doesn't look like a server rack. Point the camera at the front of a rack so its devices and ports are visible.\"",
+      "Immediate rejection, no long analysis"
+    ],
+    "rootCause": "POST /api/analyze runs a detect_only pass before the full pipeline; when the device list is empty it returns 400 with kind 'not_a_rack'. Skipped entirely when skipQualityCheck is set.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "2317-2331",
+        "snippet": "if (!skipQualityCheck) {\n      try {\n        const det = await pool.request('detect_only', { image_path: tmpPath, config_path: CONFIG_PATH });\n        if (det && det.ok && Array.isArray(det.devices) && det.devices.length === 0) {\n          safeUnlink(tmpPath);\n          return res.status(400).json({\n            error: \"This doesn't look like a server rack. Point the camera at the front of a rack so its devices and ports are visible.\",\n            retryable: true,\n            kind: 'not_a_rack',"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "scanning"
+  },
+  {
+    "question": "Some rows in my rack show as \"Unidentified\" instead of a real device.",
+    "answer": "\"Unidentified\" is RackTrack being honest: it can see that something occupies that rack unit, but it could not confidently say what. It deliberately does **not** call these rows \"Empty\", because a rack row almost always holds something and \"Empty\" would be a false certainty.\n\nTwo things produce it:\n1. **No detector agreed on a class** for that row \u2014 usually a dark, glare-hit, obscured or unusual-looking device.\n2. **A device was recognised but no ports could be found on its face** \u2014 in that case RackTrack decides its own guess was probably wrong and downgrades the row to Unidentified rather than showing you a switch with zero ports.\n\nUnidentified rows stay on the rack map and in the report so the row isn't lost, but they are hidden from the device picker because there is nothing to inspect.\n\n**What to do:**\n\u2022 Retake with better light on that part of the rack, straight on, and closer \u2014 glare on a faceplate and shooting from below are the two biggest causes.\n\u2022 If RackTrack is simply wrong and you know what the device is, use the **wrong?** control on the results to correct it. Your correction is saved and automatically applied to future scans across your whole organisation.",
+    "symptoms": [
+      "Rows labelled \"Unidentified\" in the unit map",
+      "Device missing from the device picker dropdown",
+      "Known switch showing as Unidentified"
+    ],
+    "rootCause": "Two paths: detection.ensure_every_unit_has_device synthesises an 'Unidentified' placeholder with confidence 0.0 for any grid unit no detection claims; and runner.py demotes a port-bearing device to 'Unidentified' when the port detector returns no ports at all. ResultsPage hides these from the device picker.",
+    "evidence": [
+      {
+        "file": "pipeline/detection.py",
+        "lines": "954-960",
+        "snippet": "\"\"\"Guarantee every grid unit has a device entry. For any unit that no\n    real detection claims \u2014 even after the low-confidence retry pass \u2014\n    synthesize an 'Unidentified' placeholder. We deliberately don't call\n    these 'Empty' because a rack row almost always contains *something*;\n    'Empty' would be a false certainty."
+      },
+      {
+        "file": "pipeline/detection.py",
+        "lines": "974-978",
+        "snippet": "synthetic.append({\n            \"class_id\": -1,\n            \"class_name\": \"Unidentified\",\n            \"confidence\": 0.0,"
+      },
+      {
+        "file": "pipeline/runner.py",
+        "lines": "620-631",
+        "snippet": "# If the port detector found no ports at all on a port-bearing\n            # device, the YOLO class is almost certainly wrong \u2014 demote to\n            # Unidentified.\n            detected_ports = (dev[\"ports\"] + dev[\"console_ports\"]\n                              + dev[\"sfp_ports\"] + dev.get(\"other_ports\", []))\n            if not detected_ports:\n                dev[\"class_name\"] = \"Unidentified\""
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "759-763",
+        "snippet": "// 'Unidentified' is a synthetic placeholder the pipeline inserts for rack\n// rows where no detector produced a class even at low confidence \u2014 hide\n// it from the picker (nothing to inspect) while keeping it on the rack\n// map / report so the row isn't lost visually.\nconst HIDDEN_DEVICE_TYPES = new Set(['Empty', 'Closed Unit', 'Unidentified']);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "scanning"
+  },
+  {
+    "question": "The port count on my switch is wrong \u2014 it says 20 ports and it's a 24-port switch.",
+    "answer": "Port counts come from the photo, so anything that hides a port hides it from the count: glare across the faceplate, a cable bundle sweeping over the ports, a dark aisle, or shooting at too shallow an angle so the far end of the faceplate is foreshortened.\n\nRackTrack has one built-in safety net: if it can read the **model name printed on the faceplate**, it looks up that model's real port count. If what it *saw* is less than 75% of what the model *should* have, it trusts the printed model instead of its own count. That's why a well-lit, close, straight-on shot of the faceplate matters \u2014 it gives the text reader a chance to rescue the count.\n\n**What to do:**\n1. Retake with the faceplate well lit and square-on, close enough that the model name printed on the switch is legible in the photo.\n2. If it is still wrong, use the **wrong?** control to correct the port count directly. Your corrected count is remembered and used when you locate ports on that device.\n\nAlso worth knowing: a **PDU** always reports 0 network ports by design \u2014 it carries power outlets, which are counted separately.",
+    "symptoms": [
+      "Port count lower than the real switch",
+      "Ports missing from the faceplate view",
+      "PDU shows 0 ports"
+    ],
+    "rootCause": "Port detection runs at ports_conf 0.23 on the device crop; occluded/glared ports fall below threshold. device_db OCR grounding only overrides when visual_main < expected_main * 0.75. PDUs are explicitly set to port_count 0.",
+    "evidence": [
+      {
+        "file": "config.json",
+        "lines": "14-20",
+        "snippet": "\"units_conf\":   0.25,\n    \"devices_conf\": 0.20,\n    \"server_conf\":  0.25,\n    \"iou_dedup\":    0.5,\n    \"ports_conf\":   0.23,\n    \"pdu_conf\":     0.40"
+      },
+      {
+        "file": "pipeline/runner.py",
+        "lines": "592-605",
+        "snippet": "visual_main = len(classified['main_ports'])\n                if ocr_name and ocr_total:\n                    expected_main = max(0, ocr_total - (ocr_sfp or 0))\n                    if visual_main < expected_main * 0.75:\n                        dev[\"port_count\"] = expected_main\n                        dev[\"port_count_source\"] = f\"ocr:{ocr_name}\""
+      },
+      {
+        "file": "pipeline/runner.py",
+        "lines": "554-556",
+        "snippet": "# PDUs carry power outlets, not network ports.\n                dev[\"port_count\"] = 0\n                dev[\"ports\"] = []"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "1245-1252",
+        "snippet": "if (dev && dev.port_count_source === 'user_relabeled' && dev.port_count > 0) {\n      return Number(dev.port_count);\n    }"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "scanning"
+  },
+  {
+    "question": "My video scan failed \u2014 what are the rules for video?",
+    "answer": "Video has its own limits, checked before upload:\n\n\u2022 **Too short** \u2014 \"Video is too short (0.6s). Record at least 1s panning across the racks.\" Record at least one second.\n\u2022 **Too long** \u2014 \"Video is too long (145.0s). Keep the multi-rack pan under 120s.\" Keep it under two minutes.\n\nOnce uploaded, RackTrack does not analyse the whole clip. It samples frames, scores them for a rack-shaped, centred, sharp view, and picks the single best one \u2014 then treats it exactly like a photo. So a shaky pan with no steady moment gives you a poor result even if the clip is long.\n\nIf it can't find any usable frame you'll see: **\"Could not read a usable frame from the video. Please record a clearer video of the rack.\"** For a multi-rack pan, the equivalent is **\"No racks detected in the video. Try a clearer pan.\"**\n\n**How to shoot a good rack video:** walk slowly, keep the phone upright and level with the middle of the racks, and pause for a beat in front of each rack instead of sweeping continuously. Those pauses are what produce the sharp frames it picks.",
+    "symptoms": [
+      "\"Video is too short (N.Ns). Record at least 1s panning across the racks.\"",
+      "\"Video is too long (N.Ns). Keep the multi-rack pan under 120s.\"",
+      "\"Could not read a usable frame from the video. Please record a clearer video of the rack.\"",
+      "\"No racks detected in the video. Try a clearer pan.\""
+    ],
+    "rootCause": "validateVideo enforces MIN_DURATION 1.0s / MAX_DURATION 120s client-side. Server normalizeImage routes video to the worker's extract_best_frame, which samples every 5th frame up to 400 frames, keeps the top 10 by a tall-contour/centre/sharpness score, and returns the first that passes letterbox+tilt checks.",
+    "evidence": [
+      {
+        "file": "client/src/utils/validateMedia.js",
+        "lines": "3-4",
+        "snippet": "const MIN_DURATION = 1.0;\nconst MAX_DURATION = 120;"
+      },
+      {
+        "file": "client/src/utils/validateMedia.js",
+        "lines": "88-102",
+        "snippet": "error: `Video is too short (${duration.toFixed(1)}s). Record at least ${MIN_DURATION}s panning across the racks.`,\n...\n        error: `Video is too long (${duration.toFixed(1)}s). Keep the multi-rack pan under ${MAX_DURATION}s.`,"
+      },
+      {
+        "file": "pipeline/frame_selector.py",
+        "lines": "14-18",
+        "snippet": "MIN_WIDTH = 640\nMIN_HEIGHT = 480\nFRAME_SKIP = 5\nMAX_FRAMES = 400\nTOP_K = 10"
+      },
+      {
+        "file": "pipeline/worker.py",
+        "lines": "217-222",
+        "snippet": "frame = extract_best_frame(req[\"video_path\"])\n    if frame is None:\n        return {\"ok\": False,\n                \"error\": \"Could not read a usable frame from the video. Please record a clearer video of the rack.\"}"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "3635-3638",
+        "snippet": "if (detected.length === 0) {\n      safeUnlink(videoPath);\n      return res.status(400).json({ error: 'No racks detected in the video. Try a clearer pan.' });"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "scanning"
+  },
+  {
+    "question": "I pressed \"Raise Ticket\" and got \"Could not reach ServiceNow \u2014 check the connection.\"",
+    "answer": "RackTrack could not talk to ServiceNow when it tried to create the request. The usual causes, in order of likelihood:\n\n1. No ServiceNow connection is saved, or the saved one is not the active one. Check Profile \u2192 Connections \u2014 the connection you want must show the \"Active\" badge.\n2. The Instance ID is wrong. Enter only the instance name (dev266363), not the full https://dev266363.service-now.com address.\n3. The username or password has changed in ServiceNow. Open the connection, tap Edit and re-enter the password.\n4. The instance is asleep. Sign in to it in a browser first, then try again.\n\nThe other two wordings you may see are \"Request to ServiceNow timed out \u2014 try again.\" (instance too slow) and \"CMDB apply step failed \u2014 please try again.\" (the write step failed after the ticket was created).",
+    "symptoms": [
+      "Could not reach ServiceNow \u2014 check the connection.",
+      "Request to ServiceNow timed out \u2014 try again.",
+      "CMDB apply step failed \u2014 please try again.",
+      "Something went wrong \u2014 please try again."
+    ],
+    "rootCause": "friendlyError() maps the raw script error onto four user-facing strings; underlying failures are the sc_request POST raising, a subprocess timeout, or SN_INSTANCE/SN_USER/SN_PASSWORD not being injected because no active servicenow profile resolved.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/components/CmdbApprovalModal.jsx",
+        "lines": "246-254",
+        "snippet": "if (/timeout|timed out/i.test(txt)) return 'Request to ServiceNow timed out \u2014 try again.'; if (/spawn|enoent|cmdb_apply/i.test(txt)) return 'CMDB apply step failed \u2014 please try again.'; if (/sn_request|sc_request|404|not found/i.test(txt)) return 'Could not reach ServiceNow \u2014 check the connection.';"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/cmdb_ticket.py",
+        "lines": "261-264",
+        "snippet": "client = _sn()\n    if client is None:\n        return {\"ok\": False, \"action\": \"failed\", \"error\": \"SN_INSTANCE/SN_USER/SN_PASSWORD not configured\"}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/cmdb_ticket_proxy.js",
+        "lines": "62-69",
+        "snippet": "const resolved = (orgId ? profiles.resolveCredsForOrg(orgId, 'servicenow') : null) || (userId ? profiles.resolveCredsForType(userId, 'servicenow') : null); if (resolved && resolved.secret) { ... env.SN_INSTANCE = s.instance; ... }"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "My rack was scanned but nothing at all appeared in ServiceNow, and I was never shown a ticket.",
+    "answer": "RackTrack tries to open the CMDB request automatically about 4 seconds after a scan finishes. That automatic attempt runs without a signed-in user attached, so it can only reach ServiceNow if the server itself has ServiceNow credentials set in its own configuration. On a normal install it does not, and the automatic attempt quietly fails with \"SN_INSTANCE/SN_USER/SN_PASSWORD not configured\" in the server log.\n\nWhat this means for you: use the \"Raise Ticket\" button on the results screen. That path does carry your connection and does reach ServiceNow. Nothing is lost \u2014 press the button and the request is created normally.\n\nAdmins: to make the automatic post-scan ticket and the 5-minute approval poller work unattended, SN_INSTANCE, SN_USER and SN_PASSWORD must be present in the server environment (server/.env), because the scheduled callers pass no user or organisation id.",
+    "symptoms": [
+      "No ServiceNow request created after a scan",
+      "Server log: [cmdb-ticket] <rackId> create failed: SN_INSTANCE/SN_USER/SN_PASSWORD not configured",
+      "Ticket only appears after pressing Raise Ticket"
+    ],
+    "rootCause": "scheduleCmdbTicket() and runPollCycle() call runTicketCmd without userId/orgId, so no credentials are injected into the Python child; _sn() then returns None and the create/poll fails.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/cmdb_ticket_proxy.js",
+        "lines": "182-196",
+        "snippet": "function scheduleCmdbTicket(rackId, delayMs = 4000) { ... const r = await runTicketCmd(['create', '--rack-id', rackId], { timeoutMs: 120_000 }); ... logger.warn(`[cmdb-ticket] ${rackId} create failed: ${r.error}`);"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/cmdb_ticket_proxy.js",
+        "lines": "204-207",
+        "snippet": "async function runPollCycle() { const r = await runTicketCmd(['poll'], { timeoutMs: 300_000 });"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/cmdb_ticket.py",
+        "lines": "140-146",
+        "snippet": "def _sn() -> ServiceNowClient | None:\n    inst = os.environ.get(\"SN_INSTANCE\") ... if not (inst and user and pw):\n        return None"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "I approved the RackTrack request inside ServiceNow, but the rack still is not written to the CMDB. How long does it take?",
+    "answer": "RackTrack re-checks every open request every 5 minutes, and it also runs one check about 30 seconds after the server starts. When it sees the request approved or closed-complete, it writes the rack into the CMDB and marks it applied.\n\nSo the normal wait after approving in ServiceNow is up to 5 minutes. If the write itself fails, the request is deliberately left open and retried on the next cycle, so no action is needed from you unless it never clears.\n\nIf you do not want to wait, use the \"Approve\" button inside RackTrack instead \u2014 that applies immediately.",
+    "symptoms": [
+      "Approved in ServiceNow but rack not in CMDB yet",
+      "Ticket stays in \"open\" state for several minutes",
+      "apply_error recorded on the local ticket state"
+    ],
+    "rootCause": "startTicketPoller runs runPollCycle on a 5-minute interval plus a 30s post-boot run; poll_one maps SN state/approval and calls _apply_to_cmdb, leaving state 'open' with apply_error set when the apply fails.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/cmdb_ticket_proxy.js",
+        "lines": "231-237",
+        "snippet": "function startTicketPoller(intervalMs = 5 * 60 * 1000) { ... _pollerHandle = setInterval(runPollCycle, intervalMs); setTimeout(runPollCycle, 30_000);"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/cmdb_ticket.py",
+        "lines": "404-412",
+        "snippet": "if classified == \"approved\": ok, msg = _apply_to_cmdb(rack_id) ... else: existing[\"state\"] = \"open\"   # leave open; will retry next cycle\n            existing[\"apply_error\"] = msg"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "My device is not showing up in ServiceNow even though the scan found it.",
+    "answer": "RackTrack finds your rack in ServiceNow by a single field on the rack record: the RackTrack scan ID. It looks for a rack record whose \"u_racktrack_scan_id\" field equals the rack ID shown in RackTrack (the RK-\u2026 code). If that field is blank or holds a different value, ServiceNow looks empty to RackTrack even though the rack exists \u2014 and everything in the scan is then reported as brand new.\n\nWhat to do (this needs someone who can edit records in ServiceNow):\n1. Open the rack record in ServiceNow.\n2. Set the RackTrack scan ID field to the exact RK-\u2026 code shown on the RackTrack results screen.\n3. Make sure each device sits under that rack through a \"Contains / Contained by\" relationship \u2014 RackTrack only looks at the rack's children.\n4. Re-open the rack in RackTrack.\n\nDevices attached to no rack, or to a rack without that ID set, will never appear.",
+    "symptoms": [
+      "Device present in ServiceNow but RackTrack reports it as \"added\"",
+      "Switch Information empty even though the CMDB has the switch",
+      "Everything in the scan is listed as new / missing from CMDB"
+    ],
+    "rootCause": "fetch_cmdb_state queries cmdb_ci_rack with sysparm_query u_racktrack_scan_id=<rackId>; no rows means it returns an empty device map. Children are read via cmdb_rel_ci parent=<rack sys_id>.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/diff_cmdb.py",
+        "lines": "159-169",
+        "snippet": "rack_resp = sn._get(\"/table/cmdb_ci_rack\", { \"sysparm_query\": f\"u_racktrack_scan_id={rack_id}\", \"sysparm_limit\": 1, }) ... if not rack_rows: # Not in CMDB yet \u2014 treat as \"no current state\". return {\"rack\": None, \"devices\": {}, \"reachable\": True}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/servicenow.py",
+        "lines": "92-101",
+        "snippet": "def get_rack_children(self, rack_sys_id: str) -> list[dict]: ... {\"sysparm_query\": f\"parent={rack_sys_id}\", \"sysparm_limit\": 100,}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/cmdb_apply.py",
+        "lines": "130",
+        "snippet": "rack_payload = {**rack_meta, \"u_racktrack_scan_id\": rack_id}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "Only the first 100 devices in my rack come back from the CMDB.",
+    "answer": "When RackTrack asks ServiceNow which devices sit in a rack it requests at most 100 child records, and when it counts a device's ports it requests at most 200. A very densely populated rack can therefore look partially empty or under-ported in RackTrack even though ServiceNow holds everything.\n\nIf you manage racks with more than 100 child records, expect the comparison against the scan to be incomplete and treat the difference list as advisory. Please raise this with the RackTrack team rather than editing your CMDB to work around it.",
+    "symptoms": [
+      "Some devices in a large rack never appear in RackTrack",
+      "Port counts capped at 200",
+      "Diff reports devices as removed that clearly exist in ServiceNow"
+    ],
+    "rootCause": "get_rack_children uses sysparm_limit 100; the per-device adapter/port count queries use sysparm_limit 200.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/servicenow.py",
+        "lines": "96-100",
+        "snippet": "{ \"sysparm_query\": f\"parent={rack_sys_id}\", \"sysparm_limit\": 100, }"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/diff_cmdb.py",
+        "lines": "199-209",
+        "snippet": "pr = sn._get(\"/table/cmdb_ci_network_adapter\", { \"sysparm_query\": f\"cmdb_ci={ci.get('sys_id')}\", \"sysparm_fields\": \"sys_id\", \"sysparm_limit\": \"200\", })"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "I moved a switch to a different rack unit and now the CMDB has two records for it.",
+    "answer": "This is expected behaviour, and worth understanding before you move equipment.\n\nRackTrack names devices after the rack unit they sit in: a switch in U10 becomes SW-U10, a patch panel in U06 becomes PP-U06, a server in U01 becomes SRV-U01. The CMDB match is done purely on that name.\n\nSo if you physically move a switch from U10 to U11 and rescan, RackTrack sees SW-U10 as gone and SW-U11 as brand new. Approving that registration creates a second record rather than moving the first one.\n\nWhat to do after moving equipment:\n1. Rescan the rack.\n2. Before approving, look at the difference list \u2014 it will show one device removed and one added.\n3. Have whoever owns the CMDB retire or rename the old record for the unit the device left.\n\nThe same applies if a device is detected one unit off because of the photo angle: retake the photo squarely before approving.",
+    "symptoms": [
+      "Two CMDB records for the same physical switch",
+      "A device shows as removed and a near-identical one as added",
+      "Names like SW-U10 and SW-U11 both present"
+    ],
+    "rootCause": "Device CMDB names are derived from the U position (SW-U{u:02d} / PP-U{u:02d} / SRV-U{u:02d}) in synth.py, and compute_diff keys added/removed/changed purely on set differences of those names.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/synth.py",
+        "lines": "498-500",
+        "snippet": "if cls == \"Switch\":       return f\"SW-U{u:02d}\", u\n    if cls == \"Patch Panel\":  return f\"PP-U{u:02d}\", u\n    if cls == \"Server\":       return f\"SRV-U{u:02d}\", u"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/diff_cmdb.py",
+        "lines": "270-285",
+        "snippet": "scan_names = set(scan_devices.keys())\n    cmdb_names = set(cmdb_devices.keys())\n    for name in sorted(scan_names - cmdb_names): ...\n    for name in sorted(cmdb_names - scan_names): ...\n    for name in sorted(scan_names & cmdb_names):"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/cmdb_apply.py",
+        "lines": "17-18",
+        "snippet": "Idempotent: every operation is \"find by name \u2192 patch existing OR create new\"."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "RackTrack keeps telling me a device \"changed\" when I have not touched anything.",
+    "answer": "RackTrack compares exactly six things per device against your CMDB: model, serial number, management IP address, MAC address, operating-system version, and port count. Anything else on the record is ignored.\n\nA device reported as changed every time usually means one of those six is filled in on one side and blank or differently formatted on the other \u2014 for example the CMDB has a serial with a supplier prefix and the scan reads the printed label, or the CMDB stores the OS version in a different field than os_version.\n\nBlank values are treated as \"nothing\" on both sides, so an empty CMDB field is not the cause. A field with different text is.\n\nThe fix is to make the two agree: correct the value in the CMDB, or correct the vendor/model in RackTrack using the edit controls on the switch screens, then rescan.",
+    "symptoms": [
+      "Same device listed as changed after every scan",
+      "Difference list shows old/new values that look nearly identical",
+      "Repeated CMDB sync requests with the same content"
+    ],
+    "rootCause": "_changed_fields compares the normalised scan summary to the CMDB summary over model/serial/ip/mac/os (ports handled separately); _norm only collapses empty strings to None, so any textual difference produces a change entry.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/diff_cmdb.py",
+        "lines": "85-98",
+        "snippet": "return { \"name\": ci.get(\"name\"), \"class\": kind, \"model\": ci.get(\"model_number\") or None, \"serial\": ci.get(\"serial_number\") or None, \"ip\": ci.get(\"ip_address\") or None, \"mac\": ci.get(\"mac_address\") or None, \"os\": ci.get(\"os_version\") or ci.get(\"os\") or None, \"ports\": None, }"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/diff_cmdb.py",
+        "lines": "111-129",
+        "snippet": "def _changed_fields(scan: dict, cmdb: dict, ignore_keys=(\"ports\",)) -> list[dict]: ... if n_scan is None and n_cmdb is None: continue\n        if n_scan != n_cmdb: out.append({...})"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "My incident does not appear in RackTrack's ticket list.",
+    "answer": "RackTrack only pulls in tickets it can actually act on, and it applies four filters:\n\n1. The incident must still be active.\n2. Its state must be New or In Progress. Closed, resolved or on-hold tickets are ignored.\n3. Its text (or its linked configuration item) must name a device in RackTrack's naming style \u2014 SW-U10, SRV-U01, PP-U12 and so on.\n4. Its text must contain a port number, written like \"port 12\" or \"Port #12\".\n\nIf either the device name or the port number is missing, the ticket is skipped on purpose because RackTrack would not know what to go and verify. It also reads a maximum of 200 open incidents per refresh.\n\nSo the fix is usually to edit the incident's short description to include both the device name and the port \u2014 for example \"SW-U10 port 12 link down\" \u2014 then press \"Refresh data from this source\" on the Connections screen.",
+    "symptoms": [
+      "Incident missing from the active ticket list",
+      "Ticket <INC\u2026> not in inbox",
+      "Refresh reports fewer incidents than expected"
+    ],
+    "rootCause": "poll.py queries incident with active=true^stateIN1,2 and sysparm_limit 200, then is_racktrack_actionable() requires both a parsed port number and a device matching (SW|SRV|PP)-U\\d{1,2}.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow_inbox/poll.py",
+        "lines": "92-104",
+        "snippet": "params={ \"sysparm_query\": \"active=true^stateIN1,2\",  # New + In Progress ... \"sysparm_limit\": 200, }"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow_inbox/poll.py",
+        "lines": "71-90",
+        "snippet": "RACKTRACK_DEVICE_RE = re.compile(r\"\\b((?:SW|SRV|PP)-U\\d{1,2})\\b\", re.I) ... def is_racktrack_actionable(rec): t = rec.get(\"target\", {}) ; if t.get(\"port\") is None: return False ; dev = t.get(\"device\") or \"\" ; return bool(RACKTRACK_DEVICE_RE.match(dev))"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow_inbox/poll.py",
+        "lines": "66-68",
+        "snippet": "def extract_port(text): m = re.search(r\"port[\\s#:]*(\\d+)\", text or \"\", re.I)"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "I pressed \"Refresh data from this source\" and it sat there, then failed.",
+    "answer": "That button pulls your open incidents out of ServiceNow. It runs in the background, so you can keep using the app while it works.\n\nTimings you can rely on:\n- The server gives ServiceNow up to 5 minutes to answer.\n- The screen gives up watching after 6 minutes and shows \"Stopped waiting after 6 minutes \u2014 check the server log for poll progress.\"\n- If ServiceNow itself times out you get a message naming your instance and telling you to open <instance>.service-now.com in a browser, sign in to confirm it is awake, then try again. That is exactly the right thing to do \u2014 developer instances hibernate.\n\nWhen it works you get a green line: \"\u2713 Pulled N incidents from <instance>\".",
+    "symptoms": [
+      "Refresh failed: \u2026",
+      "Stopped waiting after 6 minutes \u2014 check the server log for poll progress.",
+      "Poll timed out after 300s talking to <instance>.service-now.com.",
+      "Pulling fresh data from \u2026 spinner never finishes"
+    ],
+    "rootCause": "POST /api/incidents/refresh spawns servicenow_inbox/poll.py with a 300000 ms kill timer; the client polls /api/incidents/refresh/status every 3s and abandons after 360000 ms.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4191-4201",
+        "snippet": "const TIMEOUT_MS = 300_000; const killer = setTimeout(() => { ... error: `Poll timed out after ${TIMEOUT_MS / 1000}s talking to ${creds.instance}.service-now.com. Open ${creds.instance}.service-now.com in a browser, sign in to confirm it's awake, then try again.`,"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/ConnectionsContext.jsx",
+        "lines": "80-111",
+        "snippet": "const MAX_WAIT_MS = 360_000;   // 6 min \u2014 gives the server's 5-min cap room ... setLastRefresh({ ok: false, error: 'Stopped waiting after 6 minutes \u2014 check the server log for poll progress.' }); ... setTimeout(tick, 3000);"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/ConnectionsPage.jsx",
+        "lines": "146-152",
+        "snippet": "\u2713 Pulled {lastRefresh.count ?? '\u2014'} incident{lastRefresh.count === 1 ? '' : 's'} from <strong>{lastRefresh.instance}</strong> ... Refresh failed: {lastRefresh.error}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "I switched to a different ServiceNow connection but I am still seeing the old account's incidents.",
+    "answer": "The incident list is a stored copy from the last successful pull, so switching connections does not change it by itself. RackTrack normally kicks off a fresh pull as soon as you tap \"Use\" on a ServiceNow connection \u2014 and if a pull for the previous account is still running, it is cancelled so the old instance's results cannot overwrite the new ones.\n\nIf the list still looks wrong:\n1. Open Profile \u2192 Connections and confirm the connection you want carries the \"Active\" badge.\n2. Tap \"Refresh data from this source\".\n3. Wait for the green \"\u2713 Pulled N incidents from <instance>\" line and check the instance name in it matches the account you expect.\n\nOne thing to know: the incident list is shared across everyone on this server rather than kept per person, so it always reflects whoever refreshed last.",
+    "symptoms": [
+      "Incidents unchanged after switching connection",
+      "Banner names a different instance than the one selected",
+      "Ticket list shows another account's incidents"
+    ],
+    "rootCause": "active_tickets.json is a single global cache tagged with source_instance; _refreshState is global (not per user) and an in-flight poll is SIGKILLed when a new refresh starts.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4083-4092",
+        "snippet": "// Latest /api/incidents/refresh job state. Polled by the client ... Global (not per-user) for MVP"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4146-4156",
+        "snippet": "if (_refreshState && _refreshState.state === 'running' && _refreshChild) { logger.info(`[incidents.refresh] cancelling in-flight poll for ${_refreshState.instance} to start a fresh one for ${creds.instance}`); try { _refreshChild.kill('SIGKILL'); } catch (_) {}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/ConnectionsContext.jsx",
+        "lines": "117-135",
+        "snippet": "const activate = useCallback(async (id) => { const profile = await api.activateConnection(id); ... await api.refreshIncidents();   // returns immediately (202)\n        waitForRefresh(profile);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "Our ServiceNow password changed / the API account was rotated. What breaks and how do I fix it?",
+    "answer": "Every ServiceNow feature stops at once: Switch Information, raising and approving CMDB registration requests, and the incident refresh. RackTrack stores the credentials you typed and never re-reads them from anywhere else, so it keeps presenting the old password until someone updates it.\n\nTo fix, on the connection that is Active:\n1. Profile \u2192 Connections, tap the three-dot menu on the connection, choose Edit.\n2. Re-enter the password (and username if that changed) and save.\n3. Tap \"Refresh data from this source\" to confirm \u2014 you should get \"\u2713 Pulled N incidents\".\n\nNote that saved passwords are never shown back to you, not even to the administrator who typed them, so you cannot check the old value \u2014 you can only overwrite it. If your organisation uses an organisation-wide connection, only an organisation admin can update it, from the Connections panel in the Org Console.\n\nThere is no expiry built into RackTrack: credentials live until you change them. Anything that looks like an expiry is your ServiceNow account policy, not RackTrack.",
+    "symptoms": [
+      "Everything ServiceNow-related fails at once after a password change",
+      "Could not reach ServiceNow \u2014 check the connection.",
+      "Refresh failed with a 401-style error"
+    ],
+    "rootCause": "Credentials live only in the AES-256-GCM secret_blob of a connection profile and are write-only over the API; there is intentionally no env or file fallback, so a stale stored password keeps being used until an update replaces it.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/lib/connection_profiles.js",
+        "lines": "347-360",
+        "snippet": "* Resolve credentials for a given backend type from the user's active connection profile. ... There is intentionally NO env/file fallback \u2014 the connection profile is the sole source of truth."
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/connection_profiles_routes.js",
+        "lines": "106-111",
+        "snippet": "// Secrets are stored AES-256-GCM and are NEVER returned by any of these routes \u2014 not even to the admin who set them."
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/lib/connection_profiles.js",
+        "lines": "281-307",
+        "snippet": "function update(userId, profileId, { name, secret } = {}) { ... const nextSecret = secret ? { ...existing.secret, ...secret } : existing.secret;"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "I cannot see or edit the organisation's data-source connections \u2014 it says organization admin only.",
+    "answer": "Organisation-wide connections are restricted to organisation admins and the platform owner. A site manager or ordinary member gets \"organization admin only\" and cannot list, add, change or remove them.\n\nWhat you can still do as a non-admin: save your own personal connection under Profile \u2192 Connections. RackTrack prefers the organisation-wide credential when one exists and falls back to your personal one otherwise, so a personal connection is a valid way to work if your organisation has not configured a shared one.\n\nIf you need the shared connection changed, ask an organisation admin. If your account genuinely is an admin and you still see the message \"no organization is associated with your account\", your user is not attached to an organisation and that must be fixed first.",
+    "symptoms": [
+      "organization admin only",
+      "no organization is associated with your account",
+      "403 from /api/org-connections",
+      "Connections panel missing in the Org Console"
+    ],
+    "rootCause": "requireOrgAdmin gates /api/org-connections to roles org_admin and owner and requires req.user.organization_id; credential resolution prefers the org profile and falls back to the personal one.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/connection_profiles_routes.js",
+        "lines": "112-123",
+        "snippet": "function requireOrgAdmin(req, res, next) { if (!req.user || !['org_admin', 'owner'].includes(req.user.role)) { return res.status(403).json({ ok: false, error: 'organization admin only' }); } const orgId = req.user.organization_id; if (!orgId) { return res.status(400).json({ ok: false, error: 'no organization is associated with your account' }); }"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4661-4664",
+        "snippet": "// Prefer the ORG-wide credential the admin configured; fall back to a personal profile only if the org has none.\n    const resolved = (orgId && profiles.resolveCredsForOrg(orgId, 'servicenow')) || (userId && profiles.resolveCredsForType(userId, 'servicenow'));"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "The Network View header says \"Network View offline\".",
+    "answer": "That badge means RackTrack cannot reach the network-discovery server (Netdisco) that backs the Network View. Everything else in the app \u2014 your scan, the unit map, ports, topology \u2014 is unaffected; only this one screen depends on it.\n\nThere is nothing you can fix from the phone. Report it to your administrator and mention the rack you were looking at. While it is offline the page shows a plain message rather than error text, which is deliberate.\n\nAdmins: the health probe simply requests the configured Netdisco URL and reports whether an API key could be obtained. Check that the Netdisco container stack is up and that NETDISCO_URL, NETDISCO_USER and NETDISCO_PASSWORD in server/.env point at it.",
+    "symptoms": [
+      "Network View offline",
+      "checking\u2026 badge never turns green",
+      "Netdisco unreachable in the server log"
+    ],
+    "rootCause": "GET /api/netdisco/health fetches NETDISCO_URL with a 4s abort and reports ok:false plus authenticated:false when the fetch throws or no api_key can be obtained.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "145-160",
+        "snippet": "const t = setTimeout(() => ctrl.abort(), 4000); const r = await fetch(NETDISCO_URL, { signal: ctrl.signal }); ... res.json({ ok: r.ok || r.status < 500, url: NETDISCO_URL, authenticated: !!apiKey, status: r.status });"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/NetdiscoPage.jsx",
+        "lines": "429-437",
+        "snippet": "function HealthPill({ health }) { if (!health) return <span className={styles.healthPill}>checking\u2026</span>; ... {ok ? 'Network View online' : 'Network View offline'}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "37-40",
+        "snippet": "const NETDISCO_URL  = process.env.NETDISCO_URL      || 'http://localhost:5000'; const ND_USER = process.env.NETDISCO_USER || 'admin';"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "Network View says \"Network view is being prepared\" and never loads.",
+    "answer": "That message appears when RackTrack asked the discovery server about this rack and could not get an answer. The wording is intentionally gentle \u2014 behind it is usually the discovery server being down or still starting up.\n\nWhat to do: give it a minute and pull to reload. Network data is pushed over from your scan automatically shortly after the scan completes, so a brand-new scan genuinely does need a moment.\n\nIf it never arrives, the discovery server is down and your administrator needs to look at it. RackTrack deliberately hides the technical error text (connection refused, timeouts, tracebacks) instead of showing it to you, so there is no extra detail to read on screen.",
+    "symptoms": [
+      "Network view is being prepared.",
+      "This updates automatically from your scan \u2014 check back in a moment.",
+      "Devices section stuck empty"
+    ],
+    "rootCause": "When ndGet on the device inventory throws, /api/netdisco/scan/:rackId/match returns netdisco_reachable:false; the page renders the prepared-state warning and looksLikeNetdiscoNoise() suppresses ECONNREFUSED/traceback text.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "390-400",
+        "snippet": "const cleaned = raw.replace(/^netdisco unreachable:\\s*/i, ''); return res.json({ rackId, netdisco_reachable: false, error: cleaned, matches: [], });"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/NetdiscoPage.jsx",
+        "lines": "259-264",
+        "snippet": "{match && match.netdisco_reachable === false && (<div className={styles.warn}><strong>Network view is being prepared.</strong><br />This updates automatically from your scan \u2014 check back in a moment.</div>)}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/NetdiscoPage.jsx",
+        "lines": "25-39",
+        "snippet": "function looksLikeNetdiscoNoise(msg) { ... m.includes('econnrefused') || m.includes('etimedout') || m.includes('enotfound') || m.includes('fetch failed')"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "Network View says \"No switches detected\" even though the rack clearly has switches.",
+    "answer": "The Network View pairs each device the photo found with a device the discovery server knows about. It tries three ways, in order: a management IP recorded for the device, the device's rack-unit name (SW-U10 and so on), and finally a fuzzy match on the model text read off the faceplate.\n\nYou will see \"No switches detected\" when none of those succeed, or when the only things found were patch panels \u2014 patch panels are hidden from this screen on purpose because they are passive and have no network presence.\n\nWhat to try:\n1. Reload the screen a minute after the scan \u2014 the push into the discovery server happens shortly after the scan finishes.\n2. Check the results screen actually classified the device as a Switch. If it was misread, use the \"wrong?\" correction on the results screen and rescan.\n3. If the device is genuinely on the network, ask your administrator to confirm the discovery server has it and that its name matches the rack-unit naming.",
+    "symptoms": [
+      "No switches detected",
+      "No network switches were found for this rack yet. When one is discovered it will appear here.",
+      "Devices count shows 0 live"
+    ],
+    "rootCause": "The match route only considers scan devices classed Switch/Patch Panel/Firewall/Gateway/Router, matches by override mgmt_ip, then by canonical name (SW-/PP-/SRV- + Uxx), then by fuzzy model substring; the page then filters out Patch Panel rows before rendering.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "429-450",
+        "snippet": "const prefix = d.class_name === 'Patch Panel' ? 'PP-' : d.class_name === 'Server' ? 'SRV-' : 'SW-'; const cmdbName = u ? `${prefix}${u}` : null; ... if (cmdbName && overrideIps[cmdbName] && ndByIp[...]) ... else if (cmdbName && ndByName[cmdbName.toLowerCase()]) ... else if (d.ocr_model) {"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/NetdiscoPage.jsx",
+        "lines": "284-292",
+        "snippet": "<strong>No switches detected</strong><br />No network switches were found for this rack yet. When one is discovered it will appear here."
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "367-369",
+        "snippet": "const scanDevices = (map.devices || []).filter(d => ['Switch', 'Patch Panel', 'Firewall', 'Gateway', 'Router'].includes(d.class_name));"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "Is the Network View live data from my network, or from my photo?",
+    "answer": "In this deployment it is built from your scan. After each scan RackTrack pushes the rack's devices, ports and links into the discovery server's database, and the Network View then reads them back. Records created this way are tagged with the rack ID in their description.\n\nWhat that means in practice:\n- Device names, models and management addresses match what the scan and your CMDB data say, not what a live SNMP sweep found.\n- \"Learned MAC\" counts can legitimately be zero for these devices, because nothing has actually been observed on the wire.\n- The push happens automatically about a second and a half after a scan completes, and can also be triggered manually.\n\nIf you need genuinely live switch state \u2014 port up/down, speeds, VLANs, neighbours \u2014 use the live switch ports screen instead, which reads the switch over SSH.",
+    "symptoms": [
+      "Network View shows devices that were never SNMP-discovered",
+      "0 MACs learned on every port",
+      "Device description contains [racktrack:RK-\u2026]"
+    ],
+    "rootCause": "push_rack_to_netdisco.py builds device rows from synth.build_inventory over the scan result and inserts them into Netdisco's Postgres, tagging each description with [racktrack:<rack_id>]; scheduleNetdiscoSync fires 1500 ms after a scan.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/netdisco-docker/push_rack_to_netdisco.py",
+        "lines": "316-321",
+        "snippet": "# Tag stays at the END so it doesn't dominate Netdisco's UI but is still easy to grep on for cleanup \u2014 `description LIKE '%[racktrack:%'`.\n    desc_parts.append(f\"[racktrack:{rack_id}]\")"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "546-556",
+        "snippet": "function scheduleNetdiscoSync(rackId, delayMs = 1500) { ... const r = await runPushScript(rackId); if (r.ok) { logger.info(`[netdisco] ${rackId} synced \u2014 ${r.devices} devices, ${r.ports} ports, ${r.edges} edges`);"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "204-208",
+        "snippet": "//   /nodes (active MAC sightings) is fetched separately and joined by port.\n//   It legitimately may return [] for synthesised RackTrack devices."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "Syncing a rack to the Network View fails with \"Network View sync is temporarily unavailable.\"",
+    "answer": "The push of your scan into the discovery server did not complete. From your side there is nothing to correct \u2014 retry once, and if it fails again report it with the rack ID.\n\nAdmins: the push runs netdisco-docker/push_rack_to_netdisco.py against Netdisco's PostgreSQL directly (not its web API) and is killed after 60 seconds. The three things that break it are: the database not reachable at NETDISCO_DB_HOST:NETDISCO_DB_PORT (defaults localhost:5432), the psycopg2-binary Python package not installed, or no scan_result.json yet for that rack. The real reason is in the server log; the user-facing string is deliberately generic.",
+    "symptoms": [
+      "Network View sync is temporarily unavailable.",
+      "502 from /api/netdisco/sync/<rackId>",
+      "Log: [netdisco] <rackId> sync failed \u2014 cannot connect to Netdisco Postgres",
+      "Missing dependency. Run:  pip install psycopg2-binary"
+    ],
+    "rootCause": "runPushScript spawns the push script with a 60s SIGKILL timer and any non-ok result is mapped to a generic 502; the script exits 2 when psycopg2 cannot open the Netdisco database.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "568-575",
+        "snippet": "const r = await runPushScript(rackId); if (!r.ok) { logger.warn(`[netdisco] sync ${rackId} failed:`, r.error); return res.status(502).json({ ok: false, error: 'Network View sync is temporarily unavailable.' }); }"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "524-527",
+        "snippet": "const timer = setTimeout(() => { try { child.kill('SIGKILL'); } catch (_) {} resolve({ ok: false, error: 'push script timed out (60s)' }); }, 60_000);"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/netdisco-docker/push_rack_to_netdisco.py",
+        "lines": "75-84",
+        "snippet": "except psycopg2.OperationalError as e: print(f\"ERROR: cannot connect to Netdisco Postgres at {DB_CONFIG['host']}:{DB_CONFIG['port']} \u2014 {e}\") sys.exit(2)"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "Admin: what exactly do I configure for Netdisco, and what are the common misconfigurations?",
+    "answer": "Internal note. The server talks to Netdisco two different ways and both must be configured:\n\n1. Read path (Network View pages) \u2014 HTTP against the Netdisco web API. Settings: NETDISCO_URL (code default http://localhost:5000), NETDISCO_USER and NETDISCO_PASSWORD (both default to admin). The proxy logs in once, caches the api_key in memory, and retries a login exactly once on a 401. All requests use a 15-second timeout.\n2. Write path (pushing scans in) \u2014 direct PostgreSQL. Settings: NETDISCO_DB_HOST, NETDISCO_DB_PORT, NETDISCO_DB_NAME, NETDISCO_DB_USER, NETDISCO_DB_PASS (defaults localhost / 5432 / netdisco / netdisco / netdisco).\n\nTwo traps worth checking first:\n- Port mismatch. The bundled compose file publishes the Netdisco web container on host port 5005 (5005:5000) and Postgres on 5432. If the RackTrack server runs on the host rather than inside the compose network, NETDISCO_URL must point at the published port, not 5000. server/.env.example ships NETDISCO_URL=http://netdisco:5000, which is the in-network form.\n- Default credentials. If NODE_ENV is production and user/password are still admin/admin, the server logs a warning at boot but keeps running.",
+    "symptoms": [
+      "Network View offline despite the containers running",
+      "netdisco.default_creds warning in the boot log",
+      "Reads work but sync fails, or vice versa"
+    ],
+    "rootCause": "Two independent transports with independent settings: HTTP api-key auth for reads, direct psycopg2 for writes; compose publishes the web UI on host 5005 while the proxy default is 5000.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "37-46",
+        "snippet": "const NETDISCO_URL  = process.env.NETDISCO_URL || 'http://localhost:5000'; ... const TIMEOUT_MS = 15000; if ((process.env.NODE_ENV || 'development') === 'production' && ND_USER === 'admin' && ND_PASSWORD === 'admin') { logger.warn({ event: 'netdisco.default_creds' }, 'Netdisco using default admin/admin credentials \u2014 set NETDISCO_USER and NETDISCO_PASSWORD');"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/netdisco-docker/compose.yaml",
+        "lines": "92-93",
+        "snippet": "ports:\n      - \"5005:5000\""
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "510-518",
+        "snippet": "NETDISCO_DB_HOST: process.env.NETDISCO_DB_HOST || 'localhost', NETDISCO_DB_PORT: process.env.NETDISCO_DB_PORT || '5432', NETDISCO_DB_NAME: process.env.NETDISCO_DB_NAME || 'netdisco',"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/.env.example",
+        "lines": "32-35",
+        "snippet": "NETDISCO_URL=http://netdisco:5000\nNETDISCO_USER=changeme\nNETDISCO_PASSWORD=changeme"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "likely",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "RackTrack analysed the ticket but never posted a work note back to ServiceNow.",
+    "answer": "Posting back is guarded on purpose, and there are three reasons it is skipped:\n\n1. Low confidence \u2014 if RackTrack's confidence in its own reading is below 0.5 it stays quiet rather than posting a guess.\n2. Nothing changed \u2014 if the analysis is identical to the one already posted for that incident, it will not post a duplicate.\n3. Too soon \u2014 it will not post to the same incident twice within 24 hours.\n\nIf you need it posted anyway, the post action supports a force option that skips the no-change and rate-limit guards. If the incident is missing its internal record id in RackTrack's copy, posting is refused entirely \u2014 refresh your incidents from the Connections screen so the ticket is re-read.",
+    "symptoms": [
+      "skipped_low_confidence",
+      "skipped_no_change",
+      "skipped_rate_limit",
+      "inbox ticket is missing sys_id \u2014 cannot post",
+      "No work note appears on the incident"
+    ],
+    "rootCause": "auto_post_analysis enforces POST_CONFIDENCE_FLOOR 0.5, an analysis-hash equality check, and POST_RATE_LIMIT_HOURS 24 before calling add_work_note.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/pipeline/agent.py",
+        "lines": "593-594",
+        "snippet": "POST_CONFIDENCE_FLOOR = 0.5\nPOST_RATE_LIMIT_HOURS = 24"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/pipeline/agent.py",
+        "lines": "674-690",
+        "snippet": "if confidence < POST_CONFIDENCE_FLOOR: return {\"status\": \"skipped_low_confidence\", ...} ... if prev.get(\"hash\") == cur_hash: return {\"status\": \"skipped_no_change\", ...} ... if datetime.now(timezone.utc) - last_dt < timedelta(hours=POST_RATE_LIMIT_HOURS): return {\"status\": \"skipped_rate_limit\", ...}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4757-4762",
+        "snippet": "if (!sn_creds) return res.status(400).json({ error: 'No active ServiceNow connection. Add one under Profile \u2192 Connections.' }); ... if (!ticket.sys_id) return res.status(400).json({ error: 'inbox ticket is missing sys_id \u2014 cannot post' });"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "The work note says \"PHYSICAL DRIFT\" or \"cannot verify\". What is it telling me?",
+    "answer": "The reconciliation note compares each device your CMDB says is in the rack against what the photo actually shows at that rack unit, and ends with one recommended action:\n\n- Agreement: the CMDB and the rack match, so the incident is likely a configuration problem \u2014 check the interface state, VLAN, or the device at the far end. No physical work needed.\n- Low confidence: the right kind of device was seen at the right unit, but the photo was not clear enough. Retake the photo with better light or a straighter angle before sending anyone to the rack.\n- PHYSICAL DRIFT: what is in the rack does not match the CMDB. Either the device is not where the CMDB says, or it was moved and the CMDB was never updated.\n- Cannot verify: the CMDB record has no rack-unit position, so there is nothing to compare against. Someone needs to set the rack unit position on that record.\n\nEach line is marked with a tick for a match, a warning for a low-confidence match, a cross for a mismatch, and a question mark for missing data.",
+    "symptoms": [
+      "Suggested action: PHYSICAL DRIFT \u2014 \u2026 does not match rack scan.",
+      "Suggested action: cannot verify \u2026 \u2014 CMDB lacks rack position data.",
+      "expected <class> at U<nn>, scan detected nothing",
+      "Summary: N/M CMDB entries agree with physical scan"
+    ],
+    "rootCause": "reconciler._check_ci compares each CI's rack_unit_position against the scan detections at that U and returns one of four symbols; reconcile() maps the primary CI's symbol to one of four suggested actions.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/reconciler.py",
+        "lines": "105-127",
+        "snippet": "if u is None: return \"?\", \"no rack_unit_position set in CMDB\" ... if not detections: return \"\u2717\", f\"expected {expected} at U{u:02d}, scan detected nothing\" ... if best_conf < LOW_CONF_THRESHOLD: return \"\u26a0\", ..."
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/reconciler.py",
+        "lines": "193-211",
+        "snippet": "lines.append(f\"Suggested action: CMDB and physical rack agree on {primary_name}.\") ... f\"Suggested action: PHYSICAL DRIFT \u2014 {primary_name} does not match rack scan. \" \"Verify the device is actually installed where CMDB says, or update CMDB if moved.\" ... \"Set rack_unit_position on the CI and rerun.\""
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "I photographed a rack for a ticket and got \"Wrong rack\".",
+    "answer": "Before letting you act on a ticket, RackTrack reads the labels in your photo and checks them against the rack named on the incident. If they do not agree it stops and shows \"Wrong rack\" with the expected rack name and a comparison of what it read versus what it expected.\n\nWhat to do: walk to the rack named on screen and photograph that one instead. Check the aisle and row labels before shooting.\n\nIf the photo simply had no readable labels, RackTrack does not block you \u2014 it asks you to confirm manually instead. So a hard \"Wrong rack\" means it genuinely read labels and they belonged to a different rack.",
+    "symptoms": [
+      "Wrong rack",
+      "This isn't <rack name>",
+      "The labels read from this image don't match the rack on the incident.",
+      "409 rack_mismatch"
+    ],
+    "rootCause": "POST /api/incidents/:inc/verify-rack runs analyze plus label OCR and compares identifier-shaped labels to the ticket's CMDB rack record, returning 409 rack_mismatch with detected/expected, or a soft no_labels_detected when nothing was readable.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4304-4321",
+        "snippet": "*   - 409 {ok:false, reason:'rack_mismatch', detected, expected, missing} \u2192 wrong rack \u2014 tell the tech to upload the correct one\n *   - 200 {ok:null, reason:'no_labels_detected'} \u2192 soft mode, couldn't verify either way"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/ScanPage.jsx",
+        "lines": "1058-1062",
+        "snippet": "if (res.status === 409 && data.error === 'rack_mismatch') { clearInterval(ticker); setLoading(false); setProgress(0); setVerifyReject(data); return; }"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/ScanPage.jsx",
+        "lines": "1611-1618",
+        "snippet": "Wrong rack ... This isn't <b>{payload?.expected_rack_name || 'the expected rack'}</b> ... The labels read from this image don't match the rack on the incident. Upload the correct rack photo to continue."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "Internal: the CMDB and incident data looks like demo data and does not match our real ServiceNow.",
+    "answer": "Internal note. The server can serve fixture data in place of the real external systems. server/mock_routes.js simulates ServiceNow, NetBox, SolarWinds Orion, CA/DX Spectrum and a generic REST source from JSON files under server/data/mock, with its own hardcoded accounts (sn_admin, sn_netops, sn_dcops, sn_secops).\n\nTwo things to check when the data looks wrong:\n1. These mock routes are mounted whenever MOCK_SERVER_URL is set OR NODE_ENV is anything other than production. A staging box left on the default NODE_ENV therefore exposes them.\n2. When MOCK_SERVER_URL is set, the incident poller is redirected to it wholesale \u2014 SN_BASE_URL is rewritten to <MOCK_SERVER_URL>/api/now regardless of which ServiceNow instance the user selected. Their real instance is never contacted, so the Connections screen can show a green \"Pulled N incidents from <instance>\" while the content came from fixtures.\n\nFix: unset MOCK_SERVER_URL and run with NODE_ENV=production for any deployment that must reach a real instance.",
+    "symptoms": [
+      "Incidents and CMDB entries do not exist in the customer's real instance",
+      "Connection succeeds against any instance name with any credentials",
+      "Boot log: mock data-source routes loaded"
+    ],
+    "rootCause": "mock_routes is mounted when MOCK_SERVER_URL is set or NODE_ENV !== 'production'; POST /api/incidents/refresh overrides SN_BASE_URL to the mock URL whenever MOCK_SERVER_URL is present.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "347-357",
+        "snippet": "if (process.env.MOCK_SERVER_URL || process.env.NODE_ENV !== 'production') { app.use(require('./mock_routes')); ... } else { logger.info(... 'mock data-source routes disabled (production, MOCK_SERVER_URL unset)');"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4129-4142",
+        "snippet": "// When MOCK_SERVER_URL is set in .env, ALL ServiceNow connections route through the integrated mock routes ... ...(mockUrl ? { SN_BASE_URL: `${mockUrl}/api/now` } : {}),"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/mock_routes.js",
+        "lines": "28-36",
+        "snippet": "const SN_USERS = { sn_admin: { password: 'MockSN@2024!', name: 'System Admin', role: 'System Administrator',"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  },
+  {
+    "question": "Internal: the combined two-rack topology never creates the cross-rack links in ServiceNow.",
+    "answer": "Internal note. The inter-rack CMDB push is the one ServiceNow path that does NOT read the connection-profile store. scheduleInterRackCmdbLink returns immediately unless process.env.SN_INSTANCE is set on the server, so on installs that configure ServiceNow only through Profile \u2192 Connections it silently never runs.\n\nThis is intentional fire-and-forget behaviour \u2014 the combined topology view renders from the synthesised links regardless, so users see the uplinks in the app even though no cmdb_rel_ci \"Connects to\" rows are created. Nothing surfaces in the UI.\n\nTo enable it, set SN_INSTANCE / SN_USER / SN_PASSWORD in server/.env. This is the same server-level requirement the automatic post-scan ticket and the 5-minute approval poller have.",
+    "symptoms": [
+      "No cmdb_rel_ci relationships between racks in a group",
+      "No cmdb.interrack_linked entry in the log",
+      "Combined topology shows uplinks that do not exist in ServiceNow"
+    ],
+    "rootCause": "scheduleInterRackCmdbLink short-circuits on missing process.env.SN_INSTANCE and never consults connection_profiles, unlike every user-triggered ServiceNow route.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "3955-3960",
+        "snippet": "function scheduleInterRackCmdbLink(groupId) { if (!groupId || _interRackCmdbInflight.has(groupId)) return; if (!process.env.SN_INSTANCE) return;  // ServiceNow not configured \u2014 skip."
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "3949-3953",
+        "snippet": "// Fire-and-forget: the combined-topology view renders from the synthesized links regardless, so a missing ServiceNow config or a failed push never blocks the feature."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "Integrations: ServiceNow / CMDB, Netdisco Network View, and connection profiles"
+  }
+]
