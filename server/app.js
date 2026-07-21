@@ -315,6 +315,17 @@ try {
     'port history router not loaded');
 }
 
+// Support assistant — grounded answers from a verified knowledge base
+// (/api/support/*). Costs nothing to run: local BM25 search, with an optional
+// local model. Degrades to search-only, and to 503, rather than ever guessing.
+try {
+  app.use(require('./support_routes'));
+  logger.info({ event: 'router.loaded', router: 'support' }, 'support bot router loaded');
+} catch (err) {
+  logger.warn({ event: 'router.load_failed', router: 'support', err: err.message },
+    'support bot router not loaded');
+}
+
 // Owner-only device admin for the same monitored_devices table (/api/lab/*).
 // Split from port_history because it returns host/ssh_port, which the
 // /api/ports views intentionally strip — see lab_devices.js for why.
@@ -481,10 +492,31 @@ async function normalizeImage(inputPath) {
 }
 
 // ── Rack ID ───────────────────────────────────────────────────
-// Derived from SHA-256 of file contents → stable for the same physical rack image
-function computeRackId(filePath) {
+// SHA-256 of the file contents, SCOPED TO THE OWNING ORGANISATION.
+//
+// Content-derived, so the same rack photo rescanned inside one organisation
+// collapses onto the same id. That is deliberate: it is what lets several
+// Sites (tenants) in an org co-own one RK- id and reuse a cached analysis.
+//
+// The scope prefix is what keeps that sharing INSIDE the org. This id keys
+// both outputs/<rackId>/ and rack_owners, so hashing content alone meant two
+// unrelated organisations that uploaded the same photo (a stock image, or the
+// same physical rack) landed on one id: they co-owned it, each passed the
+// tenant gate for the other’s rack, and the second scan overwrote the
+// first’s results. 34 such ids already exist in the live database.
+function rackScope(auth) {
+  if (auth && auth.organizationId) return `org:${auth.organizationId}`;
+  // No organisation (the platform owner’s own Site) — fall back to the tenant
+  // so an id is still never shared across unrelated accounts.
+  if (auth && auth.tenantId) return `tenant:${auth.tenantId}`;
+  return 'global';
+}
+
+function computeRackId(filePath, scope = 'global') {
   const hash = crypto
     .createHash('sha256')
+    .update(String(scope))
+    .update('\0')            // delimiter: scope cannot bleed into content
     .update(fs.readFileSync(filePath))
     .digest('hex');
   return `RK-${hash.slice(0, 8).toUpperCase()}`;
@@ -2195,7 +2227,7 @@ app.post('/api/analyze', scanLimit, upload.single('image'), async (req, res) => 
     const tNormStart = Date.now();
     tmpPath = await normalizeImage(tmpPath);
     timings.normalize_ms = Date.now() - tNormStart;
-    const rackId    = computeRackId(tmpPath);
+    const rackId    = computeRackId(tmpPath, rackScope(_a));
     const rackDir   = path.join(outputsDir, rackId);
     const jsonPath  = path.join(rackDir, 'device_unit_map.json');
 
@@ -2535,7 +2567,7 @@ app.post('/api/stitch', scanLimit, upload.array('images', 8), async (req, res) =
     tmpPaths.forEach(safeUnlink);
 
     // ── Now mirror /api/analyze flow on the stitched image ───────
-    const rackId   = computeRackId(stitchedPath);
+    const rackId   = computeRackId(stitchedPath, rackScope(softAuthPayload(req)));
     const rackDir  = path.join(outputsDir, rackId);
     const jsonPath = path.join(rackDir, 'device_unit_map.json');
 
@@ -3651,7 +3683,7 @@ app.post('/api/analyze-video', scanLimit, upload.single('video'), async (req, re
         // Normalize the JPEG so it goes through the same pipeline as
         // an image upload (auto-orient, mozjpeg, etc.)
         const normalizedPath = await normalizeImage(r.best_frame_path);
-        const rackId = computeRackId(normalizedPath);
+        const rackId = computeRackId(normalizedPath, rackScope(authPayload));
         const rackDir = path.join(outputsDir, rackId);
         const jsonPath = path.join(rackDir, 'device_unit_map.json');
 
@@ -4327,7 +4359,7 @@ app.post('/api/incidents/:inc/verify-rack', scanLimit, upload.single('image'), a
   let tmpPath = req.file.path;
   try {
     tmpPath = await normalizeImage(tmpPath);
-    const rackId  = computeRackId(tmpPath);
+    const rackId  = computeRackId(tmpPath, rackScope(softAuthPayload(req)));
     const rackDir = path.join(outputsDir, rackId);
     const dumPath = path.join(rackDir, 'device_unit_map.json');
 
@@ -4422,7 +4454,7 @@ app.post('/api/analyze-for-ticket', scanLimit, upload.single('image'), async (re
     // STEP 1 — analyze the rack (reuse logic from /api/analyze inline)
     let tmpPath = req.file.path;
     tmpPath = await normalizeImage(tmpPath);
-    const rackId   = computeRackId(tmpPath);
+    const rackId   = computeRackId(tmpPath, rackScope(softAuthPayload(req)));
     const rackDir  = path.join(outputsDir, rackId);
     const jsonPath = path.join(rackDir, 'device_unit_map.json');
 
