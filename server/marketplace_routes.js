@@ -713,6 +713,22 @@ router.get('/api/marketplace/orders', requireAuth, (req, res) => {
   res.json({ ok: true, orders: rows.map(r => orderToJson(r)) });
 });
 
+// Unread message count for the current user.
+//
+// MUST stay ahead of '/orders/:id'. Express matches in registration order, so
+// with the parameterised route first this path bound id='unread-count', failed
+// the Number.isFinite check and 400'd with 'bad id' — the endpoint was
+// unreachable and every Marketplace page load logged the failure.
+router.get('/api/marketplace/orders/unread-count', requireAuth, (req, res) => {
+  const row = db.prepare(`
+    SELECT COUNT(*) AS cnt FROM marketplace_messages m
+    JOIN marketplace_orders o ON o.id = m.order_id
+    WHERE m.read = 0 AND m.sender_id != ?
+      AND (o.buyer_id = ? OR o.seller_id = ?)
+  `).get(req.user.id, req.user.id, req.user.id);
+  res.json({ ok: true, unread: row?.cnt || 0 });
+});
+
 // Get single order (must be buyer or seller)
 router.get('/api/marketplace/orders/:id', requireAuth, (req, res) => {
   const id = parseInt(req.params.id, 10);
@@ -817,17 +833,6 @@ router.post('/api/marketplace/orders/:id/messages', requireAuth, safeAsync(async
     },
   });
 }));
-
-// Unread message count for the current user
-router.get('/api/marketplace/orders/unread-count', requireAuth, (req, res) => {
-  const row = db.prepare(`
-    SELECT COUNT(*) AS cnt FROM marketplace_messages m
-    JOIN marketplace_orders o ON o.id = m.order_id
-    WHERE m.read = 0 AND m.sender_id != ?
-      AND (o.buyer_id = ? OR o.seller_id = ?)
-  `).get(req.user.id, req.user.id, req.user.id);
-  res.json({ ok: true, unread: row?.cnt || 0 });
-});
 
 
 // ═══════════════════════════════════════════════════════════════════════
