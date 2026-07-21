@@ -25,7 +25,9 @@
   pointer-events: auto;
 }
 
-/* Each tab — vertical stack: icon + label + (active-only) dot indicator */
+/* Each tab — vertical stack: icon + label + (active-only) dot indicator.
+   MORE is a <button>, the rest are links, so the element defaults have to be
+   reset here or the button renders with a border and the system font. */
 .tab {
   position: relative;
   display: flex;
@@ -35,10 +37,24 @@
   text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  padding: 8px 12px;
+  padding: 8px 4px;
   gap: 2px;
   color: #BBBBBB;
   transition: color 0.18s;
+  /* button reset */
+  font: inherit;
+  background: none;
+  border: 0;
+  /* Four equal slots that shrink together, so the bar fits a 320px phone
+     rather than pushing the last tab off the edge. */
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--md-primary, #17171a);
+  outline-offset: -3px;
+  border-radius: 8px;
 }
 
 .tab:hover {
@@ -49,16 +65,25 @@
   color: var(--md-primary);
 }
 
+/* Inline SVG rather than the Material icon font — the tabs now share their
+   icons with the sidebar, so both navigations look like the same app. */
 .icon {
-  font-size: 24px;
+  width: 23px;
+  height: 23px;
   color: inherit;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  transition: font-variation-settings 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.tab.active .icon {
-  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+.icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.9;
+  transition: stroke-width 0.18s;
 }
+
+.tab.active .icon svg { stroke-width: 2.3; }
 
 .label {
   font-family: var(--font);

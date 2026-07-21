@@ -1,27 +1,32 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import styles from './BottomNav.module.css';
 import { useShutter } from '../ShutterContext.jsx';
 import { useAuth } from '../AuthContext.jsx';
+import { usePrimaryNav, MoreIcon } from '../nav/navLinks.jsx';
+import MoreSheet from './MoreSheet.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
-   BottomNav — white surface, 3 inline tabs (HOME / SCAN / PROFILE).
-   Each tab: filled-when-active Material Symbol + uppercase label + a
-   tiny black dot indicator below the active label.
-   No floating FAB.
+   BottomNav — the phone navigation: HOME / SCAN / MORE / PROFILE.
+
+   The three permanent slots come from the shared destination list in
+   nav/navLinks.jsx, and MORE opens a sheet with everything else that list
+   contains. This used to be three hardcoded constants while the sidebar
+   built eight role-gated links, which is how Lab and Marketplace ended up
+   with no tappable route on a phone at all.
    ────────────────────────────────────────────────────────────────────── */
 
-const TABS = [
-  { to: '/',        end: true,  icon: 'home',             label: 'HOME'    },
-  { to: '/scan',    end: false, icon: 'qr_code_scanner',  label: 'SCAN'    },
-  { to: '/profile', end: false, icon: 'person',           label: 'PROFILE' },
-];
-
 export default function BottomNav() {
-  const navigate = useNavigate();
   const { fn: shutterFn, canShoot } = useShutter();
   const { isAuthed } = useAuth();
+  const links = usePrimaryNav();
+  const location = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   if (!isAuthed) return null;
+
+  const barLinks = links.filter((l) => l.inBar);
+  const overflow = links.filter((l) => !l.inBar);
 
   // While the camera viewfinder is live on the Scan page, ScanPage registers
   // a shutter handler. We hijack the SCAN tab onClick to fire it instead of
@@ -33,28 +38,51 @@ export default function BottomNav() {
     }
   };
 
+  // Highlight MORE while the user is actually on one of the pages it holds,
+  // so the bar never looks like nothing is selected.
+  const onOverflowPage = overflow.some(
+    (l) => location.pathname === l.to || location.pathname.startsWith(l.to + '/'),
+  );
+
+  const tab = (l) => (
+    <NavLink
+      key={l.to}
+      to={l.to}
+      end={l.end}
+      onClick={l.to === '/scan' ? handleScanClick : undefined}
+      className={({ isActive }) => `${styles.tab} ${isActive && !moreOpen ? styles.active : ''}`}
+    >
+      <span className={styles.icon} aria-hidden="true">{l.icon}</span>
+      <span className={styles.label}>{l.label.toUpperCase()}</span>
+      <span className={styles.dot} aria-hidden="true" />
+    </NavLink>
+  );
+
   return (
-    <nav className={styles.nav}>
-      <div className={styles.bar}>
-        {TABS.map((t) => (
-          <NavLink
-            key={t.to}
-            to={t.to}
-            end={t.end}
-            onClick={t.to === '/scan' ? handleScanClick : undefined}
-            className={({ isActive }) => `${styles.tab} ${isActive ? styles.active : ''}`}
-          >
-            <span
-              className={`material-symbols-outlined ${styles.icon}`}
-              aria-hidden="true"
+    <>
+      <nav className={styles.nav}>
+        <div className={styles.bar}>
+          {barLinks.slice(0, 2).map(tab)}
+
+          {overflow.length > 0 && (
+            <button
+              type="button"
+              className={`${styles.tab} ${moreOpen || onOverflowPage ? styles.active : ''}`}
+              onClick={() => setMoreOpen((o) => !o)}
+              aria-expanded={moreOpen}
+              aria-haspopup="dialog"
             >
-              {t.icon}
-            </span>
-            <span className={styles.label}>{t.label}</span>
-            <span className={styles.dot} aria-hidden="true" />
-          </NavLink>
-        ))}
-      </div>
-    </nav>
+              <span className={styles.icon} aria-hidden="true"><MoreIcon /></span>
+              <span className={styles.label}>MORE</span>
+              <span className={styles.dot} aria-hidden="true" />
+            </button>
+          )}
+
+          {barLinks.slice(2).map(tab)}
+        </div>
+      </nav>
+
+      {moreOpen && <MoreSheet links={overflow} onClose={() => setMoreOpen(false)} />}
+    </>
   );
 }

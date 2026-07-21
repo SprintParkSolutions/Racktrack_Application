@@ -4,6 +4,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import styles from './DesktopShell.module.css';
 import ThemeToggle from './ThemeToggle.jsx';
 import { useAuth } from '../AuthContext';
+import { usePrimaryNav } from '../nav/navLinks.jsx';
 
 // Persistent record of the last rack the user opened. Once an image has
 // been scanned and the user lands on /results/<rackId>, that rackId is
@@ -33,24 +34,6 @@ function writeLiveRackId(id) { _liveRackId = id || null; }
 // narrow widths, so their internal max-width / centering still works
 // — they just sit in a wider, sidebar-anchored canvas.
 
-const HomeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1z"/>
-    <path d="M9 21V12h6v9"/>
-  </svg>
-);
-const ScanIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-    <circle cx="12" cy="13" r="4"/>
-  </svg>
-);
-const ProfileIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-    <circle cx="12" cy="7" r="4"/>
-  </svg>
-);
 // Rack-context icons — used for the contextual section nav that appears
 // in the sidebar when the user is viewing a specific rack's results.
 const OverviewIcon = () => (
@@ -107,36 +90,9 @@ const DriftIcon = () => (
     <line x1="3" y1="21" x2="21" y2="21"/>
   </svg>
 );
-const MarketIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 7l1.5-3h15L21 7"/>
-    <path d="M3 7v12a1 1 0 001 1h16a1 1 0 001-1V7"/>
-    <path d="M8 7v3a4 4 0 008 0V7"/>
-  </svg>
-);
 
-const DashboardIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 3v18h18"/>
-    <path d="M7 15l4-5 3 3 4-6"/>
-  </svg>
-);
 
-const DataSourcesIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <ellipse cx="12" cy="5" rx="8" ry="3"/>
-    <path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/>
-    <path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/>
-  </svg>
-);
 
-const TwoRackIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="18" rx="1"/>
-    <rect x="14" y="3" width="7" height="18" rx="1"/>
-    <path d="M10 8h4"/>
-  </svg>
-);
 
 // Extract rackId from any /results/<id>/* or /switch-info/<id> path so we
 // can build contextual rack-section links in the sidebar.
@@ -194,23 +150,11 @@ export default function DesktopShell({ children }) {
     || location.pathname === '/marketplace'
     || location.pathname.startsWith('/marketplace/');
   const { user } = useAuth();
-  const isAdmin = user?.role === 'org_admin' || user?.role === 'owner';
-  const isOwner = user?.role === 'owner';
 
-  const links = [
-    { to: '/',            label: 'Home',        icon: <HomeIcon />,    end: true  },
-    { to: '/scan',        label: 'Scan',        icon: <ScanIcon />,    end: false },
-    { to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false },
-    // Operations Console (live ops + server logs) — owner-only.
-    ...(isOwner ? [{ to: '/dashboard', label: 'Console', icon: <DashboardIcon />, end: false }] : []),
-    // EVE-NG lab switches — owner-only while the Cisco path is shaken out.
-    ...(isOwner ? [{ to: '/lab', label: 'Lab', icon: <DashboardIcon />, end: false }] : []),
-    // Data Sources (connect ServiceNow / NetBox / Orion …) + Marketplace are
-    // organization-admin features.
-    ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false }] : []),
-    ...(isAdmin ? [{ to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false }] : []),
-    { to: '/profile',     label: 'Profile',     icon: <ProfileIcon />, end: false },
-  ];
+  // Shared with the phone's bottom bar — see nav/navLinks.jsx. The two used
+  // to keep separate hardcoded lists and drifted apart, which is how Lab and
+  // Marketplace ended up unreachable on a phone.
+  const links = usePrimaryNav();
 
   // Rack-context links — show OVERVIEW / PORTS / TOPOLOGY / NETWORK /
   // SWITCHES / DRIFT in the sidebar after the user has uploaded an image

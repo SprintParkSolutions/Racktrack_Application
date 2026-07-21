@@ -1,0 +1,126 @@
+/* Overflow navigation sheet for the phone bottom bar. Sized against the
+   viewport (svh, so the iOS URL bar collapsing does not clip it) and
+   scrollable inside itself, so a long list never runs off the screen. */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  /* Above the bottom bar (200). The bar stays visible but dimmed behind the
+     scrim, and tapping it closes the sheet like any other backdrop tap. */
+  z-index: 900;
+  background: rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fade .16s ease;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 540px;           /* match #root so it reads as part of the app */
+  max-height: 82svh;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #ffffff;
+  border-radius: 18px 18px 0 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.18);
+  padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  /* Clear the bottom bar so the last row is never hidden behind it. */
+  margin-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+  animation: rise .2s cubic-bezier(.22, 1, .36, 1);
+  overflow: hidden;
+}
+
+.grip {
+  width: 36px; height: 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.16);
+  margin: 2px auto 8px;
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0 0 6px;
+  padding: 0 6px;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.42);
+  flex-shrink: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;              /* lets the flex child actually scroll */
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 8px;
+  border-radius: 11px;
+  text-decoration: none;
+  color: #17171a;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background .12s ease;
+}
+.row:last-child { border-bottom: 0; }
+.row:active { background: rgba(0, 0, 0, 0.05); }
+.rowActive { background: rgba(0, 0, 0, 0.055); }
+.row:focus-visible { outline: 2px solid #17171a; outline-offset: -2px; }
+
+.icon {
+  width: 22px; height: 22px;
+  flex-shrink: 0;
+  color: rgba(0, 0, 0, 0.62);
+  display: flex; align-items: center; justify-content: center;
+}
+.icon svg { width: 100%; height: 100%; }
+.rowActive .icon { color: #17171a; }
+
+.text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.label { font-size: .95rem; font-weight: 600; letter-spacing: -.005em; }
+.hint {
+  font-size: .74rem;
+  color: rgba(0, 0, 0, 0.45);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.chev {
+  width: 17px; height: 17px;
+  flex-shrink: 0;
+  color: rgba(0, 0, 0, 0.24);
+}
+.chev svg { width: 100%; height: 100%; }
+
+.close {
+  flex-shrink: 0;
+  margin-top: 8px;
+  padding: 12px;
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 650;
+  color: #17171a;
+  background: rgba(0, 0, 0, 0.045);
+  border: 0;
+  border-radius: 11px;
+  cursor: pointer;
+}
+.close:active { background: rgba(0, 0, 0, 0.09); }
+
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes rise { from { transform: translateY(14px) } to { transform: none } }
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop, .sheet { animation: none; }
+}
