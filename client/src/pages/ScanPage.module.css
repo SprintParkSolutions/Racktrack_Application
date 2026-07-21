@@ -712,10 +712,12 @@
 .hudBadge  {
   display:inline-flex; align-items:center; gap:6px;
   background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(0,0,0,0.3); border-radius:100px;
-  padding:5px 14px; font-size:.62rem; font-weight:700; color:var(--c2);
+  border:1px solid rgba(255,255,255,0.18); border-radius:100px;
+  /* Sits on a near-black pill over a live camera feed, so it needs light
+     type — var(--c2) is the near-black brand ink and was invisible here. */
+  padding:5px 14px; font-size:.62rem; font-weight:700; color:#ffffff;
   letter-spacing:.1em; text-transform:uppercase;
-  box-shadow: 0 0 16px rgba(0,0,0,0.2);
+  box-shadow: 0 0 16px rgba(0,0,0,0.35);
 }
 .hudBottom { display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:auto; }
 /* Readable over a live camera feed — the old 40%-white text vanished against
@@ -839,8 +841,8 @@
 /* ── Recording indicator (red pulsing dot) ─────────────── */
 .recDot {
   width:7px; height:7px; border-radius:50%;
-  background:#1a1c1d;
-  box-shadow:0 0 10px rgba(0,0,0,0.8);
+  background:#ff3b30;
+  box-shadow:0 0 10px rgba(255,59,48,0.9);
   animation: recPulse 1s ease-in-out infinite;
   display:inline-block;
 }

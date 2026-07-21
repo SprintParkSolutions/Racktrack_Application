@@ -722,13 +722,17 @@ function CameraCapture({ onCapture, onCancel }) {
           mode === 'photo' && canShoot ? styles.guideBoxOn : ''
         } ${recording ? styles.guideBoxRec : ''}`} />
 
-        <div className={styles.hudTop}>
-          <span className={styles.hudBadge}>
-            {recording
-              ? <><span className={styles.recDot}/> REC {fmtTimer(recordSecs)}</>
-              : <><span className="dot dot-cyan" style={{width:5,height:5}}/> RACK SCAN</>}
-          </span>
-        </div>
+        {/* Top badge only while recording. The idle "RACK SCAN" pill sat
+            directly under the Dynamic Island and read as a second black
+            notch cutting into the viewfinder, so it's gone — the mode is
+            already obvious from the Photo/Video toggle below. */}
+        {recording && (
+          <div className={styles.hudTop}>
+            <span className={styles.hudBadge}>
+              <span className={styles.recDot}/> REC {fmtTimer(recordSecs)}
+            </span>
+          </div>
+        )}
 
         {/* ── Bottom control bar: hint → Photo|Video → shutter ── */}
         <div className={styles.camControls}>

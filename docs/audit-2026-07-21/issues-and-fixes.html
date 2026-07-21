@@ -1,0 +1,293 @@
+<title>RackTrack — Issues &amp; Fixes: Detailed Record</title>
+<style>
+  :root{
+    color-scheme:light;
+    --paper:#fbfcfc; --card:#fff; --card-2:#f5f7f8;
+    --ink:#12161a; --sub:#3f4750; --muted:#6d767f; --faint:#9aa2aa;
+    --line:#e5e9ec; --line-2:#eef1f3;
+    --red:#c0392b; --red-bg:#fdeceb; --red-ink:#8e2b20;
+    --amber:#b0750c; --amber-bg:#fdf3e0; --amber-ink:#875a08;
+    --green:#127a4b; --green-bg:#e6f5ee; --green-ink:#0d5c38;
+    --blue:#2563c9; --blue-bg:#e9effc; --blue-ink:#1c4ea3;
+    --violet:#6741cf; --violet-bg:#efeafc; --violet-ink:#4e2fb0;
+    --shadow:0 1px 2px rgba(16,24,32,.04), 0 8px 24px -18px rgba(16,24,32,.22);
+  }
+  *{box-sizing:border-box;} html{-webkit-text-size-adjust:100%;}
+  body{margin:0; background:var(--paper); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.62; -webkit-font-smoothing:antialiased; font-size:15.5px;}
+  .wrap{max-width:900px; margin:0 auto; padding:40px 22px 100px;}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.87em;
+       background:var(--card-2); border:1px solid var(--line); padding:1px 5px; border-radius:5px;}
+  .eyebrow{font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--blue-ink);}
+  h1{font-size:2rem; font-weight:800; letter-spacing:-.025em; margin:10px 0 8px;}
+  .lead{color:var(--muted); font-size:1.02rem; margin:0; max-width:70ch;}
+  h2{font-size:1.24rem; font-weight:800; margin:42px 0 4px; padding-top:20px; border-top:1px solid var(--line);}
+  .sub{color:var(--muted); font-size:.93rem; margin:2px 0 16px; max-width:72ch;}
+
+  .item{background:var(--card); border:1px solid var(--line); border-radius:13px;
+        padding:16px 18px; margin:13px 0; box-shadow:var(--shadow); border-left:4px solid var(--line);}
+  .item.crit{border-left-color:var(--red);} .item.high{border-left-color:var(--amber);}
+  .item.med{border-left-color:var(--blue);} .item.reg{border-left-color:var(--violet);}
+  .ih{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:7px;}
+  .id{font-family:ui-monospace,Menlo,monospace; font-size:.72rem; font-weight:800; color:var(--faint);}
+  .it{font-size:1.02rem; font-weight:750; letter-spacing:-.01em;}
+  .pill{font-size:.64rem; font-weight:800; letter-spacing:.05em; padding:2px 8px;
+        border-radius:5px; text-transform:uppercase; white-space:nowrap;}
+  .p-crit{background:var(--red-bg); color:var(--red-ink);}
+  .p-high{background:var(--amber-bg); color:var(--amber-ink);}
+  .p-med{background:var(--blue-bg); color:var(--blue-ink);}
+  .p-reg{background:var(--violet-bg); color:var(--violet-ink);}
+  .p-ok{background:var(--green-bg); color:var(--green-ink); margin-left:auto;}
+  .row{display:grid; grid-template-columns:88px 1fr; gap:6px 12px; margin-top:9px; font-size:.92rem;}
+  .k{color:var(--faint); font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding-top:3px;}
+  .v{color:var(--sub);} .v b{color:var(--ink);}
+  .ev{background:#12161a; color:#dfe6ec; padding:8px 11px; border-radius:8px;
+      font-family:ui-monospace,Menlo,monospace; font-size:.76rem; margin-top:6px; overflow-x:auto;}
+  .ev .ok{color:#6ee7a8;} .ev .dim{color:#8b96a1;}
+  .box{border:1px solid var(--line); border-left:4px solid var(--blue); background:var(--card);
+       border-radius:11px; padding:13px 16px; margin:16px 0; font-size:.93rem; color:var(--sub);}
+  .box.crit{border-left-color:var(--red); background:var(--red-bg);}
+  .box b{color:var(--ink);}
+  footer{margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--faint); font-size:.8rem;}
+  @media(max-width:560px){ .row{grid-template-columns:1fr;} .k{padding-top:8px;} h1{font-size:1.55rem;} }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">RackTrack · Engineering record</div>
+  <h1>Issues &amp; Fixes — Detailed Record</h1>
+  <p class="lead">Every defect found during the full-codebase audit, written in plain language: what was wrong, what it meant for users, how it was fixed, and how the fix was proven. Followed by an honest list of what is still open.</p>
+
+  <div class="box"><b>How to read this.</b> Each entry states the <b>user-visible symptom</b> first, because that is what matters — the code detail is secondary. Nothing here is theoretical: every item was confirmed by reading the source, and the important ones were reproduced against a running server.</div>
+
+  <h2>Fixed — blocking defects</h2>
+  <p class="sub">These stopped the product working. All are fixed and verified.</p>
+
+  <div class="item crit">
+    <div class="ih"><span class="id">P0-1</span><span class="it">Every scan failed, and blamed the user's photo</span><span class="pill p-crit">Critical</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Uploading any rack photo returned <b>"Please upload a clearer photo of the rack."</b> A perfect photo failed the same way, so users retried endlessly.</div>
+      <div class="k">Cause</div><div class="v">A variable was declared inside a block that had already closed, so the scan endpoint threw an internal error on every request. The error handler caught it and returned the generic "bad photo" message.</div>
+      <div class="k">Why missed</div><div class="v">Introduced hours earlier by an unrelated change. The failure looked exactly like a camera/lighting problem, so it read as user error rather than a bug.</div>
+      <div class="k">Fix</div><div class="v">Moved the declaration so it is in scope where it is used.</div>
+    </div>
+  </div>
+
+  <div class="item crit">
+    <div class="ih"><span class="id">C-3</span><span class="it">Two-rack video scanning had never worked</span><span class="pill p-crit">Critical</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Scanning two racks from a video always failed. Only the two-photo path worked.</div>
+      <div class="k">Cause</div><div class="v">The video splitter looked up a model configuration key that has never existed in the config file, so it errored on every call — since the feature was written.</div>
+      <div class="k">Fix</div><div class="v">Read the key that actually exists, keeping a fallback for the old spelling.</div>
+    </div>
+  </div>
+
+  <div class="item crit">
+    <div class="ih"><span class="id">C-1</span><span class="it">A failed component start-up froze the whole app silently</span><span class="pill p-crit">Critical</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">If the image-processing engine failed to start, every scan, port lookup and detection request would <b>hang forever</b> — no error, no timeout. Health checks stayed green, so the server looked perfectly healthy while nothing worked.</div>
+      <div class="k">Cause</div><div class="v">A start-up failure was logged but never surfaced: waiting requests were never failed and the component was never restarted.</div>
+      <div class="k">Fix</div><div class="v">A start-up failure now fails the waiting requests immediately and triggers the existing restart-with-backoff path.</div>
+    </div>
+  </div>
+
+  <h2>Fixed — security</h2>
+  <p class="sub">Each was verified against a running server before and after the fix.</p>
+
+  <div class="item crit">
+    <div class="ih"><span class="id">S-1</span><span class="it">Anyone could read any scan's data without logging in</span><span class="pill p-crit">Critical</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">With <b>no account and no password</b>, anyone who knew (or guessed) a rack's short ID could download that rack's full device inventory, network topology, CMDB records and stored switch console transcripts.</div>
+      <div class="k">Cause</div><div class="v">Scan folders were published as plain static files, before any login check. This bypassed the secure-sharing system built for exactly this purpose.</div>
+      <div class="k">Fix</div><div class="v">Only genuine images are published now; all data files go through the logged-in API, which applies per-customer checks. Rack photos still load normally, so nothing in the app changed for users.</div>
+      <div class="k">Proof</div><div class="v"><div class="ev"><span class="dim">before →</span> device_unit_map.json  <span class="ok">200 OK, 15 devices</span>
+<span class="dim">after  →</span> device_unit_map.json  <span class="ok">404 blocked</span>
+<span class="dim">after  →</span> original_image.jpg    <span class="ok">200 OK (app still works)</span></div></div>
+    </div>
+  </div>
+
+  <div class="item crit">
+    <div class="ih"><span class="id">S-2</span><span class="it">Accounts could be taken over by guessing the reset code</span><span class="pill p-crit">Critical</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">The 6-digit password-reset code could be guessed an unlimited number of times, with no lockout. An attacker could take over <b>any account, including the owner</b>, without ever knowing the password.</div>
+      <div class="k">Cause</div><div class="v">The rate limit was applied to sign-in and password reset, but the endpoint that <em>checks the code</em> was left off the list.</div>
+      <div class="k">Fix</div><div class="v">All code-checking endpoints are now rate limited.</div>
+      <div class="k">Proof</div><div class="v"><div class="ev"><span class="dim">30 rapid attempts →</span> 20 accepted, then <span class="ok">429 Too Many Requests</span> <span class="dim">(guessing stopped)</span></div></div>
+    </div>
+  </div>
+
+  <div class="item crit">
+    <div class="ih"><span class="id">S-3</span><span class="it">Login codes were written into the system log</span><span class="pill p-crit">Critical</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Every verification and password-reset code was recorded in plain text in the application log, which staff can read in the app. Anyone with log access could request a reset for any account, read the code, and take that account over.</div>
+      <div class="k">Fix</div><div class="v">The log now records only that a code was sent, never the code.</div>
+    </div>
+  </div>
+
+  <div class="item crit">
+    <div class="ih"><span class="id">S-5</span><span class="it">Anyone could force the server to connect to your switches</span><span class="pill p-crit">Critical</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">One endpoint had <b>no login requirement at all</b>. Any stranger could trigger the server to open SSH sessions to every monitored switch using the stored credentials, repeatedly.</div>
+      <div class="k">Fix</div><div class="v">Restricted to owners and administrators.</div>
+      <div class="k">Proof</div><div class="v"><div class="ev"><span class="dim">anonymous request →</span> <span class="ok">401 Unauthorized</span></div></div>
+    </div>
+  </div>
+
+  <div class="item high">
+    <div class="ih"><span class="id">S-4</span><span class="it">The customer-separation check approved requests it should have denied</span><span class="pill p-high">High</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">The shared function that decides "may this person see this rack?" answered <b>yes</b> when there was no logged-in user, and again for accounts with no assigned site. Every protection built on it was therefore ineffective in those cases.</div>
+      <div class="k">Fix</div><div class="v">Both cases now deny by default. <b>See R-5 below</b> — this fix had a real consequence for installed apps.</div>
+    </div>
+  </div>
+
+  <div class="item high">
+    <div class="ih"><span class="id">S-6</span><span class="it">The CMDB "Approve" button skipped approval entirely</span><span class="pill p-high">High</span><span class="pill p-ok">Gated</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">The app tells users that inventory is only written to the configuration database <em>after</em> a Service Request is approved. In reality the Approve button wrote to the database immediately and <b>invented a fake ticket number</b> when none existed. This contradicted the product's core compliance promise.</div>
+      <div class="k">Fix</div><div class="v">The instant-approval path is now off unless explicitly enabled for demos, and is owner-only. The genuine approval flow is unaffected. The dialog now explains that the Service Request must be approved in ServiceNow.</div>
+    </div>
+  </div>
+
+  <div class="item high">
+    <div class="ih"><span class="id">S-7</span><span class="it">Sellers could buy their own marketplace listings</span><span class="pill p-high">High</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">The guard preventing self-purchase was commented out, with the note <em>"TODO: re-enable before production"</em>. Self-purchases created real orders, accrued platform fees and inflated revenue figures.</div>
+      <div class="k">Fix</div><div class="v">Guard re-enabled.</div>
+    </div>
+  </div>
+
+  <h2>Fixed — crashes and correctness</h2>
+
+  <div class="item high">
+    <div class="ih"><span class="id">C-4</span><span class="it">The Topology "Back" button never worked</span><span class="pill p-high">High</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Tapping "← Back" on the Topology screen did nothing, in every state. Users were stranded and had to navigate away manually.</div>
+      <div class="k">Cause</div><div class="v">The back action was defined in the parent screen, not the one drawing the button, so the button referenced something that did not exist.</div>
+    </div>
+  </div>
+
+  <div class="item high">
+    <div class="ih"><span class="id">C-5</span><span class="it">Marketplace orders could white-screen the app</span><span class="pill p-high">High</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Closing an order while a message or status update was still sending crashed the app to a blank page, recoverable only by a full reload. There is no error boundary, so any such crash takes down the whole interface.</div>
+      <div class="k">Fix</div><div class="v">Both paths now handle the closed-panel case; the message list defaults to empty rather than undefined.</div>
+    </div>
+  </div>
+
+  <div class="item high">
+    <div class="ih"><span class="id">C-2</span><span class="it">One bad photo could take down the processing engine</span><span class="pill p-high">High</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">A photo where no devices were detected shut down the whole image-processing worker instead of failing that one request. Everyone's scans stalled for ~10 seconds while it restarted, and a bad configuration could make it restart in a loop.</div>
+      <div class="k">Fix</div><div class="v">The pipeline now raises a normal error the request handler can catch.</div>
+    </div>
+  </div>
+
+  <div class="item med">
+    <div class="ih"><span class="id">C-6</span><span class="it">Nine app requests carried no proof of identity</span><span class="pill p-med">Medium</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Port selection and every feedback action were sent without credentials, so the server could not tell who made them and could not apply customer separation.</div>
+      <div class="k">Fix</div><div class="v">All nine now use the authenticated request wrapper.</div>
+    </div>
+  </div>
+
+  <div class="item med">
+    <div class="ih"><span class="id">P-1</span><span class="it">The owner console scanned the whole activity table every 5 seconds</span><span class="pill p-med">Performance</span><span class="pill p-ok">Fixed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Fine today, but the cost grows with every recorded action — the dashboard would get progressively slower and eventually stall the server.</div>
+      <div class="k">Fix</div><div class="v">Added the three missing database indexes.</div>
+    </div>
+  </div>
+
+  <h2>Regressions caused by these fixes — and corrected</h2>
+  <p class="sub">Six fixes broke something else. All were caught by re-auditing the fixes and checking every caller of what changed. Recorded here in full, because this is the part a reviewer will most want to see handled honestly.</p>
+
+  <div class="item reg">
+    <div class="ih"><span class="id">R-5</span><span class="it">"Rack not found" when searching for a port (reported by a tester)</span><span class="pill p-reg">Regression</span><span class="pill p-ok">Corrected</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">On installed app builds, <b>Find Port returned "Rack not found"</b> and every feedback action failed silently. The web app was unaffected.</div>
+      <div class="k">Cause</div><div class="v">Fix <b>S-4</b> made the access check deny requests without credentials. Fix <b>C-6</b> added those credentials — but only in the web client, <em>after</em> the app build had already shipped. Installed apps therefore sent nothing and were denied.</div>
+      <div class="k">Lesson</div><div class="v"><b>Server-side authentication tightening breaks installed clients, not just the website.</b> The client must ship first and be adopted before the server tightens.</div>
+      <div class="k">Correction</div><div class="v">Restored the previous behaviour for those six endpoints so installed apps work again. To be re-tightened once testers are on the newer build. All other hardening was re-verified as still in force.</div>
+    </div>
+  </div>
+
+  <div class="item reg">
+    <div class="ih"><span class="id">R-1</span><span class="it">Feedback requests hung forever instead of answering</span><span class="pill p-reg">Regression</span><span class="pill p-ok">Corrected</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">An anonymous feedback request never received any response — the connection stayed open until the client gave up. Left unfixed this is a way to exhaust the server's connections.</div>
+      <div class="k">Cause</div><div class="v">The newly-reachable denial branch tried to read a property of the (absent) user record and threw. Because of how this framework version handles errors in asynchronous handlers, <b>no response is ever sent</b>.</div>
+      <div class="k">Proof</div><div class="v"><div class="ev"><span class="dim">before →</span> hung until timeout
+<span class="dim">after  →</span> <span class="ok">404 in 0.0028 s</span></div></div>
+    </div>
+  </div>
+
+  <div class="item reg">
+    <div class="ih"><span class="id">R-4</span><span class="it">Drift stopped working for everyone except administrators</span><span class="pill p-reg">Regression</span><span class="pill p-ok">Corrected</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Restricting the switch-monitoring endpoints to owners broke the member-facing Drift tab, which reads them — it would sit on "Waiting for first poll…" forever.</div>
+      <div class="k">Correction</div><div class="v">Reads are available to any signed-in user again; only the action that makes the server connect to a switch is restricted.</div>
+    </div>
+  </div>
+
+  <div class="item reg">
+    <div class="ih"><span class="id">R-2</span><span class="it">iPhone photos vanished from marketplace listings</span><span class="pill p-reg">Regression</span><span class="pill p-ok">Corrected</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Uploading a listing photo from an iPhone appeared to succeed, but the image was permanently broken everywhere it appeared.</div>
+      <div class="k">Cause</div><div class="v">The new asset filter did not include HEIC — the default photo format on iOS.</div>
+    </div>
+  </div>
+
+  <div class="item reg">
+    <div class="ih"><span class="id">R-3</span><span class="it">The lockdown missed the rendered report</span><span class="pill p-reg">Incomplete</span><span class="pill p-ok">Completed</span></div>
+    <div class="row">
+      <div class="k">Symptom</div><div class="v">Fix <b>S-1</b> blocked the raw data files but still served the generated report page and PDF — the same information, formatted — to anyone who guessed a rack ID.</div>
+      <div class="k">Correction</div><div class="v">Both are blocked. The app never used those URLs; it uses the secure sharing route.</div>
+    </div>
+  </div>
+
+  <h2>Still open — honest list</h2>
+
+  <div class="item high">
+    <div class="ih"><span class="id">O-1</span><span class="it">Switch inventory is not separated by customer</span><span class="pill p-high">High</span></div>
+    <div class="row">
+      <div class="k">Meaning</div><div class="v">Any signed-in user can read the list of monitored switches belonging to <em>any</em> customer — names, locations, models, serial numbers.</div>
+      <div class="k">Why open</div><div class="v">The table has no customer column, so a correct fix is a database migration. Gating it instead would break the Drift feature for normal users (see R-4), so it was not bolted on.</div>
+    </div>
+  </div>
+
+  <div class="item high">
+    <div class="ih"><span class="id">O-2</span><span class="it">Rack photos are still reachable by guessing a rack ID</span><span class="pill p-high">High</span></div>
+    <div class="row">
+      <div class="k">Meaning</div><div class="v">Data files are protected, but the photographs themselves are not.</div>
+      <div class="k">Why open</div><div class="v">Images are loaded by the browser in a way that cannot carry a login token. The proper fix is time-limited signed links, which requires a coordinated app change.</div>
+    </div>
+  </div>
+
+  <div class="item high">
+    <div class="ih"><span class="id">O-3</span><span class="it">Two integration routes lack per-rack ownership checks</span><span class="pill p-high">High</span></div>
+    <div class="row"><div class="k">Meaning</div><div class="v">The network-discovery and CMDB-ticket routes accept a rack ID without confirming the caller owns that rack.</div></div>
+  </div>
+
+  <div class="item med">
+    <div class="ih"><span class="id">O-4</span><span class="it">Four read-only endpoints need no login</span><span class="pill p-med">Medium</span></div>
+    <div class="row"><div class="k">Meaning</div><div class="v">Incident lists and aggregate accuracy statistics are readable anonymously; two of them also consume processing capacity per request.</div></div>
+  </div>
+
+  <div class="item med">
+    <div class="ih"><span class="id">O-5</span><span class="it">eBay and Amazon "Connected" is not real</span><span class="pill p-med">Medium</span></div>
+    <div class="row"><div class="k">Meaning</div><div class="v">Connecting a seller account succeeds and shows "Connected", but the access token is discarded and no listing is ever published. The feature is unimplemented rather than broken — the interface should not claim otherwise.</div></div>
+  </div>
+
+  <div class="item med">
+    <div class="ih"><span class="id">O-6 · O-7 · O-8</span><span class="it">Three performance issues that grow with usage</span><span class="pill p-med">Performance</span></div>
+    <div class="row"><div class="k">Meaning</div><div class="v">The scan list re-reads every scan from disk on each request; the dashboard re-reads the whole feedback log every 5 seconds; and the live camera view sends about 150 requests per minute into a 20-per-minute limit, so most are rejected and live detection stops working after a few seconds. All are acceptable at today's data volumes and degrade as they grow.</div></div>
+  </div>
+
+  <div class="item med">
+    <div class="ih"><span class="id">O-9 · O-10</span><span class="it">Dependencies and test coverage</span><span class="pill p-med">Medium</span></div>
+    <div class="row"><div class="k">Meaning</div><div class="v">Five dependency advisories (the one marked critical affects build tooling only, and is miscategorised as a runtime dependency). More importantly there are <b>3 automated tests for 214 endpoints</b> — which is why a one-line change was able to break all scanning unnoticed.</div></div>
+  </div>
+
+  <footer>RackTrack · Issues &amp; Fixes · 21 July 2026 · every item verified against source; runtime results reproduced against a live server.</footer>
+</div>

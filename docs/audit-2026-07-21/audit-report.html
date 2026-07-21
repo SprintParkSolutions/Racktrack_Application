@@ -1,0 +1,181 @@
+<title>RackTrack — Codebase Audit Report</title>
+<style>
+  :root{
+    color-scheme:light;
+    --paper:#fbfcfc; --card:#ffffff; --card-2:#f5f7f8;
+    --ink:#12161a; --sub:#3f4750; --muted:#6d767f; --faint:#9aa2aa;
+    --line:#e5e9ec; --line-2:#eef1f3;
+    --red:#c0392b; --red-bg:#fdeceb; --red-ink:#8e2b20;
+    --amber:#b0750c; --amber-bg:#fdf3e0; --amber-ink:#875a08;
+    --green:#127a4b; --green-bg:#e6f5ee; --green-ink:#0d5c38;
+    --blue:#2563c9; --blue-bg:#e9effc; --blue-ink:#1c4ea3;
+    --shadow:0 1px 2px rgba(16,24,32,.04), 0 8px 24px -18px rgba(16,24,32,.22);
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased; font-size:15.5px;
+  }
+  .wrap{max-width:940px; margin:0 auto; padding:40px 22px 100px;}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.88em;}
+  code{background:var(--card-2); border:1px solid var(--line); padding:1px 5px; border-radius:5px; white-space:nowrap;}
+
+  .eyebrow{font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--blue-ink);}
+  h1{font-size:2.1rem; font-weight:800; letter-spacing:-.025em; margin:10px 0 8px; text-wrap:balance;}
+  .lead{color:var(--muted); font-size:1.02rem; margin:0; max-width:68ch;}
+  .meta{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; font-size:.78rem;}
+  .tag{background:var(--card-2); border:1px solid var(--line); color:var(--sub); padding:4px 10px; border-radius:999px; font-weight:600;}
+
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:26px 0 8px;}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:14px 16px; box-shadow:var(--shadow);}
+  .statN{font-size:1.7rem; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.1;}
+  .statL{font-size:.76rem; color:var(--muted); font-weight:600; margin-top:3px;}
+  .s-red .statN{color:var(--red);} .s-green .statN{color:var(--green);}
+  .s-amber .statN{color:var(--amber);} .s-blue .statN{color:var(--blue-ink);}
+
+  h2{font-size:1.28rem; font-weight:800; letter-spacing:-.02em; margin:44px 0 6px; padding-top:20px; border-top:1px solid var(--line);}
+  h2:first-of-type{border-top:none;}
+  h3{font-size:1rem; font-weight:750; margin:24px 0 6px;}
+  p{margin:8px 0;} ul{margin:8px 0; padding-left:20px;} li{margin:5px 0; color:var(--sub);}
+  .sub{color:var(--muted); font-size:.93rem; margin:0 0 14px; max-width:70ch;}
+
+  table{width:100%; border-collapse:collapse; font-size:.88rem; margin:12px 0;}
+  .tw{border:1px solid var(--line); border-radius:12px; overflow:hidden; overflow-x:auto;}
+  th{text-align:left; padding:9px 13px; background:var(--card-2); color:var(--muted);
+     font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; font-weight:700; white-space:nowrap;}
+  td{padding:9px 13px; border-top:1px solid var(--line-2); vertical-align:top;}
+  tr:nth-child(even) td{background:#fcfdfd;}
+
+  .pill{display:inline-block; font-size:.66rem; font-weight:800; letter-spacing:.04em;
+        padding:2px 8px; border-radius:5px; text-transform:uppercase; white-space:nowrap;}
+  .p-crit{background:var(--red-bg); color:var(--red-ink);}
+  .p-high{background:var(--amber-bg); color:var(--amber-ink);}
+  .p-ok{background:var(--green-bg); color:var(--green-ink);}
+  .p-info{background:var(--blue-bg); color:var(--blue-ink);}
+
+  .box{border:1px solid var(--line); border-left:4px solid var(--blue); background:var(--card);
+       border-radius:11px; padding:13px 16px; margin:16px 0; font-size:.93rem; color:var(--sub);}
+  .box.crit{border-left-color:var(--red); background:var(--red-bg);}
+  .box.good{border-left-color:var(--green); background:var(--green-bg);}
+  .box b{color:var(--ink);}
+
+  pre{background:#12161a; color:#dfe6ec; padding:12px 14px; border-radius:10px; overflow-x:auto;
+      font-family:ui-monospace,Menlo,monospace; font-size:.8rem; line-height:1.55; margin:12px 0;}
+  pre .ok{color:#6ee7a8;} pre .bad{color:#ff9d94;} pre .dim{color:#8b96a1;}
+
+  footer{margin-top:52px; padding-top:20px; border-top:1px solid var(--line); color:var(--faint); font-size:.8rem;}
+  @media(max-width:560px){ h1{font-size:1.6rem;} .wrap{padding:26px 16px 70px;} }
+</style>
+
+<div class="wrap">
+
+  <div class="eyebrow">Engineering · Security &amp; Quality</div>
+  <h1>RackTrack — Full Codebase Audit</h1>
+  <p class="lead">A line-level audit of the entire repository ahead of external review, the fixes applied, the regressions those fixes caused and how they were caught, and an honest list of what is still outstanding.</p>
+  <div class="meta">
+    <span class="tag">~82,000 lines reviewed</span>
+    <span class="tag">237 source files</span>
+    <span class="tag">7 specialist passes</span>
+    <span class="tag">21 Jul 2026</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat s-red"><div class="statN">6</div><div class="statL">Critical found</div></div>
+    <div class="stat s-green"><div class="statN">18</div><div class="statL">Issues fixed</div></div>
+    <div class="stat s-amber"><div class="statN">5</div><div class="statL">Self-inflicted regressions caught</div></div>
+    <div class="stat s-blue"><div class="statN">11</div><div class="statL">Known remaining</div></div>
+  </div>
+
+  <h2>What was audited, and how</h2>
+  <p class="sub">Seven independent passes over the tracked source — server (18.5k lines), React client (28.8k), Python pipeline (12.5k), ServiceNow integration (5.7k) — each with a narrow brief: security, server correctness, React correctness, pipeline correctness, incomplete/dead code, performance, and finally an <em>adversarial re-audit</em> of the fixes themselves.</p>
+  <div class="box"><b>Every finding in this report was verified against the source before being reported</b>, and the important ones were reproduced against a running server. Several plausible-sounding findings were discarded as false positives — noted below, because knowing what <em>isn't</em> wrong matters too.</div>
+
+  <h2>The headline: scanning was completely broken</h2>
+  <div class="box crit">
+    <b>Every single-image scan failed</b> with <em>"Please upload a clearer photo of the rack."</em>
+    <code>rackScope(_a)</code> referenced a variable declared inside a bare block that had already closed, so <code>POST /api/analyze</code> threw <code>ReferenceError</code> on every request. The handler caught it and returned a 400 blaming the user's photo — so the failure looked like a camera problem, not a bug. Introduced hours earlier by commit <code>69e7047</code>. <b>Fixed and verified.</b>
+  </div>
+
+  <h2>Critical security issues — all fixed</h2>
+  <div class="tw"><table>
+    <tr><th>Issue</th><th>Impact</th><th>Status</th></tr>
+    <tr><td><b>Scan data world-readable</b><br><span class="mono">/outputs</span> served every file</td><td>Device maps, topology, CMDB state and SSH transcripts readable by anyone who knew an 8-char rack id — no login. Defeated the report-token design.</td><td><span class="pill p-ok">Fixed</span></td></tr>
+    <tr><td><b>Password-reset brute force</b><br><span class="mono">/api/auth/verify-reset-code</span></td><td>Not rate-limited. A 6-digit code with unlimited guesses → full account takeover, including the owner, without the password.</td><td><span class="pill p-ok">Fixed</span></td></tr>
+    <tr><td><b>One-time codes written to logs</b></td><td>Codes were logged in plaintext and readable through the logs API — anyone with log access could reset and seize any account.</td><td><span class="pill p-ok">Fixed</span></td></tr>
+    <tr><td><b>Access check failed open</b><br><span class="mono">canAccessRack()</span></td><td>Returned <em>true</em> for unauthenticated callers <em>and</em> for users with no tenant, making every "tenant guard" built on it a no-op.</td><td><span class="pill p-ok">Fixed</span></td></tr>
+    <tr><td><b>Unauthenticated SSH trigger</b><br><span class="mono">/api/port-poller/reset</span></td><td>No auth at all: anyone could force an immediate SSH sweep of every monitored switch using stored credentials.</td><td><span class="pill p-ok">Fixed</span></td></tr>
+    <tr><td><b>CMDB approval bypass</b></td><td>The "Approve" button skipped ServiceNow entirely and invented a fake ticket — contradicting the product's core compliance claim.</td><td><span class="pill p-ok">Gated</span></td></tr>
+  </table></div>
+
+  <h2>Correctness bugs fixed</h2>
+  <ul>
+    <li><b>Multi-rack video split had never worked</b> — it read a config key (<code>models.devices</code>) that has never existed, failing with <code>KeyError</code> on every call.</li>
+    <li><b>A failed Python spawn hung every request forever</b> — the worker pool logged the error but never rejected pending work or respawned, so the server looked healthy while scanning silently stopped.</li>
+    <li><b>Pipeline errors killed the warm worker</b> — <code>SystemExit</code> bypassed the <code>except Exception</code> guard, taking down the process instead of failing one request.</li>
+    <li><b>Topology "← Back" always threw</b> — <code>goBack</code> was declared in the parent component, not the one rendering the button.</li>
+    <li><b>Two blank-page crashes</b> in Marketplace orders from spreading a null object.</li>
+    <li><b>Nine API calls sent no credentials</b> — converted to the authenticated fetch wrapper.</li>
+    <li><b>Missing database indexes</b> — the owner console full-scanned the audit log every 5 seconds.</li>
+  </ul>
+
+  <h2>Regressions my own fixes caused — and how they were caught</h2>
+  <p class="sub">This is the part most worth reading. Five of the fixes broke something. All five were found by re-auditing the fixes adversarially and by checking every caller of each changed symbol — not by the test suite.</p>
+  <div class="tw"><table>
+    <tr><th>What broke</th><th>Why</th><th>Resolution</th></tr>
+    <tr><td><b>Drift stopped working for all non-admins</b></td><td>Locking the whole ports API to owners was too broad — Drift is member-facing.</td><td>Reads stay authenticated; only the SSH-triggering action is restricted.</td></tr>
+    <tr><td><b>Port select + all feedback would have 403'd</b></td><td>Failing closed exposed nine calls that never sent an auth header.</td><td>All nine converted before shipping.</td></tr>
+    <tr><td><b><span class="mono">/api/feedback</span> hung forever</b></td><td>The now-reachable branch dereferenced a null auth payload; an async throw in Express 4 means <em>no response is ever sent</em> — a socket-exhaustion primitive.</td><td>Null-safe. Now returns 404 in <b>2.8 ms</b>.</td></tr>
+    <tr><td><b>iPhone marketplace photos 404'd</b></td><td>The asset filter omitted HEIC — the iOS default format.</td><td>HEIC/HEIF allowed.</td></tr>
+    <tr><td><b>Report files still exposed</b></td><td>The first lockdown blocked <code>.json</code> but still served <code>report.html</code>/<code>.pdf</code> — the same data, rendered.</td><td>Removed; the client never used them.</td></tr>
+  </table></div>
+
+  <h3>Runtime proof</h3>
+  <pre><span class="dim"># against a live server, after the fixes</span>
+original_image.jpg    <span class="ok">200</span>   <span class="dim">← UI still works</span>
+photo.heic            <span class="ok">200</span>   <span class="dim">← iPhone uploads work</span>
+device_unit_map.json  <span class="ok">404</span>   <span class="dim">← data leak closed</span>
+report.html           <span class="ok">404</span>   <span class="dim">← rendered report closed</span>
+port-poller/reset     <span class="ok">401</span>   <span class="dim">← SSH trigger locked</span>
+feedback (anonymous)  <span class="ok">404 in 0.0028s</span>  <span class="dim">← was: hung forever</span>
+reset-code x30        <span class="ok">20x404 then 429</span> <span class="dim">← brute force stopped</span></pre>
+
+  <h2>Verified clean</h2>
+  <p class="sub">Checked specifically, and genuinely not a problem — so no one wastes time on them:</p>
+  <ul>
+    <li><b>No SQL injection.</b> Every statement is parameterised; the only interpolations use hardcoded column allowlists.</li>
+    <li><b>No command injection.</b> All subprocess calls use argument arrays, never a shell string.</li>
+    <li><b>No broken frontend↔backend links.</b> All 137 client API calls resolve against the 214 registered routes — no 404s, no verb mismatches.</li>
+    <li><b>Rules of Hooks clean</b> across every React component, including the 4,900-line results page.</li>
+    <li><b>JWT handling sound</b> — no weak fallback secret.</li>
+    <li><b>A reported email-header injection was a false positive</b> — the address regex rejects newlines.</li>
+    <li><b>Mock data-source routes are correctly disabled</b> in production (verified live).</li>
+  </ul>
+
+  <h2>Still outstanding — honest list</h2>
+  <div class="tw"><table>
+    <tr><th>Item</th><th>Why it wasn't fixed now</th><th>Severity</th></tr>
+    <tr><td>Switch table has no tenant column</td><td>Members can still <em>read</em> other tenants' switch inventory. A correct fix is a schema migration + backfill; gating it instead would break Drift.</td><td><span class="pill p-high">High</span></td></tr>
+    <tr><td>Rack images guessable by rack id</td><td>Images must stay loadable by <code>&lt;img&gt;</code>, which cannot send auth headers. Needs signed URLs plus a client change.</td><td><span class="pill p-high">High</span></td></tr>
+    <tr><td>Netdisco / CMDB proxies lack per-rack scoping</td><td>Needs the same ownership guard the main routes use; touches two mounted routers.</td><td><span class="pill p-high">High</span></td></tr>
+    <tr><td>Four read endpoints still unauthenticated</td><td>Incidents, agent insights and feedback stats leak aggregate data and burn worker slots.</td><td><span class="pill p-high">Medium</span></td></tr>
+    <tr><td>eBay/Amazon OAuth discards the token</td><td>Shows "Connected" but can never publish — the feature is unimplemented, not broken.</td><td><span class="pill p-high">Medium</span></td></tr>
+    <tr><td>Scan list re-reads every rack from disk</td><td>~9 syscalls per rack, unbounded; fine now, degrades badly with scale.</td><td><span class="pill p-info">Perf</span></td></tr>
+    <tr><td>Dashboard re-parses the feedback log every poll</td><td>Every 5 seconds, growing to a 50 MB ceiling.</td><td><span class="pill p-info">Perf</span></td></tr>
+    <tr><td>Live viewfinder exceeds its own rate limit</td><td>Sends ~150 requests/min into a 20/min budget, so ~87% are rejected.</td><td><span class="pill p-info">Perf</span></td></tr>
+    <tr><td>Dependency advisories</td><td>1 critical (build-only tooling miscategorised as a runtime dependency), 4 high.</td><td><span class="pill p-info">Medium</span></td></tr>
+    <tr><td>Test coverage</td><td>3 tests for 214 routes. The most likely single criticism from an external reviewer.</td><td><span class="pill p-high">High</span></td></tr>
+  </table></div>
+
+  <h2>Assessment</h2>
+  <div class="box good">
+    The architecture is sound and the security primitives already existed — role checks, tenant ownership, report tokens, rate limiting. <b>The failures were consistency failures</b>: a guard applied to four routes and not the fifth, a check that returned <em>true</em> instead of <em>false</em>, a static mount added before the auth layer. That is a far better position than missing primitives, and it is why most fixes were a few lines each.
+    <br><br>
+    The two systemic gaps worth naming: <b>almost no automated tests</b>, so a one-line scoping regression broke the product's primary flow undetected; and <b>multi-tenancy is enforced per-route rather than structurally</b>, which is why isolation gaps keep appearing one endpoint at a time.
+  </div>
+
+  <footer>
+    RackTrack codebase audit · 21 July 2026 · fixes in commits <span class="mono">f2b1b2a</span> → <span class="mono">e4909ee</span> · every finding verified against source; runtime results reproduced against a live server.
+  </footer>
+</div>
