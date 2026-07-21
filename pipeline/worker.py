@@ -43,6 +43,7 @@ def emit(obj):
 log("importing pipeline modules (slow, one-time)")
 from pipeline import runner  # noqa: E402
 from pipeline.quality_check import check_tilt, check_letterbox, check_side_view, check_occlusion  # noqa: E402
+from pipeline.occlusion_model import classify_occlusion  # noqa: E402
 from pipeline.detection import load_model, detect_devices_seg, normalize_class_name  # noqa: E402
 from pipeline.cable import load_cable_model, load_port_identify_model  # noqa: E402
 import cv2  # noqa: E402
@@ -117,11 +118,19 @@ def handle_quality_check(req):
         return tilt
     side = check_side_view(img)
 
-    # Occlusion check — image-based cable-clutter detector. May return a
-    # hard fail (ok=False, kind='occlusion') for severely cabled racks,
-    # in which case we surface it as a quality choice so the user can
-    # pick multi-angle capture or proceed-anyway.
-    occ = check_occlusion(img)
+    # Occlusion check — trained MobileNetV2 classifier (Models/rack_classifier.pth)
+    # judging clear vs occluded directly, instead of inferring cable clutter from
+    # edge-orientation and saturation proxies. May return a hard fail
+    # (ok=False, kind='occlusion') for severely cabled racks, which the client
+    # surfaces as a choice: multi-angle capture, or proceed anyway.
+    #
+    # Falls back to the heuristic when the model can't load (torch absent, weights
+    # not deployed). A quality gate must not block uploads on a box that shipped
+    # without the checkpoint.
+    occ = classify_occlusion(img)
+    if occ is None:
+        occ = check_occlusion(img)
+        occ.setdefault("metrics", {})["occlusion_detector"] = "heuristic"
     if not occ.get("ok"):
         return occ
 
