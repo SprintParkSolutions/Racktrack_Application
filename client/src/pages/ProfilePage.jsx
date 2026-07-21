@@ -7,6 +7,7 @@ import { TYPE_INFO } from '../utils/connectionsApi';
 import { apiUrl, authFetch } from '../utils/api';
 import Avatar from '../components/Avatar.jsx';
 import { AVATARS, resolveAvatarIndex } from '../utils/avatars';
+import BackButton from '../components/BackButton.jsx';
 
 function formatJoined(d) {
   if (!d) return null;
@@ -99,7 +100,14 @@ export default function ProfilePage() {
     <div className={`page page-full ${styles.profile}`}>
       {/* ── Sticky white header — "PROFILE" left, logout icon right ── */}
       <header className={styles.topbar}>
-        <h1 className={styles.topbarTitle}>Profile</h1>
+        {/* Grouped with the title so the header stays left-aligned whether or
+            not the back button renders — it only appears when you arrived
+            from somewhere, since tapping Profile in the nav has nowhere to
+            go back to. */}
+        <div className={styles.topbarLeft}>
+          <BackButton fallback="/" />
+          <h1 className={styles.topbarTitle}>Profile</h1>
+        </div>
         <button
           type="button"
           className={styles.topbarIconBtn}

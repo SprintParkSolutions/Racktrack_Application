@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { apiUrl, authFetch } from '../utils/api';
 import { LogsView } from './LogsPage.jsx';
 import styles from './DashboardPage.module.css';
+import BackButton from '../components/BackButton.jsx';
 
 // A short, human label for each audit action so the feed reads in plain
 // English instead of dotted machine keys.
@@ -333,6 +334,7 @@ export default function DashboardPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
+        <BackButton fallback="/" />
         <div>
           <h1 className={styles.title}>Operations Console</h1>
           <p className={styles.subtitle}>{active.sub}</p>

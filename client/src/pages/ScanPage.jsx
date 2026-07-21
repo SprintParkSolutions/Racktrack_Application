@@ -11,6 +11,7 @@ import { useShutter } from '../ShutterContext.jsx';
 import MiniRack3D from '../components/MiniRack3D.jsx';
 import { useTheme } from '../ThemeContext.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
+import { useSmartBack } from '../hooks/useSmartBack';
 
 // Lazy so the (~140 kB) three-fiber bundle only loads when the user opens VR.
 const TopologyScene3D = lazy(() => import('./TopologyScene3D.jsx'));
@@ -850,6 +851,7 @@ function AnalyzingOverlay({ progress, step }) {
 // ── Page ─────────────────────────────────────────────────────
 export default function ScanPage() {
   const navigate = useNavigate();
+  const goBackFromScan = useSmartBack('/');
   const { theme } = useTheme();
   const isLight = theme === 'light';
   // Surface tokens for the incident picker — opaque white panel in light
@@ -1231,7 +1233,10 @@ export default function ScanPage() {
 
       {/* Header — soft back chip + centered white pill title */}
       <header className={styles.header}>
-        <button className="btn btn-ghost btn-icon" onClick={() => navigate('/')} aria-label="Back">
+        {/* Was a hardcoded navigate('/'), which threw you out to the landing
+            page even when you had arrived from a results view. Go back to
+            wherever you came from, falling back to Home on a cold start. */}
+        <button className="btn btn-ghost btn-icon" onClick={goBackFromScan} aria-label="Back">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 19l-7-7 7-7"/>
           </svg>

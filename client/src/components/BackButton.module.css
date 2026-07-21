@@ -1,0 +1,34 @@
+/* Matches the ghost icon button used by the pages that already had a back
+   control (Ports, Topology, Lab), so the app has one back button, not five. */
+
+.back {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font: inherit;
+  color: var(--t1, #17171a);
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .14s ease, transform .12s ease;
+}
+
+.back svg { width: 18px; height: 18px; }
+
+.back:hover  { background: rgba(0, 0, 0, 0.045); }
+.back:active { transform: scale(0.94); }
+.back:focus-visible {
+  outline: 2px solid var(--t1, #17171a);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back { transition: none; }
+  .back:active { transform: none; }
+}

@@ -1,6 +1,13 @@
 .page {
   max-width: 1240px;
   margin: 0 auto;
+  /* This page is a flex item of #root, and `margin: 0 auto` gives it auto
+     cross-axis margins, which suppress the normal stretch-to-fill. It then
+     shrink-to-fits its content's preferred width — 551px, driven by the
+     subtitle's max-width:60ch — inside a 320px phone. #root clips the
+     overflow rather than scrolling it, so the right-hand stat column and
+     half the subtitle were simply invisible. width:100% restores the fill. */
+  width: 100%;
   padding: 20px 18px 48px;
   color: var(--md-on-surface, #1a1c1d);
   font-family: 'Manrope', system-ui, sans-serif;

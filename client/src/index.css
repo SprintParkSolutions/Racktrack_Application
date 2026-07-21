@@ -201,6 +201,17 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+/* Pages are flex items of #root, and a flex item defaults to min-width:auto —
+   it refuses to shrink below its own min-content width. Combined with the
+   overflow-x:hidden above, a page whose content wants more than the viewport
+   is silently CLIPPED rather than scrolled: the Operations Console was laying
+   out at 551px inside a 320px screen, so its subtitle and right-hand stat
+   column were invisible with no scrollbar to reveal them.
+   min-width:0 lets every page shrink to the screen instead. */
+#root > * {
+  min-width: 0;
+}
+
 /* iPad portrait (768–1023px) sits below the ≥1024px landscape/desktop
    chrome (DesktopShell / HomeDesktop) but above the phone width. Without
    this override it inherits #root's 540px cap and renders as a centered

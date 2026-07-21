@@ -4,6 +4,7 @@ import { useAuth } from '../AuthContext';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './OrgConsole.module.css';
 import OrgConnectionsPanel from '../components/OrgConnectionsPanel.jsx';
+import BackButton from '../components/BackButton.jsx';
 
 // Organization console. Role-aware:
 //   owner     → list/create organizations, drill into any org's Sites + Members
@@ -187,6 +188,7 @@ export default function OrgConsolePage() {
     <div className={styles.scroll}>
     <div className={styles.page}>
       <header className={styles.head}>
+        <BackButton fallback="/" />
         <div>
           <p className={styles.eyebrow}>{isOwner ? 'Platform Console' : 'Organization Console'}</p>
           <h1 className={styles.title}>
