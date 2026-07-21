@@ -1,0 +1,87 @@
+[
+  {
+    "question": "How do I know if the app on my phone is the current version, and what happens if it isn't?",
+    "answer": "RackTrack has no in-app version check. There is no \"a new version is available\" prompt and no version number shown anywhere in the app, so the app itself will never tell you that you are behind. (The server does expose a /api/version endpoint, but it is for operators only \u2014 nothing in the app reads it.)\n\nYou are not entirely on your own, though: new builds are announced out-of-band.\n- iPhone/iPad: builds go out through TestFlight, and Apple emails you when one is released. Open TestFlight and tap RackTrack \u2014 if an \"Update\" button is showing, you are behind. Best fix: open TestFlight, tap RackTrack, and switch on Automatic Updates once; new builds then install themselves. Each build also has \"What to Test\" notes worth ten seconds of your time.\n- Android: builds are distributed through Firebase App Distribution, which notifies testers when a new release goes out. Install it from the notification/email link you receive.\n\nWhy staying current matters: the server's address is compiled into each build at build time. If the server moves (for example, a restarted Cloudflare tunnel hands out a new random address), an old build keeps calling a host that no longer exists and every screen fails \u2014 with no \"please update\" message, just failures. So if your app has suddenly stopped working, installing the newest build is the first thing to try. Separately on iOS, TestFlight builds expire 90 days after upload and the app simply stops opening; that is Apple's rule and is also fixed by installing the current build.",
+    "symptoms": [
+      "how do I know I'm on the latest version",
+      "no update prompt",
+      "old app keeps working then suddenly doesn't",
+      "version mismatch"
+    ],
+    "rootCause": "There is no client-side version check: nothing in client/src consumes the server's /api/version endpoint, which exists only for operators. API_BASE is frozen into the bundle at build time, so a stale client fails hard rather than degrading.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "280-293",
+        "snippet": "// Which build is actually running \u2014 no auth, so you can hit\n//   https://<tunnel>/api/version\n// and instantly see the live commit + when the server last started.\n...\napp.get('/api/version', (req, res) => {\n  res.json({ commit: BUILD_COMMIT, startedAt: SERVER_STARTED_AT });\n});"
+      },
+      {
+        "file": "client/src/utils/api.js",
+        "lines": "4",
+        "snippet": "let API_BASE = import.meta.env.VITE_API_BASE || '';"
+      },
+      {
+        "file": "docs/notes/delivery/racktrack-install-guide.html",
+        "lines": "176-183",
+        "snippet": "Open <strong>TestFlight</strong> &rarr; tap <strong>RackTrack</strong> &rarr; switch on <strong>Automatic Updates</strong>. ... If a new build is waiting, RackTrack shows an <strong>Update</strong> button"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "likely",
+    "domain": "pend-misc",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "The APK/IPA built fine but points at the wrong server. How is the backend URL set?",
+    "answer": "Admin/internal. The backend URL is compiled into the JS bundle at build time from VITE_API_BASE (client/src/utils/api.js:4 reads import.meta.env.VITE_API_BASE). There is no runtime setting and no in-app way to change it \u2014 a wrong URL means rebuild.\n\nAndroid, two paths:\n- Tunnel path: run start.ps1 first (start.ps1:49 writes the tunnel URL to current-url.txt), then update-apk-url.ps1 (lines 11-27) rewrites client/.env.production to `VITE_API_BASE=<url>`, runs `npm run build` and `npx cap sync android`. Build the APK in Android Studio afterwards. This path uses a plain `vite build`, so it is the unguarded one.\n- Guarded path: client/ship-apk.sh takes the backend from $VITE_API_BASE (falling back to a hardcoded ngrok host at line 15) and exports it into `npm run build:mobile` at line 44, then cap copy + gradlew assembleDebug.\n\niOS: client/make-ipa.sh takes the URL as its second argument (`./make-ipa.sh <TEAM_ID> [https://backend]`), falling back to /tmp/cf_url.txt if omitted; it is never read from .env. Line 17 runs `VITE_API_BASE=\"$API\" npm run build:mobile`.\n\nTwo traps:\n1. client/.env.production is currently empty on purpose (`VITE_API_BASE=` \u2192 same-origin), but client/.env.production.local contains `VITE_API_BASE=http://localhost:3001`, and Vite's .local file overrides .env.production. That is the misbuild documented as blocker #1 in docs/notes/delivery/testflight-readiness.html (lines 79-80). It only bites `npm run build`: the ship-*/make-ipa scripts export VITE_API_BASE in the shell, and a real environment variable beats any .env file, so build:mobile's guard (client/scripts/check-api-base.mjs \u2014 rejects empty, localhost/127.0.0.1/0.0.0.0, and non-https; warns on trycloudflare quick tunnels) sees the right value.\n2. api.js lines 7-22 self-heal only the web dist: if API_BASE is a localhost URL AND window.location.hostname is not localhost, it drops to same-origin. A packaged app is served from capacitor://localhost, so the guard deliberately does not fire \u2014 every call fails with \"Load failed\".",
+    "symptoms": [
+      "app points at localhost",
+      "app calls the wrong server",
+      "mixed content blocked",
+      "Load failed on every call in the packaged app"
+    ],
+    "rootCause": "VITE_API_BASE is an import.meta.env value inlined at build time. .env.production.local (localhost:3001) overrides .env.production in a plain vite build.",
+    "evidence": [
+      {
+        "file": "update-apk-url.ps1",
+        "lines": "11-27",
+        "snippet": "$url = (Get-Content $urlFile).Trim()\n...\n$content = $content -replace \"VITE_API_BASE=.*\", \"VITE_API_BASE=$url\"\n...\nnpm run build\nnpx cap sync android"
+      },
+      {
+        "file": "client/.env.production.local",
+        "lines": "1",
+        "snippet": "VITE_API_BASE=http://localhost:3001"
+      },
+      {
+        "file": "client/package.json",
+        "lines": "11",
+        "snippet": "\"build:mobile\": \"node scripts/check-api-base.mjs && vite build\","
+      },
+      {
+        "file": "client/src/utils/api.js",
+        "lines": "7-22",
+        "snippet": "// Self-heal a common misbuild: the web dist gets built with a LOCALHOST API base ... If we detect a localhost base but the page is actually served from a real host, drop to same-origin"
+      },
+      {
+        "file": "docs/notes/delivery/testflight-readiness.html",
+        "lines": "1-1",
+        "snippet": "API points at localhost .env.production.local \u2192 VITE_API_BASE=http://localhost:3001 \u2014 Vite's .local file overrides .env.production. In a packaged app, localhost is the phone itself"
+      },
+      {
+        "file": "client/make-ipa.sh",
+        "lines": "16-17",
+        "snippet": "# 1. Web build with the backend URL baked in (guarded: rejects localhost/http)\nVITE_API_BASE=\"$API\" npm run build:mobile"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-misc",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

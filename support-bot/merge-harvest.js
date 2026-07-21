@@ -66,6 +66,18 @@ const SLUGS = {
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 
+/**
+ * Evidence paths arrive inconsistently — some absolute, some repo-relative,
+ * depending on which agent wrote them. Normalize to repo-relative before any
+ * existence check, or every absolute path is reported as a missing file.
+ */
+function normPath(f) {
+  let p = String(f || '').replace(/\\/g, '/')
+  const i = p.indexOf('/dark_mobile/')
+  if (i >= 0) p = p.slice(i + '/dark_mobile/'.length)
+  return p.replace(/^\.?\//, '')
+}
+
 function slugFor(domain) {
   if (SLUGS[domain]) return SLUGS[domain]
   return String(domain || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5) || 'GEN'
@@ -129,14 +141,18 @@ for (const file of files.sort()) {
     // codebase, so its claim cannot be trusted regardless of how it reads.
     const bad = (entry.evidence || [])
       .map((v) => v && v.file)
-      .filter((f) => f && !existsSync(join(REPO, f)))
+      .filter((f) => f && !existsSync(join(REPO, normPath(f))))
     if (bad.length) { reasons.badEvidence++; rejected.push({ domain, q: entry.question, why: `cites missing file(s): ${bad.join(', ')}` }); continue }
 
     const key = norm(entry.question)
     if (seen.has(key)) { reasons.duplicate++; rejected.push({ domain, q: entry.question, why: 'duplicate of an existing entry' }); continue }
     seen.add(key)
 
-    accepted.push({ ...entry, domain })
+    accepted.push({
+      ...entry,
+      domain,
+      evidence: (entry.evidence || []).map((v) => ({ ...v, file: normPath(v.file) })),
+    })
     kept++
   }
 

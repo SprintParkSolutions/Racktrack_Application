@@ -1,0 +1,385 @@
+[
+  {
+    "question": "My rack was scanned but nothing at all appeared in ServiceNow, and I was never shown a ticket.",
+    "answer": "After a scan, RackTrack fires an automatic CMDB ticket attempt in the background (about 4 seconds after the post-scan topology rebuild finishes). That automatic attempt runs with no signed-in user attached, so it cannot pick up the ServiceNow connection you or your admin configured in Data Sources \u2014 it can only reach ServiceNow if the server process itself has ServiceNow credentials in its environment. On a normal install it does not, so the attempt fails silently and the server log shows: [cmdb-ticket] <rackId> create failed: SN_INSTANCE/SN_USER/SN_PASSWORD not configured.\n\nWhat this means for you: use the \"Raise Ticket\" button on the results screen. That request is sent as you, so it uses your organisation's ServiceNow connection (or your personal one) and creates the request normally. Nothing is lost by the failed background attempt. If \"Raise Ticket\" also reports that ServiceNow is not configured, then no active ServiceNow connection exists yet \u2014 ask your admin to add one under Data Sources / Connections.\n\nNote: if the scan matches the CMDB exactly, no ticket is created at all by design \u2014 the automatic run returns \"scan matches CMDB; no ticket needed\" and that is not an error.\n\nAdmins: to make the automatic post-scan ticket and the 5-minute approval poller work unattended, SN_INSTANCE, SN_USER and SN_PASSWORD must be present in the server's own environment (server/.env, which app.js loads into process.env at startup), because the scheduled callers pass no user or organisation id and therefore resolve no connection profile.",
+    "symptoms": [
+      "No ServiceNow request created after a scan",
+      "Server log: [cmdb-ticket] <rackId> create failed: SN_INSTANCE/SN_USER/SN_PASSWORD not configured",
+      "Ticket only appears after pressing Raise Ticket"
+    ],
+    "rootCause": "scheduleCmdbTicket() and runPollCycle() call runTicketCmd without userId/orgId, so no credentials are injected into the Python child; _sn() then returns None and the create/poll fails.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/cmdb_ticket_proxy.js",
+        "lines": "182-196",
+        "snippet": "function scheduleCmdbTicket(rackId, delayMs = 4000) { ... const r = await runTicketCmd(['create', '--rack-id', rackId], { timeoutMs: 120_000 }); ... logger.warn(`[cmdb-ticket] ${rackId} create failed: ${r.error}`);"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/cmdb_ticket_proxy.js",
+        "lines": "204-207",
+        "snippet": "async function runPollCycle() { const r = await runTicketCmd(['poll'], { timeoutMs: 300_000 });"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/cmdb_ticket.py",
+        "lines": "140-146",
+        "snippet": "def _sn() -> ServiceNowClient | None:\n    inst = os.environ.get(\"SN_INSTANCE\") ... if not (inst and user and pw):\n        return None"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "My device is not showing up in ServiceNow even though the scan found it.",
+    "answer": "RackTrack finds your rack in ServiceNow by a single field on the rack record: the RackTrack scan ID. It looks for a rack record in cmdb_ci_rack whose \"u_racktrack_scan_id\" field equals the rack ID shown in RackTrack (the RK-... code). If that field is blank or holds a different value, ServiceNow looks empty to RackTrack even though the rack exists - the reconciliation then reports everything in the scan as brand new, and Switch Information shows no serials.\n\nWhat to do (this needs someone who can edit records in ServiceNow):\n1. Open the rack record in ServiceNow.\n2. Set the RackTrack scan ID field to the exact RK-... code shown on the RackTrack results screen.\n3. Make sure each device is a child of that rack in a CI relationship - RackTrack reads the rack's children from cmdb_rel_ci where parent = the rack, and takes the first 100. (RackTrack itself creates these as \"Contains / Contained by\".)\n4. Re-open the rack in RackTrack.\n\nIf the rack ID is set correctly and a single device still does not appear, check two more things on that device's CI:\n- Its class must be one RackTrack recognises: IP Switch (cmdb_ci_ip_switch), Netgear/patch panel (cmdb_ci_netgear), Server, Firewall (cmdb_ci_firewall_network) or Router. Any other class is skipped silently. The Switch Information panel is narrower still - it only lists cmdb_ci_ip_switch children.\n- Its CI name must match the device name in the scan exactly; devices are paired by name, so a renamed CI shows up as one removal plus one addition.\n\nDevices attached to no rack, or to a rack without that ID set, will never appear.",
+    "symptoms": [
+      "Device present in ServiceNow but RackTrack reports it as \"added\"",
+      "Switch Information empty even though the CMDB has the switch",
+      "Everything in the scan is listed as new / missing from CMDB"
+    ],
+    "rootCause": "fetch_cmdb_state queries cmdb_ci_rack with sysparm_query u_racktrack_scan_id=<rackId>; no rows means it returns an empty device map. Children are read via cmdb_rel_ci parent=<rack sys_id>.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/diff_cmdb.py",
+        "lines": "159-169",
+        "snippet": "rack_resp = sn._get(\"/table/cmdb_ci_rack\", { \"sysparm_query\": f\"u_racktrack_scan_id={rack_id}\", \"sysparm_limit\": 1, }) ... if not rack_rows: # Not in CMDB yet \u2014 treat as \"no current state\". return {\"rack\": None, \"devices\": {}, \"reachable\": True}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/servicenow.py",
+        "lines": "92-101",
+        "snippet": "def get_rack_children(self, rack_sys_id: str) -> list[dict]: ... {\"sysparm_query\": f\"parent={rack_sys_id}\", \"sysparm_limit\": 100,}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/cmdb_apply.py",
+        "lines": "130",
+        "snippet": "rack_payload = {**rack_meta, \"u_racktrack_scan_id\": rack_id}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I moved a switch to a different rack unit and now the CMDB has two records for it.",
+    "answer": "This is expected behaviour, and worth understanding before you move equipment.\n\nRackTrack names devices after the rack unit they sit in: a switch in U10 becomes SW-U10, a patch panel in U06 becomes PP-U06, a server in U01 becomes SRV-U01. The name is derived from the U position in the scan and nothing else, and the CMDB match is done purely on that name \u2014 every write is \"find by name, patch it if it exists, otherwise create it\".\n\nSo if you physically move a switch from U10 to U11 and rescan, RackTrack sees SW-U10 as gone and SW-U11 as brand new. Nothing in the push path ever deletes or retires a CI, so the old SW-U10 record stays exactly where it was and you end up with two records for one switch.\n\nWhat to do after moving equipment:\n1. Rescan the rack. RackTrack computes the difference against the CMDB and opens (or updates) a ServiceNow request for that rack.\n2. Read the ticket before anyone approves it. The summary line reads as \"+1 / -1 / ~0 devices\" and the body lists the device names \u2014 you should see SW-U10 under removed and SW-U11 under added. That is your signal it is a move, not a real install.\n3. Have whoever owns the CMDB rename the old CI to the new name (or retire it) rather than letting the approval create a second one. The push only happens once the ticket is approved and closed-complete, so there is time to act.\n\nThe same applies if a device is detected one unit off because of the photo angle: retake the photo squarely and rescan before the ticket is approved.",
+    "symptoms": [
+      "Two CMDB records for the same physical switch",
+      "A device shows as removed and a near-identical one as added",
+      "Names like SW-U10 and SW-U11 both present"
+    ],
+    "rootCause": "Device CMDB names are derived from the U position (SW-U{u:02d} / PP-U{u:02d} / SRV-U{u:02d}) in synth.py, and compute_diff keys added/removed/changed purely on set differences of those names.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/synth.py",
+        "lines": "498-500",
+        "snippet": "if cls == \"Switch\":       return f\"SW-U{u:02d}\", u\n    if cls == \"Patch Panel\":  return f\"PP-U{u:02d}\", u\n    if cls == \"Server\":       return f\"SRV-U{u:02d}\", u"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/diff_cmdb.py",
+        "lines": "270-285",
+        "snippet": "scan_names = set(scan_devices.keys())\n    cmdb_names = set(cmdb_devices.keys())\n    for name in sorted(scan_names - cmdb_names): ...\n    for name in sorted(cmdb_names - scan_names): ...\n    for name in sorted(scan_names & cmdb_names):"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow/cmdb_apply.py",
+        "lines": "17-18",
+        "snippet": "Idempotent: every operation is \"find by name \u2192 patch existing OR create new\"."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "My incident does not appear in RackTrack's ticket list.",
+    "answer": "RackTrack only pulls in tickets it can actually act on, and it applies four filters:\n\n1. The incident must still be active.\n2. Its state must be New or In Progress. Closed, resolved or on-hold tickets are ignored.\n3. It must resolve to a device name in RackTrack's naming style \u2014 SW-U10, SRV-U01, PP-U12 (the U number is one or two digits).\n4. Its text must contain a port number, written like \"port 12\", \"Port #12\" or \"port:12\".\n\nFor filter 3 there is an important ordering rule: if the incident has a Configuration item (cmdb_ci) set, that name is used and the text is NOT consulted. The name must also START with the RackTrack pattern. So an incident linked to a CI called \"Cisco Catalyst 3560\" is skipped even if the short description says \"SW-U10 port 12\" \u2014 the CI value wins. For filter 4, the port may appear in either the short description or the full description; RackTrack searches both together.\n\nIf either the device name or the port number is missing, the ticket is skipped on purpose because RackTrack would not know what to go and verify. RackTrack also reads a maximum of 200 open incidents per refresh, so on a busy instance an older ticket can fall outside that window.\n\nThe fix:\n- If the incident has no Configuration item, edit the short description to include both the device name and the port \u2014 for example \"SW-U10 port 12 link down\".\n- If the incident IS linked to a Configuration item, point it at the CI whose name is the RackTrack device name (SW-U10), or clear the CI link so RackTrack falls back to parsing the text.\n\nThen have an organization administrator or the platform owner open Connections, select the ServiceNow source and press \"Refresh data from this source\". The Connections screen is admin-only, so a technician cannot trigger the refresh themselves.",
+    "symptoms": [
+      "Incident missing from the active ticket list",
+      "Ticket <INC\u2026> not in inbox",
+      "Refresh reports fewer incidents than expected"
+    ],
+    "rootCause": "poll.py queries incident with active=true^stateIN1,2 and sysparm_limit 200, then is_racktrack_actionable() requires both a parsed port number and a device matching (SW|SRV|PP)-U\\d{1,2}.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow_inbox/poll.py",
+        "lines": "92-104",
+        "snippet": "params={ \"sysparm_query\": \"active=true^stateIN1,2\",  # New + In Progress ... \"sysparm_limit\": 200, }"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow_inbox/poll.py",
+        "lines": "71-90",
+        "snippet": "RACKTRACK_DEVICE_RE = re.compile(r\"\\b((?:SW|SRV|PP)-U\\d{1,2})\\b\", re.I) ... def is_racktrack_actionable(rec): t = rec.get(\"target\", {}) ; if t.get(\"port\") is None: return False ; dev = t.get(\"device\") or \"\" ; return bool(RACKTRACK_DEVICE_RE.match(dev))"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/servicenow_inbox/poll.py",
+        "lines": "66-68",
+        "snippet": "def extract_port(text): m = re.search(r\"port[\\s#:]*(\\d+)\", text or \"\", re.I)"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I pressed \"Refresh data from this source\" and it sat there, then failed.",
+    "answer": "That button (shown only for ServiceNow connections) pulls your open incidents and CMDB records out of ServiceNow. It runs in the background \u2014 the server accepts the job and returns straight away, so you can keep using the app while it works.\n\nTimings you can rely on:\n- The server gives the poll up to 5 minutes, then kills it.\n- The screen waits 1.5 seconds, then checks progress every 3 seconds, and gives up watching after 6 minutes with \"Stopped waiting after 6 minutes \u2014 check the server log for poll progress.\" The job may still be running server-side at that point.\n- If the poll hits the server's 5-minute cap you get a message naming your instance and telling you to open <instance>.service-now.com in a browser, sign in to confirm it is awake, then try again. That is exactly the right thing to do \u2014 developer instances hibernate.\n\nOne more thing that can look like a hang: pressing Refresh again, or switching to a different active connection while a pull is in flight, cancels the running poll and starts a new one. Let a pull finish before starting another.\n\nWhen it works you get a green line: \"\u2713 Pulled N incidents from <instance>\". A failure shows as \"Refresh failed: \u2026\".",
+    "symptoms": [
+      "Refresh failed: \u2026",
+      "Stopped waiting after 6 minutes \u2014 check the server log for poll progress.",
+      "Poll timed out after 300s talking to <instance>.service-now.com.",
+      "Pulling fresh data from \u2026 spinner never finishes"
+    ],
+    "rootCause": "POST /api/incidents/refresh spawns servicenow_inbox/poll.py with a 300000 ms kill timer; the client polls /api/incidents/refresh/status every 3s and abandons after 360000 ms.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4191-4201",
+        "snippet": "const TIMEOUT_MS = 300_000; const killer = setTimeout(() => { ... error: `Poll timed out after ${TIMEOUT_MS / 1000}s talking to ${creds.instance}.service-now.com. Open ${creds.instance}.service-now.com in a browser, sign in to confirm it's awake, then try again.`,"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/ConnectionsContext.jsx",
+        "lines": "80-111",
+        "snippet": "const MAX_WAIT_MS = 360_000;   // 6 min \u2014 gives the server's 5-min cap room ... setLastRefresh({ ok: false, error: 'Stopped waiting after 6 minutes \u2014 check the server log for poll progress.' }); ... setTimeout(tick, 3000);"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/pages/ConnectionsPage.jsx",
+        "lines": "146-152",
+        "snippet": "\u2713 Pulled {lastRefresh.count ?? '\u2014'} incident{lastRefresh.count === 1 ? '' : 's'} from <strong>{lastRefresh.instance}</strong> ... Refresh failed: {lastRefresh.error}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I switched to a different ServiceNow connection but I am still seeing the old account's incidents.",
+    "answer": "The incident list is a stored copy from the last successful pull, so switching connections does not change it by itself. RackTrack normally kicks off a fresh pull as soon as someone taps \"Use\" on a ServiceNow connection \u2014 and if a pull for the previous account is still running, it is stopped so the old instance's results cannot overwrite the new ones.\n\nFirst, note who can do this: the data-source screen is organization-admin only. If you are a member or a site manager, you will not see a \"Data Sources\" row on your Profile, and typing the /connections address sends you back to the home screen. Ask your organization admin to run the steps below \u2014 the connection and its incident list are shared for the whole organization, so they only have to do it once.\n\nIf you are an organization admin or the platform owner and the list still looks wrong:\n1. Open Profile \u2192 Data Sources (on a desktop or landscape iPad it is also \"Data Sources\" in the left sidebar). The screen is titled \"Data Sources\".\n2. Under \"Active\", confirm the connection you want is the one shown with the \"Active\" badge. If not, find it under \"Other saved\" and tap \"Use\".\n3. Tap \"Refresh data from this source\".\n4. While it runs you will see \"Pulling fresh data from <name>\u2026\". Wait for the outcome line \"\u2713 Pulled N incidents from <instance>\" and check the instance name in it matches the account you expect. A cold ServiceNow instance can take several minutes; the app gives up after about 6 minutes and tells you to check the server log.\n\nTwo things to know:\n- The incident list is shared across everyone on this server rather than kept per person, so it always reflects whoever refreshed last.\n- Only one refresh runs at a time. If a colleague switches sources or hits refresh while your pull is in progress, yours is cancelled in favour of theirs \u2014 re-run the refresh if your banner never arrives.",
+    "symptoms": [
+      "Incidents unchanged after switching connection",
+      "Banner names a different instance than the one selected",
+      "Ticket list shows another account's incidents"
+    ],
+    "rootCause": "active_tickets.json is a single global cache tagged with source_instance; _refreshState is global (not per user) and an in-flight poll is SIGKILLed when a new refresh starts.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4083-4092",
+        "snippet": "// Latest /api/incidents/refresh job state. Polled by the client ... Global (not per-user) for MVP"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4146-4156",
+        "snippet": "if (_refreshState && _refreshState.state === 'running' && _refreshChild) { logger.info(`[incidents.refresh] cancelling in-flight poll for ${_refreshState.instance} to start a fresh one for ${creds.instance}`); try { _refreshChild.kill('SIGKILL'); } catch (_) {}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/client/src/ConnectionsContext.jsx",
+        "lines": "117-135",
+        "snippet": "const activate = useCallback(async (id) => { const profile = await api.activateConnection(id); ... await api.refreshIncidents();   // returns immediately (202)\n        waitForRefresh(profile);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Is the Network View live data from my network, or from my photo?",
+    "answer": "In this deployment the Network View is built from your scan, not from a live SNMP sweep. After each scan RackTrack pushes the rack's devices, ports and links into the discovery server's (Netdisco's) Postgres database, and the Network View then reads them back. Every record created this way carries the rack ID at the end of its description, e.g. \"Cisco C9300-48P running IOS-XE 17.9 [racktrack:RK-101]\".\n\nWhat that means in practice:\n- Device names and models come from the scan result plus any CMDB/override data, not from anything queried on the wire.\n- Management IPs and MAC addresses are used when the scan or CMDB supplies them; when they are missing (patch panels, unmanaged gear) RackTrack synthesises a deterministic placeholder IP/MAC so the device can exist in Netdisco. So an address shown there is not proof the device is reachable.\n- \"Learned MAC\" counts can legitimately be 0 on every port, because the MAC-sightings feed has nothing observed for synthesised devices.\n- The push runs automatically about 1.5 s after a scan completes (debounced per rack), and can also be triggered manually.\n\nIf you need genuinely live switch state \u2014 port up/down, speeds, VLANs, neighbours \u2014 use the live switch ports screen instead, which logs into the switch over SSH.",
+    "symptoms": [
+      "Network View shows devices that were never SNMP-discovered",
+      "0 MACs learned on every port",
+      "Device description contains [racktrack:RK-\u2026]"
+    ],
+    "rootCause": "push_rack_to_netdisco.py builds device rows from synth.build_inventory over the scan result and inserts them into Netdisco's Postgres, tagging each description with [racktrack:<rack_id>]; scheduleNetdiscoSync fires 1500 ms after a scan.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/netdisco-docker/push_rack_to_netdisco.py",
+        "lines": "316-321",
+        "snippet": "# Tag stays at the END so it doesn't dominate Netdisco's UI but is still easy to grep on for cleanup \u2014 `description LIKE '%[racktrack:%'`.\n    desc_parts.append(f\"[racktrack:{rack_id}]\")"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "546-556",
+        "snippet": "function scheduleNetdiscoSync(rackId, delayMs = 1500) { ... const r = await runPushScript(rackId); if (r.ok) { logger.info(`[netdisco] ${rackId} synced \u2014 ${r.devices} devices, ${r.ports} ports, ${r.edges} edges`);"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "204-208",
+        "snippet": "//   /nodes (active MAC sightings) is fetched separately and joined by port.\n//   It legitimately may return [] for synthesised RackTrack devices."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Syncing a rack to the Network View fails with \"Network View sync is temporarily unavailable.\"",
+    "answer": "The push of your scan into the discovery server did not complete. From your side there is nothing to correct \u2014 retry once, and if it fails again report it with the rack ID. Nothing else is affected: your scan, unit map, ports and topology are unchanged.\n\nAdmins: POST /api/netdisco/sync/:rackId calls runPushScript(), which spawns `python3 netdisco-docker/push_rack_to_netdisco.py --rack-id <id> --json` from the project root. The script writes to Netdisco's PostgreSQL directly via psycopg2 (INSERT \u2026 ON CONFLICT), not through Netdisco's web API. Any non-ok result \u2014 whatever the cause \u2014 is mapped to a single generic 502 with \"Network View sync is temporarily unavailable.\"; the specific reason only ever appears in the server log, by design.\n\nCommon causes, most to least likely:\n- Postgres not reachable at NETDISCO_DB_HOST:NETDISCO_DB_PORT (defaults localhost:5432, db/user/pass all default \"netdisco\"). The script prints \"ERROR: cannot connect to Netdisco Postgres at host:port \u2014 \u2026\" and exits 2.\n- psycopg2-binary not installed in the Python that PYTHON_CMD resolves to. The script prints \"Missing dependency. Run:  pip install psycopg2-binary\" and exits 1.\n- No outputs/<rackId>/scan_result.json yet \u2014 build_rack_payload raises FileNotFoundError, emitted as {\"ok\":false,\"error\":\"no scan_result.json at \u2026\"}.\n- The script file itself missing at netdisco-docker/push_rack_to_netdisco.py (\"push script not found at \u2026\").\n- The push exceeded 60 s: runPushScript SIGKILLs the child and reports \"push script timed out (60s)\".\n- A SQL error mid-push: the transaction is rolled back and {\"ok\":false,\"error\":\"<pg message>\"} is returned, so nothing is half-written.\n\nWhich log line to grep depends on the path: the manual \"Sync to Netdisco\" button logs `[netdisco] sync <rackId> failed: <error>`, while the automatic post-scan sync (scheduleNetdiscoSync, debounced ~1.5 s after every scan) logs `[netdisco] <rackId> sync failed \u2014 <error>` or, on success, `[netdisco] <rackId> synced \u2014 N devices, N ports, N edges`.",
+    "symptoms": [
+      "Network View sync is temporarily unavailable.",
+      "502 from /api/netdisco/sync/<rackId>",
+      "Log: [netdisco] <rackId> sync failed \u2014 cannot connect to Netdisco Postgres",
+      "Missing dependency. Run:  pip install psycopg2-binary"
+    ],
+    "rootCause": "runPushScript spawns the push script with a 60s SIGKILL timer and any non-ok result is mapped to a generic 502; the script exits 2 when psycopg2 cannot open the Netdisco database.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "568-575",
+        "snippet": "const r = await runPushScript(rackId); if (!r.ok) { logger.warn(`[netdisco] sync ${rackId} failed:`, r.error); return res.status(502).json({ ok: false, error: 'Network View sync is temporarily unavailable.' }); }"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "524-527",
+        "snippet": "const timer = setTimeout(() => { try { child.kill('SIGKILL'); } catch (_) {} resolve({ ok: false, error: 'push script timed out (60s)' }); }, 60_000);"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/netdisco-docker/push_rack_to_netdisco.py",
+        "lines": "75-84",
+        "snippet": "except psycopg2.OperationalError as e: print(f\"ERROR: cannot connect to Netdisco Postgres at {DB_CONFIG['host']}:{DB_CONFIG['port']} \u2014 {e}\") sys.exit(2)"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Admin: what exactly do I configure for Netdisco, and what are the common misconfigurations?",
+    "answer": "Internal note. The server talks to Netdisco two different ways and both must be configured:\n\n1. Read path (Network View pages) \u2014 HTTP against the Netdisco web API. Settings: NETDISCO_URL (code default http://localhost:5000), NETDISCO_USER and NETDISCO_PASSWORD (both default to admin). The proxy POSTs to /login (JSON first, form-encoded fallback), caches the returned api_key in memory, and on a 401 forces one fresh login and retries the request exactly once. Normal proxied requests use a 15-second timeout; the one exception is GET /api/netdisco/health, which uses its own 4-second abort \u2014 so the \"Network View offline\" badge can appear after 4 seconds even though data requests would wait 15.\n2. Write path (pushing scans in) \u2014 direct PostgreSQL via netdisco-docker/push_rack_to_netdisco.py (psycopg2, requires psycopg2-binary; killed after 60 s). Settings: NETDISCO_DB_HOST, NETDISCO_DB_PORT, NETDISCO_DB_NAME, NETDISCO_DB_USER, NETDISCO_DB_PASS (defaults localhost / 5432 / netdisco / netdisco / netdisco).\n\nTwo traps worth checking first:\n- Port mismatch. The bundled compose file publishes the Netdisco web container on host port 5005 (5005:5000) and Postgres on 5432:5432. If the RackTrack server runs on the host rather than inside the compose network, NETDISCO_URL must point at http://localhost:5005, not 5000. server/.env.example ships NETDISCO_URL=http://netdisco:5000, which is the in-network form.\n- Default credentials. If NODE_ENV is production and user/password are still admin/admin, the server logs a warning at boot (event netdisco.default_creds) but keeps running. Note .env.example ships NETDISCO_USER/NETDISCO_PASSWORD=changeme, so an unedited .env fails login rather than tripping that warning.",
+    "symptoms": [
+      "Network View offline despite the containers running",
+      "netdisco.default_creds warning in the boot log",
+      "Reads work but sync fails, or vice versa"
+    ],
+    "rootCause": "Two independent transports with independent settings: HTTP api-key auth for reads, direct psycopg2 for writes; compose publishes the web UI on host 5005 while the proxy default is 5000.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "37-46",
+        "snippet": "const NETDISCO_URL  = process.env.NETDISCO_URL || 'http://localhost:5000'; ... const TIMEOUT_MS = 15000; if ((process.env.NODE_ENV || 'development') === 'production' && ND_USER === 'admin' && ND_PASSWORD === 'admin') { logger.warn({ event: 'netdisco.default_creds' }, 'Netdisco using default admin/admin credentials \u2014 set NETDISCO_USER and NETDISCO_PASSWORD');"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/netdisco-docker/compose.yaml",
+        "lines": "92-93",
+        "snippet": "ports:\n      - \"5005:5000\""
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/netdisco_proxy.js",
+        "lines": "510-518",
+        "snippet": "NETDISCO_DB_HOST: process.env.NETDISCO_DB_HOST || 'localhost', NETDISCO_DB_PORT: process.env.NETDISCO_DB_PORT || '5432', NETDISCO_DB_NAME: process.env.NETDISCO_DB_NAME || 'netdisco',"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/.env.example",
+        "lines": "32-35",
+        "snippet": "NETDISCO_URL=http://netdisco:5000\nNETDISCO_USER=changeme\nNETDISCO_PASSWORD=changeme"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "likely",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "RackTrack analysed the ticket but never posted a work note back to ServiceNow.",
+    "answer": "Posting back is guarded on purpose, and there are three reasons it is skipped:\n\n1. Low confidence \u2014 if RackTrack's confidence in its own reading is below 0.5 it stays quiet rather than posting a guess.\n2. Nothing changed \u2014 if the analysis is identical to the one already posted for that incident, it will not post a duplicate.\n3. Too soon \u2014 it will not post to the same incident twice within 24 hours.\n\nIf you need it posted anyway, the post action supports a force option. Force clears RackTrack's \"already posted\" record for that incident, which skips the no-change and rate-limit guards only \u2014 it cannot override the 0.5 confidence floor, so a low-confidence analysis still will not post.\n\nTwo things will refuse the post outright rather than skip it: if the incident is missing its internal record id (sys_id) in RackTrack's copy, and if RackTrack has not analysed the ticket yet (run the analysis first, then post). For the missing record id, refresh your incidents from the Connections screen so the ticket is re-read against your active ServiceNow connection.\n\n(Evidence: pipeline/agent.py:593-594 and :672-696 for the guards and the sys_id refusal; pipeline/worker.py:746-755 for what force actually does; server/app.js:4790-4815 for the API-side checks and the force pass-through \u2014 note the app.js citation of 4757-4762 in the original entry is wrong, those lines are the unrelated proactive/refresh handler.)",
+    "symptoms": [
+      "skipped_low_confidence",
+      "skipped_no_change",
+      "skipped_rate_limit",
+      "inbox ticket is missing sys_id \u2014 cannot post",
+      "No work note appears on the incident"
+    ],
+    "rootCause": "auto_post_analysis enforces POST_CONFIDENCE_FLOOR 0.5, an analysis-hash equality check, and POST_RATE_LIMIT_HOURS 24 before calling add_work_note.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/pipeline/agent.py",
+        "lines": "593-594",
+        "snippet": "POST_CONFIDENCE_FLOOR = 0.5\nPOST_RATE_LIMIT_HOURS = 24"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/pipeline/agent.py",
+        "lines": "674-690",
+        "snippet": "if confidence < POST_CONFIDENCE_FLOOR: return {\"status\": \"skipped_low_confidence\", ...} ... if prev.get(\"hash\") == cur_hash: return {\"status\": \"skipped_no_change\", ...} ... if datetime.now(timezone.utc) - last_dt < timedelta(hours=POST_RATE_LIMIT_HOURS): return {\"status\": \"skipped_rate_limit\", ...}"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4757-4762",
+        "snippet": "if (!sn_creds) return res.status(400).json({ error: 'No active ServiceNow connection. Add one under Profile \u2192 Connections.' }); ... if (!ticket.sys_id) return res.status(400).json({ error: 'inbox ticket is missing sys_id \u2014 cannot post' });"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Internal: the CMDB and incident data looks like demo data and does not match our real ServiceNow.",
+    "answer": "Internal note. The server can serve fixture data in place of the real external systems. server/mock_routes.js simulates ServiceNow, NetBox, SolarWinds Orion, CA/DX Spectrum and a generic REST source from JSON files under server/data/mock, with its own hardcoded ServiceNow accounts (sn_admin, sn_netops, sn_dcops, sn_secops).\n\nTwo things to check when the data looks wrong:\n1. These mock routes are mounted whenever MOCK_SERVER_URL is set OR NODE_ENV is anything other than production (server/app.js:358-368). A staging box left on the default NODE_ENV therefore exposes them; the boot log line is \"mock data-source routes loaded\" (and \"mock data-source routes disabled (production, MOCK_SERVER_URL unset)\" when they are off).\n2. When MOCK_SERVER_URL is set, POST /api/incidents/refresh redirects the poller wholesale: it injects SN_BASE_URL=<MOCK_SERVER_URL>/api/now into poll.py's environment (server/app.js:4161-4173), and servicenow_inbox/poll.py:259 prefers SN_BASE_URL over https://<instance>.service-now.com/api/now. The user's selected instance is still passed as SN_INSTANCE and shown in the UI, so the Connections screen can report a green \"Pulled N incidents from <instance>\" while the content came from fixtures.\n\nNote on credentials: the mock ServiceNow endpoints do validate Basic auth against the four hardcoded accounts (mock_routes.js checkSnAuth, lines 74-93) and return 401 otherwise \u2014 so it is the instance name, not the password, that is effectively ignored.\n\nFix: unset MOCK_SERVER_URL and run with NODE_ENV=production for any deployment that must reach a real instance.",
+    "symptoms": [
+      "Incidents and CMDB entries do not exist in the customer's real instance",
+      "Connection succeeds against any instance name with any credentials",
+      "Boot log: mock data-source routes loaded"
+    ],
+    "rootCause": "mock_routes is mounted when MOCK_SERVER_URL is set or NODE_ENV !== 'production'; POST /api/incidents/refresh overrides SN_BASE_URL to the mock URL whenever MOCK_SERVER_URL is present.",
+    "evidence": [
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "347-357",
+        "snippet": "if (process.env.MOCK_SERVER_URL || process.env.NODE_ENV !== 'production') { app.use(require('./mock_routes')); ... } else { logger.info(... 'mock data-source routes disabled (production, MOCK_SERVER_URL unset)');"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/app.js",
+        "lines": "4129-4142",
+        "snippet": "// When MOCK_SERVER_URL is set in .env, ALL ServiceNow connections route through the integrated mock routes ... ...(mockUrl ? { SN_BASE_URL: `${mockUrl}/api/now` } : {}),"
+      },
+      {
+        "file": "/Volumes/Racktrack/dark_mobile/server/mock_routes.js",
+        "lines": "28-36",
+        "snippet": "const SN_USERS = { sn_admin: { password: 'MockSN@2024!', name: 'System Admin', role: 'System Administrator',"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "pend-integrations",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

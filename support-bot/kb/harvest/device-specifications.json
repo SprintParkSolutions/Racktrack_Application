@@ -1,0 +1,561 @@
+[
+  {
+    "question": "Where do the specifications on a switch come from, and what am I looking at?",
+    "answer": "Open the scan result and tap the Switches tab (or deep-link to /switch-info/<rack id>). Pick the switch \u2014 the card opens on the Specifications tab, under the heading \"Hardware\".\n\nWhat you see is the manufacturer's datasheet for the make and model RackTrack read off the chassis in your photo. Nothing is queried from the switch itself \u2014 RackTrack does not SSH or SNMP the device for this tab, so it works even when you are not on the switch's network. (It does need to reach the RackTrack server: the app posts the vendor and model to /api/specs, and for a model it has not seen the spec agent may fetch the vendor's datasheet live from the web. Once loaded, the result is cached per rack, vendor and model.)\n\nThe rows are a mix of two things:\n1. A fixed set of labelled fields when RackTrack has them: Family, SKU, Ports, Port config, Uplinks, Max port speed (Gbps), Switching capacity (Gbps), Forwarding rate (Mpps), Buffer (MB), Latency (ns), MAC table, PoE, PoE budget (W), Power typical (W), Power max (W), Layer, Features, Rack units, Network OS, Status, Typical use.\n2. Everything else the spec agent pulled off the vendor's datasheet, keyed by whatever wording the vendor used (these never overwrite a labelled field above) \u2014 which is why one switch shows a handful of rows and another shows dozens.\n\nIf a field is blank for that model it is left out rather than shown empty. If RackTrack has no vendor/model yet you'll see \"Add vendor and model to see specs.\" Tap \"View full details \u2197\" at the top right of the Hardware section to open the vendor's own product page and confirm anything that matters before you order or install.",
+    "symptoms": [
+      "Where do the switch specs come from",
+      "Are these specs read from the switch",
+      "What is the Hardware section",
+      "One switch shows lots of specs and another shows only a few"
+    ],
+    "rootCause": "The Specifications tab renders /api/specs, which returns a fixed set of SPEC_KEY_LABELS fields from the spec agent's record plus the agent's free-form extra_specs from the vendor datasheet; empty values are skipped.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "692-695",
+        "snippet": "{ k: 'hardware', label: 'Specifications' },\n              { k: 'firmware', label: 'Firmware' },\n              { k: 'optics',   label: 'SFP Advisor' },"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "874-884",
+        "snippet": "<span style={{ ... }}>\n                Hardware\n              </span>\n              {specs?.productUrl && (\n                <a href={specs.productUrl} target=\"_blank\" rel=\"noreferrer noopener\" ...>\n                  View full details \u2197"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7041-7053",
+        "snippet": "const SPEC_KEY_LABELS = {\n  family: 'Family', sku: 'SKU',\n  port_count: 'Ports', port_config: 'Port config', uplink_config: 'Uplinks',\n  port_speed_max_gbps: 'Max port speed (Gbps)',\n  switching_capacity_gbps: 'Switching capacity (Gbps)',"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7068-7086",
+        "snippet": "for (const [key, label] of Object.entries(SPEC_KEY_LABELS)) {\n    const v = rec[key];\n    if (v == null || v === '') continue;\n    ...\n  const extras = rec.extra_specs && typeof rec.extra_specs === 'object'\n    ? rec.extra_specs : null;"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "4841-4845",
+        "snippet": "{tab === 'switches' && (\n        <div className={styles.tabContent}>\n          <SwitchInfoContent rackId={rackId || scanId} />"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "The switch card says \"We couldn't identify this device from the rack photo\" and there are no specs. What do I do?",
+    "answer": "Type the make and model in yourself \u2014 the card has a built-in editor and the specs reload as soon as you save.\n\n1. On the Switches tab, expand the device. Its title will be the switch's name if RackTrack has one, otherwise \"Unidentified device\".\n2. Under the heading \"Identification\" you will see a \"Not detected\" chip and the line \"We couldn't identify this device from the rack photo.\"\n3. Tap \"Enter make / model\" on the right of that heading.\n4. Fill in \"Make / Vendor\" (placeholder: e.g. MikroTik) and \"Model\" (placeholder: e.g. CRS328-24P-4S+RM). Both are required \u2014 Save stays greyed out until you have filled in both. Enter saves, Esc cancels.\n5. Tap Save. RackTrack re-runs the spec lookup with your values and the chip changes to \"Manual entry\". The firmware check also re-runs, but only if RackTrack already knows the device's OS version \u2014 if it doesn't, add the version with the firmware section's own editor and the check will run then.\n\nType the model exactly as printed on the chassis, including hyphens and any + signs. If you get it wrong, tap \"Edit\" and correct it, or tap \"Clear\" to remove what you entered and go back to whatever the photo produced.\n\nWhy it happens: RackTrack reads the make and model off the label in your photo. A device shot at an angle, in shadow, with the label hidden behind cables, or with no printed model on the front will come back blank. (If only one of the two fields came back blank you will see \"Vendor not detected\" or \"Model not detected\" instead, and the button reads \"Add vendor\" / \"Add model\" \u2014 the same editor.)",
+    "symptoms": [
+      "We couldn't identify this device from the rack photo",
+      "Not detected chip on the switch card",
+      "Unidentified device on the Switches tab",
+      "No specs shown for a switch"
+    ],
+    "rootCause": "When OCR returns neither manufacturer nor model, identMissing is true and the card surfaces the IdentEditor; saving writes an override and calls loadDetails() again.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "619-623",
+        "snippet": "{identMissing && !editingIdent && (\n                  <span style={{ ... }}>\n                    Not detected\n                  </span>"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "643-649",
+        "snippet": ">{\n                    identMissing && !makeIsUserSupplied && !modelIsUserSupplied\n                      ? 'Enter make / model'\n                      : identIncomplete && !makeIsUserSupplied && !modelIsUserSupplied\n                        ? (effectiveMake ? 'Add model' : 'Add vendor')\n                        : 'Edit'\n                  }</button>"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "668-671",
+        "snippet": ") : identMissing ? (\n                <StatusLine color={statusColor}>\n                  We couldn't identify this device from the rack photo.\n                </StatusLine>"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "1042-1076",
+        "snippet": "const canSave = !!(draftMake.trim() && draftModel.trim());\n  ...\n            placeholder=\"e.g. MikroTik\"\n  ...\n            placeholder=\"e.g. CRS328-24P-4S+RM\""
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "404-425",
+        "snippet": "const saveIdent = () => {\n    const newMake  = identDraftMake.trim();\n    const newModel = identDraftModel.trim();\n    ...\n      setTimeout(() => loadDetails(), 0);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "It got the brand right but the model is missing \u2014 \"We identified \"Cisco\" but couldn't read the model. Specs and firmware checks need both.\"",
+    "answer": "Add the missing half by hand. Specs and the firmware check will not run on a brand alone.\n\n1. On the Switches tab, expand the device.\n2. Under \"Identification\" you will see a chip reading either \"Model not detected\" or \"Vendor not detected\".\n3. Tap the action on the right \u2014 it reads \"Add model\" when the vendor is known, or \"Add vendor\" when only a model was read.\n4. Both boxes (\"Make / Vendor\" and \"Model\") appear, prefilled with whatever was detected. Fill in the blank one and leave the other as it is. Save stays greyed out until both boxes have text, then tap Save (or press Enter).\n\nSaving re-runs the lookup immediately \u2014 the Specifications tab switches from \"Add vendor and model to see specs.\" to the real spec table, and the firmware check runs too (if an OS version is known). You do not need to close and reopen the card.\n\nAfterwards the chip reads \"Manual entry\" and the link becomes \"Edit\", so you can correct the values later or clear them to fall back on what the scan read.\n\nThis half-detected case is common: the brand name is usually a big silkscreen logo that survives a bad photo, while the model number is small printed text on a sticker. If you can, get closer to the label and re-shoot the rack; otherwise just type the model in.",
+    "symptoms": [
+      "We identified X but couldn't read the model",
+      "Model not detected",
+      "Vendor not detected",
+      "Add vendor and model to see specs",
+      "Add model / Add vendor link"
+    ],
+    "rootCause": "identIncomplete is set when exactly one of manufacturer/model is present; loadDetails() sets specsStatus to 'skipped' unless both displayVendor and lookupModel are non-empty.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "624-628",
+        "snippet": "{identIncomplete && !editingIdent && !makeIsUserSupplied && !modelIsUserSupplied && (\n                  <span style={{ ... }}>\n                    {effectiveMake ? 'Model not detected' : 'Vendor not detected'}\n                  </span>"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "672-677",
+        "snippet": ": identIncomplete && !makeIsUserSupplied && !modelIsUserSupplied ? (\n                <StatusLine color={statusColor}>\n                  {effectiveMake\n                    ? `We identified \"${effectiveMake}\" but couldn't read the model. Specs and firmware checks need both.`\n                    : `We read a model but couldn't identify the vendor.`}"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "275-280",
+        "snippet": "const loadDetails = async (overrideVersion) => {\n    if (!displayVendor || !lookupModel) {\n      setSpecsStatus('skipped');\n      setFirmwareStatus('skipped');\n      return;\n    }"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "887",
+        "snippet": "{specsStatus === 'skipped' && <StatusLine color={statusColor}>Add vendor and model to see specs.</StatusLine>}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I typed in the make and model on the Switches tab, but my colleague still sees \"Unidentified device\" \u2014 and it vanished when I used a different phone.",
+    "answer": "That is expected. A make/model you type on the Switches tab is saved only in the browser or app you typed it in. It is not sent to the server, so it does not travel to your teammates, to another phone, or to a browser where you cleared site data.\n\nWhat it does do: it sticks on that device for you across reloads. The saved value is keyed to the device's serial number, MAC address or U position \u2014 deliberately not to the make/model you can change \u2014 so it survives a re-scan that reads different text off the label. (If the device has no serial, MAC or position at all, the value is pinned to the detected device name instead, and a re-scan that names it differently will lose it.)\n\nIf the whole team needs the corrected identity:\n- Correct the device on the scan result itself instead. Open the device from the Device list and answer \"No\" to \"Detected as <type> \u2014 right?\" for the device type; that correction is posted to the server and merged into the scan, so your organisation sees it.\n- For the make and model specifically there is no shared correction: everyone who needs the specs has to type it once on their own device, or you re-shoot the rack with the label readable so the photo picks it up for everyone.\n\nTo remove your typed value, expand the device, tap \"Edit\" under Identification, and tap \"Clear\". (Before you have entered anything, that button reads \"Enter make / model\", \"Add model\" or \"Add vendor\" instead of \"Edit\".)",
+    "symptoms": [
+      "My make/model correction isn't visible to my team",
+      "Manual entry disappeared on another device",
+      "Typed model didn't save for everyone",
+      "Manual entry chip only shows for me"
+    ],
+    "rootCause": "saveOverride writes to localStorage under racktrack:<field>:<rackId>::<stableId>; there is no server round-trip, so the override is per browser profile.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "206-219",
+        "snippet": "function userOverrideKey(rackId, sw, field) {\n  return `racktrack:${field}:${rackId || '_'}::${switchStableId(sw)}`;\n}\n...\nfunction saveOverride(rackId, sw, field, value) {\n  try {\n    const k = userOverrideKey(rackId, sw, field);\n    if (value) localStorage.setItem(k, value);\n    else localStorage.removeItem(k);"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "192-204",
+        "snippet": "// Stable per-switch identifier for localStorage keys. Uses serial > mac >\n// position as the primary key \u2014 deliberately NOT manufacturer/model\n// because those are exactly the fields the user can override"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "426-438",
+        "snippet": "const clearIdent = () => {\n    setUserMake('');\n    setUserModel('');\n    saveOverride(rackId, sw, 'make',  '');\n    saveOverride(rackId, sw, 'model', '');"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "[Internal] How does the OCR model auto-correction work, and does the UI tell the user it happened?",
+    "answer": "Internal only \u2014 do not describe this mechanism to customers beyond \"RackTrack may correct a misread model number\".\n\nPOST /api/specs and POST /api/firmware both take an optional `fromOcr` flag (server/app.js:7009 and 7190).\n\nWho sets it:\n- client/src/pages/SwitchInformationPage.jsx:309 \u2014 direct fetches set it to `!!sw._fromOcr && !modelIsUserSupplied`, i.e. OCR-derived AND the user has not manually overridden the model.\n- client/src/utils/scanPrefetch.js:172 and :184 \u2014 the background prefetcher always sends `fromOcr: true` for every OCR device it walks. So a prefetched, client-cached spec/firmware result may already contain a substitution even for a device the technician later edits.\n\nWhen fromOcr is true, resolveAgentWithOcrCorrection (server/app.js:7071-7090) runs:\n1. A DB-only probe (`--no-live`) on \"<vendor> <model>\". On a hit it returns with matchedFrom/matchedTo null.\n2. Otherwise it takes probe.response.suggestions and scores each against the queried model with _modelSimilarity (server/app.js:7032-7050) = 0.6 * (shared-prefix chars / shorter string length) + 0.4 * (in-order common chars / longer string length), alphanumeric-normalised and case-insensitive. _bestSuggestion (7052-7065) returns the top scorer only if its score is >= 0.5. If that suggestion differs from the query, it retries live with \"<vendor> <suggestion>\"; a successful retry returns matchedFrom = original model, matchedTo = suggestion.\n3. If the retry fails or no suggestion qualifies, it falls back to a live lookup of the original query and reports no substitution.\n\nWhen a substitution happened the response carries matchedFrom (what OCR read) and matchedTo (what was actually looked up) \u2014 /api/specs at 7021-7024, /api/firmware at 7211-7214. A grep of client/src shows nothing reads either field, so the swap is invisible in the UI. That is the root cause of \"the specs are for a different model\" tickets.\n\n/api/firmware runs the same probe purely for its matchedTo (the probe's spec result is discarded) and sets firmwareModel = matchedTo || model before calling the agent's --firmware mode (7199-7207), so a bad substitution also skews the firmware verdict. Note the response's `model` field still echoes the model the client sent, not matchedTo.",
+    "symptoms": [
+      "User reports specs for a sibling model",
+      "matchedFrom / matchedTo in the API response",
+      "Why did the lookup use a different model number"
+    ],
+    "rootCause": "resolveAgentWithOcrCorrection substitutes a similar model above a 0.5 similarity threshold and the client never renders matchedFrom/matchedTo, so the swap is invisible.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "7016-7034",
+        "snippet": "async function resolveAgentWithOcrCorrection(vendor, model) {\n  // Stage 1: DB-only probe. ~1-2s including py spawn.\n  const probe = await runAgentCli(['--no-live', `${vendor} ${model}`]);\n  ...\n  const best = _bestSuggestion(suggestions, model);\n  if (best && best.toLowerCase() !== model.toLowerCase()) {\n    const retry = await runAgentCli([`${vendor} ${best}`]);"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "6977-6994",
+        "snippet": "function _modelSimilarity(a, b) {\n  ...\n  return 0.6 * preScore + 0.4 * lcsScore;\n}"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "6966-6969",
+        "snippet": "if (matchedFrom) {\n    payload.matchedFrom = matchedFrom;\n    payload.matchedTo   = matchedTo;\n  }"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7143-7149",
+        "snippet": "let firmwareModel = model;\n  let matchedFrom = null, matchedTo = null;\n  if (fromOcr) {\n    ({ matchedFrom, matchedTo } =\n      await resolveAgentWithOcrCorrection(vendor, model));\n    firmwareModel = matchedTo || model;\n  }"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How does RackTrack work out the make and model from a photo \u2014 and what can I do to help it?",
+    "answer": "It reads the printed label on the front of each device. For the devices worth OCRing \u2014 switches, servers, routers, firewalls, aggregation/core gear, and anything the scan couldn't classify \u2014 RackTrack crops that device out of your rack photo, enlarges the crop if it's less than about 120 pixels tall, and runs text recognition on it three times (plain, contrast-boosted and sharpened) so faint text on dark plastic still comes out. Patch panels, PDUs, UPS units and blank panels are deliberately skipped: they rarely carry model text and OCRing them just adds noise.\n\nIt then works through the recognised text in this order:\n\n1. Model-number patterns first. If the text contains something shaped like a known SKU \u2014 for example WS-C\u2026/C9300-48P (Cisco), TL-SG\u2026 (TP-Link), DGS-/DXS- (D-Link), EX/QFX/MX/SRX (Juniper), CRS/CCR/CSS/RB (MikroTik), USW-/UDM-/ES- (Ubiquiti UniFi and EdgeSwitch), GS/JGS/XS (NETGEAR) and others \u2014 that both gives the model and fixes the brand.\n2. If no model pattern matches, it looks for a manufacturer name from RackTrack's vendor list.\n3. If that fails, it looks for brand words like Catalyst, Nexus, Meraki, JetStream, Omada, ProCurve, PowerEdge, ProSafe, UniFi, RouterOS, FortiGate and DiskStation, and tolerates common misreads (Csco, Unfi, Mikrorik) via a fuzzy match.\n\nWhat helps, in order of impact:\n- Shoot the rack straight on, not from the side \u2014 the label has to be square to the lens.\n- Get light on the front panel; the label is usually small dark text.\n- Move cables off the label if you can.\n- Fill the frame with the rack so each device gets more pixels.\n\nIf it still misses, open the device on the Switches tab and use the \"Identification\" section \u2014 \"Enter make / model\" \u2014 to type them in. Saving clears the cached results and re-runs the specs and firmware lookups straight away. (Both fields are needed: with only a vendor, specs and firmware checks can't run.)",
+    "symptoms": [
+      "How does it know the brand of my switch",
+      "Where does the make and model come from",
+      "Why did it not read my switch label",
+      "How do I take a photo it can read"
+    ],
+    "rootCause": "pipeline/ocr_devices.py crops each detected device, upscales to ~120px tall, runs three EasyOCR passes and parses make/model with per-vendor regexes, then the vendor sheet, then fuzzy brand keywords.",
+    "evidence": [
+      {
+        "file": "pipeline/ocr_devices.py",
+        "lines": "9-14",
+        "snippet": "Pipeline:\n  1. Load device_unit_map.json (per-device boxes from CV).\n  2. Resolve the original_image (.png/.jpg) from outputs/<rackId>/.\n  3. Per device: crop bbox, run EasyOCR, normalize text, parse make/model.\n  4. Match make against the Switch_Vendors_Websites.xlsx vendor list."
+      },
+      {
+        "file": "pipeline/ocr_devices.py",
+        "lines": "387-397",
+        "snippet": "\"\"\"Run EasyOCR three times on a single cropped region:\n       1. Raw crop                        \u2014 baseline\n       2. CLAHE-enhanced (contrast)       \u2014 wins on dark/uneven lighting\n       3. Unsharp-masked (edges)          \u2014 wins on cleanly lit chassis"
+      },
+      {
+        "file": "pipeline/ocr_devices.py",
+        "lines": "514-526",
+        "snippet": "# Upscale tiny crops so OCR has more pixels to chew on. Switch\n        # labels in a 1080p rack image are often only ~25px tall \u2014 push\n        # them to ~120px\n        ...\n        target_h = 120"
+      },
+      {
+        "file": "pipeline/ocr_devices.py",
+        "lines": "316-341",
+        "snippet": "# Try MODEL_PATTERNS first \u2014 a model match also nails down the make.\n    ...\n    # No model \u2014 try to identify make from vendor list (substring, slugified).\n    ...\n    for vendor, kws in BRAND_KEYWORDS:"
+      },
+      {
+        "file": "pipeline/ocr_devices.py",
+        "lines": "208-226",
+        "snippet": "BRAND_KEYWORDS: list[tuple[str, tuple[str, ...]]] = [\n    (\"Cisco\",     (\"cisco\", \"catalyst\", \"nexus\", \"meraki\", \"csco\")),\n    (\"TP-Link\",   (\"tplink\", \"tp-link\", \"jetstream\", \"omada\")),"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "The Switches tab just says \"Scanning\u2026\" / \"Run a rack scan to detect switches.\" and never fills in.",
+    "answer": "Reading the chassis labels (per-device OCR) is a separate, slower step that the server kicks off in the background once your scan finishes \u2014 on CPU it takes roughly 1-2 minutes for a full rack. Until it writes its result, the Switches tab has nothing to list and shows the misleading \"Scanning\u2026\" empty state.\n\nWhat to do:\n1. Wait a minute or two, then leave the Switches tab and come back. The tab only checks once, when it opens \u2014 it does not keep retrying \u2014 so re-opening it (or reloading the page) is what triggers a fresh check.\n2. If it is still empty after several minutes, confirm the scan actually found devices: the rack Overview should show a unit map with devices in it. No detected devices means there is nothing to read labels from.\n3. If devices were detected but no switch appears, the rack may contain no device classified as a switch. This tab lists switches only \u2014 routers and patch panels are deliberately excluded even when detected.\n\nOlder scans taken before label-reading existed will also stay empty; re-scan the rack to get identification for it.",
+    "symptoms": [
+      "Switches tab stuck on Scanning\u2026",
+      "Run a rack scan to detect switches",
+      "Switch Information never loads",
+      "Switches tab empty after a scan"
+    ],
+    "rootCause": "GET /api/scan/:rackId/ocr-devices returns 404 until ocr_devices.json exists; the prefetcher gives up after 8 consecutive 404s until the page is reloaded, and the empty state renders when the switch list is empty.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "1246-1251",
+        "snippet": "Scanning\u2026\n          </p>\n          <p style={{ ... }}>\n            Run a rack scan to detect switches. Their make, model and firmware version will appear here once detected."
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7351-7357",
+        "snippet": "app.get('/api/scan/:rackId/ocr-devices', (req, res) => {\n  const { rackId } = req.params;\n  res.setHeader('Cache-Control', 'no-store');\n  const p = path.join(outputsDir, rackId, 'ocr_devices.json');\n  if (!fs.existsSync(p)) {\n    return res.status(404).json({ ok: false, error: 'OCR not yet run for this rack', rackId });"
+      },
+      {
+        "file": "client/src/utils/scanPrefetch.js",
+        "lines": "104-119",
+        "snippet": "async function _waitForOcr(rackId, { maxMs = 180_000, intervalMs = 2_000 } = {}) {\n  if (_ocrGaveUp.has(rackId)) return null;\n  const MAX_404_BEFORE_GIVE_UP = 8;\n  ...\n      if (consecutive404 >= MAX_404_BEFORE_GIVE_UP) {\n        _ocrGaveUp.add(rackId);"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "1548-1551",
+        "snippet": "// Fire-and-forget per-device OCR after a scan finishes. Runs only when\n// outputs/<rackId>/ocr_devices.json doesn't already exist \u2014 re-running OCR\n// on every canonical refresh would be wasteful (1-2 min on CPU)."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "[Internal] A rack keeps showing the same wrong make/model after re-processing. How is device identification re-run?",
+    "answer": "Internal only.\n\nPer-device label OCR is written once per rack to outputs/<rackId>/ocr_devices.json. scheduleOcrDevices() (server/app.js:1577) is a fire-and-forget spawn of `python -m pipeline.ocr_devices <rackId> --json` and returns immediately if that file already exists, or if device_unit_map.json is missing (server/app.js:1583). It is only called from scheduleCanonicalRefresh() (server/app.js:1478), so a canonical refresh, a Netdisco resync, or re-opening the rack all keep serving the original identification.\n\nTo force a re-identification: POST /api/scan/:rackId/ocr-devices (server/app.js:7356). It runs pipeline.ocr_devices synchronously with a 5-minute timeout (OCR_DEVICES_TIMEOUT_MS, server/app.js:7355; EasyOCR on CPU is the slow path, 1-2 min for a full rack), 404s if outputs/<rackId> does not exist, 504s on timeout, and returns the parsed JSON. pipeline/ocr_devices.py always rewrites outputs/<rackId>/ocr_devices.json (line 588), so the cached result is overwritten. GET on the same path only reads that cached file (404 if OCR has never run).\n\nImportant caveat: only the background run re-syncs downstream \u2014 after a successful spawn, scheduleOcrDevices rewrites the canonical scan result and reschedules the Netdisco sync (server/app.js:1600-1608). The POST endpoint does NOT do this. After forcing a re-run via POST you must also trigger a canonical refresh / CMDB rebuild, or downstream consumers (synth.py, Netdisco, CMDB) keep serving the old synthesized make/model.\n\nCustomer-facing wording: tell the user to re-scan the rack (new rack id, therefore a fresh OCR run). Do not give customers the endpoint.",
+    "symptoms": [
+      "Same wrong model after reprocessing a rack",
+      "ocr_devices.json not regenerated",
+      "How to force re-identification"
+    ],
+    "rootCause": "scheduleOcrDevices short-circuits when outputs/<rackId>/ocr_devices.json exists, so identification is computed exactly once per rack id.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "1558-1565",
+        "snippet": "function scheduleOcrDevices(rackId) {\n  if (!rackId || _ocrRunning.has(rackId)) return;\n  ...\n  // Need a device_unit_map to know what to crop; skip silently otherwise.\n  if (!fs.existsSync(dumPath) || fs.existsSync(ocrPath)) return;"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7297-7301",
+        "snippet": "// Slow path: EasyOCR on CPU can take 1-2 minutes for a full rack. We use\n// a generous timeout (5 min) and run synchronously\nconst OCR_DEVICES_TIMEOUT_MS = 5 * 60_000;\napp.post('/api/scan/:rackId/ocr-devices', (req, res) => {"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "1580-1587",
+        "snippet": "// OCR ran \u2014 re-sync downstream consumers so they pick up the real\n    // make/model. All silent / fire-and-forget; the user never sees this.\n    try { writeCanonicalScanResult(rackId); } catch (_) {}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I look up the datasheet for a device that isn't in a scan?",
+    "answer": "Use the Specifications screen at /specifications \u2014 it is a standalone lookup and is not linked from the sidebar or bottom nav today, so navigate to the URL directly (you must be signed in). On a desktop or tablet the top bar then reads \"Specifications / Vendor & model lookup\"; the page heading is \"Find datasheet specs for a device.\"\n\n1. Type the maker into \"Make / Vendor\" (placeholder: e.g. Cisco, Juniper, Aruba). Up to six matching vendor suggestions appear as you type \u2014 tap one to fill the box.\n2. Type the model into \"Model\" (placeholder: e.g. C9300-48P, EX4400-24T).\n3. Tap \"Get specifications\". The button reads \"Searching\u2026\" while it works. Leaving either box empty gives \"Both vendor and model are required.\"\n\nYou get a summary card with the vendor and model, a line reading \"We pulled N specs from the vendor's product page \u2014 here are the most useful ones at a glance\", and up to five headline rows picked from Ports, Throughput, Layer, Form factor, Power, PoE, Uplinks, MAC table and Stacking. If the product page is found but no spec table can be extracted, it says so instead.\n\nUnderneath:\n- \"Open product page \u2197\" \u2014 opens the vendor's own page in a new tab (shown only when a product URL was found).\n- \"Show all specs (N)\" \u2014 expands the full spec table; it then reads \"Hide all specs\".\n\nThis screen is a pure lookup: it does not touch your rack, your scans or your CMDB, and nothing you type here is saved to a scan.",
+    "symptoms": [
+      "How do I look up a datasheet",
+      "Specifications screen",
+      "Get specifications button",
+      "Look up specs without scanning",
+      "Show all specs"
+    ],
+    "rootCause": "SpecificationsPage is a standalone /specifications route that POSTs a typed vendor+model to /api/specs and renders a highlights card plus an expandable full spec table.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "160-210",
+        "snippet": "<span className={styles.label}>Make / Vendor</span>\n  ...\n              placeholder=\"e.g. Cisco, Juniper, Aruba\"\n  ...\n            placeholder=\"e.g. C9300-48P, EX4400-24T\"\n  ...\n          {loading ? 'Searching\u2026' : 'Get specifications'}"
+      },
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "226-262",
+        "snippet": "? `We pulled ${totalSpecCount} ${totalSpecCount === 1 ? 'spec' : 'specs'} from the vendor's product page${highlights.length > 0 ? ' \u2014 here are the most useful ones at a glance' : ''}.`\n  ...\n                  Open product page \u2197\n  ...\n                  {showAll ? 'Hide all specs' : `Show all specs (${totalSpecCount})`}"
+      },
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "13-25",
+        "snippet": "const HIGHLIGHT_RULES = [\n  { label: 'Ports',       patterns: [/\\bports?\\b/i, /port count/i, /\\binterfaces?\\b/i] },\n  ...\n];\n\nfunction pickHighlights(specs, max = 5) {"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "154",
+        "snippet": "'/specifications':   { title: 'Specifications',      sub: 'Vendor & model lookup' },"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "The vendor box doesn't suggest my manufacturer, or it says \"Vendor list unavailable\". Can I still search?",
+    "answer": "Yes \u2014 type the vendor name in anyway and tap \"Get specifications\". The suggestion list is only a convenience; the lookup itself does not require the name to be on it.\n\nThings to know about that list:\n- It comes from RackTrack's vendor sheet on the server, loaded once when the screen opens.\n- It only shows suggestions once you start typing, and never more than six at a time \u2014 keep typing to narrow it down.\n- If the server could not supply it you get \"Vendor list unavailable: \u2026\" under the box. The search still works.\n\nYou do always need both fields filled in \u2014 leaving \"Make / Vendor\" or \"Model\" empty gives \"Both vendor and model are required.\"\n\nIf the lookup then comes back with no match, the vendor spelling is usually not the problem \u2014 re-check the Model field instead and enter the exact SKU as printed on the device, hyphens included (e.g. C9300-48P). Very short or generic model strings are the most common cause of a miss; if it still misses, confirm the full part number on the maker's own site.",
+    "symptoms": [
+      "My vendor isn't in the dropdown",
+      "Vendor list unavailable",
+      "No suggestions when typing a vendor",
+      "Only six vendor suggestions"
+    ],
+    "rootCause": "The type-ahead is populated from GET /api/specs/vendors (the vendor Excel sheet) and sliced to 6; POST /api/specs passes the typed vendor string straight through without validating it against that list.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "66-86",
+        "snippet": "// Pull the vendor list once so the user gets type-ahead.\n  useEffect(() => {\n    ...\n    return vendorList\n      .filter(v => v.name.toLowerCase().includes(q))\n      .slice(0, 6);"
+      },
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "188-190",
+        "snippet": "{vendorListErr && (\n            <span className={styles.fieldHint}>Vendor list unavailable: {vendorListErr}</span>\n          )}"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "6934-6939",
+        "snippet": "// GET /api/specs/vendors \u2014 vendor names from the Excel sheet.\napp.get('/api/specs/vendors', async (req, res) => {\n  const result = await runPipelineModule('pipeline.all_vendor', ['--list-vendors']);"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "6946-6957",
+        "snippet": "app.post('/api/specs', async (req, res) => {\n  const vendor = String(req.body?.vendor || '').trim();\n  const model  = String(req.body?.model  || '').trim();\n  ...\n  if (!vendor || !model) {\n    return res.status(400).json({ ok: false, error: 'vendor and model are required' });"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "The Specifications screen shows \"Both vendor and model are required.\" or an error about the backend / port 3001.",
+    "answer": "Three different messages, three different causes:\n\n\"Both vendor and model are required.\" \u2014 you left one of the two boxes empty. Fill in both Make / Vendor and Model, then tap \"Get specifications\" again. Nothing was sent to the server.\n\n\"Backend returned a non-JSON response (HTTP \u2026). Is the server running?\" \u2014 the request reached something, but it did not answer with a result. Usually a server-side problem, not yours.\n\n\"Request failed: \u2026 Is the backend running on port 3001?\" \u2014 the request never completed at all: no signal, no network, a VPN that just dropped, or RackTrack's server unreachable from where you are standing.\n\nFor the last two: check you have a working data or Wi-Fi connection, then retry once. If it keeps failing while the rest of the app works, report it to your administrator with the exact message and the make/model you typed \u2014 it is a server-side fault, not something you can fix on the phone.",
+    "symptoms": [
+      "Both vendor and model are required",
+      "Backend returned a non-JSON response",
+      "Is the backend running on port 3001",
+      "Request failed on the Specifications screen"
+    ],
+    "rootCause": "SpecificationsPage validates both fields client-side, then distinguishes an unparsable response body from a thrown fetch error and shows a different banner for each.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "89-93",
+        "snippet": "if (!vendor.trim() || !model.trim()) {\n      setError('Both vendor and model are required.');\n      return;\n    }"
+      },
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "104-110",
+        "snippet": "try { data = text ? JSON.parse(text) : null; } catch { /* not JSON */ }\n      if (!data) {\n        setError(`Backend returned a non-JSON response (HTTP ${res.status}). Is the server running?`);"
+      },
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "118-120",
+        "snippet": "} catch (err) {\n      setError(`Request failed: ${err.message}. Is the backend running on port 3001?`);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "It says \"We found the product page but couldn't extract a spec table\" \u2014 where are the specs?",
+    "answer": "RackTrack located the manufacturer's page for your model but could not turn it into a table \u2014 some vendors publish specs as a PDF, an image, or behind a tab that has to be clicked. The lookup itself succeeded; the extractor just returned zero fields.\n\nUse the link instead:\n- On the Specifications screen, tap \"Open product page \u2197\" in the summary card and read the specs on the vendor's own page.\n- If the lookup failed outright but a candidate page was still found, you get \"Found a candidate page but couldn't extract specs:\" followed by the URL \u2014 tap it.\n- On a switch card's Specifications/Hardware tab, the same link is \"View full details \u2197\" at the top right of the Hardware section. With zero specs the table below it will be empty \u2014 that is expected, not a loading state.\n\nIf no link appears either, the vendor page had no datasheet or image URL to fall back on; search the vendor's site for the model directly.\n\nThere is nothing to retry here \u2014 re-running the same vendor/model gives the same result. A different model from the same vendor will often extract fine. If you need the numbers recorded against the rack, note them from the vendor page.\n\n(Evidence line fix: the server-side `return { ok: true, ..., productUrl: rec.datasheet_url || rec.image_url || null, ... }` is at server/app.js:7141-7147 inside specPayloadFromAgent, declared at 7110 \u2014 not 7087-7093.)",
+    "symptoms": [
+      "We found the product page but couldn't extract a spec table",
+      "Found a candidate page but couldn't extract specs",
+      "Spec table empty but there is a link",
+      "Zero specs returned"
+    ],
+    "rootCause": "specPayloadFromAgent can return ok:true with an empty specs object plus a productUrl (datasheet_url/image_url); the page branches on totalSpecCount === 0 and on the !result.ok + productUrl case.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "226-230",
+        "snippet": "{totalSpecCount > 0\n                ? `We pulled ...`\n                : \"We found the product page but couldn't extract a spec table.\"}"
+      },
+      {
+        "file": "client/src/pages/SpecificationsPage.jsx",
+        "lines": "282-291",
+        "snippet": "{result && !result.ok && result.productUrl && (\n        <section className={styles.result}>\n          <p className={styles.fieldHint}>\n            Found a candidate page but couldn't extract specs:"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7087-7093",
+        "snippet": "return {\n    ok: true,\n    vendor:     rec.vendor || reqVendor,\n    model:      rec.model  || reqModel,\n    productUrl: rec.datasheet_url || rec.image_url || null,"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "879-884",
+        "snippet": "{specs?.productUrl && (\n                <a href={specs.productUrl} target=\"_blank\" rel=\"noreferrer noopener\" ...>\n                  View full details \u2197\n                </a>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "What is the \"Login portal\" / \"Vendor site\" chip next to the switch name?",
+    "answer": "It is a shortcut to the manufacturer's own website for the brand RackTrack identified. It appears on the small grey line directly beneath the device name on the switch card, alongside the U position and IP address.\n\n- \"Login portal\" means RackTrack has that maker's actual customer/support sign-in page on file \u2014 tap it to sign in to the vendor and look up entitlement, downloads or case history. For brands that were absorbed by another company, the link goes to the parent brand's portal (for example an Aerohive switch opens the Extreme Networks sign-in).\n- \"Vendor site\" means RackTrack only has a general support or landing page for that maker.\n- No chip at all means the make is blank, or the make RackTrack read didn't match anything in its vendor list \u2014 usually an unusual spelling.\n\nTo make the chip appear when the make is missing or misread:\n1. Tap the switch card to expand it.\n2. Under \"Identification\", tap \"Enter make / model\" (or \"Add vendor\" / \"Edit\").\n3. Fill in BOTH \"Make / Vendor\" and \"Model\" \u2014 Save stays greyed out until both boxes have text.\n4. Tap Save. The card re-checks specs and firmware, and the chip appears if the make matches a known vendor.\n\nThe chip opens in your phone's browser, in a new tab, not inside RackTrack. RackTrack does not have your vendor account \u2014 you sign in with your own company's credentials on the vendor's site. Tapping the chip does not expand or collapse the switch card.",
+    "symptoms": [
+      "What is the Login portal link",
+      "Vendor site chip on the switch card",
+      "No vendor link shown for my switch",
+      "Where do I sign in to the manufacturer"
+    ],
+    "rootCause": "SwitchCard calls findVendorLogin(effectiveMake) against a generated vendor\u2192portal map; source 'login' renders the \"Login portal\" chip, 'fallback' renders \"Vendor site\", null renders nothing.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "534-560",
+        "snippet": "const portal = effectiveMake ? findVendorLogin(effectiveMake) : null;\n  ...\n                    onClick={(e) => e.stopPropagation()}\n                    title={portal.source === 'login'\n                      ? `Log in to ${portal.name} to view device details`\n                      : `Open ${portal.name} support`}\n  ...\n                    {portal.source === 'login' ? 'Login portal' : 'Vendor site'}"
+      },
+      {
+        "file": "client/src/utils/vendorLoginUrls.js",
+        "lines": "1-4",
+        "snippet": "// AUTO-GENERATED from login-info.xlsx \u2014 vendor \u2192 login portal URL.\n// Keys are vendor names normalized to lowercase alphanumerics (no spaces\n// or punctuation). Used by SwitchCard to surface a per-vendor login link."
+      },
+      {
+        "file": "client/src/utils/vendorLoginUrls.js",
+        "lines": "183-209",
+        "snippet": "export function findVendorLogin(vendor) {\n  const key = normalize(vendor);\n  if (!key) return null;\n  ...\n  // Fallback portal by alias key.\n  ...\n  return null;\n}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "In the port view, some downstream devices show a maker name and others say \"Unknown\". Where does that name come from?",
+    "answer": "It comes from the device's MAC address, not from a photo. The first three pairs of a MAC (the OUI) are a block the IEEE assigns to one company, so RackTrack can name who built a device it has never seen \u2014 that is how a MAC hanging off a port gets labelled Dell, Realtek, Apple and so on. RackTrack keeps a copy of the IEEE registry on the server and the app asks it only for the prefixes it is about to draw. Note this is the maker of the network chip, not necessarily the brand on the box.\n\nIf only some rows say \"Unknown maker\" while others are named, the lookup is working and one of these is true:\n- the block is registered as \"Private\" \u2014 the owner paid the IEEE to hide the name, so there is nothing to show (RackTrack deliberately stores no name for these);\n- the block is a delegated/shared IEEE range with no single owner;\n- the block is newer than RackTrack's copy of the registry, which is refreshed periodically rather than live;\n- the address is locally administered or randomised (common on phones and some virtual machines), so it belongs to no manufacturer at all.\n\nNone of those are fixable from the field, and none affect port state, link speed or cabling \u2014 the MAC itself is still correct.\n\nThe one case worth reporting: if every device on the port says \"Unknown maker\", the vendor lookup itself failed (server unreachable, session expired, or the vendor table missing on the server) rather than the prefixes being unknown. Reloading the app clears the cached result and retries; if it still shows all-Unknown, raise it with your admin.\n\nEither way, treat the vendor name as a hint for identifying what is plugged in and confirm from the device itself before acting on it.",
+    "symptoms": [
+      "Downstream device shows Unknown instead of a maker",
+      "Where does the vendor name next to a MAC come from",
+      "MAC vendor is wrong",
+      "Device maker missing in the cables view"
+    ],
+    "rootCause": "The client extracts the first 3 octets of each MAC and asks /api/oui/lookup, which reads the IEEE OUI table; prefixes registered as 'Private' are omitted when the table is built, so those resolve to null and render as unknown.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "5909-5914",
+        "snippet": "// \u2500\u2500 MAC vendor lookup (IEEE OUI registry) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// The first three octets of a MAC are the manufacturer's IEEE-assigned block,\n// so a downstream MAC can be labelled with the company that built the device."
+      },
+      {
+        "file": "server/app.js",
+        "lines": "5927-5937",
+        "snippet": "app.post('/api/oui/lookup', (req, res) => {\n  const prefixes = Array.isArray(req.body?.prefixes) ? req.body.prefixes : [];\n  ...\n    if (key.length === 6 && table[key]) out[key] = table[key];"
+      },
+      {
+        "file": "server/refresh-oui.js",
+        "lines": "10-11",
+        "snippet": "// Entries registered as \"Private\" are skipped: the owner paid the IEEE to hide\n// the name, so there is nothing useful to show."
+      },
+      {
+        "file": "client/src/pages/PortsPage.jsx",
+        "lines": "1013-1018",
+        "snippet": "// The first three octets of a MAC are the manufacturer's IEEE-registered block.\n// Pull them out so each downstream device can be labelled with who built it.\nfunction ouiKey(mac) {"
+      },
+      {
+        "file": "client/src/pages/PortsPage.jsx",
+        "lines": "1034-1035",
+        "snippet": "// Cache misses too, as null \u2014 an unregistered prefix must not be re-asked.\n      for (const p of missing) vendorCache.set(p, d?.vendors?.[p] || null);"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "device-specifications",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

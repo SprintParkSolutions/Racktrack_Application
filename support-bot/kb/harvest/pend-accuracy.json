@@ -1,0 +1,394 @@
+[
+  {
+    "question": "I asked for port 7 and the app highlighted the wrong physical port. How do I fix the numbering?",
+    "answer": "Tap **No** under **\"Port 7 on <device> \u2014 right?\"**. The prompt changes to **\"What is it actually?\"** \u2014 choose the real number from the **Port 1 \u2026 Port N** dropdown, or choose **Other (type it)** and type it, then tap **Submit**.\n\nHere is the part that surprises people: **the number you asked for does not change**. You were looking for port 7 and you still want port 7. RackTrack learns the offset between its numbering and the real numbering, then immediately re-highlights the port that is genuinely port 7. So if you tell it \"the port you highlighted is really port 5\", the highlight jumps two positions to land on the true port 7.\n\nThe correction is remembered for that device on that scan and collapses to **\"Port number corrected \u2014 you set this\"**. Repeated corrections don't stack up \u2014 only your most recent one counts, so you can correct it again if the first attempt was off.\n\nNote: the automatic re-highlight applies to the device's main (RJ45) port row. On the **SFP** or **Console** tabs your correction is still recorded, but the highlight won't move on its own \u2014 re-select the port you want from that tab.",
+    "symptoms": [
+      "Port 7 on Switch \u2014 right?",
+      "highlight on wrong port",
+      "port numbering is off by one",
+      "port numbers shifted",
+      "Port number corrected \u2014 you set this"
+    ],
+    "rootCause": "Port ordering comes from the geometric layout in pipeline/port_pattern.py (column-major for two rows, left-to-right for one). A missed or extra detection at the start of a row shifts every subsequent index. /api/feedback records an absolute offset (predicted_port is normalised back to RAW model space) and _latestPortShift uses only the newest correction so shifts cannot compound.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "3759-3763",
+        "snippet": "prompt={`Port ${portNum}${selectedDevice?.class_name ? ` on ${selectedDevice.class_name}` : ''} \u2014 right?`}\noptions={Array.from({ length: Math.max(0, selectedDevice?.port_count || 0) }, (_, i) => ({ value: i + 1, label: `Port ${i + 1}` }))}\notherInput=\"number\"\nansweredText=\"Port number corrected \u2014 you set this\""
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "2712-2720",
+        "snippet": "// The user said \"this position (model called it port N) is actually\n// port M\". Their goal hasn't changed \u2014 they were looking for port N\n// and still want port N. After saving the shift, re-select port N\n// so the highlight moves to where port N really lives under the new\n// numbering."
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7577-7591",
+        "snippet": "// A device's port-numbering offset from the user's LATEST renumber correction\n// ONLY. Each correction SETS the offset (predicted_port is normalized to RAW\n// model space at record time), so repeated corrections can't compound into a\n// runaway shift the way summing every delta chronologically did."
+      },
+      {
+        "file": "docs/user-guide/RackTrack-User-Guide-iPhone.md",
+        "lines": "310",
+        "snippet": "> **NOTE** \u2014 Correcting a port number does not change the number you asked for. Say \u201cport 7 is really port 5\u201d, and RackTrack learns the offset then shows you where **port 7** truly lives."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "The app says this port is RJ45 but it's actually an SFP slot. Can I change the port type?",
+    "answer": "Yes. On the port view, answer the question **\"Port type: <type> \u2014 right?\"**. Tap **No** and choose the correct one from the list. Nine types are available, and the app displays them in sentence case: **Rj45, Sfp, Qsfp, Console, Aux, Management Port, Usb A, Usb B, Usb C** (so an RJ45 port reads \"Port type: Rj45 \u2014 right?\"). There is no free-text \"Other\" option here \u2014 the list is the full set the model understands.\n\nWhen it saves you'll see **\"Saved \u2014 thanks, this trains the model.\"** and afterwards the port reads **\"Port type: <type> \u2014 you set this\"**.\n\nThis correction does more than fix the current scan: as long as RackTrack has a location box for that port, it saves a crop of the port and stores a fingerprint of it in your organization's learned memory, so a future scan of the same port re-applies your corrected type automatically. That memory is shared across every Site in your organization and never with another organization.\n\nRJ45 and SFP are the pair most often confused, because an empty SFP cage and an empty RJ45 jack are close to the same dark rectangle at photo resolution.",
+    "symptoms": [
+      "Port type: RJ45 \u2014 right?",
+      "SFP shown as RJ45",
+      "wrong port type",
+      "Saved \u2014 thanks, this trains the model.",
+      "Port type: SFP \u2014 you set this"
+    ],
+    "rootCause": "Typed port detection uses Models/ports_9.pt at ports_conf 0.23; the visual difference between an unpopulated SFP cage and an RJ45 jack is small at typical photo resolution. /api/feedback/port-type validates against a fixed nine-value PORT_TYPE_OPTIONS list, crops the port, and calls fireMemoryCorrection('port_type', \u2026) for auto-apply on rescan.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "3602-3608",
+        "snippet": "prompt={`Port type: ${prettyPortType(portInfo.port_type)} \u2014 right?`}\noptions={PORT_TYPE_OPTIONS.map(t => ({ value: t, label: prettyPortType(t) }))}\notherInput={null}\nsubmitLabel=\"Save\"\nthanks=\"Saved \u2014 thanks, this trains the model.\"\n...\nansweredText={`Port type: ${prettyPortType(portInfo.port_type)} \u2014 you set this`}"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "110-113",
+        "snippet": "const PORT_TYPE_OPTIONS = [\n  'RJ45', 'SFP', 'QSFP', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',\n  'USB_A', 'USB_B', 'USB_C',\n];"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "8003-8009",
+        "snippet": "// Active-learning correction for a port's physical TYPE (RJ45 / SFP / QSFP /\n// CONSOLE / AUX / MANAGEMENT_PORT / USB_A / USB_B / USB_C). Mirrors the cable\n// path: crop the port, log to feedback.jsonl, and persist a pHash+embedding\n// memory so future scans of the same port auto-apply the corrected type."
+      },
+      {
+        "file": "server/app.js",
+        "lines": "8067-8074",
+        "snippet": "if (portCropSavedAs) {\n  const cropPath = path.join(feedbackWrongDir, portCropSavedAs);\n  fireMemoryCorrection('port_type', cropPath,\n    predicted_type || '', String(actual_type),"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "My patch panel has 12 ports but RackTrack insists it has 24. Why won't it show the real number?",
+    "answer": "This is deliberate, not a bug. For devices classified as **Patch Panel**, RackTrack recognises only two sizes: **24 and 48**. The combined connected+empty detection count is snapped to one of those two.\n\nThe snap is deliberately asymmetric, not simple \"nearest\". Patch-panel jacks are missed far more often than invented \u2014 dark, dust-capped or cable-obscured jacks don't get detected \u2014 so synthesising a missing slot costs 1 while discarding a real detection costs 3, and a tie keeps the larger size. In practice: anything under 30 snaps to 24, 30 and above snaps to 48. So a panel reading 18 becomes 24 with six slots filled in, and a panel reading 32 goes UP to 48 rather than down to 24.\n\nThe side effect is that genuinely non-standard panels (12-port, 16-port) are always reported as 24. To correct one:\n\n1. Answer the device-class question first (the port-count question only appears after it) \u2014 if the unit isn't really a patch panel, fix the type there.\n2. Then answer the port-count question with the true number: it offers 8, 12, 16, 24, 48, or type your own.\n\nYour typed number wins from then on, the ports are laid out to match, and the selected-device image is redrawn. (For a Patch Panel, SFP and console ports are also force-cleared, since a panel is pure RJ-45 jacks.)\n\nNote: if no ports are detected at all, the device is demoted to \"Unidentified\" instead \u2014 set the class first, then the count.",
+    "symptoms": [
+      "patch panel shows 24 ports",
+      "patch panel port count too high",
+      "12 port panel shows as 24",
+      "synthesized ports on patch panel"
+    ],
+    "rootCause": "pipeline/port_pattern.py::_pp_closest_standard snaps the combined connected+empty count to PATCHPANEL_STANDARD_COUNTS = (24, 48) using an asymmetric cost \u2014 synthesising a slot costs 1, discarding a real detection costs DROP_PENALTY = 3.0, and ties resolve to the larger standard. There is deliberately no 12 option.",
+    "evidence": [
+      {
+        "file": "pipeline/port_pattern.py",
+        "lines": "605-611",
+        "snippet": "# Patch panels are always a standard size. The status model can over- or\n# under-detect, so we snap the COMBINED (connected + empty) count to the\n# nearest standard...\nPATCHPANEL_STANDARD_COUNTS = (24, 48)"
+      },
+      {
+        "file": "pipeline/port_pattern.py",
+        "lines": "614-634",
+        "snippet": "\"\"\"Snap a detected port count to the nearest standard patch-panel size.\nWe only support 24 and 48 (there is deliberately no 12 option), so any\nsmall count rounds up to 24.\n...\novershoot (n <= c, synthesise) costs 1 per slot,\nundershoot (n > c, discard a real detection) costs 3 per slot.\n...\nDROP_PENALTY = 3.0"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "A device that is definitely in the rack is missing from my results. How do I add it?",
+    "answer": "You cannot add a missing device by hand \u2014 RackTrack has no \"add device\" control. The correction questions only let you re-label, re-count or re-number things it already found; every feedback endpoint needs an existing device to attach to. So the fix is to get RackTrack to see it, which means a better photo.\n\nMost likely causes, in order:\n\n- **Cables blocking the front of the equipment.** A heavily-patched rack hides the very faces the detector needs.\n- **Shot from an angle, or too far away.** Stand directly in front, camera level with the middle of the rack.\n- **Low light or glare** on that part of the rack.\n- **You tapped \"Proceed anyway\"** past a quality warning. That switches the safety checks off, and a genuinely bad photo comes back with devices missing \u2014 sometimes an empty rack. Retake is nearly always faster.\n- **The rack is taller than one frame.** Use the MULTI mode (2 to 8 overlapping photos) instead of trying to fit it all into one.\n\nOne thing to know before you retake: a retake is a **new scan**, and most of your corrections do not follow it. Port corrections, port-number corrections and port-count corrections are saved against the scan you made them on and stay there. The one exception is device-type corrections \u2014 if you told RackTrack \"this is a firewall, not a switch\", that is remembered for your whole organization and will usually be re-applied on later scans of the same equipment. So if you have a lot of port work invested in the current scan, finish and export it before retaking.",
+    "symptoms": [
+      "device missing from results",
+      "switch not shown in rack map",
+      "only some devices detected",
+      "empty rack after Proceed anyway",
+      "fewer devices than actually in rack"
+    ],
+    "rootCause": "Devices below devices_conf 0.20 are never emitted. Unclaimed rack rows become synthetic 'Unidentified' placeholders with confidence 0.0, which are hidden from the device picker. No API or UI path exists to insert a device \u2014 all feedback endpoints require an existing device_index.",
+    "evidence": [
+      {
+        "file": "pipeline/detection.py",
+        "lines": "971-986",
+        "snippet": "synthetic.append({\n    \"class_id\": -1,\n    \"class_name\": \"Unidentified\",\n    \"confidence\": 0.0,\n    ...\n    \"source\": \"synthetic_unidentified\",\n})"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "759-763",
+        "snippet": "// 'Unidentified' is a synthetic placeholder the pipeline inserts for rack\n// rows where no detector produced a class even at low confidence \u2014 hide\n// it from the picker (nothing to inspect) while keeping it on the rack\n// map / report so the row isn't lost visually.\nconst HIDDEN_DEVICE_TYPES = new Set(['Empty', 'Closed Unit', 'Unidentified']);"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "4353-4357",
+        "snippet": "<li>Stand directly in front of the rack \u2014 not at an angle.</li>\n<li>Keep the camera level with the middle of the rack.</li>\n<li>Make sure the full rack fits inside the frame.</li>"
+      },
+      {
+        "file": "docs/user-guide/RackTrack-User-Guide-iPhone.md",
+        "lines": "250",
+        "snippet": "> **IMPORTANT** \u2014 **Proceed anyway** switches the safety checks **off** and analyses the photo regardless. A genuinely bad photo then comes back with devices missing \u2014 or an empty rack. **Retake** is nearly always the faster route to a correct answer."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "The same device appears twice in my results, or there are phantom empty rows.",
+    "answer": "RackTrack already tries hard to prevent this, so a genuine duplicate is unusual.\n\nWhat RackTrack does automatically: when two device boxes overlap by more than about 30% of the smaller box, it keeps the higher-confidence one and drops the other; it then forces every device to the same width, snaps neighbouring devices so they share an edge (closing small overlaps and small gaps under about 40% of the median device height), and removes half-height grid rows that a device already covers so they don't appear as phantom \"Empty\" rows. Genuinely empty slots and larger real gaps are always preserved \u2014 a real blank U in your rack is not treated as an error.\n\nA duplicate that survives is therefore one where the two boxes overlapped only slightly (roughly 30% or less). That usually means a photo shot at an angle \u2014 perspective makes one chassis appear in two places \u2014 or a MULTI stitch where RackTrack could not line the seam up. On a MULTI scan an undetected seam either fails the scan with a message asking you to retake those shots with more overlap, or the photos are joined flush, so anything in the overlapping band (including a whole device) is printed twice.\n\nFix: for a stitch, retake the photos with a clear overlapping band between them. For a single photo, stand square to the rack and retake.\n\nYou can correct a device's type from the results screen, but there is no way to delete a duplicate row by hand.",
+    "symptoms": [
+      "same switch listed twice",
+      "duplicate device in results",
+      "phantom empty rows",
+      "two entries for one device",
+      "device appears twice after MULTI stitch"
+    ],
+    "rootCause": "remove_overlapping_devices drops any device whose overlap ratio with a kept device exceeds max_overlap_ratio=0.01; normalize_device_stack snaps small gaps/overlaps (gap_close_factor=0.4); cleanup_duplicate_units removes over-detected grid units that overlap a device but weren't claimed. Residual duplicates come from perspective distortion or an unaccepted stitch seam.",
+    "evidence": [
+      {
+        "file": "pipeline/detection.py",
+        "lines": "588-597",
+        "snippet": "def remove_overlapping_devices(devices, max_overlap_ratio=0.01):\n    filtered = []\n    for dev in sorted(devices, key=lambda d: (d[\"box\"][1], -d[\"confidence\"])):\n        ...\n            print(f\"[info] removing overlapping device: {dev['class_name']} overlaps {kept['class_name']}\")"
+      },
+      {
+        "file": "pipeline/detection.py",
+        "lines": "739-747",
+        "snippet": "\"\"\"Drop grid units that overlap a device but weren't picked by any\ndevice in the top-N pass. These are the half-height duplicates that\nthe YOLO grid over-detected \u2014 keeping them around would show as\nphantom \"Empty\" rows in the unit report.\n\nTruly empty units (no overlap with any device) are preserved \u2014 they\nrepresent real rack gaps.\"\"\""
+      },
+      {
+        "file": "pipeline/detection.py",
+        "lines": "601-611",
+        "snippet": "(2) vertically adjacent devices share an edge (bottom of the upper =\n    top of the lower) with ZERO overlap.\n\nReal empty slots are preserved: only a SMALL overlap or gap \u2014 one under\n`gap_close_factor` \u00d7 the median device height \u2014 is snapped shut."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "likely",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Do my corrections actually train the model, or do they only fix my own scan?",
+    "answer": "Both \u2014 but they take effect at different speeds, and it's worth knowing which is which.\n\n**Immediately (guaranteed):** your correction is overlaid onto your scan result. The rack map, the port view, the report and anything exported to your CMDB all show your corrected value. The original prediction is kept underneath as an audit trail, and corrected values are marked with a **\"Your correction\"** badge so nobody mistakes your value for the model's own guess.\n\n**On your next scan (usually):** RackTrack saves a visual fingerprint of what you corrected \u2014 an image hash plus a deep-feature embedding. When a later scan sees a device, cable or port type that looks the same, it re-applies your label automatically. This memory is shared across every Site in your organization, but is never shared with other organizations.\n\n**Into the trained model itself (slowly, and never silently):** corrections are queued, and once enough have piled up for a given model a retraining run starts on its own. But a retrained model is never trusted just because it was trained. It has to beat the current production model on a held-out test set the trainer never saw \u2014 by at least +0.5 percentage points for the device and cable models, +1.0 for port count \u2014 and even then a person has to deliberately promote it from the command line. If it doesn't clear the bar, the production model is left alone and your corrections stay queued for the next attempt. (The only exception is the very first model of its kind, where there's no prior score to beat.)\n\nSo: the correction you make today fixes today's result for certain, tends to fix tomorrow's scan of the same kit, and contributes to a model improvement on a much longer timescale.",
+    "symptoms": [
+      "does correcting help",
+      "does the app learn",
+      "will it get it right next time",
+      "Your correction badge",
+      "Saved \u2014 thanks, this trains the model."
+    ],
+    "rootCause": "Three layers: (1) applyFeedbackOverrides overlays feedback.jsonl onto scan_result.json with a _correction audit trail; (2) fireMemoryCorrection writes a pHash + ResNet18 embedding into the org-scoped active_learning_Cache store for auto-apply; (3) triggerActiveLearning spawns retraining_learning.run_loop --once, which registers candidates gated by PROMOTION_MIN_DELTA (0.005 for devices/cable, 0.010 for port_count) and requires a manual `cli promote`.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "7548-7557",
+        "snippet": "// Reads server/feedback.jsonl for a given scan and overlays the user's\n// `actual_*` corrections on top of the model's predictions in the scan\n// result. Keeps a `_correction` audit trail so the original prediction\n// is never lost.\n//\n// Applied during writeCanonicalScanResult, so the corrected values land\n// in scan_result.json \u2014 every consumer (UI, exports, ServiceNow) sees\n// the same overlaid view."
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "765-770",
+        "snippet": "// Small badge shown next to a value that came from a USER correction (active\n// learning), not the model's own output \u2014 so a tester doesn't mistake their\n// own confirmed value for a model mistake.\nfunction UserTag({ label = 'Your correction' }) {"
+      },
+      {
+        "file": "retraining_learning/config.py",
+        "lines": "44-55",
+        "snippet": "# Promotion gate: a candidate must beat the production model's primary\n# metric by at least this much (absolute) to be promoted. Stops noisy\n# tiny improvements from churning the production model.\nPROMOTION_MIN_DELTA = {\n    \"devices\":    0.005,   # \u2265 +0.5pp accuracy on holdout\n    \"cable\":      0.005,\n    \"port_count\": 0.010,\n}"
+      },
+      {
+        "file": "retraining_learning/run_loop.py",
+        "lines": "17-21",
+        "snippet": "c. On success + gate pass \u2192 register as a CANDIDATE (kept under\n   Models/candidates/<model>-<run_id>.pt). DOES NOT change the\n   production model \u2014 promotion is a deliberate operator action\n   via `python -m retraining_learning.cli promote ...`."
+      },
+      {
+        "file": "pipeline/active_learning/store.py",
+        "lines": "36-41",
+        "snippet": "# Active learning is scoped at the ORGANIZATION level: each org keeps its own\n# corrections + retraining snapshots, so all Sites/tenants within one org share\n# a single model memory while different orgs stay isolated."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "I corrected a device last week, but a new scan of the same rack got it wrong again.",
+    "answer": "RackTrack does try to re-apply your past corrections to new scans, but the match has to be close enough visually to be safe.\n\nHow it works: when you correct something, RackTrack stores a fingerprint of that device's or port's picture. On a later scan it crops each device and looks for a stored correction that matches \u2014 first by a fast image hash, then by a deeper visual comparison. Only a confident match re-applies your label. A photo shot from a noticeably different angle, distance or light level may not match, and RackTrack will fall back to detecting it fresh rather than risk applying the wrong label.\n\nThings that stop a correction re-applying:\n\n- The new photo is framed very differently (much closer, from the side, much darker).\n- You are in a different organization from the one where the correction was made \u2014 corrections are shared across all Sites in your organization, but never between organizations.\n- It was a one-off port-number nudge or a port-count fix. Those are recorded against that specific scan and are not stored as a visual fingerprint. Device type, port type and cable colour are the ones with visual memory.\n\nThe exception worth knowing on ports: if you use \"verify port layout\" on the Ports page rather than nudging a single port number, RackTrack saves that whole layout against the photo's fingerprint. A later upload of the same (or a visually similar) rack photo then reuses your verified layout and skips port detection entirely \u2014 that is what the VERIFIED badge means. So if port numbering keeps coming back wrong on rescans, verify the layout once instead of correcting ports one at a time.\n\nOtherwise the fix is simply to correct it again on the new scan. That strengthens the memory.",
+    "symptoms": [
+      "correction didn't stick",
+      "had to correct the same device again",
+      "corrections lost on rescan",
+      "learned label not applied"
+    ],
+    "rootCause": "pipeline/active_learning/memory.py two-tier matching: pHash Hamming distance <= HAMMING_TOL (6) on a 16x16 hash, else ResNet18 cosine similarity >= SIM_THRESH (0.88). Below both, find_match returns None and detection proceeds normally. Stores are partitioned per organization via store.set_org(). Port-number shifts and port-count relabels are keyed to scanId in feedback.jsonl, not to a visual fingerprint.",
+    "evidence": [
+      {
+        "file": "pipeline/active_learning/memory.py",
+        "lines": "1-8",
+        "snippet": "\"\"\"Image fingerprint + nearest-correction lookup.\n\nTwo-tier matching identical to Active Learning CDP/*.py:\n  1. Perceptual hash (Hamming distance <= HAMMING_TOL) \u2014 fast/exact path\n  2. ResNet18 deep-feature cosine similarity (>= SIM_THRESH) \u2014 robust path"
+      },
+      {
+        "file": "pipeline/active_learning/memory.py",
+        "lines": "22-24",
+        "snippet": "HASH_SIZE = 16\nHAMMING_TOL = 6\nSIM_THRESH = 0.88"
+      },
+      {
+        "file": "pipeline/active_learning/cli.py",
+        "lines": "175-190",
+        "snippet": "match = store.find_match(\"devices\", str(crop_path))\nif match and match.get(\"label\"):\n    old = dev.get(\"class_name\") or \"\"\n    new = match[\"label\"]\n    if new != old:\n        dev[\"_al_correction\"] = {"
+      },
+      {
+        "file": "pipeline/active_learning/store.py",
+        "lines": "43-47",
+        "snippet": "def set_org(org_id) -> None:\n    \"\"\"Scope all subsequent store reads/writes to one organization.\"\"\""
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I scanned a video of a row of racks and the devices ended up assigned to the wrong rack.",
+    "answer": "When you record one video panning across several racks, RackTrack has to guess where one rack ends and the next begins. It samples 30 frames spread evenly across the whole clip, runs the device detector on each, and declares a new rack whenever either signal trips between two neighbouring samples:\n\n- the equipment's average horizontal position shifts by more than a quarter of the frame width, or\n- the overall colour/scene fingerprint changes by more than about a third.\n\nA frame where the detector finds no equipment at all \u2014 motion blur from a fast pan, a gap between racks, a wall, someone walking through \u2014 is treated as a pan transition and also ends the current rack.\n\nThat guesswork is where it goes wrong. The common failures:\n\n- **One rack split into two.** A blurred or empty frame in the middle of a rack ends the segment. Because a segment only needs a single sampled frame to be emitted as a rack, even one bad frame can produce a spurious extra rack.\n- **A long video splits everywhere.** Only 30 frames are sampled no matter how long the clip is, so the longer the video, the more real-world time passes between neighbouring samples, and the more likely a normal pan looks like a scene change. Keep the clip short.\n- **Racks merged into one.** Nearly identical racks standing tight together give no colour break and no big sideways jump, so there is nothing to split on.\n- **Re-framing mid-rack.** Drifting back and forth, stepping closer or further away, or swinging the phone to recompose can trip either signal inside a single rack. Simply holding still on a rack does *not* cause a split \u2014 a steady pause is safe and helpful.\n\nHow to get a clean result: pan slowly and steadily in one direction, hold steady for a moment squarely on each rack, keep a consistent distance, and keep the whole clip short.\n\nIf a row keeps splitting badly, use one photo per rack instead \u2014 this is the most reliable path, and it is not a downgrade. On the same **Scan two racks** screen, switch from Video to Photos: RackTrack analyzes each photo separately and links them into the same grouped multi-rack result, with no boundary guessing at all. (Grouping supports up to 8 racks.)\n\nOne limitation to know: there is no way to move a device from one rack to another after a scan, and no way to merge or split racks after the fact. If the grouping came out wrong, re-capture using the per-rack photo mode.",
+    "symptoms": [
+      "devices in wrong rack",
+      "multi-rack video split incorrectly",
+      "racks merged into one",
+      "one rack split into two",
+      "wrong rack assignment"
+    ],
+    "rootCause": "pipeline/multi_rack_split.py samples at most 30 frames and declares a rack transition when adjacent samples' mean device X differs by more than TRANSITION_X_SHIFT_RATIO (0.25 of frame width) or the HSV-histogram correlation change exceeds VISUAL_CHANGE_THRESHOLD (0.35). Frames with fewer than MIN_DEVICES_FOR_RACK (1) detections at DETECTOR_CONF_THRESHOLD 0.20 are treated as pan-transitions. A rack needs only MIN_FRAMES_PER_RACK (1) sample to be emitted.",
+    "evidence": [
+      {
+        "file": "pipeline/multi_rack_split.py",
+        "lines": "54-63",
+        "snippet": "MAX_SAMPLED_FRAMES        = 30     # cap on how many frames we score\nMIN_DEVICES_FOR_RACK      = 1      # frames with 0 devices are pan-transitions\nTRANSITION_X_SHIFT_RATIO  = 0.25   # adjacent samples whose mean-X differs\n                                   # by > 25% of frame width = new rack\nVISUAL_CHANGE_THRESHOLD   = 0.35   # 1 - HSV-histogram correlation between\n                                   # adjacent samples. > 0.35 = scene changed\n                                   # (different rack), even if X stayed put.\nMIN_FRAMES_PER_RACK       = 1      # a \"rack\" must hold the camera for \u2265 N samples\nDETECTOR_CONF_THRESHOLD   = 0.20   # mirrors config.json's devices_conf"
+      },
+      {
+        "file": "pipeline/multi_rack_split.py",
+        "lines": "22-28",
+        "snippet": "4. Detect rack-transition points: split the frame sequence wherever\n...\n     + 0.35 * mean_detection_confidence"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "How do I see the model's actual confidence numbers for a scan?",
+    "answer": "Internal / support use only \u2014 do not walk an end user through this unless they are technical and you have a reason.\n\nFirst check whether you actually need the flag: the normal scan result page already shows a rounded percentage next to the **Device** row (device-class confidence) and next to the **Cable** row (cable classifier confidence). If those are the numbers you want, no flag is needed.\n\nFor the full set, a Diagnostics panel on the scan result page shows a **Confidences** section with **device class**, **port detection**, **cable color** and **port type** (the last three only once a device and port are selected, and each only if the pipeline returned it), each as a rounded percentage \u2014 alongside pipeline timings (normalize, quality_check, pipeline, total, plus a cache HIT marker, and a separate device+port timing block).\n\nThere is no button to open it. It is controlled purely by a browser storage flag: set `rt_devOpen` to `\"1\"` in localStorage for the app's origin and reload. Once open, the panel has an X in its header that closes it and writes the flag back to `\"0\"`; you can also set `\"0\"` by hand. The setting persists per browser.\n\nReading the numbers: they are raw model confidences, not calibrated probabilities. Reference points enforced in code \u2014 devices are detected at 0.20, ports at 0.23, PDU ports at 0.40 (rack units and servers at 0.25); a port whose status confidence is below 0.35 is reported as \"Unknown\" rather than connected/empty, and the downstream cable and port-type classifiers do not run on it at all; a cable below 0.50 triggers the visible \"Not fully sure about this cable\" warning.",
+    "symptoms": [
+      "where do I see confidence scores",
+      "Diagnostics panel",
+      "debug scan accuracy",
+      "how confident was the model"
+    ],
+    "rootCause": "The Diagnostics panel renders behind `devOpen`, whose only source is localStorage key 'rt_devOpen'; no toggle control references setDevOpen(true) anywhere in the client.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "1269-1274",
+        "snippet": "const [devOpen, setDevOpen] = useState(() => {\n    try { return localStorage.getItem('rt_devOpen') === '1'; } catch { return false; }\n...\n    try { localStorage.setItem('rt_devOpen', devOpen ? '1' : '0'); } catch { /* ignore */ }"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "4943-4955",
+        "snippet": "<div className={styles.diagSectionLabel}>Confidences</div>\n<div className={styles.diagRow}><span>device class</span><span className={styles.diagVal}>{fmtPct(selectedDevice.confidence)}</span></div>\n...\n<div className={styles.diagRow}><span>port detection</span>...\n<div className={styles.diagRow}><span>cable color</span>...\n<div className={styles.diagRow}><span>port type</span>..."
+      },
+      {
+        "file": "config.json",
+        "lines": "14-20",
+        "snippet": "\"device_detect_mode\": \"seg\",\n\"units_conf\":   0.25,\n\"devices_conf\": 0.20,\n\"server_conf\":  0.25,\n\"iou_dedup\":    0.5,\n\"ports_conf\":   0.23,\n\"pdu_conf\":     0.40"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Is the automatic retraining loop actually running in this deployment?",
+    "answer": "Internal / admin only \u2014 do not promise users that corrections are training the model on a schedule.\n\nThe retraining pipeline is wired but **cannot complete a cycle in the repository's current state**.\n\n1. **The `active_learning_Cache` Python package is missing.** Only its `data/` directory exists \u2014 there is no `__init__.py`, `config.py`, `store.py` or `cli.py`. Every code path that imports it fails:\n   - `retraining_learning/config.py:9` does `from active_learning_Cache import config as cache_config` and uses it at lines 62-63 (`MODELS`, `RETRAIN_THRESHOLDS`). Because `run_loop.py:39` does `from . import config`, **the entire cycle dies at process start** \u2014 the `python -m active_learning_Cache.cli ingest` subprocess at `run_loop.py:57` is never even reached, so you will not see the \"ingest failed (exit N)\" warning either. The child is spawned detached with `stdio: 'ignore'` (`server/app.js:7856-7862`), so the traceback goes nowhere and the only trace is `[active_learning] cycle done (exit 1)`.\n   - `pipeline/worker.py:440-460` imports `active_learning_Cache.config` and `.store` inside a try; `worker.py:511-514` swallows it with `AL uncertainty hook failed (non-fatal)`. No low-confidence samples are queued.\n\n2. **Even when working, promotion is never automatic.** A retrained model is registered only as a *candidate* under `Models/candidates/`; it must beat production's primary metric on a frozen holdout by at least `PROMOTION_MIN_DELTA` (`retraining_learning/config.py:47-51` \u2014 0.005 devices, 0.005 cable, 0.010 port_count) and a human must run `python -m retraining_learning.cli promote <model> <version> --yes`. Note `ports_typed`/`ports_status` in the registry have no gate configured at all. `retraining_learning/registry.json` confirms nothing has ever been promoted \u2014 every model is `\"version\": \"baseline\"` with `\"metrics\": {}` and `\"promoted_ts\": null`, and empty `candidates`/`history`.\n\nWhat **does** work today, and is safe to tell users: corrections are written to `server/feedback.jsonl`, overlaid onto their scan result, and stored as pHash+ResNet18 fingerprints in the org-scoped active-learning memory (via `pipeline.active_learning.cli`, a package that does exist) so future scans auto-apply them. That layer is independent of the retrain loop.\n\nAuto-triggering can be disabled entirely with `ACTIVE_LEARNING_AUTOTRAIN=0` (`server/app.js:7845`).",
+    "symptoms": [
+      "AL uncertainty hook failed (non-fatal)",
+      "active_learning module not found",
+      "retrain never runs",
+      "no model versions promoted",
+      "ingest failed"
+    ],
+    "rootCause": "`active_learning_Cache` contains only `data/` \u2014 no Python module. retraining_learning/config.py does `from active_learning_Cache import config as cache_config` at import time; run_loop's ingest runs `python -m active_learning_Cache.cli ingest`; worker.py's _queue_low_confidence_samples imports `active_learning_Cache.config` and `.store` inside a try that logs and swallows on failure.",
+    "evidence": [
+      {
+        "file": "retraining_learning/config.py",
+        "lines": "7-8",
+        "snippet": "# Cache-side config is the single source of truth for thresholds + model list.\nfrom active_learning_Cache import config as cache_config"
+      },
+      {
+        "file": "pipeline/worker.py",
+        "lines": "435-450",
+        "snippet": "try:\n    from active_learning_Cache import config as al_cfg\n    from active_learning_Cache.store import Store\n...\nthr_dev = al_cfg.LOW_CONF_THRESHOLDS.get(\"devices\", 0.0)"
+      },
+      {
+        "file": "pipeline/worker.py",
+        "lines": "501-505",
+        "snippet": "except Exception as e:\n    # Anything goes wrong \u2192 swallow. Active learning is a side-channel,\n    # never a hard dependency of the analyze response.\n    log(f\"AL uncertainty hook failed (non-fatal): {e}\")"
+      },
+      {
+        "file": "retraining_learning/run_loop.py",
+        "lines": "54-61",
+        "snippet": "_log(\"ingest: pulling server/feedback.jsonl \u2026\")\nr1 = subprocess.run(\n    [sys.executable, \"-m\", \"active_learning_Cache.cli\", \"ingest\"],\n    cwd=config.REPO_ROOT,\n)\nif r1.returncode != 0:\n    _log(f\"ingest failed (exit {r1.returncode}); continuing with retrain anyway\")"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7793-7803",
+        "snippet": "// Each feedback POST kicks off a fire-and-forget run_loop --once:\n// ingest (cursor-tracked, idempotent) + threshold-check + retrain\n// when ready. ... Disable with ACTIVE_LEARNING_AUTOTRAIN=0.\n...\nif (process.env.ACTIVE_LEARNING_AUTOTRAIN === '0') return;"
+      },
+      {
+        "file": "retraining_learning/registry.json",
+        "lines": "3-11",
+        "snippet": "\"devices\": {\n    \"production\": {\n      \"version\": \"baseline\",\n      ...\n      \"metrics\": {},\n      \"promoted_ts\": null"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "pend-accuracy",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

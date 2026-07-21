@@ -1,0 +1,1887 @@
+[
+  {
+    "question": "Does RackTrack show me CVEs or security advisories for my switch?",
+    "answer": "No. RackTrack does not list CVEs, severity badges, or vulnerability counts anywhere. Security-advisory reporting was removed from the product, and the server deliberately does not read the advisory rows the lookup engine still carries.\n\nThe closest thing you get is on the Firmware Check screen: after a successful check, tap \"Show details\" and look at \"Release notes excerpts\". If the vendor's own notes for the newer release listed security fixes, they appear there as a block titled \"Security fixes in <version>\", alongside \"Bug fixes\", \"New features\", \"Known issues\" and \"Deprecations\".\n\nSo: if you need a vulnerability assessment, use your vendor's advisory page or your own security tooling. RackTrack answers \"is there a newer firmware and what changed\", not \"am I vulnerable\".",
+    "symptoms": [
+      "where are the CVEs",
+      "no CVE badge",
+      "security advisory missing",
+      "vulnerability list empty",
+      "severity",
+      "Security fixes in"
+    ],
+    "rootCause": "server/app.js maps the agent's FirmwareAdvice onto the /api/firmware contract and explicitly skips advice.advisories; the only security-flavoured output is the target release's security_fixes list rendered as a changelog section.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "7121-7126",
+        "snippet": "// POST /api/firmware  body: { vendor, model, currentVersion }\n// \u2192 Pure Switch Spec Agent (Agent_scrap, clean branch). The agent's\n//   FirmwareAdvice bundles version-compare and a vendor-level latest\n//   fallback. The Node side only re-shapes the response into the UI's\n//   contract. (The agent also carries security-advisory rows; we do not\n//   read them \u2014 CVE reporting was removed from the product.)"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7192-7195",
+        "snippet": "// Security-advisory (CVE) reporting was removed from the product. The agent\n  // may still carry advisory rows in its cache; we deliberately do not read or\n  // surface them."
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7205-7217",
+        "snippet": "const push = (label, list) => {\n      if (Array.isArray(list) && list.length) {\n        changelog.push({\n          section: v ? `${label} in ${v}` : label,\n...\n    push('Security fixes', target.security_fixes);\n    push('Bug fixes',      target.bug_fixes);\n    push('New features',   target.new_features);\n    push('Known issues',   target.known_issues);\n    push('Deprecations',   target.deprecations);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "Where is the \"Firmware Check\" screen? I can't find it in the menu.",
+    "answer": "It is not in any menu. The Firmware Check page exists at the address /firmware, but there is no button or nav item that takes you there \u2014 the sidebar only has Home, Scan, Two racks, Profile (plus Console/Lab for the platform owner and Data Sources/Marketplace for admins), and the phone bottom bar only has HOME, SCAN, PROFILE.\n\nWhat to use instead, and what you normally want:\n\n1. Open the rack, then Switches, pick your switch, and use the Firmware tab on the card. That version is filled in for you from the scan or the CMDB.\n2. If you really want the standalone screen, type /firmware onto the end of the app address. You will have to type Make / Vendor, Model and Current version by hand \u2014 it knows nothing about your rack.\n\nYou still have to be signed in either way.",
+    "symptoms": [
+      "can't find Firmware Check",
+      "no firmware menu item",
+      "where is the firmware page",
+      "Firmware \u00b7 Version check"
+    ],
+    "rootCause": "The /firmware route is registered in App.jsx and has a page title entry in DesktopShell, but no NavLink in the desktop sidebar links array or the mobile BottomNav items, so it is URL-only.",
+    "evidence": [
+      {
+        "file": "client/src/App.jsx",
+        "lines": "300-302",
+        "snippet": "<Route path=\"/firmware\" element={\n              <ProtectedRoute><ResponsiveLayout withBottomNav><FirmwarePage /></ResponsiveLayout></ProtectedRoute>"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "200-213",
+        "snippet": "const links = [\n    { to: '/',            label: 'Home',        icon: <HomeIcon />,    end: true  },\n    { to: '/scan',        label: 'Scan',        icon: <ScanIcon />,    end: false },\n    { to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false },\n...\n    { to: '/profile',     label: 'Profile',     icon: <ProfileIcon />, end: false },\n  ];"
+      },
+      {
+        "file": "client/src/components/BottomNav.jsx",
+        "lines": "14-16",
+        "snippet": "{ to: '/',        end: true,  icon: 'home',             label: 'HOME'    },\n  { to: '/scan',    end: false, icon: 'qr_code_scanner',  label: 'SCAN'    },\n  { to: '/profile', end: false, icon: 'person',           label: 'PROFILE' },"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 1
+  },
+  {
+    "question": "The Firmware tab says \"No firmware version recorded\" or \"Add a model to check for updates\" \u2014 why won't it check?",
+    "answer": "The check needs all three of vendor, model and current version. Whichever one is missing is what the message is telling you.\n\n1. If it says \"Add a model to check for updates.\", go up to the top of the card and use \"Enter make / model\" (or \"Add model\" / \"Add vendor\") to fill in what the scan missed.\n2. If it says \"No firmware version recorded.\", tap \"Enter version\" and type the version the switch is running, e.g. 1.0.6 Build 20210323. Press Save.\n3. The check starts as soon as you save \u2014 you will see \"Checking for updates\u2026\".\n4. To change it later, use \"Edit version\" next to the Firmware heading.\n\nAnything you type here lives in this browser only.",
+    "symptoms": [
+      "No firmware version recorded",
+      "Add a model to check for updates",
+      "Enter version",
+      "Edit version",
+      "firmware tab does nothing",
+      "Checking for updates"
+    ],
+    "rootCause": "loadDetails() sets firmwareStatus='skipped' unless displayVendor and lookupModel resolve, and again unless a cleaned version exists; POST /api/firmware itself 400s with 'vendor, model, and currentVersion are required'.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "765-786",
+        "snippet": "{firmwareStatus === 'loading' && <StatusLine color={statusColor}>Checking for updates\u2026</StatusLine>}\n...\n            {firmwareStatus === 'skipped' && !lookupModel && (\n              <StatusLine color={statusColor}>Add a model to check for updates.</StatusLine>\n            )}"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "936-948",
+        "snippet": "<StatusLine color={statusColor}>No firmware version recorded.</StatusLine>\n...\n        >Enter version</button>"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7134-7139",
+        "snippet": "if (!vendor || !model || !currentVersion) {\n    return res.status(400).json({\n      ok: false,\n      error: 'vendor, model, and currentVersion are required',\n    });\n  }"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "The check worked but \"Release notes excerpts\" shows 0 and says it couldn't extract anything. Is that a bug?",
+    "answer": "No \u2014 it means we had a version number for you but no usable text from the vendor's notes. The excerpts only appear when the vendor release we have on file actually carries fixes or features written down for that release.\n\nWhat the screen does for you:\n\n1. Tap \"Show details\" to see the section. The number next to \"Release notes excerpts\" is how many blocks we found \u2014 0 is normal for most vendors.\n2. If it says \"Couldn't fetch release notes: \u2026\", the vendor page could not be read. If it says \"Couldn't extract any changelog sections from the page.\", the page was read but had nothing we could split up.\n3. Use \"Search release notes \u2197\" or \"Open page \u2197\" underneath to go read the vendor's page yourself.\n\nWhen excerpts do appear, they are grouped as Security fixes, Bug fixes, New features, Known issues and Deprecations for the newer version.",
+    "symptoms": [
+      "Release notes excerpts 0",
+      "Couldn't extract any changelog sections from the page",
+      "Couldn't fetch release notes",
+      "Show details empty",
+      "Search release notes",
+      "Open page"
+    ],
+    "rootCause": "changelog[] is synthesized only from the target release's security_fixes/bug_fixes/new_features/known_issues/deprecations arrays; when those are empty (the usual case for the live 'pointer tier' lookup, which never synthesizes bullets) the section falls back to the empty state plus search links.",
+    "evidence": [
+      {
+        "file": "client/src/pages/FirmwarePage.jsx",
+        "lines": "338-354",
+        "snippet": "Release notes excerpts\n                    <span className={styles.count}>{result.changelog?.length || 0}</span>\n...\n                      {result.releaseNotesError\n                        ? `Couldn't fetch release notes: ${result.releaseNotesError}`\n                        : \"Couldn't extract any changelog sections from the page.\"}"
+      },
+      {
+        "file": "client/src/pages/FirmwarePage.jsx",
+        "lines": "361-380",
+        "snippet": "Search release notes \u2197\n...\n                              Open page \u2197"
+      },
+      {
+        "file": "Agent/Agent_scrap/live_firmware.py",
+        "lines": "8-13",
+        "snippet": "Returns a *version pointer* (version, optional release_date, notes_url).\nBullet-level diff (security/features/bugs) is **not** synthesized \u2014 that\nrequires either a hand-built per-vendor fetcher (Cumulus / MikroTik) or\nan LLM, and we have neither for the long tail. Honest by design."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "The Firmware Check screen says \"Vendor list unavailable: \u2026\" under the Make / Vendor box.",
+    "answer": "Only the type-ahead list of vendor names failed to load. The check itself still works \u2014 you can type the vendor name in full and carry on.\n\n1. Type the vendor exactly as the manufacturer writes it (Cisco, Juniper, Aruba) instead of picking from the list.\n2. Fill in Model and Current version and tap \"Check firmware\" as normal.\n3. If you want the list back, reload the page \u2014 the list is fetched once when the screen opens.\n4. If it keeps failing for everyone, it is a server-side problem, not your phone: report it with the exact text after \"Vendor list unavailable:\".",
+    "symptoms": [
+      "Vendor list unavailable",
+      "no vendor suggestions",
+      "vendor autocomplete not working",
+      "Lookup took too long. Try again in a moment."
+    ],
+    "rootCause": "FirmwarePage fetches /api/specs/vendors once on mount; that endpoint shells out to pipeline.all_vendor --list-vendors, which reads Switch_Vendors_Websites.xlsx and is killed after PY_MOD_TIMEOUT_MS (90s). Failure only disables the suggestion list.",
+    "evidence": [
+      {
+        "file": "client/src/pages/FirmwarePage.jsx",
+        "lines": "57-68",
+        "snippet": "useEffect(() => {\n    let cancelled = false;\n    authFetch(apiUrl('/api/specs/vendors'))\n      .then(r => r.json())\n      .then(data => {\n        if (cancelled) return;\n        if (data.ok) setVendorList(data.vendors || []);\n        else setVendorListErr(data.error || 'Could not load vendors');"
+      },
+      {
+        "file": "client/src/pages/FirmwarePage.jsx",
+        "lines": "180-182",
+        "snippet": "{vendorListErr && (\n            <span className={styles.fieldHint}>Vendor list unavailable: {vendorListErr}</span>\n          )}"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "6887-6907",
+        "snippet": "const PY_MOD_TIMEOUT_MS = 90_000;\n...\n        error: 'Lookup took too long. Try again in a moment.',"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "6934-6940",
+        "snippet": "// GET /api/specs/vendors \u2014 vendor names from the Excel sheet.\napp.get('/api/specs/vendors', async (req, res) => {\n  const result = await runPipelineModule('pipeline.all_vendor', ['--list-vendors']);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "RackTrack read the wrong firmware version off my photo, or didn't read one at all. How do I fix it?",
+    "answer": "Type it in yourself \u2014 your typed value wins over anything the photo produced, and it is what gets used for the check.\n\n1. Open the rack, then Switches, pick the switch, and go to the Firmware tab.\n2. Tap \"Enter version\" (or \"Edit version\" if something is already there), type the version, and Save. The lookup re-runs immediately with your value.\n\nWhy it happens: the version is read off the chassis label in your photo, and only three shapes of version are recognised \u2014 Huawei-style (V200R010C00), Cisco NX-OS style (9.3(7)I7(7)), and ordinary dotted numbers (16.9.5). Anything printed differently, too small, glare-covered or at an angle simply comes back blank. A blank version is not an error, it just means nothing matched.\n\nTo get a better read next time: photograph the label straight on, fill the frame with the chassis, and avoid direct glare.",
+    "symptoms": [
+      "wrong firmware version",
+      "version not detected",
+      "firmware blank after scan",
+      "OCR read the wrong version",
+      "Enter version",
+      "Edit version"
+    ],
+    "rootCause": "pipeline/ocr_devices.py parses the version out of the OCR text with three fixed regexes and returns null on no match; SwitchCard's effectiveVersionRaw prefers sw.os_version but falls back to the per-switch localStorage override the user types.",
+    "evidence": [
+      {
+        "file": "pipeline/ocr_devices.py",
+        "lines": "178-183",
+        "snippet": "# Firmware-version patterns inside a label region.\nVERSION_PATTERNS = [\n    re.compile(r\"\\bV\\d{3}R\\d{1,3}(?:C\\d{1,3})?\\b\"),                 # Huawei VRP\n    re.compile(r\"\\b\\d{1,3}\\.\\d{1,3}\\(\\d{1,3}[A-Za-z]?\\)(?:[A-Z]\\d{1,3})?\\b\"),  # NX-OS\n    re.compile(r\"\\b\\d{1,3}\\.\\d{1,3}(?:\\.\\d{1,3}){1,3}(?:[A-Za-z]\\d{0,3})?\\b\"),  # standard\n]"
+      },
+      {
+        "file": "pipeline/ocr_devices.py",
+        "lines": "346-353",
+        "snippet": "def parse_version(text: str) -> str | None:\n    if not text:\n        return None\n    for rx in VERSION_PATTERNS:\n        m = rx.search(text)\n        if m:\n            return m.group(0)\n    return None"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "262-264",
+        "snippet": "const effectiveVersionRaw = sw.os_version || userVersion;\n  const lookupVersion = cleanVersion(effectiveVersionRaw);\n  const versionIsUserSupplied = !sw.os_version && !!userVersion;"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "The Switch Info pop-up has its own \"Firmware Update\" card \u2014 is that different from the Firmware tab on the switch card?",
+    "answer": "Same lookup, different source for your current version.\n\nThe \"Firmware Update\" card inside the Switch Info pop-up (opened from a scan result, header reads \"Switch Info \u00b7 live \u00b7 <host> \u00b7 <vendor>\") takes the version straight off the switch over SSH \u2014 it parses \"Firmware Version\" / \"Software Version\" out of the device's own system output, cleans it up (\"5.0.2 Build 20220909 Rel.75392\" becomes \"5.0.2\") and then runs the same check.\n\nIts wording is slightly different from the switch card: \"Up to date\", \"Upgrade available\", or \"Could not determine latest version\", with Current version / Latest version rows and a \"Release notes\" link. While it runs it says \"Checking vendor site for newer firmware\u2026\"; if the SSH read gave no model or version it says \"Need both model and firmware version to check for updates.\"; if the lookup failed it says \"Could not check: \u2026\".\n\nThe Firmware tab on the switch card uses whatever the scan/CMDB recorded, or what you typed \u2014 it never talks to the switch.",
+    "symptoms": [
+      "Firmware Update card",
+      "Checking vendor site for newer firmware",
+      "Could not determine latest version",
+      "Need both model and firmware version to check for updates",
+      "Could not check:",
+      "Switch Info modal firmware"
+    ],
+    "rootCause": "ResultsPage's SwitchInfoModal parses firmware from the live SSH system-info output, runs cleanFirmwareVersion() on it and calls the same POST /api/firmware; it renders its own headline set independent of SwitchInformationPage's fwHeadline.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "456-506",
+        "snippet": "{/* \u2500\u2500 Firmware Update card \u2500\u2500 */}\n...\n                  <h4>Firmware Update</h4>\n...\n                  <p className={styles.prEmpty}>Checking vendor site for newer firmware\u2026</p>\n...\n                    firmware.upToDate === true ? 'Up to date'\n                    : firmware.upToDate === false ? 'Upgrade available'\n                    : 'Could not determine latest version';\n...\n                  <p className={styles.prEmpty}>Need both model and firmware version to check for updates.</p>"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "366-378",
+        "snippet": "// Extract a clean dotted version from messy firmware strings.\n//   \"5.0.2 Build 20220909 Rel.75392\" \u2192 \"5.0.2\"\n...\nfunction cleanFirmwareVersion(raw) {"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "6513-6516",
+        "snippet": "hwVersion:  get(/Hardware Version\\s*[-:]\\s*(.+)/i),\n    fwVersion:  get(/(?:Firmware|Software) Version\\s*[-:]\\s*(.+)/i),"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How current is the firmware data, and how often does it refresh?",
+    "answer": "There is no automatic refresh. Nothing in the server schedules a firmware or advisory update.\n\n\u2022 The \"latest version\" values come from the lookup agent's SQLite cache at Agent/Agent_scrap/data/switches.db. That cache is only filled when someone runs the fetcher by hand: `python3 scripts/fetch_firmware.py` (all public vendors), `\u2026 nvd` (CVE data from NIST NVD), `\u2026 kev` (CISA actively-exploited overlay). No cron job, timer or startup hook calls it.\n\u2022 Dedicated public fetchers exist for exactly three vendors \u2014 MikroTik (RouterOS), Ubiquiti (UniFi OS) and NVIDIA (Cumulus Linux). Everything else relies on a best-effort live web pointer lookup with an 8.5-second deadline, cached on success.\n\u2022 On the client, a firmware result is cached in memory for the browser tab, keyed by rack + vendor + model + version, with no expiry. Reload the page to force a fresh call.\n\nSo when you tell a customer a firmware answer is \"current\", it is only as current as the last manual fetcher run.",
+    "symptoms": [
+      "how old is the firmware data",
+      "firmware data stale",
+      "when does it refresh",
+      "latest version out of date",
+      "does it poll the vendor"
+    ],
+    "rootCause": "Firmware/advisory ingestion is a manually-invoked script (Agent_scrap/scripts/fetch_firmware.py); server/app.js has no scheduler for it, and the client cache in scanPrefetch.js is a module-level Map with no TTL.",
+    "evidence": [
+      {
+        "file": "Agent/Agent_scrap/scripts/fetch_firmware.py",
+        "lines": "5-9",
+        "snippet": "python3 scripts/fetch_firmware.py                 # all public vendors\n    python3 scripts/fetch_firmware.py mikrotik        # one vendor\n    python3 scripts/fetch_firmware.py mikrotik -v     # verbose\n    python3 scripts/fetch_firmware.py nvd             # CVE data from NIST NVD\n    python3 scripts/fetch_firmware.py kev             # CISA actively-exploited overlay"
+      },
+      {
+        "file": "Agent/Agent_scrap/firmware.py",
+        "lines": "539-551",
+        "snippet": "PUBLIC_FIRMWARE_VENDORS = {\n    \"MikroTik\": \"RouterOS\",\n    \"Ubiquiti\": \"UniFi OS\",\n    \"NVIDIA\": \"Cumulus Linux\",\n}\n\n# vendor -> fetch_firmware.py key (only where a fetcher actually exists)\nFETCHER_KEYS = {\n    \"MikroTik\": \"mikrotik\",\n    \"Ubiquiti\": \"ubiquiti\",\n    \"NVIDIA\": \"cumulus\",\n}"
+      },
+      {
+        "file": "Agent/Agent_scrap/firmware.py",
+        "lines": "556-563",
+        "snippet": "def _try_live_firmware(model: str, vendor: str):\n...\n        return live_firmware_lookup(model or vendor, vendor_hint=vendor,\n                                    deadline_sec=8.5)"
+      },
+      {
+        "file": "client/src/utils/scanPrefetch.js",
+        "lines": "177-186",
+        "snippet": "function _prefetchFirmware(rackId, vendor, model, version, scan) {\n  if (!vendor || !model || !version) return;\n  const key = _key(rackId, 'firmware', vendor, model, version);\n  if (scan.cache.has(key)) return;\n  const p = _fetchJson('/api/firmware', {"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "A switch shows \"Upgrade available\" but the Latest version we display is the same age or older than what the customer is running. Why?",
+    "answer": "Because upToDate is a literal string comparison, not a version comparison. The server does `String(agentLatest).trim() === String(currentVersion).trim()` \u2014 anything that is not byte-identical (16.12.1 vs 16.12.01, trailing build text, different case) evaluates to false and the UI paints \"Upgrade available\".\n\nOn top of that, the advisor deliberately surfaces its cached \"latest\" pointer even when the customer's version is newer: _synthetic_diff_from_latest() keeps releases_behind at 0 and returns the cached row anyway. So a stale or wrong cached pointer becomes a false \"Upgrade available\" rather than being suppressed.\n\nWhen a customer reports this: confirm the two strings on the card, tell them the badge means \"different from our cached value\", and point them at the release-notes/vendor link. Do not tell them they are behind.",
+    "symptoms": [
+      "false Upgrade available",
+      "Latest older than Current",
+      "version compare wrong",
+      "16.12.1 vs 16.12.01",
+      "says upgrade but we are newer"
+    ],
+    "rootCause": "firmwarePayloadFromAgent computes upToDate by exact trimmed string equality; the agent's _synthetic_diff_from_latest returns the cached vendor-level latest unconditionally with releases_behind=0.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "7186-7191",
+        "snippet": "let upToDate = null;\n  if (agentLatest) {\n    upToDate = String(agentLatest).trim() === String(req.currentVersion).trim();\n  }"
+      },
+      {
+        "file": "Agent/Agent_scrap/firmware.py",
+        "lines": "750-767",
+        "snippet": "def _synthetic_diff_from_latest(latest_rec: FirmwareRecord) -> Optional[FirmwareDiff]:\n        # Surface the cached latest unconditionally \u2014 the advisor's job is\n        # to tell the user what we know, not to silently drop data when\n        # their current is newer than our cached pointer. If current \u2265\n        # latest, releases_behind stays 0 ...\n            releases_behind=0,"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "450-453",
+        "snippet": "if (firmware?.upToDate === true) {\n    fwHeadline = 'Up to date';\n  } else if (firmware?.upToDate === false) {\n    fwHeadline = 'Upgrade available';"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "Which vendors do we actually have firmware data for, and what does a customer see for the rest?",
+    "answer": "Three tiers:\n\n1. Public fetchers exist for MikroTik (RouterOS), Ubiquiti (UniFi OS) and NVIDIA (Cumulus Linux) only. These are the only vendors with a real per-release changelog path.\n2. Login-gated vendors \u2014 Cisco, Juniper, Arista, HPE Aruba, Dell, Fortinet, plus everything the vendor registry marks as gated (Huawei, H3C, Lenovo, Tejas, ZTE, NEC, Fujitsu, ALE, RUCKUS, Extreme, Ciena, Nokia). For these the advisor returns release_notes_gated and a portal URL, and the card shows \"Check vendor portal\" with a \"Vendor portal \u2197\" link.\n3. Everything else \u2014 a best-effort live web lookup (8.5-second deadline) that can only produce a version pointer, never a changelog. If that fails the advisor returns \"No firmware data available for <vendor>\" or \"No NOS specified and no default known for <vendor>\", and the card shows \"Latest version unknown\" with the explanatory line under it.\n\nNothing here is a supported/unsupported device list \u2014 it is purely about whether we can reach that vendor's release information.",
+    "symptoms": [
+      "vendor not supported",
+      "No firmware data available for",
+      "No NOS specified and no default known for",
+      "Check vendor portal",
+      "which vendors are supported for firmware"
+    ],
+    "rootCause": "firmware.advise() branches on PUBLIC_FIRMWARE_VENDORS / LOGIN_GATED_VENDORS and otherwise falls through to live_firmware_lookup, returning has_data=False with a vendor-specific message when all tiers miss.",
+    "evidence": [
+      {
+        "file": "Agent/Agent_scrap/firmware.py",
+        "lines": "571-580",
+        "snippet": "LOGIN_GATED_VENDORS = {\n    \"Cisco\": \"https://software.cisco.com\",\n    \"Juniper\": \"https://support.juniper.net/support/downloads/\",\n    \"Arista\": \"https://www.arista.com/en/support/software-download\",\n    \"HPE Aruba\": \"https://asp.arubanetworks.com\",\n    \"Dell\": \"https://www.dell.com/support\",  # partially public\n    \"Fortinet\": \"https://support.fortinet.com\",\n}"
+      },
+      {
+        "file": "Agent/Agent_scrap/firmware.py",
+        "lines": "861-867",
+        "snippet": "key = FETCHER_KEYS.get(vendor)\n            if key:\n                msg = f\"No firmware data available for {vendor} {nos}.\"\n            else:\n                msg = f\"No firmware data available for {vendor}.\""
+      },
+      {
+        "file": "Agent/Agent_scrap/firmware.py",
+        "lines": "725-730",
+        "snippet": "return FirmwareAdvice(\n            vendor=vendor, nos=None,\n            current_version=current_version,\n            has_data=False,\n            message=f\"No NOS specified and no default known for {vendor}.\","
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "455-456",
+        "snippet": "} else if (firmware?.releaseNotesGated || firmware?.portalUrl) {\n    fwHeadline = 'Check vendor portal';"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How much can we trust the \"Latest version\" values the shipped agent database returns?",
+    "answer": "Very little \u2014 treat the shipped cache as demo-grade, not authoritative. Do not quote it to a customer as a firmware recommendation.\n\nThe firmware_versions table in Agent/Agent_scrap/data/switches.db currently holds 16 rows, all written by the generic 'firmware_fetchers' path, and several are clearly mis-scraped: HPE Aruba Networking is stored as version \"802.3af\" (a PoE standard) with a picclick.com listing as its release-notes URL; Cisco is stored as \"16.2\" pointing at a Nexus 9336C-FX2 model page; MikroTik as \"25.6196C16\" pointing at a product page; Netgear as \"36.75ZM17\". Every row also has nos set to the vendor's own name rather than a real network OS, and release_date is null on all but one.\n\nConsequence: any customer whose vendor happens to be one of those 16 rows gets a bogus \"Latest\" and a false \"Upgrade available\", plus a junk \"Release notes\" link. Re-running the fetchers or curating the rows is the fix; there is no in-app override.",
+    "symptoms": [
+      "latest version is nonsense",
+      "802.3af shown as a version",
+      "release notes link goes to picclick",
+      "wrong vendor release notes URL",
+      "Latest version looks made up"
+    ],
+    "rootCause": "The generic live/pointer fetcher regex-matches any 'version-like' token on a search-result page and upserts it into firmware_versions with source='firmware_fetchers'; nothing validates the match against the real vendor NOS, and the shipped DB was populated from those runs.",
+    "evidence": [
+      {
+        "file": "Agent/Agent_scrap/data/switches.db",
+        "lines": "table firmware_versions (16 rows)",
+        "snippet": "sqlite> select vendor,nos,version,release_notes_url from firmware_versions;\nHPE Aruba Networking|HPE Aruba Networking|802.3af|https://picclick.com/Computers-Tablets-Networking/...\nCisco|Cisco|16.2|https://www.cisco.com/c/en/us/support/switches/nexus-9336c-fx2-switch/model.html\nMikroTik|MikroTik|25.6196C16|https://mikrotik.com/product/CRS326-24G-2SplusRM"
+      },
+      {
+        "file": "Agent/Agent_scrap/live_firmware.py",
+        "lines": "29-34",
+        "snippet": "# \"v1.2.3\" / \"Version 5.10.1\" / \"Firmware: 7.18.2\" / \"Release 22.4R3\"\n_VERSION_RE = re.compile(\n    r\"(?:version|firmware|release|build|software|nos|os|v)\\s*[:\\-]?\\s*\"\n    r\"v?(\\d+(?:\\.\\d+){1,3}[A-Za-z0-9\\-]*)\",\n    re.IGNORECASE,\n)"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7186-7191",
+        "snippet": "let upToDate = null;\n  if (agentLatest) {\n    upToDate = String(agentLatest).trim() === String(req.currentVersion).trim();\n  }"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "If we re-enabled CVE reporting tomorrow, would there be anything to show?",
+    "answer": "No. Two independent blockers.\n\n1. The security_advisories table in the shipped Agent/Agent_scrap/data/switches.db has 0 rows, and 0 rows flagged actively_exploited. The NVD and CISA-KEV fetchers have never been run against it (`fetch_firmware.py nvd` / `\u2026 kev`).\n2. Even with data, the join would miss: advisories are bucketed per (vendor, nos), but every firmware_versions row in the shipped DB has nos set to the vendor name (\"Cisco|Cisco\", \"MikroTik|MikroTik\"), so advisories_for_version() would query a NOS bucket that never matches an NVD row.\n\nThe schema and code are complete \u2014 severity is stored as CRITICAL / HIGH / MEDIUM / LOW with a CVSS v3.1 base score, ranked CRITICAL=4 \u2192 LOW=1, with CISA KEV (actively_exploited) sorted above everything else regardless of CVSS. None of it reaches the API: server/app.js drops advice.advisories on the floor. Any restoration is a data-ingestion project, not a UI change.",
+    "symptoms": [
+      "can we turn CVE back on",
+      "security_advisories empty",
+      "no advisories returned",
+      "severity CRITICAL HIGH MEDIUM LOW",
+      "KEV actively exploited"
+    ],
+    "rootCause": "security_advisories is empty in the shipped DB, nos values in firmware_versions are vendor names rather than NOS identifiers so the per-NOS advisory bucket cannot match, and /api/firmware never reads advice.advisories anyway.",
+    "evidence": [
+      {
+        "file": "Agent/Agent_scrap/data/switches.db",
+        "lines": "table security_advisories (0 rows)",
+        "snippet": "sqlite> select count(*) from security_advisories;  -> 0\nsqlite> select count(*) from security_advisories where actively_exploited=1;  -> 0"
+      },
+      {
+        "file": "Agent/Agent_scrap/firmware.py",
+        "lines": "374-390",
+        "snippet": "severity: Optional[str] = None      # CRITICAL / HIGH / MEDIUM / LOW\n    cvss_score: Optional[float] = None\n...\n    # CISA \"Known Exploited Vulnerabilities\" overlay \u2014 True means\n    # attackers are using this CVE in the wild right now.\n    actively_exploited: bool = False\n...\n_SEVERITY_RANK = {\"CRITICAL\": 4, \"HIGH\": 3, \"MEDIUM\": 2, \"LOW\": 1, None: 0}"
+      },
+      {
+        "file": "Agent/Agent_scrap/firmware.py",
+        "lines": "429-449",
+        "snippet": "def list_advisories(\n    vendor: str, nos: Optional[str] = None, db_path: Path = DB_PATH,\n) -> list[Advisory]:\n...\n        if nos:\n            variants = _nos_match_variants(nos)\n            placeholders = \",\".join(\"?\" * len(variants))\n            rows = con.execute(\n                f\"SELECT * FROM security_advisories \"\n                f\"WHERE vendor=? AND nos IN ({placeholders})\","
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7171-7172",
+        "snippet": "//   advice.portal_url, advice.release_notes_gated, advice.recommended_min_version\n// (advice.advisories[] also exists but is deliberately ignored \u2014 see above.)"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "\"Couldn't check for updates right now\" \u2014 what actually failed on the server?",
+    "answer": "The firmware endpoint shells out to the Python agent CLI and maps every failure to a single ok:false payload with an HTTP 404, which the switch card renders as the one generic line. The real cause is in the error string, which the Firmware Check page (unlike the switch card) prints verbatim in its red banner:\n\n\u2022 \"agent not installed at Agent/Agent_scrap\" \u2014 Agent/Agent_scrap/cli.py is missing on that host. The agent is cloned separately and is not part of this repo checkout.\n\u2022 \"Agent lookup took too long.\" \u2014 the CLI exceeded AGENT_TIMEOUT_MS = 60_000 ms and was SIGKILLed.\n\u2022 \"Agent failed to start.\" \u2014 spawn error (wrong pythonCmd, missing interpreter).\n\u2022 \"Agent returned no parsable JSON.\" \u2014 the last stdout line was not JSON; last 500 chars of stderr are attached as _stderr for the server log only.\n\u2022 \"Agent failed to return a firmware response.\" \u2014 agent responded but without a usable advice object.\n\nAlso note FirmwarePage can surface \"Backend returned a non-JSON response (HTTP <status>). Is the server running?\" and \"Request failed: <message>. Is the backend running on port 3001?\" \u2014 those are client-side network failures, not agent failures.",
+    "symptoms": [
+      "Couldn't check for updates right now",
+      "agent not installed at Agent/Agent_scrap",
+      "Agent lookup took too long",
+      "Agent returned no parsable JSON",
+      "Is the backend running on port 3001",
+      "HTTP 404 from /api/firmware"
+    ],
+    "rootCause": "runAgentCli() resolves a small set of fixed error strings; firmwarePayloadFromAgent passes them through as payload.error and the route replies 404 when ok is false. SwitchInformationPage collapses all of them to one generic status line; FirmwarePage prints the raw string.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "7256-7288",
+        "snippet": "const AGENT_TIMEOUT_MS = 60_000;\n...\n      return resolve({ ok: false, error: 'agent not installed at Agent/Agent_scrap' });\n...\n      finish({ ok: false, error: 'Agent lookup took too long.', _stderr: stderr });\n...\n      finish({ ok: false, error: 'Agent failed to start.', _spawnError: err.message });\n...\n      finish({ ok: false, error: 'Agent returned no parsable JSON.',"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7158-7162",
+        "snippet": "const payload = firmwarePayloadFromAgent(agentRes, {\n    vendor, model, currentVersion,\n  });\n...\n  res.status(payload.ok ? 200 : 404).json(payload);"
+      },
+      {
+        "file": "client/src/pages/FirmwarePage.jsx",
+        "lines": "103-115",
+        "snippet": "if (!data) {\n        setError(`Backend returned a non-JSON response (HTTP ${res.status}). Is the server running?`);\n        return;\n      }\n      if (!res.ok || !data.ok) {\n        setError(data.error || `HTTP ${res.status}`);\n...\n      setError(`Request failed: ${err.message}. Is the backend running on port 3001?`);"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "786",
+        "snippet": "{firmwareStatus === 'error'   && <StatusLine color={statusColor}>Couldn't check for updates right now.</StatusLine>}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "Is pipeline/firmware_overrides.json still used for the \"latest known firmware\" values?",
+    "answer": "No. It is dead data. Nothing in the repo reads it.\n\nThe file's own header claims it is \"Consulted before web scraping in pipeline.firmware_check\" and calls itself \"the authoritative source for the 'latest known firmware' badge\", but there is no pipeline/firmware_check.py, and a repo-wide grep for firmware_overrides returns only the file itself. /api/firmware routes exclusively through the Agent_scrap CLI (`--firmware \"<vendor> <model>\" <version>`), which reads its own SQLite DB.\n\nPractical impact: editing entries such as the Cisco C9300 \"17.15.3\" / lastChecked 2026-05-08 rows changes nothing a customer sees, and the curated values there are not what the app returns. Either wire it into the agent's DB or delete it \u2014 right now it is a trap for whoever tries to fix a wrong \"Latest\" value.",
+    "symptoms": [
+      "I updated firmware_overrides.json and nothing changed",
+      "where do the latest firmware numbers come from",
+      "firmware override not applied",
+      "pipeline.firmware_check missing"
+    ],
+    "rootCause": "pipeline/firmware_overrides.json documents an integration with pipeline.firmware_check that does not exist in this repo; the live firmware path is server/app.js \u2192 runAgentCli('--firmware') \u2192 Agent/Agent_scrap.",
+    "evidence": [
+      {
+        "file": "pipeline/firmware_overrides.json",
+        "lines": "2",
+        "snippet": "\"_doc\": \"Curated firmware-version overrides. Consulted before web scraping in pipeline.firmware_check. Edit lastChecked when refreshing entries. Vendor sites block our scraper (Cisco/Aruba/Arista return 403, Dell pages are PDFs/JS-rendered) so this file is the authoritative source for the 'latest known firmware' badge.\""
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7151-7157",
+        "snippet": "const agentRes = await runAgentCli(\n    ['--firmware', `${vendor} ${firmwareModel}`, currentVersion]);"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "7247-7252",
+        "snippet": "// \u2500\u2500 Switch Spec Agent (Agent_scrap) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// Wraps the standalone agent at Agent/Agent_scrap (cloned separately).\n// Cached DB hits return in ~1ms; unknown vendor/model falls back to a free\n// multi-engine web fetch + extraction in ~4s. No LLM, no API keys."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "Are the firmware and vendor lookup endpoints authenticated?",
+    "answer": "No. POST /api/firmware, POST /api/specs and GET /api/specs/vendors are all registered without auth.requireAuth, unlike the rack/scan/CMDB routes next to them. The client sends a token via authFetch, but the server does not require one.\n\nWhy this matters: each of these calls spawns a fresh Python process. /api/firmware allows the agent CLI up to AGENT_TIMEOUT_MS = 60_000 ms; /api/specs/vendors allows the pipeline module up to PY_MOD_TIMEOUT_MS = 90_000 ms. There is no per-caller rate limit on either. An unauthenticated caller can therefore hold open long-lived Python processes and drive outbound web scraping from our host.\n\nDo not mention this to customers. Treat it as a hardening item: add requireAuth plus a rate limit before any public exposure of the API host.",
+    "symptoms": [
+      "unauthenticated endpoint",
+      "no requireAuth on /api/firmware",
+      "python spawn per request",
+      "rate limit missing"
+    ],
+    "rootCause": "The spec/firmware routes were added without the auth.requireAuth middleware used elsewhere in app.js, while each handler shells out to a Python child process with a 60-90 second wall-clock budget and no throttling.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "7127",
+        "snippet": "app.post('/api/firmware', async (req, res) => {"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "6935-6946",
+        "snippet": "app.get('/api/specs/vendors', async (req, res) => {\n...\napp.post('/api/specs', async (req, res) => {"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "5068",
+        "snippet": "app.get('/api/cmdb/rack/:rackId/switches', auth.requireAuth, (req, res) => {"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "6887-6888",
+        "snippet": "const PY_MOD_TIMEOUT_MS = 90_000;\n\nfunction runPipelineModule(moduleName, extraArgs) {"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "What exactly is a connection / data source in RackTrack, and what does \"Active\" mean?",
+    "answer": "A connection (the app calls them Data Sources) is one saved set of credentials for an external system RackTrack reads device and ticket data from \u2014 your CMDB/ITSM, NetBox, SolarWinds Orion, CA/DX Spectrum, or your own SQL or REST database.\n\nWhere to find it: the \"Data Sources\" item in the desktop sidebar, or Profile \u2192 Data Sources. The screen is titled \"Data Sources\" and explains: \"Saved databases this app can pull data from. The active connection is what every screen uses while you're signed in. Switch any time \u2014 the data refreshes from the new source.\"\n\nThe screen has two sections:\n\u2022 Active \u2014 one card showing the connection currently in use, with an \"Active\" badge.\n\u2022 Other saved \u2014 every other connection you have saved, each with a \"Use\" button.\n\nKey rules:\n1. Exactly one connection is active at a time. Pressing \"Use\" on another one switches every screen over to it; the previous one is deactivated but not deleted. The database enforces this with a unique index (one active row per user).\n2. There is no merging across sources \u2014 the active connection is the single source of truth for that session.\n3. Saved connections belong to the account that created them. The server scopes every read and write to your user id, so no one else can see or use your saved connections.\n\nOrganization-wide credentials are a separate thing \u2014 see the \"Organization integrations\" panel in the Organization Console.",
+    "symptoms": [
+      "What is a data source / connection profile",
+      "What does the Active badge mean",
+      "Which connection is the app using",
+      "Can I use two data sources at once"
+    ],
+    "rootCause": "Connection profiles are per-user rows in connection_profiles with a unique partial index allowing one is_active=1 row per user; the Data Sources page renders an Active card and an 'Other saved' list with a Use button that calls the activate route.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "124-132",
+        "snippet": "<h1 className={styles.title}>Data Sources</h1>\n...\n      <p className={styles.intro}>\n        Saved databases this app can pull data from. The <strong>active</strong>\n        {' '}connection is what every screen uses while you're signed in.\n        Switch any time \u2014 the data refreshes from the new source.\n      </p>"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "206-223",
+        "snippet": "<h2 className={styles.sectionTitle}>Other saved</h2>\n...\n                <button\n                  type=\"button\"\n                  className={styles.useBtn}\n                  onClick={() => onActivate(p.id)}>\n                  Use\n                </button>"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "69-73",
+        "snippet": "CREATE INDEX IF NOT EXISTS idx_conn_profiles_user\n    ON connection_profiles(user_id);\n  CREATE UNIQUE INDEX IF NOT EXISTS uq_conn_profiles_active\n    ON connection_profiles(user_id) WHERE is_active = 1;"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "4-7",
+        "snippet": "* All routes require auth (req.user populated by requireAuth). Profiles\n * are scoped to req.user.id; no user can see or touch another user's\n * profiles."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "Which data sources can I connect, and exactly what do I have to type in for each one?",
+    "answer": "Six types are supported. The Type dropdown shows these labels, and the form changes to the fields that type needs:\n\n\u2022 ServiceNow / CMDB \u2014 Instance ID (e.g. dev266363), Username, Password. All required. Hint on the form: \"Use just the instance ID \u2014 the part before .service-now.com\". Do not paste the full https://\u2026service-now.com URL; the server builds the hostname itself from what you type.\n\u2022 NetBox \u2014 Base URL (e.g. https://netbox.example.com) and API Token, both required. Hint: \"API token from your NetBox user profile\".\n\u2022 SolarWinds Orion \u2014 Host (e.g. orion.example.com), Username, Password, all required. Hint: \"SolarWinds Orion NPM / NCM server\".\n\u2022 CA / DX Spectrum \u2014 Base URL (e.g. https://spectrum.example.com:8443), Username, Password, all required. Hint: \"Spectrum OneClick / REST endpoint\".\n\u2022 My own database (SQL) \u2014 a single Connection string, required. Placeholder: postgresql://user:pass@host:5432/dbname. Hint: \"PostgreSQL or MySQL connection string\".\n\u2022 My own database (REST) \u2014 Base URL (e.g. https://cmdb.example.com/api), required, plus an optional API Token. Hint: \"Generic REST endpoint that returns device / interface JSON\".\n\nAnything not on this list is rejected by the server with \"unsupported profile type: <type>\".",
+    "symptoms": [
+      "What systems can RackTrack connect to",
+      "What do I put in the Instance ID field",
+      "Do I need an API token for NetBox",
+      "Which fields are required for Orion / Spectrum"
+    ],
+    "rootCause": "TYPE_INFO in connectionsApi.js defines the label, field schema and hint per type; SUPPORTED_TYPES in connection_profiles.js is the server-side allow-list and validateType rejects anything else.",
+    "evidence": [
+      {
+        "file": "client/src/utils/connectionsApi.js",
+        "lines": "120-146",
+        "snippet": "export const TYPE_INFO = {\n  servicenow: {\n    label: 'ServiceNow / CMDB',\n    fields: [\n      { key: 'instance', label: 'Instance ID',  placeholder: 'dev266363', required: true },\n      { key: 'user',     label: 'Username',     placeholder: 'admin',     required: true },\n      { key: 'password', label: 'Password',     type: 'password',         required: true },\n    ],\n    hint: 'Use just the instance ID \u2014 the part before .service-now.com',\n  },\n  netbox: {\n    label: 'NetBox',\n    fields: [\n      { key: 'base_url', label: 'Base URL', placeholder: 'https://netbox.example.com', required: true },\n      { key: 'token',    label: 'API Token', type: 'password',                         required: true },\n    ],"
+      },
+      {
+        "file": "client/src/utils/connectionsApi.js",
+        "lines": "147-172",
+        "snippet": "  spectrum: {\n    label: 'CA / DX Spectrum',\n...\n  generic_sql: {\n    label: 'My own database (SQL)',\n    fields: [\n      { key: 'connection_string', label: 'Connection string',\n        placeholder: 'postgresql://user:pass@host:5432/dbname', required: true },\n    ],\n...\n  generic_rest: {\n    label: 'My own database (REST)',\n    fields: [\n      { key: 'base_url', label: 'Base URL', placeholder: 'https://cmdb.example.com/api', required: true },\n      { key: 'token',    label: 'API Token (optional)', type: 'password' },\n    ],"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "45-52",
+        "snippet": "const SUPPORTED_TYPES = new Set([\n  'servicenow',\n  'netbox',\n  'orion',         // SolarWinds Orion / NPM / NCM\n  'spectrum',      // CA / DX Spectrum\n  'generic_sql',   // user's own DB via SQL connection string\n  'generic_rest',  // user's own DB via REST endpoint\n]);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How do I add a new data source connection, step by step?",
+    "answer": "1. Open Data Sources (sidebar \"Data Sources\", or Profile \u2192 Data Sources).\n2. Tap \"Add connection\" at the bottom of the list. A panel titled \"New connection\" opens.\n3. Type a Name \u2014 this is just a label for you (placeholder: \"e.g. My ServiceNow Dev\"). It is required.\n4. Pick the Type. The credential fields below change to match the type you pick; switching type clears anything you already typed, so choose the type first.\n5. Fill in the credential fields marked with *. A hint under the form tells you what the field wants (for ServiceNow: \"Use just the instance ID \u2014 the part before .service-now.com\").\n6. Press \"Save & use\". The new connection is saved and becomes the active one immediately \u2014 that is what \"& use\" means.\n\nIf it is a ServiceNow connection, saving-and-using kicks off a background pull and you will see a \"Pulling fresh data from \u2026\" banner, then either \"\u2713 Pulled N incidents from <instance>\" or \"Refresh failed: \u2026\".\n\nCancel closes the panel without saving. You cannot cancel while it is saving.",
+    "symptoms": [
+      "How do I connect our CMDB",
+      "Where is the add connection button",
+      "What does Save & use do",
+      "My typed password disappeared when I changed the Type dropdown"
+    ],
+    "rootCause": "ConnectionsPage renders an 'Add connection' button that opens the create modal; a useEffect resets the secret fields whenever the chosen type changes, and the submit button posts to /api/connections which defaults make_active to true.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "249-260",
+        "snippet": "        <button\n          type=\"button\"\n          className={styles.addBtn}\n          onClick={openCreateForm}\n          disabled={loading}>\n...\n          Add connection\n        </button>"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "38-42",
+        "snippet": "  // Reset secret fields whenever the chosen type changes \u2014 different\n  // backends require different fields, so we don't want stale values.\n  useEffect(() => {\n    setSecret(emptySecretFor(type));\n  }, [type]);"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "350-355",
+        "snippet": "                <button\n                  type=\"submit\"\n                  className={styles.btnPrimary}\n                  disabled={submitting}>\n                  {submitting ? 'Saving\u2026' : (editingId ? 'Save changes' : 'Save & use')}\n                </button>"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "60-65",
+        "snippet": "  const meta = profiles.create(\n    req.user.id,\n    { name, type, secret },\n    { makeActive: make_active !== false }   // default true\n  );"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "Saving a connection failed with a message like \"servicenow profile requires {instance, user, password}\" or \"name, type, secret are required\". What is wrong?",
+    "answer": "The server refused the save because a required field was empty. Fill in every field marked with * for the type you picked, then press save again.\n\nThe exact messages and what each one means:\n\u2022 \"name, type, secret are required\" \u2014 the Name box was empty, or no credential field was filled in at all.\n\u2022 \"servicenow profile requires {instance, user, password}\" \u2014 one of Instance ID, Username or Password is blank.\n\u2022 \"netbox profile requires {base_url, token}\" \u2014 Base URL or API Token is blank.\n\u2022 \"orion profile requires {host, user, password}\" \u2014 Host, Username or Password is blank.\n\u2022 \"spectrum profile requires {base_url, user, password}\" \u2014 Base URL, Username or Password is blank.\n\u2022 \"generic_sql profile requires {connection_string}\" \u2014 the Connection string is blank.\n\u2022 \"generic_rest profile requires {base_url}\" \u2014 the Base URL is blank (the API Token is genuinely optional for this type).\n\u2022 \"unsupported profile type: <type>\" \u2014 the type is not one of the six the server accepts. That only happens if the request did not come from the Data Sources form.\n\nIn the Organization Console panel the check happens in the browser first and reads \"Fill in: <field labels>\" before anything is sent.\n\nNote: whitespace alone does not count as filled in on the org panel, and on the Data Sources form the browser also blocks submit while a required field is empty on a new connection.",
+    "symptoms": [
+      "servicenow profile requires {instance, user, password}",
+      "name, type, secret are required",
+      "netbox profile requires {base_url, token}",
+      "unsupported profile type",
+      "Fill in: Instance ID, Username"
+    ],
+    "rootCause": "validateSecret in connection_profiles.js throws a per-type message when a required key is missing; the create route returns 400 'name, type, secret are required' before that; safeAsync maps messages starting with 'unsupported' to 400. OrgConnectionsPanel pre-validates client-side with a 'Fill in:' message.",
+    "evidence": [
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "127-163",
+        "snippet": "function validateSecret(type, secret) {\n  if (!secret || typeof secret !== 'object') {\n    throw new Error('secret must be an object');\n  }\n  switch (type) {\n    case 'servicenow':\n      if (!secret.instance || !secret.user || !secret.password) {\n        throw new Error('servicenow profile requires {instance, user, password}');\n      }\n      break;\n    case 'netbox':\n      if (!secret.base_url || !secret.token) {\n        throw new Error('netbox profile requires {base_url, token}');"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "56-59",
+        "snippet": "  const { name, type, secret, make_active } = req.body || {};\n  if (!name || !type || !secret) {\n    return res.status(400).json({ ok: false, error: 'name, type, secret are required' });\n  }"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "30-32",
+        "snippet": "      logger.error(`[connections] ${req.method} ${req.originalUrl} \u2014 ${err.message}`);\n      const status = err.status || (err.message?.startsWith('unsupported') ? 400 : 500);\n      res.status(status).json({ ok: false, error: err.message || 'request failed' });"
+      },
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "45-46",
+        "snippet": "    const missing = (info.fields || []).filter(f => f.required && !String(secret[f.key] || '').trim());\n    if (missing.length) { setFormError(`Fill in: ${missing.map(f => f.label).join(', ')}`); return; }"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "I only wanted to change the password on an existing connection, but saving fails with \"servicenow profile requires {instance, user, password}\". Why?",
+    "answer": "Because when you type into any credential field on the edit form, the whole set of credential fields is sent \u2014 and the ones you left blank are sent as blank, which wipes the stored values and then fails validation.\n\nFix: when you edit credentials, re-enter every required field for that type, not just the one you are changing. For ServiceNow that means Instance ID, Username and Password together.\n\nSteps:\n1. Open Data Sources, tap the \u22ef menu on the connection, choose \"Edit\".\n2. Either leave every credential field blank (the note on the form says \"Leave the credential fields blank to keep what's already saved\") and change only the Name \u2014 or fill in all of the starred fields.\n3. Press \"Save changes\".\n\nSo there are exactly two safe edits: rename only (all credential fields blank), or replace the credentials in full.",
+    "symptoms": [
+      "Changing just the password fails to save",
+      "servicenow profile requires {instance, user, password} when editing",
+      "Edit connection error after typing a new password",
+      "Save changes rejected on an existing connection"
+    ],
+    "rootCause": "ConnectionsPage sends the entire secret object when any field is non-empty (hasSecret check), so untouched fields go up as empty strings; the server's update() merges {...existing.secret, ...secret}, so the empty strings overwrite the stored values and validateSecret then throws the per-type 'requires' error.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "75-82",
+        "snippet": "      if (editingId) {\n        // Edit: send name always; send secret only if user typed in any\n        // field (otherwise the stored credentials are kept).\n        const hasSecret = Object.values(secret).some(v => String(v || '').length > 0);\n        await update(editingId, {\n          name,\n          secret: hasSecret ? secret : undefined,\n        });"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "285-286",
+        "snippet": "  const nextSecret = secret ? { ...existing.secret, ...secret } : existing.secret;\n  if (secret) validateSecret(existing.type, nextSecret);"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "330-334",
+        "snippet": "              {editingId && (\n                <p className={styles.editHint}>\n                  Leave the credential fields blank to keep what's already saved.\n                </p>\n              )}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "Where can I see the password I saved for a connection, and why is the Type dropdown greyed out when I edit?",
+    "answer": "You cannot see a saved credential again \u2014 not in the app, and not through the API. That is deliberate: RackTrack stores the credentials encrypted and only ever returns the connection's name, type, active flag and timestamps. When you open \"Edit connection\" the credential boxes are always empty; the code never pre-loads them.\n\nWhat that means in practice:\n\u2022 Lost the password? RackTrack cannot tell you what it was. Get it from the source system and re-enter it (all required fields together).\n\u2022 The Organization Console panel says the same thing: \"They're stored encrypted and are never shown again \u2014 not even to you. To change one, just re-enter it.\"\n\nThe Type dropdown is disabled while editing, with the note \"Type can't change after a connection is created.\" To move a connection to a different system, add a new connection of the right type (it becomes active on save) and then delete the old one.",
+    "symptoms": [
+      "Can't see the saved password",
+      "Credential fields are empty when editing",
+      "Type can't change after a connection is created",
+      "How do I recover the credentials I entered"
+    ],
+    "rootCause": "The API returns metadata only (rowToMeta has no secret field), openEditForm resets the secret state with the comment 'never preload secrets', and the Type <select> is disabled whenever editingId is set.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "53-61",
+        "snippet": "  const openEditForm = (profile) => {\n    setEditingId(profile.id);\n    setName(profile.name);\n    setType(profile.type);\n    setSecret(emptySecretFor(profile.type)); // never preload secrets"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "295-308",
+        "snippet": "                <select\n                  className={styles.input}\n                  value={type}\n                  onChange={(e) => setType(e.target.value)}\n                  disabled={!!editingId}>\n...\n                {editingId && (\n                  <span className={styles.fieldHint}>\n                    Type can't change after a connection is created.\n                  </span>\n                )}"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "166-176",
+        "snippet": "function rowToMeta(row) {\n  if (!row) return null;\n  return {\n    id:         row.id,\n    name:       row.name,\n    type:       row.type,\n    is_active:  !!row.is_active,\n    created_at: row.created_at,\n    updated_at: row.updated_at,\n  };\n}"
+      },
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "79-83",
+        "snippet": "        Credentials for your CMDB/ITSM database, live network sources, etc. Set them once here for the\n        whole organization. They're stored <strong>encrypted</strong> and are <strong>never shown again</strong> \u2014\n        not even to you. To change one, just re-enter it."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How do I test that a connection actually works? I can't find a \"Test connection\" button.",
+    "answer": "There is no Test button \u2014 RackTrack has no test endpoint for connection profiles. How you verify depends on the type:\n\nServiceNow / CMDB: when it is the active connection, a button appears under the Active card: \"Refresh data from this source\". Pressing it runs a real poll against the instance you entered, so it is the closest thing to a test.\n\u2022 While it runs: \"Pulling fresh data from <name>\u2026\"\n\u2022 Success: \"\u2713 Pulled N incidents from <instance>\"\n\u2022 Failure: \"Refresh failed: <error from the poller>\"\nSaving with \"Save & use\", or pressing \"Use\" on a saved ServiceNow connection, starts the same poll automatically.\n\nEvery other type (NetBox, SolarWinds Orion, CA/DX Spectrum, own SQL, own REST): the refresh button is not shown, and nothing is contacted at save time \u2014 the credentials are simply stored. You confirm them by opening a screen that reads from that source and seeing whether data appears.\n\nSo a connection saving successfully proves only that the fields were filled in, never that the host, username or password are correct.",
+    "symptoms": [
+      "No Test connection button",
+      "How do I know the credentials are right",
+      "Refresh data from this source",
+      "Connection saved but no data appears",
+      "Refresh failed"
+    ],
+    "rootCause": "There is no test route in connection_profiles_routes.js; the only live verification is the ServiceNow poll, and ConnectionsPage renders the 'Refresh data from this source' button only when active.type === 'servicenow'. lastRefresh drives the success/failure banners.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "195-203",
+        "snippet": "        {active && active.type === 'servicenow' && (\n          <button\n            type=\"button\"\n            className={styles.refreshBtn}\n            onClick={() => refreshActiveSource().catch(() => { /* error shown in banner */ })}\n            disabled={refreshing}>\n            {refreshing ? 'Refreshing\u2026' : 'Refresh data from this source'}\n          </button>\n        )}"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "143-155",
+        "snippet": "      {lastRefresh && !refreshing && (\n        lastRefresh.ok ? (\n          <div className={styles.successBanner}>\n            \u2713 Pulled {lastRefresh.count ?? '\u2014'} incident{lastRefresh.count === 1 ? '' : 's'}\n            {' '}from <strong>{lastRefresh.instance}</strong>\n          </div>\n        ) : (\n          <div className={styles.errorBanner}>\n            Refresh failed: {lastRefresh.error}\n          </div>\n        )\n      )}"
+      },
+      {
+        "file": "client/src/ConnectionsContext.jsx",
+        "lines": "121-130",
+        "snippet": "    // For ServiceNow profiles, kick off the inbox re-poll and watch it\n    // complete in the background. The activate call returns fast; the\n    // refreshing flag drives the \"Pulling fresh data\u2026\" banner so the\n    // user can navigate around the app while it works.\n    if (profile?.type === 'servicenow') {\n      setRefreshing(true);\n      setLastRefresh(null);\n      try {\n        await api.refreshIncidents();   // returns immediately (202)"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "9-17",
+        "snippet": " * Routes:\n *   GET    /api/connections              \u2192 list metadata for this user\n *   GET    /api/connections/active       \u2192 metadata for the active profile\n *   POST   /api/connections              \u2192 create {name, type, secret, make_active?}\n *   GET    /api/connections/:id          \u2192 metadata for one profile\n *   PATCH  /api/connections/:id          \u2192 update {name?, secret?}\n *   POST   /api/connections/:id/activate \u2192 make this profile active\n *   POST   /api/connections/deactivate   \u2192 clear active (no source for this user)\n *   DELETE /api/connections/:id          \u2192 delete one profile"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "What is the \"Organization integrations\" panel, and how is it different from my personal Data Sources?",
+    "answer": "\"Organization integrations\" is where an organization admin sets the credentials the WHOLE organization uses, so every member's scans read from the same CMDB without anyone entering credentials on their own account.\n\nWhere: Organization Console \u2192 scroll to the \"Organization integrations\" section. It appears for organization admins; the platform owner does not see it (an owner account has no organization context).\n\nTo add one:\n1. Press \"+ Add integration\".\n2. Choose the Integration type (same six types as personal Data Sources).\n3. Optionally type a Label \u2014 if you leave it blank the type's name is used.\n4. Fill in the credential fields marked *.\n5. Press \"Save (encrypted)\".\n\nEach configured integration then shows as a row with \"\u25cf Configured \u00b7 encrypted\" and a \"Remove\" button. There is no edit \u2014 to change a credential you re-enter it.\n\nPrecedence: for ServiceNow the organization's credential is used first, and only if the organization has none does the server fall back to the signed-in admin's personal connection. Personal Data Sources remain private to the account that created them.",
+    "symptoms": [
+      "Where do I set credentials for the whole organization",
+      "Organization integrations panel",
+      "+ Add integration",
+      "Save (encrypted)",
+      "Configured \u00b7 encrypted"
+    ],
+    "rootCause": "OrgConnectionsPanel is rendered in OrgConsolePage only when the viewer is not the platform owner; it posts to /api/org-connections, which is gated to org_admin/owner and requires an organization_id. getSnCreds prefers resolveCredsForOrg over the personal profile.",
+    "evidence": [
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "70-78",
+        "snippet": "        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1a1c1d' }}>Organization integrations</h3>\n        {!formOpen && (\n          <button type=\"button\" style={primaryBtn} onClick={() => { setFormError(null); setFormOpen(true); }}>\n            + Add integration\n          </button>"
+      },
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "94-114",
+        "snippet": "          <label style={label}>Label (optional)</label>\n          <input style={input} value={name} placeholder={info.label}\n...\n            <button type=\"submit\" style={primaryBtn} disabled={saving}>{saving ? 'Saving\u2026' : 'Save (encrypted)'}</button>"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "426-428",
+        "snippet": "          {/* Org-wide external access \u2014 admin sets encrypted credentials the\n              whole org's pipeline uses. Owner has no org context, so admin-only. */}\n          {!isOwner && <OrgConnectionsPanel />}"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4693-4696",
+        "snippet": "    // Prefer the ORG-wide credential the admin configured; fall back to a\n    // personal profile only if the org has none.\n    const resolved = (orgId && profiles.resolveCredsForOrg(orgId, 'servicenow'))\n      || (userId && profiles.resolveCredsForType(userId, 'servicenow'));"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "I re-entered our CMDB credentials in Organization integrations and now the same integration is listed twice. Which one is being used?",
+    "answer": "The newest one is being used. The older row is kept but is no longer active \u2014 the panel simply lists every stored row for the organization, and each row displays \"\u25cf Configured \u00b7 encrypted\" whether or not it is the one in use.\n\nWhat happens when you press \"+ Add integration\" for a type you already have: the server marks the previous credential of that type inactive and inserts a new active one. Nothing is overwritten in place, so the old row stays in the list.\n\nFix: press \"Remove\" on the stale row (you will be asked \"Remove the <type> integration for this organization?\"). Removing it does not affect the newest one. If you are not sure which is which, remove them all and add the integration once more.\n\nAn organization can hold one active credential per type at the same time \u2014 for example a live ServiceNow and a live SQL source together \u2014 so seeing two rows of *different* types is normal.",
+    "symptoms": [
+      "Duplicate integration rows",
+      "Two ServiceNow entries in Organization integrations",
+      "Which credential is actually used after re-entering",
+      "Remove the integration for this organization"
+    ],
+    "rootCause": "createForOrg deactivates the previous active row of that type and inserts a new one, but listForOrg selects all rows for the organization with no is_active filter, and the panel renders every row with the same 'Configured \u00b7 encrypted' line.",
+    "evidence": [
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "394-410",
+        "snippet": "function createForOrg(orgId, adminUserId, { name, type, secret }) {\n  validateType(type);\n  validateSecret(type, secret);\n  const blob = encrypt(JSON.stringify(secret), getKey());\n  const tx = db.transaction(() => {\n    db.prepare(\n      `UPDATE connection_profiles SET is_active = 0, updated_at = datetime('now')\n        WHERE organization_id = ? AND type = ? AND is_active = 1`\n    ).run(Number(orgId), type);"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "371-379",
+        "snippet": "/** List metadata only (no secrets) for an org's connection profiles. */\nfunction listForOrg(orgId) {\n  return db.prepare(\n    `SELECT id, name, type, is_active, created_at, updated_at\n       FROM connection_profiles\n      WHERE organization_id = ?\n      ORDER BY is_active DESC, type ASC, updated_at DESC`\n  ).all(Number(orgId)).map(orgRowToMeta);\n}"
+      },
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "126-133",
+        "snippet": "            <div key={p.id} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>\n...\n                <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 2 }}>\u25cf Configured \u00b7 encrypted</div>\n              </div>\n              <button type=\"button\" style={dangerBtn} onClick={() => onRemove(p)}>Remove</button>"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "89-93",
+        "snippet": "  -- one active profile per (org, type) so an org can have a live ServiceNow\n  -- AND a live SQL source at the same time.\n  CREATE UNIQUE INDEX IF NOT EXISTS uq_conn_profiles_org_active\n    ON connection_profiles(organization_id, type)\n    WHERE is_active = 1 AND organization_id IS NOT NULL;"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "Saving an organization integration returns \"organization admin only\" or \"no organization is associated with your account\". What now?",
+    "answer": "Two different refusals:\n\n\u2022 \"organization admin only\" (403) \u2014 your account is not an organization admin (and not the platform owner). Members and site managers cannot set organization-wide credentials. Ask your organization admin to do it; they set it once and everyone's scans then use it.\n\n\u2022 \"no organization is associated with your account\" (400) \u2014 your role is accepted but your account is not attached to any organization. This is what a platform-owner account hits, because an owner sits above organizations and has no organization of its own. The fix is to use an organization-admin account inside the organization you want to configure. That is also why the \"Organization integrations\" panel is not rendered for the owner.\n\nBoth checks run on the server, so they apply to any client, not just the console screen.",
+    "symptoms": [
+      "organization admin only",
+      "no organization is associated with your account",
+      "403 saving org integration",
+      "Owner cannot set organization credentials"
+    ],
+    "rootCause": "requireOrgAdmin in connection_profiles_routes.js returns 403 for roles outside org_admin/owner and 400 when req.user.organization_id is missing, which is the platform owner's case; OrgConsolePage hides the panel for owners.",
+    "evidence": [
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "112-123",
+        "snippet": "function requireOrgAdmin(req, res, next) {\n  if (!req.user || !['org_admin', 'owner'].includes(req.user.role)) {\n    return res.status(403).json({ ok: false, error: 'organization admin only' });\n  }\n  const orgId = req.user.organization_id;\n  if (!orgId) {\n    return res.status(400).json({ ok: false, error: 'no organization is associated with your account' });\n  }\n  req._orgId = orgId;\n  next();\n}\nrouter.use('/api/org-connections', requireAuth, requireOrgAdmin);"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "426-428",
+        "snippet": "          {/* Org-wide external access \u2014 admin sets encrypted credentials the\n              whole org's pipeline uses. Owner has no org context, so admin-only. */}\n          {!isOwner && <OrgConnectionsPanel />}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How do I stop using a data source, or delete one? Is there an off switch?",
+    "answer": "There is no off switch on the Data Sources screen \u2014 your options are switch or delete.\n\nTo switch: press \"Use\" on another saved connection. The one you were on stops being active immediately and stays saved.\n\nTo delete:\n1. Tap the \u22ef menu on the connection's card.\n2. Choose \"Delete\".\n3. Confirm the prompt: Delete connection \"<name>\"?\n\nDeleting is permanent \u2014 the stored credentials go with the row and cannot be recovered, so you will have to type them in again if you want that source back.\n\nIf you delete the active connection and have no other, the screen shows \"No active connection.\" with the hint \"Add a connection below to start pulling data from your CMDB\", and CMDB-backed screens stop returning data until you add one.\n\n(For organization-wide credentials, the equivalent is the \"Remove\" button in Organization integrations.)",
+    "symptoms": [
+      "How do I disconnect a data source",
+      "Delete connection prompt",
+      "No active connection",
+      "How do I turn off a connection without deleting it"
+    ],
+    "rootCause": "ConnectionsPage exposes only Edit and Delete in the card menu plus the Use button; the /api/connections/deactivate route exists but no control on the page calls it, and remove() deletes the row (secret blob included).",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "99-103",
+        "snippet": "  const onDelete = async (profile) => {\n    setOpenMenuFor(null);\n    if (!confirm(`Delete connection \"${profile.name}\"?`)) return;\n    try { await remove(profile.id); } catch (err) { alert(err.message); }\n  };"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "187-194",
+        "snippet": "          <div className={styles.emptyCard}>\n            <p>No active connection.</p>\n            <p className={styles.emptyHint}>\n              Add a connection below to start pulling data from your CMDB.\n            </p>\n          </div>"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "23-26",
+        "snippet": "  const {\n    profiles, active, supportedTypes, loading, error, refreshing, lastRefresh,\n    refresh, create, update, activate, remove, refreshActiveSource,\n  } = useConnections();"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "339-345",
+        "snippet": "/** Delete one profile. Returns true if a row was removed. */\nfunction remove(userId, profileId) {\n  const r = db.prepare(\n    `DELETE FROM connection_profiles WHERE user_id = ? AND id = ?`\n  ).run(Number(userId), Number(profileId));\n  return r.changes > 0;\n}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "When I read live ports, the app only asks me for a Switch IP \u2014 where do the switch username and password come from?",
+    "answer": "They are already stored on the server, so you don't need them. When the login box opens, the app asks the server whether a username and password are on file for that switch type; if they are, the Username and Password boxes are hidden and only \"Switch IP\" is shown.\n\nWhat to do:\n1. Type the switch's management IP (the box shows an example like 10.0.0.5). RackTrack also suggests the last switch IP that worked for you.\n2. Press Enter or the confirm button. The server uses the stored login for that switch.\n3. If the Username and Password boxes DO appear, no login is stored for that switch type \u2014 enter the switch's own CLI username and password. The form tells you: \"Stored only in memory for this session. SSH is used to query LLDP / MAC table on the switch.\"\n\nImportant: this is a different thing from Data Sources / connection profiles. Data Sources are for your CMDB and other databases; switch logins are handled separately and can only be added or changed on the server by RackTrack staff or your platform owner \u2014 there is no screen for them. RackTrack never shows a stored switch password back to you.",
+    "symptoms": [
+      "Only asked for Switch IP, no password",
+      "Where do the switch credentials come from",
+      "Do I need the switch password to read ports",
+      "Switch login box asks for username and password"
+    ],
+    "rootCause": "CredsModal calls GET /api/switch/creds-status?vendor=\u2026 which returns booleans only; when has_username and has_password are true the modal hides those fields and submits just the host, and the server fills the credentials from its encrypted store.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "694-708",
+        "snippet": "  // Does the encrypted env store already have user/password? If so, hide\n  // those fields and ask for only the switch IP.\n  const [credsStatus, setCredsStatus] = useState(null);\n...\n  const stored = !!(credsStatus?.has_username && credsStatus?.has_password);"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "719-728",
+        "snippet": "        {!stored && (\n          <p className={styles.credsHint}>\n            Stored only in memory for this session. SSH is used to query LLDP / MAC table on the switch.\n          </p>\n        )}\n        <label className={styles.credsField}>\n          <span>Switch IP</span>\n          <input className=\"input\" type=\"text\" autoFocus value={host} onChange={e => setHost(e.target.value)} placeholder=\"e.g. 10.0.0.5\""
+      },
+      {
+        "file": "server/app.js",
+        "lines": "5841-5855",
+        "snippet": "// GET /api/switch/creds-status?vendor=X\n// Booleans only \u2014 never returns the actual secret values. Lets the client\n// know whether the encrypted env store already has username / password /\n// enable for this vendor, so the login modal can hide those fields and ask\n// the user for only the switch IP.\napp.get('/api/switch/creds-status', auth.requireAuth, (req, res) => {\n  const vendor = String(req.query.vendor || 'cisco-ios');\n  const v = sshCreds.getForVendor(vendor) || {};\n  res.json({\n    vendor,\n    has_username: !!(v.username && String(v.username).length),\n    has_password: !!(v.password && String(v.password).length),\n    has_enable:   !!(v.enablePassword && String(v.enablePassword).length),\n  });\n});"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "The ports screen says \"The switch refused the connection \u2014 is SSH enabled on it?\" What do I do?",
+    "answer": "That message means the switch answered on the network but nothing accepted the connection \u2014 so the address is reachable, it just isn't listening for RackTrack.\n\nTry these in order:\n1. Check the address you typed is the switch's management IP, not a server, an access point, or your default gateway. RackTrack suggests the last address that worked for you, so if you overtyped it, try the suggestion.\n2. Ask your network team whether SSH (rather than only Telnet or the web UI) is enabled on that switch. This is the most common cause \u2014 the switch is up, the SSH service is not running.\n3. If the switch runs SSH on a non-standard port, RackTrack has to be told: registered switches carry their own SSH port and default to 22. A switch listening on a different port with nothing on 22 gives exactly this message. Ask your admin to correct the registered SSH port.\n4. Retry once after any change. Don't hammer Retry \u2014 small managed switches allow very few SSH sessions.",
+    "symptoms": [
+      "The switch refused the connection \u2014 is SSH enabled on it?",
+      "ECONNREFUSED on the ports screen",
+      "Switch reachable but connection refused",
+      "Wrong SSH port"
+    ],
+    "rootCause": "friendlyProbeError maps an ECONNREFUSED from the SSH layer to that message; the connection targets device.ssh_port (default 22) for registered devices, so a switch with SSH disabled or on a different port refuses the TCP connect.",
+    "evidence": [
+      {
+        "file": "client/src/utils/portsProbe.js",
+        "lines": "106-107",
+        "snippet": "  if (/econnrefused/.test(m))\n    return 'The switch refused the connection \u2014 is SSH enabled on it?';"
+      },
+      {
+        "file": "server/lab_devices.js",
+        "lines": "79-86",
+        "snippet": "  const ssh_port = req.body?.ssh_port === undefined ? 22 : Number(req.body.ssh_port);\n...\n  if (!Number.isInteger(ssh_port) || ssh_port < 1 || ssh_port > 65535) {\n    return res.status(400).json({ error: 'ssh_port must be 1-65535' });\n  }"
+      },
+      {
+        "file": "server/lib/port_poller.js",
+        "lines": "178-182",
+        "snippet": "    await _runSwitchCommandsSequential({\n      _fromPoller: true,   // don't let the yield logic treat this as a manual probe\n      host:     device.host,\n      port:     device.ssh_port || 22,"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "5940-5949",
+        "snippet": "app.get('/api/switch/default-host', auth.requireAuth, (req, res) => {\n  const userId = softAuthUserId(req);\n  const last    = readLastHost(userId);\n  const gateway = defaultGateway();\n  // Suggested = last (preferred) \u2192 gateway (fallback). Either may be null.\n  res.json({\n    suggested: last || gateway || null,"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "\"The switch rejected the saved credentials\" \u2014 or it says the login was accepted but the session closed. How do I fix it?",
+    "answer": "Neither of these is something you can fix from the phone; the switch login RackTrack uses lives on the server. But which message you get tells your admin exactly what to change, so pass it on word for word.\n\n\u2022 \"The switch rejected the saved credentials.\" \u2014 the username or password RackTrack holds for this switch no longer matches the switch's local account (usually because the switch password was rotated). Ask whoever administers the RackTrack server to update the stored switch login.\n\u2022 \"The switch accepted the login but closed the session \u2014 the saved switch account may not have CLI access. Check the switch credentials.\" \u2014 the login is correct, but that account isn't allowed a CLI session. It needs an account with CLI/exec access on the switch.\n\u2022 \"The switch accepted the login but refused a CLI session \u2014 its concurrent-session limit is saturated by stuck sessions.\" \u2014 do NOT keep retrying; every attempt adds another stuck session. It has to be cleared on the switch itself (disable and re-enable SSH from the switch web UI, or reboot it), then one attempt will succeed.\n\nIf you typed the username and password yourself in the login box, re-open it and re-type them carefully first \u2014 a typo produces the same rejection.",
+    "symptoms": [
+      "The switch rejected the saved credentials",
+      "accepted the login but closed the session",
+      "concurrent-session limit is saturated",
+      "Authentication failed on the switch"
+    ],
+    "rootCause": "friendlyProbeError maps auth/denied/permission errors and session-closed errors to those strings; the SSH runner's close handler distinguishes post-auth channel refusal (session cap) from a pre-auth close.",
+    "evidence": [
+      {
+        "file": "client/src/utils/portsProbe.js",
+        "lines": "96-105",
+        "snippet": "function friendlyProbeError(msg) {\n  const m = (msg || '').toLowerCase();\n  if (/closed by the switch|session closed/.test(m))\n    return 'The switch accepted the login but closed the session \u2014 the saved switch account may not have CLI access. Check the switch credentials.';\n...\n  if (/auth|denied|permission|all configured authentication/.test(m))\n    return 'The switch rejected the saved credentials.';"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "5417-5419",
+        "snippet": "        const msg = authOk\n          ? 'The switch accepted the login but refused a CLI session \u2014 its concurrent-session limit is saturated by stuck sessions. Do NOT keep retrying (each attempt adds another session). Clear it out-of-band: log into the switch web UI and disable/enable SSH, or reboot the switch; then a single probe will succeed.'\n          : 'SSH session closed before login completed \u2014 the switch is unreachable, or the credentials are wrong (some switches drop the connection mid-handshake on a bad password instead of returning a clean auth failure).';"
+      },
+      {
+        "file": "client/src/utils/portsProbe.js",
+        "lines": "194-202",
+        "snippet": "    setState({\n      status: 'error',\n      host: null,   // drop the cached host so the next probe re-resolves cleanly\n      error: aborted\n        ? 'The switch didn\u2019t respond in time. Check you\u2019re on the same network as it, then tap Retry.'\n        : friendlyProbeError(err.message || String(err)),"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "INTERNAL: how are connection-profile credentials stored, and what may I say about it to a customer?",
+    "answer": "Storage model (do not paste this section to customers):\n\u2022 Credentials for every connection profile \u2014 personal and organization-wide \u2014 are serialised to JSON and sealed with AES-256-GCM before they touch the database. The row stores base64(iv|tag|ciphertext) in connection_profiles.secret_blob. Only name, type, is_active, organization_id and timestamps are queryable in cleartext.\n\u2022 The key is 32 bytes of hex, taken from the SSH_CREDS_KEY environment variable if set, otherwise from server/.env.key (written 0600). The same key protects the SSH credential store \u2014 one key, one rotation surface. On first run with no key present the store generates one.\n\u2022 Nothing decrypts on the client. Decryption happens only inside the server process, in getWithSecret / getActiveWithSecretForOrg, at the moment an outbound call is made.\n\u2022 No route returns plaintext. Create, update, list and get all reply with metadata only, including for the admin who set the credential.\n\nHandling rules for support staff:\n\u2022 Never read out, copy, screenshot, relay or \"confirm\" a stored secret, to anyone, including the account owner or an org admin. There is no supported way to retrieve one and you must not invent one.\n\u2022 Never ask a customer to send you a password, token or connection string in a ticket. If a credential must change, the customer re-enters it themselves in the app.\n\u2022 Do not discuss key file locations, environment variable names, or database column names with customers.\n\nSafe customer-facing phrasing: \"Your credentials are encrypted before they are stored, they are never shown again \u2014 not even to you \u2014 and the app can't display them back. To change one, just re-enter it.\"",
+    "symptoms": [
+      "How are credentials protected",
+      "Customer asks us to retrieve their stored password",
+      "Security question about credential storage",
+      "Where are connection secrets kept"
+    ],
+    "rootCause": "connection_profiles.js encrypts the secret JSON with the shared AES-256-GCM helper from ssh-creds.js and persists only the blob; all HTTP responses go through rowToMeta/orgRowToMeta, which omit secret_blob.",
+    "evidence": [
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "5-32",
+        "snippet": " * One row per saved connection. The actual credentials (instance URL,\n * username, password, API tokens, optional vendor-specific extras) live\n * in an AES-256-GCM blob; only metadata (name, type, created_at, etc.)\n * is queryable in cleartext.\n...\n * Encryption key is shared with the SSH creds store \u2014 same AES key file\n * (server/.env.key) or SSH_CREDS_KEY env var. One key, one rotation\n * surface."
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "96-112",
+        "snippet": "function loadKey() {\n  const envKey = process.env.SSH_CREDS_KEY && process.env.SSH_CREDS_KEY.trim();\n  if (envKey) return Buffer.from(envKey, 'hex');\n  if (!fs.existsSync(KEY_PATH)) {\n    // First-run convenience: generate a key so the store works out of the\n    // box. Same pattern auth.js uses for jwt.secret.\n    const hex = crypto.randomBytes(32).toString('hex');\n    fs.writeFileSync(KEY_PATH, hex + '\\n', { mode: 0o600 });"
+      },
+      {
+        "file": "server/lib/ssh-creds.js",
+        "lines": "42-48",
+        "snippet": "function encrypt(plaintext, key) {\n  const iv = crypto.randomBytes(12);\n  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);\n  const ct  = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);\n  const tag = cipher.getAuthTag();\n  return Buffer.concat([iv, tag, ct]).toString('base64');\n}"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "106-111",
+        "snippet": "// \u2500\u2500 Org-scoped connections (admin-set, org-wide, write-only) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// An org_admin configures external access ONCE for the whole organization\n// (their CMDB/ITSM DB, live network sources, etc.). Every member's pipeline\n// uses them. Secrets are stored AES-256-GCM and are NEVER returned by any of\n// these routes \u2014 not even to the admin who set them. Only the server-side\n// pipeline decrypts them for outbound calls."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "INTERNAL: every connection suddenly stopped working after a server change and the log shows decrypt failures. What happened?",
+    "answer": "The encryption key no longer matches the stored blobs. Symptoms and handling:\n\nWhat you see:\n\u2022 server log: \"[connection_profiles] decrypt failed for profile <id>: \u2026\" or \"[connection_profiles] org decrypt failed for profile <id>: \u2026\", after which the profile resolves to null and CMDB-backed endpoints behave as if no connection is configured.\n\u2022 SSH credential store: \"[ssh-creds] decrypt failed \u2014 ignoring env creds: \u2026\", after which the server behaves as if no switch credentials exist at all (polls are skipped, audits return the no-credentials error).\n\u2022 Profiles still LIST normally \u2014 name, type and Active badge are unaffected, because only the blob fails. That is why it looks like \"the app forgot our password\" rather than an outage.\n\nCauses, in likelihood order:\n1. server/.env.key was not carried across a redeploy or was deleted. On the next start the connection-profile store silently generates a brand-new key, so every existing blob becomes undecryptable.\n2. SSH_CREDS_KEY is set in the environment to a different key \u2014 the env var takes precedence over the file, so an old file on disk will not save you.\n3. The key file content was truncated or reformatted; it must be exactly 64 hex characters, otherwise the loader throws \"<path> must contain a 32-byte hex key (64 chars)\".\n\nRecovery:\n\u2022 Restore the original key material (file or env var) from backup BEFORE restarting again, then restart the server. Nothing else is needed \u2014 the blobs are intact.\n\u2022 If the key is genuinely lost, the secrets are unrecoverable by design. Every connection profile and every switch credential must be re-entered: profiles by their owners/org admins in the app, switch credentials on the server. Do not attempt any other recovery path and never ask a customer for their credentials over a support channel \u2014 direct them to re-enter in the app.\n\u2022 The keying material is backed up separately from the blob for exactly this reason; the CLI's init command warns about it.",
+    "symptoms": [
+      "[connection_profiles] decrypt failed for profile",
+      "[ssh-creds] decrypt failed \u2014 ignoring env creds",
+      "must contain a 32-byte hex key (64 chars)",
+      "All connections stopped working after redeploy",
+      "Connections still listed but no data pulled"
+    ],
+    "rootCause": "Both stores decrypt with a key resolved from SSH_CREDS_KEY or server/.env.key; a missing/replaced key makes decrypt throw, and the code logs and degrades to null/empty credentials rather than failing loudly. connection_profiles.loadKey auto-generates a fresh key when the file is absent, permanently orphaning existing blobs.",
+    "evidence": [
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "220-225",
+        "snippet": "  try {\n    secret = JSON.parse(decrypt(row.secret_blob, getKey()));\n  } catch (err) {\n    logger.warn(`[connection_profiles] decrypt failed for profile ${row.id}: ${err.message}`);\n    return null;\n  }"
+      },
+      {
+        "file": "server/lib/ssh-creds.js",
+        "lines": "86-92",
+        "snippet": "  try {\n    cached = JSON.parse(decrypt(blob, key));\n  } catch (err) {\n    console.error('[ssh-creds] decrypt failed \u2014 ignoring env creds:', err.message);\n    cached = {};\n  }"
+      },
+      {
+        "file": "server/lib/ssh-creds.js",
+        "lines": "25-34",
+        "snippet": "function loadKey() {\n  const envKey = process.env.SSH_CREDS_KEY && process.env.SSH_CREDS_KEY.trim();\n  if (envKey) return Buffer.from(envKey, 'hex');\n  if (!fs.existsSync(KEY_PATH)) return null;\n  const hex = fs.readFileSync(KEY_PATH, 'utf8').trim();\n  if (!/^[0-9a-fA-F]{64}$/.test(hex)) {\n    throw new Error(`${KEY_PATH} must contain a 32-byte hex key (64 chars)`);\n  }"
+      },
+      {
+        "file": "server/encrypt-creds.js",
+        "lines": "102-111",
+        "snippet": "async function cmdInit() {\n  if (keyExists()) {\n    console.log(`Key already exists at ${KEY_PATH} \u2014 leaving it untouched.`);\n    return;\n  }\n  const hex = crypto.randomBytes(32).toString('hex');\n  writeKey(hex);\n  console.log(`Generated new 32-byte key at ${KEY_PATH} (mode 0600).`);\n  console.log('Back this file up separately from .env; losing it means re-entering every credential.');\n}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "INTERNAL: is \"only admins can manage connections\" a real security boundary?",
+    "answer": "Partly. Be precise when answering security questionnaires:\n\n\u2022 Personal connection profiles (/api/connections/*) are protected by requireAuth only, then scoped to req.user.id. Any authenticated user \u2014 including a member \u2014 can create, list, update, activate and delete THEIR OWN profiles through the API. What they cannot do is see or touch anyone else's: every statement filters on user_id.\n\u2022 The \"admins only\" part is client-side presentation: the /connections route is wrapped in AdminRoute (redirects non-org_admin/owner to /), and the sidebar link plus the Profile row are rendered only for org_admin/owner. Treat this as a UI affordance, not an authorization control.\n\u2022 Organization-wide credentials (/api/org-connections/*) ARE server-enforced: requireOrgAdmin rejects any role outside org_admin/owner with 403 and requires an organization_id, and every query is scoped to that organization id.\n\u2022 Credential resolution has no environment or file fallback: resolveCredsForType and resolveCredsForOrg return null when there is no matching active profile, so a missing profile degrades to \"no data\" rather than quietly using someone else's credentials.\n\nSo: cross-tenant exposure of connection credentials is server-enforced; the admin-only *screen* is not. If a customer asks whether a technician can store their own CMDB credentials, the honest answer is that the app does not offer them the screen.",
+    "symptoms": [
+      "Security review question about connection permissions",
+      "Can a member create a connection profile",
+      "Is /api/connections admin-only",
+      "Cross-tenant access to credentials"
+    ],
+    "rootCause": "router.use('/api/connections', requireAuth) has no role check and all queries filter by user_id, while /api/org-connections adds requireOrgAdmin; the admin gate on the /connections page comes from AdminRoute and DesktopShell's isAdmin conditional.",
+    "evidence": [
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "37-46",
+        "snippet": "router.use('/api/connections', requireAuth);\n\n// GET /api/connections \u2014 list\nrouter.get('/api/connections', safeAsync(async (req, res) => {\n  res.json({\n    ok: true,\n    profiles: profiles.list(req.user.id),\n    supported_types: profiles.SUPPORTED_TYPES,\n  });\n}));"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "77-90",
+        "snippet": "function AdminRoute({ children }) {\n  const { isAuthed, user } = useAuth();\n...\n  if (user?.role !== 'org_admin' && user?.role !== 'owner') {\n    return <Navigate to=\"/\" replace />;\n  }\n  return children;\n}"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "197-210",
+        "snippet": "  const isAdmin = user?.role === 'org_admin' || user?.role === 'owner';\n...\n    ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false }] : []),"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "347-360",
+        "snippet": "/**\n * Resolve credentials for a given backend type from the user's active\n * connection profile. Returns null if there is no active profile or if\n * its type doesn't match. There is intentionally NO env/file fallback \u2014\n * the connection profile is the sole source of truth.\n */\nfunction resolveCredsForType(userId, wantType) {\n  if (!userId) return null;\n  const active = getActiveWithSecret(userId);\n  if (active && active.type === wantType) {\n    return { source: 'profile', profileId: active.id, type: active.type, secret: active.secret };\n  }\n  return null;\n}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "connections",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "What is the Marketplace in RackTrack and what are all those tabs at the top?",
+    "answer": "The Marketplace is RackTrack's second-hand exchange for surplus network and data-centre gear. The header reads \"Marketplace \u2014 Buy, sell and swap surplus network and data-center gear\", and every screen in the section shares the same nav bar:\n\n\u2022 Browse \u2014 everything currently for sale (or, with the toggle flipped, everything Wanted).\n\u2022 My listings \u2014 the things you have posted, with Edit / Mark sold / Relist / Delete.\n\u2022 Orders \u2014 your Buying and Selling tabs, each order's status, tracking and the message thread with the other side.\n\u2022 Alerts \u2014 saved searches and the new listings that matched them.\n\u2022 Dashboard \u2014 your own selling and buying numbers.\n\u2022 Partners \u2014 connect eBay, Amazon or a Discord channel.\n\nTop right there is a \"List an item\" button on every screen except the new-listing form itself, and a back arrow top left.\n\nA listing is one of two kinds: For sale (you have gear) or Wanted (you need gear and sellers come to you). Everything is filed under one of ten categories \u2014 Cables, Switches, Routers, Racks, Optics / SFPs, Servers, PDUs, Firewalls, Patch panels, Other \u2014 and one of four conditions: New, Refurbished, Used, For parts.\n\nThe whole section is limited to organization admins and the RackTrack platform owner; other roles never see the link and are sent back to the home screen if they type the address.",
+    "symptoms": [
+      "What is the Marketplace",
+      "What do Browse / Orders / Alerts / Dashboard / Partners do",
+      "Difference between For sale and Wanted",
+      "What can I list on RackTrack"
+    ],
+    "rootCause": "MarketplaceShell renders a fixed six-item NAV for every /marketplace/* route; the server enumerates CATEGORIES, KINDS and CONDITIONS; all routes are wrapped in AdminRoute client-side and requireRole('owner','org_admin') server-side.",
+    "evidence": [
+      {
+        "file": "client/src/components/marketplace/MarketplaceShell.jsx",
+        "lines": "23-31",
+        "snippet": "const NAV = [\n  { key: 'browse',    label: 'Browse',     to: '/marketplace' },\n  { key: 'mine',      label: 'My listings', to: '/marketplace?tab=mine', authOnly: true },\n  { key: 'orders',    label: 'Orders',     to: '/marketplace/orders',    authOnly: true, badge: 'orders' },\n  { key: 'alerts',    label: 'Alerts',     to: '/marketplace/alerts',    authOnly: true, badge: 'alerts' },\n  { key: 'dashboard', label: 'Dashboard',  to: '/marketplace/dashboard', authOnly: true },\n  { key: 'partners',  label: 'Partners',   to: '/marketplace/partners',  authOnly: true },\n];"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "719-722",
+        "snippet": "<MarketplaceShell\n      title=\"Marketplace\"\n      subtitle=\"Buy, sell and swap surplus network and data-center gear\"\n    >"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "95-109",
+        "snippet": "const CATEGORIES = [\n  'cable',\n  'switch',\n  'router',\n  'rack',\n  'optic',     // SFP / SFP+ / QSFP modules\n  'server',\n  'pdu',\n  'firewall',\n  'patch_panel',\n  'other',\n];\nconst KINDS      = new Set(['sell', 'want']);\nconst CONDITIONS = new Set(['new', 'refurb', 'used', 'for-parts']);\nconst STATUSES   = new Set(['active', 'sold', 'closed']);"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "279-280",
+        "snippet": "const requireAdminRole = requireRole('owner', 'org_admin');\nrouter.use('/api/marketplace', requireAdminRole);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How do I find a specific part in the Marketplace? My search isn't finding anything.",
+    "answer": "Search only looks at three things \u2014 the listing title, the vendor and the model \u2014 and it only ever shows listings that are still active. If a part number returns nothing, widen the search.\n\n1. Open Browse.\n2. Type into \"Search by title, vendor or model\u2026\". It waits a moment after you stop typing before searching, so give it a beat.\n3. Use the \"All categories\" dropdown to narrow to Switches, Optics / SFPs, and so on.\n4. Use the For sale / Wanted toggle. \"For sale\" is what people are selling; \"Wanted\" is what people are looking for. They are separate lists \u2014 a part you cannot find under For sale will not appear under Wanted.\n5. If you get \"Nothing matches those filters\", press \"Clear filters\" and try fewer words. Search matches whole fragments of text, so \"WS-C3850\" works but a typo or extra spaces will not.\n\nResults come 24 to a page with Previous / Next at the bottom; Next is only live when there really is another page.\n\nStill nothing? Scroll past the results to \"Can't find it here?\" and type the part number there \u2014 that opens the same search on eBay, Amazon, FS.com or Curvature in a new tab. Those are plain links out; RackTrack is not involved in anything you buy there.",
+    "symptoms": [
+      "Search returns no results",
+      "Nothing matches those filters",
+      "No listings yet",
+      "No open requests",
+      "Can't find a part number",
+      "Next button greyed out"
+    ],
+    "rootCause": "GET /api/marketplace/listings hard-filters status='active' and matches q with LIKE %q% against title, vendor and model only; the client debounces the query 300ms, requests PAGE_SIZE+1 rows to decide hasMore, and renders distinct empty states for mine / filtered / want / none.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "323-344",
+        "snippet": "router.get('/api/marketplace/listings', (req, res) => {\n  const where = [`l.status = 'active'`];\n...\n  if (req.query.q) {\n    where.push(`(l.title LIKE @q OR l.vendor LIKE @q OR l.model LIKE @q)`);"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "54",
+        "snippet": "const PAGE_SIZE = 24;"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "738-782",
+        "snippet": "<input\n              className={`mkt-field ${styles.searchInput}`}\n              placeholder=\"Search by title, vendor or model\u2026\"\n...\n            <option value=\"\">All categories</option>\n...\n              For sale\n...\n              Wanted"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "802-828",
+        "snippet": "<p className=\"mkt-empty__title\">\n              {tab === 'mine'\n                ? 'You haven\u2019t listed anything yet'\n                : hasFilters\n                  ? 'Nothing matches those filters'\n                  : kind === 'want'\n                    ? 'No open requests'\n                    : 'No listings yet'}"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "504-508",
+        "snippet": "<p className=\"mkt-label\">Can\u2019t find it here?</p>\n        <p className={styles.partnerText}>\n          Run the same part number across the partner marketplaces.\n        </p>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How do I put a piece of gear up for sale?",
+    "answer": "Use \"List an item\" \u2014 it is in the top right of every Marketplace screen.\n\n1. Tap List an item. The screen is titled \"New listing\".\n2. Leave the toggle on \"For sale\". (Switch it to \"Wanted\" if you are asking for gear instead of offering it \u2014 the screen retitles itself \"Post a request\".)\n3. Under Item, fill in Title (required, up to 140 characters), and optionally Vendor and Model. If you type a vendor and model first, RackTrack suggests the title for you and you can edit it.\n4. Pick a Category \u2014 it defaults to Switches.\n5. Under \"Condition & pricing\", choose New (sealed), Refurbished, Used \u2014 working, or For parts / not working. Fill in Price, or leave it blank: the hint says \"Leave the price blank to invite offers\" and the listing then shows \"Make an offer\" instead of a figure. Set Currency and Quantity if more than one.\n6. Add a Photo if you have one (optional).\n7. Add Location and a Description if useful \u2014 the description takes up to 2000 characters and counts down as you type.\n8. Tap \"Publish listing\" (or \"Post request\").\n\nYou land straight on My listings with the new item at the top. It is live immediately \u2014 there is no approval step and nobody reviews it before it appears.",
+    "symptoms": [
+      "How do I sell something",
+      "Where is the create listing form",
+      "How do I make an offer listing",
+      "How do I post a Wanted request",
+      "Does my listing need approval"
+    ],
+    "rootCause": "MarketplaceNewPage posts straight to POST /api/marketplace/listings, which inserts with status defaulting to 'active' \u2014 there is no review queue; on success the client replaces the route with /marketplace?tab=mine.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "215-221",
+        "snippet": "<MarketplaceShell\n      title={wanted ? 'Post a request' : 'New listing'}\n      subtitle={wanted\n        ? 'Tell sellers what you\u2019re looking for'\n        : 'List surplus equipment for other RackTrack orgs'}"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "309-334",
+        "snippet": "<FormSection title=\"Condition & pricing\" hint=\"Leave the price blank to invite offers\">\n...\n              <label className=\"mkt-label\" htmlFor=\"mkt-new-price\">Price</label>\n              <input\n                id=\"mkt-new-price\"\n                type=\"number\"\n                className={`mkt-field ${styles.num}`}\n                placeholder=\"Make an offer\""
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "199-200",
+        "snippet": "if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);\n      navigate('/marketplace?tab=mine', { replace: true });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "83",
+        "snippet": "status        TEXT    NOT NULL DEFAULT 'active', -- 'active' | 'sold' | 'closed'"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "My listing won't publish \u2014 it says \"title is required\" / \"bad category\" / \"bad price\".",
+    "answer": "Those are the form's own checks. Fix the named field and press Publish listing again \u2014 nothing was saved, so you will not create a duplicate.\n\n\u2022 \"Title is required.\" or \"title is required\" \u2014 the Title box is empty or only spaces. Type a real title (a vendor plus model is enough).\n\u2022 \"bad price\" \u2014 the Price box has something that isn't a plain positive number. Remove currency symbols, commas and letters, or clear the box entirely to list it as \"Make an offer\".\n\u2022 \"bad category\" / \"bad condition\" / \"bad kind\" \u2014 the value sent wasn't one RackTrack accepts. Reselect Category and Condition from the dropdowns rather than typing, then submit again. If it keeps happening, reload the page \u2014 a stale tab can send an old value.\n\u2022 \"Please wait for the image to finish uploading.\" \u2014 your photo is still going up. Wait for the caption under it to change from \"Uploading\u2026\" to \"Photo ready\" and press Publish again.\n\nOne thing that is NOT happening: nobody is rejecting your listing. There is no moderator queue on the way in \u2014 a listing that passes these checks goes live the moment you publish it.",
+    "symptoms": [
+      "Title is required.",
+      "bad price",
+      "bad category",
+      "bad condition",
+      "bad kind",
+      "Please wait for the image to finish uploading.",
+      "Listing rejected",
+      "Publish button does nothing"
+    ],
+    "rootCause": "POST /api/marketplace/listings validates kind/category/condition against fixed sets and requires a non-empty trimmed title and a finite non-negative price, returning 400 with a terse machine string that MarketplaceNewPage renders verbatim in its error banner.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "402-419",
+        "snippet": "if (!KINDS.has(kind))           return res.status(400).json({ ok: false, error: 'bad kind' });\n  if (!CATEGORIES.includes(category))\n    return res.status(400).json({ ok: false, error: 'bad category' });\n  if (!CONDITIONS.has(condition)) return res.status(400).json({ ok: false, error: 'bad condition' });\n  if (!title)                     return res.status(400).json({ ok: false, error: 'title is required' });\n...\n      return res.status(400).json({ ok: false, error: 'bad price' });"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "173-180",
+        "snippet": "const onSubmit = async (e) => {\n    e.preventDefault();\n    if (submitting) return;\n    if (imageUploading) { setError('Please wait for the image to finish uploading.'); return; }\n    setError(null);\n    const t = title.trim();\n    if (!t) { setError('Title is required.'); return; }"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "470-472",
+        "snippet": "{error && (\n          <div className=\"mkt-banner mkt-banner--error\" role=\"alert\">{error}</div>\n        )}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "The photo on my listing won't upload \u2014 \"Only image files are accepted\" or \"Image must be 8 MB or smaller\".",
+    "answer": "RackTrack only takes real image files, and only up to 8 MB each. Fix the file, then re-pick it.\n\n1. On the New listing screen, under Photo, the box says which formats work: JPG \u00b7 PNG \u00b7 WebP \u00b7 HEIC \u00b7 up to 8 MB.\n2. \"Image must be 8 MB or smaller.\" \u2014 the picture is too big. Shoot it again at a lower resolution, or send it through your phone's own resize/share-as-smaller option, then pick it again.\n3. \"Only image files are accepted (JPG, PNG, WebP, HEIC).\" or \"Only jpg / png / webp / heic images are accepted\" \u2014 the file isn't one of those types. Screenshots and camera photos are fine; PDFs, GIFs and files that have lost their file extension are not. If you saved the picture without an extension, rename it so it ends in .jpg or .png and pick it again.\n4. If it says \"Upload failed\", tap Replace and try once more \u2014 the photo is uploaded separately from the listing, so a failure there doesn't lose anything you have typed.\n5. Tap Remove to drop the photo entirely. A photo is optional \u2014 the form only says listings with one sell faster.\n\nDon't press Publish while the caption still reads \"Uploading\u2026\" \u2014 the form will stop you and ask you to wait.",
+    "symptoms": [
+      "Only image files are accepted (JPG, PNG, WebP, HEIC).",
+      "Image must be 8 MB or smaller.",
+      "Only jpg / png / webp / heic images are accepted",
+      "Upload failed",
+      "Photo stuck on Uploading\u2026",
+      "no file"
+    ],
+    "rootCause": "The marketplace multer instance limits fileSize to 8 MB and its fileFilter rejects anything whose original filename does not end in jpg/jpeg/png/webp/heic/heif; MarketplaceNewPage repeats both checks client-side before it even calls POST /api/marketplace/uploads.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "238-256",
+        "snippet": "function _imgExt(originalName) {\n  const m = String(originalName || '').match(/\\.(jpe?g|png|webp|heic|heif)$/i);\n...\nconst imgUpload = multer({\n  storage: imgStorage,\n  limits: { fileSize: 8 * 1024 * 1024 },\n  fileFilter: (req, file, cb) => {\n    const ok = _imgExt(file.originalname) !== '';\n    cb(ok ? null : new Error('Only jpg / png / webp / heic images are accepted'), ok);\n  },\n});"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "133-140",
+        "snippet": "if (!/^image\\//i.test(file.type) && !/\\.(heic|heif)$/i.test(file.name)) {\n      setImageError('Only image files are accepted (JPG, PNG, WebP, HEIC).');\n      return;\n    }\n    if (file.size > 8 * 1024 * 1024) {\n      setImageError('Image must be 8 MB or smaller.');\n      return;\n    }"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "210-212",
+        "snippet": "const photoStatus = imageUploading ? 'Uploading\u2026'\n    : imageError    ? 'Upload failed'\n    :                 'Photo ready';"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "401-402",
+        "snippet": "<span className={styles.photoMain}>Upload a photo</span>\n              <span className=\"mkt-hint\">JPG \u00b7 PNG \u00b7 WebP \u00b7 HEIC \u00b7 up to 8 MB</span>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "I pressed Edit on one of my listings and got a blank New listing form \u2014 where did my listing go?",
+    "answer": "Your listing is safe. Edit is currently broken: it opens the New listing form empty instead of loading the item, and if you fill it in and publish you will end up with a second, duplicate listing rather than an edited one.\n\nUntil it is fixed, do this instead:\n\n1. Go back to My listings (the back arrow, or the My listings tab).\n2. Check your original listing is still there \u2014 it will be, with its Edit / Mark sold / Delete buttons.\n3. If you only need to change the status, use the buttons that do work: \"Mark sold\" takes it off Browse, \"Relist\" puts a sold or closed one back on.\n4. If you need to change the price, title or description, tap Delete, confirm \"Yes, delete\", then use \"List an item\" to post it fresh.\n5. If you already published from the blank form, delete whichever of the two listings you don't want.\n\nPlease report it to your platform owner so it gets tracked \u2014 there is no setting on your side that causes this.",
+    "symptoms": [
+      "Edit opens an empty form",
+      "Editing a listing created a duplicate",
+      "Can't change the price of a listing",
+      "Edit button does nothing useful"
+    ],
+    "rootCause": "MyListingRow's onEdit navigates to /marketplace/new?editId=<id>, but MarketplaceNewPage only ever reads the kind, category, vendor, model and rackId query params \u2014 editId is never read, so the form initialises blank and submits as a fresh POST rather than a PATCH.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "862",
+        "snippet": "onEdit={(listing) => navigate(`/marketplace/new?editId=${listing.id}`)}"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "69-86",
+        "snippet": "const initialKind = params.get('kind') === 'want' ? 'want' : 'sell';\n  const [kind, setKind]             = useState(initialKind);\n  const [category, setCategory]     = useState(params.get('category') || 'switch');\n  const [title, setTitle]           = useState('');\n  const [vendor, setVendor]         = useState(params.get('vendor') || '');\n  const [model, setModel]           = useState(params.get('model')  || '');\n...\n  const [sourceRackId]              = useState(params.get('rackId') || '');"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "193-196",
+        "snippet": "const res  = await authFetch(apiUrl('/api/marketplace/listings'), {\n        method: 'POST',"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "225-248",
+        "snippet": "<button className=\"mkt-btn mkt-btn--sm\" onClick={stop(() => onEdit(listing))}>\n              Edit\n            </button>\n            {listing.status === 'active' ? (\n...\n                Mark sold\n...\n                Relist"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How do I actually buy something? What happens after I tap \"Buy now\"?",
+    "answer": "Buy now takes you to the Checkout screen \u2014 \"Review the order and confirm shipping\". Nothing is charged until you press the button at the bottom.\n\n1. Tap \"Buy now\" on a listing card, or open the listing and use the big \"Buy now \u2014 <price>\" button inside it.\n2. If the seller has more than one, set Quantity \u2014 the label tells you how many are available and you cannot go above it.\n3. Fill in the Shipping address. Full name, Street address and City are required; State / region, ZIP / postcode and Country are optional (Country is pre-filled with US).\n4. Check the Order summary on the right (below the form on a phone): Unit price, Quantity, Subtotal, a platform fee line and the Total.\n5. Press the button at the bottom. It reads \"Pay with Stripe \u2014 <total>\" if your RackTrack server has card payments switched on, or \"Complete purchase \u2014 <total>\" if it doesn't. With Stripe you are handed off to Stripe's own payment page; without it the order is recorded straight away and you settle with the seller directly.\n6. You end up on the order screen, where you can message the seller and follow the status.\n\nIf you leave a required field blank the page tells you which one \u2014 \"Name is required.\", \"Street address is required.\", \"City is required.\" \u2014 and nothing is submitted.",
+    "symptoms": [
+      "How do I buy",
+      "What does Buy now do",
+      "Name is required.",
+      "Street address is required.",
+      "City is required.",
+      "Difference between Pay with Stripe and Complete purchase"
+    ],
+    "rootCause": "MarketplaceCheckoutPage validates name/street/city client-side, POSTs to /api/marketplace/orders, and either follows data.stripeSessionUrl or navigates to /marketplace/orders/<id>; the button label is driven by GET /api/marketplace/stripe/status.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "88-118",
+        "snippet": "if (!name.trim()) { setError('Name is required.'); return; }\n    if (!street.trim()) { setError('Street address is required.'); return; }\n    if (!city.trim()) { setError('City is required.'); return; }\n...\n      if (data.stripeSessionUrl) {\n        window.location.href = data.stripeSessionUrl;\n        return;\n      }\n      navigate(`/marketplace/orders/${data.order.id}`, { replace: true });"
+      },
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "258-266",
+        "snippet": "<button type=\"submit\"\n                    className=\"mkt-btn mkt-btn--primary mkt-btn--tall mkt-btn--block\"\n                    disabled={submitting}>\n              {submitting\n                ? 'Processing\u2026'\n                : stripeEnabled\n                  ? `Pay with Stripe \u2014 ${formatCurrency(total, currency)}`\n                  : `Complete purchase \u2014 ${formatCurrency(total, currency)}`}"
+      },
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "158-171",
+        "snippet": "{listing.quantity > 1 && (\n              <div className={`mkt-fieldGroup ${styles.qty}`}>\n                <label className=\"mkt-label\" htmlFor=\"mkt-checkout-qty\">\n                  Quantity \u2014 {listing.quantity} available"
+      },
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "231-243",
+        "snippet": "<div className=\"mkt-row\">\n                <span className=\"mkt-row__key\">Unit price</span>\n...\n                <span className=\"mkt-row__key\">Quantity</span>\n...\n                <span className=\"mkt-row__key\">Subtotal</span>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "There's no \"Buy now\" button on a listing, or checkout says \"listing is not active\" / \"listing has no price \u2014 contact seller\".",
+    "answer": "Buy now only appears when all three of these are true: the listing is still active, it is a For sale listing (not a Wanted request), and the seller set a price.\n\nWhat to do in each case:\n\n\u2022 No price on the listing \u2014 the listing shows \"Make an offer\" and, inside the detail, \"No set price on this listing \u2014 contact @<seller> to make an offer.\" There is no way to check out; message the seller through their username. If you force the checkout address you get \"listing has no price \u2014 contact seller\".\n\u2022 \"listing is not active\" \u2014 somebody bought it, the seller marked it sold, or it was withdrawn while you had the page open. Go back to Browse and search again; sold and closed listings drop out of Browse.\n\u2022 \"listing not found\" \u2014 the seller deleted it. Nothing to recover.\n\u2022 It's a Wanted request, not a listing \u2014 those are people asking for gear. You can't buy one; if you have what they want, post your own For sale listing and they will find it.\n\u2022 The card shows a grey \"sold\" or \"closed\" badge \u2014 same thing: it is no longer purchasable.\n\nIf you were mid-checkout when it happened, nothing was charged and no order was created.",
+    "symptoms": [
+      "listing is not active",
+      "listing has no price \u2014 contact seller",
+      "listing not found",
+      "No Buy now button",
+      "Make an offer",
+      "No set price on this listing"
+    ],
+    "rootCause": "ListingCard/ListingDetailModal gate the Buy control on status==='active' && kind==='sell' && priceCents != null; POST /api/marketplace/orders re-checks the listing exists, is active and has a price, returning 404/400 with those exact strings.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "104-107",
+        "snippet": "function ListingCard({ listing, onOpen, onBuy }) {\n  const canBuy = listing.status === 'active'\n    && listing.kind === 'sell'\n    && listing.priceCents != null;"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "622-627",
+        "snippet": "const listing = db.prepare(`SELECT * FROM marketplace_listings WHERE id = ?`).get(listingId);\n  if (!listing) return res.status(404).json({ ok: false, error: 'listing not found' });\n  if (listing.status !== 'active') return res.status(400).json({ ok: false, error: 'listing is not active' });\n...\n  if (listing.price_cents == null) return res.status(400).json({ ok: false, error: 'listing has no price \u2014 contact seller' });"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "402-407",
+        "snippet": "{listing.priceCents == null && (\n                <p className={`mkt-banner ${styles.offerNote}`}>\n                  No set price on this listing \u2014 contact @{listing.seller?.username} to\n                  make an offer.\n                </p>\n              )}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "What do the order statuses mean, and how do I mark an order shipped or cancel it?",
+    "answer": "Open Orders and pick Buying (things you bought) or Selling (things you sold). Each order shows one status pill:\n\n\u2022 Pending \u2014 the order exists but payment has not been confirmed yet.\n\u2022 Paid \u2014 payment is confirmed; the seller can ship.\n\u2022 Shipped \u2014 the seller has sent it, usually with a carrier and tracking number.\n\u2022 Completed \u2014 closed out for both sides.\n\u2022 Cancelled \u2014 called off; the pill shows red.\n\nWhat you can do, and when:\n\n1. Ship it (seller only, order must be Paid). Open the order, fill in Carrier (UPS, USPS, FedEx\u2026) and Tracking number under \"Ship this order\", then press \"Mark shipped\". The tracking number then shows on the order for the buyer.\n2. Complete it (either side, order must be Shipped). Press \"Mark completed\", then confirm \"Yes, complete\" \u2014 the prompt warns it closes the order for both sides.\n3. Cancel it (either side, order must be Pending or Paid). Press \"Cancel order\", then \"Yes, cancel\". It cannot be undone.\n\nIf you see \"cannot cancel at this stage\" the order has already shipped or closed \u2014 you can no longer cancel it; message the other party instead. \"invalid status transition\" means the step you asked for isn't allowed from where the order is now (for example, only the seller can mark something shipped).",
+    "symptoms": [
+      "cannot cancel at this stage",
+      "invalid status transition",
+      "not your order",
+      "Where do I add tracking",
+      "What does Pending mean on an order",
+      "Mark shipped button missing"
+    ],
+    "rootCause": "PATCH /api/marketplace/orders/:id allows cancel only from pending|paid, 'shipped' only when isSeller, 'completed' from either party, and rejects anything else with 'invalid status transition'; the Ship block is rendered only when isSeller && order.status === 'paid'.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "776-793",
+        "snippet": "if (s === 'cancelled') {\n      if (!['pending', 'paid'].includes(existing.status))\n        return res.status(400).json({ ok: false, error: 'cannot cancel at this stage' });\n      updates.status = 'cancelled';\n      updates.cancelled_by = req.user.id;\n    } else if (s === 'shipped' && isSeller) {\n      updates.status = 'shipped';\n    } else if (s === 'completed' && (isBuyer || isSeller)) {\n      updates.status = 'completed';\n    } else {\n      return res.status(400).json({ ok: false, error: 'invalid status transition' });\n    }"
+      },
+      {
+        "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+        "lines": "26-29",
+        "snippet": "const STATUS_LABEL = {\n  pending: 'Pending', paid: 'Paid', shipped: 'Shipped',\n  completed: 'Completed', cancelled: 'Cancelled',\n};"
+      },
+      {
+        "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+        "lines": "386-420",
+        "snippet": "{isSeller && order.status === 'paid' && (\n              <div className={styles.ship}>\n                <p className=\"mkt-label\">Ship this order</p>\n...\n                      placeholder=\"UPS, USPS, FedEx\u2026\"\n...\n                  Mark shipped"
+      },
+      {
+        "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+        "lines": "426-466",
+        "snippet": "{confirming === 'complete'\n                    ? 'Mark this order completed? This closes it for both sides.'\n                    : 'Cancel this order? This cannot be undone.'}\n...\n                      Mark completed\n...\n                      Cancel order"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How do I message the buyer or seller about an order, and why does the Orders tab have a number on it?",
+    "answer": "Every order has its own message thread, and that number is how many messages you haven't read yet.\n\n1. Open Orders and tap the order. Scroll to Messages \u2014 it says who you're talking to (\"with @<username>\").\n2. Type in the \"Type a message\u2026\" box and press Enter, or tap the send arrow. Shift+Enter does not send.\n3. Keep a message under 2000 characters \u2014 a longer one is refused with \"message too long\" and nothing is sent. Split it into two.\n4. An empty message is refused with \"message body required\".\n5. The thread refreshes itself about every half a minute while the order is open, so you'll see replies without reloading.\n6. Simply opening the order marks the other person's messages as read \u2014 that is what clears the badge on the Orders tab. The badge shows \"99+\" once you're past ninety-nine.\n\nMessages live on the order, so there is no way to message someone about a listing you haven't bought. For a listing with no price, contact the seller by the @username shown on the listing instead.\n\nIf you get \"not your order\", you are signed in as someone who is neither the buyer nor the seller on that order \u2014 check which account you're using.",
+    "symptoms": [
+      "message too long",
+      "message body required",
+      "not your order",
+      "Orders tab badge won't clear",
+      "How do I contact the seller",
+      "Messages not updating"
+    ],
+    "rootCause": "POST /api/marketplace/orders/:id/messages rejects an empty body and anything over 2000 chars; GET /api/marketplace/orders/:id marks the counterparty's messages read as a side effect; MarketplaceShell polls /orders/unread-count and /alerts/unread-count once per auth state and caps the badge at 99+.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "813-815",
+        "snippet": "const body = String(req.body?.body || '').trim();\n  if (!body) return res.status(400).json({ ok: false, error: 'message body required' });\n  if (body.length > 2000) return res.status(400).json({ ok: false, error: 'message too long' });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "748-750",
+        "snippet": "// Mark messages as read for this user\n  db.prepare(`UPDATE marketplace_messages SET read = 1 WHERE order_id = ? AND sender_id != ? AND read = 0`)\n    .run(id, req.user.id);"
+      },
+      {
+        "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+        "lines": "234-240",
+        "snippet": "// Auto-refresh messages every 30s when detail open\n  useEffect(() => {\n    if (!detail) return;\n    const iv = setInterval(() => openOrder(detail.order.id), 30000);\n    return () => clearInterval(iv);"
+      },
+      {
+        "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+        "lines": "486-493",
+        "snippet": "placeholder=\"Type a message\u2026\"\n...\n                onKeyDown={(e) => {\n                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }\n                }}"
+      },
+      {
+        "file": "client/src/components/marketplace/MarketplaceShell.jsx",
+        "lines": "135",
+        "snippet": "{count > 0 && <span className={styles.navBadge}>{count > 99 ? '99+' : count}</span>}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "How do Marketplace alerts work? I saved a search but I'm not getting any matches.",
+    "answer": "A saved search is a standing watch: when someone posts a NEW listing that fits it, a match appears under Alerts. It does not look backwards, so an empty Matches list usually just means nothing new has been posted yet.\n\nTo set one up:\n1. Open Alerts, then \"New search\" (or \"Save a search\" if you have none yet).\n2. Give it a Label \u2014 required, it's the name you'll see on each match (\"e.g. Cisco switch under $2k\").\n3. Optionally add a Keyword, a Category, a Max price, and choose For sale or Wanted.\n4. Press \"Save search\".\n\nWhy a search may never fire:\n\u2022 It only checks listings created after you saved it \u2014 existing listings are never matched retroactively.\n\u2022 Every filter you set must match. A Keyword only matches against the title, vendor or model. A Category set to Switches will ignore a switch someone filed under Other.\n\u2022 Listing kind must match. A \"For sale\" search never matches a Wanted post.\n\u2022 A Max price excludes anything priced above it. Listings with no price (\"Make an offer\") still come through.\n\u2022 You are never alerted about your own listings.\n\nHousekeeping: you can keep up to 20 saved searches \u2014 the 21st is refused with \"max 20 saved searches\". Alerts show the 50 most recent. \"Mark all read\" clears the badge; the small \u00d7 on a row dismisses one match; deleting a saved search (\"Stop alerts and delete?\") also removes its matches.",
+    "symptoms": [
+      "No matches yet",
+      "Saved search never fires",
+      "max 20 saved searches",
+      "Label is required",
+      "Alerts badge won't clear",
+      "Nothing saved yet"
+    ],
+    "rootCause": "matchAlerts() runs only inside the POST /api/marketplace/listings response wrapper, so it evaluates saved searches against newly inserted rows only; it skips the listing's own owner, requires kind and (if set) category equality, a substring hit on title+vendor+model, and max_price_cents >= price. Saved searches are capped at 20 per user; GET /alerts is LIMIT 50; alerts cascade-delete with their saved search.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "985-1001",
+        "snippet": "function matchAlerts(listing) {\n  const searches = db.prepare(`SELECT * FROM marketplace_saved_searches`).all();\n  for (const s of searches) {\n    if (s.user_id === listing.user_id) continue; // don't alert yourself\n    if (s.kind !== listing.kind) continue;\n    if (s.category && s.category !== listing.category) continue;\n    if (s.max_price_cents != null && listing.price_cents != null && listing.price_cents > s.max_price_cents) continue;\n    if (s.query) {\n      const q = s.query.toLowerCase();\n      const haystack = [listing.title, listing.vendor, listing.model].filter(Boolean).join(' ').toLowerCase();\n      if (!haystack.includes(q)) continue;\n    }"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "884-888",
+        "snippet": "const label = String(b.label || '').trim();\n  if (!label) return res.status(400).json({ ok: false, error: 'label required' });\n  // Max 20\n  const cnt = db.prepare(`SELECT COUNT(*) AS c FROM marketplace_saved_searches WHERE user_id = ?`).get(req.user.id);\n  if (cnt.c >= 20) return res.status(400).json({ ok: false, error: 'max 20 saved searches' });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "942-943",
+        "snippet": "WHERE a.user_id = ?\n    ORDER BY a.created_at DESC LIMIT 50"
+      },
+      {
+        "file": "client/src/pages/MarketplaceAlertsPage.jsx",
+        "lines": "343-353",
+        "snippet": "<label className=\"mkt-label\" htmlFor=\"mkt-search-label\">Label *</label>\n                  <input\n                    id=\"mkt-search-label\"\n                    className=\"mkt-field\"\n                    placeholder=\"e.g. Cisco switch under $2k\"\n...\n                  <span className=\"mkt-hint\">How this search is named in your alerts.</span>"
+      },
+      {
+        "file": "client/src/pages/MarketplaceAlertsPage.jsx",
+        "lines": "194-209",
+        "snippet": "const markAllRead = async () => {\n    await authFetch(apiUrl('/api/marketplace/alerts/mark-read'), { method: 'POST' });\n...\n  const deleteSavedSearch = async (id) => {\n    await authFetch(apiUrl(`/api/marketplace/saved-searches/${id}`), { method: 'DELETE' });"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "My listing disappeared from Browse and now shows \"closed\" \u2014 I didn't touch it.",
+    "answer": "Listings retire themselves after about three months. Anything still active 90 days after it was posted is automatically set to closed, which takes it off Browse but leaves it in your My listings with a grey \"closed\" pill.\n\nTo put it back:\n1. Open My listings.\n2. Find the listing \u2014 closed ones stay in this list; they only vanish from public Browse.\n3. Press \"Relist\". It goes back to active immediately and reappears in Browse.\n4. If the gear is gone, press Delete instead, then \"Yes, delete\".\n\nOther reasons a listing can leave Browse:\n\u2022 It says \"sold\" \u2014 either you pressed \"Mark sold\", or somebody bought the last one, which marks it sold automatically.\n\u2022 The RackTrack platform owner hid it after it was reported. In that case it also shows as closed, and pressing Relist without fixing the reason will just get it hidden again \u2014 ask your platform owner what was wrong with it first.\n\nThe Dashboard's \"Closed\" tile is labelled \"Expired or withdrawn\", which covers both of these.",
+    "symptoms": [
+      "Listing disappeared from Browse",
+      "Listing shows closed",
+      "Listing expired",
+      "Old listing no longer visible",
+      "How do I relist"
+    ],
+    "rootCause": "maybeExpireListings() flips any active listing created more than 90 days ago to 'closed'. It is debounced to once an hour and is registered as router.use AFTER most /api/marketplace routes, so in practice it only fires on the later-registered endpoints (dashboard, stripe/status, partner OAuth status) rather than on every request.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1170-1180",
+        "snippet": "let _lastExpireRun = 0;\nfunction maybeExpireListings() {\n  const now = Date.now();\n  if (now - _lastExpireRun < 3600_000) return; // 1 hour debounce\n  _lastExpireRun = now;\n  try {\n    const info = db.prepare(`\n      UPDATE marketplace_listings SET status = 'closed', updated_at = datetime('now')\n      WHERE status = 'active'\n        AND created_at < datetime('now', '-90 days')\n    `).run();"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1188-1192",
+        "snippet": "// Hook into the browse route so it runs passively\nrouter.use('/api/marketplace', (req, res, next) => {\n  maybeExpireListings();\n  next();\n});"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1157-1162",
+        "snippet": "const action = String(req.body?.action || 'hide').toLowerCase();\n  if (action === 'hide') {\n    db.prepare(`UPDATE marketplace_listings SET status = 'closed', updated_at = datetime('now') WHERE id = ?`).run(id);\n  } else if (action === 'restore') {"
+      },
+      {
+        "file": "client/src/pages/MarketplaceDashboardPage.jsx",
+        "lines": "119",
+        "snippet": "<Stat label=\"Closed\"   value={d.listings.closed} meta=\"Expired or withdrawn\" />"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "What do the numbers on the Marketplace Dashboard mean, and why is my revenue zero when I've sold things?",
+    "answer": "The Dashboard (\"Seller dashboard \u2014 Listings, sales and purchases\") is scoped to the signed-in account only, not to the whole organization, and Revenue counts completed orders only.\n\nThe three groups:\n\u2022 Listings \u2014 Total, Active, Sold, Closed (Closed is captioned \"Expired or withdrawn\").\n\u2022 Sales \u2014 Revenue, with \"From N completed orders\" underneath; plus Orders (all orders where you are the seller), Completed, and Pending, captioned \"Awaiting shipment\".\n\u2022 Purchases \u2014 Spent, \"Across N orders\", plus your order count as a buyer.\n\nWhy Revenue can read zero:\n1. Revenue only totals orders whose status is Completed. An order sitting at Paid or Shipped counts under Pending, not Revenue.\n2. Fix it by closing out the finished orders: Orders \u2192 Selling \u2192 open the order \u2192 \"Mark completed\" \u2192 \"Yes, complete\". Only orders that are already Shipped can be completed.\n3. Pending counts orders at Paid or Shipped \u2014 that number is your to-ship / to-close queue, not unpaid orders.\n\nEverything here is per-user. If your organization has several admins selling, each sees only their own figures \u2014 there is no combined org view. \"Recent listings\" below shows your last ten, and \"View all\" jumps to My listings.",
+    "symptoms": [
+      "Revenue is 0",
+      "Dashboard numbers look wrong",
+      "Pending orders count",
+      "Nothing listed yet on dashboard",
+      "Dashboard doesn't show my team's sales"
+    ],
+    "rootCause": "GET /api/marketplace/dashboard aggregates strictly by req.user.id: revenue_cents sums total_cents only WHERE status='completed', pending_orders counts status IN ('paid','shipped'), and there is no organization-level rollup.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1211-1218",
+        "snippet": "const orderStats = db.prepare(`\n    SELECT\n      COUNT(*)                                   AS total_orders,\n      SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_orders,\n      SUM(CASE WHEN status = 'completed' THEN total_cents ELSE 0 END) AS revenue_cents,\n      SUM(CASE WHEN status IN ('paid','shipped') THEN 1 ELSE 0 END)   AS pending_orders\n    FROM marketplace_orders WHERE seller_id = ?\n  `).get(uid);"
+      },
+      {
+        "file": "client/src/pages/MarketplaceDashboardPage.jsx",
+        "lines": "122-136",
+        "snippet": "<StatGroup title=\"Sales\">\n            <Stat\n              lead\n              label=\"Revenue\"\n              value={formatCurrency(d.sales.revenueCents)}\n              meta={`From ${plural(d.sales.completedOrders, 'completed order')}`}\n            />\n...\n            <Stat\n              label=\"Pending\"\n              value={d.sales.pendingOrders}\n              meta={d.sales.pendingOrders > 0 ? 'Awaiting shipment' : undefined}\n            />"
+      },
+      {
+        "file": "client/src/pages/MarketplaceDashboardPage.jsx",
+        "lines": "97-100",
+        "snippet": "<MarketplaceShell\n      title=\"Seller dashboard\"\n      subtitle=\"Listings, sales and purchases\"\n      backTo=\"/marketplace\""
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "What do Partner accounts do, and how do I get new listings posted into our Discord channel?",
+    "answer": "Partners (/marketplace/partners) offers three cards \u2014 eBay, Amazon and Discord \u2014 and each shows a Connected / Not connected pill. Only Discord does anything on its own today.\n\nDiscord \u2014 announce every new listing in a channel:\n1. In Discord: Channel settings \u2192 Integrations \u2192 Webhooks \u2192 Copy webhook URL. (That path is printed on the card.)\n2. In RackTrack: Partners \u2192 Discord \u2192 paste it into \"Webhook URL\" \u2192 \"Save webhook\".\n3. Press \"Send test\". You should see \"Test notification sent to Discord.\" here and a \"Webhook Test\" message in the channel.\n4. From then on, every listing anyone creates posts a card into that channel with the title, category, condition, price, equipment and location.\n\nIf the test fails you get \"Test failed: \u2026\":\n\u2022 \"No Discord webhook connected\" \u2014 the webhook was disconnected; save it again.\n\u2022 \"Webhook failed: Discord returned 404\" \u2014 the webhook was deleted in Discord. Create a new one and save the new URL.\n\neBay and Amazon: if the Connect button is greyed out with \"API keys not configured on this server\", your RackTrack server has no eBay/Amazon credentials \u2014 nothing you can do from the app; ask your platform owner. Connecting them stores the link only; it does not cross-post anything yet.\n\nTo remove one, press Disconnect and then \"Yes, disconnect\". The webhook stops being used immediately.",
+    "symptoms": [
+      "API keys not configured on this server",
+      "No Discord webhook connected",
+      "Test failed",
+      "webhook URL required",
+      "Discord notifications not arriving",
+      "Connect eBay greyed out"
+    ],
+    "rootCause": "POST /api/marketplace/partner-accounts stores one row per (user, platform); Discord requires a webhookUrl and is the only platform actually consumed \u2014 sendDiscordNotification() fans out to every connected discord webhook after a listing insert. eBay/Amazon Connect is disabled client-side when the corresponding /status endpoint reports configured:false.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1080-1086",
+        "snippet": "if (platform === 'discord') {\n    const url = String(b.webhookUrl || '').trim();\n    if (!url) return res.status(400).json({ ok: false, error: 'webhook URL required' });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1268-1291",
+        "snippet": "router.post('/api/marketplace/partner-accounts/discord/test', requireAuth, safeAsync(async (req, res) => {\n...\n  if (!acct || !acct.webhook_url) return res.status(400).json({ ok: false, error: 'No Discord webhook connected' });\n...\n    if (!r.ok) throw new Error(`Discord returned ${r.status}`);\n...\n    res.status(502).json({ ok: false, error: `Webhook failed: ${err.message}` });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "205-214",
+        "snippet": "fields: [\n      { name: 'Category', value: listing.category, inline: true },\n      { name: 'Condition', value: listing.condition, inline: true },\n      { name: 'Price', value: priceStr, inline: true },\n    ],\n    footer: { text: 'RackTrack Marketplace' },"
+      },
+      {
+        "file": "client/src/pages/MarketplacePartnerAccountsPage.jsx",
+        "lines": "253-259",
+        "snippet": "placeholder=\"https://discord.com/api/webhooks/\u2026\"\n...\n                    <span className=\"mkt-hint\">\n                      Channel settings \u2192 Integrations \u2192 Webhooks \u2192 Copy webhook URL.\n                    </span>"
+      },
+      {
+        "file": "client/src/pages/MarketplacePartnerAccountsPage.jsx",
+        "lines": "315-319",
+        "snippet": "{needsKeys && (\n                        <span className={styles.actionNote}>\n                          API keys not configured on this server\n                        </span>\n                      )}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "INTERNAL: A buyer says they paid but the order is still Pending \u2014 how does Marketplace payment actually work?",
+    "answer": "Marketplace payments are env-gated on the server, and the order's initial status depends entirely on whether Stripe is wired up on that deployment.\n\nTwo modes:\n\u2022 STRIPE_SECRET_KEY unset (or the stripe package fails to load): no payment is taken at all. POST /api/marketplace/orders writes the order straight in as 'paid' \u2014 the code comments this as \"offline payment assumed\". The checkout button reads \"Complete purchase \u2014 \u2026\". Treat every such order as an IOU settled outside RackTrack. Never tell a customer RackTrack charged them.\n\u2022 STRIPE_SECRET_KEY set: the order is written as 'pending', a Stripe Checkout Session is created with the order id in metadata, and the client is redirected to session.url. The order only flips to 'paid' when POST /api/marketplace/stripe/webhook receives checkout.session.completed and matches metadata.orderId \u2014 and the UPDATE is guarded by `AND status = 'pending'`.\n\nSo an order stuck at Pending means one of:\n1. The buyer abandoned or failed the Stripe page. Stripe's cancel_url returns them to /marketplace/orders/<id>?payment=cancelled \u2014 but the Orders page never reads the `payment` query param, so they get no message either way and often think it worked.\n2. The webhook never reached this server (no public URL, wrong endpoint, or STRIPE_WEBHOOK_SECRET set but signature mismatch \u2192 400 \"Webhook verification failed: \u2026\").\n3. Session creation itself failed: the API responds `{ ok: true, order, stripeError }` and the client, which only looks for `stripeSessionUrl`, silently lands the buyer on the order page with a pending order. Look for `marketplace.stripe_error` in the log.\n\nVerify with GET /api/marketplace/stripe/status ({configured:true|false}) before diagnosing anything else. There is no in-app way to re-drive payment for an existing order \u2014 cancel it and have the buyer check out again.",
+    "symptoms": [
+      "Order stuck on Pending",
+      "Buyer paid but status didn't change",
+      "Webhook verification failed",
+      "stripeError",
+      "marketplace.stripe_error",
+      "No confirmation after returning from Stripe"
+    ],
+    "rootCause": "initialStatus = stripe ? 'pending' : 'paid'. Without Stripe the order is fabricated as paid with no charge; with Stripe the only path to 'paid' is the checkout.session.completed webhook, and both a cancelled session and a failed session-creation leave the order pending with no user-visible message because MarketplaceOrdersPage ignores ?payment=.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "635-638",
+        "snippet": "// When Stripe is configured, orders start as 'pending' and move to\n  // 'paid' only after the Stripe webhook confirms payment. Without Stripe\n  // the order is created as 'paid' directly (offline payment assumed).\n  const initialStatus = stripe ? 'pending' : 'paid';"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "694-701",
+        "snippet": "success_url: `${STRIPE_BASE_URL}/marketplace/orders/${orderId}?payment=success`,\n        cancel_url:  `${STRIPE_BASE_URL}/marketplace/orders/${orderId}?payment=cancelled`,\n...\n      logger.error({ event: 'marketplace.stripe_error', error: err.message }, 'Stripe session creation failed');\n      // Fall through \u2014 order is created as pending, buyer can retry\n      return res.json({ ok: true, order: orderJson, stripeError: err.message });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1306-1322",
+        "snippet": "router.post('/api/marketplace/stripe/webhook', express.raw({ type: 'application/json' }), safeAsync(async (req, res) => {\n  if (!stripe) return res.status(404).json({ ok: false, error: 'Stripe not configured' });\n...\n    return res.status(400).json({ ok: false, error: `Webhook verification failed: ${err.message}` });\n...\n      db.prepare(\n        \"UPDATE marketplace_orders SET status = 'paid', updated_at = datetime('now') WHERE id = ? AND status = 'pending'\"\n      ).run(parseInt(orderId, 10));"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "38-49",
+        "snippet": "let stripe = null;\nconst STRIPE_SECRET   = process.env.STRIPE_SECRET_KEY   || '';\n...\nif (STRIPE_SECRET) {\n  try {\n    stripe = require('stripe')(STRIPE_SECRET);\n...\n    logger.warn(`[marketplace] stripe package not installed \u2014 payments disabled: ${e.message}`);"
+      },
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "113-117",
+        "snippet": "// If Stripe is configured, redirect to Stripe Checkout\n      if (data.stripeSessionUrl) {\n        window.location.href = data.stripeSessionUrl;\n        return;\n      }"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "INTERNAL: A seller says their listing went \"sold\" but no payment ever came through, or a cancelled order never put the stock back.",
+    "answer": "Stock is decremented at order CREATION, before any payment is confirmed, and nothing ever reverses it.\n\nWhat POST /api/marketplace/orders does, in order: creates the order row, then either marks the listing 'sold' (when the ordered quantity meets or exceeds the listing quantity) or decrements marketplace_listings.quantity. This happens whether the order is 'pending' (Stripe) or 'paid' (no Stripe). Consequences to expect on tickets:\n\n1. Abandoned Stripe checkout \u2192 order pending forever AND the listing already reads sold / short. The seller sees a phantom sale.\n2. Cancelling the order (PATCH \u2026 status:'cancelled') only writes marketplace_orders.status and cancelled_by. It does not restore quantity and does not set the listing back to active.\n3. Remedy for the seller is manual: My listings \u2192 Relist (PATCH status:'active'). That restores visibility but NOT the decremented quantity \u2014 if they had 5 and one was taken, they must edit the quantity back, and the Edit button is currently broken, so in practice they delete and re-post.\n\nAlso note two disabled guards on this endpoint:\n\u2022 The \"cannot buy your own listing\" check is commented out with \"TODO: re-enable before production\", so a user can order from themselves. The Buy now button is also rendered on your own card in Browse (the isMine check exists only inside the detail modal), which makes accidental self-orders easy.\n\u2022 Quantity is clamped to the listing quantity server-side, so over-ordering is not possible.\n\nNever describe the phantom-sold state to a customer as a payment problem \u2014 it is an inventory bookkeeping gap.",
+    "symptoms": [
+      "Listing marked sold with no payment",
+      "Cancelled order didn't restore the listing",
+      "Quantity wrong after a cancelled order",
+      "User bought their own listing",
+      "Buy now shown on my own listing"
+    ],
+    "rootCause": "Order creation mutates the listing (status='sold' or quantity - qty) unconditionally and no code path ever reverses it; the self-purchase guard is commented out; ListingCard's canBuy does not consider listing.isMine.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "625-626",
+        "snippet": "// TODO: re-enable before production\n  // if (listing.user_id === req.user.id) return res.status(400).json({ ok: false, error: 'cannot buy your own listing' });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "670-675",
+        "snippet": "// Decrement listing quantity or mark sold\n  if (qty >= listing.quantity) {\n    db.prepare(`UPDATE marketplace_listings SET status = 'sold', updated_at = datetime('now') WHERE id = ?`).run(listingId);\n  } else {\n    db.prepare(`UPDATE marketplace_listings SET quantity = quantity - ?, updated_at = datetime('now') WHERE id = ?`).run(qty, listingId);\n  }"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "779-783",
+        "snippet": "if (s === 'cancelled') {\n      if (!['pending', 'paid'].includes(existing.status))\n        return res.status(400).json({ ok: false, error: 'cannot cancel at this stage' });\n      updates.status = 'cancelled';\n      updates.cancelled_by = req.user.id;"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "155-163",
+        "snippet": "{canBuy && (\n          <button\n            type=\"button\"\n            className={`mkt-btn mkt-btn--primary mkt-btn--sm mkt-btn--block ${styles.cardBuy}`}\n            onClick={(e) => { e.stopPropagation(); onBuy(listing.id); }}\n          >\n            Buy now\n          </button>\n        )}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "INTERNAL: An admin says \"Connect eBay\" (or Connect Amazon) just goes to a broken page even though the API keys are set.",
+    "answer": "This is a client bug, not a credentials problem. Confirm the keys first, then explain the workaround.\n\n1. Check GET /api/marketplace/partner-accounts/ebay/status (or \u2026/amazon/status). If it returns configured:false the Connect button would be disabled with \"API keys not configured on this server\" \u2014 that is the credentials case, fix the .env (EBAY_APP_ID / EBAY_CERT_ID / EBAY_REDIRECT_URI, or AMAZON_SP_CLIENT_ID / AMAZON_SP_CLIENT_SECRET / AMAZON_REDIRECT_URI) and restart.\n2. If it returns configured:true, the button is enabled and the page calls \u2026/auth-url, which responds `{ ok: true, url }`. The page then does `window.location.href = data.authUrl` \u2014 a field the API never sends \u2014 so the browser navigates to the literal string \"undefined\" relative to the current path. The user sees a not-found / blank page and never reaches the consent screen.\n3. There is no in-app workaround for the OAuth path. The row can still be created by POSTing to /api/marketplace/partner-accounts with `{platform:'ebay'}`, but that only stores a stub account id \u2014 it grants no eBay access.\n4. The OAuth callbacks themselves are implemented and, on failure, redirect to /marketplace/partners?error=ebay_auth_failed (or amazon_auth_failed) \u2014 the Partners page does not read that param either, so a failed exchange also shows nothing.\n\nEven once connected, neither eBay nor Amazon cross-posts anything: no code publishes a RackTrack listing to either platform. Do not promise cross-posting to customers.",
+    "symptoms": [
+      "Connect eBay goes to a blank page",
+      "Connect Amazon does nothing",
+      "URL ends in undefined",
+      "ebay_auth_failed",
+      "amazon_auth_failed",
+      "Cross-posting to eBay not working"
+    ],
+    "rootCause": "MarketplacePartnerAccountsPage reads data.authUrl from the /auth-url response, but the server returns the field as `url`, so window.location.href is assigned undefined. Separately, the ?error=\u2026/?connected=\u2026 params the OAuth callbacks redirect with are never read by the page.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplacePartnerAccountsPage.jsx",
+        "lines": "122-131",
+        "snippet": "if ((platform === 'ebay' || platform === 'amazon') && oauthStatus[platform]) {\n      setConnecting(platform);\n      try {\n        const res = await authFetch(apiUrl(`/api/marketplace/partner-accounts/${platform}/auth-url`));\n        const data = await res.json();\n        if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);\n        window.location.href = data.authUrl;\n        return;"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1339-1345",
+        "snippet": "router.get('/api/marketplace/partner-accounts/ebay/auth-url', requireAuth, (req, res) => {\n  if (!EBAY_APP_ID || !EBAY_CERT_ID || !EBAY_REDIRECT_URI) {\n    return res.status(400).json({ ok: false, error: 'eBay API keys not configured. Set EBAY_APP_ID, EBAY_CERT_ID, EBAY_REDIRECT_URI in .env' });\n  }\n...\n  res.json({ ok: true, url });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1388-1393",
+        "snippet": "router.get('/api/marketplace/partner-accounts/amazon/auth-url', requireAuth, (req, res) => {\n  if (!AMAZON_SP_CLIENT || !AMAZON_REDIRECT) {\n    return res.status(400).json({ ok: false, error: 'Amazon API keys not configured. Set AMAZON_SP_CLIENT_ID, AMAZON_SP_CLIENT_SECRET, AMAZON_REDIRECT_URI in .env' });\n  }\n...\n  res.json({ ok: true, url });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1369",
+        "snippet": "return res.redirect(`${STRIPE_BASE_URL}/marketplace/partners?error=ebay_auth_failed`);"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  },
+  {
+    "question": "INTERNAL: A customer reported a listing and nothing happened. How does reporting and moderation work?",
+    "answer": "Reporting works; acting on reports effectively does not. Handle these tickets manually.\n\nWhat the customer did: opened a listing they don't own, tapped \"Report listing\", typed a reason and pressed \"Submit report\". They then saw \"Reported. An admin will review this listing.\" That inserts a row in marketplace_flags. A second report on the same listing from the same account is refused with \"already flagged\" shown in the modal.\n\nWhat does not exist:\n1. There is no endpoint that lists flags \u2014 nothing in the product surfaces reported listings to anyone. The only way to see them is querying marketplace_flags in server/data/auth.db directly.\n2. There is no notification of any kind on a flag (unlike listing creation, which fires the Discord webhook).\n3. POST /api/marketplace/listings/:id/moderate exists (action 'hide' \u2192 status 'closed', 'restore' \u2192 'active') but its own check is `user.role === 'admin' || user.id === 1`. RackTrack has no 'admin' role \u2014 the roles are owner, org_admin, site_manager and member \u2014 so in practice only the very first user row can moderate; every other account, including the platform owner, gets 403 \"admin only\".\n\nSo the operational answer: escalate to whoever holds user id 1 on that deployment, or have the listing's own seller delete it (DELETE /api/marketplace/listings/:id is owner-only and always available to them). Never tell a customer a review is in progress \u2014 nobody is queued to see it.",
+    "symptoms": [
+      "Reported a listing, nothing happened",
+      "already flagged",
+      "admin only",
+      "Where do I review reported listings",
+      "Can't hide a listing as owner"
+    ],
+    "rootCause": "marketplace_flags is write-only \u2014 no list/read endpoint and no notification hook. The moderate endpoint gates on a role string ('admin') that the auth system never issues, falling back to user.id === 1, so owner/org_admin accounts receive 403 'admin only'.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1135-1145",
+        "snippet": "router.post('/api/marketplace/listings/:id/flag', requireAuth, safeAsync(async (req, res) => {\n...\n    db.prepare(`INSERT INTO marketplace_flags (listing_id, user_id, reason) VALUES (?, ?, ?)`).run(id, req.user.id, reason);\n  } catch (e) {\n    if (e.message.includes('UNIQUE')) return res.status(400).json({ ok: false, error: 'already flagged' });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1152-1155",
+        "snippet": "// Check if user is admin (role field or first user)\n  const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.user.id);\n  const isAdmin = user && (user.role === 'admin' || user.id === 1);\n  if (!isAdmin) return res.status(403).json({ ok: false, error: 'admin only' });"
+      },
+      {
+        "file": "server/auth.js",
+        "lines": "206-208",
+        "snippet": "//   'owner'        \u2014 platform superadmin (creates orgs + org admins)\n  //   'org_admin'    \u2014 manages one organization (creates Sites + users)\n  //   'site_manager' \u2014 manages one Site (adds members, runs scans)"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "410-413",
+        "snippet": "{reported ? (\n                <p className=\"mkt-banner mkt-banner--success\">\n                  Reported. An admin will review this listing.\n                </p>"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "market",
+    "_verdictsReceived": 0
+  }
+]

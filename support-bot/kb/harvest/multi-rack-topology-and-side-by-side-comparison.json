@@ -1,0 +1,465 @@
+[
+  {
+    "question": "How do I add a third rack to a multi-rack view I already built?",
+    "answer": "You can't add a rack to a view that already exists \u2014 there is no \"add rack\" control in the app, and no API call that appends a rack to an existing group. Build a new view instead.\n\nOn the \"Scan two racks\" screen there are exactly two ways in:\n1. Two photos \u2014 only two picture slots, \"Rack 1\" and \"Rack 2\". Hard limit of that mode: two racks, no more. When you tap \"Build combined view\" RackTrack analyzes both photos and links them into one group.\n2. One video \u2014 tap \"Tap to add a video panning across both racks\" and pan across every rack you want included. However many racks RackTrack detects in that pan go into the one view (at least 2 are required, or it asks you to re-pan), so this is the only way in the app to get three or more racks together.\n\nIf you need three or more racks in one view, use the video mode: pan slowly across all of them and hold each rack fully in frame for a moment. A group can hold at most 8 racks.",
+    "symptoms": [
+      "Add another rack to my multi-rack view",
+      "Only two photo slots on Scan two racks",
+      "How to compare three racks",
+      "Can I put 3 racks in one topology"
+    ],
+    "rootCause": "MultiRackNewPage's images mode holds a fixed two-element array and renders exactly two ImageSlots; only the video path (/api/analyze-video) creates a group with an arbitrary member count. No endpoint or UI adds members to an existing group.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MultiRackNewPage.jsx",
+        "lines": "57-58",
+        "snippet": "  const [images, setImages] = useState([null, null]);   // two rack photos"
+      },
+      {
+        "file": "client/src/pages/MultiRackNewPage.jsx",
+        "lines": "155-158",
+        "snippet": "            <div className={styles.slots}>\n              <ImageSlot index={0} file={images[0]} onPick={(f) => setImage(0, f)} disabled={busy} />\n              <ImageSlot index={1} file={images[1]} onPick={(f) => setImage(1, f)} disabled={busy} />\n            </div>"
+      },
+      {
+        "file": "client/src/pages/MultiRackNewPage.jsx",
+        "lines": "179",
+        "snippet": "                    <span className={styles.pickHint}>Tap to add a video panning across both racks</span>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "My video of both racks came back with \"Only 1 rack detected \u2014 pan across both racks so each is clearly visible.\"",
+    "answer": "The video only produced one usable rack, so RackTrack won't build a two-rack view from it.\n\nRe-record the pan:\n1. Start with the first rack completely in frame \u2014 top to bottom, both side rails visible.\n2. Hold still on it for a couple of seconds before you start moving.\n3. Pan sideways slowly and evenly to the next rack. Don't tilt or walk while panning.\n4. Hold still on the second rack for a couple of seconds at the end.\n5. Back on the Scan two racks screen, choose One video again, tap the video box, pick the new clip and tap Build combined view.\n\nIf you instead get \"No racks detected in the video. Try a clearer pan.\", the video gave nothing usable at all \u2014 more light, steadier hands, and a full-height view of each rack are what fix it. If the pan keeps failing, switch to Two photos and take one clear picture of each rack.",
+    "symptoms": [
+      "Only 1 rack detected in my video",
+      "pan across both racks so each is clearly visible",
+      "No racks detected in the video",
+      "Two-rack video scan failed"
+    ],
+    "rootCause": "buildFromVideo rejects any /api/analyze-video response with count < 2; the server itself 400s with 'No racks detected in the video. Try a clearer pan.' when the splitter returns zero racks.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MultiRackNewPage.jsx",
+        "lines": "111-114",
+        "snippet": "      if (!res.ok || !data.groupId) throw new Error(data.error || 'Could not process the video.');\n      if ((data.count || 0) < 2) {\n        throw new Error(`Only ${data.count || 0} rack detected \u2014 pan across both racks so each is clearly visible.`);\n      }"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "3666-3670",
+        "snippet": "    const detected = Array.isArray(splitResult.racks) ? splitResult.racks : [];\n    if (detected.length === 0) {\n      safeUnlink(videoPath);\n      return res.status(400).json({ error: 'No racks detected in the video. Try a clearer pan.' });\n    }"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I reopened my two-rack scan from Profile and only one rack shows up. Where did the second rack go?",
+    "answer": "Nothing is lost \u2014 you're just looking at one rack's own report. The side-by-side/two-rack view only appears while the web address still carries the pair's id (a `?group=\u2026` on the end), so opening a scan from your scan history on Profile opens that single rack and the Rack 1 / Rack 2 pills don't appear.\n\nTo get the pair back:\n1. While you are in a two-rack view, bookmark or copy the address bar \u2014 it looks like /results/RK-XXXXXXXX?group=GRP-XXXXXXXXXXXX. Opening that link later brings the pair back. The combined 3D scene at /multi-rack/GRP-XXXXXXXXXXXX/topology works as a bookmark too.\n2. Otherwise rebuild the pair: Scan \u2192 \"Scanning two racks?\" \u2192 Two photos \u2192 the same two photos \u2192 Build combined view. Re-using photos you've already scanned is quick \u2014 RackTrack recognises the identical image and returns the cached analysis instead of redoing it. Note this creates a fresh pair id, so bookmark the new address.\n\nOne related trap: inside the combined 3D scene, tapping a rack chip under the canvas opens that rack's Ports tab on its own \u2014 no pills, no side-by-side. Use the back arrow to return to the pair rather than the chip.",
+    "symptoms": [
+      "Two-rack scan opens as a single rack",
+      "Rack 1 / Rack 2 pills are missing",
+      "Lost my side-by-side view",
+      "Only one rack after reopening from history"
+    ],
+    "rootCause": "useGroupView only reports isGroup when the URL carries ?group=<id> matching the fetched group. ProfilePage.openScan navigates to /results/:rackId with no query string, and the combined-topology rack chips navigate to /results/:rackId/ports with no ?group either.",
+    "evidence": [
+      {
+        "file": "client/src/hooks/useGroupView.js",
+        "lines": "19-24",
+        "snippet": "  const isGroup = !!(\n    data?.group?.id &&\n    groupParam &&\n    data.group.id === groupParam &&\n    members.length >= 2\n  );"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "94",
+        "snippet": "      navigate(`/results/${rackId}`, { state: { result } });"
+      },
+      {
+        "file": "client/src/pages/MultiRackTopologyPage.jsx",
+        "lines": "279-281",
+        "snippet": "              onClick={() => navigate(`/results/${encodeURIComponent(p.member.rack_id)}/ports`)}\n              title={`Open ${p.member.label}`}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I actually compare the two racks against each other?",
+    "answer": "It depends on the screen size, and that is deliberate.\n\nOn a laptop or wide screen (1024px and up), the Overview of a two-rack scan draws both racks as two columns side by side. Each column has a sticky header with a \"#1\" / \"#2\" position chip, the rack's name, and its RK- id next to the name, and below that the full report for that rack \u2014 photo, device boxes and all. Read straight across to compare. (The Drift view is the one exception: even on a wide screen it switches between racks rather than showing them side by side.)\n\nOn a phone, or anywhere narrower than 1024px, side by side is too cramped, so you get a row of pills at the top instead \u2014 \"#1 Rack 1\" and \"#2 Rack 2\" (your own rack names if you set them) \u2014 and you tap between them. Whatever page you're on stays the same when you switch, so if you're on Ports for Rack 1 and tap Rack 2 you land on Ports for Rack 2 and can flick back and forth. That same pill strip is also what you use on Ports, Topology and Drift on a desktop \u2014 only the Overview goes two-column.\n\nFor the racks as diagrams, open Topology and use the 2D button: it draws both rack elevations in two columns with any cross-rack cables listed underneath, so you can line up U positions between them. That view is not desktop-only \u2014 on a screen narrower than 780px the two columns simply stack one above the other. The 3D button puts both racks in one shared scene.",
+    "symptoms": [
+      "How to compare two racks",
+      "Side by side view not showing on my phone",
+      "Only see one rack at a time",
+      "Where is the two-column comparison"
+    ],
+    "rootCause": "RackResultsRoute renders the two-column layout only when useIsDesktop() (>=1024px) and the group signal is present; otherwise it falls back to the single ResultsPage with the RackTabs pill switcher. The 2D topology columns collapse to one column under 780px via CSS.",
+    "evidence": [
+      {
+        "file": "client/src/pages/RackResultsRoute.jsx",
+        "lines": "21-45",
+        "snippet": "  if (loading || !isGroup || !isDesktop) return <ResultsPage />;\n...\n  return (\n    <div className={styles.wrap}>\n      <div className={styles.cols}>\n        {members.map((m) => (\n          <section key={m.rack_id} className={styles.col}>\n            <header className={styles.colHead}>\n              <span className={styles.pos}>#{m.position}</span>"
+      },
+      {
+        "file": "client/src/hooks/useIsDesktop.js",
+        "lines": "14",
+        "snippet": "const DESKTOP_BREAKPOINT = 1024;"
+      },
+      {
+        "file": "client/src/pages/SideBySideRacks.module.css",
+        "lines": "90-95",
+        "snippet": ".cols2d {\n  display: grid; grid-template-columns: 1fr 1fr; gap: 0; align-items: start;\n}\n@media (max-width: 780px) { .cols2d { grid-template-columns: 1fr; } }"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Why do Ports, Switches and Network only show one rack at a time, when Overview shows both?",
+    "answer": "That's on purpose. Ports, Switches and Network are the three pages built around a single rack's live equipment data \u2014 the Ports page in particular opens a live SSH session to the switch as soon as you open it, and the switch only allows about one session at a time. Rendering two racks at once would fire two of those checks together, which is slower and can come back with readings that disagree.\n\nSo on those three pages you get a pill toggle at the top instead \u2014 one pill per rack, showing its position (#1, #2) and its label \u2014 and only the selected rack is shown. Tapping the other pill fully remounts that rack's page, so its state and its probe start clean and the readings you see belong to that rack alone.\n\nOverview and the 2D topology don't open live sessions to the switches, so they're allowed to draw both racks together \u2014 but only on a wide screen (roughly laptop-width and up). On a phone, Overview also shows one rack at a time with its own rack switcher, and the Drift view uses the same one-at-a-time pill toggle as the other pages.",
+    "symptoms": [
+      "Ports page shows only one rack",
+      "Switches not side by side",
+      "Network view only one rack in a two-rack scan",
+      "Why can't I see both racks' ports at once"
+    ],
+    "rootCause": "RackToggle deliberately renders one member at a time, keyed on rack_id so switching remounts, to avoid two simultaneous live probes; RackSwitchesRoute / RackNetworkRoute / RackPortsRoute all wrap their content in it.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SideBySideRacks.jsx",
+        "lines": "12-16",
+        "snippet": "// Rack TOGGLE: for a multi-rack group, show ONE rack's content at a time with a\n// pill toggle to switch between racks. Rendering one at a time keeps live-probe\n// pages (Ports) correct \u2014 no two simultaneous probes. Standalone rack \u2192 the\n// normal single page."
+      },
+      {
+        "file": "client/src/pages/SideBySideRacks.jsx",
+        "lines": "40-41",
+        "snippet": "      {/* key forces a clean remount on switch so per-rack state/probes reset */}\n      <div key={m.rack_id}>{render(m.rack_id)}</div>"
+      },
+      {
+        "file": "client/src/pages/SideBySideRacks.jsx",
+        "lines": "47-60",
+        "snippet": "export function RackSwitchesRoute() {\n  return <RackToggle Single={SwitchInformationPage}\n    render={(rid) => <SwitchInfoContent rackId={rid} />} />;\n}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "How do I open the combined 3D view of both racks, and what am I looking at?",
+    "answer": "There are two ways in:\n- From any page of a two-rack scan, tap the small \"3D\" button at the right-hand end of the rack pill strip (\"Open all racks in one 3D scene\"). This opens the standalone combined view.\n- Or open the Topology tab of the scan and tap 3D in the header \u2014 the header reads \"Topology \u00b7 2 racks\" with a 2D / 3D toggle next to it. This embeds the same scene inside the Topology page.\n\nWhat you see, top to bottom:\n1. A header. On the standalone route it reads \"Combined topology\" with a tag showing how many racks are in the scene (\"2 racks\"). If you came in via the Topology tab's 3D toggle, the page keeps that tab's own \"Topology \u00b7 2 racks\" header and the 2D/3D toggle instead \u2014 the \"Combined topology\" title is hidden in that case.\n2. One shared 3D space with the racks standing side by side on the same floor \u2014 same lights, same camera. Devices sit at their real U heights.\n3. The few cables that actually cross from one rack to the other, drawn as sagging patch cables with connector plugs on each end. Amber = fibre, blue = DAC. Cabling that stays inside a rack is not drawn here.\n4. Under the scene, a strip of rack chips \u2014 \"#1 <name>\" plus the RK- id. Tapping one leaves the 3D scene and opens that rack's Ports page on its own.\n5. Below that, an \"Inter-rack connections\" panel listing each crossing cable (role, both endpoints with device and port, and the cable type). It only appears if there is at least one cross-rack cable.\n\nClicking a device highlights it in its own rack only \u2014 selection is tracked per rack, so clicking something in rack 2 doesn't dim rack 1. Tap empty space to clear all selections.",
+    "symptoms": [
+      "Where is the combined 3D view",
+      "How to see both racks in 3D",
+      "What is Combined topology",
+      "What do the rack chips under the 3D scene do"
+    ],
+    "rootCause": "MultiRackTopologyPage renders all member racks in one Canvas with a header titled 'Combined topology', a rack-chip strip and an inter-rack links panel; it is reachable from RackTabs' 3D button and from RackTopologyRoute's 3D toggle.",
+    "evidence": [
+      {
+        "file": "client/src/components/RackTabs.jsx",
+        "lines": "48-62",
+        "snippet": "          onClick={() => navigate(`/multi-rack/${encodeURIComponent(data.group.id)}/topology`)}\n          title=\"Open all racks in one 3D scene\"\n...\n          3D"
+      },
+      {
+        "file": "client/src/pages/RackTopologyRoute.jsx",
+        "lines": "61-73",
+        "snippet": "        <span className={styles.topoTitle}>Topology \u00b7 {members.length} racks</span>\n        <div className={styles.toggle}>\n          <button className={`${styles.tglBtn} ${view !== '3d' ? styles.tglOn : ''}`} onClick={() => pick('2d')}>2D</button>\n          <button className={`${styles.tglBtn} ${view === '3d' ? styles.tglOn : ''}`} onClick={() => pick('3d')}>3D</button>"
+      },
+      {
+        "file": "client/src/pages/MultiRackTopologyPage.jsx",
+        "lines": "248-256",
+        "snippet": "          title=\"Combined topology\"\n          extra={\n            <span className={styles.groupTag}>\n              {layout.placed.length} {layout.placed.length === 1 ? 'rack' : 'racks'}\n            </span>"
+      },
+      {
+        "file": "client/src/pages/MultiRackTopologyPage.jsx",
+        "lines": "88-91",
+        "snippet": "  // Per-rack selection so highlights stay scoped to one rack\n  const [selectedByRack, setSelectedByRack] = useState({});  // rackId \u2192 {kind,id}|null"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I move around the 3D rack view on a phone? It keeps spinning when I want to slide it across.",
+    "answer": "On a phone, the normal rules are:\n- One finger dragging = spin the rack around.\n- Two fingers = pinch to zoom, and drag with both fingers to slide the view across.\n- Tap a device to select it; tap empty space to deselect (this works in both the single-rack and the two-rack view).\n\nOn a single rack there's an extra behaviour: once you zoom right in (camera closer than the pan threshold), the gestures flip automatically \u2014 one finger now slides the view and two fingers become pinch-zoom plus spin. So when you're zoomed in, use one finger to pan, not two. Zoom back out and it flips back to one finger spinning / two fingers panning. On a desktop the cursor turns into a grab hand at the same moment. This flip only happens on a single rack's 3D view \u2014 in the combined multi-rack scene one finger always spins and two fingers always pinch/slide, at every zoom level, so use two fingers to slide across from one rack to the other.\n\nOn a laptop: drag with the left mouse button to spin, right button to slide, scroll wheel to zoom. When you're zoomed right in on a single rack, left and right swap over so left drags (pans) the view and right spins it.\n\nIn both views you can't tip the camera completely flat from directly above or directly underneath \u2014 the tilt stops just short of both extremes, which keeps the rack readable. Zoom range also differs: a single rack zooms between roughly 4 and 28 units, while the multi-rack scene allows pulling much further back so both racks fit.",
+    "symptoms": [
+      "3D view spins when I try to pan",
+      "How to zoom the 3D topology on a phone",
+      "Can't slide across to the second rack",
+      "3D navigation controls"
+    ],
+    "rootCause": "OrbitControls defaults (one-touch rotate, two-touch dolly/pan) apply in both scenes; only the single-rack TopologyScene3D mounts AutoPanCursor, which swaps mouse buttons and touch gestures to pan mode once the camera is inside the zoom threshold. Polar angle is clamped at both extremes.",
+    "evidence": [
+      {
+        "file": "client/src/pages/TopologyScene3D.jsx",
+        "lines": "1164-1186",
+        "snippet": "function AutoPanCursor({ panThreshold = 9 }) {\n...\n    if (zoomed) {\n      controls.mouseButtons.LEFT  = THREE.MOUSE.PAN;\n      controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;\n      controls.touches.ONE = THREE.TOUCH.PAN;\n      controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;\n      gl.domElement.style.cursor = 'grab';"
+      },
+      {
+        "file": "client/src/pages/TopologyScene3D.jsx",
+        "lines": "1414-1425",
+        "snippet": "      <OrbitControls\n        target={camTarget}\n        enablePan\n        enableDamping\n        dampingFactor={0.08}\n        minDistance={4}\n        maxDistance={28}\n        minPolarAngle={0.25}\n        maxPolarAngle={Math.PI - 0.25}\n        makeDefault\n      />\n      <AutoPanCursor />"
+      },
+      {
+        "file": "client/src/pages/MultiRackTopologyPage.jsx",
+        "lines": "373-383",
+        "snippet": "      <OrbitControls\n        target={[0, targetY, 0]}\n        enablePan\n        enableDamping\n        dampingFactor={0.08}\n        minDistance={4}\n        maxDistance={Math.max(120, camDistBound * 2.5)}\n        minPolarAngle={0.25}\n        maxPolarAngle={Math.PI - 0.25}\n        makeDefault\n      />"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "The combined topology says \"No topology data yet for any rack in this scan.\" What now?",
+    "answer": "The rack diagrams are built in the background after a scan, and none of the racks in this group had a diagram ready when this screen loaded. The combined view asks the server once per rack \u2014 it does not keep checking on its own.\n\nDo this:\n1. Wait about a minute.\n2. Reload the page, or go back and tap 3D again. That re-asks the server for every rack in the scan. (Your first visit already told the server to start building the missing diagrams, so a reload is usually enough.)\n3. If it's still empty, open one rack on its own: back out to the scan, open the Topology tab and stay on it. The single-rack Topology screen keeps retrying by itself (15 tries, 4 seconds apart \u2014 about a minute), and asking for a rack's diagram is what kicks off building it.\n4. Once you can see a rack's diagram on its own, go back to the combined view and reload \u2014 it will have data. Racks that still have no diagram simply won't appear in the combined scene.\n\nIf a rack never produces a diagram (the single-rack view ends with \"Topology could not be prepared. Try rescanning this rack.\"), rescan that rack \u2014 that regenerates it from scratch.",
+    "symptoms": [
+      "No topology data yet for any rack in this scan",
+      "Combined topology is empty",
+      "3D view of both racks won't load",
+      "Topology still generating"
+    ],
+    "rootCause": "MultiRackTopologyPage fetches /api/topology/<rackId> once per member with no retry; the server returns 404 {error:'pending'} and only schedules regeneration in the background. Single-rack TopologyPage is the one that polls (15 attempts, 4s apart).",
+    "evidence": [
+      {
+        "file": "client/src/pages/MultiRackTopologyPage.jsx",
+        "lines": "232-242",
+        "snippet": "  if (!layout || !layout.placed.length) {\n...\n          <div className={styles.err}>\n            No topology data yet for any rack in this scan.\n          </div>"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "5122-5129",
+        "snippet": "  const snapPath = path.join(outputsDir, rackId, 'topology.json');\n  if (!fs.existsSync(snapPath)) {\n    // Fire-and-forget: try to (re)generate the snapshot in the background so a\n    // refresh in a few seconds returns the real topology.\n    try { scheduleTopologyRegen(rackId); } catch (_) {}\n    return res.status(404).json({ error: 'pending' });\n  }"
+      },
+      {
+        "file": "client/src/pages/TopologyPage.jsx",
+        "lines": "132-145",
+        "snippet": "    const MAX_ATTEMPTS = 15;   // ~60s of polling while the snapshot generates\n    const RETRY_MS = 4000;\n...\n        if (r.status === 404) {\n          attempts += 1;\n          if (!cancelled) {\n            if (attempts < MAX_ATTEMPTS) timer = setTimeout(load, RETRY_MS);\n            else setErr('Topology could not be prepared. Try rescanning this rack.');"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Only one of my two racks appears in the combined 3D scene. The other one is just gone.",
+    "answer": "The missing rack is still in your scan \u2014 it just has no topology diagram yet, and the combined 3D scene silently drops any rack whose diagram it couldn't fetch. That's why the rack strip under the scene shows only one chip and the header counts only one rack.\n\nWhy it happens: the diagram for each rack is generated in the background after the scan. Until it's ready the server answers \"pending\" for that rack, and the combined view leaves that rack out instead of telling you.\n\nTo bring it back:\n1. Confirm which rack is the problem: from the scan, open the Topology tab and switch to 2D. The rack that isn't ready shows \"Topology still generating \u2014 refresh shortly.\" in its own column instead of vanishing.\n2. Wait about a minute \u2014 the first request already kicked off generation in the background \u2014 then reload that Topology screen (pull to refresh / reload the page, or toggle 3D \u2192 2D \u2192 3D). Neither the 2D nor the 3D group view retries on its own, so nothing changes until you reload.\n3. Once the second rack draws in 2D, open the combined 3D view again. Both racks will be there, along with the inter-rack cables.\n\nIf the rack still has no diagram after a few reloads, rescan that rack.\n\n(Note: leaving the group Topology screen open does not help \u2014 the automatic ~1 minute retry only runs on a single-rack topology view, not on the two-rack group view.)",
+    "symptoms": [
+      "One rack missing from the 3D view",
+      "Combined topology only shows one rack",
+      "Rack chip strip shows one rack instead of two",
+      "Second rack disappeared from topology"
+    ],
+    "rootCause": "MultiRackTopologyPage stores per-rack fetch failures in an errors map that is never surfaced, and the layout memo filters members down to those with a loaded topo, so a rack with a 404 topology is dropped from placed (and therefore from the chip strip and the rack count).",
+    "evidence": [
+      {
+        "file": "client/src/pages/MultiRackTopologyPage.jsx",
+        "lines": "118-130",
+        "snippet": "        await Promise.all((gJson.members || []).map(async (m) => {\n          try {\n            const r = await authFetch(apiUrl(`/api/topology/${m.rack_id}`));\n            const data = await r.json().catch(() => ({}));\n            if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);\n            topoMap[m.rack_id] = data;\n          } catch (e) {\n            errMap[m.rack_id] = e.message;\n          }\n        }));"
+      },
+      {
+        "file": "client/src/pages/MultiRackTopologyPage.jsx",
+        "lines": "155-162",
+        "snippet": "    const placed = members\n      .filter(m => topos[m.rack_id])"
+      },
+      {
+        "file": "client/src/pages/RackTopologyRoute.jsx",
+        "lines": "86-88",
+        "snippet": "                  {!topo ? <div className={styles.center}>Loading topology\u2026</div>\n                    : topo.__err ? <div className={styles.err}>{topo.__err === 'HTTP 404' ? 'Topology still generating \u2014 refresh shortly.' : topo.__err}</div>\n                    : <Rack2D topo={topo} />}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "What is the \"Inter-rack connections\" list under the topology, and why are there only a handful of cables between the racks?",
+    "answer": "That panel lists only the cables that run from one rack to the other. Almost all cabling stays inside a single rack \u2014 you see that cabling on each rack's own topology \u2014 so only the few uplinks that cross racks appear here.\n\nEach row reads left to right:\n- A coloured dot and, at the far right, the cable type in capitals: FIBER or DAC. Amber/yellow = fibre, blue = DAC.\n- The cable's job: \"Primary uplink\", \"Redundant uplink\", \"Cross-connect\" or \"Backup link\".\n- The two ends, separated by \u21c4: rack name, then the device, then the port on that device.\n\nThe heading also tells you the total, for example \"3 cross-rack cables\".\n\nIn 3D these same cables are drawn between the racks, leaving the actual port on the front of the switch at its real U height and sagging across the gap, with a connector plug modelled at each end \u2014 amber for fibre, blue for DAC. In 2D they appear as a rail of coloured wires down the gap between the two rack columns (hidden on a narrow phone, where the racks stack instead \u2014 the list below still shows them all).",
+    "symptoms": [
+      "What is Inter-rack connections",
+      "Only a few cables between the racks",
+      "What does cross-rack cable mean",
+      "What do the amber and blue cables mean"
+    ],
+    "rootCause": "The links panel renders /api/rack-group/:groupId/links: role, both endpoints (rack label, device, port), and cable_type uppercased; the 3D scene colours fiber '#f2c94c' and DAC '#3b82f6' and only draws links that cross racks, since intra-rack cabling lives in each rack's own topology.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MultiRackTopologyPage.jsx",
+        "lines": "293-312",
+        "snippet": "              <span className={styles.linksTitle}>Inter-rack connections</span>\n              <span className={styles.linksCount}>{links.length} cross-rack cable{links.length === 1 ? '' : 's'}</span>\n...\n                  <span className={styles.linkRole}>{l.role || 'Uplink'}</span>\n...\n                  <span className={styles.linkType}>{(l.cable_type || '').toUpperCase()}</span>"
+      },
+      {
+        "file": "client/src/pages/MultiRackTopologyPage.jsx",
+        "lines": "579",
+        "snippet": "      const color = lnk.cable_type === 'fiber' ? '#f2c94c' : '#3b82f6';"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "3969",
+        "snippet": "        role:       redundant ? 'Redundant uplink' : (_LINK_ROLES[k] || `Uplink ${k + 1}`),"
+      },
+      {
+        "file": "client/src/pages/SideBySideRacks.module.css",
+        "lines": "102",
+        "snippet": "@media (max-width: 780px) { .linkRail { display: none; } }"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "What are the hard limits on a multi-rack group, and why would pairing two racks fail with a server error? (admin reference)",
+    "answer": "Grouping rules enforced by POST /api/rack-groups (server/app.js:3858), the two-photo entry point:\n- Minimum 2 racks: fewer returns 400 \"Provide at least two rackIds to group.\"\n- Maximum 8 racks: more returns 400 \"A group can hold at most 8 racks.\" The photo UI only ever submits 2, so this ceiling is reachable only via the API. The video path (POST /api/analyze-video, server/app.js:3668) does not apply either bound \u2014 it groups however many racks the splitter returned.\n- Ids are de-duplicated ([...new Set(rackIds)].filter(Boolean)) before the count check, so posting the same rack twice fails the minimum-of-two rule. From the app you never hit this: MultiRackNewPage throws \"Both photos resolved to the same rack \u2014 use two different racks.\" before calling the endpoint.\n- Every remaining id must match /^RK-[A-Za-z0-9]+$/ and already have outputs/<rackId>/device_unit_map.json on disk. Otherwise the endpoint returns HTTP 404 with \"Rack <id> not found \u2014 analyze it first.\" \u2014 the client surfaces that message (or \"Could not link the racks.\") right after the \"Linking the two racks\u2026\" step, meaning one photo's analysis left no output directory.\n- Groups are tenant-scoped at creation (tenant_id from the caller's token) and every read re-checks it \u2014 GET /api/rack-group/:groupId, /api/rack/:rackId/group, /links and /report all return 404 \"Group not found\" on a tenant mismatch rather than 403, so cross-tenant existence is never revealed.\nScripting note: the handler's doc comment advertises an optional `label` in the body, but the handler never reads it \u2014 member labels are always generated server-side as \"Rack 1\", \"Rack 2\", \u2026 in submission order.",
+    "symptoms": [
+      "Provide at least two rackIds to group",
+      "A group can hold at most 8 racks",
+      "Rack RK-... not found \u2014 analyze it first",
+      "Two-rack pairing fails at Linking the two racks"
+    ],
+    "rootCause": "POST /api/rack-groups validates uniq.length (>=2, <=8), the RK- id pattern and the on-disk device_unit_map.json before creating the group; labels are generated server-side and req.body.label is never consumed.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "3831-3846",
+        "snippet": "app.post('/api/rack-groups', auth.requireAuth, (req, res) => {\n  const rackIds = Array.isArray(req.body?.rackIds) ? req.body.rackIds.map(String) : [];\n  const uniq = [...new Set(rackIds)].filter(Boolean);\n  if (uniq.length < 2) {\n    return res.status(400).json({ error: 'Provide at least two rackIds to group.' });\n  }\n  if (uniq.length > 8) {\n    return res.status(400).json({ error: 'A group can hold at most 8 racks.' });\n  }\n  // Every rack must already be analyzed (device_unit_map.json is the existence key).\n  for (const rid of uniq) {\n    if (!/^RK-[A-Za-z0-9]+$/.test(rid) ||\n        !fs.existsSync(path.join(outputsDir, rid, 'device_unit_map.json'))) {\n      return res.status(404).json({ error: `Rack ${rid} not found \u2014 analyze it first.` });\n    }\n  }"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "3826-3829",
+        "snippet": " * Pair two (or more) already-analyzed racks into a group \u2014 the two-IMAGE\n * entry point. (Video already creates groups inside /api/analyze-video.)\n * Body: { rackIds: [\"RK-\u2026\",\"RK-\u2026\"], label? }"
+      },
+      {
+        "file": "client/src/pages/MultiRackNewPage.jsx",
+        "lines": "81-88",
+        "snippet": "      setStep('Linking the two racks\u2026');\n      const gRes = await authFetch(apiUrl('/api/rack-groups'), {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ rackIds: [id1, id2] }),\n      });\n      const gJson = await gRes.json().catch(() => ({}));\n      if (!gRes.ok || !gJson.groupId) throw new Error(gJson.error || 'Could not link the racks.');"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Are the cables shown between two racks actually discovered, and what should we tell a customer who asks?",
+    "answer": "No. Inter-rack links are synthesized server-side, deterministically, from each rack's own topology snapshot. Never describe them to a customer as discovered, measured or verified cabling.\n\nHow they are produced (deriveInterRackLinks in server/app.js):\n- Members are sorted by capture position and only ADJACENT pairs are chained \u2014 position 1\u21942, 2\u21943. There is never a link between non-adjacent racks. (A group can hold 2\u20138 racks.)\n- Each rack's endpoints come from _uplinkPorts: switches sorted top-of-rack first, preferring in-rack switches that have a u_position, taking at most 2 ports per switch (is_uplink-flagged ports first, otherwise the first 2 ports) and at most 6 endpoints per rack.\n- Link count per adjacent pair is min(min(endpointsA, endpointsB) + 1, 5) \u2014 so at most 5 cables between any two racks.\n- Roles come from a fixed list: Primary uplink, Redundant uplink, Cross-connect, Backup link, then \"Uplink N\". The extra \"+1\" run (which reuses switch 0) only exists when the pair count is 4 or fewer; if both racks yield 5+ endpoints you get exactly 5 links and none of them is an extra redundant run \u2014 but index 1 is still labelled \"Redundant uplink\" regardless.\n- cable_type is 'fiber' only when an endpoint's role is 'core' (an out-of-rack aggregation switch, used only when a rack has no racked switches at all), otherwise 'dac'.\n- Every link carries synthetic: true and a deterministic cable_id of the form IRL-<rackA>-<rackB>-<n> with the RK- prefix stripped from both rack ids (e.g. IRL-A1B2-C3D4-1). Same members always produce the same wiring, which is why the view looks stable across reloads.\n- If either rack has no topology.json or no switches, that pair contributes zero links and the panel simply doesn't appear.\n\nSide effect to be aware of: POST /api/rack-groups (the two-image pairing entry point) best-effort spawns servicenow/cmdb_interrack_link.py to write these synthesized links into the customer's CMDB as cmdb_rel_ci \"Connects to\" relationships. It is a no-op when SN_INSTANCE is unset or the script file is missing, is de-duplicated per group while in flight, and failures are logged (cmdb.interrack_failed) without affecting the view. Groups created by /api/analyze-video do not trigger this push. On a configured instance this does write fabricated relationships into the customer's CMDB \u2014 flag that before enabling it.",
+    "symptoms": [
+      "Customer asks if cross-rack cables are real",
+      "Where do inter-rack uplinks come from",
+      "Why are the same cables shown every time",
+      "Unexpected Connects to relationships in ServiceNow"
+    ],
+    "rootCause": "deriveInterRackLinks fabricates rack-to-rack uplinks from static topology snapshots (there is no live network path between two independently photographed racks), and scheduleInterRackCmdbLink pushes them to ServiceNow when SN_INSTANCE is configured.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "3882-3888",
+        "snippet": "// \u2500\u2500 Inter-rack link synthesis \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// There's no live network between two independently-photographed racks, so \u2014\n// exactly like the single-rack cabling, which synth.py fabricates \u2014 we\n// synthesize the rack-to-rack uplinks. Each rack's \"uplink end\" is its\n// aggregation switch (AGG-CORE, rendered out-of-rack) when present, else its\n// top-most in-rack switch. Adjacent racks (by capture position) are chained.\n// Deterministic: same members \u2192 same links, so the view is stable."
+      },
+      {
+        "file": "server/app.js",
+        "lines": "3955-3970",
+        "snippet": "    const ea = _uplinkPorts(A.topo), eb = _uplinkPorts(B.topo);\n    if (!ea.length || !eb.length) continue;\n...\n    const pairs = Math.min(ea.length, eb.length);\n    const n = Math.min(pairs + 1, 5);\n...\n        cable_type: (s.role === 'core' || d.role === 'core') ? 'fiber' : 'dac',\n        role:       redundant ? 'Redundant uplink' : (_LINK_ROLES[k] || `Uplink ${k + 1}`),\n        synthetic:  true,"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "3906-3914",
+        "snippet": "function _uplinkPorts(topo, max = 6) {\n  if (!topo || !Array.isArray(topo.devices)) return [];\n  const switches = topo.devices.filter(d => d.class === 'switch');\n  if (!switches.length) return [];\n  const inRack = switches.filter(d => d.in_rack !== false && d.u_position != null);"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "3981-3985",
+        "snippet": "// Best-effort push of the synthesized inter-rack uplinks into the ServiceNow\n// CMDB as `cmdb_rel_ci` \"Connects to\" relationships between the two racks'\n// switch CIs. Fire-and-forget: the combined-topology view renders from the\n// synthesized links regardless, so a missing ServiceNow config or a failed\n// push never blocks the feature. No-op if ServiceNow isn't configured."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "A customer wants one report covering both racks in a two-rack scan. Is there one?",
+    "answer": "There is a combined-report endpoint, but no UI anywhere calls it, so it cannot be reached from the app \u2014 do not tell a customer to \"click Export\" for a two-rack report.\n\nGET /api/rack-group/:groupId/report builds a single HTML document (HTML only \u2014 there is no server-rendered PDF): a cover page headed \"RackTrack \u00b7 Combined report\" with the hardcoded title \"Two-Rack Report\" (it says that even if the group holds three or more racks), the rack count and today's date, then a pill per member reading \"#<position> <label> <rackId>\". Each rack's standard scan report follows, spliced in under a black \"Rack #<n> \u2014 <label>\" band with a page break before it, so browser Print \u2192 Save as PDF gives a clean multi-rack PDF. It reuses buildScanReport per member and substitutes a red \"Report unavailable for <rackId>: <reason>\" paragraph for any rack whose report fails, so one bad rack doesn't kill the document.\n\nTwo constraints before you promise it to anyone:\n- requireAuth accepts an Authorization: Bearer token only \u2014 no cookie, and no signed-link fallback (the report-token trick works only for single-rack /api/scan/:rackId/report) \u2014 so pasting the URL into a browser tab returns 401 \"Authentication required\".\n- It is tenant-scoped (404 \"Group not found\" for another tenant or an unknown group) and returns 404 \"Group has no racks\" for an empty group.\n\nUntil a UI entry point exists, the supported answer to the customer is: open each rack's own report, or have someone run the endpoint for them.",
+    "symptoms": [
+      "Combined report for both racks",
+      "PDF covering a multi-rack scan",
+      "Two-Rack Report",
+      "Export a two-rack scan"
+    ],
+    "rootCause": "GET /api/rack-group/:groupId/report exists and works but has no client caller (no reference to /api/rack-group/.../report anywhere in client/src), and requireAuth only accepts an Authorization: Bearer header, so it is not openable as a plain URL.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "4036-4048",
+        "snippet": " * GET /api/rack-group/:groupId/report?format=html\n * One combined report document covering EVERY rack in the group \u2014 each rack's\n * standard scan report stacked in order under a cover page.\n...\napp.get('/api/rack-group/:groupId/report', auth.requireAuth, async (req, res) => {\n  const data = rackGroups.get(req.params.groupId);\n  if (!data || data.group.tenant_id !== req.user.tenant_id) {\n    return res.status(404).json({ error: 'Group not found' });\n  }\n  const members = data.members || [];\n  if (!members.length) return res.status(404).json({ error: 'Group has no racks' });"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4070-4071",
+        "snippet": "        <div style=\"font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#888\">RackTrack \u00b7 Combined report</div>\n        <h1 style=\"font-size:2rem;font-weight:850;margin:8px 0 4px\">Two-Rack Report</h1>"
+      },
+      {
+        "file": "server/auth.js",
+        "lines": "463-466",
+        "snippet": "function requireAuth(req, res, next) {\n  const header = req.headers.authorization || '';\n  const match  = header.match(/^Bearer\\s+(.+)$/i);\n  if (!match) return res.status(401).json({ error: 'Authentication required' });"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "multi-rack, topology and side-by-side comparison",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

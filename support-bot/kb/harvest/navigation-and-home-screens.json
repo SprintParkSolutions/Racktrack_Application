@@ -1,0 +1,518 @@
+[
+  {
+    "question": "I just opened RackTrack for the first time. What am I looking at, and where do I start?",
+    "answer": "You are on the welcome screen. It is not a dashboard \u2014 it is the front door, and it has exactly one button that moves you forward.\n\nOn a phone (viewport under 768px, HomeLight):\n1. You see the RackTrack logo and name at the top, a photo of a datacenter aisle, the headline \"Manage your datacenter. From anywhere.\" and the line \"Track racks, ports, and assets in real time.\"\n2. If you are not signed in there is a Sign in button in the top-right corner, and the big button reads Get Started \u2014 it takes you to sign-up. Once you are signed in the Sign in button disappears.\n3. If you are already signed in, Get Started takes you straight to the Scan screen. That is the intended first move: tap Get Started, then scan a rack.\n\nOn an iPad or a computer (768px and wider, HomeStudio) the same screen is laid out side by side: a small kicker line (\"AI rack intelligence\", or \"Welcome back, <your name>\" once you are signed in), the headline \"See every port. Know every rack.\", a paragraph explaining what RackTrack does, three figures (30+ device classes, 0.3s per rack, 98% accuracy), and a datacenter photo on the right marked LIVE SCAN with a sample status strip (CHENNAI-DC1 - 24 racks - 1,048 ports mapped; that strip is illustrative, not your data). The main button reads Get started when signed out and Start a scan once you are signed in. When you are signed in a second button, Past scans, appears next to it \u2014 it opens your Profile page, where your scan history lives. The top-right button is Sign in when signed out and Sign out when signed in.\n\nThere is nothing actionable beyond that on this screen. The rest of the app opens up once you tap through to Scan.",
+    "symptoms": [
+      "First time opening the app",
+      "The home screen has nothing on it",
+      "Where do I start",
+      "Only a Get Started button",
+      "What is this welcome page"
+    ],
+    "rootCause": "The '/' route renders HomePage, which immediately delegates to HomeStudio (>=768px viewport) or HomeLight (phones). Both are marketing-style welcome screens whose only forward action is a CTA that routes to /scan when authenticated or /signup when not.",
+    "evidence": [
+      {
+        "file": "client/src/pages/HomePage.jsx",
+        "lines": "264-268",
+        "snippet": "  const isTabletOrUp = useIsTabletOrUp();\n  if (isTabletOrUp) return <HomeStudio />;\n  return <HomeLight />;"
+      },
+      {
+        "file": "client/src/pages/HomeLight.jsx",
+        "lines": "18-19",
+        "snippet": "  const handleGetStarted = () => navigate(isAuthed ? '/scan' : '/signup');\n  const handleSignIn     = () => navigate('/login');"
+      },
+      {
+        "file": "client/src/pages/HomeLight.jsx",
+        "lines": "49-55",
+        "snippet": "<h1 className={styles.title}>\n  Manage your datacenter.<br />From anywhere.\n</h1>\n<p className={styles.sub}>\n  Track racks, ports, and assets in real time.\n</p>"
+      },
+      {
+        "file": "client/src/pages/HomeStudio.jsx",
+        "lines": "76-84",
+        "snippet": "<button type=\"button\" className={styles.primary} onClick={start}>\n  {authed ? 'Start a scan' : 'Get started'}\n  <Arrow width=\"17\" height=\"17\" />\n</button>\n{authed && (\n  <button type=\"button\" className={styles.secondary} onClick={() => navigate('/profile')}>\n    Past scans\n  </button>\n)}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "A four-step introduction popped up the first time I signed in. Can I get it back?",
+    "answer": "No \u2014 the walkthrough is shown once per device and there is no button anywhere in the app to replay it. Signing out and back in will not bring it back either.\n\nWhat it said, so you do not need it again:\n1. \"Welcome to RackTrack\" \u2014 turn a photo of a server rack into a full, labelled map of what's inside, in seconds.\n2. \"1 \u00b7 Scan a rack\" \u2014 point your camera at the rack (or upload a photo or short video) and tap Scan.\n3. \"2 \u00b7 Review the results\" \u2014 see each device, where it sits in the rack, and its details. Tap any item to dig deeper or fix a label.\n4. \"3 \u00b7 Check the ports\" \u2014 open the Ports tab to see the switch live: which ports are free, which are connected, and what's plugged in.\n\nThe controls are Skip in the top-right corner, Next to move forward (Back appears from the second card onwards), and on the last card Start scanning, which drops you on the Scan screen. Skipping counts as finishing \u2014 it will not come back either way.\n\nIt only appears when you are signed in, so if you sign in on a second phone or tablet you will see it again there. Reinstalling the app, or otherwise clearing the app's local storage on a device, would also make it reappear, but there is no supported in-app way to reset it.",
+    "symptoms": [
+      "Intro tour disappeared",
+      "How do I see the tutorial again",
+      "Welcome to RackTrack popup",
+      "I skipped the walkthrough by accident",
+      "Getting started guide"
+    ],
+    "rootCause": "OnboardingTour records completion in localStorage under the key 'racktrack:onboarded' and returns null forever after; it also renders only when isAuthed. No UI resets the flag.",
+    "evidence": [
+      {
+        "file": "client/src/components/OnboardingTour.jsx",
+        "lines": "5-9",
+        "snippet": "// First-run walkthrough. Shows once per device for a signed-in user, then\n// never again (localStorage flag). Purely additive \u2014 it overlays the app and\n// dismisses to the scan screen. Skippable at every step.\n\nconst KEY = 'racktrack:onboarded';"
+      },
+      {
+        "file": "client/src/components/OnboardingTour.jsx",
+        "lines": "54-64",
+        "snippet": "const [done, setDone] = useState(() => {\n    try { return localStorage.getItem(KEY) === '1'; } catch { return false; }\n  });\n\n  if (done || !isAuthed) return null;\n\n  const finish = (goScan) => {\n    try { localStorage.setItem(KEY, '1'); } catch (_) {}\n    setDone(true);\n    if (goScan) navigate('/scan');\n  };"
+      },
+      {
+        "file": "client/src/components/OnboardingTour.jsx",
+        "lines": "27-31",
+        "snippet": "{\n    art: 'ports',\n    title: '3 \u00b7 Check the ports',\n    body: 'Open the Ports tab to see the switch live \u2014 which ports are free, which are connected, and what\u2019s plugged in.',\n  },"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I tapped HOME at the bottom and the menu bar vanished. Now I can't get anywhere.",
+    "answer": "That is how the home screen is built \u2014 it deliberately has no bottom bar and no sidebar. It is the welcome screen, not a hub.\n\nTo get moving again:\n1. On a phone, tap Get Started \u2014 the big button in the middle. Since you are signed in it takes you straight to the Scan screen, where the bottom bar with HOME, SCAN and PROFILE comes back.\n2. On an iPad or computer (768px wide and up) the welcome screen shows Start a scan and, next to it, Past scans. Start a scan goes to Scan; Past scans goes to Profile. Both bring the left sidebar back.\n3. Do not rely on the back gesture on the Android app: on the home screen the hardware/gesture back is wired to exit RackTrack, not to go back a page. (In a browser, back does return you to the previous screen.)\n\nPractical advice: on a phone, treat SCAN and PROFILE as your two real destinations \u2014 HOME only returns you to the welcome screen. On an iPad or computer the sidebar is present on the normal app screens (Scan, Profile, Results, Ports, Topology and so on), and clicking Home in that sidebar drops it again until you navigate on. A few full-page screens \u2014 sign in, sign up, the pending-approval wait screen and the Organizations console \u2014 also have no sidebar by design.",
+    "symptoms": [
+      "Bottom bar disappeared",
+      "Nav bar missing on home screen",
+      "Tapped HOME and got stuck",
+      "No menu on the welcome page",
+      "Sidebar gone after clicking Home"
+    ],
+    "rootCause": "In App.jsx the '/' route renders <HomePage /> bare \u2014 it is not wrapped in ResponsiveLayout, so neither BottomNav (phone) nor DesktopShell (>=768px) is mounted. Only routes passed withBottomNav render the bottom bar.",
+    "evidence": [
+      {
+        "file": "client/src/App.jsx",
+        "lines": "226-229",
+        "snippet": "{/* HomePage has its own desktop branch (HomeDesktop) via\n    useIsDesktop, so DesktopShell is bypassed for \"/\" \u2014\n    otherwise we'd double-render the chrome. */}\n<Route path=\"/\" element={<HomePage />} />"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "105-111",
+        "snippet": "function ResponsiveLayout({ children, withBottomNav = false }) {\n  const showSidebar = useHasSidebar();\n  if (showSidebar) {\n    return <DesktopShell>{children}</DesktopShell>;\n  }\n  return <>{children}{withBottomNav && <BottomNav />}</>;\n}"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "235-237",
+        "snippet": "<Route path=\"/scan\" element={\n  <ProtectedRoute><ResponsiveLayout withBottomNav><ScanPage /></ResponsiveLayout></ProtectedRoute>\n} />"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "The app looks totally different on my phone, my iPad and my laptop. Which one is right?",
+    "answer": "All three are right \u2014 RackTrack has three layouts and switches between them purely on how wide the screen is. Nothing is broken and there is no setting to change it.\n\n- Narrower than 768 pixels (any phone, and an iPad app window that has been split small): the phone layout, with no sidebar. Most pages pin a bar to the bottom with HOME, SCAN and PROFILE. A few do not: the rack result pages show their own tab strip along the bottom instead (Overview / Ports / Topology / Network / Switches / Drift), and Two racks, Console and Data Sources show no bottom bar at all.\n- 768 pixels and wider (iPad in portrait or landscape, small laptop windows): the sidebar appears down the left with Home, Scan, Two racks and Profile \u2014 plus Console and Lab for the platform owner, and Data Sources and Marketplace for organization admins. The bottom bar disappears completely, and once you have scanned a rack the sidebar also lists that rack's Overview / Ports / Topology / Network / Switches / Drift.\n- 1024 pixels and wider (laptops, desktop browsers, iPad landscape): the same sidebar, but pages that have a wide layout switch to it \u2014 most visibly, the rack tab strip is dropped from the page because the sidebar already carries the same links.\n\nSo an iPad in portrait sits between the two: it gets the sidebar but still uses the phone-width page layouts, which is why on a portrait iPad you can briefly see the rack tabs in both the sidebar and the page. If you rotate the iPad or resize the browser window, the layout changes live \u2014 you do not need to reload.\n\nOne exception at every size: the welcome screen at Home has neither the bottom bar nor the sidebar. It does change appearance at 768 pixels \u2014 a simpler welcome on phones, a richer one on tablets and laptops \u2014 but that is a different page design, not different navigation.",
+    "symptoms": [
+      "Different layout on iPad vs phone",
+      "Sidebar on laptop but not on phone",
+      "Layout changed when I rotated the tablet",
+      "Which layout is correct",
+      "App looks different on desktop"
+    ],
+    "rootCause": "Two breakpoints drive everything: SIDEBAR_BREAKPOINT = 768 (useHasSidebar -> DesktopShell vs bare mobile + BottomNav) and DESKTOP_BREAKPOINT = 1024 (useIsDesktop -> wide content layouts, e.g. suppressing ScanTabBar). Both are matchMedia hooks so they re-evaluate on resize/rotation.",
+    "evidence": [
+      {
+        "file": "client/src/hooks/useIsDesktop.js",
+        "lines": "13-24",
+        "snippet": "const DESKTOP_BREAKPOINT = 1024;\n\n// The sidebar shell wants LESS room than the side-by-side content layouts \u2014\n// a tablet in portrait (iPad \u2248 768\u2013834px) comfortably fits sidebar + one\n// column, so it gets the shell too.\nconst SIDEBAR_BREAKPOINT = 768;"
+      },
+      {
+        "file": "client/src/hooks/useIsDesktop.js",
+        "lines": "26-40",
+        "snippet": "function useMinWidth(px) {\n  const initial = typeof window !== 'undefined' && window.innerWidth >= px;\n  const [matches, setMatches] = useState(initial);\n  useEffect(() => {\n    const mql = window.matchMedia(`(min-width: ${px}px)`);"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "200-213",
+        "snippet": "const links = [\n    { to: '/',            label: 'Home',        icon: <HomeIcon />,    end: true  },\n    { to: '/scan',        label: 'Scan',        icon: <ScanIcon />,    end: false },\n    { to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false },\n    ...(isOwner ? [{ to: '/dashboard', label: 'Console', icon: <DashboardIcon />, end: false }] : []),\n    ...(isOwner ? [{ to: '/lab', label: 'Lab', icon: <DashboardIcon />, end: false }] : []),\n    ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false }] : []),\n    ...(isAdmin ? [{ to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false }] : []),\n    { to: '/profile',     label: 'Profile',     icon: <ProfileIcon />, end: false },\n  ];"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "The welcome screen on my iPad has different buttons from the one on my phone. Why?",
+    "answer": "There are two different welcome screens and the app picks one purely by browser/screen width \u2014 768 pixels is the cut-off (HomePage renders HomeStudio at 768px and above, HomeLight below). Rotating an iPad or resizing a browser window switches you between them live.\n\nPhone welcome screen (under 768px): logo and the RackTrack name, a Sign in button top-right that appears only when you are signed out, a datacenter photo, the headline \"Manage your datacenter. From anywhere.\" with the line \"Track racks, ports, and assets in real time.\", and one button, Get Started.\n\niPad / computer welcome screen (768px and up): a two-column layout. On the left a small line reading \"AI rack intelligence\" \u2014 which becomes \"Welcome back, <your username>\" once you are signed in \u2014 the headline \"See every port. Know every rack.\", a short description, then the buttons. The buttons depend on whether you are signed in: signed out you get a single Get started button; signed in that same button becomes Start a scan and a second Past scans button appears next to it. So Get Started has not disappeared on iPad \u2014 it is there until you sign in, at which point it is renamed Start a scan. Below that are three figures: 30+ device classes, 0.3s per rack, 98% accuracy. On the right is a photo tagged LIVE SCAN with a scanning overlay and a strip reading CHENNAI-DC1 \u00b7 24 racks \u00b7 1,048 ports mapped.\n\nThose three figures and the CHENNAI-DC1 strip are fixed illustration text written into the welcome screen itself. They are not your organization's numbers, they are not fetched from the server, and they never change \u2014 so nothing is wrong if 24 racks or 1,048 ports does not match your site.\n\nThe top-right button also differs between the two screens: on the phone screen it offers Sign in and is hidden entirely once you are signed in. On the iPad/computer screen it is always visible and switches to Sign out once you are signed in.",
+    "symptoms": [
+      "Different home screen on tablet",
+      "Where did Get Started go on my iPad",
+      "24 racks 1,048 ports is wrong",
+      "Home page shows numbers I don't recognise",
+      "Welcome back message only on desktop"
+    ],
+    "rootCause": "HomePage branches on useIsTabletOrUp (TABLET_BREAKPOINT = 768): HomeStudio above, HomeLight below. HomeStudio's stats and HUD strip are hard-coded literals in the component, not fetched data.",
+    "evidence": [
+      {
+        "file": "client/src/hooks/useIsTabletOrUp.js",
+        "lines": "7-9",
+        "snippet": "// 768px = iPad portrait width. The same layout flexes up to desktop sizes via\n// CSS clamp() and grid templates inside each *IPad page.\nconst TABLET_BREAKPOINT = 768;"
+      },
+      {
+        "file": "client/src/pages/HomeStudio.jsx",
+        "lines": "86-92",
+        "snippet": "<div className={styles.stats}>\n  <div className={styles.stat}><b>30+</b><span>device classes</span></div>\n  <span className={styles.statDiv} />\n  <div className={styles.stat}><b>0.3s</b><span>per rack</span></div>\n  <span className={styles.statDiv} />\n  <div className={styles.stat}><b>98%</b><span>accuracy</span></div>\n</div>"
+      },
+      {
+        "file": "client/src/pages/HomeStudio.jsx",
+        "lines": "109-115",
+        "snippet": "<div className={styles.hud}>\n  <span className={styles.hudLoc}>CHENNAI&#8209;DC1</span>\n  <span className={styles.hudDiv} />\n  <span>24 racks</span>\n  <span className={styles.hudDiv} />\n  <span>1,048 ports mapped</span>\n</div>"
+      },
+      {
+        "file": "client/src/pages/HomeLight.jsx",
+        "lines": "29-33",
+        "snippet": "{!isAuthed && (\n  <button type=\"button\" className={styles.signInBtn} onClick={handleSignIn}>\n    Sign in\n  </button>\n)}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I clicked the button in the top-right of the home screen on my laptop and it signed me straight out with no warning.",
+    "answer": "That button is Sign out, and on the home screen it takes effect immediately \u2014 there is no \"are you sure?\" step there.\n\nWhat happened: on an iPad or computer, the home screen's top-right button shows Sign in with an arrow icon when you are signed out, and swaps to Sign out once you are signed in. Pressing it signs you out and returns you to the home screen straight away.\n\nTo get back in, press Sign in in that same corner and enter your credentials. Nothing is lost \u2014 your scans stay on the server and your Recent Scans list is intact when you sign back in.\n\nIf you want the safer version, sign out from Profile instead: the exit icon in the Profile header asks \"Sign out?\" with the note \"You'll need to sign in again to scan racks.\" and gives you a Cancel button. The phone home screen never shows a Sign out button at all \u2014 it only offers Sign in, and only when you are signed out.",
+    "symptoms": [
+      "Signed out by accident",
+      "No confirmation before sign out",
+      "Clicked top right and lost my session",
+      "Sign out button on the home page"
+    ],
+    "rootCause": "HomeStudio's header button calls auth.logout() then navigate('/') directly with no confirmation dialog, unlike ProfilePage which gates sign-out behind a confirm modal.",
+    "evidence": [
+      {
+        "file": "client/src/pages/HomeStudio.jsx",
+        "lines": "52-59",
+        "snippet": "<button\n  type=\"button\"\n  className={styles.signBtn}\n  onClick={authed ? () => { auth.logout(); navigate('/'); } : () => navigate('/login')}\n>\n  <SignIcon out={authed} width=\"15\" height=\"15\" />\n  {authed ? 'Sign out' : 'Sign in'}\n</button>"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "103-109",
+        "snippet": "<button\n  type=\"button\"\n  className={styles.topbarIconBtn}\n  onClick={() => setConfirmingSignOut(true)}\n  aria-label=\"Sign out\">\n  <span className=\"material-symbols-outlined\" aria-hidden=\"true\">logout</span>\n</button>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I pressed the back arrow on my scan result and it threw me out to the Scan screen. How do I get the result back?",
+    "answer": "The back arrow on a rack result means \"go back one tab\", and on the Overview tab it means \"leave this rack\" \u2014 which lands you on the Scan screen. That is deliberate, not a bug.\n\nExactly what the arrow does:\n- On the Overview tab: leaves the rack entirely and goes to Scan.\n- On any other tab (Switches, Ports, Topology, Network, Drift): steps back through the tabs you opened, in the order you opened them. When there are none left, it returns you to Overview. Press it again from Overview and you leave the rack.\n\nTo get the result back:\n1. Open PROFILE and find the rack under Recent Scans \u2014 tap it to reopen. (On an iPad or computer the sidebar also keeps a \"Rack \u00b7 <rack ID>\" section pointing at the rack you were on.)\n2. Or, if you still have the rack's web address, open it again \u2014 a /results/<rack ID> link reopens the rack from the server.\n\nTip: the rack ID is printed under the title at the top of the result screen, so note it down if you are moving between racks a lot.",
+    "symptoms": [
+      "Back button leaves the scan result",
+      "Lost my results after pressing back",
+      "Back arrow goes to the upload screen",
+      "How do I return to my scan"
+    ],
+    "rootCause": "ResultsPage.handleHeaderBack navigates to /scan whenever tab === 'overview'; on other tabs it pops tabHistoryRef (the in-page tab stack) and otherwise falls back to the overview tab.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "1191-1210",
+        "snippet": "  // Header back button:\n  //   \u2022 on the Overview tab \u2192 ALWAYS leave the rack and go to /scan\n  //   \u2022 on any other tab \u2192 pop the in-page tab history if there's any,\n  //     otherwise fall back to Overview.\n  const handleHeaderBack = () => {\n    if (tab === 'overview') {\n      tabHistoryRef.current = [];\n      navigate('/scan');\n      return;\n    }\n    if (tabHistoryRef.current.length > 0) {\n      const prev = tabHistoryRef.current.pop();\n      setTab(prev);"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "4295-4300",
+        "snippet": "<button className=\"btn btn-ghost btn-icon\" onClick={handleHeaderBack}>"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "4286-4293",
+        "snippet": "<span className={styles.headerMono}>\n  {rackId || scanId}\n</span>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "The phone's back gesture doesn't step back through the rack tabs \u2014 it jumps out of the result completely.",
+    "answer": "Use the back arrow inside the app (top-left of the result screen) or the bottom tab strip, not the phone's back gesture, to move between a rack's tabs.\n\nWhy: switching between Overview, Switches, Ports, Topology, Network and Drift on a phone does not change the web address \u2014 the whole rack lives at one address and the tabs swap the content in place. Your phone's back gesture only knows about address changes, so it skips the tabs entirely and takes you to the screen you were on before you opened the rack.\n\nWhat to use instead:\n- The back arrow in the result's own header steps back through the tabs you visited, in order \u2014 but only while you are on a tab other than Overview. Overview is treated as the root of the rack: pressing back there always leaves the rack and returns you to the scan screen, and it also clears the remembered tab history. If you are on another tab and there is no history to step back through, back returns you to Overview.\n- The tab strip fixed at the bottom of the result (Overview, Switches, Ports, Topology, and More for Network and Drift) jumps anywhere directly, and is the most reliable way to move around. Note this strip is mobile-only; on desktop the same links live in the left sidebar.\n\nOn Android specifically, the hardware back button walks the app's page history (the previous screen, not the previous tab) and, on the home screen or the sign-in screen, closes RackTrack.",
+    "symptoms": [
+      "Back gesture exits the rack",
+      "Android back button skips the tabs",
+      "Swipe back goes too far",
+      "Browser back loses my place in the result"
+    ],
+    "rootCause": "The rack tab strip changes React state via handleTabChange (setTab + tabHistoryRef) without touching the URL, so browser/OS history has no entry per tab. AndroidBackHandler maps the hardware back button to navigate(-1), i.e. the previous route, or exitApp on '/' and '/login'.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "1176-1186",
+        "snippet": "  // Track the user's in-page tab navigation so the header back arrow can\n  // walk it back instead of bouncing straight to /scan. Each user-driven\n  // tab change pushes the previous tab onto this stack.\n  const tabHistoryRef = useRef([]);\n  const handleTabChange = (newTab) => {\n    setTab(prev => {\n      if (prev !== newTab) tabHistoryRef.current.push(prev);\n      return newTab;\n    });"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "124-130",
+        "snippet": "sub = await CapApp.addListener('backButton', () => {\n  if (location.pathname === '/' || location.pathname === '/login') {\n    CapApp.exitApp();\n  } else {\n    navigate(-1);\n  }\n});"
+      },
+      {
+        "file": "client/src/components/ScanTabBar.jsx",
+        "lines": "4-16",
+        "snippet": "const PRIMARY_TABS = [\n  { key: 'overview',  label: 'Overview',  icon: <IconRack /> },\n  { key: 'switches',  label: 'Switches',  icon: <IconSwitch /> },\n  { key: 'ports',     label: 'Ports',     icon: <IconPorts /> },\n  { key: 'topology',  label: 'Topology',  icon: <IconTopology /> },\n];\n\n// Hidden behind the More tab \u2014 opens a small sheet above the bar.\nconst MORE_TABS = [\n  { key: 'network',   label: 'Network',   icon: <IconNetwork /> },\n  { key: 'drift',     label: 'Drift',     icon: <IconDrift /> },\n];"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "On my iPad the rack tabs appear twice \u2014 once in the left sidebar and once as a strip in the page. Is that a display fault?",
+    "answer": "It is not a fault, and both sets do the same thing \u2014 it is a side-effect of the iPad's width.\n\nRackTrack shows the left sidebar from 768 pixels wide, but only hides the rack tab bar from 1024 pixels wide. An iPad in portrait is roughly 768\u2013834 pixels, so it lands between the two and gets both.\n\nWhat to do: use either. The sidebar section is headed \"Rack \u00b7 <rack ID>\" and holds Overview, Ports, Topology, Network, Switches and Drift. The other set is a tab bar pinned along the bottom of the screen (not a strip in the page body); it holds Overview, Switches, Ports, Topology and a More button that opens Network and Drift. There is one small difference worth knowing \u2014 the bottom bar also shows small count badges: on Ports, the combined port count of all switches found in the rack, and on Switches, how many switches were found.\n\nIf you would rather see only one set, turn the iPad to landscape: past 1024 pixels the bottom tab bar is hidden and the sidebar becomes the only rack navigation.",
+    "symptoms": [
+      "Two sets of tabs on iPad",
+      "Duplicate navigation on tablet",
+      "Rack tabs shown twice",
+      "Tab strip and sidebar both visible"
+    ],
+    "rootCause": "DesktopShell mounts at useHasSidebar() >= 768px, while ResultsPage suppresses ScanTabBar only when useIsDesktop() >= 1024px. Viewports in the 768-1023px band therefore render both navigations.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "1095-1098",
+        "snippet": "  // The in-page tab strip (ScanTabBar) is redundant on desktop because\n  // the DesktopShell sidebar already shows the same OVERVIEW / PORTS /\n  // TOPOLOGY / NETWORK / SWITCHES / DRIFT links. Mobile keeps it.\n  const isDesktop = useIsDesktop();"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "4323-4332",
+        "snippet": "{!isDesktop && !embeddedProp && (\n  <ScanTabBar\n    activeTab={tab}\n    onTabChange={handleTabChange}\n    badges={{\n      ports: devices.filter(d => d.class_name === 'Switch').reduce((s, d) => s + (d.port_count || 0), 0) || undefined,\n      switches: devices.filter(d => d.class_name === 'Switch').length || undefined,\n    }}\n  />\n)}"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "301-306",
+        "snippet": "{rackLinks.length > 0 && (\n  <>\n    <div className={styles.navSection}>Rack \u00b7 {rackId}</div>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I typed an address (or followed an old link) and RackTrack dumped me on the welcome screen.",
+    "answer": "The welcome screen is where RackTrack sends anything it cannot open. Three different things land you there:\n\n1. The address does not exist. Any unrecognised address \u2014 a typo, a link to a page that was removed \u2014 is redirected to the home screen rather than showing a \"page not found\" error. Check the spelling and try again. Two old addresses are deliberate exceptions and still work: an old /logs bookmark opens the Operations Console, and an old /history bookmark opens Profile.\n2. The page is restricted and you do not have the role for it. Data Sources, Marketplace and the Operations Console are limited to organization admins and the platform owner; if you are a member or a site manager, opening those addresses directly bounces you to home instead of showing an error. Ask your organization admin.\n3. You are in the Organizations console and pressed App \u2014 that button is a deliberate exit back to the main app.\n\nDifferent symptom, different cause: if you land on the Scan screen rather than the welcome screen, the address was a valid rack link but that scan no longer exists on the server. If you land on the Sign in screen, your session ended. And if you land on the \"waiting for approval\" screen, your organization has not been approved yet.",
+    "symptoms": [
+      "Redirected to the home page",
+      "Link goes nowhere",
+      "No 404 page",
+      "Typed a URL and got the welcome screen",
+      "Bounced back to home when opening a page"
+    ],
+    "rootCause": "App.jsx has a catch-all <Route path=\"*\" element={<Navigate to=\"/\" replace />} /> so unknown paths redirect home, and AdminRoute redirects non-(org_admin|owner) users to '/'. There is no 404 page in the route table.",
+    "evidence": [
+      {
+        "file": "client/src/App.jsx",
+        "lines": "345",
+        "snippet": "<Route path=\"*\" element={<Navigate to=\"/\" replace />} />"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "86-89",
+        "snippet": "  if (user?.role !== 'org_admin' && user?.role !== 'owner') {\n    return <Navigate to=\"/\" replace />;\n  }"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "63-72",
+        "snippet": "function ProtectedRoute({ children }) {\n  const { isAuthed, user } = useAuth();\n  const location = useLocation();\n  if (!isAuthed) {\n    return <Navigate to=\"/login\" replace state={{ from: location.pathname + location.search }} />;\n  }\n  if (orgNotActive(user)) {\n    return <Navigate to=\"/pending\" replace />;\n  }"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I scanned two racks together \u2014 how do I get from one rack to the other, and why did the switcher disappear?",
+    "answer": "A multi-rack scan puts a small sticky strip across the top of the result. It holds one pill per rack, numbered \u2014 #1, #2 \u2014 with each rack's label, plus a small \"3D\" button on the right that opens all the racks in one combined scene.\n\nHow to use it:\n1. Tap the other rack's pill. You stay on the same sub-page \u2014 if you were on Ports for rack 1, you land on Ports for rack 2. (The strip appears on the Overview, Ports and Topology pages; it is not shown on Netdisco.)\n2. The rack you are currently viewing is the pill that is filled in solid/highlighted \u2014 it cannot be tapped. The other racks are the outlined, grey pills you can tap. That is how you tell which rack you are on.\n3. Tap 3D to open all the racks in one scene with the cabling that runs between them.\n\nIf the strip has disappeared, the link you followed lost the group marker that tells RackTrack these racks belong together. RackTrack only shows the strip when the address carries a ?group=<group ID> marker that matches the rack's real group and the group has at least two racks. Opening a plain /results/<rack ID> address \u2014 which is what your Recent Scans list links to \u2014 or hand-editing the address drops that marker. The rack itself opens fine, just on its own. To get the group back, follow the link you were given for the multi-rack scan, or re-open the combined view. A single-rack scan never shows the strip at all \u2014 and re-uploading a photo that was once part of a multi-rack scan still gives you a single-rack report, by design.",
+    "symptoms": [
+      "Can't switch between the two racks",
+      "Rack pills missing",
+      "Two-rack scan only shows one rack",
+      "Where is the 3D button",
+      "Rack strip disappeared"
+    ],
+    "rootCause": "RackTabs renders only when useGroupView reports isGroup, which depends on the ?group query parameter being present on the URL. Navigating to a bare /results/<rackId> (e.g. from Recent Scans) drops that signal, so the group strip is not rendered.",
+    "evidence": [
+      {
+        "file": "client/src/components/RackTabs.jsx",
+        "lines": "16-19",
+        "snippet": "// Only render for an actual two-rack scan the user is viewing AS a group\n// (the ?group signal is present). A single-rack scan \u2014 even of a photo that\n// was once part of a group \u2014 never shows the rack strip.\nif (loading || !isGroup) return null;"
+      },
+      {
+        "file": "client/src/components/RackTabs.jsx",
+        "lines": "29-44",
+        "snippet": "<nav className={styles.bar} aria-label=\"Racks in this scan\">\n  {members.map((m) => {\n    const isCurrent = m.rack_id === rackId;\n    ... disabled={isCurrent}\n    onClick={() => navigate(`/results/${encodeURIComponent(m.rack_id)}${suffix}${gq}`)}\n    <span className={styles.pos}>#{m.position}</span>\n    {m.label || `Rack ${m.position}`}"
+      },
+      {
+        "file": "client/src/components/RackTabs.jsx",
+        "lines": "48-52",
+        "snippet": "{data.group && (\n  <button\n    className={styles.threeD}\n    onClick={() => navigate(`/multi-rack/${encodeURIComponent(data.group.id)}/topology`)}\n    title=\"Open all racks in one 3D scene\">"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "The title bar on my laptop says \"Live Network Switch\" but I clicked Ports. Am I on the wrong page?",
+    "answer": "You are on the right page. On a laptop, desktop browser or iPad, the strip above the page content is a location label, and a few of them are worded differently from the menu item you clicked.\n\nThe ones that catch people out:\n- Ports (rack) shows as \"Live Network Switch \u2014 Available ports\".\n- Network (rack) shows as \"Network view \u2014 Live device + port table\".\n- Topology (rack) shows as \"Topology \u2014 3D rack & cabling\".\n- Switches (rack) shows as \"Switch info \u2014 CMDB-driven\".\n- Scan shows as \"New scan \u2014 Upload, camera, or video\".\n- Two racks shows as \"Scan two racks \u2014 Detect both + the cabling between them\".\n\nA few screens do not show that strip at all \u2014 the Operations Console (Console), Profile, Data Sources and every Marketplace page draw their own heading instead, so there is no second title stacked on top. That is why clicking Console gives you no strip: the page's own \"Operations Console\" header is the only title there.\n\nIf the strip ever just says \"RackTrack\" with nothing under it, you are on a page that has no label of its own; the left sidebar still shows which item is highlighted.\n\nOn the rack's Ports page there is also a small back arrow to the left of the title \u2014 that walks you back one step.",
+    "symptoms": [
+      "Page title doesn't match the menu item",
+      "Live Network Switch heading",
+      "Breadcrumb says something else",
+      "Title bar says RackTrack",
+      "No title bar on the Profile page"
+    ],
+    "rootCause": "DesktopShell derives the topbar crumb from a PAGE_TITLE map plus deriveTitle() suffix rules; SELF_HEADED paths (/dashboard, /profile, /connections) and every /marketplace* path suppress the crumb because those pages render their own header.",
+    "evidence": [
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "164-179",
+        "snippet": "function deriveTitle(pathname) {\n  if (PAGE_TITLE[pathname]) return PAGE_TITLE[pathname];\n  if (pathname.startsWith('/results') && pathname.endsWith('/topology'))\n    return { title: 'Topology', sub: '3D rack & cabling' };\n  if (pathname.startsWith('/results') && pathname.endsWith('/netdisco'))\n    return { title: 'Network view',  sub: 'Live device + port table' };\n  if (pathname.startsWith('/results') && pathname.endsWith('/ports'))\n    return { title: 'Live Network Switch', sub: 'Available ports' };\n  ...\n  return { title: 'RackTrack', sub: '' };\n}"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "148-162",
+        "snippet": "const PAGE_TITLE = {\n  '/':                 { title: 'Home',                sub: 'Overview' },\n  '/scan':             { title: 'New scan',            sub: 'Upload, camera, or video' },\n  '/dashboard':        { title: 'Operations Console',  sub: 'Live activity, health & server logs' },\n  '/multi-rack/new':   { title: 'Scan two racks',      sub: 'Detect both + the cabling between them' },\n};"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "185-195",
+        "snippet": "const SELF_HEADED = ['/dashboard', '/profile', '/connections'];\n...\nconst selfHeaded = SELF_HEADED.includes(location.pathname)\n    || location.pathname === '/marketplace'\n    || location.pathname.startsWith('/marketplace/');"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "326-334",
+        "snippet": "{location.pathname.endsWith('/ports') && (\n  <button type=\"button\" className={styles.topBack} aria-label=\"Back\" onClick={() => navigate(-1)}>"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "INTERNAL: which home component actually renders, and is HomeDesktop still in use?",
+    "answer": "HomeDesktop.jsx is dead code. Nothing imports it \u2014 the only remaining references are its own file/CSS module, a passing mention in index.css (line ~205), and a stale comment in App.jsx above the '/' route claiming \"HomePage has its own desktop branch (HomeDesktop) via useIsDesktop\". That is no longer true.\n\nWhat actually runs for '/':\n- App.jsx (line 229) renders <HomePage /> bare (no ResponsiveLayout), so '/' has no DesktopShell and no BottomNav at any width.\n- HomePage.jsx contains no markup of its own any more: the component ends with `const isTabletOrUp = useIsTabletOrUp(); if (isTabletOrUp) return <HomeStudio />; return <HomeLight />;`. Its local state, RACKS, SCREENS, the Rack3D helper and the drag-to-rotate handlers still execute as plain code on each render but nothing they feed is ever rendered.\n- Breakpoint is useIsTabletOrUp (768px, iPad portrait), not useIsDesktop (1024px) \u2014 so desktop widths also land on HomeStudio, which is why HomeDesktop can never appear.\n- HomeStudio portals to document.body to escape #root's 540px max-width column cap; DesktopShell does the same.\n\nSupport implications: never tell a customer about HomeDesktop's copy (\"Scan the rack. Know everything.\", the four \"How it works\" step cards, the RACK-U42-DEMO hero visual) \u2014 that page cannot be reached from the running app. The tablet/desktop welcome copy is HomeStudio's (\"See every port. / Know every rack.\"). Do not quote HomePage's demo racks either: R-101 and R-102 (Chennai-DC1), R-103 (Hyderabad-DC2), incidents INC0042/INC0058, or its 3D rack views \u2014 all dead data inside HomePage.jsx.",
+    "symptoms": [
+      "Which home screen does the user see",
+      "HomeDesktop copy doesn't match the app",
+      "Screenshot doesn't match the code",
+      "R-101 rack not in my account"
+    ],
+    "rootCause": "HomePage.jsx short-circuits to HomeStudio/HomeLight before rendering any of its own markup, and HomeDesktop.jsx has no importers; the App.jsx comment referencing it was not updated.",
+    "evidence": [
+      {
+        "file": "client/src/pages/HomePage.jsx",
+        "lines": "262-268",
+        "snippet": "  /* iPad + desktop (>=768px) get the editorial HomeStudio welcome ...\n     on the clean, simple HomeLight welcome, untouched. */\n  const isTabletOrUp = useIsTabletOrUp();\n  if (isTabletOrUp) return <HomeStudio />;\n  return <HomeLight />;"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "226-229",
+        "snippet": "{/* HomePage has its own desktop branch (HomeDesktop) via\n    useIsDesktop, so DesktopShell is bypassed for \"/\" \u2014\n    otherwise we'd double-render the chrome. */}\n<Route path=\"/\" element={<HomePage />} />"
+      },
+      {
+        "file": "client/src/pages/HomeDesktop.jsx",
+        "lines": "6-8",
+        "snippet": "// HomeDesktop \u2014 landscape (\u22651024px) layout. Mobile stays on HomePage /\n// HomeLight / HomeDark, completely untouched. This file is rendered only\n// when useIsDesktop() returns true."
+      },
+      {
+        "file": "client/src/pages/HomePage.jsx",
+        "lines": "151-160",
+        "snippet": "const RACKS = [\n  {\n    id: 'R-101', role: 'Core',     u: 24, ports: 48, dc: 'Chennai-DC1',"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "INTERNAL: full navigation reference \u2014 which route renders which chrome, and who can reach it?",
+    "answer": "Same as the entry, with two precisions:\n\n1. DesktopShell = sidebar + crumb topbar, portalled to document.body \u2014 but the crumb topbar is suppressed on pages that draw their own header: SELF_HEADED = ['/dashboard', '/profile', '/connections'] plus '/marketplace' and every '/marketplace/*' path (those render MarketplaceShell). On those routes at >=768px you get the sidebar and full-width canvas but no breadcrumb bar. (Note the \"\u22651024px\" comments in App.jsx/DesktopShell are stale \u2014 the shell gate is useHasSidebar() at SIDEBAR_BREAKPOINT = 768; useIsDesktop()'s 1024 breakpoint is only used by content layouts such as side-by-side racks.)\n\n2. The remembered rack id (module-level _liveRackId, never stored in session/localStorage) is set from the URL (/results/<id> or /switch-info/<id>) or from a rt:rack-id-changed event. That event is dispatched with a rack id by ResultsPage after an upload finishes, and with null/'' by AuthContext on login and logout and by ScanPage when a new scan starts \u2014 so it is cleared on refresh, on login/logout, on starting a new scan, and on landing on /scan.\n\nEverything else in the entry (route/chrome table, withBottomNav list, ProtectedRoute/AdminRoute/PendingRoute behaviour, server-side requireRole('owner') on /api/lab/*, the /logs -> /dashboard, /history -> /profile and * -> / redirects, and the sidebar link visibility rules) matches the source exactly.",
+    "symptoms": [
+      "Which pages have a bottom bar",
+      "Route table reference",
+      "Why does this page have no menu",
+      "Who can reach which route"
+    ],
+    "rootCause": "Navigation chrome is decided per-route by whether the element is wrapped in ResponsiveLayout and whether withBottomNav is passed; role gating is done by the ProtectedRoute / AdminRoute / PendingRoute wrappers plus DesktopShell's conditional link array.",
+    "evidence": [
+      {
+        "file": "client/src/App.jsx",
+        "lines": "101-111",
+        "snippet": "// Responsive layout wrapper \u2014 at \u22651024px viewports every page renders\n// inside DesktopShell (sidebar + topbar + full-width main canvas).\nfunction ResponsiveLayout({ children, withBottomNav = false }) {\n  const showSidebar = useHasSidebar();\n  if (showSidebar) {\n    return <DesktopShell>{children}</DesktopShell>;\n  }\n  return <>{children}{withBottomNav && <BottomNav />}</>;\n}"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "313-321",
+        "snippet": "<Route path=\"/results\" element={\n  <ProtectedRoute><ResponsiveLayout><ResultsPage /></ResponsiveLayout></ProtectedRoute>\n} />\n<Route path=\"/results/:rackId\" element={\n  <ProtectedRoute><ResponsiveLayout><RackResultsRoute /></ResponsiveLayout></ProtectedRoute>\n} />"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "94-99",
+        "snippet": "function PendingRoute({ children }) {\n  const { isAuthed, user } = useAuth();\n  if (!isAuthed) return <Navigate to=\"/login\" replace />;\n  if (!orgNotActive(user)) return <Navigate to=\"/scan\" replace />;\n  return children;\n}"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "246-257",
+        "snippet": "  // Landing on the Scan page means the user is starting a NEW scan \u2014 drop the\n  // remembered rack so the sidebar's rack tabs ... stop showing the PREVIOUS scan's data.\n  useEffect(() => {\n    if (location.pathname === '/scan' && liveRackId) {\n      writeLiveRackId(null);\n      setLiveRackId(null);\n    }\n  }, [location.pathname, liveRackId]);\n  const rackId = urlRackId || liveRackId;"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "navigation-and-home-screens",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

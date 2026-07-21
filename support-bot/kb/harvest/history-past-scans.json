@@ -1,0 +1,567 @@
+[
+  {
+    "question": "Where do I find the racks I scanned earlier? I can't find a History screen.",
+    "answer": "Past scans live on your Profile screen, not on a separate History screen.\n\n1. Tap PROFILE in the bottom bar (the person icon, third tab).\n2. Scroll to the \"Recent Scans\" section.\n3. Tap any row to reopen that scan's results.\n\nOnly your 5 most recent scans are listed at first. If you have more, tap \"Show all N scans\" at the bottom of the section to reveal your full history (\"Show less\" collapses it again).\n\nOn a desktop or iPad, click \"Profile\" in the left sidebar \u2014 its subtitle is \"Account & history\".\n\nIf you saved an old /history bookmark, it still works: RackTrack now sends it straight to the Profile screen.",
+    "symptoms": [
+      "Where is scan history",
+      "There is no History tab",
+      "/history just opens Profile",
+      "How do I see my previous scans"
+    ],
+    "rootCause": "The standalone /history route was replaced by a redirect to /profile; ProfilePage renders the 'Recent Scans' section fed by GET /api/scans. Bottom nav exposes HOME / SCAN / PROFILE only.",
+    "evidence": [
+      {
+        "file": "client/src/App.jsx",
+        "lines": "311-312",
+        "snippet": "{/* Old /history URLs redirect to the new combined profile page. */}\n<Route path=\"/history\" element={<Navigate to=\"/profile\" replace />} />"
+      },
+      {
+        "file": "client/src/components/BottomNav.jsx",
+        "lines": "13-17",
+        "snippet": "const TABS = [\n  { to: '/',        end: true,  icon: 'home',             label: 'HOME'    },\n  { to: '/scan',    end: false, icon: 'qr_code_scanner',  label: 'SCAN'    },\n  { to: '/profile', end: false, icon: 'person',           label: 'PROFILE' },\n];"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "204-209",
+        "snippet": "{/* \u2500\u2500 Recent scans \u2500\u2500 */}\n<section className={styles.section}>\n  <div className={styles.sectionHead}>\n    <h3 className={styles.sectionLabel}>Recent Scans</h3>"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "151",
+        "snippet": "'/profile':          { title: 'Profile',             sub: 'Account & history' },"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "My Recent Scans list only shows 5 scans \u2014 where are the rest?",
+    "answer": "Nothing is missing. Recent Scans shows the 5 newest by default and hides the rest behind a button.\n\n1. Open PROFILE and scroll down to the \"Recent Scans\" section.\n2. Scroll to the bottom of the list.\n3. Tap \"Show all N scans\" (N is your real total).\n4. The full list appears; tap \"Show less\" to collapse it back to 5.\n\nThe button only appears once you have more than 5 scans, and only after the list has finished loading. There is no page-by-page paging \u2014 when expanded, every scan you are allowed to see is on screen at once, newest first.\n\nNote that \"allowed to see\" depends on your role: a regular member sees only the racks they claimed, an org admin sees every rack in their organization's Sites, and the platform owner sees everything. So if a scan a colleague did is still missing after expanding, that is a permissions boundary, not a truncated list.",
+    "symptoms": [
+      "Only 5 scans showing",
+      "Where is the rest of my history",
+      "Show all scans button",
+      "History list is cut off"
+    ],
+    "rootCause": "ProfilePage slices the /api/scans response to 5 unless showAllScans is toggled; the server route returns the complete list with no limit or offset parameter.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "71-72",
+        "snippet": "// Show the 5 most recent by default; \"Show all\" reveals the full history.\nconst recent  = useMemo(() => (showAllScans ? scans : scans.slice(0, 5)), [scans, showAllScans]);"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "250-258",
+        "snippet": "{!scansLoading && scans.length > 5 && (\n  <button\n    type=\"button\"\n    className={styles.showAllBtn}\n    onClick={() => setShowAllScans(v => !v)}\n  >\n    {showAllScans ? 'Show less' : `Show all ${scans.length} scans`}\n  </button>\n)}"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4944-4946",
+        "snippet": "      .filter(Boolean)\n      .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));\n    res.json({ scans });"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "What do the numbers on each row of Recent Scans mean?",
+    "answer": "Each row on the Profile page's \"Recent Scans\" list summarises one scan:\n\n\u2022 The picture on the left is the original photo taken of that rack. If no photo was kept, you get a terminal icon instead.\n\u2022 The bold mono code (for example RK-4F2A9C1B \u2014 always \"RK-\" plus 8 characters) is the rack ID, the scan's permanent address. It is derived from the photo itself, so re-scanning the same image gives the same ID.\n\u2022 The line under it reads \"N dev \u00b7 N units \u00b7 N ports\":\n  \u2013 dev = how many devices RackTrack found in the rack.\n  \u2013 units = how many rack units it mapped.\n  \u2013 ports = how many port identifications have been recorded for that rack so far. This one grows every time you identify another port, so an older scan can show more ports than a newer one. A single one reads \"1 port\".\n\u2022 On the right is how long ago the scan was taken \u2014 \"just now\", \"12m ago\", \"5h ago\", \"3d ago\", \"2w ago\", \"4mo ago\". If the scan has no timestamp you'll see a dash.\n\nThere is no search box and no sort control: the list is always newest scan first. Only the 5 most recent are shown; tap \"Show all N scans\" to see the rest.",
+    "symptoms": [
+      "What does 3 dev 12 units 8 ports mean",
+      "Port count on history row keeps changing",
+      "Can I search my scan history",
+      "How is the history list sorted"
+    ],
+    "rootCause": "ProfilePage renders rackId, deviceCount, unitCount, portCount and a relative timestamp from /api/scans; portCount is the line count of port_identifications.jsonl, and the server sorts by timestamp descending. No search or sort UI exists.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "230-244",
+        "snippet": "<div className={styles.rowThumb}>\n  {s.image\n    ? <img src={apiUrl(s.image)} alt=\"\" loading=\"lazy\" />\n    : <span className=\"material-symbols-outlined\" aria-hidden=\"true\">terminal</span>}\n</div>\n<div className={styles.rowMain}>\n  <h4 className={`${styles.rowTitle} ${styles.rowTitleMono}`}>{s.rackId}</h4>\n  <p className={styles.rowMeta}>\n    {s.deviceCount} dev \u00b7 {s.unitCount} units \u00b7 {s.portCount} port{s.portCount === 1 ? '' : 's'}\n  </p>"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "17-29",
+        "snippet": "function formatRelative(d) {\n  if (!d) return '\u2014';\n  const ms = Date.now() - new Date(d).getTime();\n  if (isNaN(ms) || ms < 0) return 'now';\n  const m = Math.floor(ms / 60000);\n  if (m < 1)   return 'just now';\n  if (m < 60)  return `${m}m ago`;"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4915-4924",
+        "snippet": "// Latest port identification timestamp (if any) for activity sorting\nlet lastPortAt = null, portCount = 0;\nconst idsPath = path.join(rackDir, 'port_identifications.jsonl');\nif (fs.existsSync(idsPath)) {\n  const lines = fs.readFileSync(idsPath, 'utf8').split('\\n').filter(Boolean);\n  portCount = lines.length;"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I reopen a scan I did last week and get back to its results?",
+    "answer": "Tap it \u2014 that is all.\n\n1. PROFILE tab \u2192 \"Recent Scans\".\n2. Tap the row for the rack you want. Only the 5 most recent are listed; tap \"Show all N scans\" to reveal the rest of your history.\n3. RackTrack reloads that scan and drops you on its results screen with the same tabs as when you first scanned it: Overview, Switches, Ports and Topology in the tab bar, with Network and Drift under \"More\".\n\nThe address it opens is /results/<rack ID> \u2014 rack IDs look like RK- followed by 8 characters, e.g. /results/RK-4F2A9C1B \u2014 so you can also bookmark or type that directly and land straight on the scan without going through Profile. Reopening a scan does not re-run the analysis and does not use your camera. If the rack no longer exists on the server, the deep link sends you back to the Scan screen and removes the stale entry from your local history.",
+    "symptoms": [
+      "How do I open an old scan",
+      "Reopen previous result",
+      "Bookmark a scan",
+      "Get back to last week's rack"
+    ],
+    "rootCause": "openScan() fetches /api/scan/<rackId>/report?format=json and navigates to /results/<rackId> with the result preloaded in router state; the /results/:rackId route is deep-linkable and re-fetches via /api/scan/:rackId when opened cold.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "79-95",
+        "snippet": "const openScan = async (rackId) => {\n  try {\n    const meta = scans.find(s => s.rackId === rackId);\n    const res  = await authFetch(apiUrl(`/api/scan/${rackId}/report?format=json`));\n...\n    navigate(`/results/${rackId}`, { state: { result } });"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "316-321",
+        "snippet": "{/* Deep-linkable variant \u2014 when state.result is absent (cold link\n    or rack-tab switch in a multi-rack scan), ResultsPage uses\n    useParams + /api/scan/:rackId to populate itself. */}\n<Route path=\"/results/:rackId\" element={"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "1108-1114",
+        "snippet": "useEffect(() => {\n  if (state?.result || !urlRackId) return;\n  if (fetchedResult?.rackId === urlRackId) return;\n...\n      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(urlRackId)}`));"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "I tapped an old scan and a red message appeared saying the scan was not found.",
+    "answer": "That scan's data is no longer on the server, so RackTrack cannot rebuild the results screen. The message is \"Scan <rack ID> not found\" and it appears as a red banner just under the Recent Scans heading on Profile \u2014 you stay on Profile, the app does not navigate anywhere.\n\nWhat to do:\n1. Stay on Profile and tap a different row in Recent Scans. If the others open, only that one rack's data is gone.\n2. Take a fresh photo of that rack from the SCAN tab. You will get results again (a new rack ID if the photo is new).\n3. If several old scans fail the same way, tell your organization admin \u2014 something removed rack folders on the server (specifically the scan's scan_meta.json).\n\nTwo related cases that look similar but are not the same thing:\n- A rack that belongs to a different Site gives \"Rack not found\" (an access boundary), not \"Scan ... not found\".\n- If you open a /results/<rack ID> link directly and the rack no longer exists, RackTrack shows no error at all: it quietly drops that entry from the app's local history and sends you to the Scan screen.",
+    "symptoms": [
+      "Scan RK-... not found",
+      "Red banner on Profile when opening a scan",
+      "Old scan won't open",
+      "Tapping a history row does nothing / bounces to Scan"
+    ],
+    "rootCause": "buildScanReportData throws 'Scan <rackId> not found' when scan_meta.json is missing, and the report route converts any throw into a 404; ProfilePage surfaces the message in scansError. ResultsPage handles a cold-link 404 by pruning the local cache and redirecting to /scan.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "781-784",
+        "snippet": "function buildScanReportData(rackId) {\n  const rackDir = path.join(outputsDir, rackId);\n  const meta    = readMeta(rackId);\n  if (!meta) throw new Error(`Scan ${rackId} not found`);"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "5031-5033",
+        "snippet": "  } catch (err) {\n    res.status(404).json({ error: err.message });\n  }"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "84-95",
+        "snippet": "if (!res.ok) throw new Error(data.error || 'Could not load scan');\n...\n} catch (err) { setScansError(err.message); }"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "1119-1131",
+        "snippet": "if (r.status === 404 && !cancelled) {\n  try {\n    window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: '' }));\n    const histRaw = localStorage.getItem('rackTrackHistory');\n...\n  navigate('/scan', { replace: true });"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "My Recent Scans says \"No scans yet.\" but I have definitely scanned racks.",
+    "answer": "\"No scans yet.\" plus a \"Start your first scan\" button means the server returned an empty list for the account you are signed in as. Work through these in order:\n\n1. Check who you are signed in as \u2014 your username and email are shown under your avatar at the top of the same Profile screen. A second account (or a re-signup) starts with an empty history.\n2. Check whether you were moved to a different Site. Your history is the racks you claimed while in your current Site; if an admin moved you, the older scans stay with the old Site.\n3. Remember that you only see scans you ran yourself. A colleague's scan of the same rack does not appear in your list.\n4. If none of that fits, ask your organization admin \u2014 they can see every scan from every Site in the organization and can confirm the scan still exists.\n\nA red error banner instead of \"No scans yet.\" means the history failed to load, not that it is empty. The list is only fetched when the Profile screen opens, so navigate away and back to Profile (or reload the app) to retry it.",
+    "symptoms": [
+      "No scans yet",
+      "History empty after signing in",
+      "Start your first scan button but I already scanned",
+      "My scans disappeared"
+    ],
+    "rootCause": "For a member, /api/scans intersects the outputs folders with tenantUserRackIds(tenant_id, user_id) \u2014 racks claimed in the CURRENT Site by THIS user. A different account, a Site move, or a colleague's claim all yield an empty set. The empty state renders only when there is no error.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "213-219",
+        "snippet": "{!scansLoading && recent.length === 0 && !scansError ? (\n  <div className={styles.empty}>\n    <p className={styles.emptyText}>No scans yet.</p>\n    <button className={styles.startBtn} onClick={() => navigate('/scan')}>\n      Start your first scan\n    </button>"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4886-4894",
+        "snippet": "// `allowedRacks === null` means no rack-set restriction (owner).\nlet allowedRacks;\nif (role === 'owner') allowedRacks = null;\nelse if (role === 'org_admin' && orgId) allowedRacks = tenant.orgRackIds(orgId);\n...\nelse allowedRacks = tenantId ? tenant.tenantUserRackIds(tenantId, userId) : new Set();"
+      },
+      {
+        "file": "server/lib/tenant.js",
+        "lines": "86-90",
+        "snippet": "function tenantUserRackIds(tenantId, userId) {\n  if (!tenantId || !userId) return new Set();\n  _prep();\n  return new Set(_stmtUserRackIds.all(Number(tenantId), Number(userId)).map(r => r.rack_id));\n}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "I was moved to a different site and now my old scans are gone from Recent Scans.",
+    "answer": "That is expected. Your scan history follows the Site you are in, not just your login.\n\nRackTrack records each scan as \"this Site claimed this rack, and this person did it\" (rack_owners: tenant_id + created_by). When an admin changes your Site, Recent Scans is rebuilt immediately from the racks claimed in your NEW Site, so scans you ran under the old Site stop showing for you. Nothing was deleted \u2014 the old records are still on the server under the old Site.\n\nWhat to do:\n1. Ask your organization admin to look the rack up \u2014 an org admin sees every scan from every Site in the organization, including your old ones.\n2. If you know the rack ID (RK-\u2026), you may still be able to open it directly for a while: rack access is checked against the Site baked into your login token, and that token is not refreshed when the admin moves you. Once you log out and back in (or the session expires), opening a rack from your old Site returns \"Rack not found\".\n3. To get the rack into your new Site's history permanently, simply scan it again from your new Site.",
+    "symptoms": [
+      "History emptied after being moved to another site",
+      "Scans vanished after admin changed my site",
+      "Rack not found after site change",
+      "Lost my history but colleague still sees it"
+    ],
+    "rootCause": "PATCH /api/orgs/:orgId/members/:memberId can set users.tenant_id. /api/scans for a member queries rack_owners by (tenant_id, created_by), and the :rackId guard denies members any rack their current tenant does not own \u2014 so a Site move detaches the member from previously claimed racks.",
+    "evidence": [
+      {
+        "file": "server/auth.js",
+        "lines": "1294-1298",
+        "snippet": "if (siteId !== undefined && siteId !== null && siteId !== '') {\n  const site = db.prepare('SELECT * FROM tenants WHERE id = ?').get(Number(siteId));\n  if (!site || site.organization_id !== orgId) return res.status(400).json({ error: 'Invalid site' });\n  sets.push('tenant_id = ?'); vals.push(site.id);\n}"
+      },
+      {
+        "file": "server/lib/tenant.js",
+        "lines": "49-50",
+        "snippet": "_stmtUserRackIds = db.prepare(\n    `SELECT rack_id FROM rack_owners WHERE tenant_id = ? AND created_by = ?`);"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "226-234",
+        "snippet": "// Members: only their own Site (tenant).\nif (!auth.tenantId) return next();\nif (!tenant.tenantOwnsRack(auth.tenantId, rackId)) {\n...\n  return res.status(404).json({ error: 'Rack not found' });\n}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Do my past scans expire? How long can I go back and open one?",
+    "answer": "No \u2014 scans do not expire. Nothing in RackTrack deletes a scan because it got old. A scan you ran stays in Recent Scans and stays openable indefinitely: there is no 30-day, 90-day or 1-year cut-off, and no cap on how many scans you can have. (Recent Scans shows your latest 5 by default; tap \"Show all N scans\" to see the rest.)\n\nTwo things can make a scan drop off your list, and neither is a timer on your history:\n\n\u2022 You are looking at it from a different place. As a technician you see the scans you yourself ran inside your current Site \u2014 not every scan the Site owns, and not scans you ran under a previous Site or a different account. The scan still exists; it just is not listed for you any more. (Site managers see their org's Sites; the platform owner sees everything.)\n\n\u2022 The rack is no longer owned by any Site at all \u2014 for example after the organization or Site it belonged to was deleted on the server. Only then does the scan folder become a candidate for the server's orphan clean-up, and even then it is not immediate: the folder must also be older than the retention window (14 days by default), and the nightly job runs in report-only mode unless an operator has explicitly switched deletion on. An admin can also run it on demand.\n\nSeparately, live port drift history has its own retention (port events ~30 days, snapshots ~90 days, latest state per port always kept). That is the port timeline, not your scan \u2014 the scan, its unit map and its report stay put.\n\nIf an old scan matters for an audit, export it: open the scan and download the report (HTML, PDF, CSV or JSON). That gives you a copy that does not depend on the server at all.",
+    "symptoms": [
+      "How long is scan history kept",
+      "Do scans get deleted after 30 days",
+      "Retention of past scans",
+      "Will my old racks disappear"
+    ],
+    "rootCause": "Nothing prunes scans by age while a rack_owners row exists; the only scheduled deletion is orphan GC, which targets outputs/RK-* folders with NO rack_owners row and is dry-run unless ORPHAN_GC_APPLY=1.",
+    "evidence": [
+      {
+        "file": "server/lib/orphan_gc.js",
+        "lines": "8-17",
+        "snippet": "* Anything in outputs/ that ISN'T owned by some tenant is dead weight\n...\n *   2. `retentionDays` (default 14) \u2014 folder must also be older than\n *      this."
+      },
+      {
+        "file": "server/lib/orphan_gc.js",
+        "lines": "69-77",
+        "snippet": "for (const name of fs.readdirSync(outputsDir)) {\n    if (!RACK_FOLDER_RE.test(name)) continue;   // safety #1: only RK-* folders\n    if (ownedSet.has(name)) continue;\n...\n    if (stat.mtimeMs > cutoffMs) continue;       // safety #2: too young"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "2117-2122",
+        "snippet": "// Scheduled daily orphan GC. Default: dry-run only (logs counts but\n// doesn't delete) so an operator can review the metric before\n// flipping ORPHAN_GC_APPLY=1.\nconst _orphanGcIntervalMs = 24 * 60 * 60 * 1000;\nconst _orphanGcApply = process.env.ORPHAN_GC_APPLY === '1';\nconst _orphanGcRetentionDays = parseInt(process.env.ORPHAN_GC_RETENTION_DAYS, 10) || 14;"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Can I put two past scans of the same rack side by side to see what changed?",
+    "answer": "There is no built-in \"compare two scans\" view \u2014 RackTrack has no scan-to-scan diff. Each scan stays reachable at its own URL, so compare them by opening both:\n\n\u2022 On a laptop or desktop: open /results/<rack ID> for the first scan in one browser tab and the second rack ID in another tab, then flip between them. A rack ID opens cold \u2014 you don't need the original scan session.\n\u2022 On the phone: open one from Profile \u2192 Recent Scans, note what you need, use Back, then open the other.\n\nThe side-by-side racks you may have seen are a different feature: they belong to a two-rack scan group (\"Scan two racks\"). On desktop, the Overview tab of such a group shows both racks of that group side by side; the other tabs (Ports, Network, Switches, Drift) and the phone show one rack at a time with a pill toggle, so live port probes don't run twice at once. Either way it compares the two racks of one scan group, not two scans taken at different times.\n\nIf what you actually want is what changed on a switch over time, use Port history & drift (\"Continuous SSH telemetry\") instead \u2014 it is built for before/after and has a Change log listing each recorded change.\n\nNote: if a scan has been removed on the server, its /results/<rack ID> link 404s and sends you back to the scan screen.",
+    "symptoms": [
+      "Compare two scans",
+      "Diff between old and new scan",
+      "Side by side past results",
+      "What changed since last scan"
+    ],
+    "rootCause": "No scan-to-scan diff exists. RackToggle only renders one rack of a multi-rack group at a time; each scan is addressable at /results/:rackId, so the practical workaround is two deep links. Temporal change is covered by the port history/drift view.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SideBySideRacks.jsx",
+        "lines": "12-16",
+        "snippet": "// Rack TOGGLE: for a multi-rack group, show ONE rack's content at a time with a\n// pill toggle to switch between racks. Rendering one at a time keeps live-probe\n// pages (Ports) correct \u2014 no two simultaneous probes. Standalone rack \u2192 the\n// normal single page.\nexport function RackToggle({ Single, render }) {"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "319-321",
+        "snippet": "<Route path=\"/results/:rackId\" element={\n  <ProtectedRoute><ResponsiveLayout><RackResultsRoute /></ResponsiveLayout></ProtectedRoute>\n} />"
+      },
+      {
+        "file": "client/src/pages/PortHistoryPage.jsx",
+        "lines": "236-240",
+        "snippet": "<div className={styles.headerCenter}>\n  <h1 className={styles.headerTitle}>Port history &amp; drift</h1>\n  <p className={styles.headerSub}>Continuous SSH telemetry</p>\n</div>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "likely",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "On a port's History tab, how far back does the \"Value at\" table and the change log go?",
+    "answer": "Open Port history & drift. The page targets your monitored switch automatically \u2014 there is no switch picker. Under \"Interface inventory\" tap a port tile, then in the panel that slides up tap the History tab (it reads \"History \u00b7 N\" when that port has changes).\n\nThe History tab has two blocks:\n\n\u2022 \"Value at\" \u2014 the port's state as it was 1h, 3h, 12h, 1d and 1w ago. Five fixed points, nothing longer than a week. Columns are Ago / Oper / Admin / Speed / Recorded. If consecutive points land on the same recorded state you get one row labelled \"1h+\" instead of repeated identical rows \u2014 that just means the port did not change across that span. (Snapshots are only written on change, so this is normal for a stable port.) On a port with no snapshots yet this block is hidden entirely.\n\n\u2022 \"Change log (N)\" \u2014 the most recent changes for that port, newest first, capped at 200. N is how many are being shown, so N = 200 means you are seeing the newest 200 and older ones exist but are not displayed here.\n\nThe Timeline tab has its own Window picker: Last 1 Hour, Last 3 Hours, Last 12 Hours, Last 1 Day, Last 1 Week. One week is again the longest view.\n\nIf you need to prove a change older than a week, capture the evidence while it is still on screen.",
+    "symptoms": [
+      "Port history only goes back a week",
+      "What does 1h+ mean in Value at",
+      "Change log cut off",
+      "Timeline window options"
+    ],
+    "rootCause": "The /history route computes exactly five offsets (1h/3h/12h/1d/1w) and requests eventsForPort with a limit of 200; the client's WINDOW_OPTIONS top out at 1 week and dedupedOffsets collapses identical snapshots into a '<first>+' row.",
+    "evidence": [
+      {
+        "file": "server/port_history.js",
+        "lines": "82-88",
+        "snippet": "const OFFSETS = [\n  ['1h',  60 * 60 * 1000],\n  ['3h',  3  * 60 * 60 * 1000],\n  ['12h', 12 * 60 * 60 * 1000],\n  ['1d',  24 * 60 * 60 * 1000],\n  ['1w',  7  * 24 * 60 * 60 * 1000],\n];"
+      },
+      {
+        "file": "server/port_history.js",
+        "lines": "99-103",
+        "snippet": "res.json({\n    current: portsDb.latestSnapshot(id, port),\n    offsets,\n    events:  portsDb.eventsForPort(id, port, 200),\n  });"
+      },
+      {
+        "file": "client/src/pages/PortHistoryPage.jsx",
+        "lines": "18-24",
+        "snippet": "const WINDOW_OPTIONS = [\n  { key: '1h',  label: 'Last 1 Hour',  sec: 3600 },\n  { key: '3h',  label: 'Last 3 Hours', sec: 3  * 3600 },\n  { key: '12h', label: 'Last 12 Hours',sec: 12 * 3600 },\n  { key: '1d',  label: 'Last 1 Day',   sec: 24 * 3600 },\n  { key: '1w',  label: 'Last 1 Week',  sec: 7  * 24 * 3600 },\n];"
+      },
+      {
+        "file": "client/src/pages/PortHistoryPage.jsx",
+        "lines": "181-185",
+        "snippet": "return order.map((e) => ({\n    sig: e.sig,\n    snap: e.snap,\n    label: e.firstKey === e.lastKey ? e.firstKey : `${e.firstKey}+`,\n  }));"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "A port's change log says \"No changes recorded yet.\" even though the port has been monitored for days.",
+    "answer": "That is a healthy port, not a broken history.\n\nRackTrack only writes a history row when something about the port actually changes. The tracked fields are: operational state (link up/down), admin state, speed, duplex, flow control, active medium, description, and the three LLDP neighbour fields (chassis, port, system). Every poll is compared against the last stored snapshot; if nothing differs, neither a snapshot nor an event is written. A port that has stayed exactly the same since monitoring began therefore has nothing to log, so the History tab shows \"Change log (0)\" and \"No changes recorded yet.\"\n\nHow to confirm the port really is being watched:\n1. Switch to the port's Specs tab and look at \"Last poll\" \u2014 it should show a recent time. That timestamp is stamped on every successful poll of the device whether or not anything changed, so a recent value proves monitoring is alive.\n2. \"Last change\" on the same tab tells you when the current state was first recorded \u2014 for a never-changed port that is effectively when monitoring began.\n3. If you need to prove logging works, shut/no-shut or unplug/replug the port; the change appears on the next poll.\n\nIf \"Last poll\" is blank or very old, the problem is polling (SSH failure or backoff), not history.\n\nOne caveat for admins: description tracking can be switched off with the server env var PORT_DRIFT_TRACK_DESCR=0. If that is set, a changed port description will not produce a change-log entry.",
+    "symptoms": [
+      "No changes recorded yet",
+      "Change log 0",
+      "Port history empty but port is monitored",
+      "Drift log shows nothing"
+    ],
+    "rootCause": "port_events rows are written only on a detected diff (writePollTxn compares against the previous snapshot), and snapshots are likewise written only on change \u2014 so a stable port legitimately has zero events.",
+    "evidence": [
+      {
+        "file": "client/src/pages/PortHistoryPage.jsx",
+        "lines": "614-616",
+        "snippet": "<h3 className={styles.subTitle}>Change log ({events.length})</h3>\n{events.length === 0 ? (\n  <div className={styles.muted}>No changes recorded yet.</div>"
+      },
+      {
+        "file": "server/lib/port_history_db.js",
+        "lines": "421-428",
+        "snippet": "// \u2500\u2500 core write path \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// Called by the poller once per port per poll. `row` is the merged\n// per-port state from the vendor's parser. Returns the list of detected\n// changes (possibly empty).\nconst writePollTxn = db.transaction((deviceId, row, ts) => {\n  const prev = latestSnapshot(deviceId, row.port);\n  const changes = [];"
+      },
+      {
+        "file": "server/port_history.js",
+        "lines": "78-81",
+        "snippet": "// `current` is the most recent snapshot. `offsets` answer \"what was\n// this port's state N ago\" by picking MAX(ts) WHERE ts <= now-N \u2014 so\n// even though we only write snapshots on change, the lookup returns a\n// real value as long as the port has been polled at least once."
+      },
+      {
+        "file": "client/src/pages/PortHistoryPage.jsx",
+        "lines": "563-564",
+        "snippet": "<KV label=\"Last change\"   value={current?.ts ? fmtAgo(current.ts) : '\u2014'} />\n<KV label=\"Last poll\"     value={device?.last_seen ? fmtAgo(device.last_seen) : '\u2014'} />"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Admin: how many scans does the Organizations console show me, and can I search or filter them?",
+    "answer": "The organization dashboard shows the 40 most recent scans across every Site in your organization, newest first \u2014 a fixed cap, not page 1 of N. (The platform owner sees no scan grid on the platform-level Organizations list at all \u2014 only the totals tiles, pending approvals and org cards; the owner gets the same 40-scan grid once they open a specific organization.)\n\nFiltering is by click, not by typing \u2014 there is no search box:\n\u2022 Click a person's card to narrow the grid to their scans; the heading changes to \"Scans \u00b7 by <username>\".\n\u2022 Click a Site row to narrow to that Site; the heading becomes \"Scans \u00b7 <site name>\".\n\u2022 Click \"Show all\", or the same card/row again, to clear the filter.\n\nBecause the filter is applied in the browser to the 40 rows already loaded, filtering by someone who has not scanned recently can legitimately show \"No scans for this selection yet.\" even though they have older scans. To reach anything older than the last 40, open it by rack ID at /results/<rack ID>.\n\nNote the Scans totals tile counts every scan ever claimed by your Sites, so it will normally be much larger than 40.",
+    "symptoms": [
+      "Org console only shows 40 scans",
+      "No scans for this selection yet but the user has scanned",
+      "Can I search scans in the organization console",
+      "Scan count doesn't match the grid"
+    ],
+    "rootCause": "GET /api/orgs/:orgId/dashboard returns recentScans with LIMIT 40 (owner dashboard LIMIT 15) while totals.scans is a COUNT(*) over rack_owners; OrgConsolePage filters that already-fetched array client-side by user id or site name.",
+    "evidence": [
+      {
+        "file": "server/auth.js",
+        "lines": "1473-1479",
+        "snippet": "const recentScans = db.prepare(`\n      SELECT r.rack_id, r.created_at, r.created_by AS by_user_id, t.name AS site, u.username AS by_user\n      FROM rack_owners r JOIN tenants t ON t.id = r.tenant_id\n      LEFT JOIN users u ON u.id = r.created_by\n      WHERE r.tenant_id IN (${inList})\n      ORDER BY r.created_at DESC LIMIT 40\n    `)"
+      },
+      {
+        "file": "server/auth.js",
+        "lines": "1443-1450",
+        "snippet": "const recentScans = db.prepare(`\n      SELECT r.rack_id, r.created_at, t.name AS site, o.name AS org, u.username AS by_user\n      FROM rack_owners r\n      JOIN tenants t ON t.id = r.tenant_id\n...\n      ORDER BY r.created_at DESC LIMIT 15\n    `).all();"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "415-423",
+        "snippet": "{/* Scans \u2014 thumbnails, filtered by the selected person / site */}\n{odash && (\n  <ScanGrid\n    scans={(odash.recentScans || []).filter(s => !scanFilter\n      || (scanFilter.type === 'user' && s.by_user_id === scanFilter.id)\n      || (scanFilter.type === 'site' && s.site === scanFilter.name))}"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "619-626",
+        "snippet": "<SecTitle icon=\"qr_code_scanner\">\n          {filterLabel ? `Scans \u00b7 ${filterLabel}` : 'Recent scans'}\n          <span className={styles.count}>{scans.length}</span>\n        </SecTitle>\n        {filterLabel && <button className={styles.smallBtn} onClick={onClear}>Show all</button>}\n      </div>\n      {scans.length === 0 ? (\n        <div className={styles.empty}>{filterLabel ? 'No scans for this selection yet.' : 'No scans yet.'}</div>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Admin: if I remove a member, or the owner removes an organization, what happens to their scan history?",
+    "answer": "Two very different outcomes.\n\nRemoving a member (DELETE /api/orgs/:orgId/members/:memberId \u2014 server/auth.js:1331-1357):\n\u2022 The scans survive. In one transaction rack_owners.created_by and invites.invited_by are set to NULL and only the user row is deleted (server/auth.js:1349-1352).\n\u2022 The rack_owners rows keep their tenant_id, so the Site and the organization keep seeing the scans. In the console's scan grid the attribution falls back to \"\u2014\" instead of \"by <username>\" (client/src/pages/OrgConsolePage.jsx:639).\n\u2022 Caveat: a plain member's own history is scoped to racks where rack_owners.created_by = them (tenant.tenantUserRackIds, used at server/app.js:4917-4920), so once created_by is NULL those scans no longer appear in any member's personal history \u2014 only org admins and the platform owner still see them.\n\u2022 Guardrails: you cannot remove yourself (\"You cannot remove your own account\"), an owner account, or \u2014 unless you are the platform owner \u2014 an org_admin. A site_manager can only remove plain members of their own Site.\n\nRemoving an organization (platform owner only, DELETE /api/orgs/:orgId \u2014 server/auth.js:1157-1191):\n\u2022 For each Site in the org, every rack_owners and rack_groups row is deleted and audit_log rows have tenant_id nulled (server/auth.js:1164-1168); then invites, users, the Sites (tenants) and the organization row are deleted.\n\u2022 The scan folders on disk are NOT deleted by that call \u2014 outputs/<rackId>/ simply becomes unowned. Org admins and members can no longer list or open them (canAccessRack / app.param('rackId'), server/app.js:193-225), but the RackTrack platform owner still can: canAccessRack returns true for role 'owner' and /api/scans leaves allowedRacks null for owner, so the owner still sees every folder on disk.\n\u2022 Unowned folders older than 14 days then match the orphan sweep (server/lib/orphan_gc.js:53-56). That sweep is dry-run by default: the daily scheduled job only logs counts unless ORPHAN_GC_APPLY=1 (server/app.js:2143-2163), and POST /api/admin/orphan-gc/run defaults to dryRun=true. So files are not auto-deleted out of the box, but they are eligible.\n\u2022 Export anything you need before deleting an organization; there is no in-app undo \u2014 only a platform owner can still reach the leftover folders.",
+    "symptoms": [
+      "What happens to scans when I remove a user",
+      "Scans show by \u2014 instead of a name",
+      "Deleting an organization removes scan history",
+      "Can I recover scans after removing an org"
+    ],
+    "rootCause": "member.remove nulls rack_owners.created_by and deletes only the user; org.remove deletes rack_owners/rack_groups/users/tenants for the org, leaving outputs/<rackId>/ folders unreferenced and therefore orphan-GC eligible.",
+    "evidence": [
+      {
+        "file": "server/auth.js",
+        "lines": "1340-1344",
+        "snippet": "const tx = db.transaction(() => {\n  db.prepare('UPDATE rack_owners SET created_by = NULL WHERE created_by = ?').run(memberId);\n  db.prepare('UPDATE invites SET invited_by = NULL WHERE invited_by = ?').run(memberId);\n  db.prepare('DELETE FROM users WHERE id = ?').run(memberId);\n});"
+      },
+      {
+        "file": "server/auth.js",
+        "lines": "1155-1167",
+        "snippet": "for (const tid of tenantIds) {\n        if (has('rack_owners')) db.prepare('DELETE FROM rack_owners WHERE tenant_id = ?').run(tid);\n        if (has('rack_groups')) db.prepare('DELETE FROM rack_groups WHERE tenant_id = ?').run(tid);\n        try { db.prepare('UPDATE audit_log SET tenant_id = NULL WHERE tenant_id = ?').run(tid); } catch (_) {}\n      }"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "639",
+        "snippet": "<span className={styles.scanSub}>{s.by_user ? `by ${s.by_user}` : '\u2014'}{s.site ? ` \u00b7 ${s.site}` : ''}</span>"
+      },
+      {
+        "file": "server/lib/orphan_gc.js",
+        "lines": "53-57",
+        "snippet": "function findOrphans({\n  outputsDir = OUTPUTS_DIR,\n  retentionDays = 14,\n} = {}) {"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Internal: a scan is counted in the organization totals but never appears in Recent Scans \u2014 why?",
+    "answer": "Same diagnosis as the entry, with corrected anchors and two additions.\n\nAccurate line references (the cited ones have drifted ~20-27 lines):\n- server/app.js:4923-4928 \u2014 /api/scans: `fs.readdirSync(outputsDir).filter(name => name.startsWith('RK-')).map(rackId => { if (allowedRacks && !allowedRacks.has(rackId)) return null; const meta = readMeta(rackId); if (!meta) return null; ...`\n- server/app.js:679-690 \u2014 readMeta: returns null if scan_meta.json is absent, and swallows a JSON.parse error to return null on a truncated/corrupt file.\n- server/auth.js:1472 \u2014 org dashboard total: `SELECT COUNT(*) c FROM rack_owners WHERE tenant_id IN (${inList})`; server/auth.js:1443 \u2014 owner platform total: `SELECT COUNT(*) c FROM rack_owners`.\n- server/app.js:3230-3234 \u2014 /api/select's comment explaining that it reconstructs and heals a missing meta instead of 404-ing.\n- server/app.js:4933 and 4944 \u2014 the per-rack device_unit_map.json and port_identifications.jsonl reads that make the endpoint scale with the size of outputs/.\n\nTwo causes the entry omits:\n1. rack_owners holds one row per (tenant_id, rack_id) claim, and a rack id is a hash of the source image \u2014 so if two Sites in the same org scan the same rack, the org total counts it twice while the history list shows it once. Duplicate claims alone can explain a totals/list gap with nothing wrong on disk.\n2. Scope mismatch: for a member, /api/scans uses allowedRacks = tenant.tenantUserRackIds(tenantId, userId) (only racks THEY claimed), while the org dashboard total spans every Site in the org. A member's Profile list is expected to be smaller than the org total.\n\nAlso note the owner dashboard's own \"Recent Scans\" table (server/auth.js:1451-1459) is a pure SQL query over rack_owners joined to tenants/organizations/users \u2014 it will still show a rack whose files are missing. Only the Profile history list (/api/scans) and /api/racks are filesystem-driven and can silently drop it.\n\nThe diagnosis order is otherwise correct: check that outputs/<rackId>/ exists, check scan_meta.json is present and valid JSON, then compare against rack_owners rows for that rack_id.",
+    "symptoms": [
+      "Scan count higher than the list",
+      "Rack counted but not listed",
+      "Scan missing from Profile but present in DB",
+      "Recent Scans slow to load"
+    ],
+    "rootCause": "/api/scans enumerates the filesystem and requires a readable scan_meta.json per rack, while dashboard totals COUNT(*) rack_owners rows; readMeta returns null on both missing and corrupt meta, so such racks are filtered out with no error.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "4896-4904",
+        "snippet": "const scans = fs.readdirSync(outputsDir)\n      .filter(name => name.startsWith('RK-'))\n      .map(rackId => {\n        if (allowedRacks && !allowedRacks.has(rackId)) return null;\n        const meta = readMeta(rackId);\n        if (!meta) return null;"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "660-670",
+        "snippet": "function readMeta(rackId) {\n  const p = path.join(outputsDir, rackId, 'scan_meta.json');\n  if (!fs.existsSync(p)) return null;\n  // A truncated/corrupt scan_meta.json (e.g. crash mid-write) must not throw \u2014\n  // callers treat null as \"reconstruct or 404\", not a 500.\n  try {\n    return JSON.parse(fs.readFileSync(p, 'utf8'));\n  } catch (_) {\n    return null;\n  }\n}"
+      },
+      {
+        "file": "server/auth.js",
+        "lines": "1460-1465",
+        "snippet": "const totals = {\n      sites: siteIds.length,\n      users: db.prepare('SELECT COUNT(*) c FROM users WHERE organization_id = ?').get(orgId).c,\n      scans: db.prepare(`SELECT COUNT(*) c FROM rack_owners WHERE tenant_id IN (${inList})`).get().c,"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "3203-3208",
+        "snippet": "// scan_meta.json can go missing even when the analysis is fully intact \u2014\n  // e.g. the cache-hit analyze path skips writeMeta, or the folder was\n  // created by a flow that didn't persist it. /api/select only needs the\n  // device map + original image (both present here), so reconstruct and\n  // heal the meta instead of hard-404ing with \"please re-upload\"."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Internal: a user says a \"Clear\" button wiped their scan history \u2014 where is that button?",
+    "answer": "It is not reachable. HistoryPage.jsx still exists and is still imported by App.jsx (line 18), but no <Route> renders it \u2014 App.jsx:312 makes /history a redirect: <Route path=\"/history\" element={<Navigate to=\"/profile\" replace />} />. Nobody can reach its \"Scan history\" header, its \"Clear\" button, or its \"No past scans yet.\" empty state through the app. Treat any report about them as a stale build, a screenshot from an old version, or a URL typed by hand into a dev bundle.\n\nWhat does still exist is the localStorage key rackTrackHistory:\n- ResultsPage appends the current result to it and truncates with history.slice(0, 12) \u2014 so at most 12 entries, per browser/device, per WebView, never synced to the server.\n- The only live readers/writers left are in ResultsPage: it writes on every new result (~line 1736) and prunes the entry when a cold /results/<rackId> link 404s (~line 1127).\n- It is NOT cleared on sign-out. AuthContext logout() only drops the stored token and user keys, so rackTrackHistory persists across sign-out and across users on the same device. Only clearing site data (or the unreachable Clear button) removes it.\n- It has no effect on Recent Scans, which ProfilePage serves entirely from GET /api/scans (server/app.js:4904, auth-scoped).\n\nSo: the authoritative history is server-side; rackTrackHistory is a vestigial, device-local 12-item cache. Clearing browser storage never deletes a scan.",
+    "symptoms": [
+      "Clear button deleted my history",
+      "Scan history page with a Clear button",
+      "No past scans yet message",
+      "History differs between phone and laptop"
+    ],
+    "rootCause": "HistoryPage is dead code (imported, never routed); the local rackTrackHistory cache is capped at 12 entries and is device-local, while the real history comes from GET /api/scans.",
+    "evidence": [
+      {
+        "file": "client/src/pages/HistoryPage.jsx",
+        "lines": "16-19",
+        "snippet": "const clearHistory = () => {\n    localStorage.removeItem('rackTrackHistory');\n    setHistory([]);\n  };"
+      },
+      {
+        "file": "client/src/pages/HistoryPage.jsx",
+        "lines": "31-40",
+        "snippet": "<h2 className={styles.title}>Scan history</h2>\n        <button className=\"btn btn-ghost btn-sm\" onClick={clearHistory} disabled={history.length === 0}>\n          Clear\n        </button>\n...\n            <p>No past scans yet.</p>"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "18",
+        "snippet": "import HistoryPage from './pages/HistoryPage.jsx';"
+      },
+      {
+        "file": "client/src/pages/ResultsPage.jsx",
+        "lines": "1728-1737",
+        "snippet": "if (!history.some(h => h.scanId === result.scanId)) {\n      history.unshift({\n        scanId: result.scanId, timestamp: result.timestamp, severity: 'info',\n...\n      localStorage.setItem('rackTrackHistory', JSON.stringify(history.slice(0, 12)));\n    }"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "history-past-scans",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

@@ -1,0 +1,108 @@
+[
+  {
+    "question": "What do the words on the Firmware tab mean \u2014 \"Up to date\", \"Upgrade available\", \"Latest version unknown\"?",
+    "answer": "The pill next to the word Firmware on the Firmware tab is the whole verdict. Once the check finishes, it says exactly one of six things:\n\n1. \"Up to date\" \u2014 the version we have on file for this model is character-for-character the same as the version you are running. (We compare the two strings exactly; we do not do clever version maths.)\n2. \"Upgrade available\" \u2014 the version we have on file is different from yours. Read it as \"different\", not automatically \"newer\" \u2014 check the release notes before you act.\n3. \"Recommended min: <version>\" \u2014 we could not confirm a latest version, but we do have a minimum safe version to aim for.\n4. \"Check vendor portal\" \u2014 this vendor keeps its release notes behind a login, so all we can do is point you at their portal.\n5. \"Couldn't read latest \u2014 check vendor\" \u2014 we have a release-notes link but could not pull a version number out of it.\n6. \"Latest version unknown\" \u2014 we have nothing on file. This is NOT the same as being up to date.\n\nUnderneath the pill you get up to four cells:\n- Current \u2014 the version on the switch.\n- Latest \u2014 the version we have on file. If we don't have one, this cell shows a dash; if we don't have one but we do recognise the vendor, it turns into a tappable \"Check site \u2197\" that opens that vendor's official download page.\n- Min safe \u2014 only shown when there is a recommended minimum version and it differs from Latest.\n- A \"Release notes \u2197\" link, or \"Vendor portal \u2197\" if there is no release-notes link.\n\nWhenever Latest is unknown, a short plain-English line appears below the cells explaining why (or saying we couldn't find a verified latest firmware for that make/model) \u2014 read that line, it is usually the most useful thing on the tab.",
+    "symptoms": [
+      "Up to date",
+      "Upgrade available",
+      "Latest version unknown",
+      "Check vendor portal",
+      "Recommended min",
+      "Min safe",
+      "what does the firmware badge mean"
+    ],
+    "rootCause": "SwitchCard derives fwHeadline from firmware.upToDate (true / false / null) and then falls through recommendedMinVersion \u2192 releaseNotesGated||portalUrl \u2192 releaseNotesUrl \u2192 'Latest version unknown'. The cells below are Current / Latest / Min safe / notes link.",
+    "evidence": [
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "448-461",
+        "snippet": "let fwHeadline;\n  if (firmware?.upToDate === true) {\n    fwHeadline = 'Up to date';\n  } else if (firmware?.upToDate === false) {\n    fwHeadline = 'Upgrade available';\n  } else if (firmware?.recommendedMinVersion) {\n    fwHeadline = `Recommended min: ${firmware.recommendedMinVersion}`;\n  } else if (firmware?.releaseNotesGated || firmware?.portalUrl) {\n    fwHeadline = 'Check vendor portal';\n  } else if (firmware?.releaseNotesUrl) {\n    fwHeadline = \"Couldn't read latest \u2014 check vendor\";\n  } else {\n    fwHeadline = 'Latest version unknown';\n  }"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "820-853",
+        "snippet": "<MiniField label=\"Current\" value={firmware.currentVersion} .../>\n                  {latestUnknown && fwUrl ? (\n...\n                        Check site \u2197\n...\n                  {firmware.recommendedMinVersion && firmware.recommendedMinVersion !== firmware.latestVersion && (\n                    <MiniField label=\"Min safe\" value={firmware.recommendedMinVersion} .../>\n...\n                      Release notes \u2197\n...\n                      Vendor portal \u2197"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "It says \"Upgrade available\" \u2014 what am I supposed to do about it?",
+    "answer": "RackTrack cannot upgrade anything. It only compares two version strings and shows you where to read. Do this:\n\n1. Open the vendor's own notes from the badge. On the switch's firmware card that link is \"Release notes \u2197\" (or \"Vendor portal \u2197\" if no release-notes link was found). On the standalone Firmware page the same link is labelled \"source \u2197\". Read what changed before you touch the switch.\n2. Compare the Current and Latest numbers yourself. \"Upgrade available\" only means the two strings are not identical \u2014 we do not order versions, so it does not prove the version we show is newer than yours.\n3. If the change matters, raise it through your normal change process and upgrade from the vendor's own download page. Nothing you do on this screen is pushed to the switch.\n4. If the switch card shows a \"Min safe\" number, that is the lowest version worth aiming for. It only appears when it differs from Latest, and it is not shown on the standalone Firmware page.\n\nNothing on either screen writes to the switch, to your CMDB, or to a ticket.",
+    "symptoms": [
+      "Upgrade available",
+      "how do I update the firmware",
+      "does RackTrack upgrade the switch",
+      "Release notes",
+      "Vendor portal"
+    ],
+    "rootCause": "upToDate is a plain string equality between the agent's cached latest version and the version supplied by the caller; the UI exposes only outbound links (release notes / vendor portal) and has no write path to the device.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "7186-7191",
+        "snippet": "let upToDate = null;\n  if (agentLatest) {\n    upToDate = String(agentLatest).trim() === String(req.currentVersion).trim();\n  }"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "843-853",
+        "snippet": "{firmware.releaseNotesUrl && (\n                    <a href={firmware.releaseNotesUrl} target=\"_blank\" rel=\"noreferrer noopener\"\n...\n                      Release notes \u2197\n...\n                  {!firmware.releaseNotesUrl && firmware.portalUrl && (\n...\n                      Vendor portal \u2197"
+      },
+      {
+        "file": "client/src/pages/FirmwarePage.jsx",
+        "lines": "24-27",
+        "snippet": "} else if (result.upToDate === false) {\n    tone = 'warn';\n    headline = 'An upgrade is available.';\n    body = `Latest is ${latest}, you're on ${cur}. Check the release notes to see what changed before you upgrade.`;"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "It says \"Latest version unknown\" \u2014 does that mean my switch is fine?",
+    "answer": "No. It means RackTrack found nothing to compare against. Treat it as \"not checked\", not as \"safe\".\n\nOn a switch card (Firmware tab), what you see depends on what the lookup came back with:\n\n- \"Latest version unknown\" with the Latest cell showing \"Check site \u2197\" \u2014 tap it; it opens that vendor's official download page. This link only appears for vendors RackTrack knows a download URL for (Cisco, Juniper, Arista, HPE/Aruba, Dell, Fortinet, Extreme, Netgear, TP-Link, D-Link, Ubiquiti, Huawei, Ruijie, Zyxel and similar).\n- Latest showing just a dash (\"\u2014\") \u2014 same meaning, but RackTrack has no download URL on file for this vendor, so there is nothing to tap. Search the vendor's own support site yourself.\n- \"Check vendor portal\" \u2014 the lookup returned a vendor portal link (often because release notes sit behind a login). Use the \"Vendor portal \u2197\" link; you may need your vendor account.\n- \"Couldn't read latest \u2014 check vendor\" \u2014 there is a release-notes URL but no readable version in it. Open \"Release notes \u2197\" and read the version yourself.\n- \"Recommended min: X\" \u2014 no confirmed latest, but RackTrack knows a minimum safe version. Being at or above X is still not the same as being current.\n\nBelow the cells you get either the agent's own explanation or \"Couldn't find a verified latest firmware for <vendor> <model> in our database.\"\n\nOn the Firmware Check screen the wording is \"We couldn't confirm the latest version.\" with the body \"The vendor's site didn't show a clear latest version. Check the vendor's site yourself \u2014 this is not the same as being up to date.\" Under \"Find latest firmware:\" you get a \"Google search \u2197\" link, plus a \"Vendor support \u2197\" link when RackTrack has a vendor site on record. (If a version was found but couldn't be compared to yours, the body instead reads \"The newest version we saw was X, but we couldn't compare it to Y.\")\n\nIn every one of these cases the correct assumption is \"unverified\", not \"up to date\".",
+    "symptoms": [
+      "Latest version unknown",
+      "We couldn't confirm the latest version",
+      "Check site",
+      "Find latest firmware",
+      "Latest shows a dash",
+      "Couldn't read latest \u2014 check vendor"
+    ],
+    "rootCause": "latestVersion is null when the agent has no cached firmware row and the live pointer lookup failed; the UI replaces the Latest cell with a vendor-download link and, on FirmwarePage, adds Google/vendor-site search fallbacks.",
+    "evidence": [
+      {
+        "file": "client/src/pages/FirmwarePage.jsx",
+        "lines": "28-34",
+        "snippet": "} else {\n    tone = 'neutral';\n    headline = \"We couldn't confirm the latest version.\";\n    body = latest\n      ? `The newest version we saw was ${latest}, but we couldn't compare it to ${cur}.`\n      : \"The vendor's site didn't show a clear latest version. Check the vendor's site yourself \u2014 this is not the same as being up to date.\";"
+      },
+      {
+        "file": "client/src/pages/FirmwarePage.jsx",
+        "lines": "296-318",
+        "snippet": "{!result.latestVersion && (() => {\n...\n                  const links = [\n                    result.vendorUrl && {\n                      label: 'Vendor support',\n...\n                      label: 'Google search',\n...\n                        Find latest firmware:"
+      },
+      {
+        "file": "client/src/pages/SwitchInformationPage.jsx",
+        "lines": "816-866",
+        "snippet": "const latestUnknown = firmware.latestVersion == null;\n...\n                        Check site \u2197\n...\n                      `Couldn't find a verified latest firmware for ${effectiveMake || displayVendor || 'this vendor'} ${effectiveModel || ''} in our database. Tap \"Check site \u2197\" above to see the current release on the manufacturer's official site.`}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "firmware",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  }
+]

@@ -1,0 +1,283 @@
+[
+  {
+    "question": "The rack is too tall to fit in one photo. How do I scan it?",
+    "answer": "Use MULTI mode, which joins several overlapping photos into one tall image before analysing it.\n\n1. Tap SCAN, then the Upload tab, then MULTI (the middle of the three mode buttons: SINGLE, MULTI, VIDEO).\n2. Tap Select photos and pick between 2 and 8 overlapping photos of the rack. The screen tells you \"Take 2-8 overlapping photos of the rack. Any order \u2014 we'll arrange them automatically.\"\n3. The button at the bottom counts down what is still missing \u2014 \"Add 2 more photo\" with nothing selected, \"Add 1 more photo\" with one \u2014 and once you have at least two it becomes Stitch & Analyze with the photo count in brackets. Tap it.\n\nOnce photos are in the list, the header shows \"N photos \u00b7 auto-arranged\" and a N/8 counter. You can add more with Add more (hidden once you hit 8), reorder with the up/down arrows on each row, or remove one with the X \u2014 but you do not need to: the top-to-bottom order is worked out for you from the overlaps. The server also enforces the same limits, so fewer than 2 or more than 8 photos will not be accepted.",
+    "symptoms": [
+      "rack too tall",
+      "how do I stitch photos",
+      "MULTI mode",
+      "Stitch & Analyze",
+      "Select photos"
+    ],
+    "rootCause": "MultiUploadZone caps the file list at 8 (slice(0,8)) and the CTA requires >= 2 files before it becomes Stitch & Analyze.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "132-136",
+        "snippet": "const merged = [...files, ...arr].slice(0, 8); // hard cap matches server\n    onChange(merged);"
+      },
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "175-182",
+        "snippet": "<div className={styles.multiEmptyTitle}>Tall rack \u2014 multi shot</div>\n          <div className={styles.multiEmptySub}>\n            Take 2-8 overlapping photos of the rack.<br/>\n            Any order \u2014 we'll arrange them automatically.\n          </div>\n          ...\n            Select photos"
+      },
+      {
+        "file": "client/src/pages/ScanPage.jsx",
+        "lines": "1553-1558",
+        "snippet": "const canSubmit = isMulti\n            ? multiFiles.length >= 2\n            : !!file;\n          const ctaLabel = isMulti\n            ? (multiFiles.length < 2 ? `Add ${2 - multiFiles.length} more photo` : `Stitch & Analyze (${multiFiles.length})`)\n            : 'Analyze Rack';"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-howto",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I see what's on the other end of a cable?",
+    "answer": "Open the rack, open Ports, then tap the Cables tab. The number on the tab is how many ports currently see a neighbour on the far end; the list itself is headed with the exact count (for example \"6 LINKS\").\n\nEach row is one cable: your port number and interface on the left, the far-end device on the right, plus a tag saying whether it is a Device, an Uplink or a Switch link. Tap a row to expand it into a trace showing both ends. Where the port feeds a whole downstream network (an uplink, a switch-to-switch link, or any port with more than one device behind it), the trace lists the devices found behind it with their makers \u2014 long lists are shortened, so use \"show all\" to see the rest.\n\nOne thing that is not a fault: a patch panel or wall socket in the middle of a run is passive, with no electronics, so the switch cannot see it. The trace will look like the cable runs straight from the switch to the far-end device. If you keep a cable schedule, record the panel in the port label.\n\nIf the tab is empty it just means RackTrack is still reading the switch \u2014 only live ports with an LLDP neighbour or a known MAC appear here.",
+    "symptoms": [
+      "what's on the end of this cable",
+      "cable trace",
+      "Cables tab",
+      "patch panel missing from the trace"
+    ],
+    "rootCause": "PortsPage CablesView derives cable rows from live port data + LLDP neighbours; expanding a row mounts CableTrace.",
+    "evidence": [
+      {
+        "file": "client/src/pages/PortsPage.jsx",
+        "lines": "501-504",
+        "snippet": "aria-selected={view === 'cables'}\n...\n          onClick={() => setView('cables')}\n        >Cables<span className={styles.viewTabCount}>{linkedCount || counts.used}</span></button>"
+      },
+      {
+        "file": "client/src/pages/PortsPage.jsx",
+        "lines": "952-999",
+        "snippet": "function CablesView({ ports, sfpPortIfaces, switchName }) {\n  const cables = deriveCables(ports, sfpPortIfaces);\n...\n              {isOpen && <CableTrace cable={c} switchName={switchName} />}"
+      },
+      {
+        "file": "client/src/pages/PortsPage.jsx",
+        "lines": "946-949",
+        "snippet": "device: { label: 'Device', cls: 'kindDevice' },\n  uplink: { label: 'Uplink', cls: 'kindUplink' },\n  trunk:  { label: 'Switch link', cls: 'kindTrunk' },"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "pend-howto",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I connect our CMDB or other data source?",
+    "answer": "This is an admin-only area (org admin or owner). Open Data Sources \u2014 from Profile it is the row under the Data Sources heading, or use Data Sources in the sidebar.\n\n1. Tap Add connection.\n2. Give it a Name (for example \"My ServiceNow Dev\").\n3. Choose the Type. The fields below change to match it:\n   - ServiceNow / CMDB \u2014 Instance ID (just the part before .service-now.com), Username, Password.\n   - NetBox \u2014 Base URL, API Token (from your NetBox user profile).\n   - SolarWinds Orion \u2014 Host, Username, Password.\n   - CA / DX Spectrum \u2014 Base URL, Username, Password.\n   - My own database (SQL) \u2014 a PostgreSQL or MySQL connection string.\n   - My own database (REST) \u2014 Base URL, and an API token if it needs one.\n4. Tap Save & use.\n\nOnly one connection is active at a time, and every screen reads from that one \u2014 switching it switches the source of all your data. To switch, tap Use on any other saved connection. The three-dot menu gives Edit and Delete. Connections are saved per signed-in admin account, not shared across the org.\n\nWhen you Edit an existing connection the credential boxes open empty on purpose \u2014 the page says \"Leave the credential fields blank to keep what's already saved.\" The Type is locked once a connection exists (\"Type can't change after a connection is created\"); to change type, create a new connection.\n\nThere is no test button, and saving is not a test: Save only checks that the required boxes are filled and then stores the credentials encrypted \u2014 it never contacts your system, so wrong credentials will save without complaint. To actually prove a ServiceNow connection works, tap Use on it (or, if it is already active, use \"Refresh data from this source\"). That runs a real poll and shows either \"Pulled N incidents from <instance>\" or \"Refresh failed: \u2026\". The poll can take a few minutes on a cold developer instance.",
+    "symptoms": [
+      "connect ServiceNow",
+      "add connection",
+      "Save & use",
+      "Data Sources",
+      "no test connection button",
+      "credentials are blank when I edit"
+    ],
+    "rootCause": "ConnectionsPage (/connections) behind AdminRoute; TYPE_INFO defines the per-type field schema; secrets are never preloaded into the edit form.",
+    "evidence": [
+      {
+        "file": "client/src/App.jsx",
+        "lines": "86-89",
+        "snippet": "if (user?.role !== 'org_admin' && user?.role !== 'owner') {\n    return <Navigate to=\"/\" replace />;\n  }"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "123-131",
+        "snippet": "<h1 className={styles.title}>Data Sources</h1>\n...\n        Saved databases this app can pull data from. The <strong>active</strong>\n        {' '}connection is what every screen uses while you're signed in."
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "250-259",
+        "snippet": "onClick={openCreateForm}\n...\n          Add connection"
+      },
+      {
+        "file": "client/src/utils/connectionsApi.js",
+        "lines": "120-170",
+        "snippet": "servicenow: { label: 'ServiceNow / CMDB', fields: [ { key: 'instance', label: 'Instance ID', placeholder: 'dev266363', required: true }, ... ], hint: 'Use just the instance ID \u2014 the part before .service-now.com' },\n  netbox: { label: 'NetBox', ... },\n  orion: { label: 'SolarWinds Orion', ... },\n  spectrum: { label: 'CA / DX Spectrum', ... },\n  generic_sql: { label: 'My own database (SQL)', ... },\n  generic_rest: { label: 'My own database (REST)', ... },"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "330-355",
+        "snippet": "Leave the credential fields blank to keep what's already saved.\n...\n                  {submitting ? 'Saving\u2026' : (editingId ? 'Save changes' : 'Save & use')}"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "56-57",
+        "snippet": "setSecret(emptySecretFor(profile.type)); // never preload secrets"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "218-223",
+        "snippet": "className={styles.useBtn}\n                  onClick={() => onActivate(p.id)}>\n                  Use"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-howto",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I approve a new organization that has signed up?",
+    "answer": "Platform owner only. Open the Organizations console (/organizations). Self-signups appear at the top under \"Pending approvals\" \u2014 the section only shows when at least one request is waiting \u2014 each tagged Pending with \"Requested by <username> \u00b7 <email>\". Until you act they are locked out of everything: the server rejects every request from a pending org (403 \"Your organization is awaiting approval\"), not just the UI.\n\nThree buttons on each pending row:\n- Approve \u2014 sets the org active. Their waiting screen polls every 12 seconds and drops them into the app on its own (they can also hit \"Check now\").\n- Reject \u2014 sets the org to \"rejected\"; they see \"Request not approved\" instead of the spinner. The org and all its accounts survive, so it is reversible: the org stays in \"All organizations\" below, and its three-dot menu offers Reactivate to let them in later.\n- Remove \u2014 permanently deletes the organization (with a confirm modal). Use Reject unless you are certain.\n\nOn the All organizations cards below, the three-dot menu gives Edit (rename), Deactivate (or Reactivate), and Remove.\n\nImportant: nobody is emailed when a company signs up \u2014 the only email the system sends is the signup verification code. You find out about new requests only by opening this console, so check it.",
+    "symptoms": [
+      "approve an organization",
+      "Pending approvals",
+      "new signup waiting",
+      "Approve Reject Remove"
+    ],
+    "rootCause": "OrgConsolePage owner branch renders the pending list with approveOrg/rejectOrg and a removeOrg confirm modal; per-org kebab menu offers Edit / Deactivate / Remove.",
+    "evidence": [
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "222-235",
+        "snippet": "<SecTitle icon=\"pending_actions\">Pending approvals</SecTitle>\n...\n                      <div className={styles.rowName}>{o.name} <span className={styles.tagOff}>Pending</span></div>\n...\n                      <button className={styles.dangerBtn} onClick={() => setModal({ kind: 'removeOrg', org: o })}>Remove</button>\n                      <button className={styles.smallBtn} onClick={() => rejectOrg(o)}>Reject</button>\n                      <button className={styles.primaryBtn} onClick={() => approveOrg(o)}>Approve</button>"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "243",
+        "snippet": "<button className={styles.primaryBtn} onClick={() => setModal('org')}>+ New organization</button>"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "278-283",
+        "snippet": "onClick={() => { setOrgMenuFor(null); onOrgMenu('edit', o); }}>Edit</button>\n...\n                          {o.status === 'active' ? 'Deactivate' : 'Reactivate'}</button>\n...\n                          onClick={() => { setOrgMenuFor(null); onOrgMenu('remove', o); }}>Remove</button>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-howto",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I run an audit on a lab switch?",
+    "answer": "Platform owner only. Open Lab in the sidebar (it only appears for owners), or go to /lab. Anyone else sees \"Restricted to platform owners.\"\n\n1. The lab devices are shown as a grid of buttons, each tagged with its state: Live, Offline, No data, Disabled, or Connecting\u2026\n2. Click a device. If it is enabled and the poller is reaching it, the audit runs automatically the first time you select it \u2014 you do not need to press anything. If the device is Disabled or Offline the auto-run is deliberately skipped (the SSH attempt would just hang), and a banner explains why; press the button to force an attempt.\n3. Read the result using the tab strip: Identity, Ports, VLANs, LLDP, MAC.\n4. To re-run it later press Refresh audit (the button reads Run full audit if there is no result yet, and Connecting\u2026 while one is in flight). It is greyed out while polling is disabled for that device. Disable polling / Enable polling turns the background polling of that device on and off.\n\nTwo things that look wrong but are not. Results are kept per device, so flipping between devices shows you what was last seen with a note of how old it is \u2014 a stamp like \"Audit as of 4m ago \u00b7 live SSH pass, not polled\". And the virtual Cisco switches genuinely report \"\u2014\" for speed, duplex and PoE, because they have no physical link or PoE hardware.",
+    "symptoms": [
+      "lab switch audit",
+      "Run full audit",
+      "Refresh audit",
+      "Restricted to platform owners",
+      "speed and PoE show a dash"
+    ],
+    "rootCause": "LabPage is owner-gated (server requireRole('owner') on /api/lab/*). Audits auto-run on first selection, are cached per device in auditsRef, and one SSH pass runs at a time. Cisco IOL has no link negotiation or PoE hardware.",
+    "evidence": [
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "217-219",
+        "snippet": "<main className={styles.main}><p className={styles.sectionNote}>Restricted to platform owners.</p></main>"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "161-181",
+        "snippet": "// Auto-run the audit the first time a device is selected, so the report just\n...\n    if (!selectedId || busyId) return;             // one SSH pass at a time\n...\n    if (auditsRef.current.has(selectedId)) return; // already have a result (or a logged failure)\n    runAudit(selectedId);"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "304-312",
+        "snippet": "<button className={styles.btn} onClick={() => toggleEnabled(selected)}>\n                  {selected.enabled ? 'Disable polling' : 'Enable polling'}\n                </button>\n...\n                  {busy ? 'Connecting\u2026' : audit ? 'Refresh audit' : 'Run full audit'}"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "108-114",
+        "snippet": "const SECTIONS = [\n  { key: 'identity', label: 'Identity' },\n  { key: 'ports',    label: 'Ports' },\n  { key: 'vlans',    label: 'VLANs' },\n  { key: 'lldp',     label: 'LLDP' },\n  { key: 'macs',     label: 'MAC' },\n];"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "76-82",
+        "snippet": "if (connecting)    return { label: 'Connecting\u2026', cls: styles.stWarn };\n  if (!d.enabled)    return { label: 'Disabled',    cls: styles.stIdle };\n  if (d.last_error)  return { label: 'Offline',     cls: styles.stOff };\n  if (!d.last_seen)  return { label: 'No data',     cls: styles.stIdle };\n  return { label: 'Live', cls: styles.stLive };"
+      },
+      {
+        "file": "client/src/pages/LabPage.jsx",
+        "lines": "21-23",
+        "snippet": "// EXPECT EMPTY SPEED/DUPLEX/PoE ON LAB SWITCHES: Cisco IOL is virtual. It never\n// negotiates a link and has no PoE hardware, so those read \"\u2014\"."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "pend-howto",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "How do I list surplus equipment for sale, and how do I search what's already listed?",
+    "answer": "Admin only (organization admin or platform owner), and the Marketplace link lives in the desktop/landscape-iPad sidebar \u2014 it is not on the phone bottom bar. Open Marketplace.\n\nThe section headings across the top are Browse, My listings, Orders, Alerts, Dashboard and Partners.\n\nTo search and filter what is listed (this toolbar only appears on the Browse tab):\n- Type in the box marked \"Search by title, vendor or model\u2026\". The X inside it clears your text.\n- Use the category dropdown next to it \u2014 it opens on \"All categories\".\n- Use the For sale / Wanted pair to switch between things people are selling and things people are looking for.\n- When any filter is on, a \"Clear filters\" link appears next to the results heading (and again in the empty-results panel).\n\nTo list something:\n1. Tap List an item (top right of the Marketplace header).\n2. Choose For sale, or Wanted if you are looking for something rather than selling it.\n3. Fill in Title (required, up to 140 characters), Vendor, Model and Category. Category is a dropdown that already has a value selected, so you only change it if the default is wrong.\n4. Set Condition (New (sealed) / Refurbished / Used \u2014 working / For parts \u2014 also pre-selected) and a Price. Leave the price blank and buyers see \"Make an offer\". You can also set Currency (USD, EUR, GBP, CAD, AUD, INR) and Quantity.\n5. Add a Location and Description (up to 2000 characters) if useful. Both optional.\n6. Add a photo \u2014 optional, JPG / PNG / WebP / HEIC, up to 8 MB. Wait for it to say Photo ready (it shows Uploading\u2026 first, or Upload failed if something went wrong). A wrong file type gives \"Only image files are accepted (JPG, PNG, WebP, HEIC).\"; too large gives \"Image must be 8 MB or smaller.\"\n7. Tap Publish listing (or Post request if you chose Wanted). The button reads Publishing\u2026 while it saves.\n\nIf RackTrack recognises the vendor/model as one of its partners, an \"Or send buyers to a partner\" box appears above the buttons \u2014 that is an alternative to publishing, not a required step.",
+    "symptoms": [
+      "sell surplus gear",
+      "List an item",
+      "Publish listing",
+      "how do I search the marketplace",
+      "Photo ready",
+      "Make an offer"
+    ],
+    "rootCause": "MarketplacePage toolbar (search + category + kind segmented control) plus MarketplaceShell's default 'List an item' action into MarketplaceNewPage, which caps images at 8 MB.",
+    "evidence": [
+      {
+        "file": "client/src/components/marketplace/MarketplaceShell.jsx",
+        "lines": "24-29",
+        "snippet": "{ key: 'browse',    label: 'Browse',     to: '/marketplace' },\n  { key: 'mine',      label: 'My listings', to: '/marketplace?tab=mine', authOnly: true },\n  { key: 'orders',    label: 'Orders',     to: '/marketplace/orders',    authOnly: true, badge: 'orders' },\n  { key: 'alerts',    label: 'Alerts',     to: '/marketplace/alerts',    authOnly: true, badge: 'alerts' },\n  { key: 'dashboard', label: 'Dashboard',  to: '/marketplace/dashboard', authOnly: true },\n  { key: 'partners',  label: 'Partners',   to: '/marketplace/partners',  authOnly: true },"
+      },
+      {
+        "file": "client/src/components/marketplace/MarketplaceShell.jsx",
+        "lines": "84-86",
+        "snippet": "const defaultAction = location.pathname === '/marketplace/new'\n    ? null\n    : <button type=\"button\" className={styles.primaryBtn} onClick={onNew}>List an item</button>;"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "738-764",
+        "snippet": "placeholder=\"Search by title, vendor or model\u2026\"\n...\n              aria-label=\"Clear search\"\n...\n            <option value=\"\">All categories</option>"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "767-793",
+        "snippet": "aria-pressed={kind === 'sell'}\n...\n              For sale\n...\n              Wanted\n...\n            <button className=\"mkt-linkBtn\" onClick={clearFilters}>Clear filters</button>"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "227-234",
+        "snippet": "aria-pressed={!wanted} onClick={() => setKind('sell')}>\n                For sale\n...\n                      aria-pressed={wanted} onClick={() => setKind('want')}>\n                Wanted"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "137",
+        "snippet": "if (file.size > 8 * 1024 * 1024) {"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "209-212",
+        "snippet": "const photoStatus = imageUploading ? 'Uploading\u2026'\n    : imageError    ? 'Upload failed'\n    :                 'Photo ready';"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "480",
+        "snippet": "{submitting ? 'Publishing\u2026' : wanted ? 'Post request' : 'Publish listing'}"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "309-333",
+        "snippet": "<FormSection title=\"Condition & pricing\" hint=\"Leave the price blank to invite offers\">\n...\n                placeholder=\"Make an offer\""
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "pend-howto",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

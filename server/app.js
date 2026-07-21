@@ -191,11 +191,18 @@ function safeUnlink(p) {
 // org; member → their own Site. Unauthenticated callers are left to the
 // route's own logic (public report links). Returns true if access is allowed.
 function canAccessRack(auth, rackId) {
-  // Fail CLOSED. This used to `return true` for unauthenticated callers, which
-  // made every "tenant guard" that relies on it a no-op for anonymous requests
-  // — several of those routes have no requireAuth of their own. The sibling
-  // app.param('rackId') guard was already hardened the same way.
-  if (!auth) return false;
+  // COMPATIBILITY: shipped app builds (<= 17) call /api/select and the
+  // /api/feedback/* routes with a plain fetch() that sends no Authorization
+  // header, so `auth` is null for them. Failing closed here returned
+  // "Rack not found" on Find Port and silently broke every feedback action for
+  // everyone still on those builds.
+  //
+  // Returning true is NOT the end state — it is the pre-existing behaviour,
+  // restored deliberately so installed clients keep working. The web client and
+  // build 18+ now send credentials on these calls; once testers have moved off
+  // 17, flip this to `return false` and add requireAuth to the six call sites.
+  // Tracked as follow-up in the audit report.
+  if (!auth) return true;
   if (auth.role === 'owner') return true;
   if (auth.role === 'org_admin') {
     return !!(auth.organizationId && tenant.rackInOrg(rackId, auth.organizationId));
