@@ -6766,7 +6766,17 @@ app.post('/api/lab/devices/:id/audit', auth.requireRole('owner'), async (req, re
       password: creds.password,
       enablePassword: creds.enablePassword || creds.password,
     });
-    res.json({ ok: true, device: portsDb.toClientView(device), host: device.host, vendor: vendorKey, ...data });
+    // A completed audit IS a successful SSH pass — the same evidence the
+    // poller records. Clear the failure state so the UI stops contradicting
+    // itself: CoreSW sat at 'nothing is listening on SSH / ECONNREFUSED' while
+    // simultaneously showing fresh audit data on the same screen, because a
+    // manual audit never touched last_error. It also breaks the backoff ladder:
+    // after 6 failures the next retry is far out, so a switch fixed in the lab
+    // stayed 'Offline' long after it recovered.
+    try { portsDb.recordPollSuccess(device.id); }
+    catch (e) { logger?.warn?.({ event: 'lab_audit.clear_failed', err: e.message }); }
+    const fresh = portsDb.getDevice(device.id) || device;
+    res.json({ ok: true, device: portsDb.toClientView(fresh), host: device.host, vendor: vendorKey, ...data });
   } catch (err) {
     logger?.warn?.({ event: 'lab_audit.failed', host: device.host, err: err.message },
       'lab device audit failed');
