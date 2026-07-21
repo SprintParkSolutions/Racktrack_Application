@@ -6693,6 +6693,14 @@ async function auditSwitchHost({ host, sshPort, vendorKey, username, password, e
     cmds.ifconfig && { name: 'ifconfig', cmd: cmds.ifconfig },
     cmds.poe      && { name: 'poe',      cmd: cmds.poe },
     cmds.vlan     && { name: 'vlan',     cmd: cmds.vlan },
+    // Neighbour/MAC reads run on this SAME shell. They used to go through
+    // runSwitchCommand, which opens a FRESH SSH connection per call - and these
+    // switches allow very few concurrent sessions and don't release them
+    // promptly, so those extra connections came back empty. That, not parsing,
+    // is why LLDP, MAC and CDP all read 0 while ports and VLANs populated.
+    lldpCmd       && { name: 'lldp',     cmd: lldpCmd },
+    macCmd        && { name: 'mac',      cmd: macCmd },
+    cdpCmd        && { name: 'cdp',      cmd: cdpCmd },
   ].filter(Boolean);
 
   const out = {};
@@ -6700,17 +6708,12 @@ async function auditSwitchHost({ host, sshPort, vendorKey, username, password, e
     host, port: sshPort, username, password,
     commands: shortCmds,
     pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
-    timeoutMsPerCmd: 15000,
+    timeoutMsPerCmd: 30000,   // neighbour + MAC dumps are longer than a port table
     onEntry: (i, entry) => { out[entry.name] = entry.output || ''; },
   });
-  const runOne = (command) => command ? runSwitchCommand({
-    host, port: sshPort, username, password,
-    command, pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
-    timeoutMs: 30000,
-  }) : Promise.resolve('');
-  const lldpRaw = await runOne(lldpCmd);
-  const macRaw  = await runOne(macCmd);
-  const cdpRaw  = await runOne(cdpCmd);
+  const lldpRaw = out.lldp || '';
+  const macRaw  = out.mac  || '';
+  const cdpRaw  = out.cdp  || '';
 
   // Merge LLDP + CDP. LLDP wins per port when it actually returned something:
   // it is the vendor-neutral protocol and carries richer fields. CDP fills the
