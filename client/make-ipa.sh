@@ -10,6 +10,32 @@ API="${2:-$(cat /tmp/cf_url.txt 2>/dev/null || true)}"
 [ -z "$TEAM" ] && { echo "✖ usage: ./make-ipa.sh <TEAM_ID> [api-url]"; echo "  Find TEAM_ID: Xcode ▸ Settings ▸ Accounts ▸ your team, or developer.apple.com ▸ Membership"; exit 1; }
 [ -z "$API" ]  && { echo "✖ no API url (pass one, or start the tunnel)"; exit 1; }
 
+PBXPROJ="ios/App/App.xcodeproj/project.pbxproj"
+GRADLE="android/app/build.gradle"
+
+# 0. Bump the build number — iOS and Android in lockstep.
+#
+#    Nothing used to do this, so it was a manual edit in two files that was
+#    easy to forget. Forgetting it is not harmless: Firebase happily accepts a
+#    duplicate and testers see the same version twice, and TestFlight rejects
+#    the upload outright because CFBundleVersion must strictly increase.
+#
+#    Take the max of the two current values so the platforms can never drift
+#    apart, then add one. Pass --no-bump to rebuild the current number.
+if [ "${NO_BUMP:-}" = "1" ] || [ "${3:-}" = "--no-bump" ]; then
+  BUILD_NUM="$(grep -m1 -oE 'CURRENT_PROJECT_VERSION = [0-9]+' "$PBXPROJ" | grep -oE '[0-9]+')"
+  echo "▸ Build:   $BUILD_NUM (not bumped)"
+else
+  IOS_NUM="$(grep -m1 -oE 'CURRENT_PROJECT_VERSION = [0-9]+' "$PBXPROJ" | grep -oE '[0-9]+')"
+  AND_NUM="$(grep -m1 -oE 'versionCode +[0-9]+' "$GRADLE" | grep -oE '[0-9]+')"
+  [ -n "$IOS_NUM" ] || { echo "✖ could not read CURRENT_PROJECT_VERSION from $PBXPROJ"; exit 1; }
+  [ -n "$AND_NUM" ] || { echo "✖ could not read versionCode from $GRADLE"; exit 1; }
+  BUILD_NUM=$(( (IOS_NUM > AND_NUM ? IOS_NUM : AND_NUM) + 1 ))
+  sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${BUILD_NUM};/g" "$PBXPROJ"
+  sed -i '' -E "s/versionCode +[0-9]+/versionCode ${BUILD_NUM}/" "$GRADLE"
+  echo "▸ Build:   $BUILD_NUM (was iOS $IOS_NUM / Android $AND_NUM)"
+fi
+
 echo "▸ Team:    $TEAM"
 echo "▸ Backend: $API"
 
