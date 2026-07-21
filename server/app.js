@@ -191,7 +191,11 @@ function safeUnlink(p) {
 // org; member → their own Site. Unauthenticated callers are left to the
 // route's own logic (public report links). Returns true if access is allowed.
 function canAccessRack(auth, rackId) {
-  if (!auth) return true;
+  // Fail CLOSED. This used to `return true` for unauthenticated callers, which
+  // made every "tenant guard" that relies on it a no-op for anonymous requests
+  // — several of those routes have no requireAuth of their own. The sibling
+  // app.param('rackId') guard was already hardened the same way.
+  if (!auth) return false;
   if (auth.role === 'owner') return true;
   if (auth.role === 'org_admin') {
     return !!(auth.organizationId && tenant.rackInOrg(rackId, auth.organizationId));
@@ -269,8 +273,23 @@ app.use(cors({
   },
 }));
 app.use(express.json());
-app.use('/uploads', express.static(uploadsDir));
-app.use('/outputs', express.static(outputsDir));
+// These are mounted before auth so that <img> tags (which cannot send an
+// Authorization header) can load rack photos. That previously exposed the
+// ENTIRE rack directory to anyone who knew the 8-char rack id — device maps,
+// scan results, topology, CMDB ticket state, OCR output and SSH console
+// transcripts were all world-readable, which defeated the report-token design.
+//
+// Only genuine assets are served statically now. Every data file is reachable
+// only through the authenticated API, which applies tenant scoping.
+// NOTE: rack images themselves are still guessable-by-rack-id; signing these
+// URLs is the proper follow-up, but it needs a client change to match.
+const PUBLIC_ASSET_RE = /\.(jpe?g|png|webp|gif|svg|ico|pdf|html)$/i;
+function assetsOnly(req, res, next) {
+  if (PUBLIC_ASSET_RE.test(req.path)) return next();
+  return res.status(404).json({ error: 'Not found' });
+}
+app.use('/uploads', assetsOnly, express.static(uploadsDir));
+app.use('/outputs', assetsOnly, express.static(outputsDir));
 
 // Health + metrics — placed early so they bypass auth/static/etc and
 // stay reachable even if the main app is degraded.
@@ -1754,8 +1773,14 @@ app.get('/api/health', (req, res) => {
 
 // Auth endpoints (signup, verify, login, resend, me)
 // Throttle credential endpoints before the auth routes handle them.
+// Every endpoint that accepts a credential OR a one-time code must be
+// throttled. verify-reset-code and verify were missing: they check a 6-digit
+// code without consuming it and with no attempt counter, so an unthrottled
+// caller could brute-force the ~10^6 space in seconds and then mint a full
+// token via login-with-code — account takeover without the password.
 app.use(['/api/auth/login', '/api/auth/signup', '/api/auth/forgot-password',
-  '/api/auth/reset-password', '/api/auth/login-with-code'], authLimit);
+  '/api/auth/reset-password', '/api/auth/login-with-code',
+  '/api/auth/verify-reset-code', '/api/auth/verify', '/api/auth/resend-code'], authLimit);
 auth.registerRoutes(app);
 
 // ── Audit log query (auth-required) ───────────────────────────
@@ -2211,12 +2236,14 @@ app.post('/api/analyze', scanLimit, upload.single('image'), async (req, res) => 
   trackScanJob(req, res);
   // Scans only happen through an approved organization: block a user whose
   // org is still pending owner approval (legacy/no-org users are unaffected).
-  {
-    const _a = softAuthPayload(req);
-    if (_a?.organizationId && !auth.isOrgActive(_a.organizationId)) {
-      safeUnlink(req.file.path);
-      return res.status(403).json({ error: 'Your organization is awaiting owner approval before you can scan.' });
-    }
+  // NOT block-scoped: `_a` is also needed further down for rackScope() when the
+  // rack id is computed. It used to live in a bare block, which put it out of
+  // scope at the call site and made every scan throw ReferenceError — surfaced
+  // to the user as "Please upload a clearer photo", blaming their image.
+  const _a = softAuthPayload(req);
+  if (_a?.organizationId && !auth.isOrgActive(_a.organizationId)) {
+    safeUnlink(req.file.path);
+    return res.status(403).json({ error: 'Your organization is awaiting owner approval before you can scan.' });
   }
 
   let tmpPath = req.file.path;
@@ -5687,7 +5714,9 @@ function parseLooseNeighbor(raw) {
   const pick = (re) => { const m = text.match(re); return m ? m[1].trim() : null; };
   const result = {
     system_name:        pick(/(?:^|\n)\s*(?:System Name|Device ID|Remote System Name|SysName|System name|Neighbor name)\s*[:=][ \t]*([^\n]+)/i),
-    port_id:            pick(/(?:^|\n)\s*(?:Port ID|Remote Port|Port id|Port Identifier|Neighbor port|PortID)\s*[:=][ \t]*([^\n]+)/i),
+    // "(outgoing port)" tolerated because CDP writes "Port ID (outgoing port): Et0/0",
+    // and requiring the colon immediately after "Port ID" dropped every CDP remote port.
+    port_id:            pick(/(?:(?:^|\n)\s*|,\s*)(?:Port ID|Remote Port|Port id|Port Identifier|Neighbor port|PortID)(?:\s*\([^)]*\))?\s*[:=][ \t]*([^\n]+)/i),
     port_description:   pick(/(?:^|\n)\s*(?:Port Description|Port Desc|Remote Port Description)\s*[:=][ \t]*([^\n]+)/i),
     chassis_id:         pick(/(?:^|\n)\s*(?:Chassis ID|Chassis Identifier|Chassis Id|Neighbor chassis)\s*[:=][ \t]*([^\n]+)/i),
     system_description: pick(/(?:System Description|Version|Remote System Description)\s*[:=]\s*([\s\S]*?)(?:\n\s*\n|\n[A-Z][^:\n]{0,40}:)/i),
@@ -6392,7 +6421,12 @@ function parseAllLldpNeighbors(raw) {
   // ("Interface Name : gigabitEthernet 1/0/1") and Cisco-ish ("Gi1/0/1",
   // "GigabitEthernet1/0/1", "Local Intf: Gi1/0/1") layouts. The captured
   // group is the port number path (1/0/1, 0/1, etc.).
-  const re = /(?:^|\n)[^\S\n]*(?:Interface(?:\s*Name)?|Local\s*(?:Intf|Port|Interface))?\s*[:=]?\s*(?:gigabitethernet|tengigabitethernet|fastethernet|Gi|Te|Fa|Eth)\s*[:=]?\s*(\d+\/\d+(?:\/\d+)?)/gi;
+  // Longest-first: the alternation is first-match-wins, so "gigabitethernet"
+  // must precede "ethernet" and "Eth" must precede "Et", or the shorter name
+  // consumes the prefix and the digits fail to match. Plain "ethernet"/"Et"
+  // were missing entirely, so Cisco IOL (Ethernet0/2, Et0/2 — the lab switches)
+  // keyed nothing at all and the Neighbour column was always blank.
+  const re = /(?:^|\n)[^\S\n]*(?:Interface(?:\s*Name)?|Local\s*(?:Intf|Port|Interface))?\s*[:=]?\s*(?:tengigabitethernet|gigabitethernet|fastethernet|ethernet|Gi|Te|Fa|Eth|Et)\s*[:=]?\s*(\d+\/\d+(?:\/\d+)?)/gi;
   const marks = [];
   let m;
   while ((m = re.exec(text)) !== null) marks.push({ key: m[1], idx: m.index });
@@ -6412,6 +6446,17 @@ const LLDP_ALL_CMD = {
   'tplink':    'show lldp neighbor-information interface',
   'cisco-ios': 'show lldp neighbors detail',
   'dlink':     'show lldp remote_ports',
+};
+
+// CDP is Cisco's native neighbour protocol. The IOL images the lab runs ship
+// CDP but frequently NOT LLDP (ipbase especially), so `lldp run` succeeds
+// quietly and `show lldp neighbors detail` returns nothing — which is why the
+// Neighbour column read blank while the ports were plainly cabled. Ask for CDP
+// too and merge. null for vendors that do not speak it, so they are skipped.
+const CDP_ALL_CMD = {
+  'tplink':    null,   // TP-Link does not speak CDP
+  'cisco-ios': 'show cdp neighbors detail',
+  'dlink':     null,   // D-Link does not speak CDP
 };
 // The forwarding (MAC) table — the logical layer: which MAC(s) are learned on
 // each port, so even non-LLDP devices are identified and uplink ports (many
@@ -6451,6 +6496,7 @@ app.post('/api/switch/neighbors', auth.requireAuth, async (req, res) => {
   const vconf = VENDORS[vendorKey];
   const lldpCmd = LLDP_ALL_CMD[vendorKey] || LLDP_ALL_CMD['cisco-ios'];
   const macCmd  = MAC_TABLE_CMD[vendorKey] || MAC_TABLE_CMD['cisco-ios'];
+  const cdpCmd  = CDP_ALL_CMD[vendorKey];   // null for vendors without CDP
   const runOne = (command) => runSwitchCommand({
     host, port: sshPort, username, password,
     command, pagingOff: vconf.paging_off, enable: vconf.enable, enablePassword,
@@ -6662,13 +6708,22 @@ async function auditSwitchHost({ host, sshPort, vendorKey, username, password, e
   }) : Promise.resolve('');
   const lldpRaw = await runOne(lldpCmd);
   const macRaw  = await runOne(macCmd);
+  const cdpRaw  = await runOne(cdpCmd);
+
+  // Merge LLDP + CDP. LLDP wins per port when it actually returned something:
+  // it is the vendor-neutral protocol and carries richer fields. CDP fills the
+  // rest, which on these Cisco IOL images is every port — they answer CDP and
+  // return nothing for LLDP.
+  const lldpN = parseAllLldpNeighbors(lldpRaw || '');
+  const cdpN  = parseAllLldpNeighbors(cdpRaw  || '');
+  const neighbors = { ...cdpN, ...lldpN };
   return {
     identity:  parseIdentityFor(vendorKey, out.sysinfo || ''),
     ifstatus:  parseIfStatusFor(vendorKey, out.ifstatus || ''),
     ifconfig:  parseInterfaceConfig(out.ifconfig || ''),
     poe:       parsePoe(out.poe || ''),
     vlans:     parseVlan(out.vlan || ''),
-    neighbors: parseAllLldpNeighbors(lldpRaw || ''),
+    neighbors,
     macs:      parseMacTable(macRaw || ''),
   };
 }
