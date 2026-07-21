@@ -17,9 +17,32 @@ $Branch = "july9_full"
 Set-Location $ProjectRoot
 
 Write-Host "`n[1/3] Pulling $Remote/$Branch ..." -ForegroundColor Cyan
+$before = (git rev-parse --short HEAD).Trim()
 git pull $Remote $Branch
+
+# STOP if the pull failed. Without this the script sailed on, rebuilt the OLD
+# tree and restarted Node, then reported success — so a deploy looked healthy
+# (fresh uptime, no errors) while serving code 14 commits stale, security fixes
+# included. The usual cause is uncommitted local edits to a file the incoming
+# commits also touch: git refuses to overwrite them and exits non-zero.
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "`n  PULL FAILED — nothing was built or restarted." -ForegroundColor Red
+    Write-Host "  The old version is still live. Most likely local edits block the merge:" -ForegroundColor Yellow
+    git status --short
+    Write-Host "`n  Fix with:  git stash push -m wip <file>   (keep them)" -ForegroundColor Yellow
+    Write-Host "         or:  git reset --hard $Remote/$Branch  (discard them)" -ForegroundColor Yellow
+    exit 1
+}
+
 $head = (git rev-parse --short HEAD).Trim()
-Write-Host "  HEAD is now $head" -ForegroundColor DarkGray
+Write-Host "  HEAD $before -> $head" -ForegroundColor DarkGray
+
+# A successful pull that changed nothing is worth calling out too: it means the
+# box was already current, so if the live version still looks old the problem is
+# a second node process, not the pull.
+if ($before -eq $head) {
+    Write-Host "  (already up to date — no new commits)" -ForegroundColor DarkGray
+}
 
 Write-Host "`n[2/3] Building the web client ..." -ForegroundColor Cyan
 Set-Location "$ProjectRoot\client"
@@ -43,10 +66,16 @@ for ($i = 0; $i -lt 10; $i++) {
         Write-Host "  $v" -ForegroundColor Green
         if ($v -match $head) {
             Write-Host "  OK — live commit matches HEAD ($head)." -ForegroundColor Green
+            break
         } else {
-            Write-Host "  WARNING — live commit does not match HEAD ($head). Check for a second node process." -ForegroundColor Yellow
+            # Non-zero exit, not just a warning: a deploy that serves a different
+            # commit than HEAD has failed, however healthy it looks.
+            Write-Host "  FAILED — live commit does not match HEAD ($head)." -ForegroundColor Red
+            Write-Host "  Another node process is probably serving an older tree:" -ForegroundColor Yellow
+            Get-Process node -ErrorAction SilentlyContinue |
+                Select-Object Id, Path | Format-Table -AutoSize
+            exit 1
         }
-        break
     } catch {
         Start-Sleep -Seconds 2
     }
