@@ -61,7 +61,15 @@ export default function CmdbApprovalModal({ rackId, ticket, onClose, onTicketUpd
       const elapsed = Date.now() - startedAt;
       if (elapsed < 1200) await new Promise((res) => setTimeout(res, 1200 - elapsed));
       if (!data?.ok) {
-        setError(friendlyError(data?.error) || 'Could not complete the registration. Please try again.');
+        // 403 means the instant demo approval is switched off (or the user
+        // isn't an owner). That is deliberate: real registrations go through an
+        // approved ServiceNow Service Request, so say that plainly instead of
+        // showing a raw "Insufficient permissions" on a button we offered.
+        if (r.status === 403) {
+          setError('This scan needs its Service Request approved in ServiceNow before it can be registered.');
+        } else {
+          setError(friendlyError(data?.error) || 'Could not complete the registration. Please try again.');
+        }
         setStep('pending');
         setBusy(false);
         return;

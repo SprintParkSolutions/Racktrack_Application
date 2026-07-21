@@ -200,7 +200,9 @@ function canAccessRack(auth, rackId) {
   if (auth.role === 'org_admin') {
     return !!(auth.organizationId && tenant.rackInOrg(rackId, auth.organizationId));
   }
-  if (!auth.tenantId) return true;
+  // Also fail CLOSED: a member whose tenant_id is NULL (legacy rows) must not
+  // inherit access to every rack on the platform.
+  if (!auth.tenantId) return false;
   return tenant.tenantOwnsRack(auth.tenantId, rackId);
 }
 
@@ -283,7 +285,7 @@ app.use(express.json());
 // only through the authenticated API, which applies tenant scoping.
 // NOTE: rack images themselves are still guessable-by-rack-id; signing these
 // URLs is the proper follow-up, but it needs a client change to match.
-const PUBLIC_ASSET_RE = /\.(jpe?g|png|webp|gif|svg|ico|pdf|html)$/i;
+const PUBLIC_ASSET_RE = /\.(jpe?g|png|webp|gif|ico|heic|heif)$/i;
 function assetsOnly(req, res, next) {
   if (PUBLIC_ASSET_RE.test(req.path)) return next();
   return res.status(404).json({ error: 'Not found' });
@@ -7984,9 +7986,9 @@ app.post('/api/feedback', async (req, res) => {
   // calling user's tenant owns this rack before letting them write feedback.
   const fbAuth = softAuthPayload(req);
   if (!canAccessRack(fbAuth, scanId)) {
-    logger.warn({ event: 'tenant.access_denied', tenantId: fbAuth.tenantId,
+    logger.warn({ event: 'tenant.access_denied', tenantId: fbAuth?.tenantId ?? null,
       rackId: scanId, route: '/api/feedback' },
-      `tenant ${fbAuth.tenantId} blocked from feedback on rack ${scanId}`);
+      `tenant ${fbAuth?.tenantId ?? 'anonymous'} blocked from feedback on rack ${scanId}`);
     return res.status(404).json({ error: `Scan ${scanId} not found` });
   }
 
@@ -8549,7 +8551,7 @@ app.post('/api/feedback/port/verified/check', async (req, res) => {
 // poller is parked in a 30-min backoff window because of a half-open
 // SSH session and you don't want to wait for the next interval / a
 // server restart / a switch reboot.
-app.post('/api/port-poller/reset', async (req, res) => {
+app.post('/api/port-poller/reset', auth.requireRole('owner', 'org_admin'), async (req, res) => {
   const deviceId = req.body?.deviceId != null ? Number(req.body.deviceId) : null;
   try {
     const portPoller = require('./lib/port_poller');
