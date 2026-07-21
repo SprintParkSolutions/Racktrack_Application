@@ -37,12 +37,18 @@ MODEL_FILE = pathlib.Path(os.environ.get("RACK_CLASSIFIER_PATH", str(_DEFAULT_MO
 # offers multi-angle re-capture. Below it, "occluded" is a soft warning and the
 # scan proceeds.
 #
-# Deliberately conservative. A false hard-fail blocks a legitimate upload, which
-# is far worse than letting a marginal image through with a warning: the scan
-# still runs and the user still gets a result. Tune against a labelled set before
-# lowering — on the sample available here a heavily-cabled patch-panel rack scored
-# 0.601, so this threshold currently routes it to a warning rather than a block.
-OCCLUSION_HARD_CONF = float(os.environ.get("RACK_CLASSIFIER_HARD_CONF", "0.85"))
+# 0.55 sits just above the 0.50 argmax boundary, so in practice an image the
+# model calls occluded is surfaced as a block rather than a warning; the warning
+# band is the narrow 0.50-0.55 sliver where the model is genuinely undecided.
+# That is the intent — an occluded rack should prompt for side-angle photos, not
+# a note the user scrolls past.
+#
+# Checked against the nine Test_Image racks before choosing it: the eight clear
+# ones score p_occluded between 0.013 and 0.149, so there is a wide margin below
+# this threshold and none of them trip it. The heavily-cabled patch-panel rack
+# scores 0.601 and does. Re-measure if the model is retrained — this is tuned to
+# THIS checkpoint's confidence distribution, not a universal constant.
+OCCLUSION_HARD_CONF = float(os.environ.get("RACK_CLASSIFIER_HARD_CONF", "0.55"))
 
 _lock = threading.Lock()
 _model = None
