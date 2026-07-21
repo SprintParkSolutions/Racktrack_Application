@@ -1905,7 +1905,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     if (forcedPort != null) setPortNum(String(forcedPort));
     setLoading(true); setError(null);
     try {
-      const res  = await fetch(apiUrl('/api/select'), {
+      const res  = await authFetch(apiUrl('/api/select'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scanId, device_index: selectedIdx, port: p, port_category: portCategory }),
@@ -1980,7 +1980,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     }
     setLoading(true); setError(null);
     try {
-      const res  = await fetch(apiUrl('/api/select'), {
+      const res  = await authFetch(apiUrl('/api/select'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scanId, device_index: selectedIdx, port: p, port_category: portCategory }),
@@ -2025,7 +2025,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const reloadSessionPort = async (entry) => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(apiUrl('/api/select'), {
+      const res = await authFetch(apiUrl('/api/select'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scanId, device_index: entry.deviceIdx, port: entry.port, port_category: entry.portCategory || 'main' }),
@@ -2563,7 +2563,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     setShareChannel(channel);
     setShareMsg(null);
     try {
-      const res = await fetch(apiUrl(`/api/scan/${scanId}/${channel}`), {
+      const res = await authFetch(apiUrl(`/api/scan/${scanId}/${channel}`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -2673,7 +2673,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
     setFeedbackStatus('submitting'); setFeedbackError(null);
     try {
-      const res = await fetch(apiUrl('/api/feedback'), {
+      const res = await authFetch(apiUrl('/api/feedback'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2717,7 +2717,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       if (!isCorrect && payloadActualPort != null) {
         const userGoalPort = parseInt(portNum, 10);  // the port the user was looking for
         try {
-          const sres = await fetch(apiUrl('/api/select'), {
+          const sres = await authFetch(apiUrl('/api/select'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2773,7 +2773,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     }
     setCableFbStatus('submitting'); setCableFbError(null);
     try {
-      const res = await fetch(apiUrl('/api/feedback'), {
+      const res = await authFetch(apiUrl('/api/feedback'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2855,7 +2855,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     }
     setDeviceFbStatus('submitting'); setDeviceFbError(null);
     try {
-      const res = await fetch(apiUrl('/api/feedback/device'), {
+      const res = await authFetch(apiUrl('/api/feedback/device'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2903,7 +2903,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     }
     setPortCountFbStatus('submitting'); setPortCountFbError(null);
     try {
-      const res = await fetch(apiUrl('/api/feedback/port-count'), {
+      const res = await authFetch(apiUrl('/api/feedback/port-count'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

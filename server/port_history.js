@@ -29,7 +29,17 @@ const { logger } = require('./lib/observability');
 // LLDP topology, and POST /poll to force the server to SSH into them with the
 // stored credentials. lab_devices.js gates the same table to owners for exactly
 // this reason. Match it until the table is tenant-scoped properly.
-router.use('/api/ports', auth.requireRole('owner', 'org_admin'));   // requireRole wraps requireAuth
+// `monitored_devices` has NO tenant/org column, so authentication alone lets a
+// member of any org read every tenant's switch inventory. The correct fix is a
+// tenant column + per-query filtering; that is a schema migration and is
+// tracked as follow-up work.
+//
+// What we do NOT do is gate the whole router to owners: the Drift feature
+// (PortHistoryPage) is member-facing and reads these endpoints, so that would
+// break a shipped feature for every normal user. Reads stay authenticated;
+// the one endpoint with a real side effect — forcing the server to SSH into a
+// switch with stored credentials — is restricted below.
+router.use('/api/ports', auth.requireAuth);
 
 function safeAsync(handler) {
   return async (req, res) => {
@@ -154,7 +164,10 @@ function pollRateOk(key) {
   return pruned.length <= POLL_RATE_MAX;
 }
 
-router.post('/api/ports/:deviceId/poll', safeAsync(async (req, res) => {
+// Owner/admin only: this makes the server open an SSH session to the switch
+// using stored credentials, on demand. Any authenticated member could
+// previously force that against any tenant's device.
+router.post('/api/ports/:deviceId/poll', auth.requireRole('owner', 'org_admin'), safeAsync(async (req, res) => {
   const id = Number(req.params.deviceId);
   const device = portsDb.getDevice(id);
   if (!device) return res.status(404).json({ error: 'device not found' });
