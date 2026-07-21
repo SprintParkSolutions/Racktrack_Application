@@ -148,3 +148,10 @@ retraining_learning/Devices_Retraining/review_dataset/images/
 # product knowledge, not user data.
 server/data/support-refusals.jsonl
 server/data/support-refusals.*.jsonl
+
+# Database files and their backups — contain password hashes and tenant data
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+server/data/*.bak*
+server/data/*.pre-repoint*
