@@ -6450,8 +6450,7 @@ function parseCdpNeighbors(raw) {
     const device = pick(/^[ \t]*Device ID:\s*([^\n]+)/mi);
     const remote = pick(/Port ID\s*\([^)]*\):\s*([^\n]+)/i);
     if (!device && !remote) continue;
-    if (out[port]) { out[port].also = (out[port].also || 0) + 1; continue; }
-    out[port] = {
+    const peer = {
       found:              true,
       system_name:        device,
       port_id:            remote,
@@ -6459,6 +6458,16 @@ function parseCdpNeighbors(raw) {
       platform:           pick(/^[ \t]*Platform:\s*([^,\n]+)/mi),
       chassis_id:         null,
     };
+    // Keep EVERY neighbour, not just a tally. The Ports table has one row per
+    // port so it shows the first plus a count, but the LLDP tab lists them
+    // individually — discarding the rest here made the other devices on a
+    // shared port (a second switch, a desk phone) impossible to see anywhere.
+    if (out[port]) {
+      out[port].peers.push(peer);
+      out[port].also = out[port].peers.length - 1;
+      continue;
+    }
+    out[port] = { ...peer, peers: [peer], also: 0 };
   }
   return out;
 }

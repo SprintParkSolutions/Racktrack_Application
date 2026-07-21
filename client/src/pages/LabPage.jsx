@@ -108,12 +108,14 @@ function Pill({ meta }) {
   );
 }
 
+// Three tabs, not five. Identity moved up into the summary strip — it is a fixed
+// set of facts about the device, not a collection to browse, so a whole tab for
+// it just added a click. The MAC table went with it: these switches report an
+// empty forwarding table, so it was a permanently empty tab.
 const SECTIONS = [
-  { key: 'identity', label: 'Identity' },
-  { key: 'ports',    label: 'Ports' },
-  { key: 'vlans',    label: 'VLANs' },
-  { key: 'lldp',     label: 'LLDP' },
-  { key: 'macs',     label: 'MAC' },
+  { key: 'ports', label: 'Ports' },
+  { key: 'vlans', label: 'VLANs' },
+  { key: 'lldp',  label: 'Neighbours' },
 ];
 
 export default function LabPage() {
@@ -231,8 +233,6 @@ export default function LabPage() {
   const poePorts  = audit?.poe?.ports || {};
   const neighbors = audit?.neighbors || {};
   const ports = Object.keys(ifstatus).length ? Object.keys(ifstatus) : Object.keys(ifconfig);
-  const macRows = Object.entries(audit?.macs || {})
-    .flatMap(([port, e]) => (e?.macs || []).map((mac) => ({ port, mac, vlan: e.vlan })));
 
   // Fleet tallies for the strip.
   const liveN = devices.filter((d) => d.enabled && !d.last_error && d.last_seen).length;
@@ -240,11 +240,14 @@ export default function LabPage() {
   const offlineExplain = selected?.last_error ? explainSshError(selected.last_error) : null;
 
   // No badge on Identity — it's a fixed field set, not a collection.
+  // Neighbour count is per DEVICE seen, not per port — a port on a shared
+  // segment sees several, and the tab lists them individually.
+  const neighbourCount = Object.values(neighbors)
+    .reduce((n, v) => n + ((v.peers && v.peers.length) || 1), 0);
   const counts = {
     ports: ports.length,
     vlans: audit?.vlans?.length || 0,
-    lldp: Object.keys(neighbors).length,
-    macs: macRows.length,
+    lldp: neighbourCount,
   };
 
   return (
@@ -332,6 +335,14 @@ export default function LabPage() {
                 <span className={`${styles.factVal} ${styles.factMono}`}>{dash(audit?.identity?.firmware)}</span>
               </div>
               <div className={styles.fact}>
+                <span className={styles.factKey}>Serial</span>
+                <span className={`${styles.factVal} ${styles.factMono}`}>{dash(audit?.identity?.serial)}</span>
+              </div>
+              <div className={styles.fact}>
+                <span className={styles.factKey}>MAC</span>
+                <span className={`${styles.factVal} ${styles.factMono}`}>{dash(audit?.identity?.mac)}</span>
+              </div>
+              <div className={styles.fact}>
                 <span className={styles.factKey}>Last polled</span>
                 <span className={styles.factVal}>{fmtAgo(selected.last_seen)}</span>
               </div>
@@ -387,19 +398,6 @@ export default function LabPage() {
                     {busy ? 'Refreshing…' : `Audit as of ${fmtAgo(entry.at)}`} · live SSH pass, not polled
                   </p>
 
-                  {tab === 'identity' && (
-                    <div className={styles.idGrid}>
-                      <Id label="Name"     value={audit.identity?.name} />
-                      <Id label="Model"    value={audit.identity?.model} mono />
-                      <Id label="Serial"   value={audit.identity?.serial} mono />
-                      <Id label="MAC"      value={audit.identity?.mac} mono />
-                      <Id label="Firmware" value={audit.identity?.firmware} mono />
-                      <Id label="Hardware" value={audit.identity?.hardware} />
-                      <Id label="Host"     value={audit.host} mono />
-                      <Id label="Vendor"   value={audit.vendor} />
-                    </div>
-                  )}
-
                   {tab === 'ports' && (
                     <>
                       <div className={styles.legend}>
@@ -423,7 +421,7 @@ export default function LabPage() {
                         <div className={styles.tableWrap}>
                           <table className={styles.table}>
                             <thead><tr>
-                              {['Port', 'Link', 'Admin', 'Speed', 'Duplex', 'Type', 'PoE (W)', 'Description', 'Neighbour'].map((h) => (
+                              {['Port', 'Link', 'Admin', 'Speed', 'Duplex', 'Type', 'PoE (W)', 'Neighbour'].map((h) => (
                                 <th key={h}>{h}</th>
                               ))}
                             </tr></thead>
@@ -441,7 +439,6 @@ export default function LabPage() {
                                     <td>{dash(s.duplex)}</td>
                                     <td>{dash(s.medium)}</td>
                                     <td>{dash(pe.power)}</td>
-                                    <td>{dash(c.description)}</td>
                                     {/* `also` counts extra neighbours on the same local port —
                                         every lab switch's e0/3 shares one pnet0 bridge, so a port
                                         can genuinely see several devices. Showing only the first
@@ -498,16 +495,21 @@ export default function LabPage() {
                     Object.keys(neighbors).length ? (
                       <div className={styles.tableWrap}>
                         <table className={styles.table}>
-                          <thead><tr>{['Local port', 'System', 'Chassis', 'Remote port'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+                          <thead><tr>{['Local port', 'Device', 'Address', 'Its port'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
                           <tbody>
-                            {Object.entries(neighbors).map(([p, n]) => (
-                              <tr key={p}>
-                                <td className={styles.mono}>{p}</td>
-                                <td>{dash(n.system_name)}</td>
-                                <td>{dash(n.chassis_id)}</td>
-                                <td className={styles.mono}>{dash(n.port_id)}</td>
-                              </tr>
-                            ))}
+                            {/* One row per NEIGHBOUR, not per port. A port on a shared segment
+                                sees several devices — listing only the first hid the other
+                                switches and the desk phone entirely. */}
+                            {Object.entries(neighbors).flatMap(([p, n]) =>
+                              (n.peers && n.peers.length ? n.peers : [n]).map((peer, i) => (
+                                <tr key={`${p}-${i}`}>
+                                  <td className={styles.mono}>{i === 0 ? p : ''}</td>
+                                  <td>{dash(peer.system_name || peer.chassis_id)}</td>
+                                  <td className={styles.mono}>{dash(peer.management_address)}</td>
+                                  <td className={styles.mono}>{dash(peer.port_id)}</td>
+                                </tr>
+                              ))
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -519,26 +521,6 @@ export default function LabPage() {
                     )
                   )}
 
-                  {tab === 'macs' && (
-                    macRows.length ? (
-                      <div className={styles.tableWrap}>
-                        <table className={styles.table}>
-                          <thead><tr>{['Port', 'MAC', 'VLAN'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
-                          <tbody>
-                            {macRows.map((m, i) => (
-                              <tr key={`${m.port}-${m.mac}-${i}`}>
-                                <td className={styles.mono}>{m.port}</td>
-                                <td className={styles.mono}>{dash(m.mac)}</td>
-                                <td>{dash(m.vlan)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <p className={styles.sectionNote}>No MAC entries returned.</p>
-                    )
-                  )}
                 </div>
               </>
             ) : (
