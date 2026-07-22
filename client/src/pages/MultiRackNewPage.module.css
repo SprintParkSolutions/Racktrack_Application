@@ -2,7 +2,7 @@
   min-height: 100dvh;
   background: var(--md-surface, #fafafa);
   color: var(--md-on-surface, #1a1c1d);
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font);
 }
 
 .header {
