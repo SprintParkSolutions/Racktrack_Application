@@ -48,8 +48,13 @@ function PreviewCard({ file, onClear }) {
 }
 
 // ── Upload / Drop Zone ───────────────────────────────────────
-function UploadZone({ onFile, mode = 'image' }) {
-  const inputRef = useRef(null);
+function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
+  // The parent needs to be able to open the picker too: the "Upload" tab is
+  // labelled and iconed like an action, so tapping it must do something. It
+  // only ever called setTab, and Upload is the default tab — so on the screen
+  // testers actually saw, tapping Upload did nothing at all.
+  const localRef = useRef(null);
+  const inputRef = externalRef || localRef;
   const [dragging, setDragging] = useState(false);
 
   const handleFile = useCallback((file) => {
@@ -852,6 +857,7 @@ function AnalyzingOverlay({ progress, step }) {
 export default function ScanPage() {
   const navigate = useNavigate();
   const goBackFromScan = useSmartBack('/');
+  const uploadInputRef = useRef(null);
   const { theme } = useTheme();
   const isLight = theme === 'light';
   // Surface tokens for the incident picker — opaque white panel in light
@@ -1259,6 +1265,12 @@ export default function ScanPage() {
               key={t.id}
               className={`${styles.tab} ${(t.id === 'upload' ? tab !== 'camera' : tab === 'camera') ? styles.tabOn : ''}`}
               onClick={() => {
+                // Already on an upload mode? Then this is the Upload ACTION —
+                // open the picker rather than silently resetting the form.
+                if (t.id === 'upload' && tab !== 'camera') {
+                  uploadInputRef.current?.click();
+                  return;
+                }
                 setTab(t.id);
                 setFile(null);
                 setMultiFiles([]);
@@ -1303,9 +1315,9 @@ export default function ScanPage() {
             : file
               ? <PreviewCard file={file} onClear={() => { setFile(null); setError(null); setQualityChoice(null); }}/>
               : tab === 'upload'
-                ? <UploadZone onFile={(f) => { setFile(f); setError(null); setQualityChoice(null); }}/>
+                ? <UploadZone inputRef={uploadInputRef} onFile={(f) => { setFile(f); setError(null); setQualityChoice(null); }}/>
                 : tab === 'video'
-                  ? <UploadZone onFile={(f) => { setFile(f); setError(null); setQualityChoice(null); }} mode="video"/>
+                  ? <UploadZone inputRef={uploadInputRef} onFile={(f) => { setFile(f); setError(null); setQualityChoice(null); }} mode="video"/>
                   : <CameraCapture
                       onCapture={(f) => { setFile(f); setTab('upload'); setError(null); setQualityChoice(null); }}
                       onCancel={() => setTab('upload')}

@@ -373,7 +373,12 @@
   background: rgba(0,0,0,0.45);
   border: 1px solid rgba(0,0,0,0.12);
   border-radius: 12px;
-  overflow: hidden;
+  /* Was overflow:hidden, which CLIPPED the table on a phone — the Recorded
+     timestamp column simply could not be reached, so the history was
+     incomplete with nothing on screen to say so. Scroll it instead. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 .offsetTable {
   width: 100%;
