@@ -20,17 +20,18 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- Export compliance. Without this key every upload lands in App Store
+	     Connect with the encryption question unanswered, which holds the build
+	     back from TestFlight until someone clicks through it by hand — builds 18
+	     to 22 were each answered manually, and build 23 sat undistributed
+	     because nobody had yet. The app only uses standard HTTPS/TLS, which is
+	     exempt, so the answer is always the same one already given six times. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>RackTrack uses your camera to scan and photograph your equipment racks.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>RackTrack needs microphone access to record video scans of your rack.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>RackTrack saves annotated rack scans to your photo library when you choose to.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
