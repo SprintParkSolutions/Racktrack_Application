@@ -4683,9 +4683,18 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             .map((dev, i) => ({ dev, idx: i + 1, label: labels[i] || `Device ${i + 1}` }))
             .filter(({ dev }) => isDevicePickable(dev));
           if (pickables.length === 0) {
+            // When the scan already worked out WHY nothing was found — a rack
+            // hidden behind cable bundles, a shot taken at too steep an angle —
+            // say that. "No devices detected" on a photo where the rack is
+            // plainly visible reads as the app being broken, and gives the user
+            // nothing to do differently. The reason was already being sent to
+            // this page and thrown away.
             return (
               <div className={styles.deviceEmpty}>
-                No devices detected in this rack.
+                {qualityWarningMsg
+                  ? <>No devices could be read from this photo. {qualityWarningMsg}</>
+                  : <>No devices detected in this rack. If the rack is clearly visible,
+                      try again from straight on with the whole rack in frame.</>}
               </div>
             );
           }
