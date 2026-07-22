@@ -1235,7 +1235,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // bounding box and hides all other overlays. Toggled by tapping the
   // selected (red-bordered) device on the rack; exited by the back button.
   const [focusMode,   setFocusMode]   = useState(false);
-  const [dragStart,   setDragStart]   = useState(null);
+  // Drag origin lives in a ref, not state. It used to be state, and
+  // handlePointerMove set BOTH it and the offset on every pointermove — two
+  // re-renders of this 4,900-line component per move event, 60-120 times a
+  // second. That is what made the screen freeze while panning on Android.
+  const dragRef = useRef(null);
+  const panRafRef = useRef(0);
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState(null);
   const [nextPort,  setNextPort]  = useState('');
@@ -1664,7 +1669,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
   const clampZoom = (value) => Math.min(2.5, Math.max(0.8, value));
   const zoomIn = () => setZoom((prev) => clampZoom(prev + 0.15));
-  const zoomOut = () => setZoom((prev) => clampZoom(prev - 0.15));
+  const zoomOut = () => setZoom((prev) => {
+    const next = clampZoom(prev - 0.15);
+    // Re-centre as we shrink: an offset that was legal at 2.5x parks the image
+    // off-screen at 1x, so zooming out could "lose" the picture entirely.
+    if (next <= 1) setOffset({ x: 0, y: 0 });
+    return next;
+  });
   const resetZoom = () => {
     setZoom(1);
     setOffset({ x: 0, y: 0 });
@@ -1674,36 +1685,73 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     const delta = event.deltaY < 0 ? 0.15 : -0.15;
     setZoom((prev) => clampZoom(prev + delta));
   };
+  // Keep the image on screen. The offset was unbounded, so a determined drag
+  // translated the picture entirely out of view — which is exactly the
+  // "image disappears" testers reported. Allow panning only as far as the
+  // parts of the scaled image that are actually off-screen.
+  const clampOffset = (next, z, el) => {
+    const box = el?.getBoundingClientRect?.();
+    const w = box?.width || 320;
+    const h = box?.height || 320;
+    const maxX = Math.max(0, (w * z - w) / 2);
+    const maxY = Math.max(0, (h * z - h) / 2);
+    return {
+      x: Math.min(maxX, Math.max(-maxX, next.x)),
+      y: Math.min(maxY, Math.max(-maxY, next.y)),
+    };
+  };
+
+  const releaseCapture = (event) => {
+    // Throws NotFoundError if the pointer was already released — e.g. the
+    // browser fired pointercancel first. An uncaught throw here left the drag
+    // permanently engaged.
+    try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* already released */ }
+  };
+
   const handlePointerDown = (event) => {
     if (event.button !== 0) return;
     // Only engage pan when zoomed in — otherwise capturing the pointer would
     // swallow taps meant for the device rectangles on the hero overlay.
     if (zoom <= 1) return;
-    setDragStart({ x: event.clientX, y: event.clientY });
-    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = { x: event.clientX, y: event.clientY };
+    try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* unsupported */ }
   };
   const handlePointerMove = (event) => {
-    if (!dragStart) return;
-    const dx = event.clientX - dragStart.x;
-    const dy = event.clientY - dragStart.y;
-    setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
-    setDragStart({ x: event.clientX, y: event.clientY });
+    const start = dragRef.current;
+    if (!start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    dragRef.current = { x: event.clientX, y: event.clientY };
+    // Coalesce to one state update per animation frame. Pointer events arrive
+    // far faster than React can usefully re-render a page this size.
+    if (panRafRef.current) return;
+    const el = event.currentTarget;
+    panRafRef.current = requestAnimationFrame(() => {
+      panRafRef.current = 0;
+      setOffset((prev) => clampOffset({ x: prev.x + dx, y: prev.y + dy }, zoom, el));
+    });
   };
   const handlePointerUp = (event) => {
-    if (!dragStart) return;
-    setDragStart(null);
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    if (panRafRef.current) { cancelAnimationFrame(panRafRef.current); panRafRef.current = 0; }
+    releaseCapture(event);
   };
   const handlePointerCancel = (event) => {
-    if (!dragStart) return;
-    setDragStart(null);
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    if (panRafRef.current) { cancelAnimationFrame(panRafRef.current); panRafRef.current = 0; }
+    releaseCapture(event);
   };
   const handlePointerLeave = () => {
-    if (!dragStart) return;
-    setDragStart(null);
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    if (panRafRef.current) { cancelAnimationFrame(panRafRef.current); panRafRef.current = 0; }
   };
-  const cursorStyle = zoom > 1 ? (dragStart ? 'grabbing' : 'grab') : 'zoom-in';
+  // Cursor is derived from zoom alone now. Tying it to the drag ref would not
+  // re-render anyway (that is the point of the ref), and a cursor that lags a
+  // frame behind is not worth a render per pointermove.
+  const cursorStyle = zoom > 1 ? 'grab' : 'zoom-in';
   // The translate is applied in screen space (after scale), so it must match the
   // drag 1:1 — NOT divided by zoom. Dividing made panning sluggish at high zoom,
   // so a tall rack couldn't be dragged far enough to reveal its top devices.

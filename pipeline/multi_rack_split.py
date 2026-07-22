@@ -59,7 +59,16 @@ TRANSITION_X_SHIFT_RATIO  = 0.25   # adjacent samples whose mean-X differs
 VISUAL_CHANGE_THRESHOLD   = 0.35   # 1 - HSV-histogram correlation between
                                    # adjacent samples. > 0.35 = scene changed
                                    # (different rack), even if X stayed put.
-MIN_FRAMES_PER_RACK       = 1      # a "rack" must hold the camera for ≥ N samples
+MIN_FRAMES_PER_RACK       = 3      # a "rack" must hold the camera for >= N samples.
+                                   # This was 1, which made the filter below a
+                                   # no-op: every segment has at least one frame,
+                                   # so nothing was ever dropped. A single shaky
+                                   # frame mid-pan became its own "rack", and one
+                                   # rack filmed in one pass could split into two
+                                   # near-identical entries — which is why a
+                                   # two-rack video showed the same topology
+                                   # twice. Three samples is roughly a second of
+                                   # the camera actually being held on a rack.
 DETECTOR_CONF_THRESHOLD   = 0.20   # mirrors config.json's devices_conf
 
 

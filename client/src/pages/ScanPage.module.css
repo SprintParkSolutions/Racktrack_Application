@@ -712,11 +712,23 @@
 }
 
 .hud { position:absolute; inset:0; z-index:10; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:12px; }
-.hc { position:absolute; width:22px; height:22px; border-color:rgba(0,0,0,0.85); border-style:solid; }
-.hcTL { top:16px;  left:16px;  border-width:2px 0 0 2px; border-radius:3px 0 0 0; box-shadow:-3px -3px 10px rgba(0,0,0,0.4); }
-.hcTR { top:16px;  right:16px; border-width:2px 2px 0 0; border-radius:0 3px 0 0; box-shadow: 3px -3px 10px rgba(0,0,0,0.4); }
-.hcBL { bottom:68px; left:16px;  border-width:0 0 2px 2px; border-radius:0 0 0 3px; box-shadow:-3px  3px 10px rgba(0,0,0,0.4); }
-.hcBR { bottom:68px; right:16px; border-width:0 2px 2px 0; border-radius:0 0 3px 0; box-shadow: 3px  3px 10px rgba(0,0,0,0.4); }
+/* Corner brackets. They sit over a live camera feed, so they are white with a
+   dark drop shadow — the old black brackets vanished against anything dark.
+   The wrapper carries the state so all four change together. */
+.corners { position:absolute; inset:0; pointer-events:none; color:rgba(255,255,255,0.92); }
+.cornersOn  { color:#34d17a; }
+.cornersRec { color:#ff3b30; }
+
+.hc {
+  position:absolute; width:26px; height:26px;
+  border-color:currentColor; border-style:solid;
+  filter: drop-shadow(0 0 3px rgba(0,0,0,0.65));
+  transition: color .18s ease;
+}
+.hcTL { top:12%;    left:9%;  border-width:2.5px 0 0 2.5px; border-radius:4px 0 0 0; }
+.hcTR { top:12%;    right:9%; border-width:2.5px 2.5px 0 0; border-radius:0 4px 0 0; }
+.hcBL { bottom:20%; left:9%;  border-width:0 0 2.5px 2.5px; border-radius:0 0 0 4px; }
+.hcBR { bottom:20%; right:9%; border-width:0 2.5px 2.5px 0; border-radius:0 0 4px 0; }
 
 .hudGrid {
   position:absolute; inset:16px; bottom:68px;

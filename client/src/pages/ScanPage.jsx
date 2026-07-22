@@ -723,10 +723,20 @@ function CameraCapture({ onCapture, onCancel }) {
       <div className={styles.hud}>
         <div className={styles.hudGrid} />
 
-        {/* Rack-shaped guide box. Photo mode: green when all checks pass. Video mode: red while recording. */}
-        <div className={`${styles.guideBox} ${
-          mode === 'photo' && canShoot ? styles.guideBoxOn : ''
-        } ${recording ? styles.guideBoxRec : ''}`} />
+        {/* Four corner brackets — the conventional scan-viewfinder guide. This
+            was a full dashed rack-shaped rectangle, which testers read as an
+            unexplained black box sitting over the picture rather than as a
+            framing aid. The brackets carry the same state the box did: they go
+            green when every check passes and red while recording, so the
+            readiness signal survives the simpler shape. */}
+        <div className={`${styles.corners} ${
+          mode === 'photo' && canShoot ? styles.cornersOn : ''
+        } ${recording ? styles.cornersRec : ''}`} aria-hidden="true">
+          <span className={`${styles.hc} ${styles.hcTL}`} />
+          <span className={`${styles.hc} ${styles.hcTR}`} />
+          <span className={`${styles.hc} ${styles.hcBL}`} />
+          <span className={`${styles.hc} ${styles.hcBR}`} />
+        </div>
 
         {/* Top badge only while recording. The idle "RACK SCAN" pill sat
             directly under the Dynamic Island and read as a second black
