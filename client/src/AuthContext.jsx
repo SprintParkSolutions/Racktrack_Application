@@ -1,18 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { apiUrl } from './utils/api';
+import { getItem, getJSON, removeItem, setItem } from './utils/safeStorage';
 
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'rt_authToken';
 const USER_KEY  = 'rt_authUser';
 
 function readStored() {
-  try {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const userRaw = localStorage.getItem(USER_KEY);
-    return { token, user: userRaw ? JSON.parse(userRaw) : null };
-  } catch {
-    return { token: null, user: null };
-  }
+  return { token: getItem(TOKEN_KEY), user: getJSON(USER_KEY) };
 }
 
 async function callApi(path, options = {}) {
@@ -31,12 +26,18 @@ export function AuthProvider({ children }) {
   const [{ token, user }, setState] = useState(readStored);
   const [loading, setLoading] = useState(false);
 
-  // Persist on every change
+  // Persist on every change.
+  //
+  // These writes are unguarded no longer: a storage-blocked browser threw here
+  // the instant a sign-in succeeded, and with the throw landing inside an
+  // effect the whole app unmounted — the user watched login work and then got
+  // a white screen. Failing to persist just means they sign in again next
+  // launch, which is a far better outcome than losing the app.
   useEffect(() => {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
-    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
-    else localStorage.removeItem(USER_KEY);
+    if (token) setItem(TOKEN_KEY, token);
+    else removeItem(TOKEN_KEY);
+    if (user) setItem(USER_KEY, JSON.stringify(user));
+    else removeItem(USER_KEY);
   }, [token, user]);
 
   // Validate stored token against the server on mount; clear if the server

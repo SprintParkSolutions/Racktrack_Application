@@ -60,6 +60,9 @@ if (offenders.length) {
 }
 
 const payload = {
+  // Category definitions travel with the data so the page never hard-codes a
+  // label that could drift from the knowledge base.
+  categories: kb.categories || [],
   entries: publishable.map((e) => ({
     id: e.id, d: e.domain || '', a: e.audience || '', c: e.confidence || '',
     q: e.question || '', ans: e.answer || '', s: e.symptoms || [],

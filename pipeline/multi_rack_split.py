@@ -38,12 +38,17 @@ Design notes:
     frame goes through the same analyze() the regular flow uses, so per-
     rack reports / topology / SFP advice / firmware checks all work the
     same way they always did. Multi-rack only adds the "group" parent.
-  - The detector is loaded lazily and reused across frames so the worker
-    process amortises the model-load cost across all sampled frames.
+  - The detector comes from pipeline.detection.load_model, the same cache
+    the worker warms at boot, so a video split reuses the checkpoint that
+    is already resident instead of loading a second copy of it.
+  - Sampled frames are scored on a downscaled copy and are NOT retained.
+    Only the winning frame of each segment is re-read at full resolution,
+    right before it is written. See split_video_into_racks for why.
 """
 
 import os
 import sys
+import json
 import hashlib
 from pathlib import Path
 
@@ -69,7 +74,20 @@ MIN_FRAMES_PER_RACK       = 3      # a "rack" must hold the camera for >= N samp
                                    # two-rack video showed the same topology
                                    # twice. Three samples is roughly a second of
                                    # the camera actually being held on a rack.
-DETECTOR_CONF_THRESHOLD   = 0.20   # mirrors config.json's devices_conf
+DEFAULT_DEVICES_CONF      = 0.20   # only used when config.json omits
+                                   # detection.devices_conf — the live value
+                                   # is read from the config so this path and
+                                   # the single-rack path can never drift.
+MAX_ANALYSIS_WIDTH        = 1920   # sampled frames wider than this are
+                                   # downscaled before detection. The detector
+                                   # letterboxes to imgsz=640 internally, so
+                                   # 4K pixels buy nothing but RAM and resize
+                                   # time — and 30 retained 4K BGR frames was
+                                   # ~750 MB inside a worker that already
+                                   # holds several YOLO checkpoints.
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _video_hash(video_path: str) -> str:
@@ -91,26 +109,68 @@ def _sample_timestamps(total_frames: int, fps: float, k: int) -> list[int]:
     return [int(i * step) for i in range(k)]
 
 
-def _load_detector():
-    """Lazy-load the device detector. The same model file the live
-    /api/analyze pipeline uses, so no separate model to maintain."""
-    from ultralytics import YOLO
-    import json
-    cfg_path = Path(__file__).resolve().parents[1] / "config.json"
-    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+def _load_config(config_path: str | None = None) -> dict:
+    """Resolve the config exactly the way pipeline.worker does: an explicit
+    path wins, then RACKTRACK_CONFIG, then plain "config.json" relative to
+    the process cwd. A deployment that points RACKTRACK_CONFIG at a
+    non-default config must get the same model + thresholds here as it does
+    on the single-rack path. Falling back to the repo-root copy keeps this
+    module usable when it's driven directly (tests, CLI) from elsewhere."""
+    path = config_path or os.environ.get("RACKTRACK_CONFIG") or "config.json"
+    if not os.path.isabs(path) and not os.path.exists(path):
+        path = str(_REPO_ROOT / path)
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _load_detector(cfg: dict):
+    """Load the device detector through pipeline.detection.load_model so we
+    share the worker's warm _MODEL_CACHE instead of loading a second copy of
+    the checkpoint into the same long-lived process."""
+    from pipeline.detection import load_model
     # config.json ships "devices_seg" — there has never been a plain "devices"
     # key, so this raised KeyError on every call and the video split silently
     # reported "multi-rack split failed: 'devices'". Accept either spelling.
     model_path = cfg["models"].get("devices") or cfg["models"]["devices_seg"]
-    if not os.path.isabs(model_path):
-        model_path = str(Path(__file__).resolve().parents[1] / model_path)
-    return YOLO(model_path)
+    # Keep the config's own spelling of the path when it resolves from the
+    # cwd — the cache is keyed on the string, and the worker preloads it in
+    # exactly that form, so absolutising it here would miss the warm entry.
+    if not os.path.isabs(model_path) and not os.path.exists(model_path):
+        model_path = str(_REPO_ROOT / model_path)
+    return load_model(model_path)
 
 
-def _detect_devices(model, bgr_frame):
+def _devices_conf(cfg: dict) -> float:
+    """Detection threshold, from the same config key the single-rack path
+    reads. Previously a module constant that only happened to match."""
+    return float(cfg.get("detection", {}).get("devices_conf", DEFAULT_DEVICES_CONF))
+
+
+def _downscale_for_analysis(bgr_frame):
+    """Shrink oversized frames before detection/scoring. Returns the frame
+    unchanged when it's already narrow enough."""
+    w = bgr_frame.shape[1]
+    if w <= MAX_ANALYSIS_WIDTH:
+        return bgr_frame
+    scale = MAX_ANALYSIS_WIDTH / float(w)
+    return cv2.resize(bgr_frame, (MAX_ANALYSIS_WIDTH,
+                                  max(1, int(bgr_frame.shape[0] * scale))),
+                      interpolation=cv2.INTER_AREA)
+
+
+def _read_frame_at(cap, index: int):
+    """Seek + read one frame. Returns None when the seek/decode fails."""
+    cap.set(cv2.CAP_PROP_POS_FRAMES, index)
+    ok, frame = cap.read()
+    if not ok or frame is None:
+        return None
+    return frame
+
+
+def _detect_devices(model, bgr_frame, conf: float):
     """Run device detection on one frame. Returns a list of
     (x_center, width, conf) tuples."""
-    res = model.predict(bgr_frame, verbose=False, conf=DETECTOR_CONF_THRESHOLD)[0]
+    res = model.predict(bgr_frame, verbose=False, conf=conf)[0]
     if res.boxes is None or len(res.boxes) == 0:
         return []
     xyxy = res.boxes.xyxy.cpu().numpy()
@@ -168,7 +228,8 @@ def _visual_distance(hist_a, hist_b) -> float:
     return max(0.0, 1.0 - float(corr))
 
 
-def split_video_into_racks(video_path: str, output_dir: str | None = None) -> list[dict]:
+def split_video_into_racks(video_path: str, output_dir: str | None = None,
+                           config_path: str | None = None) -> list[dict]:
     """Main entry. Returns a list of dicts, one per detected rack:
         {
           "position":       1,                     # 1-based, in pan order
@@ -194,32 +255,46 @@ def split_video_into_racks(video_path: str, output_dir: str | None = None) -> li
     print(f"[multi-rack] sampling {len(indices)} of {total} frames @ fps={fps:.1f}",
           file=sys.stderr)
 
-    # Load detector once (workers reuse it across frames)
-    model = _load_detector()
+    # Load detector once (workers reuse it across frames, and load_model
+    # reuses the checkpoint the worker already warmed at boot)
+    cfg   = _load_config(config_path)
+    model = _load_detector(cfg)
+    conf  = _devices_conf(cfg)
 
-    # Sample + detect
+    # Sample + detect.
+    #
+    # We deliberately keep NO frame pixels here — only the scores and the
+    # source frame index. Retaining all 30 sampled frames at full resolution
+    # was ~750 MB of resident numpy for 4K phone footage (the upload limit
+    # admits it), which OOM-killed the singleton worker mid-split and stalled
+    # every other CV request until it respawned and reloaded its models. The
+    # ~one winning frame per rack is re-read at full resolution below, just
+    # before it is written; scoring runs on a downscaled copy because the
+    # detector letterboxes to imgsz=640 regardless.
     samples = []
     for idx in indices:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-        ok, frame = cap.read()
-        if not ok or frame is None:
+        frame = _read_frame_at(cap, idx)
+        if frame is None:
             continue
-        dets = _detect_devices(model, frame)
-        sig, n_dev, mean_conf = _frame_signature(dets, frame.shape[1])
-        sharp = _sharpness(frame) if n_dev > 0 else 0.0
-        fp    = _visual_fingerprint(frame)
+        small = _downscale_for_analysis(frame)
+        frame = None                          # release the full-res decode now
+        dets = _detect_devices(model, small, conf)
+        sig, n_dev, mean_conf = _frame_signature(dets, small.shape[1])
+        # Sharpness is scale-dependent, but every sample is downscaled by the
+        # same factor (one video = one resolution), so the ranking holds.
+        sharp = _sharpness(small) if n_dev > 0 else 0.0
+        fp    = _visual_fingerprint(small)
         samples.append({
             "index":      idx,
-            "frame":      frame,
             "n_devices":  n_dev,
             "sig":        sig,        # normalized mean X, or None
             "mean_conf":  mean_conf,
             "sharpness":  sharp,
             "fp":         fp,         # HSV histogram fingerprint
         })
-    cap.release()
 
     if not samples:
+        cap.release()
         return []
 
     # ── Segment by signature shifts ──────────────────────────────────
@@ -269,6 +344,7 @@ def split_video_into_racks(video_path: str, output_dir: str | None = None) -> li
         # video as one rack — pick the globally best detected frame.
         viable = [s for s in samples if s["n_devices"] >= MIN_DEVICES_FOR_RACK]
         if not viable:
+            cap.release()
             return []
         segments = [viable]
 
@@ -286,15 +362,33 @@ def split_video_into_racks(video_path: str, output_dir: str | None = None) -> li
     max_dev = max((s["n_devices"] for seg in segments for s in seg), default=1) or 1
     max_sharp = max((s["sharpness"] for seg in segments for s in seg), default=1.0) or 1.0
 
+    def _score(s):
+        return (0.45 * (s["n_devices"]  / max_dev) +
+                0.35 *  s["mean_conf"] +
+                0.20 * (s["sharpness"] / max_sharp))
+
     results: list[dict] = []
-    for pos, seg in enumerate(segments, start=1):
-        best = max(seg, key=lambda s: (
-            0.45 * (s["n_devices"]  / max_dev) +
-            0.35 *  s["mean_conf"] +
-            0.20 * (s["sharpness"] / max_sharp)
-        ))
+    pos = 0
+    for seg in segments:
+        # Re-read the winner at full resolution. Only one full-res frame is
+        # alive at a time. If a seek that worked during sampling somehow
+        # fails now, fall through to the next-best frame of the same segment
+        # rather than dropping the rack entirely.
+        best = None
+        full = None
+        for cand in sorted(seg, key=_score, reverse=True):
+            full = _read_frame_at(cap, cand["index"])
+            if full is not None:
+                best = cand
+                break
+            print(f"[multi-rack]   re-read failed for frame {cand['index']}, "
+                  f"trying next-best", file=sys.stderr)
+        if best is None:
+            continue
+        pos += 1
         best_path = out_root / f"rack_{pos}.jpg"
-        cv2.imwrite(str(best_path), best["frame"], [cv2.IMWRITE_JPEG_QUALITY, 92])
+        cv2.imwrite(str(best_path), full, [cv2.IMWRITE_JPEG_QUALITY, 92])
+        full = None
         results.append({
             "position":        pos,
             "label":           f"Rack {pos}",
@@ -302,9 +396,7 @@ def split_video_into_racks(video_path: str, output_dir: str | None = None) -> li
             "frame_index":     best["index"],
             "device_count":    best["n_devices"],
             "mean_conf":       round(best["mean_conf"], 3),
-            "score":           round(
-                0.45 * (best["n_devices"]  / max_dev) +
-                0.35 *  best["mean_conf"] +
-                0.20 * (best["sharpness"] / max_sharp), 3),
+            "score":           round(_score(best), 3),
         })
+    cap.release()
     return results

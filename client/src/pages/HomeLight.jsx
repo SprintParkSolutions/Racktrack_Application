@@ -15,8 +15,12 @@ export default function HomeLight() {
   const navigate = useNavigate();
   const { isAuthed } = useAuth();
 
-  const handleGetStarted = () => navigate(isAuthed ? '/scan' : '/signup');
-  const handleSignIn     = () => navigate('/login');
+  // Signed out, the prominent action is SIGN IN, not sign up. Almost everyone
+  // arriving here already has an account — testers especially — and sending
+  // them to a registration form reads as "you don't have an account", which is
+  // wrong and makes them think they need to create one.
+  const handleGetStarted = () => navigate(isAuthed ? '/scan' : '/login');
+  const handleCreateOrg  = () => navigate('/signup');
 
   return (
     <div className={styles.wrap}>
@@ -27,8 +31,8 @@ export default function HomeLight() {
           <span className={styles.brandName}>RackTrack</span>
         </div>
         {!isAuthed && (
-          <button type="button" className={styles.signInBtn} onClick={handleSignIn}>
-            Sign in
+          <button type="button" className={styles.signInBtn} onClick={handleCreateOrg}>
+            Create account
           </button>
         )}
       </header>
@@ -61,7 +65,7 @@ export default function HomeLight() {
             className={styles.primaryCta}
             onClick={handleGetStarted}
           >
-            Get Started
+            {isAuthed ? 'Start a scan' : 'Sign in'}
             <span
               className={`material-symbols-outlined ${styles.primaryCtaIcon}`}
               aria-hidden="true"

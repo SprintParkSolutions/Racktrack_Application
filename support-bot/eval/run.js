@@ -130,6 +130,23 @@ async function runCuratedSuite() {
     )
   }
 
+  // --- needs access ------------------------------------------------------
+  // A restricted answer must be named as restricted, never silently swapped
+  // for whatever the caller's own tier happened to match best.
+  for (const c of cases.needs_access || []) {
+    const res = await ask(c.question, { tier: c.tier || 'end-user' })
+    const routeOk = !c.expect_route_in || c.expect_route_in.includes(res.route)
+    const body = norm(res.answer)
+    const leaked = (c.forbidden || []).filter((f) => body.includes(norm(f)))
+    const passed = routeOk && leaked.length === 0
+    record(
+      'curated', 'needs-access', c.id, passed,
+      [routeOk ? '' : `route=${res.route}, expected one of ${c.expect_route_in}`,
+       leaked.length ? `answered with unrelated content: ${leaked.join(', ')}` : ''].filter(Boolean).join('; '),
+      'critical',
+    )
+  }
+
   // --- messy phrasing ----------------------------------------------------
   for (const c of cases.messy_phrasing) {
     const res = await ask(c.question, { tier: c.tier || 'end-user' })

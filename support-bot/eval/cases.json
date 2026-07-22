@@ -112,6 +112,33 @@
     }
   ],
 
+  "_note_needs_access": "An answer that exists but is above the caller's tier must be named as such, never silently replaced by the best entry the caller CAN see. That substitution is the worst failure mode in the system: it is confident, irrelevant, and gives no hint that a real answer exists.",
+
+  "needs_access": [
+    {
+      "id": "access-ops-console-buttons",
+      "question": "What do the Live and Paused buttons do, and how often does the console update itself?",
+      "tier": "end-user",
+      "expect_route_in": ["needs-access", "refusal"],
+      "forbidden": ["drift screen", "install RackTrack", "Request not approved"],
+      "why": "The real answer is an admin Operations Console entry. An end user must be told it needs admin access — not handed an unrelated entry that happens to share the words 'button' and 'update'."
+    },
+    {
+      "id": "access-clear-log",
+      "question": "how do I clear the log",
+      "tier": "end-user",
+      "expect_route_in": ["needs-access", "refusal"],
+      "why": "Log clearing is an Operations Console action. Must not be answered from an adjacent end-user entry."
+    },
+    {
+      "id": "access-ops-console",
+      "question": "what is the operations console",
+      "tier": "end-user",
+      "expect_route_in": ["needs-access", "refusal"],
+      "why": "Admin surface. Naming it as access-restricted is a real answer; substituting something else is not."
+    }
+  ],
+
   "messy_phrasing": [
     {
       "id": "messy-lowercase-nopunct",

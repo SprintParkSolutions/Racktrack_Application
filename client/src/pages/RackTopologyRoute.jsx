@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useGroupView } from '../hooks/useGroupView';
 import TopologyPage, { RackElevation } from './TopologyPage.jsx';
-import MultiRackTopologyPage from './MultiRackTopologyPage.jsx';
 import styles from './SideBySideRacks.module.css';
+
+// Lazy, and it matters: this route IS eagerly imported by App.jsx, so importing
+// the 3D page here statically pulled three.js and drei back into the initial
+// bundle and quietly undid the code splitting everywhere else.
+const MultiRackTopologyPage = lazy(() => import('./MultiRackTopologyPage.jsx'));
 
 // Topology for a rack group: a single 2D / 3D toggle over BOTH racks.
 //   3D → the existing combined 3D scene (both racks in one space + inter-rack cables)
@@ -69,7 +73,9 @@ export default function RackTopologyRoute() {
 
       {view === '3d' ? (
         <div className={styles.scene3d}>
-          <MultiRackTopologyPage groupId={data.group.id} hideHeader />
+          <Suspense fallback={null}>
+            <MultiRackTopologyPage groupId={data.group.id} hideHeader />
+          </Suspense>
         </div>
       ) : (
         <>

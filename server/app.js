@@ -3724,6 +3724,10 @@ app.post('/api/analyze-video', scanLimit, upload.single('video'), async (req, re
     const splitResult = await withSpan('multi_rack.split', async () => {
       const r = await pool.request('split_video_racks', {
         video_path: videoPath,
+        // Every other command sends this; without it the splitter fell back to
+        // its own config.json and could resolve a different model than the
+        // single-rack path on a non-default deployment.
+        config_path: CONFIG_PATH,
       });
       if (!r.ok) throw new Error(r.error || 'split failed');
       return r;

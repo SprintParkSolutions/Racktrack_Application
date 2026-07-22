@@ -5,6 +5,7 @@ import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext.jsx';
 import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
 import CategoryIcon from '../components/marketplace/CategoryIcon.jsx';
+import useModalA11y from '../hooks/useModalA11y.js';
 
 /* ──────────────────────────────────────────────────────────────────────
    MarketplacePage — browse + my-listings.
@@ -270,12 +271,9 @@ function ListingDetailModal({ listing, partners, onClose, onPatch, onDelete, isM
     setReason(''); setReported(false); setReportErr(null);
   }, [id]);
 
-  useEffect(() => {
-    if (!listing) return;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [listing, onClose]);
+  // Escape, focus trap, focus restore and background scroll lock all come
+  // from the shared hook; `active` gates it so the closed modal does nothing.
+  const dialogRef = useModalA11y(onClose, { active: !!listing });
 
   if (!listing) return null;
 
@@ -286,6 +284,7 @@ function ListingDetailModal({ listing, partners, onClose, onPatch, onDelete, isM
   return (
     <div className={styles.modalBackdrop} onClick={onClose} role="presentation">
       <div
+        ref={dialogRef}
         className={styles.modal}
         onClick={(e) => e.stopPropagation()}
         role="dialog"

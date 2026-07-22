@@ -231,7 +231,7 @@ export function LogsView({ live = true, refreshTick = 0 }) {
             value={queryInput}
             onChange={e => setQueryInput(e.target.value)}
           />
-          {q && <button type="button" className={styles.clearBtn} onClick={clearSearch}>✕</button>}
+          {q && <button type="button" className={styles.clearBtn} onClick={clearSearch} aria-label="Clear the search box">✕</button>}
         </form>
       </div>
 

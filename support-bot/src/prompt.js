@@ -35,7 +35,7 @@ export function buildSystem(matches, tier) {
 
   const facts = matches
     .map(({ entry }, i) => {
-      const parts = [`[${i + 1}] (id: ${entry.id})`, `Question: ${entry.question}`, `Answer: ${entry.answer}`]
+      const parts = [`ID: ${entry.id}`, `Question: ${entry.question}`, `Answer: ${entry.short || entry.answer}`]
       if (entry.symptoms?.length) parts.push(`Symptoms: ${entry.symptoms.join('; ')}`)
       return parts.join('\n')
     })
@@ -54,8 +54,8 @@ ${facts}
 RULES:
 1. Answer using ONLY the facts above. Nothing else.
 2. Never invent a number, button name, screen name, error message, or setting that is not written above.
-3. Keep it short. Lead with what to do. Use numbered steps.
-4. End your reply with a line: SOURCES: <the id or ids you used>
+3. Keep it under 60 words. Lead with what to do. Numbered steps if there is more than one.
+4. End your reply with a line: SOURCES: <the exact ID line of the fact you used, e.g. SOURCES: ${matches[0] ? matches[0].entry.id : 'ABC-001'}>
 5. If the facts above do not answer the question, do NOT guess. Reply exactly:
    I don't have reliable information about that. I'd rather not guess and send you the wrong way. ${ESCALATION[tier]}
    SOURCES: none
@@ -69,7 +69,13 @@ Rule 5 is the most important rule. Saying you don't know is always better than g
  * what a human verified.
  */
 export function verbatimAnswer(entry) {
-  return { answer: entry.answer, sources: [entry.id] }
+  // Lead with the short answer; keep the full text available behind `detail`.
+  const short = entry.short && entry.short.trim()
+  return {
+    answer: short || entry.answer,
+    detail: short && short !== entry.answer ? entry.answer : null,
+    sources: [entry.id],
+  }
 }
 
 /** Refusal used when nothing in the knowledge base matches. */

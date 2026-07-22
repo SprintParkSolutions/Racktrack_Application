@@ -244,7 +244,7 @@ function NetdiscoInner({ rackId, embedded }) {
       <div className={styles.amb} />
 
       <header className={styles.header}>
-        <button className="btn btn-ghost btn-icon" onClick={() => navigate(-1)}>
+        <button className="btn btn-ghost btn-icon" onClick={() => navigate(-1)} aria-label="Back">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>

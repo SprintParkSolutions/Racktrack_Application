@@ -381,13 +381,23 @@ function warmup() {
 }
 
 // ── Out-of-scope intents ─────────────────────────────────────────────
+// Products we might be measured against, and which this KB knows nothing
+// about. A comparison is only unanswerable when the OTHER side of it is outside
+// RackTrack — comparing two racks, or two scans of one rack, is a documented
+// RackTrack feature, so the comparison verbs alone cannot be the signal.
+// Integration partners (ServiceNow, Netdisco) are deliberately absent: those
+// are things we connect to and do have entries about.
+const COMPETITOR_NAMES =
+  /\b(?:netbox|device\s?42|nlyte|sunbird|dcim\s+tools?|racktables|opendcim|netterrain|hyperview|patchmanager|rackmonkey)\b/;
+
 /**
  * Categories of question this knowledge base structurally cannot answer.
  *
  * These are not "we happen to be missing an entry" gaps that could be filled
  * later - they are questions about facts that do not live in source code at
- * all. Answering them requires a person, so route straight to one rather than
- * letting retrieval find a superficially-similar entry.
+ * all. Answering them requires a person, so route to one - unless retrieval
+ * found a verified entry that plainly answers the question, which is the caller's
+ * check to make (see `ask`), not this function's.
  */
 function detectOutOfScope(text) {
   const t = text.toLowerCase()
@@ -410,7 +420,19 @@ function detectOutOfScope(text) {
     },
     {
       kind: 'comparison',
-      re: /\b(?:better than|worse than|compared? (?:to|with)|versus|\bvs\.?\s|competitor|alternative to)\b/,
+      // Anchored to an out-of-product object, never to a comparison verb: a
+      // technician asking "how do I compare the two racks" is asking about
+      // RACK-004, and telling them we can't compare ourselves to competitors is
+      // a confidently wrong answer to a documented workflow.
+      re: new RegExp(
+        [
+          COMPETITOR_NAMES.source,
+          '\\bcompetitors?\\b',
+          '\\b(?:compare|compares|comparing|compared) (?:racktrack|this app|this product|it) (?:to|with|against|versus|vs\\.?)\\b',
+          '\\b(?:racktrack|this app|this product) (?:is |was )?(?:better|worse) than\\b',
+          '\\balternatives? to (?:racktrack|this app|this product)\\b',
+        ].join('|')
+      ),
       reply:
         "I can explain what RackTrack does, but I can't compare it to other products - I don't have reliable information about them. " +
         'Happy to answer anything about using RackTrack itself.',
@@ -462,10 +484,26 @@ function detectCredential(text) {
 
 // ── Local model (optional) ───────────────────────────────────────────
 let _llmState = null;
+let _llmStateAt = 0;
+
+/**
+ * How long a NEGATIVE probe result is trusted. A success is cached for the life
+ * of the process (Ollama does not disappear mid-run in practice), but a single
+ * failed probe used to be cached the same way — so one restart of Ollama, one
+ * slow first response, one blip, and the bot sat in search-only mode until the
+ * server was restarted, silently and with nothing to tell an operator why.
+ * Short enough to heal within a conversation, long enough that a genuinely
+ * absent Ollama is probed once a minute rather than once a question.
+ */
+const LLM_PROBE_RETRY_MS = Number(process.env.SUPPORT_LLM_PROBE_TTL_MS || 60_000);
 
 async function llmAvailable(recheck = false) {
   if (!OLLAMA_ENABLED) return { ok: false, reason: 'disabled via SUPPORT_BOT_LLM=off' };
-  if (_llmState && !recheck) return _llmState;
+  const stale = !_llmState?.ok && Date.now() - _llmStateAt >= LLM_PROBE_RETRY_MS;
+  if (_llmState && !recheck && !stale) return _llmState;
+  // Stamped before the probe, not after: concurrent questions during a probe
+  // then keep the last known state instead of each firing their own request.
+  _llmStateAt = Date.now();
   try {
     const res = await fetch(`${OLLAMA_URL}/api/tags`, { signal: AbortSignal.timeout(2500) });
     if (!res.ok) {
@@ -643,24 +681,6 @@ async function ask(question, { tier = SINGLE_TIER, history = [] } = {}) {
     };
   }
 
-  // Some questions are outside what this knowledge base can EVER answer, no
-  // matter how well the words happen to match. The KB is mined from source
-  // code, so it describes what the product does today - it cannot know
-  // roadmap, pricing, or how we compare to a competitor. Lexical search will
-  // happily match "Juniper switches" against switch entries and look
-  // confident, so these are caught by intent before scoring runs.
-  const outOfScope = detectOutOfScope(q)
-  if (outOfScope) {
-    return {
-      answer: outOfScope.reply,
-      sources: [],
-      route: 'out-of-scope',
-      confidence: 0,
-      matches: [],
-      warnings: [`out of scope: ${outOfScope.kind}`],
-    }
-  }
-
   const { index } = getIndex(tier);
 
   // Short follow-ups ("why?", "still broken") carry no searchable terms. Blend
@@ -682,6 +702,33 @@ async function ask(question, { tier = SINGLE_TIER, history = [] } = {}) {
     top.coverage < THRESHOLDS.MIN_COVERAGE ||
     top.score < THRESHOLDS.MIN_SCORE ||
     top.unknownRatio > THRESHOLDS.MAX_UNKNOWN;
+
+  // Some questions are outside what this knowledge base can EVER answer, no
+  // matter how well the words happen to match. The KB is mined from source
+  // code, so it describes what the product does today - it cannot know
+  // roadmap, pricing, or how we compare to a competitor. Lexical search will
+  // happily match "Juniper switches" against switch entries and look
+  // confident, so intent still has the final say — but only once retrieval has
+  // had its turn. An intent rule works on the shape of a sentence and cannot
+  // tell "compare us to NetBox" from "compare these two racks"; a verified
+  // entry that clears the verbatim bar can, and it wins.
+  const outOfScope = detectOutOfScope(q);
+  const documented =
+    top &&
+    top.confidence >= THRESHOLDS.DIRECT &&
+    top.coverage >= THRESHOLDS.MIN_COVERAGE &&
+    top.matchedTerms >= THRESHOLDS.MIN_TERMS_FOR_DIRECT &&
+    top.unknownRatio <= THRESHOLDS.MAX_UNKNOWN;
+  if (outOfScope && !documented) {
+    return {
+      answer: outOfScope.reply,
+      sources: [],
+      route: 'out-of-scope',
+      confidence: 0,
+      matches: [],
+      warnings: [`out of scope: ${outOfScope.kind}`],
+    };
+  }
 
   // Before refusing — or before answering with a weak match — check whether a
   // GOOD answer exists that this caller simply is not cleared to see. Telling a
@@ -721,7 +768,10 @@ async function ask(question, { tier = SINGLE_TIER, history = [] } = {}) {
       sources: [],
       route: 'refusal',
       confidence,
-      matches: [],
+      // Carried even though nothing here is shown to the user: these are the
+      // entries that ALMOST answered, and they are the whole value of the
+      // refusal log. Callers strip `matches` before responding.
+      matches: summarize(matches),
       warnings,
     };
   }
@@ -847,6 +897,10 @@ function summarize(matches) {
     id: m.entry.id,
     question: m.entry.question,
     confidence: m.confidence,
+    // Raw BM25 score alongside the normalized confidence: when a refusal is
+    // triaged later, "nothing scored above 2" and "three entries scored 11 and
+    // still lost on coverage" are different KB problems with different fixes.
+    score: Math.round(m.score * 100) / 100,
   }));
 }
 
@@ -857,5 +911,5 @@ module.exports = {
   llmAvailable,
   THRESHOLDS,
   // exported for tests
-  _internals: { search, buildIndex, tokenize, detectCredential, validate, parseSources },
+  _internals: { search, buildIndex, tokenize, detectCredential, detectOutOfScope, validate, parseSources },
 };

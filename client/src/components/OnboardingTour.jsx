@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
+import useModalA11y from '../hooks/useModalA11y.js';
 
 // First-run walkthrough. Shows once per device for a signed-in user, then
 // never again (localStorage flag). Purely additive — it overlays the app and
@@ -55,24 +56,30 @@ export default function OnboardingTour() {
     try { return localStorage.getItem(KEY) === '1'; } catch { return false; }
   });
 
-  if (done || !isAuthed) return null;
-
   const finish = (goScan) => {
     try { localStorage.setItem(KEY, '1'); } catch (_) {}
     setDone(true);
     if (goScan) navigate('/scan');
   };
 
+  // Escape skips the tour — same as the Skip button — and Tab stays inside
+  // the card while it is up. Hook must run before the early return.
+  const open = !done && isAuthed;
+  const cardRef = useModalA11y(() => finish(false), { active: open });
+
+  if (!open) return null;
+
   const last = i === STEPS.length - 1;
   const step = STEPS[i];
 
   return (
-    <div className="rtob-backdrop" role="dialog" aria-modal="true" aria-label="Getting started">
-      <div className="rtob-card">
+    <div className="rtob-backdrop">
+      <div ref={cardRef} className="rtob-card"
+           role="dialog" aria-modal="true" aria-labelledby="rtob-title">
         <button className="rtob-skip" onClick={() => finish(false)}>Skip</button>
 
         <div className="rtob-art"><Art kind={step.art} /></div>
-        <h2 className="rtob-title">{step.title}</h2>
+        <h2 id="rtob-title" className="rtob-title">{step.title}</h2>
         <p className="rtob-body">{step.body}</p>
 
         <div className="rtob-dots" aria-hidden="true">

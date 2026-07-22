@@ -22,24 +22,25 @@ const auth    = require('./auth');
 const portsDb = require('./lib/port_history_db');
 const poller  = require('./lib/port_poller');
 const { logger } = require('./lib/observability');
+const tenant  = require('./lib/tenant');
 
-// `monitored_devices` has NO tenant/org column, so requireAuth alone let any
-// logged-in member of any organisation read every tenant's switch inventory
-// (name, location, model, serial, chassis MAC), see their per-port state and
-// LLDP topology, and POST /poll to force the server to SSH into them with the
-// stored credentials. lab_devices.js gates the same table to owners for exactly
-// this reason. Match it until the table is tenant-scoped properly.
-// `monitored_devices` has NO tenant/org column, so authentication alone lets a
-// member of any org read every tenant's switch inventory. The correct fix is a
-// tenant column + per-query filtering; that is a schema migration and is
-// tracked as follow-up work.
+// `monitored_devices` used to have NO tenant column, so requireAuth alone let
+// any logged-in member of any organisation read every tenant's switch
+// inventory (name, location, model, serial, chassis MAC), walk their per-port
+// state and LLDP topology, and force the server to SSH into them.
 //
-// What we do NOT do is gate the whole router to owners: the Drift feature
-// (PortHistoryPage) is member-facing and reads these endpoints, so that would
-// break a shipped feature for every normal user. Reads stay authenticated;
-// the one endpoint with a real side effect — forcing the server to SSH into a
-// switch with stored credentials — is restricted below.
+// The table now carries tenant_id and every read below is scoped to the Sites
+// the caller can actually see. Gating the whole router to owners was rejected
+// as the fix: Drift (PortHistoryPage) is member-facing, so that would have
+// closed the hole by breaking a shipped feature for every normal user.
 router.use('/api/ports', auth.requireAuth);
+
+// Sites this caller may see: null for the platform owner (no restriction),
+// otherwise the list of Site ids. Never undefined — an unknown principal
+// resolves to [] and matches nothing.
+function scopeOf(req) {
+  return tenant.visibleTenantIds(req.user);
+}
 
 function safeAsync(handler) {
   return async (req, res) => {
@@ -56,14 +57,14 @@ function safeAsync(handler) {
 // Listing is the only "device discovery" the client gets. host / ssh_port
 // stay server-side; the UI works off the display_name (system name /
 // model / serial) returned by toClientView.
-router.get('/api/ports/devices', safeAsync(async (_req, res) => {
-  res.json({ devices: portsDb.listDevices().map(portsDb.toClientView) });
+router.get('/api/ports/devices', safeAsync(async (req, res) => {
+  res.json({ devices: portsDb.listDevices({ scope: scopeOf(req) }).map(portsDb.toClientView) });
 }));
 
 // ── snapshots / overview ─────────────────────────────────────────────
 router.get('/api/ports/:deviceId/overview', safeAsync(async (req, res) => {
   const id = Number(req.params.deviceId);
-  const device = portsDb.getDevice(id);
+  const device = portsDb.getDevice(id, scopeOf(req));
   if (!device) return res.status(404).json({ error: 'device not found' });
   res.json({
     device: portsDb.toClientView(device),
@@ -75,7 +76,7 @@ router.get('/api/ports/:deviceId/overview', safeAsync(async (req, res) => {
 router.get('/api/ports/:deviceId/events', safeAsync(async (req, res) => {
   const id    = Number(req.params.deviceId);
   const limit = Math.min(Number(req.query.limit) || 500, 5000);
-  if (!portsDb.getDevice(id)) return res.status(404).json({ error: 'device not found' });
+  if (!portsDb.getDevice(id, scopeOf(req))) return res.status(404).json({ error: 'device not found' });
   res.json({ events: portsDb.eventsForDevice(id, limit) });
 }));
 
@@ -84,7 +85,7 @@ router.get('/api/ports/:deviceId/:port/events', safeAsync(async (req, res) => {
   const id    = Number(req.params.deviceId);
   const port  = req.params.port;
   const limit = Math.min(Number(req.query.limit) || 200, 5000);
-  if (!portsDb.getDevice(id)) return res.status(404).json({ error: 'device not found' });
+  if (!portsDb.getDevice(id, scopeOf(req))) return res.status(404).json({ error: 'device not found' });
   res.json({ events: portsDb.eventsForPort(id, port, limit) });
 }));
 
@@ -106,7 +107,7 @@ const OFFSETS = [
 router.get('/api/ports/:deviceId/:port/history', safeAsync(async (req, res) => {
   const id   = Number(req.params.deviceId);
   const port = req.params.port;
-  if (!portsDb.getDevice(id)) return res.status(404).json({ error: 'device not found' });
+  if (!portsDb.getDevice(id, scopeOf(req))) return res.status(404).json({ error: 'device not found' });
   const now = Date.now();
   const offsets = {};
   for (const [label, ms] of OFFSETS) {
@@ -126,7 +127,7 @@ router.get('/api/ports/:deviceId/:port/history', safeAsync(async (req, res) => {
 router.get('/api/ports/:deviceId/:port/timeline', safeAsync(async (req, res) => {
   const id   = Number(req.params.deviceId);
   const port = req.params.port;
-  if (!portsDb.getDevice(id)) return res.status(404).json({ error: 'device not found' });
+  if (!portsDb.getDevice(id, scopeOf(req))) return res.status(404).json({ error: 'device not found' });
   const windowSec = Math.max(60, Math.min(Number(req.query.window) || 3600, 7 * 24 * 3600));
   const endMs   = Date.now();
   const startMs = endMs - windowSec * 1000;
@@ -169,7 +170,7 @@ function pollRateOk(key) {
 // previously force that against any tenant's device.
 router.post('/api/ports/:deviceId/poll', auth.requireRole('owner', 'org_admin'), safeAsync(async (req, res) => {
   const id = Number(req.params.deviceId);
-  const device = portsDb.getDevice(id);
+  const device = portsDb.getDevice(id, scopeOf(req));
   if (!device) return res.status(404).json({ error: 'device not found' });
 
   const rateKey = `${req.user?.id || req.ip || 'anon'}:${id}`;
@@ -180,7 +181,7 @@ router.post('/api/ports/:deviceId/poll', auth.requireRole('owner', 'org_admin'),
     return res.status(409).json({ error: 'poll already in progress for this device' });
   }
   await poller.pollDevice(device);
-  res.json({ ok: true, device: portsDb.toClientView(portsDb.getDevice(id)) });
+  res.json({ ok: true, device: portsDb.toClientView(portsDb.getDevice(id, scopeOf(req))) });
 }));
 
 module.exports = router;

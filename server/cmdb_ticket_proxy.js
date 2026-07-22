@@ -29,6 +29,7 @@ const profiles = require('./lib/connection_profiles');
 
 const router = express.Router();
 const tenant = require('./lib/tenant');
+const { rackOwnershipParam } = require('./lib/rack_access');
 const PROJECT_ROOT  = path.resolve(__dirname, '..');
 
 // Tenant ownership guard for any route that takes :rackId on this router.
@@ -36,14 +37,13 @@ const PROJECT_ROOT  = path.resolve(__dirname, '..');
 // we register it here too. requireAuth already runs before this fires
 // (router.use('/api/cmdb/ticket', auth.requireAuth) below), so req.user
 // is populated.
-router.param('rackId', (req, res, next, rackId) => {
-  const tid = req.user?.tenant_id;
-  if (!tid) return next();   // not authenticated → fall through (legacy)
-  if (!tenant.tenantOwnsRack(tid, rackId)) {
-    return res.status(404).json({ ok: false, error: 'Rack not found' });
-  }
-  next();
-});
+// Shared with app.js and netdisco_proxy.js so the three cannot drift again.
+// This copy used to `return next()` when tenant_id was null — failing OPEN, so
+// any user row without a Site reached every CMDB route on the platform,
+// including the one that opens a real ServiceNow request against a rack. It
+// also ignored role, so the platform owner and org admins got "Rack not found"
+// for racks they are entitled to see.
+router.param('rackId', rackOwnershipParam({ tenant, logger }));
 const TICKET_SCRIPT = path.join(PROJECT_ROOT, 'servicenow', 'cmdb_ticket.py');
 const PYTHON_CMD    = process.env.PYTHON_CMD ||
                       (process.platform === 'win32' ? 'python' : 'python3');

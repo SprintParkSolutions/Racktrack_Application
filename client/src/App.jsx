@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -27,19 +27,27 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import SpecificationsPage from './pages/SpecificationsPage.jsx';
 import FirmwarePage from './pages/FirmwarePage.jsx';
 import SwitchInformationPage from './pages/SwitchInformationPage.jsx';
-import MultiRackTopologyPage from './pages/MultiRackTopologyPage.jsx';
 import MultiRackRedirect from './pages/MultiRackRedirect.jsx';
 import PortHistoryPage from './pages/PortHistoryPage.jsx';
 import LabPage from './pages/LabPage.jsx';
 import TenantMatPage from './pages/TenantMatPage.jsx';
 import ConnectionsPage from './pages/ConnectionsPage.jsx';
-import MarketplacePage from './pages/MarketplacePage.jsx';
-import MarketplaceNewPage from './pages/MarketplaceNewPage.jsx';
-import MarketplaceCheckoutPage from './pages/MarketplaceCheckoutPage.jsx';
-import MarketplaceOrdersPage from './pages/MarketplaceOrdersPage.jsx';
-import MarketplaceAlertsPage from './pages/MarketplaceAlertsPage.jsx';
-import MarketplaceDashboardPage from './pages/MarketplaceDashboardPage.jsx';
-import MarketplacePartnerAccountsPage from './pages/MarketplacePartnerAccountsPage.jsx';
+// ── Deferred routes ──────────────────────────────────────────────────
+// Everything below loads on navigation rather than at startup.
+//
+// MultiRackTopologyPage imports three.js, @react-three/fiber and drei at the
+// top level, so importing it eagerly put the entire 3D engine in front of the
+// login form — every user paid for it to reach a page most never open. The
+// Marketplace cluster is admin-only, so ordinary members were downloading
+// seven pages they cannot navigate to.
+const MultiRackTopologyPage = lazy(() => import('./pages/MultiRackTopologyPage.jsx'));
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage.jsx'));
+const MarketplaceNewPage = lazy(() => import('./pages/MarketplaceNewPage.jsx'));
+const MarketplaceCheckoutPage = lazy(() => import('./pages/MarketplaceCheckoutPage.jsx'));
+const MarketplaceOrdersPage = lazy(() => import('./pages/MarketplaceOrdersPage.jsx'));
+const MarketplaceAlertsPage = lazy(() => import('./pages/MarketplaceAlertsPage.jsx'));
+const MarketplaceDashboardPage = lazy(() => import('./pages/MarketplaceDashboardPage.jsx'));
+const MarketplacePartnerAccountsPage = lazy(() => import('./pages/MarketplacePartnerAccountsPage.jsx'));
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
@@ -223,6 +231,10 @@ export default function App() {
             <PendingScanResumer />
             <OnboardingTour />
             <PointerGlow />
+            {/* Deferred routes suspend while their chunk loads. The fallback is
+                deliberately quiet — a spinner that flashes for 80 ms on a warm
+                connection reads as jank, not as progress. */}
+            <Suspense fallback={<div className="route-loading" aria-busy="true" />}>
             <Routes>
             {/* HomePage has its own desktop branch (HomeDesktop) via
                 useIsDesktop, so DesktopShell is bypassed for "/" —
@@ -350,6 +362,7 @@ export default function App() {
             <Route path="/demo/topology" element={<TenantMatPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </Suspense>
           </ShutterProvider>
           </ConnectionsProvider>
         </AuthProvider>

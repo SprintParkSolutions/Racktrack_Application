@@ -50,6 +50,7 @@ export default function RackTabs({ rackId }) {
           className={styles.threeD}
           onClick={() => navigate(`/multi-rack/${encodeURIComponent(data.group.id)}/topology`)}
           title="Open all racks in one 3D scene"
+          aria-label="Open all racks in one 3D scene"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useId, useState, useCallback } from 'react';
 import {
   listOrgConnections, createOrgConnection, deleteOrgConnection, TYPE_INFO,
 } from '../utils/connectionsApi';
@@ -18,6 +18,9 @@ function emptySecretFor(type) {
 }
 
 export default function OrgConnectionsPanel() {
+  // The credential fields are driven by TYPE_INFO, so the label/field pairing
+  // has to be generated too — a shared prefix keeps the ids unique per mount.
+  const uid = useId();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -86,19 +89,19 @@ export default function OrgConnectionsPanel() {
 
       {formOpen && (
         <form onSubmit={onSave} style={{ ...card, marginBottom: 14 }}>
-          <label style={label}>Integration type</label>
-          <select style={input} value={type} onChange={e => setType(e.target.value)}>
+          <label style={label} htmlFor={`${uid}-type`}>Integration type</label>
+          <select id={`${uid}-type`} style={input} value={type} onChange={e => setType(e.target.value)}>
             {TYPE_KEYS.map(t => <option key={t} value={t}>{TYPE_INFO[t].label}</option>)}
           </select>
 
-          <label style={label}>Label (optional)</label>
-          <input style={input} value={name} placeholder={info.label}
+          <label style={label} htmlFor={`${uid}-name`}>Label (optional)</label>
+          <input id={`${uid}-name`} style={input} value={name} placeholder={info.label}
             onChange={e => setName(e.target.value)} />
 
           {(info.fields || []).map(f => (
             <div key={f.key}>
-              <label style={label}>{f.label}{f.required ? ' *' : ''}</label>
-              <input style={input}
+              <label style={label} htmlFor={`${uid}-${f.key}`}>{f.label}{f.required ? ' *' : ''}</label>
+              <input id={`${uid}-${f.key}`} style={input}
                 type={f.type === 'password' ? 'password' : 'text'}
                 autoComplete="new-password"
                 placeholder={f.placeholder || ''}

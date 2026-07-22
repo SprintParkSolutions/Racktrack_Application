@@ -168,22 +168,13 @@ router.use('/api/netdisco', auth.requireAuth);
 // these two routes were authenticated but unscoped: any signed-in user could
 // name another organisation's rack id and read its scan directory through
 // Netdisco. Scoped here, in the router that actually serves them.
+// Uses the shared guard so this router, app.js and cmdb_ticket_proxy.js cannot
+// drift apart again — they already had, which is how this router ended up with
+// no ownership check at all. The shared version also shape-validates rackId,
+// which this one did not: it flows into path.join for the scan directory.
 const tenant = require('./lib/tenant');
-router.param('rackId', (req, res, next, rackId) => {
-  const u = req.user;
-  if (!u) return res.status(401).json({ error: 'Authentication required' });
-  if (u.role === 'owner') return next();
-  if (u.role === 'org_admin') {
-    if (u.organization_id && tenant.rackInOrg(rackId, u.organization_id)) return next();
-    return res.status(404).json({ error: `rack ${rackId} not found` });
-  }
-  // A user with no site cannot inherit access to every rack on the platform.
-  if (!u.tenant_id) return res.status(404).json({ error: `rack ${rackId} not found` });
-  if (tenant.tenantOwnsRack(u.tenant_id, rackId)) return next();
-  // 404 rather than 403: a 403 confirms the rack exists, which is itself a
-  // cross-tenant disclosure.
-  return res.status(404).json({ error: `rack ${rackId} not found` });
-});
+const { rackOwnershipParam } = require('./lib/rack_access');
+router.param('rackId', rackOwnershipParam({ tenant, logger }));
 
 // ── List all devices ─────────────────────────────────────────────────────
 //   Behaviour mirrors netdisco.py::list_all_devices — q=% returns everything.

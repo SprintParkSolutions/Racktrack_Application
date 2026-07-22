@@ -124,6 +124,32 @@ function rackInOrg(rackId, orgId) {
   return !!_stmtRackInOrg.get(String(rackId), Number(orgId));
 }
 
+/**
+ * Site ids visible to a principal, for scoping non-rack resources.
+ *
+ * Returns null for the platform owner, meaning "no restriction" — callers must
+ * distinguish that from `[]`, which means "no Sites at all" and correctly
+ * matches nothing. A principal with neither a role that grants breadth nor a
+ * Site of their own gets `[]` rather than everything: this fails closed.
+ */
+function visibleTenantIds(principal) {
+  if (!principal) return [];
+  const role = principal.role;
+  const tenantId = principal.tenantId ?? principal.tenant_id ?? null;
+  const orgId = principal.organizationId ?? principal.organization_id ?? null;
+
+  if (role === 'owner') return null;
+  if ((role === 'org_admin' || role === 'site_manager') && orgId) {
+    const rows = db.prepare(`SELECT id FROM tenants WHERE organization_id = ?`).all(Number(orgId));
+    const ids = rows.map((r) => r.id);
+    // An org admin also holds a Site of their own (often the "Default" one),
+    // which is not in their org's list but is still theirs.
+    if (tenantId && !ids.includes(tenantId)) ids.push(tenantId);
+    return ids;
+  }
+  return tenantId ? [tenantId] : [];
+}
+
 /** All rack ids across every Site in this organization. */
 function orgRackIds(orgId) {
   if (!orgId) return new Set();
@@ -175,6 +201,7 @@ module.exports = {
   listRacksForTenant,
   requireRackOwnership,
   rackInOrg,
+  visibleTenantIds,
   orgRackIds,
   orgForRack,
   allRackIds,

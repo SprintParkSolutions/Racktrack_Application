@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import styles from './MoreSheet.module.css';
+import useModalA11y from '../hooks/useModalA11y.js';
 
 /**
  * The phone's overflow navigation — everything the sidebar shows that does
@@ -13,16 +13,11 @@ import styles from './MoreSheet.module.css';
  * screen on a small phone instead of running off the bottom.
  */
 export default function MoreSheet({ links, onClose }) {
-  const panelRef = useRef(null);
-
-  // Escape closes; focus moves into the sheet so a keyboard or screen-reader
-  // user is not left behind on the button that opened it.
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    panelRef.current?.querySelector('a')?.focus();
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  // Escape closes, Tab stays inside, and focus moves into the sheet so a
+  // keyboard or screen-reader user is not left behind on the button that
+  // opened it — and back to that button on close. The hook holds onClose in a
+  // ref, which is what stops the old focus-on-every-render behaviour here.
+  const panelRef = useModalA11y(onClose);
 
   return createPortal(
     <div className={styles.backdrop} onClick={onClose}>

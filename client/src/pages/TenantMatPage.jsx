@@ -86,15 +86,17 @@ export default function TenantMatPage() {
         <div className={styles.banner}>
           <span>⏳</span>
           <span>CMDB not populated yet — showing Local data. The bootstrap script is still running; try CMDB again in a few minutes.</span>
-          <button className={styles.bannerClose} onClick={() => setCmdbPending(false)}>×</button>
+          <button className={styles.bannerClose} onClick={() => setCmdbPending(false)} aria-label="Dismiss CMDB notice">×</button>
         </div>
       )}
       <header className={styles.header}>
-        <button className={styles.back} onClick={() => navigate(-1)}>‹</button>
+        <button className={styles.back} onClick={() => navigate(-1)} aria-label="Back">‹</button>
         <button
           className={styles.treeToggleBtn}
           onClick={() => setTreeOpen(o => !o)}
           title={treeOpen ? 'Hide tree' : 'Show tree'}
+          aria-label={treeOpen ? 'Hide the container tree' : 'Show the container tree'}
+          aria-expanded={treeOpen}
         ><IcSidebar /></button>
         <h2>
           {data.tenant.name}
@@ -175,23 +177,37 @@ function TreeNode({ node, depth, expanded, toggle, selectedId, onSelect }) {
   const isSelected = node.id === selectedId;
   return (
     <div>
-      <div
-        className={`${styles.treeRow} ${isSelected ? styles.treeRowSel : ''}`}
-        style={{ paddingLeft: 6 + depth * 14 }}
-        onClick={() => onSelect(node)}
-      >
+      {/* The row is the select action, so it is a real <button>: it was a
+          <div onClick>, which no keyboard or screen-reader user could reach.
+          The caret is a separate button because expanding and selecting are
+          two different actions on the same row. */}
+      <div className={styles.treeRowWrap}>
         {hasChildren ? (
-          <button className={styles.treeCaret} onClick={(e) => { e.stopPropagation(); toggle(node.id); }}>
+          <button
+            type="button"
+            className={styles.treeCaret}
+            onClick={() => toggle(node.id)}
+            aria-expanded={isOpen}
+            aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${node.label}`}
+            style={{ marginLeft: 6 + depth * 14 }}
+          >
             {isOpen ? '▾' : '▸'}
           </button>
         ) : (
-          <span className={styles.treeCaretBlank} />
+          <span className={styles.treeCaretBlank} style={{ marginLeft: 6 + depth * 14 }} />
         )}
-        <span className={styles.treeIcon} data-type={node.type}>{TYPE_ICON[node.type] || '•'}</span>
-        <span className={styles.treeLabel}>{node.label}</span>
-        {typeof node.count === 'number' && (
-          <span className={styles.treeCount}>({node.count})</span>
-        )}
+        <button
+          type="button"
+          className={`${styles.treeRow} ${isSelected ? styles.treeRowSel : ''}`}
+          onClick={() => onSelect(node)}
+          aria-pressed={isSelected}
+        >
+          <span className={styles.treeIcon} data-type={node.type} aria-hidden="true">{TYPE_ICON[node.type] || '•'}</span>
+          <span className={styles.treeLabel}>{node.label}</span>
+          {typeof node.count === 'number' && (
+            <span className={styles.treeCount}>({node.count})</span>
+          )}
+        </button>
       </div>
       {hasChildren && isOpen && (
         <div>
@@ -293,6 +309,9 @@ function FloorPlan({ building, floor, racks, onPickRack }) {
             transform={`translate(${r.x_m - RACK_W / 2} ${r.y_m - RACK_D / 2}) rotate(${r.rotation_deg} ${RACK_W / 2} ${RACK_D / 2})`}
             className={styles.rackG}
             onClick={() => onPickRack(r.id)}
+            onKeyDown={activateOnKey(() => onPickRack(r.id))}
+            role="button" tabIndex={0}
+            aria-label={`Open rack ${r.name} — ${STATUS_META[r.status]?.label || r.status}`}
           >
             <rect width={RACK_W} height={RACK_D}
               fill={STATUS_META[r.status]?.color || '#888888'}
@@ -347,6 +366,10 @@ function TreeView({ tree, selectedId, onSelect }) {
               transform={`translate(${n.x} ${n.y})`}
               className={styles.treeNodeG}
               onClick={() => onSelect(n.data)}
+              onKeyDown={activateOnKey(() => onSelect(n.data))}
+              role="button" tabIndex={0}
+              aria-label={`Select ${n.label}`}
+              aria-pressed={isSel}
             >
               <rect x={-NODE_W / 2} y={-14} width={NODE_W} height={28}
                 rx="6"
@@ -372,6 +395,31 @@ function TreeView({ tree, selectedId, onSelect }) {
 
 /* ─── Table view ────────────────────────────────────────────────────── */
 
+// Enter/Space on an element that had to stay a <tr>/<g> — those can't become
+// <button>s without losing table semantics or the SVG transform.
+function activateOnKey(fn) {
+  return (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    fn();
+  };
+}
+
+// Sortable column header. The sort control has to be a real <button> inside
+// the <th> so it is tabbable; aria-sort tells a screen reader which column is
+// sorted and which way. Declared at module level so pressing it doesn't
+// remount the header and drop keyboard focus.
+function SortTh({ sortKey, label, sort, onSort }) {
+  const active = sort.key === sortKey;
+  return (
+    <th scope="col" aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button type="button" className={styles.thBtn} onClick={() => onSort(sortKey)}>
+        {label}{active ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}
+      </button>
+    </th>
+  );
+}
+
 function TableView({ racks, onPickRack }) {
   const [sort, setSort] = useState({ key: 'name', dir: 'asc' });
   const sorted = useMemo(() => {
@@ -388,27 +436,35 @@ function TableView({ racks, onPickRack }) {
     return arr;
   }, [racks, sort]);
   const click = (key) => setSort(s => ({ key, dir: s.key === key && s.dir === 'asc' ? 'desc' : 'asc' }));
-  const ind = (k) => sort.key === k ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+  const th = (k, label) => <SortTh key={k} sortKey={k} label={label} sort={sort} onSort={click} />;
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
         <thead>
           <tr>
-            <th onClick={() => click('name')}>Rack{ind('name')}</th>
-            <th onClick={() => click('building_id')}>Building{ind('building_id')}</th>
-            <th onClick={() => click('floor_id')}>Floor{ind('floor_id')}</th>
-            <th onClick={() => click('row_id')}>Row{ind('row_id')}</th>
-            <th onClick={() => click('position')}>Pos{ind('position')}</th>
-            <th onClick={() => click('status')}>Status{ind('status')}</th>
-            <th onClick={() => click('device_count')}>Devices{ind('device_count')}</th>
-            <th onClick={() => click('power_kw')}>Power{ind('power_kw')}</th>
-            <th onClick={() => click('last_seen')}>Last seen{ind('last_seen')}</th>
+            {th('name', 'Rack')}
+            {th('building_id', 'Building')}
+            {th('floor_id', 'Floor')}
+            {th('row_id', 'Row')}
+            {th('position', 'Pos')}
+            {th('status', 'Status')}
+            {th('device_count', 'Devices')}
+            {th('power_kw', 'Power')}
+            {th('last_seen', 'Last seen')}
           </tr>
         </thead>
         <tbody>
           {sorted.map(r => (
+            // The row stays a row — putting role="button" on the <tr> would
+            // strip the table semantics. The rack name is the real control, so
+            // that is what a keyboard user tabs to and presses.
             <tr key={r.id} onClick={() => onPickRack(r.id)}>
-              <td><b>{r.name}</b></td>
+              <td>
+                <button type="button" className={styles.rowOpenBtn}
+                  onClick={(e) => { e.stopPropagation(); onPickRack(r.id); }}>
+                  <b>{r.name}</b>
+                </button>
+              </td>
               <td>{r.building_id}</td>
               <td>{r.floor_id}</td>
               <td>{r.row_id}</td>
@@ -560,14 +616,14 @@ function DetailPanel({ rackId, source, data, onClose }) {
   if (!d) return null;
   if (d.error) return (
     <aside className={styles.panel}>
-      <button className={styles.panelClose} onClick={onClose}>×</button>
+      <button className={styles.panelClose} onClick={onClose} aria-label="Close rack details">×</button>
       <div className={styles.empty}>{d.error}</div>
     </aside>
   );
   const { rack, location } = d;
   return (
     <aside className={styles.panel}>
-      <button className={styles.panelClose} onClick={onClose}>×</button>
+      <button className={styles.panelClose} onClick={onClose} aria-label="Close rack details">×</button>
       <div className={styles.panelHead}>
         <div className={styles.panelDot} style={{ background: STATUS_META[rack.status]?.color }} />
         <div>
@@ -635,7 +691,7 @@ function ErrorView({ err, onBack }) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.back} onClick={onBack}>‹</button>
+        <button className={styles.back} onClick={onBack} aria-label="Back">‹</button>
         <h2>Tenant topology</h2>
       </header>
       <div className={styles.empty}>Failed to load demo data: {err}</div>

@@ -76,11 +76,16 @@ export default function SupportBot() {
       });
 
       if (!res.ok) {
+        // Read the body before deciding what to say: on a 429 the server sends
+        // the real limit and how long to wait. This used to hardcode "give it
+        // a few seconds", which was simply wrong — the wait can be minutes.
+        let err = null;
+        try { err = await res.json(); } catch { /* non-JSON error body */ }
         setMessages((prev) => [...prev, {
           role: 'assistant',
           route: 'refusal',
           content: res.status === 429
-            ? 'A lot of questions at once — give it a few seconds and try again.'
+            ? (err?.message || 'That was a lot of questions at once. Try again shortly.')
             : 'Assist is unavailable right now.',
         }]);
         return;

@@ -8,13 +8,16 @@ import { triggerBackgroundProbe } from '../utils/portsProbe';
 import { prefetchScan } from '../utils/scanPrefetch';
 import { newJobId, setPendingScan, clearPendingScan } from '../utils/pendingScan';
 import { useShutter } from '../ShutterContext.jsx';
-import MiniRack3D from '../components/MiniRack3D.jsx';
 import { useTheme } from '../ThemeContext.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { useSmartBack } from '../hooks/useSmartBack';
 
 // Lazy so the (~140 kB) three-fiber bundle only loads when the user opens VR.
 const TopologyScene3D = lazy(() => import('./TopologyScene3D.jsx'));
+// Same reason: this is decoration on the analysing overlay, and importing it
+// eagerly pulled all of three.js into the initial bundle — the exact cost the
+// lazy import above exists to avoid.
+const MiniRack3D = lazy(() => import('../components/MiniRack3D.jsx'));
 
 // ── Preview Card ─────────────────────────────────────────────
 function PreviewCard({ file, onClear }) {
@@ -36,7 +39,7 @@ function PreviewCard({ file, onClear }) {
       {url && (isVideo
         ? <video src={url} className={styles.previewImg} muted playsInline controls />
         : <img src={url} alt="Preview" className={styles.previewImg} />)}
-      <button className={styles.previewCloseBtn} onClick={onClear}>
+      <button className={styles.previewCloseBtn} onClick={onClear} aria-label="Remove the selected file">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
@@ -848,7 +851,9 @@ function AnalyzingOverlay({ progress, step }) {
     <div className={styles.overlay}>
       <div className={styles.overlayInner}>
         <div className={styles.ovRack3D}>
-          <MiniRack3D progress={progress} size={150} />
+          <Suspense fallback={null}>
+            <MiniRack3D progress={progress} size={150} />
+          </Suspense>
           <div className={styles.ovRack3DGlow} aria-hidden="true" />
         </div>
         <p className={styles.ovTitle}>Analyzing rack…</p>

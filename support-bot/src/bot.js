@@ -18,8 +18,55 @@ import { loadKB, filterByTier } from './kb.js'
 import { buildIndex, search, THRESHOLDS } from './search.js'
 import { buildSystem, verbatimAnswer, refusal, parseSources } from './prompt.js'
 import * as llm from './llm.js'
+import { selectPassage } from './passage.js'
+import { buildSemanticIndex, semanticSearch, fuse, isAvailable as semanticAvailable } from './semantic.js'
+
+/**
+ * Cosine similarity above which a semantic match counts as evidence in its own
+ * right, satisfying gates that were written for keyword overlap. Set from the
+ * observed range: unrelated entries sit near 0.3-0.45, genuine paraphrase
+ * matches land 0.6+.
+ */
+const SEMANTIC_TRUST = Number(process.env.SEMANTIC_TRUST || 0.58)
 
 const indexes = new Map()
+const semanticIndexes = new Map()
+
+/**
+ * Build the semantic index per tier, once. Returns null when no embedding model
+ * is present, in which case retrieval stays keyword-only and everything still
+ * works — semantic search is an upgrade, not a dependency.
+ */
+async function getSemanticIndex(tier) {
+  if (semanticIndexes.has(tier)) return semanticIndexes.get(tier)
+  const allowed = filterByTier(loadKB().entries, tier)
+  const cache = new URL(`../kb/embeddings-${tier}.json`, import.meta.url).pathname
+  const idx = await buildSemanticIndex(allowed, cache)
+  semanticIndexes.set(tier, idx)
+  return idx
+}
+
+/**
+ * Index over EVERY entry regardless of tier. Never used to answer — only to
+ * detect that a good answer exists above the caller's clearance, so we can say
+ * so instead of substituting an unrelated entry.
+ */
+let _fullIndex = null
+function getFullIndex() {
+  if (!_fullIndex) _fullIndex = buildIndex(loadKB().entries)
+  return _fullIndex
+}
+
+/** Human-readable feature area, for access-denied messages. */
+function featureAreaOf(entry) {
+  if (entry.category) return `the ${entry.category} area`
+  const nice = {
+    admin: 'the administration area',
+    integrations: 'connected systems',
+    account: 'team and account settings',
+  }
+  return nice[entry.domain] || 'an administrator-only area'
+}
 
 /** Build (once) and return the tier-scoped search index. */
 function getIndex(tier) {
@@ -97,7 +144,15 @@ export async function ask(question, { tier = 'end-user', history = [] } = {}) {
   const lastUser = [...history].reverse().find((m) => m.role === 'user')
   const searchQuery = q.split(/\s+/).length <= 4 && lastUser ? `${lastUser.content} ${q}` : q
 
-  const matches = search(index, searchQuery, { limit: 4 })
+  const keyword = search(index, searchQuery, { limit: 8 })
+
+  // Semantic search runs alongside, and the two rankings are fused. Keyword
+  // search finds exact strings (error text, button labels); semantic search
+  // finds meaning ("signed out" ~ "session expired"). Neither alone is enough.
+  const semIndex = await getSemanticIndex(tier)
+  const semantic = semIndex ? await semanticSearch(semIndex, searchQuery, 8) : []
+
+  const matches = semantic.length ? fuse(keyword, semantic, 4) : keyword.slice(0, 4)
   const top = matches[0]
   const confidence = top?.confidence ?? 0
   const warnings = []
@@ -107,19 +162,84 @@ export async function ask(question, { tier = 'end-user', history = [] } = {}) {
   // relative-score threshold is not enough - an off-topic question that hits
   // one incidental word can still rank first among weak options. Coverage and
   // the absolute floor catch exactly that case.
+  // The hard gates below are computed from KEYWORD search — they ask "did we
+  // find enough of the words the user typed?". Semantic search can legitimately
+  // surface the right entry with almost no word overlap, which is the entire
+  // point of it. "my photo keeps getting rejected" matches the photo-quality
+  // answer at 0.64 similarity while sharing almost no words with it, and the
+  // keyword-derived coverage gate was vetoing exactly those wins.
+  //
+  // So a strong semantic match satisfies the evidence requirement on its own.
+  // It is a different kind of evidence, not an absence of it.
+  const semanticallyStrong = top && top.similarity != null && top.similarity >= SEMANTIC_TRUST
+
   const gated =
     !top ||
     confidence < THRESHOLDS.GROUNDED ||
-    top.coverage < THRESHOLDS.MIN_COVERAGE ||
-    top.score < THRESHOLDS.MIN_SCORE ||
-    top.unknownRatio > THRESHOLDS.MAX_UNKNOWN
+    (!semanticallyStrong && top.coverage < THRESHOLDS.MIN_COVERAGE) ||
+    (!semanticallyStrong && top.score < THRESHOLDS.MIN_SCORE) ||
+    (!semanticallyStrong && top.unknownRatio > THRESHOLDS.MAX_UNKNOWN)
+
+  // Before refusing — or answering from a weak match — check whether a GOOD
+  // answer exists that this caller simply is not cleared to see. Telling a
+  // technician "that is an admin screen" is a real answer; handing them an
+  // unrelated entry because it scored best within their tier is not.
+  if (tier !== 'admin') {
+    const full = search(getFullIndex(), searchQuery, { limit: 1 })[0]
+    if (
+      full &&
+      full.entry.audience !== 'end-user' &&
+      full.confidence >= THRESHOLDS.DIRECT &&
+      // Same quality bar as answering. Without this a vague query ("its
+      // broken") can clear the confidence gap against an even weaker
+      // in-tier match and get told it needs admin access, which is nonsense.
+      full.coverage >= THRESHOLDS.MIN_COVERAGE &&
+      full.matchedTerms >= THRESHOLDS.MIN_TERMS_FOR_DIRECT &&
+      full.unknownRatio <= THRESHOLDS.MAX_UNKNOWN &&
+      full.confidence - confidence >= 0.15
+    ) {
+      return {
+        answer:
+          `That's part of ${featureAreaOf(full.entry)}, which needs administrator access — so I can't walk you through it here.\n\n` +
+          `Your RackTrack administrator can help, or can give you access if you need it.`,
+        sources: [],
+        route: 'needs-access',
+        confidence: 0,
+        matches: [],
+        warnings: [`restricted answer exists (${full.entry.id}, conf ${full.confidence})`],
+      }
+    }
+  }
 
   if (gated) {
     return { ...refusal(tier), route: 'refusal', confidence, matches: [], warnings }
   }
 
   // --- Route 2: confident single match. Answer verbatim, no model. ------
-  if (confidence >= THRESHOLDS.DIRECT && top.matchedTerms >= THRESHOLDS.MIN_TERMS_FOR_DIRECT) {
+  const clearWinner = (top.margin ?? 1) >= THRESHOLDS.MIN_MARGIN_FOR_DIRECT
+
+  const enoughSignal =
+    top.matchedTerms >= THRESHOLDS.MIN_TERMS_FOR_DIRECT ||
+    (top.similarity != null && top.similarity >= SEMANTIC_TRUST + 0.05)
+
+  if (confidence >= THRESHOLDS.DIRECT && enoughSignal && clearWinner) {
+    // The right entry can still open on the wrong part of itself. If a later
+    // passage answers this question better than the entry's lead, surface that
+    // instead — same verified text, ordered for the question actually asked.
+    const passage = selectPassage(top.entry, q, index.idf, index.maxIdf)
+
+    if (passage) {
+      return {
+        answer: passage.text,
+        detail: top.entry.answer,
+        sources: [top.entry.id],
+        route: 'verbatim',
+        confidence,
+        matches: summarize(matches),
+        warnings: [...warnings, `led with passage ${passage.index} (match ${passage.score})`],
+      }
+    }
+
     return {
       ...verbatimAnswer(top.entry),
       route: 'verbatim',
@@ -166,10 +286,14 @@ export async function ask(question, { tier = 'end-user', history = [] } = {}) {
       }
     }
 
+    // The model declining is a refusal, whichever route produced it. Report
+    // the outcome, not the machinery that reached it.
+    const modelRefused = /don't have reliable information/i.test(parsed.answer)
+
     return {
       answer: parsed.answer,
       sources: parsed.sources,
-      route: 'grounded',
+      route: modelRefused ? 'refusal' : 'grounded',
       confidence,
       matches: summarize(matches),
       warnings,

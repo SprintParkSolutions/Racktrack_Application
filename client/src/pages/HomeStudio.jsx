@@ -39,7 +39,9 @@ export default function HomeStudio() {
     || (auth?.user?.email && String(auth.user.email).split('@')[0])
     || null;
 
-  const start = () => navigate(authed ? '/scan' : '/signup');
+  // Same reasoning as HomeLight: signed out, the primary action signs you in.
+  // Creating an organization is the rarer path and sits as the secondary.
+  const start = () => navigate(authed ? '/scan' : '/login');
 
   return createPortal(
     <div className={styles.shell}>
@@ -74,9 +76,14 @@ export default function HomeStudio() {
           </p>
           <div className={styles.actions}>
             <button type="button" className={styles.primary} onClick={start}>
-              {authed ? 'Start a scan' : 'Get started'}
+              {authed ? 'Start a scan' : 'Sign in'}
               <Arrow width="17" height="17" />
             </button>
+            {!authed && (
+              <button type="button" className={styles.secondary} onClick={() => navigate('/signup')}>
+                Create an organization
+              </button>
+            )}
             {authed && (
               <button type="button" className={styles.secondary} onClick={() => navigate('/profile')}>
                 Past scans

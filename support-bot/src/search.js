@@ -26,6 +26,20 @@ const STOPWORDS = new Set([
  * actually type, not from how documentation is written.
  */
 const SYNONYM_GROUPS = [
+  // Product vocabulary. Users say "tenant", "company", "team"; the UI says
+  // "organization"; the codebase says tenant_id. These are the same thing, and
+  // a question phrased in one vocabulary must reach an entry written in
+  // another — that mismatch is invisible to word-overlap scoring and was
+  // sending "create an account as a tenant" to the create-a-new-org answer.
+  ['tenant', 'organization', 'organisation', 'org', 'company', 'team', 'workspace'],
+  ['join', 'invite', 'invitation', 'onboard', 'add'],
+  ['member', 'technician', 'user', 'colleague', 'staff'],
+  ['site', 'location', 'branch', 'facility'],
+  // Splitting these was tried and reverted: separating login from password
+  // broke more queries than it fixed ("cant log in keeps saying wrong" started
+  // matching a port change-log entry). Keeping them together is not ideal —
+  // "why am I signed out" still reaches the password entry — but it is the
+  // better of the two measured options. Revisit with the eval, not by intuition.
   ['login', 'log', 'signin', 'sign', 'logon', 'authenticate', 'auth', 'password', 'credential'],
   ['scan', 'scanning', 'scanned', 'capture', 'photo', 'picture', 'camera', 'image', 'shot'],
   ['report', 'reporting', 'export', 'download', 'csv', 'pdf', 'spreadsheet'],
@@ -134,7 +148,7 @@ export function buildIndex(entries) {
 }
 
 /** Expand a query into [term, weight] pairs, including synonyms. */
-function expandQuery(queryTokens) {
+export function expandQuery(queryTokens) {
   const weights = new Map()
   for (const token of queryTokens) {
     weights.set(token, Math.max(weights.get(token) || 0, 1.0))
@@ -200,6 +214,7 @@ export function search(index, query, { limit = 5 } = {}) {
 
       const idf = index.idf.get(term) || 0
       const norm = freq * (K1 + 1) / (freq + K1 * (1 - B + B * (doc.length / index.avgLength)))
+
       score += idf * norm * queryWeight
 
       // Only terms the user actually typed count toward coverage. A synonym
@@ -232,10 +247,14 @@ export function search(index, query, { limit = 5 } = {}) {
 
   // Normalize against the best score so confidence is comparable across queries.
   const best = top[0].rawScore
+  const runnerUp = top.length > 1 ? top[1].rawScore : 0
   return top.map((r) => ({
     entry: r.entry,
     score: r.rawScore,
     coverage: r.coverage,
+    // How clearly this beat the runner-up. A near-tie means lexical scoring
+    // cannot be trusted to have picked the right entry.
+    margin: best > 0 ? (best - runnerUp) / best : 1,
     matchedMass: r.matchedMass,
     matchedTerms: r.matchedTerms,
     unknownRatio: r.unknownRatio,
@@ -294,6 +313,16 @@ export const THRESHOLDS = {
    * us nothing. Such queries belong in the ambiguous band where we ask.
    */
   MIN_TERMS_FOR_DIRECT: 2,
+  /**
+   * How far the top match must beat the runner-up to answer it verbatim.
+   *
+   * Word overlap cannot separate near-ties: "where did my old scans go" scores
+   * a TestFlight entry at 0.74 and the correct history entry at 0.66. Both look
+   * confident; only one is right. When the gap is this small the question goes
+   * to the model, which reads both and picks — that judgement is exactly what a
+   * model is good at and lexical scoring is not.
+   */
+  MIN_MARGIN_FOR_DIRECT: 0.18,
   /**
    * Maximum fraction of query vocabulary that may be absent from the entire
    * knowledge base. Above this the question is about something we do not

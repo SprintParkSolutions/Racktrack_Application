@@ -8,7 +8,7 @@
  */
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434'
-const MODEL = process.env.OLLAMA_MODEL || 'llama3.1:8b'
+const MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b'
 const TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS || 45000)
 
 let _availability = null

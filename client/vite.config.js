@@ -13,9 +13,15 @@ export default defineConfig({
         // interstitial (HTML) instead of the JS module, so the combined
         // topology failed to load ("Load failed"). A single bundle loads as
         // part of the page (which already cleared the interstitial), so there's
-        // no separate chunk request to break. Harmless for the native apps —
-        // they load the bundle locally either way.
-        inlineDynamicImports: true,
+        // no separate chunk request to break.
+        //
+        // GATED, because it is a tunnel workaround and was being paid for
+        // everywhere else: it forced three.js and the whole 3D topology engine
+        // into the first request, so a technician on a weak signal in a rack
+        // aisle downloaded ~1.9 MB of JS to reach the login form. Set
+        // VITE_TUNNEL=1 when building for an ngrok demo; production and the
+        // native apps get code splitting.
+        inlineDynamicImports: process.env.VITE_TUNNEL === '1',
       },
     },
   },

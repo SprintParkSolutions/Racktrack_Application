@@ -39,7 +39,10 @@
   -webkit-tap-highlight-color: transparent;
   padding: 8px 4px;
   gap: 2px;
-  color: #BBBBBB;
+  /* #757575 (not the old #BBBBBB) because the 10px uppercase label has to
+     clear WCAG AA 4.5:1 against the bar's white — #BBBBBB measured 1.92:1,
+     this measures 4.61:1. */
+  color: #757575;
   transition: color 0.18s;
   /* button reset */
   font: inherit;

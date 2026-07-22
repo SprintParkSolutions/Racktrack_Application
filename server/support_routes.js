@@ -25,6 +25,7 @@ const { logger, recordEvent } = require('./lib/observability');
 const REFUSAL_LOG = path.join(__dirname, 'data', 'support-refusals.jsonl');
 const MAX_QUESTION_CHARS = 1000;
 const MAX_HISTORY_TURNS = 6;
+const MAX_NEAR_MISSES = 4;
 
 // Load the knowledge base once at boot. A missing or malformed KB must never
 // take the rest of RackTrack down — the support routes just report unavailable
@@ -58,7 +59,55 @@ router.use('/api/support', (req, res, next) => {
 
 // Answering is cheap (local BM25) but the optional model is not free of CPU,
 // so keep a sane ceiling per user.
-const askLimiter = uploadLimiter({ rate: 1, burst: 10 });
+//
+// This is a conversation, not an upload queue. A technician diagnosing one
+// problem asks a question, reads, asks two or three follow-ups, tries a
+// suggestion, comes back — a dozen turns in a few minutes is ordinary use. The
+// previous 1/min sustained meant the eleventh question of a troubleshooting
+// session was refused and every one after it made the user wait a full minute,
+// which is a broken support tool rather than a protected one.
+//
+// 30/hour sustained with a burst of 10 covers a whole session without the user
+// ever meeting the limit, and still caps a runaway client at one model call
+// every two minutes once the burst is spent.
+const ASK_PER_HOUR = 30;
+const ASK_BURST = 10;
+const askLimiter = uploadLimiter({ rate: ASK_PER_HOUR / 60, burst: ASK_BURST });
+
+/** "in about 2 minutes" / "in about 45 seconds" — what a person needs to know. */
+function humanWait(seconds) {
+  if (seconds < 90) return `in about ${Math.max(1, Math.round(seconds))} seconds`;
+  const mins = Math.round(seconds / 60);
+  return `in about ${mins} minute${mins === 1 ? '' : 's'}`;
+}
+
+/**
+ * The shared limiter speaks in uploads-per-minute; this route is questions per
+ * hour. Both the 429 text and the advertised limit are rewritten here so the
+ * user is told the real ceiling and a real time to come back, rather than
+ * "too many uploads" and a number in the wrong unit.
+ */
+function askRateLimit(req, res, next) {
+  const sendJson = res.json.bind(res);
+  res.json = (body) => {
+    if (body && body.error === 'rate_limited') {
+      const retryAfter = Number(res.getHeader('Retry-After')) || 60;
+      res.setHeader('X-RateLimit-Limit', String(ASK_PER_HOUR));
+      return sendJson({
+        error: 'rate_limited',
+        message:
+          `That's a lot of questions at once — you can ask up to ${ASK_PER_HOUR} an hour. ` +
+          `Try again ${humanWait(retryAfter)}.`,
+        retryAfterSeconds: retryAfter,
+      });
+    }
+    return sendJson(body);
+  };
+  askLimiter(req, res, () => {
+    res.setHeader('X-RateLimit-Limit', String(ASK_PER_HOUR));
+    next();
+  });
+}
 
 function safeAsync(handler) {
   return async (req, res) => {
@@ -86,7 +135,16 @@ function logRefusal(req, question, result) {
       route: result.route,
       confidence: result.confidence,
       question: question.slice(0, MAX_QUESTION_CHARS),
-      nearMisses: (result.matches || []).map((m) => m.id),
+      // The near misses are the point of this log. A bare list of ids says a
+      // question was refused; id + title + score says WHY — whether the right
+      // entry exists and scored just under the bar (fix the entry's wording) or
+      // whether nothing came close at all (write a new entry).
+      nearMisses: (result.matches || []).slice(0, MAX_NEAR_MISSES).map((m) => ({
+        id: m.id,
+        title: m.question,
+        score: m.score,
+        confidence: m.confidence,
+      })),
     });
   } catch (err) {
     logger?.warn?.(`[support] could not write refusal log: ${err.message}`);
@@ -96,7 +154,7 @@ function logRefusal(req, question, result) {
 // ── POST /api/support/ask ────────────────────────────────────────────
 router.post(
   '/api/support/ask',
-  askLimiter,
+  askRateLimit,
   safeAsync(async (req, res) => {
     const { message, history } = req.body || {};
 

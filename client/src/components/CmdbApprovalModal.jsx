@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './CmdbApprovalModal.module.css';
+import useModalA11y from '../hooks/useModalA11y.js';
 
 /**
  * CMDB approval flow modal — three sequential states:
@@ -21,6 +22,8 @@ export default function CmdbApprovalModal({ rackId, ticket, onClose, onTicketUpd
   const [busy, setBusy]       = useState(false);
   const [error, setError]     = useState(null);
   const [details, setDetails] = useState(null);
+  const titleId = useId();
+  const dialogRef = useModalA11y(onClose);
 
   // Sync step with ticket state if parent updates it.
   useEffect(() => {
@@ -87,7 +90,8 @@ export default function CmdbApprovalModal({ rackId, ticket, onClose, onTicketUpd
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className={styles.modal} onClick={(e) => e.stopPropagation()}
+           role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <button className={styles.close} onClick={onClose} aria-label="Close">×</button>
 
         {step === 'missing' && (
@@ -100,7 +104,7 @@ export default function CmdbApprovalModal({ rackId, ticket, onClose, onTicketUpd
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <h3 className={styles.title}>Rack not registered in CMDB</h3>
+            <h3 id={titleId} className={styles.title}>Rack not registered in CMDB</h3>
             <p className={styles.body}>
               The configuration database has no record for this rack.
               Submit a request to register the discovered inventory.
@@ -124,7 +128,7 @@ export default function CmdbApprovalModal({ rackId, ticket, onClose, onTicketUpd
                 <polyline points="12 6 12 12 16 14" />
               </svg>
             </div>
-            <h3 className={styles.title}>Ticket submitted</h3>
+            <h3 id={titleId} className={styles.title}>Ticket submitted</h3>
             <div className={styles.reqCard}>
               <span className={styles.reqLabel}>Reference</span>
               <span className={styles.reqNum}>{ticket?.number || '—'}</span>
@@ -148,7 +152,7 @@ export default function CmdbApprovalModal({ rackId, ticket, onClose, onTicketUpd
             <div className={`${styles.iconBubble} ${styles.iconBubbleAccent}`} aria-hidden="true">
               <span className={styles.spinner} />
             </div>
-            <h3 className={styles.title}>Synchronizing…</h3>
+            <h3 id={titleId} className={styles.title}>Synchronizing…</h3>
             <p className={styles.body}>Registering the rack inventory in the configuration database.</p>
           </>
         )}
@@ -161,7 +165,7 @@ export default function CmdbApprovalModal({ rackId, ticket, onClose, onTicketUpd
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h3 className={styles.title}>Successfully registered</h3>
+            <h3 id={titleId} className={styles.title}>Successfully registered</h3>
             <p className={styles.body}>
               The rack inventory is now available in the configuration database.
             </p>

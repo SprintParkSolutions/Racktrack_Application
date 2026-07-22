@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './OrgConsole.module.css';
 import OrgConnectionsPanel from '../components/OrgConnectionsPanel.jsx';
 import BackButton from '../components/BackButton.jsx';
+import useModalA11y from '../hooks/useModalA11y.js';
 
 // Organization console. Role-aware:
 //   owner     → list/create organizations, drill into any org's Sites + Members
@@ -650,12 +651,17 @@ function ScanGrid({ scans, filterLabel, onClear }) {
 }
 
 // ── Modal shell ──
+// Every modal on this page goes through here, so the focus trap / Escape /
+// focus-restore behaviour is applied once for all of them.
 function Modal({ title, children, onClose }) {
+  const titleId = useId();
+  const ref = useModalA11y(onClose);
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+      <div ref={ref} className={styles.modal} onClick={e => e.stopPropagation()}
+        role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className={styles.modalHead}>
-          <h3>{title}</h3>
+          <h3 id={titleId}>{title}</h3>
           <button className={styles.x} onClick={onClose} aria-label="Close">×</button>
         </div>
         {children}

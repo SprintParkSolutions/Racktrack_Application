@@ -45,7 +45,9 @@
   gap: 2px;
   background: transparent;
   border: none;
-  color: #BBBBBB;
+  /* 4.61:1 on the white bar. Was #BBBBBB — 1.92:1, far under the 4.5:1
+     minimum, matching the BottomNav fix. */
+  color: #757575;
   font-family: var(--font);
   transition: color 0.18s;
 }

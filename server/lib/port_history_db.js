@@ -106,6 +106,12 @@ const DEVICE_META_COLS = [
   ['backoff_until',        'TEXT'],
   ['last_error',           'TEXT'],
   ['last_polled_at',       'TEXT'],
+  // Which Site owns this switch. Until this existed the table had no tenant
+  // column at all, so `router.use('/api/ports', requireAuth)` was the only
+  // gate — and authentication is not authorization. A member of any org could
+  // list every other customer's switch fleet (name, location, model, serial,
+  // chassis MAC, firmware) and walk their per-port state and LLDP topology.
+  ['tenant_id',            'INTEGER'],
 ];
 const existingDeviceCols = new Set(
   db.prepare(`PRAGMA table_info(monitored_devices)`).all().map((r) => r.name)
@@ -114,6 +120,47 @@ for (const [col, type] of DEVICE_META_COLS) {
   if (existingDeviceCols.has(col)) continue;
   db.exec(`ALTER TABLE monitored_devices ADD COLUMN ${col} ${type}`);
 }
+// Backfill: rows written before the tenant column existed have tenant_id NULL,
+// and a NULL must never mean "everyone" — that is the hole this column closes.
+//
+// Choosing the owner's Site would be the naive answer and would silently break
+// Drift for every ordinary user, since the switches that exist today are the
+// shared lab and the people watching them are members of a customer Site. So:
+// if the platform has exactly ONE real Site (anything other than the implicit
+// "Default"), the existing switches belong to it — that keeps every current
+// user's access intact while still fencing the rows off from any Site created
+// later. Anything more ambiguous is left to a human via the env override,
+// because guessing wrong here either breaks a shipped feature or leaks a
+// customer's inventory.
+const devicesNeedingTenant = db
+  .prepare(`SELECT COUNT(*) AS n FROM monitored_devices WHERE tenant_id IS NULL`)
+  .get().n;
+if (devicesNeedingTenant > 0) {
+  const override = Number(process.env.PORT_DEVICES_TENANT_ID) || null;
+  const realSites = db
+    .prepare(`SELECT id FROM tenants WHERE name IS NOT 'Default' ORDER BY id`)
+    .all();
+  const ownerSite = db
+    .prepare(`SELECT tenant_id AS id FROM users WHERE role = 'owner' AND tenant_id IS NOT NULL ORDER BY id LIMIT 1`)
+    .get();
+
+  const target = override
+    || (realSites.length === 1 ? realSites[0].id : null)
+    || ownerSite?.id
+    || null;
+
+  if (target) {
+    db.prepare(`UPDATE monitored_devices SET tenant_id = ? WHERE tenant_id IS NULL`).run(target);
+    console.log(`[port_history_db] assigned ${devicesNeedingTenant} switch(es) to site ${target}`);
+  } else {
+    // No Site to attribute them to. Leave NULL — the read paths treat NULL as
+    // owner-only, so the inventory stays reachable to the platform owner and
+    // to nobody else, rather than leaking by default.
+    console.warn(`[port_history_db] ${devicesNeedingTenant} switch(es) have no site; owner-only until assigned`);
+  }
+}
+db.exec(`CREATE INDEX IF NOT EXISTS idx_devices_tenant ON monitored_devices(tenant_id)`);
+
 const SNAPSHOT_META_COLS = ['lldp_chassis', 'lldp_port', 'lldp_system'];
 const existingSnapCols = new Set(
   db.prepare(`PRAGMA table_info(port_snapshots)`).all().map((r) => r.name)
@@ -162,8 +209,8 @@ const stmtDueDevices     = db.prepare(`
 const stmtGetDevice      = db.prepare(`SELECT * FROM monitored_devices WHERE id = ?`);
 const stmtGetDeviceHost  = db.prepare(`SELECT * FROM monitored_devices WHERE host = ?`);
 const stmtInsertDevice   = db.prepare(`
-  INSERT INTO monitored_devices (host, ssh_port, vendor, label, enabled)
-  VALUES (@host, @ssh_port, @vendor, @label, @enabled)
+  INSERT INTO monitored_devices (host, ssh_port, vendor, label, enabled, tenant_id)
+  VALUES (@host, @ssh_port, @vendor, @label, @enabled, @tenant_id)
 `);
 const stmtUpdateEnabled  = db.prepare(`UPDATE monitored_devices SET enabled = ? WHERE id = ?`);
 const stmtDeleteDevice   = db.prepare(`DELETE FROM monitored_devices WHERE id = ?`);
@@ -188,16 +235,33 @@ const stmtTouchPolled = db.prepare(`
   UPDATE monitored_devices SET last_polled_at = @at WHERE id = @id
 `);
 
-function listDevices({ enabledOnly = false } = {}) {
-  return (enabledOnly ? stmtListEnabled : stmtListDevices).all();
+// ── Tenant scoping ───────────────────────────────────────────────────
+// `scope` is null for the platform owner (everything) or an array of Site ids.
+// An empty array means "no Sites", which correctly matches nothing. A row with
+// tenant_id NULL is unattributed and visible only to the owner — never to a
+// scoped caller, so an un-backfilled row can never leak sideways.
+function inScope(device, scope) {
+  if (!device) return false;
+  if (scope === null) return true;
+  return device.tenant_id != null && scope.includes(device.tenant_id);
 }
+
+function listDevices({ enabledOnly = false, scope = null } = {}) {
+  const rows = (enabledOnly ? stmtListEnabled : stmtListDevices).all();
+  return scope === null ? rows : rows.filter((d) => inScope(d, scope));
+}
+// Deliberately NOT scoped: this drives the background poller, which must sweep
+// every switch on the platform regardless of who is signed in.
 function dueDevices(now = new Date()) {
   return stmtDueDevices.all({ now: now.toISOString() });
 }
-function getDevice(id) { return stmtGetDevice.get(id); }
+function getDevice(id, scope = null) {
+  const row = stmtGetDevice.get(id);
+  return inScope(row, scope) ? row : undefined;
+}
 function getDeviceByHost(host) { return stmtGetDeviceHost.get(host); }
-function addDevice({ host, ssh_port = 22, vendor = 'tplink', label = null, enabled = 1 }) {
-  const info = stmtInsertDevice.run({ host, ssh_port, vendor, label, enabled });
+function addDevice({ host, ssh_port = 22, vendor = 'tplink', label = null, enabled = 1, tenant_id = null }) {
+  const info = stmtInsertDevice.run({ host, ssh_port, vendor, label, enabled, tenant_id });
   return getDevice(info.lastInsertRowid);
 }
 function setEnabled(id, enabled) { stmtUpdateEnabled.run(enabled ? 1 : 0, id); }
