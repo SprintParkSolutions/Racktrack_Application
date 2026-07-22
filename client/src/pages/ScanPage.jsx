@@ -873,6 +873,11 @@ export default function ScanPage() {
   const navigate = useNavigate();
   const goBackFromScan = useSmartBack('/');
   const uploadInputRef = useRef(null);
+  // Which mode the camera was opened FROM. A photo taken while Tall rack
+  // (multi) is selected has to join that set — it used to be treated as a
+  // single-image scan, so the first shot was analysed on its own and there was
+  // no way to capture the remaining racks.
+  const [cameraReturnTab, setCameraReturnTab] = useState('upload');
   const { theme } = useTheme();
   const isLight = theme === 'light';
   // Surface tokens for the incident picker — opaque white panel in light
@@ -1070,7 +1075,26 @@ export default function ScanPage() {
       body.append('clientJobId', clientJobId);
       setPendingScan(clientJobId, useMultiRack ? 'video' : 'image');
 
-      const res  = await authFetch(apiUrl(endpoint), { method: 'POST', body });
+      // One retry on a network-level failure. iOS surfaces a dropped upload as
+      // "Load Failed", which is what testers were seeing intermittently — a
+      // rack photo is several megabytes over a phone connection and a single
+      // blip kills the request. Retrying is safe here: rack ids are content
+      // hashes, so if the first attempt actually reached the server the retry
+      // hits the cache and returns the same scan rather than making a second.
+      let res;
+      try {
+        res = await authFetch(apiUrl(endpoint), { method: 'POST', body });
+      } catch (netErr) {
+        setStep('Connection dropped — retrying…');
+        await new Promise((r) => setTimeout(r, 1200));
+        try {
+          res = await authFetch(apiUrl(endpoint), { method: 'POST', body });
+        } catch {
+          throw new Error(
+            'Upload failed — the connection dropped while sending the photo. '
+            + 'Check your signal and try again.');
+        }
+      }
       const data = await res.json().catch(() => ({}));
       // We got a response, so the resume path is no longer needed. (If the app
       // was backgrounded the await throws instead, landing in catch, and we
@@ -1286,6 +1310,8 @@ export default function ScanPage() {
                   uploadInputRef.current?.click();
                   return;
                 }
+                // Opening the camera: remember where to put the photo.
+                if (t.id === 'camera' && tab !== 'camera') setCameraReturnTab(tab);
                 setTab(t.id);
                 setFile(null);
                 setMultiFiles([]);
@@ -1334,7 +1360,18 @@ export default function ScanPage() {
                 : tab === 'video'
                   ? <UploadZone inputRef={uploadInputRef} onFile={(f) => { setFile(f); setError(null); setQualityChoice(null); }} mode="video"/>
                   : <CameraCapture
-                      onCapture={(f) => { setFile(f); setTab('upload'); setError(null); setQualityChoice(null); }}
+                      onCapture={(f) => {
+                        setError(null); setQualityChoice(null);
+                        if (cameraReturnTab === 'multi') {
+                          // Add to the set and go back to it, so the shot just
+                          // taken is visible and more can be captured. Nothing
+                          // is analysed until the user says so.
+                          setMultiFiles((prev) => [...prev, f].slice(0, 8));
+                          setTab('multi');
+                          return;
+                        }
+                        setFile(f); setTab('upload');
+                      }}
                       onCancel={() => setTab('upload')}
                     />}
         </div>

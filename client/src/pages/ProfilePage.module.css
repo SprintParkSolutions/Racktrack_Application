@@ -68,6 +68,13 @@
 /* ── Main content rail (matches mockup max-w-md / px-margin-mobile) ── */
 .main {
   flex: 1;
+  /* The page is a fixed-height, clipped box, and this filled it without
+     scrolling — so the scan history stopped at whatever fitted and the
+     "Show all" button sat below the fold, unreachable. min-height:0 lets a
+     flex child actually shrink so overflow-y has something to scroll. */
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   width: 100%;
   max-width: 28rem;
   margin: 0 auto;
@@ -75,6 +82,10 @@
   display: flex;
   flex-direction: column;
 }
+
+/* Sections keep their natural height instead of being compressed to fit —
+   without this the column squashes and there is nothing to scroll. */
+.main > * { flex-shrink: 0; }
 
 /* ── Hero: centered avatar + identity ────────────────────────────── */
 .hero {
