@@ -1,7 +1,7 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import styles from './ResultsPage.module.css';
-import { apiUrl, authFetch } from '../utils/api';
+import { apiUrl, authFetch, bustUrl } from '../utils/api';
 import { getItem, getJSON, setItem, setJSON } from '../utils/safeStorage';
 import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
@@ -1972,12 +1972,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Port detection failed');
-      // Cache-bust: the selected-port images keep the same filename across
-      // selections, so without a unique query the browser serves the PREVIOUS
-      // port's cached image — the highlight looks stuck on the wrong port.
-      const bust = '?t=' + Date.now();
-      setResultImg(apiUrl(data.resultImageUrl) + bust);
-      setRackImg(data.rackImageUrl ? apiUrl(data.rackImageUrl) + bust : null);
+      setResultImg(bustUrl(apiUrl(data.resultImageUrl)));
+      setRackImg(data.rackImageUrl ? bustUrl(apiUrl(data.rackImageUrl)) : null);
       setPortView('rack');
       setPortInfo(data.portInfo || null);
 
@@ -2047,8 +2043,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Port detection failed');
-      setResultImg(apiUrl(data.resultImageUrl) + '?t=' + Date.now());
-      setRackImg(data.rackImageUrl ? apiUrl(data.rackImageUrl) + '?t=' + Date.now() : null);
+      setResultImg(bustUrl(apiUrl(data.resultImageUrl)));
+      setRackImg(data.rackImageUrl ? bustUrl(apiUrl(data.rackImageUrl)) : null);
       setPortView('rack');
       setPortInfo(data.portInfo || null);
 
@@ -2094,8 +2090,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       if (!res.ok) throw new Error(data.error || 'Port detection failed');
       setSelectedIdx(entry.deviceIdx);
       setPortNum(String(entry.port));
-      setResultImg(apiUrl(data.resultImageUrl) + '?t=' + Date.now());
-      setRackImg(data.rackImageUrl ? apiUrl(data.rackImageUrl) + '?t=' + Date.now() : null);
+      setResultImg(bustUrl(apiUrl(data.resultImageUrl)));
+      setRackImg(data.rackImageUrl ? bustUrl(apiUrl(data.rackImageUrl)) : null);
       setPortView('rack');
       setPortInfo(data.portInfo || null);
 
@@ -2806,8 +2802,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           });
           const sdata = await sres.json();
           if (sres.ok) {
-            if (sdata.resultImageUrl) setResultImg(apiUrl(sdata.resultImageUrl) + '?t=' + Date.now());
-            if (sdata.rackImageUrl)   setRackImg(apiUrl(sdata.rackImageUrl) + '?t=' + Date.now());
+            if (sdata.resultImageUrl) setResultImg(bustUrl(apiUrl(sdata.resultImageUrl)));
+            if (sdata.rackImageUrl)   setRackImg(bustUrl(apiUrl(sdata.rackImageUrl)));
             if (sdata.portInfo) {
               // Server's /api/select doesn't apply cable-color overrides — so
               // if the user corrected the cable color in this same submit,
@@ -3002,7 +2998,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         // The server redrew the device image with the corrected port count —
         // cache-bust so the port view shows the new dots/indices immediately.
         if (data.relabel.image_updated) {
-          setResultImg(prev => (prev ? prev.split('?')[0] + '?t=' + Date.now() : prev));
+          setResultImg(prev => (prev ? bustUrl(prev) : prev));
         }
       } else if (!isCorrect && actualNum > 0) {
         // The server didn't relabel, but the user still told us the real count.

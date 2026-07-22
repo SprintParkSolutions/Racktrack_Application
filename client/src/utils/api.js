@@ -138,6 +138,32 @@ function withAssetToken(path, url) {
   return url + sep + 't=' + encodeURIComponent(assetToken);
 }
 
+/** Add (or refresh) a cache-buster on a URL apiUrl() has already built.
+ *
+ * The port-locate images keep the same filename across selections, so without
+ * a unique query the browser serves the previous port's picture and the
+ * highlight looks stuck. The obvious `url + '?t=' + Date.now()` is wrong twice
+ * over once assets carry a capability token:
+ *
+ *   1. apiUrl() has already put a `?` in the URL, so a second one lands INSIDE
+ *      the query string. `&t=<token>?t=1753…` parses as a token with the
+ *      buster glued to its end — the signature check fails and the server
+ *      answers 404. The image silently breaks while the rest of the page,
+ *      which sends a Bearer header instead, keeps working.
+ *   2. `t` is the token's own parameter name, so even with a correct `&` the
+ *      two collide and Express hands the verifier an array.
+ *
+ * Hence a separate name, the right separator, and no rebuilding of the URL by
+ * hand — never `split('?')[0]`, which throws the token away with the query.
+ */
+export function bustUrl(url) {
+  if (!url) return url;
+  const [base, query = ''] = String(url).split(/\?(.*)/s);
+  const params = query.split('&').filter((p) => p && !p.startsWith('cb='));
+  params.push('cb=' + Date.now());
+  return base + '?' + params.join('&');
+}
+
 export function apiUrl(path) {
   if (!path) return path;
   if (/^https?:\/\//i.test(path)) return withAppKey(path); // already absolute
