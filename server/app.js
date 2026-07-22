@@ -8185,6 +8185,22 @@ app.post('/api/feedback/port-type', async (req, res) => {
   if (!scanId || device_index == null) {
     return res.status(400).json({ error: 'scanId and device_index are required' });
   }
+
+  // scanId is joined into an output path and into a written filename, and
+  // path.join happily resolves "..". Validate the shape before it reaches the
+  // filesystem — this holds even for callers canAccessRack still lets through.
+  if (!/^RK-[A-Za-z0-9]{4,32}$/.test(String(scanId))) {
+    return res.status(400).json({ error: 'Invalid scanId' });
+  }
+
+  // Ownership check, matching every sibling feedback route. This one was the
+  // single /api/feedback/* endpoint that had none: it took scanId straight
+  // from the body and joined it into an output path, so an unauthenticated
+  // caller could probe for and write crops against any tenant's rack.
+  const fbAuth = softAuthPayload(req);
+  if (!canAccessRack(fbAuth, scanId)) {
+    return res.status(404).json({ error: `Rack ${scanId} not found` });
+  }
   if (!actual_type || !PORT_TYPE_OPTIONS.includes(String(actual_type))) {
     return res.status(400).json({ error: `actual_type must be one of: ${PORT_TYPE_OPTIONS.join(', ')}` });
   }

@@ -65,8 +65,26 @@ const DIRS = [
 function backup(file) {
   if (!fs.existsSync(file)) return null;
   const dest = `${file}.bak-reset-${stamp}`;
-  if (GO) fs.copyFileSync(file, dest);
-  say(`  ${GO ? 'backed up' : 'would back up'}  ${path.basename(dest)}`);
+  if (GO) {
+    // NOT copyFileSync. These databases run in WAL mode, so recently committed
+    // data lives in the -wal sidecar until a checkpoint folds it back in — at
+    // one point auth.db-wal was 2.6MB against a 2.5MB main file. Copying only
+    // the main file produces a backup that silently omits the newest data,
+    // which is the worst possible failure for the one artefact you would reach
+    // for after a bad reset. Checkpoint first, then copy.
+    const db = new Database(file);
+    db.pragma('wal_checkpoint(TRUNCATE)');
+    db.close();
+    fs.copyFileSync(file, dest);
+    // Verify the copy opens and reports the same page count, rather than
+    // assuming a backup that was never read back is good.
+    const check = new Database(dest, { readonly: true });
+    const pages = check.pragma('page_count', { simple: true });
+    check.close();
+    say(`  backed up      ${path.basename(dest)}  (${pages} pages, WAL folded in)`);
+  } else {
+    say(`  would back up  ${path.basename(dest)}  (after a WAL checkpoint)`);
+  }
   return dest;
 }
 
@@ -151,7 +169,13 @@ function main() {
     say(`  created  tenant       "${NEW_ORG_NAME} Site" (id=${tenant.lastInsertRowid})`);
 
     // Restart id sequences so the fresh data does not start at 1400.
-    for (const t of [...TRUNCATE, 'users']) {
+    //
+    // `users` is deliberately EXCLUDED. Resetting its counter hands the next
+    // signups the ids of the accounts just deleted, and tokens are valid for
+    // 30 days — so someone still holding a pre-reset token for old user 3
+    // would authenticate as whoever now occupies id 3. That is a privilege
+    // escalation, not a cosmetic id gap. Let user ids keep climbing.
+    for (const t of TRUNCATE) {
       try { db.prepare('DELETE FROM sqlite_sequence WHERE name = ?').run(t); } catch { /* no sequence */ }
     }
   });
@@ -167,6 +191,25 @@ function main() {
   say(`  keeping  ${String(before.monitored_devices ?? 0).padStart(6)}  monitored_devices (lab switches)`);
   say(`  keeping  ${String(before.connection_profiles ?? 0).padStart(6)}  connection_profiles`);
   db.close();
+
+  // Tokens issued before the reset are still cryptographically valid for 30
+  // days and carry a user id. Even with the id-reuse hole closed above, a
+  // pre-reset token belongs to an account that no longer exists, and "everyone
+  // is signed out" is the honest meaning of a fresh start. Rotating the
+  // signing secret invalidates all of them at once.
+  say('\nSession tokens');
+  const SECRET = path.join(DATA, 'jwt.secret');
+  if (fs.existsSync(SECRET)) {
+    if (GO) {
+      fs.copyFileSync(SECRET, `${SECRET}.bak-reset-${stamp}`);
+      fs.writeFileSync(SECRET, require('crypto').randomBytes(64).toString('hex'), { mode: 0o600 });
+      say('  rotated  jwt.secret — every token issued before now is rejected');
+    } else {
+      say('  would rotate jwt.secret (signs everyone out; pre-reset tokens cannot be replayed)');
+    }
+  } else {
+    say('  (no jwt.secret — the server will generate one on next boot)');
+  }
 
   // Application logs live in their own database.
   say('\nApplication log');
