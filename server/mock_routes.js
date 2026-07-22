@@ -204,14 +204,14 @@ router.get('/api/now/table/incident', (req, res) => {
     results = results.filter(i => profile.inc_groups.includes(i.assignment_group?.value));
   }
   if (query.includes('number=')) {
-    const m = query.match(/number=([^\^&]+)/);
+    const m = query.match(/number=([^&^]+)/);
     if (m) results = results.filter(i => i.number === m[1]);
   }
   if (query.includes('state=')) {
-    const m = query.match(/state=([^\^&]+)/);
+    const m = query.match(/state=([^&^]+)/);
     if (m) results = results.filter(i => i.state === m[1]);
   }
-  const stateInMatch = query.match(/stateIN([^\^&]+)/);
+  const stateInMatch = query.match(/stateIN([^&^]+)/);
   if (stateInMatch) {
     const allowed = stateInMatch[1].split(',');
     results = results.filter(i => allowed.includes(i.state));
@@ -275,7 +275,7 @@ router.get('/api/now/table/cmdb_ci_rack', (req, res) => {
     results = results.filter(r => profile.rack_ids.includes(r.sys_id));
   }
   if (query.includes('u_racktrack_scan_id=')) {
-    const m = query.match(/u_racktrack_scan_id=([^\^&]+)/);
+    const m = query.match(/u_racktrack_scan_id=([^&^]+)/);
     if (m) results = results.filter(r => r.u_racktrack_scan_id === m[1]);
   }
   res.json({ result: results });
@@ -298,7 +298,7 @@ router.get('/api/now/table/cmdb_rel_ci', (req, res) => {
   const query = req.query.sysparm_query || '';
   let results = [...snData.cmdb_rel_ci];
   if (query.includes('child=')) {
-    const m = query.match(/child=([^\^&]+)/);
+    const m = query.match(/child=([^&^]+)/);
     if (m) results = results.filter(r => r.child.value === m[1]);
   }
   res.json({ result: results });

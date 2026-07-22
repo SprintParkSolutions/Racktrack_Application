@@ -64,10 +64,12 @@ test('Protected API route rejects unauthenticated request', async (t) => {
   const { server, port } = await listen();
   t.after(() => new Promise((r) => server.close(r)));
   // /api/scans is auth-required; without a Bearer token it should reject
-  // with 401 (or 403) — anything other than 2xx is acceptable here.
+  // with 401 (or 403). 404 is deliberately NOT accepted: it would also pass if
+  // the route were deleted, renamed or never mounted, which is exactly the
+  // regression this assertion exists to catch.
   const res = await fetchPath(port, '/api/scans');
   assert.ok(
-    res.status === 401 || res.status === 403 || res.status === 404,
-    `expected 401/403/404 for unauthenticated /api/scans, got ${res.status}`,
+    res.status === 401 || res.status === 403,
+    `expected 401/403 for unauthenticated /api/scans, got ${res.status}`,
   );
 });

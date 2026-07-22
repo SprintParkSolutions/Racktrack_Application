@@ -76,8 +76,8 @@ export function usePrimaryNav() {
       hint: 'Connect ServiceNow, NetBox and others' }] : []),
     ...(isAdmin ? [{ to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false,
       hint: 'Buy and sell hardware' }] : []),
-    { to: '/help',           label: 'Help',         icon: <HelpIcon />,        end: false,
-      hint: 'Ask RackTrack Assist' },
+    { to: '/help',           label: 'Ask DOT',      icon: <HelpIcon />,        end: false,
+      hint: 'Answers from verified documentation' },
     { to: '/profile',        label: 'Profile',      icon: <ProfileIcon />,     end: false, inBar: true },
   ];
 }

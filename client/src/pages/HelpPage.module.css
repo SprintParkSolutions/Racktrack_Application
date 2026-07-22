@@ -23,15 +23,27 @@
   flex-shrink: 0;
 }
 
+/* The artwork carries its own background and a small wordmark under the face.
+   Cropping to the face keeps it legible at this size — the wordmark would be
+   unreadable mush at 38px, and the name is already set in type beside it. */
+/* The artwork is a small face on a large square with a wordmark underneath.
+   At 38px the whole image is unreadable, so the container clips and the image
+   is scaled up onto the face — the name is already set in type beside it. */
 .mark {
   width: 38px; height: 38px;
   flex-shrink: 0;
   border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--md-on-surface, #17171a);
-  color: var(--md-background, #fff);
+  overflow: hidden;
+  display: block;
+  background: var(--md-surface-container, rgba(0, 0, 0, 0.05));
 }
-.mark svg { width: 21px; height: 21px; }
+.mark img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scale(2.1);
+  transform-origin: 50% 40%;
+  display: block;
+}
 
 .headText { flex: 1; min-width: 0; }
 

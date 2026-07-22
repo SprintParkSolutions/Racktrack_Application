@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "node --test test/smoke.test.js",
+    "test": "node --test test/",
     "lint": "eslint . --max-warnings=99999",
     "format": "prettier --write \"**/*.js\""
   },

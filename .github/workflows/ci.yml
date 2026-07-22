@@ -2,7 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # july9_full is the branch deploy.ps1 pulls, so it is what actually ships.
+    # Work lands there as direct commits, which match neither `main` nor
+    # `pull_request` — without it here, every gate below is dead weight.
+    branches: [main, july9_full]
   pull_request:
 
 # Cancel superseded runs on the same ref to save minutes.
@@ -30,26 +33,28 @@ jobs:
         working-directory: server
         run: npm ci
 
-      - name: Lint server
-        working-directory: server
-        run: npm run lint --if-present
-
+      # Tests before lint, deliberately: both must pass, but if lint runs first
+      # a style failure aborts the job and the behavioural check never executes.
       - name: Test server
         working-directory: server
         run: npm test --if-present
+
+      - name: Lint server
+        working-directory: server
+        run: npm run lint --if-present
 
       # --- client ---
       - name: Install client deps
         working-directory: client
         run: npm ci
 
-      - name: Lint client
-        working-directory: client
-        run: npm run lint --if-present
-
       - name: Build client
         working-directory: client
         run: npm run build
+
+      - name: Lint client
+        working-directory: client
+        run: npm run lint --if-present
 
   # ---------------------------------------------------------------------------
   # Python: install the CV/pipeline deps and smoke-import the heavy libraries.
