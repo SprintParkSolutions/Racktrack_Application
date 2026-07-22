@@ -8,7 +8,10 @@ module.exports = [
   },
   js.configs.recommended,
   {
-    files: ['**/*.js'],
+    // .mjs files are ES modules, not CommonJS. Without this block they fall
+    // through to js.configs.recommended alone — no Node globals, no module
+    // sourceType — so every `process`/`fetch`/`console` reads as no-undef.
+    files: ['**/*.js', '**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',
@@ -25,6 +28,10 @@ module.exports = [
       'no-prototype-builtins': 'off',
       'no-control-regex': 'off',
     },
+  },
+  {
+    files: ['**/*.mjs'],
+    languageOptions: { sourceType: 'module' },
   },
   prettier,
 ];
