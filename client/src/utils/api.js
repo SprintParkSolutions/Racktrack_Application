@@ -1,3 +1,5 @@
+import { getItem, setItem, removeItem } from './safeStorage';
+
 // In dev, VITE_API_BASE is empty → Vite's proxy routes /api, /outputs, /uploads.
 // In the APK build, we set VITE_API_BASE=https://<public-host> so the WebView
 // can reach the real backend instead of its own (non-existent) origin.
@@ -31,10 +33,43 @@ function withAppKey(url) {
   return url + sep + 'app_key=' + encodeURIComponent(APP_KEY);
 }
 
+// ── Asset tokens ─────────────────────────────────────────────────────
+// Rack photographs are served from /outputs and /uploads, and an <img> tag
+// cannot send an Authorization header — which is why those paths used to be
+// open to anyone holding a rack id. The server now accepts a short-lived asset
+// token in the query string instead, so it rides the same appending pattern as
+// the app key above and every image URL is covered by one code path.
+const ASSET_PATH_RE = /^\/(outputs|uploads)\//i;
+let assetToken = getItem('rt_assetToken');
+
+/** Called after sign-in (and on 401 recovery) to refresh the capability. */
+export async function refreshAssetToken() {
+  try {
+    const res = await authFetch(apiUrl('/api/assets/token'));
+    if (!res.ok) return null;
+    const { token } = await res.json();
+    if (token) { assetToken = token; setItem('rt_assetToken', token); }
+    return token || null;
+  } catch {
+    return null;   // images degrade to a broken thumbnail, not a broken app
+  }
+}
+
+export function clearAssetToken() {
+  assetToken = null;
+  removeItem('rt_assetToken');
+}
+
+function withAssetToken(path, url) {
+  if (!assetToken || !ASSET_PATH_RE.test(path)) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return url + sep + 't=' + encodeURIComponent(assetToken);
+}
+
 export function apiUrl(path) {
   if (!path) return path;
   if (/^https?:\/\//i.test(path)) return withAppKey(path); // already absolute
-  return withAppKey(API_BASE + path);
+  return withAssetToken(path, withAppKey(API_BASE + path));
 }
 
 // Free ngrok tunnels serve an HTML interstitial ("You are about to visit...")

@@ -137,6 +137,40 @@ function signReportToken(rackId) {
   return jwt.sign({ scope: 'report', rackId }, secret, { expiresIn: REPORT_TOKEN_TTL_SEC });
 }
 
+// ── Asset links ──────────────────────────────────────────────────────
+// An <img> cannot send an Authorization header, so rack photographs need a
+// capability that rides in the query string. This carries the caller's role
+// and Site rather than a specific rack, so one token covers every image the
+// user is entitled to — and it is re-checked against canAccessRack on each
+// request, so it grants no more than the session it came from.
+//
+// Longer-lived than a report token (which is 5 minutes) because images must
+// not break mid-session, but still expiring, unlike the rack id it replaces.
+const ASSET_TOKEN_TTL_SEC = 12 * 60 * 60;
+
+function signAssetToken(auth) {
+  const secret = jwtSecret();
+  if (!secret || !auth) return null;
+  return jwt.sign({
+    scope: 'asset',
+    role: auth.role,
+    tenantId: auth.tenantId ?? auth.tenant_id ?? null,
+    organizationId: auth.organizationId ?? auth.organization_id ?? null,
+  }, secret, { expiresIn: ASSET_TOKEN_TTL_SEC });
+}
+
+/** The principal an asset token stands for, or null. Scope-checked, so a
+ *  session JWT cannot be used as an asset token or vice versa. */
+function verifyAssetToken(token) {
+  if (!token) return null;
+  try {
+    const secret = jwtSecret();
+    if (!secret) return null;
+    const p = jwt.verify(token, secret);
+    return p && p.scope === 'asset' ? p : null;
+  } catch { return null; }
+}
+
 // Returns true only for a live token minted for THIS rack. A general user JWT
 // is deliberately rejected (scope check): a report token is a narrow capability
 // and must not be interchangeable with a session token, in either direction.
@@ -281,11 +315,59 @@ function assetsOnly(req, res, next) {
   if (PUBLIC_ASSET_RE.test(req.path)) return next();
   return res.status(404).json({ error: 'Not found' });
 }
-app.use('/uploads', assetsOnly, express.static(uploadsDir));
-app.use('/outputs', assetsOnly, express.static(outputsDir));
+
+// Rack imagery is no longer readable by anyone who knows a rack id.
+//
+// Restricting these mounts to image extensions closed the JSON/topology/OCR/
+// transcript leak, but left the photographs themselves open. That made a rack
+// id a permanent, non-revocable bearer credential for that rack's photos — and
+// ids travel: they sit in SPA URLs, report payloads, browser history, proxy
+// logs and /api/scans responses. Report links deliberately expire after 300
+// seconds, yet the images inside them needed no token at all, so anyone with a
+// stale share link or a departed employee kept indefinite access. Rack photos
+// show asset tags, serials, port labelling and physical topology.
+//
+// Three ways in, all of them checked:
+//   * a report token for exactly this rack (what an <iframe> report carries)
+//   * an asset token — a session-derived capability the client appends to
+//     <img> URLs, because an image tag cannot send an Authorization header
+//   * a normal Bearer token, for API-style fetches of the same paths
+function rackIdFromAssetPath(p) {
+  const seg = String(p || '').split('/').filter(Boolean)[0];
+  return rackAccess.isValidRackId(seg) ? seg : null;
+}
+
+function assetAuth(req, res, next) {
+  const rackId = rackIdFromAssetPath(req.path);
+  // Not under a rack directory (e.g. /uploads/marketplace/...): any signed-in
+  // caller may read it, but an anonymous one may not.
+  if (!rackId) {
+    const who = softAuthPayload(req) || verifyAssetToken(req.query.t);
+    return who ? next() : res.status(404).json({ error: 'Not found' });
+  }
+
+  if (verifyReportToken(req.query.t, rackId)) return next();
+
+  const principal = softAuthPayload(req) || verifyAssetToken(req.query.t);
+  if (principal && rackAccess.canAccessRack(principal, rackId, tenant)) return next();
+
+  return res.status(404).json({ error: 'Not found' });
+}
+
+app.use('/uploads', assetsOnly, assetAuth, express.static(uploadsDir));
+app.use('/outputs', assetsOnly, assetAuth, express.static(outputsDir));
 
 // Health + metrics — placed early so they bypass auth/static/etc and
 // stay reachable even if the main app is degraded.
+// The client asks for this once after sign-in and appends it to image URLs.
+// Authenticated, so the token can only ever encode a session the caller
+// already holds.
+app.get('/api/assets/token', auth.requireAuth, (req, res) => {
+  const token = signAssetToken(req.user);
+  if (!token) return res.status(503).json({ error: 'Asset tokens unavailable' });
+  res.json({ token, expiresIn: ASSET_TOKEN_TTL_SEC });
+});
+
 app.get('/healthz', o11y.healthHandler);
 app.get('/metrics', o11y.metricsHandler);
 
@@ -568,25 +650,51 @@ function computeRackId(filePath, scope = 'global') {
 const pythonCmd = process.env.PYTHON_PATH || (process.platform === 'win32' ? 'py' : 'python3');
 const WORKER_COUNT = Math.max(1, parseInt(process.env.RACKTRACK_WORKERS, 10) || 1);
 
-// In test/smoke mode we skip spawning the Python worker pool — it would
-// otherwise fork subprocesses that keep the event loop alive past the
-// last test and (in CI) noisily fail on missing pipeline deps. Routes
-// that need the pool will throw if hit, which is fine for smoke tests
-// that only exercise /healthz, /metrics, and 404 handling.
-if (process.env.RACKTRACK_SKIP_WORKER_POOL === '1') {
+// ── Worker pool, and the seam for testing without one ────────────────
+//
+// Three ways to get a pool, in precedence order:
+//
+//   RACKTRACK_POOL_MODULE=<path>  load that module as the pool. This is the
+//     seam: it lets a test substitute a fake pipeline entirely, so the scan
+//     path can be exercised in-process with no Python, no GPU and no model
+//     weights. The module must export { request, shutdown }.
+//   RACKTRACK_SKIP_WORKER_POOL=1  a stub whose request() throws.
+//   otherwise                     the real pool.
+//
+// The skip flag used to be the only option, and it is a boolean — you could
+// turn the pipeline off but not replace it. That left the product's core
+// workflow (upload an image, get a rack back) with zero automated coverage by
+// construction rather than by oversight: any test of /api/analyze either
+// shelled out to real Python and model weights or could not run at all. A
+// toggle cannot be stubbed; an injection point can.
+let pool;
+if (process.env.RACKTRACK_POOL_MODULE) {
+  const modPath = path.isAbsolute(process.env.RACKTRACK_POOL_MODULE)
+    ? process.env.RACKTRACK_POOL_MODULE
+    : path.resolve(PROJECT_ROOT, process.env.RACKTRACK_POOL_MODULE);
+  pool = require(modPath);
+  if (typeof pool?.request !== 'function') {
+    throw new Error(`RACKTRACK_POOL_MODULE ${modPath} must export a request() function`);
+  }
+  if (typeof pool.shutdown !== 'function') pool.shutdown = () => Promise.resolve();
+  logger.warn({ event: 'worker_pool.injected', module: modPath },
+    'worker pool replaced by RACKTRACK_POOL_MODULE — not for production use');
+} else if (process.env.RACKTRACK_SKIP_WORKER_POOL === '1') {
   logger.warn({ event: 'worker_pool.disabled' },
     'RACKTRACK_SKIP_WORKER_POOL=1 — Python worker pool disabled; AI/ML routes will 500');
+  pool = {
+    request: () => { throw new Error('worker pool disabled (RACKTRACK_SKIP_WORKER_POOL=1)'); },
+    shutdown: () => Promise.resolve(),
+  };
+} else {
+  pool = new WorkerPool({
+    size: WORKER_COUNT,
+    pythonCmd,
+    pythonArgs: ['-u', '-m', 'pipeline.worker'],
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, PYTHONUNBUFFERED: '1', YOLO_VERBOSE: 'False' },
+  });
 }
-const pool = process.env.RACKTRACK_SKIP_WORKER_POOL === '1'
-  ? { request: () => { throw new Error('worker pool disabled (RACKTRACK_SKIP_WORKER_POOL=1)'); },
-      shutdown: () => Promise.resolve() }
-  : new WorkerPool({
-      size: WORKER_COUNT,
-      pythonCmd,
-      pythonArgs: ['-u', '-m', 'pipeline.worker'],
-      cwd: PROJECT_ROOT,
-      env: { ...process.env, PYTHONUNBUFFERED: '1', YOLO_VERBOSE: 'False' },
-    });
 
 async function runQualityCheck(imagePath) {
   return withSpan('pipeline.quality_check', async (log) => {

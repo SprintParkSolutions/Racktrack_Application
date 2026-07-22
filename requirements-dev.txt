@@ -1,0 +1,12 @@
+# Development / CI-only Python deps.
+#
+# Kept separate from requirements.txt because that file is what the Dockerfile
+# installs into the shipped image — a test runner has no business in
+# production. Install both when working on the pipeline:
+#     pip install -r requirements.txt -r requirements-dev.txt
+#
+# Run the pipeline unit tests from the REPO ROOT (the modules import each other
+# as `pipeline.*`, so the root must be on sys.path):
+#     python -m pytest pipeline/tests -q
+
+pytest>=8.0.0

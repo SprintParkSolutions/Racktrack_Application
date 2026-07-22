@@ -57,9 +57,14 @@ jobs:
         run: npm run lint --if-present
 
   # ---------------------------------------------------------------------------
-  # Python: install the CV/pipeline deps and smoke-import the heavy libraries.
-  # The import is best-effort (continue-on-error) because it pulls torch and
-  # does not have model weights available in CI — a green run only proves the
+  # Python: install the CV/pipeline deps, unit-test the weight-free logic, and
+  # smoke-import the heavy libraries.
+  #
+  # The pytest step is a REAL gate (no continue-on-error): pipeline/tests covers
+  # the pure geometry/config/lookup code — port numbering, patch-panel count
+  # reconciliation, config loading, device-model matching — none of which needs
+  # model weights or a GPU. The smoke import stays best-effort because it pulls
+  # torch and has no weights available in CI — a green import only proves the
   # dependency set resolves and installs, not that inference works.
   # ---------------------------------------------------------------------------
   python:
@@ -78,7 +83,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --extra-index-url https://download.pytorch.org/whl/cpu \
-            -r requirements.txt
+            -r requirements.txt -r requirements-dev.txt
+
+      # Real gate. Run from the repo root: the modules import each other as
+      # `pipeline.*`, so the root has to be the working directory.
+      - name: Test pipeline (unit, no model weights)
+        run: python -m pytest pipeline/tests -q
 
       - name: Smoke import (best-effort)
         continue-on-error: true

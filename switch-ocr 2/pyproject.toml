@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "switch-ocr"
+version = "1.5.0"
+description = "Detect and read ALL text on photos of network switches (tiny, blurry, low-quality included) and identify the device's make + model. 100% free and offline."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Racktrack" }]
+keywords = ["ocr", "network-switch", "text-detection", "paddleocr", "asset-management"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "opencv-python-headless>=4.8",
+    "pillow>=10.0",
+]
+
+[project.optional-dependencies]
+# Recommended backend — best accuracy on tiny/blurry text (PP-OCRv5)
+paddle = ["paddleocr>=3.1.0", "paddlepaddle>=3.0.0"]
+# Lightweight backend — same model family on ONNX Runtime
+rapidocr = ["rapidocr>=2.0.0", "onnxruntime>=1.17"]
+# Universal fallback — needs the tesseract binary installed separately
+tesseract = ["pytesseract>=0.3.10"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+switch-ocr = "switch_ocr.cli:main"
+
+[tool.setuptools]
+packages = ["switch_ocr", "switch_ocr.engines"]
+
+[tool.setuptools.package-data]
+switch_ocr = ["vendors.json"]

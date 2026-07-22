@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { apiUrl } from './utils/api';
+import { apiUrl, refreshAssetToken, clearAssetToken } from './utils/api';
 import { getItem, getJSON, removeItem, setItem } from './utils/safeStorage';
 
 const AuthContext = createContext(null);
@@ -38,6 +38,14 @@ export function AuthProvider({ children }) {
     else removeItem(TOKEN_KEY);
     if (user) setItem(USER_KEY, JSON.stringify(user));
     else removeItem(USER_KEY);
+
+    // Rack images are served to <img>, which cannot send an Authorization
+    // header, so they travel with a separate short-lived asset token. Minted
+    // here rather than at each of the five sign-in paths: this effect already
+    // runs on every token change, so login, signup, code-login, logout and
+    // session expiry are all covered by one place that cannot be forgotten.
+    if (token) refreshAssetToken();
+    else clearAssetToken();
   }, [token, user]);
 
   // Validate stored token against the server on mount; clear if the server
