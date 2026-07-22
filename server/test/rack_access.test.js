@@ -77,8 +77,8 @@ test('rack ids are shape-validated', () => {
 });
 
 // ── the Express param guard ──────────────────────────────────────────
-function runGuard(guard, { user = null, rackId = OWNED, query = {} } = {}) {
-  const req = { user, query, path: '/api/scan/' + rackId };
+function runGuard(guard, { user = null, rackId = OWNED, query = {}, method = 'GET' } = {}) {
+  const req = { user, query, method, path: '/api/scan/' + rackId };
   const out = { status: null, body: null, nexted: false };
   const res = {
     status(code) { out.status = code; return this; },
@@ -126,4 +126,32 @@ test('a report token admits the caller for that rack only', () => {
   assert.equal(runGuard(guard, { query: { t: 'good' } }).nexted, true);
   assert.equal(runGuard(guard, { query: { t: 'good' }, rackId: FOREIGN }).status, 401);
   assert.equal(runGuard(guard, { query: { t: 'bad' } }).status, 401);
+});
+
+test('a report token is read-only', () => {
+  // A share link is a five-minute READ capability. It used to admit any method,
+  // so a link forwarded to a customer could POST to the rack routes that carry
+  // no requireAuth of their own — mutating OCR device lists and side labels
+  // with no attributable identity.
+  const guard = rackOwnershipParam({
+    tenant,
+    allow: (req) => req.query.t === 'good',
+  });
+
+  assert.equal(runGuard(guard, { query: { t: 'good' }, method: 'GET' }).nexted, true);
+  assert.equal(runGuard(guard, { query: { t: 'good' }, method: 'HEAD' }).nexted, true);
+  for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+    const r = runGuard(guard, { query: { t: 'good' }, method });
+    assert.equal(r.status, 401, `${method} with a report token must be refused`);
+    assert.equal(r.nexted, false);
+  }
+});
+
+test('shape is validated before the capability hatch', () => {
+  // The hatch used to run first, so a token minted for `../../server/data`
+  // skipped the only check that exists because rackId reaches path.join.
+  const guard = rackOwnershipParam({ tenant, allow: () => true });
+  const r = runGuard(guard, { rackId: '../../server/data' });
+  assert.equal(r.status, 400);
+  assert.equal(r.nexted, false);
 });

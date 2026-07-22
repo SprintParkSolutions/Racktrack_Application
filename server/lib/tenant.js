@@ -26,7 +26,14 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const { logger } = require('./observability');
 
-const dbPath = path.join(__dirname, '..', 'data', 'auth.db');
+// Both this module and lib/port_history_db.js open the auth database at load
+// time from a hardcoded path, which made the tenant queries untestable — the
+// only way to exercise them was against the developer's real database, so the
+// suite ran against whatever happened to be there (usually nothing, where
+// every ownership answer is "no"). An env override keeps production behaviour
+// identical and gives tests a seeded fixture to assert BOTH directions.
+const dbPath = process.env.RACKTRACK_AUTH_DB
+  || path.join(__dirname, '..', 'data', 'auth.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
@@ -139,7 +146,13 @@ function visibleTenantIds(principal) {
   const orgId = principal.organizationId ?? principal.organization_id ?? null;
 
   if (role === 'owner') return null;
-  if ((role === 'org_admin' || role === 'site_manager') && orgId) {
+  // site_manager is deliberately NOT here. It manages ONE Site — auth.js's
+  // canAccessSite requires tenant_id === siteId, and rack_access falls it
+  // through to its own tenant. Including it granted every Site in the
+  // organisation, so the first time an org gained a second Site every site
+  // manager in it would have picked up that Site's switch inventory, its
+  // per-port state, and the ability to make the server SSH into it.
+  if (role === 'org_admin' && orgId) {
     const rows = db.prepare(`SELECT id FROM tenants WHERE organization_id = ?`).all(Number(orgId));
     const ids = rows.map((r) => r.id);
     // An org admin also holds a Site of their own (often the "Default" one),

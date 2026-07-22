@@ -24,7 +24,14 @@
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const dbPath = path.join(__dirname, '..', 'data', 'auth.db');
+// Both this module and lib/port_history_db.js open the auth database at load
+// time from a hardcoded path, which made the tenant queries untestable — the
+// only way to exercise them was against the developer's real database, so the
+// suite ran against whatever happened to be there (usually nothing, where
+// every ownership answer is "no"). An env override keeps production behaviour
+// identical and gives tests a seeded fixture to assert BOTH directions.
+const dbPath = process.env.RACKTRACK_AUTH_DB
+  || path.join(__dirname, '..', 'data', 'auth.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
@@ -140,13 +147,14 @@ if (devicesNeedingTenant > 0) {
   const realSites = db
     .prepare(`SELECT id FROM tenants WHERE name IS NOT 'Default' ORDER BY id`)
     .all();
-  const ownerSite = db
-    .prepare(`SELECT tenant_id AS id FROM users WHERE role = 'owner' AND tenant_id IS NOT NULL ORDER BY id LIMIT 1`)
-    .get();
-
+  // Exactly one real Site, or an explicit override — nothing else. The
+  // fallback to the owner's Site that used to sit here did precisely what the
+  // comment above says it avoids: with zero or two-plus Sites it assigned every
+  // switch to the owner, hiding Drift from every member and site manager who
+  // uses it. The migration is one-shot and irreversible, so when the answer is
+  // ambiguous it must be left to a human, not guessed.
   const target = override
     || (realSites.length === 1 ? realSites[0].id : null)
-    || ownerSite?.id
     || null;
 
   if (target) {

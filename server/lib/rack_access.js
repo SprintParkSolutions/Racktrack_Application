@@ -74,10 +74,22 @@ function rackOwnershipParam({ tenant, logger, getPrincipal, allow } = {}) {
   const principalOf = getPrincipal || ((req) => req.user);
 
   return function rackIdGuard(req, res, next, rackId) {
-    if (allow && allow(req, rackId)) return next();
-
+    // Shape FIRST, always. This used to sit below the `allow` hatch, so a
+    // capability token minted for a rackId of `../../server/data` skipped the
+    // one check that exists because rackId reaches path.join — the validation
+    // was absent on exactly the path that needed it most.
     if (!isValidRackId(rackId)) {
       return res.status(400).json({ error: 'Invalid rack id' });
+    }
+
+    // A capability (report token) is READ-ONLY. It used to admit any method,
+    // which meant a five-minute "share this report" link — forwarded to a
+    // customer or a stakeholder — could POST to the six rack routes that carry
+    // no requireAuth of their own, mutating OCR device lists and side labels
+    // and spending server CPU with no attributable identity.
+    if (allow && allow(req, rackId)) {
+      if (req.method === 'GET' || req.method === 'HEAD') return next();
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     const principal = principalOf(req);

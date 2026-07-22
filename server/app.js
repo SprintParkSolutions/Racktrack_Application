@@ -332,13 +332,53 @@ function assetsOnly(req, res, next) {
 //   * an asset token — a session-derived capability the client appends to
 //     <img> URLs, because an image tag cannot send an Authorization header
 //   * a normal Bearer token, for API-style fetches of the same paths
+// Decide authorization on the SAME string express.static will serve.
+//
+// The first version of this matched the raw req.path, which is neither
+// percent-decoded nor normalised, while `send` decodes and normalises before
+// resolving the file. Every difference between those two strings was a bypass:
+// `/outputs/rk-victim01/…` (NTFS is case-insensitive, and production is
+// Windows) and `/outputs/%52K-VICTIM01/…` both missed the RK- regex, fell into
+// the "not under a rack directory" branch, and were served to any signed-in
+// caller. That turned "a rack id is a bearer credential" into "any login is a
+// bearer credential for every rack's photos" — a worse hole than the one it
+// replaced. Normalise first, then decide.
+function normalizedAssetPath(p) {
+  let decoded = String(p || '');
+  // Decode repeatedly: a single pass leaves %252e as %2e, which the filesystem
+  // layer would then decode again.
+  for (let i = 0; i < 3; i++) {
+    let next;
+    try { next = decodeURIComponent(decoded); } catch { return null; }
+    if (next === decoded) break;
+    decoded = next;
+  }
+  if (decoded.includes('\0')) return null;
+  // Windows accepts backslash as a separator; posix normalize does not collapse
+  // it, so fold it before normalising or `..\` walks out of the tree.
+  const unified = decoded.replace(/\\/g, '/');
+  const norm = path.posix.normalize(unified);
+  // After normalising, a leading `..` means the path escapes the mount root.
+  if (norm.startsWith('../') || norm === '..') return null;
+  return norm;
+}
+
 function rackIdFromAssetPath(p) {
-  const seg = String(p || '').split('/').filter(Boolean)[0];
-  return rackAccess.isValidRackId(seg) ? seg : null;
+  const norm = normalizedAssetPath(p);
+  if (norm === null) return { invalid: true, rackId: null };
+  const seg = norm.split('/').filter(Boolean)[0] || '';
+  // Compare case-insensitively because the filesystem does. `isValidRackId` is
+  // deliberately case-SENSITIVE (ids are minted uppercase), so a lowercase
+  // spelling must be treated as the same rack for authorization, not as "not a
+  // rack at all".
+  const canonical = seg.toUpperCase();
+  return { invalid: false, rackId: rackAccess.isValidRackId(canonical) ? canonical : null };
 }
 
 function assetAuth(req, res, next) {
-  const rackId = rackIdFromAssetPath(req.path);
+  const { invalid, rackId } = rackIdFromAssetPath(req.path);
+  if (invalid) return res.status(404).json({ error: 'Not found' });
+
   // Not under a rack directory (e.g. /uploads/marketplace/...): any signed-in
   // caller may read it, but an anonymous one may not.
   if (!rackId) {
@@ -5967,9 +6007,38 @@ function substIface(cmd, iface) {
 }
 
 // Persist the current console transcript for a (scanId, device_index, port) tuple.
+// Guard for routes that take the rack id in the BODY rather than the path.
+// `app.param('rackId')` only fires for `:rackId` in a route pattern, so these
+// bypassed every tenant check in the server. Returns true when the request may
+// proceed; sends the response and returns false when it may not.
+//
+// scanId is optional on these routes (the transcript is only persisted when
+// one is supplied), so a missing id is allowed through — it just means nothing
+// gets written.
+function bodyRackAllowed(req, res, scanId) {
+  if (scanId === undefined || scanId === null || scanId === '') return true;
+  if (!rackAccess.isValidRackId(scanId)) {
+    res.status(400).json({ error: 'Invalid scanId' });
+    return false;
+  }
+  if (!rackAccess.canAccessRack(req.user || softAuthPayload(req), scanId, tenant)) {
+    // 404 not 403: a 403 would confirm the rack exists in another tenant.
+    res.status(404).json({ error: 'Rack not found' });
+    return false;
+  }
+  return true;
+}
+
 function saveConsoleTranscript({ scanId, device_index, port, interface: iface, host, entries }) {
   if (!scanId) return null;
+  // Defence in depth at the sink. The callers now authorise scanId, but this
+  // function joins it into a path and then mkdirs inside the result, so a bad
+  // id here creates attacker-named directories anywhere the process can write.
+  // The existsSync below was the only guard and it does not confine anything —
+  // any existing directory reachable by a relative walk qualified.
+  if (!rackAccess.isValidRackId(scanId)) return null;
   const rackDir = path.join(outputsDir, scanId);
+  if (!path.resolve(rackDir).startsWith(path.resolve(outputsDir) + path.sep)) return null;
   if (!fs.existsSync(rackDir)) return null;
   const filePath = consoleLogPath(rackDir, device_index, port);
   const payload = {
@@ -6144,6 +6213,7 @@ app.get('/api/switch/default-host', auth.requireAuth, (req, res) => {
 app.post('/api/switch/console/run-auto', auth.requireAuth, async (req, res) => {
   const { host, sshPort, interface: iface, vendor,
           scanId, device_index, port } = req.body || {};
+  if (!bodyRackAllowed(req, res, scanId)) return;
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !iface) {
     return res.status(400).json({ error: 'host, interface, and credentials (body or env) required' });
@@ -6183,6 +6253,7 @@ app.post('/api/switch/console/run-auto', auth.requireAuth, async (req, res) => {
 app.post('/api/switch/console/run-auto-stream', auth.requireAuth, async (req, res) => {
   const { host, sshPort, interface: iface, vendor,
           scanId, device_index, port } = req.body || {};
+  if (!bodyRackAllowed(req, res, scanId)) return;
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !iface) {
     return res.status(400).json({ error: 'host, interface, and credentials (body or env) required' });
@@ -6278,6 +6349,7 @@ app.post('/api/switch/console/run-auto-stream', auth.requireAuth, async (req, re
 app.post('/api/switch/console/run', auth.requireAuth, async (req, res) => {
   const { host, sshPort, command, vendor,
           scanId, device_index, port, interface: iface, timeoutMs: bodyTimeoutMs } = req.body || {};
+  if (!bodyRackAllowed(req, res, scanId)) return;
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !command) {
     return res.status(400).json({ error: 'host, command, and credentials (body or env) required' });

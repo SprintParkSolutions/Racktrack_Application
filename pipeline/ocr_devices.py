@@ -384,6 +384,53 @@ def _preprocess_unsharp(crop):
         return crop
 
 
+class _SwitchOcrReader:
+    """switch-ocr wearing EasyOCR's interface.
+
+    Everything downstream of here — the per-device crops, the three-pass merge,
+    the vendor/model matching and the output schema — is unchanged. Only the
+    engine behind readtext() differs, which keeps the swap reversible and means
+    ocr_devices.json looks exactly the same to the server and the app.
+
+    switch-ocr already runs its own preprocessing variants internally, so the
+    three passes this module makes are redundant against it; they are harmless
+    (results merge by text) and are kept so the EasyOCR fallback still behaves
+    as before.
+    """
+
+    def __init__(self, reader):
+        self._reader = reader
+
+    def readtext(self, image, detail=1, paragraph=False):   # noqa: ARG002
+        result = self._reader.read(image)
+        out = []
+        for det in getattr(result, "detections", []) or []:
+            poly = getattr(det, "polygon", None) or []
+            out.append((poly, det.text, float(det.confidence)))
+        return out
+
+
+def _build_reader():
+    """Prefer switch-ocr; fall back to EasyOCR if it or its models are absent.
+
+    The fallback matters: OCR sits on the critical path for every scan, so a
+    missing dependency on one machine must degrade to the previous engine
+    rather than fail the scan outright.
+    """
+    engine = (os.environ.get("RACKTRACK_OCR") or "switch-ocr").strip().lower()
+    if engine != "easyocr":
+        try:
+            from switch_ocr import SwitchTextReader, OCRConfig
+            print("[ocr_devices] engine: switch-ocr", file=sys.stderr)
+            return _SwitchOcrReader(SwitchTextReader(OCRConfig.accurate()))
+        except Exception as exc:
+            print(f"[ocr_devices] switch-ocr unavailable ({exc.__class__.__name__}: {exc}); "
+                  f"falling back to EasyOCR", file=sys.stderr)
+    import easyocr
+    print("[ocr_devices] engine: easyocr", file=sys.stderr)
+    return easyocr.Reader(["en"], gpu=False, verbose=False)
+
+
 def _extract_labels_in_box(reader, crop) -> list[dict]:
     """Run EasyOCR three times on a single cropped region:
        1. Raw crop                        — baseline
@@ -449,7 +496,6 @@ def run(rack_id: str) -> dict:
 
     # Lazy imports — these are heavy and we only need them on a real run.
     import cv2
-    import easyocr
 
     img = cv2.imread(str(img_path))
     if img is None:
@@ -457,7 +503,7 @@ def run(rack_id: str) -> dict:
                 "rack_id": rack_id, "devices": []}
     h_img, w_img = img.shape[:2]
 
-    reader = easyocr.Reader(["en"], gpu=False, verbose=False)
+    reader = _build_reader()
     vendor_names = load_vendor_names()
 
     out_devices = []
