@@ -7629,6 +7629,38 @@ const { spawn: spawnChild } = require('child_process');
 const SHARE_PDF_TIMEOUT_MS = 120_000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Turn a sender failure into something a technician can act on.
+ *
+ * These messages reach a user who is standing in front of a rack trying to send
+ * a report. "Failed to find users with user principal name ..." plus a request
+ * id tells them nothing; "that address isn't in your Microsoft organisation"
+ * tells them exactly what to change.
+ */
+function friendlyShareError(channel, email, raw) {
+  const t = String(raw || '');
+  const where = channel === 'teams' ? 'Teams' : channel === 'outlook' ? 'Outlook' : 'Slack';
+  if (/NotFound|Failed to find users|user principal name/i.test(t)) {
+    return `${email} isn't a member of your ${where} organisation, so the report can't be sent there. `
+         + `Use a work address from your own organisation, or share by email instead.`;
+  }
+  if (/Unauthorized|InvalidAuthenticationToken|401|invalid_grant|expired/i.test(t)) {
+    return `The ${where} connection has expired. Reconnect it under Data Sources and try again.`;
+  }
+  if (/Forbidden|403|Authorization_RequestDenied/i.test(t)) {
+    return `RackTrack does not have permission to post to ${where} for this organisation. `
+         + `Your administrator needs to approve it.`;
+  }
+  if (/timed? ?out|ETIMEDOUT|ENOTFOUND|ECONNREFUSED|network/i.test(t)) {
+    return `Couldn't reach ${where}. Check the connection and try again.`;
+  }
+  if (/smtp|mail|sendmail|relay/i.test(t) && channel !== 'teams') {
+    return `The email couldn't be sent to ${email}. Check the address and try again.`;
+  }
+  return `Couldn't send the report to ${where}. This has been logged — please try again, `
+       + `or use a different sharing option.`;
+}
+
 async function runShareSender(req, res, { rackId, channel, pyModule, email, extraArgs }) {
   if (!email) {
     audit.log({ req, action: `scan.share.${channel}`, status: 'fail', targetType: 'rack', targetId: rackId, error: 'missing recipient' });
@@ -7691,12 +7723,15 @@ async function runShareSender(req, res, { rackId, channel, pyModule, email, extr
     logger.error(`[share:${channel}] sender exited code=${code} for ${rackId}`, { stderr: stderr.slice(-500) });
     audit.log({ req, action: `scan.share.${channel}`, status: 'fail', targetType: 'rack', targetId: rackId,
                 error: parsed?.error || `exit ${code}`, payload: { recipient: email } });
+    // The raw stderr used to go straight to the client, so a tester saw a
+    // Microsoft Graph JSON blob — request ids, inner errors and all — printed
+    // over the app. It says nothing they can act on and looks like a crash.
+    // Translate the cases we know, keep the rest generic, and log the original.
     send(502, {
       ok: false,
       channel,
-      error: parsed?.error || stderr || `${channel} sender exited with code ${code}`,
-      stdout: stdout.slice(-2000),
-      stderr: stderr.slice(-2000),
+      error: friendlyShareError(channel, email, parsed?.error || stderr || ''),
+      // stdout/stderr are deliberately NOT returned. They are in the server log.
     });
   });
 
@@ -7705,7 +7740,7 @@ async function runShareSender(req, res, { rackId, channel, pyModule, email, extr
     logger.error(`[share:${channel}] failed to spawn Python:`, err);
     audit.log({ req, action: `scan.share.${channel}`, status: 'fail', targetType: 'rack', targetId: rackId,
                 error: `spawn: ${err.message}`, payload: { recipient: email } });
-    send(500, { ok: false, channel, error: `Failed to spawn Python: ${err.message}` });
+    send(500, { ok: false, channel, error: `Could not start the ${channel} sender. This has been logged.` });
   });
 }
 

@@ -271,10 +271,22 @@
    screen (with a little breathing room), and the sheet below holds the device
    picker. Once a device is selected the hero shrinks to make room for the
    port / device controls in the sheet. */
-.results[data-device="none"] .heroWrap { flex: 0 0 74vh; }
-.results[data-device="none"] .sheet    { flex: 1 1 auto; }
-.results[data-device="sel"]  .heroWrap { flex: 0 0 44vh; }
-.results[data-device="sel"]  .sheet    { flex: 1 1 auto; }
+/* The hero was pinned at 74vh and could not shrink, so on a 727px phone it took
+   538px and left the panel below it 33px to show 102px of content. It scrolled,
+   technically — but scrolling a 33px window reads as "the page isn't showing".
+   `flex: 0 1` lets the image give ground, and the panel's min-height below
+   guarantees it. */
+.results[data-device="none"] .heroWrap { flex: 0 1 74vh; min-height: 0; }
+.results[data-device="none"] .sheet    { flex: 1 1 auto; min-height: 168px; }
+.results[data-device="sel"]  .heroWrap { flex: 0 1 44vh; min-height: 0; }
+.results[data-device="sel"]  .sheet    { flex: 1 1 auto; min-height: 200px; }
+
+/* On a short screen the image yields further still — the controls matter more
+   than a larger picture you can already pinch-zoom. */
+@media (max-height: 720px) {
+  .results[data-device="none"] .heroWrap { flex: 0 1 58vh; }
+  .results[data-device="sel"]  .heroWrap { flex: 0 1 38vh; }
+}
 
 /* Result variant */
 .resultHero {
