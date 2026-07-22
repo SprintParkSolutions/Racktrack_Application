@@ -43,6 +43,9 @@ export const TwoRackIcon = () => (
 export const LabIcon = () => (
   <svg {...s}><path d="M9 3v6.5L4.5 18A2 2 0 006.3 21h11.4a2 2 0 001.8-3L15 9.5V3"/><path d="M8 3h8"/><path d="M7.5 14h9"/></svg>
 );
+export const HelpIcon = () => (
+  <svg {...s}><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.9 2.9 0 015.6 1c0 2-2.8 2.6-2.8 4"/><circle cx="12" cy="17.4" r="1" fill="currentColor" stroke="none"/></svg>
+);
 export const MoreIcon = () => (
   <svg {...s}><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>
 );
@@ -73,6 +76,8 @@ export function usePrimaryNav() {
       hint: 'Connect ServiceNow, NetBox and others' }] : []),
     ...(isAdmin ? [{ to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false,
       hint: 'Buy and sell hardware' }] : []),
+    { to: '/help',           label: 'Help',         icon: <HelpIcon />,        end: false,
+      hint: 'Ask RackTrack Assist' },
     { to: '/profile',        label: 'Profile',      icon: <ProfileIcon />,     end: false, inBar: true },
   ];
 }

@@ -1,31 +1,32 @@
-// RackTrack Assist — in-app help, backed by /api/support.
+// Help — the full-screen home for RackTrack Assist.
 //
-// The server answers only from a verified knowledge base and declines rather
-// than guessing, so this component's job is to stay out of the way: show the
-// short answer, make a decline look visibly different from an answer, keep the
-// full detail one tap away, and always offer a route to a person.
+// The floating panel (SupportBot) is for when you are mid-task and need one
+// answer. This page is for when you came here to ask something, or to test.
 //
-// Renders nothing when the server reports the assistant unavailable — a help
-// button that cannot help is worse than no button.
+// It shows a diagnostic line under each answer — which route produced it and
+// which entry it came from. Without that, a tester reporting "it gave me the
+// wrong answer" has nothing actionable attached, and we cannot tell a
+// retrieval problem from a knowledge-base gap.
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { apiUrl, authFetch } from '../utils/api';
-import styles from './SupportBot.module.css';
+import styles from './HelpPage.module.css';
 
 const STARTERS = [
   "I can't sign in",
   'My scan came back empty',
   'Where did my earlier scans go?',
   'How do I export a report?',
+  'Why is my device showing the wrong model?',
+  'Do I need internet to scan?',
 ];
 
-// Routes where the assistant did not answer. Shown differently so a decline is
-// never mistaken for advice.
+// Routes where Assist did not answer. Shown differently so a decline is never
+// mistaken for advice.
 const DECLINED = new Set(['refusal', 'out-of-scope', 'needs-access']);
 
-export default function SupportBot() {
-  const [available, setAvailable] = useState(null); // null = still checking
-  const [open, setOpen] = useState(false);
+export default function HelpPage() {
+  const [status, setStatus] = useState(null); // null = checking
   const [messages, setMessages] = useState([]);
   const [pending, setPending] = useState(false);
   const [draft, setDraft] = useState('');
@@ -38,8 +39,8 @@ export default function SupportBot() {
     let cancelled = false;
     authFetch(apiUrl('/api/support/status'))
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled) setAvailable(Boolean(d && d.ok)); })
-      .catch(() => { if (!cancelled) setAvailable(false); });
+      .then((d) => { if (!cancelled) setStatus(d || { ok: false }); })
+      .catch(() => { if (!cancelled) setStatus({ ok: false }); });
     return () => { cancelled = true; };
   }, []);
 
@@ -47,14 +48,7 @@ export default function SupportBot() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [messages, pending, expanded]);
 
-  useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+  useEffect(() => { inputRef.current?.focus(); }, [status]);
 
   const send = useCallback(async (text) => {
     const question = String(text || '').trim();
@@ -64,11 +58,9 @@ export default function SupportBot() {
     setDraft('');
     setPending(true);
 
+    const started = Date.now();
     try {
-      // Prior turns give short follow-ups ("why?") something to attach to. The
-      // server caps and sanitizes this; we just avoid sending the whole session.
       const history = messages.slice(-6).map((m) => ({ role: m.role, content: m.content }));
-
       const res = await authFetch(apiUrl('/api/support/ask'), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -92,6 +84,8 @@ export default function SupportBot() {
         content: data.answer,
         detail: data.detail || null,
         route: data.route,
+        sources: data.sources || [],
+        ms: data.ms ?? Date.now() - started,
       }]);
     } catch {
       setMessages((prev) => [...prev, {
@@ -112,43 +106,40 @@ export default function SupportBot() {
     });
   };
 
-  if (!available) return null;
-
-  if (!open) {
+  if (status && !status.ok) {
     return (
-      <button
-        type="button"
-        className={styles.launcher}
-        onClick={() => setOpen(true)}
-        aria-label="Open RackTrack Assist"
-      >
-        <img src="/logo.jpg" alt="" className={styles.mark} />
-        <span className={styles.launcherText}>Assist</span>
-      </button>
+      <div className={styles.page}>
+        <div className={styles.unavailable}>
+          <h2>Help is unavailable</h2>
+          <p>The assistant isn&apos;t running right now. Please contact your RackTrack administrator.</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className={styles.panel} role="dialog" aria-modal="false" aria-label="RackTrack Assist">
+    <div className={styles.page}>
       <div className={styles.head}>
-        <img src="/logo.jpg" alt="" className={styles.headMark} />
-        <div className={styles.headText}>
-          <div className={styles.name}>RackTrack <span>Assist</span></div>
-          <div className={styles.status}>Answers from verified documentation</div>
+        <img src="/logo.jpg" alt="" className={styles.mark} />
+        <div>
+          <div className={styles.title}>RackTrack <span>Assist</span></div>
+          <div className={styles.sub}>Answers from verified documentation</div>
         </div>
-        <button type="button" className={styles.close} onClick={() => setOpen(false)} aria-label="Close">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </button>
+        {status?.ok && (
+          <div className={styles.status}>
+            <span className={`${styles.dot} ${status.mode === 'search-only' ? styles.off : ''}`} />
+            {status.entries} answers
+          </div>
+        )}
       </div>
 
       <div className={styles.log} ref={logRef}>
-        <div className={styles.stack}>
+        <div className={styles.inner}>
           {messages.length === 0 && (
             <div className={styles.intro}>
-              <strong>What are you stuck on?</strong>
-              Ask in your own words. If I&apos;m not certain, I&apos;ll say so rather than guess.
+              <h2>What are you stuck on?</h2>
+              Ask in your own words — the way you&apos;d say it to a colleague.
+              If Assist isn&apos;t certain, it will say so rather than guess.
               <div className={styles.starters}>
                 {STARTERS.map((s) => (
                   <button key={s} type="button" className={styles.starter} onClick={() => send(s)}>
@@ -187,6 +178,14 @@ export default function SupportBot() {
                       </button>
                     </div>
                   )}
+
+                  {m.role === 'assistant' && m.route && (
+                    <div className={styles.debug}>
+                      <span><b>{m.route}</b></span>
+                      {m.sources?.length > 0 && <span>{m.sources.join(', ')}</span>}
+                      {m.ms != null && <span>{m.ms}ms</span>}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -203,22 +202,22 @@ export default function SupportBot() {
       </div>
 
       <form className={styles.form} onSubmit={(e) => { e.preventDefault(); send(draft); }}>
-        <input
-          ref={inputRef}
-          className={styles.input}
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Describe what's happening…"
-          maxLength={1000}
-          autoComplete="off"
-          aria-label="Your question"
-        />
-        <button type="submit" className={styles.send} disabled={pending || !draft.trim()} aria-label="Send">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M5 12h14M13 6l6 6-6 6" />
-          </svg>
-        </button>
+        <div className={styles.formInner}>
+          <input
+            ref={inputRef}
+            className={styles.input}
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Describe what's happening…"
+            maxLength={1000}
+            autoComplete="off"
+            aria-label="Your question"
+          />
+          <button type="submit" className={styles.send} disabled={pending || !draft.trim()}>
+            Ask
+          </button>
+        </div>
       </form>
     </div>
   );

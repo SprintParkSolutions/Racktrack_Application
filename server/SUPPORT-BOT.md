@@ -16,12 +16,16 @@ question
    │
    └─ search the verified knowledge base
         │
-        ├─ confident      ──► VERBATIM   return the verified answer word for word
-        ├─ ambiguous      ──► GROUNDED   local model phrases it, output validated
+        ├─ clear winner   ──► VERBATIM   return the verified answer word for word
+        ├─ near-tie       ──► GROUNDED   local model reads the candidates and picks
+        ├─ restricted     ──► NEEDS-ACCESS  "that's an admin screen"
         └─ nothing useful ──► REFUSAL    "I don't know" + escalation
 ```
 
-Most traffic lands on **verbatim**, where the bot generates nothing and therefore cannot be wrong. Route selection is by retrieval score, not model judgment, so it is deterministic and testable.
+Most traffic lands on **verbatim**, where the bot generates nothing and therefore
+cannot be wrong. Routing is decided by retrieval score **and margin** — not by the
+model — so it stays deterministic and testable. The model is consulted only when
+the top two candidates are too close for word overlap to separate.
 
 ### Why not "always right"?
 
@@ -82,15 +86,10 @@ GET  /api/support/status                       → { ok, tier, entries, mode }
 jq -r .question data/support-refusals.jsonl | sort | uniq -c | sort -rn | head -20
 ```
 
-### Optional: local model
+### The local model
 
-Everything works without it. Adding it improves handling of unusually phrased questions — the *grounded* route only activates when a model is present; otherwise ambiguous questions show candidate questions to pick from.
-
-```bash
-ollama serve && ollama pull llama3.1:8b
-```
-
-Needs ~8–16 GB RAM **on the server**, not on the technician's device. Disable entirely with `SUPPORT_BOT_LLM=off`.
+See **The local model** at the end of this document — it covers why the model
+matters, how to install it, and how its output is fenced.
 
 ### Configuration
 
@@ -99,7 +98,8 @@ Needs ~8–16 GB RAM **on the server**, not on the technician's device. Disable 
 | `SUPPORT_KB_PATH` | `data/support-kb.json` | Knowledge base location |
 | `SUPPORT_BOT_LLM` | on | `off` disables the model, forcing search-only |
 | `OLLAMA_URL` | `http://127.0.0.1:11434` | Model host |
-| `OLLAMA_MODEL` | `llama3.1:8b` | Model name |
+| `OLLAMA_MODEL` | `llama3.2:3b` | Model name |
+| `SUPPORT_T_MARGIN` | `0.18` | How far the top match must beat the runner-up to skip the model |
 | `SUPPORT_T_DIRECT` | `0.68` | Verbatim threshold |
 | `SUPPORT_T_GROUNDED` | `0.45` | Refusal floor |
 | `SUPPORT_T_COVERAGE` | `0.33` | Min fraction of query *information* matched |
@@ -113,9 +113,9 @@ A missing or malformed knowledge base disables **only** the support routes (503 
 
 ## Maintaining the knowledge base
 
-Entries carry `evidence` (source file + line range), an `audience`, and an honest `confidence`. Current corpus: **182 entries** — 132 end-user, 40 admin, 10 internal-only.
+Entries carry `evidence` (source file + line range), an `audience`, and an honest `confidence`. Current corpus: **351 entries** — 231 end-user, 69 admin, 51 internal-only, across 17 categories.
 
-Each entry survived independent review by three skeptical verifiers checking cited evidence, technical accuracy, and end-user usefulness; entries refuted by two or more were discarded (19 were). Every cited file was then confirmed to exist, catching fabricated citations mechanically.
+Each entry survived independent review by three skeptical verifiers checking cited evidence, technical accuracy, and end-user usefulness; entries refuted by two or more were discarded (61 were, across two mining rounds). Every cited file was then confirmed to exist, catching fabricated citations mechanically.
 
 Discarded material is kept in `../support-bot/kb/` — `dropped-as-refuted.json` and `unverified-pending.json` (65 entries mined but never verified, parked deliberately rather than shipped).
 
@@ -137,7 +137,7 @@ KB_PATH=../server/data/support-kb.json npm run eval        # full suite + ship g
 cd ../server && node --test test/support_bot.test.js
 ```
 
-The eval ship gate requires zero critical failures, ≥95% retrieval, ≥90% overall. Current: **99.9%** (672/673), zero critical failures.
+The eval ship gate requires zero critical failures, ≥95% retrieval, ≥90% overall. Current: **98.1%** (1,191/1,214) with the model active, zero critical failures.
 
 ---
 
@@ -148,3 +148,58 @@ The eval ship gate requires zero critical failures, ≥95% retrieval, ≥90% ove
 **A code-mined KB cannot answer roadmap, pricing, or competitor questions.** Those facts do not live in source code. They are caught by intent and routed to a person rather than left to retrieval, which would otherwise find a superficially similar entry and look confident.
 
 **One matched word is never enough.** A vague query ("its broken") is never answered verbatim — it asks what is broken instead.
+
+---
+
+## The local model
+
+The `grounded` route needs a local model. Without one the bot still works — it
+falls back to returning the best verified match — but it cannot **judge**, and
+judgement is what separates a good answer from a plausible one.
+
+### Why it matters
+
+Word overlap cannot separate near-ties. A real example from this knowledge base:
+
+```
+"i cant find where my old scans went"
+  APP-003   TestFlight invitation                 0.74   ← word overlap picks this
+  HIST-001  "Where do I find racks I scanned?"    0.66   ← actually correct
+```
+
+Both look confident; only one is right. So routing works on the **margin**, not
+just the score: a clear winner is returned verbatim (fast, free, cannot
+hallucinate), and a near-tie goes to the model, which reads both candidates and
+picks. That is the one job a model does better than lexical scoring, and it is
+the only job it is given here.
+
+### Install
+
+```bash
+curl -fsSL -o ollama.tgz https://ollama.com/download/ollama-darwin.tgz   # macOS
+tar -xzf ollama.tgz -C /usr/local/
+ollama serve &
+ollama pull llama3.2:3b
+```
+
+Windows/Linux: see ollama.com/download. **The model must run on the RackTrack
+server**, not on a technician's device.
+
+`llama3.2:3b` is ~1.9 GB and needs roughly 4 GB RAM — deliberately the small
+model. The 8B is better at phrasing but the job here is narrow (pick between
+supplied candidates, or decline), and the 3B does it well. Set `OLLAMA_MODEL` to
+use a different one.
+
+### It is still fenced
+
+The model never sees the whole knowledge base — only the entries retrieval
+matched. Its output is validated before display: every cited id must be one that
+was supplied, a substantive answer must cite something, and prompt scaffolding
+must not leak. Anything failing falls back to the verified text. A model
+declining is reported as `refusal`, not `grounded`, so the route always names the
+outcome rather than the machinery.
+
+### Turning it off
+
+`SUPPORT_BOT_LLM=off` disables it entirely. Everything keeps working at
+search-only quality, which is the correct behaviour if the model host is down.

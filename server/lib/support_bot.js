@@ -21,11 +21,12 @@
 const fs = require('fs');
 const path = require('path');
 const { logger } = require('./observability');
+const { buildAssociations, expandWithAssociations } = require('./support_associations');
 
 const KB_PATH = process.env.SUPPORT_KB_PATH || path.join(__dirname, '..', 'data', 'support-kb.json');
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.1:8b';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';
 const OLLAMA_TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS || 20000);
 const OLLAMA_ENABLED = process.env.SUPPORT_BOT_LLM !== 'off';
 
@@ -60,6 +61,14 @@ const THRESHOLDS = {
    */
   MIN_TERMS_FOR_DIRECT: Number(process.env.SUPPORT_T_MIN_TERMS || 2),
   /**
+   * How far the top match must beat the runner-up before answering verbatim.
+   * Word overlap cannot separate near-ties — "where did my old scans go" ranks
+   * a TestFlight entry at 0.74 and the correct history entry at 0.66. Both look
+   * confident; only one is right. Below this gap the question goes to the
+   * model, which reads both and picks.
+   */
+  MIN_MARGIN_FOR_DIRECT: Number(process.env.SUPPORT_T_MARGIN || 0.18),
+  /**
    * Maximum fraction of query vocabulary absent from the whole knowledge base.
    * Above this, the question is about something we do not cover, however well
    * individual words happen to match.
@@ -76,14 +85,28 @@ const STOPWORDS = new Set([
 ]);
 
 const SYNONYM_GROUPS = [
-  ['login','log','signin','sign','logon','authenticate','auth','password','credential'],
+  // Product vocabulary. Users say "tenant", "company", "team"; the UI says
+  // "organization"; the codebase says tenant_id. A question phrased in one
+  // vocabulary must reach an entry written in another — that mismatch is
+  // invisible to word-overlap scoring.
+  ['tenant','organization','organisation','org','company','team','workspace'],
+  ['join','invite','invitation','onboard','add'],
+  ['member','technician','user','colleague','staff'],
+  ['site','location','branch','facility'],
+  // Signing in and passwords are related but NOT interchangeable. Merging them
+  // is what sent "why do I keep getting signed out" to the password-rules
+  // answer. Splitting them failed on its own earlier because nothing replaced
+  // the lost connections — the learned associations below now do, measured from
+  // the corpus rather than guessed.
+  ['login','log','signin','sign','logon','authenticate','auth'],
+  ['password','passphrase','credential','passcode'],
   ['scan','scanning','scanned','capture','photo','picture','camera','image','shot'],
   ['report','reporting','export','download','csv','pdf','spreadsheet'],
   ['rack','cabinet','enclosure'],
   ['switch','device','hardware','equipment','appliance'],
   ['port','ports','interface','socket'],
   ['cable','cabling','wire','patch','lead'],
-  ['error','fail','failed','failure','broken','wrong','issue','problem','bug','crash'],
+['error','fail','failed','failure','broken','wrong','issue','problem','bug','crash'],
   ['slow','lag','hang','freeze','stuck','timeout','timedout'],
   ['offline','disconnected','network','connection','internet','wifi','signal'],
   ['sync','syncing','synced','upload','save','saved'],
@@ -160,7 +183,13 @@ function buildIndex(entries) {
     if (v > maxIdf) maxIdf = v;
   }
 
-  return { docs, avgLength, idf, maxIdf, size: entries.length };
+  // Learn which terms travel together in THIS product's language. This is what
+  // lets a question about being "signed out" reach an answer about sessions
+  // expiring, without an embedding model and without a hand-written synonym
+  // list that someone has to keep correct.
+  const associations = buildAssociations(docs);
+
+  return { docs, avgLength, idf, maxIdf, associations, size: entries.length };
 }
 
 function search(index, query, limit = 4) {
@@ -175,6 +204,10 @@ function search(index, query, limit = 4) {
       weights.set(s, Math.max(weights.get(s) || 0, SYNONYM_WEIGHT));
     }
   }
+
+  // Then widen with what the corpus itself says goes together. The hand-written
+  // list above covers vocabulary we anticipated; this covers the rest.
+  if (index.associations) expandWithAssociations(weights, index.associations);
 
   // Total "information mass" of the query: the sum of IDF across the terms the
   // user actually typed. Matching 2 of 3 words means very different things
@@ -242,6 +275,7 @@ function search(index, query, limit = 4) {
   if (!top.length) return [];
 
   const best = top[0].rawScore;
+  const runnerUp = top.length > 1 ? top[1].rawScore : 0;
   return top.map((r) => {
     const relative = r.rawScore / best;
     const margin = top.length > 1 ? (best - top[1].rawScore) / best : 1.0;
@@ -253,6 +287,9 @@ function search(index, query, limit = 4) {
       entry: r.entry,
       score: r.rawScore,
       coverage: r.coverage,
+      // How clearly this beat the runner-up. A near-tie means word overlap
+      // cannot be trusted to have picked the right entry.
+      margin: best > 0 ? (best - runnerUp) / best : 1,
       matchedTerms: r.matchedTerms,
       unknownRatio: r.unknownRatio,
       confidence: Math.round(Math.min(1, Math.max(0, conf)) * 100) / 100,
@@ -290,6 +327,17 @@ function getIndex(tier) {
     _indexes.set(tier, { index: buildIndex(visible), count: visible.length });
   }
   return _indexes.get(tier);
+}
+
+/**
+ * Index over EVERY entry regardless of tier. Never used to answer — only to
+ * detect that a good answer exists above the caller's clearance, so we can say
+ * so instead of substituting an unrelated entry.
+ */
+let _fullIndex = null;
+function getFullIndex() {
+  if (!_fullIndex) _fullIndex = buildIndex(loadKB().entries);
+  return _fullIndex;
 }
 
 /** Build every tier index up front so the first user request is not slow. */
@@ -541,6 +589,38 @@ async function ask(question, { tier = 'end-user', history = [] } = {}) {
     top.score < THRESHOLDS.MIN_SCORE ||
     top.unknownRatio > THRESHOLDS.MAX_UNKNOWN;
 
+  // Before refusing — or before answering with a weak match — check whether a
+  // GOOD answer exists that this caller simply is not cleared to see. Telling a
+  // technician "that is an admin screen" is a real answer; handing them an
+  // unrelated entry because it was the best thing in their tier is not.
+  if (tier !== 'admin') {
+    const full = search(getFullIndex(), searchQuery, 1)[0];
+    const bestVisible = top ? top.confidence : 0;
+    if (
+      full &&
+      full.entry.audience !== 'end-user' &&
+      full.confidence >= THRESHOLDS.DIRECT &&
+      // Same quality bar as answering — otherwise a vague query clears the
+      // gap against an even weaker in-tier match and is wrongly told it
+      // needs admin access.
+      full.coverage >= THRESHOLDS.MIN_COVERAGE &&
+      full.matchedTerms >= THRESHOLDS.MIN_TERMS_FOR_DIRECT &&
+      full.unknownRatio <= THRESHOLDS.MAX_UNKNOWN &&
+      full.confidence - bestVisible >= 0.15
+    ) {
+      return {
+        answer:
+          `That's part of ${featureAreaOf(full.entry)}, which needs administrator access — so I can't walk you through it here.\n\n` +
+          `Your RackTrack administrator can help, or can give you access if you need it.`,
+        sources: [],
+        route: 'needs-access',
+        confidence: 0,
+        matches: [],
+        warnings: [`restricted answer exists (${full.entry.id}, conf ${full.confidence})`],
+      };
+    }
+  }
+
   if (gated) {
     return {
       answer: `I don't have reliable information about that. I'd rather not guess and send you the wrong way. ${ESCALATION[tier]}`,
@@ -552,7 +632,13 @@ async function ask(question, { tier = 'end-user', history = [] } = {}) {
     };
   }
 
-  if (confidence >= THRESHOLDS.DIRECT && top.matchedTerms >= THRESHOLDS.MIN_TERMS_FOR_DIRECT) {
+  const clearWinner = (top.margin == null ? 1 : top.margin) >= THRESHOLDS.MIN_MARGIN_FOR_DIRECT;
+
+  if (
+    confidence >= THRESHOLDS.DIRECT &&
+    top.matchedTerms >= THRESHOLDS.MIN_TERMS_FOR_DIRECT &&
+    clearWinner
+  ) {
     // Lead with the short answer. A technician on a phone in a cold aisle reads
     // the first line or two; the full text stays available behind `detail` for
     // anyone who taps for more. Both are the same verified text.
@@ -625,10 +711,14 @@ async function ask(question, { tier = 'end-user', history = [] } = {}) {
       };
     }
 
+    // The model declining is a refusal, whichever route produced it. Report
+    // the outcome, not the machinery that reached it.
+    const modelRefused = /don't have reliable information/i.test(parsed.answer);
+
     return {
       answer: parsed.answer,
       sources: parsed.sources,
-      route: 'grounded',
+      route: modelRefused ? 'refusal' : 'grounded',
       confidence,
       matches: summarize(matches),
       warnings,
@@ -646,6 +736,16 @@ async function ask(question, { tier = 'end-user', history = [] } = {}) {
       warnings,
     };
   }
+}
+
+/** Human-readable feature area for an entry, for access-denied messages. */
+function featureAreaOf(entry) {
+  if (entry.category) return `the ${entry.category} area`;
+  const nice = {
+    admin: 'the administration area', integrations: 'connected systems',
+    account: 'team and account settings',
+  };
+  return nice[entry.domain] || 'an administrator-only area';
 }
 
 function summarize(matches) {

@@ -17,6 +17,7 @@ import TopologyPage from './pages/TopologyPage.jsx';
 import NetdiscoPage from './pages/NetdiscoPage.jsx';
 import HistoryPage from './pages/HistoryPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import HelpPage from './pages/HelpPage.jsx';
 import LogoCompare from './pages/LogoCompare.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
@@ -249,6 +250,11 @@ export default function App() {
             } />
             <Route path="/multi-rack/:groupId/topology" element={
               <ProtectedRoute><ResponsiveLayout><MultiRackTopologyPage /></ResponsiveLayout></ProtectedRoute>
+            } />
+            {/* RackTrack Assist — the full-screen help page. The floating
+                panel covers mid-task questions; this is the destination. */}
+            <Route path="/help" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><HelpPage /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/profile" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ProfilePage /></ResponsiveLayout></ProtectedRoute>
