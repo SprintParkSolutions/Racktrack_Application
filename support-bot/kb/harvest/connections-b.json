@@ -1,0 +1,193 @@
+[
+  {
+    "question": "Saving an organization integration returns \"organization admin only\" or \"no organization is associated with your account\". What now?",
+    "answer": "Two different server-side refusals on /api/org-connections, so they apply from any client:\n\n• \"organization admin only\" (403) — your role is not org_admin (or owner). Members and site managers cannot set organization-wide credentials. Ask your organization admin; they set it once and every member's scans use it.\n\n• \"no organization is associated with your account\" (400) — your role passed, but your account has no organization_id. This is the platform-owner case: an owner sits above organizations and belongs to none. Use an org-admin account inside the organization you want to configure. It is also why the \"Organization integrations\" panel is hidden for the owner.",
+    "symptoms": [
+      "organization admin only",
+      "no organization is associated with your account",
+      "403 saving org integration",
+      "Owner cannot set organization credentials"
+    ],
+    "rootCause": "requireOrgAdmin in connection_profiles_routes.js returns 403 for roles outside org_admin/owner and 400 when req.user.organization_id is missing, which is the platform owner's case; OrgConsolePage hides the panel for owners.",
+    "evidence": [
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "112-123",
+        "snippet": "function requireOrgAdmin(req, res, next) {\n  if (!req.user || !['org_admin', 'owner'].includes(req.user.role)) {\n    return res.status(403).json({ ok: false, error: 'organization admin only' });\n  }\n  const orgId = req.user.organization_id;\n  if (!orgId) {\n    return res.status(400).json({ ok: false, error: 'no organization is associated with your account' });\n  }\n  req._orgId = orgId;\n  next();\n}\nrouter.use('/api/org-connections', requireAuth, requireOrgAdmin);"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "426-428",
+        "snippet": "          {/* Org-wide external access — admin sets encrypted credentials the\n              whole org's pipeline uses. Owner has no org context, so admin-only. */}\n          {!isOwner && <OrgConnectionsPanel />}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I stop using a data source, or delete one? Is there an off switch?",
+    "answer": "No off switch — the Data Sources screen only offers switch or delete.\n\nSwitch: press \"Use\" on another saved connection. The previous one stops being active immediately and stays saved.\n\nDelete: tap the ⋯ menu on the card → \"Delete\" → confirm `Delete connection \"<name>\"?`. This is permanent; the stored credentials live in the same row and are destroyed with it, so you would have to re-enter them.\n\nIf you delete the active connection and have no other, the screen shows \"No active connection.\" with the hint \"Add a connection below to start pulling data from your CMDB\", and CMDB-backed screens return nothing until you add one.\n\n(Organization-wide credentials use the \"Remove\" button in Organization integrations instead.)",
+    "symptoms": [
+      "How do I disconnect a data source",
+      "Delete connection prompt",
+      "No active connection",
+      "How do I turn off a connection without deleting it"
+    ],
+    "rootCause": "ConnectionsPage exposes only Edit and Delete in the card menu plus the Use button; the /api/connections/deactivate route exists but no control on the page calls it, and remove() deletes the row (secret blob included).",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "99-103",
+        "snippet": "  const onDelete = async (profile) => {\n    setOpenMenuFor(null);\n    if (!confirm(`Delete connection \"${profile.name}\"?`)) return;\n    try { await remove(profile.id); } catch (err) { alert(err.message); }\n  };"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "187-194",
+        "snippet": "          <div className={styles.emptyCard}>\n            <p>No active connection.</p>\n            <p className={styles.emptyHint}>\n              Add a connection below to start pulling data from your CMDB.\n            </p>\n          </div>"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "23-26",
+        "snippet": "  const {\n    profiles, active, supportedTypes, loading, error, refreshing, lastRefresh,\n    refresh, create, update, activate, remove, refreshActiveSource,\n  } = useConnections();"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "339-345",
+        "snippet": "/** Delete one profile. Returns true if a row was removed. */\nfunction remove(userId, profileId) {\n  const r = db.prepare(\n    `DELETE FROM connection_profiles WHERE user_id = ? AND id = ?`\n  ).run(Number(userId), Number(profileId));\n  return r.changes > 0;\n}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "INTERNAL: how are connection-profile credentials stored, and what may I say about it to a customer?",
+    "answer": "INTERNAL — storage model (do not paste to customers):\n• Connection-profile credentials (personal and org-wide) are serialised to JSON and sealed with AES-256-GCM before they reach the database. The row stores base64(iv|tag|ciphertext) in connection_profiles.secret_blob. Only user_id, name, type, is_active, organization_id and timestamps are in cleartext.\n• Key: 32 bytes as 64 hex chars, from SSH_CREDS_KEY if set, else server/.env.key (generated 0600 on first run). Same key as the SSH credential store — one rotation surface.\n• Decryption happens only inside the server process, in resolveCredsForOrg / resolveCredsForType, at the moment an outbound call is made. Nothing decrypts on the client.\n• No route returns plaintext. Create, update, list, get and activate all reply through rowToMeta/orgRowToMeta — metadata only, including for the admin who set an org credential.\n\nHandling rules:\n• Never read out, copy, screenshot, relay or \"confirm\" a stored secret — to anyone, including the account owner or an org admin. There is no supported way to retrieve one; do not invent one.\n• Never ask a customer to send a password, token or connection string in a ticket. If a credential must change, they re-enter it themselves in the app.\n• Do not discuss key file paths, env var names or database column names with customers.\n\nSafe customer-facing phrasing: \"Your credentials are encrypted before they're stored and are never shown again — not even to you. To change one, just re-enter it.\"",
+    "symptoms": [
+      "How are credentials protected",
+      "Customer asks us to retrieve their stored password",
+      "Security question about credential storage",
+      "Where are connection secrets kept"
+    ],
+    "rootCause": "connection_profiles.js encrypts the secret JSON with the shared AES-256-GCM helper from ssh-creds.js and persists only the blob; all HTTP responses go through rowToMeta/orgRowToMeta, which omit secret_blob.",
+    "evidence": [
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "5-32",
+        "snippet": " * One row per saved connection. The actual credentials (instance URL,\n * username, password, API tokens, optional vendor-specific extras) live\n * in an AES-256-GCM blob; only metadata (name, type, created_at, etc.)\n * is queryable in cleartext.\n...\n * Encryption key is shared with the SSH creds store — same AES key file\n * (server/.env.key) or SSH_CREDS_KEY env var. One key, one rotation\n * surface."
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "96-112",
+        "snippet": "function loadKey() {\n  const envKey = process.env.SSH_CREDS_KEY && process.env.SSH_CREDS_KEY.trim();\n  if (envKey) return Buffer.from(envKey, 'hex');\n  if (!fs.existsSync(KEY_PATH)) {\n    // First-run convenience: generate a key so the store works out of the\n    // box. Same pattern auth.js uses for jwt.secret.\n    const hex = crypto.randomBytes(32).toString('hex');\n    fs.writeFileSync(KEY_PATH, hex + '\\n', { mode: 0o600 });"
+      },
+      {
+        "file": "server/lib/ssh-creds.js",
+        "lines": "42-48",
+        "snippet": "function encrypt(plaintext, key) {\n  const iv = crypto.randomBytes(12);\n  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);\n  const ct  = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);\n  const tag = cipher.getAuthTag();\n  return Buffer.concat([iv, tag, ct]).toString('base64');\n}"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "106-111",
+        "snippet": "// ── Org-scoped connections (admin-set, org-wide, write-only) ──────────\n// An org_admin configures external access ONCE for the whole organization\n// (their CMDB/ITSM DB, live network sources, etc.). Every member's pipeline\n// uses them. Secrets are stored AES-256-GCM and are NEVER returned by any of\n// these routes — not even to the admin who set them. Only the server-side\n// pipeline decrypts them for outbound calls."
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "connections-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "INTERNAL: every connection suddenly stopped working after a server change and the log shows decrypt failures. What happened?",
+    "answer": "The AES key no longer matches the stored blobs. Both stores (connection profiles and SSH creds) share one key: SSH_CREDS_KEY env var, else server/.env.key.\n\nWhat you see:\n• \"[connection_profiles] decrypt failed for profile <id>\" or \"[connection_profiles] org decrypt failed for profile <id>\" — the profile resolves to null, so CMDB endpoints act as if nothing is configured.\n• \"[ssh-creds] decrypt failed — ignoring env creds\" — credentials become {}, so polls are skipped and audits return the no-credentials error.\n• Profiles still LIST fine (name, type, Active badge are cleartext) — only the blob fails, so it looks like \"the app forgot our password\", not an outage.\n\nCauses:\n1. .env.key not carried across a redeploy. On next start connection_profiles.loadKey writes a brand-new key and logs \"[connection_profiles] generated new encryption key at .env.key\" — grep the log for that line, it dates the breakage exactly.\n2. SSH_CREDS_KEY set to a different key — the env var wins over the file, so an intact .env.key on disk will not save you.\n3. Key file truncated/reformatted — must be exactly 64 hex chars, else the loader throws \"<path> must contain a 32-byte hex key (64 chars)\".\n\nRecovery: restore the original key (file or env var) from backup BEFORE restarting again, then restart. The blobs are intact; nothing else is needed. If the key is truly lost the secrets are unrecoverable by design — profiles must be re-entered by their owners/org admins in the app, switch credentials re-entered on the server via encrypt-creds.js. Never collect credentials over a support channel.",
+    "symptoms": [
+      "[connection_profiles] decrypt failed for profile",
+      "[ssh-creds] decrypt failed — ignoring env creds",
+      "must contain a 32-byte hex key (64 chars)",
+      "All connections stopped working after redeploy",
+      "Connections still listed but no data pulled"
+    ],
+    "rootCause": "Both stores decrypt with a key resolved from SSH_CREDS_KEY or server/.env.key; a missing/replaced key makes decrypt throw, and the code logs and degrades to null/empty credentials rather than failing loudly. connection_profiles.loadKey auto-generates a fresh key when the file is absent, permanently orphaning existing blobs.",
+    "evidence": [
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "220-225",
+        "snippet": "  try {\n    secret = JSON.parse(decrypt(row.secret_blob, getKey()));\n  } catch (err) {\n    logger.warn(`[connection_profiles] decrypt failed for profile ${row.id}: ${err.message}`);\n    return null;\n  }"
+      },
+      {
+        "file": "server/lib/ssh-creds.js",
+        "lines": "86-92",
+        "snippet": "  try {\n    cached = JSON.parse(decrypt(blob, key));\n  } catch (err) {\n    console.error('[ssh-creds] decrypt failed — ignoring env creds:', err.message);\n    cached = {};\n  }"
+      },
+      {
+        "file": "server/lib/ssh-creds.js",
+        "lines": "25-34",
+        "snippet": "function loadKey() {\n  const envKey = process.env.SSH_CREDS_KEY && process.env.SSH_CREDS_KEY.trim();\n  if (envKey) return Buffer.from(envKey, 'hex');\n  if (!fs.existsSync(KEY_PATH)) return null;\n  const hex = fs.readFileSync(KEY_PATH, 'utf8').trim();\n  if (!/^[0-9a-fA-F]{64}$/.test(hex)) {\n    throw new Error(`${KEY_PATH} must contain a 32-byte hex key (64 chars)`);\n  }"
+      },
+      {
+        "file": "server/encrypt-creds.js",
+        "lines": "102-111",
+        "snippet": "async function cmdInit() {\n  if (keyExists()) {\n    console.log(`Key already exists at ${KEY_PATH} — leaving it untouched.`);\n    return;\n  }\n  const hex = crypto.randomBytes(32).toString('hex');\n  writeKey(hex);\n  console.log(`Generated new 32-byte key at ${KEY_PATH} (mode 0600).`);\n  console.log('Back this file up separately from .env; losing it means re-entering every credential.');\n}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "connections-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "INTERNAL: is \"only admins can manage connections\" a real security boundary?",
+    "answer": "Partly — and the distinction matters on a security questionnaire.\n\n• Server-enforced: organization-wide credentials. `/api/org-connections/*` is mounted with `requireAuth, requireOrgAdmin` (server/connection_profiles_routes.js:123). requireOrgAdmin 403s anything outside org_admin/owner, 400s if the user has no organization_id, and pins req._orgId; every org query is scoped `WHERE organization_id = ?`.\n\n• NOT server-enforced: the \"admins only\" part of personal profiles. `/api/connections/*` is mounted with `requireAuth` alone (line 37) — no role check. Any authenticated user, member included, can create/list/update/activate/delete their own profiles via the API. The admin gate is purely client-side: AdminRoute on the /connections route (App.jsx:77-90, 269) plus isAdmin conditionals on the sidebar link (DesktopShell.jsx:197,210) and the Profile page row. UI affordance, not authorization.\n\n• Cross-tenant exposure is real-enforced either way: every personal query filters `WHERE user_id = ?`, so no user can read another's profile or secret.\n\n• No fallback: resolveCredsForType / resolveCredsForOrg return null when there is no matching active profile (connection_profiles.js:347-360, 467-471) — no env or file fallback, so a missing profile degrades to \"no data\", never to someone else's credentials.\n\nShort version: cross-tenant credential isolation is server-enforced; \"only admins can manage connections\" is a screen, not a control. A technician can't reach the UI, but nothing in the API stops them storing their own profile.",
+    "symptoms": [
+      "Security review question about connection permissions",
+      "Can a member create a connection profile",
+      "Is /api/connections admin-only",
+      "Cross-tenant access to credentials"
+    ],
+    "rootCause": "router.use('/api/connections', requireAuth) has no role check and all queries filter by user_id, while /api/org-connections adds requireOrgAdmin; the admin gate on the /connections page comes from AdminRoute and DesktopShell's isAdmin conditional.",
+    "evidence": [
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "37-46",
+        "snippet": "router.use('/api/connections', requireAuth);\n\n// GET /api/connections — list\nrouter.get('/api/connections', safeAsync(async (req, res) => {\n  res.json({\n    ok: true,\n    profiles: profiles.list(req.user.id),\n    supported_types: profiles.SUPPORTED_TYPES,\n  });\n}));"
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "77-90",
+        "snippet": "function AdminRoute({ children }) {\n  const { isAuthed, user } = useAuth();\n...\n  if (user?.role !== 'org_admin' && user?.role !== 'owner') {\n    return <Navigate to=\"/\" replace />;\n  }\n  return children;\n}"
+      },
+      {
+        "file": "client/src/components/DesktopShell.jsx",
+        "lines": "197-210",
+        "snippet": "  const isAdmin = user?.role === 'org_admin' || user?.role === 'owner';\n...\n    ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false }] : []),"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "347-360",
+        "snippet": "/**\n * Resolve credentials for a given backend type from the user's active\n * connection profile. Returns null if there is no active profile or if\n * its type doesn't match. There is intentionally NO env/file fallback —\n * the connection profile is the sole source of truth.\n */\nfunction resolveCredsForType(userId, wantType) {\n  if (!userId) return null;\n  const active = getActiveWithSecret(userId);\n  if (active && active.type === wantType) {\n    return { source: 'profile', profileId: active.id, type: active.type, secret: active.secret };\n  }\n  return null;\n}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "connections-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

@@ -1,0 +1,332 @@
+[
+  {
+    "question": "How do I find a specific part in the Marketplace? My search isn't finding anything.",
+    "answer": "Marketplace search only looks at three fields — listing title, vendor and model — and only shows listings that are still active. If a part number returns nothing, search less, not more.\n\n1. Open Browse and type into \"Search by title, vendor or model…\". It waits ~a third of a second after you stop typing, so give it a beat.\n2. Narrow with the \"All categories\" dropdown (Switches, Optics / SFPs, and so on).\n3. Check the For sale / Wanted toggle. These are two separate lists — something missing from For sale will not turn up under Wanted, and vice versa.\n4. On \"Nothing matches those filters\", press \"Clear filters\" and try fewer words. Matching is on a plain fragment of text, so \"WS-C3850\" works, but a typo or a stray space will not.\n\nResults are 24 to a page; Next only lights up when a further page actually exists.\n\nStill nothing: scroll past the results to \"Can't find it here?\" and type the part number into that box — the eBay, Amazon, FS.com and Curvature buttons stay greyed out until you do, then each opens that search in a new tab. They are plain links out; RackTrack has no part in anything you buy there.",
+    "symptoms": [
+      "Search returns no results",
+      "Nothing matches those filters",
+      "No listings yet",
+      "No open requests",
+      "Can't find a part number",
+      "Next button greyed out"
+    ],
+    "rootCause": "GET /api/marketplace/listings hard-filters status='active' and matches q with LIKE %q% against title, vendor and model only; the client debounces the query 300ms, requests PAGE_SIZE+1 rows to decide hasMore, and renders distinct empty states for mine / filtered / want / none.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "323-344",
+        "snippet": "router.get('/api/marketplace/listings', (req, res) => {\n  const where = [`l.status = 'active'`];\n...\n  if (req.query.q) {\n    where.push(`(l.title LIKE @q OR l.vendor LIKE @q OR l.model LIKE @q)`);"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "54",
+        "snippet": "const PAGE_SIZE = 24;"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "738-782",
+        "snippet": "<input\n              className={`mkt-field ${styles.searchInput}`}\n              placeholder=\"Search by title, vendor or model…\"\n...\n            <option value=\"\">All categories</option>\n...\n              For sale\n...\n              Wanted"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "802-828",
+        "snippet": "<p className=\"mkt-empty__title\">\n              {tab === 'mine'\n                ? 'You haven’t listed anything yet'\n                : hasFilters\n                  ? 'Nothing matches those filters'\n                  : kind === 'want'\n                    ? 'No open requests'\n                    : 'No listings yet'}"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "504-508",
+        "snippet": "<p className=\"mkt-label\">Can’t find it here?</p>\n        <p className={styles.partnerText}>\n          Run the same part number across the partner marketplaces.\n        </p>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I put a piece of gear up for sale?",
+    "answer": "Tap \"List an item\" — top right of Marketplace Browse, My listings and the Marketplace dashboard. The form opens titled \"New listing\".\n\n1. Leave the toggle on \"For sale\" (switch to \"Wanted\" to ask for gear instead — the screen retitles to \"Post a request\").\n2. Item: Title is required (up to 140 characters). Vendor and Model are optional; fill them in first and RackTrack pre-fills the title for you, which you can edit. Category defaults to Switches.\n3. Condition & pricing: pick New (sealed), Refurbished, Used — working, or For parts / not working. Enter a Price, or leave it blank — the listing then shows \"Make an offer\" instead of a figure. Set Currency and Quantity if you have more than one.\n4. Optional: a Photo (JPG/PNG/WebP/HEIC, up to 8 MB), Location, and a Description of up to 2000 characters.\n5. Tap \"Publish listing\" (or \"Post request\").\n\nYou land on My listings with the new item at the top. It is live immediately — there is no approval queue and nobody reviews it before it appears.",
+    "symptoms": [
+      "How do I sell something",
+      "Where is the create listing form",
+      "How do I make an offer listing",
+      "How do I post a Wanted request",
+      "Does my listing need approval"
+    ],
+    "rootCause": "MarketplaceNewPage posts straight to POST /api/marketplace/listings, which inserts with status defaulting to 'active' — there is no review queue; on success the client replaces the route with /marketplace?tab=mine.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "215-221",
+        "snippet": "<MarketplaceShell\n      title={wanted ? 'Post a request' : 'New listing'}\n      subtitle={wanted\n        ? 'Tell sellers what you’re looking for'\n        : 'List surplus equipment for other RackTrack orgs'}"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "309-334",
+        "snippet": "<FormSection title=\"Condition & pricing\" hint=\"Leave the price blank to invite offers\">\n...\n              <label className=\"mkt-label\" htmlFor=\"mkt-new-price\">Price</label>\n              <input\n                id=\"mkt-new-price\"\n                type=\"number\"\n                className={`mkt-field ${styles.num}`}\n                placeholder=\"Make an offer\""
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "199-200",
+        "snippet": "if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);\n      navigate('/marketplace?tab=mine', { replace: true });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "83",
+        "snippet": "status        TEXT    NOT NULL DEFAULT 'active', -- 'active' | 'sold' | 'closed'"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "My listing won't publish — it says \"title is required\" / \"bad category\" / \"bad price\".",
+    "answer": "Those are validation checks, not a rejection. Nothing was saved, so fixing the named field and pressing Publish listing again will not create a duplicate.\n\n• \"Title is required.\" — the Title box is empty or only spaces. Type a real title (vendor plus model is enough).\n• \"bad price\" — the Price box holds something that isn't a plain non-negative number, usually a negative value. Enter 0 or more, or clear the box entirely to list it as \"Make an offer\".\n• \"bad category\" / \"bad condition\" / \"bad kind\" — the value sent isn't one RackTrack accepts. Reselect Category and Condition from the dropdowns and submit again; if it repeats, reload the page, as a stale tab can send an old value.\n• \"Please wait for the image to finish uploading.\" — your photo is still going up. Wait for the caption to change from \"Uploading…\" to \"Photo ready\", then press Publish again.\n\nNobody reviews listings before they appear: one that passes these checks goes live the moment you publish it.",
+    "symptoms": [
+      "Title is required.",
+      "bad price",
+      "bad category",
+      "bad condition",
+      "bad kind",
+      "Please wait for the image to finish uploading.",
+      "Listing rejected",
+      "Publish button does nothing"
+    ],
+    "rootCause": "POST /api/marketplace/listings validates kind/category/condition against fixed sets and requires a non-empty trimmed title and a finite non-negative price, returning 400 with a terse machine string that MarketplaceNewPage renders verbatim in its error banner.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "402-419",
+        "snippet": "if (!KINDS.has(kind))           return res.status(400).json({ ok: false, error: 'bad kind' });\n  if (!CATEGORIES.includes(category))\n    return res.status(400).json({ ok: false, error: 'bad category' });\n  if (!CONDITIONS.has(condition)) return res.status(400).json({ ok: false, error: 'bad condition' });\n  if (!title)                     return res.status(400).json({ ok: false, error: 'title is required' });\n...\n      return res.status(400).json({ ok: false, error: 'bad price' });"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "173-180",
+        "snippet": "const onSubmit = async (e) => {\n    e.preventDefault();\n    if (submitting) return;\n    if (imageUploading) { setError('Please wait for the image to finish uploading.'); return; }\n    setError(null);\n    const t = title.trim();\n    if (!t) { setError('Title is required.'); return; }"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "470-472",
+        "snippet": "{error && (\n          <div className=\"mkt-banner mkt-banner--error\" role=\"alert\">{error}</div>\n        )}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "The photo on my listing won't upload — \"Only image files are accepted\" or \"Image must be 8 MB or smaller\".",
+    "answer": "Listing photos must be a real image file (JPG, PNG, WebP or HEIC) and 8 MB or smaller — the Photo box on the New listing screen says so.\n\n1. \"Image must be 8 MB or smaller.\" — re-shoot at lower resolution, or use your phone's resize/share-as-smaller option, then pick the file again.\n2. \"Only image files are accepted (JPG, PNG, WebP, HEIC)\" / \"Only jpg / png / webp / heic images are accepted\" — wrong file type. Camera photos and screenshots are fine; PDFs and GIFs are not. A picture saved without a file extension is also rejected — rename it to end in .jpg or .png and pick it again.\n3. \"Upload failed\" — tap Replace and try again. The photo uploads separately from the listing, so nothing you have typed is lost.\n4. The photo is optional — tap Remove to drop it.\n\nWait for \"Uploading…\" to finish before you press Publish; the form will otherwise ask you to wait.",
+    "symptoms": [
+      "Only image files are accepted (JPG, PNG, WebP, HEIC).",
+      "Image must be 8 MB or smaller.",
+      "Only jpg / png / webp / heic images are accepted",
+      "Upload failed",
+      "Photo stuck on Uploading…",
+      "no file"
+    ],
+    "rootCause": "The marketplace multer instance limits fileSize to 8 MB and its fileFilter rejects anything whose original filename does not end in jpg/jpeg/png/webp/heic/heif; MarketplaceNewPage repeats both checks client-side before it even calls POST /api/marketplace/uploads.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "238-256",
+        "snippet": "function _imgExt(originalName) {\n  const m = String(originalName || '').match(/\\.(jpe?g|png|webp|heic|heif)$/i);\n...\nconst imgUpload = multer({\n  storage: imgStorage,\n  limits: { fileSize: 8 * 1024 * 1024 },\n  fileFilter: (req, file, cb) => {\n    const ok = _imgExt(file.originalname) !== '';\n    cb(ok ? null : new Error('Only jpg / png / webp / heic images are accepted'), ok);\n  },\n});"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "133-140",
+        "snippet": "if (!/^image\\//i.test(file.type) && !/\\.(heic|heif)$/i.test(file.name)) {\n      setImageError('Only image files are accepted (JPG, PNG, WebP, HEIC).');\n      return;\n    }\n    if (file.size > 8 * 1024 * 1024) {\n      setImageError('Image must be 8 MB or smaller.');\n      return;\n    }"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "210-212",
+        "snippet": "const photoStatus = imageUploading ? 'Uploading…'\n    : imageError    ? 'Upload failed'\n    :                 'Photo ready';"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "401-402",
+        "snippet": "<span className={styles.photoMain}>Upload a photo</span>\n              <span className=\"mkt-hint\">JPG · PNG · WebP · HEIC · up to 8 MB</span>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I pressed Edit on one of my listings and got a blank New listing form — where did my listing go?",
+    "answer": "Your listing is safe — nothing was deleted. Edit is broken: it opens the New listing form blank instead of loading your item, and publishing from it creates a second, duplicate listing rather than editing the original.\n\nUntil it's fixed:\n\n1. Go back to My listings — your original is still there with its Edit / Mark sold / Delete buttons.\n2. Status changes still work: \"Mark sold\" takes it off Browse, \"Relist\" puts a sold or closed one back.\n3. To change price, title or description: tap Delete, confirm \"Yes, delete\", then re-post with \"List an item\".\n4. If you already published from the blank form, delete whichever of the two you don't want.\n\nNothing on your side causes this — report it to your platform owner so it gets tracked.",
+    "symptoms": [
+      "Edit opens an empty form",
+      "Editing a listing created a duplicate",
+      "Can't change the price of a listing",
+      "Edit button does nothing useful"
+    ],
+    "rootCause": "MyListingRow's onEdit navigates to /marketplace/new?editId=<id>, but MarketplaceNewPage only ever reads the kind, category, vendor, model and rackId query params — editId is never read, so the form initialises blank and submits as a fresh POST rather than a PATCH.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "862",
+        "snippet": "onEdit={(listing) => navigate(`/marketplace/new?editId=${listing.id}`)}"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "69-86",
+        "snippet": "const initialKind = params.get('kind') === 'want' ? 'want' : 'sell';\n  const [kind, setKind]             = useState(initialKind);\n  const [category, setCategory]     = useState(params.get('category') || 'switch');\n  const [title, setTitle]           = useState('');\n  const [vendor, setVendor]         = useState(params.get('vendor') || '');\n  const [model, setModel]           = useState(params.get('model')  || '');\n...\n  const [sourceRackId]              = useState(params.get('rackId') || '');"
+      },
+      {
+        "file": "client/src/pages/MarketplaceNewPage.jsx",
+        "lines": "193-196",
+        "snippet": "const res  = await authFetch(apiUrl('/api/marketplace/listings'), {\n        method: 'POST',"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "225-248",
+        "snippet": "<button className=\"mkt-btn mkt-btn--sm\" onClick={stop(() => onEdit(listing))}>\n              Edit\n            </button>\n            {listing.status === 'active' ? (\n...\n                Mark sold\n...\n                Relist"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I actually buy something? What happens after I tap \"Buy now\"?",
+    "answer": "\"Buy now\" opens the Checkout screen — \"Review the order and confirm shipping\". Nothing is charged until you press the button at the bottom.\n\n1. Tap \"Buy now\" on a listing card, or the \"Buy now — <price>\" button inside the listing. It only shows on priced listings that aren't your own.\n2. If the seller has more than one, set Quantity — the label says how many are available and you can't go above it.\n3. Fill in the Shipping address. Full name, Street address and City are required; State / region, ZIP / postcode and Country are optional (Country is pre-filled with US).\n4. Check the Order summary (right-hand column on desktop, below the form on a phone): Unit price, Quantity, Subtotal, Platform fee (3%), Total.\n5. Press the button at the bottom. It reads \"Pay with Stripe — <total>\" if your RackTrack server has card payments configured, or \"Complete purchase — <total>\" if it doesn't. With Stripe you're handed off to Stripe's payment page; without it the order is recorded straight away.\n6. Either way you land on the order screen, where you can message the seller and follow the status.\n\nLeave a required field blank and the page tells you which one — \"Name is required.\", \"Street address is required.\", \"City is required.\" — and nothing is submitted.",
+    "symptoms": [
+      "How do I buy",
+      "What does Buy now do",
+      "Name is required.",
+      "Street address is required.",
+      "City is required.",
+      "Difference between Pay with Stripe and Complete purchase"
+    ],
+    "rootCause": "MarketplaceCheckoutPage validates name/street/city client-side, POSTs to /api/marketplace/orders, and either follows data.stripeSessionUrl or navigates to /marketplace/orders/<id>; the button label is driven by GET /api/marketplace/stripe/status.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "88-118",
+        "snippet": "if (!name.trim()) { setError('Name is required.'); return; }\n    if (!street.trim()) { setError('Street address is required.'); return; }\n    if (!city.trim()) { setError('City is required.'); return; }\n...\n      if (data.stripeSessionUrl) {\n        window.location.href = data.stripeSessionUrl;\n        return;\n      }\n      navigate(`/marketplace/orders/${data.order.id}`, { replace: true });"
+      },
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "258-266",
+        "snippet": "<button type=\"submit\"\n                    className=\"mkt-btn mkt-btn--primary mkt-btn--tall mkt-btn--block\"\n                    disabled={submitting}>\n              {submitting\n                ? 'Processing…'\n                : stripeEnabled\n                  ? `Pay with Stripe — ${formatCurrency(total, currency)}`\n                  : `Complete purchase — ${formatCurrency(total, currency)}`}"
+      },
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "158-171",
+        "snippet": "{listing.quantity > 1 && (\n              <div className={`mkt-fieldGroup ${styles.qty}`}>\n                <label className=\"mkt-label\" htmlFor=\"mkt-checkout-qty\">\n                  Quantity — {listing.quantity} available"
+      },
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "231-243",
+        "snippet": "<div className=\"mkt-row\">\n                <span className=\"mkt-row__key\">Unit price</span>\n...\n                <span className=\"mkt-row__key\">Quantity</span>\n...\n                <span className=\"mkt-row__key\">Subtotal</span>"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "There's no \"Buy now\" button on a listing, or checkout says \"listing is not active\" / \"listing has no price — contact seller\".",
+    "answer": "Buy now only appears when the listing is active, is a For sale listing (not a Wanted request), and the seller set a price.\n\n• No price — you'll see \"Make an offer\" and \"No set price on this listing — contact @<seller> to make an offer.\" There's no checkout; message the seller. Forcing checkout returns \"listing has no price — contact seller\".\n• \"listing is not active\" — it sold, was marked sold, or was withdrawn while your page was open. Go back to Browse and search again; Browse only shows active listings.\n• \"listing not found\" — the seller deleted it. Nothing to recover.\n• Grey \"sold\"/\"closed\" badge on the card — same thing, no longer purchasable.\n• Wanted request — those are people asking for gear; you can't buy one. Post your own For sale listing instead.\n• \"cannot buy your own listing\" — Buy now still shows on your own listings, but checkout blocks it.\n\nIf you were mid-checkout, nothing was charged and no order was created.",
+    "symptoms": [
+      "listing is not active",
+      "listing has no price — contact seller",
+      "listing not found",
+      "No Buy now button",
+      "Make an offer",
+      "No set price on this listing"
+    ],
+    "rootCause": "ListingCard/ListingDetailModal gate the Buy control on status==='active' && kind==='sell' && priceCents != null; POST /api/marketplace/orders re-checks the listing exists, is active and has a price, returning 404/400 with those exact strings.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "104-107",
+        "snippet": "function ListingCard({ listing, onOpen, onBuy }) {\n  const canBuy = listing.status === 'active'\n    && listing.kind === 'sell'\n    && listing.priceCents != null;"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "622-627",
+        "snippet": "const listing = db.prepare(`SELECT * FROM marketplace_listings WHERE id = ?`).get(listingId);\n  if (!listing) return res.status(404).json({ ok: false, error: 'listing not found' });\n  if (listing.status !== 'active') return res.status(400).json({ ok: false, error: 'listing is not active' });\n...\n  if (listing.price_cents == null) return res.status(400).json({ ok: false, error: 'listing has no price — contact seller' });"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "402-407",
+        "snippet": "{listing.priceCents == null && (\n                <p className={`mkt-banner ${styles.offerNote}`}>\n                  No set price on this listing — contact @{listing.seller?.username} to\n                  make an offer.\n                </p>\n              )}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "What do the order statuses mean, and how do I mark an order shipped or cancel it?",
+    "answer": "Open Orders and pick Buying or Selling. Each order shows one status pill:\n\n• Pending — order placed, payment not confirmed yet.\n• Paid — payment confirmed; the seller can ship.\n• Shipped — sent, usually with carrier and tracking.\n• Completed — closed out for both sides.\n• Cancelled — called off (red pill).\n\nActions appear only when they're allowed:\n\n• Mark shipped — seller only, and only while the order is Paid. Fill in Carrier (\"UPS, USPS, FedEx…\") and Tracking number under \"Ship this order\", then press Mark shipped. The tracking number then shows on the order for the buyer.\n• Mark completed — either side, only while Shipped. Confirm with \"Yes, complete\"; it closes the order for both sides.\n• Cancel order — either side, only while Pending or Paid. Confirm with \"Yes, cancel\"; it can't be undone.\n\nErrors: \"cannot cancel at this stage\" means the order already shipped or closed — message the other party instead. \"invalid status transition\" means the step isn't allowed from the current status (e.g. a buyer trying to mark shipped). \"not your order\" means you're neither the buyer nor the seller on it.",
+    "symptoms": [
+      "cannot cancel at this stage",
+      "invalid status transition",
+      "not your order",
+      "Where do I add tracking",
+      "What does Pending mean on an order",
+      "Mark shipped button missing"
+    ],
+    "rootCause": "PATCH /api/marketplace/orders/:id allows cancel only from pending|paid, 'shipped' only when isSeller, 'completed' from either party, and rejects anything else with 'invalid status transition'; the Ship block is rendered only when isSeller && order.status === 'paid'.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "776-793",
+        "snippet": "if (s === 'cancelled') {\n      if (!['pending', 'paid'].includes(existing.status))\n        return res.status(400).json({ ok: false, error: 'cannot cancel at this stage' });\n      updates.status = 'cancelled';\n      updates.cancelled_by = req.user.id;\n    } else if (s === 'shipped' && isSeller) {\n      updates.status = 'shipped';\n    } else if (s === 'completed' && (isBuyer || isSeller)) {\n      updates.status = 'completed';\n    } else {\n      return res.status(400).json({ ok: false, error: 'invalid status transition' });\n    }"
+      },
+      {
+        "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+        "lines": "26-29",
+        "snippet": "const STATUS_LABEL = {\n  pending: 'Pending', paid: 'Paid', shipped: 'Shipped',\n  completed: 'Completed', cancelled: 'Cancelled',\n};"
+      },
+      {
+        "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+        "lines": "386-420",
+        "snippet": "{isSeller && order.status === 'paid' && (\n              <div className={styles.ship}>\n                <p className=\"mkt-label\">Ship this order</p>\n...\n                      placeholder=\"UPS, USPS, FedEx…\"\n...\n                  Mark shipped"
+      },
+      {
+        "file": "client/src/pages/MarketplaceOrdersPage.jsx",
+        "lines": "426-466",
+        "snippet": "{confirming === 'complete'\n                    ? 'Mark this order completed? This closes it for both sides.'\n                    : 'Cancel this order? This cannot be undone.'}\n...\n                      Mark completed\n...\n                      Cancel order"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

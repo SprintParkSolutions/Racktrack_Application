@@ -1,0 +1,247 @@
+[
+  {
+    "question": "Can I upload a photo of myself as my profile picture?",
+    "answer": "No — RackTrack has no photo upload. Your picture is always your first initial on a coloured gradient circle. On Profile, tap your avatar (the blue pencil badge) and pick one of the 8 gradients in the \"Choose your picture\" sheet; only the colour changes, never the letter.",
+    "symptoms": [
+      "how do I upload a photo",
+      "where is the camera/gallery button for my avatar",
+      "I only see coloured circles, no upload",
+      "can I use my own picture"
+    ],
+    "rootCause": "Avatars are bundled preset gradients, not images: AVATARS is a fixed 8-entry list of two-stop gradients and Avatar renders the user's initial over the gradient. The only write path is POST /api/auth/avatar, which stores an index, not a file.",
+    "evidence": [
+      {
+        "file": "client/src/utils/avatars.js",
+        "lines": "1-17",
+        "snippet": "// Preset profile avatars — professional gradient \"monograms\" (the user's\n// initial on a tasteful gradient). Bundled, so they work offline with no\n// upload.\nexport const AVATARS = [\n  { from: '#6366f1', to: '#8b5cf6' },  // 0 indigo → violet\n  ...\n  { from: '#d946ef', to: '#7c3aed' },  // 7 fuchsia → purple\n];"
+      },
+      {
+        "file": "client/src/components/Avatar.jsx",
+        "lines": "17-27",
+        "snippet": "background: `linear-gradient(135deg, ${a.from}, ${a.to})`,\n...\n        color: '#fff', fontWeight: 700, fontSize: Math.round(size * 0.42), lineHeight: 1,\n...\n      {ch}"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "293-307",
+        "snippet": "<h3 ...>Choose your picture</h3>\n            <p ...>Pick a look — tap to save.</p>\n            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, ... }}>\n              {AVATARS.map((_, idx) => (\n                <Avatar key={idx} index={idx} ..."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "profile-appearance",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I never picked a picture — where did my letter and colour come from?",
+    "answer": "They're assigned automatically, not picked by anyone. The letter is the first character of your username (or your email if you have no username), upper-cased; the colour gradient is derived from that same first character, so it's the same every time you sign in. To change it, tap your avatar on the Profile tab and pick a gradient from the \"Choose your picture\" sheet — it saves as soon as you tap.",
+    "symptoms": [
+      "why is my avatar this colour",
+      "who chose my initial",
+      "my avatar changed to a letter",
+      "what does the coloured circle mean"
+    ],
+    "rootCause": "resolveAvatarIndex falls back to autoAvatarIndex(username||email), a deterministic charCodeAt(0) % AVATARS.length pick, and avatarInitial upper-cases the first character of username||email.",
+    "evidence": [
+      {
+        "file": "client/src/utils/avatars.js",
+        "lines": "19-36",
+        "snippet": "export function autoAvatarIndex(seed = '') {\n  const s = String(seed || '?').trim();\n  const code = s.charCodeAt(0) || 63;   // '?' fallback\n  return ((code % AVATARS.length) + AVATARS.length) % AVATARS.length;\n}\n\nexport function resolveAvatarIndex(user) {\n  if (user && Number.isInteger(user.avatar)) return user.avatar;\n  return autoAvatarIndex(user?.username || user?.email || '?');\n}\n\nexport function avatarInitial(user, fallback = '?') {\n  const s = user?.username || user?.email || fallback;\n  return String(s).trim().charAt(0).toUpperCase() || fallback;\n}"
+      },
+      {
+        "file": "client/src/components/Avatar.jsx",
+        "lines": "5-8",
+        "snippet": "const idx = Number.isInteger(index) ? index : resolveAvatarIndex(user);\n  const a = AVATARS[idx] || AVATARS[0];\n  const ch = initial != null ? initial : avatarInitial(user);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "profile-appearance",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "A teammate has exactly the same avatar colour as me — is something wrong?",
+    "answer": "No. Until you pick one, your gradient is derived from the first character of your username (or email) modulo the 8 available gradients, so collisions are normal and nothing is broken. To stand apart: on Profile, tap your avatar (blue pencil badge), then tap a different gradient in \"Choose your picture\" — it saves immediately and the sheet closes. There are still only 8, so a colleague could pick the same one.",
+    "symptoms": [
+      "two users look identical in the app",
+      "same colour avatar as my colleague",
+      "duplicate avatars",
+      "I can't tell who is who"
+    ],
+    "rootCause": "autoAvatarIndex maps the first character's char code modulo the 8-entry AVATARS list, so different initials routinely map to the same gradient, and no per-user uniqueness is enforced.",
+    "evidence": [
+      {
+        "file": "client/src/utils/avatars.js",
+        "lines": "8-25",
+        "snippet": "export const AVATARS = [ ... 8 entries ... ];\n\nexport function autoAvatarIndex(seed = '') {\n  const s = String(seed || '?').trim();\n  const code = s.charCodeAt(0) || 63;\n  return ((code % AVATARS.length) + AVATARS.length) % AVATARS.length;\n}"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "296-306",
+        "snippet": "{AVATARS.map((_, idx) => (\n                <Avatar\n                  key={idx}\n                  index={idx}\n                  ...\n                  ring={idx === currentAvatar}\n                  title={idx === currentAvatar ? 'Current' : 'Select'}\n                  onClick={() => !savingAvatar && chooseAvatar(idx)}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "profile-appearance",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I know which picture I'm currently using in the picker?",
+    "answer": "Your current picture is the one with a white ring around it. Tap any other circle to switch; the sheet closes itself once the new picture is saved (if saving fails it stays open so you can retry). On desktop, hovering also shows a tooltip reading \"Current\" vs \"Select\" — that tooltip does not appear on a phone, so go by the ring.",
+    "symptoms": [
+      "which avatar is selected",
+      "no tick mark in the picker",
+      "can't tell which one is mine",
+      "Choose your picture"
+    ],
+    "rootCause": "ProfilePage passes ring={idx === currentAvatar} and title 'Current'/'Select' to each preview Avatar; Avatar renders `ring` as a white box-shadow halo.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "300-305",
+        "snippet": "ring={idx === currentAvatar}\n                  title={idx === currentAvatar ? 'Current' : 'Select'}\n                  onClick={() => !savingAvatar && chooseAvatar(idx)}"
+      },
+      {
+        "file": "client/src/components/Avatar.jsx",
+        "lines": "22-22",
+        "snippet": "boxShadow: ring ? '0 0 0 3px rgba(255,255,255,0.9), 0 4px 14px rgba(0,0,0,0.18)' : '0 4px 14px rgba(0,0,0,0.14)',"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "profile-appearance",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Is my picture choice remembered, and does it show on my other phone?",
+    "answer": "Yes to both. Your pick is saved against your account on the server, so it follows you to any device you sign in on and survives signing out or reinstalling — you never have to re-pick it. (The app also keeps a local copy for speed, but the server's copy is the one that counts.)",
+    "symptoms": [
+      "do I have to pick my avatar again",
+      "avatar reset after reinstall",
+      "different avatar on my tablet",
+      "is my picture saved"
+    ],
+    "rootCause": "The picker POSTs to /api/auth/avatar, which writes the index to the users.avatar column and returns the refreshed user; the client then calls refreshUser(). Nothing is kept in device storage.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "45-56",
+        "snippet": "const chooseAvatar = async (idx) => {\n    setSavingAvatar(true);\n    ...\n      const r = await authFetch(apiUrl('/api/auth/avatar'), {\n        method: 'POST',\n        ...\n        body: JSON.stringify({ avatar: idx }),\n      });\n      if (r.ok) { await refreshUser?.(); setPickerOpen(false); }"
+      },
+      {
+        "file": "server/auth.js",
+        "lines": "1034-1043",
+        "snippet": "// Set the profile avatar — an index into the client's preset-avatar set.\n  app.post('/api/auth/avatar', requireAuth, (req, res) => {\n    ...\n    db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(idx, req.user.id);\n    const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);\n    res.json({ ok: true, user: publicUser(fresh) });"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "profile-appearance",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I tapped a picture in \"Choose your picture\" and nothing happened — the sheet stayed open.",
+    "answer": "The save didn't reach the server, and the sheet stays open on purpose so you can retry — it never shows an error. While a save is in flight the pictures dim and the bottom button reads \"Saving…\"; on success the sheet closes by itself. Check your signal and tap the picture again. If it still won't close, tap Close and retry once you're back online.",
+    "symptoms": [
+      "avatar won't save",
+      "sheet stays open after tapping",
+      "Saving… stuck",
+      "picture didn't change"
+    ],
+    "rootCause": "chooseAvatar only closes the picker when the POST returns r.ok; a network throw is swallowed by the catch, which intentionally leaves the sheet open with no error message shown.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "52-56",
+        "snippet": "if (r.ok) { await refreshUser?.(); setPickerOpen(false); }\n    } catch (_) { /* keep the sheet open so they can retry */ }\n    finally { setSavingAvatar(false); }"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "304-314",
+        "snippet": "onClick={() => !savingAvatar && chooseAvatar(idx)}\n                  style={savingAvatar ? { opacity: .5, pointerEvents: 'none' } : undefined}\n...\n              {savingAvatar ? 'Saving…' : 'Close'}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "likely",
+    "domain": "profile-appearance",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I switch RackTrack to dark mode / where is the appearance setting?",
+    "answer": "There is no dark mode. RackTrack ships a single light theme (white surface, black accent) — no appearance setting anywhere, and the old theme toggle now renders nothing. The app also forces light rendering, so it stays white even when your phone is in system dark mode.",
+    "symptoms": [
+      "where is dark mode",
+      "night mode for the cold aisle",
+      "theme toggle does nothing / is missing",
+      "app stays white in system dark mode"
+    ],
+    "rootCause": "ThemeToggle returns null and ThemeContext hard-codes THEME='light', setting data-theme=\"light\" on <html> at mount; setTheme and toggleTheme are no-ops, so no user preference exists.",
+    "evidence": [
+      {
+        "file": "client/src/components/ThemeToggle.jsx",
+        "lines": "1-6",
+        "snippet": "/* Theme toggle is intentionally a no-op render — the app is single-theme\n   (white surface, black accent). Kept as an exported component so existing\n   call sites continue to compile. */\nexport default function ThemeToggle() {\n  return null;\n}"
+      },
+      {
+        "file": "client/src/ThemeContext.jsx",
+        "lines": "3-23",
+        "snippet": "/* Single-theme app — white Material 3 surface with black accent.\n   ... `theme` is always 'light' and toggleTheme is a no-op. */\nconst THEME = 'light';\n...\n  useEffect(() => {\n    document.documentElement.setAttribute('data-theme', THEME);\n  }, []);\n...\n    <ThemeContext.Provider value={{ theme: THEME, setTheme: () => {}, toggleTheme: () => {} }}>"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "profile-appearance",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "My avatar shows a question mark instead of a letter.",
+    "answer": "The avatar shows the first letter of your username, or your email if there's no username. A \"?\" means the app has neither — almost always because no one is signed in (the name underneath will read \"Guest\"). Sign in again. If you are signed in and it still shows \"?\", your account has no username or email set; ask your org admin to fill one in.",
+    "symptoms": [
+      "avatar shows ?",
+      "question mark profile picture",
+      "name shows Guest",
+      "no initial on my avatar"
+    ],
+    "rootCause": "avatarInitial falls back to '?' when user.username and user.email are both absent; ProfilePage renders 'Guest' as the name under the same condition.",
+    "evidence": [
+      {
+        "file": "client/src/utils/avatars.js",
+        "lines": "33-36",
+        "snippet": "export function avatarInitial(user, fallback = '?') {\n  const s = user?.username || user?.email || fallback;\n  return String(s).trim().charAt(0).toUpperCase() || fallback;\n}"
+      },
+      {
+        "file": "client/src/pages/ProfilePage.jsx",
+        "lines": "130-131",
+        "snippet": "<h2 className={styles.name}>{user?.username || 'Guest'}</h2>\n          {user?.email && <p className={styles.email}>{user.email}</p>}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "likely",
+    "domain": "profile-appearance",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  }
+]

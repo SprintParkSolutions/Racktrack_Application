@@ -1,0 +1,306 @@
+[
+  {
+    "question": "Internal: where does the audit trail live and what is in one row?",
+    "answer": "Table `audit_log` in server/data/auth.db (SQLite, WAL), created on first require of server/audit.js. One row per sensitive action: id, ts, user_id, username, tenant_id, action, target_type/target_id, status ('ok' or 'fail'), ip, user_agent, payload (JSON, capped at 8 KiB) and error. Username and tenant_id are snapshotted at write time rather than joined from users, so deleting a user or moving them to another tenant leaves the existing trail intact. Note tenant_id is added by auth.js's migration, not the base CREATE TABLE, and audit.query() can filter on it but does not return it in the row.",
+    "symptoms": [
+      "Need to know where audit events are stored before pulling a backup",
+      "Asked which fields an audit event actually captures",
+      "Wondering whether a deleted user's history is still readable"
+    ],
+    "rootCause": "audit.js opens server/data/auth.db and creates the audit_log table on first require, snapshotting username and tenant_id into each row rather than joining to users at read time.",
+    "evidence": [
+      {
+        "file": "server/audit.js",
+        "lines": "29-34",
+        "snippet": "const dbPath = path.join(dataDir, 'auth.db');\n\nconst db = new Database(dbPath);\ndb.pragma('journal_mode = WAL');"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "37-50",
+        "snippet": "CREATE TABLE IF NOT EXISTS audit_log (\n    id           INTEGER PRIMARY KEY AUTOINCREMENT,\n    ts           TEXT    NOT NULL DEFAULT (datetime('now')),\n    user_id      INTEGER,\n    username     TEXT,\n    action       TEXT    NOT NULL,\n    target_type  TEXT,\n    target_id    TEXT,\n    status       TEXT    NOT NULL CHECK (status IN ('ok','fail')),\n    ip           TEXT,\n    user_agent   TEXT,\n    payload      TEXT,\n    error        TEXT\n  );"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "19-20",
+        "snippet": " *   - We snapshot username at write time so deleting a user later does not\n *     erase their trail."
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "156-158",
+        "snippet": "// Tenant snapshot at write time so the audit row stays correct even\n  // if the user later moves tenants (rare but possible via admin tools).\n  const tenantId = u?.tenant_id ?? u?.tenant?.id ?? null;"
+      },
+      {
+        "file": "server/auth.js",
+        "lines": "137-140",
+        "snippet": "// audit_log.tenant_id — every audit row carries the actor's tenant"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "server-internals",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Internal: how do I pull one user's or one action's audit trail while investigating an incident?",
+    "answer": "GET /api/audit (auth required), newest-first. Filters: action, targetType, targetId, status, since, until, limit, offset — since/until take ISO or 'YYYY-MM-DD HH:MM:SS'; limit is clamped to 1-1000 (default 100). action supports a wildcard suffix: action=scan.* matches every scan.* event. There is no username filter — scope decides whose events you see. Default is scope=self. scope=tenant and scope=all are gated on the caller's username appearing in the server's AUDIT_ADMINS env allow-list; a non-admin is silently downgraded (all→tenant→self) with no 403, so check the \"scope\" field the response echoes back alongside ok/count/events to see what you actually got. Page with offset.",
+    "symptoms": [
+      "Investigating who performed an action and when",
+      "scope=all returns only my own events and no error is shown",
+      "Need to page through more than 100 audit events"
+    ],
+    "rootCause": "The /api/audit route requires auth and gates cross-user visibility on an AUDIT_ADMINS username allow-list, downgrading scope=all to tenant and tenant to self rather than returning 403; audit.query clamps limit and supports an 'action.*' prefix match.",
+    "evidence": [
+      {
+        "file": "server/app.js",
+        "lines": "1803-1813",
+        "snippet": "app.get('/api/audit', auth.requireAuth, (req, res) => {\n  const adminUsers = String(process.env.AUDIT_ADMINS || '')\n    .split(',').map(s => s.trim()).filter(Boolean);\n  const isAdmin = adminUsers.includes(req.user.username);\n  let scope = req.query.scope || 'self';\n  if (scope === 'all' && !isAdmin) scope = 'tenant';\n  if (scope === 'tenant' && !isAdmin) scope = 'self';"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "1797-1797",
+        "snippet": "// GET /api/audit?action=&targetType=&targetId=&status=&since=&until=&limit=&offset="
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "231-239",
+        "snippet": "if (action) {\n    // Allow wildcard suffix like 'scan.*'\n    if (action.endsWith('.*')) {\n      where.push('action LIKE @actionPrefix');\n      params.actionPrefix = action.slice(0, -1) + '%';"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "250-255",
+        "snippet": "ORDER BY id DESC\n    LIMIT @limit OFFSET @offset\n  `;\n  params.limit  = Math.min(Math.max(1, Number(limit) || 100), 1000);\n  params.offset = Math.max(0, Number(offset) || 0);"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "215-216",
+        "snippet": "sinceTs  = undefined,  // ISO string or SQLite-friendly 'YYYY-MM-DD HH:MM:SS'"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "server-internals",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Internal: an action definitely happened but there is no audit_log row for it.",
+    "answer": "Missing audit rows are normal-path, not corruption: audit.log() never throws. Two causes, both visible in the server log. (1) The event was rejected before the INSERT — no action, or status not exactly 'ok'/'fail' — logged as kind:\"audit\" with drop:true (\"[audit] dropped event ...\"). (2) The SQLite INSERT failed — logged as kind:\"audit\", subkind:\"persist_failed\", message \"audit DB write failed\". Any event that passes validation is also mirrored to the structured log stream as kind:\"audit\" (audit.<action> counter included), so the trail is usually still queryable in logs even when the table has no row. Exception: if the observability module isn't loaded (one-off scripts), there is no mirror and drops/failures go to console only.",
+    "symptoms": [
+      "Expected audit event missing from /api/audit results",
+      "Log lines reading 'audit DB write failed' or '[audit] dropped event'",
+      "Audit gap with no user-visible error at the time"
+    ],
+    "rootCause": "audit.log() validates action and status and drops invalid events with a warn, wraps the INSERT in a try/catch that logs instead of throwing, and separately mirrors each event to the observability stream via emitAudit — all deliberately non-fatal to the request path.",
+    "evidence": [
+      {
+        "file": "server/audit.js",
+        "lines": "142-149",
+        "snippet": "if (!action || typeof action !== 'string') {\n    fallbackWarn('[audit] dropped event: missing action');\n    return;\n  }\n  if (status !== 'ok' && status !== 'fail') {\n    fallbackWarn(`[audit] dropped event \"${action}\": invalid status \"${status}\"`);\n    return;\n  }"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "175-184",
+        "snippet": "} catch (err) {\n    // Never let audit failures break the caller. Surface to log for ops.\n    if (o) {\n      o.logger.error({\n        kind: 'audit', subkind: 'persist_failed',\n        action, targetId: targetIdStr, err: err.message,\n      }, 'audit DB write failed');"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "140-140",
+        "snippet": "const fallbackWarn = (msg) => o ? o.logger.warn({ kind: 'audit', drop: true }, msg) : console.warn(msg);"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "187-193",
+        "snippet": "// Mirror to structured log stream + bump audit-event counter so the same\n  // trail is queryable in logs/aggregators, not just SQLite. Best-effort —\n  // a failure here must not affect the caller.\n  if (o) {\n    try {\n      o.emitAudit({"
+      },
+      {
+        "file": "server/lib/observability.js",
+        "lines": "318-325",
+        "snippet": "function emitAudit(row) {\n  const safe = { ...row };\n  businessEvents.labels(`audit.${row.action || 'unknown'}`).inc();\n  logger.info({ kind: 'audit', ...safe }, `audit: ${row.action} ${row.status || ''}`.trim());\n}"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "server-internals",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Internal: how far back does the audit log go, and is it ever pruned or truncated?",
+    "answer": "Never pruned. audit.js (server/data/auth.db) only inserts and selects — it exports just log/query/_db and contains no DELETE — so audit_log grows for the life of the DB. Retention belongs to the separate application log (lib/log-store.js, logs.db: 7 days / 200,000 rows), and the Logs tab's \"Clear log\" runs DELETE FROM app_logs only — it never touches audit_log. Individual rows are truncated at write time (payload 8 KB, user-agent 512, error 1024), but rows are never removed. Removing an organization sets tenant_id = NULL on its audit rows: they survive but stop matching scope=tenant.",
+    "symptoms": [
+      "auth.db growing steadily over months",
+      "Asked whether old audit events have aged out",
+      "Audit rows for a removed organization no longer appear in tenant-scoped queries"
+    ],
+    "rootCause": "audit.js only ever inserts and selects — it exports log and query and contains no DELETE — while retention logic lives in lib/log-store.js for the separate application-log database.",
+    "evidence": [
+      {
+        "file": "server/audit.js",
+        "lines": "267-267",
+        "snippet": "module.exports = { log, query, _db: db };"
+      },
+      {
+        "file": "server/lib/log-store.js",
+        "lines": "28-37",
+        "snippet": "const DB_PATH = process.env.LOG_DB_PATH || path.join(DATA_DIR, 'logs.db');\n\n// Retention: drop anything older than this many days, and hard-cap total rows\nconst RETENTION_DAYS = parseInt(process.env.LOG_RETENTION_DAYS, 10) || 7;\nconst MAX_ROWS = parseInt(process.env.LOG_MAX_ROWS, 10) || 200000;\nconst PRUNE_EVERY = 1000;   // run prune once per this many inserts"
+      },
+      {
+        "file": "server/auth.js",
+        "lines": "1167-1167",
+        "snippet": "try { db.prepare('UPDATE audit_log SET tenant_id = NULL WHERE tenant_id = ?').run(tid); } catch (_) {}"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "95-95",
+        "snippet": "const PAYLOAD_LIMIT = 8 * 1024;"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "155-155",
+        "snippet": "const userAgent = req?.headers?.['user-agent']?.slice(0, 512) ?? null;"
+      },
+      {
+        "file": "server/audit.js",
+        "lines": "171-171",
+        "snippet": "error:       error ? String(error).slice(0, 1024) : null,"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "server-internals",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Internal: a user is looking at racks that are not theirs — 'Acme Corp', 'HQ Datacenter', RK-DEMO-001. Is their tenant broken?",
+    "answer": "No — they are on the unauthenticated demo page, not their tenant. Check the URL: /demo/topology renders TenantMatPage outside ProtectedRoute (client/src/App.jsx:344) and its API /api/demo/tenant-mat reads the bundled fixture server/data/demo_tenant.json — no auth, no DB, no tenant filter. Telltales: tenant \"Acme Corp\", buildings \"HQ Datacenter\" / \"DR Site\", rack IDs RK-DEMO-001..015, and the default response reports source: \"json\" (the ?source=cmdb variant hits ServiceNow instead). Send them back to their real rack views; nothing to fix on the account.",
+    "symptoms": [
+      "User reports seeing racks or sites their organization does not own",
+      "Rack list shows Acme Corp / HQ Datacenter / DR Site",
+      "Rack IDs look like RK-DEMO-001",
+      "Page is reachable even when signed out"
+    ],
+    "rootCause": "The /demo/topology route renders TenantMatPage outside ProtectedRoute, and its API (/api/demo/tenant-mat) reads a bundled fixture file with no auth, no DB and no tenant filter — it is prototype data, not the user's tenant.",
+    "evidence": [
+      {
+        "file": "server/demo_topology.js",
+        "lines": "4-7",
+        "snippet": " * Scope: serves a pre-seeded JSON file (server/data/demo_tenant.json) so the\n * tenant-mat UI has something to render before the real CMDB/scan ingestion\n * pipeline exists. NO writes, NO db, NO auth. Mounted at /api/demo/* so it\n * can never collide with the real tenant routes."
+      },
+      {
+        "file": "client/src/App.jsx",
+        "lines": "342-344",
+        "snippet": "{/* Demo: unified tenant rack-layout view. No auth — backed by\n                server/data/demo_tenant.json, isolated from real scan data. */}\n            <Route path=\"/demo/topology\" element={<TenantMatPage />} />"
+      },
+      {
+        "file": "server/data/demo_tenant.json",
+        "lines": "2-8",
+        "snippet": "\"_comment\": \"Self-contained demo dataset for the tenant-mat topology view. Does not touch auth.db, rack_owners, rack_groups, or the outputs/ tree. Editing this file is the only way to change what the /demo/topology page shows.\",\n  \"schema\": \"tenant_mat.v1\",\n  \"tenant\": {\n    \"id\": \"demo-acme\",\n    \"slug\": \"acme\",\n    \"name\": \"Acme Corp\",\n    \"rack_count\": 15"
+      },
+      {
+        "file": "server/demo_topology.js",
+        "lines": "92-101",
+        "snippet": "const data = loadDemo();\n    const summary = summarize(data.racks);\n    res.json({\n      tenant: data.tenant,\n      buildings: data.buildings,\n      racks: data.racks,\n      summary,\n      source: 'json',\n    });"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "368-373",
+        "snippet": "// Demo tenant-mat — isolated, no-auth, file-backed dataset used by the\n// /demo/topology UI to prototype the unified rack-layout view. Reads\n// server/data/demo_tenant.json; touches no real tenant data.\ntry {\n  app.use(require('./demo_topology'));"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "server-internals",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Internal: on /demo/topology the CMDB source flips back to Local with a banner. What is wrong?",
+    "answer": "Nothing is broken — the ServiceNow CMDB just isn't seeded. Pressing CMDB calls /api/demo/tenant-mat?source=cmdb, which spawns servicenow/demo_tenant_query.py; if it errors, times out (60s) or returns non-JSON, the route answers 502 'CMDB source unavailable' with the hint to run demo_tenant_bootstrap.py. TenantMatPage then deliberately refetches source=json and shows the dismissible banner 'CMDB not populated yet — showing Local data' rather than an error page (the toggle itself stays on CMDB; only the data is Local). Fix: run servicenow/demo_tenant_bootstrap.py, then press CMDB again — note the CMDB response is cached 30s.",
+    "symptoms": [
+      "Banner reads 'CMDB not populated yet — showing Local data'",
+      "CMDB button does not seem to change the data",
+      "502 'CMDB source unavailable' in the network tab"
+    ],
+    "rootCause": "source=cmdb spawns servicenow/demo_tenant_query.py; if the script is missing, exits non-zero, or returns non-JSON the route answers 502 and TenantMatPage deliberately falls back to source=json with a dismissible banner instead of an error page.",
+    "evidence": [
+      {
+        "file": "server/demo_topology.js",
+        "lines": "83-89",
+        "snippet": "} catch (err) {\n      return res.status(502).json({\n        error: 'CMDB source unavailable',\n        details: err.message,\n        hint: 'Run servicenow/demo_tenant_bootstrap.py to populate CMDB first.',\n      });\n    }"
+      },
+      {
+        "file": "client/src/pages/TenantMatPage.jsx",
+        "lines": "56-64",
+        "snippet": "fetch(apiUrl(`/api/demo/tenant-mat?source=${source}`))\n      .then(async r => {\n        const j = await r.json();\n        if (j.error && source === 'cmdb') {\n          // Auto-fall-back to Local so the user is never on a blank error page.\n          setCmdbPending(true);\n          const r2 = await fetch(apiUrl('/api/demo/tenant-mat?source=json'));"
+      },
+      {
+        "file": "client/src/pages/TenantMatPage.jsx",
+        "lines": "82-88",
+        "snippet": "{cmdbPending && (\n        <div className={styles.banner}>\n          <span>⏳</span>\n          <span>CMDB not populated yet — showing Local data. The bootstrap script is still running; try CMDB again in a few minutes.</span>"
+      },
+      {
+        "file": "client/src/pages/TenantMatPage.jsx",
+        "lines": "598-605",
+        "snippet": "function SourceToggle({ source, onChange }) {\n      <button className={...} onClick={() => onChange('json')}>Local</button>\n      <button className={...} onClick={() => onChange('cmdb')}>CMDB</button>"
+      },
+      {
+        "file": "server/demo_topology.js",
+        "lines": "65-69",
+        "snippet": "// GET /api/demo/tenant-mat?source=json|cmdb\n// Default `source=json` reads the bundled file\n// (always available). `source=cmdb` calls demo_tenant_query.py to fetch\n// live from ServiceNow — only works after demo_tenant_bootstrap.py ran."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "server-internals",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Internal: I re-ran the CMDB bootstrap but /demo/topology still shows the old CMDB numbers.",
+    "answer": "In-process cache. `GET /api/demo/tenant-mat?source=cmdb` (server/demo_topology.js, note: no `/demo/topology` route exists) memoises the CMDB result in module scope for CMDB_TTL_MS = 30 s; a cached reply carries `_cached: true`. Wait 30 s and reload, or restart the server. The `source=json` default uses a separate mtime-based cache and is unaffected. If demo_tenant_query.py runs past 60 s it is SIGKILLed and you get the 502 'CMDB source unavailable' rather than stale data.",
+    "symptoms": [
+      "CMDB view unchanged right after running the bootstrap script",
+      "Response body contains _cached: true",
+      "Occasional 502 after a long-running query"
+    ],
+    "rootCause": "demo_topology.js memoises the CMDB result in module scope for CMDB_TTL_MS (30 s) and enforces a 60 s SIGKILL timeout on demo_tenant_query.py.",
+    "evidence": [
+      {
+        "file": "server/demo_topology.js",
+        "lines": "26-29",
+        "snippet": "// Cache the CMDB-sourced response for 30s — the query takes 1-3 s and the\n// data only changes when someone runs bootstrap/teardown.\nlet _cmdbCache = { ts: 0, data: null };\nconst CMDB_TTL_MS = 30_000;"
+      },
+      {
+        "file": "server/demo_topology.js",
+        "lines": "75-82",
+        "snippet": "const now = Date.now();\n      if (_cmdbCache.data && (now - _cmdbCache.ts) < CMDB_TTL_MS) {\n        return res.json({ ..._cmdbCache.data, _cached: true });\n      }\n      const data = await runQueryScript();\n      data.summary = data.summary || summarize(data.racks || []);\n      _cmdbCache = { ts: now, data };"
+      },
+      {
+        "file": "server/demo_topology.js",
+        "lines": "31-42",
+        "snippet": "function runQueryScript(timeoutMs = 60_000) {\n    const timer = setTimeout(() => {\n      try { child.kill('SIGKILL'); } catch (_) {}\n      reject(new Error(`demo_tenant_query.py timed out (${timeoutMs}ms)`));\n    }, timeoutMs);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "server-internals",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

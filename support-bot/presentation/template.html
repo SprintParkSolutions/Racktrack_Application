@@ -1,0 +1,442 @@
+<title>RackTrack Assist</title>
+<style>
+  :root {
+    --ink:#0f1216; --ink-2:#3d4650; --muted:#727c88; --faint:#a3acb6;
+    --paper:#ffffff; --tint:#f4f6f9; --rule:#e2e7ec;
+    --blue:#2563c9; --blue-tint:#eaf0fb;
+    --green:#197a4b; --green-tint:#e7f4ed;
+    --amber:#a75f10; --amber-tint:#fbf1e3;
+    --grey:#7a8592;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:#eaeef3; --ink-2:#b6c0cb; --muted:#8a94a1; --faint:#5c6673;
+      --paper:#11151a; --tint:#1a1f26; --rule:#293139;
+      --blue:#6ea3f5; --blue-tint:#152031;
+      --green:#4cba7f; --green-tint:#132420;
+      --amber:#e0973f; --amber-tint:#241d12;
+      --grey:#8a94a1;
+    }
+  }
+  :root[data-theme="light"]{--ink:#0f1216;--ink-2:#3d4650;--muted:#727c88;--faint:#a3acb6;--paper:#fff;--tint:#f4f6f9;--rule:#e2e7ec;--blue:#2563c9;--blue-tint:#eaf0fb;--green:#197a4b;--green-tint:#e7f4ed;--amber:#a75f10;--amber-tint:#fbf1e3;--grey:#7a8592;}
+  :root[data-theme="dark"]{--ink:#eaeef3;--ink-2:#b6c0cb;--muted:#8a94a1;--faint:#5c6673;--paper:#11151a;--tint:#1a1f26;--rule:#293139;--blue:#6ea3f5;--blue-tint:#152031;--green:#4cba7f;--green-tint:#132420;--amber:#e0973f;--amber-tint:#241d12;--grey:#8a94a1;}
+
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.6 var(--ui); -webkit-font-smoothing:antialiased; }
+  .page { max-width:820px; margin:0 auto; padding:30px 26px 90px; }
+  @media (max-width:640px){ .page{ padding:22px 18px 60px; } }
+
+  /* ── Head ─────────────────────────────────────────────────────── */
+  .top { display:flex; align-items:center; gap:10px; margin-bottom:44px; }
+  .logo { width:30px; height:30px; border-radius:8px; object-fit:cover; }
+  .top b { font-size:14px; font-weight:700; letter-spacing:-.01em; }
+  .top span { font-size:14px; color:var(--muted); }
+  .themeBtn { margin-left:auto; border:1px solid var(--rule); background:var(--tint); color:var(--ink-2); border-radius:7px; padding:5px 9px; cursor:pointer; font:inherit; font-size:12.5px; line-height:1; }
+  .themeBtn:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+
+  h1 { margin:0 0 16px; font-size:clamp(30px,5vw,42px); line-height:1.1; letter-spacing:-.03em; font-weight:700; text-wrap:balance; }
+  .sub { margin:0 0 40px; font-size:19px; line-height:1.55; color:var(--ink-2); max-width:34ch; }
+
+  /* ── Section ──────────────────────────────────────────────────── */
+  section { margin-bottom:56px; }
+  h2 { margin:0 0 18px; font-size:20px; font-weight:680; letter-spacing:-.02em; }
+  .note { font-size:14.5px; color:var(--muted); line-height:1.55; max-width:60ch; margin:14px 0 0; }
+
+  /* ── Big numbers ──────────────────────────────────────────────── */
+  .nums { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:22px; }
+  .num b { display:block; font-family:var(--mono); font-size:34px; font-weight:600; letter-spacing:-.04em; line-height:1; font-variant-numeric:tabular-nums; }
+  .num span { display:block; font-size:13.5px; color:var(--muted); margin-top:7px; line-height:1.4; }
+
+  /* ── Flow ─────────────────────────────────────────────────────── */
+  .flow { display:flex; flex-direction:column; gap:10px; }
+  .step { display:grid; grid-template-columns:34px 1fr; gap:14px; align-items:center; }
+  .step .dot { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:16px; background:var(--tint); border:1px solid var(--rule); }
+  .step .txt { font-size:16px; line-height:1.45; }
+  .step .txt em { font-style:normal; color:var(--muted); font-size:14px; display:block; margin-top:2px; }
+  .arrow { margin-left:16px; width:2px; height:14px; background:var(--rule); }
+
+  /* ── Outcome cards ────────────────────────────────────────────── */
+  .outs { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:600px){ .outs{ grid-template-columns:1fr; } }
+  .out { padding:16px 18px; border-radius:12px; border:1px solid var(--rule); }
+  .out.a { background:var(--green-tint); border-color:transparent; }
+  .out.b { background:var(--blue-tint); border-color:transparent; }
+  .out.c { background:var(--amber-tint); border-color:transparent; }
+  .out.d { background:var(--tint); border-color:transparent; }
+  .out b { display:block; font-size:15.5px; margin-bottom:5px; }
+  .out.a b { color:var(--green); } .out.b b { color:var(--blue); }
+  .out.c b { color:var(--amber); } .out.d b { color:var(--grey); }
+  .out p { margin:0; font-size:14px; line-height:1.5; color:var(--ink-2); }
+
+  /* ── Example ──────────────────────────────────────────────────── */
+  .ex { border-radius:12px; overflow:hidden; border:1px solid var(--rule); }
+  .ex .q { padding:13px 16px; background:var(--tint); font-size:15px; font-weight:600; }
+  .ex .r { padding:13px 16px; border-top:1px solid var(--rule); font-size:14.5px; line-height:1.5; color:var(--ink-2); }
+  .ex .r b { display:block; font-size:11px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px; }
+  .ex .no b { color:var(--amber); }
+  .ex .yes b { color:var(--green); }
+
+  /* ── Next list ────────────────────────────────────────────────── */
+  .next { display:flex; flex-direction:column; gap:0; }
+  .nx { display:grid; grid-template-columns:1fr auto; gap:16px; align-items:baseline; padding:14px 0; border-bottom:1px solid var(--rule); }
+  .nx:last-child { border-bottom:0; }
+  .nx .t { font-size:16px; font-weight:600; }
+  .nx .d { font-size:14px; color:var(--muted); line-height:1.5; margin-top:3px; max-width:56ch; }
+  .tag { font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+  .tag.free { background:var(--green-tint); color:var(--green); }
+  .tag.cost { background:var(--amber-tint); color:var(--amber); }
+  .tag.now  { background:var(--blue-tint); color:var(--blue); }
+
+  /* Choice blocks — what we used and what we turned down */
+  .pick { padding:18px 20px; border-radius:12px; background:var(--tint); margin-bottom:12px; }
+  .pick .h { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+  .pick .h b { font-size:16px; }
+  .pick .h span { font-size:12.5px; color:var(--muted); }
+  .pick .w { font-size:14.5px; line-height:1.55; color:var(--ink-2); margin:0; }
+  .pick .alt { margin:10px 0 0; padding-top:10px; border-top:1px solid var(--rule); font-size:13.5px; color:var(--muted); line-height:1.5; }
+  .pick .alt b { color:var(--ink-2); font-weight:600; }
+
+  /* Component blocks — what each piece is, and what it replaced */
+  .comp { border:1px solid var(--rule); border-radius:12px; padding:18px 20px; margin-bottom:12px; }
+  .comp .ch { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+  .comp .ch b { font-size:16.5px; }
+  .comp .spec { font-family:var(--mono); font-size:12px; color:var(--muted); background:var(--tint); padding:2px 8px; border-radius:5px; }
+  .comp .role { font-size:13.5px; color:var(--muted); margin:0 0 12px; }
+  .comp .row { display:grid; grid-template-columns:88px 1fr; gap:12px; padding:8px 0; border-top:1px solid var(--rule); font-size:14px; line-height:1.5; }
+  @media (max-width:560px){ .comp .row { grid-template-columns:1fr; gap:2px; } }
+  .comp .row .lab { font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; padding-top:3px; }
+  .comp .why .lab { color:var(--green); }
+  .comp .not .lab { color:var(--amber); }
+  .comp .row .val { color:var(--ink-2); }
+
+  .band { padding:20px 22px; border-radius:12px; background:var(--tint); margin:0; }
+  .band p { margin:0; font-size:15.5px; line-height:1.6; }
+  .band p + p { margin-top:10px; }
+
+  /* Tabs: sticky so you always know where you are, and horizontally
+     scrollable so a narrow phone never hides one. */
+  .bar { position:sticky; top:0; z-index:10; background:var(--paper); border-bottom:1px solid var(--rule); margin:0 -26px 34px; padding:0 26px; }
+  @media (max-width:640px){ .bar { margin:0 -18px 26px; padding:0 18px; } }
+  .tabs { display:flex; gap:2px; overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { border:0; background:transparent; color:var(--muted); cursor:pointer; font:inherit; font-size:14px; font-weight:560; white-space:nowrap; padding:12px 13px; border-bottom:2px solid transparent; }
+  .tab:hover { color:var(--ink); }
+  .tab[aria-selected="true"] { color:var(--blue); border-bottom-color:var(--blue); font-weight:680; }
+  .tab:focus-visible { outline:2px solid var(--blue); outline-offset:-2px; }
+  .panel[hidden] { display:none; }
+  .panel > h1 { font-size:clamp(24px,3.6vw,31px); margin-bottom:10px; }
+  .panel > .sub { font-size:17px; margin-bottom:34px; max-width:44ch; }
+
+  .foot { margin-top:60px; padding-top:20px; border-top:1px solid var(--rule); font-size:13px; color:var(--faint); }
+</style>
+
+<div class="page">
+
+  <div class="top">
+    <img class="logo" src="__LOGO__" alt="" />
+    <b>RackTrack</b><span>· Assist</span>
+    <button class="themeBtn" id="themeBtn" type="button" aria-label="Switch theme">&#9686;</button>
+  </div>
+
+  <div class="bar">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="t1" aria-controls="p1" aria-selected="true">What it is</button>
+      <button class="tab" role="tab" id="t2" aria-controls="p2" aria-selected="false">What we did</button>
+      <button class="tab" role="tab" id="t3" aria-controls="p3" aria-selected="false">How it answers</button>
+      <button class="tab" role="tab" id="t4" aria-controls="p4" aria-selected="false">What we used</button>
+      <button class="tab" role="tab" id="t45" aria-controls="p45" aria-selected="false">The tech</button>
+      <button class="tab" role="tab" id="t5" aria-controls="p5" aria-selected="false">Is it safe</button>
+      <button class="tab" role="tab" id="t6" aria-controls="p6" aria-selected="false">Cost</button>
+      <button class="tab" role="tab" id="t7" aria-controls="p7" aria-selected="false">What's next</button>
+    </div>
+  </div>
+
+  <!-- 1 ───────────────────────────────────────────── -->
+  <div class="panel" id="p1" role="tabpanel" aria-labelledby="t1">
+    <h1>We built a help assistant into RackTrack.</h1>
+    <p class="sub">It answers technician questions instantly — and when it doesn't know, it says so instead of guessing.</p>
+
+    <section>
+      <div class="nums">
+        <div class="num"><b>__TOTAL__</b><span>answers, taken from our own code</span></div>
+        <div class="num"><b>__REFUTED__</b><span>rejected during review</span></div>
+        <div class="num"><b>100%</b><span>of the app covered</span></div>
+        <div class="num"><b>$0</b><span>per month to run</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>The problem it solves</h2>
+      <div class="band">
+        <p>A technician standing at a rack with a half-finished scan doesn't read documentation. They call someone.</p>
+        <p>Right now that call lands on engineering, because we don't have a support team yet.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Where it stands</h2>
+      <div class="next">
+        <div class="nx"><div><div class="t">Built and tested</div><div class="d">Running against the live knowledge base.</div></div><span class="tag free">Done</span></div>
+        <div class="nx"><div><div class="t">Not switched on yet</div><div class="d">One line of code, held until we agree it's ready.</div></div><span class="tag now">Your call</span></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 2 ───────────────────────────────────────────── -->
+  <div class="panel" id="p2" role="tabpanel" aria-labelledby="t2" hidden>
+    <h1>What we did</h1>
+    <p class="sub">Four steps, start to finish.</p>
+
+    <section>
+      <div class="flow">
+        <div class="step"><span class="dot">1</span><span class="txt">Read our own codebase and wrote down every question a technician could ask
+          <em>Not from the user guide — from what the app actually does</em></span></div>
+        <div class="arrow"></div>
+        <div class="step"><span class="dot">2</span><span class="txt">Had three reviewers check every single answer
+          <em>__REFUTED__ answers failed and were thrown away</em></span></div>
+        <div class="arrow"></div>
+        <div class="step"><span class="dot">3</span><span class="txt">Rewrote them in plain language
+          <em>No "server", no error codes — what the technician actually sees</em></span></div>
+        <div class="arrow"></div>
+        <div class="step"><span class="dot">4</span><span class="txt">Put it in the app as a help button
+          <em>Runs on our own server. Nothing sent outside the company</em></span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Why mine our own code</h2>
+      <div class="band">
+        <p>Our user guide says how the app is <em>meant</em> to work. It doesn't say why a scan came back empty, or why a password is rejected when it looks right.</p>
+        <p>That lives in the code. So every answer names the exact file it came from — which also means we can tell when it goes out of date.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- 3 ───────────────────────────────────────────── -->
+  <div class="panel" id="p3" role="tabpanel" aria-labelledby="t3" hidden>
+    <h1>How it answers</h1>
+    <p class="sub">Four possible outcomes. It picks one — it never mixes them.</p>
+
+    <section>
+      <div class="outs">
+        <div class="out a"><b>It knows</b><p>Shows the verified answer, word for word. Instant. Can't be wrong — it isn't writing anything.</p></div>
+        <div class="out b"><b>It's unsure between two</b><p>Reads both and picks the right one. About a second.</p></div>
+        <div class="out c"><b>It's an admin thing</b><p>"That's an admin screen — ask your administrator." Doesn't show something else instead.</p></div>
+        <div class="out d"><b>It doesn't know</b><p>Says so, points to a person, and records the question so we can add it.</p></div>
+      </div>
+      <p class="note">Most questions land in the first box — which is why it costs nothing and answers instantly.</p>
+    </section>
+
+    <section>
+      <h2>A real example</h2>
+      <div class="ex">
+        <div class="q">“i cant find where my old scans went”</div>
+        <div class="r no"><b>What plain search picked</b>An answer about TestFlight invitations — it happened to share a few words.</div>
+        <div class="r yes"><b>What Assist answered</b>“Tap <strong>Profile</strong> in the bottom bar, scroll to <strong>Recent Scans</strong>, and tap any row to reopen it.”</div>
+      </div>
+      <p class="note">It understands what a question <em>means</em>, not just which words it contains.</p>
+    </section>
+  </div>
+
+  <!-- 4 ───────────────────────────────────────────── -->
+  <div class="panel" id="p4" role="tabpanel" aria-labelledby="t4" hidden>
+    <h1>What we used</h1>
+    <p class="sub">Three choices — and what we turned down each time.</p>
+
+    <section>
+      <div class="pick">
+        <div class="h"><b>Our own code</b> <span>as the source of every answer</span></div>
+        <p class="w">Every answer was written by reading what the app actually does — the real button names, the real error messages, the real time limits.</p>
+        <p class="alt"><b>Not a general AI like ChatGPT.</b> It has never seen RackTrack, so it would invent plausible-sounding answers about our product. That's the one thing we can't allow.</p>
+      </div>
+
+      <div class="pick">
+        <div class="h"><b>Two kinds of search, together</b> <span>keyword and meaning</span></div>
+        <p class="w">Keyword search finds exact things — an error message, a button label. Meaning-based search knows "signed out" and "session expired" are the same question. Both run every time.</p>
+        <p class="alt"><b>Not one or the other.</b> Keyword alone sent "why do I keep getting signed out" to an answer about passwords, because both contain "keeps getting". Meaning alone blurs exact error messages together.</p>
+      </div>
+
+      <div class="pick">
+        <div class="h"><b>A small AI model on our own server</b> <span>only to choose, never to write</span></div>
+        <p class="w">When two answers look equally likely, the model reads both and picks. That's all it does.</p>
+        <p class="alt"><b>Not a paid AI service.</b> Cost per message, and every question would leave our servers. <b>And not a model that writes freely</b> — a model that can write can invent.</p>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- 4b ──────────────────────────────────────────── -->
+  <div class="panel" id="p45" role="tabpanel" aria-labelledby="t45" hidden>
+    <h1>The tech</h1>
+    <p class="sub">Five pieces. Each one chosen over a more obvious alternative.</p>
+
+    <section>
+      <div class="comp">
+        <div class="ch"><b>Keyword search</b> <span class="spec">BM25</span></div>
+        <p class="role">Finds answers containing the words the technician typed.</p>
+        <div class="row why"><span class="lab">Why this</span><span class="val">The same ranking method inside Elasticsearch, Lucene and Postgres search. Decades of production use. We wrote it in 200 lines with no external library.</span></div>
+        <div class="row not"><span class="lab">Not this</span><span class="val"><b>Elasticsearch.</b> A whole search server to operate, for 351 documents. Searching all of them directly takes 2 milliseconds — the infrastructure would cost more than it buys.</span></div>
+      </div>
+
+      <div class="comp">
+        <div class="ch"><b>Meaning search</b> <span class="spec">nomic-embed-text · 274 MB</span></div>
+        <p class="role">Finds answers that mean the same thing, even with no words in common.</p>
+        <div class="row why"><span class="lab">Why this</span><span class="val">Purpose-built for search rather than for chat. Small, open, free, and runs on our own server.</span></div>
+        <div class="row not"><span class="lab">Not this</span><span class="val"><b>A vector database</b> like Pinecone or Weaviate. Those exist for millions of records. Ours fits in about a megabyte of memory and compares in under a millisecond.</span></div>
+      </div>
+
+      <div class="comp">
+        <div class="ch"><b>Combining the two</b> <span class="spec">Reciprocal Rank Fusion</span></div>
+        <p class="role">Merges both result lists into one ranking.</p>
+        <div class="row why"><span class="lab">Why this</span><span class="val">It combines by <em>position</em> in each list, so an answer both methods rank highly wins.</span></div>
+        <div class="row not"><span class="lab">Not this</span><span class="val"><b>Averaging the two scores.</b> They are different units — one might be 12.4, the other 0.64. Averaging them means inventing a conversion rate that means nothing.</span></div>
+      </div>
+
+      <div class="comp">
+        <div class="ch"><b>The AI model</b> <span class="spec">Llama 3.2 · 3B · 2 GB</span></div>
+        <p class="role">Picks between candidate answers when two look equally likely.</p>
+        <div class="row why"><span class="lab">Why this</span><span class="val">We tested the larger 8-billion model too. It words things slightly better but takes more than twice as long — and for someone waiting at a rack, the wait costs more than the polish. The bigger model is installed and one setting away.</span></div>
+        <div class="row not"><span class="lab">Not this</span><span class="val"><b>ChatGPT or a paid AI service.</b> A cost per message that grows with use, and every question leaving our servers. For a job this narrow, it would be wasted.</span></div>
+      </div>
+
+      <div class="comp">
+        <div class="ch"><b>Where answers are stored</b> <span class="spec">one file · 1.2 MB</span></div>
+        <p class="role">All __TOTAL__ answers, loaded once when the server starts.</p>
+        <div class="row why"><span class="lab">Why this</span><span class="val">It sits in version control alongside the code, so any change to an answer is reviewed exactly like a code change.</span></div>
+        <div class="row not"><span class="lab">Not this</span><span class="val"><b>A database.</b> It would make the answers harder to review, not easier — the opposite of what we want.</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>What this added to our servers</h2>
+      <div class="nums">
+        <div class="num"><b>0</b><span>new software libraries</span></div>
+        <div class="num"><b>0</b><span>outside services</span></div>
+        <div class="num"><b>1</b><span>local program (the AI model)</span></div>
+      </div>
+      <p class="note">If the AI model is switched off, Assist keeps working — it just falls back to showing the verified answer directly instead of choosing between two.</p>
+    </section>
+  </div>
+
+  <!-- 5 ───────────────────────────────────────────── -->
+  <div class="panel" id="p5" role="tabpanel" aria-labelledby="t5" hidden>
+    <h1>Is it safe</h1>
+    <p class="sub">Three things stop it going wrong.</p>
+
+    <section>
+      <h2>1. It never guesses</h2>
+      <div class="band">
+        <p>A wrong answer sends a technician down the wrong path for an hour and costs us their trust for good.</p>
+        <p>So every answer is either taken word-for-word from documentation we verified — or it admits it doesn't know.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. People only see what they should</h2>
+      <div class="band">
+        <p>Technicians, administrators and internal staff each see a different set of answers.</p>
+        <p><strong>__INTERNAL__ internal answers are removed before the assistant is even built</strong> — not hidden behind a rule telling it to stay quiet. Something never loaded can't be leaked, however the question is phrased.</p>
+      </div>
+      <p class="note">A person's level comes from their login, never from what they type. Claiming to be an admin in the chat doesn't make you one.</p>
+    </section>
+
+    <section>
+      <h2>3. It's checked automatically</h2>
+      <div class="next">
+        <div class="nx"><div><div class="t">Every answer findable by its own question</div></div><span class="tag free">100%</span></div>
+        <div class="nx"><div><div class="t">Declines instead of guessing when it should</div></div><span class="tag free">100%</span></div>
+        <div class="nx"><div><div class="t">Never leaks internal detail to a technician</div></div><span class="tag free">100%</span></div>
+        <div class="nx"><div><div class="t">Resists attempts to talk it out of its rules</div></div><span class="tag free">100%</span></div>
+      </div>
+      <p class="note">Over 1,200 checks run before any change ships. It has already blocked a release once.</p>
+    </section>
+
+    <section>
+      <h2>What it won't do</h2>
+      <div class="band">
+        <p>It can't answer questions about pricing, our roadmap, or competitors — that isn't in our code, so it sends those to a person.</p>
+        <p>And covering every screen isn't the same as answering every question. The honest measure is the log of what it couldn't answer — which only means something once technicians are using it.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- 6 ───────────────────────────────────────────── -->
+  <div class="panel" id="p6" role="tabpanel" aria-labelledby="t6" hidden>
+    <h1>What it costs</h1>
+    <p class="sub">Nothing per month, and nothing new to maintain.</p>
+
+    <section>
+      <div class="nums">
+        <div class="num"><b>$0</b><span>per month</span></div>
+        <div class="num"><b>$0</b><span>per question asked</span></div>
+        <div class="num"><b>0</b><span>new software libraries</span></div>
+        <div class="num"><b>0</b><span>outside services</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Why it's free</h2>
+      <div class="band">
+        <p>It runs on the server we already pay for. There's no subscription, no per-message billing, and no vendor who can raise a price on us.</p>
+        <p>The AI model runs on that same machine — it's open and free to use.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>What it saves</h2>
+      <div class="band">
+        <p>Every question it answers is a call that doesn't reach engineering.</p>
+        <p>And when we do hire support, it hands them a ready-made list of exactly what customers struggle with.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- 7 ───────────────────────────────────────────── -->
+  <div class="panel" id="p7" role="tabpanel" aria-labelledby="t7" hidden>
+    <h1>What we could do next</h1>
+    <p class="sub">Roughly in the order we'd recommend. None are needed to go live.</p>
+
+    <section>
+      <div class="next">
+        <div class="nx"><div><div class="t">Turn it on</div><div class="d">Built and tested. One line of code.</div></div><span class="tag now">Ready</span></div>
+        <div class="nx"><div><div class="t">Email the question to support</div><div class="d">When it can't answer, offer to send it on — with the screen and device already attached.</div></div><span class="tag free">Free</span></div>
+        <div class="nx"><div><div class="t">Fill the gaps technicians actually hit</div><div class="d">Every unanswered question is logged. After a few weeks that list tells us exactly what to add.</div></div><span class="tag free">Free</span></div>
+        <div class="nx"><div><div class="t">Raise a ServiceNow ticket</div><div class="d">We already connect to ServiceNow. An unanswered question could become a ticket.</div></div><span class="tag free">Free</span></div>
+        <div class="nx"><div><div class="t">Let technicians rate answers</div><div class="d">A "did this help?" tells us which answers are correct but useless — no automated check can spot that.</div></div><span class="tag free">Free</span></div>
+        <div class="nx"><div><div class="t">Hand off to a support team</div><div class="d">Assist becomes their first line, and the unanswered log is their training material.</div></div><span class="tag cost">Needs people</span></div>
+        <div class="nx"><div><div class="t">Use a paid AI service</div><div class="d">Better wording, but a cost per message and questions leave our servers. Not needed today.</div></div><span class="tag cost">Ongoing cost</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot">RackTrack Assist · figures taken from the live system</div>
+</div>
+
+<script>
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  function pick(t) {
+    tabs.forEach(function (x) {
+      var on = x === t;
+      x.setAttribute('aria-selected', String(on));
+      document.getElementById(x.getAttribute('aria-controls')).hidden = !on;
+    });
+    window.scrollTo(0, 0);
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { pick(t); });
+    t.addEventListener('keydown', function (e) {
+      var i = tabs.indexOf(t), n = null;
+      if (e.key === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+      if (e.key === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+      if (n) { n.focus(); pick(n); }
+    });
+  });
+
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var now = document.documentElement.getAttribute('data-theme')
+      || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', now === 'dark' ? 'light' : 'dark');
+  });
+</script>

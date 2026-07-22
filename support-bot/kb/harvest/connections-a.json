@@ -1,0 +1,315 @@
+[
+  {
+    "question": "What exactly is a connection / data source in RackTrack, and what does \"Active\" mean?",
+    "answer": "A connection — the UI calls them Data Sources — is one saved set of credentials for an external system RackTrack pulls device and ticket data from: ServiceNow/CMDB, NetBox, SolarWinds Orion, CA/DX Spectrum, or your own SQL or REST endpoint.\n\nWhere: \"Data Sources\" in the desktop sidebar (admin only) or Profile → Data Sources. The page explains: \"Saved databases this app can pull data from. The active connection is what every screen uses while you're signed in. Switch any time — the data refreshes from the new source.\"\n\nTwo sections: Active (one card with an \"Active\" badge) and Other saved (each with a \"Use\" button).\n\nRules:\n1. At most one connection is active at a time — pressing \"Use\" switches every screen to it and deactivates the previous one without deleting it. The database enforces this with a unique partial index (one is_active=1 row per user). You can also end up with none active.\n2. No merging across sources: the active connection is the single source of truth for the session.\n3. Saved connections belong to the account that created them; the server scopes every read and write to your user id.\n\nOrg-wide credentials are separate — see the \"Organization integrations\" panel in the Organization Console.",
+    "symptoms": [
+      "What is a data source / connection profile",
+      "What does the Active badge mean",
+      "Which connection is the app using",
+      "Can I use two data sources at once"
+    ],
+    "rootCause": "Connection profiles are per-user rows in connection_profiles with a unique partial index allowing one is_active=1 row per user; the Data Sources page renders an Active card and an 'Other saved' list with a Use button that calls the activate route.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "124-132",
+        "snippet": "<h1 className={styles.title}>Data Sources</h1>\n...\n      <p className={styles.intro}>\n        Saved databases this app can pull data from. The <strong>active</strong>\n        {' '}connection is what every screen uses while you're signed in.\n        Switch any time — the data refreshes from the new source.\n      </p>"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "206-223",
+        "snippet": "<h2 className={styles.sectionTitle}>Other saved</h2>\n...\n                <button\n                  type=\"button\"\n                  className={styles.useBtn}\n                  onClick={() => onActivate(p.id)}>\n                  Use\n                </button>"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "69-73",
+        "snippet": "CREATE INDEX IF NOT EXISTS idx_conn_profiles_user\n    ON connection_profiles(user_id);\n  CREATE UNIQUE INDEX IF NOT EXISTS uq_conn_profiles_active\n    ON connection_profiles(user_id) WHERE is_active = 1;"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "4-7",
+        "snippet": "* All routes require auth (req.user populated by requireAuth). Profiles\n * are scoped to req.user.id; no user can see or touch another user's\n * profiles."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Which data sources can I connect, and exactly what do I have to type in for each one?",
+    "answer": "Six connection types are supported. Picking one in the Type dropdown swaps the form to that type's fields:\n\n• ServiceNow / CMDB — Instance ID (e.g. dev266363), Username, Password. All required. Type only the instance ID, not the full https://…service-now.com URL; the server appends .service-now.com itself.\n• NetBox — Base URL (e.g. https://netbox.example.com) and API Token (from your NetBox user profile). Both required.\n• SolarWinds Orion — Host (e.g. orion.example.com), Username, Password. All required. NPM / NCM server.\n• CA / DX Spectrum — Base URL (e.g. https://spectrum.example.com:8443), Username, Password. All required. OneClick / REST endpoint.\n• My own database (SQL) — one Connection string, required. PostgreSQL or MySQL, e.g. postgresql://user:pass@host:5432/dbname.\n• My own database (REST) — Base URL (e.g. https://cmdb.example.com/api), required; API Token optional. Must return device / interface JSON.\n\nAnything else is rejected by the server with \"unsupported profile type: <type>\".",
+    "symptoms": [
+      "What systems can RackTrack connect to",
+      "What do I put in the Instance ID field",
+      "Do I need an API token for NetBox",
+      "Which fields are required for Orion / Spectrum"
+    ],
+    "rootCause": "TYPE_INFO in connectionsApi.js defines the label, field schema and hint per type; SUPPORTED_TYPES in connection_profiles.js is the server-side allow-list and validateType rejects anything else.",
+    "evidence": [
+      {
+        "file": "client/src/utils/connectionsApi.js",
+        "lines": "120-146",
+        "snippet": "export const TYPE_INFO = {\n  servicenow: {\n    label: 'ServiceNow / CMDB',\n    fields: [\n      { key: 'instance', label: 'Instance ID',  placeholder: 'dev266363', required: true },\n      { key: 'user',     label: 'Username',     placeholder: 'admin',     required: true },\n      { key: 'password', label: 'Password',     type: 'password',         required: true },\n    ],\n    hint: 'Use just the instance ID — the part before .service-now.com',\n  },\n  netbox: {\n    label: 'NetBox',\n    fields: [\n      { key: 'base_url', label: 'Base URL', placeholder: 'https://netbox.example.com', required: true },\n      { key: 'token',    label: 'API Token', type: 'password',                         required: true },\n    ],"
+      },
+      {
+        "file": "client/src/utils/connectionsApi.js",
+        "lines": "147-172",
+        "snippet": "  spectrum: {\n    label: 'CA / DX Spectrum',\n...\n  generic_sql: {\n    label: 'My own database (SQL)',\n    fields: [\n      { key: 'connection_string', label: 'Connection string',\n        placeholder: 'postgresql://user:pass@host:5432/dbname', required: true },\n    ],\n...\n  generic_rest: {\n    label: 'My own database (REST)',\n    fields: [\n      { key: 'base_url', label: 'Base URL', placeholder: 'https://cmdb.example.com/api', required: true },\n      { key: 'token',    label: 'API Token (optional)', type: 'password' },\n    ],"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "45-52",
+        "snippet": "const SUPPORTED_TYPES = new Set([\n  'servicenow',\n  'netbox',\n  'orion',         // SolarWinds Orion / NPM / NCM\n  'spectrum',      // CA / DX Spectrum\n  'generic_sql',   // user's own DB via SQL connection string\n  'generic_rest',  // user's own DB via REST endpoint\n]);"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "Saving a connection failed with a message like \"servicenow profile requires {instance, user, password}\" or \"name, type, secret are required\". What is wrong?",
+    "answer": "A required field was left empty, so the server rejected the save. Fill in every field marked * for the type you picked and save again.\n\nWhat each message means:\n- \"name, type, secret are required\" — the Name box was empty (or nothing was sent at all).\n- \"servicenow profile requires {instance, user, password}\" — Instance ID, Username or Password is blank.\n- \"netbox profile requires {base_url, token}\" — Base URL or API Token is blank.\n- \"orion profile requires {host, user, password}\" — Host, Username or Password is blank.\n- \"spectrum profile requires {base_url, user, password}\" — Base URL, Username or Password is blank.\n- \"generic_sql profile requires {connection_string}\" — Connection string is blank.\n- \"generic_rest profile requires {base_url}\" — Base URL is blank. (Its API Token really is optional.)\n- \"unsupported profile type: …\" — the type isn't one of those six; only happens outside the Data Sources form.\n\nIn the Organization Console the check runs in the browser first and reads \"Fill in: <field labels>\"; spaces alone don't count as filled. On the Data Sources form the browser blocks submit on a new connection while a required field is empty.",
+    "symptoms": [
+      "servicenow profile requires {instance, user, password}",
+      "name, type, secret are required",
+      "netbox profile requires {base_url, token}",
+      "unsupported profile type",
+      "Fill in: Instance ID, Username"
+    ],
+    "rootCause": "validateSecret in connection_profiles.js throws a per-type message when a required key is missing; the create route returns 400 'name, type, secret are required' before that; safeAsync maps messages starting with 'unsupported' to 400. OrgConnectionsPanel pre-validates client-side with a 'Fill in:' message.",
+    "evidence": [
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "127-163",
+        "snippet": "function validateSecret(type, secret) {\n  if (!secret || typeof secret !== 'object') {\n    throw new Error('secret must be an object');\n  }\n  switch (type) {\n    case 'servicenow':\n      if (!secret.instance || !secret.user || !secret.password) {\n        throw new Error('servicenow profile requires {instance, user, password}');\n      }\n      break;\n    case 'netbox':\n      if (!secret.base_url || !secret.token) {\n        throw new Error('netbox profile requires {base_url, token}');"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "56-59",
+        "snippet": "  const { name, type, secret, make_active } = req.body || {};\n  if (!name || !type || !secret) {\n    return res.status(400).json({ ok: false, error: 'name, type, secret are required' });\n  }"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "30-32",
+        "snippet": "      logger.error(`[connections] ${req.method} ${req.originalUrl} — ${err.message}`);\n      const status = err.status || (err.message?.startsWith('unsupported') ? 400 : 500);\n      res.status(status).json({ ok: false, error: err.message || 'request failed' });"
+      },
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "45-46",
+        "snippet": "    const missing = (info.fields || []).filter(f => f.required && !String(secret[f.key] || '').trim());\n    if (missing.length) { setFormError(`Fill in: ${missing.map(f => f.label).join(', ')}`); return; }"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I only wanted to change the password on an existing connection, but saving fails with \"servicenow profile requires {instance, user, password}\". Why?",
+    "answer": "The edit form never pre-loads your saved credentials, and as soon as you type in any one credential field it sends all of them — the ones you left blank go up as empty strings. The server merges them over the stored secret, sees a blank Instance ID and Username, and rejects the save. Nothing is lost: validation runs before anything is written, so your saved credentials are still intact.\n\nSo an edit has to be one of two things:\n- Rename only — leave every credential field blank (the form says \"Leave the credential fields blank to keep what's already saved\") and change just the Name.\n- Replace credentials in full — fill in every starred field. For ServiceNow that is Instance ID, Username and Password together.\n\nSteps: Data Sources → three-dot menu on the connection → Edit → fill in all starred fields → Save changes.",
+    "symptoms": [
+      "Changing just the password fails to save",
+      "servicenow profile requires {instance, user, password} when editing",
+      "Edit connection error after typing a new password",
+      "Save changes rejected on an existing connection"
+    ],
+    "rootCause": "ConnectionsPage sends the entire secret object when any field is non-empty (hasSecret check), so untouched fields go up as empty strings; the server's update() merges {...existing.secret, ...secret}, so the empty strings overwrite the stored values and validateSecret then throws the per-type 'requires' error.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "75-82",
+        "snippet": "      if (editingId) {\n        // Edit: send name always; send secret only if user typed in any\n        // field (otherwise the stored credentials are kept).\n        const hasSecret = Object.values(secret).some(v => String(v || '').length > 0);\n        await update(editingId, {\n          name,\n          secret: hasSecret ? secret : undefined,\n        });"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "285-286",
+        "snippet": "  const nextSecret = secret ? { ...existing.secret, ...secret } : existing.secret;\n  if (secret) validateSecret(existing.type, nextSecret);"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "330-334",
+        "snippet": "              {editingId && (\n                <p className={styles.editHint}>\n                  Leave the credential fields blank to keep what's already saved.\n                </p>\n              )}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "Where can I see the password I saved for a connection, and why is the Type dropdown greyed out when I edit?",
+    "answer": "Saved credentials can never be read back — not in the UI and not via the API. The connections API returns metadata only (id, name, type, active flag, timestamps); the secret stays encrypted in the database. That's why the credential boxes are blank every time you open \"Edit connection\" — the code deliberately never pre-loads them (\"never preload secrets\").\n\nIf you've lost a password, RackTrack can't tell you what it was: get it from the source system and type it in again. On edit you only need to fill the field(s) you're actually changing — the new values are merged over the stored ones. Leave every credential box empty and the existing credentials are kept untouched (only the name is updated).\n\nThe Type dropdown is disabled while editing (\"Type can't change after a connection is created.\"). To point at a different kind of system, create a new connection of that type — it becomes the active one on save — then delete the old one.",
+    "symptoms": [
+      "Can't see the saved password",
+      "Credential fields are empty when editing",
+      "Type can't change after a connection is created",
+      "How do I recover the credentials I entered"
+    ],
+    "rootCause": "The API returns metadata only (rowToMeta has no secret field), openEditForm resets the secret state with the comment 'never preload secrets', and the Type <select> is disabled whenever editingId is set.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "53-61",
+        "snippet": "  const openEditForm = (profile) => {\n    setEditingId(profile.id);\n    setName(profile.name);\n    setType(profile.type);\n    setSecret(emptySecretFor(profile.type)); // never preload secrets"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "295-308",
+        "snippet": "                <select\n                  className={styles.input}\n                  value={type}\n                  onChange={(e) => setType(e.target.value)}\n                  disabled={!!editingId}>\n...\n                {editingId && (\n                  <span className={styles.fieldHint}>\n                    Type can't change after a connection is created.\n                  </span>\n                )}"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "166-176",
+        "snippet": "function rowToMeta(row) {\n  if (!row) return null;\n  return {\n    id:         row.id,\n    name:       row.name,\n    type:       row.type,\n    is_active:  !!row.is_active,\n    created_at: row.created_at,\n    updated_at: row.updated_at,\n  };\n}"
+      },
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "79-83",
+        "snippet": "        Credentials for your CMDB/ITSM database, live network sources, etc. Set them once here for the\n        whole organization. They're stored <strong>encrypted</strong> and are <strong>never shown again</strong> —\n        not even to you. To change one, just re-enter it."
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "How do I test that a connection actually works? I can't find a \"Test connection\" button.",
+    "answer": "There is no Test button — RackTrack has no test endpoint for connection profiles. Saving proves only that the required fields were filled in, never that the host, username or password are correct.\n\nServiceNow / CMDB is the one type with live verification. When it is the active connection, a \"Refresh data from this source\" button appears under the Active card. Pressing it runs a real poll against the instance you entered:\n• While it runs: \"Pulling fresh data from <name>…\"\n• Success: \"✓ Pulled N incidents from <instance>\"\n• Failure: \"Refresh failed: <error from the poller>\"\nPressing \"Use\" on a saved ServiceNow connection starts the same poll automatically. Note that saving a brand-new one with \"Save & use\" does NOT — it is made active, but nothing is contacted until you press the refresh button.\n\nEvery other type (NetBox, SolarWinds Orion, CA/DX Spectrum, own SQL, own REST): no refresh button, nothing contacted at save time — the credentials are just stored encrypted. Confirm them by opening a screen that reads from that source and seeing whether data appears.",
+    "symptoms": [
+      "No Test connection button",
+      "How do I know the credentials are right",
+      "Refresh data from this source",
+      "Connection saved but no data appears",
+      "Refresh failed"
+    ],
+    "rootCause": "There is no test route in connection_profiles_routes.js; the only live verification is the ServiceNow poll, and ConnectionsPage renders the 'Refresh data from this source' button only when active.type === 'servicenow'. lastRefresh drives the success/failure banners.",
+    "evidence": [
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "195-203",
+        "snippet": "        {active && active.type === 'servicenow' && (\n          <button\n            type=\"button\"\n            className={styles.refreshBtn}\n            onClick={() => refreshActiveSource().catch(() => { /* error shown in banner */ })}\n            disabled={refreshing}>\n            {refreshing ? 'Refreshing…' : 'Refresh data from this source'}\n          </button>\n        )}"
+      },
+      {
+        "file": "client/src/pages/ConnectionsPage.jsx",
+        "lines": "143-155",
+        "snippet": "      {lastRefresh && !refreshing && (\n        lastRefresh.ok ? (\n          <div className={styles.successBanner}>\n            ✓ Pulled {lastRefresh.count ?? '—'} incident{lastRefresh.count === 1 ? '' : 's'}\n            {' '}from <strong>{lastRefresh.instance}</strong>\n          </div>\n        ) : (\n          <div className={styles.errorBanner}>\n            Refresh failed: {lastRefresh.error}\n          </div>\n        )\n      )}"
+      },
+      {
+        "file": "client/src/ConnectionsContext.jsx",
+        "lines": "121-130",
+        "snippet": "    // For ServiceNow profiles, kick off the inbox re-poll and watch it\n    // complete in the background. The activate call returns fast; the\n    // refreshing flag drives the \"Pulling fresh data…\" banner so the\n    // user can navigate around the app while it works.\n    if (profile?.type === 'servicenow') {\n      setRefreshing(true);\n      setLastRefresh(null);\n      try {\n        await api.refreshIncidents();   // returns immediately (202)"
+      },
+      {
+        "file": "server/connection_profiles_routes.js",
+        "lines": "9-17",
+        "snippet": " * Routes:\n *   GET    /api/connections              → list metadata for this user\n *   GET    /api/connections/active       → metadata for the active profile\n *   POST   /api/connections              → create {name, type, secret, make_active?}\n *   GET    /api/connections/:id          → metadata for one profile\n *   PATCH  /api/connections/:id          → update {name?, secret?}\n *   POST   /api/connections/:id/activate → make this profile active\n *   POST   /api/connections/deactivate   → clear active (no source for this user)\n *   DELETE /api/connections/:id          → delete one profile"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "What is the \"Organization integrations\" panel, and how is it different from my personal Data Sources?",
+    "answer": "\"Organization integrations\" is where an org admin sets the credentials the WHOLE organization uses, so every member's scans read from the same CMDB without anyone entering credentials on their own account.\n\nWhere: Organization Console → \"Organization integrations\" section. Org admins only — the platform owner does not see it (an owner account has no organization context).\n\nTo add one: press \"+ Add integration\", choose the Integration type (the same six types as personal Data Sources), optionally type a Label (blank = the type's name), fill the fields marked *, then press \"Save (encrypted)\".\n\nEach one then shows as a row reading \"● Configured · encrypted\" with a \"Remove\" button. Secrets are never displayed again and there is no edit — to change a credential you re-add it.\n\nPrecedence: for ServiceNow the organization's credential wins; the server falls back to the signed-in user's personal connection only if the org has none. Personal Data Sources stay private to the account that created them.",
+    "symptoms": [
+      "Where do I set credentials for the whole organization",
+      "Organization integrations panel",
+      "+ Add integration",
+      "Save (encrypted)",
+      "Configured · encrypted"
+    ],
+    "rootCause": "OrgConnectionsPanel is rendered in OrgConsolePage only when the viewer is not the platform owner; it posts to /api/org-connections, which is gated to org_admin/owner and requires an organization_id. getSnCreds prefers resolveCredsForOrg over the personal profile.",
+    "evidence": [
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "70-78",
+        "snippet": "        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1a1c1d' }}>Organization integrations</h3>\n        {!formOpen && (\n          <button type=\"button\" style={primaryBtn} onClick={() => { setFormError(null); setFormOpen(true); }}>\n            + Add integration\n          </button>"
+      },
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "94-114",
+        "snippet": "          <label style={label}>Label (optional)</label>\n          <input style={input} value={name} placeholder={info.label}\n...\n            <button type=\"submit\" style={primaryBtn} disabled={saving}>{saving ? 'Saving…' : 'Save (encrypted)'}</button>"
+      },
+      {
+        "file": "client/src/pages/OrgConsolePage.jsx",
+        "lines": "426-428",
+        "snippet": "          {/* Org-wide external access — admin sets encrypted credentials the\n              whole org's pipeline uses. Owner has no org context, so admin-only. */}\n          {!isOwner && <OrgConnectionsPanel />}"
+      },
+      {
+        "file": "server/app.js",
+        "lines": "4693-4696",
+        "snippet": "    // Prefer the ORG-wide credential the admin configured; fall back to a\n    // personal profile only if the org has none.\n    const resolved = (orgId && profiles.resolveCredsForOrg(orgId, 'servicenow'))\n      || (userId && profiles.resolveCredsForType(userId, 'servicenow'));"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "I re-entered our CMDB credentials in Organization integrations and now the same integration is listed twice. Which one is being used?",
+    "answer": "The newest one is being used. Nothing was overwritten: pressing \"+ Add integration\" for a type you already have marks the previous credential of that type inactive and inserts a new active one, and the panel lists every stored row — each showing \"● Configured · encrypted\" whether or not it is live.\n\nWhich row is which: the list is sorted active-first, so within a type the top row is the one in use.\n\nFix: press \"Remove\" on the lower, stale row and confirm (\"Remove the <type> integration for this organization?\"). That deletes only that row and does not affect the active one.\n\nTwo rows of *different* types is normal — an organization can hold one active credential per type at once, for example a live ServiceNow and a live SQL source together.",
+    "symptoms": [
+      "Duplicate integration rows",
+      "Two ServiceNow entries in Organization integrations",
+      "Which credential is actually used after re-entering",
+      "Remove the integration for this organization"
+    ],
+    "rootCause": "createForOrg deactivates the previous active row of that type and inserts a new one, but listForOrg selects all rows for the organization with no is_active filter, and the panel renders every row with the same 'Configured · encrypted' line.",
+    "evidence": [
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "394-410",
+        "snippet": "function createForOrg(orgId, adminUserId, { name, type, secret }) {\n  validateType(type);\n  validateSecret(type, secret);\n  const blob = encrypt(JSON.stringify(secret), getKey());\n  const tx = db.transaction(() => {\n    db.prepare(\n      `UPDATE connection_profiles SET is_active = 0, updated_at = datetime('now')\n        WHERE organization_id = ? AND type = ? AND is_active = 1`\n    ).run(Number(orgId), type);"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "371-379",
+        "snippet": "/** List metadata only (no secrets) for an org's connection profiles. */\nfunction listForOrg(orgId) {\n  return db.prepare(\n    `SELECT id, name, type, is_active, created_at, updated_at\n       FROM connection_profiles\n      WHERE organization_id = ?\n      ORDER BY is_active DESC, type ASC, updated_at DESC`\n  ).all(Number(orgId)).map(orgRowToMeta);\n}"
+      },
+      {
+        "file": "client/src/components/OrgConnectionsPanel.jsx",
+        "lines": "126-133",
+        "snippet": "            <div key={p.id} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>\n...\n                <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 2 }}>● Configured · encrypted</div>\n              </div>\n              <button type=\"button\" style={dangerBtn} onClick={() => onRemove(p)}>Remove</button>"
+      },
+      {
+        "file": "server/lib/connection_profiles.js",
+        "lines": "89-93",
+        "snippet": "  -- one active profile per (org, type) so an org can have a live ServiceNow\n  -- AND a live SQL source at the same time.\n  CREATE UNIQUE INDEX IF NOT EXISTS uq_conn_profiles_org_active\n    ON connection_profiles(organization_id, type)\n    WHERE is_active = 1 AND organization_id IS NOT NULL;"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "connections-a",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]

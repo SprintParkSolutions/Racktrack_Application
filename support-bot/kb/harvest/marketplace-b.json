@@ -1,0 +1,303 @@
+[
+  {
+    "question": "How do Marketplace alerts work? I saved a search but I'm not getting any matches.",
+    "answer": "A saved search is a standing watch: it only fires on listings posted AFTER you saved it. It never looks backwards, so an empty Matches list usually just means nothing new has been posted yet.\n\nTo create one: Alerts → \"New search\" (or \"Save a search\" if you have none), enter a Label (required — it names each match, e.g. \"Cisco switch under $2k\"), optionally set Keyword, Category, Max price and For sale / Wanted, then \"Save search\".\n\nWhy a search may never fire:\n• Existing listings are never matched retroactively — only new posts.\n• Every filter must match. Keyword is a plain substring of title, vendor or model. Category must be exactly the one the seller picked (a switch filed under \"Other\" won't match a Switches search).\n• Kind must match: a \"For sale\" search never matches a Wanted post.\n• Max price excludes anything above it; listings with no price (\"Make an offer\") still come through.\n• You are never alerted about your own listings.\n\nLimits: 20 saved searches max (the 21st gives \"max 20 saved searches\"); Alerts shows the 50 most recent. \"Mark all read\" clears the badge, the × on a row dismisses one match, and deleting a search (\"Stop alerts and delete?\") also removes its matches.",
+    "symptoms": [
+      "No matches yet",
+      "Saved search never fires",
+      "max 20 saved searches",
+      "Label is required",
+      "Alerts badge won't clear",
+      "Nothing saved yet"
+    ],
+    "rootCause": "matchAlerts() runs only inside the POST /api/marketplace/listings response wrapper, so it evaluates saved searches against newly inserted rows only; it skips the listing's own owner, requires kind and (if set) category equality, a substring hit on title+vendor+model, and max_price_cents >= price. Saved searches are capped at 20 per user; GET /alerts is LIMIT 50; alerts cascade-delete with their saved search.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "985-1001",
+        "snippet": "function matchAlerts(listing) {\n  const searches = db.prepare(`SELECT * FROM marketplace_saved_searches`).all();\n  for (const s of searches) {\n    if (s.user_id === listing.user_id) continue; // don't alert yourself\n    if (s.kind !== listing.kind) continue;\n    if (s.category && s.category !== listing.category) continue;\n    if (s.max_price_cents != null && listing.price_cents != null && listing.price_cents > s.max_price_cents) continue;\n    if (s.query) {\n      const q = s.query.toLowerCase();\n      const haystack = [listing.title, listing.vendor, listing.model].filter(Boolean).join(' ').toLowerCase();\n      if (!haystack.includes(q)) continue;\n    }"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "884-888",
+        "snippet": "const label = String(b.label || '').trim();\n  if (!label) return res.status(400).json({ ok: false, error: 'label required' });\n  // Max 20\n  const cnt = db.prepare(`SELECT COUNT(*) AS c FROM marketplace_saved_searches WHERE user_id = ?`).get(req.user.id);\n  if (cnt.c >= 20) return res.status(400).json({ ok: false, error: 'max 20 saved searches' });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "942-943",
+        "snippet": "WHERE a.user_id = ?\n    ORDER BY a.created_at DESC LIMIT 50"
+      },
+      {
+        "file": "client/src/pages/MarketplaceAlertsPage.jsx",
+        "lines": "343-353",
+        "snippet": "<label className=\"mkt-label\" htmlFor=\"mkt-search-label\">Label *</label>\n                  <input\n                    id=\"mkt-search-label\"\n                    className=\"mkt-field\"\n                    placeholder=\"e.g. Cisco switch under $2k\"\n...\n                  <span className=\"mkt-hint\">How this search is named in your alerts.</span>"
+      },
+      {
+        "file": "client/src/pages/MarketplaceAlertsPage.jsx",
+        "lines": "194-209",
+        "snippet": "const markAllRead = async () => {\n    await authFetch(apiUrl('/api/marketplace/alerts/mark-read'), { method: 'POST' });\n...\n  const deleteSavedSearch = async (id) => {\n    await authFetch(apiUrl(`/api/marketplace/saved-searches/${id}`), { method: 'DELETE' });"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "My listing disappeared from Browse and now shows \"closed\" — I didn't touch it.",
+    "answer": "Listings auto-retire at 90 days. Any listing still \"active\" 90 days after it was posted is flipped to \"closed\" — it drops out of Browse (Browse only shows active listings) but stays in My listings with a grey \"closed\" pill.\n\nTo bring it back:\n1. Open My listings (closed listings are still there — they only vanish from public Browse).\n2. Press \"Relist\" — it goes straight back to active and reappears in Browse.\n3. If the gear is gone, press Delete, then \"Yes, delete\".\n\nOther reasons a listing leaves Browse:\n• It shows \"sold\" — you pressed \"Mark sold\", or a buyer took the last unit, which marks it sold automatically.\n• Your platform owner hid it after it was reported. That also shows as \"closed\"; relisting without fixing the problem just gets it hidden again, so ask them what was wrong first.\n\nNote: the expiry sweep is lazy (it runs at most once an hour, and only when certain pages are loaded), so a listing may sit past 90 days for a while before it flips.\n\nThe Dashboard's \"Closed\" tile (\"Expired or withdrawn\") counts both cases.",
+    "symptoms": [
+      "Listing disappeared from Browse",
+      "Listing shows closed",
+      "Listing expired",
+      "Old listing no longer visible",
+      "How do I relist"
+    ],
+    "rootCause": "maybeExpireListings() flips any active listing created more than 90 days ago to 'closed'. It is debounced to once an hour and is registered as router.use AFTER most /api/marketplace routes, so in practice it only fires on the later-registered endpoints (dashboard, stripe/status, partner OAuth status) rather than on every request.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1170-1180",
+        "snippet": "let _lastExpireRun = 0;\nfunction maybeExpireListings() {\n  const now = Date.now();\n  if (now - _lastExpireRun < 3600_000) return; // 1 hour debounce\n  _lastExpireRun = now;\n  try {\n    const info = db.prepare(`\n      UPDATE marketplace_listings SET status = 'closed', updated_at = datetime('now')\n      WHERE status = 'active'\n        AND created_at < datetime('now', '-90 days')\n    `).run();"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1188-1192",
+        "snippet": "// Hook into the browse route so it runs passively\nrouter.use('/api/marketplace', (req, res, next) => {\n  maybeExpireListings();\n  next();\n});"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1157-1162",
+        "snippet": "const action = String(req.body?.action || 'hide').toLowerCase();\n  if (action === 'hide') {\n    db.prepare(`UPDATE marketplace_listings SET status = 'closed', updated_at = datetime('now') WHERE id = ?`).run(id);\n  } else if (action === 'restore') {"
+      },
+      {
+        "file": "client/src/pages/MarketplaceDashboardPage.jsx",
+        "lines": "119",
+        "snippet": "<Stat label=\"Closed\"   value={d.listings.closed} meta=\"Expired or withdrawn\" />"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "end-user",
+    "confidence": "certain",
+    "domain": "marketplace-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 1
+  },
+  {
+    "question": "What do the numbers on the Marketplace Dashboard mean, and why is my revenue zero when I've sold things?",
+    "answer": "The Marketplace Dashboard (\"Seller dashboard — Listings, sales and purchases\") is per-user, not per-organization, and Revenue counts completed orders only.\n\nWhat the numbers are:\n• Listings — Total, Active, Sold, Closed (\"Expired or withdrawn\").\n• Sales — Revenue (\"From N completed orders\"), Orders (all orders where you're the seller), Completed, and Pending (\"Awaiting shipment\"). Pending counts orders at Paid or Shipped — it's your to-ship / to-close queue, not unpaid orders.\n• Purchases — Spent (\"Across N orders\") and your buyer order count.\n\nWhy Revenue reads zero: only orders with status Completed are totalled. An order still at Paid or Shipped sits in Pending and contributes nothing. Close them out: Orders → Selling → open the order → \"Mark completed\" → \"Yes, complete\". The button only appears once the order is Shipped, so mark it shipped first.\n\nThere is no combined org view — if several admins in your org sell, each sees only their own figures. \"Recent listings\" shows your last ten; \"View all\" opens the My listings tab.",
+    "symptoms": [
+      "Revenue is 0",
+      "Dashboard numbers look wrong",
+      "Pending orders count",
+      "Nothing listed yet on dashboard",
+      "Dashboard doesn't show my team's sales"
+    ],
+    "rootCause": "GET /api/marketplace/dashboard aggregates strictly by req.user.id: revenue_cents sums total_cents only WHERE status='completed', pending_orders counts status IN ('paid','shipped'), and there is no organization-level rollup.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1211-1218",
+        "snippet": "const orderStats = db.prepare(`\n    SELECT\n      COUNT(*)                                   AS total_orders,\n      SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_orders,\n      SUM(CASE WHEN status = 'completed' THEN total_cents ELSE 0 END) AS revenue_cents,\n      SUM(CASE WHEN status IN ('paid','shipped') THEN 1 ELSE 0 END)   AS pending_orders\n    FROM marketplace_orders WHERE seller_id = ?\n  `).get(uid);"
+      },
+      {
+        "file": "client/src/pages/MarketplaceDashboardPage.jsx",
+        "lines": "122-136",
+        "snippet": "<StatGroup title=\"Sales\">\n            <Stat\n              lead\n              label=\"Revenue\"\n              value={formatCurrency(d.sales.revenueCents)}\n              meta={`From ${plural(d.sales.completedOrders, 'completed order')}`}\n            />\n...\n            <Stat\n              label=\"Pending\"\n              value={d.sales.pendingOrders}\n              meta={d.sales.pendingOrders > 0 ? 'Awaiting shipment' : undefined}\n            />"
+      },
+      {
+        "file": "client/src/pages/MarketplaceDashboardPage.jsx",
+        "lines": "97-100",
+        "snippet": "<MarketplaceShell\n      title=\"Seller dashboard\"\n      subtitle=\"Listings, sales and purchases\"\n      backTo=\"/marketplace\""
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "marketplace-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "What do Partner accounts do, and how do I get new listings posted into our Discord channel?",
+    "answer": "Partners (/marketplace/partners, admin only) shows three cards — eBay, Amazon, Discord — each with a Connected / Not connected pill. Discord is the only one that does anything today.\n\nDiscord (announce new listings in a channel):\n1. Discord: Channel settings → Integrations → Webhooks → Copy webhook URL.\n2. RackTrack: Partners → Discord → paste into \"Webhook URL\" → \"Save webhook\".\n3. Press \"Send test\". You should see \"Test notification sent to Discord.\" here and a \"Webhook Test\" message in the channel.\n4. After that, every listing anyone creates posts a card with title, category, condition, price, equipment and location. The fan-out is server-wide, not per-user: every connected Discord webhook gets it.\n\nIf the test fails:\n• \"No Discord webhook connected\" — it was disconnected; save the URL again.\n• \"Webhook failed: Discord returned 404\" — the webhook was deleted in Discord; create a new one and save it.\n\neBay / Amazon: if Connect is greyed out with \"API keys not configured on this server\", the server has no eBay/Amazon credentials — ask your platform owner. When they are configured, Connect starts an OAuth redirect, but neither platform cross-posts listings yet.\n\nDisconnect → \"Yes, disconnect\" stops the webhook being used immediately.",
+    "symptoms": [
+      "API keys not configured on this server",
+      "No Discord webhook connected",
+      "Test failed",
+      "webhook URL required",
+      "Discord notifications not arriving",
+      "Connect eBay greyed out"
+    ],
+    "rootCause": "POST /api/marketplace/partner-accounts stores one row per (user, platform); Discord requires a webhookUrl and is the only platform actually consumed — sendDiscordNotification() fans out to every connected discord webhook after a listing insert. eBay/Amazon Connect is disabled client-side when the corresponding /status endpoint reports configured:false.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1080-1086",
+        "snippet": "if (platform === 'discord') {\n    const url = String(b.webhookUrl || '').trim();\n    if (!url) return res.status(400).json({ ok: false, error: 'webhook URL required' });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1268-1291",
+        "snippet": "router.post('/api/marketplace/partner-accounts/discord/test', requireAuth, safeAsync(async (req, res) => {\n...\n  if (!acct || !acct.webhook_url) return res.status(400).json({ ok: false, error: 'No Discord webhook connected' });\n...\n    if (!r.ok) throw new Error(`Discord returned ${r.status}`);\n...\n    res.status(502).json({ ok: false, error: `Webhook failed: ${err.message}` });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "205-214",
+        "snippet": "fields: [\n      { name: 'Category', value: listing.category, inline: true },\n      { name: 'Condition', value: listing.condition, inline: true },\n      { name: 'Price', value: priceStr, inline: true },\n    ],\n    footer: { text: 'RackTrack Marketplace' },"
+      },
+      {
+        "file": "client/src/pages/MarketplacePartnerAccountsPage.jsx",
+        "lines": "253-259",
+        "snippet": "placeholder=\"https://discord.com/api/webhooks/…\"\n...\n                    <span className=\"mkt-hint\">\n                      Channel settings → Integrations → Webhooks → Copy webhook URL.\n                    </span>"
+      },
+      {
+        "file": "client/src/pages/MarketplacePartnerAccountsPage.jsx",
+        "lines": "315-319",
+        "snippet": "{needsKeys && (\n                        <span className={styles.actionNote}>\n                          API keys not configured on this server\n                        </span>\n                      )}"
+      }
+    ],
+    "userCanSelfFix": true,
+    "audience": "admin",
+    "confidence": "certain",
+    "domain": "marketplace-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "INTERNAL: A buyer says they paid but the order is still Pending — how does Marketplace payment actually work?",
+    "answer": "Marketplace payment is env-gated and the order's initial status depends on whether Stripe is wired up: `const initialStatus = stripe ? 'pending' : 'paid'` (server/marketplace_routes.js:642).\n\nCheck GET /api/marketplace/stripe/status ({configured:true|false}) first.\n\nconfigured:false — no charge is ever taken. POST /api/marketplace/orders writes the order straight in as 'paid' (\"offline payment assumed\"). The checkout button reads \"Complete purchase — …\". Treat it as an IOU settled outside RackTrack; never tell a customer RackTrack charged them.\n\nconfigured:true — the order is written 'pending', a Checkout Session is created with the order id in metadata, and the client redirects to session.url (MarketplaceCheckoutPage.jsx:113-117). The only path to 'paid' is POST /api/marketplace/stripe/webhook receiving checkout.session.completed, matching metadata.orderId, and running an UPDATE guarded by `AND status = 'pending'` (marketplace_routes.js:1310-1330).\n\nKnown defect — the webhook currently cannot work. server/app.js:284 mounts express.json() globally before the marketplace router (app.js:434), so the route's express.raw() is skipped and req.body arrives as a parsed object. With STRIPE_WEBHOOK_SECRET set, constructEvent throws; without it, JSON.parse on an object throws. Either way the response is 400 \"Webhook verification failed: …\". So on any deployment with Stripe enabled, orders never leave Pending. Fix is server-side: mount the webhook with express.raw before express.json.\n\nOther ways an order sits at Pending: the buyer abandoned or failed the Stripe page (cancel_url returns them to /marketplace/orders/<id>?payment=cancelled, but MarketplaceOrdersPage never reads ?payment=, so they see no message and often assume it worked); or session creation itself failed, in which case the API returns { ok:true, order, stripeError } and the client — which only looks for stripeSessionUrl — silently drops them on a pending order page. Grep the log for marketplace.stripe_error.\n\nThere is no in-app way to re-drive payment on an existing order (only one create-session call site, at order creation). Cancel the order via PATCH /api/marketplace/orders/:id (allowed from pending) and have the buyer check out again.",
+    "symptoms": [
+      "Order stuck on Pending",
+      "Buyer paid but status didn't change",
+      "Webhook verification failed",
+      "stripeError",
+      "marketplace.stripe_error",
+      "No confirmation after returning from Stripe"
+    ],
+    "rootCause": "initialStatus = stripe ? 'pending' : 'paid'. Without Stripe the order is fabricated as paid with no charge; with Stripe the only path to 'paid' is the checkout.session.completed webhook, and both a cancelled session and a failed session-creation leave the order pending with no user-visible message because MarketplaceOrdersPage ignores ?payment=.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "635-638",
+        "snippet": "// When Stripe is configured, orders start as 'pending' and move to\n  // 'paid' only after the Stripe webhook confirms payment. Without Stripe\n  // the order is created as 'paid' directly (offline payment assumed).\n  const initialStatus = stripe ? 'pending' : 'paid';"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "694-701",
+        "snippet": "success_url: `${STRIPE_BASE_URL}/marketplace/orders/${orderId}?payment=success`,\n        cancel_url:  `${STRIPE_BASE_URL}/marketplace/orders/${orderId}?payment=cancelled`,\n...\n      logger.error({ event: 'marketplace.stripe_error', error: err.message }, 'Stripe session creation failed');\n      // Fall through — order is created as pending, buyer can retry\n      return res.json({ ok: true, order: orderJson, stripeError: err.message });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1306-1322",
+        "snippet": "router.post('/api/marketplace/stripe/webhook', express.raw({ type: 'application/json' }), safeAsync(async (req, res) => {\n  if (!stripe) return res.status(404).json({ ok: false, error: 'Stripe not configured' });\n...\n    return res.status(400).json({ ok: false, error: `Webhook verification failed: ${err.message}` });\n...\n      db.prepare(\n        \"UPDATE marketplace_orders SET status = 'paid', updated_at = datetime('now') WHERE id = ? AND status = 'pending'\"\n      ).run(parseInt(orderId, 10));"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "38-49",
+        "snippet": "let stripe = null;\nconst STRIPE_SECRET   = process.env.STRIPE_SECRET_KEY   || '';\n...\nif (STRIPE_SECRET) {\n  try {\n    stripe = require('stripe')(STRIPE_SECRET);\n...\n    logger.warn(`[marketplace] stripe package not installed — payments disabled: ${e.message}`);"
+      },
+      {
+        "file": "client/src/pages/MarketplaceCheckoutPage.jsx",
+        "lines": "113-117",
+        "snippet": "// If Stripe is configured, redirect to Stripe Checkout\n      if (data.stripeSessionUrl) {\n        window.location.href = data.stripeSessionUrl;\n        return;\n      }"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "marketplace-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "INTERNAL: An admin says \"Connect eBay\" (or Connect Amazon) just goes to a broken page even though the API keys are set.",
+    "answer": "Client bug, not credentials. Verify keys, then set expectations.\n\n1. GET /api/marketplace/partner-accounts/ebay/status (or …/amazon/status). If `configured:false`, the Connect button is disabled with \"API keys not configured on this server\" — that IS the credentials case: set EBAY_APP_ID / EBAY_CERT_ID / EBAY_REDIRECT_URI (or AMAZON_SP_CLIENT_ID / AMAZON_SP_CLIENT_SECRET / AMAZON_REDIRECT_URI) in .env and restart.\n2. If `configured:true`, the button works but the page is broken: …/auth-url returns `{ ok: true, url }` while the page reads `data.authUrl`, so it navigates to the literal string \"undefined\" — blank / not-found page, consent screen never reached (MarketplacePartnerAccountsPage.jsx:128 vs marketplace_routes.js:1349 and :1397).\n3. No in-app workaround. POSTing /api/marketplace/partner-accounts with {platform:'ebay'} only creates a stub row — it grants no eBay access.\n4. The callbacks redirect with ?error=ebay_auth_failed / ?error=amazon_auth_failed (and ?connected=ebay), but the page never reads query params, so a failed — or successful — exchange also shows nothing.\n\nEven once connected, nothing cross-posts: no code publishes a RackTrack listing to eBay or Amazon. Never promise cross-posting.",
+    "symptoms": [
+      "Connect eBay goes to a blank page",
+      "Connect Amazon does nothing",
+      "URL ends in undefined",
+      "ebay_auth_failed",
+      "amazon_auth_failed",
+      "Cross-posting to eBay not working"
+    ],
+    "rootCause": "MarketplacePartnerAccountsPage reads data.authUrl from the /auth-url response, but the server returns the field as `url`, so window.location.href is assigned undefined. Separately, the ?error=…/?connected=… params the OAuth callbacks redirect with are never read by the page.",
+    "evidence": [
+      {
+        "file": "client/src/pages/MarketplacePartnerAccountsPage.jsx",
+        "lines": "122-131",
+        "snippet": "if ((platform === 'ebay' || platform === 'amazon') && oauthStatus[platform]) {\n      setConnecting(platform);\n      try {\n        const res = await authFetch(apiUrl(`/api/marketplace/partner-accounts/${platform}/auth-url`));\n        const data = await res.json();\n        if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);\n        window.location.href = data.authUrl;\n        return;"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1339-1345",
+        "snippet": "router.get('/api/marketplace/partner-accounts/ebay/auth-url', requireAuth, (req, res) => {\n  if (!EBAY_APP_ID || !EBAY_CERT_ID || !EBAY_REDIRECT_URI) {\n    return res.status(400).json({ ok: false, error: 'eBay API keys not configured. Set EBAY_APP_ID, EBAY_CERT_ID, EBAY_REDIRECT_URI in .env' });\n  }\n...\n  res.json({ ok: true, url });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1388-1393",
+        "snippet": "router.get('/api/marketplace/partner-accounts/amazon/auth-url', requireAuth, (req, res) => {\n  if (!AMAZON_SP_CLIENT || !AMAZON_REDIRECT) {\n    return res.status(400).json({ ok: false, error: 'Amazon API keys not configured. Set AMAZON_SP_CLIENT_ID, AMAZON_SP_CLIENT_SECRET, AMAZON_REDIRECT_URI in .env' });\n  }\n...\n  res.json({ ok: true, url });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1369",
+        "snippet": "return res.redirect(`${STRIPE_BASE_URL}/marketplace/partners?error=ebay_auth_failed`);"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "marketplace-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  },
+  {
+    "question": "INTERNAL: A customer reported a listing and nothing happened. How does reporting and moderation work?",
+    "answer": "Reporting writes a row and stops there. Handle these tickets manually.\n\n\"Report listing\" POSTs to /api/marketplace/listings/:id/flag, which only inserts into marketplace_flags (server/marketplace_routes.js:1139-1146). A repeat report from the same account hits the UNIQUE(listing_id,user_id) constraint and shows \"already flagged\" in the modal. The UI then says \"Reported. An admin will review this listing.\" (client/src/pages/MarketplacePage.jsx:410-413) — that is not true; nobody is queued to see it.\n\nMissing pieces:\n- No endpoint or screen lists flags. marketplace_flags appears exactly twice in the codebase (CREATE TABLE + INSERT). The only way to read reports is querying server/data/auth.db directly.\n- No notification fires on a flag. The Discord webhook is wired to listing creation only.\n- POST /api/marketplace/listings/:id/moderate ('hide' → status closed, 'restore' → active) gates on `user.role === 'admin' || user.id === 1` (marketplace_routes.js:1156-1159). RackTrack never issues an 'admin' role — roles are owner, org_admin, site_manager, member (server/auth.js:211-214) — so only the first user row can moderate. Everyone else, platform owner included, gets 403 \"admin only\".\n\nResolution: escalate to whoever holds user id 1 on that deployment, or ask the seller to delete their own listing (DELETE /api/marketplace/listings/:id is owner-only and always works for them). Never promise the customer a review.",
+    "symptoms": [
+      "Reported a listing, nothing happened",
+      "already flagged",
+      "admin only",
+      "Where do I review reported listings",
+      "Can't hide a listing as owner"
+    ],
+    "rootCause": "marketplace_flags is write-only — no list/read endpoint and no notification hook. The moderate endpoint gates on a role string ('admin') that the auth system never issues, falling back to user.id === 1, so owner/org_admin accounts receive 403 'admin only'.",
+    "evidence": [
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1135-1145",
+        "snippet": "router.post('/api/marketplace/listings/:id/flag', requireAuth, safeAsync(async (req, res) => {\n...\n    db.prepare(`INSERT INTO marketplace_flags (listing_id, user_id, reason) VALUES (?, ?, ?)`).run(id, req.user.id, reason);\n  } catch (e) {\n    if (e.message.includes('UNIQUE')) return res.status(400).json({ ok: false, error: 'already flagged' });"
+      },
+      {
+        "file": "server/marketplace_routes.js",
+        "lines": "1152-1155",
+        "snippet": "// Check if user is admin (role field or first user)\n  const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.user.id);\n  const isAdmin = user && (user.role === 'admin' || user.id === 1);\n  if (!isAdmin) return res.status(403).json({ ok: false, error: 'admin only' });"
+      },
+      {
+        "file": "server/auth.js",
+        "lines": "206-208",
+        "snippet": "//   'owner'        — platform superadmin (creates orgs + org admins)\n  //   'org_admin'    — manages one organization (creates Sites + users)\n  //   'site_manager' — manages one Site (adds members, runs scans)"
+      },
+      {
+        "file": "client/src/pages/MarketplacePage.jsx",
+        "lines": "410-413",
+        "snippet": "{reported ? (\n                <p className=\"mkt-banner mkt-banner--success\">\n                  Reported. An admin will review this listing.\n                </p>"
+      }
+    ],
+    "userCanSelfFix": false,
+    "audience": "internal-only",
+    "confidence": "certain",
+    "domain": "marketplace-b",
+    "_corrected": true,
+    "_votes": 3,
+    "_refuted": 0
+  }
+]
