@@ -37,12 +37,11 @@
 
 .title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 750;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.06em;
   line-height: 1.25;
 }
-.title span { font-weight: 450; color: var(--muted, #6b7178); }
 
 .sub {
   margin: 2px 0 0;
@@ -385,8 +384,6 @@
   .mark { width: 32px; height: 32px; border-radius: 9px; }
   .mark svg { width: 18px; height: 18px; }
   .title { font-size: 0.92rem; }
-  /* The strapline is the first thing to go — the header must stay one line. */
-  .sub { display: none; }
   .status { padding: 5px 9px; font-size: 0.66rem; }
 
   .inner { padding: 16px 14px 4px; gap: 13px; }

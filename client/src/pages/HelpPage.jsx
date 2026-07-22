@@ -1,4 +1,4 @@
-// Help — the full-screen home for RackTrack Assist.
+// Help — the full-screen home for DOT, the RackTrack assistant.
 //
 // The floating panel (SupportBot) is for when you are mid-task and need one
 // answer. This page is for when you came here to ask something.
@@ -123,7 +123,7 @@ export default function HelpPage() {
           route: 'refusal',
           content: res.status === 429
             ? 'A lot of questions at once — give it a few seconds and try again.'
-            : 'Assist is unavailable right now.',
+            : 'DOT is unavailable right now.',
         }]);
         return;
       }
@@ -141,7 +141,7 @@ export default function HelpPage() {
       setMessages((prev) => [...prev, {
         role: 'assistant',
         route: 'refusal',
-        content: 'Could not reach Assist. Check your connection and try again.',
+        content: 'Could not reach DOT. Check your connection and try again.',
       }]);
     } finally {
       setPending(false);
@@ -166,7 +166,7 @@ export default function HelpPage() {
       <div className={styles.page}>
         <div className={styles.unavailable}>
           <h2>Help is unavailable</h2>
-          <p>Assist isn&apos;t running right now. Please contact your RackTrack administrator.</p>
+          <p>DOT isn&apos;t running right now. Please contact your RackTrack administrator.</p>
         </div>
       </div>
     );
@@ -186,8 +186,7 @@ export default function HelpPage() {
           </svg>
         </span>
         <div className={styles.headText}>
-          <h1 className={styles.title}>RackTrack <span>Assist</span></h1>
-          <p className={styles.sub}>Answers from verified documentation — never guesses</p>
+          <h1 className={styles.title}>DOT</h1>
         </div>
         {status?.ok && (
           <button
@@ -211,7 +210,7 @@ export default function HelpPage() {
               <h2>What are you stuck on?</h2>
               <p>
                 Ask in your own words — the way you&apos;d say it to a colleague.
-                If Assist isn&apos;t certain it will say so rather than guess.
+                If DOT isn&apos;t certain it will say so rather than guess.
               </p>
               <div className={styles.startersLabel}>Common questions</div>
               <div className={styles.starters}>

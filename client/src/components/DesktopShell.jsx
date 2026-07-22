@@ -141,7 +141,9 @@ export default function DesktopShell({ children }) {
   // These pages render their own full page header (title + controls). Showing
   // the shell's topbar crumb on top of that produced a duplicate header on
   // wide screens (iPad landscape / desktop), so we let the page own it.
-  const SELF_HEADED = ['/dashboard', '/profile', '/connections'];
+  // /help draws its own header (the DOT bar). Without it here the shell's
+  // breadcrumb sat on top of that, giving the page two stacked headers.
+  const SELF_HEADED = ['/dashboard', '/profile', '/connections', '/help'];
   // Every /marketplace/* route now renders MarketplaceShell, which draws
   // the section header and nav itself. Matching on the prefix rather than
   // listing each path keeps Orders / Alerts / Dashboard / Partners /
