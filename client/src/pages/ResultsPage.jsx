@@ -2,6 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import styles from './ResultsPage.module.css';
 import { apiUrl, authFetch } from '../utils/api';
+import { getJSON, setJSON } from '../utils/safeStorage';
 import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
@@ -1119,13 +1120,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           if (r.status === 404 && !cancelled) {
             try {
               window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: '' }));
-              const histRaw = localStorage.getItem('rackTrackHistory');
-              if (histRaw) {
-                const arr = JSON.parse(histRaw);
-                if (Array.isArray(arr)) {
-                  const filtered = arr.filter(h => h?.scanId !== urlRackId);
-                  localStorage.setItem('rackTrackHistory', JSON.stringify(filtered));
-                }
+              const arr = getJSON('rackTrackHistory', []);
+              if (Array.isArray(arr)) {
+                setJSON('rackTrackHistory', arr.filter(h => h?.scanId !== urlRackId));
               }
             } catch { /* ignore */ }
             navigate('/scan', { replace: true });
@@ -1769,9 +1766,15 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: id }));
     } catch { /* ignore */ }
 
-    let existing = [];
-    try { existing = JSON.parse(localStorage.getItem('rackTrackHistory') || '[]'); }
-    catch { existing = []; }
+    // History holds a SUMMARY per scan, never the whole payload. It used to
+    // store `fullResult` — every detected device with its box and confidence —
+    // twelve times over, which reliably outgrew the ~5 MB origin quota. The
+    // write then threw inside this effect and, with no boundary above it, took
+    // the whole app down on the Results page: on success, right after a scan
+    // the user had waited through, and stickily, because the oversized history
+    // was already committed and every later visit re-threw. Opening a scan from
+    // History now rehydrates from /api/scan/:id via the cold-fetch effect above.
+    const existing = getJSON('rackTrackHistory', []);
     const history  = Array.isArray(existing) ? existing : [];
     if (!history.some(h => h.scanId === result.scanId)) {
       history.unshift({
@@ -1779,9 +1782,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         incidentLabel: labels[0] || 'Rack scan',
         componentLabel: `${devices.length} devices`,
         scanSummary: `${formatUnitsRange(units_detected) || `${units_detected.length} units`} scanned`,
-        imageUrl: result.imageUrl, fullResult: result,
+        imageUrl: result.imageUrl,
       });
-      localStorage.setItem('rackTrackHistory', JSON.stringify(history.slice(0, 12)));
+      setJSON('rackTrackHistory', history.slice(0, 12));
     }
   }, [result]);
 
@@ -2624,6 +2627,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     } catch (err) {
       setShareStatus('error');
       setShareMsg(err.message);
+      // Clear eventually even if untouched — long enough to read a real
+      // explanation, short enough that it cannot sit over the page forever.
+      setTimeout(() => { setShareStatus('idle'); setShareMsg(null); setShareChannel(null); }, 15000);
     }
   };
 
@@ -3915,10 +3921,29 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               background: shareStatus === 'error' ? '#c0392b' : '#1e874b',
               boxShadow: '0 10px 34px rgba(0,0,0,.28)',
             }}>
-              <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>
+              <span style={{ fontSize: '1.1rem', lineHeight: 1, flexShrink: 0 }} aria-hidden="true">
                 {shareStatus === 'error' ? '✕' : '✓'}
               </span>
-              {shareMsg}
+              <span style={{ flex: 1, minWidth: 0 }}>{shareMsg}</span>
+              {/* A real dismiss control. The ✕ on the left is a status glyph
+                  with no handler — testers reasonably read it as a close
+                  button and reported it broken. Errors also never cleared
+                  themselves (only successes did), so the banner sat there for
+                  good until the page was left. */}
+              <button
+                type="button"
+                onClick={() => { setShareStatus('idle'); setShareMsg(null); setShareChannel(null); }}
+                aria-label="Dismiss"
+                style={{
+                  flexShrink: 0, width: 28, height: 28, marginLeft: 4,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  font: 'inherit', fontSize: '1rem', lineHeight: 1,
+                  color: '#fff', background: 'rgba(255,255,255,0.18)',
+                  border: 0, borderRadius: '50%', cursor: 'pointer',
+                }}
+              >
+                ×
+              </button>
             </div>
           )}
 

@@ -28,6 +28,7 @@ const { WorkerPool } = require('./worker-pool');
 const auth = require('./auth');
 const audit = require('./audit');
 const tenant = require('./lib/tenant');
+const rackAccess = require('./lib/rack_access');
 const rackGroups = require('./lib/rack_groups');
 const { appendLineWithRotation } = require('./lib/jsonl_rotation');
 const orphanGC = require('./lib/orphan_gc');
@@ -203,51 +204,26 @@ function canAccessRack(auth, rackId) {
   // moved to a new domain, so builds <= 20 point at a host that no longer
   // exists and cannot reach this server at all. Any client that can talk to us
   // is build 21+, and build 21 sends credentials.
-  if (!auth) return false;
-  if (auth.role === 'owner') return true;
-  if (auth.role === 'org_admin') {
-    return !!(auth.organizationId && tenant.rackInOrg(rackId, auth.organizationId));
-  }
-  // Also fail CLOSED: a member whose tenant_id is NULL (legacy rows) must not
-  // inherit access to every rack on the platform.
-  if (!auth.tenantId) return false;
-  return tenant.tenantOwnsRack(auth.tenantId, rackId);
+  // Delegates to lib/rack_access so this, the app.param guard below, and the
+  // router.param guards in cmdb_ticket_proxy.js and netdisco_proxy.js are one
+  // policy rather than four copies that disagree — which is precisely what an
+  // audit found them doing.
+  return rackAccess.canAccessRack(auth, rackId, tenant);
 }
 
-app.param('rackId', (req, res, next, rackId) => {
-  // A report token is a capability for exactly this rack: let it through, but
-  // ONLY for this rack, and only while it's valid.
-  if (verifyReportToken(req.query.t, rackId)) return next();
-
-  const auth = softAuthPayload(req);
-  // Fail CLOSED. This used to be `if (!auth) return next()` — "no token, let
-  // the route decide" — which meant an unauthenticated caller skipped the
-  // tenant check entirely. Combined with the then-public /api/racks it let
-  // anyone enumerate every tenant's racks and POST /api/scan/<id>/outlook to
-  // mail their report anywhere. Every :rackId route now requires auth (or a
-  // report token), so there is no legitimate anonymous caller left.
-  if (!auth) return res.status(401).json({ error: 'Authentication required' });
-  // Owner oversees the whole platform.
-  if (auth.role === 'owner') return next();
-  // Org admin sees any rack owned by a Site in their org.
-  if (auth.role === 'org_admin') {
-    if (auth.organizationId && tenant.rackInOrg(rackId, auth.organizationId)) return next();
-    logger.warn({ event: 'tenant.access_denied', role: 'org_admin',
-      organizationId: auth.organizationId, rackId, route: req.path },
-      `org-admin blocked from rack ${rackId}`);
-    return res.status(404).json({ error: 'Rack not found' });
-  }
-  // Members: only their own Site (tenant).
-  if (!auth.tenantId) return next();
-  if (!tenant.tenantOwnsRack(auth.tenantId, rackId)) {
-    logger.warn({
-      event: 'tenant.access_denied',
-      tenantId: auth.tenantId, rackId, route: req.path,
-    }, `tenant ${auth.tenantId} blocked from rack ${rackId}`);
-    return res.status(404).json({ error: 'Rack not found' });
-  }
-  next();
-});
+// Fail CLOSED throughout. This used to `return next()` for a member whose
+// tenantId is NULL — handing any such principal every rack on the platform —
+// while canAccessRack refused the identical case. One policy, two guards, two
+// answers. Both now come from lib/rack_access.
+//
+// The report-token escape hatch stays: it is a capability for exactly this
+// rack, so it is checked before authentication rather than instead of it.
+app.param('rackId', rackAccess.rackOwnershipParam({
+  tenant,
+  logger,
+  getPrincipal: softAuthPayload,
+  allow: (req, rackId) => verifyReportToken(req.query.t, rackId),
+}));
 
 // ── Observability middleware (must be installed before any routes) ───
 // Order matters: requestId first (so other middleware can read req.id) →
@@ -1979,20 +1955,8 @@ app.get('/api/admin/dashboard', auth.requireAuth, (req, res) => {
     const totalEvents = one("SELECT COUNT(*) n FROM audit_log").n;
     const totalFails  = one("SELECT COUNT(*) n FROM audit_log WHERE status='fail'").n;
 
-    // Feedback accuracy (right vs wrong) straight from the feedback log.
-    let fbRight = 0, fbWrong = 0;
-    try {
-      if (fs.existsSync(feedbackLogPath)) {
-        const lines = fs.readFileSync(feedbackLogPath, 'utf8').split('\n');
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const e = JSON.parse(line);
-            if (typeof e.is_correct === 'boolean') e.is_correct ? fbRight++ : fbWrong++;
-          } catch (_) {}
-        }
-      }
-    } catch (_) {}
+    // Feedback accuracy (right vs wrong), from the memoised tally.
+    const { right: fbRight, wrong: fbWrong } = feedbackTally();
 
     // Live activity feed — most recent events, org-resolved.
     // Events at the auth gate (sign-in / sign-up / reset) have no logged-in
@@ -2475,7 +2439,12 @@ app.post('/api/analyze', scanLimit, upload.single('image'), async (req, res) => 
     // so whatever it found is what they'll see.
     if (!skipQualityCheck) {
       if (deviceCount === 0) {
-        fs.rmSync(rackDir, { recursive: true, force: true });
+        // Deliberately NOT deleting rackDir. The pipeline has already run — the
+        // expensive part is done — and this is a retryable warning, not a
+        // failure. Deleting it meant "Proceed anyway" had nothing to reuse and
+        // re-ran the whole analysis on an image that had just been processed.
+        // Rack ids are content hashes, so keeping the output lets the retry hit
+        // the cache and return immediately.
         return res.status(400).json({
           error: 'Please take the photo from the front of the rack — we need to see the devices and ports face-on.',
           retryable: true,
@@ -2484,7 +2453,7 @@ app.post('/api/analyze', scanLimit, upload.single('image'), async (req, res) => 
       }
 
       if (unitCount < 3) {
-        fs.rmSync(rackDir, { recursive: true, force: true });
+        // Kept for the same reason as above — "Proceed anyway" reuses it.
         // Say what was actually seen. "Upload a clearer photo" on a photo that
         // IS clear reads as the app being broken, and gives the user nothing
         // to act on — a small or partly visible rack needs different advice
@@ -5000,33 +4969,41 @@ app.get('/api/scans', auth.requireAuth, (req, res) => {
         // set of racks THIS member claimed (tenantUserRackIds), which is the
         // correct per-user ownership signal for shared RK-ids.
         const rackDir  = path.join(outputsDir, rackId);
-        const mapPath  = path.join(rackDir, 'device_unit_map.json');
+        // One readdir instead of up to five existsSync calls. Every check
+        // below is now a Set lookup: this handler is fully synchronous and
+        // runs per rack, unbounded for the owner (whose allowedRacks is null,
+        // so the filter above never short-circuits), and each syscall blocks
+        // every other request on the server. Cheap here, but the shape is
+        // linear and worst for the account most likely to hold every rack.
+        let entries;
+        try { entries = new Set(fs.readdirSync(rackDir)); }
+        catch (_) { return null; }   // rack directory vanished between calls
+
         let deviceCount = 0, unitCount = 0;
         try {
-          if (fs.existsSync(mapPath)) {
-            const data = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+          if (entries.has('device_unit_map.json')) {
+            const data = JSON.parse(fs.readFileSync(path.join(rackDir, 'device_unit_map.json'), 'utf8'));
             deviceCount = Array.isArray(data.devices) ? data.devices.length : 0;
             unitCount   = Array.isArray(data.units_detected) ? data.units_detected.length : 0;
           }
         } catch (_) {}
         // Latest port identification timestamp (if any) for activity sorting
         let lastPortAt = null, portCount = 0;
-        const idsPath = path.join(rackDir, 'port_identifications.jsonl');
-        if (fs.existsSync(idsPath)) {
-          const lines = fs.readFileSync(idsPath, 'utf8').split('\n').filter(Boolean);
+        if (entries.has('port_identifications.jsonl')) {
+          const lines = fs.readFileSync(path.join(rackDir, 'port_identifications.jsonl'), 'utf8')
+            .split('\n').filter(Boolean);
           portCount = lines.length;
           if (lines.length) {
             try { lastPortAt = JSON.parse(lines[lines.length - 1]).timestamp || null; } catch {}
           }
         }
-        // Original scan image (for a history thumbnail). Extension varies.
-        let image = null;
-        for (const ext of ['jpg', 'jpeg', 'png']) {
-          if (fs.existsSync(path.join(rackDir, `original_image.${ext}`))) {
-            image = `/outputs/${rackId}/original_image.${ext}`;
-            break;
-          }
-        }
+        // Original scan image (for a history thumbnail). Extension varies, and
+        // matching against the listing also picks up the ones the old
+        // hardcoded jpg/jpeg/png probe missed — .webp and iPhone .heic.
+        const imageName = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif']
+          .map(ext => `original_image.${ext}`)
+          .find(name => entries.has(name));
+        const image = imageName ? `/outputs/${rackId}/${imageName}` : null;
         return {
           rackId,
           timestamp: meta.timestamp || null,
@@ -7795,6 +7772,43 @@ const feedbackDir      = path.join(__dirname, 'feedback');
 const feedbackWrongDir = path.join(feedbackDir, 'wrong');
 const feedbackLogPath  = path.join(__dirname, 'feedback.jsonl');
 [feedbackDir, feedbackWrongDir].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
+
+// Right/wrong tally over feedback.jsonl, memoised on the file's size+mtime.
+//
+// The owner dashboard polls every 5 seconds and used to readFileSync + split +
+// JSON.parse the entire log on every one of those polls, to produce two
+// integers. Both readFileSync and better-sqlite3 are synchronous, so that work
+// blocked the event loop — no other request was served while it ran, including
+// scan uploads and the port poller's callbacks. The file is small today, but
+// appendLineWithRotation only rotates at 50 MB, so the designed ceiling is a
+// 50 MB linear scan several times a minute.
+//
+// Re-scanning only when the file actually changes reduces the steady-state
+// cost to one statSync per poll. Keyed on size AND mtimeMs because an append
+// within the same millisecond still moves the size.
+let _fbTally = { key: null, right: 0, wrong: 0 };
+function feedbackTally() {
+  try {
+    const st = fs.statSync(feedbackLogPath);
+    const key = `${st.size}:${st.mtimeMs}`;
+    if (key === _fbTally.key) return _fbTally;
+
+    let right = 0, wrong = 0;
+    for (const line of fs.readFileSync(feedbackLogPath, 'utf8').split('\n')) {
+      if (!line.trim()) continue;
+      try {
+        const e = JSON.parse(line);
+        if (typeof e.is_correct === 'boolean') e.is_correct ? right++ : wrong++;
+      } catch (_) { /* a torn final line is expected mid-append */ }
+    }
+    _fbTally = { key, right, wrong };
+    return _fbTally;
+  } catch (_) {
+    // No log yet, or unreadable — report zeroes rather than failing the whole
+    // dashboard for one statistic.
+    return { key: null, right: 0, wrong: 0 };
+  }
+}
 
 // ── Feedback override layer ──────────────────────────────────
 // Reads server/feedback.jsonl for a given scan and overlays the user's
