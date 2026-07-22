@@ -526,8 +526,14 @@ def handle_pipeline(req):
     elif req.get("command") == "enrich_cables":
         argv.append("--enrich_cables")
     elif req.get("command") == "select":
-        argv += ["--device_index", str(req["device_index"]),
-                 "--port", str(req["port"])]
+        # Coerce here so a bad value fails as a clean error rather than
+        # reaching argparse, which would sys.exit() and kill the worker.
+        try:
+            _dev = int(req["device_index"])
+            _port = int(req["port"])
+        except (KeyError, TypeError, ValueError):
+            return {"ok": False, "error": "device_index and port must be integers"}
+        argv += ["--device_index", str(_dev), "--port", str(_port)]
         port_category = req.get("port_category")
         if port_category:
             argv += ["--port_category", str(port_category)]
@@ -558,6 +564,16 @@ def handle_pipeline(req):
         if req.get("command") == "analyze":
             _queue_low_confidence_samples(req["image_path"], req["output_dir"])
         return {"ok": True}
+    except SystemExit as e:
+        # argparse calls sys.exit() when an argument will not parse, and
+        # SystemExit derives from BaseException — so `except Exception` below
+        # does NOT catch it. Unhandled, it tears down this long-lived worker
+        # process, and one malformed device_index or port from a request takes
+        # a worker out of the pool for every user, not just the caller.
+        # Turn it into an ordinary failed response instead.
+        tb = traceback.format_exc()
+        log(f"pipeline REJECTED ARGS (exit {e.code}): argv={argv}\n--- traceback ---\n{tb}")
+        return {"ok": False, "error": f"invalid pipeline arguments (exit {e.code})", "trace": tb}
     except Exception as e:
         # Log the full traceback to stderr so it shows up in the Node server's
         # worker output — otherwise only str(e) propagates to the client.

@@ -163,6 +163,28 @@ router.get('/api/netdisco/health', safeAsync(async (req, res) => {
 // All routes below this line require app auth.
 router.use('/api/netdisco', auth.requireAuth);
 
+// ...and any route carrying a :rackId must also prove the caller owns that
+// rack. app.param('rackId') in app.js does NOT reach a mounted router, so
+// these two routes were authenticated but unscoped: any signed-in user could
+// name another organisation's rack id and read its scan directory through
+// Netdisco. Scoped here, in the router that actually serves them.
+const tenant = require('./lib/tenant');
+router.param('rackId', (req, res, next, rackId) => {
+  const u = req.user;
+  if (!u) return res.status(401).json({ error: 'Authentication required' });
+  if (u.role === 'owner') return next();
+  if (u.role === 'org_admin') {
+    if (u.organization_id && tenant.rackInOrg(rackId, u.organization_id)) return next();
+    return res.status(404).json({ error: `rack ${rackId} not found` });
+  }
+  // A user with no site cannot inherit access to every rack on the platform.
+  if (!u.tenant_id) return res.status(404).json({ error: `rack ${rackId} not found` });
+  if (tenant.tenantOwnsRack(u.tenant_id, rackId)) return next();
+  // 404 rather than 403: a 403 confirms the rack exists, which is itself a
+  // cross-tenant disclosure.
+  return res.status(404).json({ error: `rack ${rackId} not found` });
+});
+
 // ── List all devices ─────────────────────────────────────────────────────
 //   Behaviour mirrors netdisco.py::list_all_devices — q=% returns everything.
 router.get('/api/netdisco/devices', safeAsync(async (req, res) => {

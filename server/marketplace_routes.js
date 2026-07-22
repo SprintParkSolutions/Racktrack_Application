@@ -275,9 +275,30 @@ function safeAsync(handler) {
   };
 }
 
-// Gate all marketplace API routes to admin / owner only.
+// Gate all marketplace API routes to admin / owner only — except the three
+// that are called by somebody else's server and can never carry a session.
+//
+//   stripe/webhook            Stripe posts this; it authenticates with a
+//                             signature over the raw body, not a login.
+//   partner-accounts/*/callback  the OAuth redirect back from eBay / Amazon,
+//                             which arrives as a plain browser navigation and
+//                             authenticates by the `state` parameter.
+//
+// The blanket gate rejected all three, so Stripe payments could never be
+// confirmed and neither marketplace channel could finish connecting — the
+// feature could not work, and the failure looked like a partner-side problem.
 const requireAdminRole = requireRole('owner', 'org_admin');
-router.use('/api/marketplace', requireAdminRole);
+const PUBLIC_MARKETPLACE_PATHS = [
+  '/api/marketplace/stripe/webhook',
+  '/api/marketplace/partner-accounts/ebay/callback',
+  '/api/marketplace/partner-accounts/amazon/callback',
+];
+router.use('/api/marketplace', (req, res, next) => {
+  // req.path is relative to the mount point, so compare on originalUrl's path.
+  const full = (req.originalUrl || req.url).split('?')[0];
+  if (PUBLIC_MARKETPLACE_PATHS.includes(full)) return next();
+  return requireAdminRole(req, res, next);
+});
 
 // List categories so the UI doesn't hard-code them.
 router.get('/api/marketplace/categories', (req, res) => {

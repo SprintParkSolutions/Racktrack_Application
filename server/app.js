@@ -197,12 +197,13 @@ function canAccessRack(auth, rackId) {
   // "Rack not found" on Find Port and silently broke every feedback action for
   // everyone still on those builds.
   //
-  // Returning true is NOT the end state — it is the pre-existing behaviour,
-  // restored deliberately so installed clients keep working. The web client and
-  // build 18+ now send credentials on these calls; once testers have moved off
-  // 17, flip this to `return false` and add requireAuth to the six call sites.
-  // Tracked as follow-up in the audit report.
-  if (!auth) return true;
+  // NOW CLOSED. The relaxation above was temporary, to keep app builds <= 17
+  // working after they had already shipped. Two things make it safe to close:
+  // every client call to these routes goes through authFetch, and the tunnel
+  // moved to a new domain, so builds <= 20 point at a host that no longer
+  // exists and cannot reach this server at all. Any client that can talk to us
+  // is build 21+, and build 21 sends credentials.
+  if (!auth) return false;
   if (auth.role === 'owner') return true;
   if (auth.role === 'org_admin') {
     return !!(auth.organizationId && tenant.rackInOrg(rackId, auth.organizationId));
@@ -281,6 +282,13 @@ app.use(cors({
     return cb(null, false);
   },
 }));
+// Stripe signs the RAW request body, so its webhook must see the bytes exactly
+// as sent. express.json() below would consume the stream first, leaving the
+// route's own express.raw() a no-op and making signature verification
+// impossible — the webhook could never be validated, so payments were never
+// confirmed. Capturing the raw body here, ahead of the JSON parser, is the only
+// place this can be done.
+app.use('/api/marketplace/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 // These are mounted before auth so that <img> tags (which cannot send an
 // Authorization header) can load rack photos. That previously exposed the
