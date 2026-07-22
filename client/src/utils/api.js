@@ -42,13 +42,37 @@ function withAppKey(url) {
 const ASSET_PATH_RE = /^\/(outputs|uploads)\//i;
 let assetToken = getItem('rt_assetToken');
 
-/** Called after sign-in (and on 401 recovery) to refresh the capability. */
+// The token is captured into a module variable, and apiUrl() is not reactive —
+// nothing re-renders when a new one lands. So a component that rendered its
+// <img> before the mint (a cold start, or the morning after when the stored
+// token has expired) emitted a src the server now 404s, and it stayed broken
+// until that component happened to remount. Bumping a generation counter and
+// telling the app about it lets those images re-render once, on the render
+// after the token arrives.
+let assetTokenGen = 0;
+export function assetTokenGeneration() { return assetTokenGen; }
+
+// Guards the logout race: a sign-out during an in-flight mint used to be
+// overwritten by the response, re-arming a 12-hour capability on a device that
+// had just signed out — the exact "departed employee keeps access" case.
+let assetTokenEpoch = 0;
+
+/** Called after sign-in to mint the capability <img> tags travel with. */
 export async function refreshAssetToken() {
+  const epoch = ++assetTokenEpoch;
   try {
     const res = await authFetch(apiUrl('/api/assets/token'));
     if (!res.ok) return null;
     const { token } = await res.json();
-    if (token) { assetToken = token; setItem('rt_assetToken', token); }
+    // Someone signed out (or signed in as someone else) while this was in
+    // flight. Drop the result on the floor rather than resurrecting it.
+    if (epoch !== assetTokenEpoch) return null;
+    if (token) {
+      assetToken = token;
+      assetTokenGen += 1;
+      setItem('rt_assetToken', token);
+      try { window.dispatchEvent(new Event('rt:asset-token')); } catch { /* non-browser */ }
+    }
     return token || null;
   } catch {
     return null;   // images degrade to a broken thumbnail, not a broken app
@@ -56,8 +80,11 @@ export async function refreshAssetToken() {
 }
 
 export function clearAssetToken() {
+  assetTokenEpoch += 1;   // invalidates any mint already in flight
   assetToken = null;
+  assetTokenGen += 1;
   removeItem('rt_assetToken');
+  try { window.dispatchEvent(new Event('rt:asset-token')); } catch { /* non-browser */ }
 }
 
 function withAssetToken(path, url) {
@@ -116,7 +143,7 @@ export function installFetchInterceptor() {
 // page.
 export function authFetch(input, init = {}) {
   let token = null;
-  try { token = localStorage.getItem('rt_authToken'); } catch { /* ignore */ }
+  token = getItem('rt_authToken');
   const headers = new Headers(init.headers || {});
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);

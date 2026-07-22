@@ -242,8 +242,16 @@ def handle_split_video_racks(req):
     from pipeline.multi_rack_split import split_video_into_racks
     video_path = req["video_path"]
     output_dir = req.get("output_dir")
+    # Forward config_path like every other handler. The server sends it and the
+    # splitter accepts it, but this handler dropped it on the floor — so the
+    # splitter always fell back to its own config.json lookup and a deployment
+    # pointing RACKTRACK_CONFIG elsewhere silently got a different model and
+    # threshold here than on the single-rack path. The fix on the Node side was
+    # inert until this line existed.
+    config_path = req.get("config_path")
     try:
-        racks = split_video_into_racks(video_path, output_dir=output_dir)
+        racks = split_video_into_racks(video_path, output_dir=output_dir,
+                                       config_path=config_path)
     except Exception as e:
         return {"ok": False, "error": f"multi-rack split failed: {e}"}
     if not racks:

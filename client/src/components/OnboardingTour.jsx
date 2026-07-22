@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import useModalA11y from '../hooks/useModalA11y.js';
+import { getItem, setItem } from '../utils/safeStorage';
 
 // First-run walkthrough. Shows once per device for a signed-in user, then
 // never again (localStorage flag). Purely additive — it overlays the app and
@@ -53,11 +54,11 @@ export default function OnboardingTour() {
   const navigate = useNavigate();
   const [i, setI] = useState(0);
   const [done, setDone] = useState(() => {
-    try { return localStorage.getItem(KEY) === '1'; } catch { return false; }
+    try { return getItem(KEY) === '1'; } catch { return false; }
   });
 
   const finish = (goScan) => {
-    try { localStorage.setItem(KEY, '1'); } catch (_) {}
+    try { setItem(KEY, '1'); } catch (_) {}
     setDone(true);
     if (goScan) navigate('/scan');
   };

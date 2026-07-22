@@ -106,18 +106,36 @@ describe('reads', () => {
 });
 
 describe('setJSON under a full quota', () => {
-  test('an array is trimmed to its newest entries and retried', () => {
+  test('a newest-first array keeps its NEWEST entries', () => {
     const store = quotaStorage(12);
     install(store);
 
-    const history = [1, 2, 3, 4, 5, 6, 7, 8];
-    expect(setJSON('hist', history)).toBe(true);
+    // This is the shape the only real caller produces: ResultsPage builds its
+    // history with unshift, so index 0 is the scan that just finished. The
+    // first version of setJSON kept the TAIL, which meant the scan the user
+    // had just waited through was the one thrown away while a week-old entry
+    // survived. Default is newest-first for exactly that reason.
+    const newestFirst = ['newest', 'b', 'c', 'd', 'e', 'f', 'oldest'];
+    expect(setJSON('hist', newestFirst)).toBe(true);
 
     const kept = JSON.parse(store.data.get('hist'));
-    // Trimming must take from the FRONT: these arrays are append-ordered
-    // histories, so the entries worth losing are the oldest ones.
-    expect(kept.length).toBeLessThan(history.length);
-    expect(kept).toEqual(history.slice(history.length - kept.length));
+    expect(kept.length).toBeLessThan(newestFirst.length);
+    expect(kept).toEqual(newestFirst.slice(0, kept.length));
+    expect(kept[0]).toBe('newest');
+    expect(kept).not.toContain('oldest');
+  });
+
+  test('an append-ordered array can opt into keeping its TAIL', () => {
+    const store = quotaStorage(12);
+    install(store);
+
+    const oldestFirst = ['oldest', 'b', 'c', 'd', 'e', 'f', 'newest'];
+    expect(setJSON('hist', oldestFirst, 'local', { newestFirst: false })).toBe(true);
+
+    const kept = JSON.parse(store.data.get('hist'));
+    expect(kept).toEqual(oldestFirst.slice(oldestFirst.length - kept.length));
+    expect(kept).toContain('newest');
+    expect(kept).not.toContain('oldest');
   });
 
   test('a non-array value is not silently truncated', () => {
@@ -129,16 +147,28 @@ describe('setJSON under a full quota', () => {
     expect(store.data.has('obj')).toBe(false);
   });
 
-  test('the key is cleared when even a single entry will not fit', () => {
+  test('a failed write leaves the previously stored value intact', () => {
     const store = quotaStorage(2);
     install(store);
-    store.data.set('hist', 'stale');
+    store.data.set('hist', '["earlier","scans"]');
 
     expect(setJSON('hist', ['aaaa', 'bbbb', 'cccc'])).toBe(false);
-    // The stale value must go. Leaving it would mean every later write also
-    // failed against a value already too big to replace — a key that is
-    // permanently stuck rather than merely full.
-    expect(store.data.has('hist')).toBe(false);
+    // This used to delete the key on ANY failure, including a quota exhausted
+    // by unrelated keys — so one failed write destroyed a perfectly good
+    // stored history. Stale data beats data loss the user never asked for.
+    expect(store.data.get('hist')).toBe('["earlier","scans"]');
+  });
+
+  test('an unserialisable value is reported, not thrown', () => {
+    // JSON.stringify sat outside the guard, so the one promise this module
+    // makes — never throw — was untrue of its main entry point.
+    const store = quotaStorage(1000);
+    install(store);
+    const circular = { name: 'loop' };
+    circular.self = circular;
+    expect(() => setJSON('k', circular)).not.toThrow();
+    expect(setJSON('k', circular)).toBe(false);
+    expect(store.data.has('k')).toBe(false);
   });
 
   test('a value that fits is written whole, with no trimming', () => {

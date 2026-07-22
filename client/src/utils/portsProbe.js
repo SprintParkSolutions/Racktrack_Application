@@ -9,12 +9,13 @@
 // Independent of the LLDP "find the other end of this cable" feature —
 // different consumer, same encrypted credentials path on the server.
 import { apiUrl, authFetch } from './api';
+import { getItem, setItem, removeItem } from './safeStorage';
 
 const STORAGE_KEY = 'racktrack:portsProbe';
 
 function loadFromStorage() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (data?.status === 'ok' && Array.isArray(data.ports)) return data;
@@ -23,7 +24,7 @@ function loadFromStorage() {
 }
 function saveToStorage(s) {
   try {
-    if (s?.status === 'ok') localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    if (s?.status === 'ok') setItem(STORAGE_KEY, JSON.stringify(s));
   } catch (_) { /* quota / disabled */ }
 }
 
@@ -48,7 +49,7 @@ export function subscribeProbe(fn) {
   return () => subs.delete(fn);
 }
 export function resetProbe() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+  try { removeItem(STORAGE_KEY); } catch (_) {}
   setState({ status: 'idle', ports: null, error: null, host: null, startedAt: null, finishedAt: null });
 }
 

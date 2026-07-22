@@ -5,6 +5,7 @@ import { apiUrl, authFetch } from '../utils/api';
 import { getCached, setCached, cacheKey } from '../utils/scanPrefetch';
 import RackTabs from '../components/RackTabs.jsx';
 import styles from './TopologyPage.module.css';
+import { getItem, setItem } from '../utils/safeStorage';
 
 const TopologyScene3D = lazy(() => import('./TopologyScene3D.jsx'));
 
@@ -113,7 +114,7 @@ function TopologyInner({ rackId, embedded }) {
   const [reloadKey, setReloadKey] = useState(0); // bump to re-fetch (Retry button)
   const [selected, setSelected] = useState(null); // { kind: 'node'|'edge', id }
   const [view, setView] = useState(() => {
-    try { return localStorage.getItem(VIEW_KEY) || '2d'; } catch { return '2d'; }
+    try { return getItem(VIEW_KEY) || '2d'; } catch { return '2d'; }
   });
   const [cableFilter, setCableFilter] = useState('all'); // 'all' | 'cat' | 'fiber' | 'dac'
   const [heatmap, setHeatmap]         = useState(false);
@@ -123,7 +124,7 @@ function TopologyInner({ rackId, embedded }) {
   const [hoverInfo, setHoverInfo]     = useState(null); // { name, dev, freePct, tier }
 
   useEffect(() => {
-    try { localStorage.setItem(VIEW_KEY, view); } catch {}
+    try { setItem(VIEW_KEY, view); } catch {}
   }, [view]);
 
   useEffect(() => {

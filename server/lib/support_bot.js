@@ -713,13 +713,29 @@ async function ask(question, { tier = SINGLE_TIER, history = [] } = {}) {
   // tell "compare us to NetBox" from "compare these two racks"; a verified
   // entry that clears the verbatim bar can, and it wins.
   const outOfScope = detectOutOfScope(q);
+  // "Documented" must mean the entry would genuinely have been answered
+  // verbatim — otherwise this hatch is looser than the bar it claims to
+  // enforce. It was missing BOTH the score floor and the margin check the real
+  // verbatim route applies, so an entry that explicitly failed to be a clear
+  // winner still disabled the out-of-scope guard: a NetBox integration
+  // question came back as a cited, authoritative answer about RackTrack's
+  // export formats, implying an integration that does not exist.
   const documented =
     top &&
+    top.score >= THRESHOLDS.MIN_SCORE &&
     top.confidence >= THRESHOLDS.DIRECT &&
     top.coverage >= THRESHOLDS.MIN_COVERAGE &&
     top.matchedTerms >= THRESHOLDS.MIN_TERMS_FOR_DIRECT &&
-    top.unknownRatio <= THRESHOLDS.MAX_UNKNOWN;
-  if (outOfScope && !documented) {
+    top.unknownRatio <= THRESHOLDS.MAX_UNKNOWN &&
+    (top.margin == null ? 1 : top.margin) >= THRESHOLDS.MIN_MARGIN_FOR_DIRECT;
+  // A NAMED COMPETITOR is never overridable by retrieval score. The other
+  // intents (roadmap, pricing) are heuristics about phrasing and can lose to a
+  // genuinely well-matched entry — but "…to NetBox" is an unambiguous signal
+  // that the question is about a product we do not integrate with, and the
+  // best-matching entry will always be something adjacent and misleading.
+  // Answering it verbatim implied a NetBox integration that does not exist.
+  const overridable = outOfScope && outOfScope.kind !== 'comparison';
+  if (outOfScope && !(documented && overridable)) {
     return {
       answer: outOfScope.reply,
       sources: [],

@@ -337,8 +337,23 @@ def split_video_into_racks(video_path: str, output_dir: str | None = None,
     if current:
         segments.append(current)
 
-    # Drop too-short segments (single-frame flickers from camera shake)
-    segments = [seg for seg in segments if len(seg) >= MIN_FRAMES_PER_RACK]
+    # Drop too-short segments (single-frame flickers from camera shake).
+    #
+    # This silently discarded real racks. Sampling spreads MAX_SAMPLED_FRAMES
+    # across the WHOLE video, so a rack the operator panned past quickly — under
+    # roughly MIN_FRAMES_PER_RACK/MAX_SAMPLED_FRAMES of the runtime — can never
+    # accumulate enough samples. A three-rack pan that lingers on two came back
+    # as `ok: true, count: 2`, with position renumbering removing even the gap
+    # that would have hinted something was lost. Still dropped, because a
+    # shake flicker really is not a rack, but it is no longer silent.
+    kept = [seg for seg in segments if len(seg) >= MIN_FRAMES_PER_RACK]
+    dropped = len(segments) - len(kept)
+    if dropped:
+        print(f"[multi-rack] dropped {dropped} segment(s) shorter than "
+              f"{MIN_FRAMES_PER_RACK} samples — if a rack is missing from the "
+              f"result, it was panned past too quickly to sample",
+              file=sys.stderr)
+    segments = kept
     if not segments:
         # If aggressive splitting killed everything, treat the whole
         # video as one rack — pick the globally best detected frame.

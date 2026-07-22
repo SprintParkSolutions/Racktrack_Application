@@ -56,10 +56,18 @@ import { AuthProvider, useAuth } from './AuthContext.jsx';
 import { getPendingScan, clearPendingScan, fetchScanJob } from './utils/pendingScan';
 import OnboardingTour from './components/OnboardingTour.jsx';
 import { ConnectionsProvider } from './ConnectionsContext.jsx';
+import { useAssetToken } from './hooks/useAssetToken';
 import { ThemeProvider } from './ThemeContext.jsx';
 
 // Bounces unauthenticated visitors to /login, remembering where they were
 // trying to go so we can send them back after login/signup.
+// Subscribes the tree to asset-token changes. A component rather than a hook
+// call inside App() so the re-render it triggers stays scoped and cheap.
+function AssetTokenBoundary() {
+  useAssetToken();
+  return null;
+}
+
 // True when the signed-in user's organization is NOT active — pending owner
 // approval, rejected, or deactivated. Owners have no org and are never gated.
 // Such users are held on the /pending screen (which explains the exact state)
@@ -231,6 +239,10 @@ export default function App() {
             <PendingScanResumer />
             <OnboardingTour />
             <PointerGlow />
+            {/* Rebuilds every /outputs and /uploads src when the asset token
+                is minted or cleared — otherwise images rendered before the
+                mint keep a stale URL the server refuses. */}
+            <AssetTokenBoundary />
             {/* Deferred routes suspend while their chunk loads. The fallback is
                 deliberately quiet — a spinner that flashes for 80 ms on a warm
                 connection reads as jank, not as progress. */}

@@ -4,6 +4,7 @@ import { apiUrl, authFetch } from '../utils/api';
 import { useGroupView } from '../hooks/useGroupView';
 import TopologyPage, { RackElevation } from './TopologyPage.jsx';
 import styles from './SideBySideRacks.module.css';
+import { getItem, setItem } from '../utils/safeStorage';
 
 // Lazy, and it matters: this route IS eagerly imported by App.jsx, so importing
 // the 3D page here statically pulled three.js and drei back into the initial
@@ -20,9 +21,9 @@ export default function RackTopologyRoute() {
   const { data, loading, isGroup, members } = useGroupView(rackId);
 
   const [view, setView] = useState(() => {
-    try { return localStorage.getItem('rt_topo_view') || '2d'; } catch { return '2d'; }
+    try { return getItem('rt_topo_view') || '2d'; } catch { return '2d'; }
   });
-  const pick = (v) => { setView(v); try { localStorage.setItem('rt_topo_view', v); } catch (_) {} };
+  const pick = (v) => { setView(v); try { setItem('rt_topo_view', v); } catch (_) {} };
 
   // Inter-rack links (the same synthesized uplinks the 3D scene draws) so the
   // 2D view can show the connection between the racks too.

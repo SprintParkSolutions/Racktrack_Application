@@ -197,3 +197,21 @@ test('tokenizer drops stopwords and stems conservatively', () => {
   assert.deepEqual(tokenize('the scanning is broken'), ['scann', 'broken']);
   assert.deepEqual(tokenize(''), []);
 });
+
+test('a named competitor is never answered from an adjacent entry', () => {
+  // The out-of-scope guard could be overridden by a well-matched entry, so
+  // "how do I export ... to netbox" came back as a cited, authoritative answer
+  // about our export formats — implying an integration that does not exist.
+  // Roadmap and pricing phrasing can still lose to a genuinely good match; a
+  // named competitor cannot.
+  const { detectOutOfScope } = bot._internals;
+  for (const q of [
+    'how do I export my rack inventory to netbox',
+    'is RackTrack better than NetBox?',
+    'racktrack compared to device42',
+  ]) {
+    const r = detectOutOfScope(q);
+    assert.ok(r, `expected an out-of-scope signal for: ${q}`);
+    assert.equal(r.kind, 'comparison', `${q} must classify as a competitor question`);
+  }
+});

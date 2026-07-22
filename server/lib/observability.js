@@ -330,17 +330,28 @@ function emitAudit(row) {
 // so users can quote it in support tickets).
 function errorHandler(err, req, res, next) {
   const route = canonicalRoute(req);
-  errorsTotal.labels('uncaught', route).inc();
+
+  // Multer signals client mistakes with a .code and no status, so an oversized
+  // or wrong-type upload surfaced as 500 "internal server error". Classify
+  // BEFORE the counter and the log: a user picking the wrong file is not an
+  // uncaught server fault, and counting it as one polluted the error-rate SLO
+  // with ordinary user behaviour — which is how a real outage stays invisible.
+  const MULTER_TOO_LARGE = new Set(['LIMIT_FILE_SIZE', 'LIMIT_FILE_COUNT', 'LIMIT_PART_COUNT']);
+  if (!err.statusCode && !err.status && err.name === 'MulterError') {
+    err.status = MULTER_TOO_LARGE.has(err.code) ? 413 : 400;
+  }
+  const status = err.statusCode || err.status || 500;
+
+  errorsTotal.labels(status >= 500 ? 'uncaught' : 'client', route).inc();
   const log = req.log || logger;
-  log.error({
+  log[status >= 500 ? 'error' : 'warn']({
     err: err.message,
     stack: err.stack,
     route,
     method: req.method,
-    statusCode: err.statusCode || 500,
-  }, `unhandled: ${err.message}`);
+    statusCode: status,
+  }, `${status >= 500 ? 'unhandled' : 'client error'}: ${err.message}`);
   if (res.headersSent) return next(err);
-  const status = err.statusCode || err.status || 500;
   res.status(status).json({
     error: isDev ? err.message : (status >= 500 ? 'Internal server error' : err.message || 'Request failed'),
     requestId: req.id,

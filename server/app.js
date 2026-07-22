@@ -471,15 +471,25 @@ try {
     'lab devices router not loaded');
 }
 
-// Demo tenant-mat — isolated, no-auth, file-backed dataset used by the
-// /demo/topology UI to prototype the unified rack-layout view. Reads
-// server/data/demo_tenant.json; touches no real tenant data.
+// Demo tenant-mat — a prototype dataset for the /demo/topology UI.
+//
+// Gated like mock_routes, and for a stronger reason than "it's only demo
+// data": the module header claims it "touches no real tenant data", but its
+// ?source=cmdb branch spawns servicenow/demo_tenant_query.py, which reads the
+// configured instance's credentials and pulls LIVE records. Unauthenticated,
+// that was a customer's CMDB dataset available to anyone who could reach the
+// tunnel, plus an unbounded Python-spawn amplifier.
+if (process.env.ENABLE_DEMO_TOPOLOGY === '1' || process.env.NODE_ENV !== 'production') {
 try {
   app.use(require('./demo_topology'));
   logger.info({ event: 'router.loaded', router: 'demo_topology' }, 'demo tenant-mat router loaded');
 } catch (err) {
   logger.warn({ event: 'router.load_failed', router: 'demo_topology', err: err.message },
     'demo tenant-mat router not loaded');
+}
+} else {
+  logger.info({ event: 'router.skipped', router: 'demo_topology' },
+    'demo tenant-mat router disabled in production (set ENABLE_DEMO_TOPOLOGY=1 to enable)');
 }
 
 // Mock data-source routes — simulates ServiceNow, NetBox, Orion, Spectrum,
@@ -571,7 +581,12 @@ const upload = multer({
   limits: { fileSize: 340 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ok = _safeExt(file.originalname) !== '';
-    cb(ok ? null : new Error('Invalid file type'), ok);
+    // Tag the rejection so the error handler answers 400 rather than 500.
+    // A user picking the wrong file type is not a server fault, and every one
+    // of these was polluting the uncaught-error rate that alerting watches.
+    let err = null;
+    if (!ok) { err = new Error('Invalid file type'); err.status = 400; }
+    cb(err, ok);
   },
 });
 
@@ -584,6 +599,13 @@ const scanLimit = uploadLimiter();
 // stopped a few seconds into every session. /api/detect is a lightweight
 // detect-only call (no scan is written), so it gets its own realistic budget.
 // Still bounded, so it remains a DoS guard rather than an open door.
+// These four are UI-driven lookups that each fork one to three Python
+// processes with a 90s timeout and no concurrency cap. They had neither auth
+// nor a limiter, so an anonymous request loop could exhaust CPU and process
+// slots — the rate-limit coverage had a hole exactly where per-request cost
+// was highest.
+const moduleLimit = uploadLimiter({ rate: 10, burst: 5 });
+
 const detectLimit = uploadLimiter({
   rate:  Number(process.env.RATE_LIMIT_DETECT_PER_MIN) || 180,
   burst: Number(process.env.RATE_LIMIT_DETECT_BURST)   || 60,
@@ -4528,7 +4550,11 @@ app.post('/api/incidents/refresh', auth.requireAuth, async (req, res) => {
  * client can render a clear "upload THIS rack" prompt before the user
  * picks an image. No upload required.
  */
-app.get('/api/incidents/:inc/expected-rack', (req, res) => {
+// Authenticated, like its three sibling incident routes. Without it this
+// returned incident number, target, rack name, rack scan id, site, row, rack
+// position and the full expected-device list to anyone — and ServiceNow
+// incident numbers are sequential, so the whole inbox was enumerable.
+app.get('/api/incidents/:inc/expected-rack', auth.requireAuth, (req, res) => {
   const ticket = readTicketByNumber(req.params.inc);
   if (!ticket) return res.status(404).json({ ok: false, error: `Ticket ${req.params.inc} not in inbox` });
   const cmdbRack = readCmdbRack(ticket.cmdb?.rack_name);
@@ -7267,7 +7293,7 @@ function runPipelineModule(moduleName, extraArgs) {
 }
 
 // GET /api/specs/vendors — vendor names from the Excel sheet.
-app.get('/api/specs/vendors', async (req, res) => {
+app.get('/api/specs/vendors', auth.requireAuth, moduleLimit, async (req, res) => {
   const result = await runPipelineModule('pipeline.all_vendor', ['--list-vendors']);
   if (!result.ok) return res.status(500).json(result);
   res.json(result);
@@ -7278,7 +7304,7 @@ app.get('/api/specs/vendors', async (req, res) => {
 //   multi-engine web fallback (~4s) for unknown models. The agent's record
 //   is transformed into the UI's existing { vendor, model, productUrl, specs }
 //   contract so callers don't have to change.
-app.post('/api/specs', async (req, res) => {
+app.post('/api/specs', auth.requireAuth, moduleLimit, async (req, res) => {
   const vendor = String(req.body?.vendor || '').trim();
   const model  = String(req.body?.model  || '').trim();
   // fromOcr === true: data came from the OCR pipeline; run the 2-stage
@@ -7436,7 +7462,7 @@ function specPayloadFromAgent(agentRes, reqVendor, reqModel) {
 // → dynamically determines SFP slot type by scraping vendor datasheets,
 //   then searches the web for compatible transceiver modules.
 //   No hardcoded switch database — everything is inferred from live data.
-app.post('/api/sfp/analyze', async (req, res) => {
+app.post('/api/sfp/analyze', auth.requireAuth, moduleLimit, async (req, res) => {
   const vendor     = String(req.body?.vendor || '').trim();
   const model      = String(req.body?.model  || '').trim();
   const interfaces = req.body?.interfaces || '';  // comma-separated iface names
@@ -7459,7 +7485,7 @@ app.post('/api/sfp/analyze', async (req, res) => {
 //   fallback. The Node side only re-shapes the response into the UI's
 //   contract. (The agent also carries security-advisory rows; we do not
 //   read them — CVE reporting was removed from the product.)
-app.post('/api/firmware', async (req, res) => {
+app.post('/api/firmware', auth.requireAuth, moduleLimit, async (req, res) => {
   const vendor         = String(req.body?.vendor || '').trim();
   const model          = String(req.body?.model  || '').trim();
   const currentVersion = String(req.body?.currentVersion || '').trim();

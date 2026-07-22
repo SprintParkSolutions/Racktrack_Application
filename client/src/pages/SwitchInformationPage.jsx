@@ -8,6 +8,7 @@ import { useTheme } from '../ThemeContext.jsx';
 import { getCached, setCached, cacheKey } from '../utils/scanPrefetch';
 import SfpAdvisor from '../components/SfpAdvisor.jsx';
 import { findVendorLogin } from '../utils/vendorLoginUrls';
+import { getItem, setItem, removeItem } from '../utils/safeStorage';
 
 // CMDB-driven switch info. Reads the list of switches stored in CMDB for
 // this rack, and on demand fetches vendor specs + firmware-update info per
@@ -207,14 +208,14 @@ function userOverrideKey(rackId, sw, field) {
   return `racktrack:${field}:${rackId || '_'}::${switchStableId(sw)}`;
 }
 function loadOverride(rackId, sw, field) {
-  try { return localStorage.getItem(userOverrideKey(rackId, sw, field)) || ''; }
+  try { return getItem(userOverrideKey(rackId, sw, field)) || ''; }
   catch { return ''; }
 }
 function saveOverride(rackId, sw, field, value) {
   try {
     const k = userOverrideKey(rackId, sw, field);
-    if (value) localStorage.setItem(k, value);
-    else localStorage.removeItem(k);
+    if (value) setItem(k, value);
+    else removeItem(k);
   } catch (_) {}
 }
 

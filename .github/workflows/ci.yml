@@ -15,6 +15,24 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
+  # Secret scanning. .gitleaks.toml has been in the repo for a while with
+  # nothing invoking it, so it caught none of the credentials that reached a
+  # pushed branch. Blocking, because a leaked secret costs more than a red build.
+  # ---------------------------------------------------------------------------
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # scan history, not just the tip
+
+      - name: Scan for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------------
   # Node: server unit/smoke tests + client production build.
   # ---------------------------------------------------------------------------
   node:
@@ -47,6 +65,10 @@ jobs:
       - name: Install client deps
         working-directory: client
         run: npm ci
+
+      - name: Test client
+        working-directory: client
+        run: npm test --if-present
 
       - name: Build client
         working-directory: client

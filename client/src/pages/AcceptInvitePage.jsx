@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import styles from './AuthPages.module.css';
+import { setItem } from '../utils/safeStorage';
 import { apiUrl } from '../utils/api';
 
 const Eye = ({ off }) => off
@@ -46,8 +47,11 @@ export default function AcceptInvitePage() {
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Could not accept the invite.');
       try {
-        localStorage.setItem('rt_authToken', d.token);
-        localStorage.setItem('rt_authUser', JSON.stringify(d.user));
+        // Guarded: this is the same unguarded-write crash that blanked the
+        // app at sign-in on storage-blocked browsers. Failing to persist means
+        // signing in again next launch; throwing here means losing the app.
+        setItem('rt_authToken', d.token);
+        setItem('rt_authUser', JSON.stringify(d.user));
       } catch (_) { /* ignore */ }
       window.location.assign('/scan');   // full reload so AuthContext picks up the session
     } catch (ex) { setErr(ex.message); setBusy(false); }

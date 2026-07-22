@@ -7,6 +7,7 @@
 // backgrounded, the marker survives. On resume, PendingScanResumer (App.jsx)
 // polls the server for that id and navigates straight to the results.
 import { apiUrl, authFetch } from './api';
+import { getItem, setItem, removeItem } from './safeStorage';
 
 const KEY = 'racktrack:pendingScan';
 const TTL_MS = 15 * 60 * 1000;   // matches the server-side job TTL
@@ -17,12 +18,12 @@ export function newJobId() {
 }
 
 export function setPendingScan(id, kind = 'image') {
-  try { localStorage.setItem(KEY, JSON.stringify({ id, kind, startedAt: Date.now() })); } catch (_) {}
+  try { setItem(KEY, JSON.stringify({ id, kind, startedAt: Date.now() })); } catch (_) {}
 }
 
 export function getPendingScan() {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = getItem(KEY);
     if (!raw) return null;
     const p = JSON.parse(raw);
     if (!p || !p.id) return null;
@@ -32,7 +33,7 @@ export function getPendingScan() {
 }
 
 export function clearPendingScan() {
-  try { localStorage.removeItem(KEY); } catch (_) {}
+  try { removeItem(KEY); } catch (_) {}
 }
 
 // Ask the server what became of a scan id: { status:'running'|'done'|'error'|'missing', rackId }

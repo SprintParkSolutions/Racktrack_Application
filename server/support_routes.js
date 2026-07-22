@@ -70,7 +70,13 @@ router.use('/api/support', (req, res, next) => {
 // 30/hour sustained with a burst of 10 covers a whole session without the user
 // ever meeting the limit, and still caps a runaway client at one model call
 // every two minutes once the burst is spent.
-const ASK_PER_HOUR = 30;
+// 60/hour, not 30. The previous limiter was rate:1/min — i.e. 60/hour — and
+// this "fix" set 30/hour while its own comment claimed to be loosening it,
+// halving the ceiling and doubling the wait from 60s to 120s. The eleventh
+// question of a troubleshooting session was refused either way (burst is what
+// governs that), so every dimension of the scenario the comment cites got
+// worse. Restores the old sustained rate and keeps the corrected message text.
+const ASK_PER_HOUR = 60;
 const ASK_BURST = 10;
 const askLimiter = uploadLimiter({ rate: ASK_PER_HOUR / 60, burst: ASK_BURST });
 

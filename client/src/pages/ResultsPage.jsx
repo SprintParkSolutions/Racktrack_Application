@@ -904,7 +904,7 @@ export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, o
 
   useEffect(() => {
     if (!cmdbRackId || !isFreshDetectScan) return;
-    const dismissed = dismissKey && sessionStorage.getItem(dismissKey) === '1';
+    const dismissed = dismissKey && getItem(dismissKey, 'session') === '1';
     if (dismissed) return;
 
     // Server auto-creates the CMDB ticket ~4s after canonical scan write.
@@ -951,7 +951,7 @@ export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, o
   const closeCmdbModal = () => {
     setCmdbModalOpen(false);
     if (dismissKey) {
-      try { sessionStorage.setItem(dismissKey, '1'); } catch (_) {}
+      try { setItem(dismissKey, '1', 'session'); } catch (_) {}
     }
   };
 
@@ -1269,10 +1269,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // Developer diagnostics (timings + confidences)
   const [portTimings, setPortTimings] = useState(null);
   const [devOpen, setDevOpen] = useState(() => {
-    try { return localStorage.getItem('rt_devOpen') === '1'; } catch { return false; }
+    try { return getItem('rt_devOpen') === '1'; } catch { return false; }
   });
   useEffect(() => {
-    try { localStorage.setItem('rt_devOpen', devOpen ? '1' : '0'); } catch { /* ignore */ }
+    try { setItem('rt_devOpen', devOpen ? '1' : '0'); } catch { /* ignore */ }
   }, [devOpen]);
   const [reportOpen, setReportOpen] = useState(false);
   // When true, the in-app report iframe loads with the #download hash, which
@@ -2580,7 +2580,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     setShareDialogChannel(channel);
     setShareEmailErr(null);
     let prefill = '';
-    try { prefill = localStorage.getItem(SHARE_LS_KEY(channel)) || ''; } catch (_) {}
+    try { prefill = getItem(SHARE_LS_KEY(channel)) || ''; } catch (_) {}
     setShareEmailInput(prefill);
     setShareNoteInput('');
   };
@@ -2607,7 +2607,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       else if (channel === 'slack') payload.comment = note;
     }
 
-    try { localStorage.setItem(SHARE_LS_KEY(channel), email); } catch (_) {}
+    try { setItem(SHARE_LS_KEY(channel), email); } catch (_) {}
 
     setShareDialogChannel(null);
     setShareStatus('sending');
