@@ -411,13 +411,29 @@ class _SwitchOcrReader:
 
 
 def _build_reader():
-    """Prefer switch-ocr; fall back to EasyOCR if it or its models are absent.
+    """EasyOCR by default; switch-ocr only when explicitly asked for.
 
-    The fallback matters: OCR sits on the critical path for every scan, so a
-    missing dependency on one machine must degrade to the previous engine
-    rather than fail the scan outright.
+    switch-ocr reads a rack markedly better — on Test_Image/T3 it returns
+    'D-Link' and the model number 'DCS-1100-18' where EasyOCR returns 'Calb'
+    and 'Drrotm' — so it is worth finishing. It is not the default yet because
+    of latency, and the shape of this module makes that fatal rather than
+    merely slow: read_text_multi() runs THREE passes per device crop, on the
+    documented assumption that each costs ~50ms. Measured on this Mac, one
+    switch-ocr pass over a single 1000x133 device band takes ~24s (both the
+    fast() and accurate() presets), against ~1.5s for EasyOCR over an entire
+    image. That is ~72s per device, so a 19-device rack goes from ~95s to
+    roughly 23 minutes.
+
+    Defaulting to it would therefore hand every scan a timeout, and only on
+    machines that HAVE PaddleOCR installed — production Windows currently does
+    not, so it would look fine here and fail there, or vice versa. Opt in with
+    RACKTRACK_OCR=switch-ocr for comparison runs.
+
+    Making it the default needs the crop-and-repeat structure replaced with a
+    single full-image pass (~171s on T3, still slow but one call rather than
+    3N), assigning detections to devices by box overlap.
     """
-    engine = (os.environ.get("RACKTRACK_OCR") or "switch-ocr").strip().lower()
+    engine = (os.environ.get("RACKTRACK_OCR") or "easyocr").strip().lower()
     if engine != "easyocr":
         try:
             from switch_ocr import SwitchTextReader, OCRConfig
