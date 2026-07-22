@@ -72,7 +72,13 @@
   .headerTitle { font-size: 10px; letter-spacing: 0.18em; }
 }
 
-.scanContent {
+/* Written as .pc.scanContent, not .scanContent. The element carries both
+   classes, and the global `.pc { overflow: hidden }` in index.css was winning
+   on equal specificity, so the overflow-y:auto below never applied — the page
+   computed `hidden` and testers could not scroll to the Analyze button at all.
+   `.pc` must be wrapped in :global() — this is a CSS module, so a bare `.pc`
+   is hashed to a local name and matches nothing. */
+:global(.pc).scanContent {
   position: relative;
   z-index: 1;
   flex: 1;
@@ -90,6 +96,17 @@
   max-width: 28rem;
   margin: 0 auto;
   width: 100%;
+}
+
+/* Flex items shrink by default, so everything below the preview was being
+   compressed to fit the fixed-height page instead of overflowing it: a 520px
+   block measured 38px tall in testing, and the tilt warning plus Retake /
+   Proceed were squashed behind the bottom bar with nothing to scroll to.
+   Holding every child except the media box at its natural height makes the
+   content genuinely taller than the container, which is what gives the
+   overflow-y above something to scroll. */
+:global(.pc).scanContent > *:not(.mediaBox) {
+  flex-shrink: 0;
 }
 
 .scanIntro {

@@ -1441,7 +1441,10 @@ export default function ScanPage() {
                   left: incidentMenuRect ? incidentMenuRect.left : 0,
                   width: incidentMenuRect ? incidentMenuRect.width : 'auto',
                   maxHeight: incidentMenuRect
-                    ? `calc(100vh - ${incidentMenuRect.bottom + 4}px - 120px - env(safe-area-inset-bottom))`
+                    // dvh, not vh: on mobile the URL bar collapses and 100vh
+                    // overstates the visible height, pushing the last option
+                    // under the bottom bar where it cannot be tapped.
+                    ? `calc(100dvh - ${incidentMenuRect.bottom + 4}px - 96px - env(safe-area-inset-bottom))`
                     : '50vh',
                   zIndex:250,
                   background: pickerPanelBg,
@@ -1505,14 +1508,19 @@ export default function ScanPage() {
                         }}
                         onMouseEnter={e => { if (!sel) e.currentTarget.style.background = pickerHoverBg; }}
                         onMouseLeave={e => { if (!sel) e.currentTarget.style.background = 'transparent'; }}>
-                        <span style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600}}>
-                          {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                        {/* Wraps rather than running off the edge. On a phone
+                            the incident id, device:port and priority do not fit
+                            on one line, and without flexWrap the id itself was
+                            being clipped — testers could not tell the incidents
+                            apart well enough to pick one. */}
+                        <span style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600,flexWrap:'wrap',minWidth:0}}>
+                          {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><polyline points="20 6 9 17 4 12"/></svg>}
                           <span>{t.incident_number}</span>
                           <span style={{color:'var(--muted, #4c4546)',fontWeight:400}}>·</span>
-                          <span>{t.target?.device}:{t.cmdb?.interface_alias || `port${t.target?.port}`}</span>
+                          <span style={{overflowWrap:'anywhere'}}>{t.target?.device}:{t.cmdb?.interface_alias || `port${t.target?.port}`}</span>
                           <span style={{color:'var(--muted, #4c4546)',fontWeight:400,fontSize:11}}>· {t.priority}</span>
                         </span>
-                        <span style={{fontSize:11,color:'var(--muted, #4c4546)',lineHeight:1.3}}>
+                        <span style={{fontSize:11,color:'var(--muted, #4c4546)',lineHeight:1.35,whiteSpace:'normal',overflowWrap:'anywhere'}}>
                           {t.short_description}
                         </span>
                       </button>
