@@ -1,5 +1,18 @@
 apply plugin: 'com.android.application'
 
+// ── Release signing ─────────────────────────────────────────────────────────
+// Signing material is NEVER hardcoded and NEVER committed. Supply it via env
+// vars (CI) or gradle properties in ~/.gradle/gradle.properties (user-global,
+// OUTSIDE this repo). Keystore files match the repo-wide *.jks / *.keystore
+// ignore rules, so keep the keystore out of the tree in practice too.
+// When nothing is supplied, rtHasSigning is false: no signingConfig is attached,
+// `assembleRelease` produces an UNSIGNED apk, and ship-apk.sh refuses to upload.
+def rtKeystore  = System.getenv('RACKTRACK_KEYSTORE')          ?: project.findProperty('RACKTRACK_KEYSTORE')
+def rtStorePass = System.getenv('RACKTRACK_KEYSTORE_PASSWORD') ?: project.findProperty('RACKTRACK_KEYSTORE_PASSWORD')
+def rtKeyAlias  = System.getenv('RACKTRACK_KEY_ALIAS')         ?: project.findProperty('RACKTRACK_KEY_ALIAS')
+def rtKeyPass   = System.getenv('RACKTRACK_KEY_PASSWORD')      ?: project.findProperty('RACKTRACK_KEY_PASSWORD')
+def rtHasSigning = rtKeystore != null && !rtKeystore.toString().trim().isEmpty()
+
 android {
     namespace "com.racktrack.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,7 +20,7 @@ android {
         applicationId "com.racktrack.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 22
+        versionCode 23
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -16,10 +29,26 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (rtHasSigning) {
+                storeFile file(rtKeystore)
+                storePassword rtStorePass
+                keyAlias rtKeyAlias
+                keyPassword rtKeyPass
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Attach the release signing config only when a keystore was actually
+            // supplied. Absent it, the release apk is unsigned by design and
+            // ship-apk.sh's pre-build guard stops the build before it is uploaded.
+            if (rtHasSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
     applicationVariants.all { variant ->
