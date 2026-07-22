@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { apiUrl, refreshAssetToken, clearAssetToken } from './utils/api';
+import { apiUrl, refreshAssetToken, clearAssetToken, installAssetTokenRefresh } from './utils/api';
 import { getItem, getJSON, removeItem, setItem } from './utils/safeStorage';
 
 const AuthContext = createContext(null);
@@ -44,8 +44,15 @@ export function AuthProvider({ children }) {
     // here rather than at each of the five sign-in paths: this effect already
     // runs on every token change, so login, signup, code-login, logout and
     // session expiry are all covered by one place that cannot be forgotten.
-    if (token) refreshAssetToken();
-    else clearAssetToken();
+    if (token) {
+      refreshAssetToken();
+      // The capability expires in 12 hours while this token lasts 30 days, and
+      // this effect only re-runs when the auth token itself changes. A phone
+      // that keeps the app resident and resumes it the next day would otherwise
+      // hold a dead capability: fetches keep working, every <img> 404s. Re-mint
+      // on foreground too.
+      installAssetTokenRefresh();
+    } else clearAssetToken();
   }, [token, user]);
 
   // Validate stored token against the server on mount; clear if the server

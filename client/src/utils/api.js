@@ -79,6 +79,51 @@ export async function refreshAssetToken() {
   }
 }
 
+// Read `exp` out of the stored capability without verifying it — the server is
+// the only party whose opinion of validity counts. This is used purely to
+// decide when to ask for a new one.
+function assetTokenExpiry(tok) {
+  try {
+    const [, body] = String(tok).split('.');
+    const { exp } = JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof exp === 'number' ? exp * 1000 : 0;
+  } catch { return 0; }
+}
+
+// The capability lives 12 hours; the auth token lives 30 days. refreshAssetToken
+// used to run only at AuthContext mount, so a phone that kept the app resident
+// and resumed it the next day carried a dead token: every fetch still worked
+// (those send a Bearer header) while every <img> 404'd, which reads as "the
+// scan images stopped loading" with no other symptom. Re-mint whenever the app
+// comes back to the foreground and the token is gone, expired, or close to it.
+const ASSET_REFRESH_MARGIN_MS = 30 * 60 * 1000;
+let assetRefreshInFlight = null;
+
+export function ensureFreshAssetToken({ force = false } = {}) {
+  let token = null;
+  try { token = localStorage.getItem('rt_authToken'); } catch { /* ignore */ }
+  if (!token) return Promise.resolve(null);   // signed out — nothing to mint
+  if (!force && assetToken && Date.now() < assetTokenExpiry(assetToken) - ASSET_REFRESH_MARGIN_MS) {
+    return Promise.resolve(assetToken);       // still comfortably valid
+  }
+  // Collapse concurrent callers (resume + a failed image + a remount) onto one
+  // request, so a stale token doesn't produce a burst of identical mints.
+  if (!assetRefreshInFlight) {
+    assetRefreshInFlight = refreshAssetToken().finally(() => { assetRefreshInFlight = null; });
+  }
+  return assetRefreshInFlight;
+}
+
+/** Wire the foreground/resume triggers. Safe to call more than once. */
+export function installAssetTokenRefresh() {
+  if (typeof window === 'undefined' || window.__rtAssetRefreshWired) return;
+  window.__rtAssetRefreshWired = true;
+  const onWake = () => { if (!document.hidden) ensureFreshAssetToken(); };
+  document.addEventListener('visibilitychange', onWake);
+  window.addEventListener('focus', onWake);
+  window.addEventListener('online', onWake);
+}
+
 export function clearAssetToken() {
   assetTokenEpoch += 1;   // invalidates any mint already in flight
   assetToken = null;

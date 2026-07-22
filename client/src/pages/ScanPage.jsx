@@ -11,6 +11,7 @@ import { useShutter } from '../ShutterContext.jsx';
 import { useTheme } from '../ThemeContext.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { useSmartBack } from '../hooks/useSmartBack';
+import Icon from '../components/Icon';
 
 // Lazy so the (~140 kB) three-fiber bundle only loads when the user opens VR.
 const TopologyScene3D = lazy(() => import('./TopologyScene3D.jsx'));
@@ -94,13 +95,7 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
         {/* Centered viewfinder icon — no box, just a faded mark */}
         <div className={styles.iconRing}>
           <div className={styles.iconWrap}>
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 32, color: 'inherit' }}
-              aria-hidden="true"
-            >
-              {isVideo ? 'videocam' : 'filter_center_focus'}
-            </span>
+            <Icon name={isVideo ? 'videocam' : 'filter_center_focus'} style={{ fontSize: 32, color: 'inherit' }} />
           </div>
         </div>
 

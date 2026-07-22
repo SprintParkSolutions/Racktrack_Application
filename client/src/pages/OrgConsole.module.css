@@ -137,7 +137,7 @@
   display: flex; align-items: center; justify-content: center;
   background: #f4f4f5; color: #0b0c0e;
 }
-.statIcon .material-symbols-outlined {
+.statIcon :global(.appIcon) {
   font-size: 21px;
   font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
 }
@@ -227,7 +227,7 @@
 .field > span { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #9a9a9a; }
 .input {
   padding: 11px 13px; border-radius: 11px; border: 1px solid #e8e8e8;
-  background: #fff; color: #0b0c0e; font-size: 14px; outline: none;
+  background: #fff; color: #0b0c0e; font-size: 16px; outline: none;
   transition: border-color .16s, box-shadow .16s;
 }
 .input:focus { border-color: #0b0c0e; box-shadow: 0 0 0 3px rgba(11,12,14,.07); }
@@ -266,7 +266,7 @@
   .stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .stat { padding: 12px 13px; gap: 11px; border-radius: 13px; }
   .statIcon { width: 34px; height: 34px; border-radius: 10px; }
-  .statIcon .material-symbols-outlined { font-size: 19px; }
+  .statIcon :global(.appIcon) { font-size: 19px; }
   .statValue { font-size: 1.45rem; }
   .grid { grid-template-columns: 1fr; }
   .sectionHead { flex-wrap: wrap; }
@@ -292,7 +292,7 @@
   background: #fff5f5; color: #b42318; border: 1px solid #ffd9d9;
 }
 .inviteLinkRow { display: flex; gap: 8px; align-items: center; }
-.inviteLinkRow .input { flex: 1; font-size: 12px; font-family: ui-monospace, monospace; }
+.inviteLinkRow .input { flex: 1; font-size: 16px; font-family: ui-monospace, monospace; }
 
 /* ── People grid (scan counts, click to filter) ── */
 .peopleGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 9px; }

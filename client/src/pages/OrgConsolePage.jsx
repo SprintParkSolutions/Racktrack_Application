@@ -6,6 +6,7 @@ import styles from './OrgConsole.module.css';
 import OrgConnectionsPanel from '../components/OrgConnectionsPanel.jsx';
 import BackButton from '../components/BackButton.jsx';
 import useModalA11y from '../hooks/useModalA11y.js';
+import Icon from '../components/Icon';
 
 // Organization console. Role-aware:
 //   owner     → list/create organizations, drill into any org's Sites + Members
@@ -311,7 +312,7 @@ export default function OrgConsolePage() {
         <>
           {isOwner && (
             <button className={styles.backLink} onClick={() => { setActiveOrg(null); setSites([]); setMembers([]); setOdash(null); }}>
-              <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: 16 }}>arrow_back</span>
+              <Icon name="arrow_back" style={{ fontSize: 16 }} />
               All organizations
             </button>
           )}
@@ -553,7 +554,7 @@ function StatRow({ items }) {
         <div key={it.label} className={styles.stat}>
           {it.icon && (
             <span className={styles.statIcon}>
-              <span className="material-symbols-outlined" aria-hidden="true">{it.icon}</span>
+              <Icon name={it.icon} />
             </span>
           )}
           <div className={styles.statText}>
@@ -566,12 +567,12 @@ function StatRow({ items }) {
   );
 }
 
-// Section title with a leading Material Symbols icon. Replaces the old
+// Section title with a leading inline-SVG icon. Replaces the old
 // ::before dot marker with an actual glyph so each section reads at a glance.
 function SecTitle({ icon, children }) {
   return (
     <h2 className={styles.sectionTitle}>
-      {icon && <span className={`material-symbols-outlined ${styles.secIcon}`} aria-hidden="true">{icon}</span>}
+      {icon && <Icon name={icon} className={`${styles.secIcon}`} />}
       {children}
     </h2>
   );

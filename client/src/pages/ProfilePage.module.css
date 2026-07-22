@@ -60,7 +60,7 @@
   transition: background-color 0.18s;
 }
 .topbarIconBtn:hover { background: var(--md-surface-container-highest); }
-.topbarIconBtn .material-symbols-outlined {
+.topbarIconBtn :global(.appIcon) {
   font-size: 24px;
   font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
 }
@@ -212,7 +212,7 @@
   transition: background-color 0.18s;
 }
 .row:hover .rowIcon { background: #ffffff; }
-.rowIcon .material-symbols-outlined {
+.rowIcon :global(.appIcon) {
   font-size: 24px;
   font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
 }
@@ -368,7 +368,7 @@
   color: var(--md-on-surface);
   margin-bottom: 4px;
 }
-.confirmIcon .material-symbols-outlined { font-size: 24px; }
+.confirmIcon :global(.appIcon) { font-size: 24px; }
 .confirmTitle {
   font-family: var(--font);
   font-size: 18px;

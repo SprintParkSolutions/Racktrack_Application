@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import styles from './HomeLight.module.css';
 import { useAuth } from '../AuthContext.jsx';
+import Icon from '../components/Icon';
 
 /* ──────────────────────────────────────────────────────────────────────
    HomeLight — the single Welcome screen for RackTrack.
    White-focused Material 3 design with black accent, Geist typography,
-   Material Symbols icons. There is no dark variant — this is the only
+   Inline SVG icons. There is no dark variant — this is the only
    theme.
    ────────────────────────────────────────────────────────────────────── */
 
@@ -66,12 +67,7 @@ export default function HomeLight() {
             onClick={handleGetStarted}
           >
             {isAuthed ? 'Start a scan' : 'Sign in'}
-            <span
-              className={`material-symbols-outlined ${styles.primaryCtaIcon}`}
-              aria-hidden="true"
-            >
-              arrow_forward
-            </span>
+            <Icon name="arrow_forward" className={`${styles.primaryCtaIcon}`} />
           </button>
         </div>
       </main>

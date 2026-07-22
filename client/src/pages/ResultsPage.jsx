@@ -13,6 +13,7 @@ import { TopologyContent } from './TopologyPage.jsx';
 import { NetdiscoContent } from './NetdiscoPage.jsx';
 import { SwitchInfoContent } from './SwitchInformationPage.jsx';
 import { PortHistoryContent } from './PortHistoryPage.jsx';
+import AssetImg from '../components/AssetImg';
 
 // ── Naming convention ─────────────────────────────────────────
 const CLASS_CODE = {
@@ -890,7 +891,8 @@ export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, o
 
   const [selectedCard, setSelectedCard] = useState(null);
   const [imgNat, setImgNat] = useState(null);
-  const heroSrc = apiUrl(`/outputs/${scanId}/original_image.${originalExt || 'png'}`);
+  const heroPath = `/outputs/${scanId}/original_image.${originalExt || 'png'}`;
+  const heroSrc = apiUrl(heroPath);
 
   // CMDB approval modal — shows once after a fresh detect-mode scan when
   // the rack isn't yet registered in CMDB. Skipped for ticket-mode scans
@@ -968,7 +970,7 @@ export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, o
         {/* Show rack image with selected device highlighted */}
         {selectedCard !== null && (
           <div className={styles.resultHero}>
-            <img src={heroSrc} alt="Rack" className={styles.heroImg}
+            <AssetImg path={heroPath} src={heroSrc} alt="Rack" className={styles.heroImg}
               onLoad={e => setImgNat({ w: e.target.naturalWidth, h: e.target.naturalHeight })} />
             {imgNat && (() => {
               const dev = safeDevices[selectedCard];
@@ -1626,7 +1628,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   //     "device detection" — no port boxes cluttering every device.
   //   • A device IS selected → switch to the pipeline's devices+ports overlay
   //     (coloured port boxes baked in) so the selected device's ports show.
-  const originalSrc = apiUrl(`/outputs/${scanId}/original_image.${originalExt || 'png'}`);
+  const originalPath = `/outputs/${scanId}/original_image.${originalExt || 'png'}`;
+  const originalSrc = apiUrl(originalPath);
+  // Keep the server-relative path alongside the resolved URL: AssetImg needs the
+  // path so it can rebuild the URL with a fresh capability token when the old
+  // one has expired, rather than retrying the same dead query string.
+  const heroImgPath = selectedIdx
+    ? (result?.overlayImageUrl || (resultImg ? null : originalPath))
+    : originalPath;
   const heroImgSrc = selectedIdx
     ? ((result?.overlayImageUrl && apiUrl(result.overlayImageUrl)) || resultImg || originalSrc)
     : originalSrc;
@@ -4469,7 +4478,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           onPointerLeave={handlePointerLeave}
         >
           <div className={styles.heroImgWrap} style={focusFx || { transform: imageTransform, cursor: cursorStyle }}>
-            <img src={heroImgSrc} alt="Rack scan" className={styles.heroImg}
+            <AssetImg path={heroImgPath} src={heroImgSrc} alt="Rack scan" className={styles.heroImg}
               style={{ touchAction: zoom > 1 ? 'none' : 'pan-y' }}
               onLoad={e => setImgNat({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
               draggable="false"

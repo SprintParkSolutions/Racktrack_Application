@@ -234,29 +234,20 @@ svg { max-width: 100%; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(13, 13, 15, 0.22); border-radius: 3px; }
 
-/* Material Symbols defaults */
-.material-symbols-outlined {
-  /* font-family lived in the Google stylesheet that used to be linked from
-     index.html. Removing that link to self-host the font took this rule with
-     it, and nothing here replaced it — so every icon in the app rendered as
-     its literal name ("logout", "edit", "dns") in the body font. The build,
-     the linter and the tests all passed; only opening the app shows it. */
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
+/* Icon defaults.
+   These were Material Symbols ligatures — text that becomes a glyph only once
+   an icon font loads. That failed in production twice (missing font-family, then
+   a subset shipped with no ligature glyphs at all) and both times testers saw
+   "arrow_forward" printed on the primary button. They are inline SVG now, so
+   there is no font to fail. See src/components/Icon.jsx.
+
+   font-size still drives icon size — Icon is 1em square — so existing inline
+   fontSize values and per-page rules keep working. */
+.appIcon {
   font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
   display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  /* Ligature substitution is what turns the text "logout" into the glyph. */
-  -webkit-font-feature-settings: 'liga';
-  font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  flex: none;
+  vertical-align: middle;
   user-select: none;
 }
 
@@ -395,6 +386,13 @@ svg { max-width: 100%; }
 .badge-orange { background: rgba(245, 158, 11, 0.10); color: #b45309;          border: 1px solid rgba(245, 158, 11, 0.30); }
 .badge-cyan   { background: var(--md-surface-container); color: var(--md-on-surface); border: 1px solid var(--md-outline-variant); }
 
+/* Form controls must never render below 16px: iOS Safari and WKWebView
+   auto-zoom the viewport when a focused input/select/textarea is smaller than
+   16px, and iOS does NOT restore the scale on blur — the bottom nav ends up
+   scrolled off screen. This is the floor for bare/unclassed controls; every
+   class rule that sets its own size is kept at >=16px individually. */
+input, select, textarea { font-size: 16px; }
+
 /* ── Input — flat white, crisp 1px border, no inset shadow ── */
 .input {
   width: 100%;
@@ -403,7 +401,7 @@ svg { max-width: 100%; }
   border-radius: var(--r3);
   color: var(--md-on-surface);
   font-family: var(--font);
-  font-size: .95rem;
+  font-size: 1rem;
   padding: 14px 16px;
   outline: none;
   box-shadow: none;

@@ -8,6 +8,8 @@ import { apiUrl, authFetch } from '../utils/api';
 import Avatar from '../components/Avatar.jsx';
 import { AVATARS, resolveAvatarIndex } from '../utils/avatars';
 import BackButton from '../components/BackButton.jsx';
+import Icon from '../components/Icon';
+import AssetImg from '../components/AssetImg';
 
 function formatJoined(d) {
   if (!d) return null;
@@ -113,7 +115,7 @@ export default function ProfilePage() {
           className={styles.topbarIconBtn}
           onClick={() => setConfirmingSignOut(true)}
           aria-label="Sign out">
-          <span className="material-symbols-outlined" aria-hidden="true">logout</span>
+          <Icon name="logout" />
         </button>
       </header>
 
@@ -132,7 +134,7 @@ export default function ProfilePage() {
               background: '#2b6fed', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: '3px solid var(--md-background, #fff)', boxShadow: '0 2px 6px rgba(0,0,0,.2)',
             }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 16 }} aria-hidden="true">edit</span>
+              <Icon name="edit" style={{ fontSize: 16 }} />
             </span>
           </button>
           <h2 className={styles.name}>{user?.username || 'Guest'}</h2>
@@ -158,7 +160,7 @@ export default function ProfilePage() {
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter') navigate('/organizations'); }}>
                 <div className={styles.rowIcon}>
-                  <span className="material-symbols-outlined" aria-hidden="true">space_dashboard</span>
+                  <Icon name="space_dashboard" />
                 </div>
                 <div className={styles.rowMain}>
                   <h4 className={styles.rowTitle}>
@@ -170,7 +172,7 @@ export default function ProfilePage() {
                       : 'Sites, members & scan activity'}
                   </p>
                 </div>
-                <span className={`material-symbols-outlined ${styles.rowChevron}`} aria-hidden="true">chevron_right</span>
+                <Icon name="chevron_right" className={`${styles.rowChevron}`} />
               </li>
             </ul>
           </section>
@@ -191,7 +193,7 @@ export default function ProfilePage() {
               tabIndex={0}
               onKeyDown={(e) => { if (e.key === 'Enter') navigate('/connections'); }}>
               <div className={styles.rowIcon}>
-                <span className="material-symbols-outlined" aria-hidden="true">dns</span>
+                <Icon name="dns" />
               </div>
               <div className={styles.rowMain}>
                 <h4 className={styles.rowTitle}>
@@ -203,7 +205,7 @@ export default function ProfilePage() {
                     : 'Tap to set up ServiceNow, NetBox, Orion…'}
                 </p>
               </div>
-              <span className={`material-symbols-outlined ${styles.rowChevron}`} aria-hidden="true">chevron_right</span>
+              <Icon name="chevron_right" className={`${styles.rowChevron}`} />
             </li>
           </ul>
         </section>
@@ -237,8 +239,8 @@ export default function ProfilePage() {
                   onKeyDown={(e) => { if (e.key === 'Enter') openScan(s.rackId); }}>
                   <div className={styles.rowThumb}>
                     {s.image
-                      ? <img src={apiUrl(s.image)} alt="" loading="lazy" />
-                      : <span className="material-symbols-outlined" aria-hidden="true">terminal</span>}
+                      ? <AssetImg path={s.image} alt="" loading="lazy" />
+                      : <Icon name="terminal" />}
                   </div>
                   <div className={styles.rowMain}>
                     <h4 className={`${styles.rowTitle} ${styles.rowTitleMono}`}>{s.rackId}</h4>
@@ -248,7 +250,7 @@ export default function ProfilePage() {
                   </div>
                   <div className={styles.rowEnd}>
                     <span className={styles.rowTime}>{formatRelative(s.timestamp)}</span>
-                    <span className={`material-symbols-outlined ${styles.rowChevron}`} aria-hidden="true">chevron_right</span>
+                    <Icon name="chevron_right" className={`${styles.rowChevron}`} />
                   </div>
                 </li>
               ))}
@@ -272,7 +274,7 @@ export default function ProfilePage() {
         <div className={styles.confirmBackdrop}>
           <div className={styles.confirmModal}>
             <div className={styles.confirmIcon}>
-              <span className="material-symbols-outlined" aria-hidden="true">logout</span>
+              <Icon name="logout" />
             </div>
             <h3 className={styles.confirmTitle}>Sign out?</h3>
             <p className={styles.confirmMsg}>You'll need to sign in again to scan racks.</p>
