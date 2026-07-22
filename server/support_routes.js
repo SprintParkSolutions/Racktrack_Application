@@ -115,7 +115,18 @@ router.post(
       ? history
           .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
           .slice(-MAX_HISTORY_TURNS)
-          .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_QUESTION_CHARS) }))
+          .map((m) => ({
+            role: m.role,
+            content: m.content.slice(0, MAX_QUESTION_CHARS),
+            // Carry the ids the bot offered, so a reply of "2" can be resolved
+            // back to the entry it numbered. Client-supplied, so bounded and
+            // shape-checked here; the bot looks each id up against the
+            // answerable audiences, so a forged id cannot reach anything a
+            // normal question could not already reach.
+            ...(Array.isArray(m.sources) && m.sources.length
+              ? { sources: m.sources.filter((x) => typeof x === 'string' && x.length <= 40).slice(0, 10) }
+              : {}),
+          }))
       : [];
 
     const started = Date.now();

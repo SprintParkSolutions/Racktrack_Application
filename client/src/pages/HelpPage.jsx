@@ -1,14 +1,26 @@
 // Help — the full-screen home for RackTrack Assist.
 //
 // The floating panel (SupportBot) is for when you are mid-task and need one
-// answer. This page is for when you came here to ask something, or to test.
+// answer. This page is for when you came here to ask something.
 //
-// It shows a diagnostic line under each answer — which route produced it and
-// which entry it came from. Without that, a tester reporting "it gave me the
-// wrong answer" has nothing actionable attached, and we cannot tell a
-// retrieval problem from a knowledge-base gap.
+// Two things drive the design:
+//
+//   1. When Assist is unsure it offers a numbered list and asks you to "reply
+//      with the number". Making people type a number into a chat box is poor
+//      on a phone, so the list renders as buttons. Tapping one sends that
+//      question verbatim, which the server matches exactly and answers from
+//      the verified text — no guessing in between.
+//
+//   2. Every reply is labelled with how it was produced: answered from
+//      verified documentation, unsure, or declined. A support bot that looks
+//      equally confident whether it knows or not is worse than no bot.
+//
+// The retrieval diagnostics (route, entry ids, latency) are hidden behind a
+// toggle. They were on screen for everyone, so users saw lines like
+// "suggestions MKT-012, ACCT-001 4ms" under their answer, which reads as an
+// error and means nothing to them.
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './HelpPage.module.css';
 
@@ -24,6 +36,37 @@ const STARTERS = [
 // Routes where Assist did not answer. Shown differently so a decline is never
 // mistaken for advice.
 const DECLINED = new Set(['refusal', 'out-of-scope', 'needs-access']);
+const UNSURE = new Set(['suggestions', 'clarify']);
+
+/** How a reply should be labelled, in the user's language rather than ours. */
+function badgeFor(route) {
+  if (DECLINED.has(route)) return { label: 'No verified answer', kind: 'declined' };
+  if (UNSURE.has(route)) return { label: 'Not sure yet', kind: 'unsure' };
+  if (route === 'credential-guard') return { label: 'Security notice', kind: 'declined' };
+  if (route === 'grounded') return { label: 'Composed from documentation', kind: 'ok' };
+  if (route === 'verbatim') return { label: 'Verified answer', kind: 'ok' };
+  return null;
+}
+
+/**
+ * Split a suggestions reply into its lead-in and the numbered options, so the
+ * options can be rendered as real controls. Falls back to plain text whenever
+ * the shape is not what we expect — never lose the message trying to prettify it.
+ */
+function parseOptions(text) {
+  const lines = String(text || '').split('\n');
+  const opts = [];
+  const lead = [];
+  let trailing = [];
+  for (const line of lines) {
+    const m = line.match(/^\s*(\d{1,2})[.)]\s+(.*\S)\s*$/);
+    if (m) { opts.push(m[2]); trailing = []; }
+    else if (opts.length) { if (line.trim()) trailing.push(line.trim()); }
+    else if (line.trim()) lead.push(line.trim());
+  }
+  if (opts.length < 2) return null;
+  return { lead: lead.join(' '), options: opts, trailing: trailing.join(' ') };
+}
 
 export default function HelpPage() {
   const [status, setStatus] = useState(null); // null = checking
@@ -31,6 +74,7 @@ export default function HelpPage() {
   const [pending, setPending] = useState(false);
   const [draft, setDraft] = useState('');
   const [expanded, setExpanded] = useState(() => new Set());
+  const [showDiag, setShowDiag] = useState(false);
 
   const logRef = useRef(null);
   const inputRef = useRef(null);
@@ -60,7 +104,13 @@ export default function HelpPage() {
 
     const started = Date.now();
     try {
-      const history = messages.slice(-6).map((m) => ({ role: m.role, content: m.content }));
+      // `sources` goes back too: when Assist offers a numbered list and the
+      // user replies "2", the server resolves that number against the ids it
+      // offered. Without them the number means nothing and the reply Assist
+      // explicitly asked for produces a refusal.
+      const history = messages.slice(-6).map((m) => ({
+        role: m.role, content: m.content, sources: m.sources || undefined,
+      }));
       const res = await authFetch(apiUrl('/api/support/ask'), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -106,12 +156,17 @@ export default function HelpPage() {
     });
   };
 
+  const parsed = useMemo(
+    () => messages.map((m) => (m.role === 'assistant' && UNSURE.has(m.route) ? parseOptions(m.content) : null)),
+    [messages],
+  );
+
   if (status && !status.ok) {
     return (
       <div className={styles.page}>
         <div className={styles.unavailable}>
           <h2>Help is unavailable</h2>
-          <p>The assistant isn&apos;t running right now. Please contact your RackTrack administrator.</p>
+          <p>Assist isn&apos;t running right now. Please contact your RackTrack administrator.</p>
         </div>
       </div>
     );
@@ -119,31 +174,54 @@ export default function HelpPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.head}>
-        <img src="/logo.jpg" alt="" className={styles.mark} />
-        <div>
-          <div className={styles.title}>RackTrack <span>Assist</span></div>
-          <div className={styles.sub}>Answers from verified documentation</div>
+      <header className={styles.head}>
+        <span className={styles.mark} aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+               strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="5" rx="1.5" />
+            <rect x="3" y="12" width="18" height="5" rx="1.5" />
+            <circle cx="7" cy="6.5" r="0.9" fill="currentColor" stroke="none" />
+            <circle cx="7" cy="14.5" r="0.9" fill="currentColor" stroke="none" />
+            <path d="M12 20h7" />
+          </svg>
+        </span>
+        <div className={styles.headText}>
+          <h1 className={styles.title}>RackTrack <span>Assist</span></h1>
+          <p className={styles.sub}>Answers from verified documentation — never guesses</p>
         </div>
         {status?.ok && (
-          <div className={styles.status}>
-            <span className={`${styles.dot} ${status.mode === 'search-only' ? styles.off : ''}`} />
+          <button
+            type="button"
+            className={styles.status}
+            onClick={() => setShowDiag((v) => !v)}
+            aria-pressed={showDiag}
+            title={showDiag ? 'Hide retrieval details' : 'Show retrieval details'}
+          >
+            <span className={styles.dot} />
             {status.entries} answers
-          </div>
+          </button>
         )}
-      </div>
+      </header>
 
       <div className={styles.log} ref={logRef}>
         <div className={styles.inner}>
           {messages.length === 0 && (
             <div className={styles.intro}>
+              <div className={styles.introRule} aria-hidden="true" />
               <h2>What are you stuck on?</h2>
-              Ask in your own words — the way you&apos;d say it to a colleague.
-              If Assist isn&apos;t certain, it will say so rather than guess.
+              <p>
+                Ask in your own words — the way you&apos;d say it to a colleague.
+                If Assist isn&apos;t certain it will say so rather than guess.
+              </p>
+              <div className={styles.startersLabel}>Common questions</div>
               <div className={styles.starters}>
                 {STARTERS.map((s) => (
                   <button key={s} type="button" className={styles.starter} onClick={() => send(s)}>
                     {s}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                         strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
                   </button>
                 ))}
               </div>
@@ -151,26 +229,70 @@ export default function HelpPage() {
           )}
 
           {messages.map((m, i) => {
-            const declined = m.role === 'assistant' && DECLINED.has(m.route);
+            if (m.role === 'user') {
+              return (
+                <div key={i} className={`${styles.row} ${styles.me}`}>
+                  <div className={styles.meBubble}>{m.content}</div>
+                </div>
+              );
+            }
+
+            const badge = badgeFor(m.route);
+            const opts = parsed[i];
             const isOpen = expanded.has(i);
+
             return (
-              <div
-                key={i}
-                className={`${styles.row} ${m.role === 'user' ? styles.me : styles.bot} ${declined ? styles.declined : ''}`}
-              >
-                <div>
-                  <div className={styles.bubble}>{m.content}</div>
+              <div key={i} className={`${styles.row} ${styles.bot}`}>
+                <div className={`${styles.card} ${badge ? styles[badge.kind] : ''}`}>
+                  {badge && (
+                    <div className={styles.badge}>
+                      <span className={styles.badgeDot} aria-hidden="true" />
+                      {badge.label}
+                    </div>
+                  )}
+
+                  {opts ? (
+                    <>
+                      {opts.lead && <p className={styles.lead}>{opts.lead}</p>}
+                      <div className={styles.options}>
+                        {opts.options.map((o, n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            className={styles.option}
+                            onClick={() => send(o)}
+                            disabled={pending}
+                          >
+                            <span className={styles.optionNum}>{n + 1}</span>
+                            <span className={styles.optionText}>{o}</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                                 strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                          </button>
+                        ))}
+                      </div>
+                      <p className={styles.hint}>Tap one, or rephrase your question below.</p>
+                    </>
+                  ) : (
+                    <div className={styles.answer}>{m.content}</div>
+                  )}
 
                   {m.detail && (
                     <>
-                      <button type="button" className={styles.detailBtn} onClick={() => toggleDetail(i)} aria-expanded={isOpen}>
-                        {isOpen ? 'Less detail' : 'More detail'}
+                      <button
+                        type="button"
+                        className={styles.detailBtn}
+                        onClick={() => toggleDetail(i)}
+                        aria-expanded={isOpen}
+                      >
+                        {isOpen ? 'Show less' : 'Show the full steps'}
                       </button>
                       {isOpen && <div className={styles.detail}>{m.detail}</div>}
                     </>
                   )}
 
-                  {declined && (
+                  {DECLINED.has(m.route) && (
                     <div className={styles.escape}>
                       Still stuck?{' '}
                       <button type="button" onClick={() => send('how do I contact support')}>
@@ -179,10 +301,10 @@ export default function HelpPage() {
                     </div>
                   )}
 
-                  {m.role === 'assistant' && m.route && (
+                  {showDiag && m.route && (
                     <div className={styles.debug}>
-                      <span><b>{m.route}</b></span>
-                      {m.sources?.length > 0 && <span>{m.sources.join(', ')}</span>}
+                      <b>{m.route}</b>
+                      {m.sources?.length > 0 && <span>{m.sources.join(' · ')}</span>}
                       {m.ms != null && <span>{m.ms}ms</span>}
                     </div>
                   )}
@@ -193,8 +315,10 @@ export default function HelpPage() {
 
           {pending && (
             <div className={`${styles.row} ${styles.bot}`}>
-              <div className={styles.bubble}>
-                <span className={styles.dots} aria-label="Thinking"><i /><i /><i /></span>
+              <div className={`${styles.card} ${styles.thinking}`}>
+                <span className={styles.dots} aria-label="Searching the documentation">
+                  <i /><i /><i />
+                </span>
               </div>
             </div>
           )}
@@ -214,8 +338,12 @@ export default function HelpPage() {
             autoComplete="off"
             aria-label="Your question"
           />
-          <button type="submit" className={styles.send} disabled={pending || !draft.trim()}>
-            Ask
+          <button type="submit" className={styles.send} disabled={pending || !draft.trim()} aria-label="Ask">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
+                 strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
           </button>
         </div>
       </form>
