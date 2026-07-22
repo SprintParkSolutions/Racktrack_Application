@@ -1,4 +1,4 @@
-# Derived from where this script lives — see deploy.ps1. Hardcoding the drive
+﻿# Derived from where this script lives — see deploy.ps1. Hardcoding the drive
 # breaks every time the checkout moves.
 $ProjectRoot = $PSScriptRoot
 

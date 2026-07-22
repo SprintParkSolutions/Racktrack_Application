@@ -6,3 +6,9 @@
 *.pt binary
 *.pth binary
 *.onnx binary
+
+# PowerShell scripts run on the Windows box under PowerShell 5.1, which assumes
+# the system ANSI codepage for a .ps1 with no byte-order mark and mis-decodes
+# every non-ASCII byte in the comments. These files are stored WITH a UTF-8 BOM
+# and CRLF endings; -text keeps git from rewriting either on checkout.
+*.ps1 -text

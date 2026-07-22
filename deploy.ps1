@@ -1,4 +1,4 @@
-# RackTrack one-command deploy for the Windows GPU box.
+﻿# RackTrack one-command deploy for the Windows GPU box.
 #   .\deploy.ps1
 # Pulls the latest code, rebuilds the web client, restarts the Node server
 # (via start.ps1), and prints the commit the server is now actually running.
