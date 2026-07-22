@@ -22,6 +22,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { apiUrl, authFetch } from '../utils/api';
+import { useTheme } from '../ThemeContext.jsx';
 import styles from './HelpPage.module.css';
 
 const STARTERS = [
@@ -74,7 +75,14 @@ export default function HelpPage() {
   const [pending, setPending] = useState(false);
   const [draft, setDraft] = useState('');
   const [expanded, setExpanded] = useState(() => new Set());
-  const [showDiag, setShowDiag] = useState(false);
+  // Retrieval diagnostics are ours, not the user's. Behind ?debug=1 rather than
+  // a visible control, so a tester never meets them by accident.
+  const showDiag = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).has('debug');
+  // Each logo has its background baked in, so the wrong one shows as a black
+  // square on a white bar (or the reverse) rather than just looking off.
+  const { theme } = useTheme();
+  const dotLogo = theme === 'dark' ? '/dark_DOT.png' : '/white_DOT.png';
 
   const logRef = useRef(null);
   const inputRef = useRef(null);
@@ -176,30 +184,12 @@ export default function HelpPage() {
     <div className={styles.page}>
       <header className={styles.head}>
         <span className={styles.mark} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-               strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="5" rx="1.5" />
-            <rect x="3" y="12" width="18" height="5" rx="1.5" />
-            <circle cx="7" cy="6.5" r="0.9" fill="currentColor" stroke="none" />
-            <circle cx="7" cy="14.5" r="0.9" fill="currentColor" stroke="none" />
-            <path d="M12 20h7" />
-          </svg>
+          <img src={dotLogo} alt="" />
         </span>
         <div className={styles.headText}>
           <h1 className={styles.title}>DOT</h1>
         </div>
-        {status?.ok && (
-          <button
-            type="button"
-            className={styles.status}
-            onClick={() => setShowDiag((v) => !v)}
-            aria-pressed={showDiag}
-            title={showDiag ? 'Hide retrieval details' : 'Show retrieval details'}
-          >
-            <span className={styles.dot} />
-            {status.entries} answers
-          </button>
-        )}
+
       </header>
 
       <div className={styles.log} ref={logRef}>
