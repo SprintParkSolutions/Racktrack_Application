@@ -367,3 +367,85 @@
   .dots i { animation: none; opacity: 0.5; }
   .starter, .send, .option { transition: none; }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   Per-screen layouts. A phone and a desktop want different things from
+   this page, not the same thing scaled: on a phone the reply must start
+   as high as possible and the composer must sit above the thumb; on a
+   wide screen the conversation should not stretch into an unreadable
+   line, and there is room to show the starters as a grid.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Phone (under 768px) ─────────────────────────────────────────────
+   Tight chrome, full-width cards, and a composer that clears the bottom
+   navigation bar rather than sitting underneath it. */
+@media (max-width: 767px) {
+  .head { padding: 12px 15px; gap: 11px; }
+  .mark { width: 32px; height: 32px; border-radius: 9px; }
+  .mark svg { width: 18px; height: 18px; }
+  .title { font-size: 0.92rem; }
+  /* The strapline is the first thing to go — the header must stay one line. */
+  .sub { display: none; }
+  .status { padding: 5px 9px; font-size: 0.66rem; }
+
+  .inner { padding: 16px 14px 4px; gap: 13px; }
+  .card, .meBubble { max-width: 100%; }
+  .card { padding: 13px 14px; border-radius: 4px 14px 14px 14px; }
+  .meBubble { border-radius: 14px 14px 4px 14px; }
+  .answer, .lead { font-size: 0.9rem; line-height: 1.58; }
+
+  /* Options are the primary control on a phone, so give them a real
+     touch target rather than a compact list row. */
+  .option { padding: 13px 12px; min-height: 48px; }
+  .optionNum { width: 23px; height: 23px; }
+
+  .intro h2 { font-size: 1.2rem; }
+  .intro p { margin-bottom: 18px; font-size: 0.88rem; }
+  .starter { padding: 13px 14px; min-height: 48px; }
+
+  /* Clear the fixed bottom navigation. Without this the composer sits
+     under it and the last option cannot be reached. */
+  .form {
+    padding: 10px 14px calc(10px + 64px + env(safe-area-inset-bottom, 0px));
+  }
+  .input { padding: 12px 15px; font-size: 16px; }  /* 16px stops iOS zooming on focus */
+  .send { width: 42px; height: 42px; }
+}
+
+/* ── iPad and desktop (768px and up) ─────────────────────────────────
+   The page already sits inside the sidebar shell, so it gets breathing
+   room instead of edge-to-edge chrome, and the starters become a grid —
+   six stacked rows waste most of a wide screen. */
+@media (min-width: 768px) {
+  .head { padding: 20px 32px; }
+  .inner { padding: 30px 32px 12px; gap: 20px; }
+  .form { padding: 16px 32px calc(16px + env(safe-area-inset-bottom, 0px)); }
+
+  .card { max-width: 78%; padding: 16px 19px; }
+  .meBubble { max-width: 66%; padding: 12px 17px; }
+  .answer, .lead { font-size: 0.95rem; line-height: 1.68; }
+
+  .intro { padding: 14px 2px 0; }
+  .intro h2 { font-size: 1.65rem; }
+  .intro p { font-size: 0.95rem; max-width: 52ch; }
+  .starters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  /* Hover states only make sense where there is a pointer. */
+  .option:hover:not(:disabled) { background: rgba(0, 0, 0, 0.02); }
+}
+
+/* ── Large desktop (1180px and up) ───────────────────────────────────
+   Cap the measure. Reply text running the full width of a 27" monitor is
+   unreadable however well it is styled. */
+@media (min-width: 1180px) {
+  .inner { max-width: 820px; padding: 36px 40px 14px; }
+  .formInner { max-width: 820px; }
+  .card { max-width: 72%; }
+  .starters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .intro h2 { font-size: 1.8rem; }
+}

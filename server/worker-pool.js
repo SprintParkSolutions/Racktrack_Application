@@ -50,7 +50,18 @@ class Worker extends EventEmitter {
     this.proc.stdout.on('data', (chunk) => this._onStdout(chunk));
     this.proc.stderr.on('data', (chunk) => {
       const s = chunk.toString().trimEnd();
-      if (s) wlog('warn', { worker: index, kind: 'worker.stderr' }, s);
+      if (!s) return;
+      // Python writes ALL its diagnostics to stderr, including "[worker] ready"
+      // on every start. Logging the lot at warn meant a healthy boot produced
+      // dozens of warnings — 56 of the 66 warnings in a 400-row sample were
+      // workers announcing they had started — which buries the warnings that
+      // matter and makes the Console look like something is wrong when it is
+      // not. Classify by content: only genuine failures are warnings.
+      // No leading \b: Python exception names are compounds, so "RuntimeError"
+      // and "ConnectionRefusedError" must match. Erring toward warn is correct
+      // here — a false warning is noticed and dismissed, a missed error is not.
+      const looksBad = /(error|exception|traceback|failed|fatal|cannot|refused|denied|critical|warn)/i.test(s);
+      wlog(looksBad ? 'warn' : 'info', { worker: index, kind: 'worker.stderr' }, s);
     });
     this.proc.on('exit', (code, signal) => {
       wcount('exit');
