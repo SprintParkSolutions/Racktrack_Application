@@ -2,14 +2,16 @@
 ocr_devices.py — per-device OCR for chassis labels.
 
 For each device detected by the rack-scan CV pipeline, crops its bounding box
-from the rack image and runs EasyOCR on that crop. Parses the recognized
+from the rack image. The photo is read ONCE by switch-ocr and each device
+is given the text that fell inside its box. Parses the recognized
 text for vendor name, model number, and firmware version. Output is keyed by
 U-position so the CMDB synth layer can use it as a real-data source.
 
 Pipeline:
   1. Load device_unit_map.json (per-device boxes from CV).
   2. Resolve the original_image (.png/.jpg) from outputs/<rackId>/.
-  3. Per device: crop bbox, run EasyOCR, normalize text, parse make/model.
+  3. Read the whole image once; assign each label to the device box
+     containing it; normalize text, parse make/model.
   4. Match make against the Switch_Vendors_Websites.xlsx vendor list.
   5. Write outputs/<rackId>/ocr_devices.json with one record per device.
 
@@ -353,132 +355,70 @@ def parse_version(text: str) -> str | None:
     return None
 
 
-def _preprocess_for_ocr(crop):
-    """Phone-scanned chassis labels are small + lit unevenly. Run grayscale
-    + CLAHE (adaptive histogram eq) so faint text on dark plastic comes out
-    legible. Returns the enhanced image; original used as fallback."""
-    import cv2
-    try:
-        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-        clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
-        enhanced = clahe.apply(gray)
-        # Back to 3ch BGR — EasyOCR is happier with 3-channel input.
-        return cv2.cvtColor(enhanced, cv2.COLOR_GRAY2BGR)
-    except Exception:
-        return crop
+def _read_whole_image(reader, img) -> list[dict]:
+    """One OCR pass over the entire rack photo.
 
+    This module used to crop each device and run three preprocessing passes
+    over every crop, because EasyOCR is cheap on small images (~50ms a pass)
+    and each variant catches text the others miss. switch-ocr inverts both
+    halves of that trade: it already applies its own preprocessing variants
+    internally (see TextDetection.variant), so the three passes are redundant,
+    and it costs ~24s per call, so 3 passes x N devices is minutes of work.
 
-def _preprocess_unsharp(crop):
-    """Second preprocessing variant: unsharp mask. Sharpens edges without
-    pushing contrast as hard as CLAHE — reads better on cleanly lit
-    chassis where CLAHE introduces noise. Different failure mode means we
-    catch text that CLAHE-pass loses to over-enhancement."""
-    import cv2
-    try:
-        blurred = cv2.GaussianBlur(crop, (0, 0), sigmaX=1.4)
-        # amount=1.5 is a moderate sharpen — strong enough to re-edge
-        # 1px-wide chassis text strokes without ringing on solid panels.
-        sharpened = cv2.addWeighted(crop, 1.5, blurred, -0.5, 0)
-        return sharpened
-    except Exception:
-        return crop
-
-
-class _SwitchOcrReader:
-    """switch-ocr wearing EasyOCR's interface.
-
-    Everything downstream of here — the per-device crops, the three-pass merge,
-    the vendor/model matching and the output schema — is unchanged. Only the
-    engine behind readtext() differs, which keeps the swap reversible and means
-    ocr_devices.json looks exactly the same to the server and the app.
-
-    switch-ocr already runs its own preprocessing variants internally, so the
-    three passes this module makes are redundant against it; they are harmless
-    (results merge by text) and are kept so the EasyOCR fallback still behaves
-    as before.
+    One pass over the full image instead. Detections come back in original
+    image coordinates, so they can be handed to whichever device box contains
+    them — which also gives each label a real position, something the old
+    per-crop path never had (the sort by y,x was a no-op because crop-relative
+    coordinates were discarded).
     """
+    result = reader.read(img)
+    out = []
+    for det in getattr(result, "detections", []) or []:
+        text = (det.text or "").strip()
+        if len(text) < 2:
+            continue
+        box = [int(v) for v in (det.box or [0, 0, 0, 0])]
+        out.append({
+            "text": text,
+            "conf": float(det.confidence),
+            "box":  box,
+            "cx":   (box[0] + box[2]) / 2.0,
+            "cy":   (box[1] + box[3]) / 2.0,
+        })
+    return out
 
-    def __init__(self, reader):
-        self._reader = reader
 
-    def readtext(self, image, detail=1, paragraph=False):   # noqa: ARG002
-        result = self._reader.read(image)
-        out = []
-        for det in getattr(result, "detections", []) or []:
-            poly = getattr(det, "polygon", None) or []
-            out.append((poly, det.text, float(det.confidence)))
-        return out
+def _labels_for_box(detections: list[dict], box: list[int], pad: int = 2) -> list[dict]:
+    """Pick the detections belonging to one device.
+
+    A label belongs to the device whose box contains its centre. Centre rather
+    than overlap because rack devices are stacked with almost no vertical gap:
+    a tall detection straddling a chassis edge would otherwise be claimed by
+    both neighbours, and the same model number would appear on two devices.
+    """
+    x1, y1, x2, y2 = box[0] - pad, box[1] - pad, box[2] + pad, box[3] + pad
+    inside = [d for d in detections if x1 <= d["cx"] <= x2 and y1 <= d["cy"] <= y2]
+    # Reading order: top-to-bottom, then left-to-right within a line. Labels on
+    # a chassis are a single row far more often than not, so band the y a little
+    # before sorting or a 2px baseline wobble scrambles the line.
+    inside.sort(key=lambda d: (round(d["cy"] / 12.0), d["cx"]))
+    return [{"text": d["text"], "conf": d["conf"], "x": d["cx"], "y": d["cy"]} for d in inside]
 
 
 def _build_reader():
-    """EasyOCR by default; switch-ocr only when explicitly asked for.
+    """Build the switch-ocr reader.
 
-    switch-ocr reads a rack markedly better — on Test_Image/T3 it returns
-    'D-Link' and the model number 'DCS-1100-18' where EasyOCR returns 'Calb'
-    and 'Drrotm' — so it is worth finishing. It is not the default yet because
-    of latency, and the shape of this module makes that fatal rather than
-    merely slow: read_text_multi() runs THREE passes per device crop, on the
-    documented assumption that each costs ~50ms. Measured on this Mac, one
-    switch-ocr pass over a single 1000x133 device band takes ~24s (both the
-    fast() and accurate() presets), against ~1.5s for EasyOCR over an entire
-    image. That is ~72s per device, so a 19-device rack goes from ~95s to
-    roughly 23 minutes.
-
-    Defaulting to it would therefore hand every scan a timeout, and only on
-    machines that HAVE PaddleOCR installed — production Windows currently does
-    not, so it would look fine here and fail there, or vice versa. Opt in with
-    RACKTRACK_OCR=switch-ocr for comparison runs.
-
-    Making it the default needs the crop-and-repeat structure replaced with a
-    single full-image pass (~171s on T3, still slow but one call rather than
-    3N), assigning detections to devices by box overlap.
+    EasyOCR used to be the engine here, with switch-ocr behind a flag. It is
+    gone: on the same rack photo EasyOCR returned 'Calb' and 'Drrotm' where
+    switch-ocr returns 'D-Link' and the model number 'DCS-1100-18', and a
+    vendor/model matcher fed the former cannot recover. There is no fallback on
+    purpose — silently degrading to an engine that misreads model numbers
+    produces a confident, wrong inventory, which is worse than a scan that
+    fails loudly and can be retried.
     """
-    engine = (os.environ.get("RACKTRACK_OCR") or "easyocr").strip().lower()
-    if engine != "easyocr":
-        try:
-            from switch_ocr import SwitchTextReader, OCRConfig
-            print("[ocr_devices] engine: switch-ocr", file=sys.stderr)
-            return _SwitchOcrReader(SwitchTextReader(OCRConfig.accurate()))
-        except Exception as exc:
-            print(f"[ocr_devices] switch-ocr unavailable ({exc.__class__.__name__}: {exc}); "
-                  f"falling back to EasyOCR", file=sys.stderr)
-    import easyocr
-    print("[ocr_devices] engine: easyocr", file=sys.stderr)
-    return easyocr.Reader(["en"], gpu=False, verbose=False)
-
-
-def _extract_labels_in_box(reader, crop) -> list[dict]:
-    """Run EasyOCR three times on a single cropped region:
-       1. Raw crop                        — baseline
-       2. CLAHE-enhanced (contrast)       — wins on dark/uneven lighting
-       3. Unsharp-masked (edges)          — wins on cleanly lit chassis
-
-    Merge, dedup by lowercase text, keep the best confidence per phrase.
-    Three passes with different preprocessing catches text any single pass
-    would lose — and EasyOCR is the bottleneck so adding two more passes
-    on small bbox crops is fast (~50ms each)."""
-    sources = [crop, _preprocess_for_ocr(crop), _preprocess_unsharp(crop)]
-
-    seen: dict[str, float] = {}
-    canonical: dict[str, str] = {}
-    for source in sources:
-        try:
-            results = reader.readtext(source, detail=1, paragraph=False)
-        except Exception:
-            continue
-        for (_pts, text, conf) in results:
-            text = (text or "").strip()
-            if len(text) < 2:
-                continue
-            key = text.lower()
-            prior = seen.get(key, 0.0)
-            if float(conf) > prior:
-                seen[key] = float(conf)
-            if key not in canonical or len(text) > len(canonical[key]):
-                canonical[key] = text
-
-    return [{"text": canonical.get(key, key), "conf": conf}
-            for key, conf in seen.items()]
+    from switch_ocr import SwitchTextReader, OCRConfig
+    print("[ocr_devices] engine: switch-ocr", file=sys.stderr)
+    return SwitchTextReader(OCRConfig.accurate())
 
 
 def _resolve_image(rack_dir: Path) -> Path | None:
@@ -520,6 +460,10 @@ def run(rack_id: str) -> dict:
     h_img, w_img = img.shape[:2]
 
     reader = _build_reader()
+    # ONE pass over the whole photo, not three per device: switch-ocr costs
+    # seconds per call, so 3 x N calls would run to minutes on a full rack.
+    detections = _read_whole_image(reader, img)
+    print(f"[ocr_devices] {len(detections)} text detections in the image", file=sys.stderr)
     vendor_names = load_vendor_names()
 
     out_devices = []
@@ -572,22 +516,12 @@ def run(rack_id: str) -> dict:
             })
             continue
 
-        crop = img[y1:y2, x1:x2]
-        # Upscale tiny crops so OCR has more pixels to chew on. Switch
-        # labels in a 1080p rack image are often only ~25px tall — push
-        # them to ~120px so even small chassis stickers are readable.
-        # 120 is the proven baseline; pushing higher (e.g. 200) introduces
-        # interpolation artifacts that hurt OCR on already-medium crops
-        # more than they help small ones.
-        ch, cw = crop.shape[:2]
-        target_h = 120
-        if ch < target_h:
-            scale = target_h / float(ch)
-            new_w = max(1, int(cw * scale))
-            new_h = max(1, int(ch * scale))
-            crop = cv2.resize(crop, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
-
-        labels = _extract_labels_in_box(reader, crop)
+        # No crop and no upscale: the image was read once, in full, above.
+        # Cropping existed to give EasyOCR a small region and to enlarge tiny
+        # chassis stickers (~25px tall) before reading them. switch-ocr does
+        # its own scaling internally and reads the whole frame in one call, so
+        # all this device needs is the labels that fell inside its box.
+        labels = _labels_for_box(detections, [x1, y1, x2, y2])
         # Concatenated text (preserves left-to-right reading inside one row).
         text = " ".join(l["text"] for l in labels)
         ocr_conf = round(sum(l["conf"] for l in labels) / len(labels), 3) if labels else 0.0

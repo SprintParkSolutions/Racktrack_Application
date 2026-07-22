@@ -5,15 +5,48 @@
 # These are loose (>=) floors for development. For reproducible builds/deploys
 # use the pinned lockfile instead:  pip install -r requirements.lock.txt
 # (see requirements.lock.txt for how it was generated and known caveats).
+#
+# WARNING — the Dockerfile and CI currently install THIS file, not the lock.
+# Loose floors mean a fresh install pulls the newest torch/opencv wheels (built
+# for numpy 2.x) while numpy is held at <2.0 below — pip resolves it, but the
+# numpy-2.x-era wheels can abort at import against a numpy-1.26 runtime (numpy
+# 2.0 broke the C ABI). Point the Dockerfile/CI at requirements.lock.txt, which
+# pins a coherent numpy-1.x generation. (Those files are owned elsewhere — this
+# is a flag, not a fix.)
+#
+# DEPENDENCY-CONFUSION FLAG: the Dockerfile/CI install these with
+#   --extra-index-url https://download.pytorch.org/whl/cpu
+# An *extra* index lets pip prefer a higher version from public PyPI over the
+# trusted CPU-wheel host — the classic confusion shape. Prefer a single
+# --index-url or exact/hashed pins. Flagged, not changed (Dockerfile/CI owned
+# elsewhere).
 
 # --- CV pipeline (pipeline/) ---
 opencv-python-headless>=4.9.0
+# numpy<2.0 is the authoritative constraint; requirements.lock.txt conforms to
+# it (pins 1.26.4). Do NOT lift the ceiling without re-validating the whole CV
+# stack against numpy 2.x's ABI break — easyocr in particular.
 numpy>=1.26.0,<2.0
 Pillow>=10.0.0
 torch>=2.1.0
 torchvision>=0.16.0
-ultralytics>=8.1.0
+# Floor raised above the compromised ultralytics releases: 8.3.41 and 8.3.42
+# (Dec 2024) shipped a cryptominer on PyPI and were later yanked. The old
+# >=8.1.0 floor allowed them; >=8.3.43 cannot resolve to either.
+ultralytics>=8.3.43
+# Still required by pipeline/ocr_labels.py and pipeline/side_labels.py.
+# pipeline/ocr_devices.py no longer uses it — see switch-ocr below.
 easyocr>=1.7.1
+
+# --- Device-label OCR (pipeline/ocr_devices.py) ---
+# The switch_ocr package is vendored in this repo; these are its engines.
+# Without them ocr_devices.py raises on import rather than falling back:
+# a silent fall back to a weaker engine produces a confident WRONG inventory
+# (EasyOCR read this rack's D-Link as "Calb"), which is worse than a scan that
+# fails and can be retried. rapidocr is the lighter of the two backends and is
+# what switch-ocr selects by default.
+rapidocr>=2.0.0
+onnxruntime>=1.17
 
 # --- Vendor matrix / firmware scraper ---
 beautifulsoup4>=4.12.0
