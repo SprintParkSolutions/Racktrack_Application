@@ -497,6 +497,26 @@ const authLimit = uploadLimiter({
   },
 });
 
+// Crash reports from the client's error boundary. Deliberately unauthenticated:
+// the most valuable report is the one from a screen that broke so badly the
+// session could not be read, and a tester who hits a blank page cannot be asked
+// to log in first. Everything is truncated and nothing is executed or echoed —
+// this only ever appends to the log. Rate limited so it cannot be used to flood
+// the log store.
+const clientErrorLimit = uploadLimiter({ rate: 6, burst: 12 });
+app.post('/api/client-error', clientErrorLimit, express.json({ limit: '32kb' }), (req, res) => {
+  const s = (v, n) => String(v == null ? '' : v).slice(0, n);
+  logger.warn({
+    event: 'client.render_error',
+    message:        s(req.body?.message, 300),
+    path:           s(req.body?.path, 200),
+    stack:          s(req.body?.stack, 2000),
+    componentStack: s(req.body?.componentStack, 2000),
+    userAgent:      s(req.body?.userAgent || req.get('user-agent'), 300),
+  }, '[client] render error');
+  res.status(204).end();
+});
+
 // ── Image normalization ───────────────────────────────────────
 // Converts HEIC/HEIF to JPEG and applies EXIF rotation so downstream
 // code (cv2, pipeline) always sees an upright standard JPEG.
