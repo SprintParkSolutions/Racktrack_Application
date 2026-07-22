@@ -2485,8 +2485,14 @@ app.post('/api/analyze', scanLimit, upload.single('image'), async (req, res) => 
 
       if (unitCount < 3) {
         fs.rmSync(rackDir, { recursive: true, force: true });
+        // Say what was actually seen. "Upload a clearer photo" on a photo that
+        // IS clear reads as the app being broken, and gives the user nothing
+        // to act on — a small or partly visible rack needs different advice
+        // from a blurry one.
         return res.status(400).json({
-          error: 'Please upload a clearer photo of the rack — keep the camera steady and make sure the full rack fits in the frame.',
+          error: `Only ${unitCount} rack unit${unitCount === 1 ? '' : 's'} could be made out in that photo. `
+               + `Move back so the whole rack fits in the frame, or get closer if the rack is small — `
+               + `we need to see at least three units to map it.`,
           retryable: true,
           kind: 'quality',
         });
@@ -2546,12 +2552,29 @@ app.post('/api/analyze', scanLimit, upload.single('image'), async (req, res) => 
   } catch (err) {
     // Clean up tmp if still around
     safeUnlink(tmpPath);
-    logger.error(err.message);
+    logger.error({ event: 'scan.failed', err: err.message, stack: String(err.stack || '').slice(0, 1500) },
+      `[scan] analyze failed: ${err.message}`);
     audit.log({ req, action: 'scan.create', status: 'fail', error: err.message });
-    res.status(400).json({
-      error: 'Please upload a clearer photo of the rack — keep the camera steady and make sure the full rack fits in the frame.',
+
+    // This used to answer "Please upload a clearer photo" for EVERY exception —
+    // a crashed worker, a timeout, a bug in our own code — so the app blamed
+    // the user's photograph for its own failures. Testers duly re-took clear
+    // photos over and over and got the same message, and we lost the real
+    // error. Only genuine image problems get the photo advice now; anything
+    // else says plainly that the failure was ours.
+    const m = String(err.message || '');
+    const isImageProblem = /image|decode|corrupt|unsupported|format|heic|exif|dimension|too large|empty file/i.test(m);
+    if (isImageProblem) {
+      return res.status(400).json({
+        error: 'That image could not be read. Try a JPG or PNG taken straight from the camera.',
+        retryable: true,
+        kind: 'quality',
+      });
+    }
+    res.status(500).json({
+      error: 'Something went wrong on our side analysing that photo — it is not a problem with your image. It has been logged; please try again.',
       retryable: true,
-      kind: 'quality',
+      kind: 'server',
     });
   }
 });

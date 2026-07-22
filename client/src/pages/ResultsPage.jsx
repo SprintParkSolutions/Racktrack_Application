@@ -2648,7 +2648,21 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const openReportForDownload = () => { setReportDownload(true); setReportOpen(true); fetchReportToken(); };
   const downloadReport = async (format) => {
     try {
-      const res = await fetch(reportUrl(format));
+      const url = reportUrl(format);
+
+      // Inside the packaged app the WebView ignores both blob: URLs and the
+      // <a download> attribute, so the tap did nothing at all and there was no
+      // error to show — the report simply never arrived. Hand the URL to the
+      // system instead, which downloads it properly. The URL already carries
+      // the short-lived report token, so it works without an auth header.
+      const isNative = typeof window !== 'undefined'
+        && (window.Capacitor?.isNativePlatform?.() || !!window.Capacitor?.isNative);
+      if (isNative) {
+        window.open(url, '_system');
+        return;
+      }
+
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`Report request failed (${res.status})`);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
