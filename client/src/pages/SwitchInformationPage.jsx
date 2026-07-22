@@ -977,7 +977,7 @@ function VersionEditor({
             padding: '6px 10px', borderRadius: 6,
             background: 'transparent', color: valueColor,
             border: `1px solid ${fieldBorder}`,
-            fontSize: '.82rem', fontFamily: 'inherit',
+            fontSize: '16px', fontFamily: 'inherit',
             outline: 'none',
           }}
         />
@@ -1033,7 +1033,7 @@ function IdentEditor({
     padding: '6px 10px', borderRadius: 6,
     background: 'transparent', color: valueColor,
     border: `1px solid ${fieldBorder}`,
-    fontSize: '.82rem', fontFamily: 'inherit',
+    fontSize: '16px', fontFamily: 'inherit',
     outline: 'none',
   };
   const onKeyDown = (e) => {

@@ -25,7 +25,10 @@
  *   )
  *
  *   UNIQUE INDEX uq_conn_profiles_active ON connection_profiles(user_id)
- *     WHERE is_active = 1;
+ *     WHERE is_active = 1 AND organization_id IS NULL;   -- personal only
+ *   UNIQUE INDEX uq_conn_profiles_org_active
+ *     ON connection_profiles(organization_id, type)
+ *     WHERE is_active = 1 AND organization_id IS NOT NULL; -- per (org, type)
  *
  * Encryption key is shared with the SSH creds store — same AES key file
  * (server/.env.key) or SSH_CREDS_KEY env var. One key, one rotation
@@ -68,8 +71,6 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_conn_profiles_user
     ON connection_profiles(user_id);
-  CREATE UNIQUE INDEX IF NOT EXISTS uq_conn_profiles_active
-    ON connection_profiles(user_id) WHERE is_active = 1;
 `);
 
 // ── Org-scoped profiles ───────────────────────────────────────────────
@@ -77,15 +78,44 @@ db.exec(`
 // pipeline uses them, and — like the per-user profiles — the plaintext is
 // never readable back through the API (write-only). organization_id is set,
 // user_id records which admin last wrote it (for audit only, not scoping).
+// The active-uniqueness indexes below reference organization_id, so the
+// column must exist before they are (re)built.
 (() => {
   const cols = db.prepare(`PRAGMA table_info(connection_profiles)`).all().map(c => c.name);
   if (!cols.includes('organization_id')) {
     db.exec(`ALTER TABLE connection_profiles ADD COLUMN organization_id INTEGER REFERENCES organizations(id)`);
   }
 })();
+
+// Active-profile uniqueness lives in TWO distinct scopes that must not bleed
+// into each other:
+//   • personal profiles (organization_id IS NULL)     — one active PER USER
+//   • org profiles      (organization_id IS NOT NULL) — one active PER (org, type)
+//
+// The historical index was UNIQUE(user_id) WHERE is_active = 1: table-wide on
+// user_id with no org scoping. Because an org profile stores the writing admin's
+// id in user_id, that single index capped each admin at ONE active profile
+// across BOTH scopes at once — a second org profile, or a personal profile
+// alongside an org one, tripped a UNIQUE constraint and surfaced as a raw 500.
+// Migrate any database still carrying that definition: IF NOT EXISTS cannot
+// rewrite an existing index's WHERE clause, so drop the old shape first.
+(() => {
+  const existing = db.prepare(
+    `SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'uq_conn_profiles_active'`
+  ).get();
+  const alreadyScoped = existing && /organization_id\s+IS\s+NULL/i.test(existing.sql || '');
+  if (existing && !alreadyScoped) {
+    db.exec(`DROP INDEX uq_conn_profiles_active`);
+  }
+})();
 db.exec(`
   CREATE INDEX IF NOT EXISTS idx_conn_profiles_org
     ON connection_profiles(organization_id);
+  -- one active PERSONAL profile per user (org profiles are excluded here and
+  -- constrained per (org, type) by the index below).
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_conn_profiles_active
+    ON connection_profiles(user_id)
+    WHERE is_active = 1 AND organization_id IS NULL;
   -- one active profile per (org, type) so an org can have a live ServiceNow
   -- AND a live SQL source at the same time.
   CREATE UNIQUE INDEX IF NOT EXISTS uq_conn_profiles_org_active
@@ -256,9 +286,12 @@ function create(userId, { name, type, secret }, { makeActive = true } = {}) {
   const blob = encrypt(JSON.stringify(secret), getKey());
   const tx = db.transaction(() => {
     if (makeActive) {
+      // Only deactivate the user's other PERSONAL profile — org profiles share
+      // this admin's user_id but are managed via the *ForOrg API and must not
+      // be switched off as a side effect of a personal create.
       db.prepare(
         `UPDATE connection_profiles SET is_active = 0, updated_at = datetime('now')
-          WHERE user_id = ? AND is_active = 1`
+          WHERE user_id = ? AND is_active = 1 AND organization_id IS NULL`
       ).run(Number(userId));
     }
     const r = db.prepare(
@@ -315,9 +348,11 @@ function activate(userId, profileId) {
   ).get(Number(userId), Number(profileId));
   if (!owned) return null;
   const tx = db.transaction(() => {
+    // Deactivate only other PERSONAL profiles (organization_id IS NULL); org
+    // profiles for the same admin are governed by their own per-(org,type) rule.
     db.prepare(
       `UPDATE connection_profiles SET is_active = 0, updated_at = datetime('now')
-        WHERE user_id = ? AND is_active = 1 AND id != ?`
+        WHERE user_id = ? AND is_active = 1 AND id != ? AND organization_id IS NULL`
     ).run(Number(userId), Number(profileId));
     db.prepare(
       `UPDATE connection_profiles SET is_active = 1, updated_at = datetime('now')
@@ -328,11 +363,11 @@ function activate(userId, profileId) {
   return get(userId, profileId);
 }
 
-/** Deactivate all profiles for the user (no active connection). */
+/** Deactivate all PERSONAL profiles for the user (no active connection). */
 function deactivateAll(userId) {
   db.prepare(
     `UPDATE connection_profiles SET is_active = 0, updated_at = datetime('now')
-      WHERE user_id = ? AND is_active = 1`
+      WHERE user_id = ? AND is_active = 1 AND organization_id IS NULL`
   ).run(Number(userId));
 }
 

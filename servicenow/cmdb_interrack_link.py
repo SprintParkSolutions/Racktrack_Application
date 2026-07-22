@@ -30,11 +30,21 @@ from dotenv import load_dotenv
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
 AUTH_DB = os.path.join(ROOT, "server", "data", "auth.db")
 OUTPUTS = os.path.join(ROOT, "outputs")
 
+from servicenow import escape_query_value as _q  # noqa: E402 (needs sys.path above)
+
 CONNECTS_TO_REL_TYPE = "5599a965c0a8010e00da3b58b113d70e"  # Connects to::Connected by
 SYNTH_TAG = "synthetic_data=true; provenance=inter-rack-synth"
+
+# This script fabricates "Connects to" relationships between switches that were
+# never physically cabled — there is no live network between two independently
+# photographed racks. Writing those into a customer's production CMDB corrupts
+# their system of record, so it is OFF unless the operator explicitly opts in.
+ALLOW_ENV = "CMDB_ALLOW_SYNTHETIC_LINKS"
 
 LINK_ROLES = ["Primary uplink", "Redundant uplink", "Cross-connect", "Backup link"]
 
@@ -125,7 +135,7 @@ class SN:
         return self._retry(_do)
 
     def upsert(self, table, name, extra_query, payload):
-        query = f"name={name}"
+        query = f"name={_q(name)}"
         if extra_query:
             query += f"^{extra_query}"
         ex = self.find(table, query)
@@ -137,27 +147,37 @@ class SN:
     def ensure_rel(self, parent_sys_id, child_sys_id, rel_type):
         existing = self.find(
             "cmdb_rel_ci",
-            f"parent={parent_sys_id}^child={child_sys_id}^type={rel_type}")
+            f"parent={_q(parent_sys_id)}^child={_q(child_sys_id)}"
+            f"^type={_q(rel_type)}")
         if existing:
             return False
+        # Tag the relationship itself, not just the CIs it joins, so a fabricated
+        # "Connects to" row is unmistakable in the customer's CMDB. `comments`
+        # is standard on cmdb_rel_ci; if a given instance lacks it the field is
+        # simply ignored by the Table API.
         self.create("cmdb_rel_ci",
-                    {"parent": parent_sys_id, "child": child_sys_id, "type": rel_type})
+                    {"parent": parent_sys_id, "child": child_sys_id,
+                     "type": rel_type, "comments": SYNTH_TAG})
         return True
 
 
 def ensure_rack_ci(sn, rack_id, topo):
     rack_name = (topo or {}).get("rackName") or f"RACK-{rack_id.replace('RK-', '')}"
     rack, _ = sn.upsert("cmdb_ci_rack", rack_name,
-                        f"u_racktrack_scan_id={rack_id}",
-                        {"u_racktrack_scan_id": rack_id, "comments": SYNTH_TAG})
+                        f"u_racktrack_scan_id={_q(rack_id)}",
+                        {"u_racktrack_scan_id": rack_id,
+                         "u_racktrack_rack_id": rack_id, "comments": SYNTH_TAG})
     return rack, rack_name
 
 
-def ensure_switch_ci(sn, rack, sw):
-    # Upsert by name — synthesized switch names carry a rack-derived suffix
-    # (e.g. AGG-CORE-42) so they don't collide across racks.
-    switch, made = sn.upsert("cmdb_ci_ip_switch", sw["name"], "",
+def ensure_switch_ci(sn, rack, rack_id, sw):
+    # Scope the switch upsert to its rack (u_racktrack_rack_id). Two racks can
+    # have identically-named uplink switches, so a bare name match would collide
+    # across racks the same way cmdb_apply's device upsert did.
+    switch, made = sn.upsert("cmdb_ci_ip_switch", sw["name"],
+                             f"u_racktrack_rack_id={_q(rack_id)}",
                              {"model_id": sw.get("model") or "",
+                              "u_racktrack_rack_id": rack_id,
                               "comments": SYNTH_TAG})
     # Contain the switch in its rack (Contains::Contained by) — best-effort.
     contains = sn.find("cmdb_rel_type", "name=Contains::Contained by")
@@ -181,6 +201,14 @@ def main():
         else:
             print(obj)
         return code
+
+    # Safety gate: refuse to write fabricated inter-rack links into the live
+    # CMDB unless the operator explicitly opted in. Exit 0 so the fire-and-
+    # forget caller treats this as a clean no-op, not a failure to alert on.
+    if os.environ.get(ALLOW_ENV) != "1":
+        return out({"ok": True, "skipped": True, "count": 0, "links": [],
+                    "reason": f"synthetic inter-rack CMDB writes are disabled; "
+                              f"set {ALLOW_ENV}=1 to enable"}, 0)
 
     instance = os.environ.get("SN_INSTANCE")
     user = os.environ.get("SN_USER")
@@ -207,8 +235,8 @@ def main():
             continue
         rack_a, name_a = ensure_rack_ci(sn, a["rack_id"], a["topo"])
         rack_b, name_b = ensure_rack_ci(sn, b["rack_id"], b["topo"])
-        sw_a = ensure_switch_ci(sn, rack_a, a["uplink"])
-        sw_b = ensure_switch_ci(sn, rack_b, b["uplink"])
+        sw_a = ensure_switch_ci(sn, rack_a, a["rack_id"], a["uplink"])
+        sw_b = ensure_switch_ci(sn, rack_b, b["rack_id"], b["uplink"])
         # The inter-rack uplink itself: Connects to between the two switches.
         made = sn.ensure_rel(sw_a["sys_id"], sw_b["sys_id"], CONNECTS_TO_REL_TYPE)
         pushed.append({

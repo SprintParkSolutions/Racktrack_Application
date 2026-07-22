@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import BottomNav from './components/BottomNav.jsx';
 import DesktopShell from './components/DesktopShell.jsx';
 import PointerGlow from './components/PointerGlow.jsx';
+import RouteBoundary from './components/RouteBoundary.jsx';
 import { useHasSidebar } from './hooks/useIsDesktop';
 import HomePage from './pages/HomePage.jsx';
 import ScanPage from './pages/ScanPage.jsx';
@@ -56,15 +57,50 @@ import { AuthProvider, useAuth } from './AuthContext.jsx';
 import { getPendingScan, clearPendingScan, fetchScanJob } from './utils/pendingScan';
 import OnboardingTour from './components/OnboardingTour.jsx';
 import { ConnectionsProvider } from './ConnectionsContext.jsx';
-import { useAssetToken } from './hooks/useAssetToken';
 import { ThemeProvider } from './ThemeContext.jsx';
 
 // Bounces unauthenticated visitors to /login, remembering where they were
 // trying to go so we can send them back after login/signup.
-// Subscribes the tree to asset-token changes. A component rather than a hook
-// call inside App() so the re-render it triggers stays scoped and cheap.
-function AssetTokenBoundary() {
-  useAssetToken();
+// Development-only tripwire. index.css hides overflow-x on body / #root so any
+// element that lays out wider than the viewport is silently CLIPPED instead of
+// producing a scrollbar — which is how the "content is off screen" bugs reach
+// testers unseen. This measures the page after each navigation and on resize
+// and warns when something exceeds its container, so the next overflow shows up
+// in a developer's console first. Gated on import.meta.env.DEV: never ships.
+function OverflowGuard() {
+  const location = useLocation();
+  useEffect(() => {
+    let raf1;
+    let raf2;
+    const check = () => {
+      const root = document.getElementById('root');
+      if (!root) return;
+      const nodes = [root, ...Array.from(root.children)];
+      for (const el of nodes) {
+        if (!el || typeof el.scrollWidth !== 'number') continue;
+        // 1px slack absorbs sub-pixel rounding on fractional-DPR screens.
+        if (el.scrollWidth > el.clientWidth + 1) {
+          const cls = typeof el.className === 'string' && el.className
+            ? '.' + el.className.trim().split(/\s+/).join('.')
+            : '';
+          console.warn(
+            `[RackTrack] horizontal overflow on ${location.pathname}: ` +
+            `<${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${cls}> ` +
+            `scrollWidth ${el.scrollWidth} > clientWidth ${el.clientWidth}. ` +
+            'Something is wider than the viewport and is being clipped, not scrolled.',
+          );
+        }
+      }
+    };
+    // Two rAFs: let the route commit and lay out before measuring.
+    raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(check); });
+    window.addEventListener('resize', check);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.removeEventListener('resize', check);
+    };
+  }, [location.pathname]);
   return null;
 }
 
@@ -239,13 +275,16 @@ export default function App() {
             <PendingScanResumer />
             <OnboardingTour />
             <PointerGlow />
-            {/* Rebuilds every /outputs and /uploads src when the asset token
-                is minted or cleared — otherwise images rendered before the
-                mint keep a stale URL the server refuses. */}
-            <AssetTokenBoundary />
-            {/* Deferred routes suspend while their chunk loads. The fallback is
-                deliberately quiet — a spinner that flashes for 80 ms on a warm
-                connection reads as jank, not as progress. */}
+            {/* Stale rack images (a token that expired while the page sat open,
+                or a first paint before the token landed) are handled per-image
+                by the AssetImg component, which re-mints and retries on a 404. */}
+            {import.meta.env.DEV && <OverflowGuard />}
+            {/* Per-route boundary INSIDE the shell: a chunk-load failure or a
+                render error in one route is contained here instead of unmounting
+                the whole app at the root boundary. Deferred routes suspend while
+                their chunk loads; the fallback is deliberately quiet — a spinner
+                that flashes for 80 ms on a warm connection reads as jank. */}
+            <RouteBoundary>
             <Suspense fallback={<div className="route-loading" aria-busy="true" />}>
             <Routes>
             {/* HomePage has its own desktop branch (HomeDesktop) via
@@ -375,6 +414,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             </Suspense>
+            </RouteBoundary>
           </ShutterProvider>
           </ConnectionsProvider>
         </AuthProvider>

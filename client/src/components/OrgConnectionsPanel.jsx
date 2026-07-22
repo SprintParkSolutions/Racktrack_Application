@@ -67,7 +67,9 @@ export default function OrgConnectionsPanel() {
   const ghostBtn = { ...btn, background: '#fff', color: '#333', border: '1px solid #ececec' };
   const dangerBtn = { ...btn, background: '#fff', color: '#dc2626', border: '1px solid rgba(220,38,38,0.35)', padding: '7px 12px', fontSize: 12 };
   const label = { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 6 };
-  const input = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 10, border: '1px solid #e2e2e2', fontSize: 14, marginBottom: 12 };
+  // fontSize 16 (not smaller): iOS Safari auto-zooms the viewport when a
+  // focused input is under 16px and never restores the scale on blur.
+  const input = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 10, border: '1px solid #e2e2e2', fontSize: 16, marginBottom: 12 };
 
   return (
     <section style={{ marginTop: 28 }}>

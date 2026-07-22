@@ -534,6 +534,20 @@ router.delete('/api/marketplace/listings/:id', requireAuth, safeAsync(async (req
   if (!existing) return res.status(404).json({ ok: false, error: 'not found' });
   if (existing.user_id !== req.user.id)
     return res.status(403).json({ ok: false, error: 'not your listing' });
+  // marketplace_orders.listing_id has no ON DELETE action, so deleting a
+  // listing that has orders raises a raw foreign-key error that safeAsync
+  // surfaces as a 500 leaking the SQLite message. Detect the dependency and
+  // return a clear 409 — order history must be preserved, so the seller should
+  // mark the listing sold/closed instead of deleting it.
+  const orderCount = db.prepare(
+    `SELECT COUNT(*) AS c FROM marketplace_orders WHERE listing_id = ?`
+  ).get(id).c;
+  if (orderCount > 0) {
+    return res.status(409).json({
+      ok: false,
+      error: 'This listing has orders and cannot be deleted. Mark it as sold or closed instead.',
+    });
+  }
   db.prepare(`DELETE FROM marketplace_listings WHERE id = ?`).run(id);
   res.json({ ok: true });
 }));

@@ -49,6 +49,21 @@ const PYTHON_CMD    = process.env.PYTHON_CMD ||
                       (process.platform === 'win32' ? 'python' : 'python3');
 
 
+// Python failures embed the customer's ServiceNow instance URL (every client
+// builds https://<inst>.service-now.com/...) and full tracebacks. Neither may
+// reach the API caller. We keep the ticket_url the UI needs but scrub any
+// instance hostname out of free-text error strings and cap their length.
+function scrubError(msg) {
+  if (typeof msg !== 'string' || !msg) return 'CMDB ticket operation failed';
+  return msg
+    // Any *.service-now.com reference — full URL, or the bare host= form a
+    // requests ConnectionError prints — becomes an opaque token.
+    .replace(/(?:https?:\/\/)?[A-Za-z0-9._-]*\.service-now\.com[^\s'"]*/gi, '[servicenow]')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 300) || 'CMDB ticket operation failed';
+}
+
 function runTicketCmd(args, { timeoutMs = 60_000, userId = null, orgId = null } = {}) {
   return new Promise((resolve) => {
     if (!fs.existsSync(TICKET_SCRIPT)) {
@@ -94,12 +109,22 @@ function runTicketCmd(args, { timeoutMs = 60_000, userId = null, orgId = null } 
         }
       }
       if (parsed && typeof parsed === 'object') {
+        // The script's own error strings can also carry the instance URL
+        // (e.g. a requests exception). Scrub that one field; leave the rest
+        // (including the legitimate ticket_url the UI links to) intact.
+        if (parsed.ok === false && typeof parsed.error === 'string') {
+          logger.warn(`[cmdb-ticket] ${args.join(' ')} script error: ${parsed.error}`);
+          parsed.error = scrubError(parsed.error);
+        }
         return resolve(parsed);
       }
-      resolve({
-        ok: false,
-        error: stderr.trim().slice(-500) || stdout.trim().slice(-500) || 'unknown failure',
-      });
+      // No JSON at all — a crash or non-JSON exit. Log the raw output
+      // server-side for diagnosis; return a generic message to the caller.
+      logger.error(
+        `[cmdb-ticket] ${args.join(' ')} produced no JSON (exit) — ` +
+        `stderr=${stderr.trim().slice(-2000)} stdout=${stdout.trim().slice(-500)}`
+      );
+      resolve({ ok: false, error: 'CMDB ticket operation failed' });
     });
     child.on('error', (e) => {
       clearTimeout(timer);
@@ -220,7 +245,8 @@ async function runPollCycle() {
       const swept   = r.swept || 0;
       const results = r.results || [];
       const acted   = results.filter(x =>
-        ['applied', 'rejected', 'cancelled', 'apply_failed'].includes(x.action)
+        ['applied', 'rejected', 'cancelled', 'apply_failed',
+         'apply_failed_terminal'].includes(x.action)
       );
       if (swept > 0) {
         logger.info(`[cmdb-ticket] poll cycle — swept ${swept}, acted ${acted.length}`);

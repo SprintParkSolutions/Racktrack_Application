@@ -2,7 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import styles from './ResultsPage.module.css';
 import { apiUrl, authFetch } from '../utils/api';
-import { getJSON, setJSON } from '../utils/safeStorage';
+import { getItem, getJSON, setItem, setJSON } from '../utils/safeStorage';
 import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';

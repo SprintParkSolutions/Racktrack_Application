@@ -58,39 +58,51 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_audit_ts        ON audit_log(ts);
 `);
 
-// tenant_id column is added by auth.js's tenant migration (idempotent
-// ALTER TABLE). The schema may not have it yet on the very first boot
-// before auth.js runs, so we detect at prepare-time and pick the right
-// INSERT shape.
-function _prepInsert() {
-  const cols = db.prepare('PRAGMA table_info(audit_log)').all();
-  const hasTenant = cols.some(c => c.name === 'tenant_id');
+// tenant_id is added to audit_log by auth.js's tenant migration — which runs
+// AFTER this module is required (auth.js does `require('./audit')` at the top,
+// THEN runs migrateTenants()). So at load time the column is typically absent.
+//
+// We must NOT freeze that observation for the life of the process. Doing so
+// pinned the INSERT to the no-tenant shape forever: every audit row written
+// after boot silently landed with tenant_id NULL, which the migration then
+// re-stamped to the default tenant on the next restart. Instead we re-detect
+// until the column shows up, then latch the positive result (a column is only
+// ever added during a run, never dropped) and prepare the matching INSERT
+// lazily on first use.
+let _tenantColReady = false;
+function _hasTenantColumn() {
+  if (_tenantColReady) return true;
+  const has = db.prepare('PRAGMA table_info(audit_log)').all().some(c => c.name === 'tenant_id');
+  if (has) _tenantColReady = true;
+  return has;
+}
+
+let _insWithTenant = null;
+let _insNoTenant = null;
+function _insertStmt(hasTenant) {
   if (hasTenant) {
-    return {
-      hasTenant: true,
-      stmt: db.prepare(`
+    if (!_insWithTenant) {
+      _insWithTenant = db.prepare(`
         INSERT INTO audit_log
           (user_id, username, tenant_id, action, target_type, target_id,
            status, ip, user_agent, payload, error)
         VALUES
           (@user_id, @username, @tenant_id, @action, @target_type, @target_id,
            @status, @ip, @user_agent, @payload, @error)
-      `),
-    };
+      `);
+    }
+    return _insWithTenant;
   }
-  return {
-    hasTenant: false,
-    stmt: db.prepare(`
+  if (!_insNoTenant) {
+    _insNoTenant = db.prepare(`
       INSERT INTO audit_log
         (user_id, username, action, target_type, target_id, status, ip, user_agent, payload, error)
       VALUES
         (@user_id, @username, @action, @target_type, @target_id, @status, @ip, @user_agent, @payload, @error)
-    `),
-  };
+    `);
+  }
+  return _insNoTenant;
 }
-let _ins = _prepInsert();
-const insertStmt = _ins.stmt;
-const _hasTenantCol = _ins.hasTenant;
 
 const PAYLOAD_LIMIT = 8 * 1024;
 
@@ -158,6 +170,7 @@ function log(opts = {}) {
   const tenantId = u?.tenant_id ?? u?.tenant?.id ?? null;
 
   try {
+    const hasTenant = _hasTenantColumn();
     const params = {
       user_id:     u?.id ?? null,
       username:    u?.username ?? null,
@@ -170,8 +183,8 @@ function log(opts = {}) {
       payload:     safeStringify(payload),
       error:       error ? String(error).slice(0, 1024) : null,
     };
-    if (_hasTenantCol) params.tenant_id = tenantId;
-    insertStmt.run(params);
+    if (hasTenant) params.tenant_id = tenantId;
+    _insertStmt(hasTenant).run(params);
   } catch (err) {
     // Never let audit failures break the caller. Surface to log for ops.
     if (o) {
@@ -224,7 +237,7 @@ function query({
     where.push('user_id = @userId');
     params.userId = Number(userId);
   }
-  if (tenantId !== undefined && tenantId !== null && tenantId !== '' && _hasTenantCol) {
+  if (tenantId !== undefined && tenantId !== null && tenantId !== '' && _hasTenantColumn()) {
     where.push('tenant_id = @tenantId');
     params.tenantId = Number(tenantId);
   }

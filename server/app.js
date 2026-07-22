@@ -604,7 +604,18 @@ const scanLimit = uploadLimiter();
 // nor a limiter, so an anonymous request loop could exhaust CPU and process
 // slots — the rate-limit coverage had a hole exactly where per-request cost
 // was highest.
-const moduleLimit = uploadLimiter({ rate: 10, burst: 5 });
+//
+// Burst is sized for a real rack, not a single call: the client fans these out
+// per detected switch (scanPrefetch fires /specs AND /firmware for every OCR'd
+// device in parallel, SwitchInformationPage re-fires per card, PortsPage adds
+// /sfp/analyze), so an 8-switch rack legitimately makes ~16-24 near-simultaneous
+// requests on one user's bucket. A burst of 5 threw 429s at ordinary use. 40
+// covers a large rack while still capping a runaway client; env-tunable so a
+// deployment with bigger racks can raise it without a code change.
+const moduleLimit = uploadLimiter({
+  rate:  Number(process.env.RATE_LIMIT_MODULE_RATE)  || 60,
+  burst: Number(process.env.RATE_LIMIT_MODULE_BURST) || 40,
+});
 
 const detectLimit = uploadLimiter({
   rate:  Number(process.env.RATE_LIMIT_DETECT_PER_MIN) || 180,
@@ -5958,10 +5969,18 @@ function parseLooseNeighbor(raw) {
 // New layout: <rack>/console/d{idx}_p{port}.json
 // Falls back to the legacy flat path if the file already exists there.
 function consoleLogPath(rackDir, deviceIndex, port) {
+  // deviceIndex and port are interpolated straight into the filename, so a
+  // value like "../../OTHER-RACK/console/d0" walks the write out of this rack
+  // and into another tenant's — or out of outputs/ entirely. The earlier
+  // hardening validated scanId (which reaches rackDir) but not these two,
+  // which are the values that actually reach the path. Coerce to integers and
+  // refuse anything else; there is no legitimate non-integer device or port.
+  const di = Number(deviceIndex), pt = Number(port);
+  if (!Number.isInteger(di) || !Number.isInteger(pt) || di < 0 || pt < 0) return null;
   const dir = path.join(rackDir, 'console');
   fs.mkdirSync(dir, { recursive: true });
-  const newPath = path.join(dir, `d${deviceIndex}_p${port}.json`);
-  const legacy  = path.join(rackDir, `port_console_d${deviceIndex}_p${port}.json`);
+  const newPath = path.join(dir, `d${di}_p${pt}.json`);
+  const legacy  = path.join(rackDir, `port_console_d${di}_p${pt}.json`);
   if (!fs.existsSync(newPath) && fs.existsSync(legacy)) return legacy;
   return newPath;
 }
@@ -6064,9 +6083,12 @@ function saveConsoleTranscript({ scanId, device_index, port, interface: iface, h
   // any existing directory reachable by a relative walk qualified.
   if (!rackAccess.isValidRackId(scanId)) return null;
   const rackDir = path.join(outputsDir, scanId);
-  if (!path.resolve(rackDir).startsWith(path.resolve(outputsDir) + path.sep)) return null;
   if (!fs.existsSync(rackDir)) return null;
   const filePath = consoleLogPath(rackDir, device_index, port);
+  if (!filePath) return null;   // device_index/port failed integer validation
+  // Assert containment on the ACTUAL write target, not on rackDir (which the
+  // scanId check already made safe). This is the value fs.writeFileSync uses.
+  if (!path.resolve(filePath).startsWith(path.resolve(outputsDir) + path.sep)) return null;
   const payload = {
     scanId,
     device_index: Number(device_index),
@@ -7976,6 +7998,10 @@ module.exports.renderJSONReport        = renderJSONReport;
 module.exports.renderCSVReport         = renderCSVReport;
 module.exports.runSwitchCommandsSequential = runSwitchCommandsSequential;
 module.exports.app                       = app;
+// Test-only: lets tenant-isolation tests exercise the console path guard
+// against the REAL function rather than a copy (a copy proves nothing about
+// the shipped code — the mutation-testing lesson).
+module.exports._internals = { consoleLogPath, saveConsoleTranscript, outputsDir };
 
 // ── User feedback on port identification ──────────────────────
 const feedbackDir      = path.join(__dirname, 'feedback');

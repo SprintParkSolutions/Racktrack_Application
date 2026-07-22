@@ -137,10 +137,18 @@ function assignPublicId(userId, role) {
   // audit_log.tenant_id — every audit row carries the actor's tenant
   // so org-wide audit queries are tenant-scoped.
   if (db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='audit_log'`).get()) {
+    const auditHadTenant = _hasColumn('audit_log', 'tenant_id');
     _ensureColumn('audit_log', 'tenant_id',
       'tenant_id INTEGER REFERENCES tenants(id)');
-    db.prepare('UPDATE audit_log SET tenant_id = ? WHERE tenant_id IS NULL')
-      .run(defaultTenantId);
+    // ONE-SHOT backfill: only when we just added the column. This used to run
+    // on EVERY boot, so rows written legitimately tenant-less (unauthenticated
+    // actors, or actors with no tenant) were re-stamped into the default tenant
+    // on the next restart. Once the column exists a NULL tenant_id is a real
+    // value, not a missing one — never reclaim it.
+    if (!auditHadTenant) {
+      db.prepare('UPDATE audit_log SET tenant_id = ? WHERE tenant_id IS NULL')
+        .run(defaultTenantId);
+    }
     // Index the column we just added: the owner dashboard groups scans by
     // tenant and counts per-org scans every 5s, which scanned the whole
     // audit_log each time because no index was created alongside the ALTER.
@@ -161,6 +169,10 @@ function assignPublicId(userId, role) {
       PRIMARY KEY (tenant_id, rack_id)
     );
     CREATE INDEX IF NOT EXISTS idx_rack_owners_rack ON rack_owners(rack_id);
+    -- The org members endpoint (GET /api/orgs/:orgId/members) runs a correlated
+    -- subquery over rack_owners keyed on created_by per member row; without this
+    -- index each subquery was a full table scan.
+    CREATE INDEX IF NOT EXISTS idx_rack_owners_created_by ON rack_owners(created_by);
   `);
 
   // rack_groups — a multi-rack scan: one video upload that produced N

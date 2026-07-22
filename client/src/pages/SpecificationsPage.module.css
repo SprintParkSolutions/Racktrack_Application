@@ -145,7 +145,7 @@
   background: var(--card);
   border: 1px solid var(--gb);
   color: var(--t1);
-  font-size: .95rem;
+  font-size: 16px;
   font-family: var(--font);
   outline: none;
   transition: border-color .15s, box-shadow .15s;

@@ -51,6 +51,7 @@ except Exception:
 
 import requests
 from synth import build_inventory, load_override, load_port_detail, merge_port_detail
+from servicenow import escape_query_value as _q
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -110,25 +111,48 @@ def apply_rack(rack_id: str, *, dry_run: bool = False) -> dict:
     sn = SN() if not dry_run else None
     counters = {"created": 0, "updated": 0, "rels": 0, "ports": 0}
 
-    def upsert(table: str, name: str, payload: dict, extra_q: str = "") -> dict:
+    def upsert(table: str, name: str, payload: dict, extra_q: str = "",
+               scope_field: str = "u_racktrack_rack_id") -> dict:
+        # Device names are U-position derived (SW-U06, PP-U18) and carry NO rack
+        # prefix, so a bare `name=` match collides across racks: applying rack
+        # B's approved ticket would find and PATCH rack A's SW-U06 with rack B's
+        # IP/serial/MAC, and then relate that single CI to both racks. We pin
+        # every CI to its rack via `scope_field` (u_racktrack_rack_id for
+        # devices, u_racktrack_scan_id for the rack itself — the field diff_cmdb
+        # already keys the rack on) so two racks can never collide. The field is
+        # stamped on write and required in the match; if the customer hasn't
+        # provisioned it, SN drops the unknown condition, so we also refuse to
+        # PATCH any row that already belongs to a *different* rack.
+        scoped_payload = {**payload, scope_field: rack_id}
         if dry_run:
             counters["updated"] += 1
             return {"sys_id": f"DRYRUN-{name}", "name": name}
-        q = f"name={name}"
+        q = f"name={_q(name)}^{scope_field}={_q(rack_id)}"
         if extra_q:
             q += f"^{extra_q}"
         existing = sn.find_one(table, q)
         if existing:
-            sn.patch(table, existing["sys_id"], payload)
+            ex_scope = (existing.get(scope_field) or "").strip()
+            if ex_scope and ex_scope != rack_id:
+                # Name matched a different rack's CI (scope condition was
+                # dropped because the field isn't provisioned). Never cross
+                # racks — create this rack's own CI instead of overwriting.
+                existing = None
+        if existing:
+            sn.patch(table, existing["sys_id"], scoped_payload)
             counters["updated"] += 1
             return existing
-        created = sn.create(table, {"name": name, **payload})
+        created = sn.create(table, {"name": name, **scoped_payload})
         counters["created"] += 1
         return created
 
     # ── 1. Rack ──────────────────────────────────────────────────────────
+    # Scope the rack on u_racktrack_scan_id — the field diff_cmdb.fetch_cmdb_state
+    # keys the rack on — so apply and diff always resolve the same rack CI and
+    # two racks sharing a display name (override rack_name) don't collide.
     rack_payload = {**rack_meta, "u_racktrack_scan_id": rack_id}
-    rack = upsert("cmdb_ci_rack", rack_name, rack_payload)
+    rack = upsert("cmdb_ci_rack", rack_name, rack_payload,
+                  scope_field="u_racktrack_scan_id")
     rack_sys_id = rack.get("sys_id")
 
     # ── Resolve relationship type sys_ids ────────────────────────────────

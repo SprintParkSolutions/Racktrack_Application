@@ -113,7 +113,7 @@
   border: 1px solid var(--mkt-line);
   background: var(--mkt-surface);
   color: var(--mkt-ink);
-  font: inherit; font-size: 13.5px;
+  font: inherit; font-size: 16px;
   transition: var(--mkt-t);
 }
 .mkt-field::placeholder { color: var(--mkt-muted); opacity: 0.8; }

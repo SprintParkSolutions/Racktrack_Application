@@ -424,11 +424,20 @@ function detectOutOfScope(text) {
       // technician asking "how do I compare the two racks" is asking about
       // RACK-004, and telling them we can't compare ourselves to competitors is
       // a confidently wrong answer to a documented workflow.
+      // The comparison OBJECT must be another product, never just any noun.
+      // "compare it to the other rack" / "with the second rack" / "to last
+      // week's scan" are the user's OWN racks and scans — the documented
+      // RACK-004 / HIST-009 workflow — and were being hard-refused as though
+      // the user asked about a competitor. The object after to/with must be a
+      // product-like word or a named competitor for this to fire.
       re: new RegExp(
         [
           COMPETITOR_NAMES.source,
           '\\bcompetitors?\\b',
-          '\\b(?:compare|compares|comparing|compared) (?:racktrack|this app|this product|it) (?:to|with|against|versus|vs\\.?)\\b',
+          '\\b(?:compare|compares|comparing|compared) (?:racktrack|this app|this product|it) (?:to|with|against|versus|vs\\.?) '
+            + '(?:a |an |any |another |other |some )?'
+            + '(?:tool|product|software|platform|solution|system|vendor|competitor|app|service|dcim|'
+            + COMPETITOR_NAMES.source.replace(/^\\b|\\b$/g, '') + ')',
           '\\b(?:racktrack|this app|this product) (?:is |was )?(?:better|worse) than\\b',
           '\\balternatives? to (?:racktrack|this app|this product)\\b',
         ].join('|')

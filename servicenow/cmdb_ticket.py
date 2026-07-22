@@ -56,6 +56,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -76,12 +77,28 @@ except Exception:
     pass
 
 import requests
-from servicenow import ServiceNowClient
+from servicenow import ServiceNowClient, escape_query_value as _q
 from diff_cmdb import compute_diff, diff_is_empty, render_diff_text
 
 
 OUTPUTS_BASE = ROOT / "outputs"
 SCHEMA = "cmdb_ticket.v1"
+
+# Apply retries are bounded so a permanently-broken apply (bad CMDB schema,
+# revoked creds) stops re-running every poll cycle forever. After
+# MAX_APPLY_ATTEMPTS failures the ticket moves to the terminal "failed" state;
+# between attempts we wait an exponentially growing back-off.
+MAX_APPLY_ATTEMPTS = 5
+APPLY_BACKOFF_BASE_SECS = 300          # 5 min, doubling each attempt
+APPLY_BACKOFF_CAP_SECS = 6 * 60 * 60   # never wait more than 6h
+
+# Cross-process guard so a background auto-create and a user clicking "Raise
+# Ticket" at the same moment cannot both POST an sc_request for one rack.
+TICKET_LOCK_STALE_SECS = 180
+TICKET_LOCK_WAIT_SECS = 90
+
+# Terminal local states — poll_one leaves these alone.
+TERMINAL_STATES = ("applied", "rejected", "cancelled", "failed")
 
 # ServiceNow sc_request state values vary by instance customisation, but the
 # OOTB defaults are widely used. We cover the common ones and fall through
@@ -131,6 +148,72 @@ def clear_ticket(rack_id: str) -> bool:
 
 def _now() -> str:
     return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _future(secs: int) -> str:
+    return (dt.datetime.now(dt.timezone.utc)
+            + dt.timedelta(seconds=secs)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# Per-rack create lock (cross-process). Each `create` runs as its own Python
+# process — a background scan-triggered create can race a user clicking "Raise
+# Ticket". Without a lock both compute a diff, see no local ticket, and POST,
+# opening TWO Service Requests and orphaning one. An O_EXCL lock file serialises
+# them so the second waits, then re-reads the state the first wrote and takes
+# the "already open" path instead of creating a duplicate. Cross-platform:
+# O_CREAT|O_EXCL is atomic on both Windows (production) and POSIX.
+# ─────────────────────────────────────────────────────────────────────────
+
+class _TicketLock:
+    def __init__(self, rack_id: str):
+        self.rack_id = rack_id
+        self.path = OUTPUTS_BASE / rack_id / "cmdb_ticket.lock"
+        self.fd = None
+
+    def acquire(self) -> "_TicketLock":
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        deadline = time.time() + TICKET_LOCK_WAIT_SECS
+        while True:
+            try:
+                self.fd = os.open(str(self.path),
+                                  os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(self.fd, f"{os.getpid()} {_now()}".encode("utf-8"))
+                return self
+            except FileExistsError:
+                # Steal a stale lock left by a crashed process.
+                try:
+                    age = time.time() - self.path.stat().st_mtime
+                except OSError:
+                    age = 0
+                if age > TICKET_LOCK_STALE_SECS:
+                    try:
+                        self.path.unlink()
+                    except OSError:
+                        pass
+                    continue
+                if time.time() >= deadline:
+                    raise TimeoutError(
+                        f"another create is in progress for {self.rack_id}")
+                time.sleep(0.25)
+
+    def release(self) -> None:
+        try:
+            if self.fd is not None:
+                os.close(self.fd)
+        finally:
+            self.fd = None
+            try:
+                self.path.unlink()
+            except OSError:
+                pass
+
+    def __enter__(self):
+        return self.acquire()
+
+    def __exit__(self, *exc):
+        self.release()
+        return False
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -199,7 +282,70 @@ def _classify_sn_state(sn_state: str | None, sn_approval: str | None) -> str:
     return "open"
 
 
+def _find_existing_sr(client: ServiceNowClient, rack_id: str) -> dict | None:
+    """Return the most recent non-terminal sc_request already tagged for this
+    rack, or None. Guards duplicate creation from two angles the local state
+    file can't cover: a crashed create that opened an SR before writing its
+    state file, and a `cancel` that dropped the local file while leaving the SR
+    open in ServiceNow. Both are re-discovered here and adopted instead of
+    re-POSTed."""
+    try:
+        resp = client._get("/table/sc_request", {
+            "sysparm_query": (
+                f"u_racktrack_rack_id={_q(rack_id)}^ORDERBYDESCsys_created_on"
+            ),
+            "sysparm_limit": 10,
+        })
+    except Exception:
+        # Can't confirm — caller decides. Returning None means it may create;
+        # that's the pre-existing behaviour and the lock still prevents the
+        # concurrent double-open this function is layered on top of.
+        return None
+    for row in resp.get("result", []):
+        if _classify_sn_state(row.get("state"), row.get("approval")) not in (
+                "rejected", "cancelled"):
+            return row
+    return None
+
+
+def _adopt_sr(client: ServiceNowClient, rack_id: str, row: dict,
+              diff: dict) -> dict:
+    """Write a local state file pointing at an SR that already exists in SN."""
+    sys_id = row.get("sys_id")
+    number = row.get("number")
+    state_obj = {
+        "schema":         SCHEMA,
+        "rack_id":        rack_id,
+        "rack_name":      diff.get("rack_name"),
+        "number":         number,
+        "sys_id":         sys_id,
+        "state":          "open",
+        "sn_state":       row.get("state"),
+        "sn_approval":    row.get("approval"),
+        "diff_hash":      diff["diff_hash"],
+        "summary":        diff.get("summary"),
+        "opened_at":      row.get("sys_created_on") or _now(),
+        "last_polled_at": _now(),
+        "applied_at":     None,
+        "apply_error":    None,
+        "ticket_url":     _ticket_url(client, sys_id) if sys_id else None,
+    }
+    write_ticket(rack_id, state_obj)
+    return state_obj
+
+
 def create_ticket_for_rack(rack_id: str, *, force: bool = False) -> dict:
+    """Serialise create per rack so concurrent invocations can't double-open."""
+    try:
+        with _TicketLock(rack_id):
+            return _create_ticket_for_rack_locked(rack_id, force=force)
+    except TimeoutError as e:
+        # Another create holds the lock; it will produce/adopt the ticket.
+        return {"ok": True, "action": "busy", "note": str(e),
+                "ticket": read_ticket(rack_id)}
+
+
+def _create_ticket_for_rack_locked(rack_id: str, *, force: bool = False) -> dict:
     """Compute the diff, open an SR if needed, write the local state file.
 
     Returns a result dict:
@@ -213,6 +359,15 @@ def create_ticket_for_rack(rack_id: str, *, force: bool = False) -> dict:
             diff = compute_diff(rack_id)
         except Exception as e:
             return {"ok": False, "action": "failed", "error": str(e),
+                    "ticket": existing}
+        if not diff.get("cmdb_reachable", True):
+            # A timeout makes the CMDB look empty, i.e. every device "added".
+            # Never act on that: don't rewrite the diff_hash and don't append a
+            # bogus "everything is missing" work note to the live SR.
+            return {"ok": False, "action": "failed",
+                    "error": "CMDB read was unreachable; leaving the open "
+                             "ticket untouched",
+                    "cmdb_error": diff.get("cmdb_error"),
                     "ticket": existing}
         if diff_is_empty(diff):
             return {"ok": True, "action": "unchanged", "ticket": existing,
@@ -250,6 +405,16 @@ def create_ticket_for_rack(rack_id: str, *, force: bool = False) -> dict:
     except Exception as e:
         return {"ok": False, "action": "failed", "error": str(e), "ticket": existing}
 
+    if not diff.get("cmdb_reachable", True):
+        # The CMDB read failed (timeout / auth / network). Every present device
+        # then looks "added", and opening an SR here would file a real request
+        # asserting devices are missing that are all in fact present. Refuse.
+        return {"ok": False, "action": "failed",
+                "error": "CMDB read was unreachable; refusing to open a "
+                         "Service Request from a partial diff",
+                "cmdb_error": diff.get("cmdb_error"),
+                "ticket": existing}
+
     if diff_is_empty(diff) and not force:
         # Scan matches CMDB — nothing to do, and clear any stale rejected
         # state so the UI doesn't keep showing "rejected" forever.
@@ -262,6 +427,16 @@ def create_ticket_for_rack(rack_id: str, *, force: bool = False) -> dict:
     if client is None:
         return {"ok": False, "action": "failed",
                 "error": "SN_INSTANCE/SN_USER/SN_PASSWORD not configured"}
+
+    # Pre-create query: an SR for this rack may already be open in SN even
+    # though we hold no (or a stale/cleared) local state file. Adopt it rather
+    # than open a second one. Under --force we still adopt — force means
+    # "recompute even if unchanged", not "always mint a duplicate SR".
+    prior = _find_existing_sr(client, rack_id)
+    if prior:
+        state_obj = _adopt_sr(client, rack_id, prior, diff)
+        return {"ok": True, "action": "adopted", "ticket": state_obj,
+                "note": "re-linked an sc_request already open for this rack"}
 
     short_desc = (
         f"RackTrack: CMDB sync for {diff.get('rack_name')} ({rack_id}) — "
@@ -313,7 +488,16 @@ def create_ticket_for_rack(rack_id: str, *, force: bool = False) -> dict:
         "apply_error":    None,
         "ticket_url":     _ticket_url(client, sys_id),
     }
-    write_ticket(rack_id, state_obj)
+    # The SR now exists in SN. write_ticket used to run bare, so a disk error
+    # here left an SR nothing pointed at. It can't be re-ordered (sys_id/number
+    # only exist after the POST), so recover instead: the SR carries
+    # u_racktrack_rack_id, so _find_existing_sr re-adopts it on the next create.
+    try:
+        write_ticket(rack_id, state_obj)
+    except Exception as e:
+        return {"ok": True, "action": "created", "ticket": state_obj,
+                "warning": f"SR opened but local state not persisted "
+                           f"({e}); it will be re-linked on the next sync"}
     return {"ok": True, "action": "created", "ticket": state_obj}
 
 
@@ -367,7 +551,7 @@ def poll_one(rack_id: str) -> dict:
     existing = read_ticket(rack_id)
     if not existing:
         return {"ok": True, "rack_id": rack_id, "action": "no_ticket"}
-    if existing.get("state") in ("applied", "rejected", "cancelled"):
+    if existing.get("state") in TERMINAL_STATES:
         return {"ok": True, "rack_id": rack_id, "action": "terminal",
                 "ticket": existing}
 
@@ -402,18 +586,47 @@ def poll_one(rack_id: str) -> dict:
                 "ticket": existing}
 
     if classified == "approved":
+        # Respect the back-off window between failed applies. classification
+        # needed the SN GET above (cheap); the guard here is on the expensive
+        # and side-effecting cmdb_apply run, which is what must be bounded.
+        next_retry = existing.get("next_retry_at")
+        if next_retry and _now() < next_retry:
+            write_ticket(rack_id, existing)
+            return {"ok": True, "rack_id": rack_id, "action": "apply_backoff",
+                    "ticket": existing, "next_retry_at": next_retry}
+
+        attempts = int(existing.get("apply_attempts") or 0)
         ok, msg = _apply_to_cmdb(rack_id)
         if ok:
-            existing["state"]       = "applied"
-            existing["applied_at"]  = _now()
-            existing["apply_error"] = None
-        else:
-            existing["state"]       = "open"   # leave open; will retry next cycle
-            existing["apply_error"] = msg
+            existing["state"]         = "applied"
+            existing["applied_at"]    = _now()
+            existing["apply_error"]   = None
+            existing["apply_attempts"] = attempts + 1
+            existing["next_retry_at"] = None
+            write_ticket(rack_id, existing)
+            return {"ok": True, "rack_id": rack_id, "action": "applied",
+                    "ticket": existing, "apply_msg": msg}
+
+        # Failure: count it, back off, and give up after MAX_APPLY_ATTEMPTS so a
+        # permanently-broken apply doesn't retry forever every poll cycle.
+        attempts += 1
+        existing["apply_attempts"] = attempts
+        existing["apply_error"]    = msg
+        if attempts >= MAX_APPLY_ATTEMPTS:
+            existing["state"]         = "failed"   # terminal
+            existing["next_retry_at"] = None
+            write_ticket(rack_id, existing)
+            return {"ok": False, "rack_id": rack_id,
+                    "action": "apply_failed_terminal",
+                    "ticket": existing, "apply_msg": msg}
+        backoff = min(APPLY_BACKOFF_BASE_SECS * (2 ** (attempts - 1)),
+                      APPLY_BACKOFF_CAP_SECS)
+        existing["state"]         = "open"         # remain pollable
+        existing["next_retry_at"] = _future(backoff)
         write_ticket(rack_id, existing)
-        return {"ok": ok, "rack_id": rack_id,
-                "action": "applied" if ok else "apply_failed",
-                "ticket": existing, "apply_msg": msg}
+        return {"ok": False, "rack_id": rack_id, "action": "apply_failed",
+                "ticket": existing, "apply_msg": msg,
+                "next_retry_at": existing["next_retry_at"]}
 
     if classified in ("rejected", "cancelled"):
         existing["state"] = classified

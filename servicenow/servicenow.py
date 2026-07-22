@@ -7,6 +7,29 @@ table (incident, cmdb_ci_*, cmdb_rel_ci). Basic auth is fine for a PDI.
 import requests
 
 
+def escape_query_value(value) -> str:
+    """Neutralise ServiceNow encoded-query operators in an interpolated value.
+
+    Encoded queries separate conditions with ^ (AND), ^OR and ^NQ, and there is
+    no official escaping mechanism. A value carrying one of those — e.g. an
+    OCR-derived device name of ``x^ORname!=zzz`` interpolated into ``name=x`` —
+    injects a new condition and silently widens the match to CIs it was never
+    meant to touch, which for an upsert means PATCHing the wrong record. Device
+    and rack names never legitimately contain these characters, so we strip the
+    structural separators and any control characters and coerce non-str input.
+
+    This does not make arbitrary text safe to run as a query; it makes a *value*
+    safe to interpolate as the right-hand side of a single condition.
+    """
+    s = "" if value is None else str(value)
+    # ^ starts a new query condition; CR/LF can smuggle one in via some clients.
+    s = s.replace("\r", " ").replace("\n", " ").replace("^", " ")
+    # Drop remaining C0 control characters (keep tab), which have no place in a
+    # CI name and can confuse the query parser.
+    s = "".join(ch for ch in s if ch >= " " or ch == "\t")
+    return s.strip()
+
+
 class ServiceNowClient:
     def __init__(self, instance: str, user: str, password: str):
         self.base = f"https://{instance}.service-now.com/api/now"

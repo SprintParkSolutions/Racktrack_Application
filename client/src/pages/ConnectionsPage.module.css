@@ -418,7 +418,7 @@
   background: #ffffff;
   border: 1px solid #f0f0f0;
   color: var(--text);
-  font-size: .95rem;
+  font-size: 16px;
   font-family: inherit;
   outline: none;
   transition: border-color .15s, background .15s;

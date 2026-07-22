@@ -29,12 +29,20 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const readline = require('readline');
 const Database = require('better-sqlite3');
 
 const GO = process.argv.includes('--yes');
+// A deliberate second gate for the production host. NODE_ENV=production alone
+// refuses to run; this flag is the "yes, I truly mean the live box" override.
+const FORCE_PROD = process.argv.includes('--i-understand-production');
 const ROOT = path.resolve(__dirname, '..');
-const DATA = path.join(ROOT, 'data');
+// RACKTRACK_DATA_DIR lets a sandbox run point every path at a throwaway copy
+// (used by the test harness). Unset in production → the real server/data dir.
+const DATA = process.env.RACKTRACK_DATA_DIR || path.join(ROOT, 'data');
+const FILE_ROOT = process.env.RACKTRACK_DATA_DIR ? path.dirname(DATA) : ROOT;
 const AUTH_DB = path.join(DATA, 'auth.db');
 const LOGS_DB = path.join(DATA, 'logs.db');
 
@@ -56,11 +64,23 @@ const TRUNCATE = [
 
 // ── on-disk artefacts ──────────────────────────────────────────────────
 const DIRS = [
-  path.join(ROOT, 'uploads'),
-  path.join(ROOT, 'outputs'),
-  path.join(ROOT, '..', 'uploads'),
-  path.join(ROOT, '..', 'outputs'),
+  path.join(FILE_ROOT, 'uploads'),
+  path.join(FILE_ROOT, 'outputs'),
+  path.join(FILE_ROOT, '..', 'uploads'),
+  path.join(FILE_ROOT, '..', 'outputs'),
 ];
+
+// Read a single typed line from the terminal. Resolves to '' on a closed /
+// piped stdin (EOF) so a non-interactive invocation aborts rather than proceeds.
+function ask(question) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    let done = false;
+    const finish = (v) => { if (done) return; done = true; rl.close(); resolve(String(v || '').trim()); };
+    rl.question(question, finish);
+    rl.on('close', () => finish(''));   // EOF / piped-empty stdin → abort
+  });
+}
 
 function backup(file) {
   if (!fs.existsSync(file)) return null;
@@ -104,13 +124,26 @@ function emptyDir(dir) {
   say(`  cleared       ${dir}  (${n} entries)`);
 }
 
-function main() {
+async function main() {
   if (!fs.existsSync(AUTH_DB)) {
     console.error(`✗ no database at ${AUTH_DB}`);
     process.exit(1);
   }
 
+  // Environment guard. This script ships to the production host via `git pull`,
+  // and --yes was the only thing standing between a stray run and a live wipe.
+  // Refuse outright under NODE_ENV=production unless the operator ALSO passes
+  // --i-understand-production. This check happens before anything is opened or
+  // copied, so a refusal changes nothing on disk.
+  if (GO && process.env.NODE_ENV === 'production' && !FORCE_PROD) {
+    console.error(`\n✗ NODE_ENV=production on ${os.hostname()} — refusing to reset live data.`);
+    console.error('  This is the production host. If you REALLY mean it, re-run with:');
+    console.error('    node scripts/reset-data.js --yes --i-understand-production\n');
+    process.exit(1);
+  }
+
   say(`\nRackTrack data reset — ${GO ? 'LIVE' : 'DRY RUN (pass --yes to apply)'}`);
+  say(`host:           ${os.hostname()}`);
   say(`data directory: ${DATA}\n`);
 
   say('Backups');
@@ -139,10 +172,19 @@ function main() {
     // to reassign them: there is a partial unique index allowing one active
     // profile per user, and the owner already has one.
     for (const t of TRUNCATE) {
-      try {
-        const n = db.prepare(`DELETE FROM "${t}"`).run().changes;
-        say(`  emptied  ${String(n).padStart(6)}  ${t}`);
-      } catch (e) { say(`  skipped           ${t}  (${e.message})`); }
+      // A missing table is the ONE expected, skippable condition (not every
+      // deploy created every marketplace table). Anything else — a locked DB, a
+      // constraint violation, corruption — must abort the whole transaction:
+      // swallowing it and continuing to COMMIT is exactly how a partial reset
+      // used to still print "Reset complete". Check existence explicitly, then
+      // let any DELETE error propagate out of the transaction so better-sqlite3
+      // rolls it back.
+      const exists = db.prepare(
+        `SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`
+      ).get(t);
+      if (!exists) { say(`  skipped           ${t}  (no such table)`); continue; }
+      const n = db.prepare(`DELETE FROM "${t}"`).run().changes;
+      say(`  emptied  ${String(n).padStart(6)}  ${t}`);
     }
 
     const users = db.prepare('DELETE FROM users WHERE id != ?').run(owner.id).changes;
@@ -179,6 +221,23 @@ function main() {
       try { db.prepare('DELETE FROM sqlite_sequence WHERE name = ?').run(t); } catch { /* no sequence */ }
     }
   });
+
+  // Final human gate: show WHERE this is running and WHAT will be destroyed,
+  // then require the word RESET typed back. A piped / non-interactive stdin
+  // reads as EOF → empty string → abort, so this can never be auto-answered.
+  if (GO) {
+    say(`\n⚠  About to PERMANENTLY delete the following on ${os.hostname()}:`);
+    for (const t of TRUNCATE) say(`    ${String(before[t] ?? 0).padStart(6)}  ${t}`);
+    say(`    ${String(Math.max(0, (before.users ?? 1) - 1)).padStart(6)}  users (keeping the owner)`);
+    say(`    ${String(before.organizations ?? 0).padStart(6)}  organizations`);
+    say(`    ${String(before.tenants ?? 0).padStart(6)}  tenants (keeping the owner's)`);
+    const answer = await ask('\nType "RESET" to proceed (anything else aborts): ');
+    if (answer !== 'RESET') {
+      say('\nAborted — the database was not changed (a backup was already written).');
+      db.close();
+      process.exit(1);
+    }
+  }
 
   say('\nDatabase');
   if (GO) { run(); db.pragma('wal_checkpoint(TRUNCATE)'); db.exec('VACUUM'); }
@@ -232,4 +291,10 @@ function main() {
   if (GO) say('  Restart the server, then sign in as the owner.\n');
 }
 
-main();
+// Any error thrown from the reset transaction (a real DELETE failure, not a
+// missing table) rejects here and exits non-zero WITHOUT printing "Reset
+// complete" — the transaction has already been rolled back by better-sqlite3.
+main().catch((err) => {
+  console.error(`\n✗ Reset aborted — the transaction was rolled back: ${err.message}`);
+  process.exit(1);
+});

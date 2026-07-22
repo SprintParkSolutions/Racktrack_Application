@@ -27,7 +27,7 @@
 
 .pickRow { display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap; }
 .select, .other {
-  font: inherit; font-size: 0.85rem; color: var(--md-on-surface, #1a1c1d);
+  font: inherit; font-size: 16px; color: var(--md-on-surface, #1a1c1d);
   background: var(--md-surface, #fff);
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.16)); border-radius: 8px;
   padding: 7px 10px; min-width: 0;

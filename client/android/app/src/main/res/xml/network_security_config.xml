@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  RackTrack's backend is HTTPS-only (see ../../../../../BACKEND_URL) and every
+  screen loads over TLS, so cleartext HTTP is never legitimate and is denied
+  app-wide. This is deliberately host-agnostic: the backend runs behind a tunnel
+  whose hostname moves, and pinning that hostname here would just add another
+  place that drifts (see the note in client/ship-apk.sh). Denying cleartext for
+  the base config already covers the backend domain and is stronger than relying
+  on the API-28+ default, because it holds regardless of targetSdkVersion.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

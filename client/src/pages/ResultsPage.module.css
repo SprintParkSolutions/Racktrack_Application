@@ -726,7 +726,7 @@
   flex: 1;
   padding: 12px 14px !important;
   border-radius: 12px !important;
-  font-size: .96rem !important;
+  font-size: 16px !important;
   font-family: var(--mono) !important;
 }
 .portInput:focus {
@@ -2056,7 +2056,7 @@
   border-radius: 8px;
   color: #ffffff;
   font-family: var(--mono, 'SF Mono', Menlo, Consolas, monospace);
-  font-size: .95rem;
+  font-size: 16px;
   padding: 12px 12px;
   outline: none;
 }
@@ -2158,7 +2158,7 @@
 }
 .credsField input {
   padding: 11px 13px !important;
-  font-size: .88rem !important;
+  font-size: 16px !important;
   background: rgba(0,0,0,0.5) !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
   color: #ffffff !important;
@@ -2456,7 +2456,7 @@
 .shareDialogTextarea {
   width: 100%;
   padding: 10px 12px;
-  font-size: .85rem;
+  font-size: 16px;
   font-family: inherit;
   color: #f9f9fb;
   background: rgba(0,0,0,0.65);
@@ -2469,7 +2469,7 @@
 .shareDialogTextarea {
   resize: vertical;
   min-height: 64px;
-  font-size: .82rem;
+  font-size: 16px;
   line-height: 1.45;
 }
 .shareDialogInput:focus,
@@ -2655,7 +2655,7 @@
   flex: 1; min-width: 110px;
   padding: 8px 12px !important;
   border-radius: 10px !important;
-  font-size: .82rem !important;
+  font-size: 16px !important;
   font-family: var(--mono) !important;
   color: #ffffff !important;
   background: rgba(0,0,0,0.55) !important;
@@ -2785,7 +2785,7 @@
   flex: 1; min-width: 0; position: relative; z-index: 1;
   padding: 10px 14px !important;
   border-radius: 14px !important;
-  font-size: .84rem !important;
+  font-size: 16px !important;
   font-family: var(--mono) !important;
   background: transparent !important;
   border: none !important;
@@ -3468,7 +3468,7 @@
   border-radius: 10px;
   color: #ffffff;
   font-family: inherit;
-  font-size: .86rem;
+  font-size: 16px;
   font-weight: 600;
   padding: 10px 32px 10px 14px;
   cursor: pointer;
@@ -4089,7 +4089,7 @@
   flex: 1;
   padding: 11px 13px !important;
   border-radius: 10px !important;
-  font-size: .9rem !important;
+  font-size: 16px !important;
   font-family: var(--mono) !important;
 }
 .prFbSubmit {
@@ -4215,7 +4215,7 @@
   flex: 1;
   padding: 10px 14px !important;
   border-radius: 12px !important;
-  font-size: .78rem !important;
+  font-size: 16px !important;
   background: rgba(0,0,0,0.55) !important;
   border: 1px solid rgba(255,255,255,0.14) !important;
   color: #ffffff !important;
@@ -4587,7 +4587,7 @@
   color: var(--md-on-surface);
   border: 1px solid var(--md-outline-variant);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 20px;
   cursor: pointer;
   transition: border-color 0.18s;
@@ -5701,7 +5701,7 @@
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   color: var(--md-on-surface, #121417) !important;
-  font-size: 13px !important;
+  font-size: 16px !important;
   font-weight: 500 !important;
   box-shadow: none !important;
 }
@@ -5797,7 +5797,7 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   color: var(--md-on-surface, #121417) !important;
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 14px !important;
+  font-size: 16px !important;
   font-weight: 500 !important;
   box-shadow: none !important;
   outline: none !important;

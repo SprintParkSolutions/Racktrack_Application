@@ -1,8 +1,11 @@
 import argparse
 import json
+import logging
 import os
 import sys
 import cv2
+
+logger = logging.getLogger(__name__)
 
 # Ensure the project root is on sys.path when this script is run directly
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -48,6 +51,80 @@ from pipeline.cable import (
 )
 
 # Step 06: Pipeline runner
+
+# ── Occupancy honesty ────────────────────────────────────────────────────────
+# The cable classifier (Models/cable_eff_best) has FOURTEEN outputs and every
+# one of them is a cable COLOUR (LC_Aqua … SC_Yellow) — verified at the weights
+# level, classifier.1.weight is (14, 1280). There is NO empty / no-cable class,
+# so its softmax always sums to 1 across colours: its top-class confidence
+# answers "which colour" and can be arbitrarily high on a crop that holds no
+# cable at all. It therefore MUST NOT be thresholded to decide occupancy — doing
+# so fabricated connected/empty that then fed topology and the CMDB. Occupancy
+# comes only from the status sweep; a port the sweep didn't tag is genuinely
+# UNKNOWN, and we say so rather than guess.
+_OCCUPANCY_STATES = ("connected", "empty")
+
+
+def resolve_port_occupancy(sweep_status):
+    """Return a port's occupancy honestly from the status-sweep tag alone.
+
+    `sweep_status` is whatever the status model tagged the port with. That is
+    the only signal that measures presence, so anything other than a real
+    occupancy state ("connected" / "empty") — including "unknown", "invalid",
+    None or a stray string — resolves to "unknown". We never synthesize
+    connected/empty from the cable-colour classifier's confidence.
+    """
+    return sweep_status if sweep_status in _OCCUPANCY_STATES else "unknown"
+
+
+def _clear_port_fields(dev):
+    """Zero every port field on a device dict in place.
+
+    Used both as the crash fallback and by the demotion path. Deliberately does
+    NOT touch port_detection_failed / port_detection_error, so a failure marker
+    set by mark_port_detection_failed survives a subsequent demotion.
+    """
+    dev["port_count"] = 0
+    dev["ports"] = []
+    dev["console_ports"] = []
+    dev["sfp_ports"] = []
+    dev["other_ports"] = []
+    dev["connected_ports"] = []
+    return dev
+
+
+def mark_port_detection_failed(dev, exc):
+    """Record that port detection CRASHED on this device.
+
+    A crash previously zeroed the port fields silently, which made the device
+    indistinguishable in device_unit_map.json from one that genuinely has no
+    ports (both then demote to "Unidentified"). Marking the failure keeps the
+    two apart for downstream consumers.
+    """
+    _clear_port_fields(dev)
+    dev["port_detection_failed"] = True
+    dev["port_detection_error"] = f"{type(exc).__name__}: {exc}"
+    return dev
+
+
+def demote_if_no_ports(dev):
+    """Demote a port-bearing device with zero detected ports to "Unidentified".
+
+    When the detector finds no ports on a port-bearing class the YOLO class is
+    almost certainly wrong, so we demote. A detection that CRASHED is marked
+    with port_detection_failed BEFORE this runs; _clear_port_fields preserves
+    that marker, so a genuine zero-port device (no marker) stays distinguishable
+    from a detection failure even after both land on "Unidentified".
+    """
+    detected = (list(dev.get("ports") or [])
+                + list(dev.get("console_ports") or [])
+                + list(dev.get("sfp_ports") or [])
+                + list(dev.get("other_ports") or []))
+    if not detected:
+        dev["class_name"] = "Unidentified"
+        _clear_port_fields(dev)
+    return dev
+
 
 def unit_label_to_index(label):
     return int(label.strip().lower().lstrip("u"))
@@ -609,30 +686,28 @@ def main():
                 dev["other_ports"] = classified.get('other_ports', [])
                 dev["connected_ports"] = [p for p in classified['main_ports']
                                           if p.get("status") == "connected"]
-            except Exception:
-                dev["port_count"] = 0
-                dev["ports"] = []
-                dev["console_ports"] = []
-                dev["sfp_ports"] = []
-                dev["other_ports"] = []
-                dev["connected_ports"] = []
+            except Exception as exc:
+                # A port-detection CRASH must not masquerade as a device that
+                # genuinely has no ports. Log it with context, then MARK the
+                # failure so device_unit_map.json keeps a crash apart from a
+                # real zero-port device — both still demote to "Unidentified"
+                # below, but only the crash carries port_detection_failed.
+                logger.exception(
+                    "port detection failed for device class=%r units=%s box=%s",
+                    dev.get("class_name"), dev.get("units"), dev.get("box"),
+                )
+                print(f"[ports] detection FAILED on {dev.get('class_name')!r} "
+                      f"box={dev.get('box')}: {type(exc).__name__}: {exc}")
+                mark_port_detection_failed(dev, exc)
 
             # If the port detector found no ports at all on a port-bearing
             # device, the YOLO class is almost certainly wrong — demote to
             # Unidentified. Status ('connected' vs 'empty') is no longer
             # required: the class-aware port_best.pt labels port *category*
             # (main/sfp/console) but doesn't infer occupancy, so legitimate
-            # ports come back with status='unknown'.
-            detected_ports = (dev["ports"] + dev["console_ports"]
-                              + dev["sfp_ports"] + dev.get("other_ports", []))
-            if not detected_ports:
-                dev["class_name"] = "Unidentified"
-                dev["port_count"] = 0
-                dev["ports"] = []
-                dev["console_ports"] = []
-                dev["sfp_ports"] = []
-                dev["other_ports"] = []
-                dev["connected_ports"] = []
+            # ports come back with status='unknown'. A crashed detection was
+            # marked above; demote_if_no_ports preserves that marker.
+            demote_if_no_ports(dev)
 
         # Rebuild the class→units mapping since reclassification above may
         # have moved devices out of their original class bucket.
@@ -727,6 +802,7 @@ def main():
         "port_number": port_number,
         "port_category": port_category,
         "status": "unknown",
+        "occupancy_source": None,
         "class_name": None,
         "confidence": None,
         "location": None,
@@ -750,25 +826,23 @@ def main():
         selected_port_box = [box[0] + ox, box[1] + oy, box[2] + ox, box[3] + oy]
         selected_port_info["location"] = selected_port_box
 
-        # Cable-model fallback: when the status sweep couldn't tag the
-        # selected port (e.g. patch-panel-trained port_count.pt didn't
-        # match this switch's port box), use the cable classifier's
-        # confidence as a binary tiebreaker so the UI never shows
-        # "Unknown" — a real port is always either connected or empty.
-        CABLE_CONNECTED_MIN = 0.55
-        if (selected_port_info["status"] not in ("connected", "empty")
-                and cable_model is not None):
-            bx1, by1, bx2, by2 = selected_port_box
-            box_w = max(1, bx2 - bx1)
-            box_h = max(1, by2 - by1)
-            port_crop = crop_box(
-                img, selected_port_box,
-                pad_x=(box_w * 3) // 2, pad_y=(box_h * 3) // 2,
-            )
-            _, fallback_conf = classify_cable(port_crop, cable_model)
-            selected_port_info["status"] = (
-                "connected" if fallback_conf >= CABLE_CONNECTED_MIN else "empty"
-            )
+        # Occupancy comes ONLY from the status sweep. When it couldn't tag the
+        # selected port (e.g. patch-panel-trained port_count.pt didn't match
+        # this switch's port box), the honest answer is "unknown" — we do NOT
+        # fall back to the cable classifier's confidence. That model has no
+        # 'no-cable' class (all 14 outputs are colours), so its softmax measures
+        # WHICH colour, never WHETHER a cable is present; thresholding it here
+        # fabricated connected/empty that then fed topology and the CMDB.
+        # occupancy_source makes the distinction explicit in the output so a
+        # downstream consumer can tell a measured empty from an unknown.
+        selected_port_info["status"] = resolve_port_occupancy(
+            selected_port_info["status"]
+        )
+        selected_port_info["occupancy_source"] = (
+            "status_model"
+            if selected_port_info["status"] in _OCCUPANCY_STATES
+            else "unknown"
+        )
 
         if selected_port_info["status"] == "connected" and cable_model is not None:
             # Quadruple the port box size before handing it to the cable

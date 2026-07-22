@@ -1,15 +1,69 @@
 ﻿# Derived from where this script lives — see deploy.ps1. Hardcoding the drive
 # breaks every time the checkout moves.
 $ProjectRoot = $PSScriptRoot
+$PidFile = "$ProjectRoot\.racktrack.pid"   # records the server PID we start below
 
-# Kill all existing node + cloudflared (the worker pool spawns child node
-# processes that don't always die with the parent — wipe them all).
-Get-Process -Name "node","cloudflared" -ErrorAction SilentlyContinue | Stop-Process -Force
+# Stop ONLY RackTrack — not every node/cloudflared on the box. The old code
+# force-killed every node and cloudflared process system-wide, justified by a
+# comment claiming "the worker pool spawns child node processes." It does not:
+# the pool spawns `python -m pipeline.worker` (see app.js), so the only node
+# process is this server. Killing all node/cloudflared murdered unrelated tools
+# and any in-flight scan or SSH session mid-write, with no chance to drain.
+function Stop-RackTrack {
+    $root = $ProjectRoot.TrimEnd('\')
+
+    # 1) Preferred: the PID we recorded last start, and its whole tree. /T takes
+    #    the Python worker children with it. Try a clean stop first so in-flight
+    #    work can unwind, then force. (A true graceful drain would need a
+    #    shutdown handler in app.js; on Windows this is the best we can do here.)
+    if (Test-Path $PidFile) {
+        $oldPid = (Get-Content $PidFile -Raw).Trim()
+        if ($oldPid -match '^\d+$') {
+            taskkill /PID $oldPid /T 2>$null | Out-Null
+            for ($i = 0; $i -lt 10; $i++) {
+                if (-not (Get-Process -Id $oldPid -ErrorAction SilentlyContinue)) { break }
+                Start-Sleep -Milliseconds 500
+            }
+            taskkill /PID $oldPid /T /F 2>$null | Out-Null
+        }
+        Remove-Item $PidFile -ErrorAction SilentlyContinue
+    }
+
+    # 2) Belt-and-braces. Whatever is LISTENING on 3001 IS this server (this box
+    #    runs RackTrack there) — kill it and its tree even if it predates the
+    #    pidfile (i.e. was started by the old start.ps1, whose command line was
+    #    just "node app.js" and so cannot be matched by path). /T also takes the
+    #    python worker children. Strictly narrower than the old "kill every node".
+    #    NB: matching node by command line does NOT work here — a process started
+    #    with -ArgumentList "app.js" records "node app.js" with no project path.
+    $owners = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty OwningProcess -Unique
+    foreach ($op in $owners) { if ($op) { taskkill /PID $op /T /F 2>$null | Out-Null } }
+
+    # Orphaned Python workers (pipeline.worker is a RackTrack-only module) that a
+    # crash may have reparented away from the server's process tree.
+    foreach ($pyName in 'python.exe','pythonw.exe','py.exe') {
+        Get-CimInstance Win32_Process -Filter "Name = '$pyName'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -and $_.CommandLine -match 'pipeline\.worker' } |
+            ForEach-Object { taskkill /PID $_.ProcessId /T /F 2>$null | Out-Null }
+    }
+
+    Get-CimInstance Win32_Process -Filter "Name = 'cloudflared.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.ExecutablePath -like "$root*" -or ($_.CommandLine -and $_.CommandLine -match 'localhost:3001') } |
+        ForEach-Object { taskkill /PID $_.ProcessId /F 2>$null | Out-Null }
+
+    Get-CimInstance Win32_Process -Filter "Name = 'ngrok.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -and $_.CommandLine -match '(^|\s)3001(\s|$)' } |
+        ForEach-Object { taskkill /PID $_.ProcessId /F 2>$null | Out-Null }
+}
+
+Stop-RackTrack
 Start-Sleep 1
 
-# Wait for port 3001 to actually free up — Stop-Process is async on Windows
-# and the OS can hold the socket in TIME_WAIT for a few seconds. Retrying
-# inside the server on bind-fail wastes 30+ seconds; doing it here is faster.
+# Wait for port 3001 to actually free up — process termination is async and the
+# OS can hold the socket in TIME_WAIT for a few seconds after taskkill returns.
+# Retrying inside the server on bind-fail wastes 30+ seconds; doing it here is
+# faster.
 for ($i = 0; $i -lt 20; $i++) {
     $busy = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue
     if (-not $busy) { break }
@@ -27,7 +81,10 @@ $env:RACKTRACK_WORKERS = "4"
 # does "real env wins", and a stray inline comment in .env would silently make
 # the value !== "production".
 if (-not $env:NODE_ENV) { $env:NODE_ENV = "production" }
-Start-Process "node" -ArgumentList "app.js" -WorkingDirectory "$ProjectRoot\server" -WindowStyle Minimized
+# Capture the PID so the next Stop-RackTrack can target THIS process (and its
+# Python worker children via taskkill /T) instead of every node on the box.
+$server = Start-Process "node" -ArgumentList "app.js" -WorkingDirectory "$ProjectRoot\server" -WindowStyle Minimized -PassThru
+$server.Id | Set-Content $PidFile
 
 # ── Tunnel ───────────────────────────────────────────────────────────────
 # Prefer ngrok on the RESERVED domain recorded in BACKEND_URL. cloudflared's

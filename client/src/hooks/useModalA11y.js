@@ -12,6 +12,28 @@ const FOCUSABLE = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
+// Reference-counted scroll lock, shared across every hook instance. Snapshotting
+// and restoring document.body.style.overflow PER instance is only correct if
+// dialogs close in strict last-in-first-out order: two overlapping modals that
+// close out of order would restore in the wrong order and leave the page
+// permanently unscrollable. The counter fixes that — only the last unlock, when
+// the count returns to zero, restores the value captured at the first lock.
+let scrollLockCount = 0;
+let scrollLockSaved = '';
+function lockBodyScroll() {
+  if (scrollLockCount === 0) {
+    scrollLockSaved = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+  scrollLockCount += 1;
+}
+function unlockBodyScroll() {
+  scrollLockCount = Math.max(0, scrollLockCount - 1);
+  if (scrollLockCount === 0) {
+    document.body.style.overflow = scrollLockSaved;
+  }
+}
+
 /**
  * Shared modal/sheet accessibility behaviour: move focus in on open, keep Tab
  * inside, close on Escape, put focus back where it came from on close, and
@@ -55,7 +77,11 @@ export default function useModalA11y(onClose, { active = true } = {}) {
     }
 
     const onKey = (e) => {
-      if (e.key === 'Escape') { e.stopPropagation(); onCloseRef.current?.(); return; }
+      // stopImmediatePropagation, not stopPropagation: this is a capture-phase
+      // listener on document, and stopPropagation does NOT stop other listeners
+      // bound to the SAME node. With two dialogs open, plain stopPropagation
+      // would let one Escape fire both handlers and close both at once.
+      if (e.key === 'Escape') { e.stopImmediatePropagation(); onCloseRef.current?.(); return; }
       if (e.key !== 'Tab') return;
       // getClientRects rather than offsetParent — the latter reports null for
       // position:fixed elements, which would drop them from the trap.
@@ -75,12 +101,11 @@ export default function useModalA11y(onClose, { active = true } = {}) {
     };
     document.addEventListener('keydown', onKey, true);
 
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
 
     return () => {
       document.removeEventListener('keydown', onKey, true);
-      document.body.style.overflow = prevOverflow;
+      unlockBodyScroll();
       if (restoreTo && typeof restoreTo.focus === 'function' && document.contains(restoreTo)) {
         restoreTo.focus();
       }

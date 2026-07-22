@@ -4,16 +4,50 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+PBXPROJ="ios/App/App.xcodeproj/project.pbxproj"
+GRADLE="android/app/build.gradle"
+
+# Accept --no-bump in ANY position (or NO_BUMP=1 in the env); everything that
+# is not the flag is treated positionally as <TEAM_ID> then [api-url]. The old
+# code only recognised it as argument 3, so `./make-ipa.sh TEAM --no-bump`
+# silently bumped anyway.
+NO_BUMP="${NO_BUMP:-0}"
+ARGS=()
+for a in "$@"; do
+  if [ "$a" = "--no-bump" ]; then
+    NO_BUMP=1
+  else
+    ARGS+=("$a")
+  fi
+done
+# bash 3.2 (the macOS default): expanding an empty array under `set -u` is an
+# error, so guard the expansion.
+set -- ${ARGS[@]+"${ARGS[@]}"}
+
 TEAM="${1:-}"
 # Falls back to ../BACKEND_URL, the single place the tunnel URL is recorded, so
 # a moved tunnel is one edit instead of four files that drift apart.
 API="${2:-$(tr -d '[:space:]' < "$(dirname "$0")/../BACKEND_URL" 2>/dev/null || cat /tmp/cf_url.txt 2>/dev/null || true)}"
 
-[ -z "$TEAM" ] && { echo "✖ usage: ./make-ipa.sh <TEAM_ID> [api-url]"; echo "  Find TEAM_ID: Xcode ▸ Settings ▸ Accounts ▸ your team, or developer.apple.com ▸ Membership"; exit 1; }
+[ -z "$TEAM" ] && { echo "✖ usage: ./make-ipa.sh <TEAM_ID> [api-url] [--no-bump]"; echo "  Find TEAM_ID: Xcode ▸ Settings ▸ Accounts ▸ your team, or developer.apple.com ▸ Membership"; exit 1; }
 [ -z "$API" ]  && { echo "✖ no API url (pass one, or start the tunnel)"; exit 1; }
 
-PBXPROJ="ios/App/App.xcodeproj/project.pbxproj"
-GRADLE="android/app/build.gradle"
+# The bump rewrites two tracked files BEFORE the long Xcode archive. Any later
+# failure must not leave them half-rewritten — Android especially, which this
+# script never builds. Snapshot both before the first write and roll back on a
+# non-zero exit; drop the snapshots on success.
+BUMPED=0
+_restore_versions() {
+  status=$?
+  if [ "$status" -ne 0 ] && [ "$BUMPED" = "1" ]; then
+    echo "✖ failed (exit $status) — restoring $PBXPROJ and $GRADLE to their pre-bump state"
+    [ -f "$PBXPROJ.prebump" ] && mv -f "$PBXPROJ.prebump" "$PBXPROJ"
+    [ -f "$GRADLE.prebump" ]  && mv -f "$GRADLE.prebump"  "$GRADLE"
+  else
+    rm -f "$PBXPROJ.prebump" "$GRADLE.prebump"
+  fi
+}
+trap _restore_versions EXIT
 
 # 0. Bump the build number — iOS and Android in lockstep.
 #
@@ -24,15 +58,24 @@ GRADLE="android/app/build.gradle"
 #
 #    Take the max of the two current values so the platforms can never drift
 #    apart, then add one. Pass --no-bump to rebuild the current number.
-if [ "${NO_BUMP:-}" = "1" ] || [ "${3:-}" = "--no-bump" ]; then
-  BUILD_NUM="$(grep -m1 -oE 'CURRENT_PROJECT_VERSION = [0-9]+' "$PBXPROJ" | grep -oE '[0-9]+')"
+#
+#    `|| true` on the greps keeps `set -e`+pipefail from killing the script on a
+#    no-match BEFORE the guards below can print a clear error (that is why the
+#    old guards were unreachable).
+if [ "$NO_BUMP" = "1" ]; then
+  BUILD_NUM="$(grep -m1 -oE 'CURRENT_PROJECT_VERSION = [0-9]+' "$PBXPROJ" | grep -oE '[0-9]+' || true)"
+  [ -n "$BUILD_NUM" ] || { echo "✖ could not read CURRENT_PROJECT_VERSION from $PBXPROJ"; exit 1; }
   echo "▸ Build:   $BUILD_NUM (not bumped)"
 else
-  IOS_NUM="$(grep -m1 -oE 'CURRENT_PROJECT_VERSION = [0-9]+' "$PBXPROJ" | grep -oE '[0-9]+')"
-  AND_NUM="$(grep -m1 -oE 'versionCode +[0-9]+' "$GRADLE" | grep -oE '[0-9]+')"
+  IOS_NUM="$(grep -m1 -oE 'CURRENT_PROJECT_VERSION = [0-9]+' "$PBXPROJ" | grep -oE '[0-9]+' || true)"
+  AND_NUM="$(grep -m1 -oE 'versionCode +[0-9]+' "$GRADLE" | grep -oE '[0-9]+' || true)"
   [ -n "$IOS_NUM" ] || { echo "✖ could not read CURRENT_PROJECT_VERSION from $PBXPROJ"; exit 1; }
   [ -n "$AND_NUM" ] || { echo "✖ could not read versionCode from $GRADLE"; exit 1; }
   BUILD_NUM=$(( (IOS_NUM > AND_NUM ? IOS_NUM : AND_NUM) + 1 ))
+  # Snapshot BEFORE the first write so the trap can roll back on any later failure.
+  cp "$PBXPROJ" "$PBXPROJ.prebump"
+  cp "$GRADLE"  "$GRADLE.prebump"
+  BUMPED=1
   sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${BUILD_NUM};/g" "$PBXPROJ"
   sed -i '' -E "s/versionCode +[0-9]+/versionCode ${BUILD_NUM}/" "$GRADLE"
   echo "▸ Build:   $BUILD_NUM (was iOS $IOS_NUM / Android $AND_NUM)"

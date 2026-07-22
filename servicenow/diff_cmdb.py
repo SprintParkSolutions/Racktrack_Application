@@ -50,7 +50,7 @@ except Exception:
     pass
 
 from synth import build_inventory, load_override, load_port_detail, merge_port_detail
-from servicenow import ServiceNowClient
+from servicenow import ServiceNowClient, escape_query_value as _q
 
 
 OUTPUTS_BASE = ROOT / "outputs"
@@ -157,7 +157,7 @@ def fetch_cmdb_state(rack_id: str, sn: ServiceNowClient | None) -> dict:
 
     try:
         rack_resp = sn._get("/table/cmdb_ci_rack", {
-            "sysparm_query": f"u_racktrack_scan_id={rack_id}",
+            "sysparm_query": f"u_racktrack_scan_id={_q(rack_id)}",
             "sysparm_limit": 1,
         })
     except Exception as e:
@@ -196,14 +196,15 @@ def fetch_cmdb_state(rack_id: str, sn: ServiceNowClient | None) -> dict:
             port_count = 0
             try:
                 if kind == "Patch Panel":
+                    qn = _q(name)
                     pr = sn._get("/table/cmdb_ci_port", {
-                        "sysparm_query": f"name>={name}:Port^name<={name}:Port~",
+                        "sysparm_query": f"name>={qn}:Port^name<={qn}:Port~",
                         "sysparm_fields": "sys_id",
                         "sysparm_limit": "200",
                     })
                 else:
                     pr = sn._get("/table/cmdb_ci_network_adapter", {
-                        "sysparm_query": f"cmdb_ci={ci.get('sys_id')}",
+                        "sysparm_query": f"cmdb_ci={_q(ci.get('sys_id'))}",
                         "sysparm_fields": "sys_id",
                         "sysparm_limit": "200",
                     })
