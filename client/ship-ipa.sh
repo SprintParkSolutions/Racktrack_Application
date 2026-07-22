@@ -2,7 +2,7 @@
 # Ship the built IPA to TestFlight WITH release notes — the iOS twin of
 # ship-apk.sh (which already sends notes to Firebase for Android).
 #
-#   ./make-ipa.sh 6GS882NNAX https://enigmatic-tarnish-tackle.ngrok-free.dev
+#   ./make-ipa.sh 6GS882NNAX          # backend URL read from ../BACKEND_URL
 #   ./ship-ipa.sh "• first bullet
 # • second bullet
 # • third bullet"

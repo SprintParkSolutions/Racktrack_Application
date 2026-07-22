@@ -1,4 +1,8 @@
-const BASE = 'https://enigmatic-tarnish-tackle.ngrok-free.dev';
+import { readFileSync } from 'node:fs';
+// Single source for the tunnel URL — see ../BACKEND_URL. Hardcoding it here
+// meant this script silently pointed at a dead tunnel when it moved.
+const BASE = (process.env.VITE_API_BASE
+  || readFileSync(new URL('../BACKEND_URL', import.meta.url), 'utf8')).trim();
 const H = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
 const l = await (await fetch(`${BASE}/api/auth/login`, { method:'POST', headers:H,
   body: JSON.stringify({ username:'Owner', password: process.env.PW }) })).json();

@@ -29,9 +29,44 @@ $env:RACKTRACK_WORKERS = "4"
 if (-not $env:NODE_ENV) { $env:NODE_ENV = "production" }
 Start-Process "node" -ArgumentList "app.js" -WorkingDirectory "$ProjectRoot\server" -WindowStyle Minimized
 
-# Start tunnel (skip silently if cloudflared.exe isn't here — local testing
-# only needs http://localhost:3001).
-if (Test-Path "$ProjectRoot\cloudflared.exe") {
+# ── Tunnel ───────────────────────────────────────────────────────────────
+# Prefer ngrok on the RESERVED domain recorded in BACKEND_URL. cloudflared's
+# free tunnel hands out a new random hostname every restart, so the URL baked
+# into the app kept going stale and builds shipped pointing at a dead host.
+# A reserved domain means the URL never changes and the app keeps working
+# across restarts.
+$ngrok = Get-Command ngrok -ErrorAction SilentlyContinue
+$backendFile = "$ProjectRoot\BACKEND_URL"
+if ($ngrok -and (Test-Path $backendFile)) {
+    $backend = (Get-Content $backendFile -Raw).Trim()
+    $domain  = $backend -replace '^https?://', ''
+    Write-Host "Starting ngrok on reserved domain $domain ..." -ForegroundColor Yellow
+    Start-Process "ngrok" -ArgumentList "http 3001 --domain=$domain --log=stdout" `
+        -RedirectStandardOutput "$ProjectRoot\ngrok.log" -WindowStyle Minimized
+
+    # Confirm it actually came up rather than assuming — a bad authtoken or an
+    # unclaimed domain fails immediately and silently in a minimized window.
+    Start-Sleep 4
+    $ok = $false
+    for ($i = 0; $i -lt 15; $i++) {
+        try {
+            $r = Invoke-WebRequest -Uri "$backend/healthz" -TimeoutSec 4 -UseBasicParsing `
+                 -Headers @{ "ngrok-skip-browser-warning" = "1" }
+            if ($r.StatusCode -eq 200) { $ok = $true; break }
+        } catch { Start-Sleep 2 }
+    }
+    if ($ok) {
+        Write-Host "`n=== TUNNEL UP ===" -ForegroundColor Cyan
+        Write-Host $backend -ForegroundColor Green
+        Write-Host "=================`n" -ForegroundColor Cyan
+        $backend | Set-Content "$ProjectRoot\current-url.txt"
+    } else {
+        Write-Host "`n!! ngrok did not answer on $backend" -ForegroundColor Red
+        Write-Host "   Check $ProjectRoot\ngrok.log — usually a stale authtoken" -ForegroundColor Red
+        Write-Host "   or the domain belongs to a different ngrok account.`n" -ForegroundColor Red
+    }
+}
+elseif (Test-Path "$ProjectRoot\cloudflared.exe") {
     $log = "$ProjectRoot\cf_temp.log"
     Remove-Item $log -ErrorAction SilentlyContinue
     Start-Process "$ProjectRoot\cloudflared.exe" -ArgumentList "tunnel --url http://localhost:3001" -RedirectStandardError $log -WindowStyle Minimized

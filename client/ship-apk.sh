@@ -12,7 +12,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-BACKEND="${VITE_API_BASE:-https://enigmatic-tarnish-tackle.ngrok-free.dev}"
+# The tunnel URL lives in one place — ../BACKEND_URL — because it was
+# previously hardcoded here, in make-ipa.sh's docs, in lab.mjs and in the setup
+# guide. When the tunnel moved, builds kept shipping to a dead host and nobody
+# noticed until testers reported the app was down. Change that one file.
+BACKEND="${VITE_API_BASE:-$(tr -d '[:space:]' < "$(dirname "$0")/../BACKEND_URL" 2>/dev/null)}"
+[ -n "$BACKEND" ] || { echo "✖ no backend URL — set VITE_API_BASE or fill in BACKEND_URL at the repo root"; exit 1; }
 NOTES="${1:-New RackTrack build}"
 GROUP="${FIREBASE_GROUP:-testers}"
 

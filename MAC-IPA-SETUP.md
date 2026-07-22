@@ -3,7 +3,7 @@
 **Do this on the Mac. It is now only a build machine.**
 
 The server lives on the **Windows box** and is reached at
-`https://enigmatic-tarnish-tackle.ngrok-free.dev`. The Mac never serves anything —
+`https://harpist-tying-aware.ngrok-free.dev`. The Mac never serves anything —
 `make-ipa.sh` only writes that URL into the JS bundle as a string. Once the IPA is
 on a tester's phone, every API call goes to Windows.
 
@@ -148,7 +148,7 @@ npx cap sync ios
 
 ```bash
 cd client
-./make-ipa.sh 6GS882NNAX https://enigmatic-tarnish-tackle.ngrok-free.dev
+./make-ipa.sh 6GS882NNAX            # URL comes from BACKEND_URL at the repo root
 ```
 
 - `6GS882NNAX` = Apple Team ID (SPRINTPARK LLC).
@@ -203,7 +203,7 @@ returns real PNG bytes; without it, HTML.
 
 | Item | Value |
 |---|---|
-| Backend URL | `https://enigmatic-tarnish-tackle.ngrok-free.dev` |
+| Backend URL | `https://harpist-tying-aware.ngrok-free.dev` |
 | Apple Team ID | `6GS882NNAX` (SPRINTPARK LLC) |
 | Bundle ID | `com.racktrack.app` |
 | Current build | 1.0 (4) → ship **1.0 (5)** |

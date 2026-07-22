@@ -5,7 +5,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 TEAM="${1:-}"
-API="${2:-$(cat /tmp/cf_url.txt 2>/dev/null || true)}"
+# Falls back to ../BACKEND_URL, the single place the tunnel URL is recorded, so
+# a moved tunnel is one edit instead of four files that drift apart.
+API="${2:-$(tr -d '[:space:]' < "$(dirname "$0")/../BACKEND_URL" 2>/dev/null || cat /tmp/cf_url.txt 2>/dev/null || true)}"
 
 [ -z "$TEAM" ] && { echo "✖ usage: ./make-ipa.sh <TEAM_ID> [api-url]"; echo "  Find TEAM_ID: Xcode ▸ Settings ▸ Accounts ▸ your team, or developer.apple.com ▸ Membership"; exit 1; }
 [ -z "$API" ]  && { echo "✖ no API url (pass one, or start the tunnel)"; exit 1; }
