@@ -81,8 +81,12 @@ function html(a) {
 
         <p style="margin:0 0 8px;color:#1A1A2E;font-size:.9rem;font-weight:700;">Signing in</p>
         <p style="margin:0 0 22px;color:#4A4A5A;font-size:.88rem;line-height:1.65;">
-          Leave the <b>Organization</b> field empty. Enter the <b>username</b> above — not your
-          email address — and the password. There is no verification code to enter.
+          Leave the <b>Organization</b> field <b>empty</b>. Enter the <b>username</b> above — not
+          your email address — and the password. There is no verification code to enter.
+          <br><br>
+          If you do type something in Organization it must be exactly
+          <b>THE TESTERS</b>; anything else is rejected as a wrong password even
+          when the password is right.
         </p>
 
         <p style="margin:0 0 8px;color:#1A1A2E;font-size:.9rem;font-weight:700;">If something breaks</p>
@@ -115,8 +119,11 @@ Install build 21 from the invite you received, then sign in with:
   Password: ${a.password}
   Role:     ${a.role.replace('_', ' ')}
 
-Leave the Organization field empty. Enter the USERNAME above, not your email
+Leave the Organization field EMPTY. Enter the USERNAME above, not your email
 address. There is no verification code to enter.
+
+If you do type something into Organization it must be exactly "THE TESTERS".
+Anything else is rejected as a wrong password even when the password is right.
 
 If something breaks: tap More in the bottom bar and choose Help to ask
 RackTrack Assist. If a screen goes wrong it will show an error you can recover
