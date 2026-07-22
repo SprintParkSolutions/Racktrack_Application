@@ -62,7 +62,12 @@ export default function BottomNav() {
     <>
       <nav className={styles.nav}>
         <div className={styles.bar}>
-          {barLinks.slice(0, 2).map(tab)}
+          {/* Menu sits LAST, not in the middle. Wedged between Scan and
+              Profile it read as a peer destination and pushed Profile out of
+              the corner people reach for. It is also "Menu", not "More" — the
+              rack results screen has its own More tab, and two different More
+              buttons on adjacent screens is a naming collision. */}
+          {barLinks.map(tab)}
 
           {overflow.length > 0 && (
             <button
@@ -73,12 +78,10 @@ export default function BottomNav() {
               aria-haspopup="dialog"
             >
               <span className={styles.icon} aria-hidden="true"><MoreIcon /></span>
-              <span className={styles.label}>MORE</span>
+              <span className={styles.label}>MENU</span>
               <span className={styles.dot} aria-hidden="true" />
             </button>
           )}
-
-          {barLinks.slice(2).map(tab)}
         </div>
       </nav>
 

@@ -64,7 +64,7 @@ export default function MarketplaceShell({
   // A path, or a handler for pages where back means "close the thing I
   // have open" rather than "leave" — Orders needs to step out of an open
   // order before it steps out of the page.
-  backTo = '/',
+  backTo = null,   // null => go back where you came from (see below)
   children,
 }) {
   const navigate  = useNavigate();
@@ -103,7 +103,16 @@ export default function MarketplaceShell({
         <div className={styles.headerTop}>
           <button
             className={styles.backBtn}
-            onClick={() => (typeof backTo === 'function' ? backTo() : navigate(backTo))}
+            // Back should return you to whatever you were looking at. This
+            // used to be a hardcoded '/', which dropped people on the welcome
+            // screen — every other destination came back to where they were.
+            onClick={() => {
+              if (typeof backTo === 'function') return backTo();
+              if (backTo) return navigate(backTo);
+              const idx = window.history.state && window.history.state.idx;
+              if (typeof idx === 'number' && idx > 0) return navigate(-1);
+              return navigate('/scan');
+            }}
             aria-label="Back"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"

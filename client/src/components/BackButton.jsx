@@ -22,6 +22,9 @@ export default function BackButton({ fallback = '/', always = false, label = 'Ba
   const idx = typeof window !== 'undefined' && window.history.state
     ? window.history.state.idx : null;
   const hasHistory = typeof idx === 'number' && idx > 0;
+  // `always` still renders the control on pages that are only ever reached
+  // from somewhere else, even on a cold start — it falls back to the given
+  // route in that case rather than doing nothing.
   if (!always && !hasHistory) return null;
 
   return (

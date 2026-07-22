@@ -35,6 +35,22 @@ export default function ConnectionsPage() {
   const [formError, setFormError]   = useState(null);
   const [openMenuFor, setOpenMenuFor] = useState(null);
 
+  // Close the ⋯ menu on any outside tap or Escape. Without this it stayed open
+  // until something else happened to close it, so the Edit/Delete panel sat
+  // over the page and followed you around. Same behaviour the Organizations
+  // console already had.
+  useEffect(() => {
+    if (openMenuFor == null) return;
+    const close = () => setOpenMenuFor(null);
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('click', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [openMenuFor]);
+
   // Reset secret fields whenever the chosen type changes — different
   // backends require different fields, so we don't want stale values.
   useEffect(() => {
@@ -168,7 +184,7 @@ export default function ConnectionsPage() {
             <button
               type="button"
               className={styles.menuBtn}
-              onClick={() => setOpenMenuFor(openMenuFor === active.id ? null : active.id)}
+              onClick={(e) => { e.stopPropagation(); setOpenMenuFor(openMenuFor === active.id ? null : active.id); }}
               aria-label="More options">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="5" cy="12" r="2"/>
@@ -224,7 +240,7 @@ export default function ConnectionsPage() {
                 <button
                   type="button"
                   className={styles.menuBtn}
-                  onClick={() => setOpenMenuFor(openMenuFor === p.id ? null : p.id)}
+                  onClick={(e) => { e.stopPropagation(); setOpenMenuFor(openMenuFor === p.id ? null : p.id); }}
                   aria-label="More options">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="5" cy="12" r="2"/>

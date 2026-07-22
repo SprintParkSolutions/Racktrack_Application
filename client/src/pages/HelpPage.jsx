@@ -23,6 +23,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { apiUrl, authFetch } from '../utils/api';
 import { useTheme } from '../ThemeContext.jsx';
+import BackButton from '../components/BackButton.jsx';
 import styles from './HelpPage.module.css';
 
 const STARTERS = [
@@ -188,6 +189,9 @@ export default function HelpPage() {
   return (
     <div className={styles.page}>
       <header className={styles.head}>
+        {/* Every other destination reached from the menu has a back control;
+            Help was the one that did not, so it was a dead end. */}
+        <BackButton fallback="/scan" always />
         <span className={styles.mark} aria-hidden="true">
           <img src={dotLogo} alt="" />
         </span>
