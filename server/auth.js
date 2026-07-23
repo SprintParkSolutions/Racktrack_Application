@@ -320,6 +320,11 @@ function createOrganization(name, createdBy = null) {
 
 // ── Validation ───────────────────────────────────────────────
 const EMAIL_RE    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Public self-signup is limited to Gmail addresses. Deliberately NOT folded
+// into EMAIL_RE: password resets, invites and existing staff/owner accounts
+// (some on @sprintpark.com) still validate against the general pattern. Only
+// the signup path below applies this narrower rule.
+const GMAIL_RE    = /@gmail\.com$/i;
 const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,32}$/;
 
 // ≥ 8 chars, an upper, a lower, a digit, a special
@@ -609,6 +614,11 @@ function registerRoutes(app) {
     if (!email || !EMAIL_RE.test(String(email).trim())) {
       audit.log({ req, action: 'auth.signup.start', status: 'fail', error: 'invalid email', payload: { email } });
       return res.status(400).json({ error: 'Valid email required' });
+    }
+    // Account creation is limited to Gmail addresses.
+    if (!GMAIL_RE.test(String(email).trim())) {
+      audit.log({ req, action: 'auth.signup.start', status: 'fail', error: 'non-gmail email', payload: { email } });
+      return res.status(400).json({ error: 'Please use a @gmail.com email address to create an account.' });
     }
     if (!username || !USERNAME_RE.test(String(username).trim())) {
       audit.log({ req, action: 'auth.signup.start', status: 'fail', error: 'invalid username', payload: { email, username } });
