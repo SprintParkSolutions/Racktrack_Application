@@ -1,0 +1,522 @@
+{
+  "adtran": {
+    "label": "ADTRAN",
+    "identity": "show version",
+    "port_status": "show interfaces status",
+    "port_config": "show interfaces description",
+    "lldp": "show lldp neighbors",
+    "poe": "show power inline",
+    "vlans": "show vlan",
+    "paging_off": "terminal length 0"
+  },
+  "aruba-hpe": {
+    "label": "Aruba (HPE)",
+    "identity": "show system",
+    "port_status": "show interface brief",
+    "port_config": "show interface description",
+    "lldp": "show lldp neighbor-info [detail]",
+    "poe": "show power-over-ethernet",
+    "vlans": "show vlan + show vlan port",
+    "paging_off": "no page (paging toggle: \"page\" enables, \"no page\" disables)"
+  },
+  "alcatel-lucent-enterprise": {
+    "label": "Alcatel-Lucent Enterprise",
+    "identity": "show system + show chassis",
+    "port_status": "show interfaces status",
+    "port_config": "show interfaces alias",
+    "lldp": "show lldp remote-system",
+    "poe": "show lanpower slot",
+    "vlans": "show vlan members",
+    "paging_off": "no more"
+  },
+  "allied-telesis": {
+    "label": "Allied Telesis",
+    "identity": "show system + show system serialnumber",
+    "port_status": "show interface status",
+    "port_config": "show running-config interface",
+    "lldp": "show lldp neighbors detail",
+    "poe": "show power-inline",
+    "vlans": "show vlan brief",
+    "paging_off": "terminal length 0"
+  },
+  "ciena": {
+    "label": "Ciena",
+    "identity": "software show + system show uptime / system show host-name / chassis show device-id",
+    "port_status": "port show",
+    "port_config": "port show",
+    "lldp": "lldp show neighbors",
+    "poe": "n/a",
+    "vlans": "vlan show",
+    "paging_off": "system shell set more off"
+  },
+  "cisco-systems": {
+    "label": "Cisco Systems",
+    "identity": "show version + show inventory [raw] [entity]",
+    "port_status": "show interfaces [interface-id] status",
+    "port_config": "show interfaces [interface-id] description",
+    "lldp": "show lldp neighbors [interface-id] [detail]",
+    "poe": "show power inline [interface interface-id] [module switch-number]",
+    "vlans": "show vlan [brief | group | id vlan-id | mtu | name vlan-name | private-vlan [type] | remote-span | summary]",
+    "paging_off": "terminal length 0"
+  },
+  "arista-networks": {
+    "label": "Arista Networks",
+    "identity": "show version",
+    "port_status": "show interfaces status",
+    "port_config": "show interfaces description",
+    "lldp": "show lldp neighbors [<INTERFACE>] [detailed]",
+    "poe": "show poe",
+    "vlans": "show vlan [VLAN_LIST] [PORT_ACTIVITY]",
+    "paging_off": "terminal length <lines> (0 = no pagination)"
+  },
+  "draytek": {
+    "label": "DrayTek",
+    "identity": "show version",
+    "port_status": "show interfaces status",
+    "port_config": "show running-config",
+    "lldp": "show lldp neighbor",
+    "poe": "show poe",
+    "vlans": "show vlan",
+    "paging_off": "terminal length"
+  },
+  "d-link": {
+    "label": "D-Link",
+    "identity": "show version + show unit",
+    "port_status": "show interfaces status",
+    "port_config": "show interfaces [INTERFACE-ID [- | ,]]",
+    "lldp": "show lldp neighbor interface INTERFACE-ID [brief | detail]",
+    "poe": "show poe power-inline [INTERFACE-ID] status",
+    "vlans": "show vlan [VLAN-ID | interface [INTERFACE-ID]]",
+    "paging_off": "terminal length NUMBER"
+  },
+  "engenius": {
+    "label": "EnGenius",
+    "identity": "show system information",
+    "port_status": "show interfaces GigabitEthernet <id> status",
+    "port_config": "show interfaces ... description (same show interfaces syntax)",
+    "lldp": "show lldp neighbors",
+    "poe": "show power inline",
+    "vlans": "show vlan",
+    "paging_off": "set cli pagination off"
+  },
+  "extreme-networks": {
+    "label": "Extreme Networks",
+    "identity": "show version + show switch",
+    "port_status": "show ports information {detail}",
+    "port_config": "\u2014 not found",
+    "lldp": "show lldp neighbors",
+    "poe": "show inline-power info {detail} ports {port_list} + show inline-power",
+    "vlans": "show vlan",
+    "paging_off": "disable clipaging (\u226422.x) / disable cli paging (31.x+ Switch Engine)"
+  },
+  "fortinet": {
+    "label": "Fortinet",
+    "identity": "get system status + get hardware status",
+    "port_status": "get switch physical-port",
+    "port_config": "show switch physical-port",
+    "lldp": "get switch lldp neighbors-detail",
+    "poe": "get switch poe inline",
+    "vlans": "get switch vlan",
+    "paging_off": "config system console -> set output standard -> end"
+  },
+  "huawei": {
+    "label": "Huawei",
+    "identity": "display version + display esn",
+    "port_status": "display interface brief",
+    "port_config": "display interface description",
+    "lldp": "display lldp neighbor brief",
+    "poe": "display poe information",
+    "vlans": "display port vlan",
+    "paging_off": "screen-length 0 temporary"
+  },
+  "juniper-networks": {
+    "label": "Juniper Networks",
+    "identity": "show version + show chassis hardware",
+    "port_status": "show interfaces terse + show interfaces <ge-fpc/pic/port> media",
+    "port_config": "show interfaces descriptions",
+    "lldp": "show lldp neighbors [interface <name>] [detail]",
+    "poe": "show poe interface [interface-name] + show poe controller",
+    "vlans": "show vlans",
+    "paging_off": "set cli screen-length 0"
+  },
+  "mikrotik": {
+    "label": "MikroTik",
+    "identity": "/system resource print + /system routerboard print + /system identity print",
+    "port_status": "/interface ethernet print + /interface ethernet monitor <name> once",
+    "port_config": "/interface ethernet print detail",
+    "lldp": "/ip neighbor print",
+    "poe": "/interface ethernet poe print + /interface ethernet poe monitor [find]",
+    "vlans": "/interface bridge vlan print",
+    "paging_off": "append `without-paging` to print commands"
+  },
+  "netgear": {
+    "label": "Netgear",
+    "identity": "show version + show sysinfo",
+    "port_status": "show interfaces status all",
+    "port_config": "show port all",
+    "lldp": "show lldp remote-device all",
+    "poe": "show poe port info all",
+    "vlans": "show vlan {vlan-id}",
+    "paging_off": "terminal length 0"
+  },
+  "tp-link": {
+    "label": "TP-Link",
+    "identity": "show system-info",
+    "port_status": "show interface status",
+    "port_config": "show interface configuration",
+    "lldp": "show lldp neighbor-information",
+    "poe": "show power inline information [interface ...]",
+    "vlans": "show vlan",
+    "paging_off": "no clipaging"
+  },
+  "trendnet": {
+    "label": "TRENDnet",
+    "identity": "show model + show uptime",
+    "port_status": "show interface IFNAME",
+    "port_config": "show interface IFNAME",
+    "lldp": "show lldp neighbor",
+    "poe": "show poe",
+    "vlans": "vlan VLANID (config node) then show",
+    "paging_off": "\u2014 not found"
+  },
+  "ubiquiti": {
+    "label": "Ubiquiti",
+    "identity": "show version + show sysinfo",
+    "port_status": "show port all",
+    "port_config": "show port all + show port description [slot/port]",
+    "lldp": "show lldp remote-device all",
+    "poe": "show poe status all",
+    "vlans": "show vlan {vlanid} + show vlan port all",
+    "paging_off": "terminal length 0"
+  },
+  "avaya": {
+    "label": "Avaya",
+    "identity": "show sys-info",
+    "port_status": "show interfaces",
+    "port_config": "show interfaces names",
+    "lldp": "show lldp neighbor",
+    "poe": "show poe-main-status + show poe-port-status",
+    "vlans": "show vlan + show vlan interface vids [<portlist>]",
+    "paging_off": "<show cmd> | no-more (per-command pipe)"
+  },
+  "dell": {
+    "label": "Dell",
+    "identity": "show version + show system id",
+    "port_status": "show interfaces status",
+    "port_config": "show interfaces description",
+    "lldp": "show lldp remote-device",
+    "poe": "show power inline",
+    "vlans": "show vlan",
+    "paging_off": "terminal length"
+  },
+  "nvidia-mellanox": {
+    "label": "NVIDIA (Mellanox)",
+    "identity": "nv show system + nv show platform",
+    "port_status": "nv show interface + nv show interface <id> link",
+    "port_config": "nv show interface <id> link",
+    "lldp": "nv show interface lldp",
+    "poe": "n/a",
+    "vlans": "nv show bridge port-vlan + nv show bridge domain <domain-id> port vlan",
+    "paging_off": "no pager by default; per-command flag --paginate on|off"
+  },
+  "ruckus-networks": {
+    "label": "Ruckus Networks",
+    "identity": "show version",
+    "port_status": "show interfaces brief",
+    "port_config": "show interfaces brief (Name column) + port-name <string> (config)",
+    "lldp": "show lldp neighbors",
+    "poe": "show inline power",
+    "vlans": "show vlan",
+    "paging_off": "skip-page-display"
+  },
+  "lantronix": {
+    "label": "Lantronix",
+    "identity": "show version brief",
+    "port_status": "show interface",
+    "port_config": "show interface",
+    "lldp": "show lldp neighbors",
+    "poe": "show poe",
+    "vlans": "show vlan",
+    "paging_off": "terminal length 0"
+  },
+  "alaxala-networks": {
+    "label": "Alaxala Networks",
+    "identity": "show version + show system",
+    "port_status": "show port",
+    "port_config": "show port",
+    "lldp": "show lldp",
+    "poe": "show power inline",
+    "vlans": "show vlan",
+    "paging_off": "set terminal pager disable"
+  },
+  "belden": {
+    "label": "Belden",
+    "identity": "show system info",
+    "port_status": "show port",
+    "port_config": "show port + (config: interface ... \"name\" / \"shutdown\")",
+    "lldp": "show lldp remote-data",
+    "poe": "show inlinepower port",
+    "vlans": "show vlan",
+    "paging_off": "cli numlines <0..85>"
+  },
+  "micas-networks": {
+    "label": "Micas Networks",
+    "identity": "show version + show platform syseeprom",
+    "port_status": "show interfaces status",
+    "port_config": "show interfaces description [<interface_name>]",
+    "lldp": "show lldp neighbors",
+    "poe": "n/a",
+    "vlans": "show vlan brief",
+    "paging_off": "n/a \u2014 no pager"
+  },
+  "celestica": {
+    "label": "Celestica",
+    "identity": "show version + show platform syseeprom",
+    "port_status": "show interface status",
+    "port_config": "show interface",
+    "lldp": "show lldp table + show lldp neighbor",
+    "poe": "n/a",
+    "vlans": "show vlan",
+    "paging_off": "terminal length 0"
+  },
+  "edgecore-networks": {
+    "label": "Edgecore Networks",
+    "identity": "show version + show platform syseeprom",
+    "port_status": "show interfaces status",
+    "port_config": "show interfaces description [<interface_name>]",
+    "lldp": "show lldp table",
+    "poe": "n/a",
+    "vlans": "show vlan brief",
+    "paging_off": "n/a \u2014 no pager"
+  },
+  "moxa": {
+    "label": "Moxa",
+    "identity": "show system information + show interfaces",
+    "port_status": "show interface status",
+    "port_config": "show interface description",
+    "lldp": "\u2014 not found",
+    "poe": "show poe [interface <if type> <ifnum>] {config | status | diagnosis}",
+    "vlans": "show vlan [brief | id <vlan-range> | summary | ascending]",
+    "paging_off": "\u2014 not found"
+  },
+  "nokia-networks": {
+    "label": "Nokia Networks",
+    "identity": "show system information + show chassis",
+    "port_status": "show port",
+    "port_config": "show port <port-id> description",
+    "lldp": "show system lldp neighbor",
+    "poe": "\u2014 not found",
+    "vlans": "show service sap-using",
+    "paging_off": "environment no more"
+  },
+  "ruijie-networks": {
+    "label": "Ruijie Networks",
+    "identity": "show version",
+    "port_status": "show interfaces status",
+    "port_config": "show interfaces description",
+    "lldp": "show lldp neighbors",
+    "poe": "show poe interfaces status",
+    "vlans": "show vlan",
+    "paging_off": "terminal length 0"
+  },
+  "yamaha": {
+    "label": "Yamaha",
+    "identity": "show environment",
+    "port_status": "show interface brief + show interface",
+    "port_config": "show interface brief + show running-config interface",
+    "lldp": "show lldp neighbors",
+    "poe": "show power-inline [interface <ifname>]",
+    "vlans": "show vlan brief",
+    "paging_off": "terminal length 0"
+  },
+  "h3c": {
+    "label": "H3C",
+    "identity": "display version + display device manuinfo",
+    "port_status": "display interface brief",
+    "port_config": "display interface brief description",
+    "lldp": "display lldp neighbor-information list",
+    "poe": "display poe interface",
+    "vlans": "display vlan brief",
+    "paging_off": "screen-length disable"
+  },
+  "quanta-cloud-technology-qct": {
+    "label": "Quanta Cloud Technology (QCT)",
+    "identity": "show version + show hardware",
+    "port_status": "show interface status",
+    "port_config": "show interface description",
+    "lldp": "show lldp remote-device",
+    "poe": "\u2014 not found",
+    "vlans": "show vlan",
+    "paging_off": "terminal length"
+  },
+  "supermicro": {
+    "label": "Supermicro",
+    "identity": "show system information",
+    "port_status": "show interfaces",
+    "port_config": "show interfaces",
+    "lldp": "show lldp neighbors [chassis-id <string(255)> port-id <string(255)>]",
+    "poe": "n/a",
+    "vlans": "show vlan",
+    "paging_off": "set cli pagination {on | off}"
+  },
+  "asterfusion-data-technologies": {
+    "label": "Asterfusion Data Technologies",
+    "identity": "\u2014 not found",
+    "port_status": "show interface summary",
+    "port_config": "show interface description",
+    "lldp": "show lldp table + show lldp neighbors [interface-name]",
+    "poe": "\u2014 not found",
+    "vlans": "show vlan brief",
+    "paging_off": "\u2014 not found"
+  },
+  "lenovo": {
+    "label": "Lenovo",
+    "identity": "show version + show sys-info",
+    "port_status": "show interface status",
+    "port_config": "show interface",
+    "lldp": "show lldp neighbors",
+    "poe": "n/a",
+    "vlans": "show vlan",
+    "paging_off": "terminal length"
+  },
+  "ip-infusion-ocnos": {
+    "label": "IP Infusion (OcNOS)",
+    "identity": "show version + show system uptime",
+    "port_status": "show interface brief (IFNAME|) + show interface (IFNAME|)",
+    "port_config": "show interface brief",
+    "lldp": "show lldp (nearest-bridge|non-tpmr-bridge|customer-bridge|) neighbors (brief|details)",
+    "poe": "n/a",
+    "vlans": "show vlan brief",
+    "paging_off": "terminal length 0"
+  },
+  "phoenix-contact-incl-hirschmann": {
+    "label": "Phoenix Contact (incl. Hirschmann)",
+    "identity": "show version + show sys-info",
+    "port_status": "show port-info all",
+    "port_config": "show port-info all + (config: port <port-no> admin-mode {enable|disable}; port <port-no> description <text>)",
+    "lldp": "show lldp topology all",
+    "poe": "\u2014 not found",
+    "vlans": "show vlan port-table",
+    "paging_off": "\u2014 not found"
+  },
+  "hikvision-digital-technology": {
+    "label": "Hikvision Digital Technology",
+    "identity": "show version",
+    "port_status": "show interface brief",
+    "port_config": "show running-config + description (set)",
+    "lldp": "show lldp neighbor",
+    "poe": "show poe",
+    "vlans": "show vlan [ id <vlan-id> | interface <intf-id> | ... ]",
+    "paging_off": "terminal length"
+  },
+  "perle-systems": {
+    "label": "Perle Systems",
+    "identity": "show version + show sysinfo",
+    "port_status": "show interfaces",
+    "port_config": "show running-config",
+    "lldp": "show lldp neighbors",
+    "poe": "show power inline",
+    "vlans": "show vlan",
+    "paging_off": "terminal length 0"
+  },
+  "planet-technology": {
+    "label": "Planet Technology",
+    "identity": "show version",
+    "port_status": "show interface",
+    "port_config": "show interface",
+    "lldp": "show lldp neighbors interface ethernet <IFNAME>",
+    "poe": "\u2014 not found",
+    "vlans": "show vlan",
+    "paging_off": "terminal length"
+  },
+  "fs-fiberstore": {
+    "label": "FS (FiberStore)",
+    "identity": "show version",
+    "port_status": "show interfaces status",
+    "port_config": "show interfaces [ interface-type interface-number ]",
+    "lldp": "show lldp neighbors",
+    "poe": "\u2014 not found",
+    "vlans": "show vlan",
+    "paging_off": "\u2014 not found"
+  },
+  "advantech-co-ltd": {
+    "label": "Advantech Co., Ltd.",
+    "identity": "show info + show version",
+    "port_status": "show interfaces IF_PORTS status",
+    "port_config": "show running-config interfaces IF_PORTS",
+    "lldp": "show lldp neighbor",
+    "poe": "show poe (system|port)",
+    "vlans": "show vlan [(VLANLIST|dynamic|static)]",
+    "paging_off": "\u2014 not found"
+  },
+  "kyland-technology": {
+    "label": "Kyland Technology",
+    "identity": "show version + show uptime",
+    "port_status": "show int eth <port>",
+    "port_config": "show running-config",
+    "lldp": "\u2014 not found",
+    "poe": "n/a",
+    "vlans": "show vlan",
+    "paging_off": "\u2014 not found"
+  },
+  "korenix-technology": {
+    "label": "Korenix Technology",
+    "identity": "show version + show hardware mac",
+    "port_status": "show interface fa1",
+    "port_config": "show interface <ifname> + (config-if: shutdown / no shutdown; description <text>)",
+    "lldp": "\u2014 not found",
+    "poe": "show poe system + show poe interface fa1",
+    "vlans": "show vlan",
+    "paging_off": "\u2014 not found"
+  },
+  "schneider-electric": {
+    "label": "Schneider Electric",
+    "identity": "show sysinfo",
+    "port_status": "show port all",
+    "port_config": "show running-config",
+    "lldp": "show lldp remote-data",
+    "poe": "n/a",
+    "vlans": "show vlan + show vlan port",
+    "paging_off": "\u2014 not found"
+  },
+  "beijer-electronics": {
+    "label": "Beijer Electronics",
+    "identity": "show version + show hardware mac",
+    "port_status": "show interface fa1",
+    "port_config": "show interface <ifname> + (config-if: shutdown / description)",
+    "lldp": "\u2014 not found",
+    "poe": "show poe system + show poe interface fa1",
+    "vlans": "show vlan",
+    "paging_off": "\u2014 not found"
+  },
+  "westermo": {
+    "label": "Westermo",
+    "identity": "show system-information",
+    "port_status": "show port [detail | <port>]",
+    "port_config": "show port detail + (config: port <x> context \u2014 [no] enable; [no] description <STRING>)",
+    "lldp": "show lldp",
+    "poe": "show poe [<port>]",
+    "vlans": "show vlan",
+    "paging_off": "\u2014 not found"
+  },
+  "microsens": {
+    "label": "MICROSENS",
+    "identity": "Device.Factory. + Device.System.",
+    "port_status": "Device.Port.status[*/*].link_up",
+    "port_config": "Device.Port.config[slot/port].",
+    "lldp": "\u2014 not found",
+    "poe": "\u2014 not found",
+    "vlans": "Protocol.VLAN.filter_config[VID].port_members",
+    "paging_off": "Management.CLI.script_mode = Enabled"
+  },
+  "lantech-communications": {
+    "label": "Lantech Communications",
+    "identity": "show system-info",
+    "port_status": "show interface status",
+    "port_config": "show interface configuration",
+    "lldp": "show lldp",
+    "poe": "\u2014 not found",
+    "vlans": "show vlan [GroupID]",
+    "paging_off": "\u2014 not found"
+  }
+}

@@ -43,10 +43,14 @@ function safeAsync(handler) {
   };
 }
 
-// Vendors we have a working poll recipe for. Rejecting unknown vendors at
-// write time beats accepting a typo'd row that then fails silently on every
-// poll for the next 30 days (the poller just logs "no recipe" and skips).
-const SUPPORTED_VENDORS = Object.keys(poller.VENDOR_RECIPES || {});
+// Vendors we can poll: the exact-parser recipes plus every vendor in the
+// verified Switch_CLI matrix (generic recipe — real commands, identity parsed,
+// port rows left empty until a vendor gets an exact parser). Rejecting unknown
+// vendors at write time beats accepting a typo'd row that then fails silently
+// on every poll for the next 30 days.
+const SUPPORTED_VENDORS = (poller.supportedVendors
+  ? poller.supportedVendors().map((v) => v.key)
+  : Object.keys(poller.VENDOR_RECIPES || {}));
 
 // Hosts are SSH targets we connect to on a timer, so keep this tight: an
 // IPv4 literal or a plain hostname, nothing that could carry a scheme,

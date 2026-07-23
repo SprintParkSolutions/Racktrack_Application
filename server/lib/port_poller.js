@@ -99,10 +99,43 @@ const VENDOR_RECIPES = {
 // The DB's vendor column is free text and predates the recipe table, so a
 // row may carry the older 'cisco_ios' spelling. Fold it onto the canonical
 // hyphenated key rather than keeping two entries in sync.
-const VENDOR_ALIASES = { cisco_ios: 'cisco-ios' };
+// Fold legacy and matrix spellings onto the canonical key of the exact recipe,
+// so a device stored as 'cisco-systems' (the matrix's name) resolves to the
+// hand-written 'cisco-ios' parser rather than the generic fallback.
+const VENDOR_ALIASES = {
+  cisco_ios: 'cisco-ios',
+  'cisco-systems': 'cisco-ios',
+  'tp-link': 'tplink',
+};
 function normalizeVendor(v) {
   const key = String(v || '').trim();
   return VENDOR_ALIASES[key] || key;
+}
+
+// A hand-written recipe (exact port parsing) always wins. For the ~50 other
+// vendors in the verified Switch_CLI matrix, fall back to a generic recipe:
+// their real commands run and identity is parsed, but no port rows are guessed.
+// See generic_recipe.js.
+const genericRecipes = require('./generic_recipe');
+function resolveRecipe(vendor) {
+  return VENDOR_RECIPES[vendor] || genericRecipes.buildGenericRecipe(vendor) || null;
+}
+
+// Every vendor the poller can drive: exact ones first, then matrix vendors.
+// A matrix vendor whose spelling folds onto an exact recipe (cisco-systems →
+// cisco-ios) is skipped so it does not appear twice.
+const EXACT_LABELS = { 'cisco-ios': 'Cisco IOS', tplink: 'TP-Link' };
+function supportedVendors() {
+  const seen = new Map();
+  for (const key of Object.keys(VENDOR_RECIPES)) {
+    seen.set(key, { key, label: EXACT_LABELS[key] || VENDOR_RECIPES[key].label || key, parser: 'exact' });
+  }
+  for (const { key, label } of genericRecipes.matrixVendors()) {
+    if (seen.has(key)) continue;
+    if (VENDOR_RECIPES[normalizeVendor(key)]) continue;   // folds onto an exact recipe
+    seen.set(key, { key, label, parser: 'generic' });
+  }
+  return [...seen.values()];
 }
 
 let _timer = null;
@@ -147,7 +180,7 @@ async function pollDevice(device) {
 
 async function _pollDeviceInner(device) {
   const vendor = normalizeVendor(device.vendor);
-  const recipe = VENDOR_RECIPES[vendor];
+  const recipe = resolveRecipe(vendor);
   if (!recipe) {
     logger?.warn?.(`[port_poller] no recipe for vendor=${device.vendor}, skipping ${device.host}`);
     portsDb.touchPolled(device.id);
@@ -348,5 +381,6 @@ async function forceReset({ deviceId } = {}) {
 module.exports = {
   start, stop, setSshRunner, pollAll, pollDevice,
   isBusy, VENDOR_RECIPES, forceReset, normalizeVendor,
+  resolveRecipe, supportedVendors,
   noteManualProbe, isManualProbeActive,
 };
