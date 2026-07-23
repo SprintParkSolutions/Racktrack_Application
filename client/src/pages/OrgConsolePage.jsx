@@ -268,7 +268,8 @@ export default function OrgConsolePage() {
           ) : (
             <div className={styles.grid}>
               {orgs.map(o => (
-                <div key={o.id} className={styles.card} style={{ position: 'relative' }}>
+                <div key={o.id} className={styles.card}
+                  style={{ position: 'relative', zIndex: orgMenuFor === o.id ? 5 : undefined }}>
                   <button className={styles.cardMainBtn}
                     style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}
                     onClick={() => openOrg(o)}>
@@ -353,7 +354,8 @@ export default function OrgConsolePage() {
                   const on = scanFilter?.type === 'user' && scanFilter.id === m.id;
                   const canManage = m.role !== 'owner' && !(m.role === 'org_admin' && !isOwner);
                   return (
-                    <div key={m.id} className={`${styles.personCard} ${on ? styles.personOn : ''} ${m.active === 0 ? styles.personOff : ''}`}>
+                    <div key={m.id} className={`${styles.personCard} ${on ? styles.personOn : ''} ${m.active === 0 ? styles.personOff : ''}`}
+                      style={menuFor === m.id ? { position: 'relative', zIndex: 5 } : undefined}>
                       <button className={styles.personMain}
                         onClick={() => setScanFilter(on ? null : { type: 'user', id: m.id, name: m.username })}
                         title="Show this person's scans">

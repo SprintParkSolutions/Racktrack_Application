@@ -19,6 +19,10 @@
    ══════════════════════════════════════════════════════════════════════ */
 
 .mkt-root {
+  /* Opt out of Android WebView force-dark, same as the app shell. Without it
+     the light surfaces (the For sale / Wanted segmented control especially)
+     were inverted to black on first paint and only corrected on a tap/repaint. */
+  color-scheme: light;
   /* Surfaces + ink. Fall back to literals so the section still renders
      correctly if it is ever mounted outside the app's token scope. */
   --mkt-surface:  var(--md-surface-container-lowest, #ffffff);
