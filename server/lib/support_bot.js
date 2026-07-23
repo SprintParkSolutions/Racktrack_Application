@@ -692,6 +692,37 @@ async function ask(question, { tier = SINGLE_TIER, history = [] } = {}) {
     };
   }
 
+  // ── Greeting ───────────────────────────────────────────────────────
+  // A bare "hi" is all stopwords, so retrieval matched nothing and the bot
+  // answered "no verified information" — which reads as broken on the very
+  // first message. Greet back and invite the real question instead.
+  if (/^(hi+|hey+|hello+|yo+|hiya|heya|howdy|sup|namaste|greetings|good\s*(morning|afternoon|evening|day))[\s!.,]*$/i.test(q)) {
+    return {
+      answer: "Hi! I'm DOT, the RackTrack assistant. Tell me what's going on — a scan that failed, a login or approval problem, a switch read that looks wrong — and I'll help. To reach a person, email support@racktrack.ai.",
+      sources: [], route: 'greeting', confidence: 1, matches: [], warnings: [],
+    };
+  }
+
+  // ── Contact a person / the support team ────────────────────────────
+  // "How do I contact support", "I want to contact the support team",
+  // "reach a real person", "talk to a human" are direct intents, not things
+  // to disambiguate. Retrieval used to drop them into the middling
+  // "suggestions" bucket and offer unrelated troubleshooting options — which
+  // is exactly the "responses are rubbish" complaint. Answer straight: one
+  // support inbox.
+  const wantsSupport =
+    (/\b(contact|reach|speak|talk|email|message|writ(e|ing) to|get in touch|in touch)\b/i.test(q) &&
+     /\b(support|the team|racktrack team|a person|a human|someone|an? agent|help\s?desk|customer (care|service|support)|real person)\b/i.test(q)) ||
+    /\breach (a|an?) (real )?(person|human|human being|agent)\b/i.test(q) ||
+    /\btalk to (a )?(real )?(person|human|someone|agent)\b/i.test(q);
+  if (wantsSupport) {
+    return {
+      answer: 'Email the RackTrack support team at support@racktrack.ai. Include what you were doing when it happened and the exact error text (or a screenshot) so they can help without going back and forth.',
+      sources: ['HELP-003'],
+      route: 'verbatim', confidence: 1, matches: [], warnings: [],
+    };
+  }
+
   const { index } = getIndex(tier);
 
   // Short follow-ups ("why?", "still broken") carry no searchable terms. Blend
