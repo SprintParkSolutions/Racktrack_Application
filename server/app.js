@@ -1037,6 +1037,25 @@ function buildScanReportData(rackId) {
     };
   });
 
+  // Merge make/model/firmware from OCR (ocr_devices.json), matched by U-position,
+  // so the report shows a real inventory ("Cisco C9300-48P") rather than only a
+  // class ("Switch"). Best-effort: the report still renders if OCR never ran.
+  try {
+    const ocrPath = path.join(rackDir, 'ocr_devices.json');
+    if (fs.existsSync(ocrPath)) {
+      const ocr = JSON.parse(fs.readFileSync(ocrPath, 'utf8'));
+      const byPos = {};
+      for (const o of ocr.devices || []) {
+        if (o.position) byPos[String(o.position).toUpperCase()] = o;
+      }
+      for (const dv of devices) {
+        const key = String(dv.position || '').split(/[\s–—-]/)[0].toUpperCase();
+        const o = byPos[key];
+        if (o) { dv.make = o.make || null; dv.model = o.model || null; dv.firmware = o.version || null; }
+      }
+    }
+  } catch { /* inventory just won't carry make/model */ }
+
   // Latest port identification only — walk newest-first and take the first valid line
   const idsPath = path.join(rackDir, 'port_identifications.jsonl');
   const portIdentifications = [];
@@ -1240,6 +1259,48 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
 
   const ts = formatTimestamp(d.timestamp);
 
+  // ── Inventory rollup ──────────────────────────────────────────────
+  const devs = d.devices || [];
+  const isSwitch = (dv) => /switch|router|firewall|aggregation/i.test(dv.class_name || '');
+  const switchCount   = devs.filter(isSwitch).length;
+  const totalPorts     = devs.reduce((s, dv) => s + (dv.port_count || 0), 0);
+  const connectedPorts = devs.reduce((s, dv) => s + (dv.connected_ports || 0), 0);
+  const identified     = devs.filter(dv => dv.make || dv.model).length;
+
+  // Annotated rack image (device + unit overlay) for the report hero.
+  const rackShot = srcFor((d.images || []).find(f => /3_units_and_devices|7_rack_all_ports/.test(f)) || (d.images || [])[0]);
+
+  const invRows = devs.map(dv => {
+    const a = accentFor(dv.class_name || '');
+    const occ = dv.port_count
+      ? `${dv.connected_ports || 0}/${dv.port_count}`
+      : (dv.power_total ? `${dv.power_connected || 0}/${dv.power_total} PDU` : '—');
+    const occPct = dv.port_count ? Math.round(100 * (dv.connected_ports || 0) / dv.port_count) : 0;
+    const makeModel = [dv.make, dv.model].filter(Boolean).join(' ');
+    return `
+<tr>
+  <td class="invPos"><span class="invDot" style="background:${a}"></span>${htmlEscape(dv.position || '—')}</td>
+  <td>${htmlEscape(dv.class_name || 'Unknown')}</td>
+  <td class="invModel">${makeModel ? htmlEscape(makeModel) : '<span class="invNone">not read</span>'}</td>
+  <td class="invNum">${dv.port_count || (dv.power_total ? dv.power_total : '—')}</td>
+  <td class="invOcc">
+    ${dv.port_count ? `<span class="occBarWrap"><span class="occBar" style="width:${occPct}%;background:${a}"></span></span>` : ''}
+    <span class="occText">${occ}</span>
+  </td>
+</tr>`;
+  }).join('');
+
+  const inventoryHtml = devs.length ? `
+<div class="section">
+  <div class="sectionTitle">Device Inventory</div>
+  <div class="tableWrap">
+    <table class="invTable">
+      <thead><tr><th>Position</th><th>Type</th><th>Make &amp; Model</th><th>Ports</th><th>In use</th></tr></thead>
+      <tbody>${invRows}</tbody>
+    </table>
+  </div>
+</div>` : '';
+
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -1309,7 +1370,7 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   }
 
   /* ── Stat cards ── */
-  .stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0 8px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:18px 0 8px}
   .stat{
     position:relative;
     padding:16px 18px;border-radius:14px;
@@ -1329,6 +1390,37 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
     background:linear-gradient(135deg, var(--accent), var(--accent2));
     -webkit-background-clip:text;background-clip:text;
   }
+  .stat .statOf{font-size:1.05rem;font-weight:700;color:var(--softMuted);-webkit-text-fill-color:var(--softMuted)}
+
+  /* ── Rack image ── */
+  .rackShot{
+    border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    background:#fafafa;box-shadow:var(--shadowSm);
+  }
+  .rackShot img{display:block;width:100%;height:auto}
+
+  /* ── Inventory table ── */
+  .tableWrap{
+    border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    box-shadow:var(--shadowSm);overflow-x:auto;
+  }
+  .invTable{width:100%;border-collapse:collapse;font-size:.9rem}
+  .invTable thead th{
+    text-align:left;font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);padding:11px 14px;background:#fafafa;border-bottom:1px solid var(--border);white-space:nowrap;
+  }
+  .invTable td{padding:11px 14px;border-bottom:1px solid var(--borderSoft);vertical-align:middle}
+  .invTable tbody tr:last-child td{border-bottom:none}
+  .invTable tbody tr:nth-child(even){background:#fcfcfc}
+  .invPos{font-family:'SF Mono',Menlo,Consolas,monospace;font-weight:700;white-space:nowrap}
+  .invDot{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:8px;vertical-align:middle}
+  .invModel{font-weight:600}
+  .invNone{color:var(--softMuted);font-weight:400;font-style:italic}
+  .invNum{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;width:64px}
+  .invOcc{min-width:120px}
+  .occBarWrap{display:inline-block;width:64px;height:6px;border-radius:99px;background:#eee;overflow:hidden;vertical-align:middle;margin-right:8px}
+  .occBar{display:block;height:100%;border-radius:99px}
+  .occText{font-variant-numeric:tabular-nums;font-size:.82rem;color:var(--muted);font-weight:600}
 
   /* ── Section heading ── */
   .section{margin-top:32px}
@@ -1508,19 +1600,31 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   <h1>${htmlEscape(d.rackId)}</h1>
   <div class="heroMeta">
     <span><span class="k">Scanned:</span> <code>${htmlEscape(ts)}</code></span>
+    ${d.units_range ? `<span><span class="k">Occupies:</span> <code>${htmlEscape(d.units_range)}</code></span>` : ''}
+    <span><span class="k">Devices:</span> <code>${devs.length}</code></span>
   </div>
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="k">Units</div><div class="v">${htmlEscape(d.units_range || `${d.units_detected.length}`)}</div></div>
-  <div class="stat"><div class="k">Devices</div><div class="v">${d.devices.length}</div></div>
+  <div class="stat"><div class="k">Devices</div><div class="v">${devs.length}</div></div>
+  <div class="stat"><div class="k">Switches &amp; routers</div><div class="v">${switchCount}</div></div>
+  <div class="stat"><div class="k">Ports · in use</div><div class="v">${connectedPorts}<span class="statOf"> / ${totalPorts}</span></div></div>
+  <div class="stat"><div class="k">Models read</div><div class="v">${identified}<span class="statOf"> / ${devs.length}</span></div></div>
 </div>
+
+${rackShot ? `
+<div class="section">
+  <div class="sectionTitle">Rack</div>
+  <div class="rackShot"><img src="${rackShot}" alt="Annotated rack scan"/></div>
+</div>` : ''}
+
+${inventoryHtml}
 
 <div class="section">
   <div class="sectionTitle">Port Identifications</div>
   ${d.port_identifications.length
     ? portIdsHtml
-    : `<p class="empty">No ports have been identified yet.</p>`}
+    : `<p class="empty">No individual ports have been located yet. Use “Find Port” on a switch to add per-port detail here.</p>`}
 </div>
 
 </div></body></html>`;
