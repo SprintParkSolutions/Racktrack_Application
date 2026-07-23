@@ -106,11 +106,16 @@
   background: #0a0a0b;
   border: 1px solid var(--md-outline-variant);
   justify-self: stretch;
+  /* Soft, grounded shadow so the image reads as a premium card floating on the
+     white page rather than a flat rectangle. */
+  box-shadow: 0 32px 70px -34px rgba(10, 12, 16, 0.42), 0 8px 22px -18px rgba(10, 12, 16, 0.35);
 }
 .photo {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  object-fit: cover; object-position: 50% 50%;
+  /* Favour the right side of the frame, where the black racks recede into the
+     white room — the strong part of the composition. */
+  object-fit: cover; object-position: 62% 50%;
   display: block;
 }
 /* faint top/bottom shade so the white overlay stays legible */
