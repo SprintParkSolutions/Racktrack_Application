@@ -6,6 +6,12 @@
          app-wide, which is the one accommodation a technician squinting at a
          port label in a dark aisle actually needs. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- color-scheme is set on :root in index.css too, but the Android WebView
+         applies force-dark BEFORE the stylesheet loads, inverting light
+         surfaces to black on first paint (the marketplace For sale / Wanted
+         control especially) until a tap forced a repaint. Declaring it as a
+         meta tag here — read before any CSS — stops the first-paint blackout. -->
+    <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />

@@ -4,8 +4,6 @@ const MIN_DURATION = 1.0;
 const MAX_DURATION = 120;
 const SAMPLE_MAX_DIM = 512;
 
-const QUALITY_ERROR = 'Please upload a clearer photo of the rack — keep the camera steady and make sure the full rack fits in the frame.';
-
 export async function validateMedia(file) {
   if (!file) return { ok: false, error: 'No file selected.' };
 
@@ -23,7 +21,15 @@ export async function validateMedia(file) {
 
 async function validateImage(file) {
   const img = await loadImage(file).catch(() => null);
-  if (!img) return { ok: false, error: QUALITY_ERROR };
+  if (!img) {
+    // The browser couldn't decode the image in this WebView — common for a
+    // full-resolution phone photo (memory pressure on Android) or an odd
+    // container. DON'T block: the server normalizes and validates every
+    // upload (detect-gate + quality checks), exactly like the video and HEIC
+    // paths already defer here. Failing closed rejected perfectly good rack
+    // photos with a "clearer photo" error and left testers unable to scan.
+    return { ok: true, metrics: { skipped: 'browser-decode-failed-deferred-to-server' } };
+  }
 
   const { width, height } = img;
   if (Math.min(width, height) < MIN_DIM) {

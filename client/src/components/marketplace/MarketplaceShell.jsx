@@ -137,6 +137,13 @@ export default function MarketplaceShell({
               <NavLink
                 key={item.key}
                 to={item.to}
+                // replace, not push: switching sections (For sale → Alerts →
+                // Orders …) used to stack a history entry each time, so the
+                // back button walked through every section you'd visited and
+                // never left marketplace — it "looped in". Replacing keeps a
+                // single marketplace entry, so back returns to wherever you
+                // entered marketplace from (Scan/Home).
+                replace
                 className={`${styles.navItem} ${isActive(item) ? styles.navItemActive : ''}`}
                 aria-current={isActive(item) ? 'page' : undefined}
               >
