@@ -37,6 +37,15 @@
   gap: 20px; padding-bottom: 14px; margin-bottom: 22px;
   border-bottom: 1px solid #eee;
 }
+.headBackBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; flex: none;
+  border-radius: 10px; border: 1px solid var(--md-outline-variant, #e0e0e0);
+  background: #fff; color: var(--md-on-surface, #121417); cursor: pointer;
+  align-self: center; transition: background-color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.headBackBtn:hover { background: var(--md-surface-container-highest, #f5f5f5); }
 .eyebrow {
   margin: 0 0 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .16em;
   text-transform: uppercase; color: #b3b3b3;

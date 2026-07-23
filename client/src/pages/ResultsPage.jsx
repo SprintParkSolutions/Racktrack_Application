@@ -14,6 +14,7 @@ import { NetdiscoContent } from './NetdiscoPage.jsx';
 import { SwitchInfoContent } from './SwitchInformationPage.jsx';
 import { PortHistoryContent } from './PortHistoryPage.jsx';
 import AssetImg from '../components/AssetImg';
+import { useSmartBack } from '../hooks/useSmartBack';
 
 // ── Naming convention ─────────────────────────────────────────
 const CLASS_CODE = {
@@ -1089,6 +1090,7 @@ export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, o
 // ── Main page ─────────────────────────────────────────────────
 export default function ResultsPage({ rackId: propRackId = null, embedded: embeddedProp = false } = {}) {
   const navigate = useNavigate();
+  const exitRack = useSmartBack('/scan');
   const location = useLocation();
   const { state } = location;
   const { rackId: paramRackId } = useParams();
@@ -1195,7 +1197,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     if (tab === 'overview') {
       // Clear any stored tab-history since we're leaving the rack entirely.
       tabHistoryRef.current = [];
-      navigate('/scan');
+      // Go BACK through history to wherever the rack was opened from (Scan,
+      // Profile, a link…), NOT a fresh push to /scan. Pushing /scan while Scan
+      // itself backs with navigate(-1) is what made Scan⇆Results ping-pong:
+      // each "back" landed on the other page instead of climbing out. Falls
+      // back to /scan only on a cold start with no history behind it.
+      exitRack();
       return;
     }
     if (tabHistoryRef.current.length > 0) {

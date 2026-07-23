@@ -190,7 +190,17 @@ export default function OrgConsolePage() {
     <div className={styles.scroll}>
     <div className={styles.page}>
       <header className={styles.head}>
-        <BackButton fallback="/" />
+        {activeOrg && isOwner
+          // Inside an organization, "back" returns to the organization LIST,
+          // not to wherever the owner came from (the dashboard/profile). Only
+          // at the list does back leave the console.
+          ? (
+            <button type="button" className={styles.headBackBtn} aria-label="Back to organizations"
+              onClick={() => { setActiveOrg(null); setSites([]); setMembers([]); setOdash(null); setOrgMenuFor(null); }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+          )
+          : <BackButton fallback="/" />}
         <div>
           <p className={styles.eyebrow}>{activeOrg ? 'Organization' : 'Organization Console'}</p>
           <h1 className={styles.title}>
