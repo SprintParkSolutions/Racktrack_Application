@@ -367,8 +367,15 @@
   column-gap: 32px;
   row-gap: 14px;
   padding: 24px 48px 48px !important;
-  max-width: 1500px;
-  margin: 0 auto;
+  /* !important is required, not cosmetic: the mobile rule
+     `:global(.pc).scanContent { max-width: 28rem; margin: 0 auto }` has
+     specificity (0,2,0) and outranks this single-class selector (0,1,0), so
+     without it the desktop grid stayed capped at 448px — a two-column layout
+     crushed into a phone-width column, which is exactly the "still looks like
+     mobile on my laptop" report. Match the display/padding overrides already
+     here. */
+  max-width: 1500px !important;
+  margin: 0 auto !important;
   height: auto !important;
   overflow: visible !important;
   align-items: start;
@@ -411,7 +418,7 @@
     column-gap: 0 !important;
     row-gap: 16px !important;
     padding: 20px 28px 40px !important;
-    max-width: 760px;
+    max-width: 760px !important;  /* same specificity fight as above */
   }
   .scanContentDesktop .mediaBox {
     grid-column: 1 !important;
