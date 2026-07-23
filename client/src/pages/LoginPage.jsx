@@ -34,8 +34,12 @@ export default function LoginPage() {
       // the global username/email lookup. Either way we route by the account's
       // REAL role once the credentials resolve — no role picker.
       const u = await login(username.trim(), password, org.trim());
+      // Everyone lands on Home after signing in. Owner / org-admin used to be
+      // sent straight to the organization dashboard; they now start on Home
+      // like everyone else and reach the dashboard from the Profile page or the
+      // sidebar. A deep link that bounced them to login is still honoured.
       if (u?.role === 'owner' || u?.role === 'org_admin') {
-        navigate('/organizations', { replace: true });
+        navigate(location.state?.from || '/', { replace: true });
       } else {
         navigate(from, { replace: true });
       }
