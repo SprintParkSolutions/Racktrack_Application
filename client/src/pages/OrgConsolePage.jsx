@@ -192,7 +192,7 @@ export default function OrgConsolePage() {
       <header className={styles.head}>
         <BackButton fallback="/" />
         <div>
-          <p className={styles.eyebrow}>{isOwner ? 'Platform Console' : 'Organization Console'}</p>
+          <p className={styles.eyebrow}>{activeOrg ? 'Organization' : 'Organization Console'}</p>
           <h1 className={styles.title}>
             {activeOrg && isOwner ? activeOrg.name : (activeOrg?.name || 'Organizations')}
           </h1>

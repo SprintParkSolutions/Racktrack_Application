@@ -27,9 +27,37 @@ const ACTION_LABELS = {
   'member.remove':          'Removed a member',
   'org.approve':            'Approved an org',
   'org.remove':             'Removed an org',
+  'org.create':             'Created an org',
+  'org.update':             'Updated an org',
+  'org.reject':             'Rejected an org',
+  'invite.create':          'Created an invite',
+  'rack_group.create':      'Grouped two racks',
+  'report.regen':           'Regenerated a report',
+  'scan.confirm_layout':    'Confirmed rack layout',
+  'scan.ocr_devices':       'Read device labels',
+  'scan.analyze_for_ticket.rack_mismatch': 'Ticket rack didn’t match',
+  'feedback.verified_ports':'Verified ports',
+  'console.run_auto':       'Ran a check',
+  'console.run_auto_stream':'Ran a live check',
+  'auth.forgot_password.login_with_code': 'Signed in with a code',
+  'active_learning.cycle':  'Retrained the model',
+  'agent.post_work_note':   'Posted a work note',
+  'agent.feedback_refresh': 'Refreshed feedback',
+  'agent.proactive_refresh':'Refreshed data',
+  'logs.clear':             'Cleared the log',
+  'port_poller.reset':      'Reset a switch poll',
+  'orphan_gc.run':          'Cleaned up storage',
+  'orphan_gc.scheduled':    'Scheduled cleanup',
 };
 
-const labelFor = (a) => ACTION_LABELS[a] || a;
+// Anything still unmapped becomes readable rather than raw ("rack_group.create"
+// → "Rack group create") — no dotted machine names leak into the dashboard.
+const humanizeAction = (a) =>
+  String(a || '')
+    .replace(/[._]/g, ' ')
+    .replace(/^\w/, (c) => c.toUpperCase());
+
+const labelFor = (a) => ACTION_LABELS[a] || humanizeAction(a);
 
 // audit_log timestamps are UTC "YYYY-MM-DD HH:MM:SS" (no zone) → parse as UTC.
 function parseTs(ts) {
