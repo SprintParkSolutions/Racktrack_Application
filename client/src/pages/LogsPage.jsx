@@ -6,8 +6,8 @@ import styles from './LogsPage.module.css';
 // level *and above* (warn also shows error + fatal), matching how you triage.
 const LEVELS = [
   { key: '',      label: 'All' },
-  { key: 'info',  label: 'Info+' },
-  { key: 'warn',  label: 'Warn+' },
+  { key: 'info',  label: 'Info' },
+  { key: 'warn',  label: 'Warnings' },
   { key: 'error', label: 'Errors' },
 ];
 

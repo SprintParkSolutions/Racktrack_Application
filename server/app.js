@@ -2266,17 +2266,26 @@ app.get('/api/admin/dashboard', auth.requireAuth, (req, res) => {
       WHERE a.status='fail' AND a.error IS NOT NULL AND a.error <> ''
       ORDER BY a.id DESC LIMIT 30`);
 
-    // Busiest scanners.
+    // Busiest scanners. Resolve the real name from the user the event is
+    // attributed to (a.user_id) — the denormalized a.username is often blank
+    // for owner/admin scans, which is why the board showed "(anonymous)".
     const topUsers = many(`
-      SELECT COALESCE(NULLIF(username,''),'(anonymous)') AS username, COUNT(*) AS scans
-      FROM audit_log WHERE action='scan.create' AND status='ok'
-      GROUP BY username ORDER BY scans DESC LIMIT 10`);
+      SELECT COALESCE(NULLIF(u.username,''), NULLIF(a.username,''), '(anonymous)') AS username,
+             COUNT(*) AS scans
+      FROM audit_log a
+      LEFT JOIN users u ON u.id = a.user_id
+      WHERE a.action='scan.create' AND a.status='ok'
+      GROUP BY COALESCE(a.user_id, a.username) ORDER BY scans DESC LIMIT 10`);
 
-    // Scans per organization.
+    // Scans per organization. Resolve the org via the Site first, then the
+    // user's own organization (owners/admins have no tenant_id, which is why
+    // their scans fell into "(no org)").
+    const orgOfUser = `(SELECT o.name FROM users u JOIN organizations o
+                          ON o.id = u.organization_id WHERE u.id = a.user_id)`;
     const byOrg = many(`
-      SELECT COALESCE(${orgOf},'(no org)') AS org, COUNT(*) AS scans
+      SELECT COALESCE(${orgOf}, ${orgOfUser}, '(no org)') AS org, COUNT(*) AS scans
       FROM audit_log a WHERE a.action='scan.create' AND a.status='ok'
-      GROUP BY a.tenant_id ORDER BY scans DESC LIMIT 10`);
+      GROUP BY org ORDER BY scans DESC LIMIT 10`);
 
     // Action mix — EVERY action type (ok vs fail), nothing capped.
     const actions = many(`
