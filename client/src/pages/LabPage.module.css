@@ -54,22 +54,38 @@
 /* ── device cards ────────────────────────────────────────────────── */
 .deviceGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(224px, 1fr));
+  gap: 12px;
 }
 .deviceCard {
+  position: relative;
   display: flex; flex-direction: column; gap: 8px;
-  padding: 12px 14px; min-width: 0;
+  padding: 14px 16px 14px 18px; min-width: 0;
   text-align: left; font: inherit; cursor: pointer;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--md-outline-variant, #e0e0e0);
   background: var(--md-surface-container-lowest, #ffffff);
   color: var(--md-on-surface, #121417);
-  transition: border-color .14s, background-color .14s;
+  box-shadow: 0 1px 2px rgba(18,20,23,0.04);
+  transition: border-color .16s, box-shadow .16s, transform .12s;
+  overflow: hidden;
 }
-.deviceCard:hover { border-color: var(--md-on-surface, #121417); background: var(--md-surface-container, #fafafa); }
+/* A thin status rail down the left edge so the fleet reads at a glance. */
+.deviceCard::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: rgba(18,20,23,0.16);
+}
+.deviceCard:has(.stLive)::before { background: #22c55e; }
+.deviceCard:has(.stOff)::before  { background: #ef4444; }
+.deviceCard:has(.stWarn)::before { background: #f59e0b; }
+.deviceCard:hover {
+  border-color: var(--md-on-surface, #121417);
+  box-shadow: 0 8px 20px -10px rgba(18,20,23,0.28);
+  transform: translateY(-2px);
+}
 .deviceCardActive {
-  outline: 2px solid var(--md-on-surface, #121417); outline-offset: -1px;
+  border-color: var(--md-on-surface, #121417);
+  box-shadow: 0 0 0 1px var(--md-on-surface, #121417), 0 8px 20px -10px rgba(18,20,23,0.28);
   background: var(--md-surface-container, #fafafa);
 }
 .dName {
