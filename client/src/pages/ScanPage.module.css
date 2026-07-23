@@ -242,10 +242,12 @@
   flex: 1 1 0;
   /* Give the live camera / upload area real height so the preview isn't a thin
      letterbox with the shutter and mode toggle piled on top of each other. The
-     page scrolls if the incident picker + Analyze button need more room. */
-  min-height: 52vh;
-  min-height: 200px;
-  max-height: 760px;
+     page scrolls if the incident picker + Analyze button need more room.
+     Bumped a little (52→60vh) so a contained upload has more room and reads as
+     the whole photo rather than a strip. */
+  min-height: 60vh;
+  min-height: 240px;
+  max-height: 820px;
   position: relative;
   box-shadow: none;
   display: flex;
@@ -359,7 +361,10 @@
   position:relative; flex:1; min-height:0;
   display:flex; flex-direction:column; overflow:hidden;
 }
-.previewImg { width:100%; flex:1; min-height:0; display:block; object-fit:cover; }
+/* contain, not cover: show the WHOLE uploaded photo inside the box rather than
+   cropping it to fill. The letterbox area shows a faint neutral so the image
+   edges read against the white card. Desktop already does this (below). */
+.previewImg { width:100%; flex:1; min-height:0; display:block; object-fit:contain; background:rgba(0,0,0,0.04); }
 
 /* ─── Desktop / landscape layout (≥1180px) ────────────────────────────
    Mobile rules above untouched. Desktop turns the .scanContent flex
@@ -730,13 +735,6 @@
 .hcBL { bottom:20%; left:9%;  border-width:0 0 2.5px 2.5px; border-radius:0 0 0 4px; }
 .hcBR { bottom:20%; right:9%; border-width:0 2.5px 2.5px 0; border-radius:0 0 4px 0; }
 
-.hudGrid {
-  position:absolute; inset:16px; bottom:68px;
-  background-image:
-    linear-gradient(rgba(0,0,0,0.05) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(0,0,0,0.05) 1px,transparent 1px);
-  background-size:40px 40px;
-}
 .hudTop    { display:flex; justify-content:center; pointer-events:none; }
 .hudBadge  {
   display:inline-flex; align-items:center; gap:6px;

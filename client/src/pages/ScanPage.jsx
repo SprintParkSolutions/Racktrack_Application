@@ -719,8 +719,6 @@ function CameraCapture({ onCapture, onCancel }) {
       )}
 
       <div className={styles.hud}>
-        <div className={styles.hudGrid} />
-
         {/* Four corner brackets — the conventional scan-viewfinder guide. This
             was a full dashed rack-shaped rectangle, which testers read as an
             unexplained black box sitting over the picture rather than as a
@@ -1371,28 +1369,9 @@ export default function ScanPage() {
                     />}
         </div>
 
-        {/* Two-rack entry — a separate flow that detects both racks and shows
-            the uplink cabling that runs between them. */}
-        <button
-          type="button"
-          onClick={() => navigate('/multi-rack/new')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-            margin: '12px 0 0', padding: '12px 14px', borderRadius: 12,
-            border: '1px solid var(--md-outline-variant, rgba(0,0,0,0.12))',
-            background: 'var(--md-surface-container, rgba(0,0,0,0.04))',
-            color: 'inherit', cursor: 'pointer', font: 'inherit', textAlign: 'left',
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', opacity: 0.8 }}>
-            <rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/><path d="M10 8h4"/>
-          </svg>
-          <span style={{ flex: 1 }}>
-            <span style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem' }}>Scanning two racks?</span>
-            <span style={{ display: 'block', fontSize: '0.76rem', opacity: 0.7 }}>Detect both and see the cabling between them</span>
-          </span>
-          <span aria-hidden="true" style={{ opacity: 0.5, fontSize: '1.1rem' }}>›</span>
-        </button>
+        {/* The two-rack flow lives in the sidebar / bottom nav ("Two racks").
+            It used to also appear here as a card, which put the same entry in
+            two places on the scan screen; removed to keep a single home for it. */}
 
         {/* Selected-incident description — compact single line so the user
             sees what they picked without pushing the page off-screen. */}
