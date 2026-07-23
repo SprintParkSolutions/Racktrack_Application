@@ -1,4 +1,4 @@
-# RackTrack one-command deploy for the Windows GPU box.
+﻿# RackTrack one-command deploy for the Windows GPU box.
 #   .\deploy.ps1                 # normal deploy (pull -> CI gate -> deps -> build -> backup -> restart)
 #   .\deploy.ps1 -Force          # EMERGENCY: skip the CI gate (logs loudly)
 #   .\deploy.ps1 -Rollback       # revert to the previous commit and restart
