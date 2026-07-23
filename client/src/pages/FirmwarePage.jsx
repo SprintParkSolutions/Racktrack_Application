@@ -104,11 +104,15 @@ export default function FirmwarePage() {
         setError(`Backend returned a non-JSON response (HTTP ${res.status}). Is the server running?`);
         return;
       }
-      if (!res.ok || !data.ok) {
-        setError(data.error || `HTTP ${res.status}`);
-        if (data.vendor || data.releaseNotesUrl) setResult(data);
-      } else {
+      if (data.ok) {
         setResult(data);
+      } else if (data.portalUrl || data.message) {
+        // Not an error: auth-required / bot-walled / unknown all come back with
+        // a portal link + message for the user to check the vendor site.
+        setResult(data);
+        setError(null);
+      } else {
+        setError(data.error || `HTTP ${res.status}`);
       }
     } catch (err) {
       setError(`Request failed: ${err.message}. Is the backend running on port 3001?`);
@@ -142,11 +146,11 @@ export default function FirmwarePage() {
           Version check{deviceClass ? ` · ${deviceClass}` : ''}
         </p>
         <h2 className={styles.h2}>
-          Check whether you're on the latest version — and what's new in it.
+          Check whether you're on the latest firmware version.
         </h2>
         <p className={styles.sub}>
-          We look up the newest firmware for your model and scrape the vendor's
-          release notes so you can see what changed.
+          We look up the newest firmware for your model on the vendor's own
+          site. If a vendor needs a login, we hand you the link to check there.
         </p>
       </section>
 
@@ -230,7 +234,7 @@ export default function FirmwarePage() {
                   target="_blank"
                   rel="noreferrer noopener"
                 >
-                  Open release notes ↗
+                  Open on vendor site ↗
                 </a>
               )}
               <button
@@ -334,73 +338,37 @@ export default function FirmwarePage() {
                 })()}
               </section>
 
-              {/* Changelog snippets */}
-              <section className={styles.section}>
-                <div className={styles.sectionHead}>
-                  <h3 className={styles.sectionTitle}>
-                    Release notes excerpts
-                    <span className={styles.count}>{result.changelog?.length || 0}</span>
-                  </h3>
-                  <span className={styles.sectionSub}>
-                    scraped from the vendor's release-notes page
-                  </span>
-                </div>
-                {(!result.changelog || result.changelog.length === 0) ? (
-                  <div className={styles.empty}>
-                    <p style={{ margin: 0 }}>
-                      {result.releaseNotesError
-                        ? `Couldn't fetch release notes: ${result.releaseNotesError}`
-                        : "Couldn't extract any changelog sections from the page."}
-                    </p>
-                    {(() => {
-                      const v = result.vendor || vendor;
-                      const m = result.model || model;
-                      const q = encodeURIComponent(
-                        `${v} ${m} release notes changelog`
-                      );
-                      return (
-                        <div className={styles.versionFallbackLinks} style={{ marginTop: 8 }}>
-                          <a
-                            href={`https://www.google.com/search?q=${q}`}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            className={styles.versionFallbackLink}
-                          >
-                            Search release notes ↗
-                          </a>
-                          {result.releaseNotesUrl && (
-                            <a
-                              href={result.releaseNotesUrl}
-                              target="_blank"
-                              rel="noreferrer noopener"
-                              className={styles.versionFallbackLink}
-                            >
-                              Open page ↗
-                            </a>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  <div className={styles.changelogList}>
-                    {result.changelog.map((entry, i) => (
-                      <article key={i} className={styles.changelogItem}>
-                        <header className={styles.changelogHead}>
-                          <span className={styles.changelogSection}>{entry.section}</span>
-                          {entry.version && (
-                            <span className={styles.changelogVer}>{entry.version}</span>
-                          )}
-                        </header>
-                        <p className={styles.changelogText}>{entry.text}</p>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
             </>
           )}
         </>
+      )}
+
+      {/* Login-required / bot-walled / unknown: not an error — hand the user
+          the vendor's own portal link so they can check (and log in) there. */}
+      {result && !result.ok && (result.portalUrl || result.message) && (
+        <section className={`${styles.summaryCard} ${styles.tone_neutral}`}>
+          <h3 className={styles.summaryHeadline}>
+            {result.authRequired
+              ? 'This vendor needs a login to check.'
+              : "We couldn't confirm the latest version."}
+          </h3>
+          <p className={styles.summaryBody}>
+            {result.message
+              || "The vendor's site didn't show a clear latest version. Open it to check — this is not the same as being up to date."}
+          </p>
+          {result.portalUrl && (
+            <div className={styles.summaryActions}>
+              <a
+                className={`btn btn-secondary ${styles.summaryBtn}`}
+                href={result.portalUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {result.authRequired ? 'Log in on vendor site ↗' : 'Open on vendor site ↗'}
+              </a>
+            </div>
+          )}
+        </section>
       )}
     </div>
   );

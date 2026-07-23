@@ -7502,20 +7502,17 @@ app.post('/api/sfp/analyze', auth.requireAuth, moduleLimit, async (req, res) => 
 });
 
 // POST /api/firmware  body: { vendor, model, currentVersion }
-// → Pure Switch Spec Agent (Agent_scrap, clean branch). The agent's
-//   FirmwareAdvice bundles version-compare and a vendor-level latest
-//   fallback. The Node side only re-shapes the response into the UI's
-//   contract. (The agent also carries security-advisory rows; we do not
-//   read them — CVE reporting was removed from the product.)
+// → firmware_lookup (vendored package). Reads the vendor's OWN real site for
+//   the latest official firmware, and never fabricates a version. Returns the
+//   latest version, whether an update is available, and the vendor page it
+//   came from. When a vendor needs a login or blocks automation, that page is
+//   handed to the user as a portal link to check for themselves — never a
+//   dead end. Changelog / release-note bodies are intentionally not provided
+//   (accuracy over coverage — see firmware_lookup/README.md).
 app.post('/api/firmware', auth.requireAuth, moduleLimit, async (req, res) => {
   const vendor         = String(req.body?.vendor || '').trim();
   const model          = String(req.body?.model  || '').trim();
   const currentVersion = String(req.body?.currentVersion || '').trim();
-  // See /api/specs above for the fromOcr semantics. For manually-entered
-  // or CMDB-sourced data we skip the OCR-correction probe — the agent's
-  // --firmware mode already does its own internal spec lookup, so the
-  // probe is duplicate work costing an extra Python spawn (~1-2s).
-  const fromOcr = req.body?.fromOcr === true;
   if (!vendor || !model || !currentVersion) {
     return res.status(400).json({
       ok: false,
@@ -7523,105 +7520,79 @@ app.post('/api/firmware', auth.requireAuth, moduleLimit, async (req, res) => {
     });
   }
 
-  let firmwareModel = model;
-  let matchedFrom = null, matchedTo = null;
-  if (fromOcr) {
-    ({ matchedFrom, matchedTo } =
-      await resolveAgentWithOcrCorrection(vendor, model));
-    firmwareModel = matchedTo || model;
-  }
-
-  const agentRes = await runAgentCli(
-    ['--firmware', `${vendor} ${firmwareModel}`, currentVersion]);
-  const payload = firmwarePayloadFromAgent(agentRes, {
-    vendor, model, currentVersion,
-  });
-  if (matchedFrom) {
-    payload.matchedFrom = matchedFrom;
-    payload.matchedTo = matchedTo;
-  }
-  res.status(payload.ok ? 200 : 404).json(payload);
+  const lookup  = await runFirmwareLookup(vendor, model, currentVersion);
+  const payload = firmwarePayloadFromLookup(lookup, { vendor, model, currentVersion });
+  // Always 200 when the lookup ran, even for auth-required / bot-walled /
+  // unknown: those are not server errors — each carries a portal link the UI
+  // shows the user. Only a genuine runner failure is non-200.
+  res.status(lookup && lookup._runnerError ? 502 : 200).json(payload);
 });
 
-// Maps the clean-branch agent's `{advice}` shape onto the UI's
-// /api/firmware contract: { ok, vendor, model, currentVersion,
-// latestVersion, upToDate, releaseNotesUrl, releaseNotesError, changelog,
-// portalUrl? }.
-//
-// Agent natively returns:
-//   advice.diff.target.{version, release_notes_url, security_fixes,
-//                       bug_fixes, new_features, known_issues, deprecations}
-//   advice.portal_url, advice.release_notes_gated, advice.recommended_min_version
-// (advice.advisories[] also exists but is deliberately ignored — see above.)
-function firmwarePayloadFromAgent(agentRes, req) {
-  if (!agentRes || !agentRes.ok) {
+// Spawn the vendored firmware_lookup package for one (vendor, model, version).
+// The CLI prints the full FirmwareResult as pretty JSON on stdout (logs go to
+// stderr), so we parse the whole of stdout rather than a single line.
+const FIRMWARE_TIMEOUT_MS = 90_000;   // live vendor sites + browser providers are slow
+function runFirmwareLookup(vendor, model, currentVersion) {
+  return new Promise((resolve) => {
+    const child = _spawnPyMod(
+      pythonCmd,
+      ['-u', '-m', 'firmware_lookup', 'lookup', vendor, model, currentVersion, '--json', '--verbose'],
+      { cwd: PROJECT_ROOT, env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' } },
+    );
+    let stdout = '', stderr = '', settled = false;
+    const finish = (p) => { if (settled) return; settled = true; resolve(p); };
+    const killer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch (_) {}
+      finish({ _runnerError: 'Firmware lookup took too long. Try again in a moment.', _stderr: stderr.slice(-500) });
+    }, FIRMWARE_TIMEOUT_MS);
+    child.stdout.on('data', c => { stdout += c.toString(); });
+    child.stderr.on('data', c => { stderr += c.toString(); });
+    child.on('error', (err) => {
+      clearTimeout(killer);
+      finish({ _runnerError: 'Firmware lookup failed to start.', _spawnError: err.message });
+    });
+    child.on('close', () => {
+      clearTimeout(killer);
+      try { finish(JSON.parse(stdout.trim())); }
+      catch { finish({ _runnerError: 'Firmware lookup returned no usable result.', _stderr: stderr.slice(-500) }); }
+    });
+  });
+}
+
+// Map a firmware_lookup FirmwareResult (to_full_dict) onto the UI contract:
+// { ok, vendor, model, currentVersion, latestVersion, upToDate,
+//   releaseNotesUrl, portalUrl, authRequired, statusValue, message,
+//   confidence, changelog }. releaseNotesUrl keeps its name so the existing
+// link renders; for this source it is the vendor page / portal, not a
+// changelog. changelog is always empty — the package does not provide one.
+function firmwarePayloadFromLookup(r, req) {
+  if (!r || r._runnerError) {
     return {
       ok: false,
-      vendor: req.vendor,
-      model:  req.model,
-      currentVersion: req.currentVersion,
-      error: agentRes?.error
-        || 'Agent failed to return a firmware response.',
+      vendor: req.vendor, model: req.model, currentVersion: req.currentVersion,
+      error: (r && r._runnerError) || 'Firmware lookup failed.',
     };
   }
-  const advice = agentRes.advice || {};
-  const target = (advice.diff && advice.diff.target) || null;
-  const agentLatest = (target && target.version) || null;
-
+  const status = r.status || 'cannot_determine';
+  const latest = r.latest_version || null;
+  const portal = r.source_url || null;
+  const isOk   = status === 'ok';
   let upToDate = null;
-  if (agentLatest) {
-    upToDate = String(agentLatest).trim() === String(req.currentVersion).trim();
-  }
-
-  // Security-advisory (CVE) reporting was removed from the product. The agent
-  // may still carry advisory rows in its cache; we deliberately do not read or
-  // surface them.
-
-  // Synthesize the changelog section from the target firmware's
-  // structured release-note fields — no extra web scrape needed since the
-  // agent's firmware DB already carries the diff breakdown.
-  const changelog = [];
-  if (target) {
-    const v = target.version || '';
-    const push = (label, list) => {
-      if (Array.isArray(list) && list.length) {
-        changelog.push({
-          section: v ? `${label} in ${v}` : label,
-          version: v || null,
-          text: list.join('\n'),
-        });
-      }
-    };
-    push('Security fixes', target.security_fixes);
-    push('Bug fixes',      target.bug_fixes);
-    push('New features',   target.new_features);
-    push('Known issues',   target.known_issues);
-    push('Deprecations',   target.deprecations);
-  }
-
+  if (isOk && typeof r.update_available === 'boolean') upToDate = (r.update_available === false);
   return {
-    ok: true,
-    vendor:         agentRes.vendor || advice.vendor || req.vendor,
-    model:          agentRes.model  || req.model,
+    ok: isOk,
+    vendor:         r.vendor || req.vendor,
+    model:          r.model  || req.model,
     currentVersion: req.currentVersion,
-    latestVersion:  agentLatest,
+    latestVersion:  latest,
     upToDate,
-    releaseNotesUrl:   (target && target.release_notes_url) || null,
-    releaseNotesError: (!target && advice.message) ? advice.message : null,
-    releaseNotesGated: !!advice.release_notes_gated,
-    // Agent's human-readable status. Useful in the null-target case so
-    // the UI can say something specific ("no firmware data cached for
-    // vendor") instead of falling back to "couldn't reach vendor right now".
-    advisoryMessage: advice.message || null,
-    // True when the agent has *something* useful (cached latest, or a diff).
-    // Lets the UI distinguish a partial hit from a miss.
-    hasAdvisoryData: !!advice.has_data,
-    nos: advice.nos || null,
-    versionsFound: [],
-    changelog,
-    portalUrl: advice.portal_url || null,
-    recommendedMinVersion: advice.recommended_min_version || null,
-    latestSource: `agent (${agentRes.elapsed_ms ?? '?'} ms)`,
+    releaseNotesUrl: portal,   // vendor page / portal (name kept for the UI)
+    portalUrl:       portal,
+    authRequired:    status === 'auth_required',
+    statusValue:     status,
+    message:         r.message || null,
+    confidence:      r.confidence || null,
+    changelog:       [],       // package provides no changelog, by design
   };
 }
 

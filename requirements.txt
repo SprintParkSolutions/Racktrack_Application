@@ -62,3 +62,18 @@ psycopg2-binary>=2.9.9
 
 # --- Shared utilities ---
 python-dotenv>=1.0.0
+
+# --- Firmware version lookup (firmware_lookup/, POST /api/firmware) ---
+# Reads each vendor's own real site for the latest official firmware. requests
+# is already pinned above. cryptography encrypts saved vendor logins at rest;
+# pymupdf (imported as fitz) extracts version text from vendor PDF datasheets;
+# playwright drives a real browser for the ~31 vendors behind a login or a
+# JS-rendered page. There is NO fallback engine — a missing dependency makes
+# firmware lookup fail loudly rather than return a wrong version.
+#
+# After installing these, run ONCE on the box that serves firmware lookups:
+#     playwright install chromium firefox
+# (chromium covers most vendors; firefox is required only for Lenovo.)
+cryptography>=41.0
+pymupdf>=1.23
+playwright>=1.40

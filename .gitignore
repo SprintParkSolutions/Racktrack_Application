@@ -87,6 +87,9 @@ pipeline/*_slack_cache.json
 # Word lock files (created when a .docx is open in Microsoft Word).
 ~$*.docx
 
+# Local handout/deliverable docs (sprint updates, matrices) — working files, not source.
+docs/handouts/
+
 # Old documentation archives — superseded by docs/features/.
 /docs.zip
 /docs/use-cases.zip
@@ -172,3 +175,6 @@ server/data/jwt.secret
 *.keystore
 *.p12
 *.mobileprovision
+
+# firmware_lookup runtime HTTP cache — not source
+firmware_lookup/cache_dir/
