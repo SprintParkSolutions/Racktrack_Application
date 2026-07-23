@@ -150,6 +150,19 @@
 }
 :global([data-theme='light']) .sidebarBottom { border-top-color: #f1f1f1; }
 
+.signOut {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent; border: none; cursor: pointer;
+  padding: 8px 10px; border-radius: 8px;
+  transition: background-color .15s, color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.signOut:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+:global([data-theme='light']) .signOut { color: #5a5456; }
+:global([data-theme='light']) .signOut:hover { background: #f4f4f4; color: #1a1c1d; }
+
 /* ── MAIN CONTENT AREA ───────────────────────────────────────────── */
 .main {
   display: flex;

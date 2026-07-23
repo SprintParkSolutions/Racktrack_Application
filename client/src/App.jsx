@@ -323,9 +323,11 @@ export default function App() {
               <ProtectedRoute><ResponsiveLayout withBottomNav><ProfilePage /></ResponsiveLayout></ProtectedRoute>
             } />
             {/* Organization console — owner (platform) + org_admin manage
-                Organizations → Sites → Members. Full-page (no app chrome). */}
+                Organizations → Sites → Members. Renders inside the shell
+                (sidebar) on tablet/desktop like every other page; it keeps its
+                own header because it needs a back button for org→list. */}
             <Route path="/organizations" element={
-              <ProtectedRoute><OrgConsolePage /></ProtectedRoute>
+              <ProtectedRoute><ResponsiveLayout><OrgConsolePage /></ResponsiveLayout></ProtectedRoute>
             } />
             {/* Live operations dashboard — owner-gated on the server; the page
                 itself shows a clear message if a non-owner reaches it. */}

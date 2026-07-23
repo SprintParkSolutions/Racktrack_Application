@@ -491,6 +491,10 @@
    Appended last so it wins on source order over the base .page rule.
    Mobile (<768px) is untouched. */
 @media (min-width: 768px) {
+  /* The shell crumb is now the header on desktop (Connections is no longer
+     self-headed), and back/theme both live in the sidebar — so hide the page's
+     own header and let the one shared crumb do the job. */
+  .header { display: none; }
   .page {
     max-width: 1000px;
     margin: 0 auto;

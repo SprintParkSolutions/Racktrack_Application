@@ -441,6 +441,10 @@
    the page actually uses the space. Appended last so these win on source
    order over the base rules above. */
 @media (min-width: 768px) {
+  /* On desktop/tablet the shell crumb is the header, and Sign out lives in the
+     sidebar, so Profile's own sticky topbar is redundant — hide it so every
+     page shows the one identical header. */
+  .topbar { display: none; }
   .main {
     max-width: 760px;
     padding: 40px 32px 96px;

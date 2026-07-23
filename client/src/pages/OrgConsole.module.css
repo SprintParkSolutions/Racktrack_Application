@@ -353,3 +353,19 @@
 .scanId { font-size: 12px; font-weight: 700; color: #0b0c0e; }
 .scanSub { font-size: 11.5px; color: #6b6b6b; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scanDate { font-size: 11px; color: #9a9a9a; margin-top: 1px; }
+
+/* ── Inside the sidebar shell (≥768px) ────────────────────────────────
+   This page used position:fixed; inset:0 to break out of the mobile 540px
+   column. Inside DesktopShell that fixed overlay covered the sidebar and made
+   Organizations feel like a separate app. At tablet/desktop widths the shell
+   already owns the scroll area, so stand the fixed positioning down and let
+   the page flow in the shell's content canvas — sidebar stays visible, exactly
+   like every other page. Phones (<768px) keep the full-screen scroller. */
+@media (min-width: 768px) {
+  .scroll {
+    position: static;
+    inset: auto;
+    overflow-y: visible;
+    background: transparent;
+  }
+}

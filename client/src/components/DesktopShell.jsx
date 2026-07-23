@@ -144,7 +144,12 @@ export default function DesktopShell({ children }) {
   // wide screens (iPad landscape / desktop), so we let the page own it.
   // /help draws its own header (the DOT bar). Without it here the shell's
   // breadcrumb sat on top of that, giving the page two stacked headers.
-  const SELF_HEADED = ['/dashboard', '/profile', '/connections', '/help'];
+  // Pages that draw their OWN header on desktop because it carries real
+  // controls the shell crumb can't: Dashboard (live/refresh/tabs), Help (the
+  // DOT chat bar), Organizations (org→list back button). Everything else —
+  // including Profile and Connections now — uses the single shell crumb as its
+  // header, so headers look identical page to page (only the title changes).
+  const SELF_HEADED = ['/dashboard', '/help', '/organizations'];
   // Every /marketplace/* route now renders MarketplaceShell, which draws
   // the section header and nav itself. Matching on the prefix rather than
   // listing each path keeps Orders / Alerts / Dashboard / Partners /
@@ -152,7 +157,7 @@ export default function DesktopShell({ children }) {
   const selfHeaded = SELF_HEADED.includes(location.pathname)
     || location.pathname === '/marketplace'
     || location.pathname.startsWith('/marketplace/');
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // Shared with the phone's bottom bar — see nav/navLinks.jsx. The two used
   // to keep separate hardcoded lists and drifted apart, which is how Lab and
@@ -263,6 +268,17 @@ export default function DesktopShell({ children }) {
 
         <div className={styles.sidebarBottom}>
           <ThemeToggle />
+          {/* Sign out lives here so Profile no longer needs its own header on
+              desktop — the shell's crumb can be the single header there too. */}
+          <button
+            type="button"
+            className={styles.signOut}
+            onClick={() => { logout(); navigate('/'); }}
+            aria-label="Sign out"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Sign out</span>
+          </button>
         </div>
       </aside>
 
