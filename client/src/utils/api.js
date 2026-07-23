@@ -164,6 +164,17 @@ export function bustUrl(url) {
   return base + '?' + params.join('&');
 }
 
+// The public origin an off-device link (an invite, a shared report) should
+// point at. In the native app window.location.origin is capacitor://localhost
+// (iOS) or http://localhost (Android) — useless the moment the link leaves the
+// phone. Use the configured backend host, which serves the web app (including
+// the accept-invite page). On the web, API_BASE is empty and the served origin
+// already IS the public one.
+export function publicOrigin() {
+  if (API_BASE) return API_BASE.replace(/\/+$/, '');
+  try { return window.location.origin; } catch { return ''; }
+}
+
 export function apiUrl(path) {
   if (!path) return path;
   if (/^https?:\/\//i.test(path)) return withAppKey(path); // already absolute

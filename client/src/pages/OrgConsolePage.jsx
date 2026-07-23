@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useId } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { apiUrl, authFetch } from '../utils/api';
+import { apiUrl, authFetch, publicOrigin } from '../utils/api';
 import styles from './OrgConsole.module.css';
 import OrgConnectionsPanel from '../components/OrgConnectionsPanel.jsx';
 import BackButton from '../components/BackButton.jsx';
@@ -811,8 +811,10 @@ function InviteModal({ siteId, siteName, onClose }) {
   const set = (k) => (e) => setF(v => ({ ...v, [k]: e.target.value }));
   const { run, busy, err } = useSubmit(async () => {
     const d = await postJSON(`/api/sites/${siteId}/invites`, f);
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    setLink(origin + d.invite.path);
+    // publicOrigin(), not window.location.origin: in the native app the latter
+    // is capacitor://localhost / http://localhost, so a shared invite link was
+    // dead. This resolves to the real backend host that serves the web app.
+    setLink(publicOrigin() + d.invite.path);
   });
   const copy = async () => {
     try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (_) {}
