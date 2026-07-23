@@ -12362,7 +12362,7 @@
     },
     {
       "question": "The assistant can't help me. How do I reach a real person?",
-      "answer": "Under any reply where the assistant declines, tap \"Reach a person\" next to \"Still stuck?\". It asks the assistant how to contact support, and the reply tells you what to do next based on your role:\n\n• Technicians: contact your RackTrack administrator with what you were doing when it happened.\n• Owners, org admins and site managers: capture the exact error text and steps to reproduce, then escalate to the engineering team.",
+      "answer": "Email the RackTrack support team at support@racktrack.ai. Include what you were doing when it happened and the exact error text (or a screenshot) so they can help without going back and forth.\n\nYou can also tap \"Reach a person\" next to \"Still stuck?\" under any assistant reply that declines — it points you to the same support inbox.",
       "symptoms": [
         "How do I contact support?",
         "Still stuck after asking the assistant",
@@ -12395,7 +12395,7 @@
       "_refuted": 0,
       "id": "HELP-003",
       "category": "Getting help",
-      "short": "\". It asks the assistant how to contact support, and the reply tells you what to do next based on your role: • Technicians: contact your RackTrack administrator with what you were doing when it happened."
+      "short": "Email the RackTrack support team at support@racktrack.ai with what you were doing and the exact error text. \"Reach a person\" under a declined reply points to the same inbox."
     },
     {
       "question": "I pasted my password into the help chat by mistake — what now?",

@@ -532,9 +532,11 @@ async function llmAvailable(recheck = false) {
 }
 
 // One escalation line, because there is one bot. It has to work whether the
-// reader is a technician or the person who runs the platform.
+// reader is a technician or the person who runs the platform. Give a concrete
+// destination — a support inbox — not a vague "pass it to the team", so the
+// user knows exactly how to reach a person.
 const ESCALATION_TEXT =
-  'Note what you were doing when it happened and any exact error text, and pass that to the RackTrack team.';
+  'Note what you were doing when it happened and any exact error text, and email it to support@racktrack.ai.';
 const ESCALATION = new Proxy({}, { get: () => ESCALATION_TEXT });
 
 function buildPrompt(matches, tier) {
