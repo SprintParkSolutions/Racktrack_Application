@@ -7,6 +7,13 @@ on:
     # `pull_request` — without it here, every gate below is dead weight.
     branches: [main, july9_full]
   pull_request:
+  # Weekly run, independent of any push. Catches drift that a quiet week hides:
+  # a transitive dependency that started failing, an environment change, a test
+  # that only breaks against a fresh install. Monday 06:00 UTC.
+  schedule:
+    - cron: '0 6 * * 1'
+  # And a button in the Actions tab to run the whole gate on demand.
+  workflow_dispatch:
 
 # Cancel superseded runs on the same ref to save minutes.
 concurrency:
@@ -77,6 +84,53 @@ jobs:
       - name: Lint client
         working-directory: client
         run: npm run lint --if-present
+
+  # ---------------------------------------------------------------------------
+  # Browser sweep. Drives the BUILT client in a real browser as a signed-in
+  # user across every major route and fails on a white screen, an icon that
+  # renders as literal text, horizontal overflow at 320px, a sub-16px input,
+  # or any console error. This is the gate the unit suites cannot be: build,
+  # lint and 200+ tests once all passed while every icon rendered as its name.
+  # All APIs are stubbed in-browser, so no server or database is needed.
+  # ---------------------------------------------------------------------------
+  browser:
+    name: Browser sweep (built client)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install client deps
+        working-directory: client
+        run: npm ci
+
+      - name: Build client
+        working-directory: client
+        run: npm run build
+
+      - name: Install e2e deps + Chromium
+        working-directory: e2e
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      # Serve and sweep in ONE step: a background server started in a separate
+      # step is not reliably alive in the next one.
+      - name: Serve the built client and run the sweep
+        env:
+          BASE_URL: https://localhost:4173
+        run: |
+          (cd client && npm run preview &)
+          for i in $(seq 1 30); do
+            curl -ksf https://localhost:4173/ >/dev/null && break
+            sleep 1
+          done
+          curl -ksf https://localhost:4173/ >/dev/null || { echo "preview server did not come up" >&2; exit 1; }
+          cd e2e && node sweep.mjs
 
   # ---------------------------------------------------------------------------
   # Python: install the CV/pipeline deps, unit-test the weight-free logic, and

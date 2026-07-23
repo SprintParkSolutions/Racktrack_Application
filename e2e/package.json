@@ -1,0 +1,12 @@
+{
+  "name": "racktrack-e2e",
+  "private": true,
+  "description": "Browser smoke sweep — drives the built client in a real browser as a signed-in user. Self-contained so Playwright never enters the app's own dependency tree.",
+  "type": "module",
+  "scripts": {
+    "sweep": "node sweep.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}
