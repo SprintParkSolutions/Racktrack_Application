@@ -1269,19 +1269,24 @@ export default function ScanPage() {
         </svg>
       </div>
 
-      {/* Header — soft back chip + centered white pill title */}
-      <header className={styles.header}>
-        {/* Was a hardcoded navigate('/'), which threw you out to the landing
-            page even when you had arrived from a results view. Go back to
-            wherever you came from, falling back to Home on a cold start. */}
-        <button className="btn btn-ghost btn-icon" onClick={goBackFromScan} aria-label="Back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 19l-7-7 7-7"/>
-          </svg>
-        </button>
-        <span className={styles.headerTitle}>Scan your Rack</span>
-        <div style={{width:44}} aria-hidden="true"/>
-      </header>
+      {/* Header — soft back chip + centered white pill title. Mobile only:
+          on desktop/iPad the DesktopShell already draws the page header
+          (the "New scan" crumb), so rendering this too gave two stacked
+          headers. Hide it inside the shell. */}
+      {!isDesktop && (
+        <header className={styles.header}>
+          {/* Was a hardcoded navigate('/'), which threw you out to the landing
+              page even when you had arrived from a results view. Go back to
+              wherever you came from, falling back to Home on a cold start. */}
+          <button className="btn btn-ghost btn-icon" onClick={goBackFromScan} aria-label="Back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <span className={styles.headerTitle}>Scan your Rack</span>
+          <div style={{width:44}} aria-hidden="true"/>
+        </header>
+      )}
 
       <div className={`pc ${styles.scanContent} ${isDesktop ? styles.scanContentDesktop : ''}`}>
         <div className={styles.scanIntro}>
