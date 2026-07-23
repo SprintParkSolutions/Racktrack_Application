@@ -77,6 +77,12 @@ export default function OrgConsolePage() {
   const openOrg = useCallback(async (org) => {
     setActiveOrg(org);
     setError(null);
+    // Clear the previous org's data before loading the new one. Without this,
+    // one org's members/sites — and their Edit / Remove options — lingered
+    // under the new org's header while the fetch was in flight, so controls for
+    // a different organization appeared to "come back". Also close any open ⋮.
+    setMembers([]); setSites([]); setOdash(null);
+    setMenuFor(null); setOrgMenuFor(null);
     try {
       const [d, m] = await Promise.all([
         getJSON(`/api/orgs/${org.id}/dashboard`),
