@@ -1,0 +1,26 @@
+/* Desktop / tablet layout overrides for the Switch Information page.
+   NOTE: this page's base styles live in the shared SpecificationsPage.module.css
+   (imported as `styles`). These page-scoped classes are layered on top via a
+   second import (`desk`) so the shared module — and the Specifications page that
+   also uses it — is left completely untouched.
+
+   At >=768px the page renders inside DesktopShell (sidebar + a top crumb header
+   that already provides the title / back button / theme toggle), so:
+   1. the page's own header is redundant -> hide it, and
+   2. the content should use the screen width as a centered, readable column
+      instead of the inherited phone-width column.
+
+   Mobile (<768px) has no rules here, so it is unchanged. */
+@media (min-width: 768px) {
+  /* !important because the base .header (display:flex) lives in the OTHER CSS
+     module (shared SpecificationsPage.module.css); the two have equal
+     specificity, so without this the winner would depend on bundle order. */
+  .header {
+    display: none !important;
+  }
+  .main {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 32px 32px 64px;
+  }
+}

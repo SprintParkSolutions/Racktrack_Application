@@ -99,9 +99,11 @@ export default function HomeStudio() {
           </div>
         </div>
 
-        {/* real datacenter photo with an AI scan-viewfinder overlay */}
+        {/* A real RackTrack rack (labelled switches + patch panels) under the
+            AI scan-viewfinder — the actual thing the app scans, not a generic
+            stock datacenter. */}
         <div className={styles.deck}>
-          <img src="/datacenter.jpg" alt="Datacenter racks under live scan" className={styles.photo} />
+          <img src="/test_rack.jpg" alt="A live equipment rack being scanned by RackTrack" className={styles.photo} />
           <div className={styles.shade} aria-hidden="true" />
           <div className={styles.scan} aria-hidden="true" />
 

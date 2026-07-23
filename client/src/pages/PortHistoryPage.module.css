@@ -1435,3 +1435,15 @@
 }
 .legend::-webkit-scrollbar { display: none !important; }
 .legend > * { flex: 0 0 auto !important; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Desktop / tablet (≥768px) — the DesktopShell already renders a sidebar
+   plus a top crumb header (title + back), so the page's own phone header
+   is a duplicate: hide it. And let the telemetry/timeline content use the
+   screen width instead of the mobile phone column. Appended last so it
+   wins on source order. Mobile (<768px) is untouched.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  .header { display: none; }
+  .main { max-width: 1000px; margin: 0 auto; padding: 32px 32px 64px; }
+}

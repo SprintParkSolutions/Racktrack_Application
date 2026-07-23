@@ -433,3 +433,31 @@
   object-fit: cover;
   display: block;
 }
+
+/* ── Desktop / tablet layout ──────────────────────────────────────────
+   Inside the sidebar shell (≥768px) the content rail used to stay a 28rem
+   phone column, so Profile "looked like mobile" on a laptop or iPad. Widen
+   the rail on a tablet, and lay the section cards two-up on a wide screen so
+   the page actually uses the space. Appended last so these win on source
+   order over the base rules above. */
+@media (min-width: 768px) {
+  .main {
+    max-width: 760px;
+    padding: 40px 32px 96px;
+  }
+  .hero { margin-bottom: 44px; }
+}
+@media (min-width: 1120px) {
+  .main {
+    max-width: 1000px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+    row-gap: 20px;
+    align-content: start;
+  }
+  /* Hero (avatar + identity) spans the full width above the two columns. */
+  .hero { grid-column: 1 / -1; margin-bottom: 12px; }
+  /* Grid gap owns the spacing now — drop the per-card bottom margin. */
+  .section { margin-bottom: 0; }
+}

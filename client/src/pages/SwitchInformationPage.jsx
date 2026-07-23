@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useSmartBack } from '../hooks/useSmartBack';
 import styles from './SpecificationsPage.module.css';
+import desk from './SwitchInformationPage.module.css';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import { useTheme } from '../ThemeContext.jsx';
@@ -1437,11 +1438,11 @@ export default function SwitchInformationPage() {
   const [showTop, setShowTop] = useState(false);
 
   return (
-    <div className={`page page-full ${styles.specs}`}>
+    <div className={`page page-full ${styles.specs} ${desk.main}`}>
       <div className={styles.amb} />
       <div className={styles.amb2} />
 
-      <header className={styles.header}>
+      <header className={`${styles.header} ${desk.header}`}>
         <button className={styles.backBtn} onClick={() => goBack()} aria-label="Back">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/>

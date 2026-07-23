@@ -163,12 +163,30 @@
 @media (max-aspect-ratio: 1/1) {
   .main {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
     align-items: start;
-    gap: clamp(20px, 3vh, 34px);
+    gap: clamp(22px, 3.4vh, 38px);
+    /* Breathing room so the stacked hero isn't jammed against the edges on
+       an iPad in portrait. */
+    padding: clamp(8px, 2vh, 28px) 0 clamp(24px, 4vh, 44px);
   }
   .head { font-size: clamp(2.6rem, 7vw, 4rem); }
-  .deck { max-height: none; width: 100%; }
+  /* The rack is a tall (portrait) photo. Give the stacked deck a real,
+     bounded height with a rack-like portrait ratio and centre it, instead of
+     letting it fill all remaining space and crop the rack to a thin band. */
+  .deck {
+    max-height: none;
+    width: min(100%, 460px);
+    justify-self: center;
+    aspect-ratio: 3 / 4;
+  }
+}
+
+/* ── iPad landscape / small laptop (768–1180, wide) — the two-column hero
+   fits, just keep it from crowding the edges. ── */
+@media (min-width: 768px) and (min-aspect-ratio: 1/1) and (max-width: 1180px) {
+  .main { gap: clamp(28px, 4vw, 56px); }
+  .deck { max-height: min(72vh, 560px); }
 }
 
 /* keep type sane on ultrawide */

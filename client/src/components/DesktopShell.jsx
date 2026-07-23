@@ -105,6 +105,7 @@ const PAGE_TITLE = {
   '/':                 { title: 'Home',                sub: 'Overview' },
   '/scan':             { title: 'New scan',            sub: 'Upload, camera, or video' },
   '/profile':          { title: 'Profile',             sub: 'Account & history' },
+  '/organizations':    { title: 'Organizations',       sub: 'Members, sites & approvals' },
   '/connections':      { title: 'Connections',         sub: 'Active data sources' },
   '/results':          { title: 'Scan results',        sub: 'Devices & ports' },
   '/specifications':   { title: 'Specifications',      sub: 'Vendor & model lookup' },

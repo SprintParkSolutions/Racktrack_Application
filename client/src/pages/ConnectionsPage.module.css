@@ -482,3 +482,18 @@
 .btnPrimary:disabled, .btnGhost:disabled {
   opacity: 0.6; cursor: not-allowed; transform: none;
 }
+
+/* ── Desktop / tablet (≥768px) ─────────────────────────────────────────
+   At ≥768px this page renders inside DesktopShell's full-width sidebar
+   canvas (it's SELF_HEADED, so it draws its own header above). Give the
+   content container a comfortable centred column with real page padding
+   so it reads as a desktop settings screen instead of a phone-width strip.
+   Appended last so it wins on source order over the base .page rule.
+   Mobile (<768px) is untouched. */
+@media (min-width: 768px) {
+  .page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 28px 32px 64px;
+  }
+}

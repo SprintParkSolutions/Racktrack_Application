@@ -4164,3 +4164,34 @@
 }
 .filterBtn:hover { background: rgba(0,0,0,0.04) !important; color: rgba(0,0,0,0.7) !important; }
 .filterBtnActive { background: rgba(0,0,0,0.07) !important; color: #1a1c1d !important; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   DESKTOP / TABLET (≥768px)
+   The page renders inside DesktopShell, which already supplies the left
+   sidebar and a top crumb bar carrying the "Network view" title + back
+   affordance. This page's own header therefore duplicates the back button
+   and title/subtitle — hide those, but KEEP the live HealthPill (a real
+   status indicator) right-aligned. Also let the content use the screen
+   width instead of sitting in a phone-width column.
+   Scoped to ≥768px only — mobile (<768px) is unchanged.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  .header {
+    justify-content: flex-end;      /* only the HealthPill remains → push right */
+    padding: 12px 32px 0;
+    border-bottom: none !important; /* beats the !important base border-bottom */
+  }
+  /* The back button is the header's only <button> (it uses the global
+     .btn/.btn-ghost/.btn-icon classes, not a CSS-module class), and the
+     title + rackId subtitle live in .headerCenter. Hide both. The
+     HealthPill is a <span>, so it is untouched and stays visible. */
+  .header > button:first-child,
+  .headerCenter {
+    display: none;
+  }
+  .main {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 8px 32px 64px;
+  }
+}

@@ -43,6 +43,9 @@ export const TwoRackIcon = () => (
 export const LabIcon = () => (
   <svg {...s}><path d="M9 3v6.5L4.5 18A2 2 0 006.3 21h11.4a2 2 0 001.8-3L15 9.5V3"/><path d="M8 3h8"/><path d="M7.5 14h9"/></svg>
 );
+export const OrgIcon = () => (
+  <svg {...s}><path d="M3 21h18"/><path d="M5 21V6a1 1 0 011-1h6a1 1 0 011 1v15"/><path d="M13 21V10a1 1 0 011-1h4a1 1 0 011 1v11"/><path d="M8 9h1M8 13h1M8 17h1M16 13h.5M16 17h.5"/></svg>
+);
 export const HelpIcon = () => (
   <svg {...s}><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.9 2.9 0 015.6 1c0 2-2.8 2.6-2.8 4"/><circle cx="12" cy="17.4" r="1" fill="currentColor" stroke="none"/></svg>
 );
@@ -64,6 +67,13 @@ export function usePrimaryNav() {
     { to: '/scan',           label: 'Scan',         icon: <ScanIcon />,        end: false, inBar: true },
     { to: '/multi-rack/new', label: 'Two racks',    icon: <TwoRackIcon />,     end: false,
       hint: 'Scan two racks together' },
+    // Organization Console — manage organizations, members and sites. Owner
+    // and org-admin only. This used to be reachable ONLY from the Profile
+    // page, so on a tablet it was missing from the sidebar entirely and on a
+    // phone it was missing from the More menu. Putting it in the shared list
+    // makes it show in both, from one definition.
+    ...(isAdmin ? [{ to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,
+      hint: 'Organizations, members and sites' }] : []),
     // Operations Console (live ops + server logs) — owner-only.
     ...(isOwner ? [{ to: '/dashboard', label: 'Console', icon: <DashboardIcon />, end: false,
       hint: 'Live operations and server logs' }] : []),
