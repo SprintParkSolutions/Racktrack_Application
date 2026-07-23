@@ -3,6 +3,7 @@ import { apiUrl, authFetch } from '../utils/api';
 import { LogsView } from './LogsPage.jsx';
 import styles from './DashboardPage.module.css';
 import BackButton from '../components/BackButton.jsx';
+import { HeaderActions } from '../components/ShellHeader.jsx';
 
 // A short, human label for each audit action so the feed reads in plain
 // English instead of dotted machine keys.
@@ -361,6 +362,21 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
+      {/* On desktop the page header is hidden (the shared shell header shows
+          "Operations Console"); the Live / Refresh controls portal into the
+          shell header's right slot. No-op on mobile, so nothing duplicates. */}
+      <HeaderActions>
+        <button
+          className={`${styles.liveBtn} ${live ? styles.liveOn : ''}`}
+          onClick={() => setLive(v => !v)}
+          title={live ? 'Auto-refresh on' : 'Auto-refresh paused'}
+        >
+          <span className={styles.liveDot} />
+          {live ? 'Live' : 'Paused'}
+        </button>
+        <button className={styles.refreshBtn} onClick={() => setRefreshTick(n => n + 1)}>Refresh</button>
+      </HeaderActions>
+
       <header className={styles.header}>
         <BackButton fallback="/" />
         <div>

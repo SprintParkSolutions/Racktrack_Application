@@ -231,6 +231,18 @@
 }
 :global([data-theme='light']) .crumbSub { color: #4c4546; }
 
+/* Right-hand actions slot — pages portal their controls here (List an item,
+   Live/Refresh, org actions). Pushed to the far right; the title stays hard
+   left next to the back button on every page. */
+.headerActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.headerActions:empty { display: none; }
+
 /* Content canvas — pages render full-width below the topbar. Scrolling
    lives here (rather than on .main) so the topbar stays sticky and only
    the page itself moves under the user's wheel/trackpad. */

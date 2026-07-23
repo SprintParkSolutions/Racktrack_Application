@@ -458,3 +458,12 @@
   .starters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .intro h2 { font-size: 1.8rem; }
 }
+
+/* ── Desktop shared header (768px and up) ────────────────────────────
+   DesktopShell draws one header for every page ([back] [Title] + actions).
+   Hide this page's own [back] DOT bar so there is no double header. The
+   chat log and composer are untouched. Appended last so it wins on source
+   order over the .head padding rule above. */
+@media (min-width: 768px) {
+  .head { display: none; }
+}

@@ -5,6 +5,7 @@ import { apiUrl, authFetch, publicOrigin } from '../utils/api';
 import styles from './OrgConsole.module.css';
 import OrgConnectionsPanel from '../components/OrgConnectionsPanel.jsx';
 import BackButton from '../components/BackButton.jsx';
+import { HeaderActions, useHeaderBack } from '../components/ShellHeader.jsx';
 import useModalA11y from '../hooks/useModalA11y.js';
 import Icon from '../components/Icon';
 
@@ -190,11 +191,27 @@ export default function OrgConsolePage() {
     }
   };
 
+  // The shared shell Back button clears the active org (returns to the org
+  // list) when an owner is inside one — mirroring the page's own in-page back.
+  // At the list it falls back to the default history back.
+  useHeaderBack(
+    activeOrg && isOwner
+      ? () => { setActiveOrg(null); setSites([]); setMembers([]); setOdash(null); setOrgMenuFor(null); }
+      : null,
+  );
+
   if (loading) return <div className={styles.scroll}><div className={styles.page}><div className={styles.loading}>Loading…</div></div></div>;
 
   return (
     <div className={styles.scroll}>
     <div className={styles.page}>
+      {/* On desktop the shared shell header shows the title + Back; the page's
+          own header below is hidden there. Keep just the role badge visible by
+          porting it into the shell header — Console / App / Sign out are all in
+          the sidebar now, so they're dropped on desktop. */}
+      <HeaderActions>
+        <span className={styles.roleBadge}>{roleLabel(user?.role)}</span>
+      </HeaderActions>
       <header className={styles.head}>
         {activeOrg && isOwner
           // Inside an organization, "back" returns to the organization LIST,

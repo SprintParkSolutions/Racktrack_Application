@@ -5,6 +5,7 @@ import './marketplace-theme.css';
 import { apiUrl, authFetch } from '../../utils/api';
 import { useAuth } from '../../AuthContext.jsx';
 import ThemeToggle from '../ThemeToggle.jsx';
+import { HeaderActions } from '../ShellHeader.jsx';
 
 /* Shared chrome for every /marketplace/* route.
 
@@ -154,6 +155,13 @@ export default function MarketplaceShell({
           })}
         </nav>
       </header>
+
+      {/* On desktop the DesktopShell draws the one shared [back] [Title] bar
+          and this page's .headerTop is hidden, so port the primary action
+          into the shell header's right slot. No-op on mobile (renders null),
+          where the .headerTop button above stays the visible one. The shell
+          sidebar already has a ThemeToggle, so it is not ported here. */}
+      <HeaderActions>{resolvedAction}</HeaderActions>
 
       <main className={styles.main}>{children}</main>
     </div>

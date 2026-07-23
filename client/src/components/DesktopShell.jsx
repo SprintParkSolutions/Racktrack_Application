@@ -1,10 +1,11 @@
 import { createPortal } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import styles from './DesktopShell.module.css';
 import ThemeToggle from './ThemeToggle.jsx';
 import { useAuth } from '../AuthContext';
 import { usePrimaryNav } from '../nav/navLinks.jsx';
+import { ShellHeaderContext } from './ShellHeader.jsx';
 
 // Persistent record of the last rack the user opened. Once an image has
 // been scanned and the user lands on /results/<rackId>, that rackId is
@@ -116,10 +117,15 @@ const PAGE_TITLE = {
   '/marketplace/new':  { title: 'New listing',         sub: 'List surplus equipment' },
   '/dashboard':        { title: 'Operations Console',  sub: 'Live activity, health & server logs' },
   '/multi-rack/new':   { title: 'Scan two racks',      sub: 'Detect both + the cabling between them' },
+  '/lab':              { title: 'Lab',                 sub: 'Live switches in the test lab' },
+  '/help':             { title: 'Ask DOT',             sub: 'Answers from verified documentation' },
 };
 
 function deriveTitle(pathname) {
   if (PAGE_TITLE[pathname]) return PAGE_TITLE[pathname];
+  // Marketplace sub-sections (Orders / Alerts / Dashboard / Partners …) all sit
+  // under the one "Marketplace" title; the active tab shows which section.
+  if (pathname.startsWith('/marketplace')) return { title: 'Marketplace', sub: '' };
   if (pathname.startsWith('/results') && pathname.endsWith('/topology'))
     return { title: 'Topology', sub: '3D rack & cabling' };
   if (pathname.startsWith('/results') && pathname.endsWith('/netdisco'))
@@ -139,24 +145,26 @@ export default function DesktopShell({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const crumb = deriveTitle(location.pathname);
-  // These pages render their own full page header (title + controls). Showing
-  // the shell's topbar crumb on top of that produced a duplicate header on
-  // wide screens (iPad landscape / desktop), so we let the page own it.
-  // /help draws its own header (the DOT bar). Without it here the shell's
-  // breadcrumb sat on top of that, giving the page two stacked headers.
-  // Pages that draw their OWN header on desktop because it carries real
-  // controls the shell crumb can't: Dashboard (live/refresh/tabs), Help (the
-  // DOT chat bar), Organizations (org→list back button). Everything else —
-  // including Profile and Connections now — uses the single shell crumb as its
-  // header, so headers look identical page to page (only the title changes).
-  const SELF_HEADED = ['/dashboard', '/help', '/organizations'];
-  // Every /marketplace/* route now renders MarketplaceShell, which draws
-  // the section header and nav itself. Matching on the prefix rather than
-  // listing each path keeps Orders / Alerts / Dashboard / Partners /
-  // Checkout from growing a second, duplicate title bar on wide screens.
-  const selfHeaded = SELF_HEADED.includes(location.pathname)
-    || location.pathname === '/marketplace'
-    || location.pathname.startsWith('/marketplace/');
+
+  // ── The one header ────────────────────────────────────────────────────
+  // Every page renders inside this shell and shares ONE top bar: [back]
+  // [Title] on the left, an actions slot on the right. Pages no longer draw
+  // their own header on desktop — they hide it and, if they have right-side
+  // controls, portal them into `actionsEl` via <HeaderActions>. `backHandler`
+  // lets a page override what Back does (the org console clears the active org
+  // instead of navigating). This is what makes the header identical page to
+  // page — same position, font, size, back button — with only the title
+  // changing.
+  const [actionsEl, setActionsEl] = useState(null);
+  const [backHandler, setBackHandler] = useState(null);
+  const goBack = useCallback(() => {
+    if (typeof backHandler === 'function') { backHandler(); return; }
+    const idx = window.history.state && window.history.state.idx;
+    if (typeof idx === 'number' && idx > 0) navigate(-1);
+    else navigate('/');
+  }, [backHandler, navigate]);
+  const headerCtx = useMemo(() => ({ actionsEl, setBackHandler }), [actionsEl]);
+
   const { user, logout } = useAuth();
 
   // Shared with the phone's bottom bar — see nav/navLinks.jsx. The two used
@@ -284,26 +292,25 @@ export default function DesktopShell({ children }) {
 
       {/* ── Main area ───────────────────────────────────────────── */}
       <section className={styles.main}>
-        {!selfHeaded && (
-          <header className={styles.topBar}>
-            {location.pathname.endsWith('/ports') && (
-              <button
-                type="button"
-                className={styles.topBack}
-                aria-label="Back"
-                onClick={() => navigate(-1)}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-              </button>
-            )}
-            <div className={styles.crumbBlock}>
-              <span className={styles.crumbTitle}>{crumb.title}</span>
-              {crumb.sub && <span className={styles.crumbSub}>{crumb.sub}</span>}
-            </div>
-          </header>
-        )}
+        {/* The ONE header — back + title on the left, page actions on the
+            right. Same on every page; only the title text changes. */}
+        <header className={styles.topBar}>
+          <button
+            type="button"
+            className={styles.topBack}
+            aria-label="Back"
+            onClick={goBack}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <span className={styles.crumbTitle}>{crumb.title}</span>
+          {/* Pages portal their right-side controls here via <HeaderActions>. */}
+          <div ref={setActionsEl} className={styles.headerActions} />
+        </header>
 
-        <div className={styles.fluid}>{children}</div>
+        <div className={styles.fluid}>
+          <ShellHeaderContext.Provider value={headerCtx}>{children}</ShellHeaderContext.Provider>
+        </div>
       </section>
     </div>,
     document.body

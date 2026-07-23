@@ -368,4 +368,7 @@
     overflow-y: visible;
     background: transparent;
   }
+  /* The shared shell header (back + "Organizations" + role badge) is the header
+     on desktop, so hide the page's own head bar to avoid two stacked headers. */
+  .head { display: none; }
 }

@@ -112,6 +112,21 @@
   display: flex; flex-direction: column; gap: 20px;
 }
 
+/* ── Desktop (≥ shell breakpoint) ────────────────────────────────────
+   The DesktopShell now draws the one shared [back] [Title] header with a
+   right-side actions slot. Hide THIS header's top row (back + title +
+   subtitle + actions) so there is no double header; the primary action is
+   ported into the shell header via <HeaderActions>. The section nav is NOT
+   part of the shared header — it's sub-navigation — so it stays visible and
+   stays sticky, pinning flush under the shell's top bar while a long
+   listings grid scrolls beneath it (.fluid is the scroll container). */
+@media (min-width: 768px) {
+  .headerTop { display: none; }
+  /* Drop the mobile safe-area inset (meaningless on desktop; it would push
+     the nav down and make it read as detached). Keep position: sticky. */
+  .header { padding-top: 0; }
+}
+
 @media (max-width: 560px) {
   .headerTop { padding: 12px 14px 10px; gap: 10px; }
   .nav  { padding: 0 14px; }
