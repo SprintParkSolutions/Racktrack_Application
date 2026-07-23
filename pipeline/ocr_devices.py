@@ -384,8 +384,42 @@ def _read_whole_image(reader, img) -> list[dict]:
             "box":  box,
             "cx":   (box[0] + box[2]) / 2.0,
             "cy":   (box[1] + box[3]) / 2.0,
+            # Keep the original detection so a device's make+model can be read
+            # by switch-ocr's own identify_device (see _identify_switch), which
+            # covers far more vendors/models than the local MODEL_PATTERNS.
+            "_det": det,
         })
     return out
+
+
+def _identify_switch(labels: list[dict]) -> tuple[str | None, str | None]:
+    """Make + model for one device, using switch-ocr's own identifier.
+
+    We already ask switch-ocr to READ the faceplate; it also IDENTIFIES it
+    (fuzzy brand matching that absorbs OCR errors like "D-Lirk", vendor model
+    regexes, and a universal fallback that pulls a model shape for any vendor,
+    even ones not in its knowledge base). The old code threw that away and
+    re-derived make/model from a 26-vendor local regex, so any switch outside
+    that list came back make-only. Use the identifier the engine already ran.
+    """
+    try:
+        from switch_ocr import identify_device
+    except Exception:
+        return None, None
+    dets = [l["_det"] for l in labels if l.get("_det") is not None]
+    if not dets:
+        return None, None
+    try:
+        dev = identify_device(dets)
+    except Exception:
+        return None, None
+    make = (dev.brand or None)
+    model = (dev.model or None)
+    # A model must look like one (has a digit, not a stray word) so the
+    # universal fallback can't promote a random faceplate string to a model.
+    if model and not any(c.isdigit() for c in model):
+        model = None
+    return make, model
 
 
 def _labels_for_box(detections: list[dict], box: list[int], pad: int = 2) -> list[dict]:
@@ -402,7 +436,8 @@ def _labels_for_box(detections: list[dict], box: list[int], pad: int = 2) -> lis
     # a chassis are a single row far more often than not, so band the y a little
     # before sorting or a 2px baseline wobble scrambles the line.
     inside.sort(key=lambda d: (round(d["cy"] / 12.0), d["cx"]))
-    return [{"text": d["text"], "conf": d["conf"], "x": d["cx"], "y": d["cy"]} for d in inside]
+    return [{"text": d["text"], "conf": d["conf"], "x": d["cx"], "y": d["cy"],
+             "_det": d.get("_det")} for d in inside]
 
 
 def _build_reader():
@@ -526,7 +561,15 @@ def run(rack_id: str) -> dict:
         text = " ".join(l["text"] for l in labels)
         ocr_conf = round(sum(l["conf"] for l in labels) / len(labels), 3) if labels else 0.0
 
-        make, model = parse_make_model(text, vendor_names)
+        # switch-ocr's own identifier first — it covers the vendors and model
+        # formats the local MODEL_PATTERNS regex misses (which is why testers
+        # were seeing make with no model). Fall back to the local parser for
+        # anything it leaves blank.
+        make, model = _identify_switch(labels)
+        if not (make and model):
+            m2, mo2 = parse_make_model(text, vendor_names)
+            make = make or m2
+            model = model or mo2
         version = parse_version(text)
 
         if make and model:

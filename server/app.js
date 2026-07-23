@@ -3532,6 +3532,21 @@ app.post('/api/select', async (req, res) => {
       : {};
     const portInfo = fullData.port_info || {};
 
+    // Occupancy is 'connected', 'empty', or 'unknown' — 'unknown' meaning the
+    // status model couldn't measure THIS port (a coverage gap). The pipeline is
+    // deliberately honest about that and never guesses, because guessing once
+    // fed wrong data into topology and the CMDB (see pipeline/runner.py). But
+    // testers found a bare "Unknown" on the Port Located screen confusing, so
+    // for the FIND-PORT DISPLAY ONLY we present an unmeasured port as 'empty' —
+    // the conservative reading (don't claim a link we didn't see). The honest
+    // value is preserved on occupancy_source, and the data that feeds topology
+    // and the CMDB is the pipeline's, untouched by this line.
+    if (portInfo.status !== 'connected' && portInfo.status !== 'empty') {
+      portInfo.occupancy_source = portInfo.occupancy_source || 'unknown';
+      portInfo.status_measured = portInfo.status || 'unknown';
+      portInfo.status = 'empty';
+    }
+
     // Re-stamp port_info with the user-visible number so the UI sees
     // its own corrected numbering, not the raw pipeline output.
     if (appliedShift !== 0) {
