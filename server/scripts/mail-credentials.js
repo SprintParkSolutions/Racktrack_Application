@@ -44,7 +44,7 @@ const only = (() => {
 const APP_URL = (() => {
   try {
     return fs.readFileSync(path.resolve(__dirname, '..', '..', 'BACKEND_URL'), 'utf8').trim();
-  } catch { return 'https://harpist-tying-aware.ngrok-free.dev'; }
+  } catch { return 'https://harpist-uncorrupt-chowder.ngrok-free.dev'; }
 })();
 
 // Single source of truth — the seeder's list, so a password can never drift
