@@ -5,7 +5,7 @@ import { apiUrl, authFetch, publicOrigin } from '../utils/api';
 import styles from './OrgConsole.module.css';
 import OrgConnectionsPanel from '../components/OrgConnectionsPanel.jsx';
 import BackButton from '../components/BackButton.jsx';
-import { HeaderActions, useHeaderBack } from '../components/ShellHeader.jsx';
+import { useHeaderBack } from '../components/ShellHeader.jsx';
 import useModalA11y from '../hooks/useModalA11y.js';
 import Icon from '../components/Icon';
 
@@ -200,19 +200,46 @@ export default function OrgConsolePage() {
       : null,
   );
 
+  // Longest scan bar in the org list is normalised against the busiest org.
+  const maxScans = Math.max(1, ...orgs.map(o => o.scans || 0));
+
   if (loading) return <div className={styles.scroll}><div className={styles.page}><div className={styles.loading}>Loading…</div></div></div>;
 
   return (
     <div className={styles.scroll}>
     <div className={styles.page}>
-      {/* On desktop the shared shell header shows the title + Back; the page's
-          own header below is hidden there. Keep just the role badge visible by
-          porting it into the shell header — Console / App / Sign out are all in
-          the sidebar now, so they're dropped on desktop. */}
-      <HeaderActions>
-        <span className={styles.roleBadge}>{roleLabel(user?.role)}</span>
-      </HeaderActions>
-      <header className={styles.head}>
+      {isOwner && !activeOrg ? (
+        <header className={`${styles.bleed} ${styles.hero}`}>
+          <div className={styles.heroTop}>
+            <div className={styles.heroTopLeft}>
+              <BackButton fallback="/" always className={styles.heroBack} />
+              <h1 className={styles.heroTitle}>Organizations</h1>
+            </div>
+            <span className={styles.ownerPill}>{roleLabel(user?.role)}</span>
+          </div>
+          {dash && (
+            <div className={styles.heroStats}>
+              <div className={styles.heroStat}>
+                <div className={styles.heroStatNum}>{dash.totals.organizations ?? 0}</div>
+                <div className={styles.heroStatLbl}>Organizations</div>
+              </div>
+              <div className={styles.heroStat}>
+                <div className={styles.heroStatNum}>{dash.totals.sites ?? 0}</div>
+                <div className={styles.heroStatLbl}>Sites</div>
+              </div>
+              <div className={styles.heroStat}>
+                <div className={styles.heroStatNum}>{dash.totals.users ?? 0}</div>
+                <div className={styles.heroStatLbl}>Users</div>
+              </div>
+              <div className={styles.heroStat}>
+                <div className={styles.heroStatNum}>{dash.totals.scans ?? 0}</div>
+                <div className={styles.heroStatLbl}>Total scans</div>
+              </div>
+            </div>
+          )}
+        </header>
+      ) : (
+        <header className={styles.head}>
         {activeOrg && isOwner
           // Inside an organization, "back" returns to the organization LIST,
           // not to wherever the owner came from (the dashboard/profile). Only
@@ -239,6 +266,7 @@ export default function OrgConsolePage() {
           <button className={styles.ghostBtn} onClick={logout}>Sign out</button>
         </div>
       </header>
+      )}
 
       {banner && <div className={styles.banner}>{banner}</div>}
       {error && <div className={styles.error}>{error}</div>}
@@ -246,14 +274,6 @@ export default function OrgConsolePage() {
       {/* ── Owner: platform dashboard + organizations ── */}
       {isOwner && !activeOrg && (
         <section>
-          {dash && (
-            <StatRow items={[
-              { label: 'Organizations', value: dash.totals.organizations, icon: 'apartment' },
-              { label: 'Sites', value: dash.totals.sites, icon: 'location_on' },
-              { label: 'Users', value: dash.totals.users, icon: 'group' },
-              { label: 'Total scans', value: dash.totals.scans, icon: 'qr_code_scanner' },
-            ]} />
-          )}
           {pending.length > 0 && (
             <section className={styles.block}>
               <div className={styles.sectionHead}><SecTitle icon="pending_actions">Pending approvals</SecTitle></div>
@@ -276,55 +296,65 @@ export default function OrgConsolePage() {
               </div>
             </section>
           )}
-          <div className={styles.sectionHead}>
-            <SecTitle icon="apartment">All organizations</SecTitle>
-            <button className={styles.primaryBtn} onClick={() => setModal('org')}>+ New organization</button>
-          </div>
-          {orgs.length === 0 ? (
-            <div className={styles.empty}>No organizations yet. Create the first one.</div>
-          ) : (
-            <div className={styles.grid}>
-              {orgs.map(o => (
-                <div key={o.id} className={styles.card}
-                  style={{ position: 'relative', zIndex: orgMenuFor === o.id ? 5 : undefined }}>
-                  <button className={styles.cardMainBtn}
-                    style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}
-                    onClick={() => openOrg(o)}>
-                    <div className={styles.cardName}>
-                      {o.name}
-                      {o.status && o.status !== 'active' && (
-                        <span className={styles.tagOff} style={{ marginLeft: 8 }}>
-                          {o.status === 'pending' ? 'Pending' : 'Inactive'}
-                        </span>
-                      )}
-                    </div>
-                    <div className={styles.cardMeta}>
-                      <span>{o.sites} site{o.sites === 1 ? '' : 's'}</span>
-                      <span>·</span>
-                      <span>{o.users} user{o.users === 1 ? '' : 's'}</span>
-                      <span>·</span>
-                      <span className={styles.cardScans}>{o.scans} scan{o.scans === 1 ? '' : 's'}</span>
-                    </div>
-                  </button>
-                  <div className={styles.kebabWrap} style={{ position: 'absolute', top: 10, right: 10 }}>
-                    <button className={styles.kebabBtn} title="Options" aria-label="Options"
-                      onClick={(e) => { e.stopPropagation(); setOrgMenuFor(orgMenuFor === o.id ? null : o.id); }}>⋮</button>
-                    {orgMenuFor === o.id && (
-                      <div className={styles.menu} onClick={(e) => e.stopPropagation()}>
-                        <button className={styles.menuItem}
-                          onClick={() => { setOrgMenuFor(null); onOrgMenu('edit', o); }}>Edit</button>
-                        <button className={styles.menuItem}
-                          onClick={() => { setOrgMenuFor(null); onOrgMenu('toggle', o); }}>
-                          {o.status === 'active' ? 'Deactivate' : 'Reactivate'}</button>
-                        <button className={`${styles.menuItem} ${styles.menuDanger}`}
-                          onClick={() => { setOrgMenuFor(null); onOrgMenu('remove', o); }}>Remove</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+          <div className={`${styles.bleed} ${styles.listSection}`}>
+            <div className={styles.listHead}>
+              <span className={styles.listEyebrow}>All organizations</span>
+              <button className={styles.primaryBtn} onClick={() => setModal('org')}>+ New organization</button>
             </div>
-          )}
+            {orgs.length === 0 ? (
+              <div className={styles.empty}>No organizations yet. Create the first one.</div>
+            ) : (
+              <div className={styles.orgList}>
+                {orgs.map(o => {
+                  const pct = Math.round(((o.scans || 0) / maxScans) * 100);
+                  return (
+                    <div key={o.id} className={styles.orgRow}
+                      role="button" tabIndex={0}
+                      onClick={() => openOrg(o)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openOrg(o); } }}
+                      style={{ position: 'relative', zIndex: orgMenuFor === o.id ? 5 : undefined }}>
+                      <span className={styles.orgBadge} aria-hidden="true">{orgInitials(o.name)}</span>
+                      <div className={styles.orgInfo}>
+                        <div className={styles.orgRowName}>
+                          {o.name}
+                          {o.status && o.status !== 'active' && (
+                            <span className={styles.tagOff}>
+                              {o.status === 'pending' ? 'Pending' : 'Inactive'}
+                            </span>
+                          )}
+                        </div>
+                        <div className={styles.orgRowMeta}>
+                          {o.sites} site{o.sites === 1 ? '' : 's'} · {o.users} user{o.users === 1 ? '' : 's'}
+                        </div>
+                      </div>
+                      <div className={styles.scanBar}>
+                        <div className={styles.scanTrack}>
+                          <div className={styles.scanFill} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className={styles.scanVal}>{o.scans || 0}</span>
+                      </div>
+                      <div className={styles.kebabWrap} onClick={(e) => e.stopPropagation()}>
+                        <button className={styles.kebabBtn} title="Options" aria-label="Options"
+                          onClick={(e) => { e.stopPropagation(); setOrgMenuFor(orgMenuFor === o.id ? null : o.id); }}>⋮</button>
+                        {orgMenuFor === o.id && (
+                          <div className={styles.menu} onClick={(e) => e.stopPropagation()}>
+                            <button className={styles.menuItem}
+                              onClick={() => { setOrgMenuFor(null); onOrgMenu('edit', o); }}>Edit</button>
+                            <button className={styles.menuItem}
+                              onClick={() => { setOrgMenuFor(null); onOrgMenu('toggle', o); }}>
+                              {o.status === 'active' ? 'Deactivate' : 'Reactivate'}</button>
+                            <button className={`${styles.menuItem} ${styles.menuDanger}`}
+                              onClick={() => { setOrgMenuFor(null); onOrgMenu('remove', o); }}>Remove</button>
+                          </div>
+                        )}
+                      </div>
+                      <span className={styles.orgArrow} aria-hidden="true">→</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </section>
       )}
 
@@ -571,6 +601,14 @@ function ConfirmModal({ title, message, confirmLabel = 'Confirm', danger = false
 
 function roleLabel(r) {
   return { owner: 'Owner', org_admin: 'Org Admin', site_manager: 'Site Manager', member: 'Member' }[r] || r || 'Member';
+}
+
+// 1–2 letter initials for an org's badge (e.g. "Acme Corp" → "AC").
+function orgInitials(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
 function fmtDate(s) {

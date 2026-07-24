@@ -374,23 +374,23 @@
      crushed into a phone-width column, which is exactly the "still looks like
      mobile on my laptop" report. Match the display/padding overrides already
      here. */
-  /* Full width + full height: fill the whole content canvas so there's no dead
-     white space below the dropzone. */
+  /* Full width, no centered cap. */
   max-width: none !important;
   margin: 0 !important;
-  min-height: calc(100vh - 92px) !important;
   height: auto !important;
   overflow: visible !important;
-  align-items: stretch;
+  align-items: start;
 }
 
-/* Media box anchors the left column and stretches to fill the grid height. */
+/* Media box anchors the left column, sized to the viewport height (with a 600px
+   floor) so it fills the screen — no dead band below — WITHOUT running past one
+   screen. */
 .scanContentDesktop .mediaBox {
   grid-column: 1;
   grid-row: 1 / span 99;
   min-height: 600px;
+  height: calc(100vh - 132px);
   max-height: none;
-  height: 100%;
   margin: 0 !important;
 }
 

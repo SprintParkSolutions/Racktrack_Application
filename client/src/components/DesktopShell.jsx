@@ -299,9 +299,10 @@ export default function DesktopShell({ children }) {
       {/* ── Main area ───────────────────────────────────────────── */}
       <section className={styles.main}>
         {/* The ONE header — back + title on the left, page actions on the
-            right. Same on every page; only the title text changes. Contact
-            draws its own full-bleed hero header, so the crumb is suppressed. */}
-        {location.pathname !== '/contact' && (
+            right. Same on every page; only the title text changes. Contact and
+            Organizations draw their own full-bleed hero header, so the crumb is
+            suppressed there. */}
+        {location.pathname !== '/contact' && location.pathname !== '/organizations' && (
         <header className={styles.topBar}>
           <button
             type="button"
