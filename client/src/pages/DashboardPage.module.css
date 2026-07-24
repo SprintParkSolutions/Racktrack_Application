@@ -1,5 +1,5 @@
 .page {
-  max-width: 1240px;
+  max-width: none;
   margin: 0 auto;
   /* This page is a flex item of #root, and `margin: 0 auto` gives it auto
      cross-axis margins, which suppress the normal stretch-to-fill. It then

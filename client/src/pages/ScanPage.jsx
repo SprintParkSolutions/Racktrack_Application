@@ -76,6 +76,9 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
     : 'image/*,image/heic,image/heif,.heic,.heif,video/*';
   const title = isVideo ? 'Drop rack video here' : 'Drop rack image here';
   const sub = isVideo ? 'tap to browse · MP4, MOV, WEBM' : 'tap to browse · JPG, PNG, HEIC, MP4';
+  // Format pills shown only in the desktop reference layout (hidden on mobile
+  // via CSS — see .fmtPills). Mobile keeps the inline `sub` string above.
+  const formats = isVideo ? ['MP4', 'MOV', 'WEBM'] : ['JPG', 'PNG', 'HEIC', 'MP4'];
 
   return (
     <>
@@ -103,6 +106,15 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
           <p className={styles.dropTitle}>{title}</p>
           <p className={styles.dropSub}>{sub}</p>
         </div>
+
+        {/* Desktop reference extras — rendered always but hidden on mobile via
+            CSS (base rules set display:none; .scanContentDesktop reveals them).
+            The mobile layout above is untouched. */}
+        <p className={styles.dropSubAlt}>or <span className={styles.browseLink}>tap to browse</span></p>
+        <div className={styles.fmtPills} aria-hidden="true">
+          {formats.map(f => <span key={f} className={styles.fmtPill}>{f}</span>)}
+        </div>
+        <span className={styles.readyCaption} aria-hidden="true">READY · NO FILE SELECTED</span>
       </div>
       {/* Visually hidden (NOT display:none) — Safari blocks .click() on a
           display:none file input, so the Upload button wouldn't open the picker. */}
@@ -1292,6 +1304,9 @@ export default function ScanPage() {
         <div className={styles.scanIntro}>
         </div>
 
+        {/* Desktop-only eyebrow label (mobile: not rendered — isDesktop is
+            false below 1024px, so the mobile layout is unchanged). */}
+        {isDesktop && <div className={`${styles.eyebrow} ${styles.eyebrowCapture}`}>Capture method</div>}
         {/* Primary tabs */}
         <div className={styles.tabs}>
           {[
@@ -1322,7 +1337,9 @@ export default function ScanPage() {
         </div>
 
         {tab !== 'camera' && (
-          <div className={styles.uploadModes}>
+          <>
+            {isDesktop && <div className={`${styles.eyebrow} ${styles.eyebrowMode}`}>Mode</div>}
+            <div className={styles.uploadModes}>
             {[
               { id:'upload', label:'SINGLE', icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="3" width="12" height="18" rx="1.5"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="17" x2="15" y2="17"/></svg> },
               { id:'multi', label:'MULTI', icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="5" rx="1"/><rect x="3" y="10" width="18" height="5" rx="1"/><rect x="3" y="17" width="18" height="5" rx="1"/></svg> },
@@ -1343,7 +1360,8 @@ export default function ScanPage() {
                 <span>{t.label}</span>
               </button>
             ))}
-          </div>
+            </div>
+          </>
         )}
 
 
@@ -1384,7 +1402,7 @@ export default function ScanPage() {
           const raw = ticket.short_description || '';
           const headline = raw.split(/\s+[—–-]\s+/)[0].trim() || raw;
           return (
-            <h2 style={{
+            <h2 className={styles.ticketHeadline} style={{
               margin:'0',
               fontSize:14,
               fontWeight:600,
@@ -1406,8 +1424,8 @@ export default function ScanPage() {
             app styling, so we roll our own). Selecting an incident makes
             Analyze jump straight to that device+port. */}
         {tickets.length > 0 && (
-          <div style={{margin:'8px 0 4px', position:'relative'}}>
-            <label style={{
+          <div className={styles.incidentBlock} style={{margin:'8px 0 4px', position:'relative'}}>
+            <label className={styles.incidentLabel} style={{
               display:'block',
               fontSize:11,
               fontWeight:600,
@@ -1425,6 +1443,7 @@ export default function ScanPage() {
             <button
               ref={incidentTriggerRef}
               type="button"
+              className={styles.incidentTrigger}
               onClick={() => {
                 setIncidentMenuOpen(o => {
                   const next = !o;
@@ -1617,6 +1636,7 @@ export default function ScanPage() {
             ? (multiFiles.length < 2 ? `Add ${2 - multiFiles.length} more photo` : `Stitch & Analyze (${multiFiles.length})`)
             : 'Analyze Rack';
           return (
+            <>
             <button className={`btn btn-primary btn-lg btn-full ${styles.cta}`}
               disabled={!canSubmit}
               style={{
@@ -1629,10 +1649,30 @@ export default function ScanPage() {
                 <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
               </svg>
             </button>
+            {/* Desktop-only helper shown while Analyze is disabled. */}
+            {isDesktop && !canSubmit && (
+              <div className={styles.analyzeHelper}>
+                <span className={styles.analyzeHelperDot} aria-hidden="true" />
+                Add an image to enable analysis
+              </div>
+            )}
+            </>
           );
         })()}
+        {/* Tips — desktop-only (not rendered on mobile). */}
+        {isDesktop && (
+          <div className={styles.tips}>
+            <div className={`${styles.eyebrow} ${styles.tipsTitle}`}>Tips for a clean scan</div>
+            <ul className={styles.tipsList}>
+              <li>Fill the frame with the rack front</li>
+              <li>Keep port labels in focus</li>
+              <li>Even lighting, no glare on the panel</li>
+            </ul>
+          </div>
+        )}
+
         {/* Spacer so the last button isn't flush against the fixed bottom nav */}
-        <div style={{height:'calc(env(safe-area-inset-bottom, 0px) + 72px)'}} aria-hidden="true" />
+        <div className={styles.scanSpacer} style={{height:'calc(env(safe-area-inset-bottom, 0px) + 72px)'}} aria-hidden="true" />
       </div>
 
       {loading && <AnalyzingOverlay progress={progress} step={step}/>}

@@ -1355,3 +1355,302 @@
     margin-bottom: 4px !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   DESKTOP REFERENCE RESTYLE (≥1024px, .scanContentDesktop only)
+   ---------------------------------------------------------------------
+   Everything below is scoped to .scanContentDesktop, which the JSX applies
+   only when useIsDesktop() (≥1024px) is true. Below 1024px the element
+   carries plain .scanContent and NONE of these rules match, so the mobile
+   (<768px) layout renders exactly as before. New sub-elements (format pills,
+   caption, alt sub) default to display:none and are revealed only here.
+
+   Reference mono font = the app's --mono token (never Google Fonts).
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* --- Eyebrow labels (MODE / CAPTURE METHOD / TIPS) ------------------- */
+.eyebrow {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #9a9a97;
+  line-height: 1.2;
+}
+/* Tighten each eyebrow to the control directly beneath it (the grid
+   row-gap otherwise puts a full block gap between a label and its input). */
+.scanContentDesktop .eyebrowMode,
+.scanContentDesktop .eyebrowCapture {
+  margin-bottom: -13px;
+}
+
+/* --- MODE: segmented control (was the underline tab bar) ------------- */
+.scanContentDesktop .uploadModes {
+  display: flex;
+  gap: 0;
+  padding: 4px !important;
+  background: #f2f2f0 !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+.scanContentDesktop .uploadModeBtn {
+  border: none !important;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+  border-radius: 9px;
+  padding: 9px 4px;
+  background: transparent;
+  color: #8a8a87;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.scanContentDesktop .uploadModeBtn:hover { color: #111; }
+.scanContentDesktop .uploadModeOn {
+  background: #fff !important;
+  color: #111 !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-radius: 9px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* --- CAPTURE METHOD: two equal cards (Upload / Camera) -------------- */
+.scanContentDesktop .tabs {
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.scanContentDesktop .tab {
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 12px;
+  background: #fff !important;
+  border: 1px solid #e4e4e1 !important;
+  border-radius: 14px;
+  color: #111 !important;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: none !important;
+  transition: border-color 0.16s, transform 0.16s;
+}
+.scanContentDesktop .tab svg { width: 22px; height: 22px; }
+.scanContentDesktop .tab:hover {
+  border-color: #111 !important;
+  transform: translateY(-1px);
+  background: #fff !important;
+}
+.scanContentDesktop .tabOn {
+  background: #fff !important;
+  color: #111 !important;
+  border-color: #111 !important;
+  box-shadow: none !important;
+}
+
+/* --- INCIDENT LINK: dropdown + eyebrow'd label ---------------------- */
+.scanContentDesktop .incidentLabel {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.13em !important;
+  color: #9a9a97 !important;
+}
+.scanContentDesktop .incidentTrigger {
+  border-radius: 12px !important;
+  font-size: 15px !important;
+}
+
+/* --- DROP ZONE: single large dashed box (strip the card frame) ------ */
+.scanContentDesktop .mediaBox {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  min-height: 600px;
+  max-height: none !important;
+}
+.scanContentDesktop .dropZone {
+  margin: 0 !important;
+  padding: 40px !important;
+  border: 1.5px dashed #d4d4d0 !important;
+  border-radius: 22px !important;
+  background: #fbfbfa !important;
+}
+.scanContentDesktop .dropZone:hover,
+.scanContentDesktop .dragOver {
+  border-color: #111 !important;
+  background: #f4f4f2 !important;
+}
+/* 92px black circle, white viewfinder icon. */
+.scanContentDesktop .iconWrap {
+  width: 92px !important;
+  height: 92px !important;
+  background: #111 !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+.scanContentDesktop .dropZone:hover .iconWrap,
+.scanContentDesktop .dragOver .iconWrap {
+  background: #111 !important;
+  color: #fff !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.scanContentDesktop .dropTitle {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: #111 !important;
+  margin-bottom: 0;
+  line-height: 1.2;
+}
+/* The mobile sub ("tap to browse · JPG …") is replaced by the alt sub +
+   format pills below on desktop. */
+.scanContentDesktop .dropSub { display: none !important; }
+
+/* Desktop-only dropzone extras — hidden everywhere by default, shown here. */
+.dropSubAlt,
+.fmtPills,
+.readyCaption { display: none; }
+
+.scanContentDesktop .dropSubAlt {
+  display: block;
+  margin-top: 6px;
+  text-align: center;
+  font-family: var(--font);
+  font-size: 14px;
+  color: #8a8a87;
+}
+.scanContentDesktop .dropSubAlt .browseLink {
+  text-decoration: underline;
+  color: #5c5c59;
+}
+.scanContentDesktop .fmtPills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+.scanContentDesktop .fmtPill {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  color: #8a8a87;
+  border: 1px solid #e4e4e1;
+  border-radius: 999px;
+  padding: 6px 13px;
+  line-height: 1;
+}
+.scanContentDesktop .readyCaption {
+  display: block;
+  position: absolute;
+  left: 20px;
+  bottom: 16px;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c2c2be;
+}
+
+/* --- ANALYZE button + disabled helper line -------------------------- */
+.scanContentDesktop .cta {
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 18px !important;
+  border-radius: 14px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  background: #111 !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.scanContentDesktop .cta:hover { background: #111 !important; opacity: 0.92; }
+.scanContentDesktop .cta:disabled { opacity: 0.45 !important; color: #fff !important; }
+.scanContentDesktop .analyzeHelper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: -12px;
+  font-family: var(--font);
+  font-size: 12.5px;
+  color: #9a9a97;
+}
+.scanContentDesktop .analyzeHelperDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c2c2be;
+  flex-shrink: 0;
+}
+
+/* --- TIPS block ----------------------------------------------------- */
+.scanContentDesktop .tips {
+  border-top: 1px solid #ededea;
+  padding-top: 18px;
+}
+.scanContentDesktop .tipsTitle { color: #9a9a97; }
+.scanContentDesktop .tipsList {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scanContentDesktop .tipsList li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #5c5c59;
+}
+.scanContentDesktop .tipsList li::before {
+  content: "•";
+  position: absolute;
+  left: 2px;
+  color: #111;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TWO-COLUMN REFERENCE GRID (≥1180px only)
+   Kept above the tablet band (1024–1179px) so that range stays single-column
+   as before — the sidebar leaves no room for a 400px rail there. Order is
+   applied here so the right rail reads MODE → CAPTURE → INCIDENT → ANALYZE →
+   TIPS regardless of DOM order; irrelevant to the single-column tablet band.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1180px) {
+  .scanContentDesktop {
+    grid-template-columns: minmax(0, 1fr) 400px !important;
+    column-gap: 32px !important;
+    row-gap: 22px !important;
+  }
+  .scanContentDesktop .scanIntro     { order: 5; }
+  .scanContentDesktop .eyebrowMode    { order: 10; }
+  .scanContentDesktop .uploadModes    { order: 11; }
+  .scanContentDesktop .eyebrowCapture { order: 20; }
+  .scanContentDesktop .tabs           { order: 21; }
+  .scanContentDesktop .ticketHeadline { order: 29; }
+  .scanContentDesktop .incidentBlock  { order: 30; }
+  .scanContentDesktop .errBox         { order: 40; }
+  .scanContentDesktop .qualityChoice  { order: 41; }
+  .scanContentDesktop .cta            { order: 50; }
+  .scanContentDesktop .analyzeHelper  { order: 51; }
+  .scanContentDesktop .tips           { order: 60; }
+  .scanContentDesktop .scanSpacer     { order: 99; }
+}

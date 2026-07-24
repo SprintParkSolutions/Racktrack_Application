@@ -3,7 +3,7 @@
    strips them anyway), ink #121417 as the accent. */
 
 .page {
-  max-width: 1080px;
+  max-width: none;
   margin: 0 auto;
   width: 100%;
   padding: 0 18px 48px;

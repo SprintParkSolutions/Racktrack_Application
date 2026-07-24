@@ -446,14 +446,14 @@
      page shows the one identical header. */
   .topbar { display: none; }
   .main {
-    max-width: 760px;
+    max-width: none;
     padding: 40px 32px 96px;
   }
   .hero { margin-bottom: 44px; }
 }
 @media (min-width: 1120px) {
   .main {
-    max-width: 1000px;
+    max-width: none;
     display: grid;
     grid-template-columns: 1fr 1fr;
     column-gap: 24px;

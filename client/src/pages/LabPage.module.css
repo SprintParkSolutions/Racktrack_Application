@@ -39,7 +39,7 @@
 .main {
   display: flex; flex-direction: column; gap: 16px;
   padding: 16px 14px 32px;
-  max-width: 1000px; width: 100%; margin: 0 auto;
+  max-width: none; width: 100%; margin: 0 auto;
 }
 
 /* ── fleet strip ─────────────────────────────────────────────────── */
@@ -325,7 +325,7 @@
   .header { display: none; }
 
   .main {
-    max-width: 1440px;
+    max-width: none;
     margin: 0 auto;
     padding: 26px 32px 56px;
     display: grid;

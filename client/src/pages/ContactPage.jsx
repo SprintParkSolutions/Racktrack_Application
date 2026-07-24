@@ -63,7 +63,7 @@ export default function ContactPage() {
       </nav>
       <div className={styles.heroTitle}>
         <div className={styles.eyebrow}>Support</div>
-        <h1 className={styles.h1}>Talk to a real person.</h1>
+        <h1 className={styles.h1}>Contact us</h1>
       </div>
     </section>
   );
@@ -94,11 +94,6 @@ export default function ContactPage() {
       {Hero}
 
       <div className={styles.wrap}>
-        <p className={styles.lede}>
-          Real humans, real fast. Tell us what broke and we&apos;ll reply straight to{' '}
-          <strong>{email}</strong> — the more you include, the faster we help.
-        </p>
-
         <div className={styles.grid}>
           <form className={styles.formCard} onSubmit={submit}>
             <label className={styles.label}>Subject <span className={styles.optional}>optional</span></label>

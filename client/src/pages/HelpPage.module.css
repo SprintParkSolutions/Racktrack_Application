@@ -99,7 +99,7 @@
   -webkit-overflow-scrolling: touch;
 }
 .inner {
-  max-width: 720px;
+  max-width: none;
   margin: 0 auto;
   padding: 22px 20px 8px;
   display: flex;
@@ -321,7 +321,7 @@
   padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
 }
 .formInner {
-  max-width: 720px;
+  max-width: none;
   margin: 0 auto;
   display: flex;
   gap: 9px;
@@ -452,8 +452,8 @@
    Cap the measure. Reply text running the full width of a 27" monitor is
    unreadable however well it is styled. */
 @media (min-width: 1180px) {
-  .inner { max-width: 820px; padding: 36px 40px 14px; }
-  .formInner { max-width: 820px; }
+  .inner { max-width: none; padding: 36px 40px 14px; }
+  .formInner { max-width: none; }
   .card { max-width: 72%; }
   .starters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .intro h2 { font-size: 1.8rem; }

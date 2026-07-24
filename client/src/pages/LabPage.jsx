@@ -293,17 +293,6 @@ export default function LabPage() {
       </header>
 
       <main className={styles.main}>
-        {/* Fleet strip — one-line health summary. */}
-        <div className={styles.fleetBar}>
-          <span className={styles.fleetCount}>{devices.length} switch{devices.length === 1 ? '' : 'es'}</span>
-          {!!devices.length && (
-            <>
-              <span className={styles.fleetSep}>·</span>
-              <span className={`${styles.fleetStat} ${styles.stLive}`}><span className={`${styles.statusDot}`} style={{ background: '#22c55e' }} />{liveN} live</span>
-              <span className={`${styles.fleetStat} ${styles.stOff}`}><span className={`${styles.statusDot}`} style={{ background: '#ef4444' }} />{offN} offline</span>
-            </>
-          )}
-        </div>
 
         {loadErr && <p className={styles.errLine}>Device list stale — {loadErr}</p>}
 
