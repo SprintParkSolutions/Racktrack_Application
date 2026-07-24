@@ -367,7 +367,9 @@ export default function App() {
             {/* Ground Truth — technicians verify what the model detected.
                 Owner-only for now (OwnerRoute); the page also refuses non-owners
                 and the server API is requireRole('owner'). */}
-            <Route path="/ground-truth" element={
+            {/* Per-scan now: reached from a rack's results after analyse, scoped
+                to that one upload (/ground-truth/:rackId). */}
+            <Route path="/ground-truth/:rackId" element={
               <OwnerRoute><ResponsiveLayout withBottomNav><GroundTruthPage /></ResponsiveLayout></OwnerRoute>
             } />
             {/* Marketplace — restricted to Admin / Owner only. */}

@@ -86,11 +86,9 @@ export function usePrimaryNav() {
     // EVE-NG lab switches — owner-only while the Cisco path is shaken out.
     ...(isOwner ? [{ to: '/lab', label: 'Lab', icon: <LabIcon />, end: false,
       hint: 'Live switches in the test lab' }] : []),
-    // Ground Truth — technicians tell us the real device identities so we can
-    // find where the model is wrong. Owner-only for now; drop the isOwner wrap
-    // to open it to everyone.
-    ...(isOwner ? [{ to: '/ground-truth', label: 'Ground Truth', icon: <GroundTruthIcon />, end: false,
-      hint: 'Verify what the model detected' }] : []),
+    // Ground Truth is no longer a standalone destination — it's now a per-scan
+    // step reached from a rack's results after analyse (/ground-truth/:rackId),
+    // scoped to that one upload. See the rack context nav in DesktopShell.
     // Data Sources (ServiceNow / NetBox / Orion …) and Marketplace are
     // organization-admin features.
     ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false,

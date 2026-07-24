@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext.jsx';
-import { HeaderActions } from '../components/ShellHeader.jsx';
 import BackButton from '../components/BackButton.jsx';
 import styles from './GroundTruthPage.module.css';
 
@@ -327,7 +326,7 @@ function Worklist() {
   );
 }
 
-function BrowseDetail({ rackId, onBack }) {
+function BrowseDetail({ rackId, onBack, backLabel = '‹ All scans' }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
@@ -352,7 +351,7 @@ function BrowseDetail({ rackId, onBack }) {
 
   return (
     <div>
-      <button type="button" className={styles.backLink} onClick={onBack}>‹ All scans</button>
+      <button type="button" className={styles.backLink} onClick={onBack}>{backLabel}</button>
       {loading ? (
         <div className={styles.center}>Loading scan…</div>
       ) : err ? (
@@ -465,17 +464,21 @@ function Browse() {
   );
 }
 
+// Ground Truth is now a PER-SCAN step, reached only after a scan is analysed
+// (/ground-truth/:rackId, linked from the rack context). It verifies the model's
+// detections for THAT one upload — not a global worklist across every scan. The
+// server already exposes /api/ground-truth/scan/:rackId, which BrowseDetail uses.
 export default function GroundTruthPage() {
+  const { rackId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const isOwner = user?.role === 'owner';
-  const [tab, setTab] = useState('worklist');
 
   if (!isOwner) {
     return (
       <div className={styles.page}>
         <header className={styles.header}>
-          <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Back">‹</button>
+          <BackButton fallback={rackId ? `/results/${rackId}` : '/'} />
           <div className={styles.headerText}>
             <h1 className={styles.title}>Ground Truth</h1>
           </div>
@@ -487,45 +490,26 @@ export default function GroundTruthPage() {
     );
   }
 
-  const Tabs = ({ variant }) => (
-    <div className={variant === 'desktop' ? styles.tabsDesktop : styles.tabsMobile} role="tablist">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === 'worklist'}
-        className={`${styles.tab} ${tab === 'worklist' ? styles.tabActive : ''}`}
-        onClick={() => setTab('worklist')}
-      >
-        Worklist
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === 'browse'}
-        className={`${styles.tab} ${tab === 'browse' ? styles.tabActive : ''}`}
-        onClick={() => setTab('browse')}
-      >
-        Browse scans
-      </button>
-    </div>
-  );
-
   return (
     <div className={styles.page}>
-      <HeaderActions><Tabs variant="desktop" /></HeaderActions>
-
       <header className={styles.header}>
-        <BackButton fallback="/" />
+        <BackButton fallback={rackId ? `/results/${rackId}` : '/'} />
         <div className={styles.headerText}>
           <h1 className={styles.title}>Ground Truth</h1>
-          <p className={styles.subtitle}>Verify what the model detected</p>
+          <p className={styles.subtitle}>Verify what the model detected in this scan</p>
         </div>
       </header>
 
-      <Tabs variant="mobile" />
-
       <main className={styles.main}>
-        {tab === 'worklist' ? <Worklist /> : <Browse />}
+        {rackId ? (
+          <BrowseDetail
+            rackId={rackId}
+            backLabel="‹ Back to results"
+            onBack={() => navigate(`/results/${rackId}`)}
+          />
+        ) : (
+          <p className={styles.refusal}>Open a scan first, then verify its detections here.</p>
+        )}
       </main>
     </div>
   );

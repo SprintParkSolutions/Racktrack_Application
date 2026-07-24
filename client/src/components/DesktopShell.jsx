@@ -4,7 +4,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import styles from './DesktopShell.module.css';
 import ThemeToggle from './ThemeToggle.jsx';
 import { useAuth } from '../AuthContext';
-import { usePrimaryNav } from '../nav/navLinks.jsx';
+import { usePrimaryNav, GroundTruthIcon } from '../nav/navLinks.jsx';
 import { ShellHeaderContext } from './ShellHeader.jsx';
 
 // Persistent record of the last rack the user opened. Once an image has
@@ -168,6 +168,7 @@ export default function DesktopShell({ children }) {
   const headerCtx = useMemo(() => ({ actionsEl, setBackHandler }), [actionsEl]);
 
   const { user, logout } = useAuth();
+  const isOwner = user?.role === 'owner';
 
   // Shared with the phone's bottom bar — see nav/navLinks.jsx. The two used
   // to keep separate hardcoded lists and drifted apart, which is how Lab and
@@ -237,6 +238,9 @@ export default function DesktopShell({ children }) {
     // Drift has no separate route today — it's a sub-view inside ResultsPage
     // activated by the #drift hash; its active state comes from that hash.
     { to: `/results/${rackId}${gq}#drift`,     label: 'Drift',    icon: <DriftIcon />,    end: false, active: isDriftView },
+    // Ground Truth — owner-only, per this scan. Only reachable here, after a
+    // rack has been analysed (there IS a rackId).
+    ...(isOwner ? [{ to: `/ground-truth/${rackId}`, label: 'Ground Truth', icon: <GroundTruthIcon />, end: false }] : []),
   ] : [];
 
   return createPortal(
