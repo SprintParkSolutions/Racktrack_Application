@@ -6,6 +6,8 @@ import { useTheme } from '../ThemeContext.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import HomeLight from './HomeLight.jsx';
 import HomeStudio from './HomeStudio.jsx';
+import HomeDashboard from './HomeDashboard.jsx';
+import DesktopShell from '../components/DesktopShell.jsx';
 import { useIsTabletOrUp } from '../hooks/useIsTabletOrUp';
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -263,7 +265,13 @@ export default function HomePage() {
      centred, full-viewport, no-scroll hero with fine line-art. Phones stay
      on the clean, simple HomeLight welcome, untouched. */
   const isTabletOrUp = useIsTabletOrUp();
-  if (isTabletOrUp) return <HomeStudio />;
+  if (isTabletOrUp) {
+    // Signed in → the dashboard home rendered inside the shell (sidebar).
+    // Signed out → the editorial marketing hero (full-screen).
+    return auth?.isAuthed
+      ? <DesktopShell><HomeDashboard /></DesktopShell>
+      : <HomeStudio />;
+  }
   return <HomeLight />;
 
 }

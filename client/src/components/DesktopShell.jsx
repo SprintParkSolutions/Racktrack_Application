@@ -299,7 +299,9 @@ export default function DesktopShell({ children }) {
       {/* ── Main area ───────────────────────────────────────────── */}
       <section className={styles.main}>
         {/* The ONE header — back + title on the left, page actions on the
-            right. Same on every page; only the title text changes. */}
+            right. Same on every page; only the title text changes. The home
+            ("/") is the landing dashboard: no back, no title crumb. */}
+        {location.pathname !== '/' && (
         <header className={styles.topBar}>
           <button
             type="button"
@@ -313,6 +315,7 @@ export default function DesktopShell({ children }) {
           {/* Pages portal their right-side controls here via <HeaderActions>. */}
           <div ref={setActionsEl} className={styles.headerActions} />
         </header>
+        )}
 
         <div className={styles.fluid}>
           <ShellHeaderContext.Provider value={headerCtx}>{children}</ShellHeaderContext.Provider>
