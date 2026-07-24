@@ -144,10 +144,6 @@ export default function ContactPage() {
               <div className={styles.k}>Status</div>
               <div className={styles.dot}><i />All systems operational</div>
             </div>
-            <div className={styles.reassure}>
-              A real person on the RackTrack team reads every message — no bots,
-              no ticket maze.
-            </div>
           </aside>
         </div>
 

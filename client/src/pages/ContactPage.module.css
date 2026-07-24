@@ -116,10 +116,12 @@
   .eyebrow { font-size: 12px; }
   .h1 { font-size: clamp(44px, 7vw, 64px); }
 
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 44px 44px 72px; }
-  .lede { font-size: 18px; line-height: 1.6; max-width: 620px; margin-bottom: 30px; }
+  /* Use the full content width — no centered max-width column. */
+  .wrap { max-width: none; margin: 0; padding: 44px clamp(32px, 4vw, 64px) 72px; }
+  .lede { font-size: 18px; line-height: 1.6; max-width: 640px; margin-bottom: 30px; }
 
-  .grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.9fr); gap: 30px; align-items: stretch; }
+  /* Form fills the remaining width; the details rail is a fixed rail on the right. */
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 40px; align-items: start; }
 
   /* The form gets a defined card so the section reads as intentional, not a
      lone control floating in white space. */
@@ -140,7 +142,6 @@
   a.v:hover { text-decoration: underline; text-underline-offset: 2px; }
   .dot { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: 600; }
   .dot i { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.14); }
-  .reassure { font-size: 13px; line-height: 1.55; color: #8a8a87; padding: 2px 4px; margin-top: auto; }
 
   .emailCard { display: none; }
 }
