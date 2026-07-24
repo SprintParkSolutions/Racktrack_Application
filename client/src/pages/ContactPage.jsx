@@ -6,18 +6,13 @@ import styles from './ContactPage.module.css';
 
 const SUPPORT_EMAIL = 'support@racktrack.ai';
 
-const MailIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>
-);
-
-// Contact support. The message is sent server-side to the support inbox with the
-// user's identity + context attached (Reply-To is their email), so support can
-// reply straight back. If the server can't send (SMTP down), we fall back to a
-// mailto: link so the user is never stuck.
+// Contact support — full-bleed data-center hero + form, rendered inside the
+// shell. The message is sent server-side to the support inbox with the user's
+// identity + context attached (Reply-To is their email); if the server can't
+// send, a mailto: fallback keeps the user unstuck.
 //
-// Arrived-from-DOT: when the assistant couldn't answer, its "Contact support"
-// button navigates here with { context } — the question it couldn't handle —
-// which we pre-fill so the user doesn't retype it.
+// Arrived-from-DOT: the assistant's "Contact support" button navigates here with
+// { context } — the question it couldn't answer — pre-filled into the message.
 export default function ContactPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,114 +53,113 @@ export default function ContactPage() {
     }
   };
 
-  const Header = (
-    <header className={styles.header}>
-      <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Back">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-      </button>
-      <h1 className={styles.headerTitle}>Contact support</h1>
-    </header>
+  const Hero = (
+    <section className={styles.hero}>
+      <img src="/home-bg.jpg" alt="" className={styles.heroImg} />
+      <div className={styles.scrim} aria-hidden="true" />
+      <nav className={styles.nav}>
+        <button className={styles.back} onClick={() => navigate(-1)} aria-label="Back">‹</button>
+        <span className={styles.brand}>RackTrack</span>
+      </nav>
+      <div className={styles.heroTitle}>
+        <div className={styles.eyebrow}>Support</div>
+        <h1 className={styles.h1}>Talk to a real person.</h1>
+      </div>
+    </section>
   );
 
   if (status === 'sent') {
     return (
       <div className={styles.page}>
-        {Header}
-        <main className={styles.main}>
+        {Hero}
+        <div className={styles.wrap}>
           <div className={styles.doneCard}>
             <div className={styles.doneMark} aria-hidden="true">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
             </div>
             <h2 className={styles.doneTitle}>Message sent</h2>
             <p className={styles.doneText}>
               Thanks — the RackTrack support team has it and will reply to{' '}
-              <strong>{email}</strong>. You can keep using the app in the meantime.
+              <strong>{email}</strong>.
             </p>
-            <button className={styles.primaryBtn} onClick={() => navigate(-1)}>
-              Back to what I was doing
-            </button>
+            <button className={styles.send} onClick={() => navigate(-1)}>Back to what I was doing</button>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
     <div className={styles.page}>
-      {Header}
+      {Hero}
 
-      <main className={styles.main}>
+      <div className={styles.wrap}>
+        <p className={styles.lede}>
+          Real humans, real fast. Tell us what broke and we&apos;ll reply straight to{' '}
+          <strong>{email}</strong> — the more you include, the faster we help.
+        </p>
+
         <div className={styles.grid}>
-          {/* ── Intro panel ── */}
-          <aside className={styles.intro}>
-            <span className={styles.eyebrow}>Support</span>
-            <h2 className={styles.introTitle}>Talk to a real person.</h2>
-            <p className={styles.introText}>
-              Tell us what went wrong and we&apos;ll reply straight to{' '}
-              <strong>{email}</strong>. The more you include, the faster we can help —
-              no back and forth.
-            </p>
+          <form onSubmit={submit}>
+            <label className={styles.label}>Subject <span className={styles.optional}>optional</span></label>
+            <input
+              className={styles.fld}
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. Scan won't upload"
+              maxLength={140}
+            />
 
-            <ul className={styles.tips}>
-              <li>What you were doing when it happened</li>
-              <li>The exact error text, or a screenshot</li>
-              <li>The rack or screen it happened on</li>
-            </ul>
-
-            <div className={styles.directCard}>
-              <span className={styles.directLabel}>Prefer email?</span>
-              <a href={mailto} className={styles.directMail}>
-                <MailIcon /> {SUPPORT_EMAIL}
-              </a>
-            </div>
-          </aside>
-
-          {/* ── Form card ── */}
-          <form className={styles.card} onSubmit={submit}>
-            <label className={styles.field}>
-              <span className={styles.label}>Subject <span className={styles.optional}>optional</span></span>
-              <input
-                className={styles.input}
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. Scan won't upload"
-                maxLength={140}
-              />
-            </label>
-
-            <label className={styles.field}>
-              <span className={styles.label}>Message</span>
-              <textarea
-                className={styles.textarea}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="What happened? What were you doing when it happened? Paste any exact error text."
-                rows={9}
-                maxLength={5000}
-                autoFocus
-              />
-            </label>
+            <label className={`${styles.label} ${styles.labelGap}`}>Message</label>
+            <textarea
+              className={`${styles.fld} ${styles.textarea}`}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="What happened? What were you doing when it happened? Paste any exact error text."
+              maxLength={5000}
+              autoFocus
+            />
 
             {error && (
               <div className={styles.errorBox}>
-                {error}
-                <div className={styles.errorAlt}>
-                  You can also email us directly at{' '}
-                  <a href={mailto} className={styles.link}>{SUPPORT_EMAIL}</a>.
-                </div>
+                {error}{' '}
+                <a href={mailto} className={styles.link}>Email us directly →</a>
               </div>
             )}
 
-            <div className={styles.actions}>
-              <button type="submit" className={styles.primaryBtn} disabled={!canSend}>
-                {status === 'sending' ? 'Sending…' : 'Send message'}
-              </button>
-              <span className={styles.replyNote}>We reply to {email}</span>
-            </div>
+            <button type="submit" className={styles.send} disabled={!canSend}>
+              {status === 'sending' ? 'Sending…' : 'Send message →'}
+            </button>
           </form>
+
+          {/* Desktop/iPad: support details rail */}
+          <div className={styles.aside}>
+            <div>
+              <div className={styles.k}>Email</div>
+              <div className={styles.v}>{SUPPORT_EMAIL}</div>
+              <div className={styles.m}>Replies within a few hours</div>
+            </div>
+            <div>
+              <div className={styles.k}>Hours</div>
+              <div className={styles.v}>Mon–Fri · 9–6 PT</div>
+            </div>
+            <div>
+              <div className={styles.k}>Status</div>
+              <div className={styles.dot}><i />All systems operational</div>
+            </div>
+          </div>
         </div>
-      </main>
+
+        {/* Mobile: compact email card */}
+        <a className={styles.emailCard} href={mailto}>
+          <div>
+            <div className={styles.k}>Prefer email?</div>
+            <div className={styles.v}>{SUPPORT_EMAIL}</div>
+          </div>
+          <span aria-hidden="true">›</span>
+        </a>
+      </div>
     </div>
   );
 }

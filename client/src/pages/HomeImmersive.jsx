@@ -10,12 +10,6 @@ export default function HomeImmersive() {
   const navigate = useNavigate();
   const auth = useAuth();
   const authed = auth?.isAuthed;
-  const name =
-    auth?.user?.username ||
-    auth?.user?.name ||
-    (auth?.user?.email && String(auth.user.email).split('@')[0]) ||
-    '';
-
   const start = () => navigate(authed ? '/scan' : '/login');
 
   return createPortal(
@@ -26,7 +20,7 @@ export default function HomeImmersive() {
       <div className={styles.scrim} aria-hidden="true" />
 
       <nav className={styles.nav}>
-        <div className={styles.logo}><b>R</b>RackTrack</div>
+        <div className={styles.logo}><img src="/logo.jpg" alt="" className={styles.logoMark} />RackTrack</div>
         <button
           type="button"
           className={styles.signout}
@@ -37,8 +31,6 @@ export default function HomeImmersive() {
       </nav>
 
       <div className={styles.body}>
-        <span className={styles.chip}><span className={styles.pulse} />LIVE SCAN · CHENNAI-DC1</span>
-        <div className={styles.eyebrow}>{authed && name ? `Welcome back, ${name}` : 'AI rack intelligence'}</div>
         <h1 className={styles.h1}>See every port.<br />Know every rack.</h1>
         <p className={styles.lede}>
           Point your phone at any rack. RackTrack maps every switch, patch panel,
@@ -55,11 +47,6 @@ export default function HomeImmersive() {
           >
             {authed ? 'Past scans' : 'Create an organization'}
           </button>
-        </div>
-        <div className={styles.stats}>
-          <div><div className={styles.statNum}>30+</div><div className={styles.statLbl}>device classes</div></div>
-          <div><div className={styles.statNum}>0.3s</div><div className={styles.statLbl}>per rack</div></div>
-          <div><div className={styles.statNum}>98%</div><div className={styles.statLbl}>accuracy</div></div>
         </div>
       </div>
     </section>,
