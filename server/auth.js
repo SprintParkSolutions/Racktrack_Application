@@ -20,6 +20,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const audit = require('./audit');
+const graphMail = require('./lib/graphMail');
 const { logger } = require('./lib/observability');
 
 const dataDir   = path.join(__dirname, 'data');
@@ -409,6 +410,23 @@ async function sendVerificationEmail(email, code) {
   // and AUDIT_ADMINS, so anyone with log access could trigger a reset for any
   // account, read the code, and take it over. Log only that a code was sent.
   logger.info({ event: 'auth.code_sent', email }, '[auth] verification code sent');
+
+  // Prefer sending FROM the RackTrack Microsoft 365 mailbox
+  // (racktrackteam@sprintpark.com) via Graph, not an employee's Gmail. Falls
+  // back to SMTP below if Graph isn't configured or the send fails.
+  try {
+    const ok = await graphMail.sendGraphMail({
+      sender: 'racktrack',
+      to: email,
+      subject: `Your RackTrack verification code: ${code}`,
+      text: `Your RackTrack verification code is ${code}. It expires in 1 minute.`,
+      html: emailHtml(code),
+    });
+    if (ok) return true;
+  } catch (err) {
+    logger.error(`[auth] Graph verification send failed: ${err.message} — falling back to SMTP`);
+  }
+
   const providers = mailProviders();
   if (!providers.length) return false;
   for (const p of providers) {
@@ -444,8 +462,6 @@ function escapeHtml(s) {
 // as verification codes. Reply-To is the sender so support can reply straight
 // from their client. Returns true if any provider delivered.
 async function sendContactEmail({ fromEmail, fromName, meta, subject, message }) {
-  const providers = mailProviders();
-  if (!providers.length) return false;
   const text = [
     message, '', '——',
     `From: ${fromName || 'Unknown'} <${fromEmail || 'no email'}>`,
@@ -456,6 +472,24 @@ async function sendContactEmail({ fromEmail, fromName, meta, subject, message })
     <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
     <p style="color:#6b6b7a;font-size:12px;margin:0;">From: ${escapeHtml(fromName || 'Unknown')} &lt;${escapeHtml(fromEmail || 'no email')}&gt;<br>${escapeHtml(meta || '').replace(/\n/g, '<br>')}</p>
   </div>`;
+
+  // Prefer the support Microsoft 365 mailbox (support@racktrack.ai) via Graph,
+  // Reply-To the sender; fall back to SMTP if Graph isn't configured.
+  try {
+    const ok = await graphMail.sendGraphMail({
+      sender: 'support',
+      to: SUPPORT_EMAIL,
+      replyTo: fromEmail || undefined,
+      subject: subject || 'Support request from the app',
+      text, html,
+    });
+    if (ok) return true;
+  } catch (err) {
+    logger.error(`[auth] Graph contact send failed: ${err.message} — falling back to SMTP`);
+  }
+
+  const providers = mailProviders();
+  if (!providers.length) return false;
   for (const p of providers) {
     try {
       await p.tx.sendMail({

@@ -84,6 +84,10 @@ pipeline/*_outlook_cache.json
 pipeline/*_teams_cache.json
 pipeline/*_slack_cache.json
 
+# Azure/Graph mail credentials + token caches (CLIENT_ID/TENANT_ID + access
+# tokens). The whole folder is secret — never commit any of it.
+token/
+
 # Word lock files (created when a .docx is open in Microsoft Word).
 ~$*.docx
 
