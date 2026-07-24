@@ -2,6 +2,52 @@
 
 Everything user-facing lives in this folder.
 
+## Documentation set — two tracks (Markdown)
+
+As of 24 July 2026 the architecture and feature docs come in **two parallel versions**, so each reader gets the right depth:
+
+- **User track** (`*-users.md`) — plain, lucid English for users and stakeholders. No file paths, no endpoints, no code.
+- **Developer track** (`*-developers.md`) — the same material for engineers, with verified file paths, endpoints, modules and versions (every technical claim checked against the code).
+
+Every feature has a user version; the more technical features also have a developer version. These Markdown docs are the current source of truth and **supersede the older per-feature `.docx` files** in `features/` (kept for now for reference).
+
+### Architecture
+
+| Topic | For everyone | For engineers |
+|---|---|---|
+| How RackTrack works / Architecture | [overview-users](architecture/overview-users.md) | [overview-developers](architecture/overview-developers.md) |
+
+### Features
+
+| Feature | For everyone | For engineers |
+|---|---|---|
+| Rack scanning & capture | [users](features/rack-scanning-capture-users.md) | [developers](features/rack-scanning-capture-developers.md) |
+| Scan results & device detection | [users](features/scan-results-device-detection-users.md) | [developers](features/scan-results-device-detection-developers.md) |
+| Ground Truth (owner) | [users](features/ground-truth-users.md) | [developers](features/ground-truth-developers.md) |
+| Multi-rack scans | [users](features/multi-rack-scans-users.md) | [developers](features/multi-rack-scans-developers.md) |
+| Available ports | [users](features/available-ports-users.md) | [developers](features/available-ports-developers.md) |
+| Network view / live discovery | [users](features/network-view-live-discovery-users.md) | [developers](features/network-view-live-discovery-developers.md) |
+| Port history & drift | [users](features/port-history-drift-users.md) | [developers](features/port-history-drift-developers.md) |
+| Rack topology (3D) | [users](features/rack-topology-users.md) | [developers](features/rack-topology-developers.md) |
+| Switch information | [users](features/switch-information-users.md) | [developers](features/switch-information-developers.md) |
+| Firmware check | [users](features/firmware-check-users.md) | [developers](features/firmware-check-developers.md) |
+| Connections / Data Sources | [users](features/connections-integrations-users.md) | [developers](features/connections-integrations-developers.md) |
+| CMDB registration & reconciliation | [users](features/cmdb-registration-reconciliation-users.md) | [developers](features/cmdb-registration-reconciliation-developers.md) |
+| Accounts & onboarding | [users](features/accounts-onboarding-users.md) | — |
+| Organization administration | [users](features/organization-administration-users.md) | — |
+| Profile & scan history | [users](features/profile-scan-history-users.md) | — |
+| Specifications lookup | [users](features/specifications-lookup-users.md) | — |
+| SFP procurement advisor | [users](features/sfp-procurement-advisor-users.md) | — |
+| Marketplace | [users](features/marketplace-users.md) | — |
+
+### UI reference
+
+| Topic | For everyone | For engineers |
+|---|---|---|
+| UI & design system | [ui-reference-users](reference/ui-reference-users.md) | [ui-reference-developers](reference/ui-reference-developers.md) |
+
+---
+
 ## User guide
 
 Two editions — one per device. The **words are identical**; only the screenshots differ.
