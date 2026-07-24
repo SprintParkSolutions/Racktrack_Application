@@ -118,6 +118,7 @@ const PAGE_TITLE = {
   '/dashboard':        { title: 'Operations Console',  sub: 'Live activity, health & server logs' },
   '/multi-rack/new':   { title: 'Scan two racks',      sub: 'Detect both + the cabling between them' },
   '/lab':              { title: 'Lab',                 sub: 'Live switches in the test lab' },
+  '/ground-truth':     { title: 'Ground Truth',        sub: 'Verify what the model detected' },
   '/help':             { title: 'Ask DOT',             sub: 'Answers from verified documentation' },
 };
 

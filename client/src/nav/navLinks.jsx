@@ -43,6 +43,9 @@ export const TwoRackIcon = () => (
 export const LabIcon = () => (
   <svg {...s}><path d="M9 3v6.5L4.5 18A2 2 0 006.3 21h11.4a2 2 0 001.8-3L15 9.5V3"/><path d="M8 3h8"/><path d="M7.5 14h9"/></svg>
 );
+export const GroundTruthIcon = () => (
+  <svg {...s}><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
+);
 export const OrgIcon = () => (
   <svg {...s}><path d="M3 21h18"/><path d="M5 21V6a1 1 0 011-1h6a1 1 0 011 1v15"/><path d="M13 21V10a1 1 0 011-1h4a1 1 0 011 1v11"/><path d="M8 9h1M8 13h1M8 17h1M16 13h.5M16 17h.5"/></svg>
 );
@@ -80,6 +83,11 @@ export function usePrimaryNav() {
     // EVE-NG lab switches — owner-only while the Cisco path is shaken out.
     ...(isOwner ? [{ to: '/lab', label: 'Lab', icon: <LabIcon />, end: false,
       hint: 'Live switches in the test lab' }] : []),
+    // Ground Truth — technicians tell us the real device identities so we can
+    // find where the model is wrong. Owner-only for now; drop the isOwner wrap
+    // to open it to everyone.
+    ...(isOwner ? [{ to: '/ground-truth', label: 'Ground Truth', icon: <GroundTruthIcon />, end: false,
+      hint: 'Verify what the model detected' }] : []),
     // Data Sources (ServiceNow / NetBox / Orion …) and Marketplace are
     // organization-admin features.
     ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false,

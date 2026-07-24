@@ -5341,6 +5341,203 @@ app.get('/api/scans', auth.requireAuth, (req, res) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════════════
+// Ground Truth — technicians tell us the real identity of detected
+// devices so we can find where the model is wrong and retrain on it.
+//
+// WRITES reuse the existing, battle-tested POST /api/feedback/device
+// (atomic map update + append-only feedback.jsonl + AL memory + scoreboard).
+// This section only adds the owner-only READ surfaces the tab needs:
+//   GET /api/ground-truth/queue            → least-confident, still-untruthed
+//                                            devices across all scans (worklist)
+//   GET /api/ground-truth/scans            → per-scan truth progress (browse)
+//   GET /api/ground-truth/scan/:rackId     → every device in one scan
+//   GET /api/ground-truth/crop/:rackId/:i  → lazy, cached crop of one device
+//
+// Gated to `owner` for now. The rack-visibility logic below is already
+// role-correct, so opening this to other roles later is a one-line change
+// to the guard — the queries do not need to change.
+// ════════════════════════════════════════════════════════════════════
+
+// Latest device-class verdict per device_index for a rack, from feedback.jsonl.
+function _gtDeviceFeedbackMap(rackDir) {
+  const m = new Map();
+  const fp = path.join(rackDir, 'feedback.jsonl');
+  if (!fs.existsSync(fp)) return m;
+  let lines = [];
+  try { lines = fs.readFileSync(fp, 'utf8').split('\n').filter(Boolean); }
+  catch (_) { return m; }
+  for (const ln of lines) {
+    let e; try { e = JSON.parse(ln); } catch { continue; }
+    if (e && e.feedback_type === 'device' && e.device_index != null) {
+      // File is append-order, so the last write for an index wins.
+      m.set(Number(e.device_index), {
+        is_correct: !!e.is_correct,
+        actual_class: e.actual_device_class || null,
+        predicted_class: e.predicted_device_class || null,
+        timestamp: e.timestamp || null,
+      });
+    }
+  }
+  return m;
+}
+
+// Normalised device list for one scan, with predicted class, confidence,
+// position, a stable label, and current truth verdict. null if the scan has
+// no device_unit_map.json yet. Shared by the queue, browse and detail routes.
+function _gtScanDevices(rackId) {
+  const rackDir = path.join(outputsDir, rackId);
+  const mapPath = path.join(rackDir, 'device_unit_map.json');
+  if (!fs.existsSync(mapPath)) return null;
+  let map;
+  try { map = JSON.parse(fs.readFileSync(mapPath, 'utf8')); } catch { return null; }
+  const meta = readMeta(rackId);
+  const fbMap = _gtDeviceFeedbackMap(rackDir);
+  const unitsDetected = map.units_detected || [];
+  const overlayName = fs.existsSync(rackImagePath(rackDir, '3_units_and_devices.png'))
+    ? '3_units_and_devices.png'
+    : (fs.existsSync(rackImagePath(rackDir, '7_rack_all_ports.png')) ? '7_rack_all_ports.png' : null);
+  const overlay = overlayName ? `/outputs/${rackId}/${rackImageUrlPath(rackDir, overlayName)}` : null;
+
+  const counts = {};
+  const devices = (map.devices || []).map((dev, i) => {
+    const idx = i + 1;
+    const code = CLASS_CODE_SRV[dev.class_name] || (dev.class_name || 'UNK').replace(/\s+/g, '').slice(0, 4).toUpperCase();
+    counts[code] = (counts[code] || 0) + 1;
+    const labelUnits = dev.units?.length ? dev.units : (unitsDetected.length ? [unitsDetected[0]] : []);
+    const position = formatUnitsRangeSrv(labelUnits) || '—';
+    const fb = fbMap.get(idx) || null;
+    return {
+      scanId: rackId,
+      device_index: idx,
+      predicted_class: dev.class_name || 'Unknown',
+      confidence: typeof dev.confidence === 'number' ? dev.confidence : null,
+      position,
+      label: `${(position.split(/[\s–—-]/)[0] || 'U')}-${code}${String(counts[code]).padStart(2, '0')}`,
+      source: dev.source || null,
+      truthed: !!fb,
+      truth: fb ? { is_correct: fb.is_correct, actual_class: fb.actual_class } : null,
+      cropUrl: `/api/ground-truth/crop/${rackId}/${idx}`,
+    };
+  });
+  return { rackId, meta, overlay, devices };
+}
+
+// Which racks may this caller see. Owner → all (null). Kept general so the
+// route guard is the only thing to relax when opening the tab to other roles.
+function _gtAllowedRacks(reqUser) {
+  const role = reqUser?.role;
+  const orgId = reqUser?.organization_id;
+  const tenantId = reqUser?.tenant_id;
+  const userId = reqUser?.id;
+  if (role === 'owner') return null;
+  if (role === 'org_admin' && orgId) return tenant.orgRackIds(orgId);
+  return tenantId ? tenant.tenantUserRackIds(tenantId, userId) : new Set();
+}
+
+function _gtRackNames() {
+  try { return fs.readdirSync(outputsDir).filter(n => n.startsWith('RK-')); }
+  catch (_) { return []; }
+}
+
+// GET /api/ground-truth/queue?limit=150 — the labelling worklist.
+// Every still-untruthed device across visible scans, least-confident first
+// (unknown confidence is treated as most urgent), plus platform-wide stats.
+app.get('/api/ground-truth/queue', auth.requireRole('owner'), (req, res) => {
+  const limit = Math.min(Math.max(Number(req.query.limit) || 150, 1), 500);
+  const allowed = _gtAllowedRacks(req.user);
+
+  let scans = 0, totalDevices = 0, truthed = 0, correct = 0, wrong = 0;
+  const items = [];
+  for (const rackId of _gtRackNames()) {
+    if (allowed && !allowed.has(rackId)) continue;
+    const sd = _gtScanDevices(rackId);
+    if (!sd) continue;
+    scans++;
+    for (const dv of sd.devices) {
+      totalDevices++;
+      if (dv.truthed) {
+        truthed++;
+        if (dv.truth?.is_correct) correct++; else wrong++;
+        continue; // worklist shows only what still needs truth
+      }
+      items.push({ ...dv, scannedAt: sd.meta?.timestamp || null, rackImageUrl: sd.overlay });
+    }
+  }
+  items.sort((a, b) => ((a.confidence ?? -1) - (b.confidence ?? -1)));
+  const graded = correct + wrong;
+  res.json({
+    items: items.slice(0, limit),
+    truncated: items.length > limit,
+    stats: {
+      scans, devices: totalDevices, truthed, remaining: totalDevices - truthed,
+      correct, wrong, accuracy: graded ? correct / graded : null,
+    },
+  });
+});
+
+// GET /api/ground-truth/scans — one row per scan with truth progress (browse).
+app.get('/api/ground-truth/scans', auth.requireRole('owner'), (req, res) => {
+  const allowed = _gtAllowedRacks(req.user);
+  const scans = _gtRackNames().map((rackId) => {
+    if (allowed && !allowed.has(rackId)) return null;
+    const sd = _gtScanDevices(rackId);
+    if (!sd) return null;
+    const deviceCount = sd.devices.length;
+    const truthedCount = sd.devices.filter(d => d.truthed).length;
+    const correct = sd.devices.filter(d => d.truth?.is_correct).length;
+    const wrong = sd.devices.filter(d => d.truthed && !d.truth?.is_correct).length;
+    return { rackId, timestamp: sd.meta?.timestamp || null, deviceCount, truthedCount, correct, wrong, image: sd.overlay };
+  }).filter(Boolean).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+  res.json({ scans });
+});
+
+// GET /api/ground-truth/scan/:rackId — every device in one scan (browse detail).
+// :rackId is guarded by app.param('rackId') (tenant scope) before we get here.
+app.get('/api/ground-truth/scan/:rackId', auth.requireRole('owner'), (req, res) => {
+  const { rackId } = req.params;
+  const sd = _gtScanDevices(rackId);
+  if (!sd) return res.status(404).json({ error: `Scan ${rackId} not found` });
+  res.json({ rackId, timestamp: sd.meta?.timestamp || null, rackImageUrl: sd.overlay, devices: sd.devices });
+});
+
+// GET /api/ground-truth/crop/:rackId/:index — a tight crop of one device from
+// the original photo, so the technician sees exactly what to identify. Cropped
+// once on first request and cached to outputs/<rackId>/gt_crops/dev<i>.png.
+app.get('/api/ground-truth/crop/:rackId/:index', auth.requireRole('owner'), async (req, res) => {
+  const { rackId } = req.params;
+  const index = Number(req.params.index);
+  if (!Number.isInteger(index) || index < 1) {
+    return res.status(400).json({ error: 'Invalid device index' });
+  }
+  const rackDir = path.join(outputsDir, rackId);
+  const mapPath = path.join(rackDir, 'device_unit_map.json');
+  if (!fs.existsSync(mapPath)) return res.status(404).json({ error: 'Scan not found' });
+
+  let box = null;
+  try {
+    const map = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+    box = (map.devices || [])[index - 1]?.box || null;
+  } catch (_) {}
+  if (!box) return res.status(404).json({ error: 'Device not found' });
+
+  const cropDir = path.join(rackDir, 'gt_crops');
+  const dest = path.join(cropDir, `dev${index}.png`);
+  try {
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(cropDir, { recursive: true });
+      const ok = await cropBoxImage(rackId, box, dest, 0.12, 6);
+      if (!ok) return res.status(404).json({ error: 'Crop unavailable' });
+    }
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.setHeader('Content-Type', 'image/png');
+    return res.sendFile(dest);
+  } catch (err) {
+    logger.warn('ground-truth crop failed: ' + err.message);
+    return res.status(404).json({ error: 'Crop unavailable' });
+  }
+});
+
 // ── Report endpoints ──────────────────────────────────────────
 // One source of truth (buildScanReportData), four output formats:
 //   GET /api/scan/:rackId/report                 → JSON metadata (no file written)
