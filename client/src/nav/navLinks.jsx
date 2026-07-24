@@ -52,6 +52,9 @@ export const OrgIcon = () => (
 export const HelpIcon = () => (
   <svg {...s}><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.9 2.9 0 015.6 1c0 2-2.8 2.6-2.8 4"/><circle cx="12" cy="17.4" r="1" fill="currentColor" stroke="none"/></svg>
 );
+export const ContactIcon = () => (
+  <svg {...s}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>
+);
 export const MoreIcon = () => (
   <svg {...s}><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>
 );
@@ -96,6 +99,10 @@ export function usePrimaryNav() {
       hint: 'Buy and sell hardware' }] : []),
     { to: '/help',           label: 'Ask DOT',      icon: <HelpIcon />,        end: false,
       hint: 'Answers from verified documentation' },
+    // Contact support — reachable directly (not only via DOT's hand-off).
+    // Available to everyone; shows in the sidebar and the phone's Menu.
+    { to: '/contact',        label: 'Contact',      icon: <ContactIcon />,     end: false,
+      hint: 'Email the RackTrack support team' },
     { to: '/profile',        label: 'Profile',      icon: <ProfileIcon />,     end: false, inBar: true },
   ];
 }
