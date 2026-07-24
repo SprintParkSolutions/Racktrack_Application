@@ -1288,23 +1288,18 @@ function SwitchPicker({ switches, rackId }) {
     return sw.manufacturer || '';
   };
 
+  const multi = switches.length > 1;
+
   return (
-    <section style={{ marginTop: 16 }}>
-      {switches.length > 1 && (
+    // `.switchLayout` is a container-query context; `.master` (added only
+    // when there's >1 switch) turns it into a rail + detail grid once the
+    // container is wide enough. Narrow/embedded/mobile contexts stay stacked.
+    <section className={`${desk.switchLayout} ${multi ? desk.master : ''}`}>
+      {multi && (
         <div
           role="tablist"
           aria-label="Switches detected in this rack"
-          style={{
-            display: 'grid',
-            gridAutoFlow: 'column',
-            gridAutoColumns: 'minmax(140px, 1fr)',
-            gap: 10,
-            overflowX: 'auto',
-            padding: '4px 0 18px',
-            marginBottom: 4,
-            msOverflowStyle: 'none',
-            scrollbarWidth: 'none',
-          }}>
+          className={desk.rail}>
           {switches.map((sw, i) => {
             const on = i === safeIdx;
             return (
@@ -1402,14 +1397,16 @@ function SwitchPicker({ switches, rackId }) {
         </div>
       )}
 
-      {active && (
-        <SwitchCard
-          key={active.serial_number || active.name || safeIdx}
-          sw={active}
-          rackId={rackId}
-          defaultExpanded
-        />
-      )}
+      <div className={desk.detail}>
+        {active && (
+          <SwitchCard
+            key={active.serial_number || active.name || safeIdx}
+            sw={active}
+            rackId={rackId}
+            defaultExpanded
+          />
+        )}
+      </div>
     </section>
   );
 }

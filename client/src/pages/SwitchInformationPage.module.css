@@ -19,8 +19,83 @@
     display: none !important;
   }
   .main {
+    /* The page root is a flex child of DesktopShell's .fluid (a column
+       flexbox). `margin: 0 auto` on a flex item makes BOTH cross-axis
+       (horizontal) margins auto, which — per the flexbox spec — disables
+       the default `align-self: stretch`. The item then shrink-wraps to its
+       content's intrinsic width (~470px) and the auto margins center it,
+       producing the "narrow column floating in empty space" bug. Giving it
+       an explicit `width: 100%` restores a definite cross-size so it fills
+       the whole content canvas; the auto margins then collapse to 0. */
     max-width: none;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
     padding: 32px 32px 64px;
+  }
+}
+
+/* ── SwitchPicker: full-width / master-detail layout ─────────────────────
+   The picker's outer containers used to be inline-styled (grid + overflowX
+   on the rail, a bare <section>), which meant they could never respond to
+   width. They're class-driven now so the layout can switch between the
+   phone stack and a desktop master-detail grid.
+
+   The switch is driven by a CONTAINER query on `.switchLayout`, not a
+   viewport media query. That way the same component renders correctly in
+   every context it's reused in: the standalone full-width page goes
+   master-detail, while the embedded "Switches" tab inside a narrow
+   ResultsPage column (and mobile) falls back to the stacked layout
+   automatically — purely on the width actually available to it.
+
+   Light-theme tokens are hardcoded here (this surface is light-only);
+   no dark variant. */
+.switchLayout {
+  margin-top: 16px;
+  container-type: inline-size;
+}
+
+/* Rail — the strip of detected switches. Default (phone / any narrow
+   container): a horizontal, edge-to-edge scroll strip, exactly as before. */
+.rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(140px, 1fr);
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 0 18px;
+  margin-bottom: 4px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.rail::-webkit-scrollbar { display: none; }
+
+/* Detail — wraps the selected SwitchCard. Plain block by default so the
+   card fills the width on phone exactly as it did before. */
+.detail { min-width: 0; }
+
+@container (min-width: 880px) {
+  /* Cap the detail card so a lone switch doesn't stretch to a 2500px line
+     length on an ultra-wide monitor; it fills a laptop and left-aligns. */
+  .detail { max-width: 1100px; }
+
+  /* When there is more than one switch (`.master` is added) go master-detail:
+     a left rail listing every switch + a wide detail panel for the selected
+     one. */
+  .master {
+    display: grid;
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .master .rail {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr;
+    grid-auto-columns: auto;
+    overflow-x: visible;
+    padding: 0;
+    margin: 0;
+    gap: 10px;
+    position: sticky;
+    top: 0;
   }
 }

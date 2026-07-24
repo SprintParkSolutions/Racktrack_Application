@@ -5382,6 +5382,14 @@ function _gtDeviceFeedbackMap(rackDir) {
   return m;
 }
 
+// Rack-slot placeholders, not real equipment. The CV model emits one entry
+// per rack unit, so blank/closed slots come through as "Empty" / "Closed Unit"
+// (the "U01 / unit 2" rows). Ground Truth is for verifying actual devices, so
+// these are dropped from the list — matching the app-wide HIDDEN_DEVICE_TYPES
+// used on the Results view. "Unidentified" is deliberately KEPT: an unlabelled
+// device is exactly what ground-truthing exists to correct.
+const GT_UNIT_CLASSES = new Set(['Empty', 'Closed Unit']);
+
 // Normalised device list for one scan, with predicted class, confidence,
 // position, a stable label, and current truth verdict. null if the scan has
 // no device_unit_map.json yet. Shared by the queue, browse and detail routes.
@@ -5419,7 +5427,10 @@ function _gtScanDevices(rackId) {
       truth: fb ? { is_correct: fb.is_correct, actual_class: fb.actual_class } : null,
       cropUrl: `/api/ground-truth/crop/${rackId}/${idx}`,
     };
-  });
+  })
+  // Drop the blank rack-slot rows AFTER indexing, so every kept device keeps
+  // its original 1-based device_index (the crop + truth endpoints key off it).
+  .filter(d => !GT_UNIT_CLASSES.has(d.predicted_class));
   return { rackId, meta, overlay, devices };
 }
 
