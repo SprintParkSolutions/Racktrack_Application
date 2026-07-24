@@ -21,6 +21,7 @@
 // error and means nothing to them.
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useTheme } from '../ThemeContext.jsx';
 import BackButton from '../components/BackButton.jsx';
@@ -71,6 +72,7 @@ function parseOptions(text) {
 }
 
 export default function HelpPage() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState(null); // null = checking
   const [messages, setMessages] = useState([]);
   const [pending, setPending] = useState(false);
@@ -293,8 +295,13 @@ export default function HelpPage() {
                   {DECLINED.has(m.route) && (
                     <div className={styles.escape}>
                       Still stuck?{' '}
-                      <button type="button" onClick={() => send('how do I contact support')}>
-                        Reach a person
+                      {/* Can't answer → hand off to the Contact page, pre-filled
+                          with the question DOT couldn't handle. */}
+                      <button
+                        type="button"
+                        onClick={() => navigate('/contact', { state: { context: messages[i - 1]?.content || '' } })}
+                      >
+                        Contact support
                       </button>
                     </div>
                   )}

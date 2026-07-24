@@ -1,0 +1,109 @@
+/* Contact support — clean white form, black accents, matching the app. */
+
+.page {
+  display: flex; flex-direction: column;
+  min-height: 100vh;
+  background: var(--md-background, #ffffff);
+  color: var(--md-on-surface, #121417);
+}
+
+/* Mobile header — hidden on desktop, where the shell draws the one header. */
+.header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 16px 12px;
+  background: var(--md-surface-container-lowest, #ffffff);
+  border-bottom: 1px solid var(--md-outline-variant, #e0e0e0);
+  position: sticky; top: 0; z-index: 60;
+}
+.backBtn {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 12px; border: 1px solid var(--md-outline-variant, #e0e0e0);
+  background: var(--md-surface-container-lowest, #ffffff);
+  color: var(--md-on-surface, #121417);
+  font-size: 24px; line-height: 1; cursor: pointer;
+}
+.backBtn:hover { border-color: var(--md-on-surface, #121417); background: var(--md-surface-container, #fafafa); }
+.headerTitle { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+
+.main {
+  flex: 1;
+  width: 100%; max-width: 620px; margin: 0 auto;
+  padding: 22px 18px 64px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+.lede {
+  margin: 0;
+  font-size: 14px; line-height: 1.6;
+  color: var(--md-on-surface-variant, #4c4546);
+}
+.lede strong { color: var(--md-on-surface, #121417); font-weight: 600; }
+
+.form { display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 7px; }
+.label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--md-on-surface-variant, #4c4546);
+}
+.optional { font-weight: 500; text-transform: none; letter-spacing: 0; opacity: 0.6; }
+
+.input, .textarea {
+  width: 100%; box-sizing: border-box;
+  font: inherit; font-size: 14px; color: var(--md-on-surface, #121417);
+  background: var(--md-surface-container-lowest, #ffffff);
+  border: 1px solid var(--md-outline-variant, #d8d8d8);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.textarea { resize: vertical; min-height: 150px; line-height: 1.55; }
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--md-on-surface, #121417);
+  box-shadow: 0 0 0 3px rgba(18, 20, 23, 0.06);
+}
+.input::placeholder, .textarea::placeholder { color: rgba(18,20,23,0.38); }
+
+.actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 2px; }
+.primaryBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 46px; padding: 0 26px;
+  font: inherit; font-size: 15px; font-weight: 600;
+  color: #fff; background: #121417; border: 1px solid #121417; border-radius: 999px;
+  cursor: pointer; transition: opacity .15s, transform .12s;
+}
+.primaryBtn:hover:not(:disabled) { opacity: 0.9; }
+.primaryBtn:active:not(:disabled) { transform: scale(0.99); }
+.primaryBtn:disabled { opacity: 0.4; cursor: default; }
+
+.ghostLink, .link { color: var(--md-on-surface, #121417); font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.ghostLink:hover, .link:hover { opacity: 0.7; }
+
+.errorBox {
+  padding: 12px 14px; border-radius: 12px;
+  background: rgba(180, 35, 24, 0.06); border: 1px solid rgba(180, 35, 24, 0.2);
+  color: #b42318; font-size: 13px; line-height: 1.5;
+}
+.errorAlt { margin-top: 6px; color: var(--md-on-surface-variant, #4c4546); }
+
+/* ── Sent confirmation ── */
+.doneCard {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 12px; padding: 40px 24px;
+}
+.doneMark {
+  width: 56px; height: 56px; border-radius: 999px;
+  display: grid; place-items: center;
+  background: rgba(22, 163, 74, 0.1); color: #16a34a;
+  margin-bottom: 4px;
+}
+.doneTitle { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.doneText { margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: var(--md-on-surface-variant, #4c4546); max-width: 42ch; }
+.doneText strong { color: var(--md-on-surface, #121417); font-weight: 600; }
+
+/* ── Desktop / tablet: the shell draws the one header, so hide the page's own
+   and give the form a comfortable centred column. ── */
+@media (min-width: 768px) {
+  .header { display: none; }
+  .main { max-width: 640px; padding: 34px 32px 72px; gap: 22px; }
+}

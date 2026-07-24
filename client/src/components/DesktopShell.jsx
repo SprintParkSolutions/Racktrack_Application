@@ -120,6 +120,7 @@ const PAGE_TITLE = {
   '/lab':              { title: 'Lab',                 sub: 'Live switches in the test lab' },
   '/ground-truth':     { title: 'Ground Truth',        sub: 'Verify what the model detected' },
   '/help':             { title: 'Ask DOT',             sub: 'Answers from verified documentation' },
+  '/contact':          { title: 'Contact support',     sub: '' },
 };
 
 function deriveTitle(pathname) {

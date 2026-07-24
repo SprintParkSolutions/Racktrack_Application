@@ -9,6 +9,7 @@
 // button that cannot help is worse than no button.
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './SupportBot.module.css';
 
@@ -24,6 +25,7 @@ const STARTERS = [
 const DECLINED = new Set(['refusal', 'out-of-scope', 'needs-access']);
 
 export default function SupportBot() {
+  const navigate = useNavigate();
   const [available, setAvailable] = useState(null); // null = still checking
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -187,8 +189,13 @@ export default function SupportBot() {
                   {declined && (
                     <div className={styles.escape}>
                       Still stuck?{' '}
-                      <button type="button" onClick={() => send('how do I contact support')}>
-                        Reach a person
+                      {/* Can't answer → hand off to the Contact page, pre-filled
+                          with the question DOT couldn't handle. */}
+                      <button
+                        type="button"
+                        onClick={() => { setOpen(false); navigate('/contact', { state: { context: messages[i - 1]?.content || '' } }); }}
+                      >
+                        Contact support
                       </button>
                     </div>
                   )}

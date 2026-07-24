@@ -19,6 +19,7 @@ import NetdiscoPage from './pages/NetdiscoPage.jsx';
 import HistoryPage from './pages/HistoryPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
+import ContactPage from './pages/ContactPage.jsx';
 import LogoCompare from './pages/LogoCompare.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
@@ -337,6 +338,10 @@ export default function App() {
                 panel covers mid-task questions; this is the destination. */}
             <Route path="/help" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><HelpPage /></ResponsiveLayout></ProtectedRoute>
+            } />
+            {/* Contact support — where "Reach a person" (from DOT) lands. */}
+            <Route path="/contact" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><ContactPage /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/profile" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ProfilePage /></ResponsiveLayout></ProtectedRoute>

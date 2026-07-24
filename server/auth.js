@@ -431,6 +431,47 @@ async function sendVerificationEmail(email, code) {
   return false;
 }
 
+// Where "Reach a person" / the Contact page delivers. Kept in one place so it
+// matches the address the support bot quotes.
+const SUPPORT_EMAIL = 'support@racktrack.ai';
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Support contact form → the support inbox, over the same primary+fallback SMTP
+// as verification codes. Reply-To is the sender so support can reply straight
+// from their client. Returns true if any provider delivered.
+async function sendContactEmail({ fromEmail, fromName, meta, subject, message }) {
+  const providers = mailProviders();
+  if (!providers.length) return false;
+  const text = [
+    message, '', '——',
+    `From: ${fromName || 'Unknown'} <${fromEmail || 'no email'}>`,
+    meta || '',
+  ].filter(Boolean).join('\n');
+  const html = `<div style="font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;line-height:1.6;color:#1a1a2e;">
+    <p style="white-space:pre-wrap;margin:0 0 16px;">${escapeHtml(message)}</p>
+    <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
+    <p style="color:#6b6b7a;font-size:12px;margin:0;">From: ${escapeHtml(fromName || 'Unknown')} &lt;${escapeHtml(fromEmail || 'no email')}&gt;<br>${escapeHtml(meta || '').replace(/\n/g, '<br>')}</p>
+  </div>`;
+  for (const p of providers) {
+    try {
+      await p.tx.sendMail({
+        from: p.from, to: SUPPORT_EMAIL, replyTo: fromEmail || undefined,
+        subject: subject || 'Support request from the app', text, html,
+      });
+      logger.info(`[auth] contact email delivered to ${SUPPORT_EMAIL} via ${p.label} (${p.host})`);
+      return true;
+    } catch (err) {
+      logger.error(`[auth] ${p.label} contact send failed (${p.host}): ${err.message} — trying next provider`);
+    }
+  }
+  logger.error(`[auth] ALL providers failed to send contact email to ${SUPPORT_EMAIL}`);
+  return false;
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 function genCode() {
   // 6-digit zero-padded
@@ -1062,6 +1103,46 @@ function registerRoutes(app) {
     db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(idx, req.user.id);
     const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
     res.json({ ok: true, user: publicUser(fresh) });
+  });
+
+  // ── Support contact form ──────────────────────────────────────
+  // Sends the user's message to the support inbox with their identity +
+  // context attached (and Reply-To set so support can respond). requireAuth:
+  // the app is behind login, and it lets us attach who/where without the user
+  // retyping it. A short per-user cooldown blocks double-sends and spam. If SMTP
+  // isn't configured or the send fails, the client falls back to a mailto: link.
+  const _lastContactAt = new Map();
+  app.post('/api/support/contact', requireAuth, async (req, res) => {
+    const message = String(req.body?.message || '').trim();
+    if (message.length < 4)    return res.status(400).json({ error: 'Please describe the problem.' });
+    if (message.length > 5000) return res.status(400).json({ error: 'That message is too long — please shorten it.' });
+
+    const now = Date.now();
+    if (now - (_lastContactAt.get(req.user.id) || 0) < 15_000) {
+      return res.status(429).json({ error: 'Please wait a few seconds before sending again.' });
+    }
+
+    const u = req.user;
+    const org = u.tenant?.name || '—';
+    const context = String(req.body?.context || '').trim();
+    const meta =
+      `Role: ${u.role || '—'} · Org/Site: ${org} · User id: ${u.id}` +
+      (context ? `\nContext: ${context.slice(0, 800)}` : '');
+
+    const sent = await sendContactEmail({
+      fromEmail: u.email,
+      fromName:  u.username,
+      meta,
+      subject:   String(req.body?.subject || '').trim() || `Support request from ${u.username || 'a user'}`,
+      message,
+    });
+
+    if (!sent) {
+      return res.status(502).json({ error: `Could not send right now. Please email ${SUPPORT_EMAIL} directly.`, supportEmail: SUPPORT_EMAIL });
+    }
+    _lastContactAt.set(u.id, now);
+    audit.log({ req, user: u, action: 'support.contact', status: 'ok' });
+    res.json({ ok: true, to: SUPPORT_EMAIL });
   });
 
   // ══════════════════════════════════════════════════════════════
