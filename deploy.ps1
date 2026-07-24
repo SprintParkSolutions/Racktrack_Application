@@ -72,10 +72,26 @@ function Invoke-DepsBuildRestart {
     elseif (Test-Path "$ProjectRoot\.venv\Scripts\python.exe")      { $py = "$ProjectRoot\.venv\Scripts\python.exe" }
     else                                                            { $py = "py" }
     Write-Host "  python: $py" -ForegroundColor DarkGray
+
+    # Remember any CUDA torch build BEFORE the bare lock install below wipes it
+    # (the lock pins CPU-only torch for the Linux/Docker target — see the
+    # GPU/CUDA NOTE above), so it can be restored afterward on this GPU box.
+    $priorTorch = & $py -c "import torch; print(torch.__version__)" 2>$null
+    $priorTorchvision = & $py -c "import torchvision; print(torchvision.__version__)" 2>$null
+
     & $py -m pip install -r "$ProjectRoot\requirements.lock.txt"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  pip install FAILED — old version still live, nothing restarted." -ForegroundColor Red
         exit 1
+    }
+
+    if ($priorTorch -match '\+cu\d+$') {
+        $cudaTag = ($priorTorch -split '\+')[1]
+        Write-Host "  Restoring CUDA torch ($priorTorch) — the lock install above just put CPU-only torch back ..." -ForegroundColor Cyan
+        & $py -m pip install "torch==$priorTorch" "torchvision==$priorTorchvision" --index-url "https://download.pytorch.org/whl/$cudaTag"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  CUDA torch restore FAILED — box is left on CPU-only torch; fix manually." -ForegroundColor Red
+        }
     }
 
     Write-Host "`n[build] Building the web client ..." -ForegroundColor Cyan
