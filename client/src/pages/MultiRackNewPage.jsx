@@ -25,17 +25,25 @@ function ImageSlot({ index, file, onPick, disabled }) {
   // the feature looked upload-only. `capture="environment"` opens the rear
   // camera directly; the plain input keeps the gallery available for people
   // who already have the photos.
-  const cameraRef = useRef(null);
-  const galleryRef = useRef(null);
+  const inputRef = useRef(null);
   const url = file ? URL.createObjectURL(file) : null;
   const ACCEPT = 'image/*,image/heic,image/heif,.heic,.heif';
   const take = (e) => { const f = e.target.files?.[0]; if (f) onPick(f); e.target.value = ''; };
+  // One tap on the container. No `capture` attribute → the phone shows its
+  // native chooser (Take Photo / Photo Library); desktop opens the file picker.
+  const open = () => { if (!disabled) inputRef.current?.click(); };
 
   return (
     <div className={styles.slot}>
       <div className={styles.slotLabel}>Rack {index + 1}</div>
 
-      <div className={`${styles.dropZone} ${file ? styles.dropZoneFilled : ''}`}>
+      <button
+        type="button"
+        className={`${styles.dropZone} ${file ? styles.dropZoneFilled : ''}`}
+        onClick={open}
+        disabled={disabled}
+        aria-label={file ? `Replace Rack ${index + 1} photo` : `Add Rack ${index + 1} photo`}
+      >
         {url ? (
           <img src={url} alt={`Rack ${index + 1}`} className={styles.thumb} />
         ) : (
@@ -48,7 +56,7 @@ function ImageSlot({ index, file, onPick, disabled }) {
               </svg>
             </span>
             <span className={styles.dropTitle}>Add a photo</span>
-            <span className={styles.pickHint}>Camera or gallery below</span>
+            <span className={styles.pickHint}>Tap to take a photo or pick from your gallery</span>
             <span className={styles.fmtPills} aria-hidden="true">
               <span className={styles.fmtPill}>JPG</span>
               <span className={styles.fmtPill}>PNG</span>
@@ -56,40 +64,9 @@ function ImageSlot({ index, file, onPick, disabled }) {
             </span>
           </div>
         )}
-      </div>
+      </button>
 
-      <div className={styles.slotActions}>
-        <button
-          type="button"
-          className={`${styles.slotBtn} ${styles.slotBtnPrimary}`}
-          onClick={() => !disabled && cameraRef.current?.click()}
-          disabled={disabled}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-               strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-            <circle cx="12" cy="13" r="4" />
-          </svg>
-          {file ? 'Retake' : 'Camera'}
-        </button>
-        <button
-          type="button"
-          className={styles.slotBtn}
-          onClick={() => !disabled && galleryRef.current?.click()}
-          disabled={disabled}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-               strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <path d="M21 15l-5-5L5 21" />
-          </svg>
-          {file ? 'Replace' : 'Gallery'}
-        </button>
-      </div>
-
-      <input ref={cameraRef} type="file" accept={ACCEPT} capture="environment" hidden onChange={take} />
-      <input ref={galleryRef} type="file" accept={ACCEPT} hidden onChange={take} />
+      <input ref={inputRef} type="file" accept={ACCEPT} hidden onChange={take} />
     </div>
   );
 }

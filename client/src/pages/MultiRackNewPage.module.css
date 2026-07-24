@@ -118,14 +118,20 @@
 /* Dashed dropzone — the Scan look. */
 .dropZone {
   position: relative;
+  width: 100%;
   min-height: 200px;
   border: 1.5px dashed #d4d4d0;
   border-radius: 22px;
   background: #fbfbfa;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
   overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   transition: border-color 0.16s, background 0.16s;
 }
+.dropZone:disabled { cursor: default; opacity: 0.6; }
+.dropZone:hover:not(:disabled) { border-color: #111; background: #f4f4f2; }
 .dropZoneFilled {
   border-style: solid;
   border-color: #e4e4e1;
