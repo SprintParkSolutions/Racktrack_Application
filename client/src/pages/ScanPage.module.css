@@ -374,21 +374,28 @@
      crushed into a phone-width column, which is exactly the "still looks like
      mobile on my laptop" report. Match the display/padding overrides already
      here. */
-  max-width: 1500px !important;
-  margin: 0 auto !important;
+  /* Full width + full height: fill the whole content canvas so there's no dead
+     white space below the dropzone. */
+  max-width: none !important;
+  margin: 0 !important;
+  min-height: calc(100vh - 92px) !important;
   height: auto !important;
   overflow: visible !important;
-  align-items: start;
+  align-items: stretch;
 }
 
-/* Media box anchors the left column and stretches the full grid height. */
+/* Media box anchors the left column and stretches to fill the grid height. */
 .scanContentDesktop .mediaBox {
   grid-column: 1;
   grid-row: 1 / span 99;
   min-height: 600px;
-  max-height: calc(100vh - 200px);
+  max-height: none;
+  height: 100%;
   margin: 0 !important;
 }
+
+/* The dropzone (or preview/camera) fills the tall media box — no gap inside. */
+.scanContentDesktop .dropZone { flex: 1 1 auto; }
 
 /* Every other child stacks in the right column in natural DOM order. */
 .scanContentDesktop > *:not(.mediaBox) {
@@ -418,7 +425,7 @@
     column-gap: 0 !important;
     row-gap: 16px !important;
     padding: 20px 28px 40px !important;
-    max-width: 760px !important;  /* same specificity fight as above */
+    max-width: none !important;   /* full width on tablet too */
   }
   .scanContentDesktop .mediaBox {
     grid-column: 1 !important;
