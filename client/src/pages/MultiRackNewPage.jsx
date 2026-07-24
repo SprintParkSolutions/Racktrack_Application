@@ -40,8 +40,20 @@ function ImageSlot({ index, file, onPick, disabled }) {
           <img src={url} alt={`Rack ${index + 1}`} className={styles.thumb} />
         ) : (
           <div className={styles.placeholder}>
-            <span className={styles.plus}>+</span>
-            <span className={styles.pickHint}>Add a photo</span>
+            <span className={styles.iconWrap} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
+                <circle cx="12" cy="12" r="3.2" />
+              </svg>
+            </span>
+            <span className={styles.dropTitle}>Add a photo</span>
+            <span className={styles.pickHint}>Camera or gallery below</span>
+            <span className={styles.fmtPills} aria-hidden="true">
+              <span className={styles.fmtPill}>JPG</span>
+              <span className={styles.fmtPill}>PNG</span>
+              <span className={styles.fmtPill}>HEIC</span>
+            </span>
           </div>
         )}
       </div>
@@ -49,7 +61,7 @@ function ImageSlot({ index, file, onPick, disabled }) {
       <div className={styles.slotActions}>
         <button
           type="button"
-          className={styles.slotBtn}
+          className={`${styles.slotBtn} ${styles.slotBtnPrimary}`}
           onClick={() => !disabled && cameraRef.current?.click()}
           disabled={disabled}
         >
@@ -168,6 +180,7 @@ export default function MultiRackNewPage() {
           with the uplink cabling that runs <b>between</b> them.
         </p>
 
+        <div className={styles.eyebrow}>Capture mode</div>
         <div className={styles.modeToggle}>
           <button
             className={`${styles.modeBtn} ${mode === 'images' ? styles.modeBtnOn : ''}`}
@@ -183,6 +196,7 @@ export default function MultiRackNewPage() {
 
         {mode === 'images' ? (
           <>
+            <div className={styles.eyebrow}>Rack photos</div>
             <div className={styles.slots}>
               <ImageSlot index={0} file={images[0]} onPick={(f) => setImage(0, f)} disabled={busy} />
               <ImageSlot index={1} file={images[1]} onPick={(f) => setImage(1, f)} disabled={busy} />
@@ -197,6 +211,7 @@ export default function MultiRackNewPage() {
           </>
         ) : (
           <>
+            <div className={styles.eyebrow}>Rack video</div>
             <button
               type="button"
               className={`${styles.videoZone} ${video ? styles.videoZoneFilled : ''}`}
@@ -206,8 +221,20 @@ export default function MultiRackNewPage() {
               {video
                 ? <span className={styles.videoName}>🎬 {video.name}</span>
                 : <span className={styles.placeholder}>
-                    <span className={styles.plus}>+</span>
-                    <span className={styles.pickHint}>Tap to add a video panning across both racks</span>
+                    <span className={styles.iconWrap} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                           strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="6" width="14" height="12" rx="2" />
+                        <path d="M22 8l-6 4 6 4z" />
+                      </svg>
+                    </span>
+                    <span className={styles.dropTitle}>Add a rack video</span>
+                    <span className={styles.pickHint}>Pan across both racks · or tap to browse</span>
+                    <span className={styles.fmtPills} aria-hidden="true">
+                      <span className={styles.fmtPill}>MP4</span>
+                      <span className={styles.fmtPill}>MOV</span>
+                      <span className={styles.fmtPill}>WEBM</span>
+                    </span>
                   </span>}
             </button>
             <input

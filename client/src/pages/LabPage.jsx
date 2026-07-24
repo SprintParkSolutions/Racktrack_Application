@@ -269,7 +269,6 @@ export default function LabPage() {
   // Fleet tallies for the strip.
   const liveN = devices.filter((d) => d.enabled && !d.last_error && d.last_seen).length;
   const offN  = devices.filter((d) => d.enabled && d.last_error).length;
-  const offlineExplain = selected?.last_error ? explainSshError(selected.last_error) : null;
 
   // No badge on Identity — it's a fixed field set, not a collection.
   // Neighbour count is per DEVICE seen, not per port — a port on a shared
@@ -379,14 +378,12 @@ export default function LabPage() {
             {selected.last_error && (
               <div className={`${styles.banner} ${styles.bannerWarn}`}>
                 <span className={styles.bannerStrong}>
-                  Poller can’t reach it
+                  Offline — the switch isn’t answering
                   {selected.consecutive_failures
-                    ? ` — ${selected.consecutive_failures} failed attempt${selected.consecutive_failures === 1 ? '' : 's'}`
+                    ? ` (${selected.consecutive_failures} failed attempt${selected.consecutive_failures === 1 ? '' : 's'})`
                     : ''}.
-                </span>
-                {offlineExplain && <> {offlineExplain.plain}</>}
-                {offlineExplain && <div className={styles.bannerHint}>{offlineExplain.hint}</div>}
-                <div className={styles.bannerRaw}>SSH error: {selected.last_error}</div>
+                </span>{' '}
+                It’s likely stopped or unreachable; polling recovers on its own once it’s back.
               </div>
             )}
 

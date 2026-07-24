@@ -2536,7 +2536,7 @@ app.get('/api/analyze/result/:jobId', (req, res) => {
   res.json({ status: j.status, rackId: j.rackId || null, error: j.error || null });
 });
 
-app.post('/api/analyze', scanLimit, upload.single('image'), async (req, res) => {
+app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file provided' });
   trackScanJob(req, res);
   // Scans only happen through an approved organization: block a user whose
@@ -3515,7 +3515,7 @@ app.get('/api/ocr/labels/:rackId', (req, res) => {
  * Runs full pipeline with --device_index and --port on the cached rack image.
  * Reads imagePath from scan_meta.json — no in-memory state required.
  */
-app.post('/api/select', async (req, res) => {
+app.post('/api/select', auth.requireAuth, async (req, res) => {
   const { scanId, device_index, port, port_category } = req.body;
   const rackId = scanId;
 
@@ -4013,7 +4013,7 @@ function resolveTicketDevice(rackDir, cmdbDeviceName, cmdbHint = null) {
  *       { rackId, position, label, deviceCount, score, cached }
  *     ] }
  */
-app.post('/api/analyze-video', scanLimit, upload.single('video'), async (req, res) => {
+app.post('/api/analyze-video', auth.requireAuth, scanLimit, upload.single('video'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No video file provided' });
   trackScanJob(req, res);
   const reqStart = Date.now();
@@ -8664,7 +8664,7 @@ async function cropBoxImage(rackId, box, destPath, padRatio = 0.25, minPad = 6) 
   }
 }
 
-app.post('/api/feedback', async (req, res) => {
+app.post('/api/feedback', auth.requireAuth, async (req, res) => {
   const {
     scanId, device_index, predicted_port, is_correct,
     actual_port, actual_cable_color,
@@ -8807,7 +8807,7 @@ const PORT_TYPE_OPTIONS = [
   'RJ45', 'SFP', 'QSFP', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
   'USB_A', 'USB_B', 'USB_C',
 ];
-app.post('/api/feedback/port-type', async (req, res) => {
+app.post('/api/feedback/port-type', auth.requireAuth, async (req, res) => {
   const {
     scanId, device_index, port,
     predicted_type = null, actual_type,
@@ -8926,7 +8926,7 @@ app.post('/api/scan/:rackId/confirm-layout', auth.requireAuth, async (req, res) 
 // ── Device-only feedback ──────────────────────────────────────
 // Independent of port/cable feedback. The user looks at a device's
 // predicted class and either confirms it or supplies the actual class.
-app.post('/api/feedback/device', async (req, res) => {
+app.post('/api/feedback/device', auth.requireAuth, async (req, res) => {
   const { scanId, device_index, is_correct, actual_device_class } = req.body || {};
 
   if (!scanId || device_index == null || typeof is_correct !== 'boolean') {
@@ -9026,7 +9026,7 @@ app.post('/api/feedback/device', async (req, res) => {
 // Independent of device-class and port/cable feedback. The user
 // confirms how many main ports the model detected for the selected
 // device, or supplies the actual count.
-app.post('/api/feedback/port-count', async (req, res) => {
+app.post('/api/feedback/port-count', auth.requireAuth, async (req, res) => {
   const { scanId, device_index, is_correct, actual_port_count } = req.body || {};
 
   if (!scanId || device_index == null || typeof is_correct !== 'boolean') {
@@ -9193,7 +9193,7 @@ function fireMemoryCorrection(model, imagePath, predLabel, finalLabel, sourceNam
 // Save a user-verified port layout. From this point on, any upload of
 // the same (or visually-similar) image returns this layout and skips
 // the YOLO port model entirely.
-app.post('/api/feedback/port/verified', async (req, res) => {
+app.post('/api/feedback/port/verified', auth.requireAuth, async (req, res) => {
   const { scanId, ports, img_w, img_h, image_name } = req.body || {};
   if (!scanId || !Array.isArray(ports) || ports.length === 0) {
     return res.status(400).json({ error: 'scanId and ports[] are required' });
@@ -9235,7 +9235,7 @@ app.post('/api/feedback/port/verified', async (req, res) => {
 // POST /api/feedback/port/verified/check
 // Look up whether the given scan's original image has a saved verified
 // port layout. Used by PortsPage to show a VERIFIED badge.
-app.post('/api/feedback/port/verified/check', async (req, res) => {
+app.post('/api/feedback/port/verified/check', auth.requireAuth, async (req, res) => {
   const { scanId } = req.body || {};
   if (!scanId) return res.status(400).json({ error: 'scanId required' });
 
