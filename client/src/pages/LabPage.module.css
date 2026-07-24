@@ -306,16 +306,85 @@
   opacity: 0.55;
 }
 
-/* ── desktop / tablet: use the screen width inside the DesktopShell ──
-   The shell (≥768px) already renders a sidebar + a top crumb header, so the
-   page's own header is a duplicate with no functional controls — hide it. The
-   main column drops its phone-width cap and centres in the available width. */
+/* ══════════════════════════════════════════════════════════════════════
+   iPad / desktop — master–detail console
+   ──────────────────────────────────────────────────────────────────────
+   On a phone the page is a vertical stack: health summary → switch cards →
+   detail. On a wide screen that wastes the width and buries the detail under a
+   long scroll. Inside the shell (≥768px) we restructure into two panes:
+
+     ┌─────────────┬──────────────────────────────────────┐
+     │ health card │  selected switch — identity, tabs,   │
+     │ switch list │  port faceplate, tables …            │
+     │ (sticky)    │  (fills the right, scrolls)          │
+     └─────────────┴──────────────────────────────────────┘
+
+   The shell draws the page header, so the page's own is hidden.
+   ══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
   .header { display: none; }
-  .main { max-width: 1100px; margin: 0 auto; padding: 32px 32px 64px; }
+
+  .main {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 26px 32px 56px;
+    display: grid;
+    grid-template-columns: minmax(244px, 292px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "fleet  detail"
+      "list   detail";
+    column-gap: 30px;
+    row-gap: 14px;
+    align-items: start;
+  }
+
+  /* Health summary — a card at the top of the rail, not a one-liner. The "·"
+     separator only made sense inline, so it's dropped and the tallies stack. */
+  .fleetBar {
+    grid-area: fleet;
+    flex-direction: column; align-items: stretch; gap: 9px;
+    padding: 15px 17px;
+    border: 1px solid var(--md-outline-variant, #e0e0e0);
+    border-radius: 16px;
+    background: var(--md-surface-container-lowest, #ffffff);
+    box-shadow: 0 1px 2px rgba(18,20,23,0.04);
+    font-size: 13px;
+  }
+  .fleetCount { font-size: 15px; }
+  .fleetSep { display: none; }
+  .fleetStat { justify-content: flex-start; }
+
+  /* Switch list — a vertical stack of the fleet cards that stays in view
+     (sticky) while the long detail scrolls beside it. */
+  .deviceGrid {
+    grid-area: list;
+    display: flex !important; flex-direction: column; gap: 9px;
+    position: sticky; top: 8px; align-self: start;
+    max-height: calc(100vh - 150px); overflow-y: auto;
+    padding-right: 2px;
+  }
+  .deviceCard { padding: 12px 14px 12px 16px; gap: 6px; }
+  .deviceCard:hover { transform: none; }   /* no lift inside a tight list */
+  .dName { font-size: 14px; }
+
+  /* Detail — one clean card filling the right pane. */
+  .detail {
+    grid-area: detail; align-self: start;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(18,20,23,0.04);
+  }
+  .detailHead { padding: 18px 20px 16px; }
+  .detailName { font-size: 23px; }
+  .section { padding: 18px 20px; }
+  .factGrid { grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); }
+
+  /* A stray error line spans the whole width above both panes. */
+  .errLine { grid-column: 1 / -1; }
 }
 
-/* Roomier switch-card grid once there's real width to work with. */
-@media (min-width: 900px) {
-  .deviceGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+/* More breathing room + a denser port faceplate once there's real width. */
+@media (min-width: 1200px) {
+  .main { column-gap: 38px; grid-template-columns: 300px minmax(0, 1fr); }
+  .portGrid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
 }

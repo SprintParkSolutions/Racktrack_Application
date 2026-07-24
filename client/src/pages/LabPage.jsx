@@ -26,6 +26,21 @@ import styles from './LabPage.module.css';
 // the stylesheet), tables scroll in their own wrapper. The detail is split into
 // a summary head + tabbed sections rather than one long scroll of cards.
 
+// Persist the last audit per device in localStorage so a refresh or reopening
+// the page shows the last result INSTANTLY instead of blocking on a fresh SSH
+// pass. The live refresh then runs in the background and updates in place. Keyed
+// by device id; a few switches' worth of JSON is well under the quota.
+const LS_AUDIT = (id) => `rt_lab_audit_${id}`;
+function loadCachedAudit(id) {
+  try {
+    const j = JSON.parse(localStorage.getItem(LS_AUDIT(id)));
+    return j && j.data ? { data: j.data, at: j.at || null, error: null } : null;
+  } catch { return null; }
+}
+function saveCachedAudit(id, data, at) {
+  try { localStorage.setItem(LS_AUDIT(id), JSON.stringify({ data, at })); } catch { /* quota / disabled */ }
+}
+
 function fmtAgo(iso) {
   if (!iso) return 'never';
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -133,6 +148,10 @@ export default function LabPage() {
   // deviceId -> { data, at, error }. A ref, not state: it must survive device
   // switches without re-triggering the effects that would refetch.
   const auditsRef = useRef(new Map());
+  // Devices whose live audit we've already kicked off this session — so opening
+  // the page refreshes each device once in the background, not on every tab
+  // switch or 15s device-list poll.
+  const refreshedRef = useRef(new Set());
   const bump = () => forceRender((n) => n + 1);
 
   useEffect(() => {
@@ -175,12 +194,23 @@ export default function LabPage() {
   // offline diagnosis immediately is more useful, and the button still forces
   // a retry by hand.
   useEffect(() => {
-    if (!selectedId || busyId) return;             // one SSH pass at a time
+    if (!selectedId) return;
+    // 1. Show the last saved audit INSTANTLY (survives a refresh/reopen) so the
+    //    detail is never blank while a live pass runs.
+    if (!auditsRef.current.has(selectedId)) {
+      const cached = loadCachedAudit(selectedId);
+      if (cached) { auditsRef.current.set(selectedId, cached); bump(); }
+    }
+    // 2. Refresh live in the BACKGROUND — once per device per session, never
+    //    blocking the view. The cached data above stays on screen (marked
+    //    "Refreshing…") and updates in place when the pass returns.
+    if (busyId) return;                              // one SSH session at a time
+    if (refreshedRef.current.has(selectedId)) return; // already kicked off this session
     const d = devices.find((x) => x.id === selectedId);
-    if (!d || !d.enabled || d.last_error) return;  // disabled / known-unreachable
-    if (auditsRef.current.has(selectedId)) return; // already have a result (or a logged failure)
+    if (!d || !d.enabled || d.last_error) return;    // disabled / known-unreachable
+    refreshedRef.current.add(selectedId);
     runAudit(selectedId);
-  }, [selectedId, devices, busyId]);               // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedId, devices, busyId]);                 // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleEnabled = async (d) => {
     try {
@@ -204,7 +234,9 @@ export default function LabPage() {
       const r = await authFetch(apiUrl(`/api/lab/devices/${id}/audit`), { method: 'POST' });
       const data = await r.json();
       if (!r.ok || !data.ok) throw new Error(data.error || `HTTP ${r.status}`);
-      auditsRef.current.set(id, { data, at: new Date().toISOString(), error: null });
+      const at = new Date().toISOString();
+      auditsRef.current.set(id, { data, at, error: null });
+      saveCachedAudit(id, data, at);   // survive refresh/reopen
     } catch (err) {
       // Preserve the previous audit — an error annotates it, never erases it.
       const prev = auditsRef.current.get(id);
