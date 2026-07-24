@@ -116,20 +116,31 @@
   .eyebrow { font-size: 12px; }
   .h1 { font-size: clamp(44px, 7vw, 64px); }
 
-  .wrap { max-width: 900px; margin: 0 auto; padding: 40px 44px 64px; }
-  .lede { font-size: 18px; line-height: 1.6; max-width: 560px; margin-bottom: 28px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 44px 44px 72px; }
+  .lede { font-size: 18px; line-height: 1.6; max-width: 620px; margin-bottom: 30px; }
 
-  .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 44px; align-items: start; }
-  .textarea { height: 200px; }
-  .send { margin-top: 18px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.9fr); gap: 30px; align-items: stretch; }
 
-  .aside {
-    display: flex; flex-direction: column; gap: 22px;
-    padding-left: 44px; border-left: 1px solid #eeeeec;
+  /* The form gets a defined card so the section reads as intentional, not a
+     lone control floating in white space. */
+  .formCard {
+    padding: 30px 30px 28px;
+    border: 1px solid #ececea; border-radius: 18px; background: #fff;
+    box-shadow: 0 1px 2px rgba(20,22,26,.03), 0 24px 48px -34px rgba(20,22,26,.28);
   }
-  .aside .v { font-size: 15px; }
+  .textarea { height: 220px; }
+  .send { margin-top: 20px; }
+
+  /* Support details rail — small cards, no more sparse left-border list. */
+  .aside { display: flex; flex-direction: column; gap: 14px; }
+  .infoCard {
+    padding: 18px 20px; border: 1px solid #ececea; border-radius: 14px; background: #fbfbfa;
+  }
+  .infoCard .v { display: inline-block; font-size: 15px; margin-top: 5px; }
+  a.v:hover { text-decoration: underline; text-underline-offset: 2px; }
   .dot { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: 600; }
-  .dot i { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; }
+  .dot i { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.14); }
+  .reassure { font-size: 13px; line-height: 1.55; color: #8a8a87; padding: 2px 4px; margin-top: auto; }
 
   .emailCard { display: none; }
 }

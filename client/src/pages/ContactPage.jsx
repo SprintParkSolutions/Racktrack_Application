@@ -100,7 +100,7 @@ export default function ContactPage() {
         </p>
 
         <div className={styles.grid}>
-          <form onSubmit={submit}>
+          <form className={styles.formCard} onSubmit={submit}>
             <label className={styles.label}>Subject <span className={styles.optional}>optional</span></label>
             <input
               className={styles.fld}
@@ -134,21 +134,21 @@ export default function ContactPage() {
           </form>
 
           {/* Desktop/iPad: support details rail */}
-          <div className={styles.aside}>
-            <div>
+          <aside className={styles.aside}>
+            <div className={styles.infoCard}>
               <div className={styles.k}>Email</div>
-              <div className={styles.v}>{SUPPORT_EMAIL}</div>
+              <a className={styles.v} href={mailto}>{SUPPORT_EMAIL}</a>
               <div className={styles.m}>Replies within a few hours</div>
             </div>
-            <div>
-              <div className={styles.k}>Hours</div>
-              <div className={styles.v}>Mon–Fri · 9–6 PT</div>
-            </div>
-            <div>
+            <div className={styles.infoCard}>
               <div className={styles.k}>Status</div>
               <div className={styles.dot}><i />All systems operational</div>
             </div>
-          </div>
+            <div className={styles.reassure}>
+              A real person on the RackTrack team reads every message — no bots,
+              no ticket maze.
+            </div>
+          </aside>
         </div>
 
         {/* Mobile: compact email card */}
