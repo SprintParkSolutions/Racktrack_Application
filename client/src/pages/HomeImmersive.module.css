@@ -1,0 +1,90 @@
+/* Immersive home — dark data-center hero, content bottom-anchored over a scrim.
+   1:1 with the immersive-home reference; the only swap is the mono font (the
+   app's own, not a Google Fonts request) so it stays offline-safe. */
+
+.hero {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: #0b0b0b; color: #fff;
+  color-scheme: dark;
+  font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.bg { position: absolute; inset: 0; z-index: 0; }
+.bg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.scrim {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(8,8,8,.55) 0%, rgba(8,8,8,.30) 38%, rgba(8,8,8,.92) 100%);
+}
+
+.nav {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 26px clamp(20px, 5vw, 56px);
+  padding-top: max(26px, env(safe-area-inset-top, 0px));
+}
+.logo { display: flex; align-items: center; gap: 11px; font-weight: 600; font-size: 17px; }
+.logo b {
+  width: 34px; height: 34px; border-radius: 9px; background: #fff; color: #0d0d0d;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 19px;
+}
+.signout {
+  border: 1px solid rgba(255,255,255,.28); border-radius: 11px; padding: 9px 15px;
+  font-size: 14px; color: #fff; background: transparent;
+  -webkit-tap-highlight-color: transparent; transition: background-color .18s;
+}
+.signout:hover { background: rgba(255,255,255,.1); }
+
+.body {
+  position: relative; z-index: 2; margin-top: auto;
+  padding: 0 clamp(20px, 5vw, 56px) clamp(36px, 6vh, 60px);
+  padding-bottom: calc(clamp(36px, 6vh, 60px) + env(safe-area-inset-bottom, 0px));
+  max-width: 1100px;
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.14);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 11px; letter-spacing: .12em;
+  padding: 7px 12px; border-radius: 999px;
+}
+.pulse { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pl 1.8s infinite; }
+@keyframes pl { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+.eyebrow {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+  color: rgba(255,255,255,.6); margin-top: 22px;
+}
+.h1 {
+  font-weight: 800; font-size: clamp(44px, 7vw, 78px);
+  line-height: .94; letter-spacing: -.04em; margin-top: 14px;
+}
+.lede {
+  font-size: clamp(15px, 2vw, 19px); line-height: 1.55;
+  color: rgba(255,255,255,.8); max-width: 500px; margin-top: 18px;
+}
+
+.actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; }
+.btn {
+  border-radius: 12px; padding: 15px 28px; font-size: 15px; font-weight: 700;
+  border: 1px solid transparent; -webkit-tap-highlight-color: transparent;
+  transition: transform .18s, background-color .18s;
+}
+.primary { background: #fff; color: #0d0d0d; }
+.primary:hover { transform: translateY(-1px); }
+.ghost { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.28); font-weight: 600; }
+.ghost:hover { background: rgba(255,255,255,.16); }
+
+.stats { display: flex; flex-wrap: wrap; gap: clamp(24px, 4vw, 40px); margin-top: 36px; }
+.statNum { font-weight: 800; font-size: clamp(24px, 3vw, 30px); }
+.statLbl {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(255,255,255,.55); margin-top: 5px;
+}
+
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }

@@ -4,11 +4,7 @@ import styles from './HomePage.module.css';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { useTheme } from '../ThemeContext.jsx';
 import { useAuth } from '../AuthContext.jsx';
-import HomeLight from './HomeLight.jsx';
-import HomeStudio from './HomeStudio.jsx';
-import HomeDashboard from './HomeDashboard.jsx';
-import DesktopShell from '../components/DesktopShell.jsx';
-import { useIsTabletOrUp } from '../hooks/useIsTabletOrUp';
+import HomeImmersive from './HomeImmersive.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
    HomePage — RackTrack, modelled on the EV app reference
@@ -264,14 +260,7 @@ export default function HomePage() {
   /* iPad + desktop (>=768px) get the editorial HomeStudio welcome — a
      centred, full-viewport, no-scroll hero with fine line-art. Phones stay
      on the clean, simple HomeLight welcome, untouched. */
-  const isTabletOrUp = useIsTabletOrUp();
-  if (isTabletOrUp) {
-    // Signed in → the dashboard home rendered inside the shell (sidebar).
-    // Signed out → the editorial marketing hero (full-screen).
-    return auth?.isAuthed
-      ? <DesktopShell><HomeDashboard /></DesktopShell>
-      : <HomeStudio />;
-  }
-  return <HomeLight />;
+  // One immersive home for every screen — a full-screen dark data-center hero.
+  return <HomeImmersive />;
 
 }
