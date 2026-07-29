@@ -30,6 +30,16 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';
 const OLLAMA_TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS || 20000);
 const OLLAMA_ENABLED = process.env.SUPPORT_BOT_LLM !== 'off';
 
+// Cloud LLM backend (preferred when configured). When OPENROUTER_API_KEY is set
+// the grounded-answer step uses OpenRouter (default: NVIDIA Nemotron, free tier)
+// instead of a local Ollama model — same OpenAI-style chat shape, different URL
+// + bearer auth. The key lives ONLY in the server env (never committed). With no
+// key set, the bot falls back to Ollama, and with neither it degrades to
+// verbatim KB answers + escalation — exactly as before.
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const OPENROUTER_URL = process.env.OPENROUTER_URL || 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b:free';
+
 // ── One bot, one corpus ──────────────────────────────────────────────
 // There used to be two tiers, and the same question got different answers
 // depending on who asked: "How do I create a RackTrack account?" returned the
@@ -508,6 +518,11 @@ const LLM_PROBE_RETRY_MS = Number(process.env.SUPPORT_LLM_PROBE_TTL_MS || 60_000
 
 async function llmAvailable(recheck = false) {
   if (!OLLAMA_ENABLED) return { ok: false, reason: 'disabled via SUPPORT_BOT_LLM=off' };
+  // Cloud backend wins when a key is present. We don't health-probe a remote
+  // endpoint per question — assume reachable and let the per-call timeout +
+  // catch degrade to the verbatim KB answer on a transient outage, same as an
+  // Ollama miss.
+  if (OPENROUTER_API_KEY) return { ok: true, backend: 'openrouter', model: OPENROUTER_MODEL };
   const stale = !_llmState?.ok && Date.now() - _llmStateAt >= LLM_PROBE_RETRY_MS;
   if (_llmState && !recheck && !stale) return _llmState;
   // Stamped before the probe, not after: concurrent questions during a probe
@@ -529,6 +544,54 @@ async function llmAvailable(recheck = false) {
     _llmState = { ok: false, reason: `unreachable at ${OLLAMA_URL} (${err.message})` };
   }
   return _llmState;
+}
+
+// Generate one grounded answer from the matched entries. Routes to OpenRouter
+// (Nemotron) when a key is configured, else to a local Ollama model — both take
+// the same messages array and are pinned to temperature 0 so the same question
+// gives the same answer (the bot has to be testable to be verifiable). Returns
+// the trimmed completion text; throws on transport error / empty output so the
+// caller falls back to the verbatim KB answer.
+async function callChatModel(messages) {
+  if (OPENROUTER_API_KEY) {
+    const res = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        messages,
+        temperature: 0,
+        top_p: 1,
+        max_tokens: 500,
+      }),
+      signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status}`);
+    const body = await res.json();
+    const text = body?.choices?.[0]?.message?.content?.trim() || '';
+    if (!text) throw new Error('empty response');
+    return text;
+  }
+  // Local Ollama fallback.
+  const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      messages,
+      stream: false,
+      options: { temperature: 0, top_p: 1, num_predict: 500, num_ctx: 8192 },
+    }),
+    signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
+  const body = await res.json();
+  const text = body?.message?.content?.trim() || '';
+  if (!text) throw new Error('empty response');
+  return text;
 }
 
 // One escalation line, because there is one bot. It has to work whether the
@@ -875,28 +938,15 @@ async function ask(question, { tier = SINGLE_TIER, history = [] } = {}) {
   }
 
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        model: OLLAMA_MODEL,
-        messages: [
-          { role: 'system', content: buildPrompt(matches, tier) },
-          ...history.slice(-4),
-          { role: 'user', content: q },
-        ],
-        stream: false,
-        // temperature 0: the same question must give the same answer every
-        // time, or the bot is untestable — and untestable means unverifiable.
-        options: { temperature: 0, top_p: 1, num_predict: 500, num_ctx: 8192 },
-      }),
-      signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
-
-    const body = await res.json();
-    const text = body && body.message && body.message.content ? body.message.content.trim() : '';
-    if (!text) throw new Error('empty response');
+    const messages = [
+      { role: 'system', content: buildPrompt(matches, tier) },
+      ...history.slice(-4),
+      { role: 'user', content: q },
+    ];
+    // Pinned to temperature 0 inside callChatModel: the same question must give
+    // the same answer every time, or the bot is untestable — and untestable
+    // means unverifiable.
+    const text = await callChatModel(messages);
 
     const parsed = parseSources(text);
     const check = validate(parsed, matches);

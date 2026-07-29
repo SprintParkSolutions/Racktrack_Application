@@ -182,3 +182,9 @@ server/data/jwt.secret
 
 # firmware_lookup runtime HTTP cache — not source
 firmware_lookup/cache_dir/
+
+# Support-bot working folders — the handoff package and the R&D copy. Both
+# carry a .env with live API keys (Groq / Gemini / OpenRouter) and ~26 MB of
+# KB/embeddings/docx. Never commit — integration lands in server/ + client/.
+support-bot2/
+racktrack-support-bot/

@@ -3053,7 +3053,7 @@
           "snippet": "minSdkVersion = 24"
         },
         {
-          "file": "notes/artifacts/status-Android.html",
+          "file": "docs/notes/older-drafts/status-Android.html",
           "lines": "51-52",
           "snippet": "<span>APK <b>built</b> (~11 MB)</span><span>ID <b>com.racktrack.app</b></span><span>Android <b>7+</b></span>\n<span>Delivery <b>sideload</b></span>"
         },
@@ -3100,7 +3100,7 @@
           "snippet": "versionCode 17\nversionName \"1.0\""
         },
         {
-          "file": "notes/artifacts/status-Android.html",
+          "file": "docs/notes/older-drafts/status-Android.html",
           "lines": "71",
           "snippet": "Installed <b>Android Studio</b> and produced a working <b>APK</b> file (~11 MB) with the tunnel address baked in."
         }
@@ -3181,7 +3181,7 @@
           "snippet": "if (/trycloudflare\\.com/i.test(url)) {\n  console.warn(`\\n⚠ Warning: \"${url}\" is a TEMPORARY Cloudflare quick-tunnel.`);\n  console.warn('  Its URL changes on every restart — the shipped app will break and need a rebuild.');"
         },
         {
-          "file": "notes/artifacts/status-Android.html",
+          "file": "docs/notes/older-drafts/status-Android.html",
           "lines": "120-123",
           "snippet": "The APK has a web address baked in that points, through a Cloudflare tunnel, to the Mac's server. ... The address is random and changes if the Mac restarts — then the APK can't reach the server and we'd have to rebuild."
         }
@@ -14326,6 +14326,1734 @@
       "id": "RES-034",
       "category": "Reading results",
       "short": "Internal. After image enrichment, sfp_recommend.py drops every module that has no locally cached image: `modules = [m for m in modules if m.get(\"imageUrl\")]` (line 1283) — the rule is that a part the user can't see isn't worth recommending. Images are fetched server-side into outputs/sfp_images/; a scraped URL is only tried directly if `_is_trusted_image_host` passes (page's own domain or a known retailer/CDN), otherwise a DDG image-search fallback runs. With outbound fetching blocked, every candidate fails and lists come back short or empty. Two other filters also shrink the list: brandless entries are dropped (line 1244) and a per-brand round-robin cap limits how many SKUs one vendor contributes (line 1285+)."
+    },
+    {
+      "question": "How do I join a team in RackTrack?",
+      "answer": "You can join a team by either creating a new organization and waiting for approval, or by accepting an invitation link from an existing organization. If you're creating a new organization, you'll need to provide details such as email, username, organization name, and a strong password, and then verify your email address with a 6-digit code. If you're accepting an invitation, you'll need to open the invite link, choose a username and password, and join the organization.",
+      "symptoms": [
+        "invitation link",
+        "create organization",
+        "join team"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "ACCO-D001"
+    },
+    {
+      "question": "What happens after I create a new organization?",
+      "answer": "After you create a new organization, you'll need to wait for approval from the platform owner. You'll be taken to a waiting room where you'll see a message indicating that your organization is pending approval. Once your organization is approved, you'll be able to access the app.",
+      "symptoms": [
+        "waiting room",
+        "pending approval"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "ACCO-D002"
+    },
+    {
+      "question": "How do I recover my password if I'm locked out?",
+      "answer": "If you're locked out, you can use the Forgot Password feature to recover your access. You'll receive a one-minute code via email, which you can use to reset your password or sign in.",
+      "symptoms": [
+        "Forgot Password",
+        "locked out"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "ACCO-D003"
+    },
+    {
+      "question": "What is the difference between a founder and an invitee?",
+      "answer": "A founder is someone who creates a new organization, while an invitee is someone who joins an existing organization through an invitation link. Founders need to wait for approval, while invitees can join immediately.",
+      "symptoms": [
+        "founder",
+        "invitee"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "ACCO-D004"
+    },
+    {
+      "question": "How do I know if my organization is approved?",
+      "answer": "You'll receive a message in the waiting room indicating whether your organization is pending, rejected, or deactivated. If your organization is approved, you'll be able to access the app.",
+      "symptoms": [
+        "waiting room",
+        "organization status"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "ACCO-D005"
+    },
+    {
+      "question": "Can I choose my own role in the organization?",
+      "answer": "No, your role is determined by the account and is enforced on the server. You'll be routed to the correct screen based on your role when you sign in.",
+      "symptoms": [
+        "role selection"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "ACCO-D006"
+    },
+    {
+      "question": "How do I invite new members to my organization?",
+      "answer": "As an admin, you can email invitation links to new members. They'll be able to set their own password and join the organization immediately.",
+      "symptoms": [
+        "invitation link",
+        "new member"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ACCO-D007"
+    },
+    {
+      "question": "What happens if I enter an incorrect password?",
+      "answer": "If you enter an incorrect password, you'll be prompted to try again. If you're still having trouble, you can use the Forgot Password feature to recover your access.",
+      "symptoms": [
+        "incorrect password"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "ACCO-D008"
+    },
+    {
+      "question": "Is my password stored securely?",
+      "answer": "Yes, your password is never stored in the clear. Reset codes are also short-lived and single-purpose, and are emailed to you securely.",
+      "symptoms": [
+        "password security"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "ACCO-D009"
+    },
+    {
+      "question": "What is the role hierarchy in RackTrack?",
+      "answer": "The role hierarchy in RackTrack is owner, org admin, site manager, and member. Roles are enforced on the server and determine the level of access you have to the app.",
+      "symptoms": [
+        "role hierarchy"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ACCO-D010"
+    },
+    {
+      "question": "What does the Live Switch Data feature do?",
+      "answer": "The Live Switch Data feature opens a live connection to the switch and tells you how many ports are free versus in use, and whether an open port is copper or fiber, so you know instantly whether there is room to plug something in.",
+      "symptoms": [
+        "How many free ports do I have?",
+        "What type of ports are available?"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D011"
+    },
+    {
+      "question": "How do I use the Live Switch Data feature?",
+      "answer": "To use the Live Switch Data feature, open the Ports view for a rack, and the server will open a session to the switch and request its interface status. You can then use the filter pills to narrow the list of ports.",
+      "symptoms": [
+        "How do I get a list of available ports?"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D012"
+    },
+    {
+      "question": "What happens if the probe fails?",
+      "answer": "If the probe fails, you can read the reason for the failure and press Retry to try again.",
+      "symptoms": [
+        "Probe failed",
+        "Retry"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D013"
+    },
+    {
+      "question": "How does the feature determine if a port is available or in use?",
+      "answer": "The feature determines if a port is available or in use by parsing the interface table from the switch. A port is considered available if it is link down and has no description, and in use if it is link up or connected.",
+      "symptoms": [
+        "How does it know if a port is available?"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D014"
+    },
+    {
+      "question": "What is the difference between a reserved port and an available port?",
+      "answer": "A reserved port is a port that is administratively down, shut, or err-disabled, or a down port that still has a description. An available port is a port that is link down and has no description. Reserved ports do not count as open capacity.",
+      "symptoms": [
+        "What is a reserved port?"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D015"
+    },
+    {
+      "question": "How does the feature classify ports as copper or fiber?",
+      "answer": "The feature classifies ports as copper or fiber by using the switch's medium column, or by inferring from the interface naming or the scan's SFP-cage count.",
+      "symptoms": [
+        "How does it know if a port is copper or fiber?"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D016"
+    },
+    {
+      "question": "What is the utilization bar and what does it show?",
+      "answer": "The utilization bar shows the used capacity of the switch as a percentage of the total capacity.",
+      "symptoms": [
+        "What is the utilization bar?"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D017"
+    },
+    {
+      "question": "Can I use the Live Switch Data feature to plan a patch?",
+      "answer": "Yes, you can use the Live Switch Data feature to plan a patch by confirming a free copper port and its interface name before running a cable.",
+      "symptoms": [
+        "How do I plan a patch?"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D018"
+    },
+    {
+      "question": "Can I use the Live Switch Data feature to check the capacity of a switch?",
+      "answer": "Yes, you can use the Live Switch Data feature to check the capacity of a switch by looking at the utilization bar, which shows at a glance whether a switch is nearly full.",
+      "symptoms": [
+        "How do I check the capacity of a switch?"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D019"
+    },
+    {
+      "question": "How do I spot reserved ports using the Live Switch Data feature?",
+      "answer": "You can spot reserved ports using the Live Switch Data feature by using the Errors filter, which reveals ports that are down on purpose.",
+      "symptoms": [
+        "How do I spot reserved ports?"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "AVAI-D020"
+    },
+    {
+      "question": "What is the purpose of the CMDB Registration & Reconciliation feature in RackTrack?",
+      "answer": "The CMDB Registration & Reconciliation feature in RackTrack is used to register the devices, ports, and connections in a rack into the CMDB and to reconcile any discrepancies between the physical rack and the CMDB records. It raises alerts and creates work notes or tickets for any mismatches found.",
+      "symptoms": [
+        "Physical Drift Detected",
+        "CMDB expects vs scan sees at U##"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CMDB-D021"
+    },
+    {
+      "question": "How do I register a new rack in RackTrack?",
+      "answer": "To register a new rack in RackTrack, you need to perform a fresh scan of the unregistered rack. An approval card will appear, and you can choose to 'Raise Ticket' and then 'Approve' to synchronize the inventory. You will see a 'Successfully registered' summary with counts and a device list.",
+      "symptoms": [
+        "approval card",
+        "Raise Ticket",
+        "Successfully registered"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CMDB-D022"
+    },
+    {
+      "question": "What happens when a discrepancy is found between the physical rack and the CMDB records?",
+      "answer": "When a discrepancy is found between the physical rack and the CMDB records, a 'Physical Drift Detected' alert appears. You can use the 'Raise ticket' action to open an incident inline for the drift, and a work note or ticket will be posted to the actual incident/CMDB backend.",
+      "symptoms": [
+        "Physical Drift Detected",
+        "CMDB expects vs scan sees at U##"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CMDB-D023"
+    },
+    {
+      "question": "What is the difference between real and synthetic data in the CMDB Registration & Reconciliation feature?",
+      "answer": "The registered device list and counts are real data, coming from the scan's detected inventory. Some connection and asset fields are synthetic, meaning they are placeholder values mixed into the push. Reconciliation verdicts are real, computed from expected-class-at-U vs detected-class-at-U.",
+      "symptoms": [
+        "REAL",
+        "SYNTHETIC"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "CMDB-D024"
+    },
+    {
+      "question": "Can I use the CMDB Registration & Reconciliation feature to onboard a new rack?",
+      "answer": "Yes, the CMDB Registration & Reconciliation feature can be used to onboard a new rack. A single scan can register the whole rack's inventory into the CMDB via a guided approval.",
+      "symptoms": [
+        "onboarding a rack"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CMDB-D025"
+    },
+    {
+      "question": "How does the CMDB Registration & Reconciliation feature handle duplicate tickets?",
+      "answer": "The CMDB Registration & Reconciliation feature uses a stable hash to compare the scan vs records and produces a content hash. If the hash is unchanged, no duplicate tickets are raised. If the hash is changed, a note is appended instead.",
+      "symptoms": [
+        "stable hash",
+        "duplicate tickets"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "CMDB-D026"
+    },
+    {
+      "question": "What is the purpose of the 'Raise ticket' action in the CMDB Registration & Reconciliation feature?",
+      "answer": "The 'Raise ticket' action is used to open an incident inline for a drift detected between the physical rack and the CMDB records. It allows you to create a work note or ticket for the discrepancy found.",
+      "symptoms": [
+        "Raise ticket",
+        "Physical Drift Detected"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CMDB-D027"
+    },
+    {
+      "question": "Can I use the CMDB Registration & Reconciliation feature to prove physical drift?",
+      "answer": "Yes, the CMDB Registration & Reconciliation feature can be used to prove physical drift. A ticket-linked scan can show that a device is at the wrong unit or missing, and raise it with evidence.",
+      "symptoms": [
+        "proving physical drift"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CMDB-D028"
+    },
+    {
+      "question": "What is the purpose of the Connections & Integrations feature in RackTrack?",
+      "answer": "The Connections & Integrations feature allows you to manage external systems that RackTrack pulls data from, such as ServiceNow, NetBox, and Orion. You can add connections, store credentials securely, and make one connection active at a time to drive the data shown on the screens.",
+      "symptoms": [
+        "No data is being pulled from external sources",
+        "Error connecting to ServiceNow"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CONN-D029"
+    },
+    {
+      "question": "How do I add a new connection in RackTrack?",
+      "answer": "To add a new connection, press the 'Add connection' button and enter a name, type, and the type-specific credential fields. The credentials will be encrypted and stored securely, and you can then make the connection active to drive the data shown on the screens.",
+      "symptoms": [
+        "Error adding new connection",
+        "Credential fields are blank"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CONN-D030"
+    },
+    {
+      "question": "What happens when I make a connection active in RackTrack?",
+      "answer": "When you make a connection active, it drives the data shown on every screen in the app. You can only have one active connection at a time, and making a new connection active will refresh the downstream data.",
+      "symptoms": [
+        "Data is not updating after making a new connection active"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CONN-D031"
+    },
+    {
+      "question": "How do I refresh the data from an active connection in RackTrack?",
+      "answer": "To refresh the data from an active connection, press the 'Refresh data' button. This will pull fresh records from the source and update the data shown on the screens.",
+      "symptoms": [
+        "Error refreshing data",
+        "Data is not updating"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CONN-D032"
+    },
+    {
+      "question": "What happens to my credentials when I add a new connection in RackTrack?",
+      "answer": "When you add a new connection, your credentials are encrypted and stored securely. They are never sent back to the client and are never displayed on the screen. If you need to edit the credentials, you will need to re-enter the secret to replace it.",
+      "symptoms": [
+        "Credential fields are blank",
+        "Error editing credentials"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CONN-D033"
+    },
+    {
+      "question": "Can I have multiple active connections in RackTrack at the same time?",
+      "answer": "No, you can only have one active connection at a time in RackTrack. This ensures that there is a single, unambiguous source of truth behind every screen.",
+      "symptoms": [
+        "Error making multiple connections active"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CONN-D034"
+    },
+    {
+      "question": "Who can use the Connections & Integrations feature in RackTrack?",
+      "answer": "The Connections & Integrations feature is available to owners and organization admins. They can add connections, make them active, and manage the credentials securely.",
+      "symptoms": [
+        "Error accessing Connections & Integrations feature"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "CONN-D035"
+    },
+    {
+      "question": "What is the purpose of the 'Use' button on a connection in RackTrack?",
+      "answer": "The 'Use' button on a connection allows you to make that connection active. This will drive the data shown on every screen in the app and refresh the downstream data.",
+      "symptoms": [
+        "Error making a connection active"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CONN-D036"
+    },
+    {
+      "question": "How do I rotate credentials for a connection in RackTrack?",
+      "answer": "To rotate credentials for a connection, you need to re-enter the secret to replace it. This ensures that the old credentials are never exposed and the new credentials are encrypted and stored securely.",
+      "symptoms": [
+        "Error rotating credentials"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "CONN-D037"
+    },
+    {
+      "question": "What does the Firmware Check feature do?",
+      "answer": "The Firmware Check feature tells you whether your device's firmware is up to date, what the latest version is, and what changes have been made in the latest release. It provides a plain-English verdict and release-note excerpts.",
+      "symptoms": [
+        "You're up to date",
+        "Upgrade available"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "FIRM-D038"
+    },
+    {
+      "question": "How do I use the Firmware Check feature?",
+      "answer": "To use the Firmware Check feature, enter the make, model, and current version of your device. Then, press the 'Check firmware' button. The feature will compare your current version to the latest version and provide a verdict and release-note excerpts.",
+      "symptoms": [
+        "Checking..."
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "FIRM-D039"
+    },
+    {
+      "question": "What information do I need to provide to use the Firmware Check feature?",
+      "answer": "You need to provide the make, model, and current version of your device to use the Firmware Check feature. The make and model fields have type-ahead suggestions, and the current version field is free text.",
+      "symptoms": [
+        "Make",
+        "Model",
+        "Current version"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "FIRM-D040"
+    },
+    {
+      "question": "What kind of output does the Firmware Check feature provide?",
+      "answer": "The Firmware Check feature provides a verdict card with a colored headline and a plain-English body, a version-status card with a comparison pill, and release-note excerpts. It also provides fallback links to vendor support and web searches when data is thin.",
+      "symptoms": [
+        "Verdict card",
+        "Version status",
+        "Release-note excerpts"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "FIRM-D041"
+    },
+    {
+      "question": "What happens if the Firmware Check feature cannot confirm the latest version?",
+      "answer": "If the Firmware Check feature cannot confirm the latest version, it will display a message indicating that the latest version cannot be confirmed and provide search links to vendor support and web searches.",
+      "symptoms": [
+        "Latest version cannot be confirmed"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "FIRM-D042"
+    },
+    {
+      "question": "How does the Firmware Check feature prioritize upgrades?",
+      "answer": "The Firmware Check feature helps prioritize upgrades by providing a verdict and release-note excerpts. If a device is several releases behind, it will rise up the maintenance list.",
+      "symptoms": [
+        "Upgrade available"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "FIRM-D043"
+    },
+    {
+      "question": "Can I use the Firmware Check feature for change planning?",
+      "answer": "Yes, the Firmware Check feature can be used for change planning. The release-note excerpts provide information on what changes have been made in the latest version, helping you plan for upgrades.",
+      "symptoms": [
+        "Release-note excerpts"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "FIRM-D044"
+    },
+    {
+      "question": "What is the RackTrack Marketplace?",
+      "answer": "The RackTrack Marketplace is a place where users can buy, sell, or swap surplus networking and datacenter gear. It allows users to list surplus hardware for sale, post 'wanted' ads, or jump out to partner marketplaces with a pre-filled search.",
+      "symptoms": [
+        "Marketplace",
+        "buy",
+        "sell",
+        "swap"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D045"
+    },
+    {
+      "question": "Who can use the Marketplace?",
+      "answer": "Everyone can browse the Marketplace, but posting and managing listings requires a sign-in. Signed-in users can post and manage their own listings.",
+      "symptoms": [
+        "sign-in required",
+        "posting listings"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D046"
+    },
+    {
+      "question": "How do I browse listings on the Marketplace?",
+      "answer": "You can browse public listings by filtering by keyword, category, and for-sale/wanted. You can also open a listing card for full detail.",
+      "symptoms": [
+        "browse listings",
+        "filter by category"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D047"
+    },
+    {
+      "question": "How do I sell something on the Marketplace?",
+      "answer": "To sell something, you need to sign in and press the 'Sell something' button. You can publish a listing, which can be pre-filled from a scan result. You can manage your own listings by marking them as sold, reactivating, or deleting them.",
+      "symptoms": [
+        "sell something",
+        "publish a listing"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D048"
+    },
+    {
+      "question": "What information is required to create a listing?",
+      "answer": "To create a listing, you need to provide title, category, condition, optional vendor/model, price, quantity, location, a photo, and a description.",
+      "symptoms": [
+        "create listing",
+        "required fields"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D049"
+    },
+    {
+      "question": "Can I use a scan result to pre-fill a listing?",
+      "answer": "Yes, you can use a scan result to pre-fill a listing. The scan result can provide vendor/model/category/rack ID, which can be used to pre-fill the listing fields.",
+      "symptoms": [
+        "scan pre-fill",
+        "pre-filled listing"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D050"
+    },
+    {
+      "question": "What happens when I use the partner search bar?",
+      "answer": "When you use the partner search bar, you will be taken to a pre-filled search on a third-party site, such as eBay, Amazon, FS.com, or Curvature. No listing is created on the third-party site, and no data is exchanged beyond the query text.",
+      "symptoms": [
+        "partner search",
+        "third-party site"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D051"
+    },
+    {
+      "question": "Are the listings on the Marketplace real or synthetic?",
+      "answer": "The listings on the Marketplace are real, posted by users. There is no demo seed data, and uploaded photos are also real.",
+      "symptoms": [
+        "real listings",
+        "synthetic data"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D052"
+    },
+    {
+      "question": "What are some common use cases for the Marketplace?",
+      "answer": "Some common use cases for the Marketplace include offloading surplus hardware, sourcing a replacement part, and finding a specific device. You can use the 'Sell this' action on a scan result to pre-fill a listing for the exact device, or post a wanted ad to find a replacement transceiver quickly.",
+      "symptoms": [
+        "use cases",
+        "offloading surplus"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D053"
+    },
+    {
+      "question": "How do I manage my listings on the Marketplace?",
+      "answer": "You can manage your listings by signing in and accessing the 'My listings' view. From there, you can mark listings as sold, reactivate, or delete them.",
+      "symptoms": [
+        "manage listings",
+        "my listings"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MARK-D054"
+    },
+    {
+      "question": "What is the multi-rack scan feature in RackTrack?",
+      "answer": "The multi-rack scan feature in RackTrack allows you to scan multiple racks at once by panning a video across several racks or uploading photos of each rack. It then splits the video or photos into individual racks, analyzes each one, and groups them together so you can view the entire row in 3D.",
+      "symptoms": [
+        "multi-rack scan",
+        "rack grouping"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D055"
+    },
+    {
+      "question": "How do I use the multi-rack scan feature?",
+      "answer": "To use the multi-rack scan feature, record a slow pan across the aisle or upload a photo per rack. The feature will then split the video or photos into individual racks, analyze each one, and group them together.",
+      "symptoms": [
+        "record a slow pan",
+        "upload a photo per rack"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D056"
+    },
+    {
+      "question": "What is the output of the multi-rack scan feature?",
+      "answer": "The output of the multi-rack scan feature is a rack group, where each rack is analyzed individually and grouped together with a combined 3D view. You can also view each rack individually and switch between them using the rack tabs.",
+      "symptoms": [
+        "rack group",
+        "combined 3D view"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D057"
+    },
+    {
+      "question": "How does the multi-rack scan feature detect rack boundaries?",
+      "answer": "The multi-rack scan feature detects rack boundaries by looking for big horizontal shifts, scene-color changes, or detection-less blurry frames in the video or photos.",
+      "symptoms": [
+        "rack boundaries",
+        "detection-less blurry frames"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D058"
+    },
+    {
+      "question": "What happens if the multi-rack scan feature fails to detect rack boundaries?",
+      "answer": "If the multi-rack scan feature fails to detect rack boundaries, it will treat the entire video or set of photos as a single rack.",
+      "symptoms": [
+        "failed to detect rack boundaries",
+        "single rack"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D059"
+    },
+    {
+      "question": "Can I use the multi-rack scan feature with synthetic data?",
+      "answer": "No, the multi-rack scan feature uses real data from your video or photos to analyze and group the racks. However, the combined-view cabling is synthetic, meaning it is inferred from the individual rack analyses.",
+      "symptoms": [
+        "synthetic data",
+        "real data"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D060"
+    },
+    {
+      "question": "What are some common use cases for the multi-rack scan feature?",
+      "answer": "Some common use cases for the multi-rack scan feature include surveying a row of racks and reviewing the entire row in 3D for a layout overview.",
+      "symptoms": [
+        "surveying a row",
+        "whole-row review"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D061"
+    },
+    {
+      "question": "How does the multi-rack scan feature handle per-rack frames?",
+      "answer": "The multi-rack scan feature chooses the best frame per segment based on a weighted score of device count, mean confidence, and sharpness.",
+      "symptoms": [
+        "per-rack frames",
+        "best frame per segment"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D062"
+    },
+    {
+      "question": "What is the purpose of the rack tabs in the multi-rack scan feature?",
+      "answer": "The rack tabs in the multi-rack scan feature allow you to switch between individual racks and preserve the current sub-page when you switch racks.",
+      "symptoms": [
+        "rack tabs",
+        "switch between racks"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D063"
+    },
+    {
+      "question": "Can I use the multi-rack scan feature to view a specific rack's details?",
+      "answer": "Yes, you can use the quick-jump chips to open a specific rack's detail from the combined view.",
+      "symptoms": [
+        "quick-jump chips",
+        "specific rack's details"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "MULT-D064"
+    },
+    {
+      "question": "What does the Network View feature in RackTrack do?",
+      "answer": "The Network View feature joins your scanned rack to live network-discovery data to show real port up/down state, VLANs, LLDP/CDP neighbors, and how many MAC addresses each port has learned. It also lets you look up where any MAC ended up across the network.",
+      "symptoms": [
+        "Network View online/offline",
+        "X/Y live"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "NETW-D065"
+    },
+    {
+      "question": "How do I use the Network View feature?",
+      "answer": "To use the Network View feature, open the Network View, read the match summary, expand a device card to load its port table, filter ports by Live/Up/Down/All, and click a learned-MAC count to look up where that address lives.",
+      "symptoms": [
+        "Health pill",
+        "Match summary"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "NETW-D066"
+    },
+    {
+      "question": "What is the source of the data in the Network View?",
+      "answer": "The data in the Network View comes from live network discovery of the actual devices, matched to the scan. It is not synthesized or based on the scan or wiring.",
+      "symptoms": [
+        "REAL / LIVE",
+        "discovery database"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "NETW-D067"
+    },
+    {
+      "question": "What information can I find in the device cards?",
+      "answer": "The device cards show the device's identity, IP, a ports-up bar, and a link count. They also show the device's name, class, model/vendor, and IP, and are dimmed if not discovered.",
+      "symptoms": [
+        "Device cards",
+        "dimmed device"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "NETW-D068"
+    },
+    {
+      "question": "How do I find an endpoint using the Network View?",
+      "answer": "To find an endpoint, use the MAC lookup feature. It reveals which port a device is learned behind, across the network.",
+      "symptoms": [
+        "MAC lookup",
+        "Learned-MAC chips"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "NETW-D069"
+    },
+    {
+      "question": "What is the difference between the Network View and the topology view?",
+      "answer": "The Network View shows logical, discovered connectivity, while the topology view shows physical layout with inferred cabling.",
+      "symptoms": [
+        "Network View",
+        "topology view"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "NETW-D070"
+    },
+    {
+      "question": "Can I use the Network View to confirm if a link is really up?",
+      "answer": "Yes, the Network View shows the true operational state of the link, independent of the photo.",
+      "symptoms": [
+        "Link up/down",
+        "Network View online/offline"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "NETW-D071"
+    },
+    {
+      "question": "What happens if the discovery database is not connected?",
+      "answer": "If the discovery database is not connected, the Network View will show a 'being prepared' message instead of raw errors.",
+      "symptoms": [
+        "Friendly offline banner",
+        "Network View offline"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "NETW-D072"
+    },
+    {
+      "question": "Can I seed the discovery database with a demo fabric for demonstration purposes?",
+      "answer": "Yes, the discovery database can be populated with a seeded demo fabric for demonstration. When real discovery is connected, the same view shows genuine live telemetry.",
+      "symptoms": [
+        "Seeded demo fabric",
+        "Discovery database"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "NETW-D073"
+    },
+    {
+      "question": "How does the Network View handle bidirectional neighbors?",
+      "answer": "The Network View represents links in both directions, so they show consistently from either end.",
+      "symptoms": [
+        "Bidirectional neighbors",
+        "LLDP/CDP neighbors"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "NETW-D074"
+    },
+    {
+      "question": "What is the Organization Administration feature in RackTrack?",
+      "answer": "The Organization Administration feature is a role-aware console that allows platform owners and organization admins to manage organizations, sites, members, and invitations. The owner can create, approve, rename, deactivate, or remove organizations, while an organization admin can manage their own org's sites, members, and integrations.",
+      "symptoms": [
+        "role-aware console",
+        "organization management"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D075"
+    },
+    {
+      "question": "Who can use the Organization Administration feature?",
+      "answer": "The Organization Administration feature can only be used by the platform owner and organization admins. Members and site managers are redirected away from the console.",
+      "symptoms": [
+        "access denied",
+        "redirected away"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D076"
+    },
+    {
+      "question": "How do I open the Organization Administration console?",
+      "answer": "You can open the Organization Administration console from the Profile admin shortcut. The owner or admin scope will determine what you can do in the console.",
+      "symptoms": [
+        "Profile admin shortcut"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D077"
+    },
+    {
+      "question": "What can the platform owner do in the Organization Administration console?",
+      "answer": "The platform owner can view platform stats, create, approve, rename, deactivate, or remove organizations, and drill into any organization to see its sites, members, and scans.",
+      "symptoms": [
+        "platform stats",
+        "organization management"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D078"
+    },
+    {
+      "question": "What can an organization admin do in the Organization Administration console?",
+      "answer": "An organization admin can add sites, add or edit members, set org-wide integrations, generate single-use invite links, and filter scan activity by person or site.",
+      "symptoms": [
+        "site management",
+        "member management"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D079"
+    },
+    {
+      "question": "How do I invite new members to an organization?",
+      "answer": "You can generate a single-use invite link from the Organization Administration console. The link is valid for 7 days and binds the new account to the invited org, site, and role.",
+      "symptoms": [
+        "invite link",
+        "single-use link"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D080"
+    },
+    {
+      "question": "What happens when an organization is deactivated?",
+      "answer": "When an organization is deactivated, scanning is paused for all its members. The organization's admin will see a notice indicating that the organization is awaiting approval.",
+      "symptoms": [
+        "deactivated organization",
+        "awaiting approval"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D081"
+    },
+    {
+      "question": "Can I manage another organization admin's account?",
+      "answer": "No, one organization admin cannot manage another organization admin's account. The owner role can never be managed by others.",
+      "symptoms": [
+        "account management",
+        "role restrictions"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D082"
+    },
+    {
+      "question": "What happens to a member's past scans when their account is removed?",
+      "answer": "When a member's account is removed, their past scans are preserved and kept on record.",
+      "symptoms": [
+        "removed account",
+        "past scans"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D083"
+    },
+    {
+      "question": "How do I filter scan activity by person or site?",
+      "answer": "You can filter scan activity by person or site from the Organization Administration console. Select a person or site to scope the scan grid.",
+      "symptoms": [
+        "scan activity",
+        "filtering"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "ORGA-D084"
+    },
+    {
+      "question": "What is the Port History & Drift feature in RackTrack?",
+      "answer": "The Port History & Drift feature records every port change over time for a continuously monitored switch, including link up/down, speed, duplex, admin state, medium, description, and neighbor, to help spot re-cabling and flapping links.",
+      "symptoms": [
+        "link flapping",
+        "re-cabling"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D085"
+    },
+    {
+      "question": "How often does the background poller check the switch for changes?",
+      "answer": "The background poller checks the switch about once a minute.",
+      "symptoms": [
+        "polling error"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D086"
+    },
+    {
+      "question": "What information is stored in the per-port timeline?",
+      "answer": "The per-port timeline stores colored segments for each period a value held, providing a visual representation of changes over time.",
+      "symptoms": [
+        "timeline not updating"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D087"
+    },
+    {
+      "question": "How do I access the detail sheet for a specific port?",
+      "answer": "To access the detail sheet for a specific port, tap on the port in the interface grid.",
+      "symptoms": [
+        "port not responding"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D088"
+    },
+    {
+      "question": "What is the purpose of the 'Value at' table?",
+      "answer": "The 'Value at' table shows the value that held at each time offset, providing a detailed view of changes over time.",
+      "symptoms": [
+        "value not updating"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D089"
+    },
+    {
+      "question": "How does the system detect changes in neighbor information?",
+      "answer": "The system detects changes in neighbor information by tracking LLDP neighbor changes and displaying a color change on the timeline to flag re-cabling.",
+      "symptoms": [
+        "neighbor not detected"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D090"
+    },
+    {
+      "question": "What is the purpose of the change log?",
+      "answer": "The change log provides a human-readable record of events, including from→to values and timestamps, to help identify changes and issues.",
+      "symptoms": [
+        "change log not updating"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D091"
+    },
+    {
+      "question": "How do I use the Port History & Drift feature to chase a flapping link?",
+      "answer": "To chase a flapping link, use the change log to pinpoint exactly when a port went down and came back, and then investigate the cause of the issue.",
+      "symptoms": [
+        "flapping link"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D092"
+    },
+    {
+      "question": "What is the purpose of the 'Poll now' button?",
+      "answer": "The 'Poll now' button allows you to manually poll the switch for updates, in addition to the automatic polling that occurs about once a minute.",
+      "symptoms": [
+        "polling not working"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D093"
+    },
+    {
+      "question": "How does the system handle sparse early history?",
+      "answer": "The system expects sparse early history and accrues history only as the poller runs, providing a clear indication of when data is available.",
+      "symptoms": [
+        "sparse history"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PORT-D094"
+    },
+    {
+      "question": "What does the Profile & Scan History feature do?",
+      "answer": "The Profile & Scan History feature shows who you are signed in as, your organization, and your most recent rack scans. You can tap any scan to reopen its full report. Admins and owners also get shortcuts to their management tools here.",
+      "symptoms": [
+        "Recent scans not showing",
+        "Unable to reopen scan report"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PROF-D095"
+    },
+    {
+      "question": "How do I access my profile and scan history?",
+      "answer": "You can access your profile and scan history by opening the Profile section from the bottom navigation.",
+      "symptoms": [
+        "Can't find profile",
+        "Profile not loading"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PROF-D096"
+    },
+    {
+      "question": "What information is shown in the identity hero section?",
+      "answer": "The identity hero section shows your avatar, username, email, organization, and join date.",
+      "symptoms": [
+        "Missing avatar",
+        "Incorrect username"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PROF-D097"
+    },
+    {
+      "question": "How do I reopen a previous scan report?",
+      "answer": "You can reopen a previous scan report by tapping on the scan row in the Recent Scans list.",
+      "symptoms": [
+        "Scan report not loading",
+        "Unable to reopen scan"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PROF-D098"
+    },
+    {
+      "question": "What shortcuts are available for admins and owners?",
+      "answer": "Admins and owners have shortcuts to the Administration and Integrations sections, which are role-gated and only visible to them.",
+      "symptoms": [
+        "Missing admin shortcuts",
+        "Unable to access admin tools"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "PROF-D099"
+    },
+    {
+      "question": "How do I sign out of my account?",
+      "answer": "You can sign out of your account by confirming the sign-out prompt. Note that you will need to sign in again to access your account.",
+      "symptoms": [
+        "Sign-out not working",
+        "Unable to sign in again"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PROF-D100"
+    },
+    {
+      "question": "Why are my scans not showing up in the Recent Scans list?",
+      "answer": "Scans are fetched for the signed-in user and rendered newest-first. If your scans are not showing up, try checking your account and scan history to ensure that the scans are stored and synced correctly.",
+      "symptoms": [
+        "Missing scans",
+        "Scans not updating"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PROF-D101"
+    },
+    {
+      "question": "Can I access my scan history across devices?",
+      "answer": "Yes, your scan history is account-backed and follows you across devices. You can access your scan history from any device where you are signed in to your account.",
+      "symptoms": [
+        "Scan history not syncing",
+        "Scans not available on other devices"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "PROF-D102"
+    },
+    {
+      "question": "How do I use RackTrack to scan a rack?",
+      "answer": "To scan a rack, open the Scan screen from the central capture button in the bottom navigation. Choose a capture family: Upload (a file you have) or Camera (live capture). For Camera Photo mode, frame the rack until the guide box turns green. Press the primary button to analyze the rack.",
+      "symptoms": [
+        "Unable to scan rack",
+        "Rack not detected"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D103"
+    },
+    {
+      "question": "What types of media can I use to scan a rack?",
+      "answer": "You can use a photo, video, or AR session from your device camera, or upload an image or video file (JPG, PNG, HEIC/HEIF, MP4, MOV, WEBM).",
+      "symptoms": [
+        "Unsupported file type"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D104"
+    },
+    {
+      "question": "How do I link a service incident to a rack scan?",
+      "answer": "You can link a service incident to a rack scan by selecting the incident before scanning the rack. This will target the exact device and port and verify the correct rack before scoring.",
+      "symptoms": [
+        "Unable to link incident"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D105"
+    },
+    {
+      "question": "What happens if the quality of my scan is poor?",
+      "answer": "If the quality of your scan is poor, the quality gate will prevent the scan from being processed. You will be prompted to retake the scan or proceed anyway.",
+      "symptoms": [
+        "Poor scan quality",
+        "Retake scan"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D106"
+    },
+    {
+      "question": "Can I scan a tall rack with RackTrack?",
+      "answer": "Yes, you can scan a tall rack with RackTrack using multi-photo mode. This mode stitches several overlapping shots into one panorama, allowing you to capture a rack taller than a single frame accurately.",
+      "symptoms": [
+        "Tall rack not scanning"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D107"
+    },
+    {
+      "question": "What is the output of a rack scan?",
+      "answer": "The output of a rack scan is a completed scan opened on the Results screen, which includes detected devices, port layout, cabling, and a rack group (if the input was a video or multiple racks).",
+      "symptoms": [
+        "No output from scan"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D108"
+    },
+    {
+      "question": "How do I access the results of a rack scan?",
+      "answer": "You can access the results of a rack scan by opening the Results screen. The results will be displayed in an annotated rack view, allowing you to explore the detected devices, ports, and cabling.",
+      "symptoms": [
+        "Unable to access results"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D109"
+    },
+    {
+      "question": "Can I use RackTrack to document a new rack?",
+      "answer": "Yes, you can use RackTrack to document a new rack. Simply capture the rack and RackTrack will build the full inventory and offer to register it in the CMDB.",
+      "symptoms": [
+        "New rack not documented"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D110"
+    },
+    {
+      "question": "How do I use RackTrack to work a ticket?",
+      "answer": "To use RackTrack to work a ticket, link the incident to the rack scan. This will take you straight to the device and port the ticket is about, with a check that it is the right rack.",
+      "symptoms": [
+        "Unable to work ticket"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D111"
+    },
+    {
+      "question": "What is the purpose of the quality gate in RackTrack?",
+      "answer": "The quality gate in RackTrack protects the pipeline from unusable frames by checking the sharpness, framing, and lighting of the scan. If the quality is poor, the scan will not be processed.",
+      "symptoms": [
+        "Quality gate error"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D112"
+    },
+    {
+      "question": "What is the Rack Topology feature in RackTrack?",
+      "answer": "The Rack Topology feature provides a 2D and interactive 3D visualization of a rack's devices and cabling, allowing users to understand the physical layout and wiring of the rack.",
+      "symptoms": [
+        "Rack Topology",
+        "2D elevation",
+        "3D scene"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D113"
+    },
+    {
+      "question": "How do I use the Rack Topology feature?",
+      "answer": "To use the Rack Topology feature, open the Topology for a rack, toggle between 2D elevation and 3D scene, filter cables by type, turn on Capacity to recolor devices by how full they are, and use Trace to find the cabling path between two devices.",
+      "symptoms": [
+        "Topology",
+        "2D elevation",
+        "3D scene",
+        "filter cables"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D114"
+    },
+    {
+      "question": "What is the difference between real and synthetic data in Rack Topology?",
+      "answer": "Real data in Rack Topology includes devices, classes, U-positions, sizes, port counts, and connected/free state, which come from the scan. Synthetic data includes cable pairings, cable IDs, types, and lengths, which are inferred and not network-verified.",
+      "symptoms": [
+        "real data",
+        "synthetic data",
+        "cable pairings"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D115"
+    },
+    {
+      "question": "How does the Rack Topology feature handle missing pixel data?",
+      "answer": "When pixel data is missing, the Rack Topology feature uses a deterministic fallback, which means that a fixed ordering is used to ensure that the same scan always yields the same diagram.",
+      "symptoms": [
+        "missing pixel data",
+        "deterministic fallback"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D116"
+    },
+    {
+      "question": "Can I override the synthetic data in Rack Topology?",
+      "answer": "Yes, you can override the synthetic data in Rack Topology by providing a curated override file, which replaces the guessed values with real values.",
+      "symptoms": [
+        "curated override",
+        "synthetic data"
+      ],
+      "audience": "admin",
+      "confidence": "certain",
+      "id": "RACK-D117"
+    },
+    {
+      "question": "What are some common use cases for the Rack Topology feature?",
+      "answer": "Common use cases for the Rack Topology feature include planning a move, understanding a rack you didn't build, and tracing a run to speed up a hunt.",
+      "symptoms": [
+        "planning a move",
+        "understanding a rack",
+        "tracing a run"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D118"
+    },
+    {
+      "question": "How do I interpret the cable pairings in Rack Topology?",
+      "answer": "Cable pairings in Rack Topology are synthetic and inferred, and should be treated as plausible placeholder cabling for planning, not verified physical or network-discovered connections, unless a curated override file is provided.",
+      "symptoms": [
+        "cable pairings",
+        "synthetic data"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D119"
+    },
+    {
+      "question": "What information is displayed in the Info panel of Rack Topology?",
+      "answer": "The Info panel in Rack Topology displays device ports tables, cable endpoints, and aggregated-link cable lists.",
+      "symptoms": [
+        "Info panel",
+        "device ports",
+        "cable endpoints"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D120"
+    },
+    {
+      "question": "How do I use the Trace feature in Rack Topology?",
+      "answer": "To use the Trace feature in Rack Topology, turn on Trace and tap two devices to find the cabling path between them.",
+      "symptoms": [
+        "Trace feature",
+        "cabling path"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D121"
+    },
+    {
+      "question": "What is the purpose of the Capacity mode in Rack Topology?",
+      "answer": "The Capacity mode in Rack Topology highlights which switches have room before you relocate a server, allowing you to plan a move more effectively.",
+      "symptoms": [
+        "Capacity mode",
+        "switches",
+        "relocate a server"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "RACK-D122"
+    },
+    {
+      "question": "What happens after a scan finishes in RackTrack?",
+      "answer": "After a scan finishes, you see your rack photo with every device boxed and labeled. You can pick any device, drill into a specific port, and tell the app when it got something wrong.",
+      "symptoms": [
+        "scan completes",
+        "devices boxed and labeled"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D123"
+    },
+    {
+      "question": "How do I inspect a device in RackTrack?",
+      "answer": "To inspect a device, open the device dropdown and choose a device to inspect. Then, pick a port type and number, and press Find Port to open the port-detail dashboard.",
+      "symptoms": [
+        "device dropdown",
+        "Find Port"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D124"
+    },
+    {
+      "question": "What information does the port-detail dashboard provide?",
+      "answer": "The port-detail dashboard provides the status of the port, cable type and color, confidence, and the resolved end device.",
+      "symptoms": [
+        "port-detail dashboard",
+        "status",
+        "cable type"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D125"
+    },
+    {
+      "question": "How do I correct a misread device or port count in RackTrack?",
+      "answer": "To correct a misread device or port count, answer the confirm/correct prompts for device type and port count. Your corrections will be stored and reused.",
+      "symptoms": [
+        "confirm/correct prompts",
+        "correction input"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D126"
+    },
+    {
+      "question": "What is the purpose of the feedback loop in RackTrack?",
+      "answer": "The feedback loop captures each correction and uses it to retrain the models, so accuracy improves where your fleet differs from the training set.",
+      "symptoms": [
+        "feedback loop",
+        "corrections"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D127"
+    },
+    {
+      "question": "How does RackTrack handle empty or unidentified rack rows?",
+      "answer": "Empty, closed, and unidentified rack rows are excluded from the overlay and the device picker, so they don't clutter the view.",
+      "symptoms": [
+        "empty rows",
+        "unidentified rows"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D128"
+    },
+    {
+      "question": "What is the benefit of using RackTrack for verifying an install?",
+      "answer": "RackTrack allows you to scan, confirm the switch and port count, and trust the rest, documenting the rack in seconds.",
+      "symptoms": [
+        "verifying an install",
+        "scan"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D129"
+    },
+    {
+      "question": "How does RackTrack help with chasing a bad port?",
+      "answer": "RackTrack allows you to select a port and see its live status and the device on the other end without opening a terminal.",
+      "symptoms": [
+        "chasing a bad port",
+        "port status"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D130"
+    },
+    {
+      "question": "What is the purpose of the 'Your correction' badge in RackTrack?",
+      "answer": "The 'Your correction' badge marks any value that came from you rather than the model, indicating that you have corrected a misread device or port count.",
+      "symptoms": [
+        "Your correction badge",
+        "correction"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D131"
+    },
+    {
+      "question": "How does RackTrack improve accuracy over time?",
+      "answer": "RackTrack improves accuracy over time by capturing corrections and using them to retrain the models, so accuracy improves where your fleet differs from the training set.",
+      "symptoms": [
+        "improving accuracy",
+        "corrections"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SCAN-D132"
+    },
+    {
+      "question": "What is the SFP Procurement Advisor and what does it do?",
+      "answer": "The SFP Procurement Advisor is a reference tool that recommends compatible SFP/optical transceiver modules and plug-and-play DAC/AOC cables to purchase for a given switch, along with prices, product photos, and buy links. It is sized to the number of open SFP ports on the switch.",
+      "symptoms": [
+        "SFP procurement",
+        "optics recommendation"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D133"
+    },
+    {
+      "question": "How does the SFP Procurement Advisor work?",
+      "answer": "The advisor runs automatically from the switch's vendor/model, performs a live product search for compatible transceivers, and if nothing is found, uses a built-in fallback catalog. It then recommends a top pick, alternatives, and plug-and-play cables, and computes totals for the number of open SFP ports.",
+      "symptoms": [
+        "live product search",
+        "fallback catalog"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D134"
+    },
+    {
+      "question": "What input does the SFP Procurement Advisor use?",
+      "answer": "The advisor uses the switch's vendor/model and the number of available SFP ports as input. It also uses live product listings and a built-in fallback catalog.",
+      "symptoms": [
+        "switch vendor/model",
+        "available SFP ports"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D135"
+    },
+    {
+      "question": "What output does the SFP Procurement Advisor produce?",
+      "answer": "The advisor produces a top-pick module, alternatives, plug-and-play cables, and totals for the number of open SFP ports. It also includes a datasheet link and a note on the provenance of the recommendation.",
+      "symptoms": [
+        "top-pick module",
+        "alternatives"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D136"
+    },
+    {
+      "question": "What do I see on screen when using the SFP Procurement Advisor?",
+      "answer": "You see a slot summary, a hero 'TOP PICK' card, a list of alternatives, a plug-and-play cables grid, and a footer with a datasheet link and a note on the number of modules and sources.",
+      "symptoms": [
+        "slot summary",
+        "TOP PICK card"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D137"
+    },
+    {
+      "question": "Why does the SFP Procurement Advisor use a fallback catalog?",
+      "answer": "The advisor uses a fallback catalog when the live product search yields nothing usable. The fallback catalog is a manually verified list of compatible modules, but it can go stale if the manufacturer changes its pages.",
+      "symptoms": [
+        "fallback catalog",
+        "live product search"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D138"
+    },
+    {
+      "question": "How do I use the SFP Procurement Advisor to order optics for a new switch?",
+      "answer": "The advisor lists compatible modules and the total to fill every open cage. You can follow the buy link to order the recommended optics.",
+      "symptoms": [
+        "ordering optics",
+        "new switch"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D139"
+    },
+    {
+      "question": "What if the SFP Procurement Advisor returns an empty result?",
+      "answer": "If the advisor returns an empty result, you can try searching for the switch's vendor/model manually or checking the fallback catalog.",
+      "symptoms": [
+        "empty result",
+        "search link"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D140"
+    },
+    {
+      "question": "Are the prices shown by the SFP Procurement Advisor always up-to-date?",
+      "answer": "No, the prices shown by the advisor are indicative and may not always be up-to-date. You should confirm the prices with the vendor before ordering.",
+      "symptoms": [
+        "price",
+        "vendor"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D141"
+    },
+    {
+      "question": "Can I use the SFP Procurement Advisor to choose a short-run link?",
+      "answer": "Yes, the advisor offers plug-and-play DAC cables for in-rack or adjacent-rack runs.",
+      "symptoms": [
+        "short-run link",
+        "DAC cables"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SFPP-D142"
+    },
+    {
+      "question": "What is the Specifications Lookup feature in RackTrack?",
+      "answer": "The Specifications Lookup feature allows you to find the datasheet specifications of a device by typing its vendor and model. It pulls the specifications straight from the manufacturer's product page, so you don't have to hunt for a PDF.",
+      "symptoms": [
+        "datasheet specifications",
+        "device specs"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SPEC-D143"
+    },
+    {
+      "question": "How do I use the Specifications Lookup feature?",
+      "answer": "To use the Specifications Lookup feature, type a vendor and model, and RackTrack will pull the device's datasheet specifications. You can use the type-ahead suggestions to help with the vendor. Then, press the 'Get specifications' button to see the highlights block, full spec table, and product-page link.",
+      "symptoms": [
+        "type-ahead suggestions",
+        "Get specifications button"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SPEC-D144"
+    },
+    {
+      "question": "What kind of information can I find using the Specifications Lookup feature?",
+      "answer": "The Specifications Lookup feature provides a highlights block with 4-5 of the most decision-relevant specs, a full spec table with every extracted name/value pair, and a product-page link. You can find information such as ports, throughput, layer, power, PoE, uplinks, and more.",
+      "symptoms": [
+        "ports",
+        "throughput",
+        "layer",
+        "power",
+        "PoE",
+        "uplinks"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SPEC-D145"
+    },
+    {
+      "question": "What if the Specifications Lookup feature can't find the specifications for a device?",
+      "answer": "If the Specifications Lookup feature can't find the specifications for a device, it will display an 'couldn't extract' message with a link to the product page. It will never provide filler or invented data.",
+      "symptoms": [
+        "couldn't extract",
+        "extraction failures"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SPEC-D146"
+    },
+    {
+      "question": "Can I use the Specifications Lookup feature to compare devices?",
+      "answer": "Yes, you can use the Specifications Lookup feature to compare devices. For example, you can pull specs for two switches and compare their PoE budget and MAC table size.",
+      "symptoms": [
+        "comparing devices",
+        "PoE budget",
+        "MAC table size"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SPEC-D147"
+    },
+    {
+      "question": "Is the data provided by the Specifications Lookup feature real or synthetic?",
+      "answer": "The data provided by the Specifications Lookup feature is real and live, extracted from the vendor's product page. It is not synthetic or filled with placeholder specs.",
+      "symptoms": [
+        "real data",
+        "synthetic data"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SPEC-D148"
+    },
+    {
+      "question": "What are some common use cases for the Specifications Lookup feature?",
+      "answer": "Some common use cases for the Specifications Lookup feature include sizing an uplink, comparing two switches, and checking throughput and uplink options before committing to a model.",
+      "symptoms": [
+        "sizing an uplink",
+        "comparing switches"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SPEC-D149"
+    },
+    {
+      "question": "What is the Live Switch Data feature in RackTrack?",
+      "answer": "The Live Switch Data feature in RackTrack provides detailed information about a detected switch, including its identity, specifications, firmware, and optics. It brings together all the relevant data about a switch in one place, driven by what the photo actually saw.",
+      "symptoms": [
+        "Switch Information",
+        "Live Switch Data"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D150"
+    },
+    {
+      "question": "How do I access the Live Switch Data feature?",
+      "answer": "To access the Live Switch Data feature, pick a switch from the detected list, and then confirm its identity. You can then view its specifications, firmware, and SFP advisor tabs.",
+      "symptoms": [
+        "Switch selector",
+        "Identity header"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D151"
+    },
+    {
+      "question": "What if the switch's identity was not read correctly?",
+      "answer": "If the switch's identity was not read correctly, you can type or correct it in the inline editor. This will allow you to access the correct information for the switch.",
+      "symptoms": [
+        "Unidentified device",
+        "Make/model corrector"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D152"
+    },
+    {
+      "question": "How does the Live Switch Data feature get its information?",
+      "answer": "The Live Switch Data feature gets its information from a combination of sources, including the scanned identity of the switch, live vendor and firmware lookups, and a curated map of official vendor portal and download pages.",
+      "symptoms": [
+        "Scanned identity",
+        "Live spec lookup"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D153"
+    },
+    {
+      "question": "What kind of information can I find in the Specifications tab?",
+      "answer": "The Specifications tab provides a live datasheet lookup for the switch, including its specifications and a product-page link.",
+      "symptoms": [
+        "Specifications tab",
+        "Spec table"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D154"
+    },
+    {
+      "question": "How does the Firmware tab work?",
+      "answer": "The Firmware tab provides the latest version of the firmware for the switch, as well as upgrade guidance. It compares the entered current version against the latest version found in the vendor's release notes.",
+      "symptoms": [
+        "Firmware tab",
+        "Firmware status"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D155"
+    },
+    {
+      "question": "What is the SFP Advisor tab used for?",
+      "answer": "The SFP Advisor tab provides recommendations for compatible transceivers and cables for the switch.",
+      "symptoms": [
+        "SFP Advisor tab",
+        "Transceiver recommendations"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D156"
+    },
+    {
+      "question": "Can I manually enter the make and model of a switch?",
+      "answer": "Yes, you can manually enter the make and model of a switch if it was not detected correctly. This information will be saved locally and will survive re-scans.",
+      "symptoms": [
+        "Make/model corrector",
+        "Manual entry"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D157"
+    },
+    {
+      "question": "How does the Live Switch Data feature handle multiple switches?",
+      "answer": "The Live Switch Data feature allows you to pick a switch from the detected list and view its information. If several switches were detected, you can switch between them using the tab strip.",
+      "symptoms": [
+        "Switch selector",
+        "Tab strip"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D158"
+    },
+    {
+      "question": "What are some common use cases for the Live Switch Data feature?",
+      "answer": "Some common use cases for the Live Switch Data feature include auditing a switch on sight, fixing a bad read, and planning optics for a switch.",
+      "symptoms": [
+        "Audit a switch",
+        "Fix a bad read",
+        "Plan optics"
+      ],
+      "audience": "end-user",
+      "confidence": "certain",
+      "id": "SWIT-D159"
     }
   ],
   "categories": [
