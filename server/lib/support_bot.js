@@ -39,6 +39,13 @@ const OLLAMA_ENABLED = process.env.SUPPORT_BOT_LLM !== 'off';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 const OPENROUTER_URL = process.env.OPENROUTER_URL || 'https://openrouter.ai/api/v1/chat/completions';
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b:free';
+// Fallback chain, tried in order until one answers. OpenRouter's free catalog
+// is volatile — models get delisted with days' notice — so never depend on one
+// ID. Set OPENROUTER_MODELS (comma-separated) to anchor the chain with a
+// reliable paid instruct model, e.g.
+//   OPENROUTER_MODELS=nvidia/nemotron-...:free,meta-llama/llama-3.1-8b-instruct
+const OPENROUTER_MODELS = (process.env.OPENROUTER_MODELS || OPENROUTER_MODEL)
+  .split(',').map((m) => m.trim()).filter(Boolean);
 
 // ── One bot, one corpus ──────────────────────────────────────────────
 // There used to be two tiers, and the same question got different answers
@@ -552,28 +559,42 @@ async function llmAvailable(recheck = false) {
 // gives the same answer (the bot has to be testable to be verifiable). Returns
 // the trimmed completion text; throws on transport error / empty output so the
 // caller falls back to the verbatim KB answer.
+// Strip a model's chain-of-thought so it can't leak into the grounded answer or
+// break source parsing. Reasoning models wrap it in <think>…</think>; catch bare
+// stray tags too. (A reasoning model is still the wrong choice here — this is a
+// backstop, not a substitute for an instruction-following model.)
+function stripReasoning(text) {
+  return String(text || '')
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<\/?think>/gi, '')
+    .trim();
+}
+
+async function openrouterCall(model, messages) {
+  const res = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${OPENROUTER_API_KEY}` },
+    body: JSON.stringify({ model, messages, temperature: 0, top_p: 1, max_tokens: 500 }),
+    signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status} (${model})`);
+  const body = await res.json();
+  const text = stripReasoning(body?.choices?.[0]?.message?.content);
+  if (!text) throw new Error(`empty response (${model})`);
+  return text;
+}
+
 async function callChatModel(messages) {
   if (OPENROUTER_API_KEY) {
-    const res = await fetch(OPENROUTER_URL, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${OPENROUTER_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENROUTER_MODEL,
-        messages,
-        temperature: 0,
-        top_p: 1,
-        max_tokens: 500,
-      }),
-      signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status}`);
-    const body = await res.json();
-    const text = body?.choices?.[0]?.message?.content?.trim() || '';
-    if (!text) throw new Error('empty response');
-    return text;
+    // Try each model in the chain; a delisted / rate-limited / down model just
+    // moves to the next. Only when the whole chain fails do we throw, so the
+    // caller falls back to the verbatim KB answer.
+    let lastErr;
+    for (const model of OPENROUTER_MODELS) {
+      try { return await openrouterCall(model, messages); }
+      catch (err) { lastErr = err; logger?.warn?.(`[support_bot] model failed, trying next: ${err.message}`); }
+    }
+    throw lastErr || new Error('no OpenRouter models configured');
   }
   // Local Ollama fallback.
   const res = await fetch(`${OLLAMA_URL}/api/chat`, {
@@ -589,7 +610,7 @@ async function callChatModel(messages) {
   });
   if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
   const body = await res.json();
-  const text = body?.message?.content?.trim() || '';
+  const text = stripReasoning(body?.message?.content);
   if (!text) throw new Error('empty response');
   return text;
 }

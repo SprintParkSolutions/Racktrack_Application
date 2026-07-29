@@ -135,10 +135,6 @@ export default function ContactPage() {
               <a className={styles.v} href={mailto}>{SUPPORT_EMAIL}</a>
               <div className={styles.m}>Replies within a few hours</div>
             </div>
-            <div className={styles.infoCard}>
-              <div className={styles.k}>Status</div>
-              <div className={styles.dot}><i />All systems operational</div>
-            </div>
           </aside>
         </div>
 
