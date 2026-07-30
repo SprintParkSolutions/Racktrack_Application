@@ -339,7 +339,7 @@ export default function HelpPage() {
             type="text"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Describe what's happening…"
+            placeholder="Ask about scans, racks, ports, reports…"
             maxLength={1000}
             autoComplete="off"
             aria-label="Your question"
