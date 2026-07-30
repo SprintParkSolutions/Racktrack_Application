@@ -208,10 +208,11 @@ export default function HelpPage() {
           {messages.length === 0 && (
             <div className={styles.intro}>
               <div className={styles.introRule} aria-hidden="true" />
-              <h2>What are you stuck on?</h2>
+              <h2>Hello! I&apos;m the RackTrack support assistant.</h2>
               <p>
-                Ask in your own words — the way you&apos;d say it to a colleague.
-                If DOT isn&apos;t certain it will say so rather than guess.
+                Ask me anything about using RackTrack — scans, racks, switches,
+                reports, your account — and I&apos;ll answer from our verified
+                help content.
               </p>
               <div className={styles.startersLabel}>Common questions</div>
               <div className={styles.starters}>
