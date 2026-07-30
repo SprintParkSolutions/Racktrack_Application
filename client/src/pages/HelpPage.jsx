@@ -238,20 +238,11 @@ export default function HelpPage() {
               );
             }
 
-            const badge = badgeFor(m.route);
             const opts = parsed[i];
-            const isOpen = expanded.has(i);
 
             return (
               <div key={i} className={`${styles.row} ${styles.bot}`}>
-                <div className={`${styles.card} ${badge ? styles[badge.kind] : ''}`}>
-                  {badge && (
-                    <div className={styles.badge}>
-                      <span className={styles.badgeDot} aria-hidden="true" />
-                      {badge.label}
-                    </div>
-                  )}
-
+                <div className={styles.card}>
                   {opts ? (
                     <>
                       {opts.lead && <p className={styles.lead}>{opts.lead}</p>}
@@ -277,20 +268,6 @@ export default function HelpPage() {
                     </>
                   ) : (
                     <div className={styles.answer}>{m.content}</div>
-                  )}
-
-                  {m.detail && (
-                    <>
-                      <button
-                        type="button"
-                        className={styles.detailBtn}
-                        onClick={() => toggleDetail(i)}
-                        aria-expanded={isOpen}
-                      >
-                        {isOpen ? 'Show less' : 'Show the full steps'}
-                      </button>
-                      {isOpen && <div className={styles.detail}>{m.detail}</div>}
-                    </>
                   )}
 
                   {DECLINED.has(m.route) && (
