@@ -284,9 +284,25 @@ app.use(helmet({
 const _corsOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',').map(s => s.trim()).filter(Boolean);
 const _corsIsDev = (process.env.NODE_ENV || 'development') !== 'production';
+// The Capacitor (iOS/Android) app runs from a FIXED local WebView origin and
+// calls this API cross-origin, so unless these are allowed the packaged app
+// gets no Access-Control-Allow-Origin and EVERY request dies as "Load failed"
+// — the exact symptom testers hit at login, while the web app (same-origin) is
+// unaffected. Allowing them is safe: auth is a Bearer token the client reads
+// from its OWN origin's localStorage (never a cookie), and fetch never uses
+// credentials:'include', so CORS carries no ambient credential a malicious
+// local page could ride. iOS = capacitor://localhost, Android (default https
+// scheme) = https://localhost, plus http/ionic variants for older configs.
+const _nativeOrigins = new Set([
+  'capacitor://localhost',
+  'ionic://localhost',
+  'https://localhost',
+  'http://localhost',
+]);
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);                  // same-origin / curl
+    if (_nativeOrigins.has(origin)) return cb(null, true); // Capacitor native app
     if (_corsOrigins.includes(origin)) return cb(null, true);
     if (_corsOrigins.length === 0 && _corsIsDev) return cb(null, true);
     return cb(null, false);
