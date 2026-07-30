@@ -1,41 +1,80 @@
-/* RackTrack Assist — monochrome, matching the rest of the app: white surface,
-   black accent, hairline rules, and colour used only where it carries meaning
-   (whether a reply is verified, unsure, or declined). The previous version
-   used blue chat bubbles, which belonged to a different product. */
+/* RackTrack — "Ask DOT" support assistant.
+   DOT's black-and-white identity, given a soft, restrained neumorphism: white
+   surfaces gently lifted off a near-white field by a pair of soft shadows (a
+   light highlight + a light-grey shadow). Nothing glossy or plasticky — the
+   lift is barely-there and only on the surfaces that invite a tap: the answer
+   cards, the option/starter buttons, the composer well, and the send button.
+
+   Colour is spent sparingly and only where it means something: a small
+   semantic dot (and a hairline edge) on the answer badges — verified, unsure,
+   declined. Everything else is near-black type on white.
+
+   The layout is fluid from phone to ultrawide. The conversation reads as a
+   comfortable centred column (~760px) that relaxes to full width on a phone.
+   The same page renders both as a bare mobile screen and inside the desktop
+   sidebar shell, so it carries no fixed column of its own. Light theme only. */
 
 .page {
+  /* ── palette ── */
+  --dot-field:    #f3f4f6;   /* near-white base so the soft shadows read      */
+  --dot-surface:  #ffffff;   /* raised white surfaces                          */
+  --dot-ink:      #16181d;   /* near-black — text and primary actions          */
+  --dot-ink-soft: #3a3f47;   /* strong secondary                               */
+  --dot-muted:    #6b7178;   /* secondary text                                 */
+  --dot-faint:    #9aa0a6;   /* placeholder, chevrons, hints                   */
+  --dot-line:     #e6e8ec;   /* hairline separators                            */
+
+  /* restrained, monochrome-leaning semantic accents — small dots / thin edges */
+  --dot-ok:       #2e7d57;
+  --dot-unsure:   #a97b2c;
+  --dot-declined: #b0524b;
+
+  /* ── soft dual shadows — gentle, never heavy ── */
+  --nm-raised:
+      5px 5px 13px rgba(17, 19, 23, 0.055),
+     -5px -5px 13px rgba(255, 255, 255, 0.90);
+  --nm-raised-sm:
+      3px 3px 8px rgba(17, 19, 23, 0.05),
+     -3px -3px 8px rgba(255, 255, 255, 0.85);
+  --nm-inset:
+      inset 2px 2px 5px rgba(17, 19, 23, 0.05),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.92);
+  --nm-ink:                                   /* soft lift under a dark chip   */
+      4px 4px 11px rgba(17, 19, 23, 0.22),
+     -3px -3px 8px rgba(255, 255, 255, 0.55);
+
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: var(--md-background, #fff);
-  color: var(--md-on-surface, #17171a);
+  background: var(--dot-field);
+  color: var(--dot-ink);
   font-family: var(--font, ui-sans-serif, system-ui, sans-serif);
 }
 
-/* ── header ─────────────────────────────────────────────────────────── */
+/* ── header (phone only; the desktop shell draws its own) ─────────────── */
 .head {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--md-outline-variant, rgba(0, 0, 0, 0.1));
+  gap: clamp(10px, 2.5vw, 14px);
+  padding: clamp(12px, 3vw, 16px) clamp(15px, 4.5vw, 22px);
+  border-bottom: 1px solid var(--dot-line);
+  background: var(--dot-field);
   flex-shrink: 0;
 }
 
-/* The artwork carries its own background and a small wordmark under the face.
-   Cropping to the face keeps it legible at this size — the wordmark would be
-   unreadable mush at 38px, and the name is already set in type beside it. */
 /* The artwork is a small face on a large square with a wordmark underneath.
-   At 38px the whole image is unreadable, so the container clips and the image
+   At this size the whole image is unreadable, so the chip clips and the image
    is scaled up onto the face — the name is already set in type beside it. */
 .mark {
-  width: 38px; height: 38px;
+  width: clamp(32px, 8vw, 38px);
+  height: clamp(32px, 8vw, 38px);
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 11px;
   overflow: hidden;
   display: block;
-  background: var(--md-surface-container, rgba(0, 0, 0, 0.05));
+  background: var(--dot-surface);
+  box-shadow: var(--nm-raised-sm);
 }
 .mark img {
   width: 100%; height: 100%;
@@ -49,421 +88,373 @@
 
 .title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: clamp(0.95rem, 2.6vw, 1.05rem);
   font-weight: 750;
   letter-spacing: 0.06em;
   line-height: 1.25;
 }
 
-.sub {
-  margin: 2px 0 0;
-  font-size: 0.76rem;
-  color: var(--muted, #6b7178);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-
-/* Doubles as the diagnostics toggle. The retrieval details are for us, not for
-   the person asking — they were on screen for everyone, so users saw
-   "suggestions MKT-012, ACCT-001 4ms" under their answer and read it as an
-   error. */
-.status {
-  flex-shrink: 0;
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 6px 11px;
-  font: inherit;
-  font-size: 0.7rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
-  color: var(--muted, #6b7178);
-  background: transparent;
-  border: 1px solid var(--md-outline-variant, rgba(0, 0, 0, 0.12));
-  border-radius: 999px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.status[aria-pressed='true'] {
-  color: var(--md-on-surface, #17171a);
-  border-color: var(--md-on-surface, #17171a);
-}
-.dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #1f9d55;
-  box-shadow: 0 0 0 3px rgba(31, 157, 85, 0.14);
-}
-
-/* ── conversation ───────────────────────────────────────────────────── */
+/* ── conversation ────────────────────────────────────────────────────── */
 .log {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+/* The comfortable, centred reading column — full width on a phone, capped on
+   anything larger so a reply never runs the width of a monitor. */
 .inner {
-  max-width: none;
+  width: 100%;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 22px 20px 8px;
+  padding: clamp(18px, 3.6vw, 32px) clamp(16px, 4.5vw, 40px) 10px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: clamp(14px, 2.4vw, 20px);
 }
 
 .row { display: flex; }
-.me { justify-content: flex-end; }
+.me  { justify-content: flex-end; }
 .bot { justify-content: flex-start; }
 
 .meBubble {
-  max-width: 82%;
-  padding: 11px 15px;
-  border-radius: 16px 16px 4px 16px;
-  background: var(--md-on-surface, #17171a);
-  color: var(--md-background, #fff);
-  font-size: 0.92rem;
+  max-width: 84%;
+  padding: 11px 16px;
+  border-radius: 18px 18px 5px 18px;
+  background: var(--dot-ink);
+  color: #fff;
+  font-size: clamp(0.9rem, 2.4vw, 0.94rem);
   line-height: 1.5;
   overflow-wrap: anywhere;
+  box-shadow: var(--nm-ink);
 }
 
 .card {
-  max-width: 88%;
-  padding: 14px 16px;
-  border-radius: 4px 16px 16px 16px;
-  background: var(--md-surface-container-lowest, #fff);
-  border: 1px solid var(--md-outline-variant, rgba(0, 0, 0, 0.11));
-  /* A hairline down the left edge carries the state, so a reply reads as
-     verified / unsure / declined before a word of it is read. */
-  border-left: 3px solid var(--md-outline-variant, rgba(0, 0, 0, 0.11));
+  position: relative;
+  max-width: 90%;
+  padding: clamp(14px, 3vw, 18px) clamp(15px, 3.2vw, 20px);
+  border-radius: 6px 18px 18px 18px;
+  background: var(--dot-surface);
+  box-shadow: var(--nm-raised);
 }
-.card.ok       { border-left-color: #1f5f4f; }
-.card.unsure   { border-left-color: #9a6a12; }
-.card.declined { border-left-color: #8c4a4a; }
+/* A quiet accent down the left edge carries the state, so a reply reads as
+   verified / unsure / declined before a word of it is. Kept clear of the
+   rounded corners so nothing pokes out. */
+.card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 14px; bottom: 14px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--dot-line);
+}
+.card.ok::before       { background: var(--dot-ok); }
+.card.unsure::before   { background: var(--dot-unsure); }
+.card.declined::before { background: var(--dot-declined); }
 
 .badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 0.63rem;
-  font-weight: 750;
-  letter-spacing: 0.1em;
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
-  color: var(--muted, #6b7178);
-  margin-bottom: 9px;
+  color: var(--dot-ink-soft);
+  margin-bottom: 10px;
 }
-.badgeDot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.ok       .badge { color: #1f5f4f; }
-.unsure   .badge { color: #9a6a12; }
-.declined .badge { color: #8c4a4a; }
+/* The one spot of colour: a small dot with a soft halo. The label stays ink. */
+.badgeDot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--dot-faint);
+  box-shadow: 0 0 0 3px rgba(17, 19, 23, 0.04);
+}
+.ok       .badgeDot { background: var(--dot-ok);       box-shadow: 0 0 0 3px rgba(46, 125, 87, 0.13); }
+.unsure   .badgeDot { background: var(--dot-unsure);   box-shadow: 0 0 0 3px rgba(169, 123, 44, 0.13); }
+.declined .badgeDot { background: var(--dot-declined); box-shadow: 0 0 0 3px rgba(176, 82, 75, 0.13); }
 
 .answer, .lead {
   margin: 0;
-  font-size: 0.93rem;
+  font-size: clamp(0.9rem, 2.5vw, 0.95rem);
   line-height: 1.62;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  color: var(--dot-ink);
 }
-.lead { margin-bottom: 11px; }
+.lead { margin-bottom: 12px; }
 
-/* ── the numbered options, as real controls ─────────────────────────── */
-.options { display: flex; flex-direction: column; gap: 7px; }
+/* ── the numbered options, as real controls ──────────────────────────── */
+.options { display: flex; flex-direction: column; gap: 8px; }
 
 .option {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   width: 100%;
-  padding: 11px 12px;
+  min-height: 44px;
+  padding: 11px 13px;
   text-align: left;
   font: inherit;
-  font-size: 0.88rem;
+  font-size: clamp(0.86rem, 2.3vw, 0.9rem);
   line-height: 1.45;
-  color: var(--md-on-surface, #17171a);
-  background: var(--md-background, #fff);
-  border: 1px solid var(--md-outline-variant, rgba(0, 0, 0, 0.14));
-  border-radius: 10px;
+  color: var(--dot-ink);
+  background: var(--dot-surface);
+  border: 0;
+  border-radius: 12px;
+  box-shadow: var(--nm-raised-sm);
   cursor: pointer;
-  transition: border-color 0.14s, background 0.14s;
+  transition: box-shadow 0.16s ease, transform 0.12s ease;
 }
-.option:hover:not(:disabled) { border-color: var(--md-on-surface, #17171a); }
-.option:active:not(:disabled) { background: rgba(0, 0, 0, 0.04); }
-.option:disabled { opacity: 0.55; cursor: default; }
-.option:focus-visible { outline: 2px solid var(--md-on-surface, #17171a); outline-offset: 2px; }
+.option:active:not(:disabled) { box-shadow: var(--nm-inset); transform: translateY(1px); }
+.option:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+.option:focus-visible { outline: 2px solid var(--dot-ink); outline-offset: 2px; }
 
 .optionNum {
   flex-shrink: 0;
-  width: 21px; height: 21px;
+  width: 24px; height: 24px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 6px;
-  background: var(--md-on-surface, #17171a);
-  color: var(--md-background, #fff);
-  font-size: 0.68rem;
-  font-weight: 750;
+  border-radius: 7px;
+  background: var(--dot-ink);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .optionText { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.option svg { width: 15px; height: 15px; flex-shrink: 0; color: rgba(0, 0, 0, 0.26); }
+.option svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--dot-faint); }
 
 .hint {
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   font-size: 0.76rem;
-  color: var(--muted, #6b7178);
+  color: var(--dot-muted);
 }
 
-/* ── detail, escape hatch, diagnostics ──────────────────────────────── */
+/* ── detail, escape hatch, diagnostics ───────────────────────────────── */
 .detailBtn {
-  margin-top: 11px;
+  margin-top: 12px;
   padding: 0;
   font: inherit;
   font-size: 0.8rem;
   font-weight: 650;
-  color: var(--md-on-surface, #17171a);
+  color: var(--dot-ink);
   background: none;
   border: 0;
   border-bottom: 1px solid currentColor;
   cursor: pointer;
 }
+.detailBtn:focus-visible { outline: 2px solid var(--dot-ink); outline-offset: 3px; border-radius: 2px; }
+
 .detail {
-  margin-top: 10px;
-  padding-top: 11px;
-  border-top: 1px dashed var(--md-outline-variant, rgba(0, 0, 0, 0.14));
-  font-size: 0.88rem;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--dot-line);
+  font-size: clamp(0.85rem, 2.3vw, 0.9rem);
   line-height: 1.62;
   white-space: pre-wrap;
-  color: var(--md-on-surface-variant, #43484f);
+  color: var(--dot-muted);
   overflow-wrap: anywhere;
 }
 
 .escape {
-  margin-top: 11px;
+  margin-top: 12px;
   font-size: 0.82rem;
-  color: var(--muted, #6b7178);
+  color: var(--dot-muted);
 }
 .escape button {
   font: inherit; font-weight: 650;
-  color: var(--md-on-surface, #17171a);
+  color: var(--dot-ink);
   background: none; border: 0;
   border-bottom: 1px solid currentColor;
   cursor: pointer; padding: 0;
 }
+.escape button:focus-visible { outline: 2px solid var(--dot-ink); outline-offset: 3px; border-radius: 2px; }
 
 .debug {
   display: flex; flex-wrap: wrap; gap: 10px;
-  margin-top: 11px;
-  padding-top: 9px;
-  border-top: 1px dashed var(--md-outline-variant, rgba(0, 0, 0, 0.14));
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--dot-line);
   font-family: var(--mono, ui-monospace, Menlo, monospace);
   font-size: 0.67rem;
-  color: var(--muted, #8a8f96);
+  color: var(--dot-faint);
 }
 
-/* ── empty state ────────────────────────────────────────────────────── */
-.intro { padding: 6px 2px 0; }
+/* ── empty state ─────────────────────────────────────────────────────── */
+.intro { padding: clamp(4px, 1.5vw, 12px) 2px 0; }
 .introRule {
-  width: 34px; height: 2px;
-  background: var(--md-on-surface, #17171a);
-  margin-bottom: 16px;
+  width: 34px; height: 3px; border-radius: 3px;
+  background: var(--dot-ink);
+  margin-bottom: clamp(14px, 3vw, 18px);
 }
 .intro h2 {
-  margin: 0 0 8px;
-  font-size: 1.4rem;
+  margin: 0 0 10px;
+  font-size: clamp(1.35rem, 5vw, 1.8rem);
   font-weight: 780;
   letter-spacing: -0.02em;
+  line-height: 1.15;
   text-wrap: balance;
 }
 .intro p {
-  margin: 0 0 22px;
-  font-size: 0.9rem;
+  margin: 0 0 clamp(18px, 4vw, 24px);
+  font-size: clamp(0.88rem, 2.5vw, 0.95rem);
   line-height: 1.6;
-  color: var(--md-on-surface-variant, #43484f);
-  max-width: 46ch;
+  color: var(--dot-muted);
+  max-width: 52ch;
 }
 .startersLabel {
   font-size: 0.63rem;
   font-weight: 750;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--muted, #6b7178);
-  margin-bottom: 10px;
+  color: var(--dot-muted);
+  margin-bottom: 12px;
 }
-.starters { display: flex; flex-direction: column; gap: 7px; }
+.starters { display: flex; flex-direction: column; gap: 8px; }
 .starter {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   width: 100%;
-  padding: 12px 14px;
+  min-height: 46px;
+  padding: 12px 15px;
   text-align: left;
   font: inherit;
-  font-size: 0.88rem;
+  font-size: clamp(0.86rem, 2.3vw, 0.9rem);
   font-weight: 550;
-  color: var(--md-on-surface, #17171a);
-  background: var(--md-surface-container-lowest, #fff);
-  border: 1px solid var(--md-outline-variant, rgba(0, 0, 0, 0.12));
-  border-radius: 11px;
+  color: var(--dot-ink);
+  background: var(--dot-surface);
+  border: 0;
+  border-radius: 13px;
+  box-shadow: var(--nm-raised-sm);
   cursor: pointer;
-  transition: border-color 0.14s, transform 0.12s;
+  transition: box-shadow 0.16s ease, transform 0.12s ease;
 }
-.starter:hover { border-color: var(--md-on-surface, #17171a); }
-.starter:active { transform: scale(0.99); }
-.starter svg { width: 15px; height: 15px; flex-shrink: 0; color: rgba(0, 0, 0, 0.28); }
-.starter:focus-visible { outline: 2px solid var(--md-on-surface, #17171a); outline-offset: 2px; }
+.starter:active { box-shadow: var(--nm-inset); transform: translateY(1px); }
+.starter svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--dot-faint); }
+.starter:focus-visible { outline: 2px solid var(--dot-ink); outline-offset: 2px; }
 
-/* ── thinking ───────────────────────────────────────────────────────── */
-.thinking { padding: 15px 18px; }
+/* ── thinking ────────────────────────────────────────────────────────── */
+.thinking { padding: 16px 18px; }
+.thinking::before { display: none; }   /* no state bar on the loader */
 .dots { display: inline-flex; gap: 5px; }
 .dots i {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: rgba(0, 0, 0, 0.3);
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--dot-faint);
   animation: blink 1.25s ease-in-out infinite;
 }
 .dots i:nth-child(2) { animation-delay: 0.16s; }
 .dots i:nth-child(3) { animation-delay: 0.32s; }
 @keyframes blink { 0%, 80%, 100% { opacity: 0.28 } 40% { opacity: 1 } }
 
-/* ── composer ───────────────────────────────────────────────────────── */
+/* ── composer ────────────────────────────────────────────────────────── */
 .form {
   flex-shrink: 0;
-  border-top: 1px solid var(--md-outline-variant, rgba(0, 0, 0, 0.1));
-  background: var(--md-background, #fff);
-  padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--dot-line);
+  background: var(--dot-field);
+  padding: clamp(10px, 2.5vw, 16px) clamp(16px, 4.5vw, 40px)
+           calc(clamp(10px, 2.5vw, 16px) + env(safe-area-inset-bottom, 0px));
 }
 .formInner {
-  max-width: none;
+  width: 100%;
+  max-width: 760px;
   margin: 0 auto;
   display: flex;
-  gap: 9px;
+  gap: 10px;
   align-items: center;
 }
 .input {
   flex: 1;
   min-width: 0;
-  padding: 13px 16px;
+  padding: 13px 18px;
   font: inherit;
-  font-size: 16px;
-  color: var(--md-on-surface, #17171a);
-  background: var(--md-surface-container-lowest, #fff);
-  border: 1px solid var(--md-outline-variant, rgba(0, 0, 0, 0.16));
+  font-size: 16px;                       /* 16px stops iOS zooming on focus */
+  color: var(--dot-ink);
+  background: var(--dot-surface);
+  border: 1px solid var(--dot-line);
   border-radius: 999px;
+  box-shadow: var(--nm-inset);
+  transition: box-shadow 0.16s ease, border-color 0.16s ease;
 }
-.input::placeholder { color: var(--muted, #9aa0a6); }
-.input:focus { outline: none; border-color: var(--md-on-surface, #17171a); }
+.input::placeholder { color: var(--dot-faint); }
+.input:focus {
+  outline: none;
+  border-color: var(--dot-ink);
+  box-shadow: var(--nm-inset), 0 0 0 3px rgba(22, 24, 29, 0.09);
+}
 
 .send {
   flex-shrink: 0;
-  width: 44px; height: 44px;
+  width: 46px; height: 46px;
   display: flex; align-items: center; justify-content: center;
   border: 0;
   border-radius: 50%;
-  background: var(--md-on-surface, #17171a);
-  color: var(--md-background, #fff);
+  background: var(--dot-ink);
+  color: #fff;
   cursor: pointer;
-  transition: opacity 0.14s, transform 0.12s;
+  box-shadow: var(--nm-ink);
+  transition: box-shadow 0.16s ease, transform 0.12s ease, opacity 0.16s ease;
 }
 .send svg { width: 19px; height: 19px; }
-.send:disabled { opacity: 0.28; cursor: default; }
-.send:active:not(:disabled) { transform: scale(0.94); }
-.send:focus-visible { outline: 2px solid var(--md-on-surface, #17171a); outline-offset: 2px; }
+.send:disabled { opacity: 0.32; cursor: default; box-shadow: var(--nm-raised-sm); }
+.send:active:not(:disabled) { transform: translateY(1px) scale(0.97); box-shadow: var(--nm-inset); }
+.send:focus-visible { outline: 2px solid var(--dot-ink); outline-offset: 2px; }
 
-/* ── unavailable ────────────────────────────────────────────────────── */
+/* ── unavailable ─────────────────────────────────────────────────────── */
 .unavailable {
   margin: auto;
   padding: 40px 24px;
   text-align: center;
-  max-width: 380px;
+  max-width: 400px;
 }
-.unavailable h2 { margin: 0 0 8px; font-size: 1.15rem; font-weight: 750; }
-.unavailable p { margin: 0; color: var(--md-on-surface-variant, #43484f); font-size: 0.9rem; line-height: 1.6; }
+.unavailable h2 { margin: 0 0 10px; font-size: 1.15rem; font-weight: 750; color: var(--dot-ink); }
+.unavailable p  { margin: 0; color: var(--dot-muted); font-size: 0.92rem; line-height: 1.6; }
 
-@media (max-width: 420px) {
-  .inner { padding: 18px 14px 8px; }
-  .form { padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); }
-  .card, .meBubble { max-width: 94%; }
-  .intro h2 { font-size: 1.22rem; }
+/* ══════════════════════════════════════════════════════════════════════
+   Responsive adjustments. Most sizing is handled by clamp() above; these
+   handle the things a clamp can't — hover only where there's a pointer, the
+   phone composer clearing the fixed bottom nav, the starters becoming a grid
+   on wider screens, and the desktop shell owning the header.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Hover lift only where a real pointer exists (avoids sticky hover on touch). */
+@media (hover: hover) {
+  .option:hover:not(:disabled) { box-shadow: var(--nm-raised); }
+  .starter:hover              { box-shadow: var(--nm-raised); }
+  .send:hover:not(:disabled)  { box-shadow: 5px 5px 14px rgba(17, 19, 23, 0.26), -3px -3px 8px rgba(255, 255, 255, 0.55); }
+}
+
+/* Phone: cards relax to full width, and the composer clears the fixed bottom
+   navigation so the last option can always be reached. */
+@media (max-width: 767px) {
+  .card { max-width: 100%; }
+  .form {
+    padding-bottom: calc(12px + 64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* iPad and up: there's room to lay the starters out as a grid — six stacked
+   rows waste most of a wide screen. */
+@media (min-width: 768px) {
+  .starters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+/* Large desktop: a third column fits comfortably inside the reading measure. */
+@media (min-width: 1180px) {
+  .starters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dots i { animation: none; opacity: 0.5; }
-  .starter, .send, .option { transition: none; }
+  .starter, .send, .option, .input { transition: none; }
+  .option:active:not(:disabled),
+  .starter:active,
+  .send:active:not(:disabled) { transform: none; }
 }
 
-
-/* ══════════════════════════════════════════════════════════════════════
-   Per-screen layouts. A phone and a desktop want different things from
-   this page, not the same thing scaled: on a phone the reply must start
-   as high as possible and the composer must sit above the thumb; on a
-   wide screen the conversation should not stretch into an unreadable
-   line, and there is room to show the starters as a grid.
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* ── Phone (under 768px) ─────────────────────────────────────────────
-   Tight chrome, full-width cards, and a composer that clears the bottom
-   navigation bar rather than sitting underneath it. */
-@media (max-width: 767px) {
-  .head { padding: 12px 15px; gap: 11px; }
-  .mark { width: 32px; height: 32px; border-radius: 9px; }
-  .mark svg { width: 18px; height: 18px; }
-  .title { font-size: 0.92rem; }
-  .status { padding: 5px 9px; font-size: 0.66rem; }
-
-  .inner { padding: 16px 14px 4px; gap: 13px; }
-  .card, .meBubble { max-width: 100%; }
-  .card { padding: 13px 14px; border-radius: 4px 14px 14px 14px; }
-  .meBubble { border-radius: 14px 14px 4px 14px; }
-  .answer, .lead { font-size: 0.9rem; line-height: 1.58; }
-
-  /* Options are the primary control on a phone, so give them a real
-     touch target rather than a compact list row. */
-  .option { padding: 13px 12px; min-height: 48px; }
-  .optionNum { width: 23px; height: 23px; }
-
-  .intro h2 { font-size: 1.2rem; }
-  .intro p { margin-bottom: 18px; font-size: 0.88rem; }
-  .starter { padding: 13px 14px; min-height: 48px; }
-
-  /* Clear the fixed bottom navigation. Without this the composer sits
-     under it and the last option cannot be reached. */
-  .form {
-    padding: 10px 14px calc(10px + 64px + env(safe-area-inset-bottom, 0px));
-  }
-  .input { padding: 12px 15px; font-size: 16px; }  /* 16px stops iOS zooming on focus */
-  .send { width: 42px; height: 42px; }
-}
-
-/* ── iPad and desktop (768px and up) ─────────────────────────────────
-   The page already sits inside the sidebar shell, so it gets breathing
-   room instead of edge-to-edge chrome, and the starters become a grid —
-   six stacked rows waste most of a wide screen. */
-@media (min-width: 768px) {
-  .head { padding: 20px 32px; }
-  .inner { padding: 30px 32px 12px; gap: 20px; }
-  .form { padding: 16px 32px calc(16px + env(safe-area-inset-bottom, 0px)); }
-
-  .card { max-width: 78%; padding: 16px 19px; }
-  .meBubble { max-width: 66%; padding: 12px 17px; }
-  .answer, .lead { font-size: 0.95rem; line-height: 1.68; }
-
-  .intro { padding: 14px 2px 0; }
-  .intro h2 { font-size: 1.65rem; }
-  .intro p { font-size: 0.95rem; max-width: 52ch; }
-  .starters {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-  }
-
-  /* Hover states only make sense where there is a pointer. */
-  .option:hover:not(:disabled) { background: rgba(0, 0, 0, 0.02); }
-}
-
-/* ── Large desktop (1180px and up) ───────────────────────────────────
-   Cap the measure. Reply text running the full width of a 27" monitor is
-   unreadable however well it is styled. */
-@media (min-width: 1180px) {
-  .inner { max-width: none; padding: 36px 40px 14px; }
-  .formInner { max-width: none; }
-  .card { max-width: 72%; }
-  .starters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .intro h2 { font-size: 1.8rem; }
-}
-
-/* ── Desktop shared header (768px and up) ────────────────────────────
+/* ── Desktop shared header ────────────────────────────────────────────
    DesktopShell draws one header for every page ([back] [Title] + actions).
-   Hide this page's own [back] DOT bar so there is no double header. The
-   chat log and composer are untouched. Appended last so it wins on source
-   order over the .head padding rule above. */
+   Hide this page's own DOT header so there is no double header. Appended
+   last so it wins on source order. The chat log and composer are untouched. */
 @media (min-width: 768px) {
   .head { display: none; }
 }
