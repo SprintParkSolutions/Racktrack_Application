@@ -736,6 +736,9 @@ function computeRackId(filePath, scope = 'global') {
 }
 
 // ── Persistent Python worker pool ─────────────────────────────
+// Workers preload the YOLO models named in config.json at boot and never
+// re-read it — a model swap there (e.g. models.devices_seg) takes effect only
+// on the next server restart.
 const pythonCmd = process.env.PYTHON_PATH || (process.platform === 'win32' ? 'py' : 'python3');
 const WORKER_COUNT = Math.max(1, parseInt(process.env.RACKTRACK_WORKERS, 10) || 1);
 
