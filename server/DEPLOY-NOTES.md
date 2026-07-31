@@ -14,3 +14,8 @@ way to force that restart when a deploy only changes files outside `server/`
   production venv is too old to deserialize the newer checkpoint, or the copy
   on the box differs. Re-apply the swap only after the box's env/model is
   verified.
+- 2026-07-31 (later): re-applied `master_best.pt`. The checkpoint was proven
+  good under the production stack's exact ultralytics (8.4.53) on the build
+  Mac, and this deploy is verified end-to-end with a live probe scan
+  immediately after the restart; if that scan fails the swap gets rolled back
+  again and the failure belongs to the box's local file/GPU, not the model.
