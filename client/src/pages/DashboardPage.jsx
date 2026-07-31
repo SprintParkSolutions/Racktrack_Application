@@ -253,6 +253,24 @@ function OperationsView({ live = true, refreshTick = 0 }) {
             </div>
           </section>
 
+          {/* Scans by site */}
+          <section className={styles.card}>
+            <div className={styles.cardHead}><h2>Scans by site</h2></div>
+            <div className={styles.rankList}>
+              {(data?.bySite || []).map((s, i) => (
+                <div key={i} className={styles.rankRow}>
+                  <span className={styles.rankName}>{s.site}</span>
+                  <span className={styles.rankBarWrap}>
+                    <span className={styles.rankBar}
+                      style={{ width: `${Math.max(6, (s.scans / (data.bySite[0]?.scans || 1)) * 100)}%` }} />
+                  </span>
+                  <span className={styles.rankNum}>{s.scans}</span>
+                </div>
+              ))}
+              {!(data?.bySite || []).length && <div className={styles.empty}>—</div>}
+            </div>
+          </section>
+
           {/* Action mix */}
           <section className={styles.card}>
             <div className={styles.cardHead}><h2>What users are doing</h2></div>
@@ -278,6 +296,31 @@ function OperationsView({ live = true, refreshTick = 0 }) {
           </section>
         </div>
       </div>
+
+      {/* ── The scans themselves — who scanned what, where ── */}
+      <section className={styles.card} style={{ marginTop: 16 }}>
+        <div className={styles.cardHead}>
+          <h2>Recent scans</h2>
+          <span className={styles.cardMeta}>last {(data?.recentScans || []).length}</span>
+        </div>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr><th>Rack</th><th>User</th><th>Site</th><th>Organization</th><th>When</th></tr></thead>
+            <tbody>
+              {(data?.recentScans || []).map((s, i) => (
+                <tr key={i}>
+                  <td><code className={styles.userId}>{s.rack || '—'}</code></td>
+                  <td>{s.username}</td>
+                  <td>{s.site || '—'}</td>
+                  <td>{s.org || '—'}</td>
+                  <td className={styles.dim}>{relTime(s.ts)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!(data?.recentScans || []).length && <div className={styles.empty}>No scans yet.</div>}
+        </div>
+      </section>
 
       {/* ── Authentication activity ── */}
       <section className={styles.card} style={{ marginTop: 16 }}>

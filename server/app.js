@@ -2303,6 +2303,27 @@ app.get('/api/admin/dashboard', auth.requireAuth, (req, res) => {
       FROM audit_log a WHERE a.action='scan.create' AND a.status='ok'
       GROUP BY org ORDER BY scans DESC LIMIT 10`);
 
+    // Site (tenant) name straight off the event, for scan attribution.
+    const siteOf = `(SELECT t.name FROM tenants t WHERE t.id = a.tenant_id)`;
+
+    // Scans per site — the same board as byOrg, one level finer.
+    const bySite = many(`
+      SELECT COALESCE(${siteOf}, '(no site)') AS site, COUNT(*) AS scans
+      FROM audit_log a WHERE a.action='scan.create' AND a.status='ok'
+      GROUP BY site ORDER BY scans DESC LIMIT 10`);
+
+    // The scans themselves — each recent scan with who made it and where
+    // (site + org), so the dashboard can show the work, not just the counts.
+    const recentScans = many(`
+      SELECT a.ts, a.target_id AS rack,
+             COALESCE(NULLIF(u.username,''), NULLIF(a.username,''), '(anonymous)') AS username,
+             ${siteOf} AS site,
+             COALESCE(${orgOf}, ${orgOfUser}) AS org
+      FROM audit_log a
+      LEFT JOIN users u ON u.id = a.user_id
+      WHERE a.action='scan.create' AND a.status='ok'
+      ORDER BY a.id DESC LIMIT 100`);
+
     // Action mix — EVERY action type (ok vs fail), nothing capped.
     const actions = many(`
       SELECT action,
@@ -2351,7 +2372,7 @@ app.get('/api/admin/dashboard', auth.requireAuth, (req, res) => {
         accuracy: (fbRight + fbWrong) ? Math.round(fbRight / (fbRight + fbWrong) * 100) : null,
       },
       auth: auth_,
-      recent, errors, topUsers, byOrg, actions,
+      recent, errors, topUsers, byOrg, bySite, recentScans, actions,
       allUsers, allOrgs,
     });
   } catch (err) {
