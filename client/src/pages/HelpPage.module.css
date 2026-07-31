@@ -89,13 +89,15 @@
 .log::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.18); border-radius: 6px; }
 .log::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.32); }
 
-/* The message column. min-height lets the empty state centre in the viewport
-   while messages stack from the top once the conversation begins. */
+/* The message column — full content width on every device (this app never
+   uses a centered max-width column; see ContactPage). Individual bubbles are
+   capped for readable line lengths, but the canvas itself is the whole screen.
+   min-height lets the empty state centre in the viewport while messages stack
+   from the top once the conversation begins. */
 .inner {
   min-height: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: clamp(20px, 3vw, 32px) clamp(18px, 3vw, 28px);
+  width: 100%;
+  padding: clamp(20px, 3vw, 32px) clamp(18px, 4vw, 56px);
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -115,7 +117,7 @@
 
 /* Sent = black (the user's action); received = bordered white (content). */
 .meBubble {
-  max-width: 86%;
+  max-width: min(86%, 720px);
   padding: 12px 16px;
   border-radius: 16px 16px 4px 16px;
   background: var(--ink);
@@ -128,7 +130,7 @@
 
 .card {
   position: relative;
-  max-width: 86%;
+  max-width: min(86%, 860px);
   padding: 14px 17px;
   border-radius: 16px 16px 16px 4px;
   background: #fff;
@@ -221,10 +223,11 @@
 }
 
 /* ── empty state — mark + heading + starters ─────────────────────────── */
+/* Full width; only the copy inside is capped, for readable lines. */
 .intro {
   margin: auto;
   text-align: center;
-  max-width: 34rem;
+  width: 100%;
   padding: 0 4px;
 }
 /* A black tile with three stacked bars — a rack, in the same black as the
@@ -321,13 +324,12 @@
   flex-shrink: 0;
   background: #fff;
   border-top: 1px solid var(--line-soft);
-  padding: 14px clamp(18px, 3vw, 28px)
+  /* Horizontal padding matches .inner so the composer tracks the chat edge. */
+  padding: 14px clamp(18px, 4vw, 56px)
            calc(14px + env(safe-area-inset-bottom, 0px));
 }
 .formInner {
   width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
   display: flex;
   gap: 10px;
   align-items: center;
@@ -412,4 +414,6 @@
    column and composer simply centre inside the wider canvas. */
 @media (min-width: 768px) {
   .head { display: none; }
+  /* Six starters as two clean rows of three, spanning the full canvas. */
+  .starters { grid-template-columns: repeat(3, 1fr); }
 }
