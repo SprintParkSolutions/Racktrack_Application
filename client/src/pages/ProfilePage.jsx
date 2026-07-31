@@ -131,7 +131,7 @@ export default function ProfilePage() {
             <Avatar user={user} size={96} ring />
             <span style={{
               position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: '50%',
-              background: '#2b6fed', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#121417', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: '3px solid var(--md-background, #fff)', boxShadow: '0 2px 6px rgba(0,0,0,.2)',
             }}>
               <Icon name="edit" style={{ fontSize: 16 }} />

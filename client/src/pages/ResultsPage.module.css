@@ -2556,7 +2556,7 @@
   box-shadow: 0 0 0 3px rgba(0,0,0,0.18);
 }
 :global([data-theme='light']) .shareDialogInput::placeholder,
-:global([data-theme='light']) .shareDialogTextarea::placeholder { color: #aaaaaa; }
+:global([data-theme='light']) .shareDialogTextarea::placeholder { color: #5F646C; }
 :global([data-theme='light']) .shareDialogFieldErr { color: #1a1c1d; }
 :global([data-theme='light']) .shareDialogCancel {
   background: #f5f5f5; color: #1a1c1d; border-color: #dbdbdb;
@@ -5940,7 +5940,7 @@
 .portSwitchRow { margin: 4px 0 16px; }
 .portSwitchLabel {
   display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em;
-  text-transform: uppercase; color: #9a9a9a; margin-bottom: 8px;
+  text-transform: uppercase; color: #5F646C; margin-bottom: 8px;
 }
 
 /* ── Compact port-type switch above the "another port" input ── */

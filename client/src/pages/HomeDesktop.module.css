@@ -533,8 +533,8 @@
 }
 :global([data-theme='light']) .heroTitleAccent {
   background: none;
-  -webkit-text-fill-color: #8a8a8a;
-  color: #8a8a8a;
+  -webkit-text-fill-color: #5F646C;
+  color: #5F646C;
   font-style: normal;
   font-weight: 400;
   letter-spacing: -1.5px;
@@ -590,7 +590,7 @@
   font-family: "Inter Display","Inter","SF Pro Display",system-ui,sans-serif;
 }
 :global([data-theme='light']) .statLabel {
-  color: #8a8a8a;
+  color: #5F646C;
   font-size: 0.68rem;
   letter-spacing: 0.10em;
   font-weight: 600;
@@ -674,7 +674,7 @@
   box-shadow: 0 0 0 2px rgba(18,20,23,0.14);
 }
 :global([data-theme='light']) .heroRackPort.warn {
-  background: #9a9a9a;
+  background: #5F646C;
   box-shadow: 0 0 0 2px rgba(154,154,154,0.24);
 }
 :global([data-theme='light']) .heroRackPort.empty { background: #ebebea; }

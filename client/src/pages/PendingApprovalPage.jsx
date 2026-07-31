@@ -82,12 +82,13 @@ export default function PendingApprovalPage() {
   );
 }
 
-const BLUE = '#1257a6';
+// No colour accent in this app — ink does the accenting.
+const BLUE = '#121417';
 const S = {
   wrap: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: '#eef1f6', padding: '24px', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif" },
-  card: { background: '#fff', borderRadius: 18, padding: '40px 32px', maxWidth: 420, width: '100%',
-    textAlign: 'center', boxShadow: '0 8px 40px rgba(18,60,120,.12)' },
+    background: 'var(--ground, #F7F8FA)', padding: '24px', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif" },
+  card: { background: 'var(--raised, #fff)', borderRadius: 18, padding: '40px 32px', maxWidth: 420, width: '100%',
+    textAlign: 'center', boxShadow: 'var(--lift)' },
   badge: { display: 'inline-block', fontSize: 11, letterSpacing: '.2em', fontWeight: 700,
     color: BLUE, background: '#eaf3fc', padding: '5px 12px', borderRadius: 20, marginBottom: 20 },
   spinner: { width: 44, height: 44, margin: '0 auto 20px', borderRadius: '50%',

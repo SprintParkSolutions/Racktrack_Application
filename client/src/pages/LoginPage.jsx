@@ -63,8 +63,8 @@ export default function LoginPage() {
 
       <main className={styles.authShell}>
 
-        <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'22px' }}>
-          <img src="/logo.jpg" alt="" style={{ width:'40px', height:'40px', borderRadius:'11px', objectFit:'cover', boxShadow:'0 6px 16px rgba(0,0,0,0.18)' }} />
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginBottom:'22px' }}>
+          <img src="/logo.jpg" alt="" style={{ width:'40px', height:'40px', borderRadius:'11px', objectFit:'cover', boxShadow:'var(--lift)' }} />
           <span style={{ fontFamily: 'var(--font)', fontWeight:800, fontSize:'1.15rem', letterSpacing:'-0.01em' }}>RackTrack</span>
         </div>
 
@@ -149,10 +149,13 @@ export default function LoginPage() {
 
         {/* A brand-new user otherwise has no way to know that joining an
             existing team is invite/credentials-only — spell out the paths. */}
+        {/* A carved well, not a bordered box — matches the depth system used
+            by the inputs above it (see --press in index.css). */}
         <div style={{
-          marginTop: 16, padding: '13px 15px', borderRadius: 11,
-          background: 'var(--md-surface-container, rgba(0,0,0,0.045))',
-          border: '1px solid var(--md-outline-variant, rgba(0,0,0,0.10))',
+          marginTop: 18, padding: '15px 17px', borderRadius: 12,
+          background: 'var(--sunken, #E4E8EE)',
+          boxShadow: 'var(--press)',
+          border: 0,
           fontSize: '0.82rem', lineHeight: 1.55,
           color: 'var(--muted, #4c4546)',
         }}>

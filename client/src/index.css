@@ -1,15 +1,26 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ══════════════════════════════════════════════════════════════════════
-   SINGLE THEME — white-focused, subtle-black accent. Flat surfaces only,
-   no gradients anywhere. Reads as a designed paper-white surface with
-   confident black type and pill buttons.
+   SINGLE THEME — soft UI on a mid-tone ground, subtle black accents.
+   No colour accent by design: hierarchy comes from value and from depth,
+   never from hue.
+
+   One light source sits at the TOP-LEFT. Every surface therefore carries two
+   shadows — a dark one bottom-right where the light doesn't reach, and a
+   WHITE one top-left where it does. See the DEPTH block below; --lift raises
+   and --press sinks, and that pair is the whole system.
+
+   PINNED TO LIGHT in both themes on purpose. These values do not survive a
+   naive dark-mode flip: the light-side shadow would have to fall to about
+   rgba(255,255,255,.04) and the shade side rise to ~50% black, so the light
+   numbers cannot be reused. ThemeContext always reports 'light'.
    ══════════════════════════════════════════════════════════════════════ */
 :root,
 [data-theme='light'],
 [data-theme='dark'] {
-  /* ── Material 3 palette — exact match to the mockup spec.
-     Primary #121417, secondary #717171, outline #E0E0E0. ── */
+  /* ── Material 3 palette — black primary retained, neutrals re-layered
+     onto the soft-UI ground: page #E9ECF1 → raised #F2F4F8 → sunken
+     #E4E8EE. See the SOFT-UI GROUND block below. ── */
   --md-primary:                       #121417;
   --md-on-primary:                    #ffffff;
   --md-primary-container:             #121417;
@@ -19,14 +30,14 @@
   --md-on-primary-fixed:              #ffffff;
   --md-on-primary-fixed-variant:      #ffffff;
 
-  --md-secondary:                     #717171;
+  --md-secondary:                     #6b7280;
   --md-on-secondary:                  #121417;
   --md-secondary-container:           #FFFFFF;
   --md-on-secondary-container:        #121417;
   --md-secondary-fixed:               #FFFFFF;
   --md-secondary-fixed-dim:           #FFFFFF;
   --md-on-secondary-fixed:            #121417;
-  --md-on-secondary-fixed-variant:    #717171;
+  --md-on-secondary-fixed-variant:    #6b7280;
 
   --md-tertiary:                      #121417;
   --md-on-tertiary:                   #ffffff;
@@ -42,29 +53,62 @@
   --md-error-container:               #ffdad6;
   --md-on-error-container:            #93000a;
 
-  /* Mockup-exact neutral ramp.
-     Background #FFFFFF, container-low/lowest also #FFFFFF (mockup spec),
-     container #FAFAFA, highest/variant #F5F5F5, outline #E0E0E0. */
-  --md-background:                    #FFFFFF;
-  --md-on-background:                 #121417;
-  --md-surface:                       #FFFFFF;
-  --md-surface-bright:                #FFFFFF;
-  --md-surface-dim:                   #FFFFFF;
-  --md-on-surface:                    #121417;
-  --md-on-surface-variant:            #717171;
-  --md-surface-variant:               #FFFFFF;
-  --md-surface-tint:                  #121417;
-  --md-surface-container-lowest:      #FFFFFF;
-  --md-surface-container-low:         #FFFFFF;
-  --md-surface-container:             #FFFFFF;
-  --md-surface-container-high:        #FFFFFF;
-  --md-surface-container-highest:     #FFFFFF;
+  /* ══ SOFT-UI GROUND ══════════════════════════════════════════════════
+     Three greys do most of the work. Raised things are LIGHTER than the
+     page, sunken things are DARKER — that value relationship sells the
+     depth more than the shadows do.
 
-  --md-outline:                       #E0E0E0;
-  --md-outline-variant:               #E0E0E0;
+     The page is NOT white. On pure white the light-side shadow (--hi) is
+     invisible and the whole effect collapses into an ordinary grey blur,
+     which is exactly how the earlier attempts failed. Mid-tone ground is
+     load-bearing, not a preference. */
+  --ground:                           #F7F8FA;   /* the page — reads white */
+  --raised:                           #FFFFFF;   /* pure white */
+  --sunken:                           #EBEEF3;   /* the only real grey */
+
+  /* The page reads WHITE, not grey, by request. The value ladder is kept —
+     raised is still lighter than the ground and sunken still darker — but
+     the rungs are close together up top.
+
+     Known trade-off: on a near-white ground the light-side shadow (--hi) has
+     almost nothing to lighten, so --lift leans on its dark side and reads as
+     a quiet drop shadow rather than a fully carved edge. The sunken wells,
+     which sit well below the ground, still show the effect properly. Do not
+     "fix" this by inflating the shadows — big soft shadows read as a
+     consumer app. If the depth is ever wanted back at full strength, the
+     ground has to come down to about #E9ECF1. */
+
+  --md-background:                    var(--ground);
+  --md-on-background:                 #121417;
+  --md-surface:                       var(--raised);
+  --md-surface-bright:                #F7F9FC;
+  --md-surface-dim:                   var(--sunken);
+  --md-on-surface:                    #121417;
+  --md-on-surface-variant:            #5F646C;
+  --md-surface-variant:               var(--sunken);
+  --md-surface-tint:                  #121417;
+  --md-surface-container-lowest:      var(--raised);
+  --md-surface-container-low:         #F0F2F7;
+  --md-surface-container:             var(--ground);
+  --md-surface-container-high:        var(--sunken);
+  --md-surface-container-highest:     #DEE3EA;
+
+  /* Hairlines are a fallback, not the primary separator — depth carries it.
+     Kept close to the ground so borders read as a seam, not a drawn line. */
+  --md-outline:                       #D3D9E2;
+  --md-outline-variant:               #DFE4EB;
   --md-inverse-surface:               #17171a;
   --md-inverse-on-surface:            #f4f4f6;
   --md-inverse-primary:               #c8c8cc;
+
+  /* ── Accent — subtle black. There is no colour accent in this app by
+     design: white and white-shades only, with black doing the accenting.
+     Focus rings, links, active nav and live pips all resolve to ink. ── */
+  --accent:        #121417;
+  --accent-strong: #000000;
+  --accent-soft:   rgba(18, 20, 23, 0.06);
+  --accent-ring:   rgba(18, 20, 23, 0.16);
+  --accent-tint:   #F5F5F5;
 
   /* ── Legacy aliases — every existing component still reads these. ── */
   --bg:    var(--md-surface-container-lowest);
@@ -90,18 +134,18 @@
   --p2:   var(--md-secondary);
   --pg:   rgba(91, 91, 96, 0.22);
 
-  /* "Gradients" — kept as tokens for back-compat, but flattened to a
-     single colour each so nothing renders as a gradient. */
-  --grad:     #17171a;
-  --grad-btn: #0d0d0f;
-  --grad-r:   #ba1a1a;
+  /* Gradient tokens — re-lit as SUBTLE vertical fades (near-black top →
+     true black base) so primary fills feel machined, not flat-printed. */
+  --grad:     linear-gradient(180deg, #1d2027 0%, #121417 55%, #0d0e11 100%);
+  --grad-btn: linear-gradient(180deg, #22262e 0%, #121417 60%, #0b0c0e 100%);
+  --grad-r:   linear-gradient(180deg, #d13636 0%, #ba1a1a 100%);
 
   /* Status */
-  --green:  #22c55e;
+  --green:  #16a34a;
   --orange: #f59e0b;
   --red:    var(--md-error);
   --rg:     rgba(186, 26, 26, 0.22);
-  --gg:     rgba(34, 197, 94, 0.22);
+  --gg:     rgba(22, 163, 74, 0.20);
 
   /* Borders / hairlines */
   --glass:  var(--md-surface-container-lowest);
@@ -122,12 +166,12 @@
   --font: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Radii — pulled in by ~20% so cards read as crisp rectangles with
-     a soft corner rather than soft pillows. */
-  --r1: 0.25rem;
-  --r2: 0.5rem;
-  --r3: 0.625rem;
-  --r4: 0.875rem;
+  /* Radii — opened back up slightly: soft-depth surfaces want gently
+     rounded corners; crisp 4px corners fight the shadow language. */
+  --r1: 0.375rem;
+  --r2: 0.625rem;
+  --r3: 0.75rem;
+  --r4: 1rem;
   --r-pill: 9999px;
 
   /* Spacing scale */
@@ -138,22 +182,52 @@
   --space-xl: 40px;
   --space-gutter: 20px;
 
-  /* Reusable shadow tokens — pulled WAY back. The previous values made
-     every card look like a marshmallow. Cards should sit on the page,
-     not hover above it. Use hairlines + 1px borders for separation;
-     only the primary CTA gets real elevation. */
-  --shadow-soft:       0 1px 2px rgba(13, 13, 15, 0.04);
-  --shadow-inner-soft: inset 0 1px 0 rgba(13, 13, 15, 0.03);
-  --shadow-glow:       0 8px 20px -8px rgba(13, 13, 15, 0.20);
+  /* ══ DEPTH — one light source, top-left ═══════════════════════════════
+     Every surface gets TWO shadows: a dark one bottom-right where the light
+     doesn't reach, and a WHITE one top-left where it does. The white shadow
+     is the whole trick — without it this is just an ordinary drop shadow.
+
+     --lift raises, --press (the same shadows, inset) sinks. That pair is the
+     entire system: cards and buttons take --lift, inputs and selected
+     options take --press.
+
+     Blur stays small and opacity low. 10% at 16px blur read as a consumer
+     app; 7% at 10px reads as a considered surface. Do not inflate these. */
+  --hi:    rgba(255, 255, 255, 0.9);   /* the light side */
+  --lo:    rgba(14, 17, 20, 0.07);     /* the shade side */
+  --lift:  4px 4px 10px var(--lo), -4px -4px 10px var(--hi);
+  --press: inset 2px 2px 5px rgba(14, 17, 20, 0.08),
+           inset -2px -2px 5px rgba(255, 255, 255, 0.85);
+
+  /* Legacy elevation aliases — every existing component still reads these,
+     so they resolve to the soft-UI pair rather than old drop shadows. */
+  --shadow-soft:       var(--lift);
+  --shadow-card:       var(--lift);
+  --shadow-card-hover: 6px 6px 14px var(--lo), -6px -6px 14px var(--hi);
+  /* Overlays float clear of the ground, so they keep a genuine cast shadow
+     in addition to the light-side edge. */
+  --shadow-modal:      12px 12px 32px rgba(14, 17, 20, 0.12), -8px -8px 24px var(--hi);
+  --shadow-btn:        var(--lift);
+  --shadow-neu:        var(--lift);
+  --shadow-neu-inset:  var(--press);
+  --shadow-inner-soft: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --shadow-glow:       var(--lift);
+
+  /* ── Motion system ── */
+  --ease-out:    cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --dur-fast:    150ms;
+  --dur-med:     280ms;
+  --dur-slow:    450ms;
 }
 
 html {
   font-size: 16px;
   height: 100%;
   -webkit-text-size-adjust: 100%;
-  /* Match the app surface so the rubber-band / overscroll area reads white
-     instead of the browser's default (which renders black when the OS is in
-     dark mode). color-scheme: light forces light UA rendering everywhere. */
+  /* Match the app canvas so the rubber-band / overscroll area reads as the
+     same off-white instead of the browser's default (which renders black when
+     the OS is in dark mode). color-scheme: light forces light UA rendering. */
   background: var(--md-background);
   color-scheme: light;
 }
@@ -170,7 +244,10 @@ html {
 }
 body {
   font-family: var(--font);
-  background: var(--md-background);
+  /* Flat mid-tone ground — no wash. The depth system needs an even field to
+     read against; a gradient makes the light-side shadow stronger in one
+     corner than another and the single-light-source illusion breaks. */
+  background: var(--ground);
   color: var(--t1);
   /* Lock the document so it never becomes the scroller. On Android's WebView,
      document/body scrolling is unreliable (it was requiring two fingers). All
@@ -232,7 +309,7 @@ svg { max-width: 100%; }
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(13, 13, 15, 0.22); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(13, 13, 15, 0.18); border-radius: 3px; }
 
 /* Icon defaults.
    These were Material Symbols ligatures — text that becomes a glyph only once
@@ -256,10 +333,15 @@ svg { max-width: 100%; }
   flex: 1; display: flex; flex-direction: column;
   overflow: hidden; position: relative;
   height: calc(100vh - 80px);
+  /* Route entrance: opacity-only (no transform — a transformed page would
+     become the containing block for position:fixed children like the camera
+     shutter and modals, re-anchoring them mid-animation). */
+  animation: rt-page-in var(--dur-med) var(--ease-out) both;
 }
 .page-full {
   min-height: 100vh;
   height: 100vh;
+  animation: rt-page-in var(--dur-med) var(--ease-out) both;
 }
 
 @media (min-width: 1180px) {
@@ -276,33 +358,35 @@ svg { max-width: 100%; }
   overflow: hidden;
 }
 
-/* ── "Gradient" text classes — flattened to flat subtle-black so
-   existing markup with `.gt` / `.title-grad` reads as solid type. ── */
+/* ── Gradient text — big display titles only. Near-black fading to a
+   steel grey base; reads as machined metal, not rainbow. Applied to the
+   global .gt / .title-grad classes AND re-asserted after the enforcement
+   block below (which flattens legacy module gradient text). ── */
 .gt, .title-grad {
-  background: none;
-  -webkit-background-clip: initial;
-  -webkit-text-fill-color: currentColor;
-  background-clip: initial;
+  background: linear-gradient(180deg, #121417 30%, #4b5563 115%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   color: var(--md-on-surface);
 }
 
-/* ── Card surfaces — flat white, hairline only. NO inset highlight,
-   NO drop shadow. Purely 2D — depth comes from hierarchy, not shadow. ── */
+/* ── Card surfaces — white on the off-white canvas: hairline + quiet
+   dual shadow + a 1px top highlight (the "slight neumorphism"). ── */
 .glass {
   background: var(--md-surface-container-lowest);
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--r4);
-  box-shadow: none;
+  box-shadow: var(--lift);
 }
 
 .glass-blue {
   background: var(--md-surface-container-low);
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--r4);
-  box-shadow: none;
+  box-shadow: var(--lift);
 }
 
-/* ── Buttons — pill-shaped, flat fills only ── */
+/* ── Buttons — pill-shaped, soft depth, springy press ── */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -319,33 +403,43 @@ svg { max-width: 100%; }
   letter-spacing: 0.01em;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.18s, box-shadow 0.18s, background 0.18s, border-color 0.18s;
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
 }
-.btn:active { transform: scale(0.98) !important; }
+/* Pressing a raised control sinks it — the same shadows, inset. That swap
+   is the whole feedback mechanism; no scale trick needed. */
+.btn:active { box-shadow: var(--press) !important; }
 
-/* Primary — flat subtle-black pill. ZERO shadow — purely 2D. */
+/* Primary — machined black pill: subtle vertical fade + real elevation,
+   lifts 1px on hover. The one element on screen allowed a strong shadow. */
 .btn-primary {
-  background: #121417;
+  background: var(--grad-btn);
+  background-color: #121417;
   color: var(--md-on-primary);
   border-color: transparent;
-  box-shadow: none;
+  box-shadow: var(--shadow-btn);
 }
 .btn-primary:hover {
-  background: #121417;
-  opacity: 0.9;
-  box-shadow: none;
+  background-color: #1a1d23;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover), var(--shadow-btn);
 }
 
-/* Secondary — flat white with hairline. No shadow. */
+/* Secondary — white pill, soft-raised, hairline. */
 .btn-secondary {
-  background: var(--md-surface-container-lowest);
+  background: var(--raised);
   color: var(--md-on-surface);
-  border: 1px solid var(--md-outline-variant);
-  box-shadow: none;
+  border: 1px solid transparent;
+  box-shadow: var(--lift);
 }
 .btn-secondary:hover {
-  background: var(--md-surface-container-lowest);
-  border-color: var(--md-primary);
+  background: var(--raised);
+  border-color: transparent;
+  box-shadow: var(--lift);
 }
 
 /* Ghost — transparent with hairline */
@@ -359,6 +453,19 @@ svg { max-width: 100%; }
   border-color: rgba(13, 13, 15, 0.18);
 }
 
+/* Neumorphic — soft tile carved from the canvas itself. For quiet
+   secondary actions and segmented controls sitting on the off-white bg. */
+.btn-neu {
+  background: var(--md-background);
+  color: var(--md-on-surface);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-neu);
+}
+.btn-neu:hover { transform: translateY(-1px); }
+.btn-neu:active, .btn-neu[aria-pressed='true'] {
+  box-shadow: var(--shadow-neu-inset);
+}
+
 .btn-lg   { padding: 16px 32px; font-size: 1rem; border-radius: var(--r-pill); }
 .btn-sm   { padding: 8px 14px; font-size: 0.78rem; }
 .btn-icon { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
@@ -366,25 +473,25 @@ svg { max-width: 100%; }
 
 /* ── Dots ── */
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-.dot-green  { background:var(--green);  box-shadow:0 0 6px rgba(34, 197, 94, 0.4); }
+.dot-green  { background:var(--green);  box-shadow:0 0 6px rgba(22, 163, 74, 0.4); }
 .dot-orange { background:var(--orange); box-shadow:0 0 6px rgba(245, 158, 11, 0.4); }
 .dot-red    { background:var(--red);    box-shadow:0 0 6px rgba(186, 26, 26, 0.45); animation:pR 1.3s ease infinite; }
-.dot-cyan   { background:var(--c1);     box-shadow:0 0 6px rgba(13, 13, 15, 0.35); animation:pC 2s ease infinite; }
+.dot-cyan   { background:var(--accent); box-shadow:0 0 6px rgba(18, 20, 23, 0.45); animation:pC 2s ease infinite; }
 .dot-dim    { background: rgba(13, 13, 15, 0.25); }
 
 @keyframes pR { 0%,100%{box-shadow:0 0 6px rgba(186, 26, 26, 0.45)}  50%{box-shadow:0 0 18px rgba(186, 26, 26, 0.6);opacity:.6} }
-@keyframes pC { 0%,100%{box-shadow:0 0 6px rgba(13, 13, 15, 0.35)}   50%{box-shadow:0 0 18px rgba(13, 13, 15, 0.5);opacity:.8} }
+@keyframes pC { 0%,100%{box-shadow:0 0 6px rgba(18, 20, 23, 0.45)}  50%{box-shadow:0 0 18px rgba(18, 20, 23, 0.55);opacity:.8} }
 
-/* ── Badges — flat fills only ── */
+/* ── Badges — soft tinted fills ── */
 .badge {
   display:inline-flex; align-items:center; gap:5px;
   padding:4px 10px; border-radius:var(--r-pill);
   font-size:0.68rem; font-weight:600; letter-spacing:.07em; text-transform:uppercase;
 }
-.badge-red    { background: rgba(186, 26, 26, 0.10); color: var(--md-error);   border: 1px solid rgba(186, 26, 26, 0.30); }
-.badge-green  { background: rgba(34, 197, 94, 0.10); color: #16a34a;           border: 1px solid rgba(34, 197, 94, 0.30); }
-.badge-orange { background: rgba(245, 158, 11, 0.10); color: #b45309;          border: 1px solid rgba(245, 158, 11, 0.30); }
-.badge-cyan   { background: var(--md-surface-container); color: var(--md-on-surface); border: 1px solid var(--md-outline-variant); }
+.badge-red    { background: rgba(186, 26, 26, 0.08);  color: var(--md-error); border: 1px solid rgba(186, 26, 26, 0.25); }
+.badge-green  { background: rgba(22, 163, 74, 0.08);  color: #15803d;         border: 1px solid rgba(22, 163, 74, 0.25); }
+.badge-orange { background: rgba(245, 158, 11, 0.10); color: #b45309;         border: 1px solid rgba(245, 158, 11, 0.28); }
+.badge-cyan   { background: var(--accent-tint);       color: var(--accent-strong); border: 1px solid rgba(18, 20, 23, 0.25); }
 
 /* Form controls must never render below 16px: iOS Safari and WKWebView
    auto-zoom the viewport when a focused input/select/textarea is smaller than
@@ -393,11 +500,11 @@ svg { max-width: 100%; }
    class rule that sets its own size is kept at >=16px individually. */
 input, select, textarea { font-size: 16px; }
 
-/* ── Input — flat white, crisp 1px border, no inset shadow ── */
+/* ── Input — white well with a whisper of inset depth; accent focus ring ── */
 .input {
   width: 100%;
-  background: var(--md-surface-container-lowest);
-  border: 1px solid rgba(13, 13, 15, 0.14);
+  background: var(--sunken);
+  border: 1px solid transparent;
   border-radius: var(--r3);
   color: var(--md-on-surface);
   font-family: var(--font);
@@ -407,23 +514,34 @@ input, select, textarea { font-size: 16px; }
   font-size: 16px;
   padding: 14px 16px;
   outline: none;
-  box-shadow: none;
-  transition: border-color .18s, box-shadow .18s, background .18s;
+  box-shadow: inset 0 1px 2px rgba(18, 20, 23, 0.04);
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
 .input:hover {
   border-color: rgba(13, 13, 15, 0.24);
 }
 .input:focus {
-  border-color: var(--md-primary);
-  box-shadow: 0 0 0 3px rgba(13, 13, 15, 0.08);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
-.input::placeholder { color: rgba(13, 13, 15, 0.40); }
+.input::placeholder { color: rgba(13, 13, 15, 0.38); }
 
-/* ── Shimmer — flat pulse, no gradient sweep ── */
+/* ── Shimmer — real gradient sweep over a soft base ── */
 .shimmer {
-  background: rgba(13, 13, 15, 0.05);
-  animation: shim 1.6s infinite;
+  position: relative;
+  overflow: hidden;
+  background: rgba(18, 20, 23, 0.055);
 }
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.75) 50%, transparent 100%);
+  animation: rt-sweep 1.6s var(--ease-out) infinite;
+}
+@keyframes rt-sweep { to { transform: translateX(100%); } }
+/* Legacy pulse kept for anything that composed `shim` directly. */
 @keyframes shim { 0%,100% { opacity: 0.6 } 50% { opacity: 1 } }
 
 /* ── Section label ── */
@@ -438,14 +556,85 @@ input, select, textarea { font-size: 16px; }
 }
 
 /* ── Keyframes ── */
-@keyframes spin      { to { transform: rotate(360deg); } }
-@keyframes fade-up   { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-@keyframes fade-in   { from{opacity:0} to{opacity:1} }
-@keyframes blink     { 0%,100%{opacity:1} 50%{opacity:.25} }
-@keyframes scan-line { 0%{top:0%;opacity:.7} 100%{top:100%;opacity:0} }
-@keyframes float     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+@keyframes spin        { to { transform: rotate(360deg); } }
+@keyframes fade-up     { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+@keyframes fade-in     { from{opacity:0} to{opacity:1} }
+@keyframes blink       { 0%,100%{opacity:1} 50%{opacity:.25} }
+@keyframes scan-line   { 0%{top:0%;opacity:.7} 100%{top:100%;opacity:0} }
+@keyframes float       { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+@keyframes rt-page-in  { from{opacity:0} to{opacity:1} }
+@keyframes rt-scale-in { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:none} }
+@keyframes rt-pop      { 0%{transform:scale(0.92)} 60%{transform:scale(1.02)} 100%{transform:scale(1)} }
+
+/* ── Motion utilities ────────────────────────────────────────────────────
+   Opt-in entrance choreography. `.rt-stagger` fades-up its direct children
+   with a rolling delay — drop it on a list/grid container and every row
+   arrives 45ms after the previous one. All end at transform:none so no
+   containing-block is left behind for fixed-position descendants. */
+.rt-fade-up  { animation: fade-up var(--dur-slow) var(--ease-out) both; }
+.rt-fade-in  { animation: fade-in var(--dur-med) var(--ease-out) both; }
+.rt-scale-in { animation: rt-scale-in var(--dur-med) var(--ease-out) both; }
+.rt-stagger > * { animation: fade-up var(--dur-slow) var(--ease-out) both; }
+.rt-stagger > *:nth-child(1)  { animation-delay: 0ms; }
+.rt-stagger > *:nth-child(2)  { animation-delay: 45ms; }
+.rt-stagger > *:nth-child(3)  { animation-delay: 90ms; }
+.rt-stagger > *:nth-child(4)  { animation-delay: 135ms; }
+.rt-stagger > *:nth-child(5)  { animation-delay: 180ms; }
+.rt-stagger > *:nth-child(6)  { animation-delay: 225ms; }
+.rt-stagger > *:nth-child(7)  { animation-delay: 270ms; }
+.rt-stagger > *:nth-child(8)  { animation-delay: 315ms; }
+.rt-stagger > *:nth-child(9)  { animation-delay: 360ms; }
+.rt-stagger > *:nth-child(10) { animation-delay: 405ms; }
+.rt-stagger > *:nth-child(n+11) { animation-delay: 450ms; }
+
+/* Interactive lift — put on cards/tiles that navigate somewhere. Pointer
+   devices only: on touch, hover state sticks after tap and looks broken. */
+@media (hover: hover) {
+  .rt-lift { transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out); }
+  .rt-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+}
+
+/* ── Decorative helpers — names deliberately avoid the enforcement-block
+   wildcards below so their gradients/blur survive. ────────────────────── */
+/* Faint dot-grid texture panel (pure CSS, no image request). */
+.rt-dots {
+  background-image: radial-gradient(rgba(18, 20, 23, 0.10) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+}
+/* Soft indigo wash for page tops / feature strips. */
+.rt-wash {
+  background-image: radial-gradient(120% 140% at 50% -20%, rgba(18, 20, 23, 0.08), transparent 65%);
+}
+/* Frosted strip — the one sanctioned blur (floating navs, sticky bars). */
+.rt-frost {
+  background-color: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: saturate(150%) blur(14px);
+  backdrop-filter: saturate(150%) blur(14px);
+}
 
 .mono { font-family: var(--mono); }
+
+/* ── Lazy-route fallback — invisible for the first ~180ms (a spinner that
+   flashes for 80ms reads as jank), then a quiet branded spinner for the
+   slow loads (3D topology, marketplace cluster on cold cache). ── */
+.route-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  opacity: 0;
+  animation: fade-in 200ms var(--ease-out) 180ms both;
+}
+.route-loading::after {
+  content: '';
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(18, 20, 23, 0.10);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
 
 /* ── Native <select> dropdown options ── */
 select option {
@@ -458,28 +647,38 @@ select option:hover {
   color: var(--md-on-surface);
 }
 
+/* ── Accessibility: visible focus for keyboard users, accent-colored. ── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ══════════════════════════════════════════════════════════════════════
-   WHITE-SURFACE ENFORCEMENT — every page renders on a white surface.
-   Module CSS that historically painted coloured page bands or gradients
-   is overridden here so the user always sees flat white with subtle
-   black accents.
+   SURFACE ENFORCEMENT v2 — the app-wide look is applied HERE.
+   Module CSS still carries legacy dark-theme gradients, neon glows and
+   glassmorphism blurs from two designs ago; rather than chase them file
+   by file, the same wildcard matchers that used to flatten everything now
+   REPAINT everything into the soft-depth system: gradients/blur stay
+   stripped (safety net), but each surface tier gets its real elevation.
+   Intentional decoration uses .rt-* names, which these matchers skip.
    ══════════════════════════════════════════════════════════════════════ */
 
 html, #root,
 .page, .page-full {
-  background-color: var(--md-background) !important;
+  background-color: transparent !important;
   background-image: none !important;
 }
+/* html carries the canvas colour itself (overscroll areas), body carries
+   the ambient wash; pages stay transparent so the wash shows through. */
+html { background-color: var(--md-background) !important; }
 
 body {
   color: var(--md-on-surface);
 }
 
-/* Kill every gradient still painted by module CSS. We can't easily
-   target individual `background: linear-gradient(...)` declarations
-   from here, so we strip `background-image` (which is what
-   gradient-shorthand actually compiles to) for the surfaces and
-   buttons most likely to use them. Keeps each surface flat. */
+/* Kill every legacy gradient still painted by module CSS. `background-image:
+   none` is what gradient-shorthand actually compiles to. Intentional new
+   gradients live on .rt-* classes or pseudo-elements, which this skips. */
 [class*="card"],
 [class*="Card"],
 [class*="btn"],
@@ -515,8 +714,9 @@ body {
   background-image: none !important;
 }
 
-/* Flatten any background-clipped gradient text back to the on-surface
-   colour so titles and labels stay legible. */
+/* Flatten any background-clipped gradient text in legacy module CSS back
+   to the on-surface colour so titles stay legible. The sanctioned display
+   gradient (.gt / .title-grad) is re-asserted right after this block. */
 [class*="title"],
 [class*="Title"],
 [class*="grad"],
@@ -528,34 +728,148 @@ body {
   -webkit-background-clip: initial !important;
 }
 
-/* No 3D / shadow / glow anywhere. The mockup is purely 2D: hairlines
-   carry separation, fills carry hierarchy, never elevation. Strip
-   box-shadow from common surface/button classes so module CSS can't
-   paint a marshmallow. */
+/* ── Depth repaint ─────────────────────────────────────────────────────
+   Raised surfaces take --lift AND the raised tone. Both matter: a raised
+   thing must be LIGHTER than the page, or the shadows alone won't sell it. */
 [class*="card"],   [class*="Card"],
-[class*="btn"],    [class*="Btn"],
-[class*="button"], [class*="Button"],
 [class*="panel"],  [class*="Panel"],
 [class*="tile"],   [class*="Tile"],
-[class*="hero"],   [class*="Hero"],
-[class*="header"], [class*="Header"],
-[class*="banner"], [class*="Banner"],
+[class*="surface"],[class*="Surface"],
+[class*="glass"] {
+  box-shadow: var(--lift) !important;
+  background-color: var(--raised);
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Overlays: real elevation so they visibly float above the page. */
 [class*="modal"],  [class*="Modal"],
 [class*="sheet"],  [class*="Sheet"],
-[class*="dialog"], [class*="Dialog"],
-[class*="badge"],  [class*="Badge"],
-[class*="chip"],   [class*="Chip"],
-[class*="pill"],   [class*="Pill"],
-[class*="input"],  [class*="Input"],
-[class*="field"],  [class*="Field"],
-[class*="select"], [class*="Select"],
-[class*="tab"],    [class*="Tab"],
-[class*="surface"],[class*="Surface"],
-[class*="cta"],    [class*="Cta"],
-[class*="glass"] {
+[class*="dialog"], [class*="Dialog"] {
+  box-shadow: var(--shadow-modal) !important;
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Buttons stay FLAT by default. --lift assumes a surface close in tone to
+   the ground; on a solid black primary button the light-side shadow reads as
+   a white smudge and the shade side disappears into the fill. Light, raised
+   controls opt in explicitly (.btn-secondary / .btn-neu below). */
+[class*="btn"],    [class*="Btn"],
+[class*="button"], [class*="Button"],
+[class*="cta"],    [class*="Cta"] {
   box-shadow: none !important;
   text-shadow: none !important;
   filter: none !important;
-  backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Form controls SINK: --press, plus the sunken tone (darker than the page).
+   Sunken-and-darker is the counterpart to raised-and-lighter; the inset
+   shadow without the darker fill just reads as a smudge.
+
+   Scoped to REAL controls, not to class names. `[class*="field"]` matched
+   the wrapper <div> around a label + input, so the label and its helper text
+   were being sunk into the well along with the control. Element selectors
+   can't make that mistake. Checkboxes, radios and ranges are excluded —
+   they draw their own control and an inset shadow deforms them. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+select,
+textarea {
+  box-shadow: var(--press) !important;
+  background-color: var(--sunken);
+  border: 0;
+  /* A carved well needs a radius; square corners read as an unstyled grey
+     bar rather than something pressed into the surface. Padding is NOT set
+     here — fields that carry an inline icon (the marketplace search) reserve
+     their own left padding, and forcing a value made the placeholder collide
+     with the glyph. Modules keep their own spacing. */
+  border-radius: var(--r3);
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+/* Wrappers named *field*/*input* keep the legacy flattening only — no fill,
+   no inset, so they stay level with whatever surface they sit on. */
+[class*="field"], [class*="Field"],
+[class*="input"], [class*="Input"],
+[class*="select"], [class*="Select"] {
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Flat accessories: labels don't get depth. Chips, badges, pills, tabs,
+   headers and banners stay level with the ground. */
+[class*="badge"],  [class*="Badge"],
+[class*="chip"],   [class*="Chip"],
+[class*="pill"],   [class*="Pill"],
+[class*="tab"],    [class*="Tab"],
+[class*="hero"],   [class*="Hero"],
+[class*="header"], [class*="Header"],
+[class*="banner"], [class*="Banner"] {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* ── Post-enforcement re-assertions (same importance, later = wins) ── */
+/* The sanctioned display-title gradient. */
+.gt, .title-grad {
+  background: linear-gradient(180deg, #121417 30%, #4b5563 115%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+/* Primary CTA keeps its machined fade + real elevation. */
+.btn-primary {
+  background-image: var(--grad-btn) !important;
+  box-shadow: var(--shadow-btn) !important;
+}
+.btn-primary:hover {
+  box-shadow: var(--shadow-card-hover), var(--shadow-btn) !important;
+}
+/* Raised controls lift; pressed / toggled-on controls sink. */
+.btn-secondary { box-shadow: var(--lift) !important; }
+.btn-secondary:active { box-shadow: var(--press) !important; }
+.btn-neu { box-shadow: var(--lift) !important; }
+.btn-neu:active, .btn-neu[aria-pressed='true'] { box-shadow: var(--press) !important; }
+
+/* Inputs sink. Focus stacks a HARD 2px ring on top of the soft shadows —
+   a blurred focus indicator fails accessibility checks, so the ring must be
+   solid. The --press shadows stay underneath it. */
+.input { box-shadow: var(--press) !important; }
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):focus,
+select:focus, textarea:focus,
+.input:focus, .input:focus-visible {
+  box-shadow: var(--press), 0 0 0 2px var(--accent) !important;
+  outline: none;
+}
+
+/* Same rule for every focusable element the app styles itself: the visible
+   indicator is a solid outline, never a soft glow. */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Frosted strips keep their blur. */
+.rt-frost {
+  -webkit-backdrop-filter: saturate(150%) blur(14px) !important;
+  backdrop-filter: saturate(150%) blur(14px) !important;
+}
+
+/* ── Motion accessibility — the entire motion system collapses to a
+   simple fade (or nothing) when the OS asks for reduced motion. ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

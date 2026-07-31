@@ -1382,7 +1382,7 @@
   font-weight: 500;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: #9a9a97;
+  color: #5F646C;
   line-height: 1.2;
 }
 /* Tighten each eyebrow to the control directly beneath it (the grid
@@ -1410,7 +1410,7 @@
   border-radius: 9px;
   padding: 9px 4px;
   background: transparent;
-  color: #8a8a87;
+  color: #5F646C;
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 12px;
   font-weight: 600;
@@ -1469,7 +1469,7 @@
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace) !important;
   font-size: 11px !important;
   letter-spacing: 0.13em !important;
-  color: #9a9a97 !important;
+  color: #5F646C !important;
 }
 .scanContentDesktop .incidentTrigger {
   border-radius: 12px !important;
@@ -1537,7 +1537,7 @@
   text-align: center;
   font-family: var(--font);
   font-size: 14px;
-  color: #8a8a87;
+  color: #5F646C;
 }
 .scanContentDesktop .dropSubAlt .browseLink {
   text-decoration: underline;
@@ -1553,7 +1553,7 @@
 .scanContentDesktop .fmtPill {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 11px;
-  color: #8a8a87;
+  color: #5F646C;
   border: 1px solid #e4e4e1;
   border-radius: 999px;
   padding: 6px 13px;
@@ -1568,7 +1568,7 @@
   font-size: 10.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #c2c2be;
+  color: #5F646C;
 }
 
 /* --- ANALYZE button + disabled helper line -------------------------- */
@@ -1596,13 +1596,13 @@
   margin-top: -12px;
   font-family: var(--font);
   font-size: 12.5px;
-  color: #9a9a97;
+  color: #5F646C;
 }
 .scanContentDesktop .analyzeHelperDot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #c2c2be;
+  background: #5F646C;
   flex-shrink: 0;
 }
 
@@ -1611,7 +1611,7 @@
   border-top: 1px solid #ededea;
   padding-top: 18px;
 }
-.scanContentDesktop .tipsTitle { color: #9a9a97; }
+.scanContentDesktop .tipsTitle { color: #5F646C; }
 .scanContentDesktop .tipsList {
   list-style: none;
   margin: 12px 0 0;

@@ -71,7 +71,7 @@
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 11px; font-weight: 500;
   letter-spacing: 0.13em; text-transform: uppercase;
-  color: #9a9a97; line-height: 1.2;
+  color: #5F646C; line-height: 1.2;
   margin-bottom: -8px;
 }
 
@@ -91,7 +91,7 @@
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 12px; font-weight: 600;
   letter-spacing: 0.04em; text-transform: uppercase;
-  color: #8a8a87;
+  color: #5F646C;
   transition: color .16s, background .16s, box-shadow .16s;
 }
 .modeBtn:hover:not(:disabled) { color: #111; }
@@ -112,7 +112,7 @@
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 11px; font-weight: 500;
   letter-spacing: 0.13em; text-transform: uppercase;
-  color: #9a9a97;
+  color: #5F646C;
 }
 
 /* Dashed dropzone — the Scan look. */
@@ -156,7 +156,7 @@
   color: #111; letter-spacing: -0.01em;
 }
 .pickHint {
-  font-size: 13px; color: #8a8a87;
+  font-size: 13px; color: #5F646C;
   line-height: 1.45; max-width: 240px;
 }
 .fmtPills {
@@ -165,7 +165,7 @@
 }
 .fmtPill {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px; color: #8a8a87;
+  font-size: 11px; color: #5F646C;
   border: 1px solid #e4e4e1; border-radius: 999px;
   padding: 5px 12px; line-height: 1;
 }

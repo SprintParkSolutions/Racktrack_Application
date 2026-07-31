@@ -5,15 +5,20 @@
 // Each entry is a two-stop gradient. Keep this list append-only-ish: the
 // stored value is an INDEX into this array (server column users.avatar), so
 // re-ordering would remap everyone's choice.
+// Monochrome by design: the app is white / white-shades with subtle black
+// accents and carries no colour accent, so the avatars are a graphite ramp
+// rather than a rainbow. The array is still index-addressed (users.avatar
+// stores the INDEX), so the length and order must not change — only the
+// values were re-toned.
 export const AVATARS = [
-  { from: '#6366f1', to: '#8b5cf6' },  // 0 indigo → violet
-  { from: '#0ea5e9', to: '#06b6d4' },  // 1 sky → cyan
-  { from: '#14b8a6', to: '#22c55e' },  // 2 teal → green
-  { from: '#f59e0b', to: '#f97316' },  // 3 amber → orange
-  { from: '#f43f5e', to: '#ec4899' },  // 4 rose → pink
-  { from: '#64748b', to: '#334155' },  // 5 slate (neutral)
-  { from: '#10b981', to: '#0d9488' },  // 6 emerald → teal
-  { from: '#d946ef', to: '#7c3aed' },  // 7 fuchsia → purple
+  { from: '#3A3F47', to: '#14171B' },  // 0 graphite
+  { from: '#4A505A', to: '#22262C' },  // 1 slate
+  { from: '#2B2F35', to: '#0C0E11' },  // 2 near-black
+  { from: '#5A616C', to: '#2E333A' },  // 3 steel
+  { from: '#43484F', to: '#191C21' },  // 4 iron
+  { from: '#646B76', to: '#383D45' },  // 5 ash
+  { from: '#33373D', to: '#101215' },  // 6 charcoal
+  { from: '#545A64', to: '#282C32' },  // 7 gunmetal
 ];
 
 // Deterministic pick from a seed (username/email) so an un-chosen user always

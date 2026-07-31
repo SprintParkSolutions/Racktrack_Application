@@ -138,7 +138,7 @@
   letter-spacing: 0.05em;
   line-height: 16px;
   text-transform: uppercase;
-  color: #8a8a8a;
+  color: #5F646C;
   margin: 0;
   text-align: center;
 }
@@ -163,7 +163,7 @@
   letter-spacing: 0.10em;
   line-height: 16px;
   text-transform: uppercase;
-  color: #8a8a8a;
+  color: #5F646C;
   margin: 0;
 }
 .sectionDot {
@@ -263,11 +263,11 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #8a8a8a;
+  color: #5F646C;
 }
 .rowChevron {
   font-size: 18px !important;
-  color: #8a8a8a;
+  color: #5F646C;
   flex-shrink: 0;
   font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 18;
 }

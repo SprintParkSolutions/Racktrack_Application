@@ -18,7 +18,7 @@
 .page {
   --ink:    #111;                        /* text & the single accent          */
   --dim:    #5c5c66;                     /* secondary copy                    */
-  --faint:  #9a9a97;                     /* placeholder, hints, glyphs        */
+  --faint:  #5F646C;                     /* placeholder, hints, glyphs        */
   --line:   #ececea;                     /* hairline card/input borders       */
   --line-soft: #f0f0f0;                  /* structural dividers (shell match) */
   --hover:  #fafafa;                     /* hovered card fill                 */

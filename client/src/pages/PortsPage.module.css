@@ -1829,7 +1829,7 @@
 }
 :global([data-theme='light']) .tile_reserved:hover {
   background: #ffffff;
-  border-color: #9a9a9a;
+  border-color: #5F646C;
 }
 
 /* ── Light: port detail popover ── */
@@ -1986,7 +1986,7 @@
   -webkit-background-clip: text; background-clip: text;
 }
 :global([data-theme='light']) .advisorLoadingSub { color: #717171; }
-:global([data-theme='light']) .moduleSource { color: #9a9a9a; }
+:global([data-theme='light']) .moduleSource { color: #5F646C; }
 :global([data-theme='light']) .advisorSourceLink {
   background: #ffffff;
   border-color: #f0f0f0;
@@ -2188,7 +2188,7 @@
 :global([data-theme='light']) .compactPickMeta  { color: #717171; }
 :global([data-theme='light']) .compactPickUnit  { color: #121417; }
 :global([data-theme='light']) .compactPickTotal { color: #717171; }
-:global([data-theme='light']) .compactPickArrow { color: #9a9a9a; }
+:global([data-theme='light']) .compactPickArrow { color: #5F646C; }
 :global([data-theme='light']) .compactPick:hover .compactPickArrow { color: #121417; }
 
 /* Alternatives */
@@ -2225,7 +2225,7 @@
 :global([data-theme='light']) .altsRowMeta  { color: #717171; }
 :global([data-theme='light']) .altsRowPrice { color: #121417; }
 :global([data-theme='light']) .altsRowPriceTotal { color: #717171; }
-:global([data-theme='light']) .altsRowArrow { color: #9a9a9a; }
+:global([data-theme='light']) .altsRowArrow { color: #5F646C; }
 :global([data-theme='light']) .altsRow:hover .altsRowArrow { color: #121417; }
 
 /* Cabling strip */

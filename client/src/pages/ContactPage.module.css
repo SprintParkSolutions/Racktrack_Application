@@ -91,13 +91,17 @@
   margin-top: 16px; padding: 15px 18px;
   border: 1px solid #ececea; border-radius: 12px; color: #111;
 }
-.emailCard span { color: #b0b0ac; font-size: 18px; }
+.emailCard span { color: #5F646C; font-size: 18px; }
 .k {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 10px; letter-spacing: .12em; color: #9a9a97; text-transform: uppercase;
+  font-size: 10px; letter-spacing: .12em; color: #5F646C; text-transform: uppercase;
 }
-.v { font-weight: 600; margin-top: 2px; font-size: 14px; }
-.m { font-size: 13px; color: #8a8a87; margin-top: 2px; }
+/* Used on an <a> as well as a <div>; without an explicit colour the
+   anchor fell back to the browser default blue (#0000EE). */
+.v { font-weight: 600; margin-top: 2px; font-size: 14px; color: var(--md-on-surface, #121417); text-decoration: none; }
+/* Anchor variant needs a 24px hit area (WCAG 2.5.8). */
+a.v { display: inline-flex; align-items: center; min-height: 24px; }
+.m { font-size: 13px; color: #5F646C; margin-top: 2px; }
 
 /* Sent confirmation */
 .doneCard { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 44px 24px; max-width: 440px; margin: 0 auto; }

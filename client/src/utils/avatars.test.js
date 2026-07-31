@@ -14,16 +14,26 @@ describe('the AVATARS table', () => {
     // If you are here because this failed: adding to the END is fine, and this
     // assertion just needs the new entries appended too. Anything else has
     // already changed what a stored index means.
+    //
+    // The palette was re-toned from a colour ramp to a graphite one when the
+    // app moved to white + white-shades with subtle black accents. That is a
+    // VALUE change, not a shape change: there are still eight entries in the
+    // same eight slots, so every stored users.avatar index still resolves to
+    // the same slot it always did — those users simply render monochrome now.
     expect(AVATARS.slice(0, 8)).toEqual([
-      { from: '#6366f1', to: '#8b5cf6' },
-      { from: '#0ea5e9', to: '#06b6d4' },
-      { from: '#14b8a6', to: '#22c55e' },
-      { from: '#f59e0b', to: '#f97316' },
-      { from: '#f43f5e', to: '#ec4899' },
-      { from: '#64748b', to: '#334155' },
-      { from: '#10b981', to: '#0d9488' },
-      { from: '#d946ef', to: '#7c3aed' },
+      { from: '#3A3F47', to: '#14171B' },
+      { from: '#4A505A', to: '#22262C' },
+      { from: '#2B2F35', to: '#0C0E11' },
+      { from: '#5A616C', to: '#2E333A' },
+      { from: '#43484F', to: '#191C21' },
+      { from: '#646B76', to: '#383D45' },
+      { from: '#33373D', to: '#101215' },
+      { from: '#545A64', to: '#282C32' },
     ]);
+  });
+
+  test('keeps its length, so no stored index can fall out of range', () => {
+    expect(AVATARS).toHaveLength(8);
   });
 });
 

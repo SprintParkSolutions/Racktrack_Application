@@ -183,8 +183,8 @@ export default function SignupPage() {
 
       <main className={styles.authShell}>
 
-        <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'22px' }}>
-          <img src="/logo.jpg" alt="" style={{ width:'40px', height:'40px', borderRadius:'11px', objectFit:'cover', boxShadow:'0 6px 16px rgba(0,0,0,0.18)' }} />
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginBottom:'22px' }}>
+          <img src="/logo.jpg" alt="" style={{ width:'40px', height:'40px', borderRadius:'11px', objectFit:'cover', boxShadow:'var(--lift)' }} />
           <span style={{ fontFamily: 'var(--font)', fontWeight:800, fontSize:'1.15rem', letterSpacing:'-0.01em' }}>RackTrack</span>
         </div>
 

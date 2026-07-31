@@ -5,7 +5,9 @@
   flex: 1;
   min-height: 0;
   display: flex; flex-direction: column;
-  background: #ffffff;
+  /* Transparent, not white: the soft-UI ground is painted on <body>, and a
+     hardcoded white page renders as a slab floating on it. */
+  background: transparent;
   color: #1a1c1d;
   overflow-x: hidden;
   overflow-y: auto;
@@ -208,7 +210,9 @@
   font-size: 1.06rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  padding: 0 26px 9px 0;
+  /* Filled-well padding: these were underline fields, so they had no inner
+     spacing. Inside a --press well the text needs to sit off the edges. */
+  padding: 13px 44px 13px 15px;
   transition: border-color .2s;
 }
 .input::placeholder { color: rgba(0,0,0,0.35); }
@@ -295,6 +299,7 @@
   margin: -2px 2px 0;
 }
 .forgotLink {
+  display: inline-flex; align-items: center; min-height: 24px;
   font-size: .8rem; font-weight: 700;
   color: #000000;
   text-decoration: none;
@@ -362,6 +367,7 @@
   color: #4c4546;
 }
 .altLink {
+  display: inline-flex; align-items: center; min-height: 24px;
   color: #000000;
   font-weight: 700;
   text-decoration: none;
@@ -428,7 +434,7 @@
 }
 
 /* Optional-field hint on a label */
-.labelOpt { font-weight: 500; color: #b0b0b0; letter-spacing: 0; text-transform: none; }
+.labelOpt { font-weight: 500; color: #5A5F67; letter-spacing: 0; text-transform: none; }
 
 /* ── Role segmented control (sign-in field guide) ── */
 .roleSeg {
@@ -437,7 +443,7 @@
 }
 .roleSegBtn {
   flex: 1; padding: 9px 8px; border: none; background: transparent;
-  border-radius: 9px; font-size: 13px; font-weight: 600; color: #8a8a8a;
+  border-radius: 9px; font-size: 13px; font-weight: 600; color: #5F646C;
   cursor: pointer; transition: background .16s, color .16s, box-shadow .16s;
   font-family: inherit; -webkit-tap-highlight-color: transparent;
 }
@@ -445,7 +451,7 @@
 .roleSegBtnOn { background: #ffffff; color: #121417; box-shadow: 0 1px 3px rgba(0,0,0,.10); }
 
 /* Small helper text under a field */
-.fieldNote { margin: 6px 2px 0; font-size: 12px; line-height: 1.4; color: #a0a0a0; }
+.fieldNote { margin: 6px 2px 0; font-size: 12px; line-height: 1.4; color: #5F646C; }
 
 /* ── iPad — center the form as a calm card instead of a stretched, top-clinging
    column. Header pins to the top so the card can sit in the vertical middle. ── */
@@ -460,13 +466,16 @@
     align-self: center;
     max-width: 468px;
     margin: auto;
-    padding: 48px 48px 52px;
-    border: 1px solid #ececec;
-    border-radius: 30px;
-    background: #ffffff;
-    box-shadow:
-      0 1px 2px rgba(10, 10, 11, 0.04),
-      0 40px 90px -46px rgba(10, 10, 11, 0.26);
+    /* Top padding clears the absolutely-positioned header. The card is close
+       to viewport height, so centring leaves only ~30px above it and the
+       brand row was colliding with the "Sign in" title. */
+    padding: 78px 48px 52px;
+    /* Raised surface on the soft-UI ground: lighter than the page, carrying
+       --lift. The old 40px/26% drop shadow read as a consumer app. */
+    border: 0;
+    border-radius: 24px;
+    background: var(--raised);
+    box-shadow: var(--lift);
   }
   .heading { font-size: 40px; }
   .form { gap: 24px; }

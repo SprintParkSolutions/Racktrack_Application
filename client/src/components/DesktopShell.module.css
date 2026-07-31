@@ -22,7 +22,9 @@
   overflow: hidden;
 }
 :global([data-theme='light']) .shell {
-  background: #ffffff;
+  /* The ground, not white — the raised sidebar/topbar need something to
+     sit on or the soft-UI depth has nothing to read against. */
+  background: var(--ground);
   color: #0b0c0e;
 }
 
@@ -41,8 +43,8 @@
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
 :global([data-theme='light']) .sidebar {
-  background: #ffffff;
-  border-right: 1px solid #f0f0f0;
+  background: var(--raised);
+  border-right: 1px solid var(--md-outline-variant);
 }
 
 /* ── Brand ── */
@@ -169,7 +171,7 @@
   flex-direction: column;
   min-width: 0;
   height: 100vh;
-  background: #ffffff;
+  background: transparent;   /* the shell's ground shows through */
   overflow: hidden;          /* main itself doesn't scroll */
 }
 
@@ -189,8 +191,8 @@
   z-index: 4;
 }
 :global([data-theme='light']) .topBar {
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
+  background: var(--raised);
+  border-bottom: 1px solid var(--md-outline-variant);
 }
 .topBack {
   flex: 0 0 auto;
@@ -205,11 +207,13 @@
 }
 .topBack:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); }
 :global([data-theme='light']) .topBack {
-  border: 1px solid #ececec;
-  background: #ffffff;
+  border: 0;
+  background: var(--raised);
+  box-shadow: var(--lift);
   color: #121417;
 }
-:global([data-theme='light']) .topBack:hover { background: #f5f5f5; }
+:global([data-theme='light']) .topBack:hover { background: var(--raised); }
+:global([data-theme='light']) .topBack:active { box-shadow: var(--press); }
 .crumbBlock {
   display: flex;
   flex-direction: column;
@@ -252,7 +256,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: transparent;   /* cards lift off the ground here */
   overflow-y: auto;
   overflow-x: hidden;
 }
