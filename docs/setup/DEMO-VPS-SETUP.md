@@ -77,13 +77,19 @@ git clone https://github.com/<org>/dark_mobile.git /opt/racktrack
 cd /opt/racktrack
 ```
 
-`Models/` (~483 MB) and `server/.env` are git-ignored — they never arrive with a
-clone. Push both **from the Mac**:
+`Models/` (~483 MB) is git-ignored, so it never arrives with a clone. Push it
+**from the Mac**:
 
 ```bash
 rsync -avz --progress Models/ root@82.29.164.213:/opt/racktrack/Models/
-rsync -avz server/.env server/.env.key root@82.29.164.213:/opt/racktrack/server/
 ```
+
+**Do not rsync `server/.env`.** Production's copy holds `SLACK_TOKEN`,
+`JIRA_TOKEN`, `OPENROUTER_API_KEY`, `SWITCH_USER_PASSWORD`,
+`NETDISCO_PASSWORD` and `SSH_CREDS_ENC` — live lab and third-party
+credentials. A public demo box needs none of them, and each one copied there
+is another secret to rotate if the box is ever compromised. Build a minimal
+one instead (next section).
 
 Create the runtime directories the volumes expect:
 
@@ -91,27 +97,29 @@ Create the runtime directories the volumes expect:
 mkdir -p /opt/racktrack/{outputs,server/data,active_learning_Cache/data}
 ```
 
-### Edit `server/.env` for the demo
+### Build `server/.env` on the VPS
 
-On the VPS, in `/opt/racktrack/server/.env`:
+A template ships with the repo. On the VPS:
 
-```ini
-NODE_ENV=production
-CORS_ALLOWED_ORIGINS=https://demo.racktrack.ai
-JWT_SECRET=<64+ random hex chars — openssl rand -hex 32>
+```bash
+cp deploy/demo.env.example server/.env
+openssl rand -hex 32                     # paste into JWT_SECRET=
+nano server/.env
 ```
 
-Set `JWT_SECRET` explicitly. Left unset it is auto-generated into
-`server/data/jwt.secret`, which works but makes the demo's sessions depend on a
-file that is easy to lose.
+`JWT_SECRET` is the only required value. Generate a **fresh** one — reusing
+production's would make a token minted on the demo valid against the Windows
+box as well.
 
-The loader takes everything after `=` verbatim — **no inline comments**.
-`NODE_ENV=production # demo` is not `production`, and the server silently stays
-in dev mode leaking raw errors to the public internet.
+`NODE_ENV`, `PORT`, `CORS_ALLOWED_ORIGINS` and `RACKTRACK_WORKERS` are not in
+this file on purpose: `docker-compose.demo.yml` sets them, and compose's
+`environment:` beats `env_file:`. (On Windows they come from `start.ps1`,
+which is why production's `.env` has none of them either.)
 
-Strip anything pointing at the office lab (`TPLINK_BENCH_HOST`, `NETDISCO_URL`,
-`SSH_CREDS_ENC`) unless the demo is meant to reach real switches — from a public
-VPS those either hang or expose internal addresses in error text.
+The loader takes everything after `=` verbatim — **no inline comments**. A
+trailing `# demo` makes the value `production # demo`, which is not
+`production`, and the server silently stays in dev mode leaking raw errors to
+the public internet.
 
 ---
 
