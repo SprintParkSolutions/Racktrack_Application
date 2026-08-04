@@ -36,6 +36,53 @@ function wcount(event) {
   if (o) o.metrics.workerEvents.labels(event).inc();
 }
 
+// ── Fatal (process-level) worker errors ──────────────────────────────
+//
+// A worker that answers {ok:false} is normally still healthy: the REQUEST
+// failed, the process did not. CUDA is the exception. Once a CUDA context is
+// invalidated — driver TDR reset, sleep/resume, GPU dropping off the bus — every
+// later call in that process returns the same error forever. Nothing short of a
+// new process recovers it.
+//
+// The pool used to hand such a worker straight back to the rotation, because an
+// {ok:false} reply is a well-formed response and only `exit` and `timeout`
+// recycled anything. So a single GPU fault became an unbroken wall of identical
+// failures until someone restarted the server — production logged nine
+// consecutive "CUDA error: unknown error" scans from one fault, and would have
+// logged nine hundred. Worse, the four workers share one GPU, so a device-level
+// fault poisons all of them at the same instant.
+//
+// Treat these as fatal to the process: kill the worker so the existing exit
+// handler respawns it with a fresh context, and retry the request elsewhere.
+const FATAL_WORKER_ERROR = new RegExp([
+  'CUDA error',
+  'CUDA kernel errors',
+  'CUDA out of memory',
+  'CUDA driver',
+  'no CUDA-capable device',
+  'device-side assert',
+  'CUBLAS_STATUS',
+  'CUDNN_STATUS',
+  'cuDNN error',
+  'illegal memory access',
+  'unspecified launch failure',
+  'misaligned address',
+  'no kernel image is available',
+].join('|'), 'i');
+
+/** True when an {ok:false} error means the WORKER is unusable, not the request. */
+function isFatalWorkerError(message) {
+  return FATAL_WORKER_ERROR.test(String(message || ''));
+}
+
+// One retry per request: enough to ride out a poisoned worker, not enough to
+// stampede the pool when the GPU is genuinely gone.
+const MAX_RETRIES = 1;
+// Recycle budget window. If the GPU is dead rather than merely wedged, every
+// respawned worker fails the same way, and unbounded recycling would thrash the
+// box reloading models (~10s each) instead of failing fast.
+const RECYCLE_WINDOW_MS = 5 * 60 * 1000;
+
 class Worker extends EventEmitter {
   constructor(pythonCmd, pythonArgs, cwd, index, env) {
     super();
@@ -182,9 +229,15 @@ class WorkerPool extends EventEmitter {
       ? requestTimeoutMs
       : Number(process.env.RACKTRACK_WORKER_TIMEOUT_MS || 120000);
     this.workers = [];
-    this.queue = []; // [{command, params, resolve, reject}]
+    this.queue = []; // [{command, params, resolve, reject, attempts}]
     this._shuttingDown = false;
     this._crashCounts = {}; // index -> consecutive fast-exit count (backoff)
+    // Timestamps of recent fatal-error recycles, and how many we allow inside
+    // RECYCLE_WINDOW_MS. Two full rebuilds of the pool is enough to recover a
+    // wedged GPU; past that the device itself is down and churning workers only
+    // makes the box slower to say so.
+    this._recycles = [];
+    this._recycleBudget = Math.max(4, size * 2);
 
     for (let i = 0; i < size; i++) this._spawn(i);
   }
@@ -226,8 +279,57 @@ class WorkerPool extends EventEmitter {
       const free = this.workers.find(x => x.ready && !x.busy);
       if (!free) return;
       const task = this.queue.shift();
-      free.dispatch(task.command, task.params, this.requestTimeoutMs).then(task.resolve, task.reject);
+      free.dispatch(task.command, task.params, this.requestTimeoutMs)
+        .then((res) => this._onResult(free, task, res), task.reject);
     }
+  }
+
+  /** Recycle budget check — trims the window, then reports headroom. */
+  _mayRecycle() {
+    const now = Date.now();
+    this._recycles = this._recycles.filter(t => now - t < RECYCLE_WINDOW_MS);
+    return this._recycles.length < this._recycleBudget;
+  }
+
+  /**
+   * Inspect a worker's reply before handing it to the caller. Ordinary
+   * {ok:false} answers pass straight through; a fatal device error costs the
+   * worker its life (see FATAL_WORKER_ERROR) and buys the request one more
+   * attempt on a healthy one.
+   *
+   * Always runs as a promise continuation, never synchronously inside _drain's
+   * loop, so re-entering _drain() here is safe.
+   */
+  _onResult(worker, task, res) {
+    if (!res || res.ok !== false || !isFatalWorkerError(res.error)) {
+      return task.resolve(res);
+    }
+    wcount('fatal_error');
+    const err = String(res.error || '').slice(0, 200);
+
+    if (!this._mayRecycle()) {
+      // Respawning has stopped helping, which means the GPU is down rather than
+      // wedged. Surface the error instead of rebuilding workers that will only
+      // fail the same way.
+      wlog('error', { worker: worker.index, kind: 'worker.device_down', err },
+        `worker ${worker.index} hit a fatal device error and the recycle budget is spent — ` +
+        `the GPU looks down, not wedged; failing fast instead of respawning`);
+      return task.resolve(res);
+    }
+
+    this._recycles.push(Date.now());
+    wlog('error', { worker: worker.index, kind: 'worker.poisoned', err },
+      `worker ${worker.index} hit a fatal device error — its CUDA context is unusable for the ` +
+      `rest of the process; killing it so a fresh one replaces it`);
+    worker.kill(); // the 'exit' handler respawns with a clean context
+
+    if ((task.attempts || 0) >= MAX_RETRIES) return task.resolve(res);
+    task.attempts = (task.attempts || 0) + 1;
+    wcount('retry');
+    // Front of the queue: this request has already waited once through a full
+    // inference, and the caller is still holding the HTTP connection open.
+    this.queue.unshift(task);
+    this._drain();
   }
 
   request(command, params) {
@@ -249,4 +351,4 @@ class WorkerPool extends EventEmitter {
   }
 }
 
-module.exports = { WorkerPool };
+module.exports = { WorkerPool, isFatalWorkerError };

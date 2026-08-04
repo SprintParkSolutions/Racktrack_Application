@@ -24,7 +24,7 @@ const multer   = require('multer');
 const crypto   = require('crypto');
 const sharp    = require('sharp');
 const { v4: uuidv4 } = require('uuid');
-const { WorkerPool } = require('./worker-pool');
+const { WorkerPool, isFatalWorkerError } = require('./worker-pool');
 const auth = require('./auth');
 const audit = require('./audit');
 const tenant = require('./lib/tenant');
@@ -787,6 +787,16 @@ if (process.env.RACKTRACK_POOL_MODULE) {
     env: { ...process.env, PYTHONUNBUFFERED: '1', YOLO_VERBOSE: 'False' },
   });
 }
+
+// A scan that died because the GPU fell over is neither the photographer's
+// fault nor a permanent failure: the pool has already killed the poisoned
+// worker, so the next attempt runs on a fresh CUDA context. Say that — instead
+// of blaming the photo, or pasting a torch traceback into the owner's feed,
+// which is what "CUDA error: unknown error CUDA kernel errors might be
+// asynchronously reported…" did to nine consecutive rows of it.
+const ENGINE_DOWN_MSG =
+  'The scan engine lost its GPU and is restarting itself. Please try that photo again in a moment.';
+const ENGINE_DOWN_AUDIT = 'Scan engine GPU fault — worker recycled; scan is retryable';
 
 async function runQualityCheck(imagePath) {
   return withSpan('pipeline.quality_check', async (log) => {
@@ -2857,7 +2867,12 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
     safeUnlink(tmpPath);
     logger.error({ event: 'scan.failed', err: err.message, stack: String(err.stack || '').slice(0, 1500) },
       `[scan] analyze failed: ${err.message}`);
-    audit.log({ req, action: 'scan.create', status: 'fail', error: err.message });
+    const deviceDown = isFatalWorkerError(err.message);
+    audit.log({ req, action: 'scan.create', status: 'fail',
+      error: deviceDown ? ENGINE_DOWN_AUDIT : err.message });
+    if (deviceDown) {
+      return res.status(503).json({ error: ENGINE_DOWN_MSG, retryable: true, kind: 'engine' });
+    }
 
     // This used to answer "Please upload a clearer photo" for EVERY exception —
     // a crashed worker, a timeout, a bug in our own code — so the app blamed
@@ -3087,7 +3102,15 @@ app.post('/api/stitch', scanLimit, upload.array('images', 8), async (req, res) =
     tmpPaths.forEach(safeUnlink);
     if (stitchedPath) safeUnlink(stitchedPath);
     logger.error(err.message);
-    audit.log({ req, action: 'scan.create', status: 'fail', error: err.message, payload: { stitched: true } });
+    const deviceDown = isFatalWorkerError(err.message);
+    audit.log({ req, action: 'scan.create', status: 'fail',
+      error: deviceDown ? ENGINE_DOWN_AUDIT : err.message, payload: { stitched: true } });
+    if (deviceDown) {
+      // Same trap as the single-image path: a GPU fault has nothing to do with
+      // how the photos overlap, and telling the user to re-shoot the rack sends
+      // them round a loop they cannot win.
+      return res.status(503).json({ error: ENGINE_DOWN_MSG, retryable: true, kind: 'engine' });
+    }
     res.status(400).json({
       error: 'Could not stitch and analyze the rack. Make sure each photo shows the rack front and adjacent shots overlap by ~20–40%.',
       retryable: true,
