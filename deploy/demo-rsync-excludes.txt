@@ -1,0 +1,62 @@
+# rsync excludes for pushing this checkout to the demo VPS.
+#
+#   rsync -avz --progress --exclude-from=deploy/demo-rsync-excludes.txt \
+#     ./ root@82.29.164.213:/opt/racktrack-demo/
+#
+# Why this exists rather than `git clone` on the box: the repo is private and
+# the VPS has no GitHub credentials. Why it exists rather than reusing
+# .dockerignore: rsync cannot read that file, and its `!negation` syntax means
+# the two are not interchangeable anyway.
+#
+# Takes the checkout from ~2 GB to ~16 MB. The big offenders are not obvious:
+# .venv alone is ~900 MB (a Windows virtualenv carrying torch's DLLs, which are
+# useless on Linux and get reinstalled from the CPU wheel index in the image
+# anyway), and server.zip is another 106 MB.
+#
+# Models/ is excluded here and sent separately — see docs/setup/DEMO-VPS-SETUP.md.
+# Keep this list in step with .dockerignore when that changes.
+
+# Virtualenvs — platform-specific binaries, rebuilt inside the image
+.venv
+venv
+__pycache__
+*.pyc
+
+# Dependencies — reinstalled from lockfiles during the build
+node_modules
+
+# Version control
+.git
+
+# Weights and runtime data — mounted as volumes, transferred separately
+Models
+outputs
+batch_outputs
+active_learning_Cache
+*.zip
+
+# Mobile build artifacts — the image serves the web build only
+client/ios
+client/android
+client/build
+client/dist
+
+# Host-specific and secret. server/data holds production's auth.db; server/.env
+# holds live lab and third-party credentials. Neither belongs on a public box.
+server/data
+server/.env
+server/.env.key
+server/feedback
+server/uploads
+
+# Not needed at runtime
+docs
+Test_Image
+retraining_learning
+netdisco-docker
+servicenow
+servicenow_inbox
+racktrack-support-bot
+support-bot
+cmdb_racks
+e2e
