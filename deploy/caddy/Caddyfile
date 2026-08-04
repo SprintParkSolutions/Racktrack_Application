@@ -1,0 +1,32 @@
+# TLS + reverse proxy for the demo deployment (demo.racktrack.ai).
+#
+# Caddy obtains and renews the Let's Encrypt certificate itself. That needs
+# BOTH :80 and :443 reachable from the internet — :80 carries the ACME
+# HTTP-01 challenge, it is not merely a redirect. A firewall that opens only
+# :443 leaves the site permanently without a certificate.
+
+demo.racktrack.ai {
+	encode zstd gzip
+
+	# The server accepts uploads up to 340 MB (app.js multer limit). Caddy
+	# must not cap below that or an eight-photo stitch is rejected out here,
+	# before the app can give its own error.
+	request_body {
+		max_size 350MB
+	}
+
+	# This box has no GPU, so a scan is seconds of CPU inference and a
+	# tall-rack stitch is longer. No timeout is configured on purpose: Caddy
+	# defaults to waiting indefinitely for an upstream response, which is what
+	# a slow CPU scan needs. Do not add `transport http { read_timeout ... }`
+	# here — those are not valid subdirectives, and Caddy refuses to start on
+	# a bad Caddyfile, taking the whole site down rather than just the tweak.
+	reverse_proxy racktrack:3001
+
+	log {
+		output file /data/access.log {
+			roll_size 10MB
+			roll_keep 5
+		}
+	}
+}

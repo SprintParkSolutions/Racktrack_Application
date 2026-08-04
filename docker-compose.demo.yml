@@ -1,0 +1,91 @@
+# RackTrack — public demo deployment (demo.racktrack.ai).
+#
+#   docker compose -f docker-compose.demo.yml up -d --build
+#
+# Standalone rather than an override of docker-compose.yml, deliberately:
+# list-valued keys like `ports` MERGE across -f files rather than replace, so
+# an override file cannot un-publish :3001. The app would stay reachable over
+# plain HTTP behind Caddy's back — exactly the thing this file exists to
+# prevent. One self-contained file has no such trap.
+#
+# Differences from docker-compose.yml (the local/dev one):
+#   * Caddy terminates TLS and is the only published surface (:80, :443).
+#   * The app is not published at all — it is reachable only on the private
+#     compose network, so nothing can bypass TLS.
+#   * CORS is pinned to the demo origin.
+#   * server/data is persisted; the local file omits it, which is fine for a
+#     throwaway run and would silently wipe the demo on every redeploy.
+#
+# Setup, DNS and first-run steps: docs/setup/DEMO-VPS-SETUP.md
+
+services:
+  racktrack:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: racktrack:demo
+    container_name: racktrack
+
+    # Secrets (JWT, SMTP, SSH creds) — never baked into the image.
+    env_file:
+      - server/.env
+
+    environment:
+      - PORT=3001
+      # Must be exactly this string. app.js's .env loader does not strip
+      # inline comments, so a trailing "# ..." makes it !== "production" and
+      # the server quietly stays in dev mode, leaking raw errors publicly.
+      - NODE_ENV=production
+      # Each worker holds the whole torch + model stack resident (~1.5–2.5 GB).
+      # On an 8 GB box, two leaves headroom for node, sqlite and page cache.
+      # Raise only after watching `docker stats` under a real scan.
+      - RACKTRACK_WORKERS=2
+      # app.js reads this exact name (not CORS_ORIGINS). It must match the
+      # browser's origin or every API call from the demo site is refused.
+      - CORS_ALLOWED_ORIGINS=https://demo.racktrack.ai
+
+    # Deliberately `expose`, not `ports` — reachable from Caddy, not the world.
+    expose:
+      - "3001"
+
+    volumes:
+      # Model weights — git-ignored, ~483 MB, rsync'd to the host separately.
+      - ./Models:/app/Models:ro
+      - ./active_learning_Cache/data:/app/active_learning_Cache/data
+      - ./outputs:/app/outputs
+      # auth.db and jwt.secret live here. Without this mount every redeploy
+      # signs out every account and drops every scan the demo has collected.
+      - ./server/data:/app/server/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3001/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # Two workers each load every model from a cold page cache on a CPU-only
+      # box; 40s (the local file's value) marks the container unhealthy while
+      # it is still legitimately starting.
+      start_period: 120s
+
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: racktrack-caddy
+    depends_on:
+      - racktrack
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates and the ACME account key. Lose this volume and Caddy
+      # re-issues on every restart, which will hit Let's Encrypt's rate limit
+      # (5 certs per domain per week) and leave the demo without TLS for days.
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
