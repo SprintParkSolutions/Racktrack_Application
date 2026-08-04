@@ -40,15 +40,20 @@ services:
       # inline comments, so a trailing "# ..." makes it !== "production" and
       # the server quietly stays in dev mode, leaking raw errors publicly.
       - NODE_ENV=production
-      # Each worker holds the whole torch + model stack resident (~1.5–2.5 GB).
-      # ONE, not two: this VPS is shared. Of its 7.8 GB, ~2.3 GB is already
-      # spent on the older RackTrack instance on :8095 and the other tenants'
-      # stacks, leaving ~5.5 GB. Two workers plus node would sit right on that
-      # ceiling and the container would be OOM-killed mid-scan — which looks
-      # exactly like a pipeline bug and is miserable to diagnose.
-      # Raise to 2 only after retiring the :8095 instance, and only after
-      # watching `docker stats` through a real scan.
-      - RACKTRACK_WORKERS=1
+      # Each worker holds the whole torch + model stack resident (~1.5–2.5 GB),
+      # so this tracks free RAM, and separately it should not exceed the core
+      # count — inference is CPU-bound, and a third worker on a 2-core box just
+      # makes all three slower.
+      #
+      # TWO is the ceiling here: the box has 2 vCPUs. It only fits once the
+      # older :8095 RackTrack instance is stopped, which frees the ~2 GB that
+      # forced this to 1 originally. Without that, two workers plus node sit on
+      # the memory ceiling and the container is OOM-killed mid-scan — a failure
+      # that presents as a pipeline bug and is miserable to trace back to RAM.
+      #
+      # Going beyond 2 means a bigger plan, not a bigger number: KVM 4 for 3,
+      # KVM 8 for 5.
+      - RACKTRACK_WORKERS=2
       # app.js reads this exact name (not CORS_ORIGINS). It must match the
       # browser's origin or every API call from the demo site is refused.
       - CORS_ALLOWED_ORIGINS=https://demo.racktrack.ai
