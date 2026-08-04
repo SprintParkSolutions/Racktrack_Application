@@ -24,7 +24,11 @@ services:
       context: .
       dockerfile: Dockerfile
     image: racktrack:demo
-    container_name: racktrack
+    # NOT "racktrack": the VPS is shared and already runs a container by that
+    # name (racktrack:latest, published on :8095, untouched by this file).
+    # Compose would refuse to start on the name collision, and any attempt to
+    # force past it would take down a deployment that is not ours.
+    container_name: racktrack-demo
 
     # Secrets (JWT, SMTP, SSH creds) — never baked into the image.
     env_file:
@@ -37,9 +41,14 @@ services:
       # the server quietly stays in dev mode, leaking raw errors publicly.
       - NODE_ENV=production
       # Each worker holds the whole torch + model stack resident (~1.5–2.5 GB).
-      # On an 8 GB box, two leaves headroom for node, sqlite and page cache.
-      # Raise only after watching `docker stats` under a real scan.
-      - RACKTRACK_WORKERS=2
+      # ONE, not two: this VPS is shared. Of its 7.8 GB, ~2.3 GB is already
+      # spent on the older RackTrack instance on :8095 and the other tenants'
+      # stacks, leaving ~5.5 GB. Two workers plus node would sit right on that
+      # ceiling and the container would be OOM-killed mid-scan — which looks
+      # exactly like a pipeline bug and is miserable to diagnose.
+      # Raise to 2 only after retiring the :8095 instance, and only after
+      # watching `docker stats` through a real scan.
+      - RACKTRACK_WORKERS=1
       # app.js reads this exact name (not CORS_ORIGINS). It must match the
       # browser's origin or every API call from the demo site is refused.
       - CORS_ALLOWED_ORIGINS=https://demo.racktrack.ai
