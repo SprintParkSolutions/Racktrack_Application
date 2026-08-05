@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './AuthPages.module.css';
-import AuthAside from '../components/AuthAside.jsx';
+import AuthBackdrop from '../components/AuthBackdrop.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import { CodeGrid, PW_RULES, STRENGTH_COLORS } from './SignupPage.jsx';
 
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className={styles.authPage}>
-      <AuthAside />
+      <AuthBackdrop />
 
       <header className={styles.authHeader}>
         <button className={styles.authBack} onClick={() => navigate('/login')} aria-label="Back to sign in">

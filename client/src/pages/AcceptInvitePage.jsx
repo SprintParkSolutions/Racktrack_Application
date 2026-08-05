@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import styles from './AuthPages.module.css';
-import AuthAside from '../components/AuthAside.jsx';
+import AuthBackdrop from '../components/AuthBackdrop.jsx';
 import { setItem } from '../utils/safeStorage';
 import { apiUrl } from '../utils/api';
 import SocialSignIn from '../components/SocialSignIn.jsx';
@@ -61,7 +61,7 @@ export default function AcceptInvitePage() {
 
   return (
     <div className={styles.authPage}>
-      <AuthAside />
+      <AuthBackdrop />
       <main className={styles.authShell}>
         {loading ? (
           <p className={styles.subheading}>Loading your invite…</p>

@@ -551,93 +551,71 @@
 
 .aside { display: none; }
 
-@media (min-width: 900px) {
-  /* Set by AuthAside while an auth page is mounted. Without this the grid
-     below lays out inside #root's 540px frame and the panel has nowhere to
-     go — the reason these pages looked like a phone screenshot on a laptop. */
+/* ── The photographic backdrop ──────────────────────────────────
+   Hidden by default; the phone layout is already right and a background
+   photograph there would only sit behind the keyboard. */
+.backdrop { display: none; }
+
+@media (min-width: 768px) {
+  /* Set by AuthBackdrop while an auth page is mounted. Without it everything
+     below lays out inside #root's 540px frame — the reason these pages looked
+     like a phone screenshot on a laptop. */
   :global(#root.rt-auth-wide) { max-width: none; }
 
-  .authPage {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(430px, 38vw, 560px);
-    grid-template-rows: auto 1fr;
-    align-items: stretch;
-    overflow: hidden;                /* each side scrolls on its own */
+  .backdrop {
+    display: block;
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+    background: #F3F4F6;
   }
-
-  .aside {
-    display: block; position: relative;
-    grid-column: 1; grid-row: 1 / -1;
-    overflow: hidden;
-    background: #FFFFFF;
-    border-right: 1px solid rgba(16,24,40,.08);
+  /* Desaturated and lifted, then thrown out of focus: the room should be
+     legible as a room and nothing more. Scaled up so the blur has material to
+     work with at the edges instead of feathering into grey. */
+  .backdropImg {
+    position: absolute; inset: -3%;
+    width: 106%; height: 106%;
+    object-fit: cover; object-position: 38% center;
+    filter: saturate(.62) brightness(1.06) blur(1.5px);
   }
-
-  /* The panel spans its column; its contents take a measure and sit centred
-     in it. Left flush against the edge the drawing looked like it had been
-     pushed aside to make room for nothing. */
-  .asideInner {
+  /* The wash is what makes it a WHITE page that happens to contain a
+     photograph, rather than a photograph with a form on it. Strongest through
+     the middle, where the card sits, and lightest at the edges so the aisle
+     still reads at the margins. */
+  .backdropWash {
     position: absolute; inset: 0;
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center;
-    gap: clamp(12px, 2vh, 24px);
-    padding: clamp(24px, 3vw, 48px);
-  }
-  .asideInner > * { width: 100%; max-width: 460px; }
-
-  .asideBrand {
-    flex: 0 0 auto;
-    display: flex; align-items: center; gap: 10px;
-    font-weight: 700; font-size: 16px; letter-spacing: -.014em; color: #101215;
-  }
-  .asideMark { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; display: block; }
-
-  /* 700, not 800: Geist ships 400–700, so 800 is a synthesised fake bold. */
-  .asideH {
-    flex: 0 0 auto;
-    margin: 0;
-    font-size: clamp(21px, min(2.3vw, 3.6vh), 38px);
-    font-weight: 700; line-height: 1.06; letter-spacing: -.036em; color: #101215;
-  }
-  .asideAccent { color: #1D3FD1; }
-
-  /* The drawing takes whatever height is left, which is what lets a 42U rack
-     stay legible on a short window and generous on a tall one. */
-  .asideRack { flex: 1 1 auto; min-height: 0; display: flex; }
-
-  .asideNote {
-    flex: 0 0 auto; margin: 0;
-    font-size: 13px; line-height: 1.55; color: #5A616B; max-width: 46ch;
+    background:
+      radial-gradient(ellipse 46% 62% at 50% 48%, rgba(255,255,255,.80) 0%, rgba(255,255,255,.42) 60%, rgba(255,255,255,.12) 100%),
+      linear-gradient(180deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.10) 42%, rgba(255,255,255,.40) 100%);
   }
 
-  /* The form column.
-     The ≥768px block above turns .authShell into a raised, centred, 468px card
-     with a 24px radius — right for a tablet, wrong here, where the column IS
-     the surface. Every one of those properties has to be undone explicitly;
-     overriding only max-width leaves a rounded card floating in the column,
-     which is the same problem one level down. */
-  .authHeader {
-    position: static;
-    grid-column: 2; grid-row: 1;
-    padding: max(18px, env(safe-area-inset-top, 0px)) clamp(24px, 2.4vw, 40px) 0;
-  }
-  .authShell {
-    grid-column: 2; grid-row: 2;
-    flex: 1 1 auto; align-self: stretch;
-    max-width: none; margin: 0;
-    border-radius: 0; box-shadow: none;
-    background: var(--raised, #fff);
+  /* The page becomes a stage for one centred card. */
+  .authPage {
+    position: relative;
+    display: flex; flex-direction: column;
+    justify-content: safe center; align-items: center;
     overflow-y: auto;
-    /* `safe` matters: with plain `center`, a form taller than its column
-       overflows equally in both directions and the top — the heading — is
-       scrolled out of reach. The base .authShell already uses safe center for
-       exactly this reason. */
-    justify-content: safe center;
-    padding: clamp(16px, 3vh, 40px) clamp(32px, 3.4vw, 64px) clamp(28px, 4vh, 56px);
+  }
+  .authHeader {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+    background: transparent; border-bottom: 0;
+    padding: max(18px, env(safe-area-inset-top, 0px)) clamp(20px, 3vw, 40px) 0;
   }
 
-  /* With the panel already naming the product, the stacked logo above the
-     heading is a second wordmark on the same screen.
-     !important because the lockup carries an inline display:flex. */
-  .authBrandLockup { display: none !important; }
+  .authShell {
+    position: relative; z-index: 1;
+    flex: 0 0 auto;
+    width: 100%; max-width: 468px;
+    margin: clamp(52px, 7vh, 88px) auto clamp(24px, 4vh, 48px);
+    border: 1px solid rgba(16,24,40,.06);
+    border-radius: 16px;
+    background: rgba(255,255,255,.94);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    backdrop-filter: blur(18px) saturate(1.2);
+    /* One soft, wide shadow rather than a hard drop: the card should feel
+       lifted off the room, not stamped onto it. */
+    box-shadow:
+      0 1px 2px rgba(16,24,40,.04),
+      0 28px 60px -24px rgba(16,24,40,.28);
+    padding: clamp(24px, 3.4vh, 44px) clamp(26px, 3vw, 44px) clamp(24px, 3.4vh, 40px);
+  }
 }

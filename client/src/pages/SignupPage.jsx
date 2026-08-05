@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './AuthPages.module.css';
-import AuthAside from '../components/AuthAside.jsx';
+import AuthBackdrop from '../components/AuthBackdrop.jsx';
 import { useAuth } from '../AuthContext.jsx';
 
 export const PW_RULES = [
@@ -165,7 +165,7 @@ export default function SignupPage() {
 
   return (
     <div className={styles.authPage}>
-      <AuthAside />
+      <AuthBackdrop />
 
       <header className={styles.authHeader}>
         <button className={styles.authBack}

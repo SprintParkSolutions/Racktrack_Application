@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './AuthPages.module.css';
-import AuthAside from '../components/AuthAside.jsx';
+import AuthBackdrop from '../components/AuthBackdrop.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import SocialSignIn from '../components/SocialSignIn.jsx';
 
@@ -55,7 +55,7 @@ export default function LoginPage() {
 
   return (
     <div className={styles.authPage}>
-      <AuthAside />
+      <AuthBackdrop />
 
       <header className={styles.authHeader}>
         <button className={styles.authBack} onClick={() => navigate('/')} aria-label="Back to home">
