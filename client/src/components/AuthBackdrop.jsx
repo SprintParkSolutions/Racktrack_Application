@@ -28,7 +28,7 @@ export default function AuthBackdrop() {
 
   return (
     <div className={styles.backdrop} aria-hidden="true">
-      <img src="/hero-rack.jpg" alt="" className={styles.backdropImg} />
+      <img src="/bg.jpg" alt="" className={styles.backdropImg} />
       <div className={styles.backdropWash} />
     </div>
   );

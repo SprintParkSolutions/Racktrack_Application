@@ -574,8 +574,12 @@
   .backdropImg {
     position: absolute; inset: -3%;
     width: 106%; height: 106%;
-    object-fit: cover; object-position: 38% center;
-    filter: saturate(.62) brightness(1.06) blur(1.5px);
+    object-fit: cover; object-position: 50% 46%;
+    /* Already a bright, white-dominant photograph — white switch faces, pale
+       patch panels — so it needs lifting rather than rescuing. Desaturated to
+       keep the teal fibre from becoming the loudest thing on a sign-in page,
+       and softened just enough that the port rows read as texture. */
+    filter: brightness(2.55) saturate(.22) contrast(.78) blur(1.5px);
   }
   /* The wash is what makes it a WHITE page that happens to contain a
      photograph, rather than a photograph with a form on it. Strongest through
@@ -584,8 +588,8 @@
   .backdropWash {
     position: absolute; inset: 0;
     background:
-      radial-gradient(ellipse 46% 62% at 50% 48%, rgba(255,255,255,.80) 0%, rgba(255,255,255,.42) 60%, rgba(255,255,255,.12) 100%),
-      linear-gradient(180deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.10) 42%, rgba(255,255,255,.40) 100%);
+      radial-gradient(ellipse 48% 60% at 50% 46%, rgba(255,255,255,.88) 0%, rgba(255,255,255,.56) 58%, rgba(255,255,255,.26) 100%),
+      linear-gradient(180deg, rgba(255,255,255,.52) 0%, rgba(255,255,255,.22) 45%, rgba(255,255,255,.58) 100%);
   }
 
   /* The page becomes a stage for one centred card. */
