@@ -34,7 +34,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const audit = require('./audit');
 const { logger } = require('./lib/observability');
-const { getProvider, enabledProviders } = require('./lib/oauthProviders');
+const { getProvider, enabledProviders, makePkce, makeNonce } = require('./lib/oauthProviders');
 const { db, makeToken, publicUser, assignPublicId, USERNAME_RE } = require('./auth');
 
 const STATE_TTL_MS = 10 * 60 * 1000;   // a consent screen nobody finishes in 10 min is abandoned
@@ -62,6 +62,16 @@ db.exec(`
   );
 `);
 
+// PKCE verifier, OIDC nonce, and the browser-binding secret, added after the
+// table shipped. Same idempotent style as auth.js.
+(function migrateOauthStates() {
+  const cols = db.prepare('PRAGMA table_info(oauth_states)').all().map(c => c.name);
+  const add = (col, ddl) => { if (!cols.includes(col)) db.exec(`ALTER TABLE oauth_states ADD COLUMN ${ddl}`); };
+  add('code_verifier', 'code_verifier TEXT');
+  add('nonce',         'nonce TEXT');
+  add('browser_key',   'browser_key TEXT');
+})();
+
 // users.password_set (0 = joined through a provider, has no password) is added
 // by the migration block in auth.js, alongside the other user columns.
 
@@ -84,6 +94,27 @@ function nativeScheme() {
 }
 
 // ── Helpers ──────────────────────────────────────────────────
+// Read one cookie off the raw header. Express sets cookies natively via
+// res.cookie(), but reading them needs cookie-parser — a whole dependency and
+// a global middleware for the single cookie this module uses. `res.clearCookie`
+// is likewise core, so nothing else is missing.
+function readCookie(req, name) {
+  const header = req.headers?.cookie;
+  if (!header) return null;
+  for (const part of header.split(';')) {
+    const eq = part.indexOf('=');
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() === name) {
+      try { return decodeURIComponent(part.slice(eq + 1).trim()); }
+      catch { return part.slice(eq + 1).trim(); }
+    }
+  }
+  return null;
+}
+
+const BIND_COOKIE = 'rt_oauth_bind';
+const BIND_COOKIE_PATH = '/api/auth/oauth';
+
 function landingUrl(platform, params) {
   // base64url so a JSON user object survives the trip without any interaction
   // between JSON's characters and URL parsing.
@@ -291,11 +322,56 @@ function registerRoutes(app) {
     db.prepare('DELETE FROM oauth_states WHERE expires_at < ?').run(Date.now());
 
     const state = crypto.randomBytes(24).toString('base64url');
-    db.prepare(`INSERT INTO oauth_states (state, provider, mode, invite_code, platform, expires_at)
-                VALUES (?, ?, ?, ?, ?, ?)`)
-      .run(state, name, mode, inviteCode, platform, Date.now() + STATE_TTL_MS);
+    const pkce = provider.supportsPkce ? makePkce() : null;
+    const nonce = provider.supportsNonce ? makeNonce() : null;
 
-    res.redirect(302, provider.authorizeUrl(state, redirectUriFor(name)));
+    // Browser binding. `state` alone proves the callback corresponds to a
+    // request WE started; it does not prove it reached the browser that started
+    // it. Without this, an attacker who obtains a valid callback URL — from a
+    // shoulder-surfed screen, a shared log, a chat paste — can open it in their
+    // own browser and receive the victim's session. The other half of the pair
+    // lives in an httpOnly cookie the attacker cannot have, so a callback
+    // arriving without it is refused.
+    //
+    // Web only: a native flow hands off to an in-app browser tab whose cookie
+    // jar is separate from the WebView's, so the cookie could not come back.
+    // There the deep link into the app is itself the binding — the redirect
+    // targets a scheme only our installed app is registered to receive.
+    let browserKey = null;
+    if (platform === 'web') {
+      browserKey = crypto.randomBytes(24).toString('base64url');
+
+      // SameSite has to match how the provider returns the result. Lax is sent
+      // on a cross-site top-level GET (Google, Facebook) but NOT on a
+      // cross-site POST — so for Apple's form_post the cookie must be None,
+      // which browsers only honour when it is also Secure.
+      const crossSitePost = !!provider.usesFormPost;
+
+      // Secure is derived rather than hardcoded: a hardcoded `true` is dropped
+      // by the browser on plain http, which would break local development
+      // against a tunnel-less server. Behind Caddy the connection to us is
+      // http, so the forwarded header is what tells us the real scheme.
+      const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+
+      res.cookie(BIND_COOKIE, browserKey, {
+        httpOnly: true,
+        secure: isHttps || crossSitePost,   // SameSite=None is void without Secure
+        sameSite: crossSitePost ? 'none' : 'lax',
+        maxAge: STATE_TTL_MS,
+        path: BIND_COOKIE_PATH,
+      });
+    }
+
+    db.prepare(`INSERT INTO oauth_states
+                  (state, provider, mode, invite_code, platform, expires_at,
+                   code_verifier, nonce, browser_key)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(state, name, mode, inviteCode, platform, Date.now() + STATE_TTL_MS,
+           pkce?.verifier || null, nonce, browserKey);
+
+    res.redirect(302, provider.authorizeUrl(state, redirectUriFor(name), {
+      challenge: pkce?.challenge, nonce,
+    }));
   });
 
   // ── Step 2: the provider comes back ────────────────────────
@@ -308,6 +384,11 @@ function registerRoutes(app) {
     const { code, state } = src;
     // Fallback platform for the error redirect if we can't resolve the state.
     let platform = 'web';
+
+    // Single-use, like the state row it pairs with. Cleared on every exit path
+    // — success or failure — so a stale binding can never be replayed against a
+    // later flow.
+    res.clearCookie(BIND_COOKIE, { path: BIND_COOKIE_PATH });
 
     try {
       const provider = getProvider(name);
@@ -327,6 +408,19 @@ function registerRoutes(app) {
         throw new SocialAuthError('bad_state', 'Sign-in session did not match. Please try again.');
       }
 
+      // Browser binding — see the comment where browser_key is issued. Compared
+      // in constant time so the check can't be turned into an oracle.
+      if (row.browser_key) {
+        const presented = String(readCookie(req, BIND_COOKIE) || '');
+        const expected = String(row.browser_key);
+        const ok = presented.length === expected.length
+          && crypto.timingSafeEqual(Buffer.from(presented), Buffer.from(expected));
+        if (!ok) {
+          throw new SocialAuthError('bad_state',
+            'This sign-in was started in a different browser. Please try again here.');
+        }
+      }
+
       // The user tapped Cancel on the consent screen.
       if (!code) {
         const denied = src.error === 'access_denied' || src.error === 'user_cancelled_authorize';
@@ -335,7 +429,10 @@ function registerRoutes(app) {
                  : `${provider.label} did not return an authorization code.`);
       }
 
-      const identity = await provider.exchange(String(code), redirectUriFor(name));
+      const identity = await provider.exchange(String(code), redirectUriFor(name), {
+        verifier: row.code_verifier || undefined,
+        nonce: row.nonce || undefined,
+      });
 
       const result = row.mode === 'invite'
         ? resolveInvite(identity, provider, row.invite_code)

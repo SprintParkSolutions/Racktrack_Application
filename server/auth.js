@@ -37,7 +37,19 @@ function loadOrCreateSecret() {
   return secret;
 }
 const JWT_SECRET = process.env.JWT_SECRET || loadOrCreateSecret();
-const TOKEN_TTL  = '30d';
+const TOKEN_TTL  = process.env.TOKEN_TTL || '30d';
+// Asserted on both mint and verify. A token is only accepted if it was issued
+// by this service FOR this service.
+const JWT_ISSUER   = 'racktrack';
+const JWT_AUDIENCE = 'racktrack-app';
+
+// bcrypt work factor. Was 10, which dates from hardware two decades old; 12 is
+// the current floor and costs ~4x more per guess to an attacker holding a
+// stolen hash. It also costs us ~250ms per login on this hardware, which is
+// fine for an endpoint called once a session and is itself a brute-force brake.
+// Existing hashes carry their own cost in the string, so old passwords keep
+// verifying — they are silently upgraded on next successful sign-in.
+const BCRYPT_COST = Number(process.env.BCRYPT_COST) || 12;
 
 // ── Database schema ──────────────────────────────────────────
 const db = new Database(dbPath);
@@ -70,6 +82,20 @@ db.exec(`
     code_expires_at INTEGER NOT NULL,
     requested_at    INTEGER NOT NULL
   );
+  -- Individually revoked sessions, keyed by the token's jti.
+  --
+  -- users.token_version handles "kill every session for this user"; this table
+  -- handles "kill THIS one", which is what signing out on one device means. A
+  -- denylist is only viable because the entries expire: a row is needed exactly
+  -- as long as the token it revokes would otherwise still verify, so the table
+  -- stays proportional to concurrent sessions rather than growing forever.
+  CREATE TABLE IF NOT EXISTS revoked_tokens (
+    jti        TEXT    PRIMARY KEY,
+    user_id    INTEGER,
+    revoked_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_revoked_tokens_exp ON revoked_tokens(expires_at);
 `);
 
 // ── Tenant migration ─────────────────────────────────────────
@@ -245,6 +271,16 @@ function assignPublicId(userId, role) {
   // a real password at the column level. Hence this flag. Every pre-existing
   // row defaults to 1, which is correct: they all signed up with a password.
   _ensureColumn('users', 'password_set', 'password_set INTEGER NOT NULL DEFAULT 1');
+  // Session generation counter. Every token carries the value it was minted
+  // against; requireAuth rejects any token whose copy is stale. Incrementing it
+  // therefore invalidates EVERY outstanding session for that user at once —
+  // which is what has to happen when a password changes, an account is
+  // deactivated, or the user asks to be signed out everywhere.
+  //
+  // Existing rows default to 0 and every token minted from now on carries 0, so
+  // sessions issued before this migration keep working. That is deliberate: the
+  // alternative logs out every user on deploy.
+  _ensureColumn('users', 'token_version', 'token_version INTEGER NOT NULL DEFAULT 0');
   (function backfillPublicIds() {
     const counters = { OWN: 0, ADM: 0, USR: 0 };
     for (const r of db.prepare(
@@ -522,12 +558,67 @@ function genCode() {
 function makeToken(user) {
   // tenantId baked into the JWT so middleware can read it without a DB
   // round-trip on every request.
+  //
+  // jti + tv are what make a stateless token revocable:
+  //   jti  a unique id for THIS token, so signing out one device can deny
+  //        exactly it (revoked_tokens) without touching the user's other
+  //        sessions.
+  //   tv   the user's token_version at mint time. Bumping the column
+  //        invalidates every token ever issued to them in one write — the
+  //        lever for a password change, a deactivation, or "sign out
+  //        everywhere".
+  //
+  // iss/aud are asserted on the way back in. They cost nothing and mean a token
+  // minted by some other service that happens to share this secret — a future
+  // staging box restored from the same backup, say — cannot authenticate here.
   return jwt.sign(
     { sub: user.id, username: user.username, tenantId: user.tenant_id,
-      organizationId: user.organization_id || null, role: user.role || 'member' },
+      organizationId: user.organization_id || null, role: user.role || 'member',
+      tv: Number(user.token_version || 0) },
     JWT_SECRET,
-    { expiresIn: TOKEN_TTL }
+    {
+      expiresIn: TOKEN_TTL,
+      jwtid: crypto.randomUUID(),
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+      algorithm: 'HS256',
+    }
   );
+}
+
+// Deny one specific token. The row only has to outlive the token itself, so it
+// carries the token's own exp — see the sweep in revokeSweep().
+function revokeToken(payload) {
+  if (!payload || !payload.jti) return false;
+  db.prepare(`INSERT INTO revoked_tokens (jti, user_id, revoked_at, expires_at)
+              VALUES (?, ?, ?, ?)
+              ON CONFLICT(jti) DO NOTHING`)
+    .run(String(payload.jti), payload.sub || null, Date.now(),
+         (Number(payload.exp) || 0) * 1000 || Date.now() + 30 * 86400_000);
+  return true;
+}
+
+function isRevoked(jti) {
+  if (!jti) return false;
+  return !!db.prepare('SELECT 1 FROM revoked_tokens WHERE jti = ?').get(String(jti));
+}
+
+// Invalidate EVERY outstanding session for a user. Called wherever the trust
+// behind those sessions changes: password set or reset, deactivation, or an
+// explicit "sign out everywhere".
+function bumpTokenVersion(userId) {
+  db.prepare('UPDATE users SET token_version = COALESCE(token_version, 0) + 1 WHERE id = ?')
+    .run(Number(userId));
+}
+
+// Expired rows can go: the token they deny no longer verifies on its own.
+// Cheap enough to run opportunistically rather than on a timer.
+let _lastRevokeSweep = 0;
+function revokeSweep() {
+  const now = Date.now();
+  if (now - _lastRevokeSweep < 60_000) return;
+  _lastRevokeSweep = now;
+  db.prepare('DELETE FROM revoked_tokens WHERE expires_at < ?').run(now);
 }
 
 function publicUser(user, tenant = null) {
@@ -573,9 +664,45 @@ function requireAuth(req, res, next) {
   const match  = header.match(/^Bearer\s+(.+)$/i);
   if (!match) return res.status(401).json({ error: 'Authentication required' });
   try {
-    const payload = jwt.verify(match[1], JWT_SECRET);
+    // algorithms is pinned explicitly. Without it the library will honour
+    // whatever `alg` the token itself declares, which is the classic JWT
+    // confusion attack — a forged token asking to be verified as "none", or as
+    // RS256 with our HMAC secret treated as a public key.
+    //
+    // issuer/audience are enforced here to match makeToken.
+    const payload = jwt.verify(match[1], JWT_SECRET, {
+      algorithms: ['HS256'],
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    });
+
+    // Individually signed out (one device), or globally invalidated.
+    revokeSweep();
+    if (isRevoked(payload.jti)) {
+      return res.status(401).json({ error: 'Session has been signed out' });
+    }
+
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(payload.sub);
     if (!user) return res.status(401).json({ error: 'User no longer exists' });
+
+    // Deactivation used to be checked ONLY at login, which meant it did almost
+    // nothing: the account's existing 30-day token kept working against every
+    // endpoint, so removing someone's access did not actually remove it until
+    // their token happened to expire. Checked here, it takes effect on the
+    // user's very next request.
+    if (user.active === 0) {
+      return res.status(403).json({
+        error: 'This account has been deactivated. Contact your administrator.',
+      });
+    }
+
+    // Stale generation → the password changed, the account was deactivated and
+    // reinstated, or the user signed out everywhere. Tokens minted before this
+    // migration carry no `tv` and compare equal to the default 0, so existing
+    // sessions survive the deploy rather than all being dropped at once.
+    if (Number(payload.tv || 0) !== Number(user.token_version || 0)) {
+      return res.status(401).json({ error: 'Session expired — please sign in again' });
+    }
     // Defensive: a token issued before tenancy landed won't carry tenantId.
     // Use the user's row value (backfilled to default tenant) instead.
     if (user.tenant_id) {
@@ -584,6 +711,9 @@ function requireAuth(req, res, next) {
       user.tenant = t || null;
     }
     req.user = user;
+    // The verified claims, kept for routes that act on THIS token rather than
+    // on the user — /api/auth/logout needs the jti to deny exactly this session.
+    req.authPayload = payload;
 
     // Central org-status gate.
     //
@@ -738,7 +868,7 @@ function registerRoutes(app) {
     }
 
     const code = genCode();
-    const passwordHash = bcrypt.hashSync(password, 10);
+    const passwordHash = bcrypt.hashSync(password, BCRYPT_COST);
     const expiresAt = Date.now() + 60 * 1000; // 1 minute
 
     // Stash the company name on the pending row so the verify step
@@ -947,6 +1077,19 @@ function registerRoutes(app) {
         targetType: 'user', targetId: user.id });
       return res.status(403).json({ error: 'This account has been deactivated. Contact your administrator.' });
     }
+
+    // Transparent rehash. The password was just proven correct and is in memory
+    // for this one moment, so an account still on the old cost-10 hash can be
+    // upgraded now — the only point at which that is possible without asking
+    // the user to change anything. Deliberately NOT a token_version bump: the
+    // credential hasn't changed, only how it's stored, so live sessions stay.
+    try {
+      if (bcrypt.getRounds(user.password_hash) < BCRYPT_COST) {
+        db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+          .run(bcrypt.hashSync(password, BCRYPT_COST), user.id);
+      }
+    } catch (_) { /* unreadable cost — leave the hash alone, sign-in still valid */ }
+
     audit.log({ req, user, action: 'auth.login', status: 'ok',
       targetType: 'user', targetId: user.id,
       payload: { tenant_id: user.tenant_id } });
@@ -1118,12 +1261,16 @@ function registerRoutes(app) {
       return res.status(404).json({ error: 'No account exists for that email' });
     }
 
-    const newHash = bcrypt.hashSync(password, 10);
+    const newHash = bcrypt.hashSync(password, BCRYPT_COST);
     // password_set flips to 1 here: this is the supported route for a user who
     // joined through Google/Apple to gain a password. It's safe because it
     // still requires control of the inbox — the emailed code proves that.
     db.prepare('UPDATE users SET password_hash = ?, password_set = 1 WHERE id = ?')
       .run(newHash, user.id);
+    // Changing the password must end every session opened with the OLD one.
+    // The whole point of a reset is often that someone else has the account;
+    // leaving their 30-day token valid would make the reset cosmetic.
+    bumpTokenVersion(user.id);
     db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailNorm);
 
     audit.log({ req, user, action: 'auth.forgot_password.reset',
@@ -1131,12 +1278,42 @@ function registerRoutes(app) {
 
     // Issue a fresh token so the client can sign the user in immediately
     // after they reset — no second login round-trip needed.
-    res.json({ ok: true, token: makeToken(user), user: publicUser(user) });
+    //
+    // Re-read first: `user` was loaded BEFORE bumpTokenVersion, so minting from
+    // it would stamp the token with the old generation and requireAuth would
+    // reject it on the very next request — a reset that appears to succeed and
+    // then bounces the user to the login screen.
+    const refreshed = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+    res.json({ ok: true, token: makeToken(refreshed), user: publicUser(refreshed) });
   });
 
   // ── Whoami ─────────────────────────────────────────────────
   app.get('/api/auth/me', requireAuth, (req, res) => {
     res.json({ ok: true, user: publicUser(req.user) });
+  });
+
+  // ── Sign out (this device) ─────────────────────────────────
+  // Logout used to be purely client-side: the app dropped the token from
+  // localStorage and that was that. The token itself stayed valid for the rest
+  // of its 30 days, so signing out on a shared or lost device protected
+  // nothing against anyone who had already copied it. Denying the jti makes the
+  // token dead server-side, which is what users assume "sign out" means.
+  app.post('/api/auth/logout', requireAuth, (req, res) => {
+    revokeToken(req.authPayload);
+    audit.log({ req, user: req.user, action: 'auth.logout', status: 'ok',
+      targetType: 'user', targetId: req.user.id });
+    res.json({ ok: true });
+  });
+
+  // ── Sign out everywhere ────────────────────────────────────
+  // The lever for "my laptop was stolen". Bumping token_version invalidates
+  // every token ever issued to this user in a single write, including the one
+  // making this request.
+  app.post('/api/auth/logout-all', requireAuth, (req, res) => {
+    bumpTokenVersion(req.user.id);
+    audit.log({ req, user: req.user, action: 'auth.logout_all', status: 'ok',
+      targetType: 'user', targetId: req.user.id });
+    res.json({ ok: true });
   });
 
   // Set the profile avatar — an index into the client's preset-avatar set.
@@ -1225,7 +1402,7 @@ function registerRoutes(app) {
 
     const out = db.transaction(() => {
       const org = createOrganization(name, req.user.id);
-      const hash = bcrypt.hashSync(adminPassword, 10);
+      const hash = bcrypt.hashSync(adminPassword, BCRYPT_COST);
       db.prepare(`INSERT INTO users (email, username, password_hash, email_verified, role, organization_id)
                   VALUES (?, ?, ?, 1, 'org_admin', ?)`)
         .run(emailN, adminUsername, hash, org.id);
@@ -1392,7 +1569,7 @@ function registerRoutes(app) {
       return res.status(409).json({ error: 'That email is already registered' });
     if (db.prepare('SELECT 1 FROM users WHERE username = ? COLLATE NOCASE').get(username))
       return res.status(409).json({ error: 'That username is taken' });
-    const hash = bcrypt.hashSync(password, 10);
+    const hash = bcrypt.hashSync(password, BCRYPT_COST);
     const r = db.prepare(`INSERT INTO users (email, username, password_hash, email_verified, role, organization_id, tenant_id)
                           VALUES (?, ?, ?, 1, ?, ?, ?)`)
       .run(emailN, username, hash, memberRole, site.organization_id, siteId);
@@ -1456,7 +1633,7 @@ function registerRoutes(app) {
     if (password !== undefined && password !== '') {
       const pwErr = validatePassword(password);
       if (pwErr) return res.status(400).json({ error: pwErr });
-      sets.push('password_hash = ?'); vals.push(bcrypt.hashSync(password, 10));
+      sets.push('password_hash = ?'); vals.push(bcrypt.hashSync(password, BCRYPT_COST));
       // A member who joined through Google/Apple has password_set = 0; giving
       // them a real password has to clear that, or the profile page keeps
       // offering to "set a password" they already have.
@@ -1467,8 +1644,18 @@ function registerRoutes(app) {
     }
 
     if (!sets.length) return res.status(400).json({ error: 'Nothing to update' });
+
+    // An admin changing someone's password, or deactivating them, has to end
+    // that person's existing sessions — otherwise both actions are advisory
+    // until their 30-day token happens to expire. requireAuth now refuses a
+    // deactivated user outright, but bumping here covers reactivation too: a
+    // member switched off and back on gets a clean slate rather than having
+    // their pre-deactivation tokens spring back to life.
+    const mustInvalidate = (password !== undefined && password !== '') || active !== undefined;
+
     vals.push(memberId);
     db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+    if (mustInvalidate) bumpTokenVersion(memberId);
     audit.log({ req, user: req.user, action: 'member.update', status: 'ok', targetType: 'user', targetId: memberId, payload: { fields: sets.map(s => s.split(' ')[0]) } });
 
     const updated = db.prepare(`
@@ -1570,7 +1757,7 @@ function registerRoutes(app) {
     if (db.prepare('SELECT 1 FROM users WHERE email = ? COLLATE NOCASE').get(inv.email))
       return res.status(409).json({ error: 'An account already exists for this email' });
 
-    const hash = bcrypt.hashSync(password, 10);
+    const hash = bcrypt.hashSync(password, BCRYPT_COST);
     const r = db.prepare(`INSERT INTO users (email, username, password_hash, email_verified, role, organization_id, tenant_id, active)
                           VALUES (?, ?, ?, 1, ?, ?, ?, 1)`)
       .run(inv.email, uname, hash, inv.role, inv.organization_id, inv.tenant_id);

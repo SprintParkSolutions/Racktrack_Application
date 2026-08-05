@@ -17,13 +17,23 @@
  * extractable, so the redemption has to happen here. The upshot is one flow
  * that serves web, iOS and Android identically.
  *
- * ON NOT VERIFYING id_token SIGNATURES
- * ------------------------------------
- * The id_token is not fetched from the browser — it comes straight back from
- * the provider's token endpoint over TLS, in exchange for our client secret.
- * OIDC Core §3.1.3.7 explicitly permits skipping signature validation in this
- * case. We still check iss / aud / exp, because those catch a misconfigured
- * client ID (e.g. pointing at the wrong Google project) rather than forgery.
+ * ON id_token SIGNATURES
+ * ----------------------
+ * OIDC Core §3.1.3.7 permits skipping signature validation when the token comes
+ * straight from the token endpoint over TLS in exchange for a client secret,
+ * which is our case. We verify anyway, against the provider's published JWKS:
+ * the exemption assumes the TLS channel is sound, and verifying costs one
+ * cached key fetch. iss / aud / exp / nonce are checked on top.
+ *
+ * PKCE AND NONCE
+ * --------------
+ * PKCE (RFC 7636) binds the authorization code to the process that requested
+ * it, so a code intercepted from a redirect is useless without the verifier
+ * that never left this server. `nonce` binds the id_token to this specific
+ * authorization request, which is what stops a token replayed from elsewhere
+ * being accepted. Neither is strictly required for a confidential server-side
+ * client; both are cheap and are what the current OAuth 2.1 / BCP guidance
+ * asks for.
  *
  * Configuration lives entirely in env vars — see docs/SOCIAL-LOGIN-SETUP.md.
  * A provider with no credentials configured is simply reported as disabled and
@@ -78,28 +88,89 @@ function appleClientSecret() {
   return token;
 }
 
+// ── JWKS: verify id_token signatures ─────────────────────────
+// Providers publish their signing keys and rotate them on their own schedule,
+// so the set is fetched on demand and cached. A `kid` we've never seen forces
+// one refetch — that is exactly what a rotation looks like — but no more than
+// once a minute, so an attacker sending garbage `kid`s cannot turn our verifier
+// into a request amplifier pointed at Google.
+const _jwksCache = new Map();   // url → { keys: Map<kid, pem>, fetchedAt }
+const JWKS_TTL_MS = 60 * 60 * 1000;
+const JWKS_MIN_REFETCH_MS = 60 * 1000;
+
+function jwkToPem(jwk) {
+  // Node can import a JWK directly; no third-party key parser needed.
+  return crypto.createPublicKey({ key: jwk, format: 'jwk' })
+    .export({ type: 'spki', format: 'pem' });
+}
+
+async function getSigningKey(jwksUrl, kid) {
+  let entry = _jwksCache.get(jwksUrl);
+  const fresh = entry && (Date.now() - entry.fetchedAt) < JWKS_TTL_MS;
+
+  if (!fresh || !entry.keys.has(kid)) {
+    const canRefetch = !entry || (Date.now() - entry.fetchedAt) > JWKS_MIN_REFETCH_MS;
+    if (!fresh || canRefetch) {
+      const res = await fetch(jwksUrl);
+      if (!res.ok) throw new Error(`Could not fetch signing keys (${res.status})`);
+      const body = await res.json();
+      const keys = new Map();
+      for (const jwk of body.keys || []) {
+        try { keys.set(jwk.kid, jwkToPem(jwk)); } catch { /* skip unusable key */ }
+      }
+      entry = { keys, fetchedAt: Date.now() };
+      _jwksCache.set(jwksUrl, entry);
+    }
+  }
+
+  const pem = entry?.keys.get(kid);
+  if (!pem) throw new Error('Identity token was signed with an unknown key');
+  return pem;
+}
+
 // ── id_token helpers ─────────────────────────────────────────
-function decodeIdToken(idToken) {
-  const payload = jwt.decode(idToken);
-  if (!payload || typeof payload !== 'object') {
-    throw new Error('Provider returned an unreadable identity token');
+async function verifyIdToken(idToken, { jwksUrl, issuers, audience, provider, nonce }) {
+  if (!idToken) throw new Error(`${provider}: no identity token returned`);
+
+  const decoded = jwt.decode(idToken, { complete: true });
+  if (!decoded || !decoded.header || !decoded.payload) {
+    throw new Error(`${provider}: unreadable identity token`);
+  }
+  // Pin to RSA — every provider here signs with RS256. Without this the library
+  // honours the token's own `alg`, which is how "alg: none" forgeries land.
+  if (decoded.header.alg !== 'RS256') {
+    throw new Error(`${provider}: unexpected token algorithm ${decoded.header.alg}`);
+  }
+
+  const key = await getSigningKey(jwksUrl, decoded.header.kid);
+  // jsonwebtoken enforces iss / aud / exp / signature together here, so a
+  // failure of any one of them throws rather than being checked piecemeal.
+  const payload = jwt.verify(idToken, key, {
+    algorithms: ['RS256'],
+    issuer: issuers,
+    audience,
+  });
+
+  // The nonce we generated for THIS authorization request. Its absence or
+  // mismatch means the token belongs to some other request — a replay.
+  if (nonce && payload.nonce !== nonce) {
+    throw new Error(`${provider}: identity token does not match this sign-in request`);
   }
   return payload;
 }
 
-function assertClaims(payload, { issuers, audience, provider }) {
-  const iss = String(payload.iss || '');
-  if (!issuers.includes(iss)) {
-    throw new Error(`${provider}: unexpected token issuer`);
-  }
-  // `aud` is a string for a single audience, an array when the token is shared.
-  const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-  if (!aud.includes(audience)) {
-    throw new Error(`${provider}: identity token was not issued for this app`);
-  }
-  if (payload.exp && Date.now() / 1000 > Number(payload.exp)) {
-    throw new Error(`${provider}: identity token has expired`);
-  }
+// ── PKCE + nonce generation ──────────────────────────────────
+// The verifier is the secret that never leaves this server; only its SHA-256
+// hash travels to the provider, so an attacker holding an intercepted
+// authorization code still cannot redeem it.
+function makePkce() {
+  const verifier = crypto.randomBytes(32).toString('base64url');   // 43 chars, RFC 7636 range
+  const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
+  return { verifier, challenge };
+}
+
+function makeNonce() {
+  return crypto.randomBytes(16).toString('base64url');
 }
 
 // Apple sends email_verified as the STRING "true" in some responses and a real
@@ -138,7 +209,10 @@ const google = {
   // account — Google owns the namespace and asserts verification.
   trustsEmail: true,
 
-  authorizeUrl(state, redirectUri) {
+  supportsPkce: true,
+  supportsNonce: true,
+
+  authorizeUrl(state, redirectUri, { challenge, nonce } = {}) {
     const q = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: redirectUri,
@@ -150,23 +224,31 @@ const google = {
       // me in as my colleague".
       prompt: 'select_account',
     });
+    if (challenge) {
+      q.set('code_challenge', challenge);
+      q.set('code_challenge_method', 'S256');   // never 'plain'
+    }
+    if (nonce) q.set('nonce', nonce);
     return `https://accounts.google.com/o/oauth2/v2/auth?${q}`;
   },
 
-  async exchange(code, redirectUri) {
-    const data = await postForm('https://oauth2.googleapis.com/token', {
+  async exchange(code, redirectUri, { verifier, nonce } = {}) {
+    const form = {
       code,
       client_id: this.clientId,
       client_secret: this.clientSecret,
       redirect_uri: redirectUri,
       grant_type: 'authorization_code',
-    }, 'Google');
+    };
+    if (verifier) form.code_verifier = verifier;
+    const data = await postForm('https://oauth2.googleapis.com/token', form, 'Google');
 
-    const payload = decodeIdToken(data.id_token);
-    assertClaims(payload, {
+    const payload = await verifyIdToken(data.id_token, {
+      jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs',
       issuers: ['https://accounts.google.com', 'accounts.google.com'],
       audience: this.clientId,
       provider: 'Google',
+      nonce,
     });
     return {
       provider: 'google',
@@ -190,7 +272,21 @@ const apple = {
 
   trustsEmail: true,
 
-  authorizeUrl(state, redirectUri) {
+  // Apple does not document PKCE for the Sign in with Apple web flow. Sending
+  // an undocumented parameter to an endpoint that might reject it would break
+  // sign-in for a guarantee we already hold another way: this is a confidential
+  // client whose secret is an ES256 JWT signed with a key that never leaves the
+  // server. `nonce` IS documented and is used.
+  supportsPkce: false,
+  supportsNonce: true,
+  // Apple returns the result as a cross-site form POST rather than a redirect
+  // (see response_mode below). That changes cookie handling for whoever is
+  // setting one on the outbound leg: SameSite=Lax is sent on a cross-site
+  // top-level GET but NOT on a cross-site POST, so a Lax cookie would silently
+  // never arrive and every Apple sign-in would fail state validation.
+  usesFormPost: true,
+
+  authorizeUrl(state, redirectUri, { nonce } = {}) {
     const q = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: redirectUri,
@@ -201,10 +297,11 @@ const apple = {
       // than redirect with a query string. The callback route accepts both.
       response_mode: 'form_post',
     });
+    if (nonce) q.set('nonce', nonce);
     return `https://appleid.apple.com/auth/authorize?${q}`;
   },
 
-  async exchange(code, redirectUri) {
+  async exchange(code, redirectUri, { nonce } = {}) {
     const data = await postForm('https://appleid.apple.com/auth/token', {
       code,
       client_id: this.clientId,
@@ -213,11 +310,12 @@ const apple = {
       grant_type: 'authorization_code',
     }, 'Apple');
 
-    const payload = decodeIdToken(data.id_token);
-    assertClaims(payload, {
+    const payload = await verifyIdToken(data.id_token, {
+      jwksUrl: 'https://appleid.apple.com/auth/keys',
       issuers: ['https://appleid.apple.com'],
       audience: this.clientId,
       provider: 'Apple',
+      nonce,
     });
     return {
       provider: 'apple',
@@ -253,7 +351,13 @@ const facebook = {
   // invite path (where the invite itself proves who owns the address).
   get trustsEmail() { return env('FACEBOOK_TRUST_EMAIL') === '1'; },
 
-  authorizeUrl(state, redirectUri) {
+  supportsPkce: true,
+  // Facebook Login is OAuth 2.0, not OIDC on this flow — there is no id_token
+  // to bind a nonce to. Identity comes from a Graph API call authenticated with
+  // our app secret instead.
+  supportsNonce: false,
+
+  authorizeUrl(state, redirectUri, { challenge } = {}) {
     const q = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: redirectUri,
@@ -261,16 +365,23 @@ const facebook = {
       scope: 'email public_profile',
       state,
     });
+    if (challenge) {
+      q.set('code_challenge', challenge);
+      q.set('code_challenge_method', 'S256');
+    }
     return `https://www.facebook.com/v21.0/dialog/oauth?${q}`;
   },
 
-  async exchange(code, redirectUri) {
-    const token = await postForm('https://graph.facebook.com/v21.0/oauth/access_token', {
+  async exchange(code, redirectUri, { verifier } = {}) {
+    const form = {
       code,
       client_id: this.clientId,
       client_secret: this.clientSecret,
       redirect_uri: redirectUri,
-    }, 'Facebook');
+    };
+    if (verifier) form.code_verifier = verifier;
+    const token = await postForm('https://graph.facebook.com/v21.0/oauth/access_token',
+      form, 'Facebook');
 
     // appsecret_proof stops a leaked user access token from being replayed
     // against the Graph API from anywhere but this server.
@@ -313,4 +424,7 @@ function enabledProviders() {
     .map(p => ({ name: p.name, label: p.label }));
 }
 
-module.exports = { getProvider, enabledProviders, PROVIDERS };
+module.exports = { getProvider, enabledProviders, PROVIDERS, makePkce, makeNonce,
+  // Exported for tests: this is the function that decides whether a provider's
+  // identity assertion is genuine, so it needs to be exercisable directly.
+  verifyIdToken };

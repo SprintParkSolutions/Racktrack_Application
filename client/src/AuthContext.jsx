@@ -173,11 +173,27 @@ export function AuthProvider({ children }) {
     return await callApi('/api/auth/resend-code', { body: { email } });
   }, []);
 
-  const logout = useCallback(() => {
+  // Signing out now tells the SERVER, which denies this token's jti. Previously
+  // it only dropped the token from storage — anyone who had already copied it
+  // kept a working session for the rest of its 30 days, so "sign out" on a
+  // shared or lost device protected nothing.
+  //
+  // Local state is cleared regardless of whether the call lands. A user on a
+  // flaky connection who taps Sign Out must not stay signed in on this device
+  // because the network was down; the token is already unusable here, and the
+  // server-side denial is what the "sign out everywhere" control is for.
+  const logout = useCallback((opts = {}) => {
+    const current = token;
     setState({ token: null, user: null });
-    // Clear the remembered rack so the next user's Overview nav starts clean.
     try { window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: null })); } catch (_) {}
-  }, []);
+    if (current) {
+      fetch(apiUrl(opts.everywhere ? '/api/auth/logout-all' : '/api/auth/logout'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${current}` },
+        keepalive: true,   // survives the navigation that usually follows
+      }).catch(() => { /* best effort — local session is already gone */ });
+    }
+  }, [token]);
 
   // Re-fetch the current user from the server and update state. Used by the
   // "awaiting approval" screen to detect the moment the owner activates the org.
