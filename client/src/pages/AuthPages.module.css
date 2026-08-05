@@ -481,3 +481,61 @@
   .form { gap: 24px; }
   .input { font-size: 17px; padding-bottom: 12px; }
 }
+
+/* ── Social sign-in ─────────────────────────────────────────────
+   Deliberately the inverse of .primaryBtn: the password form stays the
+   filled black pill (the primary action), and these read as outlined
+   alternatives so the page still has exactly one visual primary. */
+.socialBlock { margin-top: 20px; }
+
+.socialDivider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 14px;
+  font-size: 0.78rem; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: #5F646C;
+}
+.socialDivider::before,
+.socialDivider::after {
+  content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.12);
+}
+
+.socialBtn {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  padding: 13px 18px;
+  margin-bottom: 10px;
+  border-radius: 100px;
+  border: 1px solid rgba(0,0,0,0.22);
+  background: #ffffff;
+  color: #1a1c1d;
+  font-family: inherit;
+  font-size: 0.97rem;
+  font-weight: 650;
+  cursor: pointer;
+  box-shadow: 0 2px 6px -3px rgba(0,0,0,0.22);
+  transition: transform .15s, box-shadow .2s, border-color .2s, opacity .15s;
+}
+.socialBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(0,0,0,0.42);
+  box-shadow: 0 8px 18px -10px rgba(0,0,0,0.45);
+}
+.socialBtn:active:not(:disabled) { transform: translateY(0); }
+.socialBtn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+
+/* Fixed-width so every label lands on the same optical centre regardless of
+   how wide the brand mark is. */
+.socialIcon {
+  flex: 0 0 19px;
+  display: grid; place-items: center;
+  height: 19px;
+}
+
+.socialSpinner {
+  width: 15px; height: 15px;
+  border: 2px solid rgba(0,0,0,0.18);
+  border-top-color: #1a1c1d;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}

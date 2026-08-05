@@ -238,6 +238,13 @@ function assignPublicId(userId, role) {
   // Stable per-user public ID (member number), role-prefixed (OWN/ADM/USR).
   // Assigned once and never renumbered. Backfill existing users in id order.
   _ensureColumn('users', 'public_id', 'public_id TEXT');
+  // 0 = the user has no password they know: they joined through Google / Apple /
+  // Facebook (see socialAuth.js). password_hash is NOT NULL and SQLite can't
+  // drop that without rebuilding the table, so those accounts store a hash of
+  // random bytes that is thrown away — unguessable, but indistinguishable from
+  // a real password at the column level. Hence this flag. Every pre-existing
+  // row defaults to 1, which is correct: they all signed up with a password.
+  _ensureColumn('users', 'password_set', 'password_set INTEGER NOT NULL DEFAULT 1');
   (function backfillPublicIds() {
     const counters = { OWN: 0, ADM: 0, USR: 0 };
     for (const r of db.prepare(
@@ -1112,7 +1119,11 @@ function registerRoutes(app) {
     }
 
     const newHash = bcrypt.hashSync(password, 10);
-    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, user.id);
+    // password_set flips to 1 here: this is the supported route for a user who
+    // joined through Google/Apple to gain a password. It's safe because it
+    // still requires control of the inbox — the emailed code proves that.
+    db.prepare('UPDATE users SET password_hash = ?, password_set = 1 WHERE id = ?')
+      .run(newHash, user.id);
     db.prepare('DELETE FROM password_resets WHERE email = ?').run(emailNorm);
 
     audit.log({ req, user, action: 'auth.forgot_password.reset',
@@ -1446,6 +1457,10 @@ function registerRoutes(app) {
       const pwErr = validatePassword(password);
       if (pwErr) return res.status(400).json({ error: pwErr });
       sets.push('password_hash = ?'); vals.push(bcrypt.hashSync(password, 10));
+      // A member who joined through Google/Apple has password_set = 0; giving
+      // them a real password has to clear that, or the profile page keeps
+      // offering to "set a password" they already have.
+      sets.push('password_set = ?'); vals.push(1);
     }
     if (active !== undefined) {
       sets.push('active = ?'); vals.push(active ? 1 : 0);
@@ -1627,4 +1642,11 @@ function registerRoutes(app) {
   });
 }
 
-module.exports = { registerRoutes, requireAuth, requireRole, isOrgActive };
+module.exports = {
+  registerRoutes, requireAuth, requireRole, isOrgActive,
+  // Exposed for socialAuth.js, which mints sessions for the same users through
+  // a different front door and must produce byte-identical tokens and payloads.
+  // Kept as an explicit named list rather than exporting the module internals
+  // wholesale, so it stays obvious what the social path is allowed to touch.
+  db, makeToken, publicUser, assignPublicId, USERNAME_RE,
+};

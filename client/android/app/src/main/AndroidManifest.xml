@@ -19,6 +19,23 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Social sign-in return trip. The OAuth runs in a Chrome Custom
+                 Tab (Google refuses to authenticate inside an embedded WebView),
+                 and our own server closes the loop by redirecting to
+                 com.racktrack.app://auth/callback#token=… . launchMode above is
+                 already singleTask, so this arrives at the RUNNING activity via
+                 onNewIntent rather than starting a second copy — which is what
+                 lets Capacitor surface it as an appUrlOpen event.
+
+                 This scheme is never registered with Google/Apple/Facebook: they
+                 only see the HTTPS redirect URI pointing at our server. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.racktrack.app" android:host="auth" />
+            </intent-filter>
         </activity>
 
         <provider

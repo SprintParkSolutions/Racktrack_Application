@@ -104,6 +104,18 @@ export function AuthProvider({ children }) {
     } finally { setLoading(false); }
   }, []);
 
+  // Adopt a session that was minted somewhere other than a fetch from here —
+  // specifically the social sign-in redirect, where the server hands back a
+  // finished token in the URL fragment (see utils/socialSession.js). Everything
+  // downstream of setState is identical to a password login: the persist effect
+  // above writes storage and mints the asset token, so this cannot drift from
+  // the other sign-in paths.
+  const adoptSession = useCallback((newToken, newUser) => {
+    setState({ token: newToken, user: newUser });
+    try { window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: null })); } catch (_) {}
+    return newUser;
+  }, []);
+
   const forgotPassword = useCallback(async (email) => {
     return await callApi('/api/auth/forgot-password', { body: { email } });
   }, []);
@@ -188,6 +200,7 @@ export function AuthProvider({ children }) {
       isAuthed: !!user,
       login, signup, verifyCode, resendCode, logout, refreshUser,
       forgotPassword, verifyResetCode, resetPassword, loginWithCode,
+      adoptSession,
     }}>
       {children}
     </AuthContext.Provider>

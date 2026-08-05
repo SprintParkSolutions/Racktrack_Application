@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './AuthPages.module.css';
 import { useAuth } from '../AuthContext.jsx';
+import SocialSignIn from '../components/SocialSignIn.jsx';
 
 const Arrow = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -17,7 +18,11 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPw,   setShowPw]   = useState(false);
-  const [error,    setError]    = useState(null);
+  // A failed social sign-in redirects back here carrying its reason, so the
+  // user learns "no account uses that address" instead of silently landing on
+  // an empty login form.
+  const [error,    setError]    = useState(location.state?.socialError || null);
+  const [hasSocial, setHasSocial] = useState(false);
 
   const from = location.state?.from || '/scan';
 
@@ -134,6 +139,18 @@ export default function LoginPage() {
             </div>
           )}
 
+          {/* Someone who joined through an invite with Google has no password at
+              all, and would otherwise just keep retrying one. Shown after ANY
+              failure rather than only that case: an error that appeared only for
+              accounts without a password would tell an attacker which addresses
+              are registered. */}
+          {error && hasSocial && (
+            <p className={styles.fieldNote}>
+              Joined with Google, Apple or Facebook? Use the buttons below instead —
+              those accounts don&rsquo;t have a password.
+            </p>
+          )}
+
           <button type="submit" className={styles.primaryBtn} disabled={loading}>
             <span>Sign in</span>
             <span className={styles.btnArrow}>
@@ -141,6 +158,8 @@ export default function LoginPage() {
             </span>
           </button>
         </form>
+
+        <SocialSignIn mode="login" onLoaded={(p) => setHasSocial(p.length > 0)} />
 
         <div className={styles.altRow}>
           New here?

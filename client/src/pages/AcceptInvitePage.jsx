@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import styles from './AuthPages.module.css';
 import { setItem } from '../utils/safeStorage';
 import { apiUrl } from '../utils/api';
+import SocialSignIn from '../components/SocialSignIn.jsx';
 
 const Eye = ({ off }) => off
   ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -106,6 +107,12 @@ export default function AcceptInvitePage() {
                 <span>{busy ? 'Joining…' : 'Join'}</span>
               </button>
             </form>
+
+            {/* Joining this way skips inventing a username and a password that
+                satisfies the four-class policy. The server still requires the
+                provider to assert THIS invite's email address, so the button is
+                no weaker than the form above it. */}
+            <SocialSignIn mode="invite" inviteCode={code} />
           </>
         )}
       </main>

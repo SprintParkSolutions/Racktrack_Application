@@ -1,7 +1,9 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
+import { parseAuthFragment, isAuthCallbackUrl } from './utils/socialSession';
 import BottomNav from './components/BottomNav.jsx';
 import DesktopShell from './components/DesktopShell.jsx';
 import PointerGlow from './components/PointerGlow.jsx';
@@ -26,6 +28,7 @@ import SignupPage from './pages/SignupPage.jsx';
 import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
 import PendingApprovalPage from './pages/PendingApprovalPage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import AuthCallbackPage from './pages/AuthCallbackPage.jsx';
 import SpecificationsPage from './pages/SpecificationsPage.jsx';
 import FirmwarePage from './pages/FirmwarePage.jsx';
 import SwitchInformationPage from './pages/SwitchInformationPage.jsx';
@@ -207,6 +210,50 @@ function AndroidBackHandler() {
   return null;
 }
 
+// Catches the social sign-in deep link on native.
+//
+// The web build lands on /auth/callback as a page load; native cannot, because
+// the OAuth happens in an in-app browser tab and the app underneath never
+// navigated anywhere. Instead the server redirects to
+// com.racktrack.app://auth/callback#token=… , the OS hands that to the running
+// app as appUrlOpen, and we adopt the session here.
+//
+// Registered unconditionally at the app root rather than on the login page: the
+// tab is a separate process, and on a memory-pressured phone the WebView can be
+// reclaimed and rebuilt while it's in front — landing the deep link on a
+// freshly mounted tree that was never on /login.
+function SocialDeepLinkHandler() {
+  const navigate = useNavigate();
+  const { adoptSession } = useAuth();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let sub;
+    (async () => {
+      sub = await CapApp.addListener('appUrlOpen', ({ url }) => {
+        if (!isAuthCallbackUrl(url)) return;   // some other deep link — leave it alone
+        const result = parseAuthFragment(url);
+        if (!result) return;
+
+        // Dismiss the browser tab still sitting over the app. Best-effort: on
+        // Android the Custom Tab may already be gone, which throws.
+        Browser.close().catch(() => {});
+
+        if (!result.ok) {
+          navigate('/login', { replace: true, state: { socialError: result.message } });
+          return;
+        }
+        const user = adoptSession(result.token, result.user);
+        navigate(user?.role === 'owner' || user?.role === 'org_admin' ? '/' : '/scan',
+          { replace: true });
+      });
+    })();
+    return () => { sub?.remove?.(); };
+  }, [adoptSession, navigate]);
+
+  return null;
+}
+
 // NOTE: there used to be a ResumeToScan handler here that, on every native
 // resume, bounced the user from /results back to /scan "to start fresh". In
 // practice that threw away the scan they had just run: switch to another app,
@@ -292,6 +339,7 @@ export default function App() {
           <ConnectionsProvider>
           <ShutterProvider>
             <AndroidBackHandler />
+            <SocialDeepLinkHandler />
             <PendingScanResumer />
             <OnboardingTour />
             <PointerGlow />
@@ -315,6 +363,10 @@ export default function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/invite/:code" element={<AcceptInvitePage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            {/* Where the server drops the browser after a social sign-in.
+                Native uses the same path via a custom-scheme deep link, which
+                SocialDeepLinkHandler intercepts before routing gets involved. */}
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/pending" element={<PendingRoute><PendingApprovalPage /></PendingRoute>} />
             <Route path="/scan" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ScanPage /></ResponsiveLayout></ProtectedRoute>
