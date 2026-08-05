@@ -4,29 +4,31 @@ import { useAuth } from '../AuthContext.jsx';
 import styles from './HomeHero.module.css';
 
 /**
- * Home hero — light, two-column.
+ * Home hero — left-aligned editorial, two columns.
  *
- * The claim sits on the left and a real rack on the right, with the numbers a
- * scan produces read out over the photo. That pairing is the argument: the
- * product's output is a precise description of a physical thing, so the thing
- * and its description appear together rather than the copy sitting on a stock
- * background.
+ * Claim on the left over a hairline row of measurements; the rack on the right
+ * with its scan readings floating over it as small white instruments.
  *
- * Portalled to <body> like the dark hero it replaces, so it escapes #root's
- * mobile frame and fills the viewport. Unlike that one it scrolls — there is
- * more here than fits a phone screen.
+ * Portalled to <body> so it escapes #root's 540px frame and fills the viewport.
  */
 
 const ArrowR = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
        strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
   </svg>
 );
 
-// What the pipeline actually identifies, which is also the answer to the
-// question the hero raises ("documented how precisely?").
-const READS = ['Switches', 'Patch panels', 'Firewalls', 'PDUs', 'Cables', 'Ports'];
+/* Every figure here is one the repo can back up, rather than the round numbers
+   a hero usually reaches for: the CPU-only demo measures 3–8s a scan
+   (docs/setup/DEMO-VPS-SETUP.md), the device model is 12-class, and two-rack
+   capture ships. Inventing a "99.99%" would be the easiest thing on the page
+   to disprove. */
+const STATS = [
+  { v: '3–8s',  k: 'Scan to inventory' },
+  { v: '12',    k: 'Device classes' },
+  { v: '2',     k: 'Racks per pass' },
+];
 
 export default function HomeHero() {
   const navigate = useNavigate();
@@ -35,8 +37,6 @@ export default function HomeHero() {
 
   return createPortal(
     <section className={styles.hero}>
-      <div className={styles.grid} aria-hidden="true" />
-
       <nav className={styles.nav}>
         <div className={styles.logo}>
           <img src="/logo.jpg" alt="" className={styles.logoMark} />
@@ -53,17 +53,9 @@ export default function HomeHero() {
 
       <div className={styles.body}>
         <div className={styles.copy}>
-          <span className={styles.badge}>
-            <span className={styles.badgeDot} aria-hidden="true" />
-            Now scanning two racks in a single pass
-          </span>
+          <p className={styles.eyebrow}>Physical infrastructure · documented</p>
 
-          <h1 className={styles.h1}>
-            Every rack.<br />
-            Every unit.<br />
-            <span className={styles.blue}>Precisely</span><br />
-            <span className={styles.teal}>documented.</span>
-          </h1>
+          <h1 className={styles.h1}>Every rack. Every unit. Precisely documented.</h1>
 
           <p className={styles.lede}>
             RackTrack is the system of record for your physical infrastructure.
@@ -89,48 +81,38 @@ export default function HomeHero() {
             </button>
           </div>
 
+          <div className={styles.stats}>
+            {STATS.map(s => (
+              <div className={styles.stat} key={s.k}>
+                <span className={styles.statVal}>{s.v}</span>
+                <span className={styles.statKey}>{s.k}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <figure className={styles.shot}>
-          <img src="/home-bg.jpg" alt="A network rack of switches, patch panels and cabling" />
-          <figcaption className={styles.readout}>
-            <div className={styles.readoutTop}>
-              <span className={styles.rackId}>Rack R-101 · Chennai-DC1</span>
-              {/* Labelled as an example rather than dressed up as a live feed —
-                  the numbers below are illustrative, not a running system. */}
-              <span className={styles.sampleTag}>
-                <span className={styles.sampleDot} aria-hidden="true" />
-                Example scan
-              </span>
-            </div>
-            <div className={styles.stats}>
-              <div>
-                <div className={styles.statVal}>24U / 42U</div>
-                <div className={styles.statKey}>Space used</div>
-              </div>
-              <div>
-                <div className={styles.statVal}>48</div>
-                <div className={styles.statKey}>Mapped ports</div>
-              </div>
-              <div>
-                <div className={styles.statVal}>5</div>
-                <div className={styles.statKey}>Devices found</div>
-              </div>
-            </div>
-          </figcaption>
-        </figure>
+          <div className={styles.shotImg}>
+            <img src="/home-bg.jpg" alt="A network rack of switches, patch panels and cabling" />
+          </div>
 
-        {/* Where the reference put customer logos. Those would have to be real
-            companies to sit here, so this states a verifiable capability
-            instead. Placed after the photo in source order so that on a phone —
-            where the columns collapse to one — the rack is the second thing
-            seen rather than the fifth. */}
-        <div className={styles.reads}>
-          <p className={styles.eyebrow}>Reads every unit in the rack</p>
-          <ul className={styles.readsList}>
-            {READS.map(r => <li key={r}>{r}</li>)}
-          </ul>
-        </div>
+          {/* Readings from an example scan, placed as instruments rather than a
+              caption bar: the point is that these numbers are ABOUT the rack
+              behind them. Labelled as an example so the meter is never mistaken
+              for a live feed. */}
+          <figcaption className={`${styles.chip} ${styles.chipTop}`}>
+            <span className={styles.chipKey}>Rack R-101 · space</span>
+            <span className={styles.chipVal}>24<small>/ 42U</small></span>
+            <span className={styles.meter}>
+              <span className={styles.meterFill} style={{ width: '57%' }} />
+            </span>
+          </figcaption>
+
+          <div className={`${styles.chip} ${styles.chipBottom}`}>
+            <span className={styles.chipKey}>Mapped ports · example</span>
+            <span className={styles.chipVal}>48</span>
+          </div>
+        </figure>
       </div>
     </section>,
     document.body,

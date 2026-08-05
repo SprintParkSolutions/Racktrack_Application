@@ -553,8 +553,8 @@
 
 @media (min-width: 900px) {
   /* Set by AuthAside while an auth page is mounted. Without this the grid
-     below lays out inside #root's 540px frame and the brand panel has nowhere
-     to go — the reason these pages looked like a phone screenshot on a laptop. */
+     below lays out inside #root's 540px frame and the panel has nowhere to
+     go — the reason these pages looked like a phone screenshot on a laptop. */
   :global(#root.rt-auth-wide) { max-width: none; }
 
   .authPage {
@@ -573,77 +573,49 @@
     border-right: 1px solid rgba(16,24,40,.08);
   }
 
-  /* The same drafting grid as the home hero, so arriving at sign-in from the
-     landing page feels like one product rather than two. */
-  .asideGrid {
-    position: absolute; inset: 0; pointer-events: none;
-    background-image:
-      linear-gradient(to right, rgba(16,24,40,.055) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(16,24,40,.055) 1px, transparent 1px);
-    background-size: 72px 72px;
-    mask-image: radial-gradient(ellipse 110% 80% at 40% 35%, #000 45%, transparent 100%);
-    -webkit-mask-image: radial-gradient(ellipse 110% 80% at 40% 35%, #000 45%, transparent 100%);
-  }
-
-  /* The panel spans its column, but its CONTENTS need a measure. Left to fill
-     a 1400px-wide panel the headline ran to a single line and the photo became
-     a 1354x330 letterbox — the same mistake as a full-width paragraph, just
-     with pictures. Centred inside the panel so the white space falls evenly. */
+  /* The panel spans its column; its contents take a measure and sit centred
+     in it. Left flush against the edge the drawing looked like it had been
+     pushed aside to make room for nothing. */
   .asideInner {
-    position: relative; height: 100%;
-    display: flex; flex-direction: column; justify-content: center;
-    gap: clamp(18px, 3vh, 34px);
-    width: 100%; max-width: min(740px, 100%);
-    margin: 0 auto;
-    padding: clamp(28px, 4vw, 60px);
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center;
+    gap: clamp(12px, 2vh, 24px);
+    padding: clamp(24px, 3vw, 48px);
   }
+  .asideInner > * { width: 100%; max-width: 460px; }
 
   .asideBrand {
+    flex: 0 0 auto;
     display: flex; align-items: center; gap: 10px;
-    font-weight: 700; font-size: 16.5px; letter-spacing: -.012em; color: #0B1220;
+    font-weight: 700; font-size: 16px; letter-spacing: -.014em; color: #101215;
   }
-  .asideMark { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; display: block; }
+  .asideMark { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; display: block; }
 
+  /* 700, not 800: Geist ships 400–700, so 800 is a synthesised fake bold. */
   .asideH {
+    flex: 0 0 auto;
     margin: 0;
-    font-size: clamp(30px, min(3.4vw, 6.4vh), 66px);
-    font-weight: 800; line-height: .98; letter-spacing: -.04em; color: #0B1220;
+    font-size: clamp(21px, min(2.3vw, 3.6vh), 38px);
+    font-weight: 700; line-height: 1.06; letter-spacing: -.036em; color: #101215;
   }
-  .asideBlue { color: #2F6FD8; }
-  .asideTeal { color: #45B0C3; }
+  .asideAccent { color: #1D3FD1; }
 
-  .asideShot {
-    position: relative; margin: 0; width: 100%;
-    height: clamp(160px, 34vh, 430px);
-    border-radius: 18px; overflow: hidden; background: #0D1117;
-    box-shadow: 0 1px 2px rgba(16,24,40,.10), 0 26px 48px -28px rgba(16,24,40,.45);
-  }
-  .asideShot img { width: 100%; height: 100%; object-fit: cover; object-position: 40% center; display: block; }
+  /* The drawing takes whatever height is left, which is what lets a 42U rack
+     stay legible on a short window and generous on a tall one. */
+  .asideRack { flex: 1 1 auto; min-height: 0; display: flex; }
 
-  .asideReadout {
-    position: absolute; left: 10px; right: 10px; bottom: 10px;
-    display: flex; flex-direction: column; gap: 4px;
-    padding: 11px 14px; border-radius: 12px;
-    background: rgba(13,17,23,.72);
-    -webkit-backdrop-filter: blur(12px) saturate(1.4);
-    backdrop-filter: blur(12px) saturate(1.4);
-    border: 1px solid rgba(255,255,255,.10);
-    color: #fff;
+  .asideNote {
+    flex: 0 0 auto; margin: 0;
+    font-size: 13px; line-height: 1.55; color: #5A616B; max-width: 46ch;
   }
-  .asideRackId {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
-    color: rgba(255,255,255,.62);
-  }
-  .asideStats { font-size: 13px; color: rgba(255,255,255,.82); }
-  .asideStats b { font-weight: 700; color: #fff; }
 
   /* The form column.
      The ≥768px block above turns .authShell into a raised, centred, 468px card
-     with a 24px radius — the right answer for a tablet, wrong here, where the
-     column IS the surface. Every one of those properties has to be undone
-     explicitly; overriding only max-width leaves a rounded card floating in
-     the column, which is the same problem one level down. */
+     with a 24px radius — right for a tablet, wrong here, where the column IS
+     the surface. Every one of those properties has to be undone explicitly;
+     overriding only max-width leaves a rounded card floating in the column,
+     which is the same problem one level down. */
   .authHeader {
     position: static;
     grid-column: 2; grid-row: 1;
@@ -656,13 +628,16 @@
     border-radius: 0; box-shadow: none;
     background: var(--raised, #fff);
     overflow-y: auto;
-    justify-content: center;
+    /* `safe` matters: with plain `center`, a form taller than its column
+       overflows equally in both directions and the top — the heading — is
+       scrolled out of reach. The base .authShell already uses safe center for
+       exactly this reason. */
+    justify-content: safe center;
     padding: clamp(16px, 3vh, 40px) clamp(32px, 3.4vw, 64px) clamp(28px, 4vh, 56px);
   }
 
-  /* With the brand panel already naming the product, the stacked logo above
-     the heading is a second wordmark on the same screen.
-     !important because the lockup carries an inline display:flex, which a
-     stylesheet rule cannot otherwise outrank. */
+  /* With the panel already naming the product, the stacked logo above the
+     heading is a second wordmark on the same screen.
+     !important because the lockup carries an inline display:flex. */
   .authBrandLockup { display: none !important; }
 }

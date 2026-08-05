@@ -1,287 +1,206 @@
-/* Home hero — light, two-column: the claim on the left, a real rack on the
-   right with its scan read out over the photo.
+/* Home hero — left-aligned editorial, two columns.
+   Claim on the left over a hairline stat row; the rack on the right with its
+   scan readings floating over it as small white instruments.
 
-   Replaces the dark full-bleed immersive hero. The subject is documentation
-   accuracy, so the page is built like a spec sheet: a faint measured grid,
-   near-black text with a cool cast, and mono for anything that is an
-   identifier rather than prose. */
+   Notes on the treatment:
 
-/* The hero is sized to the viewport rather than to its content: it is the
-   first thing anyone sees and it should compose to the screen it lands on,
-   not spill past the fold and ask to be scrolled.
-   Everything below is measured against BOTH axes — type and spacing take the
-   smaller of a width- and a height-derived size — so a short laptop window
-   gets the same composition as a tall one, just tighter. `auto` is kept as a
-   safety valve for viewports shorter than anything targeted here; clipping
-   content away with `hidden` would make it unreachable. */
+   · SQUARE corners, not pills. 3px on the buttons, 10px on the image. Pill
+     buttons read as consumer app chrome; a near-square button reads as a tool.
+   · ONE colour in the headline. Splitting it across blue and teal fought the
+     type for attention. The accent now appears once, on the primary button.
+   · WEIGHT 700. Geist ships 400–700 (fonts.css); asking for 800 makes the
+     browser synthesise a fake bold, which smears the stems at hero size.
+   · The stat row is mono because those are measurements, not prose. */
+
 .hero {
   position: fixed; inset: 0; z-index: 40;
   display: flex; flex-direction: column;
   overflow-y: auto; overflow-x: hidden;
   background: #FFFFFF;
-  color: #0B1220;
+  color: #101215;
   color-scheme: light;
   font-family: var(--font, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-  --blue: #2F6FD8;
-  --teal: #45B0C3;
-  --muted: #5B6472;
-  --hair: #E4E8EF;
-  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
-}
-
-/* The measured grid. It reads as drafting paper rather than decoration, which
-   is the whole pitch: this is where the real dimensions live. Fixed so it
-   doesn't slide under the content on a short screen. */
-.grid {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    linear-gradient(to right, rgba(16,24,40,.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(16,24,40,.055) 1px, transparent 1px);
-  background-size: 78px 78px;
-  mask-image: radial-gradient(ellipse 120% 90% at 50% 30%, #000 45%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 120% 90% at 50% 30%, #000 45%, transparent 100%);
+  --accent: #1D3FD1;
+  --ink: #101215;
+  --muted: #5A616B;
+  --faint: #9AA1AB;
+  --hair: #E6E8EC;
+  --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* ── Nav ──────────────────────────────────────────────── */
 .nav {
-  position: relative; z-index: 2;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px;
-  padding: 20px clamp(20px, 4vw, 96px);
-  padding-top: max(20px, env(safe-area-inset-top, 0px));
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 18px clamp(20px, 4vw, 64px);
+  padding-top: max(18px, env(safe-area-inset-top, 0px));
 }
-.logo {
-  display: flex; align-items: center; gap: 10px;
-  font-weight: 700; font-size: 16.5px; letter-spacing: -.012em;
-}
-.logoMark { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; display: block; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16.5px; letter-spacing: -.014em; }
+.logoMark { width: 30px; height: 30px; border-radius: 7px; object-fit: cover; display: block; }
 .navBtn {
-  border: 1px solid var(--hair); border-radius: 100px; padding: 9px 18px;
-  font-size: 14px; font-weight: 600; color: #0B1220; background: #fff;
+  border: 1px solid var(--hair); border-radius: 3px; padding: 9px 18px;
+  font-size: 14px; font-weight: 600; background: #fff; color: var(--ink);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
-  transition: border-color .18s, background-color .18s;
+  transition: border-color .16s, background-color .16s;
 }
-.navBtn:hover { border-color: #0B1220; }
+.navBtn:hover { border-color: var(--ink); }
 
-/* ── Two-column body ──────────────────────────────────── */
-/* Full-bleed by design — the page spans the device, no centred column. */
+/* ── Two columns ──────────────────────────────────────── */
 .body {
-  position: relative; z-index: 1;
-  flex: 1 1 auto; min-height: 0;      /* absorbs the space the nav leaves */
+  flex: 1 1 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
-  grid-template-rows: auto auto;
-  align-content: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
   align-items: center;
-  gap: clamp(18px, 2.8vh, 44px) clamp(28px, 4vw, 68px);
-  padding: 0 clamp(20px, 4vw, 96px) clamp(20px, 4vh, 56px);
-}
-/* Explicit placement rather than source order, because the two disagree: the
-   photo must sit beside the copy on a wide screen but directly after it on a
-   phone, ahead of the capability list. */
-.copy  { grid-column: 1; grid-row: 1; align-self: end; }
-.reads { grid-column: 1; grid-row: 2; align-self: start; }
-.shot  { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
-
-/* ── Left column ──────────────────────────────────────── */
-.badge {
-  display: inline-flex; align-items: center; gap: 9px;
-  border: 1px solid var(--hair); border-radius: 100px;
-  background: #fff; padding: 8px 17px 8px 13px;
-  font-size: 13.5px; font-weight: 500; color: #1B2432;
-  box-shadow: 0 1px 2px rgba(16,24,40,.04);
-}
-.badgeDot {
-  width: 7px; height: 7px; border-radius: 50%; background: var(--teal);
-  flex: 0 0 7px;
+  gap: clamp(28px, 4.5vw, 88px);
+  padding: 0 clamp(20px, 4vw, 64px) clamp(20px, 3.5vh, 52px);
 }
 
-/* min(vw, vh) is the whole trick: the headline is four stacked lines, so on a
-   short window it is height that runs out first, not width. Sizing on width
-   alone is what pushed the composition past the fold at 1280x720. */
-.h1 {
-  margin: clamp(12px, 2.2vh, 30px) 0 0;
-  font-size: clamp(34px, min(6.2vw, 8.4vh), 96px);
-  font-weight: 800;
-  line-height: .96;
-  letter-spacing: -.042em;
-  text-wrap: balance;
-}
-/* The colour shift lands on the claim, not the subject: the racks and units
-   are stated flatly, and only "precisely documented" — the part that is the
-   actual promise — is given the accent. */
-.h1 .blue { color: var(--blue); }
-.h1 .teal { color: var(--teal); }
+/* ── Left ─────────────────────────────────────────────── */
+.copy { display: flex; flex-direction: column; align-items: flex-start; }
 
-.lede {
-  margin: clamp(12px, 2vh, 26px) 0 0;
-  font-size: clamp(14.5px, min(1.15vw, 2vh), 20px);
-  line-height: 1.6;
-  color: var(--muted);
-  max-width: 58ch;
-}
-
-.actions {
-  display: flex; flex-wrap: wrap;
-  gap: clamp(9px, 1.2vh, 13px);
-  margin-top: clamp(14px, 2.4vh, 34px);
-}
-.btn {
-  display: inline-flex; align-items: center; gap: 10px;
-  border-radius: 100px;
-  padding: clamp(11px, 1.6vh, 15px) clamp(20px, 2vw, 28px);
-  font-size: clamp(14.5px, 1.7vh, 15.5px); font-weight: 650; letter-spacing: -.008em;
-  border: 1px solid transparent; cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform .16s, background-color .16s, border-color .16s, box-shadow .2s;
-}
-.primary {
-  background: #0B1220; color: #fff;
-  box-shadow: 0 12px 26px -14px rgba(11,18,32,.7);
-}
-.primary:hover { transform: translateY(-1px); background: #000; }
-.primary svg { transition: transform .18s; }
-.primary:hover svg { transform: translateX(3px); }
-.ghost { background: #fff; color: #0B1220; border-color: var(--hair); }
-.ghost:hover { border-color: #0B1220; }
-
-.reads { margin-top: 0; }
 .eyebrow {
   font-family: var(--mono);
-  font-size: 11px; font-weight: 600; letter-spacing: .17em;
-  text-transform: uppercase; color: #8A93A1;
-  margin: 0 0 12px;
-}
-.readsList {
-  display: flex; flex-wrap: wrap; gap: 8px 10px;
-  margin: 0; padding: 0; list-style: none;
-}
-.readsList li {
-  border: 1px solid var(--hair); border-radius: 100px;
-  padding: 6px 14px; font-size: 13.5px; font-weight: 600; color: #253044;
-  background: #fff;
+  font-size: clamp(10px, 1.25vh, 11.5px);
+  letter-spacing: .19em; text-transform: uppercase;
+  color: var(--faint);
+  border: 1px solid var(--hair);
+  padding: 5px 11px;
+  margin: 0;
 }
 
-/* ── Right column: the rack ───────────────────────────── */
-/* HEIGHT drives this card, not width, and the ratio follows from it.
-   The other way round — full-column width with a max-height cap — looks right
-   until the screen gets big: on a 2000px display the column is ~880px, the cap
-   holds the height at 700, and the portrait card silently becomes a landscape
-   letterbox. Sizing from height keeps the intended shape at any width, and
-   the card centres in its column rather than stretching to fill it. */
-.shot {
-  position: relative;
-  margin: 0;                 /* <figure> carries a default margin */
-  justify-self: center;
-  height: min(72dvh, 820px);
-  aspect-ratio: 4 / 4.4;
-  width: auto;
-  max-width: 100%;
-  border-radius: 22px;
-  overflow: hidden;
-  background: #0D1117;
-  box-shadow:
-    0 1px 2px rgba(16,24,40,.10),
-    0 34px 60px -30px rgba(16,24,40,.45);
-}
-.shot img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-  /* Keeps the central rack — patch panels, the orange coil, the lit units —
-     in frame as the card narrows. */
-  object-position: 40% center;
+.h1 {
+  margin: clamp(14px, 2.4vh, 30px) 0 0;
+  font-size: clamp(34px, min(5.4vw, 8.6vh), 84px);
+  font-weight: 700;
+  line-height: 1.0;
+  letter-spacing: -.042em;
+  max-width: 13ch;
 }
 
-/* Read-out over the photo. Dark glass rather than a solid bar so the rack
-   stays visible behind it — the numbers are about that rack, not a widget
-   floating on top of a stock photo. */
-.readout {
-  position: absolute; left: 12px; right: 12px; bottom: 12px;
-  border-radius: 15px;
-  padding: 14px 18px 16px;
-  background: rgba(13, 17, 23, .72);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  backdrop-filter: blur(14px) saturate(1.4);
-  border: 1px solid rgba(255,255,255,.10);
-  color: #fff;
+.lede {
+  margin: clamp(14px, 2.4vh, 30px) 0 0;
+  font-size: clamp(14.5px, min(1.05vw, 1.95vh), 18px);
+  line-height: 1.62;
+  color: var(--muted);
+  max-width: 52ch;
 }
-.readoutTop {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin-bottom: 12px;
-}
-.rackId {
-  font-family: var(--mono); font-size: 11.5px; letter-spacing: .13em;
-  text-transform: uppercase; color: rgba(255,255,255,.62);
-}
-.sampleTag {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: var(--mono); font-size: 10.5px; letter-spacing: .13em;
-  text-transform: uppercase; color: rgba(255,255,255,.62);
-}
-.sampleDot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
 
-.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(16px, 2.8vh, 36px); }
+.btn {
+  display: inline-flex; align-items: center; gap: 11px;
+  border-radius: 3px;
+  padding: clamp(12px, 1.8vh, 17px) clamp(20px, 1.9vw, 30px);
+  font-size: clamp(14.5px, 1.7vh, 15.5px); font-weight: 650; letter-spacing: -.006em;
+  border: 1px solid transparent; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .16s, border-color .16s, transform .14s;
+}
+.primary { background: var(--accent); color: #fff; }
+.primary:hover { background: #1834B4; }
+.primary svg { transition: transform .18s; }
+.primary:hover svg { transform: translateX(3px); }
+.ghost { background: #fff; color: var(--ink); border-color: var(--hair); }
+.ghost:hover { border-color: var(--ink); }
+
+/* Hairline plus measurements. Vertical rules BETWEEN cells rather than around
+   them, so the row reads as one instrument panel instead of three boxes. */
+.stats {
+  display: flex; flex-wrap: wrap;
+  margin-top: clamp(18px, 3.4vh, 48px);
+  padding-top: clamp(14px, 2.2vh, 26px);
+  border-top: 1px solid var(--hair);
+  width: 100%;
+}
+.stat { padding-right: clamp(20px, 2.4vw, 40px); }
+.stat + .stat {
+  padding-left: clamp(20px, 2.4vw, 40px);
+  border-left: 1px solid var(--hair);
+}
 .statVal {
-  font-size: clamp(19px, 1.8vw, 25px); font-weight: 750;
-  letter-spacing: -.022em; line-height: 1.1;
+  display: block;
+  font-family: var(--mono);
+  font-size: clamp(15px, 2vh, 21px); font-weight: 500;
+  letter-spacing: -.01em; color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 .statKey {
-  margin-top: 3px; font-size: 12.5px; color: rgba(255,255,255,.6);
-  line-height: 1.3;
+  display: block; margin-top: 5px;
+  font-family: var(--mono);
+  font-size: clamp(9.5px, 1.2vh, 11px);
+  letter-spacing: .15em; text-transform: uppercase; color: var(--faint);
 }
+
+/* ── Right: the rack ──────────────────────────────────── */
+.shot {
+  position: relative; margin: 0;
+  justify-self: stretch;
+  height: min(76dvh, 840px);
+  overflow: visible;             /* the instruments overhang the frame */
+}
+.shotImg {
+  position: absolute; inset: 0;
+  border-radius: 10px; overflow: hidden;
+  background: #0D1117;
+  box-shadow: 0 1px 2px rgba(16,24,40,.08), 0 18px 40px -26px rgba(16,24,40,.35);
+}
+.shotImg img { width: 100%; height: 100%; object-fit: cover; display: block; object-position: 46% center; }
+
+/* Small white instruments over the photograph. They overhang the frame so the
+   image reads as something being measured rather than a picture in a box. */
+.chip {
+  position: absolute; z-index: 2;
+  background: #fff;
+  border: 1px solid rgba(16,24,40,.07);
+  border-radius: 4px;
+  padding: 11px 14px 12px;
+  box-shadow: 0 10px 26px -12px rgba(16,24,40,.32);
+  min-width: clamp(140px, 13vw, 186px);
+}
+.chipTop    { top: clamp(16px, 3vh, 40px); left: clamp(-14px, -1vw, 0px); }
+.chipBottom { bottom: clamp(16px, 3vh, 40px); right: clamp(-14px, -1vw, 0px); }
+.chipKey {
+  display: block;
+  font-family: var(--mono);
+  font-size: clamp(9px, 1.15vh, 10.5px);
+  letter-spacing: .15em; text-transform: uppercase; color: var(--faint);
+}
+.chipVal {
+  display: block; margin-top: 5px;
+  font-family: var(--mono);
+  font-size: clamp(17px, 2.5vh, 26px); font-weight: 500;
+  letter-spacing: -.02em; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chipVal small { font-size: .52em; color: var(--muted); margin-left: 4px; letter-spacing: .04em; }
+.meter { display: block; margin-top: 9px; height: 3px; background: #EDEFF2; border-radius: 2px; overflow: hidden; }
+.meterFill { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
 
 /* ── Narrow ───────────────────────────────────────────── */
 @media (max-width: 900px) {
   .body {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    gap: clamp(12px, 2.2vh, 26px);
-    padding-bottom: calc(clamp(14px, 2.5vh, 30px) + env(safe-area-inset-bottom, 0px));
+    gap: clamp(20px, 3vh, 34px);
+    align-content: center;
+    padding-bottom: calc(clamp(16px, 2.5vh, 34px) + env(safe-area-inset-bottom, 0px));
   }
-  /* One column: copy, then the rack, then the capability list. */
-  .copy  { grid-column: 1; grid-row: 1; align-self: auto; }
-  .shot  { grid-column: 1; grid-row: 2; }
-  .reads { grid-column: 1; grid-row: 3; }
-  /* Stacked, the card competes with the copy for the same vertical budget, so
-     height is set directly and the ratio is dropped. Keeping aspect-ratio here
-     backfired: once max-height bit, the ratio pulled the WIDTH in to match and
-     the card sat at 500px inside an 820px column with dead space beside it. */
-  .shot { aspect-ratio: auto; height: clamp(200px, 34dvh, 430px); width: 100%; max-width: none; }
-  .grid { background-size: 54px 54px; }
+  .h1 { max-width: 15ch; }
   .lede { max-width: none; }
+  .shot { height: clamp(190px, 32dvh, 380px); order: 2; }
+  .chip { min-width: 132px; padding: 9px 12px 10px; }
+  .chipTop { left: 10px; top: 12px; }
+  .chipBottom { right: 10px; bottom: 12px; }
 }
-/* The readout is the one element that can't just reflow: it sits over the
-   photo, so it has a hard width budget. Below this the tracked-out mono labels
-   no longer fit on one line and wrap mid-identifier ("CHENNAI-" / "DC1"), so
-   the tracking and size come down and the row is allowed to stack. */
-@media (max-width: 560px) {
-  .readoutTop { flex-wrap: wrap; gap: 4px 10px; margin-bottom: 10px; }
-  .rackId, .sampleTag { font-size: 10px; letter-spacing: .07em; }
-  .statVal { font-size: 19px; }
-  .statKey { font-size: 11.5px; }
-}
-/* Small phones in landscape, and the shorter 4.7"/SE-class screens. Below this
-   there is no spacing left to reclaim, so something has to go rather than
-   everything shrinking to the point of illegibility. The capability chips are
-   the most expendable: they elaborate a claim the headline already makes, and
-   the rack photo carries far more weight for a first-time visitor. */
-@media (max-width: 900px) and (max-height: 700px) {
-  .reads { display: none; }
-  .body { gap: clamp(10px, 1.8vh, 18px) clamp(20px, 3vw, 40px); }
-  .shot { height: clamp(150px, 30dvh, 300px); }
-  .lede { font-size: 13.5px; line-height: 1.5; }
-}
-
-@media (max-width: 420px) {
-  /* Side by side rather than stacked: two full-width pills cost ~60px of the
-     one budget that is actually scarce on a phone, and at this width each
-     still clears a comfortable touch target. */
+@media (max-width: 480px) {
   .btn { flex: 1 1 0; justify-content: center; padding-left: 14px; padding-right: 14px; }
-  .stats { gap: 8px; }
-  .readout { left: 8px; right: 8px; bottom: 8px; padding: 11px 13px 12px; }
-  .nav { padding-left: 18px; padding-right: 18px; }
-  .badge { font-size: 12.5px; padding: 6px 14px 6px 11px; }
-  .readsList li { padding: 5px 12px; font-size: 12.5px; }
+  .stat { padding-right: 16px; }
+  .stat + .stat { padding-left: 16px; }
+}
+/* Short screens: the measurement row restates what the page already shows. */
+@media (max-height: 700px) and (max-width: 900px) {
+  .stats { display: none; }
+  .shot { height: clamp(140px, 24dvh, 220px); }
+  .body { gap: 16px; }
+  .lede { font-size: 13.5px; line-height: 1.5; }
 }
 
 @media (prefers-reduced-motion: reduce) {

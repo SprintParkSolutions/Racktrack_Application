@@ -1,19 +1,19 @@
 import { useEffect } from 'react';
 import styles from '../pages/AuthPages.module.css';
+import RackElevation from './RackElevation.jsx';
 
 /**
- * The brand panel beside the auth form on wide screens.
+ * The panel beside the auth form on wide screens.
  *
- * The auth pages were a 440px column centred in whatever space existed, which
- * on a laptop meant a phone-shaped strip floating in an empty page. Widening
- * the form itself is not the fix — a sign-in form with 1400px-wide inputs is
- * worse, not better — so the surplus width gets content of its own and the
- * form keeps a sensible measure.
+ * The genre convention is a stock photo or a 3D mascot here, which is why
+ * every one of these pages looks like every other: the artwork is
+ * interchangeable. This panel carries a drawn 42U rack elevation instead —
+ * built from the same U-positions and device tags the app uses throughout, so
+ * it belongs to this product and no other.
  *
  * Hidden below 900px, where the single column is already the right answer.
- * Purely decorative, so it is aria-hidden: everything it says is either
- * repeated by the form or is marketing copy a screen-reader user reaching a
- * sign-in page does not need read to them first.
+ * aria-hidden: it is decorative, and a screen-reader user arriving at a
+ * sign-in page should reach the form, not a rack diagram.
  */
 export default function AuthAside() {
   // #root is capped at 540px and centred (index.css) — the frame that makes the
@@ -33,7 +33,6 @@ export default function AuthAside() {
 
   return (
     <aside className={styles.aside} aria-hidden="true">
-      <div className={styles.asideGrid} />
       <div className={styles.asideInner}>
         <div className={styles.asideBrand}>
           <img src="/logo.jpg" alt="" className={styles.asideMark} />
@@ -41,21 +40,17 @@ export default function AuthAside() {
         </div>
 
         <h2 className={styles.asideH}>
-          Every rack.<br />
-          Every unit.<br />
-          <span className={styles.asideBlue}>Precisely</span><br />
-          <span className={styles.asideTeal}>documented.</span>
+          Every rack. Every unit.<br />
+          <span className={styles.asideAccent}>Precisely documented.</span>
         </h2>
 
-        <figure className={styles.asideShot}>
-          <img src="/home-bg.jpg" alt="" />
-          <figcaption className={styles.asideReadout}>
-            <span className={styles.asideRackId}>Rack R-101 · Chennai-DC1</span>
-            <span className={styles.asideStats}>
-              <b>24U / 42U</b> space · <b>48</b> ports · <b>5</b> devices
-            </span>
-          </figcaption>
-        </figure>
+        <div className={styles.asideRack}>
+          <RackElevation />
+        </div>
+
+        <p className={styles.asideNote}>
+          Every unit, its U-position and its port count — read from one photograph.
+        </p>
       </div>
     </aside>
   );
