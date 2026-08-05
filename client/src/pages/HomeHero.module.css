@@ -1,0 +1,238 @@
+/* Home hero — light, two-column: the claim on the left, a real rack on the
+   right with its scan read out over the photo.
+
+   Replaces the dark full-bleed immersive hero. The subject is documentation
+   accuracy, so the page is built like a spec sheet: a faint measured grid,
+   near-black text with a cool cast, and mono for anything that is an
+   identifier rather than prose. */
+
+.hero {
+  position: fixed; inset: 0; z-index: 40;
+  overflow-y: auto; overflow-x: hidden;
+  background: #FFFFFF;
+  color: #0B1220;
+  color-scheme: light;
+  font-family: var(--font, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  --blue: #2F6FD8;
+  --teal: #45B0C3;
+  --muted: #5B6472;
+  --hair: #E4E8EF;
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+/* The measured grid. It reads as drafting paper rather than decoration, which
+   is the whole pitch: this is where the real dimensions live. Fixed so it
+   doesn't slide under the content on a short screen. */
+.grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(16,24,40,.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(16,24,40,.055) 1px, transparent 1px);
+  background-size: 78px 78px;
+  mask-image: radial-gradient(ellipse 120% 90% at 50% 30%, #000 45%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 120% 90% at 50% 30%, #000 45%, transparent 100%);
+}
+
+/* ── Nav ──────────────────────────────────────────────── */
+.nav {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+  padding: 20px clamp(20px, 4vw, 60px);
+  padding-top: max(20px, env(safe-area-inset-top, 0px));
+}
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 16.5px; letter-spacing: -.012em;
+}
+.logoMark { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; display: block; }
+.navBtn {
+  border: 1px solid var(--hair); border-radius: 100px; padding: 9px 18px;
+  font-size: 14px; font-weight: 600; color: #0B1220; background: #fff;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: border-color .18s, background-color .18s;
+}
+.navBtn:hover { border-color: #0B1220; }
+
+/* ── Two-column body ──────────────────────────────────── */
+/* Full-bleed by design — the page spans the device, no centred column. */
+.body {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: clamp(24px, 3vw, 44px) clamp(28px, 4vw, 68px);
+  padding: clamp(12px, 2vh, 30px) clamp(20px, 4vw, 60px) clamp(40px, 6vh, 72px);
+}
+/* Explicit placement rather than source order, because the two disagree: the
+   photo must sit beside the copy on a wide screen but directly after it on a
+   phone, ahead of the capability list. */
+.copy  { grid-column: 1; grid-row: 1; align-self: end; }
+.reads { grid-column: 1; grid-row: 2; align-self: start; }
+.shot  { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+
+/* ── Left column ──────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 9px;
+  border: 1px solid var(--hair); border-radius: 100px;
+  background: #fff; padding: 8px 17px 8px 13px;
+  font-size: 13.5px; font-weight: 500; color: #1B2432;
+  box-shadow: 0 1px 2px rgba(16,24,40,.04);
+}
+.badgeDot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--teal);
+  flex: 0 0 7px;
+}
+
+.h1 {
+  margin: clamp(20px, 3vh, 34px) 0 0;
+  font-size: clamp(40px, 6.4vw, 82px);
+  font-weight: 800;
+  line-height: .96;
+  letter-spacing: -.042em;
+  text-wrap: balance;
+}
+/* The colour shift lands on the claim, not the subject: the racks and units
+   are stated flatly, and only "precisely documented" — the part that is the
+   actual promise — is given the accent. */
+.h1 .blue { color: var(--blue); }
+.h1 .teal { color: var(--teal); }
+
+.lede {
+  margin: clamp(18px, 2.6vh, 30px) 0 0;
+  font-size: clamp(15px, 1.15vw, 18px);
+  line-height: 1.62;
+  color: var(--muted);
+  max-width: 54ch;
+}
+
+.actions { display: flex; flex-wrap: wrap; gap: 13px; margin-top: clamp(22px, 3vh, 36px); }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  border-radius: 100px; padding: 15px 28px;
+  font-size: 15.5px; font-weight: 650; letter-spacing: -.008em;
+  border: 1px solid transparent; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .16s, background-color .16s, border-color .16s, box-shadow .2s;
+}
+.primary {
+  background: #0B1220; color: #fff;
+  box-shadow: 0 12px 26px -14px rgba(11,18,32,.7);
+}
+.primary:hover { transform: translateY(-1px); background: #000; }
+.primary svg { transition: transform .18s; }
+.primary:hover svg { transform: translateX(3px); }
+.ghost { background: #fff; color: #0B1220; border-color: var(--hair); }
+.ghost:hover { border-color: #0B1220; }
+
+.reads { margin-top: clamp(30px, 5vh, 58px); }
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 600; letter-spacing: .17em;
+  text-transform: uppercase; color: #8A93A1;
+  margin: 0 0 12px;
+}
+.readsList {
+  display: flex; flex-wrap: wrap; gap: 8px 10px;
+  margin: 0; padding: 0; list-style: none;
+}
+.readsList li {
+  border: 1px solid var(--hair); border-radius: 100px;
+  padding: 6px 14px; font-size: 13.5px; font-weight: 600; color: #253044;
+  background: #fff;
+}
+
+/* ── Right column: the rack ───────────────────────────── */
+.shot {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  aspect-ratio: 4 / 4.4;
+  background: #0D1117;
+  box-shadow:
+    0 1px 2px rgba(16,24,40,.10),
+    0 34px 60px -30px rgba(16,24,40,.45);
+}
+.shot img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  /* Keeps the central rack — patch panels, the orange coil, the lit units —
+     in frame as the card narrows. */
+  object-position: 40% center;
+}
+
+/* Read-out over the photo. Dark glass rather than a solid bar so the rack
+   stays visible behind it — the numbers are about that rack, not a widget
+   floating on top of a stock photo. */
+.readout {
+  position: absolute; left: 12px; right: 12px; bottom: 12px;
+  border-radius: 15px;
+  padding: 14px 18px 16px;
+  background: rgba(13, 17, 23, .72);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,.10);
+  color: #fff;
+}
+.readoutTop {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 12px;
+}
+.rackId {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .13em;
+  text-transform: uppercase; color: rgba(255,255,255,.62);
+}
+.sampleTag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .13em;
+  text-transform: uppercase; color: rgba(255,255,255,.62);
+}
+.sampleDot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.statVal {
+  font-size: clamp(19px, 1.8vw, 25px); font-weight: 750;
+  letter-spacing: -.022em; line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.statKey {
+  margin-top: 3px; font-size: 12.5px; color: rgba(255,255,255,.6);
+  line-height: 1.3;
+}
+
+/* ── Narrow ───────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    gap: 28px;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  }
+  /* One column: copy, then the rack, then the capability list. */
+  .copy  { grid-column: 1; grid-row: 1; align-self: auto; }
+  .shot  { grid-column: 1; grid-row: 2; }
+  .reads { grid-column: 1; grid-row: 3; margin-top: 0; }
+  .shot { aspect-ratio: 4 / 3.2; }
+  .grid { background-size: 54px 54px; }
+  .lede { max-width: none; }
+}
+/* The readout is the one element that can't just reflow: it sits over the
+   photo, so it has a hard width budget. Below this the tracked-out mono labels
+   no longer fit on one line and wrap mid-identifier ("CHENNAI-" / "DC1"), so
+   the tracking and size come down and the row is allowed to stack. */
+@media (max-width: 560px) {
+  .readoutTop { flex-wrap: wrap; gap: 4px 10px; margin-bottom: 10px; }
+  .rackId, .sampleTag { font-size: 10px; letter-spacing: .07em; }
+  .statVal { font-size: 19px; }
+  .statKey { font-size: 11.5px; }
+}
+@media (max-width: 420px) {
+  .btn { flex: 1 1 100%; justify-content: center; }
+  .stats { gap: 8px; }
+  .readout { left: 8px; right: 8px; bottom: 8px; padding: 12px 14px 14px; }
+  .shot { aspect-ratio: 4 / 3.6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .primary svg, .navBtn { transition: none; }
+}

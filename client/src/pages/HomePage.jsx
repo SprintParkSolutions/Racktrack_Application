@@ -4,7 +4,7 @@ import styles from './HomePage.module.css';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { useTheme } from '../ThemeContext.jsx';
 import { useAuth } from '../AuthContext.jsx';
-import HomeImmersive from './HomeImmersive.jsx';
+import HomeHero from './HomeHero.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
    HomePage — RackTrack, modelled on the EV app reference
@@ -260,7 +260,10 @@ export default function HomePage() {
   /* iPad + desktop (>=768px) get the editorial HomeStudio welcome — a
      centred, full-viewport, no-scroll hero with fine line-art. Phones stay
      on the clean, simple HomeLight welcome, untouched. */
-  // One immersive home for every screen — a full-screen dark data-center hero.
-  return <HomeImmersive />;
+  // One home for every screen — the light two-column hero: the claim on the
+  // left, a real rack on the right with its scan read out over the photo.
+  // Replaces the dark full-bleed HomeImmersive, which is kept in the tree
+  // alongside the other home variants.
+  return <HomeHero />;
 
 }

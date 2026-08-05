@@ -22,7 +22,6 @@ export default function LoginPage() {
   // user learns "no account uses that address" instead of silently landing on
   // an empty login form.
   const [error,    setError]    = useState(location.state?.socialError || null);
-  const [hasSocial, setHasSocial] = useState(false);
 
   const from = location.state?.from || '/scan';
 
@@ -139,17 +138,6 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Someone who joined through an invite with Google has no password at
-              all, and would otherwise just keep retrying one. Shown after ANY
-              failure rather than only that case: an error that appeared only for
-              accounts without a password would tell an attacker which addresses
-              are registered. */}
-          {error && hasSocial && (
-            <p className={styles.fieldNote}>
-              Joined with Google, Apple or Facebook? Use the buttons below instead —
-              those accounts don&rsquo;t have a password.
-            </p>
-          )}
 
           <button type="submit" className={styles.primaryBtn} disabled={loading}>
             <span>Sign in</span>
@@ -159,7 +147,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <SocialSignIn mode="login" onLoaded={(p) => setHasSocial(p.length > 0)} />
+        <SocialSignIn mode="login" />
 
         <div className={styles.altRow}>
           New here?
