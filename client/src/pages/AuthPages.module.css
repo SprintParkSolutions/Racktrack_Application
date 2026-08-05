@@ -585,10 +585,16 @@
     -webkit-mask-image: radial-gradient(ellipse 110% 80% at 40% 35%, #000 45%, transparent 100%);
   }
 
+  /* The panel spans its column, but its CONTENTS need a measure. Left to fill
+     a 1400px-wide panel the headline ran to a single line and the photo became
+     a 1354x330 letterbox — the same mistake as a full-width paragraph, just
+     with pictures. Centred inside the panel so the white space falls evenly. */
   .asideInner {
     position: relative; height: 100%;
     display: flex; flex-direction: column; justify-content: center;
     gap: clamp(18px, 3vh, 34px);
+    width: 100%; max-width: min(740px, 100%);
+    margin: 0 auto;
     padding: clamp(28px, 4vw, 60px);
   }
 
@@ -600,7 +606,7 @@
 
   .asideH {
     margin: 0;
-    font-size: clamp(30px, min(3.4vw, 6.4vh), 58px);
+    font-size: clamp(30px, min(3.4vw, 6.4vh), 66px);
     font-weight: 800; line-height: .98; letter-spacing: -.04em; color: #0B1220;
   }
   .asideBlue { color: #2F6FD8; }
@@ -608,7 +614,7 @@
 
   .asideShot {
     position: relative; margin: 0; width: 100%;
-    height: clamp(150px, 34vh, 330px);
+    height: clamp(160px, 34vh, 430px);
     border-radius: 18px; overflow: hidden; background: #0D1117;
     box-shadow: 0 1px 2px rgba(16,24,40,.10), 0 26px 48px -28px rgba(16,24,40,.45);
   }

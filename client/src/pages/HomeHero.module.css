@@ -47,7 +47,7 @@
   position: relative; z-index: 2;
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px;
-  padding: 20px clamp(20px, 4vw, 60px);
+  padding: 20px clamp(20px, 4vw, 96px);
   padding-top: max(20px, env(safe-area-inset-top, 0px));
 }
 .logo {
@@ -74,7 +74,7 @@
   align-content: center;
   align-items: center;
   gap: clamp(18px, 2.8vh, 44px) clamp(28px, 4vw, 68px);
-  padding: 0 clamp(20px, 4vw, 60px) clamp(20px, 4vh, 56px);
+  padding: 0 clamp(20px, 4vw, 96px) clamp(20px, 4vh, 56px);
 }
 /* Explicit placement rather than source order, because the two disagree: the
    photo must sit beside the copy on a wide screen but directly after it on a
@@ -101,7 +101,7 @@
    alone is what pushed the composition past the fold at 1280x720. */
 .h1 {
   margin: clamp(12px, 2.2vh, 30px) 0 0;
-  font-size: clamp(34px, min(6.2vw, 8.4vh), 80px);
+  font-size: clamp(34px, min(6.2vw, 8.4vh), 96px);
   font-weight: 800;
   line-height: .96;
   letter-spacing: -.042em;
@@ -115,10 +115,10 @@
 
 .lede {
   margin: clamp(12px, 2vh, 26px) 0 0;
-  font-size: clamp(14.5px, min(1.15vw, 2vh), 18px);
-  line-height: 1.58;
+  font-size: clamp(14.5px, min(1.15vw, 2vh), 20px);
+  line-height: 1.6;
   color: var(--muted);
-  max-width: 54ch;
+  max-width: 58ch;
 }
 
 .actions {
@@ -163,18 +163,22 @@
 }
 
 /* ── Right column: the rack ───────────────────────────── */
-/* aspect-ratio sets the card's shape, max-height stops that shape from
-   dictating the page height. When the cap bites, the ratio simply gives way
-   and object-fit: cover keeps the photo composed — which is the right
-   trade: a shorter card beats a page that no longer fits. */
+/* HEIGHT drives this card, not width, and the ratio follows from it.
+   The other way round — full-column width with a max-height cap — looks right
+   until the screen gets big: on a 2000px display the column is ~880px, the cap
+   holds the height at 700, and the portrait card silently becomes a landscape
+   letterbox. Sizing from height keeps the intended shape at any width, and
+   the card centres in its column rather than stretching to fill it. */
 .shot {
   position: relative;
   margin: 0;                 /* <figure> carries a default margin */
-  width: 100%;
+  justify-self: center;
+  height: min(72dvh, 820px);
+  aspect-ratio: 4 / 4.4;
+  width: auto;
+  max-width: 100%;
   border-radius: 22px;
   overflow: hidden;
-  aspect-ratio: 4 / 4.4;
-  max-height: min(76dvh, 700px);
   background: #0D1117;
   box-shadow:
     0 1px 2px rgba(16,24,40,.10),
@@ -242,7 +246,7 @@
      height is set directly and the ratio is dropped. Keeping aspect-ratio here
      backfired: once max-height bit, the ratio pulled the WIDTH in to match and
      the card sat at 500px inside an 820px column with dead space beside it. */
-  .shot { aspect-ratio: auto; height: clamp(200px, 34dvh, 430px); }
+  .shot { aspect-ratio: auto; height: clamp(200px, 34dvh, 430px); width: 100%; max-width: none; }
   .grid { background-size: 54px 54px; }
   .lede { max-width: none; }
 }
