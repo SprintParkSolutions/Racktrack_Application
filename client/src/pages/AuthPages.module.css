@@ -539,3 +539,124 @@
   border-radius: 50%;
   animation: spin .7s linear infinite;
 }
+
+/* ── Wide-screen auth layout ────────────────────────────────────
+   These pages were a 440px column centred in whatever space existed, so on a
+   laptop or desktop they read as a phone screenshot dropped into an empty
+   page. The form itself stays a sensible measure — nobody wants 1400px-wide
+   inputs — and the surplus width gets a brand panel instead of being left
+   blank.
+
+   Below 900px nothing here applies and the existing single column stands. */
+
+.aside { display: none; }
+
+@media (min-width: 900px) {
+  /* Set by AuthAside while an auth page is mounted. Without this the grid
+     below lays out inside #root's 540px frame and the brand panel has nowhere
+     to go — the reason these pages looked like a phone screenshot on a laptop. */
+  :global(#root.rt-auth-wide) { max-width: none; }
+
+  .authPage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(430px, 38vw, 560px);
+    grid-template-rows: auto 1fr;
+    align-items: stretch;
+    overflow: hidden;                /* each side scrolls on its own */
+  }
+
+  .aside {
+    display: block; position: relative;
+    grid-column: 1; grid-row: 1 / -1;
+    overflow: hidden;
+    background: #FFFFFF;
+    border-right: 1px solid rgba(16,24,40,.08);
+  }
+
+  /* The same drafting grid as the home hero, so arriving at sign-in from the
+     landing page feels like one product rather than two. */
+  .asideGrid {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgba(16,24,40,.055) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(16,24,40,.055) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(ellipse 110% 80% at 40% 35%, #000 45%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 110% 80% at 40% 35%, #000 45%, transparent 100%);
+  }
+
+  .asideInner {
+    position: relative; height: 100%;
+    display: flex; flex-direction: column; justify-content: center;
+    gap: clamp(18px, 3vh, 34px);
+    padding: clamp(28px, 4vw, 60px);
+  }
+
+  .asideBrand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 16.5px; letter-spacing: -.012em; color: #0B1220;
+  }
+  .asideMark { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; display: block; }
+
+  .asideH {
+    margin: 0;
+    font-size: clamp(30px, min(3.4vw, 6.4vh), 58px);
+    font-weight: 800; line-height: .98; letter-spacing: -.04em; color: #0B1220;
+  }
+  .asideBlue { color: #2F6FD8; }
+  .asideTeal { color: #45B0C3; }
+
+  .asideShot {
+    position: relative; margin: 0; width: 100%;
+    height: clamp(150px, 34vh, 330px);
+    border-radius: 18px; overflow: hidden; background: #0D1117;
+    box-shadow: 0 1px 2px rgba(16,24,40,.10), 0 26px 48px -28px rgba(16,24,40,.45);
+  }
+  .asideShot img { width: 100%; height: 100%; object-fit: cover; object-position: 40% center; display: block; }
+
+  .asideReadout {
+    position: absolute; left: 10px; right: 10px; bottom: 10px;
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 11px 14px; border-radius: 12px;
+    background: rgba(13,17,23,.72);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    backdrop-filter: blur(12px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,.10);
+    color: #fff;
+  }
+  .asideRackId {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(255,255,255,.62);
+  }
+  .asideStats { font-size: 13px; color: rgba(255,255,255,.82); }
+  .asideStats b { font-weight: 700; color: #fff; }
+
+  /* The form column.
+     The ≥768px block above turns .authShell into a raised, centred, 468px card
+     with a 24px radius — the right answer for a tablet, wrong here, where the
+     column IS the surface. Every one of those properties has to be undone
+     explicitly; overriding only max-width leaves a rounded card floating in
+     the column, which is the same problem one level down. */
+  .authHeader {
+    position: static;
+    grid-column: 2; grid-row: 1;
+    padding: max(18px, env(safe-area-inset-top, 0px)) clamp(24px, 2.4vw, 40px) 0;
+  }
+  .authShell {
+    grid-column: 2; grid-row: 2;
+    flex: 1 1 auto; align-self: stretch;
+    max-width: none; margin: 0;
+    border-radius: 0; box-shadow: none;
+    background: var(--raised, #fff);
+    overflow-y: auto;
+    justify-content: center;
+    padding: clamp(16px, 3vh, 40px) clamp(32px, 3.4vw, 64px) clamp(28px, 4vh, 56px);
+  }
+
+  /* With the brand panel already naming the product, the stacked logo above
+     the heading is a second wordmark on the same screen.
+     !important because the lockup carries an inline display:flex, which a
+     stylesheet rule cannot otherwise outrank. */
+  .authBrandLockup { display: none !important; }
+}

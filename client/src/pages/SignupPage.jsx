@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './AuthPages.module.css';
+import AuthAside from '../components/AuthAside.jsx';
 import { useAuth } from '../AuthContext.jsx';
 
 export const PW_RULES = [
@@ -164,6 +165,7 @@ export default function SignupPage() {
 
   return (
     <div className={styles.authPage}>
+      <AuthAside />
 
       <header className={styles.authHeader}>
         <button className={styles.authBack}
@@ -183,7 +185,7 @@ export default function SignupPage() {
 
       <main className={styles.authShell}>
 
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginBottom:'22px' }}>
+        <div className={styles.authBrandLockup} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginBottom:'22px' }}>
           <img src="/logo.jpg" alt="" style={{ width:'40px', height:'40px', borderRadius:'11px', objectFit:'cover', boxShadow:'var(--lift)' }} />
           <span style={{ fontFamily: 'var(--font)', fontWeight:800, fontSize:'1.15rem', letterSpacing:'-0.01em' }}>RackTrack</span>
         </div>
