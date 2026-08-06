@@ -6,12 +6,12 @@
   min-height: 100vh;
   /* Default to light; dark theme override at bottom of file. */
   background: #ffffff;
-  color: #0b0c0e;
+  color: #000000;
   display: flex; flex-direction: column;
   overflow: hidden;
 }
 :global([data-theme="dark"]) .page {
-  background: linear-gradient(180deg, #1a1c1d 0%, #000000 100%);
+  background: linear-gradient(180deg, #1c1c1c 0%, #000000 100%);
   color: #eeeeee;
 }
 .header {
@@ -24,11 +24,11 @@
 }
 .header h2 {
   margin: 0; font-size: 16px; font-weight: 700;
-  color: #0b0c0e;
+  color: #000000;
   flex: 1;
 }
 :global([data-theme="dark"]) .header h2 {
-  background: linear-gradient(135deg, #000000 0%, #4c4546 100%);
+  background: linear-gradient(135deg, #000000 0%, #474747 100%);
   -webkit-background-clip: text; background-clip: text;
 }
 .back {
@@ -47,12 +47,12 @@
   padding: 3px 8px; border-radius: 4px;
   background: rgba(0,0,0,0.10);
   border: 1px solid rgba(0,0,0,0.35);
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 :global([data-theme="dark"]) .groupTag {
   background: rgba(0,0,0,0.12);
   border-color: rgba(0,0,0,0.3);
-  color: #cfc4c5;
+  color: #c6c6c6;
 }
 .exitFsBtn {
   font-size: 12px; font-weight: 700;
@@ -60,7 +60,7 @@
   border-radius: 6px;
   background: rgba(0,0,0,0.15);
   border: 1px solid rgba(0,0,0,0.35);
-  color: #cfc4c5;
+  color: #c6c6c6;
   cursor: pointer;
 }
 
@@ -71,7 +71,7 @@
 }
 .summaryNum {
   font-size: 32px; font-weight: 800; line-height: 1;
-  color: #0b0c0e;
+  color: #000000;
 }
 .summaryLabel { font-size: 13px; color: rgba(0,0,0,0.7); }
 
@@ -112,17 +112,17 @@
   padding: 3px 7px;
   border-radius: 4px;
   background: rgba(0,0,0,0.15);
-  color: #cfc4c5;
+  color: #c6c6c6;
   border: 1px solid rgba(0,0,0,0.3);
 }
 .tileLabel {
   font-size: 14px; font-weight: 700; flex: 1;
-  color: #0b0c0e;
+  color: #000000;
 }
 .tileExpand {
   font-size: 16px; color: rgba(0,0,0,0.5);
 }
-.tile:hover .tileExpand { color: #cfc4c5; }
+.tile:hover .tileExpand { color: #c6c6c6; }
 
 .tileScene {
   position: relative;
@@ -136,7 +136,7 @@
   width: 100%; height: 100%;
   color: rgba(0,0,0,0.5); font-size: 12px;
 }
-.tileErr { color: #4c4546; }
+.tileErr { color: #474747; }
 
 .tileFoot {
   display: flex; align-items: center; justify-content: space-between;
@@ -167,11 +167,11 @@
   min-height: 320px;
   /* Inline style overrides this with the live palette.bg, so it always
      matches the WebGL background no matter the theme. */
-  background: #f7f7f7;
+  background: #ffffff;
   overflow: hidden;
 }
 :global([data-theme="dark"]) .canvasShell {
-  background: #1a1c1d;
+  background: #1c1c1c;
 }
 .canvasShell > canvas {
   position: absolute; inset: 0;
@@ -202,7 +202,7 @@
 .rackChip:hover {
   background: rgba(0,0,0,0.10);
   border-color: rgba(0,0,0,0.45);
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 :global([data-theme="dark"]) .rackChip {
   background: rgba(255,255,255,0.04);
@@ -212,7 +212,7 @@
 :global([data-theme="dark"]) .rackChip:hover {
   background: rgba(0,0,0,0.10);
   border-color: rgba(0,0,0,0.4);
-  color: #cfc4c5;
+  color: #c6c6c6;
 }
 .rackChipPos {
   font-family: ui-monospace, Menlo, monospace;
@@ -224,14 +224,14 @@
 }
 :global([data-theme="dark"]) .rackChipPos {
   background: rgba(0,0,0,0.18);
-  color: #cfc4c5;
+  color: #c6c6c6;
 }
 .rackChipLabel {
   font-size: 12px; font-weight: 700;
-  color: #0b0c0e;
+  color: #000000;
 }
 :global([data-theme="dark"]) .rackChipLabel {
-  background: linear-gradient(135deg, #000000, #4c4546);
+  background: linear-gradient(135deg, #000000, #474747);
   -webkit-background-clip: text; background-clip: text;
 }
 .rackChipId {
@@ -250,7 +250,7 @@
   color: rgba(0,0,0,0.7);
   margin: 18px;
 }
-.err { color: #4c4546; background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.25); }
+.err { color: #474747; background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.25); }
 
 /* ── Inter-rack connections panel ─────────────────────────────── */
 .linksPanel {
@@ -266,13 +266,13 @@
   display: flex; align-items: baseline; gap: 10px;
   margin-bottom: 10px;
 }
-.linksTitle { font-size: 13px; font-weight: 800; color: #0b0c0e; letter-spacing: -0.01em; }
-:global([data-theme="dark"]) .linksTitle { color: #f0eef0; }
+.linksTitle { font-size: 13px; font-weight: 800; color: #000000; letter-spacing: -0.01em; }
+:global([data-theme="dark"]) .linksTitle { color: #efefef; }
 .linksCount {
   font-size: 11px; font-weight: 600; color: #6a6a6a;
   background: #f4f4f4; border-radius: 999px; padding: 2px 9px;
 }
-:global([data-theme="dark"]) .linksCount { background: rgba(255,255,255,0.07); color: #b8b0b2; }
+:global([data-theme="dark"]) .linksCount { background: rgba(255,255,255,0.07); color: #b2b2b2; }
 
 .linksList { display: flex; flex-direction: column; gap: 7px; }
 .linkRow {
@@ -280,13 +280,13 @@
   padding: 8px 11px;
   border: 1px solid rgba(0,0,0,0.10);
   border-radius: 9px;
-  background: #fbfbfc;
-  font-size: 12px; color: #26282b;
+  background: #ffffff;
+  font-size: 12px; color: #282828;
 }
 :global([data-theme="dark"]) .linkRow {
   background: rgba(255,255,255,0.03);
   border-color: rgba(255,255,255,0.08);
-  color: #d6d0d1;
+  color: #d1d1d1;
 }
 .cableDot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .dotFiber { background: #f2c94c; box-shadow: 0 0 0 3px rgba(242,201,76,0.18); }
@@ -303,11 +303,11 @@
   background: rgba(0,0,0,0.06); border-radius: 5px; padding: 1px 6px;
 }
 :global([data-theme="dark"]) .linkEnd code { background: rgba(255,255,255,0.08); }
-.linkArrow { font-weight: 800; color: #8a8082; }
+.linkArrow { font-weight: 800; color: #828282; }
 .linkType {
   margin-left: auto;
   font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
   color: #6a6a6a;
   background: #f0f0f0; border-radius: 5px; padding: 2px 7px;
 }
-:global([data-theme="dark"]) .linkType { background: rgba(255,255,255,0.07); color: #b8b0b2; }
+:global([data-theme="dark"]) .linkType { background: rgba(255,255,255,0.07); color: #b2b2b2; }

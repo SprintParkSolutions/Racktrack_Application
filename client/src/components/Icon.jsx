@@ -20,7 +20,31 @@ const P = {
   arrow_back: <><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></>,
   arrow_forward: <><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></>,
   chevron_right: <path d="M9 5l7 7-7 7" />,
+  chevron_left: <path d="M15 5l-7 7 7 7" />,
   expand_more: <path d="M5 9l7 7 7-7" />,
+
+  search: <>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="M16 16l4.5 4.5" />
+  </>,
+
+  close: <path d="M6 6l12 12M18 6L6 18" />,
+
+  history: <>
+    <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
+    <path d="M3 4v4h4" />
+    <path d="M12 7.5V12l3 2" />
+  </>,
+
+  /* A rack, drawn — the placeholder when a scan has no thumbnail. Nested
+     slots rather than lines: three bars inside a frame read as mounted
+     equipment, where evenly spaced rules read as a document. */
+  rack: <>
+    <rect x="4.5" y="3" width="15" height="18" rx="1.8" />
+    <rect x="7.2" y="6.1" width="9.6" height="2.7" rx="0.7" />
+    <rect x="7.2" y="10.7" width="9.6" height="2.7" rx="0.7" />
+    <rect x="7.2" y="15.3" width="9.6" height="2.7" rx="0.7" />
+  </>,
 
   dns: <>
     <rect x="3" y="4" width="18" height="6" rx="2" />

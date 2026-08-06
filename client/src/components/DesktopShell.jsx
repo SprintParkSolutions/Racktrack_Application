@@ -106,6 +106,7 @@ const PAGE_TITLE = {
   '/':                 { title: 'Home',                sub: 'Overview' },
   '/scan':             { title: 'New scan',            sub: 'Upload, camera, or video' },
   '/profile':          { title: 'Profile',             sub: 'Account & history' },
+  '/history':          { title: 'Scan history',        sub: 'Every rack you have scanned' },
   '/organizations':    { title: 'Organizations',       sub: 'Members, sites & approvals' },
   '/connections':      { title: 'Connections',         sub: 'Active data sources' },
   '/results':          { title: 'Scan results',        sub: 'Devices & ports' },

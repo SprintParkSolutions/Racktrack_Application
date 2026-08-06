@@ -10,18 +10,18 @@ import * as THREE from 'three';
 const COLORS = {
   rail:        '#000000',
   chassisDark: '#000000',
-  chassisMid:  '#1a1c1d',
-  chassisAlt:  '#1a1c1d',
+  chassisMid:  '#1c1c1c',
+  chassisAlt:  '#1c1c1c',
   faceplate:   '#000000',
   vent:        '#000000',
-  ledPurple:   '#cfc4c5',
-  ledBlue:     '#cfc4c5',
-  ledGreen:    '#4c4546',
-  ledOrange:   '#4c4546',
-  ledRed:      '#4c4546',
-  cable1:      '#4c4546',
-  cable2:      '#4c4546',
-  cable3:      '#cfc4c5',
+  ledPurple:   '#c6c6c6',
+  ledBlue:     '#c6c6c6',
+  ledGreen:    '#474747',
+  ledOrange:   '#474747',
+  ledRed:      '#474747',
+  cable1:      '#474747',
+  cable2:      '#474747',
+  cable3:      '#c6c6c6',
 };
 
 // ── Reusable port grid ──
@@ -87,7 +87,7 @@ function FanGrille({ position, scanLit }) {
         {[0, 1, 2, 3].map((i) => (
           <mesh key={i} rotation={[(i * Math.PI) / 2, 0, 0]}>
             <boxGeometry args={[0.005, 0.1, 0.03]} />
-            <meshStandardMaterial color="#1a1c1d" metalness={0.6} />
+            <meshStandardMaterial color="#1c1c1c" metalness={0.6} />
           </mesh>
         ))}
       </group>
@@ -112,7 +112,7 @@ function Screws({ y }) {
       ].map(([x, z], i) => (
         <mesh key={i} position={[x, y, z + 0.01]}>
           <cylinderGeometry args={[0.025, 0.025, 0.02, 8]} />
-          <meshStandardMaterial color="#4c4546" metalness={0.95} roughness={0.2} />
+          <meshStandardMaterial color="#474747" metalness={0.95} roughness={0.2} />
         </mesh>
       ))}
     </>
@@ -180,7 +180,7 @@ function PatchPanel({ y, scanLit }) {
       {/* "PATCH PANEL" silver strip on left */}
       <mesh position={[-1.07, 0, 0.674]}>
         <boxGeometry args={[0.18, 0.06, 0.005]} />
-        <meshStandardMaterial color="#f9f9fb" metalness={0.9} roughness={0.25} />
+        <meshStandardMaterial color="#ffffff" metalness={0.9} roughness={0.25} />
       </mesh>
       <Screws y={0} />
     </group>
@@ -265,7 +265,7 @@ function ServerUnit({ y, scanLit }) {
         {[0, 1, 2].map((i) => (
           <mesh key={i} rotation={[0, 0, (i * 2 * Math.PI) / 3]}>
             <boxGeometry args={[0.01, 0.06, 0.005]} />
-            <meshStandardMaterial color="#1a1c1d" metalness={0.6} />
+            <meshStandardMaterial color="#1c1c1c" metalness={0.6} />
           </mesh>
         ))}
       </group>
@@ -306,7 +306,7 @@ function RackFrame() {
       {[1.15, 0.7, 0.2, -0.3, -0.8, -1.25].map((y, i) => (
         <mesh key={`x-${i}`} position={[0, y, 0.66]}>
           <boxGeometry args={[2.55, 0.015, 0.015]} />
-          <meshStandardMaterial color="#4c4546" metalness={0.9} roughness={0.3} />
+          <meshStandardMaterial color="#474747" metalness={0.9} roughness={0.3} />
         </mesh>
       ))}
       {/* base soft glow */}
@@ -464,8 +464,8 @@ export default function MiniRack3D({ progress = 0, size = 150 }) {
       >
         <ambientLight intensity={0.55} />
         <directionalLight position={[5, 6, 4]} intensity={1.5} color="#ffffff" castShadow />
-        <pointLight position={[-3, -2, 3]} intensity={0.9} color="#4c4546" />
-        <pointLight position={[3, 1, -3]} intensity={0.7} color="#4c4546" />
+        <pointLight position={[-3, -2, 3]} intensity={0.9} color="#474747" />
+        <pointLight position={[3, 1, -3]} intensity={0.7} color="#474747" />
         <Suspense fallback={null}>
           <Scene progress={progress} />
         </Suspense>

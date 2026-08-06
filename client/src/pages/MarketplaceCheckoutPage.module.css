@@ -35,17 +35,17 @@
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--mkt-line, #e0e0e0);
   border-radius: var(--mkt-r-sm, 8px);
-  background: var(--mkt-raised, #fafafa);
+  background: var(--mkt-raised, #ffffff);
   overflow: hidden;
 }
 .itemThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.itemThumbIcon { color: var(--mkt-ink, #121417); opacity: 0.2; }
+.itemThumbIcon { color: var(--mkt-ink, #121212); opacity: 0.2; }
 
 .itemInfo { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .itemTitle {
   margin: 0; font-size: 15px; font-weight: 700;
   line-height: 1.3; letter-spacing: -0.01em;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   overflow-wrap: anywhere;
 }
 

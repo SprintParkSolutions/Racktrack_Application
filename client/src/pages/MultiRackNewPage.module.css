@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════════
    Two racks — restyled to match the redesigned Scan page.
-   White surfaces (#fff / #fbfbfa), hairline borders (#e4e4e1), dashed
+   White surfaces (#fff / #ffffff), hairline borders (#e4e4e4), dashed
    dropzones with a black viewfinder circle, a segmented Mode control, mono
    eyebrow labels, and a full-width dark Analyze button.
 
@@ -28,7 +28,7 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  border-bottom: 1px solid #ededea;
+  border-bottom: 1px solid #ededed;
   position: sticky; top: 0; z-index: 5;
   background: #fff;
 }
@@ -36,7 +36,7 @@
   width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 9999px;
-  border: 1px solid #e4e4e1;
+  border: 1px solid #e4e4e4;
   background: #fff; color: #111;
   font-size: 18px; line-height: 1; cursor: pointer;
   transition: border-color .15s;
@@ -62,7 +62,7 @@
 .intro {
   margin: 0;
   font-size: 0.9rem; line-height: 1.6;
-  color: #5c5c59;
+  color: #5c5c5c;
 }
 .intro b { color: #111; font-weight: 650; }
 
@@ -71,7 +71,7 @@
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 11px; font-weight: 500;
   letter-spacing: 0.13em; text-transform: uppercase;
-  color: #5F646C; line-height: 1.2;
+  color: #6b6b6b; line-height: 1.2;
   margin-bottom: -8px;
 }
 
@@ -81,7 +81,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 0;
   padding: 4px;
-  background: #f2f2f0;
+  background: #f2f2f2;
   border-radius: 12px;
 }
 .modeBtn {
@@ -91,7 +91,7 @@
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 12px; font-weight: 600;
   letter-spacing: 0.04em; text-transform: uppercase;
-  color: #5F646C;
+  color: #6b6b6b;
   transition: color .16s, background .16s, box-shadow .16s;
 }
 .modeBtn:hover:not(:disabled) { color: #111; }
@@ -112,7 +112,7 @@
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 11px; font-weight: 500;
   letter-spacing: 0.13em; text-transform: uppercase;
-  color: #5F646C;
+  color: #6b6b6b;
 }
 
 /* Dashed dropzone — the Scan look. */
@@ -120,9 +120,9 @@
   position: relative;
   width: 100%;
   min-height: 200px;
-  border: 1.5px dashed #d4d4d0;
+  border: 1.5px dashed #d4d4d4;
   border-radius: 22px;
-  background: #fbfbfa;
+  background: #ffffff;
   color: inherit;
   font: inherit;
   cursor: pointer;
@@ -131,10 +131,10 @@
   transition: border-color 0.16s, background 0.16s;
 }
 .dropZone:disabled { cursor: default; opacity: 0.6; }
-.dropZone:hover:not(:disabled) { border-color: #111; background: #f4f4f2; }
+.dropZone:hover:not(:disabled) { border-color: #111; background: #f4f4f4; }
 .dropZoneFilled {
   border-style: solid;
-  border-color: #e4e4e1;
+  border-color: #e4e4e4;
   background: #fff;
 }
 .thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -156,7 +156,7 @@
   color: #111; letter-spacing: -0.01em;
 }
 .pickHint {
-  font-size: 13px; color: #5F646C;
+  font-size: 13px; color: #6b6b6b;
   line-height: 1.45; max-width: 240px;
 }
 .fmtPills {
@@ -165,8 +165,8 @@
 }
 .fmtPill {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px; color: #5F646C;
-  border: 1px solid #e4e4e1; border-radius: 999px;
+  font-size: 11px; color: #6b6b6b;
+  border: 1px solid #e4e4e4; border-radius: 999px;
   padding: 5px 12px; line-height: 1;
 }
 
@@ -180,7 +180,7 @@
   font-size: 13px; font-weight: 600;
   color: #111;
   background: #fff;
-  border: 1px solid #e4e4e1;
+  border: 1px solid #e4e4e4;
   border-radius: 11px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -188,7 +188,7 @@
 }
 .slotBtn svg { width: 16px; height: 16px; flex-shrink: 0; }
 .slotBtn:hover:not(:disabled) { border-color: #111; transform: translateY(-1px); }
-.slotBtn:active:not(:disabled) { background: #f4f4f2; transform: none; }
+.slotBtn:active:not(:disabled) { background: #f4f4f4; transform: none; }
 .slotBtn:disabled { opacity: 0.45; cursor: default; }
 .slotBtn:focus-visible { outline: 2px solid #111; outline-offset: 2px; }
 
@@ -197,7 +197,7 @@
   background: #111; color: #fff; border-color: #111;
 }
 .slotBtnPrimary:hover:not(:disabled) {
-  background: #0d0d0d; border-color: #0d0d0d; opacity: 0.92; transform: translateY(-1px);
+  background: #000000; border-color: #000000; opacity: 0.92; transform: translateY(-1px);
 }
 .slotBtnPrimary:active:not(:disabled) { background: #111; }
 
@@ -209,17 +209,17 @@
 .videoZone {
   width: 100%;
   min-height: 200px;
-  border: 1.5px dashed #d4d4d0;
+  border: 1.5px dashed #d4d4d4;
   border-radius: 22px;
-  background: #fbfbfa;
+  background: #ffffff;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   padding: 28px 20px;
   transition: border-color 0.16s, background 0.16s;
 }
-.videoZone:hover:not(:disabled) { border-color: #111; background: #f4f4f2; }
+.videoZone:hover:not(:disabled) { border-color: #111; background: #f4f4f4; }
 .videoZone:disabled { opacity: 0.6; cursor: default; }
-.videoZoneFilled { border-style: solid; border-color: #e4e4e1; background: #fff; }
+.videoZoneFilled { border-style: solid; border-color: #e4e4e4; background: #fff; }
 .videoName {
   display: inline-flex; align-items: center; gap: 8px;
   font-weight: 650; font-size: 0.95rem; color: #111;
@@ -250,7 +250,7 @@
 }
 .spinner {
   width: 16px; height: 16px; border-radius: 50%;
-  border: 2px solid #e4e4e1;
+  border: 2px solid #e4e4e4;
   border-top-color: #111;
   animation: spin 0.7s linear infinite;
 }
@@ -259,7 +259,7 @@
 .error {
   padding: 13px 15px;
   border-radius: 14px;
-  background: #fdf2f0;
+  background: #f4f4f4;
   border: 1px solid #f1c9c2;
   color: #b23b30;
   font-size: 0.85rem; line-height: 1.5;

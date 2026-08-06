@@ -1,14 +1,16 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ══════════════════════════════════════════════════════════════════════
-   SINGLE THEME — soft UI on a mid-tone ground, subtle black accents.
-   No colour accent by design: hierarchy comes from value and from depth,
-   never from hue.
+   SINGLE THEME — PURE WHITE with subtle black. No colour accent and no hue
+   anywhere in the neutrals: every grey in this file is true greyscale
+   (R=G=B), so nothing can read as blue-grey or beige on a real screen.
+   Hierarchy comes from value, depth and type.
 
-   One light source sits at the TOP-LEFT. Every surface therefore carries two
-   shadows — a dark one bottom-right where the light doesn't reach, and a
-   WHITE one top-left where it does. See the DEPTH block below; --lift raises
-   and --press sinks, and that pair is the whole system.
+   One light source sits at the TOP-LEFT. Surfaces carry a dark shadow
+   bottom-right and a white one top-left. On a white ground the white side has
+   nothing left to lighten, so --lift now leans on its dark side and reads as
+   a quiet drop shadow; the sunken wells still carve properly because they sit
+   below white. See the DEPTH block below; --lift raises and --press sinks.
 
    PINNED TO LIGHT in both themes on purpose. These values do not survive a
    naive dark-mode flip: the light-side shadow would have to fall to about
@@ -18,96 +20,86 @@
 :root,
 [data-theme='light'],
 [data-theme='dark'] {
-  /* ── Material 3 palette — black primary retained, neutrals re-layered
-     onto the soft-UI ground: page #E9ECF1 → raised #F2F4F8 → sunken
-     #E4E8EE. See the SOFT-UI GROUND block below. ── */
-  --md-primary:                       #121417;
+  /* ── Material 3 palette — black primary, neutrals on a white ground:
+     page #ffffff → raised #ffffff → sunken #f4f4f4. See the GROUND block. ── */
+  --md-primary:                       #121212;
   --md-on-primary:                    #ffffff;
-  --md-primary-container:             #121417;
+  --md-primary-container:             #121212;
   --md-on-primary-container:          #ffffff;
-  --md-primary-fixed:                 #121417;
-  --md-primary-fixed-dim:             #121417;
+  --md-primary-fixed:                 #121212;
+  --md-primary-fixed-dim:             #121212;
   --md-on-primary-fixed:              #ffffff;
   --md-on-primary-fixed-variant:      #ffffff;
 
-  --md-secondary:                     #6b7280;
-  --md-on-secondary:                  #121417;
+  --md-secondary:                     #6b6b6b;
+  --md-on-secondary:                  #121212;
   --md-secondary-container:           #FFFFFF;
-  --md-on-secondary-container:        #121417;
+  --md-on-secondary-container:        #121212;
   --md-secondary-fixed:               #FFFFFF;
   --md-secondary-fixed-dim:           #FFFFFF;
-  --md-on-secondary-fixed:            #121417;
-  --md-on-secondary-fixed-variant:    #6b7280;
+  --md-on-secondary-fixed:            #121212;
+  --md-on-secondary-fixed-variant:    #6b6b6b;
 
-  --md-tertiary:                      #121417;
+  --md-tertiary:                      #121212;
   --md-on-tertiary:                   #ffffff;
-  --md-tertiary-container:            #121417;
-  --md-on-tertiary-container:         #121417;
+  --md-tertiary-container:            #121212;
+  --md-on-tertiary-container:         #121212;
   --md-tertiary-fixed:                #FFFFFF;
-  --md-tertiary-fixed-dim:            #121417;
-  --md-on-tertiary-fixed:             #121417;
-  --md-on-tertiary-fixed-variant:     #121417;
+  --md-tertiary-fixed-dim:            #121212;
+  --md-on-tertiary-fixed:             #121212;
+  --md-on-tertiary-fixed-variant:     #121212;
 
   --md-error:                         #ba1a1a;
   --md-on-error:                      #ffffff;
-  --md-error-container:               #ffdad6;
+  --md-error-container:               #e2e2e2;
   --md-on-error-container:            #93000a;
 
-  /* ══ SOFT-UI GROUND ══════════════════════════════════════════════════
-     Three greys do most of the work. Raised things are LIGHTER than the
-     page, sunken things are DARKER — that value relationship sells the
-     depth more than the shadows do.
+  /* ══ GROUND — PURE WHITE ═════════════════════════════════════════════
+     The page and every raised surface are #FFFFFF. Only the sunken well is
+     off-white, and it is true greyscale: a 4% wash of black, never a tint.
 
-     The page is NOT white. On pure white the light-side shadow (--hi) is
-     invisible and the whole effect collapses into an ordinary grey blur,
-     which is exactly how the earlier attempts failed. Mid-tone ground is
-     load-bearing, not a preference. */
-  --ground:                           #F7F8FA;   /* the page — reads white */
+     This replaces the earlier mid-tone ground (#F7F8FA page, #EBEEF3 well).
+     Those carried a blue cast and read on screen as the grey the app was
+     asked not to have. The trade-off is known and accepted: on white the
+     light-side shadow (--hi) has nothing to lighten, so --lift reads as a
+     quiet drop shadow rather than a carved edge, and separation is carried by
+     that shadow plus black hairlines. Do NOT compensate by inflating the
+     shadows — big soft shadows read as a consumer app. */
+  --ground:                           #FFFFFF;   /* the page — pure white */
   --raised:                           #FFFFFF;   /* pure white */
-  --sunken:                           #EBEEF3;   /* the only real grey */
-
-  /* The page reads WHITE, not grey, by request. The value ladder is kept —
-     raised is still lighter than the ground and sunken still darker — but
-     the rungs are close together up top.
-
-     Known trade-off: on a near-white ground the light-side shadow (--hi) has
-     almost nothing to lighten, so --lift leans on its dark side and reads as
-     a quiet drop shadow rather than a fully carved edge. The sunken wells,
-     which sit well below the ground, still show the effect properly. Do not
-     "fix" this by inflating the shadows — big soft shadows read as a
-     consumer app. If the depth is ever wanted back at full strength, the
-     ground has to come down to about #E9ECF1. */
+  --sunken:                           #F4F4F4;   /* a wash of black, no hue */
 
   --md-background:                    var(--ground);
-  --md-on-background:                 #121417;
+  --md-on-background:                 #121212;
   --md-surface:                       var(--raised);
-  --md-surface-bright:                #F7F9FC;
+  --md-surface-bright:                #FFFFFF;
   --md-surface-dim:                   var(--sunken);
-  --md-on-surface:                    #121417;
-  --md-on-surface-variant:            #5F646C;
+  --md-on-surface:                    #121212;
+  --md-on-surface-variant:            #6B6B6B;
   --md-surface-variant:               var(--sunken);
-  --md-surface-tint:                  #121417;
+  --md-surface-tint:                  #121212;
   --md-surface-container-lowest:      var(--raised);
-  --md-surface-container-low:         #F0F2F7;
+  --md-surface-container-low:         #ffffff;
   --md-surface-container:             var(--ground);
   --md-surface-container-high:        var(--sunken);
-  --md-surface-container-highest:     #DEE3EA;
+  --md-surface-container-highest:     #EDEDED;
 
   /* Hairlines are a fallback, not the primary separator — depth carries it.
-     Kept close to the ground so borders read as a seam, not a drawn line. */
-  --md-outline:                       #D3D9E2;
-  --md-outline-variant:               #DFE4EB;
-  --md-inverse-surface:               #17171a;
-  --md-inverse-on-surface:            #f4f4f6;
-  --md-inverse-primary:               #c8c8cc;
+     Black at low alpha rather than a grey hex, so a line is literally ink
+     thinned out and can never drift toward blue or beige. */
+  --md-outline:                       rgba(18, 18, 18, 0.14);
+  --md-outline-variant:               rgba(18, 18, 18, 0.08);
+  --md-inverse-surface:               #171717;
+  --md-inverse-on-surface:            #f4f4f4;
+  --md-inverse-primary:               #c8c8c8;
 
   /* ── Accent — subtle black. There is no colour accent in this app by
      design: white and white-shades only, with black doing the accenting.
      Focus rings, links, active nav and live pips all resolve to ink. ── */
-  --accent:        #121417;
+  --accent:        #121212;
   --accent-strong: #000000;
-  --accent-soft:   rgba(18, 20, 23, 0.06);
-  --accent-ring:   rgba(18, 20, 23, 0.16);
+  --accent-soft:   rgba(18, 18, 18, 0.06);
+  --accent-ring:   rgba(18, 18, 18, 0.16);
   --accent-tint:   #F5F5F5;
 
   /* ── Legacy aliases — every existing component still reads these. ── */
@@ -120,24 +112,24 @@
 
   /* Brand — subtle-black accent on white */
   --c1:   var(--md-primary);
-  --c2:   #17171a;
-  --c3:   #0d0d0f;
-  --cg:   rgba(13, 13, 15, 0.40);
-  --cg2:  rgba(13, 13, 15, 0.08);
+  --c2:   #171717;
+  --c3:   #000000;
+  --cg:   rgba(0, 0, 0, 0.40);
+  --cg2:  rgba(0, 0, 0, 0.08);
 
   /* Secondary — neutral grey */
   --cyan:  var(--md-secondary);
   --cyan2: var(--md-on-secondary-container);
-  --cyg:   rgba(91, 91, 96, 0.22);
+  --cyg:   rgba(91, 91, 91, 0.22);
 
   --p1:   var(--md-primary);
   --p2:   var(--md-secondary);
-  --pg:   rgba(91, 91, 96, 0.22);
+  --pg:   rgba(91, 91, 91, 0.22);
 
   /* Gradient tokens — re-lit as SUBTLE vertical fades (near-black top →
      true black base) so primary fills feel machined, not flat-printed. */
-  --grad:     linear-gradient(180deg, #1d2027 0%, #121417 55%, #0d0e11 100%);
-  --grad-btn: linear-gradient(180deg, #22262e 0%, #121417 60%, #0b0c0e 100%);
+  --grad:     linear-gradient(180deg, #202020 0%, #121212 55%, #000000 100%);
+  --grad-btn: linear-gradient(180deg, #262626 0%, #121212 60%, #000000 100%);
   --grad-r:   linear-gradient(180deg, #d13636 0%, #ba1a1a 100%);
 
   /* Status */
@@ -151,14 +143,14 @@
   --glass:  var(--md-surface-container-lowest);
   --glass2: var(--md-surface-container-low);
   --gb:     var(--md-outline-variant);
-  --gbc:    rgba(13, 13, 15, 0.45);
+  --gbc:    rgba(0, 0, 0, 0.45);
   --gbr:    rgba(186, 26, 26, 0.35);
   --gbw:    var(--md-outline-variant);
 
   /* Text */
   --t1: var(--md-on-surface);
   --t2: var(--md-on-surface-variant);
-  --t3: rgba(13, 13, 15, 0.65);
+  --t3: rgba(0, 0, 0, 0.65);
   --text:  var(--md-on-surface);
   --muted: var(--md-on-surface-variant);
 
@@ -194,9 +186,9 @@
      Blur stays small and opacity low. 10% at 16px blur read as a consumer
      app; 7% at 10px reads as a considered surface. Do not inflate these. */
   --hi:    rgba(255, 255, 255, 0.9);   /* the light side */
-  --lo:    rgba(14, 17, 20, 0.07);     /* the shade side */
+  --lo:    rgba(17, 17, 17, 0.07);     /* the shade side */
   --lift:  4px 4px 10px var(--lo), -4px -4px 10px var(--hi);
-  --press: inset 2px 2px 5px rgba(14, 17, 20, 0.08),
+  --press: inset 2px 2px 5px rgba(17, 17, 17, 0.08),
            inset -2px -2px 5px rgba(255, 255, 255, 0.85);
 
   /* Legacy elevation aliases — every existing component still reads these,
@@ -206,7 +198,7 @@
   --shadow-card-hover: 6px 6px 14px var(--lo), -6px -6px 14px var(--hi);
   /* Overlays float clear of the ground, so they keep a genuine cast shadow
      in addition to the light-side edge. */
-  --shadow-modal:      12px 12px 32px rgba(14, 17, 20, 0.12), -8px -8px 24px var(--hi);
+  --shadow-modal:      12px 12px 32px rgba(17, 17, 17, 0.12), -8px -8px 24px var(--hi);
   --shadow-btn:        var(--lift);
   --shadow-neu:        var(--lift);
   --shadow-neu-inset:  var(--press);
@@ -309,7 +301,7 @@ svg { max-width: 100%; }
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(13, 13, 15, 0.18); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.18); border-radius: 3px; }
 
 /* Icon defaults.
    These were Material Symbols ligatures — text that becomes a glyph only once
@@ -363,7 +355,7 @@ svg { max-width: 100%; }
    global .gt / .title-grad classes AND re-asserted after the enforcement
    block below (which flattens legacy module gradient text). ── */
 .gt, .title-grad {
-  background: linear-gradient(180deg, #121417 30%, #4b5563 115%);
+  background: linear-gradient(180deg, #121212 30%, #545454 115%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -418,13 +410,13 @@ svg { max-width: 100%; }
    lifts 1px on hover. The one element on screen allowed a strong shadow. */
 .btn-primary {
   background: var(--grad-btn);
-  background-color: #121417;
+  background-color: #121212;
   color: var(--md-on-primary);
   border-color: transparent;
   box-shadow: var(--shadow-btn);
 }
 .btn-primary:hover {
-  background-color: #1a1d23;
+  background-color: #1d1d1d;
   transform: translateY(-1px);
   box-shadow: var(--shadow-card-hover), var(--shadow-btn);
 }
@@ -446,11 +438,11 @@ svg { max-width: 100%; }
 .btn-ghost {
   background: transparent;
   color: var(--md-on-surface);
-  border: 1px solid rgba(13, 13, 15, 0.10);
+  border: 1px solid rgba(0, 0, 0, 0.10);
 }
 .btn-ghost:hover {
-  background: rgba(13, 13, 15, 0.04);
-  border-color: rgba(13, 13, 15, 0.18);
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.18);
 }
 
 /* Neumorphic — soft tile carved from the canvas itself. For quiet
@@ -476,11 +468,11 @@ svg { max-width: 100%; }
 .dot-green  { background:var(--green);  box-shadow:0 0 6px rgba(22, 163, 74, 0.4); }
 .dot-orange { background:var(--orange); box-shadow:0 0 6px rgba(245, 158, 11, 0.4); }
 .dot-red    { background:var(--red);    box-shadow:0 0 6px rgba(186, 26, 26, 0.45); animation:pR 1.3s ease infinite; }
-.dot-cyan   { background:var(--accent); box-shadow:0 0 6px rgba(18, 20, 23, 0.45); animation:pC 2s ease infinite; }
-.dot-dim    { background: rgba(13, 13, 15, 0.25); }
+.dot-cyan   { background:var(--accent); box-shadow:0 0 6px rgba(18, 18, 18, 0.45); animation:pC 2s ease infinite; }
+.dot-dim    { background: rgba(0, 0, 0, 0.25); }
 
 @keyframes pR { 0%,100%{box-shadow:0 0 6px rgba(186, 26, 26, 0.45)}  50%{box-shadow:0 0 18px rgba(186, 26, 26, 0.6);opacity:.6} }
-@keyframes pC { 0%,100%{box-shadow:0 0 6px rgba(18, 20, 23, 0.45)}  50%{box-shadow:0 0 18px rgba(18, 20, 23, 0.55);opacity:.8} }
+@keyframes pC { 0%,100%{box-shadow:0 0 6px rgba(18, 18, 18, 0.45)}  50%{box-shadow:0 0 18px rgba(18, 18, 18, 0.55);opacity:.8} }
 
 /* ── Badges — soft tinted fills ── */
 .badge {
@@ -491,7 +483,7 @@ svg { max-width: 100%; }
 .badge-red    { background: rgba(186, 26, 26, 0.08);  color: var(--md-error); border: 1px solid rgba(186, 26, 26, 0.25); }
 .badge-green  { background: rgba(22, 163, 74, 0.08);  color: #15803d;         border: 1px solid rgba(22, 163, 74, 0.25); }
 .badge-orange { background: rgba(245, 158, 11, 0.10); color: #b45309;         border: 1px solid rgba(245, 158, 11, 0.28); }
-.badge-cyan   { background: var(--accent-tint);       color: var(--accent-strong); border: 1px solid rgba(18, 20, 23, 0.25); }
+.badge-cyan   { background: var(--accent-tint);       color: var(--accent-strong); border: 1px solid rgba(18, 18, 18, 0.25); }
 
 /* Form controls must never render below 16px: iOS Safari and WKWebView
    auto-zoom the viewport when a focused input/select/textarea is smaller than
@@ -514,23 +506,23 @@ input, select, textarea { font-size: 16px; }
   font-size: 16px;
   padding: 14px 16px;
   outline: none;
-  box-shadow: inset 0 1px 2px rgba(18, 20, 23, 0.04);
+  box-shadow: inset 0 1px 2px rgba(18, 18, 18, 0.04);
   transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
 .input:hover {
-  border-color: rgba(13, 13, 15, 0.24);
+  border-color: rgba(0, 0, 0, 0.24);
 }
 .input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-ring);
 }
-.input::placeholder { color: rgba(13, 13, 15, 0.38); }
+.input::placeholder { color: rgba(0, 0, 0, 0.38); }
 
 /* ── Shimmer — real gradient sweep over a soft base ── */
 .shimmer {
   position: relative;
   overflow: hidden;
-  background: rgba(18, 20, 23, 0.055);
+  background: rgba(18, 18, 18, 0.055);
 }
 .shimmer::after {
   content: '';
@@ -598,12 +590,12 @@ input, select, textarea { font-size: 16px; }
    wildcards below so their gradients/blur survive. ────────────────────── */
 /* Faint dot-grid texture panel (pure CSS, no image request). */
 .rt-dots {
-  background-image: radial-gradient(rgba(18, 20, 23, 0.10) 1px, transparent 1.5px);
+  background-image: radial-gradient(rgba(18, 18, 18, 0.10) 1px, transparent 1.5px);
   background-size: 18px 18px;
 }
 /* Soft indigo wash for page tops / feature strips. */
 .rt-wash {
-  background-image: radial-gradient(120% 140% at 50% -20%, rgba(18, 20, 23, 0.08), transparent 65%);
+  background-image: radial-gradient(120% 140% at 50% -20%, rgba(18, 18, 18, 0.08), transparent 65%);
 }
 /* Frosted strip — the one sanctioned blur (floating navs, sticky bars). */
 .rt-frost {
@@ -631,7 +623,7 @@ input, select, textarea { font-size: 16px; }
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 3px solid rgba(18, 20, 23, 0.10);
+  border: 3px solid rgba(18, 18, 18, 0.10);
   border-top-color: var(--accent);
   animation: spin 0.8s linear infinite;
 }
@@ -825,7 +817,7 @@ textarea {
 /* ── Post-enforcement re-assertions (same importance, later = wins) ── */
 /* The sanctioned display-title gradient. */
 .gt, .title-grad {
-  background: linear-gradient(180deg, #121417 30%, #4b5563 115%) !important;
+  background: linear-gradient(180deg, #121212 30%, #545454 115%) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;

@@ -6,7 +6,7 @@
   display: flex; flex-direction: column;
   min-height: 100vh;
   background: rgba(0,0,0,0.42);
-  color: #cfc4c5;
+  color: #c6c6c6;
   position: relative;
 }
 
@@ -39,7 +39,7 @@
 .headerTitle {
   margin: 0;
   font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em;
-  background: linear-gradient(135deg, #000000 0%, #4c4546 40%, #4c4546 100%);
+  background: linear-gradient(135deg, #000000 0%, #474747 40%, #474747 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   filter: drop-shadow(0 0 12px rgba(0,0,0,0.20));
   max-width: 100%;
@@ -84,8 +84,8 @@
   .healthPill { padding: 4px 8px; font-size: .55rem; gap: 4px; letter-spacing: .04em; }
 }
 
-.healthOk  { border-color: rgba(0,0,0,0.40); color: #1a1c1d; background: rgba(0,0,0,0.06); }
-.healthBad { border-color: rgba(0,0,0,0.40); color: #4c4546; background: rgba(0,0,0,0.06); }
+.healthOk  { border-color: rgba(0,0,0,0.40); color: #1c1c1c; background: rgba(0,0,0,0.06); }
+.healthBad { border-color: rgba(0,0,0,0.40); color: #474747; background: rgba(0,0,0,0.06); }
 
 .healthDot {
   width: 6px; height: 6px;
@@ -155,7 +155,7 @@
   padding: 2px 6px;
   font-family: var(--mono);
 }
-.linkBtn:hover { color: #4c4546; }
+.linkBtn:hover { color: #474747; }
 
 .syncBtn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -163,7 +163,7 @@
   padding: 0;
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.28);
-  color: #cfc4c5;
+  color: #c6c6c6;
   border-radius: 8px;
   cursor: pointer;
 }
@@ -237,7 +237,7 @@
   font-family: var(--mono);
   font-size: 0.9rem; font-weight: 800;
   letter-spacing: 0.03em;
-  color: #cfc4c5;
+  color: #c6c6c6;
 }
 
 .deviceClass {
@@ -305,7 +305,7 @@
   color: rgba(0,0,0,0.45);
 }
 
-.cntUp   b { color: #1a1c1d; }
+.cntUp   b { color: #1c1c1c; }
 .cntDown b { color: rgba(0,0,0,0.55); }
 .cntDown i { color: rgba(0,0,0,0.30); }
 .cntLive b { color: #000000; }
@@ -347,7 +347,7 @@
 .matchRow:hover {
   background: rgba(0,0,0,0.06);
   border-color: rgba(0,0,0,0.25);
-  border-left-color: #4c4546;
+  border-left-color: #474747;
 }
 
 .matchRowSel {
@@ -365,7 +365,7 @@
   font-family: var(--mono);
   font-size: 0.82rem; font-weight: 800;
   letter-spacing: 0.03em;
-  color: #cfc4c5;
+  color: #c6c6c6;
 }
 
 .matchNd strong {
@@ -382,7 +382,7 @@
 /* Port pills — same shape as ResultsPage portPill family */
 .portCount {
   font-family: var(--mono); font-size: 0.64rem; font-weight: 700;
-  color: #1a1c1d;
+  color: #1c1c1c;
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.20);
   border-radius: 100px;
@@ -412,13 +412,13 @@
 
 .tag_mgmt_ip {
   background: rgba(0,0,0,0.10);
-  color: #4c4546;
+  color: #474747;
   border: 1px solid rgba(0,0,0,0.30);
 }
 
 .tag_ocr_model {
   background: rgba(0,0,0,0.10);
-  color: #cfc4c5;
+  color: #c6c6c6;
   border: 1px solid rgba(0,0,0,0.30);
 }
 
@@ -478,7 +478,7 @@
 .filterBtnActive {
   background: rgba(0,0,0,0.10);
   border-color: rgba(0,0,0,0.50);
-  color: #cfc4c5;
+  color: #c6c6c6;
 }
 
 /* ── Port table ───────────────────────────────────────────────────────── */
@@ -560,7 +560,7 @@
 }
 
 .dotActive {
-  background: #1a1c1d;
+  background: #1c1c1c;
   box-shadow: 0 0 6px rgba(0,0,0,0.7);
 }
 
@@ -571,7 +571,7 @@
 .macChip {
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.25);
-  color: #cfc4c5;
+  color: #c6c6c6;
   font-family: var(--mono);
   font-size: 0.62rem;
   font-weight: 700;
@@ -599,7 +599,7 @@
 .endDeviceBtn strong {
   font-family: var(--mono);
   font-size: 0.72rem;
-  color: #cfc4c5;
+  color: #c6c6c6;
   letter-spacing: 0.02em;
 }
 .endDeviceBtn .subtle {
@@ -610,11 +610,11 @@
   font-weight: 700;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
-.endDeviceBtn:hover strong { color: #f9f9fb; }
+.endDeviceBtn:hover strong { color: #ffffff; }
 
 :global([data-theme='light']) .endDeviceBtn strong { color: #000000; }
 :global([data-theme='light']) .endDeviceBtn .subtle { color: #000000; }
-:global([data-theme='light']) .endDeviceBtn:hover strong { color: #1a1c1d; }
+:global([data-theme='light']) .endDeviceBtn:hover strong { color: #1c1c1c; }
 
 /* ── MAC lookup ───────────────────────────────────────────────────────── */
 .macSection {
@@ -660,7 +660,7 @@
   letter-spacing: 0.06em;
   background: rgba(0,0,0,0.10);
   border: 1px solid rgba(0,0,0,0.35);
-  color: #cfc4c5;
+  color: #c6c6c6;
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
@@ -692,7 +692,7 @@
   font-size: 0.58rem; font-weight: 700;
   letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: #4c4546;
+  color: #474747;
 }
 
 .currentLoc strong {
@@ -742,7 +742,7 @@
   border-radius: 8px;
   background: rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.25);
-  color: #4c4546;
+  color: #474747;
   font-size: 0.74rem;
   margin-bottom: 8px;
 }
@@ -752,7 +752,7 @@
   border-radius: 10px;
   background: rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.25);
-  color: #cfc4c5;
+  color: #c6c6c6;
   font-size: 0.76rem;
   line-height: 1.55;
   margin-bottom: 8px;
@@ -763,7 +763,7 @@
   padding: 1px 6px;
   border-radius: 4px;
   font-family: var(--mono);
-  color: #cfc4c5;
+  color: #c6c6c6;
   font-size: 0.72rem;
 }
 
@@ -772,7 +772,7 @@
   border-radius: 8px;
   background: rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.25);
-  color: #4c4546;
+  color: #474747;
   font-size: 0.74rem;
   margin-bottom: 8px;
 }
@@ -875,12 +875,12 @@
 
 /* Light-theme mobile parity. */
 @media (max-width: 700px) {
-  :global([data-theme='light']) .portRow .portName strong { color: #1a1c1d; }
-  :global([data-theme='light']) .portRow .portName .subtle { color: #4c4546; }
-  :global([data-theme='light']) .portRow .portVlan { color: #4c4546; }
-  :global([data-theme='light']) .portRow .portVlan::before { color: #4c4546; }
-  :global([data-theme='light']) .portTable5 .portRow > div:nth-child(4) { color: #4c4546; }
-  :global([data-theme='light']) .portTable5 .portRow > div:nth-child(4)::before { color: #4c4546; }
+  :global([data-theme='light']) .portRow .portName strong { color: #1c1c1c; }
+  :global([data-theme='light']) .portRow .portName .subtle { color: #474747; }
+  :global([data-theme='light']) .portRow .portVlan { color: #474747; }
+  :global([data-theme='light']) .portRow .portVlan::before { color: #474747; }
+  :global([data-theme='light']) .portTable5 .portRow > div:nth-child(4) { color: #474747; }
+  :global([data-theme='light']) .portTable5 .portRow > div:nth-child(4)::before { color: #474747; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -889,7 +889,7 @@
 
 :global([data-theme='light']) .page {
   background: transparent;
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 :global([data-theme='light']) .amb {
   background:
@@ -898,29 +898,29 @@
     radial-gradient(ellipse 45% 35% at 5% 65%,  rgba(0,0,0,0.08) 0%, transparent 50%);
 }
 :global([data-theme='light']) .header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249,249,249,0.88));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255,0.88));
   border-bottom: 1px solid #ffffff;
 }
 :global([data-theme='light']) .headerTitle {
-  background: linear-gradient(135deg, #000000 0%, #000000 50%, #4c4546 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 50%, #474747 100%);
   -webkit-background-clip: text;
   background-clip: text;
   filter: none;
 }
-:global([data-theme='light']) .headerMono { color: #4c4546; }
+:global([data-theme='light']) .headerMono { color: #474747; }
 :global([data-theme='light']) .healthPill {
   background: #ffffff;
   border: 1px solid #ffffff;
-  color: #4c4546;
+  color: #474747;
 }
 :global([data-theme='light']) .healthOk {
   border-color: rgba(0,0,0,0.40);
-  color: #1a1c1d;
+  color: #1c1c1c;
   background: rgba(0,0,0,0.06);
 }
 :global([data-theme='light']) .healthBad {
   border-color: rgba(0,0,0,0.40);
-  color: #1a1c1d;
+  color: #1c1c1c;
   background: rgba(0,0,0,0.06);
 }
 
@@ -931,10 +931,10 @@
   box-shadow: 0 4px 14px rgba(0,0,0,0.06);
 }
 :global([data-theme='light']) .sectionHead h3 { color: #000000; }
-:global([data-theme='light']) .subtle  { color: #4c4546; }
+:global([data-theme='light']) .subtle  { color: #474747; }
 :global([data-theme='light']) .subhead { color: #000000; }
-:global([data-theme='light']) .linkBtn { color: #4c4546; }
-:global([data-theme='light']) .linkBtn:hover { color: #1a1c1d; }
+:global([data-theme='light']) .linkBtn { color: #474747; }
+:global([data-theme='light']) .linkBtn:hover { color: #1c1c1c; }
 :global([data-theme='light']) .syncBtn {
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.30);
@@ -959,24 +959,24 @@
   background: rgba(0,0,0,0.04);
 }
 :global([data-theme='light']) .deviceCardDim {
-  border-left-color: #cfc4c5;
+  border-left-color: #c6c6c6;
 }
 :global([data-theme='light']) .deviceName  { color: #000000; }
-:global([data-theme='light']) .deviceClass { color: #4c4546; }
-:global([data-theme='light']) .modelTag    { color: #1a1c1d; }
-:global([data-theme='light']) .ipTag       { color: #4c4546; }
-:global([data-theme='light']) .unmanaged   { color: #4c4546; }
+:global([data-theme='light']) .deviceClass { color: #474747; }
+:global([data-theme='light']) .modelTag    { color: #1c1c1c; }
+:global([data-theme='light']) .ipTag       { color: #474747; }
+:global([data-theme='light']) .unmanaged   { color: #474747; }
 :global([data-theme='light']) .chev        { color: #000000; }
-:global([data-theme='light']) .cnt         { color: #1a1c1d; }
-:global([data-theme='light']) .cnt i       { color: #4c4546; }
-:global([data-theme='light']) .cntUp b     { color: #1a1c1d; }
-:global([data-theme='light']) .cntDown b   { color: #4c4546; }
-:global([data-theme='light']) .cntDown i   { color: #4c4546; }
+:global([data-theme='light']) .cnt         { color: #1c1c1c; }
+:global([data-theme='light']) .cnt i       { color: #474747; }
+:global([data-theme='light']) .cntUp b     { color: #1c1c1c; }
+:global([data-theme='light']) .cntDown b   { color: #474747; }
+:global([data-theme='light']) .cntDown i   { color: #474747; }
 :global([data-theme='light']) .cntLive b   { color: #000000; }
 
 :global([data-theme='light']) .deviceBody {
   border-top: 1px solid #ffffff;
-  background: #fbfbfb;
+  background: #ffffff;
 }
 
 /* Match table */
@@ -996,10 +996,10 @@
   border-left-color: #000000;
 }
 :global([data-theme='light']) .matchScan strong { color: #000000; }
-:global([data-theme='light']) .matchNd strong   { color: #1a1c1d; }
+:global([data-theme='light']) .matchNd strong   { color: #1c1c1c; }
 
 :global([data-theme='light']) .portCount {
-  color: #1a1c1d;
+  color: #1c1c1c;
   background: rgba(0,0,0,0.10);
   border-color: rgba(0,0,0,0.30);
 }
@@ -1010,7 +1010,7 @@
 }
 :global([data-theme='light']) .tag_mgmt_ip {
   background: rgba(0,0,0,0.10);
-  color: #1a1c1d;
+  color: #1c1c1c;
   border-color: rgba(0,0,0,0.30);
 }
 :global([data-theme='light']) .tag_ocr_model {
@@ -1024,16 +1024,16 @@
   border-color: rgba(0,0,0,0.20);
 }
 :global([data-theme='light']) .fieldKey { color: #000000; }
-:global([data-theme='light']) .fieldVal { color: #1a1c1d; }
+:global([data-theme='light']) .fieldVal { color: #1c1c1c; }
 
 :global([data-theme='light']) .filterBtn {
   background: #ffffff;
-  border: 1px solid #cfc4c5;
-  color: #4c4546;
+  border: 1px solid #c6c6c6;
+  color: #474747;
 }
 :global([data-theme='light']) .filterBtn:hover {
   color: #000000;
-  border-color: #4c4546;
+  border-color: #474747;
 }
 :global([data-theme='light']) .filterBtnActive {
   background: rgba(0,0,0,0.10);
@@ -1045,22 +1045,22 @@
   border: 1px solid #ffffff;
 }
 :global([data-theme='light']) .portHead {
-  background: #fbfbfb;
+  background: #ffffff;
   color: #000000;
   border-bottom: 1px solid #ffffff;
 }
 :global([data-theme='light']) .portRow {
   border-bottom: 1px solid #ffffff;
 }
-:global([data-theme='light']) .portRow:nth-child(even) { background: #fbfbfb; }
+:global([data-theme='light']) .portRow:nth-child(even) { background: #ffffff; }
 :global([data-theme='light']) .portName strong,
-:global([data-theme='light']) .portNb strong { color: #1a1c1d; }
-:global([data-theme='light']) .portVlan { color: #4c4546; }
+:global([data-theme='light']) .portNb strong { color: #1c1c1c; }
+:global([data-theme='light']) .portVlan { color: #474747; }
 :global([data-theme='light']) .dotActive {
-  background: #1a1c1d;
+  background: #1c1c1c;
   box-shadow: 0 0 6px rgba(0,0,0,0.55);
 }
-:global([data-theme='light']) .dotIdle { background: #cfc4c5; }
+:global([data-theme='light']) .dotIdle { background: #c6c6c6; }
 :global([data-theme='light']) .macChip {
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.28);
@@ -1070,17 +1070,17 @@
 
 /* MAC lookup */
 :global([data-theme='light']) .macSection {
-  background: #fbfbfb;
+  background: #ffffff;
   border: 1px solid #ffffff;
 }
 :global([data-theme='light']) .macLabel { color: #000000; }
 :global([data-theme='light']) .macInput {
   background: #ffffff;
-  border: 1px solid #cfc4c5;
-  color: #1a1c1d;
+  border: 1px solid #c6c6c6;
+  color: #1c1c1c;
 }
 :global([data-theme='light']) .macInput:focus {
-  border-color: #4c4546;
+  border-color: #474747;
 }
 :global([data-theme='light']) .macBtn {
   background: rgba(0,0,0,0.10);
@@ -1096,19 +1096,19 @@
   background: rgba(0,0,0,0.08);
   border-color: rgba(0,0,0,0.30);
 }
-:global([data-theme='light']) .currentLabel { color: #1a1c1d; }
-:global([data-theme='light']) .currentLoc strong { color: #1a1c1d; }
+:global([data-theme='light']) .currentLabel { color: #1c1c1c; }
+:global([data-theme='light']) .currentLoc strong { color: #1c1c1c; }
 
-:global([data-theme='light']) .miniRow { background: #fbfbfb; }
-:global([data-theme='light']) .miniRow:nth-child(even) { background: #f6f6f6; }
-:global([data-theme='light']) .miniRow strong { color: #1a1c1d; }
+:global([data-theme='light']) .miniRow { background: #ffffff; }
+:global([data-theme='light']) .miniRow:nth-child(even) { background: #ffffff; }
+:global([data-theme='light']) .miniRow strong { color: #1c1c1c; }
 
-:global([data-theme='light']) .loading { color: #4c4546; }
-:global([data-theme='light']) .empty   { color: #4c4546; }
+:global([data-theme='light']) .loading { color: #474747; }
+:global([data-theme='light']) .empty   { color: #474747; }
 :global([data-theme='light']) .error {
   background: rgba(0,0,0,0.08);
   border-color: rgba(0,0,0,0.32);
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 :global([data-theme='light']) .warn {
   background: rgba(0,0,0,0.06);
@@ -1116,13 +1116,13 @@
   color: #000000;
 }
 :global([data-theme='light']) .warn code {
-  background: #fbfbfb;
+  background: #ffffff;
   color: #000000;
 }
 :global([data-theme='light']) .success {
   background: rgba(0,0,0,0.08);
   border-color: rgba(0,0,0,0.30);
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 
 /* ── Minimalistic refresh — white + subtle black accents. Wins via cascade order. ── */
@@ -2123,7 +2123,7 @@
   letter-spacing: 0.10em !important;
   line-height: 16px !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   margin: 0 !important;
 }
@@ -2133,9 +2133,9 @@
   border-radius: 9999px !important;
   background: transparent !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
-.syncBtn:hover { background: var(--md-surface-container, #FAFAFA) !important; }
+.syncBtn:hover { background: var(--md-surface-container, #ffffff) !important; }
 
 /* ── Device list spacing — tighter gaps between cards ────────── */
 .deviceList { gap: 10px !important; }
@@ -2178,7 +2178,7 @@
   font-weight: 700 !important;
   line-height: 18px !important;
   letter-spacing: -0.005em !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .deviceClass {
   display: none !important; /* Subsumed into the model line below */
@@ -2196,7 +2196,7 @@
 .modelTag, .ipTag {
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 11px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   background: transparent !important;
   border: none !important;
@@ -2210,7 +2210,7 @@
 .unmanaged {
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 11px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
   font-style: normal !important;
 }
@@ -2233,7 +2233,7 @@
 .cnt b, .cntLive b, .cntUp b, .cntDown b {
   font-size: 13px !important;
   font-weight: 700 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .cnt i, .cntLive i, .cntUp i, .cntDown i {
   font-style: normal !important;
@@ -2241,7 +2241,7 @@
   font-weight: 700 !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.5 !important;
 }
 
@@ -2250,7 +2250,7 @@
   align-self: center !important;
   font-size: 14px !important;
   line-height: 1 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
   padding-top: 0 !important;
 }
@@ -2287,7 +2287,7 @@
   background: transparent !important;
   border: none !important;
   border-bottom: 2px solid transparent !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.5 !important;
   font-family: var(--font, inherit) !important;
   font-size: 12px !important;
@@ -2303,8 +2303,8 @@
 .filterBtn:hover { opacity: 0.85 !important; }
 .filterBtnActive {
   background: transparent !important;
-  color: var(--md-on-surface, #121417) !important;
-  border-bottom-color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
+  border-bottom-color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   font-weight: 700 !important;
 }
@@ -2346,7 +2346,7 @@
   font-weight: 700 !important;
   letter-spacing: 0.08em !important;
   line-height: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
 }
 
@@ -2358,7 +2358,7 @@
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   font-size: 10px !important;
   font-weight: 600 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.85 !important;
   text-transform: lowercase !important;
   box-shadow: none !important;
@@ -2383,11 +2383,11 @@
   padding: 2px 7px !important;
   background: transparent !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.75 !important;
   border-radius: 9999px !important;
 }
-.macChip:hover { opacity: 1 !important; background: var(--md-surface-container, #FAFAFA) !important; }
+.macChip:hover { opacity: 1 !important; background: var(--md-surface-container, #ffffff) !important; }
 
 /* Light-theme namespace mirrors of the above, so they win over the
    existing :global blocks earlier in the file. */
@@ -2408,8 +2408,8 @@
 }
 :global([data-theme='light']) .filterBtnActive {
   background: transparent !important;
-  color: var(--md-on-surface, #121417) !important;
-  border-bottom-color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
+  border-bottom-color: var(--md-on-surface, #121212) !important;
 }
 :global([data-theme='light']) .portRow:hover { background: transparent !important; }
 :global([data-theme='light']) .portState {
@@ -2434,20 +2434,20 @@
   letter-spacing: 0.06em !important;
   line-height: 18px !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   margin: 0 !important;
 }
 .headRight .subtle {
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.6 !important;
 }
 .headRight .subtle b {
   font-family: var(--font, inherit) !important;
   font-weight: 700 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
 }
 .syncBtn {
@@ -2455,14 +2455,14 @@
   height: 32px !important;
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   border-radius: 9999px !important;
   transition: background-color 0.18s, border-color 0.18s !important;
 }
 .syncBtn:hover {
-  background: var(--md-on-surface, #121417) !important;
+  background: var(--md-on-surface, #121212) !important;
   color: var(--md-surface-container-lowest, #FFFFFF) !important;
-  border-color: var(--md-on-surface, #121417) !important;
+  border-color: var(--md-on-surface, #121212) !important;
 }
 
 /* ── Device list — slightly more space between cards ─────────── */
@@ -2476,7 +2476,7 @@
   box-shadow: none !important;
   transition: border-color 0.18s !important;
 }
-.deviceCard:hover { border-color: rgba(18, 20, 23, 0.32) !important; }
+.deviceCard:hover { border-color: rgba(18, 18, 18, 0.32) !important; }
 .deviceCard::before,
 :global([data-theme='light']) .deviceCard::before { display: none !important; content: none !important; }
 
@@ -2501,9 +2501,9 @@
   width: 40px !important;
   height: 40px !important;
   border-radius: 10px !important;
-  background: var(--md-surface-container, #FAFAFA) !important;
+  background: var(--md-surface-container, #ffffff) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23121417' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='6' width='20' height='5' rx='1.5'/><rect x='2' y='13' width='20' height='5' rx='1.5'/><circle cx='6' cy='8.5' r='0.6' fill='%23121417'/><circle cx='6' cy='15.5' r='0.6' fill='%23121417'/></svg>") !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23121212' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='6' width='20' height='5' rx='1.5'/><rect x='2' y='13' width='20' height='5' rx='1.5'/><circle cx='6' cy='8.5' r='0.6' fill='%23121212'/><circle cx='6' cy='15.5' r='0.6' fill='%23121212'/></svg>") !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
 }
@@ -2522,7 +2522,7 @@
   font-weight: 700 !important;
   line-height: 22px !important;
   letter-spacing: -0.01em !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .deviceClass { display: none !important; }
 
@@ -2536,7 +2536,7 @@
 .modelTag {
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.7 !important;
   background: transparent !important;
   border: none !important;
@@ -2550,7 +2550,7 @@
 .ipTag {
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   background: transparent !important;
   border: none !important;
@@ -2559,7 +2559,7 @@
 .unmanaged {
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
   font-style: normal !important;
 }
@@ -2572,7 +2572,7 @@
   align-items: baseline !important;
   gap: 4px !important;
   padding: 5px 10px !important;
-  background: var(--md-on-surface, #121417) !important;
+  background: var(--md-on-surface, #121212) !important;
   border-radius: 9999px !important;
 }
 .cnt, .cntLive, .cntUp, .cntDown {
@@ -2604,7 +2604,7 @@
   align-self: center !important;
   font-size: 14px !important;
   line-height: 1 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.5 !important;
   padding-top: 0 !important;
 }
@@ -2636,7 +2636,7 @@
   border-radius: 9999px !important;
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.85 !important;
   font-family: var(--font, inherit) !important;
   font-size: 12px !important;
@@ -2649,14 +2649,14 @@
   transition: all 0.14s !important;
 }
 .filterBtn:hover {
-  border-color: rgba(18, 20, 23, 0.32) !important;
+  border-color: rgba(18, 18, 18, 0.32) !important;
   opacity: 1 !important;
 }
 .filterBtnActive,
 :global([data-theme='light']) .filterBtnActive {
-  background: var(--md-on-surface, #121417) !important;
+  background: var(--md-on-surface, #121212) !important;
   color: var(--md-surface-container-lowest, #FFFFFF) !important;
-  border-color: var(--md-on-surface, #121417) !important;
+  border-color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   font-weight: 700 !important;
 }
@@ -2677,7 +2677,7 @@
 .portRow:last-child { border-bottom: none !important; }
 .portRow:hover,
 :global([data-theme='light']) .portRow:hover {
-  background: var(--md-surface-container, #FAFAFA) !important;
+  background: var(--md-surface-container, #ffffff) !important;
 }
 
 .portName { gap: 4px !important; }
@@ -2692,12 +2692,12 @@
   font-size: 14px !important;
   font-weight: 700 !important;
   letter-spacing: -0.005em !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .portName .subtle {
   font-family: var(--font, inherit) !important;
   font-size: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   font-weight: 400 !important;
 }
@@ -2706,7 +2706,7 @@
   font-weight: 700 !important;
   letter-spacing: 0.08em !important;
   line-height: 14px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.5 !important;
 }
 
@@ -2719,7 +2719,7 @@
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 11px !important;
   font-weight: 600 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   text-transform: lowercase !important;
   box-shadow: none !important;
@@ -2750,16 +2750,16 @@
   font-weight: 700 !important;
   letter-spacing: 0.04em !important;
   padding: 3px 8px !important;
-  background: var(--md-surface-container, #FAFAFA) !important;
+  background: var(--md-surface-container, #ffffff) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   border-radius: 9999px !important;
 }
 .macChip:hover {
-  background: var(--md-on-surface, #121417) !important;
+  background: var(--md-on-surface, #121212) !important;
   color: var(--md-surface-container-lowest, #FFFFFF) !important;
-  border-color: var(--md-on-surface, #121417) !important;
+  border-color: var(--md-on-surface, #121212) !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -2794,7 +2794,7 @@
   letter-spacing: 0.14em !important;
   line-height: 16px !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   margin: 0 !important;
 }
@@ -2807,13 +2807,13 @@
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 11px !important;
   letter-spacing: 0.04em !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.7 !important;
 }
 .headRight .subtle b {
   font-family: var(--font, inherit) !important;
   font-weight: 700 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
 }
 .syncBtn {
@@ -2821,7 +2821,7 @@
   height: auto !important;
   background: transparent !important;
   border: none !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   border-radius: 0 !important;
   padding: 4px !important;
@@ -2829,7 +2829,7 @@
 }
 .syncBtn:hover {
   background: transparent !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   border-color: transparent !important;
   opacity: 1 !important;
 }
@@ -2874,7 +2874,7 @@
   font-size: 11px !important;
   font-weight: 700 !important;
   letter-spacing: 0.06em !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
   background: none !important;
   border: none !important;
@@ -2905,7 +2905,7 @@
   font-weight: 700 !important;
   line-height: 24px !important;
   letter-spacing: -0.015em !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .deviceClass { display: none !important; }
 
@@ -2920,7 +2920,7 @@
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 12px !important;
   letter-spacing: 0 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.75 !important;
   background: transparent !important;
   border: none !important;
@@ -2934,7 +2934,7 @@
 .ipTag {
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   background: transparent !important;
   border: none !important;
@@ -2943,7 +2943,7 @@
 .unmanaged {
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.4 !important;
   font-style: normal !important;
   text-transform: lowercase !important;
@@ -2975,7 +2975,7 @@
   font-weight: 700 !important;
   line-height: 1 !important;
   letter-spacing: -0.02em !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .cnt i, .cntLive i, .cntUp i, .cntDown i {
   font-style: normal !important;
@@ -2983,7 +2983,7 @@
   font-weight: 700 !important;
   letter-spacing: 0.16em !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
 }
 
@@ -3020,7 +3020,7 @@
   background: transparent !important;
   border: none !important;
   border-bottom: 2px solid transparent !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
   font-family: var(--font, inherit) !important;
   font-size: 13px !important;
@@ -3037,8 +3037,8 @@
 .filterBtnActive,
 :global([data-theme='light']) .filterBtnActive {
   background: transparent !important;
-  color: var(--md-on-surface, #121417) !important;
-  border-bottom-color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
+  border-bottom-color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   font-weight: 700 !important;
 }
@@ -3086,12 +3086,12 @@
   font-size: 14px !important;
   font-weight: 700 !important;
   letter-spacing: -0.01em !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .portName .subtle {
   font-family: var(--font, inherit) !important;
   font-size: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   font-weight: 400 !important;
 }
@@ -3101,7 +3101,7 @@
   font-weight: 500 !important;
   letter-spacing: 0.04em !important;
   line-height: 14px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.4 !important;
   text-transform: none !important;
 }
@@ -3120,7 +3120,7 @@
   font-size: 12px !important;
   font-weight: 500 !important;
   letter-spacing: 0 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   text-transform: lowercase !important;
   box-shadow: none !important;
@@ -3153,7 +3153,7 @@
   padding: 0 !important;
   background: transparent !important;
   border: none !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   border-radius: 0 !important;
   text-decoration: underline !important;
@@ -3162,7 +3162,7 @@
 .macChip:hover,
 :global([data-theme='light']) .macChip:hover {
   background: transparent !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   border-color: transparent !important;
   opacity: 1 !important;
 }
@@ -3208,7 +3208,7 @@
   letter-spacing: 0.05em !important;
   line-height: 16px !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 1 !important;
   margin: 0 !important;
 }
@@ -3221,13 +3221,13 @@
   font-family: var(--font, inherit) !important;
   font-size: 12px !important;
   letter-spacing: 0.02em !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 1 !important;
 }
 .headRight .subtle b {
   font-family: var(--font, inherit) !important;
   font-weight: 700 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .syncBtn {
   width: 32px !important;
@@ -3235,7 +3235,7 @@
   border-radius: 9999px !important;
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   padding: 0 !important;
   box-shadow: none !important;
@@ -3243,8 +3243,8 @@
 }
 .syncBtn:hover {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  border-color: var(--md-on-surface, #121417) !important;
-  color: var(--md-on-surface, #121417) !important;
+  border-color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
 }
 
@@ -3274,7 +3274,7 @@
 }
 .deviceCard:hover,
 :global([data-theme='light']) .deviceCard:hover {
-  border-color: var(--md-on-surface, #121417) !important;
+  border-color: var(--md-on-surface, #121212) !important;
 }
 .deviceCard::before,
 :global([data-theme='light']) .deviceCard::before {
@@ -3287,7 +3287,7 @@
 :global([data-theme='light']) .deviceCardOpen {
   position: relative !important;
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  border: 2px solid var(--md-on-surface, #121417) !important;
+  border: 2px solid var(--md-on-surface, #121212) !important;
   border-radius: 12px !important;
   padding: 14px !important;
   box-shadow: none !important;
@@ -3302,7 +3302,7 @@
   top: 0 !important;
   bottom: 0 !important;
   width: 4px !important;
-  background: var(--md-on-surface, #121417) !important;
+  background: var(--md-on-surface, #121212) !important;
   border-radius: 0 !important;
   opacity: 1 !important;
 }
@@ -3348,7 +3348,7 @@
   font-weight: 600 !important;
   line-height: 24px !important;
   letter-spacing: -0.005em !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .deviceClass { display: none !important; }
 
@@ -3370,7 +3370,7 @@
   font-size: 14px !important;
   font-weight: 400 !important;
   line-height: 20px !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 1 !important;
   background: transparent !important;
   border: none !important;
@@ -3385,7 +3385,7 @@
   font-weight: 500 !important;
   line-height: 18px !important;
   letter-spacing: 0 !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 0.85 !important;
   background: transparent !important;
   border: none !important;
@@ -3395,7 +3395,7 @@
 .unmanaged {
   font-family: var(--font, inherit) !important;
   font-size: 13px !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 0.7 !important;
   font-style: normal !important;
   text-transform: none !important;
@@ -3408,7 +3408,7 @@
   align-items: center !important;
   gap: 6px !important;
   padding: 4px 10px !important;
-  background: var(--md-surface-container-high, #ebe7e7) !important;
+  background: var(--md-surface-container-high, #e8e8e8) !important;
   border: none !important;
   border-radius: 9999px !important;
   flex-shrink: 0 !important;
@@ -3432,7 +3432,7 @@
   width: 6px !important;
   height: 6px !important;
   border-radius: 50% !important;
-  background: var(--md-on-surface, #121417) !important;
+  background: var(--md-on-surface, #121212) !important;
   flex-shrink: 0 !important;
 }
 .cnt b, .cntLive b, .cntUp b, .cntDown b {
@@ -3441,7 +3441,7 @@
   font-weight: 700 !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   line-height: 14px !important;
 }
 .cnt i, .cntLive i, .cntUp i, .cntDown i {
@@ -3450,7 +3450,7 @@
   font-weight: 700 !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
 }
 
@@ -3486,7 +3486,7 @@
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 0.6 !important;
   font-family: var(--font, inherit) !important;
   font-size: 12px !important;
@@ -3503,7 +3503,7 @@
 .filterBtnActive,
 :global([data-theme='light']) .filterBtnActive {
   background: transparent !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   border: none !important;
   opacity: 1 !important;
   font-weight: 700 !important;
@@ -3543,12 +3543,12 @@
 /* Leading Ethernet icon */
 .portIcon {
   flex-shrink: 0 !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 0.6 !important;
   transition: opacity 0.14s, color 0.14s !important;
 }
 .portRow:hover .portIcon {
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
 }
 
@@ -3570,7 +3570,7 @@
   font-size: 13px !important;
   font-weight: 500 !important;
   letter-spacing: 0 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   text-decoration: none !important;
 }
@@ -3578,7 +3578,7 @@
   font-family: var(--font, inherit) !important;
   font-size: 13px !important;
   font-weight: 400 !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 1 !important;
   text-transform: none !important;
 }
@@ -3590,7 +3590,7 @@
   letter-spacing: 0.05em !important;
   line-height: 14px !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 0.7 !important;
   text-decoration: none !important;
 }
@@ -3631,16 +3631,16 @@
   font-weight: 600 !important;
   letter-spacing: 0 !important;
   padding: 2px 8px !important;
-  background: var(--md-surface-container-high, #ebe7e7) !important;
+  background: var(--md-surface-container-high, #e8e8e8) !important;
   border: none !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   border-radius: 9999px !important;
   text-decoration: none !important;
 }
 .macChip:hover,
 :global([data-theme='light']) .macChip:hover {
-  background: var(--md-on-surface, #121417) !important;
+  background: var(--md-on-surface, #121212) !important;
   color: var(--md-surface-container-lowest, #FFFFFF) !important;
   opacity: 1 !important;
 }
@@ -3674,14 +3674,14 @@
   letter-spacing: 0.10em !important;
   line-height: 14px !important;
   text-transform: uppercase !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .vlanGroupCount {
   font-family: var(--mono, ui-monospace, monospace) !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   letter-spacing: 0 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   font-variant-numeric: tabular-nums !important;
 }
@@ -3706,7 +3706,7 @@
 }
 .portRow:hover,
 :global([data-theme='light']) .portRow:hover {
-  background: var(--md-surface-container-low, #f6f3f2) !important;
+  background: var(--md-surface-container-low, #f4f4f4) !important;
 }
 
 /* Reset old portName container — we now place the columns directly */
@@ -3723,7 +3723,7 @@
   font-size: 13px !important;
   font-weight: 600 !important;
   letter-spacing: 0 !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   font-variant-numeric: tabular-nums !important;
   white-space: nowrap !important;
 }
@@ -3733,7 +3733,7 @@
   font-family: var(--font, inherit) !important;
   font-size: 13px !important;
   font-weight: 400 !important;
-  color: var(--md-on-surface-variant, #4c4546) !important;
+  color: var(--md-on-surface-variant, #474747) !important;
   opacity: 1 !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -3779,10 +3779,10 @@
   display: grid; place-items: center;
   border-radius: 7px;
   background: rgba(0,0,0,0.05);
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 .statTileText { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
-.statTileValue { font-size: 1.15rem; font-weight: 800; color: #1a1c1d; letter-spacing: -0.02em;
+.statTileValue { font-size: 1.15rem; font-weight: 800; color: #1c1c1c; letter-spacing: -0.02em;
                  font-variant-numeric: tabular-nums; }
 .statTileLabel { font-size: 0.66rem; font-weight: 600; color: rgba(0,0,0,0.45);
                  text-transform: uppercase; letter-spacing: 0.05em; }
@@ -3798,21 +3798,21 @@
 .netPortsTitle { font-size: 0.66rem; font-weight: 700; color: rgba(0,0,0,0.5);
                  text-transform: uppercase; letter-spacing: 0.06em; }
 .netPortsNums { font-size: 0.8rem; color: rgba(0,0,0,0.55); font-variant-numeric: tabular-nums; }
-.netPortsNums b { color: #1a1c1d; font-weight: 700; }
+.netPortsNums b { color: #1c1c1c; font-weight: 700; }
 .netDot { margin: 0 5px; color: rgba(0,0,0,0.25); }
 .netMuted { color: rgba(0,0,0,0.4); }
 .netDownNum { color: rgba(0,0,0,0.45); }
 .netBar { height: 8px; border-radius: 5px; background: rgba(0,0,0,0.08); overflow: hidden; }
-.netBarUp { height: 100%; border-radius: 5px; background: #1a1c1d; transition: width .35s ease; }
+.netBarUp { height: 100%; border-radius: 5px; background: #1c1c1c; transition: width .35s ease; }
 
 /* ── Device card enrichments ────────────────────────────────────────── */
 .deviceGlyph {
   width: 22px; height: 22px; flex: none; margin-right: 7px;
   display: grid; place-items: center; border-radius: 6px;
-  background: rgba(0,0,0,0.05); color: #1a1c1d;
+  background: rgba(0,0,0,0.05); color: #1c1c1c;
 }
 .vendorTag {
-  font-size: 0.7rem; font-weight: 700; color: #1a1c1d;
+  font-size: 0.7rem; font-weight: 700; color: #1c1c1c;
   background: rgba(0,0,0,0.06); padding: 1px 7px; border-radius: 5px;
 }
 .osTag {
@@ -3826,10 +3826,10 @@
   padding: 0 14px 10px;
 }
 .utilBar { flex: 1; height: 6px; border-radius: 4px; background: rgba(0,0,0,0.08); overflow: hidden; min-width: 56px; }
-.utilBarUp { height: 100%; border-radius: 4px; background: #1a1c1d; transition: width .35s ease; }
+.utilBarUp { height: 100%; border-radius: 4px; background: #1c1c1c; transition: width .35s ease; }
 .utilLabel { font-size: 0.74rem; color: rgba(0,0,0,0.5); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.utilUp   { color: #1a1c1d; font-weight: 700; }
-.utilConn { color: #1a1c1d; font-weight: 700; }
+.utilUp   { color: #1c1c1c; font-weight: 700; }
+.utilConn { color: #1c1c1c; font-weight: 700; }
 
 /* ── Port faceplate grid — monochrome ───────────────────────────────── */
 .faceplate {
@@ -3853,9 +3853,9 @@
   transition: transform .1s ease;
 }
 .facePort:hover { transform: translateY(-1px); border-color: rgba(0,0,0,0.4); }
-.facePortDown   { background: #f2f2f3; border-color: rgba(0,0,0,0.08); color: rgba(0,0,0,0.28); }
-.facePortUp     { background: #ffffff; border-color: rgba(0,0,0,0.45); color: #1a1c1d; }
-.facePortLinked { background: #1a1c1d; border-color: #1a1c1d; color: #ffffff; }
+.facePortDown   { background: #f2f2f2; border-color: rgba(0,0,0,0.08); color: rgba(0,0,0,0.28); }
+.facePortUp     { background: #ffffff; border-color: rgba(0,0,0,0.45); color: #1c1c1c; }
+.facePortLinked { background: #1c1c1c; border-color: #1c1c1c; color: #ffffff; }
 
 .faceLegend {
   display: flex; gap: 12px; margin-top: 8px;
@@ -3863,9 +3863,9 @@
 }
 .faceLegend span { display: inline-flex; align-items: center; gap: 4px; }
 .legDot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.14); }
-.legLinked { background: #1a1c1d; border-color: #1a1c1d; }
+.legLinked { background: #1c1c1c; border-color: #1c1c1c; }
 .legUp { background: #ffffff; border-color: rgba(0,0,0,0.45); }
-.legDown { background: #f2f2f3; }
+.legDown { background: #f2f2f2; }
 
 /* ── Compact + monochrome port rows (final override) ────────────────── */
 .portRow,
@@ -3876,7 +3876,7 @@
 }
 .portMono { font-size: 12px !important; }
 .portDesc { font-size: 11px !important; color: rgba(0,0,0,0.35) !important; }
-.portArrowUp   { color: #1a1c1d !important; }
+.portArrowUp   { color: #1c1c1c !important; }
 .portArrowDown { color: rgba(0,0,0,0.24) !important; opacity: 1 !important; }
 .portArrow { width: 16px !important; height: 16px !important; }
 .portArrow svg { width: 13px !important; height: 13px !important; }
@@ -3904,30 +3904,30 @@
   padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.06);
   font-size: 0.82rem; vertical-align: middle; white-space: nowrap;
 }
-.devTr:hover > td { background: #fafafa; }
-.devTrOpen > td { background: #f5f5f6; }
+.devTr:hover > td { background: #ffffff; }
+.devTrOpen > td { background: #f5f5f5; }
 .devTrDim { cursor: default; }
 .devTrDim:hover > td { background: transparent; }
 
 .tdDevice .deviceName {
   font-family: var(--mono, ui-monospace, monospace); font-weight: 700;
-  font-size: 0.84rem; color: #1a1c1d; margin-right: 8px;
+  font-size: 0.84rem; color: #1c1c1c; margin-right: 8px;
 }
 .tdDevice .deviceClass {
   font-size: 0.62rem; font-weight: 600; color: rgba(0,0,0,0.4);
   text-transform: uppercase; letter-spacing: 0.05em;
 }
-.tdModel { color: #1a1c1d; max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+.tdModel { color: #1c1c1c; max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
 .tdIp { font-family: var(--mono, monospace); font-size: 0.78rem; color: rgba(0,0,0,0.55); }
 .tdPorts { font-family: var(--mono, monospace); font-variant-numeric: tabular-nums; color: rgba(0,0,0,0.5); }
-.tdPorts b { color: #1a1c1d; font-weight: 700; }
-.tdLinks { font-variant-numeric: tabular-nums; font-weight: 700; color: #1a1c1d; }
+.tdPorts b { color: #1c1c1c; font-weight: 700; }
+.tdLinks { font-variant-numeric: tabular-nums; font-weight: 700; color: #1c1c1c; }
 .tdChev { color: rgba(0,0,0,0.35); width: 18px; }
 .unmanaged { color: rgba(0,0,0,0.35); font-size: 0.78rem; }
 
 .devExpandTd {
   padding: 2px 4px 12px !important;
-  background: #fbfbfc;
+  background: #ffffff;
   border-bottom: 1px solid rgba(0,0,0,0.06) !important;
 }
 
@@ -3955,14 +3955,14 @@
   padding: 11px 12px;
 }
 .mcardDim .mcardHead { cursor: default; }
-.mcard:not(.mcardDim) .mcardHead:hover { background: #fafafa; }
+.mcard:not(.mcardDim) .mcardHead:hover { background: #ffffff; }
 
 .mcardTop { display: flex; align-items: center; gap: 7px; }
 .mGlyph {
   width: 22px; height: 22px; flex: none; display: grid; place-items: center;
-  border-radius: 6px; background: rgba(0,0,0,0.05); color: #1a1c1d;
+  border-radius: 6px; background: rgba(0,0,0,0.05); color: #1c1c1c;
 }
-.mName { font-family: var(--mono, ui-monospace, monospace); font-weight: 700; font-size: 0.85rem; color: #1a1c1d; }
+.mName { font-family: var(--mono, ui-monospace, monospace); font-weight: 700; font-size: 0.85rem; color: #1c1c1c; }
 .mClass { font-size: 0.6rem; font-weight: 600; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.05em; }
 .mChev { margin-left: auto; color: rgba(0,0,0,0.35); font-size: 0.8rem; }
 
@@ -3972,18 +3972,18 @@
 .mIp { font-family: var(--mono, monospace); color: rgba(0,0,0,0.45); }
 
 .mBarRow { display: flex; align-items: center; gap: 9px; }
-.mBar { flex: 1; height: 6px; border-radius: 4px; background: #ececef; overflow: hidden; min-width: 40px; }
-.mBar > i { display: block; height: 100%; background: #1a1c1d; border-radius: 4px; }
+.mBar { flex: 1; height: 6px; border-radius: 4px; background: #ececec; overflow: hidden; min-width: 40px; }
+.mBar > i { display: block; height: 100%; background: #1c1c1c; border-radius: 4px; }
 .mNums { font-family: var(--mono, monospace); font-size: 0.72rem; color: rgba(0,0,0,0.5);
          white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mNums b { color: #1a1c1d; font-weight: 700; }
+.mNums b { color: #1c1c1c; font-weight: 700; }
 
 .mUnmanaged { font-size: 0.75rem; color: rgba(0,0,0,0.38); margin-top: 8px; }
 
 .mBody {
   border-top: 1px solid rgba(0,0,0,0.07);
   padding: 10px 12px 4px;
-  background: #fbfbfc;
+  background: #ffffff;
 }
 
 /* ── Single column, wider, clearly separated cards (override) ────────── */
@@ -4012,7 +4012,7 @@
   display: flex; align-items: baseline; justify-content: space-between;
   margin: 0 2px 14px;
 }
-.nvTitle { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; color: #1a1c1d; }
+.nvTitle { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; color: #1c1c1c; }
 .nvCount { font-size: 0.76rem; font-weight: 600; color: rgba(0,0,0,0.42); font-variant-numeric: tabular-nums; }
 
 .nvList {
@@ -4023,27 +4023,27 @@
 }
 .nvItem { border-bottom: 1px solid rgba(0,0,0,0.055); }
 .nvItem:last-child { border-bottom: none; }
-.nvItemOpen { background: #fbfbfc; }
+.nvItemOpen { background: #ffffff; }
 
 .nvRow {
   display: flex; align-items: center; gap: 14px; width: 100%;
   text-align: left; background: transparent; border: none;
   cursor: pointer; padding: 14px 18px;
 }
-.nvItem:not(.nvItemDim) .nvRow:hover { background: #fafafa; }
+.nvItem:not(.nvItemDim) .nvRow:hover { background: #ffffff; }
 .nvItemDim .nvRow { cursor: default; }
 
 .nvIcon {
   width: 34px; height: 34px; flex: none;
   display: grid; place-items: center;
-  border-radius: 9px; background: rgba(0,0,0,0.045); color: #1a1c1d;
+  border-radius: 9px; background: rgba(0,0,0,0.045); color: #1c1c1c;
 }
 .nvIcon svg { width: 17px; height: 17px; }
 
 .nvIdent { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
 .nvL1 { display: flex; align-items: baseline; gap: 9px; }
 .nvName { font-family: var(--mono, ui-monospace, monospace); font-weight: 700;
-          font-size: 0.92rem; color: #1a1c1d; letter-spacing: -0.01em; }
+          font-size: 0.92rem; color: #1c1c1c; letter-spacing: -0.01em; }
 .nvType { font-size: 0.6rem; font-weight: 600; color: rgba(0,0,0,0.38);
           text-transform: uppercase; letter-spacing: 0.06em; }
 .nvL2 { font-size: 0.8rem; color: rgba(0,0,0,0.5); white-space: nowrap;
@@ -4053,11 +4053,11 @@
 .nvOff { color: rgba(0,0,0,0.35); }
 
 .nvUtil { display: flex; align-items: center; gap: 11px; flex: none; }
-.nvBar { width: 84px; height: 5px; border-radius: 3px; background: #ececef; overflow: hidden; }
-.nvBar > i { display: block; height: 100%; background: #1a1c1d; border-radius: 3px; }
+.nvBar { width: 84px; height: 5px; border-radius: 3px; background: #ececec; overflow: hidden; }
+.nvBar > i { display: block; height: 100%; background: #1c1c1c; border-radius: 3px; }
 .nvNums { font-family: var(--mono, monospace); font-size: 0.73rem; color: rgba(0,0,0,0.48);
           white-space: nowrap; font-variant-numeric: tabular-nums; }
-.nvNums b { color: #1a1c1d; font-weight: 700; }
+.nvNums b { color: #1c1c1c; font-weight: 700; }
 .nvSep2 { margin: 0 5px; color: rgba(0,0,0,0.24); }
 .nvChev { flex: none; color: rgba(0,0,0,0.3); font-size: 0.78rem; width: 12px; text-align: center; }
 
@@ -4078,7 +4078,7 @@
   background: #ffffff !important;
   border-color: rgba(0,0,0,0.12) !important;
 }
-.healthOk .healthDot  { background: #1a1c1d !important; }
+.healthOk .healthDot  { background: #1c1c1c !important; }
 .healthBad .healthDot { background: rgba(0,0,0,0.3) !important; }
 
 /* ═══ Option C — airy rows, zero lines (final) ═══════════════════════ */
@@ -4098,8 +4098,8 @@
   gap: 16px !important;
   transition: background .12s ease;
 }
-.nvItem:not(.nvItemDim) .nvRow:hover { background: #ececed !important; }
-.nvItemOpen .nvRow { background: #f1f1f3 !important; }
+.nvItem:not(.nvItemDim) .nvRow:hover { background: #ececec !important; }
+.nvItemOpen .nvRow { background: #f1f1f1 !important; }
 
 .nvIcon { width: 36px; height: 36px; border-radius: 10px; }
 .nvIcon svg { width: 18px; height: 18px; }
@@ -4141,17 +4141,17 @@
   display: flex; align-items: center; gap: 10px;
   padding: 6px 8px; border-radius: 9px;
 }
-.nport:hover { background: #f1f1f3; }
-.nportName { font-family: var(--mono, monospace); font-weight: 700; font-size: 0.8rem; color: #1a1c1d; }
+.nport:hover { background: #f1f1f1; }
+.nportName { font-family: var(--mono, monospace); font-weight: 700; font-size: 0.8rem; color: #1c1c1c; }
 .nportFill { flex: 1; }
 .nportMac {
   font-family: var(--mono, monospace); font-size: 0.66rem; font-weight: 700;
-  color: #1a1c1d; background: rgba(0,0,0,0.06); border: none;
+  color: #1c1c1c; background: rgba(0,0,0,0.06); border: none;
   border-radius: 6px; padding: 2px 7px; cursor: pointer;
 }
 .nportMac:hover { background: rgba(0,0,0,0.11); }
 .nportState { font-size: 0.72rem; font-weight: 600; width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
-.nportUp { color: #1a1c1d; }
+.nportUp { color: #1c1c1c; }
 .nportDown { color: rgba(0,0,0,0.28); }
 
 /* filter tabs — airy, no boxes */
@@ -4163,7 +4163,7 @@
   cursor: pointer;
 }
 .filterBtn:hover { background: rgba(0,0,0,0.04) !important; color: rgba(0,0,0,0.7) !important; }
-.filterBtnActive { background: rgba(0,0,0,0.07) !important; color: #1a1c1d !important; }
+.filterBtnActive { background: rgba(0,0,0,0.07) !important; color: #1c1c1c !important; }
 
 /* ══════════════════════════════════════════════════════════════════════
    DESKTOP / TABLET (≥768px)

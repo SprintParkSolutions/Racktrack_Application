@@ -9,29 +9,29 @@ import * as THREE from 'three';
 // colors for its shared floor / fog.
 export const SCENE_PALETTES = {
   dark: {
-    bg:           '#0e1830',
-    fog:          '#0e1830',
-    floor:        '#0c1428',
+    bg:           '#181818',
+    fog:          '#181818',
+    floor:        '#141414',
     floorOpacity:  0.88,
     gridCell:     '#2e4a78',
     gridSection:  '#5388c8',
     poolColor:    '#2a4f9e',
     poolOpacity:   0.22,
-    cableJacket:  '#e6ebf2',  // off-white — pops on dark
+    cableJacket:  '#eaeaea',  // off-white — pops on dark
     environment:  'warehouse',
     envIntensity:  0.55,
     ambientBoost:  1.0,
   },
   light: {
-    bg:           '#f4f6fb',
-    fog:          '#eef1f7',
-    floor:        '#dde3ee',
+    bg:           '#ffffff',
+    fog:          '#f1f1f1',
+    floor:        '#e3e3e3',
     floorOpacity:  0.95,
-    gridCell:     '#9aa6bd',
+    gridCell:     '#a5a5a5',
     gridSection:  '#4b5b7a',
     poolColor:    '#7ca0d6',
     poolOpacity:   0.20,
-    cableJacket:  '#1f2937',  // dark slate — pops on light
+    cableJacket:  '#282828',  // dark slate — pops on light
     environment:  'apartment',
     envIntensity:  0.85,
     ambientBoost:  1.15,
@@ -68,7 +68,7 @@ const TIER_COLOR = {
 
 // Capacity → color (matches the heatmap helper in TopologyPage).
 function capacityColor(freePct) {
-  if (freePct === null || freePct === undefined) return '#475569';
+  if (freePct === null || freePct === undefined) return '#535353';
   if (freePct >= 0.5)  return '#22c55e';
   if (freePct >= 0.25) return '#f59e0b';
   return '#ef4444';
@@ -149,9 +149,9 @@ function NeighborRacks({ topo, chassisU }) {
           <group key={`${n.name}-${i}`} position={[x, 0, -1.0]}>
             <mesh>
               <boxGeometry args={[2.2, totalH * 0.85, 1.4]} />
-              <meshStandardMaterial color="#0b1428" metalness={0.6} roughness={0.55}
+              <meshStandardMaterial color="#141414" metalness={0.6} roughness={0.55}
                                     transparent opacity={0.55}
-                                    emissive="#1a2547" emissiveIntensity={0.22} />
+                                    emissive="#252525" emissiveIntensity={0.22} />
             </mesh>
             {/* Connecting beam from main rack toward this neighbor */}
             <mesh position={[-dir * 1.1, 0, 1.0]} rotation={[0, dir > 0 ? -0.18 : 0.18, 0]}>
@@ -161,11 +161,11 @@ function NeighborRacks({ topo, chassisU }) {
             <Text
               position={[0, totalH/2 * 0.85 + 0.15, 0.72]}
               fontSize={0.18}
-              color="#cbd5f5"
+              color="#d5d5d5"
               anchorX="center"
               anchorY="bottom"
               outlineWidth={0.005}
-              outlineColor="#020617"
+              outlineColor="#000000"
             >
               {n.name}
             </Text>
@@ -202,7 +202,7 @@ function CableArm({ side, totalH, totalD, totalW }) {
       {/* Main bundle */}
       <mesh>
         <cylinderGeometry args={[0.06, 0.06, armH, 12]} />
-        <meshStandardMaterial color="#070b1c" metalness={0.3} roughness={0.85} />
+        <meshStandardMaterial color="#000000" metalness={0.3} roughness={0.85} />
       </mesh>
       {/* Velcro/cable bands */}
       {bandColors.map((c, i) => {
@@ -236,13 +236,13 @@ function CableManagerFront({ side, totalH }) {
           part of the frame, not a separate gadget. */}
       <mesh>
         <boxGeometry args={[0.08, railH, 0.04]} />
-        <meshStandardMaterial color="#0d1322" metalness={0.6} roughness={0.5} />
+        <meshStandardMaterial color="#131313" metalness={0.6} roughness={0.5} />
       </mesh>
       {/* Recessed gutter — slightly inset darker channel where cables drop
           in. Reads as a cable-routing slot rather than a solid bar. */}
       <mesh position={[0, 0, 0.022]}>
         <boxGeometry args={[0.04, railH - 0.06, 0.012]} />
-        <meshStandardMaterial color="#04081a" metalness={0.3} roughness={0.85} />
+        <meshStandardMaterial color="#000000" metalness={0.3} roughness={0.85} />
       </mesh>
     </group>
   );
@@ -272,12 +272,12 @@ function SwingPanel({ side, totalH, totalD, totalW, open, onClick }) {
       >
         <planeGeometry args={[panelLen, totalH - 0.04]} />
         <meshStandardMaterial
-          color="#0a1228"
+          color="#121212"
           metalness={0.3}
           roughness={0.2}
           transparent
           opacity={0.22}
-          emissive="#1a2547"
+          emissive="#252525"
           emissiveIntensity={0.22}
           side={THREE.DoubleSide}
         />
@@ -285,7 +285,7 @@ function SwingPanel({ side, totalH, totalD, totalW, open, onClick }) {
       {/* Subtle hinge marker so users see where it swings from */}
       <mesh position={[0, 0, -0.03]}>
         <boxGeometry args={[0.02, totalH - 0.06, 0.04]} />
-        <meshStandardMaterial color="#1a2547" metalness={0.6} roughness={0.5} />
+        <meshStandardMaterial color="#252525" metalness={0.6} roughness={0.5} />
       </mesh>
     </group>
   );
@@ -348,7 +348,7 @@ function RackChassis({ totalU, chassisU, rackName, hasShelf, leftOpen, rightOpen
       <mesh position={[0, -totalH/2 - 0.05, 0]}>
         <boxGeometry args={[totalW + 0.10, 0.10, totalD + 0.06]} />
         <meshStandardMaterial
-          color="#080d1f"
+          color="#000000"
           metalness={0.6}
           roughness={0.55}
         />
@@ -361,7 +361,7 @@ function RackChassis({ totalU, chassisU, rackName, hasShelf, leftOpen, rightOpen
           return (
             <mesh key={`vent-${i}`} position={[x, 0, totalD/4]}>
               <boxGeometry args={[ventGap * 0.45, 0.02, totalD * 0.32]} />
-              <meshStandardMaterial color="#04081a" metalness={0.4} roughness={0.85} />
+              <meshStandardMaterial color="#000000" metalness={0.4} roughness={0.85} />
             </mesh>
           );
         })}
@@ -371,12 +371,12 @@ function RackChassis({ totalU, chassisU, rackName, hasShelf, leftOpen, rightOpen
       <mesh position={[0, 0, -totalD/2 + 0.012]}>
         <planeGeometry args={[totalW - 0.04, totalH - 0.04]} />
         <meshStandardMaterial
-          color="#0a1228"
+          color="#121212"
           metalness={0.4}
           roughness={0.35}
           transparent
           opacity={0.55}
-          emissive="#0e1a3a"
+          emissive="#1a1a1a"
           emissiveIntensity={0.20}
           side={THREE.DoubleSide}
         />
@@ -401,7 +401,7 @@ function RackChassis({ totalU, chassisU, rackName, hasShelf, leftOpen, rightOpen
             anchorX="right"
             anchorY="middle"
             outlineWidth={0.003}
-            outlineColor="#020617"
+            outlineColor="#000000"
           >
             {`U${String(u).padStart(2,'0')}`}
           </Text>
@@ -445,8 +445,8 @@ function RackChassis({ totalU, chassisU, rackName, hasShelf, leftOpen, rightOpen
       <group position={[0, totalH/2 + 0.16, totalD/2 + 0.04]}>
         <mesh position={[0, 0.10, 0]}>
           <boxGeometry args={[Math.max(1.4, rackName?.length * 0.12 || 1.6), 0.28, 0.04]} />
-          <meshStandardMaterial color="#0c1428" metalness={0.85} roughness={0.35}
-                                emissive="#1a2547" emissiveIntensity={0.18} />
+          <meshStandardMaterial color="#141414" metalness={0.85} roughness={0.35}
+                                emissive="#252525" emissiveIntensity={0.18} />
         </mesh>
         {/* Thin cyan accent stripe along the bottom of the badge */}
         <mesh position={[0, -0.04, 0.022]}>
@@ -456,11 +456,11 @@ function RackChassis({ totalU, chassisU, rackName, hasShelf, leftOpen, rightOpen
         <Text
           position={[0, 0.10, 0.022]}
           fontSize={0.16}
-          color="#e2e8f0"
+          color="#e7e7e7"
           anchorX="center"
           anchorY="middle"
           outlineWidth={0.005}
-          outlineColor="#020617"
+          outlineColor="#000000"
           letterSpacing={0.08}
         >
           {rackName}
@@ -487,11 +487,11 @@ function cableColor(cable_type) {
   // Generic fiber default → aqua (most common datacenter MMF)
   if (t.includes('fiber') || t.includes('fibre'))                   return '#22d3b8';
   // Direct-attach copper / twinax — black jacket with metal connectors
-  if (t.includes('dac') || t.includes('twinax'))                    return '#475569';
+  if (t.includes('dac') || t.includes('twinax'))                    return '#535353';
   // Copper Ethernet (Cat5e/Cat6/Cat6a/Cat7) — datacenter blue
   if (t.startsWith('cat'))                                          return '#2563eb';
   // Unknown → muted slate so it stays readable but doesn't pretend a type
-  return '#64748b';
+  return '#727272';
 }
 
 // ── Port layout: returns Map<portName, [relX, relY]> on the device front face.
@@ -550,8 +550,8 @@ function PortGrid({ dev, h, dimmed, portMap, highlightedPorts }) {
   const isPanel  = dev.class === 'patch_panel';
   const isServer = dev.class === 'server';
 
-  const COL_EMPTY   = '#020617';
-  const COL_CONNECT = '#1a2540';
+  const COL_EMPTY   = '#000000';
+  const COL_CONNECT = '#252525';
   const COL_UPLINK  = '#fcd34d';
   const COL_HL      = '#ffffff';
   const COL_RIM     = '#5b6b8a';  // brushed-metal jack rim
@@ -691,8 +691,8 @@ function DeviceBox({ dev, uPos, sizeU, chassisU, color, dimmed, selected, isCore
       // Matte black powder-coated panel — most patch panels look like this.
       // Lifted enough that ports + labels remain readable against the rack.
       return {
-        bodyColor: new THREE.Color('#1a2138'),
-        faceColor: new THREE.Color('#222a44'),
+        bodyColor: new THREE.Color('#212121'),
+        faceColor: new THREE.Color('#2a2a2a'),
         bodyMetalness: 0.35,
         bodyRoughness: 0.72,
       };
@@ -700,16 +700,16 @@ function DeviceBox({ dev, uPos, sizeU, chassisU, color, dimmed, selected, isCore
     if (dev.class === 'server') {
       // Server chassis — light charcoal, metallic brushed finish
       return {
-        bodyColor: new THREE.Color('#2c3450'),
-        faceColor: new THREE.Color('#363f5c'),
+        bodyColor: new THREE.Color('#343434'),
+        faceColor: new THREE.Color('#3f3f3f'),
         bodyMetalness: 0.78,
         bodyRoughness: 0.36,
       };
     }
     // Default: switch — anodized aluminum, mid-dark so it reads as metal
     return {
-      bodyColor: new THREE.Color('#252e48'),
-      faceColor: new THREE.Color('#2f3a58'),
+      bodyColor: new THREE.Color('#2e2e2e'),
+      faceColor: new THREE.Color('#3a3a3a'),
       bodyMetalness: 0.72,
       bodyRoughness: 0.38,
     };
@@ -756,7 +756,7 @@ function DeviceBox({ dev, uPos, sizeU, chassisU, color, dimmed, selected, isCore
           not a bright bar. */}
       <mesh position={[0, faceH/2 - 0.012, d/2 + FACE_DEPTH + 0.002]}>
         <planeGeometry args={[faceW * 0.92, 0.003]} />
-        <meshBasicMaterial color="#a5b4cf" transparent
+        <meshBasicMaterial color="#b3b3b3" transparent
                            opacity={dimmed ? 0.06 : 0.18} />
       </mesh>
 
@@ -795,7 +795,7 @@ function DeviceBox({ dev, uPos, sizeU, chassisU, color, dimmed, selected, isCore
             w * (isSwitch ? 0.74 : 0.86),
             h * (isSwitch ? 0.62 : 0.36),
           ]} />
-          <meshBasicMaterial color="#cbd5f5" transparent
+          <meshBasicMaterial color="#d5d5d5" transparent
                              opacity={dimmed ? 0.18 : 0.45} />
         </mesh>
       )}
@@ -808,7 +808,7 @@ function DeviceBox({ dev, uPos, sizeU, chassisU, color, dimmed, selected, isCore
           position={[w/2 - 0.10 - i * 0.035, h * 0.08, d/2 + FACE_DEPTH + 0.002]}
         >
           <planeGeometry args={[0.012, h * 0.32]} />
-          <meshBasicMaterial color="#04081a" transparent opacity={0.85} />
+          <meshBasicMaterial color="#000000" transparent opacity={0.85} />
         </mesh>
       ))}
 
@@ -816,7 +816,7 @@ function DeviceBox({ dev, uPos, sizeU, chassisU, color, dimmed, selected, isCore
       <group position={[-w/2 + 0.115, h * 0.32, d/2 + FACE_DEPTH + 0.002]}>
         <mesh>
           <circleGeometry args={[Math.min(0.06, h * 0.16), 16]} />
-          <meshBasicMaterial color="#04081a" />
+          <meshBasicMaterial color="#000000" />
         </mesh>
         <mesh position={[0, 0, 0.001]}>
           <circleGeometry args={[Math.min(0.04, h * 0.10), 14]} />
@@ -839,11 +839,11 @@ function DeviceBox({ dev, uPos, sizeU, chassisU, color, dimmed, selected, isCore
       <Text
         position={[-w/2 + 0.16, h * 0.04, d/2 + FACE_DEPTH + 0.003]}
         fontSize={Math.min(0.18, h * 0.45)}
-        color="#f8fafc"
+        color="#ffffff"
         anchorX="left"
         anchorY="middle"
         outlineWidth={0.005}
-        outlineColor="#020617"
+        outlineColor="#000000"
       >
         {dev.name}
       </Text>
@@ -852,11 +852,11 @@ function DeviceBox({ dev, uPos, sizeU, chassisU, color, dimmed, selected, isCore
       <Text
         position={[w/2 - 0.1, -h * 0.20, d/2 + FACE_DEPTH + 0.003]}
         fontSize={Math.min(0.10, h * 0.26)}
-        color={isCore ? '#fcd34d' : 'rgba(241,245,249,0.62)'}
+        color={isCore ? '#fcd34d' : 'rgba(244, 244, 244,0.62)'}
         anchorX="right"
         anchorY="middle"
         outlineWidth={0.003}
-        outlineColor="#020617"
+        outlineColor="#000000"
         letterSpacing={isCore ? 0.12 : 0}
       >
         {isCore ? 'CORE / UPLINK' : (dev.model || CLASS_LABEL[dev.class] || dev.class)}
@@ -893,7 +893,7 @@ function hash01(s) {
 // drawn from the exact src-port position to the exact dst-port position.
 // Lines colored by cable_type (Cat6a / Fiber / DAC). Each cable has a small
 // hash-based bow offset so a 24-cable trunk fans out instead of overlapping.
-function PortCables({ selected, topo, positions, traceEdgeKeys, setSelected, cableJacketColor = '#e6ebf2' }) {
+function PortCables({ selected, topo, positions, traceEdgeKeys, setSelected, cableJacketColor = '#eaeaea' }) {
   const groupRef = useRef();
 
   useFrame((state) => {
@@ -1063,7 +1063,7 @@ function PortCables({ selected, topo, positions, traceEdgeKeys, setSelected, cab
                 <mesh>
                   <boxGeometry args={[connDim * 1.3, connDim * 0.9, connDim]} />
                   <meshStandardMaterial
-                    color="#0a1020"
+                    color="#101010"
                     metalness={0.45}
                     roughness={0.55}
                     transparent
@@ -1100,8 +1100,8 @@ function Lights({ chassisU, ambientBoost = 1 }) {
           The rack still pops because the key + rim lights are stronger.
           ambientBoost is bumped on light themes to keep dark chassis legible. */}
       <ambientLight intensity={1.05 * ambientBoost} />
-      <directionalLight position={[ 6, 7,  5]} intensity={1.0} color="#f3f6ff" />
-      <directionalLight position={[-6, 7,  5]} intensity={1.0} color="#f3f6ff" />
+      <directionalLight position={[ 6, 7,  5]} intensity={1.0} color="#ffffff" />
+      <directionalLight position={[-6, 7,  5]} intensity={1.0} color="#ffffff" />
       {/* Bright key from front-above — main illumination on the faceplate */}
       <spotLight
         position={[0, topY + 4, 2.6]}
@@ -1109,11 +1109,11 @@ function Lights({ chassisU, ambientBoost = 1 }) {
         penumbra={0.55}
         intensity={2.6}
         distance={22}
-        color="#f4f7ff"
+        color="#ffffff"
       />
       {/* Front fills — closer to the rack so port detail reads clearly */}
-      <pointLight position={[-3.5, 1.2, 4]} intensity={0.7} color="#dbe4f7" distance={14} />
-      <pointLight position={[ 3.5, 1.2, 4]} intensity={0.7} color="#dbe4f7" distance={14} />
+      <pointLight position={[-3.5, 1.2, 4]} intensity={0.7} color="#e3e3e3" distance={14} />
+      <pointLight position={[ 3.5, 1.2, 4]} intensity={0.7} color="#e3e3e3" distance={14} />
       {/* Cyan rim from above-behind — outlines the rack silhouette against
           the backdrop, same role as a stage rim light. */}
       <pointLight position={[ 0, topY - 0.5, -4.2]} intensity={1.0} color="#6366F1" distance={11} />

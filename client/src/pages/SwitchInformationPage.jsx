@@ -8,6 +8,7 @@ import { apiUrl, authFetch } from '../utils/api';
 import { useTheme } from '../ThemeContext.jsx';
 import { getCached, setCached, cacheKey } from '../utils/scanPrefetch';
 import SfpAdvisor from '../components/SfpAdvisor.jsx';
+import DeviceLabelCapture from '../components/DeviceLabelCapture.jsx';
 import { findVendorLogin } from '../utils/vendorLoginUrls';
 import { getItem, setItem, removeItem } from '../utils/safeStorage';
 
@@ -248,6 +249,12 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
   const [editingIdent, setEditingIdent] = useState(false);
   const [identDraftMake,  setIdentDraftMake]  = useState('');
   const [identDraftModel, setIdentDraftModel] = useState('');
+  // Close-up capture — the step between "the rack photo couldn't read this"
+  // and "type it yourself". captureRead holds the last close-up result so
+  // the editor can say where its prefill came from and offer the runner-up
+  // readings; null means the editor was opened by hand.
+  const [capturingIdent, setCapturingIdent] = useState(false);
+  const [captureRead, setCaptureRead] = useState(null);
   const [editingVersion, setEditingVersion] = useState(false);
   const [versionDraft, setVersionDraft] = useState('');
 
@@ -265,14 +272,20 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
   const lookupVersion = cleanVersion(effectiveVersionRaw);
   const versionIsUserSupplied = !sw.os_version && !!userVersion;
 
+  // This card came from the scan and its label hasn't been read yet. Empty
+  // make/model here means "not yet", not "couldn't" — so none of the failure
+  // copy or the manual-entry prompts below apply. Telling someone we failed
+  // to read a label we haven't finished reading is just wrong.
+  const awaitingLabel = !!sw._awaitingLabel && !userMake && !userModel;
+
   // OCR/CMDB returned nothing for either field — surface the editor as
   // the primary call-to-action instead of a tiny "edit" affordance.
-  const identMissing = !effectiveMake && !effectiveModel;
+  const identMissing = !awaitingLabel && !effectiveMake && !effectiveModel;
   // OCR got vendor but missed model (the common case after fuzzy-match
   // recovery) or vice-versa. Still surface the editor, just less
   // prominently — the user requested manual entry whenever the pipeline
   // failed on *either* field, not just both.
-  const identIncomplete = !identMissing && (!effectiveMake || !effectiveModel);
+  const identIncomplete = !awaitingLabel && !identMissing && (!effectiveMake || !effectiveModel);
 
   const loadDetails = async (overrideVersion) => {
     if (!displayVendor || !lookupModel) {
@@ -402,7 +415,30 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     setEditingIdent(false);
     setIdentDraftMake('');
     setIdentDraftModel('');
+    setCaptureRead(null);
   };
+
+  // Photograph the device's own label instead of typing it. The rack photo
+  // gives each device only a slice of the frame, so a model number that was
+  // legible in person can reach OCR too small to survive — which makes a
+  // second, closer photo a better recovery than a keyboard.
+  const startCaptureIdent = () => {
+    setCaptureRead(null);
+    setCapturingIdent(true);
+  };
+
+  // A close-up read PREFILLS the editor and stops there. The user is standing
+  // in front of the device and can confirm at a glance, and a confident wrong
+  // model number is worse downstream than an empty one — so "read failed" and
+  // "read wrong" both land on the same correction path.
+  const onIdentCaptured = (read) => {
+    setCapturingIdent(false);
+    setCaptureRead(read);
+    setIdentDraftMake(read.make || userMake || sw.manufacturer || '');
+    setIdentDraftModel(read.model || userModel || sw.model_number || '');
+    setEditingIdent(true);
+  };
+
   const saveIdent = () => {
     const newMake  = identDraftMake.trim();
     const newModel = identDraftModel.trim();
@@ -410,9 +446,18 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     setUserModel(newModel);
     saveOverride(rackId, sw, 'make',  newMake);
     saveOverride(rackId, sw, 'model', newModel);
+    // The close-up usually catches the firmware string printed on the same
+    // label. Keep it only when nothing else supplied one: an existing version
+    // came from the device itself or from the user, and both outrank a photo.
+    const readVersion = captureRead?.version;
+    if (readVersion && !sw.os_version && !userVersion) {
+      setUserVersion(readVersion);
+      saveUserVersion(rackId, sw, readVersion);
+    }
     setEditingIdent(false);
     setIdentDraftMake('');
     setIdentDraftModel('');
+    setCaptureRead(null);
     // New values invalidate any cached spec/firmware results — re-fetch.
     setSpecs(null);
     setSpecsStatus('idle');
@@ -433,6 +478,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     setEditingIdent(false);
     setIdentDraftMake('');
     setIdentDraftModel('');
+    setCaptureRead(null);
     setSpecs(null);
     setSpecsStatus('idle');
     setFirmware(null);
@@ -462,11 +508,11 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     fwHeadline = 'Latest version unknown';
   }
   const fwColor =
-    fwTone === 'ok' ? '#1a1c1d' : fwTone === 'critical' ? '#1a1c1d'
-    : fwTone === 'warn' ? '#4c4546' : lt ? '#4c4546' : 'rgba(0,0,0,0.7)';
+    fwTone === 'ok' ? '#1c1c1c' : fwTone === 'critical' ? '#1c1c1c'
+    : fwTone === 'warn' ? '#474747' : lt ? '#474747' : 'rgba(0,0,0,0.7)';
 
   // Accent: indigo (light) / cyan (dark) for CMDB; amber for OCR
-  const accent      = sw._fromOcr ? '#4c4546' : lt ? '#000000' : '#000000';
+  const accent      = sw._fromOcr ? '#474747' : lt ? '#000000' : '#000000';
   const accentDim   = sw._fromOcr ? (lt ? 'rgba(0,0,0,0.10)'  : 'rgba(0,0,0,0.15)')
                                   : (lt ? 'rgba(0,0,0,0.10)' : 'rgba(0,0,0,0.12)');
   const accentBorder= sw._fromOcr ? (lt ? 'rgba(0,0,0,0.35)'  : 'rgba(0,0,0,0.35)')
@@ -474,15 +520,15 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
 
   // Theme tokens
   const cardBg      = lt ? '#ffffff'                         : 'rgba(0,0,0,0.95)';
-  const cardBorder  = lt ? '#cfc4c5'                         : 'rgba(255,255,255,0.08)';
-  const titleColor  = lt ? '#1a1c1d'                         : '#e9e9e9';
-  const subColor    = lt ? '#4c4546'                         : 'rgba(0,0,0,0.8)';
-  const divider     = lt ? '#cfc4c5'                         : 'rgba(255,255,255,0.06)';
+  const cardBorder  = lt ? '#c6c6c6'                         : 'rgba(255,255,255,0.08)';
+  const titleColor  = lt ? '#1c1c1c'                         : '#e9e9e9';
+  const subColor    = lt ? '#474747'                         : 'rgba(0,0,0,0.8)';
+  const divider     = lt ? '#c6c6c6'                         : 'rgba(255,255,255,0.06)';
   const fieldBg     = lt ? '#ffffff'                         : 'rgba(255,255,255,0.03)';
-  const fieldBorder = lt ? '#cfc4c5'                         : 'rgba(255,255,255,0.07)';
-  const valueColor  = lt ? '#1a1c1d'                         : '#e9e9e9';
-  const chevronColor= lt ? '#4c4546'                         : 'rgba(0,0,0,0.6)';
-  const statusColor = lt ? '#4c4546'                         : 'rgba(0,0,0,0.7)';
+  const fieldBorder = lt ? '#c6c6c6'                         : 'rgba(255,255,255,0.07)';
+  const valueColor  = lt ? '#1c1c1c'                         : '#e9e9e9';
+  const chevronColor= lt ? '#474747'                         : 'rgba(0,0,0,0.6)';
+  const statusColor = lt ? '#474747'                         : 'rgba(0,0,0,0.7)';
   const linkColor   = lt ? '#000000'                         : '#000000';
 
   const displayVersion = sw.os_version || userVersion;
@@ -528,8 +574,22 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
             <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.01em', color: titleColor }}>
               {effectiveMake && effectiveModel
                 ? `${effectiveMake} ${specs?.model || effectiveModel}`
-                : effectiveMake || effectiveModel || sw.name || 'Unidentified device'}
+                : effectiveMake || effectiveModel
+                  || (awaitingLabel ? (sw.position ? `Switch · ${sw.position}` : 'Switch') : null)
+                  || sw.name || 'Unidentified device'}
             </span>
+            {awaitingLabel && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                fontSize: '.68rem', fontWeight: 700, color: '#717171',
+                background: '#ffffff', border: '1px solid #ececec',
+                padding: '2px 8px', borderRadius: 20,
+              }}>
+                <span aria-hidden="true" className={desk.pulseDot}
+                  style={{ width: 6, height: 6 }} />
+                Reading label
+              </span>
+            )}
           </div>
           {(sw.position || sw.ip_address || effectiveMake) && (() => {
             // Per-vendor login portal: if we have a curated URL for this
@@ -582,12 +642,15 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
           the user always knows where the firmware version lives and can
           add one via the expanded Firmware section. Serial / MAC / IP
           appear when populated. */}
-      {(displayVersion || sw.serial_number || sw.mac_address || sw.ip_address) && (
+      {(displayVersion || sw.port_count || sw.serial_number || sw.mac_address || sw.ip_address) && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(0, 1fr))', gap: 1, borderTop: `1px solid ${divider}` }}>
           {[
             ['Firmware',     displayVersion
                               ? (versionIsUserSupplied ? `${displayVersion} · entered` : displayVersion)
                               : '—'],
+            // Counted by the detector, so it is on screen with the first
+            // render — no waiting on the label pass or a vendor lookup.
+            sw.port_count    && ['Ports',  String(sw.port_count)],
             sw.serial_number && ['Serial', sw.serial_number],
             sw.mac_address   && ['MAC',    sw.mac_address],
             sw.ip_address    && ['IP',     sw.ip_address],
@@ -644,7 +707,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                     }}
                   >{
                     identMissing && !makeIsUserSupplied && !modelIsUserSupplied
-                      ? 'Enter make / model'
+                      ? 'Type it in'
                       : identIncomplete && !makeIsUserSupplied && !modelIsUserSupplied
                         ? (effectiveMake ? 'Add model' : 'Add vendor')
                         : 'Edit'
@@ -661,23 +724,73 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                   onCancel={cancelEditIdent}
                   hasExisting={!!(userMake || userModel)}
                   onClear={clearIdent}
+                  read={captureRead}
+                  onScan={startCaptureIdent}
                   accent={accent}
                   fieldBg={fieldBg}
                   fieldBorder={fieldBorder}
                   valueColor={valueColor}
                   statusColor={statusColor}
                 />
-              ) : identMissing ? (
-                <StatusLine color={statusColor}>
-                  We couldn't identify this device from the rack photo.
-                </StatusLine>
-              ) : identIncomplete && !makeIsUserSupplied && !modelIsUserSupplied ? (
-                <StatusLine color={statusColor}>
-                  {effectiveMake
-                    ? `We identified "${effectiveMake}" but couldn't read the model. Specs and firmware checks need both.`
-                    : `We read a model but couldn't identify the vendor.`}
-                </StatusLine>
-              ) : null}
+              ) : (
+                <>
+                  {identMissing ? (
+                    <StatusLine color={statusColor}>
+                      We couldn't identify this device from the rack photo.
+                    </StatusLine>
+                  ) : identIncomplete && !makeIsUserSupplied && !modelIsUserSupplied ? (
+                    <StatusLine color={statusColor}>
+                      {effectiveMake
+                        ? `We identified "${effectiveMake}" but couldn't read the model. Specs and firmware checks need both.`
+                        : `We read a model but couldn't identify the vendor.`}
+                    </StatusLine>
+                  ) : null}
+
+                  {/* Close-up capture, offered ahead of the keyboard. The rack
+                      photo spends its pixels on the whole rack, so this device's
+                      label reached OCR too small to read — which a second photo
+                      fixes and typing only works around. Weighted by how much is
+                      missing: a full CTA when nothing was identified, a quiet
+                      link when only one field is. */}
+                  {(identMissing || identIncomplete) && !makeIsUserSupplied && !modelIsUserSupplied && (
+                    identMissing ? (
+                      <button
+                        type="button"
+                        onClick={startCaptureIdent}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                          width: '100%', marginTop: 10, padding: '10px 14px',
+                          borderRadius: 8, border: 0, background: accent, color: '#ffffff',
+                          fontSize: '.82rem', fontWeight: 700, cursor: 'pointer',
+                        }}
+                      >
+                        <CameraGlyph />
+                        Scan the device label
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={startCaptureIdent}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          marginTop: 8, padding: 0, background: 'transparent', border: 0,
+                          color: linkColor, fontSize: '.75rem', fontWeight: 700, cursor: 'pointer',
+                        }}
+                      >
+                        <CameraGlyph />
+                        Scan the device label
+                      </button>
+                    )
+                  )}
+                  {identMissing && !makeIsUserSupplied && !modelIsUserSupplied && (
+                    <p style={{ margin: '6px 0 0', fontSize: '.72rem', color: statusColor }}>
+                      Photograph the model number on the device's faceplate — up close
+                      it reads far better than it does in the rack photo. You can take
+                      it now or upload one you already have.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           )}
 
@@ -840,7 +953,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                     <MiniField label="Latest" value={firmware.latestVersion || '—'} accent={accent} fieldBg={fieldBg} fieldBorder={fieldBorder} valueColor={valueColor} />
                   )}
                   {firmware.recommendedMinVersion && firmware.recommendedMinVersion !== firmware.latestVersion && (
-                    <MiniField label="Min safe" value={firmware.recommendedMinVersion} accent={'#4c4546'} fieldBg={fieldBg} fieldBorder={fieldBorder} valueColor={valueColor} />
+                    <MiniField label="Min safe" value={firmware.recommendedMinVersion} accent={'#474747'} fieldBg={fieldBg} fieldBorder={fieldBorder} valueColor={valueColor} />
                   )}
                   {firmware.releaseNotesUrl && (
                     <a href={firmware.releaseNotesUrl} target="_blank" rel="noreferrer noopener"
@@ -926,7 +1039,33 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
 
         </div>
       )}
+
+      {capturingIdent && (
+        <DeviceLabelCapture
+          deviceLabel={[sw.position, sw.name].filter(Boolean).join(' · ')}
+          onIdentified={onIdentCaptured}
+          onManualEntry={() => {
+            // A photo that couldn't be read hands off to the keyboard rather
+            // than dropping the user back on the button they just pressed.
+            setCapturingIdent(false);
+            if (!editingIdent) startEditIdent();
+          }}
+          onCancel={() => setCapturingIdent(false)}
+        />
+      )}
     </article>
+  );
+}
+
+// Camera glyph for the capture CTAs. Inline rather than an icon import to
+// match the rest of this page, which draws its own SVGs.
+function CameraGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
   );
 }
 
@@ -1008,7 +1147,7 @@ function VersionEditor({
             type="button"
             onClick={onClear}
             style={{
-              background: 'transparent', color: '#1a1c1d',
+              background: 'transparent', color: '#1c1c1c',
               border: `1px solid rgba(0,0,0,0.35)`,
               padding: '6px 10px', borderRadius: 6,
               fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
@@ -1026,9 +1165,15 @@ function VersionEditor({
 // time, so the UI doesn't need to validate model strings.
 function IdentEditor({
   draftMake, setDraftMake, draftModel, setDraftModel,
-  onSave, onCancel, hasExisting, onClear,
+  onSave, onCancel, hasExisting, onClear, read, onScan,
   accent, fieldBg, fieldBorder, valueColor, statusColor,
 }) {
+  // `read` is the last close-up result, present only when the editor was
+  // opened from the camera. Its values are already in the drafts — this
+  // block exists to say where they came from, because a prefilled field the
+  // user didn't type is one they have to be told to check.
+  const readSomething = !!(read && (read.make || read.model));
+  const alternates = (read?.alternates || []).filter(a => a.make || a.model);
   const inputStyle = {
     flex: '1 1 140px', minWidth: 0,
     padding: '6px 10px', borderRadius: 6,
@@ -1047,6 +1192,56 @@ function IdentEditor({
       padding: 10, borderRadius: 10,
       background: fieldBg, border: `1px solid ${fieldBorder}`,
     }}>
+      {read && (
+        <div style={{
+          marginBottom: 10, paddingBottom: 10,
+          borderBottom: `1px solid ${fieldBorder}`,
+        }}>
+          <p style={{ margin: 0, fontSize: '.75rem', fontWeight: 700, color: valueColor }}>
+            {readSomething
+              ? 'Read from your photo — check it before saving.'
+              : "We couldn't read that photo either."}
+          </p>
+          {readSomething && read.version && (
+            <p style={{ margin: '4px 0 0', fontSize: '.72rem', color: statusColor }}>
+              Firmware {read.version} was on the same label — it'll be saved too.
+            </p>
+          )}
+          {!readSomething && (
+            <p style={{ margin: '4px 0 0', fontSize: '.72rem', color: statusColor }}>
+              Enter the make and model below, or try another photo with the
+              label filling more of the frame.
+            </p>
+          )}
+          {alternates.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <span style={{
+                display: 'block', fontSize: '.6rem', fontWeight: 700,
+                textTransform: 'uppercase', letterSpacing: '.07em',
+                color: accent, marginBottom: 5,
+              }}>Or did you mean</span>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {alternates.map((alt, i) => (
+                  <button
+                    key={`${alt.make}-${alt.model}-${i}`}
+                    type="button"
+                    onClick={() => {
+                      if (alt.make)  setDraftMake(alt.make);
+                      if (alt.model) setDraftModel(alt.model);
+                    }}
+                    style={{
+                      background: 'transparent', color: valueColor,
+                      border: `1px solid ${fieldBorder}`,
+                      padding: '4px 9px', borderRadius: 20,
+                      fontSize: '.72rem', fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >{[alt.make, alt.model].filter(Boolean).join(' ')}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div>
           <span style={{
@@ -1107,12 +1302,26 @@ function IdentEditor({
             type="button"
             onClick={onClear}
             style={{
-              background: 'transparent', color: '#1a1c1d',
+              background: 'transparent', color: '#1c1c1c',
               border: `1px solid rgba(0,0,0,0.35)`,
               padding: '6px 10px', borderRadius: 6,
               fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
             }}
           >Clear</button>
+        )}
+        {onScan && (
+          <button
+            type="button"
+            onClick={onScan}
+            style={{
+              marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: 'transparent', color: '#000000', border: 0,
+              padding: '6px 0', fontSize: '.75rem', fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            <CameraGlyph />
+            {read ? 'Another photo' : 'Scan the label'}
+          </button>
         )}
       </div>
     </div>
@@ -1154,109 +1363,283 @@ function Field({ label, value }) {
 }
 
 // ── Shared data + rendering logic ────────────────────────────
+
+// A rack scan schedules per-device OCR in the background (server-side
+// scheduleOcrDevices) and EasyOCR on CPU takes 1-2 minutes for a full rack.
+// Until it writes ocr_devices.json the GET below answers 404. That 404 means
+// "not finished yet", NOT "never coming" — so we keep checking instead of
+// freezing on the first miss, which is what stranded this page on a
+// permanent "Scanning…" panel that nothing would ever clear.
+const OCR_POLL_INTERVAL_MS = 3_000;
+const OCR_POLL_DEADLINE_MS = 4 * 60_000;   // comfortably past the server's own 5-min cap on a fresh run
+
+// Switch Information is switches only — routers are a different device class
+// and were showing up here mislabelled as switches (e.g. a Mikrotik router).
+const NETWORK_CLASSES = ['switch'];
+const isSwitchClass = (d) => NETWORK_CLASSES.includes((d?.class_name || '').toLowerCase());
+
 function useSwitchData(rackId) {
-  // The Switches tab is driven purely by what the rack scan saw (OCR /
-  // detection) plus any user overrides — CMDB is intentionally excluded
-  // here. The user doesn't want this page to surface ServiceNow-sourced
-  // facts; the page's purpose is "what's actually in front of me", not
-  // "what does the asset DB claim is in front of me".
+  // The Switches tab is driven purely by what the rack scan saw (detection,
+  // then OCR) plus any user overrides — CMDB is intentionally excluded here.
+  // The user doesn't want this page to surface ServiceNow-sourced facts; the
+  // page's purpose is "what's actually in front of me", not "what does the
+  // asset DB claim is in front of me".
+  //
+  // TWO sources, deliberately, because they arrive minutes apart:
+  //   scan_result.json  — written when the scan finishes. Already knows which
+  //                       units hold a switch. Available immediately.
+  //   ocr_devices.json  — EasyOCR over the photo, 1-2 min later on CPU. Adds
+  //                       make / model / firmware to those same devices.
+  // The page used to wait for the second one before drawing anything, so a
+  // rack whose switches were known the whole time showed an empty panel for
+  // minutes. Now the list renders from the scan and the labels fill in.
   const ocrCached  = rackId ? getCached(cacheKey.ocrDevices(rackId)) : null;
   const ocrCachedDevs = ocrCached?.devices && Array.isArray(ocrCached.devices)
     ? ocrCached.devices
     : null;
+  const scanCached = rackId ? getCached(cacheKey.scanResult(rackId)) : null;
+  const scanCachedDevs = Array.isArray(scanCached?.devices) ? scanCached.devices : null;
 
-  const [loading, setLoading] = useState(!ocrCachedDevs);
-  const [ocrDevices, setOcrDevices] = useState(ocrCachedDevs);
+  const [ocrDevices, setOcrDevices]   = useState(ocrCachedDevs);
+  const [scanDevices, setScanDevices] = useState(scanCachedDevs);
+  // How the label pass is going. Only decides the footnote under the list
+  // now — it no longer gates whether the list renders at all.
+  //   pending — not ready yet (404); still polling
+  //   ready   — labels merged in
+  //   stalled — polled past the deadline; stopped
+  //   error   — failed for a reason other than "not yet"
+  const [ocrStatus, setOcrStatus] = useState(ocrCachedDevs ? 'ready' : 'pending');
+  const [scanLoaded, setScanLoaded] = useState(!!scanCachedDevs);
+  const [attempt, setAttempt] = useState(0);   // bumped by recheck() to re-run the effects
 
+  // ── The fast half: the switch list, straight from the scan ──
   useEffect(() => {
-    if (!rackId) { setLoading(false); return; }
+    if (!rackId || scanCachedDevs) { setScanLoaded(true); return; }
     let cancelled = false;
-    if (ocrCachedDevs) { setLoading(false); return; }
-
-    setLoading(true);
-    authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/ocr-devices`))
-      .then(async r => {
-        if (!r.ok) return null;
+    (async () => {
+      try {
+        const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/result`));
+        if (!r.ok) throw new Error(String(r.status));
         const text = await r.text();
-        try { return text ? JSON.parse(text) : null; } catch { return null; }
-      })
-      .catch(() => null)
-      .then(ocrData => {
+        const data = text ? JSON.parse(text) : null;
         if (cancelled) return;
-        const devs = Array.isArray(ocrData) ? ocrData
-                   : (ocrData?.devices && Array.isArray(ocrData.devices)) ? ocrData.devices
-                   : null;
-        if (devs) {
-          setOcrDevices(devs);
-          if (ocrData && !ocrCached) setCached(cacheKey.ocrDevices(rackId), ocrData);
+        if (Array.isArray(data?.devices)) {
+          setScanDevices(data.devices);
+          setCached(cacheKey.scanResult(rackId), data);
         }
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
-
+      } catch { /* the OCR pass below can still carry the page */ }
+      finally { if (!cancelled) setScanLoaded(true); }
+    })();
     return () => { cancelled = true; };
-  }, [rackId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rackId, attempt]);
 
-  // Switch Information is switches only — routers are a different device class
-  // and were showing up here mislabelled as switches (e.g. a Mikrotik router).
-  const NETWORK_CLASSES = ['switch'];
-  const switches = (ocrDevices || [])
-    .filter(ocr => NETWORK_CLASSES.includes((ocr.class_name || '').toLowerCase()))
-    .map(ocr => {
-      // Prefer extracting from raw_text (more complete), fall back to ocr.model
-      const rawExtracted = extractModelFromRaw(ocr.raw_text, ocr.make);
-      const model = expandPartialModel(rawExtracted || ocr.model || '');
-      return {
-        name: ocr.position ? `${ocr.class_name} (${ocr.position})` : (ocr.name || ocr.class_name || 'Detected switch'),
-        manufacturer: ocr.make || '',
-        model_number: model,
-        os_version: ocr.version || '',
-        serial_number: '',
-        mac_address: '',
-        ip_address: '',
-        position: ocr.position || '',
-        discovery_source: ocr.source || 'ocr',
-        ocr_conf: ocr.match_conf,
-        raw_text: ocr.raw_text || '',
-        _fromOcr: true,
-      };
-    });
-  // Always treat the Switches tab as OCR/scan-driven now — drives the
-  // existing UI branch that hides CMDB chrome (CMDB tag, "entered" tags
-  // sourced from CMDB, etc.).
-  const showingOcrOnly = true;
+  // ── The slow half: labels, polled until they land ──
+  useEffect(() => {
+    if (!rackId)       { setOcrStatus('stalled'); return; }
+    if (ocrCachedDevs) { setOcrStatus('ready'); return; }
 
-  return { loading, data: null, switches, showingOcrOnly };
+    let cancelled = false;
+    let timer = null;
+    const deadline = Date.now() + OCR_POLL_DEADLINE_MS;
+
+    const poll = async () => {
+      let r;
+      try {
+        r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/ocr-devices`));
+      } catch {
+        if (!cancelled) setOcrStatus('error');
+        return;
+      }
+      if (cancelled) return;
+
+      if (r.status === 404) {
+        if (Date.now() >= deadline) { setOcrStatus('stalled'); return; }
+        setOcrStatus('pending');
+        timer = setTimeout(poll, OCR_POLL_INTERVAL_MS);
+        return;
+      }
+      if (!r.ok) { setOcrStatus('error'); return; }
+
+      let ocrData = null;
+      try {
+        const text = await r.text();
+        ocrData = text ? JSON.parse(text) : null;
+      } catch { ocrData = null; }
+      if (cancelled) return;
+
+      const devs = Array.isArray(ocrData) ? ocrData
+                 : (ocrData?.devices && Array.isArray(ocrData.devices)) ? ocrData.devices
+                 : null;
+      if (!devs) { setOcrStatus('error'); return; }
+
+      setOcrDevices(devs);
+      setCached(cacheKey.ocrDevices(rackId), ocrData);
+      setOcrStatus('ready');
+    };
+
+    setOcrStatus('pending');
+    poll();
+
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rackId, attempt]);
+
+  const recheck = () => setAttempt(n => n + 1);
+
+  // OCR is authoritative once it lands — it covers the same devices as the
+  // scan (both derive from device_unit_map.json) and adds make/model. Until
+  // then the scan's switches stand in, keyed by position so React swaps the
+  // labels in place rather than remounting the cards.
+  const labelled = (ocrDevices || []).filter(isSwitchClass);
+  const detected = (scanDevices || []).filter(isSwitchClass);
+  const source   = labelled.length ? labelled : detected;
+  const awaitingLabels = !labelled.length && detected.length > 0 && ocrStatus === 'pending';
+
+  const switches = source.map((d, i) => {
+    // Prefer extracting from raw_text (more complete), fall back to d.model
+    const rawExtracted = extractModelFromRaw(d.raw_text, d.make);
+    const model = expandPartialModel(rawExtracted || d.model || '');
+    const position = (d.position || '').toUpperCase();
+    return {
+      name: position ? `${d.class_name} (${position})` : (d.name || d.class_name || 'Detected switch'),
+      manufacturer: d.make || '',
+      model_number: model,
+      os_version: d.version || '',
+      serial_number: '',
+      mac_address: '',
+      ip_address: '',
+      position,
+      discovery_source: d.source || 'ocr',
+      ocr_conf: d.match_conf,
+      raw_text: d.raw_text || '',
+      port_count: d.port_count,
+      _fromOcr: true,
+      // True while this card is a scan-detected switch whose label hasn't
+      // been read yet — distinct from "OCR ran and couldn't read it", which
+      // is what the manual-entry prompts are for.
+      _awaitingLabel: awaitingLabels,
+      _key: position || `i${i}`,
+    };
+  });
+
+  // Only a page with nothing at all to draw is still "loading".
+  const status = switches.length ? 'ready'
+    : !scanLoaded || ocrStatus === 'pending' ? 'loading'
+    : ocrStatus === 'error' ? 'error'
+    : 'empty';
+
+  return { status, ocrStatus, recheck, switches };
 }
 
-function SwitchInfoBody({ rackId, loading, data, switches, showingOcrOnly }) {
+// The states where work is genuinely in flight. Carries a live indicator so
+// "in progress" and "given up" don't look the same on screen — the old panel
+// said "Scanning…" in both cases and animated in neither.
+function WorkingPanel({ title, detail }) {
+  return (
+    <div style={{ padding: '32px 16px', textAlign: 'center' }}>
+      <span aria-hidden="true" className={desk.pulseDot} />
+      <p style={{ margin: '12px 0 0', fontWeight: 600, color: '#121212', fontSize: '.92rem' }}>
+        {title}
+      </p>
+      <p style={{ margin: '6px auto 0', maxWidth: 420, fontSize: '.78rem', color: '#717171', lineHeight: 1.5 }}>
+        {detail}
+      </p>
+    </div>
+  );
+}
+
+// The states where nothing more will happen on its own. Each says which one
+// it is and offers the only useful next step, rather than dead-ending.
+function RestingPanel({ title, detail, onRetry, retryLabel = 'Check again' }) {
+  return (
+    <div style={{
+      marginTop: 18, padding: 16, borderRadius: 12,
+      background: '#ffffff',
+      border: '1px dashed #e6e6e6',
+    }}>
+      <p style={{ margin: 0, fontWeight: 600, color: '#121212', fontSize: '.92rem' }}>
+        {title}
+      </p>
+      <p style={{ margin: '6px 0 0', fontSize: '.78rem', color: '#717171', lineHeight: 1.5 }}>
+        {detail}
+      </p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          style={{
+            marginTop: 12, padding: '7px 14px', borderRadius: 8,
+            border: '1px solid #121212', background: 'transparent',
+            color: '#121212', fontSize: '.78rem', fontWeight: 700,
+            fontFamily: 'inherit', cursor: 'pointer',
+          }}
+        >{retryLabel}</button>
+      )}
+    </div>
+  );
+}
+
+// A one-line footnote under the list, for when the switches are on screen but
+// their labels are still being read. It belongs under the cards rather than in
+// front of them — the list is already useful, and blocking it behind this
+// message is the thing that made the page feel slow.
+function LabelProgressNote({ ocrStatus, onRetry }) {
+  if (ocrStatus === 'ready') return null;
+  const working = ocrStatus === 'pending';
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+      marginTop: 14, padding: '10px 14px', borderRadius: 10,
+      background: '#ffffff', border: '1px dashed #e6e6e6',
+    }}>
+      {working && <span aria-hidden="true" className={desk.pulseDot} />}
+      <span style={{ fontSize: '.76rem', color: '#717171', lineHeight: 1.5 }}>
+        {working
+          ? 'Reading make and model off the device labels — they fill in here as they land.'
+          : 'Couldn’t read the device labels. Positions and port counts are from the scan; add make and model yourself on any card.'}
+      </span>
+      {!working && onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          style={{
+            marginLeft: 'auto', padding: '5px 12px', borderRadius: 8,
+            border: '1px solid #121212', background: 'transparent',
+            color: '#121212', fontSize: '.74rem', fontWeight: 700,
+            fontFamily: 'inherit', cursor: 'pointer',
+          }}
+        >Check again</button>
+      )}
+    </div>
+  );
+}
+
+function SwitchInfoBody({ rackId, status, ocrStatus, switches, recheck }) {
+  if (status === 'loading') {
+    return <WorkingPanel
+      title="Finding switches…"
+      detail="Reading what the last rack scan found in this rack." />;
+  }
+
+  if (status === 'error') {
+    return <RestingPanel
+      title="Couldn't load switch data"
+      detail="The server didn't return this rack's devices."
+      onRetry={recheck} />;
+  }
+
+  if (switches.length === 0) {
+    return <RestingPanel
+      title="No switches detected"
+      detail="The scan of this rack didn't identify any device as a switch. If there is one here, re-run the rack scan — make and model read best when the faceplate is square-on and well lit."
+      onRetry={recheck} />;
+  }
+
   return (
     <>
-      {loading && (
-        <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-          <p style={{ margin: 0, fontSize: '.88rem', color: 'rgba(0,0,0,0.55)' }}>
-            Scanning rack for switches…
-          </p>
-        </div>
-      )}
-
-      {!loading && switches.length === 0 && (
-        <div style={{
-          marginTop: 18, padding: 16, borderRadius: 12,
-          background: '#ffffff',
-          border: '1px dashed #e6e6e6',
-        }}>
-          <p style={{ margin: 0, fontWeight: 600, color: '#121417', fontSize: '.92rem' }}>
-            Scanning…
-          </p>
-          <p style={{ margin: '6px 0 0', fontSize: '.78rem', color: '#717171' }}>
-            Run a rack scan to detect switches. Their make, model and firmware version will appear here once detected.
-          </p>
-        </div>
-      )}
-
-      {!loading && switches.length > 0 && (
-        <SwitchPicker switches={switches} rackId={rackId} />
-      )}
+      <SwitchPicker switches={switches} rackId={rackId} />
+      <LabelProgressNote ocrStatus={ocrStatus} onRetry={recheck} />
     </>
   );
 }
@@ -1318,10 +1701,10 @@ function SwitchPicker({ switches, rackId }) {
                   padding: on ? '14px 14px 14px 18px' : '14px',
                   borderRadius: 14,
                   border: on
-                    ? '2px solid var(--md-on-surface, #121417)'
+                    ? '2px solid var(--md-on-surface, #121212)'
                     : '1px solid var(--md-outline-variant, #E0E0E0)',
                   background: 'var(--md-surface-container-lowest, #FFFFFF)',
-                  color: 'var(--md-on-surface, #121417)',
+                  color: 'var(--md-on-surface, #121212)',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   textAlign: 'left',
@@ -1335,7 +1718,7 @@ function SwitchPicker({ switches, rackId }) {
                     position: 'absolute',
                     left: 0, top: 0, bottom: 0,
                     width: 4,
-                    background: 'var(--md-on-surface, #121417)',
+                    background: 'var(--md-on-surface, #121212)',
                   }} />
                 )}
 
@@ -1347,8 +1730,8 @@ function SwitchPicker({ switches, rackId }) {
                 }}>
                   <span style={{
                     width: 7, height: 7, borderRadius: '50%',
-                    background: on ? 'var(--md-on-surface, #121417)' : 'transparent',
-                    border: on ? 'none' : '1.5px solid var(--md-on-surface, #121417)',
+                    background: on ? 'var(--md-on-surface, #121212)' : 'transparent',
+                    border: on ? 'none' : '1.5px solid var(--md-on-surface, #121212)',
                     opacity: on ? 1 : 0.55,
                     transition: 'background 0.14s, opacity 0.14s',
                   }} />
@@ -1358,7 +1741,7 @@ function SwitchPicker({ switches, rackId }) {
                     fontWeight: 700,
                     letterSpacing: '0.10em',
                     textTransform: 'uppercase',
-                    color: 'var(--md-on-surface, #121417)',
+                    color: 'var(--md-on-surface, #121212)',
                     opacity: on ? 0.7 : 0.45,
                   }}>
                     Switch {i + 1}
@@ -1370,7 +1753,7 @@ function SwitchPicker({ switches, rackId }) {
                   fontWeight: 700,
                   letterSpacing: '-0.01em',
                   lineHeight: '22px',
-                  color: 'var(--md-on-surface, #121417)',
+                  color: 'var(--md-on-surface, #121212)',
                 }}>
                   {tabLabel(sw, i)}
                 </span>
@@ -1382,7 +1765,7 @@ function SwitchPicker({ switches, rackId }) {
                     fontWeight: 500,
                     letterSpacing: 0,
                     lineHeight: '14px',
-                    color: 'var(--md-on-surface, #121417)',
+                    color: 'var(--md-on-surface, #121212)',
                     opacity: 0.6,
                     maxWidth: '100%',
                     overflow: 'hidden',
@@ -1425,7 +1808,6 @@ export default function SwitchInformationPage() {
   const params = useParams();
   const rackId = params.rackId || location.state?.rackId || null;
   const switchData = useSwitchData(rackId);
-  const { loading, data, switches, showingOcrOnly } = switchData;
 
   // The page root is `.page.page-full` (height:100dvh, overflow:hidden), so the
   // content must scroll in its OWN container — otherwise long spec tables get

@@ -586,7 +586,7 @@ function ConfirmModal({ title, message, confirmLabel = 'Confirm', danger = false
   const [busy, setBusy] = useState(false);
   return (
     <Modal title={title} onClose={onClose}>
-      <p style={{ margin: '0 0 18px', color: '#4a5563', lineHeight: 1.6 }}>{message}</p>
+      <p style={{ margin: '0 0 18px', color: '#545454', lineHeight: 1.6 }}>{message}</p>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 18 }}>
         <button type="button" className={styles.smallBtn} onClick={onClose}>Cancel</button>
         <button type="button"

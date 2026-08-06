@@ -11,14 +11,14 @@
 // stores the INDEX), so the length and order must not change — only the
 // values were re-toned.
 export const AVATARS = [
-  { from: '#3A3F47', to: '#14171B' },  // 0 graphite
-  { from: '#4A505A', to: '#22262C' },  // 1 slate
-  { from: '#2B2F35', to: '#0C0E11' },  // 2 near-black
-  { from: '#5A616C', to: '#2E333A' },  // 3 steel
-  { from: '#43484F', to: '#191C21' },  // 4 iron
-  { from: '#646B76', to: '#383D45' },  // 5 ash
-  { from: '#33373D', to: '#101215' },  // 6 charcoal
-  { from: '#545A64', to: '#282C32' },  // 7 gunmetal
+  { from: '#3f3f3f', to: '#171717' },  // 0 graphite
+  { from: '#4f4f4f', to: '#262626' },  // 1 slate
+  { from: '#2f2f2f', to: '#000000' },  // 2 near-black
+  { from: '#606060', to: '#323232' },  // 3 steel
+  { from: '#474747', to: '#1c1c1c' },  // 4 iron
+  { from: '#6a6a6a', to: '#3d3d3d' },  // 5 ash
+  { from: '#373737', to: '#121212' },  // 6 charcoal
+  { from: '#595959', to: '#2c2c2c' },  // 7 gunmetal
 ];
 
 // Deterministic pick from a seed (username/email) so an un-chosen user always

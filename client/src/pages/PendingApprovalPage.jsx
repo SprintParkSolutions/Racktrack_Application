@@ -83,24 +83,24 @@ export default function PendingApprovalPage() {
 }
 
 // No colour accent in this app — ink does the accenting.
-const BLUE = '#121417';
+const BLUE = '#121212';
 const S = {
   wrap: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'var(--ground, #F7F8FA)', padding: '24px', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif" },
+    background: 'var(--ground, #ffffff)', padding: '24px', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif" },
   card: { background: 'var(--raised, #fff)', borderRadius: 18, padding: '40px 32px', maxWidth: 420, width: '100%',
     textAlign: 'center', boxShadow: 'var(--lift)' },
   badge: { display: 'inline-block', fontSize: 11, letterSpacing: '.2em', fontWeight: 700,
-    color: BLUE, background: '#eaf3fc', padding: '5px 12px', borderRadius: 20, marginBottom: 20 },
+    color: BLUE, background: '#f2f2f2', padding: '5px 12px', borderRadius: 20, marginBottom: 20 },
   spinner: { width: 44, height: 44, margin: '0 auto 20px', borderRadius: '50%',
-    border: '4px solid #dbe6f3', borderTopColor: BLUE, animation: 'rtspin 1s linear infinite' },
+    border: '4px solid #e5e5e5', borderTopColor: BLUE, animation: 'rtspin 1s linear infinite' },
   blocked: { width: 46, height: 46, margin: '0 auto 20px', borderRadius: '50%',
-    background: '#fdecea', color: '#c0392b', fontSize: 26, fontWeight: 800,
+    background: '#efefef', color: '#c0392b', fontSize: 26, fontWeight: 800,
     display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  h1: { margin: '0 0 10px', fontSize: 22, fontWeight: 750, color: '#1a2432' },
-  p: { margin: '0 0 8px', color: '#4a5563', fontSize: 15, lineHeight: 1.6 },
-  sub: { margin: '0 0 24px', color: '#8a93a3', fontSize: 13 },
+  h1: { margin: '0 0 10px', fontSize: 22, fontWeight: 750, color: '#232323' },
+  p: { margin: '0 0 8px', color: '#545454', fontSize: 15, lineHeight: 1.6 },
+  sub: { margin: '0 0 24px', color: '#929292', fontSize: 13 },
   primary: { width: '100%', padding: '13px', border: 0, borderRadius: 12, background: BLUE,
     color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 10 },
-  ghost: { width: '100%', padding: '12px', border: '1px solid #d8dee7', borderRadius: 12,
-    background: '#fff', color: '#5c6775', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
+  ghost: { width: '100%', padding: '12px', border: '1px solid #dddddd', borderRadius: 12,
+    background: '#fff', color: '#666666', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
 };

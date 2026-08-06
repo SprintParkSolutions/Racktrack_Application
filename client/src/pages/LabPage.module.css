@@ -13,7 +13,7 @@
   display: flex; flex-direction: column;
   min-height: 100vh;
   background: var(--md-background, #ffffff);
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
 }
 
 .header {
@@ -28,10 +28,10 @@
   width: 40px; height: 40px; flex-shrink: 0;
   border-radius: 12px; border: 1px solid var(--md-outline-variant, #e0e0e0);
   background: var(--md-surface-container-lowest, #ffffff);
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   font-size: 24px; line-height: 1; cursor: pointer;
 }
-.backBtn:hover { border-color: var(--md-on-surface, #121417); background: var(--md-surface-container, #fafafa); }
+.backBtn:hover { border-color: var(--md-on-surface, #121212); background: var(--md-surface-container, #ffffff); }
 .headerCenter { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .headerTitle { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
 .headerSub   { margin: 0; font-size: 12px; opacity: 0.6; }
@@ -65,28 +65,28 @@
   border-radius: 14px;
   border: 1px solid var(--md-outline-variant, #e0e0e0);
   background: var(--md-surface-container-lowest, #ffffff);
-  color: var(--md-on-surface, #121417);
-  box-shadow: 0 1px 2px rgba(18,20,23,0.04);
+  color: var(--md-on-surface, #121212);
+  box-shadow: 0 1px 2px rgba(18, 18, 18,0.04);
   transition: border-color .16s, box-shadow .16s, transform .12s;
   overflow: hidden;
 }
 /* A thin status rail down the left edge so the fleet reads at a glance. */
 .deviceCard::before {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-  background: rgba(18,20,23,0.16);
+  background: rgba(18, 18, 18,0.16);
 }
 .deviceCard:has(.stLive)::before { background: #22c55e; }
 .deviceCard:has(.stOff)::before  { background: #ef4444; }
 .deviceCard:has(.stWarn)::before { background: #f59e0b; }
 .deviceCard:hover {
-  border-color: var(--md-on-surface, #121417);
-  box-shadow: 0 8px 20px -10px rgba(18,20,23,0.28);
+  border-color: var(--md-on-surface, #121212);
+  box-shadow: 0 8px 20px -10px rgba(18, 18, 18,0.28);
   transform: translateY(-2px);
 }
 .deviceCardActive {
-  border-color: var(--md-on-surface, #121417);
-  box-shadow: 0 0 0 1px var(--md-on-surface, #121417), 0 8px 20px -10px rgba(18,20,23,0.28);
-  background: var(--md-surface-container, #fafafa);
+  border-color: var(--md-on-surface, #121212);
+  box-shadow: 0 0 0 1px var(--md-on-surface, #121212), 0 8px 20px -10px rgba(18, 18, 18,0.28);
+  background: var(--md-surface-container, #ffffff);
 }
 .dName {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -112,8 +112,8 @@
 .stLive { color: #16a34a; } .stLive .statusDot { background: #22c55e; }
 .stOff  { color: #dc2626; } .stOff  .statusDot { background: #ef4444; }
 .stWarn { color: #d97706; } .stWarn .statusDot { background: #f59e0b; }
-.stIdle { color: var(--md-on-surface, #121417); opacity: 0.75; }
-.stIdle .statusDot { background: rgba(18,20,23,0.35); }
+.stIdle { color: var(--md-on-surface, #121212); opacity: 0.75; }
+.stIdle .statusDot { background: rgba(18, 18, 18,0.35); }
 
 /* ── detail ──────────────────────────────────────────────────────── */
 .detail {
@@ -140,14 +140,14 @@
   height: 32px; padding: 0 14px;
   border-radius: 8px; border: 1px solid var(--md-outline-variant, #e0e0e0);
   background: var(--md-surface-container-lowest, #ffffff);
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   font: inherit; font-size: 12px; font-weight: 600;
   cursor: pointer; white-space: nowrap;
   transition: border-color .14s, background-color .14s;
 }
-.btn:hover:not(:disabled) { border-color: var(--md-on-surface, #121417); background: var(--md-surface-container, #fafafa); }
+.btn:hover:not(:disabled) { border-color: var(--md-on-surface, #121212); background: var(--md-surface-container, #ffffff); }
 .btn:disabled { opacity: 0.45; cursor: default; }
-.btnPrimary { border-color: var(--md-on-surface, #121417); }
+.btnPrimary { border-color: var(--md-on-surface, #121212); }
 
 /* ── fact grid (summary key facts) ───────────────────────────────── */
 /* auto-FIT, not auto-fill: the 1px gaps expose the grey backdrop, so an
@@ -201,13 +201,13 @@
   flex: 1 1 auto; min-width: max-content;
   padding: 11px 16px; margin-bottom: -1px;
   background: transparent; border: none; border-bottom: 2px solid transparent;
-  color: var(--md-on-surface, #121417); opacity: 0.55;
+  color: var(--md-on-surface, #121212); opacity: 0.55;
   font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
   text-transform: uppercase; white-space: nowrap; cursor: pointer;
   transition: opacity .15s, border-color .15s;
 }
 .tab:hover { opacity: 0.85; }
-.tabActive { opacity: 1; font-weight: 700; border-bottom-color: var(--md-on-surface, #121417); }
+.tabActive { opacity: 1; font-weight: 700; border-bottom-color: var(--md-on-surface, #121212); }
 .tabCount { opacity: 0.55; font-weight: 600; margin-left: 5px; }
 
 .section { padding: 16px; }
@@ -260,7 +260,7 @@
   border-radius: 7px;
   border: 1px solid var(--md-outline-variant, #e0e0e0);
   background: var(--md-surface-container-lowest, #ffffff);
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
 }
 .portCell::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
@@ -348,7 +348,7 @@
     border: 1px solid var(--md-outline-variant, #e0e0e0);
     border-radius: 16px;
     background: var(--md-surface-container-lowest, #ffffff);
-    box-shadow: 0 1px 2px rgba(18,20,23,0.04);
+    box-shadow: 0 1px 2px rgba(18, 18, 18,0.04);
     font-size: 13px;
   }
   .fleetCount { font-size: 15px; }
@@ -372,7 +372,7 @@
   .detail {
     grid-area: detail; align-self: start;
     border-radius: 16px;
-    box-shadow: 0 1px 2px rgba(18,20,23,0.04);
+    box-shadow: 0 1px 2px rgba(18, 18, 18,0.04);
   }
   .detailHead { padding: 18px 20px 16px; }
   .detailName { font-size: 23px; }

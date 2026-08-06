@@ -39,7 +39,6 @@ export default function ProfilePage() {
   const [scans, setScans] = useState([]);
   const [scansLoading, setScansLoading] = useState(true);
   const [scansError, setScansError] = useState(null);
-  const [showAllScans, setShowAllScans] = useState(false);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
@@ -71,8 +70,8 @@ export default function ProfilePage() {
 
   const initial = useMemo(() => (user?.username || user?.email || '?').charAt(0).toUpperCase(), [user]);
   const joined  = useMemo(() => formatJoined(user?.created_at), [user]);
-  // Show the 5 most recent by default; "Show all" reveals the full history.
-  const recent  = useMemo(() => (showAllScans ? scans : scans.slice(0, 5)), [scans, showAllScans]);
+  // Profile shows the 5 most recent only; the rest live on /history.
+  const recent  = useMemo(() => scans.slice(0, 5), [scans]);
 
   const onSignOut = () => {
     logout();
@@ -131,7 +130,7 @@ export default function ProfilePage() {
             <Avatar user={user} size={96} ring />
             <span style={{
               position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: '50%',
-              background: '#121417', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#121212', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: '3px solid var(--md-background, #fff)', boxShadow: '0 2px 6px rgba(0,0,0,.2)',
             }}>
               <Icon name="edit" style={{ fontSize: 16 }} />
@@ -257,13 +256,17 @@ export default function ProfilePage() {
             </ul>
           )}
 
+          {/* Beyond five, the archive is its own page — expanding the list in
+              place turned Profile into an endless scroll with no way to find a
+              particular rack. /history is searchable, filtered and paged. */}
           {!scansLoading && scans.length > 5 && (
             <button
               type="button"
               className={styles.showAllBtn}
-              onClick={() => setShowAllScans(v => !v)}
+              onClick={() => navigate('/history')}
             >
-              {showAllScans ? 'Show less' : `Show all ${scans.length} scans`}
+              View all {scans.length} scans
+              <Icon name="chevron_right" className={styles.showAllChevron} />
             </button>
           )}
         </section>
@@ -291,11 +294,11 @@ export default function ProfilePage() {
         <div
           onClick={() => !savingAvatar && setPickerOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 400, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-            background: 'rgba(8,11,18,.55)', backdropFilter: 'blur(4px)' }}
+            background: 'rgba(0, 0, 0,.55)', backdropFilter: 'blur(4px)' }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: 440, background: 'var(--md-background, #fff)', color: 'var(--md-on-surface, #0f1826)',
+            style={{ width: '100%', maxWidth: 440, background: 'var(--md-background, #fff)', color: 'var(--md-on-surface, #171717)',
               borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: '20px 22px calc(24px + env(safe-area-inset-bottom))',
               boxShadow: '0 -10px 40px rgba(0,0,0,.28)' }}
           >

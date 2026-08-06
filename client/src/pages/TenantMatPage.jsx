@@ -18,10 +18,10 @@ const TopologyScene3D = lazy(() => import('./TopologyScene3D.jsx'));
  */
 
 const STATUS_META = {
-  ok:         { label: 'OK',         color: '#1a1c1d' },
-  drift:      { label: 'Drift',      color: '#1a1c1d' },
-  cmdb_only:  { label: 'Unscanned',  color: '#cfc4c5' },
-  scan_only:  { label: 'Orphan',     color: '#1a1c1d' },
+  ok:         { label: 'OK',         color: '#1c1c1c' },
+  drift:      { label: 'Drift',      color: '#1c1c1c' },
+  cmdb_only:  { label: 'Unscanned',  color: '#c6c6c6' },
+  scan_only:  { label: 'Orphan',     color: '#1c1c1c' },
 };
 
 const VIEW_MODES = [

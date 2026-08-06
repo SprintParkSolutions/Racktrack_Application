@@ -63,10 +63,10 @@ export default function OrgConnectionsPanel() {
 
   const card = { border: '1px solid #ececec', borderRadius: 14, background: '#fff', padding: 16 };
   const btn = { fontSize: 13, fontWeight: 600, padding: '9px 14px', borderRadius: 10, cursor: 'pointer' };
-  const primaryBtn = { ...btn, background: '#0b0c0e', color: '#fff', border: '1px solid #0b0c0e' };
+  const primaryBtn = { ...btn, background: '#000000', color: '#fff', border: '1px solid #000000' };
   const ghostBtn = { ...btn, background: '#fff', color: '#333', border: '1px solid #ececec' };
   const dangerBtn = { ...btn, background: '#fff', color: '#dc2626', border: '1px solid rgba(220,38,38,0.35)', padding: '7px 12px', fontSize: 12 };
-  const label = { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#5F646C', marginBottom: 6 };
+  const label = { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b6b6b', marginBottom: 6 };
   // fontSize 16 (not smaller): iOS Safari auto-zooms the viewport when a
   // focused input is under 16px and never restores the scale on blur.
   const input = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 10, border: '1px solid #e2e2e2', fontSize: 16, marginBottom: 12 };
@@ -74,14 +74,14 @@ export default function OrgConnectionsPanel() {
   return (
     <section style={{ marginTop: 28 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1a1c1d' }}>Organization integrations</h3>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1c1c1c' }}>Organization integrations</h3>
         {!formOpen && (
           <button type="button" style={primaryBtn} onClick={() => { setFormError(null); setFormOpen(true); }}>
             + Add integration
           </button>
         )}
       </div>
-      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#5F646C', lineHeight: 1.5, maxWidth: 640 }}>
+      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#6b6b6b', lineHeight: 1.5, maxWidth: 640 }}>
         Credentials for your CMDB/ITSM database, live network sources, etc. Set them once here for the
         whole organization. They're stored <strong>encrypted</strong> and are <strong>never shown again</strong> —
         not even to you. To change one, just re-enter it.
@@ -111,7 +111,7 @@ export default function OrgConnectionsPanel() {
                 onChange={e => setSecret(s => ({ ...s, [f.key]: e.target.value }))} />
             </div>
           ))}
-          {info.hint && <p style={{ margin: '0 0 12px', fontSize: 12, color: '#5F646C' }}>{info.hint}</p>}
+          {info.hint && <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6b6b6b' }}>{info.hint}</p>}
           {formError && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{formError}</div>}
 
           <div style={{ display: 'flex', gap: 8 }}>
@@ -122,16 +122,16 @@ export default function OrgConnectionsPanel() {
       )}
 
       {loading ? (
-        <div style={{ ...card, color: '#5F646C' }}>Loading…</div>
+        <div style={{ ...card, color: '#6b6b6b' }}>Loading…</div>
       ) : profiles.length === 0 ? (
-        <div style={{ ...card, color: '#5F646C', textAlign: 'center' }}>No integrations configured yet.</div>
+        <div style={{ ...card, color: '#6b6b6b', textAlign: 'center' }}>No integrations configured yet.</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {profiles.map(p => (
             <div key={p.id} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
               <div>
-                <div style={{ fontWeight: 700, color: '#1a1c1d', fontSize: 14 }}>
-                  {p.name} <span style={{ fontSize: 12, fontWeight: 600, color: '#5F646C' }}>· {TYPE_INFO[p.type]?.label || p.type}</span>
+                <div style={{ fontWeight: 700, color: '#1c1c1c', fontSize: 14 }}>
+                  {p.name} <span style={{ fontSize: 12, fontWeight: 600, color: '#6b6b6b' }}>· {TYPE_INFO[p.type]?.label || p.type}</span>
                 </div>
                 <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 2 }}>● Configured · encrypted</div>
               </div>

@@ -32,7 +32,7 @@
   border-radius: 50%;
   border: 1px solid var(--border, rgba(0,0,0,0.12));
   background: var(--card, #ffffff);
-  color: var(--t1, #1a1c1d);
+  color: var(--t1, #1c1c1c);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -337,7 +337,7 @@
 .specs {
   background: var(--md-background, #FFFFFF) !important;
   background-image: none !important;
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
 }
 
 /* Ambient blobs — the radial dark "glow" reads as dirt against white. Hide them. */
@@ -358,7 +358,7 @@
   -webkit-backdrop-filter: none;
 }
 .title {
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -368,7 +368,7 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   box-shadow: none !important;
   filter: none !important;
   backdrop-filter: none !important;
@@ -377,12 +377,12 @@
 }
 .backBtn:hover {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  border-color: var(--md-on-surface, #121417) !important;
+  border-color: var(--md-on-surface, #121212) !important;
 }
 
 /* Intro / eyebrow / sub — hierarchy via weight + opacity, no grey ramp. */
 .eyebrow {
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   opacity: 1;
   font-size: 11px;
   font-weight: 700;
@@ -390,12 +390,12 @@
   text-transform: uppercase;
 }
 .h2 {
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 .sub {
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   opacity: 0.65;
 }
 
@@ -404,7 +404,7 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   box-shadow: none !important;
   filter: none !important;
   backdrop-filter: none !important;
@@ -413,11 +413,11 @@
   transition: border-color .15s ease;
 }
 .input::placeholder {
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   opacity: 0.45;
 }
 .input:focus {
-  border-color: var(--md-on-surface, #121417) !important;
+  border-color: var(--md-on-surface, #121212) !important;
   box-shadow: none !important;
   outline: none !important;
 }
@@ -433,14 +433,14 @@
   border-radius: 10px;
 }
 .suggestItem {
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
 }
 .suggestItem:hover {
   background: var(--md-surface-container-lowest, #FFFFFF);
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
 }
 .fieldHint {
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   opacity: 0.6;
 }
 
@@ -449,7 +449,7 @@
 .highlightLabel,
 .specKey,
 .resultVendor {
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   font-size: 11px !important;
   font-weight: 700 !important;
@@ -462,7 +462,7 @@
 .specVal,
 .summaryBody,
 .resultModel {
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   font-weight: 600;
 }
 .specVal {
@@ -520,15 +520,15 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   font-weight: 600;
   box-shadow: none !important;
   filter: none !important;
 }
 .sourceLink:hover {
-  background: var(--md-surface-container, #FAFAFA) !important;
-  border-color: var(--md-on-surface, #121417) !important;
-  color: var(--md-on-surface, #121417) !important;
+  background: var(--md-surface-container, #ffffff) !important;
+  border-color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 
 /* CTA / summary buttons — outlined pill, active = solid black border + bold. */
@@ -537,7 +537,7 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   font-weight: 600 !important;
   box-shadow: none !important;
   filter: none !important;
@@ -549,7 +549,7 @@
 .summaryBtn:hover,
 .cta:focus-visible,
 .summaryBtn:focus-visible {
-  border-color: var(--md-on-surface, #121417) !important;
+  border-color: var(--md-on-surface, #121212) !important;
   font-weight: 700 !important;
   box-shadow: none !important;
   outline: none !important;
@@ -570,7 +570,7 @@
   filter: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 
 /* Everything nested inside switch cards — strip shadows, blurs, gradients. */
@@ -588,15 +588,15 @@
 .specs article > button {
   background: transparent !important;
   background-image: none !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 
-/* Fields grid + tiles inside expanded card — #FAFAFA tiles on white card. */
+/* Fields grid + tiles inside expanded card — #ffffff tiles on white card. */
 .specs article div[style*="grid"] > div {
   background-image: none !important;
 }
 .specs article a {
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   text-decoration: none;
 }
 
@@ -606,7 +606,7 @@
 .specs article samp,
 .specs article [class*="mono"] {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
   opacity: 0.7;
 }
 
@@ -641,7 +641,7 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
   box-shadow: none !important;
   filter: none !important;
   backdrop-filter: none !important;
@@ -654,7 +654,7 @@
 .specs [aria-selected="true"][class*="chip"],
 .specs [aria-selected="true"][class*="pill"],
 .specs [aria-selected="true"][class*="tag"] {
-  border-color: var(--md-on-surface, #121417) !important;
+  border-color: var(--md-on-surface, #121212) !important;
   font-weight: 700 !important;
 }
 
@@ -685,7 +685,7 @@
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   border-radius: 12px !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 
 /* Scrollable areas — neutral white bg, hairline only. */
@@ -714,7 +714,7 @@
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   border-radius: 10px !important;
   box-shadow: none !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 
 /* Empty / loading / error state blocks — white card, hairline, no glow. */
@@ -723,8 +723,8 @@
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
-  color: var(--md-on-surface, #121417) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .specs p {
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
 }

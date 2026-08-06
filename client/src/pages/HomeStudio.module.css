@@ -30,7 +30,7 @@
 .mark {
   width: 27px; height: 27px; border-radius: 7px; object-fit: cover;
   display: block; flex-shrink: 0;
-  outline: 1px solid rgba(18, 20, 23, 0.08); outline-offset: -1px;
+  outline: 1px solid rgba(18, 18, 18, 0.08); outline-offset: -1px;
 }
 .word { font-family: var(--font); font-size: 15px; font-weight: 800; letter-spacing: -0.01em; color: var(--md-primary); }
 .signBtn {
@@ -40,7 +40,7 @@
   padding: 8px 15px; border-radius: 999px; cursor: pointer;
   transition: border-color .16s, background .16s; -webkit-tap-highlight-color: transparent;
 }
-.signBtn:hover { border-color: var(--md-primary); background: rgba(18, 20, 23, 0.03); }
+.signBtn:hover { border-color: var(--md-primary); background: rgba(18, 18, 18, 0.03); }
 .signBtn:active { opacity: .75; }
 
 /* ── split hero ── */
@@ -76,7 +76,7 @@
 .primary {
   display: inline-flex; align-items: center; gap: 9px;
   font-family: var(--font); font-size: 1.04rem; font-weight: 600; letter-spacing: -0.01em;
-  color: #fff; background: #121417; border: 1px solid #121417;
+  color: #fff; background: #121212; border: 1px solid #121212;
   padding: 15px 26px; border-radius: 999px; cursor: pointer;
   transition: transform .14s ease, opacity .16s; -webkit-tap-highlight-color: transparent;
 }
@@ -88,7 +88,7 @@
   padding: 15px 24px; border-radius: 999px; cursor: pointer;
   transition: border-color .16s, background .16s; -webkit-tap-highlight-color: transparent;
 }
-.secondary:hover { border-color: var(--md-primary); background: rgba(18, 20, 23, 0.03); }
+.secondary:hover { border-color: var(--md-primary); background: rgba(18, 18, 18, 0.03); }
 
 .stats { display: flex; align-items: center; gap: clamp(16px, 2vw, 28px); margin-top: clamp(22px, 3vh, 36px); }
 .stat { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
@@ -103,12 +103,12 @@
   max-height: min(78vh, 640px);
   border-radius: 20px;
   overflow: hidden;
-  background: #0a0a0b;
+  background: #000000;
   border: 1px solid var(--md-outline-variant);
   justify-self: stretch;
   /* Soft, grounded shadow so the image reads as a premium card floating on the
      white page rather than a flat rectangle. */
-  box-shadow: 0 32px 70px -34px rgba(10, 12, 16, 0.42), 0 8px 22px -18px rgba(10, 12, 16, 0.35);
+  box-shadow: 0 32px 70px -34px rgba(0, 0, 0, 0.42), 0 8px 22px -18px rgba(0, 0, 0, 0.35);
 }
 .photo {
   position: absolute; inset: 0;
@@ -137,7 +137,7 @@
   position: absolute; top: 14px; left: 14px; z-index: 3;
   display: inline-flex; align-items: center; gap: 7px;
   font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
-  color: #fff; background: rgba(10, 10, 11, 0.78);
+  color: #fff; background: rgba(0, 0, 0, 0.78);
   padding: 6px 11px; border-radius: 999px;
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }

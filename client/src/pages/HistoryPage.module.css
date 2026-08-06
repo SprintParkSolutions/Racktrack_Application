@@ -1,125 +1,761 @@
-﻿.history {
-  background: #ffffff;
+/* Scan history — the full archive as a gallery.
+ *
+ * Pure white and subtle black, nothing else: every value here is true
+ * greyscale, surfaces are #ffffff, and separation comes from black thinned to
+ * a hairline plus the house --lift shadow. The only saturated element on the
+ * page is a scan's own photograph.
+ *
+ * A tile is one scan: its picture, its rack ID, its date. The metric columns
+ * (devices / units / ports) are deliberately gone — counts belong on the
+ * scan's own page, not repeated across a wall of thumbnails.
+ *
+ * Grouped by day; the tiles carry the date and ID together, so nothing is lost
+ * on the Rack ID sort where the day headings drop away.
+ */
+
+.history {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  /* No background here: `.page-full` is forced transparent, so the white
+     ground shows through. */
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
-/* ── Ambient (removed for the all-white design system) ── */
-.amb {
-  display: none;
+/* ── Sticky phone header (the shell draws its own from 768px) ─────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(18, 18, 18, 0.07);
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.topbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.topbarTitle {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 16px;
+  text-transform: uppercase;
+  color: #121212;
+  margin: 0;
+}
+.countPill {
+  min-width: 30px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: #121212;
+  color: #ffffff;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* ── Header ── */
-.header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px 12px;
+/* Portalled into the shell header on desktop. */
+.newScanBtn {
+  height: 38px;
+  padding: 0 20px;
+  border-radius: 9999px;
+  border: none;
+  background: #121212;
+  color: #ffffff;
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--lift);
+  transition: transform 0.18s var(--ease-out, ease), box-shadow 0.18s;
+}
+.newScanBtn:hover { transform: translateY(-1px); box-shadow: var(--shadow-card-hover, var(--lift)); }
+.newScanBtn:active { transform: translateY(0); }
+
+/* ── Content rail — full device width, no centred column ─────────── */
+.main {
+  flex: 1;
+  /* `.page-full` is a fixed-height, clipped box below 1180px, so the column
+     itself has to be the scroller — without min-height:0 + overflow-y the
+     gallery would stop at the fold and the pager would sit under the bottom
+     nav, unreachable. Same trap Profile documents. */
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  /* The container already reserves the bottom nav's height, so this is just
+     breathing room under the pager — not clearance. */
+  padding: 22px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.main > * { flex-shrink: 0; }
+
+/* ══ The panel: totals over controls, one surface ═══════════════════ */
+.panel {
   background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
-  z-index: 10; position: relative;
+  border-radius: 20px;
+  box-shadow: var(--lift);
+  overflow: hidden;
 }
 
-.title {
-  font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em;
-  text-align: center; flex: 1; min-width: 0;
-  color: #121417;
+/* ── Totals — spread the panel's full width, hairline-divided ─────── */
+.stats {
+  /* Four across even on a phone — a 2×2 block pushed the first scan most of a
+     screen down, and this page exists to show scans. */
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 8px;
+  padding: 15px 16px 14px;
+  border-bottom: 1px solid rgba(18, 18, 18, 0.07);
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.statValue {
+  font-family: var(--font);
+  font-size: clamp(18px, 5.2vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: #121212;
+  line-height: 1.05;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 6px;
 }
-@media (max-width: 420px) {
-  .header { padding: 12px 10px 10px; }
-  .title { font-size: .95rem; }
-}
-@media (max-width: 360px) {
-  .title { font-size: .85rem; }
+/* "just now" / "3w ago" is a word, not a figure — one step down so it sits on
+   the same optical weight as the numerals beside it. */
+.statValueWord { font-size: clamp(13px, 3.7vw, 20px); letter-spacing: -0.02em; }
+.statLabel {
+  font-family: var(--font);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9a9a9a;
 }
 
-/* ── Body ── */
-.body {
-  position: relative; z-index: 1;
+/* ── Toolbar: search, chips and sort on one white surface ────────── */
+.controls {
+  /* Search on its own line, then chips and sort side by side — three stacked
+     rows made the toolbar taller than the first row of scans. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+.searchWrap { grid-column: 1 / -1; }
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.searchIcon {
+  position: absolute;
+  left: 15px;
+  font-size: 17px;
+  color: #9a9a9a;
+  pointer-events: none;
+  transition: color 0.18s;
+}
+.searchWrap:focus-within .searchIcon { color: #121212; }
+.search {
   width: 100%;
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 16px;
-  display: flex; flex-direction: column; gap: 12px;
-  min-height: calc(100vh - 80px);
-  overflow-y: auto;
-}
-
-.empty {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 16px; color: #717171; text-align: center;
-}
-
-.list {
-  display: flex; flex-direction: column; gap: 12px;
-}
-
-/* ── History card — white surface, hairline border ── */
-.card {
-  display: flex; flex-direction: column; gap: 12px;
-  padding: 18px;
-  border-radius: var(--r4);
+  height: 46px;
+  padding: 0 42px 0 44px;
+  border-radius: 13px;
+  /* White with a hairline, not a grey well: on this page the sunken fill was
+     the largest grey shape on screen, which is exactly what the white-only
+     brief rules out. Depth comes from the ring on focus instead. */
+  border: 1px solid rgba(18, 18, 18, 0.10);
   background: #ffffff;
-  border: 1px solid #f0f0f0;
+  font-family: var(--font);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #121212;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.search::placeholder { color: #9a9a9a; font-weight: 450; }
+.search:hover { border-color: rgba(18, 18, 18, 0.20); }
+.search:focus {
+  border-color: #121212;
+  box-shadow: 0 0 0 3px rgba(18, 18, 18, 0.07);
+}
+.search::-webkit-search-cancel-button { display: none; }
+.searchClear {
+  position: absolute;
+  right: 9px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #6b6b6b;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: transform .18s, border-color .18s, box-shadow .18s;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  transition: color 0.18s, transform 0.18s;
 }
-.card:hover {
-  transform: translateY(-2px);
-  border-color: #121417;
-  box-shadow: 0 8px 22px rgba(0,0,0,0.16);
-}
+.searchClear:hover { color: #121212; transform: scale(1.06); }
 
-.cardTop {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+.chips {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 1px 1px 1px 1px;
+  /* On a phone the row scrolls past the sort control. Fading the right edge
+     makes the cut-off chip read as "there is more", not as a clipped bug. */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
 }
-
-.cardTitle {
-  font-size: .95rem; font-weight: 700; color: #121417;
-}
-
-.cardMeta {
-  font-size: .72rem; color: #717171;
-}
-
-.cardInfo {
-  display: flex; flex-wrap: wrap; gap: 8px;
-}
-
-.cardChip {
-  display: inline-flex; align-items: center; padding: 5px 11px;
-  border-radius: 999px;
-  font-size: .72rem; font-weight: 600;
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 9999px;
+  border: 1px solid rgba(18, 18, 18, 0.10);
   background: #ffffff;
-  border: 1px solid #f0f0f0;
-  color: #717171;
+  color: #6b6b6b;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.16s;
+  -webkit-tap-highlight-color: transparent;
+}
+.chip:hover { border-color: rgba(18, 18, 18, 0.28); color: #121212; }
+.chip:active { transform: scale(0.97); }
+/* The accent. Small area, full black — the first thing the eye finds. */
+.chipOn,
+.chipOn:hover {
+  background: #121212;
+  border-color: #121212;
+  color: #ffffff;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   LIGHT THEME OVERRIDES
-   ══════════════════════════════════════════════════════════════════════ */
-
-:global([data-theme='light']) .history { background: #ffffff; }
-:global([data-theme='light']) .amb { display: none; }
-:global([data-theme='light']) .empty { color: #717171; }
-
-:global([data-theme='light']) .card {
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+.sortWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
-:global([data-theme='light']) .card:hover {
-  background: #ffffff;
-  border-color: #121417;
-  box-shadow: 0 8px 22px rgba(0,0,0,0.16);
+/* The select says "Newest first" on its face — the label is a desktop luxury. */
+.sortLabel {
+  display: none;
+  font-family: var(--font);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  flex: 0 0 auto;
 }
-:global([data-theme='light']) .cardTitle { color: #121417; }
-:global([data-theme='light']) .cardMeta  { color: #717171; }
-:global([data-theme='light']) .cardChip {
+.sort {
+  flex: 1 1 auto;
+  min-width: 128px;
+  height: 40px;
+  padding: 0 32px 0 12px;
+  border-radius: 11px;
+  border: 1px solid rgba(18, 18, 18, 0.10);
   background: #ffffff;
-  border: 1px solid #f0f0f0;
-  color: #717171;
+  /* Chevron drawn in, so the control matches the rest instead of inheriting
+     the platform's select styling. */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23121212' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9l7 7 7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 14px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 620;
+  color: #121212;
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.2s;
+}
+.sort:hover  { border-color: rgba(18, 18, 18, 0.28); }
+.sort:focus  { border-color: #121212; }
+
+/* ── Result line ─────────────────────────────────────────────────── */
+.resultLine {
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  padding: 0 2px;
+  scroll-margin-top: 88px;
+}
+
+/* ── Day groups ──────────────────────────────────────────────────── */
+.group { display: flex; flex-direction: column; gap: 12px; }
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 2px;
+}
+/* A small black square, not a bullet — the day marker down the left edge. */
+.groupDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: #121212;
+  flex: 0 0 auto;
+}
+.groupLabel {
+  font-family: var(--font);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #121212;
+  margin: 0;
+  flex: 0 0 auto;
+}
+/* The rule fills whatever the label and count leave — an editorial dateline. */
+.groupRule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(18, 18, 18, 0.13), rgba(18, 18, 18, 0.02));
+}
+.groupCount {
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  flex: 0 0 auto;
+}
+
+/* ══ The gallery ═════════════════════════════════════════════════ */
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 2px;   /* room for the lifted tiles' shadow */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 16px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: var(--lift);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.26s cubic-bezier(0.22, 0.7, 0.28, 1), box-shadow 0.26s;
+  -webkit-tap-highlight-color: transparent;
+  animation: tileIn 0.36s cubic-bezier(0.22, 0.7, 0.28, 1) both;
+  animation-delay: calc(var(--i, 0) * 18ms);
+}
+.tile:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover, var(--lift));
+}
+.tile:active { transform: translateY(-1px); }
+.tile:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #121212;
+}
+@keyframes tileIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The picture. 4:3 keeps a portrait rack photo and a wide one on the same
+   grid line — the crop is centred, so the rack stays in frame either way. */
+.frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: #f4f4f4;
+  overflow: hidden;
+}
+.frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.22, 0.7, 0.28, 1);
+}
+.tile:hover .frame img { transform: scale(1.05); }
+/* A hairline over the photo's bottom edge so a pale scan cannot bleed into
+   the caption. */
+.frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 -1px 0 rgba(18, 18, 18, 0.07);
+  pointer-events: none;
+}
+.frameEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--press);
+}
+.framePlaceholder {
+  font-size: 58px;
+  color: #cfcfcf;
+  transition: transform 0.4s cubic-bezier(0.22, 0.7, 0.28, 1), color 0.3s;
+}
+.tile:hover .framePlaceholder { transform: scale(1.06); color: #9a9a9a; }
+
+/* Sits on the picture, not under it — a flag, not a field. */
+.warnChip {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #121212;
+  font-family: var(--font);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.caption {
+  position: relative;
+  padding: 11px 13px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+/* The accent: a 2px black rule that draws itself across the caption's top
+   edge on hover, left to right. */
+.caption::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: #121212;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.22, 0.7, 0.28, 1);
+}
+.tile:hover .caption::before,
+.tile:focus-visible .caption::before { transform: scaleX(1); }
+
+.rackId {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 18px;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  color: #121212;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stamp {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 550;
+  color: #6b6b6b;
+  min-width: 0;
+}
+.stampDay {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stampTime {
+  flex: 0 0 auto;
+  color: #9a9a9a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Loading skeleton — the gallery's own shape ──────────────────── */
+.skeletonTile {
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: var(--lift);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.skeletonFrame,
+.skeletonBar {
+  background: linear-gradient(90deg, #f4f4f4 25%, #ececec 37%, #f4f4f4 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease infinite;
+}
+.skeletonFrame { aspect-ratio: 4 / 3; }
+.skeletonBar   { height: 11px; border-radius: 6px; margin: 14px 13px 18px; }
+@keyframes shimmer {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0 50%; }
+}
+
+/* ── Empty states ────────────────────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 56px 24px 60px;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: var(--lift);
+}
+.emptyIcon {
+  width: 62px;
+  height: 62px;
+  border-radius: 9999px;
+  background: #f4f4f4;
+  box-shadow: var(--press);
+  color: #9a9a9a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+.emptyTitle {
+  font-family: var(--font);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #121212;
+  margin: 0;
+}
+.emptyText {
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 450;
+  line-height: 19px;
+  color: #6b6b6b;
+  margin: 0;
+  max-width: 34ch;
+}
+.startBtn {
+  margin-top: 10px;
+  height: 46px;
+  padding: 0 26px;
+  border-radius: 9999px;
+  background: #121212;
+  color: #ffffff;
+  border: none;
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--lift);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.startBtn:hover { transform: translateY(-1px); box-shadow: var(--shadow-card-hover, var(--lift)); }
+.clearFilters {
+  margin-top: 10px;
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid rgba(18, 18, 18, 0.12);
+  color: #121212;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 620;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.clearFilters:hover { border-color: #121212; }
+
+/* ── Error ───────────────────────────────────────────────────────── */
+.errBanner {
+  padding: 13px 16px;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: var(--lift), inset 3px 0 0 #121212;
+  color: #121212;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+/* ── Pager ───────────────────────────────────────────────────────── */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 4px;
+}
+.pageNums {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pageArrow,
+.pageNum {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 9px;
+  border-radius: 12px;
+  border: none;
+  background: #ffffff;
+  color: #121212;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--lift);
+  transition: transform 0.16s, box-shadow 0.18s, background 0.18s, color 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+.pageArrow { font-size: 16px; }
+.pageArrow:hover:not(:disabled),
+.pageNum:hover { transform: translateY(-1px); }
+.pageArrow:active:not(:disabled),
+.pageNum:active { transform: translateY(0); box-shadow: var(--press); }
+.pageArrow:disabled {
+  color: #c6c6c6;
+  box-shadow: none;
+  background: transparent;
+  cursor: default;
+}
+.pageNumOn,
+.pageNumOn:hover {
+  background: #121212;
+  color: #ffffff;
+  transform: none;
+}
+.pageGap {
+  width: 18px;
+  text-align: center;
+  color: #c6c6c6;
+  font-family: var(--font);
+  font-size: 13px;
+}
+
+/* ══ Tablet / desktop ════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  /* The shell draws one header for every page — Profile hides its own here
+     too, so History does the same and there is only ever one. */
+  .topbar { display: none; }
+
+  .main {
+    padding: 30px 32px 56px;
+    gap: 26px;
+  }
+
+  /* The totals span the panel, so the dividers land on real column edges
+     instead of stopping halfway across an empty band. */
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    padding: 20px 26px 18px;
+  }
+  .stat { padding: 0 30px; }
+  .stat:first-child { padding-left: 0; }
+  .stat + .stat { box-shadow: inset 1px 0 0 rgba(18, 18, 18, 0.08); }
+  .statValue { font-size: 34px; }
+  .statValueWord { font-size: 23px; }
+
+  /* Search, chips and sort on one line — the toolbar stops being a stack. */
+  .controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding: 16px 26px 20px;
+  }
+  /* Let the field take the free width rather than leaving a lake of white
+     between the chips and the sort. */
+  .searchWrap { flex: 1 1 320px; max-width: none; }
+  /* Every chip fits from here up, so the scroll fade would be a lie. */
+  .chips { flex: 0 1 auto; -webkit-mask-image: none; mask-image: none; }
+  .sortWrap { margin-left: auto; }
+  .sortLabel { display: block; }
+  .sort { flex: 0 0 auto; min-width: 172px; }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+  }
+  .caption { padding: 13px 15px 15px; }
+  .rackId { font-size: 15px; }
+  .stamp { font-size: 11.5px; }
+
+  .pager { justify-content: flex-start; margin-top: 10px; }
+  .empty { padding: 76px 24px 84px; }
+}
+
+@media (min-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(224px, 1fr));
+    gap: 22px;
+  }
+}
+
+/* Motion is decoration here — the gallery is equally usable without it. */
+@media (prefers-reduced-motion: reduce) {
+  .tile { animation: none; transition: none; }
+  .tile:hover { transform: none; }
+  .frame img, .framePlaceholder, .caption::before { transition: none; }
+  .skeletonFrame, .skeletonBar { animation: none; }
 }

@@ -183,7 +183,7 @@
 /* Tone variants — colored hairline only, flat white surface. */
 .tone_ok {
   background: #ffffff;
-  border-color: #cde9d3;
+  border-color: #e1e1e1;
 }
 .tone_warn {
   background: #ffffff;
@@ -191,7 +191,7 @@
 }
 .tone_critical {
   background: #ffffff;
-  border-color: #f3caca;
+  border-color: #d3d3d3;
 }
 .tone_neutral {
   background: #ffffff;

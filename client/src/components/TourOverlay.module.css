@@ -1,0 +1,250 @@
+/* One bold accent used only for tour chrome — never the app's own black/
+   white/gray palette — so a highlight always reads unmistakably as "the
+   guide," not as part of the underlying page. */
+.overlayRoot {
+  --tour-accent: #121417;
+  --tour-accent-soft: rgba(18, 20, 23, 0.35);
+  position: fixed;
+  inset: 0;
+  z-index: 850;
+  pointer-events: none;
+}
+
+.dim {
+  position: fixed;
+  background: rgba(10, 10, 12, 0.62);
+  /* Auto (not none): these four strips tile the whole viewport minus the
+     spotlighted rect, so making them event-capturing is what actually
+     confines the user to the highlighted step — without this, clicks pass
+     straight through to the dimmed app underneath. */
+  pointer-events: auto;
+  transition: all 0.15s ease;
+}
+
+/* Punches a real click-through hole over the page's own Back button —
+   rendered after the .dim strips (same stacking context, later in the DOM),
+   so it wins the hit-test at that spot regardless of z-index math. */
+.bypassHole {
+  position: fixed;
+  pointer-events: auto;
+  cursor: pointer;
+  background: transparent;
+}
+
+.ring {
+  position: fixed;
+  border: 2px solid var(--tour-accent);
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+  border-radius: 14px;
+  pointer-events: none;
+  transition: all 0.18s cubic-bezier(0.2, 0.6, 0.3, 1);
+  box-shadow: 0 0 0 3px var(--tour-accent-soft), 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+/* Radar-style ping — a second ring that grows and fades on a loop, the
+   classic "something is happening here" cue instead of a static box. */
+.ringPing {
+  position: fixed;
+  border: 2px solid var(--tour-accent);
+  border-radius: 14px;
+  pointer-events: none;
+  transform-origin: center;
+  animation: rt-tour-ping 1.8s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+@keyframes rt-tour-ping {
+  0%   { transform: scale(1);    opacity: 0.7; }
+  70%  { transform: scale(1.12); opacity: 0; }
+  100% { transform: scale(1.12); opacity: 0; }
+}
+
+/* The mascot — perched on the info card's own top-left corner (not the
+   spotlight ring), like it's the one speaking the step instructions. */
+.mascot {
+  position: absolute;
+  top: -10px;
+  left: -55px;
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Phones. TourOverlay clamps the bubble to at least 12px from the left edge,
+   so a -55px mascot overhang is guaranteed to be cut off by the screen. It
+   moves to the bubble's top-right corner instead — the one corner that is
+   always on screen (the bubble is clamped 12px off the right edge too) and
+   that the speech-bubble tail never occupies, since the tail tracks the
+   spotlight from the left. */
+@media (max-width: 639px) {
+  .mascot {
+    top: -46px;
+    left: auto;
+    right: 6px;
+  }
+}
+
+.robotStage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  animation: rt-tour-robot-float 3.2s ease-in-out infinite;
+}
+
+.robotBody {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Same percentages as TourIntroModal.module.css's .mascotArm, calibrated
+   to this same robot image, so the wave lines up identically on both. */
+.robotArm {
+  position: absolute;
+  left: 6.801%;
+  top: 47.266%;
+  width: 27.078%;
+  height: 18.164%;
+  transform-origin: 94.88% 96.77%;
+  animation: rt-tour-robot-wave 1.8s ease-in-out infinite;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@keyframes rt-tour-robot-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+@keyframes rt-tour-robot-wave {
+  0%   { transform: rotate(0deg); }
+  15%  { transform: rotate(-18deg); }
+  35%  { transform: rotate(12deg); }
+  55%  { transform: rotate(-18deg); }
+  75%  { transform: rotate(10deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Speech-bubble tail — a small diamond in the bubble's own colors, poking
+   out toward the mascot so the bubble reads as "the mascot is saying this",
+   not a disconnected card. */
+.tail {
+  position: fixed;
+  width: 16px;
+  height: 16px;
+  background: var(--md-background, #fff);
+  pointer-events: none;
+  animation: rt-tour-tail-bob 2s ease-in-out infinite;
+}
+
+.tailUp {
+  border-top: 1px solid var(--md-outline-variant, #e0e0e0);
+  border-left: 1px solid var(--md-outline-variant, #e0e0e0);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.tailDown {
+  border-bottom: 1px solid var(--md-outline-variant, #e0e0e0);
+  border-right: 1px solid var(--md-outline-variant, #e0e0e0);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+@keyframes rt-tour-tail-bob {
+  0%, 100% { transform: translate(-50%, -50%) rotate(45deg) scale(1); }
+  50%      { transform: translate(-50%, -50%) rotate(45deg) scale(1.15); }
+}
+
+.bubble {
+  position: fixed;
+  pointer-events: auto;
+  background: var(--md-background, #fff);
+  border: 1px solid var(--md-outline-variant, #e0e0e0);
+  border-top: 3px solid var(--tour-accent);
+  border-radius: 14px;
+  padding: 14px 16px 16px;
+  /* Two-layer shadow — a tight contact shadow plus a soft ambient one —
+     reads as "floating card" instead of the flatter single heavy shadow. */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10), 0 14px 32px rgba(0, 0, 0, 0.18);
+  animation: rt-tour-bubble-in 0.2s cubic-bezier(0.2, 0.6, 0.3, 1);
+}
+
+@keyframes rt-tour-bubble-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bubbleTitle {
+  margin: 0 0 6px;
+  /* Clears the mascot perched over the card's top-left corner. */
+  padding-left: 44px;
+  min-height: 26px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--md-on-surface, #121417);
+}
+
+.bubbleBody {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--md-on-surface-variant, #4c4546);
+}
+
+.bubbleActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.skipStepBtn,
+.skipTourBtn {
+  appearance: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.skipStepBtn:active,
+.skipTourBtn:active {
+  transform: scale(0.96);
+}
+
+.skipStepBtn:focus-visible,
+.skipTourBtn:focus-visible {
+  outline: 2px solid var(--tour-accent);
+  outline-offset: 2px;
+}
+
+/* Primary of the two — advancing is the expected path, so it gets the
+   card's own accent instead of reading like a throwaway link. */
+.skipStepBtn {
+  background: var(--tour-accent, #121417);
+  border: 1px solid var(--tour-accent, #121417);
+  color: #fff;
+}
+
+.skipStepBtn:hover {
+  opacity: 0.88;
+}
+
+/* Quieter of the two — bailing on the whole tour is a bigger decision,
+   so it stays a plain outline button rather than competing for attention. */
+.skipTourBtn {
+  background: transparent;
+  border: 1px solid var(--md-outline-variant, #e0e0e0);
+  color: var(--md-on-surface-variant, #4c4546);
+}
+
+.skipTourBtn:hover {
+  background: var(--md-surface-variant, #f2f2f2);
+  color: var(--md-on-surface, #121417);
+}

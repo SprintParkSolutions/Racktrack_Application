@@ -518,7 +518,7 @@ export default function SfpAdvisor({ rackId, vendor: vendorProp, model: modelPro
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{
                 fontSize: '.78rem', fontWeight: 800, letterSpacing: '.02em',
-                color: 'var(--t1, #cfc4c5)',
+                color: 'var(--t1, #c6c6c6)',
               }}>
                 Plug-and-play cables
               </span>
@@ -565,7 +565,7 @@ export default function SfpAdvisor({ rackId, vendor: vendorProp, model: modelPro
                     </div>
                     <span style={{
                       fontSize: '.68rem', fontWeight: 700,
-                      color: '#4c4546',
+                      color: '#474747',
                       letterSpacing: '.04em',
                     }}>
                       {c.type} · {c.maxDistance}
@@ -573,7 +573,7 @@ export default function SfpAdvisor({ rackId, vendor: vendorProp, model: modelPro
                     <span style={{
                       fontFamily: 'var(--mono, ui-monospace, monospace)',
                       fontSize: '.7rem', fontWeight: 700,
-                      color: 'var(--t1, #cfc4c5)',
+                      color: 'var(--t1, #c6c6c6)',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
                       {c.partNumber}
@@ -586,7 +586,7 @@ export default function SfpAdvisor({ rackId, vendor: vendorProp, model: modelPro
                       {c.price && (
                         <span style={{
                           fontSize: '.86rem', fontWeight: 800,
-                          color: '#4c4546',
+                          color: '#474747',
                         }}>
                           {c.price}
                         </span>

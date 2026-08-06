@@ -16,19 +16,21 @@ describe('the AVATARS table', () => {
     // already changed what a stored index means.
     //
     // The palette was re-toned from a colour ramp to a graphite one when the
-    // app moved to white + white-shades with subtle black accents. That is a
-    // VALUE change, not a shape change: there are still eight entries in the
-    // same eight slots, so every stored users.avatar index still resolves to
-    // the same slot it always did — those users simply render monochrome now.
+    // app moved to white + white-shades with subtle black accents, and re-toned
+    // again when the neutrals were flattened to TRUE greyscale (the graphite
+    // ramp above was blue-tinted: #3A3F47 is not R=G=B). Both are VALUE
+    // changes, not shape changes: there are still eight entries in the same
+    // eight slots, so every stored users.avatar index still resolves to the
+    // slot it always did — those users simply render monochrome now.
     expect(AVATARS.slice(0, 8)).toEqual([
-      { from: '#3A3F47', to: '#14171B' },
-      { from: '#4A505A', to: '#22262C' },
-      { from: '#2B2F35', to: '#0C0E11' },
-      { from: '#5A616C', to: '#2E333A' },
-      { from: '#43484F', to: '#191C21' },
-      { from: '#646B76', to: '#383D45' },
-      { from: '#33373D', to: '#101215' },
-      { from: '#545A64', to: '#282C32' },
+      { from: '#3f3f3f', to: '#171717' },
+      { from: '#4f4f4f', to: '#262626' },
+      { from: '#2f2f2f', to: '#000000' },
+      { from: '#606060', to: '#323232' },
+      { from: '#474747', to: '#1c1c1c' },
+      { from: '#6a6a6a', to: '#3d3d3d' },
+      { from: '#373737', to: '#121212' },
+      { from: '#595959', to: '#2c2c2c' },
     ]);
   });
 

@@ -56,7 +56,7 @@
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: -0.025em;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -90,7 +90,7 @@
 
 /* The glyph is an orienting mark, not an illustration — it sits well
    back so the title stays the only thing with weight in the row. */
-.recentIcon { color: var(--mkt-ink, #121417); opacity: 0.3; flex-shrink: 0; }
+.recentIcon { color: var(--mkt-ink, #121212); opacity: 0.3; flex-shrink: 0; }
 
 .recentInfo {
   display: flex; align-items: center; gap: 8px;
@@ -98,14 +98,14 @@
 }
 .recentTitle {
   font-size: 13.5px; font-weight: 600;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   min-width: 0;
 }
 
 .recentPrice {
   font-size: 13.5px; font-weight: 700; white-space: nowrap;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   font-variant-numeric: tabular-nums;
 }
 

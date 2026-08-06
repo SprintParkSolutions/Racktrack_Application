@@ -99,3 +99,24 @@
     top: 0;
   }
 }
+
+/* Live indicator for the "still working" panels. The point is motion: this
+   page used to show identical static text whether OCR was running or had
+   long since stopped, so there was no way to tell a wait from a dead end. */
+.pulseDot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #121212;
+  animation: switchInfoPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes switchInfoPulse {
+  0%, 100% { opacity: 0.22; transform: scale(0.8); }
+  50%      { opacity: 1;    transform: scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulseDot { animation: none; opacity: 0.55; }
+}

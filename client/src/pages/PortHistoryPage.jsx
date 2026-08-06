@@ -32,29 +32,29 @@ const OFFSET_KEYS = ['1h', '3h', '12h', '1d', '1w'];
 const TIMELINE_BARS = [
   {
     label: 'Administrative State', field: 'admin',
-    colorOf: (v) => v === 'enabled'  ? '#1a1c1d'
-                  : v === 'disabled' ? '#1a1c1d'
-                  : '#1a1c1d',
+    colorOf: (v) => v === 'enabled'  ? '#1c1c1c'
+                  : v === 'disabled' ? '#1c1c1c'
+                  : '#1c1c1c',
     formatValue: (v) => v ? v.charAt(0).toUpperCase() + v.slice(1) : '—',
   },
   {
     label: 'Flow Control',         field: 'flowctrl',
-    colorOf: (v) => v === 'Enable'  ? '#4c4546'
-                  : v === 'Disable' ? '#1a1c1d'
-                  : '#1a1c1d',
+    colorOf: (v) => v === 'Enable'  ? '#474747'
+                  : v === 'Disable' ? '#1c1c1c'
+                  : '#1c1c1c',
     formatValue: (v) => v || 'Off',
   },
   {
     label: 'Operational Status',   field: 'oper',
     colorOf: (v) => v === 'up'   ? '#22c55e'
                   : v === 'down' ? '#ef4444'
-                  : '#d1d5db',
+                  : '#d5d5d5',
     // Render label as Up / Down — the colour itself signals state
     formatValue: (v) => v ? v.toUpperCase() : '—',
   },
   {
     label: 'Speed',                field: 'speed_mbps',
-    colorOf: (v) => v ? '#cfc4c5' : '#1a1c1d',
+    colorOf: (v) => v ? '#c6c6c6' : '#1c1c1c',
     formatValue: (v) => fmtSpeed(v),
   },
   {
@@ -62,7 +62,7 @@ const TIMELINE_BARS = [
     // Hash the neighbor name to a stable colour so identity is obvious
     // at a glance — different segments → different colours → cable was
     // re-routed to a different switch / host.
-    colorOf: (v) => v ? hashColor(v) : '#1a1c1d',
+    colorOf: (v) => v ? hashColor(v) : '#1c1c1c',
     formatValue: (v) => v || 'none',
   },
 ];
@@ -73,7 +73,7 @@ const TIMELINE_BARS = [
 function hashColor(s) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  const palette = ['#000000', '#4c4546', '#4c4546', '#4c4546', '#1a1c1d', '#cfc4c5', '#4c4546', '#f3f3f5'];
+  const palette = ['#000000', '#474747', '#474747', '#474747', '#1c1c1c', '#c6c6c6', '#474747', '#f3f3f3'];
   return palette[h % palette.length];
 }
 

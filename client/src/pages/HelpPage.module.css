@@ -1,7 +1,7 @@
 /* RackTrack — "Ask DOT" support assistant.
 
    Styled in the app's own light idiom (DesktopShell / ContactPage): pure white
-   surfaces, hairline #ececea borders, 12px radii, and black as the only accent
+   surfaces, hairline #ececec borders, 12px radii, and black as the only accent
    — the same black as the sidebar's active pill and the Contact page's send
    button. The previous neumorphic port read as a foreign app inside the shell;
    this sheet retires it.
@@ -17,11 +17,11 @@
 
 .page {
   --ink:    #111;                        /* text & the single accent          */
-  --dim:    #5c5c66;                     /* secondary copy                    */
-  --faint:  #5F646C;                     /* placeholder, hints, glyphs        */
-  --line:   #ececea;                     /* hairline card/input borders       */
+  --dim:    #5d5d5d;                     /* secondary copy                    */
+  --faint:  #6b6b6b;                     /* placeholder, hints, glyphs        */
+  --line:   #ececec;                     /* hairline card/input borders       */
   --line-soft: #f0f0f0;                  /* structural dividers (shell match) */
-  --hover:  #fafafa;                     /* hovered card fill                 */
+  --hover:  #ffffff;                     /* hovered card fill                 */
 
   display: flex;
   flex-direction: column;
@@ -177,7 +177,7 @@
   width: 24px; height: 24px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 8px;
-  background: #f4f4f2;
+  background: #f4f4f4;
   color: var(--dim);
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 11px;
@@ -342,7 +342,7 @@
   font-size: 16px;                       /* 16px stops iOS zooming on focus */
   color: var(--ink);
   background: #fff;
-  border: 1px solid #e2e2df;
+  border: 1px solid #e2e2e2;
   border-radius: 999px;
   outline: none;
   transition: border-color 0.2s ease;
@@ -364,7 +364,7 @@
 .send svg { width: 18px; height: 18px; }
 .send:hover:not(:disabled) { background: #000; }
 .send:active:not(:disabled) { transform: scale(0.96); }
-.send:disabled { background: #f0f0ee; color: #b0b0ac; cursor: default; }
+.send:disabled { background: #f0f0f0; color: #b0b0b0; cursor: default; }
 .send:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* ── unavailable ─────────────────────────────────────────────────────── */

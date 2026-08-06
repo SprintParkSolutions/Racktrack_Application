@@ -39,8 +39,8 @@
   -webkit-tap-highlight-color: transparent;
   padding: 8px 4px;
   gap: 2px;
-  /* #757575 (not the old #5F646C) because the 10px uppercase label has to
-     clear WCAG AA 4.5:1 against the bar's white — #5F646C measured 1.92:1,
+  /* #757575 (not the old #6b6b6b) because the 10px uppercase label has to
+     clear WCAG AA 4.5:1 against the bar's white — #6b6b6b measured 1.92:1,
      this measures 4.61:1. */
   color: #757575;
   transition: color 0.18s;
@@ -55,7 +55,7 @@
 }
 
 .tab:focus-visible {
-  outline: 2px solid var(--md-primary, #17171a);
+  outline: 2px solid var(--md-primary, #171717);
   outline-offset: -3px;
   border-radius: 8px;
 }

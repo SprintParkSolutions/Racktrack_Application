@@ -14,7 +14,7 @@
 .heroImg { width: 100%; height: 100%; object-fit: cover; display: block; }
 .scrim {
   position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(10,10,10,.35), rgba(10,10,10,.72));
+  background: linear-gradient(180deg, rgba(0, 0, 0,.35), rgba(0, 0, 0,.72));
 }
 .nav {
   position: absolute; top: 0; left: 0; right: 0;
@@ -44,7 +44,7 @@
 
 /* ── Body ── */
 .wrap { padding: 24px 24px 48px; }
-.lede { font-size: 15px; line-height: 1.55; color: #4a4a48; margin-bottom: 20px; }
+.lede { font-size: 15px; line-height: 1.55; color: #4a4a4a; margin-bottom: 20px; }
 .lede strong { color: #111; font-weight: 600; }
 
 .grid { display: block; }
@@ -55,11 +55,11 @@
   font-size: 11px; letter-spacing: .12em; color: #6b6b6b; text-transform: uppercase; margin-bottom: 9px;
 }
 .labelGap { margin-top: 12px; }
-.optional { color: #c4c4c1; }
+.optional { color: #c4c4c4; }
 
 .fld {
   width: 100%; box-sizing: border-box;
-  padding: 14px 15px; border: 1px solid #e2e2df; border-radius: 12px;
+  padding: 14px 15px; border: 1px solid #e2e2e2; border-radius: 12px;
   font-size: 15px; background: #fff; color: #111;
   transition: border-color .2s;
 }
@@ -89,25 +89,25 @@
 .emailCard {
   display: flex; align-items: center; justify-content: space-between;
   margin-top: 16px; padding: 15px 18px;
-  border: 1px solid #ececea; border-radius: 12px; color: #111;
+  border: 1px solid #ececec; border-radius: 12px; color: #111;
 }
-.emailCard span { color: #5F646C; font-size: 18px; }
+.emailCard span { color: #6b6b6b; font-size: 18px; }
 .k {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 10px; letter-spacing: .12em; color: #5F646C; text-transform: uppercase;
+  font-size: 10px; letter-spacing: .12em; color: #6b6b6b; text-transform: uppercase;
 }
 /* Used on an <a> as well as a <div>; without an explicit colour the
    anchor fell back to the browser default blue (#0000EE). */
-.v { font-weight: 600; margin-top: 2px; font-size: 14px; color: var(--md-on-surface, #121417); text-decoration: none; }
+.v { font-weight: 600; margin-top: 2px; font-size: 14px; color: var(--md-on-surface, #121212); text-decoration: none; }
 /* Anchor variant needs a 24px hit area (WCAG 2.5.8). */
 a.v { display: inline-flex; align-items: center; min-height: 24px; }
-.m { font-size: 13px; color: #5F646C; margin-top: 2px; }
+.m { font-size: 13px; color: #6b6b6b; margin-top: 2px; }
 
 /* Sent confirmation */
 .doneCard { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 44px 24px; max-width: 440px; margin: 0 auto; }
 .doneMark { width: 56px; height: 56px; border-radius: 999px; display: grid; place-items: center; background: rgba(22,163,74,.1); color: #16a34a; }
 .doneTitle { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
-.doneText { margin: 0 0 10px; font-size: 14.5px; line-height: 1.6; color: #5c5c66; }
+.doneText { margin: 0 0 10px; font-size: 14.5px; line-height: 1.6; color: #5d5d5d; }
 .doneText strong { color: #111; font-weight: 600; }
 
 /* ── iPad / desktop ── */
@@ -131,8 +131,8 @@ a.v { display: inline-flex; align-items: center; min-height: 24px; }
      lone control floating in white space. */
   .formCard {
     padding: 30px 30px 28px;
-    border: 1px solid #ececea; border-radius: 18px; background: #fff;
-    box-shadow: 0 1px 2px rgba(20,22,26,.03), 0 24px 48px -34px rgba(20,22,26,.28);
+    border: 1px solid #ececec; border-radius: 18px; background: #fff;
+    box-shadow: 0 1px 2px rgba(22, 22, 22,.03), 0 24px 48px -34px rgba(22, 22, 22,.28);
   }
   .textarea { height: 220px; }
   .send { margin-top: 20px; }
@@ -140,7 +140,7 @@ a.v { display: inline-flex; align-items: center; min-height: 24px; }
   /* Support details rail — small cards, no more sparse left-border list. */
   .aside { display: flex; flex-direction: column; gap: 14px; }
   .infoCard {
-    padding: 18px 20px; border: 1px solid #ececea; border-radius: 14px; background: #fbfbfa;
+    padding: 18px 20px; border: 1px solid #ececec; border-radius: 14px; background: #ffffff;
   }
   .infoCard .v { display: inline-block; font-size: 15px; margin-top: 5px; }
   a.v:hover { text-decoration: underline; text-underline-offset: 2px; }

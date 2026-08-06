@@ -38,13 +38,13 @@
 }
 /* Held back from full ink: it identifies the card, it is not the point
    of it — the platform name and the status pill are. */
-.glyph { color: var(--mkt-ink, #121417); opacity: 0.55; flex-shrink: 0; }
+.glyph { color: var(--mkt-ink, #121212); opacity: 0.55; flex-shrink: 0; }
 
 .cardName {
   flex: 1; min-width: 0;
   margin: 0; font-size: 15px; font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 
@@ -61,7 +61,7 @@
   padding: 0 12px;
   border: 1px solid var(--mkt-line, #e0e0e0);
   border-radius: var(--mkt-r-sm, 8px);
-  background: var(--mkt-raised, #fafafa);
+  background: var(--mkt-raised, #ffffff);
 }
 /* :global — .mkt-row__val is a theme class, so the module must be told
    not to hash it, or this rule would target a name that never renders. */
@@ -76,7 +76,7 @@
 .confirmText {
   flex-basis: 100%;
   font-size: 12.5px; font-weight: 600;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
 }
 
 .actionNote {

@@ -36,7 +36,7 @@
   border-radius: 50%;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #cfc4c5;
+  color: #c6c6c6;
   font-size: 18px; font-weight: 300;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -52,7 +52,7 @@
   border-radius: 50%;
   background: rgba(0,0,0,0.12);
   border: 1px solid rgba(0,0,0,0.35);
-  color: #cfc4c5;
+  color: #c6c6c6;
   display: flex; align-items: center; justify-content: center;
   margin: 0 auto 14px;
   box-shadow: 0 0 32px rgba(0,0,0,0.25);
@@ -60,13 +60,13 @@
 .iconBubbleAccent {
   background: rgba(0,0,0,0.12);
   border-color: rgba(0,0,0,0.4);
-  color: #cfc4c5;
+  color: #c6c6c6;
   box-shadow: 0 0 32px rgba(0,0,0,0.25);
 }
 .iconBubbleSuccess {
   background: rgba(0,0,0,0.14);
   border-color: rgba(0,0,0,0.45);
-  color: #4c4546;
+  color: #474747;
   box-shadow: 0 0 32px rgba(0,0,0,0.25);
 }
 
@@ -93,7 +93,7 @@
   border-radius: 10px;
   background: rgba(0,0,0,0.1);
   border: 1px solid rgba(0,0,0,0.3);
-  color: #4c4546;
+  color: #474747;
   font-size: 0.78rem;
   text-align: center;
 }
@@ -116,7 +116,7 @@
   gap: 8px;
 }
 .btnPrimary {
-  background: linear-gradient(135deg, #000000, #1a1c1d);
+  background: linear-gradient(135deg, #000000, #1c1c1c);
   color: #ffffff;
   border-color: rgba(0,0,0,0.4);
   box-shadow: 0 6px 18px rgba(0,0,0,0.4);
@@ -143,7 +143,7 @@
 }
 
 .btnDev {
-  background: linear-gradient(135deg, #1a1c1d, #4c4546);
+  background: linear-gradient(135deg, #1c1c1c, #474747);
   color: #ffffff;
   border-color: rgba(0,0,0,0.4);
   box-shadow: 0 6px 18px rgba(0,0,0,0.35);
@@ -192,7 +192,7 @@
 .spinner {
   width: 26px; height: 26px;
   border: 2.5px solid rgba(0,0,0,0.18);
-  border-top-color: #cfc4c5;
+  border-top-color: #c6c6c6;
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
 }
@@ -304,7 +304,7 @@
   font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #cfc4c5;
+  color: #c6c6c6;
   font-weight: 600;
   margin-left: auto;
 }
@@ -321,7 +321,7 @@
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #cfc4c5;
+  color: #c6c6c6;
   font-weight: 600;
 }
 .metaText {
@@ -338,15 +338,15 @@
 :global([data-theme='light']) .modal {
   background: #000000;
   border-color: rgba(0,0,0,0.22);
-  color: #1a1c1d;
+  color: #1c1c1c;
   box-shadow: 0 18px 60px rgba(0,0,0,0.18);
 }
 :global([data-theme='light']) .close {
   border-color: rgba(0,0,0,0.18);
   color: #000000;
 }
-:global([data-theme='light']) .title { color: #1a1c1d; }
-:global([data-theme='light']) .body  { color: #4c4546; }
+:global([data-theme='light']) .title { color: #1c1c1c; }
+:global([data-theme='light']) .body  { color: #474747; }
 :global([data-theme='light']) .iconBubble {
   background: rgba(0,0,0,0.08);
   border-color: rgba(0,0,0,0.32);
@@ -355,40 +355,40 @@
 :global([data-theme='light']) .iconBubbleAccent {
   background: rgba(0,0,0,0.08);
   border-color: rgba(0,0,0,0.3);
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 :global([data-theme='light']) .iconBubbleSuccess {
   background: rgba(0,0,0,0.1);
   border-color: rgba(0,0,0,0.32);
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 :global([data-theme='light']) .reqCard {
   background: rgba(0,0,0,0.05);
   border-color: rgba(0,0,0,0.22);
 }
-:global([data-theme='light']) .reqLabel { color: #1a1c1d; }
-:global([data-theme='light']) .reqNum   { color: #1a1c1d; }
+:global([data-theme='light']) .reqLabel { color: #1c1c1c; }
+:global([data-theme='light']) .reqNum   { color: #1c1c1c; }
 :global([data-theme='light']) .btnGhost {
-  color: #4c4546;
+  color: #474747;
   border-color: rgba(0, 0, 0, 0.12);
 }
 :global([data-theme='light']) .btnGhost:hover:not(:disabled) {
   background: rgba(0,0,0,0.06);
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 :global([data-theme='light']) .stat {
   background: rgba(0,0,0,0.05);
   border-color: rgba(0,0,0,0.18);
 }
-:global([data-theme='light']) .statValue { color: #1a1c1d; }
+:global([data-theme='light']) .statValue { color: #1c1c1c; }
 :global([data-theme='light']) .statLabel { color: #000000; }
 :global([data-theme='light']) .detailsHeader { color: #000000; }
 :global([data-theme='light']) .deviceRow {
   background: #ffffff;
   border-color: rgba(0,0,0,0.14);
 }
-:global([data-theme='light']) .deviceName { color: #1a1c1d; }
-:global([data-theme='light']) .metaText   { color: #4c4546; }
+:global([data-theme='light']) .deviceName { color: #1c1c1c; }
+:global([data-theme='light']) .metaText   { color: #474747; }
 :global([data-theme='light']) .tag {
   background: rgba(0,0,0,0.1);
   border-color: rgba(0,0,0,0.28);
@@ -404,10 +404,10 @@
   background: #ffffff;
   border-color: rgba(0,0,0,0.12);
 }
-:global([data-theme='light']) .cableEnd  { color: #1a1c1d; }
+:global([data-theme='light']) .cableEnd  { color: #1c1c1c; }
 :global([data-theme='light']) .cableArrow { color: #000000; }
 :global([data-theme='light']) .tagSm {
   background: rgba(0,0,0,0.08);
   border-color: rgba(0,0,0,0.22);
-  color: #1a1c1d;
+  color: #1c1c1c;
 }

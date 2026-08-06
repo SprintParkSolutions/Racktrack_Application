@@ -6,8 +6,9 @@
 
    · SQUARE corners, not pills. 3px on the buttons, 10px on the image. Pill
      buttons read as consumer app chrome; a near-square button reads as a tool.
-   · ONE colour in the headline. Splitting it across blue and teal fought the
-     type for attention. The accent now appears once, on the primary button.
+   · NO colour anywhere. The accent was blue (#1D3FD1) on the primary button
+     and the meter; the app is pure white with subtle black, so the accent is
+     now ink and the button is a black fill on white.
    · WEIGHT 700. Geist ships 400–700 (fonts.css); asking for 800 makes the
      browser synthesise a fake bold, which smears the stems at hero size.
    · The stat row is mono because those are measurements, not prose. */
@@ -17,14 +18,14 @@
   display: flex; flex-direction: column;
   overflow-y: auto; overflow-x: hidden;
   background: #FFFFFF;
-  color: #101215;
+  color: #121212;
   color-scheme: light;
   font-family: var(--font, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-  --accent: #1D3FD1;
-  --ink: #101215;
-  --muted: #5A616B;
-  --faint: #9AA1AB;
-  --hair: #E6E8EC;
+  --accent: #121212;
+  --ink: #121212;
+  --muted: #606060;
+  --faint: #a0a0a0;
+  --hair: #e8e8e8;
   --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -140,8 +141,8 @@
 .shotImg {
   position: absolute; inset: 0;
   border-radius: 10px; overflow: hidden;
-  background: #0D1117;
-  box-shadow: 0 1px 2px rgba(16,24,40,.08), 0 18px 40px -26px rgba(16,24,40,.35);
+  background: #111111;
+  box-shadow: 0 1px 2px rgba(23, 23, 23,.08), 0 18px 40px -26px rgba(23, 23, 23,.35);
 }
 .shotImg img { width: 100%; height: 100%; object-fit: cover; display: block; object-position: 46% center; }
 
@@ -150,10 +151,10 @@
 .chip {
   position: absolute; z-index: 2;
   background: #fff;
-  border: 1px solid rgba(16,24,40,.07);
+  border: 1px solid rgba(23, 23, 23,.07);
   border-radius: 4px;
   padding: 11px 14px 12px;
-  box-shadow: 0 10px 26px -12px rgba(16,24,40,.32);
+  box-shadow: 0 10px 26px -12px rgba(23, 23, 23,.32);
   min-width: clamp(140px, 13vw, 186px);
 }
 .chipTop    { top: clamp(16px, 3vh, 40px); left: clamp(-14px, -1vw, 0px); }
@@ -172,7 +173,7 @@
   font-variant-numeric: tabular-nums;
 }
 .chipVal small { font-size: .52em; color: var(--muted); margin-left: 4px; letter-spacing: .04em; }
-.meter { display: block; margin-top: 9px; height: 3px; background: #EDEFF2; border-radius: 2px; overflow: hidden; }
+.meter { display: block; margin-top: 9px; height: 3px; background: #efefef; border-radius: 2px; overflow: hidden; }
 .meterFill { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
 
 /* ── Narrow ───────────────────────────────────────────── */

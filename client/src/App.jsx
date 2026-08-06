@@ -60,7 +60,9 @@ import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
 import { AuthProvider, useAuth } from './AuthContext.jsx';
 import { getPendingScan, clearPendingScan, fetchScanJob } from './utils/pendingScan';
-import OnboardingTour from './components/OnboardingTour.jsx';
+import { TourProvider } from './TourContext.jsx';
+import TourIntroModal from './components/TourIntroModal.jsx';
+import TourOverlay from './components/TourOverlay.jsx';
 import { ConnectionsProvider } from './ConnectionsContext.jsx';
 import { ThemeProvider } from './ThemeContext.jsx';
 
@@ -172,6 +174,22 @@ function PendingRoute({ children }) {
   if (!isAuthed) return <Navigate to="/login" replace />;
   if (!orgNotActive(user)) return <Navigate to="/scan" replace />;
   return children;
+}
+
+// Gate for the guided tour. The walkthrough drives the user through
+// /scan → /results, so it only makes sense for someone who can actually
+// reach those pages: signed in, with an active organization. Held back on
+// the sign-in / pending screens, where the prompt would cover the form the
+// user is trying to fill in.
+function TourGate() {
+  const { isAuthed, user } = useAuth();
+  if (!isAuthed || orgNotActive(user)) return null;
+  return (
+    <>
+      <TourIntroModal />
+      <TourOverlay />
+    </>
+  );
 }
 
 // Responsive layout wrapper — at ≥1024px viewports every page renders
@@ -313,8 +331,8 @@ function PendingScanResumer() {
     <div role="status" aria-live="polite" style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: '18px', background: 'rgba(8,11,18,0.82)', backdropFilter: 'blur(6px)',
-      color: '#eaf0fa', textAlign: 'center',
+      gap: '18px', background: 'rgba(0, 0, 0,0.82)', backdropFilter: 'blur(6px)',
+      color: '#efefef', textAlign: 'center',
       padding: 'max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left))',
     }}>
       <div style={{
@@ -341,7 +359,6 @@ export default function App() {
             <AndroidBackHandler />
             <SocialDeepLinkHandler />
             <PendingScanResumer />
-            <OnboardingTour />
             <PointerGlow />
             {/* Stale rack images (a token that expired while the page sat open,
                 or a first paint before the token landed) are handled per-image
@@ -352,6 +369,12 @@ export default function App() {
                 the whole app at the root boundary. Deferred routes suspend while
                 their chunk loads; the fallback is deliberately quiet — a spinner
                 that flashes for 80 ms on a warm connection reads as jank. */}
+            {/* The tour spotlights real controls on /scan and /results, so the
+                pages themselves call useTour() — the provider has to be above
+                the router outlet, not beside it. TourGate renders last so that
+                the intro card and the dim layer win any z-index tie against
+                page chrome painted before them. */}
+            <TourProvider>
             <RouteBoundary>
             <Suspense fallback={<div className="route-loading" aria-busy="true" />}>
             <Routes>
@@ -463,8 +486,11 @@ export default function App() {
             <Route path="/switch-info/:rackId" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><RackSwitchesRoute /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Old /history URLs redirect to the new combined profile page. */}
-            <Route path="/history" element={<Navigate to="/profile" replace />} />
+            {/* The full scan archive — searchable, filtered and paged. Profile
+                keeps the five most recent and links here for the rest. */}
+            <Route path="/history" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><HistoryPage /></ResponsiveLayout></ProtectedRoute>
+            } />
             <Route path="/results" element={
               <ProtectedRoute><ResponsiveLayout><ResultsPage /></ResponsiveLayout></ProtectedRoute>
             } />
@@ -501,6 +527,8 @@ export default function App() {
             </Routes>
             </Suspense>
             </RouteBoundary>
+            <TourGate />
+            </TourProvider>
           </ShutterProvider>
           </ConnectionsProvider>
         </AuthProvider>

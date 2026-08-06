@@ -52,7 +52,7 @@ function matchesCableType(cable_type, filter) {
 
 // Capacity → color: green (lots free) → amber → red (nearly full).
 function heatmapColor(freePct) {
-  if (freePct === null || freePct === undefined) return '#475569';
+  if (freePct === null || freePct === undefined) return '#535353';
   if (freePct >= 0.5)  return '#22c55e';
   if (freePct >= 0.25) return '#f59e0b';
   return '#ef4444';
@@ -65,9 +65,9 @@ const CLASS_COLOR_RACK = {
   switch: '#2563eb', patch_panel: '#0d9488', server: '#f59e0b',
   pdu: '#ec4899', router: '#6366f1', firewall: '#ef4444',
   gateway: '#8b5cf6', ups: '#14b8a6', psu: '#a3a3a3',
-  unidentified: '#64748b',
+  unidentified: '#727272',
 };
-const rackClassColor = (c) => CLASS_COLOR_RACK[c] || '#64748b';
+const rackClassColor = (c) => CLASS_COLOR_RACK[c] || '#727272';
 
 // Port square colour by kind + connected state.
 function rackPortColor(p) {
@@ -75,7 +75,7 @@ function rackPortColor(p) {
   if (p.kind === 'sfp')     return p.connected ? '#22d3ee' : '#155e75';
   if (p.kind === 'console') return '#a855f7';
   if (p.kind === 'usb' || p.kind === 'other') return '#f97316';
-  return p.connected ? '#22c55e' : '#334155';   // main RJ45: green connected / dark free
+  return p.connected ? '#22c55e' : '#3f3f3f';   // main RJ45: green connected / dark free
 }
 
 function rackCableColor(t) {
@@ -83,7 +83,7 @@ function rackCableColor(t) {
   if (/fiber|mm|sm/.test(s)) return '#22d3ee';
   if (/dac|twinax/.test(s))  return '#f59e0b';
   if (s.startsWith('cat'))   return '#38bdf8';
-  return '#94a3b8';
+  return '#a1a1a1';
 }
 
 // ── Embeddable content (used as a tab in ResultsPage) ────────
@@ -316,7 +316,7 @@ function TopologyInner({ rackId, embedded }) {
           type="button"
           onClick={retry}
           style={{ marginTop: 14, alignSelf: 'flex-start', padding: '10px 18px', borderRadius: 10,
-                   border: '1px solid #0b0c0e', background: '#0b0c0e', color: '#fff',
+                   border: '1px solid #000000', background: '#000000', color: '#fff',
                    fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
         >Retry</button>
       </>
@@ -542,7 +542,7 @@ function TraceBanner({ traceA, traceB, tracePath, clear }) {
     );
   } else if (!tracePath || tracePath.length === 0) {
     body = (
-      <span className={styles.traceHint} style={{ color: '#0b0c0e' }}>
+      <span className={styles.traceHint} style={{ color: '#000000' }}>
         No cable path between <code>{traceA}</code> and <code>{traceB}</code>.
       </span>
     );
@@ -552,7 +552,7 @@ function TraceBanner({ traceA, traceB, tracePath, clear }) {
         <code>{traceA}</code>
         <span className={styles.peerArrow}> → </span>
         <code>{traceB}</code>
-        <span style={{ marginLeft: 8, color: '#0b0c0e' }}>
+        <span style={{ marginLeft: 8, color: '#000000' }}>
           {tracePath.length - 1} hop{tracePath.length - 1 === 1 ? '' : 's'}
         </span>
         <span style={{ marginLeft: 6, color: '#717171' }}>
@@ -603,7 +603,7 @@ function HoverInfoCard({ info }) {
       </div>
       {total > 0 && (
         <div className={styles.hoverCardPorts}>
-          <span style={{ color: '#0b0c0e' }}>{connected}/{total}</span> connected
+          <span style={{ color: '#000000' }}>{connected}/{total}</span> connected
           <span style={{ color: '#717171', marginLeft: 6 }}>· {free} free</span>
         </div>
       )}
@@ -658,7 +658,7 @@ function RackPortStrip({ ports, x, y, w, h }) {
 
 function RackElevLegend() {
   const items = [
-    ['#22c55e', 'connected'], ['#334155', 'free RJ45'], ['#22d3ee', 'SFP'],
+    ['#22c55e', 'connected'], ['#3f3f3f', 'free RJ45'], ['#22d3ee', 'SFP'],
     ['#a855f7', 'console'], ['#f59e0b', 'uplink'],
   ];
   const cables = [['#38bdf8', 'Cat'], ['#22d3ee', 'Fiber'], ['#f59e0b', 'DAC']];
@@ -865,7 +865,7 @@ function Graph2D({ topo, selected, setSelected, aggEdges, heatmap, freePctByDevi
           </feMerge>
         </filter>
         <filter id="nodeShadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor="#0e0f12" floodOpacity="0.12" />
+          <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor="#0f0f0f" floodOpacity="0.12" />
         </filter>
       </defs>
 
@@ -893,7 +893,7 @@ function Graph2D({ topo, selected, setSelected, aggEdges, heatmap, freePctByDevi
 
       {/* Rack name tag, top-right */}
       <text x={W - 24} y={40} textAnchor="end"
-            fill="#94a3b8" fontSize="12"
+            fill="#a1a1a1" fontSize="12"
             fontFamily="ui-monospace, Menlo, monospace" letterSpacing="0.08em">
         {topo.rackName} · {topo.u_size}U
       </text>
@@ -944,7 +944,7 @@ function Graph2D({ topo, selected, setSelected, aggEdges, heatmap, freePctByDevi
                         fontFamily="ui-monospace, Menlo, monospace"
                         fontSize="10"
                         fontWeight="700"
-                        fill={dimmed ? '#c4c4c4' : '#0b0c0e'}>
+                        fill={dimmed ? '#c4c4c4' : '#000000'}>
                     {e.count}
                   </text>
                 </g>
@@ -994,7 +994,7 @@ function NodeShape({ dev, pos, color, dimmed, selected, onClick }) {
       {/* card with a coloured left accent bar */}
       <rect x="0" y="0" width={w} height={h} rx="15"
             fill="#ffffff"
-            stroke={selected ? '#0b0c0e' : color}
+            stroke={selected ? '#000000' : color}
             strokeWidth={selected ? 2.8 : 1.8}
             filter={selected ? 'url(#topoGlow)' : 'url(#nodeShadow)'} />
       <rect x="1.5" y="14" width="5" height={h - 28} rx="2.5" fill={color} />
@@ -1003,11 +1003,11 @@ function NodeShape({ dev, pos, color, dimmed, selected, onClick }) {
       <g transform={`translate(${30 - 14} ${cy - 14})`}>{glyph}</g>
       {/* name + sub */}
       <text x="58" y={cy - 6} fontFamily="ui-monospace, Menlo, monospace"
-            fontSize="14.5" fontWeight="800" fill="#0b0c0e" letterSpacing="-0.01em">
+            fontSize="14.5" fontWeight="800" fill="#000000" letterSpacing="-0.01em">
         {dev.name}
       </text>
       <text x="58" y={cy + 12} fontFamily="ui-monospace, Menlo, monospace"
-            fontSize="10.5" fill="#64748b" letterSpacing="0.03em">
+            fontSize="10.5" fill="#727272" letterSpacing="0.03em">
         {dev.u_position ? `U${String(dev.u_position).padStart(2, '0')} · ` : ''}
         {CLASS_LABEL[dev.class] || dev.class}
       </text>
@@ -1211,7 +1211,7 @@ function PortsTable({ dev, topo }) {
       <div className={styles.portsTableHead}>
         <span className={styles.detailSub}>Ports</span>
         <span className={styles.bottomHint}>
-          {rows.length} total · <span style={{color:'#0b0c0e'}}>{connected} connected</span> · <span style={{color:'#717171'}}>{free} free</span>
+          {rows.length} total · <span style={{color:'#000000'}}>{connected} connected</span> · <span style={{color:'#717171'}}>{free} free</span>
         </span>
       </div>
       <div className={styles.portsTableScroll}>

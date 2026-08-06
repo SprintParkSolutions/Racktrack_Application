@@ -21,18 +21,18 @@ import { useState } from 'react';
 // SFP silhouette so we always render *something*.
 
 const BRAND_COLOURS = {
-  cisco:    '#4c4546',
-  juniper:  '#4c4546',
-  arista:   '#4c4546',
-  ubiquiti: '#1a1c1d',
-  mikrotik: '#1a1c1d',
-  hpe:      '#4c4546',
-  dell:     '#1a1c1d',
-  netgear:  '#cfc4c5',
-  tplink:   '#cfc4c5',
-  fs:       '#1a1c1d',
-  finisar:  '#1a1c1d',
-  default:  '#cfc4c5',
+  cisco:    '#474747',
+  juniper:  '#474747',
+  arista:   '#474747',
+  ubiquiti: '#1c1c1c',
+  mikrotik: '#1c1c1c',
+  hpe:      '#474747',
+  dell:     '#1c1c1c',
+  netgear:  '#c6c6c6',
+  tplink:   '#c6c6c6',
+  fs:       '#1c1c1c',
+  finisar:  '#1c1c1c',
+  default:  '#c6c6c6',
 };
 
 function brandColor(brand) {

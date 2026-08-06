@@ -422,14 +422,14 @@ function SceneLights({ chassisU, sceneWidth, ambientBoost = 1 }) {
     const x = -half + t * sceneWidth;
     fills.push(
       <pointLight key={i} position={[x, 1.2, 4]} intensity={0.55}
-                  color="#f9f9fb" distance={10} />
+                  color="#ffffff" distance={10} />
     );
   }
   return (
     <>
       <ambientLight intensity={1.15 * ambientBoost} />
-      <directionalLight position={[ half + 4, 8,  6]} intensity={1.1} color="#f8f8f8" />
-      <directionalLight position={[-half - 4, 8,  6]} intensity={1.1} color="#f8f8f8" />
+      <directionalLight position={[ half + 4, 8,  6]} intensity={1.1} color="#ffffff" />
+      <directionalLight position={[-half - 4, 8,  6]} intensity={1.1} color="#ffffff" />
       {/* Wide overhead spot — covers the full row from above */}
       <spotLight
         position={[0, topY + 4, 2.6]}
@@ -437,11 +437,11 @@ function SceneLights({ chassisU, sceneWidth, ambientBoost = 1 }) {
         penumbra={0.55}
         intensity={2.6}
         distance={Math.max(40, sceneWidth * 1.6)}
-        color="#f9f9f9"
+        color="#ffffff"
       />
       {fills}
       <pointLight position={[ 0, topY - 0.5, -4.2]} intensity={1.0} color="#000000" distance={Math.max(20, sceneWidth)} />
-      <pointLight position={[ 0, -topY + 2, -2.8]} intensity={0.5} color="#1a1c1d" distance={Math.max(20, sceneWidth)} />
+      <pointLight position={[ 0, -topY + 2, -2.8]} intensity={0.5} color="#1c1c1c" distance={Math.max(20, sceneWidth)} />
     </>
   );
 }
@@ -532,7 +532,7 @@ function CablePlug({ pos, dir, color }) {
       {/* plug body */}
       <mesh position={bodyPos} quaternion={quat}>
         <cylinderGeometry args={[0.045, 0.05, 0.13, 10]} />
-        <meshStandardMaterial color="#20242c" roughness={0.5} metalness={0.35} />
+        <meshStandardMaterial color="#242424" roughness={0.5} metalness={0.35} />
       </mesh>
       {/* coloured strain-relief boot at the base */}
       <mesh position={[pos[0] + dir[0] * 0.14, pos[1] + dir[1] * 0.14, pos[2] + dir[2] * 0.14]} quaternion={quat}>

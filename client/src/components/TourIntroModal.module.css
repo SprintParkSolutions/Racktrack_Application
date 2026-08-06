@@ -1,0 +1,154 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgba(18, 20, 23, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+}
+
+@media (min-width: 640px) {
+  .backdrop {
+    align-items: center;
+  }
+}
+
+.panel {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--md-background, #fff);
+  border: 1px solid var(--md-outline-variant, #e0e0e0);
+  border-radius: 16px;
+  padding: 24px 20px;
+  /* Same two-layer shadow language as the step bubbles (TourOverlay.module.css)
+     — a tight contact shadow plus a soft ambient one. */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.10), 0 20px 44px rgba(0, 0, 0, 0.18);
+  animation: rt-tour-rise 0.2s cubic-bezier(0.2, 0.6, 0.3, 1);
+}
+
+/* Speech-bubble tail pointing at the robot — two stacked triangles (a
+   slightly larger border-colored one behind, the fill-colored one in
+   front) so the tail reads as part of the same bordered card, not a
+   separate shape. Position matches the mascot's own `top` offset below,
+   so the tail keeps pointing at it if that ever moves. */
+
+
+.panel::before {
+  left: -18px;
+  border-right: 18px solid var(--md-outline-variant, #e0e0e0);
+}
+
+.panel::after {
+  left: -16px;
+  border-right: 16px solid var(--md-background, #fff);
+}
+
+@keyframes rt-tour-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Big robot mascot anchored to the card's bottom-left corner via absolute
+   positioning (top: 100%) — always flush against the corner with zero gap,
+   regardless of viewport/centering, and never overlapping the card's own
+   content since it sits entirely below it. */
+.mascot {
+  position: absolute;
+  top: 80%;
+  left: -100px;
+  /* Width follows the new art's own aspect ratio (794×1024) so the arm's
+     percentage-based position below lines up without letterboxing. */
+  width: 116px;
+  height: 150px;
+  z-index: 2;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35));
+  animation: rt-intro-robot-float 3.2s ease-in-out infinite;
+}
+
+.mascotBody {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.mascotArm {
+  position: absolute;
+  left: 6.801%;
+  top: 47.266%;
+  width: 27.078%;
+  height: 18.164%;
+  transform-origin: 94.88% 96.77%;
+  animation: rt-intro-robot-wave 1.8s ease-in-out infinite;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@keyframes rt-intro-robot-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+
+@keyframes rt-intro-robot-wave {
+  0%   { transform: rotate(0deg); }
+  15%  { transform: rotate(-18deg); }
+  35%  { transform: rotate(12deg); }
+  55%  { transform: rotate(-18deg); }
+  75%  { transform: rotate(10deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Phones. The sidecar position above needs ~100px of empty gutter beside the
+   card, and a 414px-wide screen has 17px — the robot rendered as a sliver at
+   the screen edge. Below the card is no good either: the backdrop bottom-aligns
+   the card on mobile, so there's nothing under it. It stands on the card's top
+   edge instead, which keeps the same "beside the content, never over it"
+   intent and stays fully on screen down to the narrowest phone we support. */
+@media (max-width: 639px) {
+  .mascot {
+    top: auto;
+    bottom: 100%;
+    left: 10px;
+    /* Slight overlap so it reads as standing ON the card, not floating above. */
+    margin-bottom: -4px;
+    width: 100px;
+    height: 129px;
+  }
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  /* Matches .bubbleStepLabel's tracking in TourOverlay.module.css so both
+     "eyebrow" labels across the tour read as the same type system. */
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant, #666);
+}
+
+.heading {
+  margin: 0 0 10px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--md-on-surface, #121417);
+}
+
+.body {
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--md-on-surface-variant, #4c4546);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}

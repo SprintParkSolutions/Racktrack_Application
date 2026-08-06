@@ -61,7 +61,7 @@ function PhonePreview({ logoSrc, label }) {
         textAlign: 'center',
         background: 'rgba(0,0,0,0.08)',
         borderTop: '1px solid rgba(0,0,0,0.2)',
-        color: '#f9f9fb',
+        color: '#ffffff',
         fontSize: '0.85rem',
         fontWeight: 700,
         letterSpacing: '0.05em',
@@ -83,7 +83,7 @@ export default function LogoCompare() {
       alignItems: 'center',
       gap: 24,
     }}>
-      <div style={{ textAlign: 'center', color: '#f7f7f7' }}>
+      <div style={{ textAlign: 'center', color: '#ffffff' }}>
         <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>Logo Comparison</h2>
         <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.6)', fontSize: '.85rem' }}>
           Pick the one you like — both shown how they appear in the app.
@@ -103,7 +103,7 @@ export default function LogoCompare() {
 
       <Link to="/" style={{
         marginTop: 16,
-        color: '#4c4546',
+        color: '#474747',
         textDecoration: 'none',
         fontSize: '.9rem',
       }}>← Back to app</Link>

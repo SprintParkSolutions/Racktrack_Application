@@ -65,16 +65,16 @@
   border: 1px dashed var(--mkt-line, #e0e0e0);
   border-radius: var(--mkt-r-md, 12px);
   background: var(--mkt-surface, #ffffff);
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   font: inherit; cursor: pointer;
   transition: var(--mkt-t);
 }
-.photoDrop:hover { border-color: var(--mkt-ink, #121417); background: var(--mkt-raised, #fafafa); }
-.photoDrop:focus-visible { outline: 2px solid var(--mkt-ink, #121417); outline-offset: 2px; }
+.photoDrop:hover { border-color: var(--mkt-ink, #121212); background: var(--mkt-raised, #ffffff); }
+.photoDrop:focus-visible { outline: 2px solid var(--mkt-ink, #121212); outline-offset: 2px; }
 
 /* Sits well back, like the card placeholders on the browse grid — a
    dropzone that shouts is a dropzone that competes with the fields. */
-.photoIcon { color: var(--mkt-ink, #121417); opacity: 0.28; }
+.photoIcon { color: var(--mkt-ink, #121212); opacity: 0.28; }
 .photoMain { font-size: 13.5px; font-weight: 600; }
 
 .photoCard {
@@ -85,7 +85,7 @@
   width: 92px; height: 92px; flex-shrink: 0;
   border-radius: var(--mkt-r-sm, 8px);
   border: 1px solid var(--mkt-line, #e0e0e0);
-  background: var(--mkt-raised, #fafafa);
+  background: var(--mkt-raised, #ffffff);
   object-fit: cover;
 }
 .photoMeta {
@@ -95,7 +95,7 @@
 .photoStatus {
   display: inline-flex; align-items: center; gap: 8px;
   font-size: 13px; font-weight: 600;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
 }
 .photoSpinner { width: 14px; height: 14px; border-width: 1.5px; }
 .photoActions { display: flex; flex-wrap: wrap; gap: 8px; }

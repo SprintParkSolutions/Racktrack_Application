@@ -15,6 +15,7 @@ import { SwitchInfoContent } from './SwitchInformationPage.jsx';
 import { PortHistoryContent } from './PortHistoryPage.jsx';
 import AssetImg from '../components/AssetImg';
 import { useSmartBack } from '../hooks/useSmartBack';
+import { useTour } from '../TourContext.jsx';
 
 // ── Naming convention ─────────────────────────────────────────
 const CLASS_CODE = {
@@ -27,7 +28,7 @@ const TYPE_COLOR = {
   'Switch': '#6366f1', 'Patch Panel': '#60a5fa', 'Server': '#a78bfa',
   'Gateway': '#fb923c', 'Firewall': '#f87171', 'PDU': '#fbbf24',
   'PSU': '#f472b6', 'UPS': '#34d399', 'Router': '#818cf8',
-  'Load Balancer': '#c084fc', 'Modem': '#94a3b8',
+  'Load Balancer': '#c084fc', 'Modem': '#a1a1a1',
   'Controller': '#67e8f9', 'Recorder': '#86efac', 'Amplifier': '#fda4af',
   'Closed Unit': '#f43f5e', 'Empty': 'rgba(79, 70, 229,0.3)',
 };
@@ -120,14 +121,14 @@ const prettyPortType = (t) => t ? t.split('_').map(w => w[0] + w.slice(1).toLowe
 // monochrome theme applies to the app chrome, not to physical cable colours —
 // showing an orange cable as a black dot is confusing/wrong).
 const CABLE_COLOR_MAP = {
-  black: '#1c1c1e', blue: '#2f6bd8', brown: '#8b5a2b', green: '#1f9d55',
-  grey: '#9aa0a6', gray: '#9aa0a6', orange: '#e8792b', pink: '#e86fa6',
-  red: '#d0342c', white: '#f4f4f6', yellow: '#e6b800', violet: '#8b5cf6',
+  black: '#1c1c1c', blue: '#2f6bd8', brown: '#8b5a2b', green: '#1f9d55',
+  grey: '#9f9f9f', gray: '#9f9f9f', orange: '#e8792b', pink: '#e86fa6',
+  red: '#d0342c', white: '#f4f4f4', yellow: '#e6b800', violet: '#8b5cf6',
   aqua: '#22c3d6',
 };
 function cableColorCSS(name) {
-  if (!name) return '#4c4546';
-  return CABLE_COLOR_MAP[name.toLowerCase()] || '#4c4546';
+  if (!name) return '#474747';
+  return CABLE_COLOR_MAP[name.toLowerCase()] || '#474747';
 }
 
 function parseCableType(label) {
@@ -428,7 +429,7 @@ function SwitchInfoModal({
           {status === 'error' && (
             <div className={styles.siCard}>
               <div className={styles.siCardHead}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4c4546" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#474747" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                 <h4>Could not reach switch</h4>
               </div>
               <p className={styles.prEmpty}>{error || 'Unknown error'}</p>
@@ -1091,6 +1092,11 @@ export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, o
 export default function ResultsPage({ rackId: propRackId = null, embedded: embeddedProp = false } = {}) {
   const navigate = useNavigate();
   const exitRack = useSmartBack('/scan');
+  // Null outside TourProvider (this page is also rendered embedded), so read
+  // through optional chaining rather than destructuring.
+  const tour = useTour();
+  const tourActive = !!tour?.active;
+  const stopTour = tour?.stopTour;
   const location = useLocation();
   const { state } = location;
   const { rackId: paramRackId } = useParams();
@@ -1194,6 +1200,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   //   • on any other tab → pop the in-page tab history if there's any,
   //     otherwise fall back to Overview.
   const handleHeaderBack = () => {
+    // Four of the seven tour steps happen on this page, so leaving it means
+    // abandoning the walkthrough — end it rather than leave the spotlight
+    // hunting for anchors that are no longer rendered.
+    if (tourActive) stopTour?.();
     if (tab === 'overview') {
       // Clear any stored tab-history since we're leaving the rack entirely.
       tabHistoryRef.current = [];
@@ -1872,12 +1882,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <p style={{
             fontSize: '1.05rem',
             fontWeight: 700,
-            color: 'var(--t1, #1a1c1d)',
+            color: 'var(--t1, #1c1c1c)',
             margin: 0,
           }}>
             Loading rack <span style={{ fontFamily: 'ui-monospace, monospace', color: '#000000' }}>{urlRackId}</span>
           </p>
-          <p style={{ fontSize: '.84rem', color: 'var(--t2, #4c4546)', margin: 0 }}>
+          <p style={{ fontSize: '.84rem', color: 'var(--t2, #474747)', margin: 0 }}>
             Fetching analysis from the server…
           </p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -1887,10 +1897,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     return (
       <div className={`page page-full ${styles.results}`} data-tab="loading"
            style={{ minHeight: '70vh', padding: '60px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-        <p style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--t1, #1a1c1d)', margin: 0 }}>
+        <p style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--t1, #1c1c1c)', margin: 0 }}>
           No scan result available
         </p>
-        <p style={{ fontSize: '.84rem', color: 'var(--t2, #4c4546)', margin: 0, maxWidth: 420, textAlign: 'center' }}>
+        <p style={{ fontSize: '.84rem', color: 'var(--t2, #474747)', margin: 0, maxWidth: 420, textAlign: 'center' }}>
           Start a new scan to identify devices, ports, and cables on a rack.
         </p>
         <button className="btn btn-primary" onClick={() => navigate('/scan')}>Start a Scan</button>
@@ -2545,10 +2555,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       key: 'teams', label: 'Teams',
       icon: (
         <svg width="20" height="20" viewBox="0 0 32 32" fill="none" aria-hidden>
-          <rect x="2" y="6" width="18" height="20" rx="3" fill="#1a1c1d"/>
+          <rect x="2" y="6" width="18" height="20" rx="3" fill="#1c1c1c"/>
           <path d="M6 12h10M11 12v10" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round"/>
-          <circle cx="25" cy="11" r="3" fill="#4c4546"/>
-          <rect x="21" y="15" width="9" height="10" rx="2" fill="#4c4546"/>
+          <circle cx="25" cy="11" r="3" fill="#474747"/>
+          <rect x="21" y="15" width="9" height="10" rx="2" fill="#474747"/>
         </svg>
       ),
     },
@@ -2556,10 +2566,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       key: 'outlook', label: 'Outlook',
       icon: (
         <svg width="20" height="20" viewBox="0 0 32 32" fill="none" aria-hidden>
-          <rect x="2" y="7" width="17" height="18" rx="2" fill="#1a1c1d"/>
+          <rect x="2" y="7" width="17" height="18" rx="2" fill="#1c1c1c"/>
           <circle cx="10.5" cy="16" r="4.5" fill="none" stroke="#ffffff" strokeWidth="2"/>
-          <rect x="20" y="10" width="10" height="12" rx="1.5" fill="#cfc4c5"/>
-          <path d="M20 11l5 4 5-4" stroke="#1a1c1d" strokeWidth="1.4" fill="none"/>
+          <rect x="20" y="10" width="10" height="12" rx="1.5" fill="#c6c6c6"/>
+          <path d="M20 11l5 4 5-4" stroke="#1c1c1c" strokeWidth="1.4" fill="none"/>
         </svg>
       ),
     },
@@ -2567,10 +2577,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       key: 'slack', label: 'Slack',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path d="M5 15a2 2 0 114 0v1H7a2 2 0 01-2-2z" fill="#cfc4c5"/>
-          <path d="M9 5a2 2 0 114 0v5a2 2 0 11-4 0z" fill="#4c4546"/>
-          <path d="M19 9a2 2 0 11-4 0V8h2a2 2 0 012 2z" fill="#cfc4c5"/>
-          <path d="M15 19a2 2 0 11-4 0v-5a2 2 0 114 0z" fill="#1a1c1d"/>
+          <path d="M5 15a2 2 0 114 0v1H7a2 2 0 01-2-2z" fill="#c6c6c6"/>
+          <path d="M9 5a2 2 0 114 0v5a2 2 0 11-4 0z" fill="#474747"/>
+          <path d="M19 9a2 2 0 11-4 0V8h2a2 2 0 012 2z" fill="#c6c6c6"/>
+          <path d="M15 19a2 2 0 11-4 0v-5a2 2 0 114 0z" fill="#1c1c1c"/>
         </svg>
       ),
     },
@@ -3043,7 +3053,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     const rackImgUrl = result.rackImageUrl ? apiUrl(result.rackImageUrl) : (result.imageUrl ? apiUrl(result.imageUrl) : null);
     return (
       <div className={`page page-full ${styles.results}`}>
-        <div className={styles.portAmb} style={{ '--ac': '#1a1c1d' }} />
+        <div className={styles.portAmb} style={{ '--ac': '#1c1c1c' }} />
 
         <header className={styles.header}>
           <button className="btn btn-ghost btn-icon"
@@ -3054,7 +3064,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </svg>
           </button>
           <div className={styles.headerCenter}>
-            <h2 className={styles.headerTitle} style={{color:'#1a1c1d'}}>Physical Drift Detected</h2>
+            <h2 className={styles.headerTitle} style={{color:'#1c1c1c'}}>Physical Drift Detected</h2>
             <div className={styles.headerMetaRow}>
               {rackId && <span className={styles.headerMono}>{rackId}</span>}
             </div>
@@ -3074,36 +3084,36 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             flexDirection: 'column',
             gap: 10,
           }}>
-            <div style={{display:'flex',alignItems:'center',gap:8,fontSize:11,fontWeight:600,letterSpacing:'0.08em',color:'#1a1c1d',textTransform:'uppercase'}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,fontSize:11,fontWeight:600,letterSpacing:'0.08em',color:'#1c1c1c',textTransform:'uppercase'}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
               CMDB ↔ scan mismatch for {ticket?.incident_number}
             </div>
-            <div style={{fontSize:14,color:'var(--text, #cfc4c5)',lineHeight:1.45}}>
+            <div style={{fontSize:14,color:'var(--text, #c6c6c6)',lineHeight:1.45}}>
               {drift.reason}
             </div>
             {/* CMDB vs scan comparison */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:4}}>
               <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:8,padding:10}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #4c4546)',textTransform:'uppercase',marginBottom:4}}>CMDB expects</div>
-                <div style={{fontSize:13,color:'var(--text, #cfc4c5)'}}>
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>CMDB expects</div>
+                <div style={{fontSize:13,color:'var(--text, #c6c6c6)'}}>
                   <strong>{drift.expected_device}</strong>
                 </div>
-                <div style={{fontSize:12,color:'var(--muted, #4c4546)',marginTop:2}}>
+                <div style={{fontSize:12,color:'var(--muted, #474747)',marginTop:2}}>
                   {drift.expected_class} @ {uStr}
                 </div>
               </div>
               <div style={{background:'rgba(0,0,0,0.06)',border:'1px solid rgba(0,0,0,0.3)',borderRadius:8,padding:10}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'#4c4546',textTransform:'uppercase',marginBottom:4}}>Scan sees at {uStr}</div>
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'#474747',textTransform:'uppercase',marginBottom:4}}>Scan sees at {uStr}</div>
                 {seen.length === 0 ? (
-                  <div style={{fontSize:13,color:'var(--text, #cfc4c5)'}}>nothing</div>
+                  <div style={{fontSize:13,color:'var(--text, #c6c6c6)'}}>nothing</div>
                 ) : (
                   seen.map((d, i) => (
-                    <div key={i} style={{fontSize:13,color:'var(--text, #cfc4c5)'}}>
+                    <div key={i} style={{fontSize:13,color:'var(--text, #c6c6c6)'}}>
                       <strong>{d.class_name}</strong>
-                      <span style={{fontSize:11,color:'var(--muted, #4c4546)',marginLeft:6}}>
+                      <span style={{fontSize:11,color:'var(--muted, #474747)',marginLeft:6}}>
                         conf {typeof d.confidence === 'number' ? d.confidence.toFixed(2) : '?'}
                       </span>
                     </div>
@@ -3113,8 +3123,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
 
             {/* Next-step guidance */}
-            <div style={{fontSize:12,color:'var(--muted, #4c4546)',lineHeight:1.5,marginTop:4}}>
-              <strong style={{color:'var(--text, #cfc4c5)'}}>Next steps:</strong> either the CMDB is stale (device was moved/replaced) or someone installed the wrong hardware. Verify physically at rack <strong>{ticket?.cmdb?.rack_name || '?'}</strong>, then update whichever side is wrong.
+            <div style={{fontSize:12,color:'var(--muted, #474747)',lineHeight:1.5,marginTop:4}}>
+              <strong style={{color:'var(--text, #c6c6c6)'}}>Next steps:</strong> either the CMDB is stale (device was moved/replaced) or someone installed the wrong hardware. Verify physically at rack <strong>{ticket?.cmdb?.rack_name || '?'}</strong>, then update whichever side is wrong.
             </div>
 
           </div>
@@ -3153,7 +3163,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             }}
             style={{ width: 40, height: 40, display: 'grid', placeItems: 'center',
               border: '1px solid #ececec', borderRadius: 12, background: '#fff',
-              color: '#121417', cursor: 'pointer', flex: '0 0 auto' }}
+              color: '#121212', cursor: 'pointer', flex: '0 0 auto' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
@@ -3185,15 +3195,15 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               <div style={{display:'flex',alignItems:'center',gap:8,fontSize:11,fontWeight:600,letterSpacing:'0.08em',color:'#000000',textTransform:'uppercase'}}>
                 Auto-targeted from {ticket.incident_number}
               </div>
-              <div style={{color:'var(--text, #cfc4c5)',lineHeight:1.4}}>
+              <div style={{color:'var(--text, #c6c6c6)',lineHeight:1.4}}>
                 {ticket.short_description}
               </div>
-              <div style={{display:'flex',gap:10,flexWrap:'wrap',color:'var(--muted, #4c4546)',fontSize:12}}>
-                <span><strong style={{color:'var(--text, #cfc4c5)'}}>{ticket.cmdb?.rack_name || '?'}</strong></span>
+              <div style={{display:'flex',gap:10,flexWrap:'wrap',color:'var(--muted, #474747)',fontSize:12}}>
+                <span><strong style={{color:'var(--text, #c6c6c6)'}}>{ticket.cmdb?.rack_name || '?'}</strong></span>
                 <span>·</span>
-                <span><strong style={{color:'var(--text, #cfc4c5)'}}>{ticket.target?.device}</strong> ({ticket.cmdb?.model || '?'})</span>
+                <span><strong style={{color:'var(--text, #c6c6c6)'}}>{ticket.target?.device}</strong> ({ticket.cmdb?.model || '?'})</span>
                 <span>·</span>
-                <span>port <strong style={{color:'var(--text, #cfc4c5)'}}>{ticket.cmdb?.interface_alias || `#${ticket.target?.port}`}</strong></span>
+                <span>port <strong style={{color:'var(--text, #c6c6c6)'}}>{ticket.cmdb?.interface_alias || `#${ticket.target?.port}`}</strong></span>
                 {ticket.cmdb?.mgmt_ip && <><span>·</span><span>{ticket.cmdb.mgmt_ip}</span></>}
               </div>
 
@@ -3209,12 +3219,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   alignItems:'center',
                   gap:10,
                 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
                   </svg>
                   <div style={{display:'flex',flexDirection:'column'}}>
-                    <div style={{fontSize:13,fontWeight:600,color:'#1a1c1d'}}>Cable attached — port is now active</div>
-                    <div style={{fontSize:11,color:'var(--muted, #4c4546)'}}>
+                    <div style={{fontSize:13,fontWeight:600,color:'#1c1c1c'}}>Cable attached — port is now active</div>
+                    <div style={{fontSize:11,color:'var(--muted, #474747)'}}>
                       Detected at {new Date(liveResolvedAt).toLocaleTimeString()} · incident {ticket.incident_number} likely resolved
                     </div>
                   </div>
@@ -3231,13 +3241,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 alignItems:'center',
                 gap:10,
                 fontSize:11,
-                color:'var(--muted, #4c4546)',
+                color:'var(--muted, #474747)',
               }}>
                 <span style={{display:'inline-flex',alignItems:'center',gap:6}}>
                   <span style={{
                     width:8, height:8, borderRadius:'50%',
-                    background: liveSnapshot?.link_active ? '#1a1c1d' : (liveSnapshot?.ok ? '#4c4546' : '#4c4546'),
-                    boxShadow: liveSnapshot?.link_active ? '0 0 6px #1a1c1d' : 'none',
+                    background: liveSnapshot?.link_active ? '#1c1c1c' : (liveSnapshot?.ok ? '#474747' : '#474747'),
+                    boxShadow: liveSnapshot?.link_active ? '0 0 6px #1c1c1c' : 'none',
                     animation: liveInFlightRef.current ? 'pulse 1.2s ease-in-out infinite' : 'none',
                   }}/>
                   Live · every {Math.round(LIVE_POLL_MS/1000)}s
@@ -3245,15 +3255,15 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 {liveSnapshot?.ok ? (
                   <>
                     <span>·</span>
-                    <span>link: <strong style={{color: liveSnapshot.link_active ? '#1a1c1d' : '#4c4546'}}>
+                    <span>link: <strong style={{color: liveSnapshot.link_active ? '#1c1c1c' : '#474747'}}>
                       {liveSnapshot.link_active ? 'active' : 'idle'}
                     </strong></span>
                     <span>·</span>
-                    <span>neighbor: <strong style={{color:'var(--text, #cfc4c5)'}}>
+                    <span>neighbor: <strong style={{color:'var(--text, #c6c6c6)'}}>
                       {liveSnapshot.has_neighbor ? (liveSnapshot.neighbor?.sysname || 'present') : 'none'}
                     </strong></span>
                     <span>·</span>
-                    <span>MACs: <strong style={{color:'var(--text, #cfc4c5)'}}>{liveSnapshot.mac_count ?? 0}</strong></span>
+                    <span>MACs: <strong style={{color:'var(--text, #c6c6c6)'}}>{liveSnapshot.mac_count ?? 0}</strong></span>
                   </>
                 ) : liveSnapshot ? (
                   <span>· last attempt failed: {liveSnapshot.error?.slice(0, 60) || 'unknown'}</span>
@@ -3285,7 +3295,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               fontSize: 13,
             }}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
-                <div style={{display:'flex',alignItems:'center',gap:8,fontSize:11,fontWeight:600,letterSpacing:'0.08em',color:'#1a1c1d',textTransform:'uppercase'}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,fontSize:11,fontWeight:600,letterSpacing:'0.08em',color:'#1c1c1c',textTransform:'uppercase'}}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2a3 3 0 00-3 3v0a3 3 0 003 3 3 3 0 003-3v0a3 3 0 00-3-3z"/>
                     <path d="M19 12a3 3 0 00-3-3 3 3 0 00-3 3v0a3 3 0 003 3 3 3 0 003-3v0z"/>
@@ -3300,7 +3310,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                     background: (agent.extraction?.confidence ?? 0) >= 0.5
                       ? 'rgba(0,0,0,0.18)'
                       : 'rgba(0,0,0,0.18)',
-                    color: (agent.extraction?.confidence ?? 0) >= 0.5 ? '#1a1c1d' : '#4c4546',
+                    color: (agent.extraction?.confidence ?? 0) >= 0.5 ? '#1c1c1c' : '#474747',
                     fontSize:10,
                     letterSpacing:'0.04em',
                   }}>
@@ -3312,7 +3322,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   style={{
                     background:'transparent',
                     border:'1px solid rgba(255,255,255,0.12)',
-                    color:'var(--muted, #4c4546)',
+                    color:'var(--muted, #474747)',
                     fontSize:11,
                     padding:'4px 10px',
                     borderRadius:6,
@@ -3323,31 +3333,31 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               </div>
 
               {/* One-line summary always visible */}
-              <div style={{color:'var(--text, #cfc4c5)',lineHeight:1.4}}>
+              <div style={{color:'var(--text, #c6c6c6)',lineHeight:1.4}}>
                 {agent.extraction?.one_line_summary || 'no extractable details'}
               </div>
 
               {/* Field grid — always visible, terse */}
-              <div style={{display:'flex',flexWrap:'wrap',gap:8,fontSize:11,color:'var(--muted, #4c4546)'}}>
+              <div style={{display:'flex',flexWrap:'wrap',gap:8,fontSize:11,color:'var(--muted, #474747)'}}>
                 {agent.extraction?.failure_mode && (
-                  <span>mode: <strong style={{color:'var(--text, #cfc4c5)'}}>{agent.extraction.failure_mode.replace(/_/g,' ')}</strong></span>
+                  <span>mode: <strong style={{color:'var(--text, #c6c6c6)'}}>{agent.extraction.failure_mode.replace(/_/g,' ')}</strong></span>
                 )}
                 {agent.extraction?.affected_device && (
                   <>
                     <span>·</span>
-                    <span>device: <strong style={{color:'var(--text, #cfc4c5)'}}>{agent.extraction.affected_device}</strong></span>
+                    <span>device: <strong style={{color:'var(--text, #c6c6c6)'}}>{agent.extraction.affected_device}</strong></span>
                   </>
                 )}
                 {agent.extraction?.affected_port != null && (
                   <>
                     <span>·</span>
-                    <span>port: <strong style={{color:'var(--text, #cfc4c5)'}}>{agent.extraction.affected_port}</strong></span>
+                    <span>port: <strong style={{color:'var(--text, #c6c6c6)'}}>{agent.extraction.affected_port}</strong></span>
                   </>
                 )}
                 {agent.extraction?.urgency_signal && (
                   <>
                     <span>·</span>
-                    <span>urgency: <strong style={{color:'var(--text, #cfc4c5)'}}>{agent.extraction.urgency_signal.replace(/_/g,' ')}</strong></span>
+                    <span>urgency: <strong style={{color:'var(--text, #c6c6c6)'}}>{agent.extraction.urgency_signal.replace(/_/g,' ')}</strong></span>
                   </>
                 )}
               </div>
@@ -3359,7 +3369,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   {/* Signals used */}
                   {Array.isArray(agent.extraction?.signals_used) && agent.extraction.signals_used.length > 0 && (
                     <div>
-                      <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:'var(--muted, #4c4546)',textTransform:'uppercase',marginBottom:5}}>
+                      <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:5}}>
                         Signals
                       </div>
                       <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
@@ -3369,7 +3379,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                             padding:'2px 6px',
                             borderRadius:4,
                             background:'rgba(255,255,255,0.05)',
-                            color:'#f9f9fb',
+                            color:'#ffffff',
                             fontFamily:'var(--mono, monospace)',
                           }}>{sig}</code>
                         ))}
@@ -3380,12 +3390,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   {/* Reasoning chain */}
                   {Array.isArray(agent.reasoning) && agent.reasoning.length > 0 && (
                     <div>
-                      <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:'var(--muted, #4c4546)',textTransform:'uppercase',marginBottom:5}}>
+                      <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:5}}>
                         Reasoning chain
                       </div>
                       <ol style={{margin:0,paddingLeft:18,display:'flex',flexDirection:'column',gap:6}}>
                         {agent.reasoning.map((step, i) => (
-                          <li key={i} style={{color:'var(--text, #cfc4c5)',lineHeight:1.5}}>
+                          <li key={i} style={{color:'var(--text, #c6c6c6)',lineHeight:1.5}}>
                             <span style={{
                               display:'inline-block',
                               minWidth:90,
@@ -3397,7 +3407,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                             }}>
                               {step.step?.replace(/_/g,' ')}
                             </span>
-                            <span style={{color:'var(--muted, #4c4546)'}}> · </span>
+                            <span style={{color:'var(--muted, #474747)'}}> · </span>
                             <span>{step.evidence}</span>
                             <span style={{fontSize:10,color:'rgba(255,255,255,0.35)',marginLeft:6}}>
                               ({Math.round((step.confidence ?? 0) * 100)}%)
@@ -3413,14 +3423,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                     <div>
                       <div style={{
                         fontSize:10,fontWeight:700,letterSpacing:'0.08em',
-                        color:'var(--muted, #4c4546)',textTransform:'uppercase',
+                        color:'var(--muted, #474747)',textTransform:'uppercase',
                         marginBottom:5,
                         display:'flex',alignItems:'center',justifyContent:'space-between',
                       }}>
                         <span>Work-note preview</span>
                         <span style={{
                           fontSize:9,
-                          color: agent.work_note_preview.would_post ? '#1a1c1d' : '#4c4546',
+                          color: agent.work_note_preview.would_post ? '#1c1c1c' : '#474747',
                           letterSpacing:'0.02em',
                           textTransform:'none',
                         }}>
@@ -3433,7 +3443,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                         borderRadius:8,
                         background:'rgba(0,0,0,0.35)',
                         border:'1px solid rgba(255,255,255,0.08)',
-                        color:'#f9f9fb',
+                        color:'#ffffff',
                         fontSize:11,
                         fontFamily:'var(--mono, monospace)',
                         whiteSpace:'pre-wrap',
@@ -3453,7 +3463,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                           style={{
                             background: agentNoteCopied ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.05)',
                             border: `1px solid ${agentNoteCopied ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.12)'}`,
-                            color: agentNoteCopied ? '#1a1c1d' : 'var(--text, #cfc4c5)',
+                            color: agentNoteCopied ? '#1c1c1c' : 'var(--text, #c6c6c6)',
                             fontSize:11,
                             padding:'5px 12px',
                             borderRadius:6,
@@ -3482,10 +3492,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                                 ? 'rgba(0,0,0,0.50)'
                                 : 'rgba(0,0,0,0.40)'}`,
                               color: agentPosting
-                                ? 'var(--muted, #4c4546)'
+                                ? 'var(--muted, #474747)'
                                 : agent.work_note_preview.would_post
-                                  ? '#cfc4c5'
-                                  : '#4c4546',
+                                  ? '#c6c6c6'
+                                  : '#474747',
                               fontSize:11,
                               fontWeight:600,
                               padding:'5px 12px',
@@ -3527,10 +3537,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                                 ? 'rgba(0,0,0,0.15)'
                                 : 'rgba(0,0,0,0.15)',
                             color: agentPostResult.status === 'posted'
-                              ? '#1a1c1d'
+                              ? '#1c1c1c'
                               : agentPostResult.status === 'error'
-                                ? '#4c4546'
-                                : '#4c4546',
+                                ? '#474747'
+                                : '#474747',
                             border: `1px solid ${agentPostResult.status === 'posted'
                               ? 'rgba(0,0,0,0.40)'
                               : agentPostResult.status === 'error'
@@ -3588,7 +3598,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             }
 
             return (
-              <div className={`${styles.portImgWrap} ${wrapClass}`} onClick={cycleView}>
+              <div className={`${styles.portImgWrap} ${wrapClass}`} data-tour="port-image-tap" onClick={cycleView}>
                 <img src={imgSrc} alt="Port located"
                   className={styles.portImg}
                   style={zoomStyle}
@@ -3617,7 +3627,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             const isOn = s === 'connected';
             const isEmpty = s === 'empty';
             const statusText = isOn ? 'Connected' : isEmpty ? 'Empty' : 'Unknown';
-            const statusColor = isOn ? '#1a1c1d' : isEmpty ? '#cfc4c5' : '#4c4546';
+            const statusColor = isOn ? '#1c1c1c' : isEmpty ? '#c6c6c6' : '#474747';
             return (
               <div className={styles.prDash} style={{ '--sc': statusColor, '--ac': rc }}>
                 <div className={styles.prPortTile}>
@@ -3962,6 +3972,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           {/* Report row — View / Download / Share as labeled chips */}
           <div className={styles.reportRow} style={{ '--ac': rc }}>
             <button className={`${styles.reportChip} ${styles.reportChipView}`}
+              data-tour="full-report-btn"
               onClick={ticketMode ? () => setTicketReportOpen(true) : viewReport}
               title="View report">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -4282,50 +4293,50 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 border:'1px solid rgba(0,0,0,0.12)',
                 borderRadius:14,
                 padding:18,
-                color:'#1a1c1d',
+                color:'#1c1c1c',
               }}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
                 <div>
                   <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.08em',color:'#000000',textTransform:'uppercase'}}>Incident Report</div>
                   <div style={{fontSize:18,fontWeight:600,marginTop:2}}>{ticket.incident_number}</div>
                 </div>
-                <button onClick={() => setTicketReportOpen(false)} style={{background:'none',border:'none',color:'var(--muted, #4c4546)',cursor:'pointer',fontSize:20,lineHeight:1}}>×</button>
+                <button onClick={() => setTicketReportOpen(false)} style={{background:'none',border:'none',color:'var(--muted, #474747)',cursor:'pointer',fontSize:20,lineHeight:1}}>×</button>
               </div>
 
               {/* Incident */}
               <div style={{marginBottom:14}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #4c4546)',textTransform:'uppercase',marginBottom:4}}>Incident</div>
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Incident</div>
                 <div style={{fontSize:14,lineHeight:1.4}}>{ticket.short_description}</div>
-                <div style={{fontSize:12,color:'var(--muted, #4c4546)',marginTop:4}}>
+                <div style={{fontSize:12,color:'var(--muted, #474747)',marginTop:4}}>
                   {ticket.priority} · opened {ticket.opened_at || '?'}
                 </div>
               </div>
 
               {/* Image */}
               <div style={{marginBottom:14}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #4c4546)',textTransform:'uppercase',marginBottom:4}}>Image</div>
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Image</div>
                 {rackImg || resultImg ? (
                   <img src={rackImg || resultImg} alt="Located port" style={{width:'100%',maxHeight:280,objectFit:'contain',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)'}}/>
-                ) : <div style={{fontSize:12,color:'var(--muted, #4c4546)'}}>not available</div>}
+                ) : <div style={{fontSize:12,color:'var(--muted, #474747)'}}>not available</div>}
               </div>
 
               {/* Port located */}
               <div style={{marginBottom:14}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #4c4546)',textTransform:'uppercase',marginBottom:4}}>Port Located</div>
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Port Located</div>
                 <div style={{fontSize:14}}>
                   <strong>{ticket.target?.device}</strong> @ <strong>{ticket.cmdb?.interface_alias || `port ${ticket.target?.port}`}</strong>
                 </div>
-                <div style={{fontSize:12,color:'var(--muted, #4c4546)',marginTop:2}}>
+                <div style={{fontSize:12,color:'var(--muted, #474747)',marginTop:2}}>
                   {ticket.cmdb?.rack_name} · {ticket.cmdb?.model || '?'} · mgmt {ticket.cmdb?.mgmt_ip || '?'}
                 </div>
               </div>
 
               {/* Output */}
               <div style={{marginBottom:14}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #4c4546)',textTransform:'uppercase',marginBottom:4}}>Output</div>
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Output</div>
                 {liveSnapshot?.ok ? (
-                  <div style={{fontSize:13,lineHeight:1.6,fontFamily:'ui-monospace, monospace',background:'#f4f6f9',border:'1px solid rgba(0,0,0,0.08)',color:'#1a1c1d',padding:10,borderRadius:6}}>
-                    <div>link        : <strong style={{color: liveSnapshot.link_active ? '#1a1c1d' : '#4c4546'}}>{liveSnapshot.link_active ? 'active' : 'idle'}</strong></div>
+                  <div style={{fontSize:13,lineHeight:1.6,fontFamily:'ui-monospace, monospace',background:'#ffffff',border:'1px solid rgba(0,0,0,0.08)',color:'#1c1c1c',padding:10,borderRadius:6}}>
+                    <div>link        : <strong style={{color: liveSnapshot.link_active ? '#1c1c1c' : '#474747'}}>{liveSnapshot.link_active ? 'active' : 'idle'}</strong></div>
                     <div>neighbor    : {liveSnapshot.has_neighbor ? (liveSnapshot.neighbor?.sysname || 'present') : 'none'}</div>
                     {liveSnapshot.neighbor?.port_id && <div>remote port : {liveSnapshot.neighbor.port_id}</div>}
                     {liveSnapshot.neighbor?.mgmt_ip && <div>remote mgmt : {liveSnapshot.neighbor.mgmt_ip}</div>}
@@ -4334,22 +4345,22 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                     <div>as of       : {new Date(liveSnapshot.as_of).toLocaleTimeString()}</div>
                   </div>
                 ) : liveSnapshot ? (
-                  <div style={{fontSize:12,color:'#4c4546'}}>Live sample failed: {liveSnapshot.error}</div>
+                  <div style={{fontSize:12,color:'#474747'}}>Live sample failed: {liveSnapshot.error}</div>
                 ) : (
-                  <div style={{fontSize:12,color:'var(--muted, #4c4546)'}}>no live sample yet</div>
+                  <div style={{fontSize:12,color:'var(--muted, #474747)'}}>no live sample yet</div>
                 )}
               </div>
 
               {/* Suggestions */}
               <div>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #4c4546)',textTransform:'uppercase',marginBottom:4}}>Suggestions</div>
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Suggestions</div>
                 <div style={{fontSize:13,lineHeight:1.5}}>
                   {(() => {
-                    if (liveResolvedAt) return <span style={{color:'#1a1c1d'}}>✓ Port is active now — cable was attached at {new Date(liveResolvedAt).toLocaleTimeString()}. Incident likely resolved; verify with monitoring, then close the ticket.</span>;
-                    if (liveSnapshot?.link_active) return <span style={{color:'#1a1c1d'}}>Port is currently active. Issue may be intermittent — watch for re-flaps over the next few minutes.</span>;
+                    if (liveResolvedAt) return <span style={{color:'#1c1c1c'}}>✓ Port is active now — cable was attached at {new Date(liveResolvedAt).toLocaleTimeString()}. Incident likely resolved; verify with monitoring, then close the ticket.</span>;
+                    if (liveSnapshot?.link_active) return <span style={{color:'#1c1c1c'}}>Port is currently active. Issue may be intermittent — watch for re-flaps over the next few minutes.</span>;
                     if (liveSnapshot?.ok && !liveSnapshot.link_active) return <span>No traffic on this port right now. Verify the cable is plugged in on both ends, check the far-end device power/NIC status, then re-monitor.</span>;
                     if (liveSnapshot && !liveSnapshot.ok) return <span>Cannot reach the switch over SSH to verify. Check mgmt connectivity to {ticket.cmdb?.mgmt_ip || 'the switch'}.</span>;
-                    return <span style={{color:'var(--muted, #4c4546)'}}>Waiting for first live sample.</span>;
+                    return <span style={{color:'var(--muted, #474747)'}}>Waiting for first live sample.</span>;
                   })()}
                 </div>
               </div>
@@ -4392,7 +4403,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
       {!embeddedProp && (
       <header className={styles.header}>
-        <button className="btn btn-ghost btn-icon" onClick={handleHeaderBack}>
+        <button className="btn btn-ghost btn-icon"
+          data-tour-bypass={tourActive ? 'true' : undefined}
+          onClick={handleHeaderBack}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
@@ -4736,7 +4749,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             );
           }
           return (
-            <div className={styles.devicePicker}>
+            <div className={styles.devicePicker} data-tour="device-picker">
               <label className={styles.devicePickerLabel}>Device</label>
               <div className={styles.devicePickerSelectWrap}>
                 <select
@@ -4834,7 +4847,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 );
               })}
             </div>
-            <div className={styles.portInputRow}>
+            <div className={styles.portInputRow} data-tour="port-input-row">
               <input
                 className={`input ${styles.portInput}`}
                 type="text" inputMode="numeric" pattern="[0-9]*"
@@ -4847,6 +4860,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               />
               <button
                 type="button"
+                data-tour="find-port-btn"
                 className={`btn btn-primary ${styles.findBtn}`}
                 style={{ '--btn-glow': selColor }}
                 disabled={!portNum || loading}
@@ -4960,14 +4974,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             fontSize: '1.4rem',
             fontWeight: 800,
             letterSpacing: '-0.01em',
-            color: 'var(--t1, #1a1c1d)',
+            color: 'var(--t1, #1c1c1c)',
           }}>
             Port history &amp; drift
           </h2>
           <p style={{
             margin: '0 0 20px',
             fontSize: '.88rem',
-            color: 'var(--t2, #4c4546)',
+            color: 'var(--t2, #474747)',
           }}>
             Live port state, VLAN and link-flap tracking across this rack.
           </p>

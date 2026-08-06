@@ -40,7 +40,7 @@
   color: var(--mkt-muted, #717171); cursor: pointer;
   transition: color .14s ease, background-color .14s ease;
 }
-.searchClear:hover { color: var(--mkt-ink, #121417); background: var(--mkt-raised, #fafafa); }
+.searchClear:hover { color: var(--mkt-ink, #121212); background: var(--mkt-raised, #ffffff); }
 
 .categorySelect { flex: 0 1 180px; }
 
@@ -82,7 +82,7 @@
   transition: border-color .14s ease;
 }
 .card:hover,
-.card:focus-within { border-color: var(--mkt-ink, #121417); }
+.card:focus-within { border-color: var(--mkt-ink, #121212); }
 
 .cardOpen {
   position: absolute; inset: 0; z-index: 1;
@@ -90,7 +90,7 @@
   cursor: pointer;
 }
 .cardOpen:focus-visible {
-  outline: 2px solid var(--mkt-ink, #121417); outline-offset: -3px;
+  outline: 2px solid var(--mkt-ink, #121212); outline-offset: -3px;
   border-radius: var(--mkt-r-md, 12px);
 }
 
@@ -98,14 +98,14 @@
   position: relative;
   aspect-ratio: 4 / 3;
   display: flex; align-items: center; justify-content: center;
-  background: var(--mkt-raised, #fafafa);
+  background: var(--mkt-raised, #ffffff);
   border-bottom: 1px solid var(--mkt-line, #e0e0e0);
   overflow: hidden;
 }
 .cardThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 /* The glyph is a placeholder, not an illustration — it sits well back
    so a card without a photo reads as quiet, never as broken. */
-.cardThumbIcon { color: var(--mkt-ink, #121417); opacity: 0.16; }
+.cardThumbIcon { color: var(--mkt-ink, #121212); opacity: 0.16; }
 
 .cardBadge { position: absolute; top: 8px; right: 8px; z-index: 2; }
 
@@ -129,7 +129,7 @@
   margin: 0;
   font-size: 13.5px; font-weight: 650; line-height: 1.3;
   letter-spacing: -0.005em;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -146,7 +146,7 @@
 }
 .cardPrice {
   font-size: 15.5px; font-weight: 700; letter-spacing: -0.015em;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   font-variant-numeric: tabular-nums;
 }
 .cardAge { font-size: 11px; color: var(--mkt-muted, #717171); white-space: nowrap; }
@@ -179,14 +179,14 @@
   transition: border-color .14s ease;
 }
 .row:hover,
-.row:focus-within { border-color: var(--mkt-ink, #121417); }
+.row:focus-within { border-color: var(--mkt-ink, #121212); }
 
 .rowOpen {
   position: absolute; inset: 0; z-index: 1;
   border: none; background: transparent; padding: 0; cursor: pointer;
 }
 .rowOpen:focus-visible {
-  outline: 2px solid var(--mkt-ink, #121417); outline-offset: -3px;
+  outline: 2px solid var(--mkt-ink, #121212); outline-offset: -3px;
   border-radius: var(--mkt-r-md, 12px);
 }
 
@@ -196,17 +196,17 @@
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--mkt-line, #e0e0e0);
   border-radius: var(--mkt-r-sm, 8px);
-  background: var(--mkt-raised, #fafafa);
+  background: var(--mkt-raised, #ffffff);
   overflow: hidden;
 }
 .rowThumb img { width: 100%; height: 100%; object-fit: cover; }
-.rowThumbIcon { color: var(--mkt-ink, #121417); opacity: 0.2; }
+.rowThumbIcon { color: var(--mkt-ink, #121212); opacity: 0.2; }
 
 .rowInfo { grid-area: info; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .rowTitleLine { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .rowTitle {
   margin: 0; font-size: 13.5px; font-weight: 650;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   min-width: 0;
 }
@@ -218,7 +218,7 @@
 .rowPrice {
   grid-area: price; align-self: start;
   font-size: 14px; font-weight: 700; white-space: nowrap;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   font-variant-numeric: tabular-nums;
 }
 
@@ -230,7 +230,7 @@
 }
 .rowConfirmText {
   font-size: 12px; font-weight: 600;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
 }
 
 @media (max-width: 560px) {
@@ -250,7 +250,7 @@
 .modalBackdrop {
   position: fixed; inset: 0; z-index: 80;
   display: flex; align-items: flex-end; justify-content: center;
-  background: rgba(18, 20, 23, 0.45);
+  background: rgba(18, 18, 18, 0.45);
   backdrop-filter: blur(3px);
   animation: fade .16s ease;
 }
@@ -276,16 +276,16 @@
   border-radius: 50%;
   border: 1px solid var(--mkt-line, #e0e0e0);
   background: var(--mkt-surface, #ffffff);
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   cursor: pointer;
   transition: var(--mkt-t);
 }
-.modalClose:hover { border-color: var(--mkt-ink, #121417); background: var(--mkt-raised, #fafafa); }
+.modalClose:hover { border-color: var(--mkt-ink, #121212); background: var(--mkt-raised, #ffffff); }
 
 .modalThumb {
   aspect-ratio: 16 / 9;
   display: flex; align-items: center; justify-content: center;
-  background: var(--mkt-raised, #fafafa);
+  background: var(--mkt-raised, #ffffff);
   border-bottom: 1px solid var(--mkt-line, #e0e0e0);
   overflow: hidden;
 }
@@ -294,7 +294,7 @@
    the dialog to an icon. */
 .modalThumbEmpty { aspect-ratio: auto; height: 116px; }
 .modalThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.modalThumbIcon { color: var(--mkt-ink, #121417); opacity: 0.14; }
+.modalThumbIcon { color: var(--mkt-ink, #121212); opacity: 0.14; }
 
 .modalBody {
   display: flex; flex-direction: column; gap: 10px;
@@ -306,19 +306,19 @@
 .modalTitle {
   margin: 0; font-size: 20px; font-weight: 700;
   line-height: 1.25; letter-spacing: -0.02em;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   overflow-wrap: anywhere;
 }
 .modalVendor { margin: -4px 0 0; font-size: 13px; color: var(--mkt-muted, #717171); }
 .modalPrice {
   margin: 2px 0 4px;
   font-size: 26px; font-weight: 700; letter-spacing: -0.025em;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   font-variant-numeric: tabular-nums;
 }
 .modalDesc {
   margin: 0; font-size: 13.5px; line-height: 1.6;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   white-space: pre-wrap; overflow-wrap: anywhere;
 }
 
@@ -335,7 +335,7 @@
   border-radius: var(--mkt-r-sm, 8px);
   background: var(--mkt-surface, #ffffff);
 }
-.confirmText { font-size: 12.5px; line-height: 1.5; color: var(--mkt-ink, #121417); }
+.confirmText { font-size: 12.5px; line-height: 1.5; color: var(--mkt-ink, #121212); }
 .confirmBtns { display: flex; gap: 8px; justify-content: flex-end; }
 
 /* Inline report form — replaces window.prompt(). */
@@ -375,7 +375,7 @@
   padding: 16px 18px;
   border: 1px solid var(--mkt-line, #e0e0e0);
   border-radius: var(--mkt-r-md, 12px);
-  background: var(--mkt-raised, #fafafa);
+  background: var(--mkt-raised, #ffffff);
 }
 .partnerCopy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .partnerText {

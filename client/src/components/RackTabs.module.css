@@ -11,7 +11,7 @@
   position: sticky;
   top: 0;
   z-index: 6;
-  background: var(--md-surface, #fafafa);
+  background: var(--md-surface, #ffffff);
   border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.08));
 }
 .bar::-webkit-scrollbar { display: none; }
@@ -23,7 +23,7 @@
   gap: 7px;
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.12));
   background: transparent;
-  color: var(--muted, #6b6466);
+  color: var(--muted, #666666);
   cursor: pointer;
   font-family: inherit;
   font-size: 0.84rem;
@@ -34,13 +34,13 @@
   transition: border-color 0.14s ease, color 0.14s ease, background 0.14s ease;
 }
 .pill:hover:not(:disabled) {
-  border-color: var(--md-on-surface, #1a1c1d);
-  color: var(--md-on-surface, #1a1c1d);
+  border-color: var(--md-on-surface, #1c1c1c);
+  color: var(--md-on-surface, #1c1c1c);
 }
 .pillOn {
-  background: var(--md-on-surface, #1a1c1d);
+  background: var(--md-on-surface, #1c1c1c);
   color: var(--md-surface-container-lowest, #fff);
-  border-color: var(--md-on-surface, #1a1c1d);
+  border-color: var(--md-on-surface, #1c1c1c);
   cursor: default;
 }
 .pos {
@@ -58,7 +58,7 @@
   gap: 5px;
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.12));
   background: transparent;
-  color: var(--muted, #6b6466);
+  color: var(--muted, #666666);
   cursor: pointer;
   font-family: inherit;
   font-size: 0.78rem;
@@ -69,6 +69,6 @@
   transition: border-color 0.14s ease, color 0.14s ease;
 }
 .threeD:hover {
-  border-color: var(--md-on-surface, #1a1c1d);
-  color: var(--md-on-surface, #1a1c1d);
+  border-color: var(--md-on-surface, #1c1c1c);
+  color: var(--md-on-surface, #1c1c1c);
 }

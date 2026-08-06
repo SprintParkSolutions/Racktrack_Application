@@ -6,7 +6,7 @@
   display: flex; flex-direction: column;
   min-height: 100vh;
   background: var(--md-background, #ffffff);
-  color: var(--md-on-surface, #121417);
+  color: var(--md-on-surface, #121212);
 }
 
 /* ── Header ──────────────────────────────────────────────────────────
@@ -32,17 +32,17 @@
   border-radius: var(--mkt-r-sm, 8px);
   border: 1px solid var(--mkt-line, #e0e0e0);
   background: var(--mkt-surface, #ffffff);
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   cursor: pointer;
   transition: var(--mkt-t);
 }
-.backBtn:hover { border-color: var(--mkt-ink, #121417); background: var(--mkt-raised, #fafafa); }
+.backBtn:hover { border-color: var(--mkt-ink, #121212); background: var(--mkt-raised, #ffffff); }
 
 .headerText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .title {
   margin: 0; font-size: 19px; font-weight: 700;
   letter-spacing: -0.02em; line-height: 1.2;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
 }
 .subtitle {
   margin: 0; font-size: 12.5px; line-height: 1.35;
@@ -55,8 +55,8 @@
   display: inline-flex; align-items: center; justify-content: center;
   height: 34px; padding: 0 16px;
   border-radius: var(--mkt-r-sm, 8px);
-  border: 1px solid var(--mkt-ink, #121417);
-  background: var(--mkt-ink, #121417);
+  border: 1px solid var(--mkt-ink, #121212);
+  background: var(--mkt-ink, #121212);
   color: var(--md-on-primary, #ffffff);
   font: inherit; font-size: 12.5px; font-weight: 600;
   white-space: nowrap; cursor: pointer;
@@ -88,17 +88,17 @@
   white-space: nowrap; text-decoration: none; cursor: pointer;
   transition: color .14s ease, border-color .14s ease;
 }
-.navItem:hover { color: var(--mkt-ink, #121417); }
+.navItem:hover { color: var(--mkt-ink, #121212); }
 .navItemActive {
-  color: var(--mkt-ink, #121417); font-weight: 700;
-  border-bottom-color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212); font-weight: 700;
+  border-bottom-color: var(--mkt-ink, #121212);
 }
 
 .navBadge {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 17px; height: 17px; padding: 0 5px;
   border-radius: 999px;
-  background: var(--mkt-ink, #121417);
+  background: var(--mkt-ink, #121212);
   color: var(--md-on-primary, #ffffff);
   font-size: 10px; font-weight: 700; line-height: 1;
   font-variant-numeric: tabular-nums;

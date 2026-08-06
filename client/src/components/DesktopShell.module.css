@@ -17,7 +17,7 @@
     radial-gradient(ellipse 50% 40% at 82% 28%, rgba(0,0,0,0.14), transparent 65%),
     radial-gradient(ellipse 60% 45% at 50% 100%, rgba(0,0,0,0.14), transparent 65%),
     transparent;
-  color: #cfc4c5;
+  color: #c6c6c6;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
 }
@@ -25,7 +25,7 @@
   /* The ground, not white — the raised sidebar/topbar need something to
      sit on or the soft-UI depth has nothing to read against. */
   background: var(--ground);
-  color: #0b0c0e;
+  color: #000000;
 }
 
 /* ── LEFT SIDEBAR ─────────────────────────────────────────────────── */
@@ -87,7 +87,7 @@
   background: linear-gradient(90deg, rgba(0,0,0,0.10), transparent);
 }
 .navSection:first-child { margin-top: 0; }
-:global([data-theme='light']) .navSection { color: #4c4546; }
+:global([data-theme='light']) .navSection { color: #474747; }
 :global([data-theme='light']) .navSection::after {
   background: linear-gradient(90deg, rgba(0,0,0,0.18), transparent);
 }
@@ -128,15 +128,15 @@
   transition: opacity 0.18s ease;
 }
 .navLink:hover svg { opacity: 0.95; }
-.navLink.active svg { opacity: 1; color: #cfc4c5; }
+.navLink.active svg { opacity: 1; color: #c6c6c6; }
 
-:global([data-theme='light']) .navLink { color: #4c4546; }
+:global([data-theme='light']) .navLink { color: #474747; }
 :global([data-theme='light']) .navLink:hover {
   background: rgba(0,0,0,0.07);
   color: #000000;
 }
 :global([data-theme='light']) .navLink.active {
-  background: #0b0c0e;
+  background: #000000;
   color: #ffffff;
   box-shadow: none;
 }
@@ -162,8 +162,8 @@
   -webkit-tap-highlight-color: transparent;
 }
 .signOut:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
-:global([data-theme='light']) .signOut { color: #5a5456; }
-:global([data-theme='light']) .signOut:hover { background: #f4f4f4; color: #1a1c1d; }
+:global([data-theme='light']) .signOut { color: #555555; }
+:global([data-theme='light']) .signOut:hover { background: #f4f4f4; color: #1c1c1c; }
 
 /* ── MAIN CONTENT AREA ───────────────────────────────────────────── */
 .main {
@@ -210,7 +210,7 @@
   border: 0;
   background: var(--raised);
   box-shadow: var(--lift);
-  color: #121417;
+  color: #121212;
 }
 :global([data-theme='light']) .topBack:hover { background: var(--raised); }
 :global([data-theme='light']) .topBack:active { box-shadow: var(--press); }
@@ -223,17 +223,17 @@
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.015em;
-  color: var(--t1, #f7f7f7);
+  color: var(--t1, #ffffff);
   line-height: 1.2;
 }
-:global([data-theme='light']) .crumbTitle { color: #1a1c1d; }
+:global([data-theme='light']) .crumbTitle { color: #1c1c1c; }
 .crumbSub {
   font-size: 0.72rem;
   font-weight: 500;
   color: rgba(0,0,0,0.5);
   letter-spacing: 0.02em;
 }
-:global([data-theme='light']) .crumbSub { color: #4c4546; }
+:global([data-theme='light']) .crumbSub { color: #474747; }
 
 /* Right-hand actions slot — pages portal their controls here (List an item,
    Live/Refresh, org actions). Pushed to the far right; the title stays hard

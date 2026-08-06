@@ -5,7 +5,7 @@
 .hero {
   position: fixed; inset: 0; z-index: 40;
   display: flex; flex-direction: column; overflow: hidden;
-  background: #0b0b0b; color: #fff;
+  background: #000000; color: #fff;
   color-scheme: dark;
   font-family: var(--font, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
 }
@@ -15,7 +15,7 @@
 
 .scrim {
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: linear-gradient(180deg, rgba(8,8,8,.55) 0%, rgba(8,8,8,.30) 38%, rgba(8,8,8,.92) 100%);
+  background: linear-gradient(180deg, rgba(0, 0, 0,.55) 0%, rgba(0, 0, 0,.30) 38%, rgba(0, 0, 0,.92) 100%);
 }
 
 .nav {
@@ -55,7 +55,7 @@
   border: 1px solid transparent; -webkit-tap-highlight-color: transparent;
   transition: transform .18s, background-color .18s;
 }
-.primary { background: #fff; color: #0d0d0d; }
+.primary { background: #fff; color: #000000; }
 .primary:hover { transform: translateY(-1px); }
 .ghost { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.28); font-weight: 600; }
 .ghost:hover { background: rgba(255,255,255,.16); }

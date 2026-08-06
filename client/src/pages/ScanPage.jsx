@@ -9,6 +9,7 @@ import { prefetchScan } from '../utils/scanPrefetch';
 import { newJobId, setPendingScan, clearPendingScan } from '../utils/pendingScan';
 import { useShutter } from '../ShutterContext.jsx';
 import { useTheme } from '../ThemeContext.jsx';
+import { useTour } from '../TourContext.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { useSmartBack } from '../hooks/useSmartBack';
 import Icon from '../components/Icon';
@@ -823,10 +824,10 @@ function normalizeBbox(d) {
 function colorForClass(cls) {
   const c = String(cls || '').toLowerCase();
   if (c.includes('switch'))  return '#000000';
-  if (c.includes('patch'))   return '#4c4546';
-  if (c.includes('server'))  return '#1a1c1d';
-  if (c.includes('router'))  return '#1a1c1d';
-  return '#cfc4c5';
+  if (c.includes('patch'))   return '#474747';
+  if (c.includes('server'))  return '#1c1c1c';
+  if (c.includes('router'))  return '#1c1c1c';
+  return '#c6c6c6';
 }
 
 function isSwitchOrPatchPanel(cls) {
@@ -877,6 +878,11 @@ function AnalyzingOverlay({ progress, step }) {
 export default function ScanPage() {
   const navigate = useNavigate();
   const goBackFromScan = useSmartBack('/');
+  // useTour() is null outside TourProvider (e.g. a page rendered in isolation
+  // by a test), so read through optional chaining rather than destructuring.
+  const tour = useTour();
+  const tourActive = !!tour?.active;
+  const stopTour = tour?.stopTour;
   const uploadInputRef = useRef(null);
   // Which mode the camera was opened FROM. A photo taken while Tall rack
   // (multi) is selected has to join that set — it used to be treated as a
@@ -1253,20 +1259,20 @@ export default function ScanPage() {
         <svg className={styles.art} viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice">
           <defs>
             <radialGradient id="bigG" cx="0.4" cy="0.3" r="0.85">
-              <stop offset="0%" stopColor="#cfc4c5"/>
-              <stop offset="24%" stopColor="#4c4546"/>
-              <stop offset="56%" stopColor="#1a1c1d"/>
+              <stop offset="0%" stopColor="#c6c6c6"/>
+              <stop offset="24%" stopColor="#474747"/>
+              <stop offset="56%" stopColor="#1c1c1c"/>
               <stop offset="100%" stopColor="#000000"/>
             </radialGradient>
             <radialGradient id="pinkG" cx="0.5" cy="0.5" r="0.6">
-              <stop offset="0%" stopColor="#f9f9fb"/>
-              <stop offset="50%" stopColor="#cfc4c5"/>
-              <stop offset="100%" stopColor="#cfc4c5"/>
+              <stop offset="0%" stopColor="#ffffff"/>
+              <stop offset="50%" stopColor="#c6c6c6"/>
+              <stop offset="100%" stopColor="#c6c6c6"/>
             </radialGradient>
             <radialGradient id="pearlG" cx="0.35" cy="0.3" r="0.75">
               <stop offset="0%" stopColor="#ffffff"/>
-              <stop offset="42%" stopColor="#f9f9fb"/>
-              <stop offset="100%" stopColor="#cfc4c5"/>
+              <stop offset="42%" stopColor="#ffffff"/>
+              <stop offset="100%" stopColor="#c6c6c6"/>
             </radialGradient>
             <clipPath id="bigClip"><circle cx="300" cy="235" r="205"/></clipPath>
           </defs>
@@ -1290,7 +1296,13 @@ export default function ScanPage() {
           {/* Was a hardcoded navigate('/'), which threw you out to the landing
               page even when you had arrived from a results view. Go back to
               wherever you came from, falling back to Home on a cold start. */}
-          <button className="btn btn-ghost btn-icon" onClick={goBackFromScan} aria-label="Back">
+          {/* data-tour-bypass punches a click-through hole in the tour's dim
+              layer over this button, so Back stays reachable mid-walkthrough
+              instead of trapping the user until they finish it. */}
+          <button className="btn btn-ghost btn-icon"
+            data-tour-bypass={tourActive ? 'true' : undefined}
+            onClick={() => { if (tourActive) stopTour?.(); goBackFromScan(); }}
+            aria-label="Back">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 19l-7-7 7-7"/>
             </svg>
@@ -1365,8 +1377,11 @@ export default function ScanPage() {
         )}
 
 
-        {/* Media box */}
-        <div className={styles.mediaBox}>
+        {/* Media box — also the guided tour's "add a photo" anchor. It wraps
+            whichever picker is showing (upload / video / tall-rack / camera),
+            so the spotlight lands on the right thing in every mode instead of
+            following one particular tab's markup. */}
+        <div className={styles.mediaBox} data-tour="media-drop-zone">
           {tab === 'multi'
             ? <MultiUploadZone files={multiFiles} onChange={(fs) => { setMultiFiles(fs); setError(null); setQualityChoice(null); }}/>
             : file
@@ -1407,7 +1422,7 @@ export default function ScanPage() {
               fontSize:14,
               fontWeight:600,
               letterSpacing:'-0.005em',
-              color:'#0A0A0A',
+              color:'#000000',
               lineHeight:1.3,
               textAlign:'center',
               whiteSpace:'nowrap',
@@ -1443,6 +1458,7 @@ export default function ScanPage() {
             <button
               ref={incidentTriggerRef}
               type="button"
+              data-tour="incident-dropdown"
               className={styles.incidentTrigger}
               onClick={() => {
                 setIncidentMenuOpen(o => {
@@ -1476,16 +1492,16 @@ export default function ScanPage() {
                     <span style={{fontSize:13,fontWeight:600}}>
                       {ticket.incident_number} · {ticket.target?.device}:{ticket.cmdb?.interface_alias || `port${ticket.target?.port}`}
                     </span>
-                    <span style={{fontSize:11,color:'var(--muted, #4c4546)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                    <span style={{fontSize:11,color:'var(--muted, #474747)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                       {ticket.priority} · {ticket.short_description}
                     </span>
                   </>
                 ) : (
-                  <span style={{color:'var(--muted, #4c4546)'}}>Manual scan (tap to link an incident)</span>
+                  <span style={{color:'var(--muted, #474747)'}}>Manual scan (tap to link an incident)</span>
                 )}
               </span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                style={{transform: incidentMenuOpen ? 'rotate(180deg)' : 'none', transition:'transform 0.15s ease', color:'var(--muted, #4c4546)', flexShrink:0}}>
+                style={{transform: incidentMenuOpen ? 'rotate(180deg)' : 'none', transition:'transform 0.15s ease', color:'var(--muted, #474747)', flexShrink:0}}>
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
             </button>
@@ -1533,7 +1549,7 @@ export default function ScanPage() {
                       border:'none',
                       borderBottom:`1px solid ${pickerDivider}`,
                       background: !ticket ? 'rgba(0,0,0,0.12)' : 'transparent',
-                      color:'var(--text, #cfc4c5)',
+                      color:'var(--text, #c6c6c6)',
                       cursor:'pointer',
                       marginBottom:2,
                     }}
@@ -1542,9 +1558,9 @@ export default function ScanPage() {
                     <span style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600}}>
                       {!ticket && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                       <span>Manual scan</span>
-                      <span style={{color:'var(--muted, #4c4546)',fontWeight:400,fontSize:11}}>· no ticket</span>
+                      <span style={{color:'var(--muted, #474747)',fontWeight:400,fontSize:11}}>· no ticket</span>
                     </span>
-                    <span style={{fontSize:11,color:'var(--muted, #4c4546)',lineHeight:1.3}}>
+                    <span style={{fontSize:11,color:'var(--muted, #474747)',lineHeight:1.3}}>
                       Pick device and port yourself after the rack is analyzed
                     </span>
                   </button>
@@ -1565,7 +1581,7 @@ export default function ScanPage() {
                           borderRadius:8,
                           border:'none',
                           background: sel ? 'rgba(0,0,0,0.15)' : 'transparent',
-                          color:'var(--text, #cfc4c5)',
+                          color:'var(--text, #c6c6c6)',
                           cursor:'pointer',
                         }}
                         onMouseEnter={e => { if (!sel) e.currentTarget.style.background = pickerHoverBg; }}
@@ -1576,13 +1592,13 @@ export default function ScanPage() {
                             being clipped — testers could not tell the incidents
                             apart well enough to pick one. */}
                         <span style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600,flexWrap:'wrap',minWidth:0}}>
-                          {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1a1c1d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><polyline points="20 6 9 17 4 12"/></svg>}
+                          {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><polyline points="20 6 9 17 4 12"/></svg>}
                           <span>{t.incident_number}</span>
-                          <span style={{color:'var(--muted, #4c4546)',fontWeight:400}}>·</span>
+                          <span style={{color:'var(--muted, #474747)',fontWeight:400}}>·</span>
                           <span style={{overflowWrap:'anywhere'}}>{t.target?.device}:{t.cmdb?.interface_alias || `port${t.target?.port}`}</span>
-                          <span style={{color:'var(--muted, #4c4546)',fontWeight:400,fontSize:11}}>· {t.priority}</span>
+                          <span style={{color:'var(--muted, #474747)',fontWeight:400,fontSize:11}}>· {t.priority}</span>
                         </span>
-                        <span style={{fontSize:11,color:'var(--muted, #4c4546)',lineHeight:1.35,whiteSpace:'normal',overflowWrap:'anywhere'}}>
+                        <span style={{fontSize:11,color:'var(--muted, #474747)',lineHeight:1.35,whiteSpace:'normal',overflowWrap:'anywhere'}}>
                           {t.short_description}
                         </span>
                       </button>
@@ -1638,6 +1654,7 @@ export default function ScanPage() {
           return (
             <>
             <button className={`btn btn-primary btn-lg btn-full ${styles.cta}`}
+              data-tour="analyze-rack-btn"
               disabled={!canSubmit}
               style={{
                 opacity: canSubmit ? 1 : 0.4,
@@ -1706,15 +1723,15 @@ function VerifyRejectModal({ payload, onRetake, onClose }) {
     <div style={modalBackdrop} onClick={onClose}>
       <div style={modalDialog} onClick={(e) => e.stopPropagation()}>
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
-          <div style={{width:8,height:8,borderRadius:'50%',background:'#1a1c1d',boxShadow:'0 0 8px rgba(0,0,0,0.8)'}} />
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.10em',color:'#1a1c1d',textTransform:'uppercase'}}>
+          <div style={{width:8,height:8,borderRadius:'50%',background:'#1c1c1c',boxShadow:'0 0 8px rgba(0,0,0,0.8)'}} />
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.10em',color:'#1c1c1c',textTransform:'uppercase'}}>
             Wrong rack
           </div>
         </div>
-        <h2 style={{margin:'0 0 8px',fontSize:18,fontWeight:600,color:'var(--text, #cfc4c5)'}}>
+        <h2 style={{margin:'0 0 8px',fontSize:18,fontWeight:600,color:'var(--text, #c6c6c6)'}}>
           This isn't <b>{payload?.expected_rack_name || 'the expected rack'}</b>
         </h2>
-        <p style={{margin:'0 0 16px',fontSize:13,color:'var(--muted, #4c4546)',lineHeight:1.5}}>
+        <p style={{margin:'0 0 16px',fontSize:13,color:'var(--muted, #474747)',lineHeight:1.5}}>
           {payload?.message || `The labels read from this image don't match the rack on the incident. Upload the correct rack photo to continue.`}
         </p>
 
@@ -1724,7 +1741,7 @@ function VerifyRejectModal({ payload, onRetake, onClose }) {
             {detected.length === 0
               ? <div style={diffEmpty}>No labels read</div>
               : <div style={chipWrap}>
-                  {detected.map(l => <code key={l} style={{...chip, background:'rgba(0,0,0,0.10)', color:'#4c4546'}}>{l}</code>)}
+                  {detected.map(l => <code key={l} style={{...chip, background:'rgba(0,0,0,0.10)', color:'#474747'}}>{l}</code>)}
                 </div>}
           </div>
           <div style={diffCol}>
@@ -1732,7 +1749,7 @@ function VerifyRejectModal({ payload, onRetake, onClose }) {
             {expectedUnique.length === 0
               ? <div style={diffEmpty}>—</div>
               : <div style={chipWrap}>
-                  {expectedUnique.map(l => <code key={l} style={{...chip, background:'rgba(0,0,0,0.10)', color:'#4c4546'}}>{l}</code>)}
+                  {expectedUnique.map(l => <code key={l} style={{...chip, background:'rgba(0,0,0,0.10)', color:'#474747'}}>{l}</code>)}
                 </div>}
           </div>
         </div>
@@ -1763,9 +1780,9 @@ const diffCol = {
 };
 const diffHeading = {
   fontSize:10, fontWeight:700, letterSpacing:'0.08em',
-  color:'var(--muted, #4c4546)', textTransform:'uppercase', marginBottom:6,
+  color:'var(--muted, #474747)', textTransform:'uppercase', marginBottom:6,
 };
-const diffEmpty = { fontSize:11, color:'var(--muted, #4c4546)', fontStyle:'italic' };
+const diffEmpty = { fontSize:11, color:'var(--muted, #474747)', fontStyle:'italic' };
 const chipWrap  = { display:'flex', flexWrap:'wrap', gap:4 };
 const chip = {
   padding:'2px 6px', borderRadius:4, fontSize:10, fontFamily:'var(--mono, monospace)',
@@ -1776,6 +1793,6 @@ const btnPrimary = {
 };
 const btnGhost = {
   padding:'9px 16px', borderRadius:8, cursor:'pointer',
-  background:'transparent', color:'var(--text, #cfc4c5)',
+  background:'transparent', color:'var(--text, #c6c6c6)',
   border:'1px solid rgba(255,255,255,0.15)', fontSize:13, fontWeight:600,
 };

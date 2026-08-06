@@ -44,21 +44,21 @@
   background: var(--mkt-surface, #ffffff);
   transition: border-color .14s ease;
 }
-.alert:hover, .alert:focus-within { border-color: var(--mkt-ink, #121417); }
-.alertUnread { background: var(--mkt-raised, #fafafa); }
+.alert:hover, .alert:focus-within { border-color: var(--mkt-ink, #121212); }
+.alertUnread { background: var(--mkt-raised, #ffffff); }
 
 /* The gutter is reserved on every row so a read and an unread row keep
    the same text alignment — only the dot appears and disappears. */
 .alertDot { display: flex; justify-content: center; padding-top: 5px; }
 .alertDotMark {
   width: 7px; height: 7px; border-radius: 50%;
-  background: var(--mkt-ink, #121417);
+  background: var(--mkt-ink, #121212);
 }
 
 .alertMain { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .alertTitle {
   margin: 0; font-size: 13.5px; font-weight: 650; line-height: 1.35;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   overflow-wrap: anywhere;
 }
 .alertMeta {
@@ -80,19 +80,19 @@
   background: var(--mkt-surface, #ffffff);
   transition: border-color .14s ease;
 }
-.search:hover, .search:focus-within { border-color: var(--mkt-ink, #121417); }
+.search:hover, .search:focus-within { border-color: var(--mkt-ink, #121212); }
 
 .searchMain { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .searchTitle {
   margin: 0; font-size: 13.5px; font-weight: 650;
-  color: var(--mkt-ink, #121417);
+  color: var(--mkt-ink, #121212);
   overflow-wrap: anywhere;
 }
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .chipQuery { text-transform: none; letter-spacing: 0; font-weight: 600; }
 
 .searchConfirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.confirmText { font-size: 12px; font-weight: 600; color: var(--mkt-ink, #121417); }
+.confirmText { font-size: 12px; font-weight: 600; color: var(--mkt-ink, #121212); }
 
 /* Square icon button — the glyph needs no side padding, so the base
    .mkt-btn box is narrowed rather than restyled. */

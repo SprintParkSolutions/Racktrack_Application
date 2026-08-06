@@ -162,13 +162,13 @@ export default function LoginPage() {
             by the inputs above it (see --press in index.css). */}
         <div style={{
           marginTop: 18, padding: '15px 17px', borderRadius: 12,
-          background: 'var(--sunken, #E4E8EE)',
+          background: 'var(--sunken, #e8e8e8)',
           boxShadow: 'var(--press)',
           border: 0,
           fontSize: '0.82rem', lineHeight: 1.55,
-          color: 'var(--muted, #4c4546)',
+          color: 'var(--muted, #474747)',
         }}>
-          <div style={{ fontWeight: 700, color: 'var(--md-on-surface, #1a1c1d)', marginBottom: 5 }}>
+          <div style={{ fontWeight: 700, color: 'var(--md-on-surface, #1c1c1c)', marginBottom: 5 }}>
             How to get access
           </div>
           <div style={{ marginBottom: 6 }}>

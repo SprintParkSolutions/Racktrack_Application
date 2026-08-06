@@ -8,7 +8,7 @@
   /* Transparent, not white: the soft-UI ground is painted on <body>, and a
      hardcoded white page renders as a slab floating on it. */
   background: transparent;
-  color: #1a1c1d;
+  color: #1c1c1c;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -34,7 +34,7 @@
   width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
   background: #ffffff; border: 1px solid #ececec;
-  color: #1a1c1d;
+  color: #1c1c1c;
   cursor: pointer; border-radius: 12px;
   transition: background .15s, color .15s, border-color .15s;
   -webkit-tap-highlight-color: transparent;
@@ -59,7 +59,7 @@
   border-radius: 50%;
   background: #ffffff;
   border: 1px solid #ececec;
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 
 /* Small square brand chip */
@@ -84,7 +84,7 @@
   transition: background .25s, width .25s;
 }
 .stepDotActive { width: 28px; background: #000000; }
-.stepDotDone   { background: #4c4546; }
+.stepDotDone   { background: #474747; }
 
 /* ── Main shell ── */
 .authShell {
@@ -146,7 +146,7 @@
 .orbSat {
   position: absolute;
   border-radius: 50%;
-  background: #1a1c1d;
+  background: #1c1c1c;
   box-shadow: 0 4px 10px -3px rgba(0,0,0,0.4);
 }
 .sat1 { width: 16px; height: 16px; top: 26px;  right: 36px; }
@@ -178,7 +178,7 @@
   font-family: var(--font);
   font-size: .95rem;
   text-align: center;
-  color: #4c4546;
+  color: #474747;
   font-weight: 500;
   letter-spacing: -0.005em;
 }
@@ -195,7 +195,7 @@
   font-weight: 700;
   letter-spacing: .07em;
   text-transform: uppercase;
-  color: #4c4546;
+  color: #474747;
   pointer-events: none;
   margin-bottom: 6px;
 }
@@ -205,7 +205,7 @@
   border: none;
   border-bottom: 1.5px solid #ececec;
   outline: none;
-  color: #1a1c1d;
+  color: #1c1c1c;
   font-family: inherit;
   font-size: 1.06rem;
   font-weight: 600;
@@ -234,7 +234,7 @@
   right: 0; top: 50%; transform: translateY(-50%);
   width: 40px; height: 40px;
   background: transparent; border: none;
-  color: #565b62;
+  color: #5a5a5a;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; border-radius: 8px; z-index: 3;
   -webkit-tap-highlight-color: transparent;
@@ -252,28 +252,28 @@
 .strengthFill {
   position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
   border-radius: 999px;
-  background: #1a1c1d;
+  background: #1c1c1c;
   transition: width .25s ease;
 }
 .strengthHint {
   font-size: .7rem; font-weight: 600;
-  color: #4c4546;
+  color: #474747;
   white-space: nowrap;
   font-family: var(--mono, monospace);
   letter-spacing: .02em;
 }
-.strengthHintOk { color: #1a1c1d; font-weight: 800; }
+.strengthHintOk { color: #1c1c1c; font-weight: 800; }
 
 .matchHint {
   position: absolute;
   right: 0; bottom: 11px;
   font-size: .68rem; font-weight: 700;
   letter-spacing: .04em;
-  color: #4c4546;
+  color: #474747;
   pointer-events: none;
 }
-.matchOk  { color: #1a1c1d; font-weight: 800; }
-.matchBad { color: #1a1c1d; font-weight: 800; }
+.matchOk  { color: #1c1c1c; font-weight: 800; }
+.matchBad { color: #1c1c1c; font-weight: 800; }
 
 /* ── Error / info pills ── */
 .errBox, .infoBox {
@@ -285,12 +285,12 @@
 .errBox {
   background: #ffffff;
   border: 1px solid #ececec;
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 .infoBox {
   background: #ffffff;
   border: 1px solid #ececec;
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 
 /* ── Forgot link ── */
@@ -364,7 +364,7 @@
   margin-top: 20px;
   text-align: center;
   font-size: .88rem;
-  color: #4c4546;
+  color: #474747;
 }
 .altLink {
   display: inline-flex; align-items: center; min-height: 24px;
@@ -400,7 +400,7 @@
   text-align: center;
   font-family: var(--mono, 'SF Mono', Menlo, Consolas, monospace);
   font-size: 1.6rem; font-weight: 600;
-  color: #1a1c1d;
+  color: #1c1c1c;
   background: #ffffff;
   border: 1.5px solid #ececec;
   border-radius: 14px;
@@ -424,7 +424,7 @@
   margin: 0 0 22px;
   text-align: center;
   font-size: .82rem;
-  color: #4c4546;
+  color: #474747;
   font-family: var(--mono, monospace);
 }
 .sentToEmail {
@@ -434,24 +434,24 @@
 }
 
 /* Optional-field hint on a label */
-.labelOpt { font-weight: 500; color: #5A5F67; letter-spacing: 0; text-transform: none; }
+.labelOpt { font-weight: 500; color: #5f5f5f; letter-spacing: 0; text-transform: none; }
 
 /* ── Role segmented control (sign-in field guide) ── */
 .roleSeg {
   display: flex; gap: 4px; padding: 4px;
-  background: #f3f3f4; border-radius: 12px; margin-bottom: 6px;
+  background: #f3f3f3; border-radius: 12px; margin-bottom: 6px;
 }
 .roleSegBtn {
   flex: 1; padding: 9px 8px; border: none; background: transparent;
-  border-radius: 9px; font-size: 13px; font-weight: 600; color: #5F646C;
+  border-radius: 9px; font-size: 13px; font-weight: 600; color: #6b6b6b;
   cursor: pointer; transition: background .16s, color .16s, box-shadow .16s;
   font-family: inherit; -webkit-tap-highlight-color: transparent;
 }
-.roleSegBtn:hover { color: #121417; }
-.roleSegBtnOn { background: #ffffff; color: #121417; box-shadow: 0 1px 3px rgba(0,0,0,.10); }
+.roleSegBtn:hover { color: #121212; }
+.roleSegBtnOn { background: #ffffff; color: #121212; box-shadow: 0 1px 3px rgba(0,0,0,.10); }
 
 /* Small helper text under a field */
-.fieldNote { margin: 6px 2px 0; font-size: 12px; line-height: 1.4; color: #5F646C; }
+.fieldNote { margin: 6px 2px 0; font-size: 12px; line-height: 1.4; color: #6b6b6b; }
 
 /* ── iPad — center the form as a calm card instead of a stretched, top-clinging
    column. Header pins to the top so the card can sit in the vertical middle. ── */
@@ -492,7 +492,7 @@
   display: flex; align-items: center; gap: 12px;
   margin: 0 0 14px;
   font-size: 0.78rem; font-weight: 600; letter-spacing: .06em;
-  text-transform: uppercase; color: #5F646C;
+  text-transform: uppercase; color: #6b6b6b;
 }
 .socialDivider::before,
 .socialDivider::after {
@@ -508,7 +508,7 @@
   border-radius: 100px;
   border: 1px solid rgba(0,0,0,0.22);
   background: #ffffff;
-  color: #1a1c1d;
+  color: #1c1c1c;
   font-family: inherit;
   font-size: 0.97rem;
   font-weight: 650;
@@ -535,7 +535,7 @@
 .socialSpinner {
   width: 15px; height: 15px;
   border: 2px solid rgba(0,0,0,0.18);
-  border-top-color: #1a1c1d;
+  border-top-color: #1c1c1c;
   border-radius: 50%;
   animation: spin .7s linear infinite;
 }
@@ -566,7 +566,7 @@
     display: block;
     position: fixed; inset: 0; z-index: 0;
     pointer-events: none;
-    background: #F3F4F6;
+    background: #f4f4f4;
   }
   /* Desaturated and lifted, then thrown out of focus: the room should be
      legible as a room and nothing more. Scaled up so the blur has material to
@@ -610,7 +610,7 @@
     flex: 0 0 auto;
     width: 100%; max-width: 468px;
     margin: clamp(52px, 7vh, 88px) auto clamp(24px, 4vh, 48px);
-    border: 1px solid rgba(16,24,40,.06);
+    border: 1px solid rgba(23, 23, 23,.06);
     border-radius: 16px;
     background: rgba(255,255,255,.94);
     -webkit-backdrop-filter: blur(18px) saturate(1.2);
@@ -618,8 +618,8 @@
     /* One soft, wide shadow rather than a hard drop: the card should feel
        lifted off the room, not stamped onto it. */
     box-shadow:
-      0 1px 2px rgba(16,24,40,.04),
-      0 28px 60px -24px rgba(16,24,40,.28);
+      0 1px 2px rgba(23, 23, 23,.04),
+      0 28px 60px -24px rgba(23, 23, 23,.28);
     padding: clamp(24px, 3.4vh, 44px) clamp(26px, 3vw, 44px) clamp(24px, 3.4vh, 40px);
   }
 }

@@ -19,7 +19,7 @@
     radial-gradient(ellipse 50% 40% at 82% 28%, rgba(0,0,0,0.16), transparent 65%),
     radial-gradient(ellipse 60% 45% at 50% 100%, rgba(0,0,0,0.16), transparent 65%),
     transparent;
-  color: #cfc4c5;
+  color: #c6c6c6;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
 }
@@ -30,7 +30,7 @@
     radial-gradient(ellipse 50% 40% at 82% 28%, rgba(0,0,0,0.50), transparent 65%),
     radial-gradient(ellipse 60% 45% at 50% 100%, rgba(0,0,0,0.32), transparent 65%),
     #000000;
-  color: #1a1c1d;
+  color: #1c1c1c;
 }
 
 /* ── Top nav ─────────────────────────────────────────────────────── */
@@ -80,9 +80,9 @@
 }
 .navLink.active {
   background: rgba(0,0,0,0.16);
-  color: #cfc4c5;
+  color: #c6c6c6;
 }
-:global([data-theme='light']) .navLink { color: #4c4546; }
+:global([data-theme='light']) .navLink { color: #474747; }
 :global([data-theme='light']) .navLink:hover { background: rgba(0,0,0,0.08); color: #000000; }
 :global([data-theme='light']) .navLink.active { background: rgba(0,0,0,0.12); color: #000000; }
 
@@ -132,14 +132,14 @@
   border-radius: 999px;
   background: rgba(0,0,0,0.12);
   border: 1px solid rgba(0,0,0,0.32);
-  color: #4c4546;
+  color: #474747;
   font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .heroBadge::before {
   content: '';
   width: 6px; height: 6px; border-radius: 50%;
-  background: #1a1c1d;
+  background: #1c1c1c;
   box-shadow: 0 0 8px rgba(0,0,0,0.8);
   animation: pulseDot 1.8s ease-in-out infinite;
 }
@@ -149,7 +149,7 @@
 }
 :global([data-theme='light']) .heroBadge {
   background: rgba(0,0,0,0.14);
-  color: #1a1c1d;
+  color: #1c1c1c;
   border-color: rgba(0,0,0,0.40);
 }
 
@@ -159,12 +159,12 @@
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.025em;
-  color: var(--t1, #f7f7f7);
+  color: var(--t1, #ffffff);
 }
 :global([data-theme='light']) .heroTitle { color: #000000; }
 .heroTitleAccent {
   display: block;
-  background: linear-gradient(135deg, #4c4546 0%, #4c4546 60%, #cfc4c5 100%);
+  background: linear-gradient(135deg, #474747 0%, #474747 60%, #c6c6c6 100%);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
   font-style: italic;
@@ -177,7 +177,7 @@
   color: rgba(232,232,232,0.72);
   max-width: 520px;
 }
-:global([data-theme='light']) .heroSub { color: #4c4546; }
+:global([data-theme='light']) .heroSub { color: #474747; }
 
 .heroCtaRow {
   display: flex;
@@ -219,11 +219,11 @@
   background: rgba(0,0,0,0.06);
 }
 :global([data-theme='light']) .heroSecondary {
-  color: #1a1c1d;
-  border-color: #cfc4c5;
+  color: #1c1c1c;
+  border-color: #c6c6c6;
 }
 :global([data-theme='light']) .heroSecondary:hover {
-  border-color: #4c4546;
+  border-color: #474747;
   background: rgba(0,0,0,0.06);
 }
 
@@ -236,13 +236,13 @@
   padding-top: 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
-:global([data-theme='light']) .heroStats { border-top-color: #cfc4c5; }
+:global([data-theme='light']) .heroStats { border-top-color: #c6c6c6; }
 .statValue {
   display: block;
   font-size: 1.7rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #4c4546, #4c4546);
+  background: linear-gradient(135deg, #474747, #474747);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -253,7 +253,7 @@
   color: rgba(0,0,0,0.55);
   margin-top: 2px;
 }
-:global([data-theme='light']) .statLabel { color: #4c4546; }
+:global([data-theme='light']) .statLabel { color: #474747; }
 
 /* ── Hero visual: the rack illustration with glow + corner brackets ── */
 .heroVisual {
@@ -317,13 +317,13 @@
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 0.62rem; font-weight: 700;
   letter-spacing: 0.10em; text-transform: uppercase;
-  color: #4c4546;
+  color: #474747;
 }
 .heroRackLive::before {
   content: '';
   width: 6px; height: 6px; border-radius: 50%;
-  background: #1a1c1d;
-  box-shadow: 0 0 6px #1a1c1d;
+  background: #1c1c1c;
+  box-shadow: 0 0 6px #1c1c1c;
   animation: pulseDot 1.8s ease-in-out infinite;
 }
 
@@ -356,7 +356,7 @@
 }
 :global([data-theme='light']) .heroRackUnit {
   background: #000000;
-  border-color: #f9f9fb;
+  border-color: #ffffff;
 }
 :global([data-theme='light']) .heroRackUnit.switch {
   background: linear-gradient(90deg, rgba(0,0,0,0.16), rgba(0,0,0,0.08));
@@ -369,7 +369,7 @@
   color: rgba(0,0,0,0.65);
   min-width: 40px;
 }
-:global([data-theme='light']) .heroRackUnitLabel { color: #4c4546; }
+:global([data-theme='light']) .heroRackUnitLabel { color: #474747; }
 
 .heroRackUnitPorts {
   display: flex; gap: 3px; flex: 1;
@@ -380,11 +380,11 @@
   border-radius: 2px;
   background: rgba(0,0,0,0.32);
 }
-.heroRackPort.lit { background: #1a1c1d; box-shadow: 0 0 6px #1a1c1d; }
-.heroRackPort.warn { background: #1a1c1d; box-shadow: 0 0 6px #1a1c1d; }
+.heroRackPort.lit { background: #1c1c1c; box-shadow: 0 0 6px #1c1c1c; }
+.heroRackPort.warn { background: #1c1c1c; box-shadow: 0 0 6px #1c1c1c; }
 .heroRackPort.empty { background: rgba(255, 255, 255, 0.06); }
-:global([data-theme='light']) .heroRackPort { background: #f9f9fb; }
-:global([data-theme='light']) .heroRackPort.empty { background: #cfc4c5; }
+:global([data-theme='light']) .heroRackPort { background: #ffffff; }
+:global([data-theme='light']) .heroRackPort.empty { background: #c6c6c6; }
 
 /* ── "How it works" strip ──────────────────────────────────────── */
 .steps {
@@ -411,7 +411,7 @@
 }
 :global([data-theme='light']) .stepCard {
   background: #ffffff;
-  border-color: #cfc4c5;
+  border-color: #c6c6c6;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
 :global([data-theme='light']) .stepCard:hover {
@@ -431,43 +431,43 @@
 .stepTitle {
   margin: 0 0 6px;
   font-size: 1.04rem; font-weight: 700;
-  color: var(--t1, #f7f7f7);
+  color: var(--t1, #ffffff);
 }
-:global([data-theme='light']) .stepTitle { color: #1a1c1d; }
+:global([data-theme='light']) .stepTitle { color: #1c1c1c; }
 .stepDesc {
   margin: 0;
   font-size: 0.85rem;
   line-height: 1.5;
   color: rgba(232,232,232,0.62);
 }
-:global([data-theme='light']) .stepDesc { color: #4c4546; }
+:global([data-theme='light']) .stepDesc { color: #474747; }
 
 /* ══════════════════════════════════════════════════════════════════════
    v2 — white-focused refresh for tablet + desktop.
    Wholesale overrides of the dark-tinted light theme above. Keeps every
    feature; just re-paints to a clean editorial palette: pure white panels,
-   hairline #ebebea borders, deep ink #0a0a0a text, single warm-amber
+   hairline #ebebeb borders, deep ink #000000 text, single warm-amber
    accent used only in micro-doses.
    Loads at all viewports because the app is single-theme. Mobile pages
    are unaffected (different CSS modules).
    ══════════════════════════════════════════════════════════════════════ */
 :global([data-theme='light']) .page {
   background: #ffffff;
-  color: #0a0a0a;
+  color: #000000;
   font-family: "Inter","SF Pro Text",-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 :global([data-theme='light']) .nav {
-  background: rgba(250,250,249,0.82);
-  border-bottom-color: #ebebea;
+  background: rgba(255, 255, 255,0.82);
+  border-bottom-color: #ebebeb;
   padding: 18px clamp(20px, 4vw, 56px);
   backdrop-filter: saturate(180%) blur(12px);
   -webkit-backdrop-filter: saturate(180%) blur(12px);
 }
 :global([data-theme='light']) .brand { letter-spacing: -0.4px; font-weight: 600; font-size: 1.05rem; }
 :global([data-theme='light']) .brandMark {
-  background: #0a0a0a;
+  background: #000000;
   border-radius: 10px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.10);
   width: 34px; height: 34px;
@@ -475,7 +475,7 @@
 :global([data-theme='light']) .navLinks {
   padding: 4px;
   background: rgba(255,255,255,0.85);
-  border: 1px solid #ebebea;
+  border: 1px solid #ebebeb;
   border-radius: 999px;
 }
 :global([data-theme='light']) .navLink {
@@ -486,10 +486,10 @@
   color: #5a5a5a;
   transition: background 0.18s, color 0.18s;
 }
-:global([data-theme='light']) .navLink:hover { color: #0a0a0a; background: transparent; }
-:global([data-theme='light']) .navLink.active { background: #0a0a0a; color: #fff; }
+:global([data-theme='light']) .navLink:hover { color: #000000; background: transparent; }
+:global([data-theme='light']) .navLink.active { background: #000000; color: #fff; }
 :global([data-theme='light']) .startBtn {
-  background: #0a0a0a;
+  background: #000000;
   color: #fff;
   font-weight: 500;
   font-size: 0.85rem;
@@ -513,7 +513,7 @@
 }
 :global([data-theme='light']) .heroBadge {
   background: #ffffff;
-  color: #121417;
+  color: #121212;
   border-color: #f0f0f0;
   padding: 6px 14px;
   font-size: 0.66rem;
@@ -521,11 +521,11 @@
   font-weight: 600;
 }
 :global([data-theme='light']) .heroBadge::before {
-  background: #0b0c0e;
-  box-shadow: 0 0 0 4px rgba(11,12,14,0.12);
+  background: #000000;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0,0.12);
 }
 :global([data-theme='light']) .heroTitle {
-  color: #0a0a0a;
+  color: #000000;
   font-size: clamp(40px, 5.8vw, 78px);
   font-weight: 600;
   letter-spacing: -2px;
@@ -533,8 +533,8 @@
 }
 :global([data-theme='light']) .heroTitleAccent {
   background: none;
-  -webkit-text-fill-color: #5F646C;
-  color: #5F646C;
+  -webkit-text-fill-color: #6b6b6b;
+  color: #6b6b6b;
   font-style: normal;
   font-weight: 400;
   letter-spacing: -1.5px;
@@ -546,7 +546,7 @@
   max-width: 50ch;
 }
 :global([data-theme='light']) .heroCta {
-  background: #0a0a0a;
+  background: #000000;
   color: #fff;
   border-radius: 999px;
   padding: 14px 26px;
@@ -561,28 +561,28 @@
 }
 :global([data-theme='light']) .heroSecondary {
   background: #fff;
-  color: #0a0a0a;
-  border: 1px solid #ebebea;
+  color: #000000;
+  border: 1px solid #ebebeb;
   border-radius: 999px;
   padding: 13px 22px;
   font-size: 0.9rem;
   font-weight: 500;
 }
 :global([data-theme='light']) .heroSecondary:hover {
-  border-color: #c8c8c7;
-  background: #f7f7f6;
+  border-color: #c8c8c8;
+  background: #ffffff;
   transform: translateY(-1px);
 }
 :global([data-theme='light']) .heroStats {
-  border-top: 1px solid #ebebea;
+  border-top: 1px solid #ebebeb;
   padding-top: 28px;
   margin-top: 22px;
   gap: clamp(28px, 4vw, 52px);
 }
 :global([data-theme='light']) .statValue {
   background: none;
-  -webkit-text-fill-color: #0a0a0a;
-  color: #0a0a0a;
+  -webkit-text-fill-color: #000000;
+  color: #000000;
   font-size: clamp(28px, 3vw, 40px);
   font-weight: 600;
   letter-spacing: -1.2px;
@@ -590,7 +590,7 @@
   font-family: "Inter Display","Inter","SF Pro Display",system-ui,sans-serif;
 }
 :global([data-theme='light']) .statLabel {
-  color: #5F646C;
+  color: #6b6b6b;
   font-size: 0.68rem;
   letter-spacing: 0.10em;
   font-weight: 600;
@@ -600,13 +600,13 @@
 /* ── Hero rack visual ──────────────────────────────────── */
 :global([data-theme='light']) .heroVisualHalo {
   background: radial-gradient(circle at 50% 50%,
-    rgba(10,10,10,0.06) 0%,
-    rgba(10,10,10,0.06) 35%,
+    rgba(0, 0, 0,0.06) 0%,
+    rgba(0, 0, 0,0.06) 35%,
     transparent 75%);
 }
 :global([data-theme='light']) .heroRackFrame {
   background: #fff;
-  border: 1px solid #ebebea;
+  border: 1px solid #ebebeb;
   border-radius: 22px;
   width: clamp(380px, 36vw, 480px);
   height: clamp(500px, 50vw, 620px);
@@ -618,44 +618,44 @@
     0 0 0 1px rgba(15,15,15,0.04);
 }
 :global([data-theme='light']) .heroRackHead {
-  border-bottom-color: #ebebea;
+  border-bottom-color: #ebebeb;
   padding: 4px 6px 14px;
   margin-bottom: 10px;
 }
 :global([data-theme='light']) .heroRackId {
-  color: #0a0a0a;
+  color: #000000;
   font-weight: 600;
   font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
   font-size: 0.72rem;
 }
 :global([data-theme='light']) .heroRackLive {
-  color: #0b0c0e;
+  color: #000000;
   font-size: 0.6rem;
   letter-spacing: 0.12em;
 }
 :global([data-theme='light']) .heroRackLive::before {
-  background: #0b0c0e;
-  box-shadow: 0 0 0 4px rgba(11,12,14,0.12);
+  background: #000000;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0,0.12);
 }
 :global([data-theme='light']) .heroRackUnit {
   background: #ffffff;
-  border: 1px solid #ebebea;
+  border: 1px solid #ebebeb;
   border-radius: 10px;
   padding: 9px 12px;
 }
 :global([data-theme='light']) .heroRackUnit.switch {
   background: #fff;
-  border-color: #ebebea;
+  border-color: #ebebeb;
   box-shadow: 0 1px 2px rgba(15,15,15,0.04);
 }
 :global([data-theme='light']) .heroRackUnit.scanning {
   background: #fff;
-  border-color: #0b0c0e;
+  border-color: #000000;
   animation: rackScanV2 2.2s ease-in-out infinite;
 }
 @keyframes rackScanV2 {
-  0%, 100% { box-shadow: 0 0 0 rgba(11,12,14,0); }
-  50%      { box-shadow: 0 0 0 4px rgba(11,12,14,0.14); }
+  0%, 100% { box-shadow: 0 0 0 rgba(0, 0, 0,0); }
+  50%      { box-shadow: 0 0 0 4px rgba(0, 0, 0,0.14); }
 }
 :global([data-theme='light']) .heroRackUnitLabel {
   color: #5a5a5a;
@@ -664,20 +664,20 @@
   font-weight: 600;
 }
 :global([data-theme='light']) .heroRackPort {
-  background: #dcdcdb;
+  background: #dcdcdc;
   border-radius: 2px;
   width: 10px;
   height: 10px;
 }
 :global([data-theme='light']) .heroRackPort.lit {
-  background: #121417;
-  box-shadow: 0 0 0 2px rgba(18,20,23,0.14);
+  background: #121212;
+  box-shadow: 0 0 0 2px rgba(18, 18, 18,0.14);
 }
 :global([data-theme='light']) .heroRackPort.warn {
-  background: #5F646C;
+  background: #6b6b6b;
   box-shadow: 0 0 0 2px rgba(154,154,154,0.24);
 }
-:global([data-theme='light']) .heroRackPort.empty { background: #ebebea; }
+:global([data-theme='light']) .heroRackPort.empty { background: #ebebeb; }
 
 /* ── How-it-works steps ────────────────────────────────── */
 :global([data-theme='light']) .steps {
@@ -687,19 +687,19 @@
 }
 :global([data-theme='light']) .stepCard {
   background: #fff;
-  border: 1px solid #ebebea;
+  border: 1px solid #ebebeb;
   border-radius: 20px;
   padding: 28px 24px;
   box-shadow: 0 1px 2px rgba(15,15,15,0.04);
   transition: box-shadow 0.22s, border-color 0.22s, transform 0.22s;
 }
 :global([data-theme='light']) .stepCard:hover {
-  border-color: #dcdcdb;
+  border-color: #dcdcdc;
   transform: translateY(-3px);
   box-shadow: 0 16px 40px -12px rgba(15,15,15,0.12), 0 2px 6px rgba(15,15,15,0.05);
 }
 :global([data-theme='light']) .stepNum {
-  background: #0a0a0a;
+  background: #000000;
   color: #fff;
   width: 30px; height: 30px;
   font-weight: 600;
@@ -708,7 +708,7 @@
   box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 :global([data-theme='light']) .stepTitle {
-  color: #0a0a0a;
+  color: #000000;
   font-size: 1.02rem;
   font-weight: 600;
   letter-spacing: -0.2px;

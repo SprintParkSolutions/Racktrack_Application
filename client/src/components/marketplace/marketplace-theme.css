@@ -26,9 +26,9 @@
   /* Surfaces + ink. Fall back to literals so the section still renders
      correctly if it is ever mounted outside the app's token scope. */
   --mkt-surface:  var(--md-surface-container-lowest, #ffffff);
-  --mkt-raised:   var(--md-surface-container, #fafafa);
+  --mkt-raised:   var(--md-surface-container, #ffffff);
   --mkt-line:     var(--md-outline-variant, #e0e0e0);
-  --mkt-ink:      var(--md-on-surface, #121417);
+  --mkt-ink:      var(--md-on-surface, #121212);
   --mkt-muted:    var(--md-on-surface-variant, #717171);
 
   /* Semantic — small doses only. */
