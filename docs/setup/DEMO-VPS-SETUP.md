@@ -70,18 +70,24 @@ Caddy, so there is no way to hit it over plain HTTP.
 
 ## 3. Get the code and the weights onto the box
 
-The repo is private, so clone with a deploy key or a PAT:
+The repo is private and the VPS has no GitHub credentials, so the code goes up
+by rsync **from the Mac** rather than a clone on the box. The exclude list takes
+the checkout from ~2 GB to ~16 MB:
 
 ```bash
-git clone https://github.com/<org>/dark_mobile.git /opt/racktrack
-cd /opt/racktrack
+rsync -avz --progress --exclude-from=deploy/demo-rsync-excludes.txt \
+  ./ root@82.29.164.213:/opt/racktrack-demo/
 ```
 
-`Models/` (~483 MB) is git-ignored, so it never arrives with a clone. Push it
-**from the Mac**:
+> The demo lives in **`/opt/racktrack-demo`**, not `/opt/racktrack`. That second
+> directory is a separate, older JULY9 checkout still serving `:8095` — deploying
+> into it rebuilds the wrong instance and leaves the demo untouched.
+
+`Models/` (~483 MB) is git-ignored and excluded above, so it never arrives with
+the code. Push it separately, once:
 
 ```bash
-rsync -avz --progress Models/ root@82.29.164.213:/opt/racktrack/Models/
+rsync -avz --progress Models/ root@82.29.164.213:/opt/racktrack-demo/Models/
 ```
 
 **Do not rsync `server/.env`.** Production's copy holds `SLACK_TOKEN`,
@@ -189,13 +195,25 @@ before showing anyone. Check `docker stats` while it runs — if memory heads pa
 
 ## Updating
 
-The demo does not auto-deploy. To ship a change:
+The demo does not auto-deploy, and there is no `git pull` on the box — it has no
+GitHub credentials. Ship a change in two steps, the first **from the Mac**:
 
 ```bash
-cd /opt/racktrack
-git pull
+cd /Volumes/Racktrack/dark_mobile
+rsync -avz --progress --exclude-from=deploy/demo-rsync-excludes.txt \
+  ./ root@82.29.164.213:/opt/racktrack-demo/
+```
+
+then on the box:
+
+```bash
+cd /opt/racktrack-demo
 docker compose -f docker-compose.demo.yml up -d --build
 ```
+
+`--build` is not optional: the client is compiled **inside** the image, so a
+plain `restart` serves the previous bundle and the change appears not to have
+landed.
 
 `server/data`, `outputs` and `Models` are bind-mounted from the host, so
 accounts, scans and weights survive a rebuild.
