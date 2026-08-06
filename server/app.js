@@ -41,6 +41,7 @@ const { uploadLimiter } = require('./lib/rate_limit');
 // log structured events. Provides logger + metrics + middleware + helpers.
 const o11y = require('./lib/observability');
 const { logger, withSpan, recordEvent } = o11y;
+const portHistoryDb = require('./lib/port_history_db');
 
 // Merge stored env credentials (per vendor) into request body fields. Values
 // sent explicitly by the client take precedence over the env-stored defaults.
@@ -1030,6 +1031,149 @@ function formatUnitsRangeSrv(units = []) {
   ).join(' ');
 }
 
+// Ported from client/src/pages/SwitchInformationPage.jsx so the report
+// recovers the same models that page displays. The pipeline's own OCR
+// model field is frequently null even when raw_text has enough to work
+// with (e.g. U11 here: model=null but raw_text contains "CrS326") — the
+// client re-parses raw_text with these patterns instead of trusting the
+// pipeline's field. Keep in sync with the client copy if either changes.
+function extractModelFromRawSrv(rawText, make) {
+  if (!rawText) return '';
+  const norm = rawText.replace(/[_][-]|[-][_]/g, '-').replace(/(?<=[A-Za-z0-9])_(?=[A-Za-z0-9])/g, '-');
+  const patterns = [
+    /\b(?:WS-C|C)\d{4,5}[A-Z]*-\d{1,3}[A-Z]{0,4}(?:-\w{1,4})?\b/,  // Cisco
+    /\bTL-[A-Z]{2,4}\d{3,5}[A-Z]{0,4}\b/,                            // TP-Link
+    /\bT[1-9]\d{2,3}[A-Z]{0,4}\b/,                                    // TP-Link JetStream
+    /\bD[GX]S-\d{3,4}[A-Z]?-\d{1,3}[A-Z]{0,4}\b/,                   // D-Link
+    /\b(?:EX|QFX|MX|SRX)\d{3,5}[A-Z0-9-]*\b/,                       // Juniper
+    /\bCX\s?\d{4}[A-Z]?\b/,                                           // Aruba
+    /\b(?:DCS-)?7\d{3}[A-Z]?-\d{1,3}[A-Z0-9-]*\b/,                  // Arista
+    /\b(?:CRS|CCR)\d{3,4}(?:-[\w+]{1,12})*\b/i,                      // Mikrotik
+  ];
+  for (const rx of patterns) {
+    const m = norm.match(rx);
+    if (m) return m[0].toUpperCase();
+  }
+  if (make && make.toLowerCase().includes('mikro')) {
+    const fuzzy = norm.match(/[A-Z@][A-Z]*[RS]\d{3,4}(?:-[\w+]{1,12})*/i);
+    if (fuzzy) {
+      const raw = fuzzy[0];
+      const digits = raw.match(/\d{3,4}(?:-[\w+]{1,12})*/);
+      if (digits) {
+        const prefix = raw.toLowerCase().includes('ccr') ? 'CCR' : 'CRS';
+        return prefix + digits[0].toUpperCase();
+      }
+    }
+  }
+  return '';
+}
+const PARTIAL_MODEL_MAP_SRV = [
+  [/^CRS3265?$/i,   'CRS326-24G-2S+RM'],
+  [/^CRS3261?$/i,   'CRS326-24G-2S+RM'],
+  [/^CRS3541?/i,    'CRS354-48G-4S+2Q+RM'],
+  [/^CRS3121?/i,    'CRS312-4C+8XG-RM'],
+  [/^CRS3171?/i,    'CRS317-1G-16S+RM'],
+  [/^CRS3051?/i,    'CRS305-1G-4S+IN'],
+  [/^CRS3281?/i,    'CRS328-24P-4S+RM'],
+  [/^CRS5181?/i,    'CRS518-16XS-2XQ-RM'],
+  [/^CCR20041?/i,   'CCR2004-1G-12S+2XS'],
+  [/^CCR20161?/i,   'CCR2016-1G-12S+2XS'],
+  [/^C93001?$/i,    'C9300-24T'],
+  [/^C93004?$/i,    'C9300-48T'],
+  [/^C93002?$/i,    'C9300-24P'],
+  [/^C93006?$/i,    'C9300-48P'],
+  [/^TLSG24281?/i,  'TL-SG2428P'],
+];
+function expandPartialModelSrv(model) {
+  if (!model) return model;
+  const looksPartial = (!model.includes('-') && !model.includes('+') && model.length < 12)
+    || /[A-Z]\d{1,2}$/i.test(model);
+  if (!looksPartial) return model;
+  for (const [rx, full] of PARTIAL_MODEL_MAP_SRV) {
+    if (rx.test(model)) return full;
+  }
+  return model;
+}
+
+// Matches a report device (by its first occupied unit + class) against the
+// per-device OCR pass (outputs/<rackId>/ocr_devices.json) to recover the
+// make/model read off the physical faceplate. Best-effort: OCR frequently
+// only gets the make, or nothing at all — callers must handle null fields.
+// When the pipeline's own `model` field is empty, falls back to the same
+// raw_text re-parse the Switch Information page uses, so the report shows
+// the same model that page does instead of nothing.
+function matchOcrDevice(rackDir, position, className) {
+  try {
+    const p = path.join(rackDir, 'ocr_devices.json');
+    if (!fs.existsSync(p)) return null;
+    const perDev = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const firstUnit = String(position || '').split(/[\s-]/)[0]; // "U04-U05" -> "U04"
+    if (!firstUnit) return null;
+    const rows = perDev?.devices || [];
+    const row = rows.find(d => d.position === firstUnit && d.class_name === className)
+             || rows.find(d => d.position === firstUnit)
+             || null;
+    if (row && !row.model) {
+      const extracted = extractModelFromRawSrv(row.raw_text, row.make);
+      const expanded = expandPartialModelSrv(extracted);
+      if (expanded) return { ...row, model: expanded };
+    }
+    return row;
+  } catch { return null; }
+}
+
+// outputs/<rackId>/device_overrides.json — user-entered corrections (make,
+// model, firmware) from the Switch Information page, keyed by the same
+// "U04" position string OCR uses. Saved via POST /api/scan/:rackId/device-override.
+// A user override always wins over the OCR guess (see selectedDevice below).
+function deviceOverridesPath(rackDir) {
+  return path.join(rackDir, 'device_overrides.json');
+}
+function readDeviceOverride(rackDir, position) {
+  try {
+    const p = deviceOverridesPath(rackDir);
+    if (!fs.existsSync(p)) return null;
+    const all = JSON.parse(fs.readFileSync(p, 'utf8'));
+    return all[position] || null;
+  } catch { return null; }
+}
+
+// Pulls the existing SSH-poll drift history (server/lib/port_history_db.js)
+// for the report's Drift section. There is currently no rackId column on
+// monitored_devices, so this can't be scoped to "the switch in this rack" —
+// but when a port has been identified in this scan, we DO scope to that
+// port NUMBER (matching the trailing /N on the polled interface name, e.g.
+// "Gi1/0/2" -> 2 — see server/lib/tplink_parser.js), irrespective of
+// whether it was tagged RJ45/SFP/console in the scan. With no port context
+// (nothing identified yet) it falls back to showing everything polled.
+// Synchronous: better-sqlite3 has no async API.
+function collectDriftHistory(selectedPort = null, eventsPerDevice = 30) {
+  try {
+    return portHistoryDb.listDevices().map(dev => {
+      const all = portHistoryDb.eventsForDevice(dev.id, 1000);
+      const filtered = selectedPort == null ? all : all.filter(e => {
+        const m = String(e.port).match(/(\d+)$/);
+        return m && Number(m[1]) === Number(selectedPort);
+      });
+      return {
+        id: dev.id,
+        host: dev.host,
+        label: dev.label || dev.system_name || dev.host,
+        vendor: dev.vendor,
+        model: dev.model,
+        sw_version: dev.sw_version,
+        last_seen: dev.last_seen,
+        events: filtered.slice(0, eventsPerDevice).map(e => ({
+          port: e.port, field: e.field, from: e.from_val, to: e.to_val, at: e.at,
+        })),
+      };
+    });
+  } catch (e) {
+    logger.warn(`[report] drift history unavailable: ${e.message}`);
+    return [];
+  }
+}
+
 function buildScanReportData(rackId) {
   const rackDir = path.join(outputsDir, rackId);
   const meta    = readMeta(rackId);
@@ -1066,24 +1210,23 @@ function buildScanReportData(rackId) {
     };
   });
 
-  // Merge make/model/firmware from OCR (ocr_devices.json), matched by U-position,
-  // so the report shows a real inventory ("Cisco C9300-48P") rather than only a
-  // class ("Switch"). Best-effort: the report still renders if OCR never ran.
-  try {
-    const ocrPath = path.join(rackDir, 'ocr_devices.json');
-    if (fs.existsSync(ocrPath)) {
-      const ocr = JSON.parse(fs.readFileSync(ocrPath, 'utf8'));
-      const byPos = {};
-      for (const o of ocr.devices || []) {
-        if (o.position) byPos[String(o.position).toUpperCase()] = o;
-      }
-      for (const dv of devices) {
-        const key = String(dv.position || '').split(/[\s–—-]/)[0].toUpperCase();
-        const o = byPos[key];
-        if (o) { dv.make = o.make || null; dv.model = o.model || null; dv.firmware = o.version || null; }
-      }
+  // Merge make/model/firmware onto every device, so the report shows a real
+  // inventory ("Cisco C9300-48P") rather than only a class ("Switch").
+  // Goes through matchOcrDevice (rather than reading ocr_devices.json flat)
+  // so each device gets the same raw_text re-parse the Switch Information
+  // page uses — the pipeline's own `model` field is often null even when the
+  // faceplate text clearly carries a model. A user's manual correction
+  // (device_overrides.json) outranks whatever OCR guessed.
+  // Best-effort throughout: the report still renders if OCR never ran.
+  for (const dv of devices) {
+    const o = matchOcrDevice(rackDir, dv.position, dv.class_name);
+    const ov = readDeviceOverride(rackDir, String(dv.position || '').split(/[\s–—-]/)[0]);
+    if (o || ov) {
+      dv.make     = ov?.make     || o?.make    || null;
+      dv.model    = ov?.model    || o?.model   || null;
+      dv.firmware = ov?.firmware || o?.version || null;
     }
-  } catch { /* inventory just won't carry make/model */ }
+  }
 
   // Latest port identification only — walk newest-first and take the first valid line
   const idsPath = path.join(rackDir, 'port_identifications.jsonl');
@@ -1119,6 +1262,74 @@ function buildScanReportData(rackId) {
   const images = candidateImages
     .filter(f => fs.existsSync(rackImagePath(rackDir, f)))
     .map(f => rackImageUrlPath(rackDir, f));
+  // Report's "Rack Image" section shows the plain original upload, not an
+  // annotated derivative — falls back to whatever's available if the
+  // original file is somehow missing.
+  const originalImageExt = ['jpg', 'jpeg', 'png']
+    .find(ext => fs.existsSync(rackImagePath(rackDir, `original_image.${ext}`)));
+  const rackOverviewImage = originalImageExt
+    ? rackImageUrlPath(rackDir, `original_image.${originalImageExt}`)
+    : (images[0] || null);
+
+  const portIdentificationsOut = portIdentifications.map(e => {
+    const p = e.port_info || {};
+    const dev = devices[e.device_index - 1];
+    const console_transcript = readConsoleTranscript(rackDir, e.device_index, e.port);
+    return {
+      timestamp: e.timestamp,
+      device_index: e.device_index,
+      device_label: dev?.label || null,
+      device_class: dev?.class_name || null,
+      device_position: dev?.position || null,
+      port: e.port,
+      port_category: p.port_category || null,
+      status: p.status || null,
+      confidence: p.confidence ?? null,
+      location: p.location || null,
+      cable_color: p.cable_color || null,
+      cable_connector: p.cable_connector || null,
+      cable_type: p.cable_type || null,
+      cable_confidence: p.cable_confidence ?? null,
+      port_type: p.port_type || null,
+      port_type_confidence: p.port_type_confidence ?? null,
+      device_image: e.device_image || null,
+      full_rack_image: e.full_rack_image || null,
+      console: console_transcript ? {
+        host: console_transcript.host,
+        interface: console_transcript.interface,
+        updated_at: console_transcript.updated_at,
+        entries: console_transcript.entries || [],
+      } : null,
+    };
+  });
+
+  // "Selected device" = the device behind the most recent port identification
+  // (same one the Port Identifications section already highlights), enriched
+  // with whatever the per-device OCR pass read off its faceplate. make/model/
+  // firmware were already resolved (override > OCR) on the devices array above.
+  let selectedDevice = null;
+  if (portIdentificationsOut.length) {
+    const latest = portIdentificationsOut[0];
+    const dev = devices[latest.device_index - 1];
+    if (dev) {
+      const firstUnit = String(dev.position || '').split(/[\s–—-]/)[0];
+      const ocr = matchOcrDevice(rackDir, dev.position, dev.class_name);
+      const override = readDeviceOverride(rackDir, firstUnit);
+      selectedDevice = {
+        ...dev,
+        make: override?.make || ocr?.make || null,
+        model: override?.model || ocr?.model || null,
+        model_source: (override?.make || override?.model) ? 'user' : (ocr?.source || null),
+        model_confidence: (override?.make || override?.model) ? null : (ocr?.match_conf ?? null),
+        firmware_version_ocr: override?.firmware || ocr?.version || null,
+        // Populated best-effort in buildScanReport (needs a live/cached
+        // spec+firmware lookup) — placeholders here so JSON/CSV consumers
+        // that skip that step still see stable keys.
+        specs: null,
+        firmware: null,
+      };
+    }
+  }
 
   return {
     rackId,
@@ -1127,31 +1338,9 @@ function buildScanReportData(rackId) {
     units_detected: unitsDetected,
     units_range: formatUnitsRangeSrv(unitsDetected),
     devices,
-    port_identifications: portIdentifications.map(e => {
-      const p = e.port_info || {};
-      const dev = devices[e.device_index - 1];
-      const console_transcript = readConsoleTranscript(rackDir, e.device_index, e.port);
-      return {
-        timestamp: e.timestamp,
-        device_index: e.device_index,
-        device_label: dev?.label || null,
-        device_class: dev?.class_name || null,
-        device_position: dev?.position || null,
-        port: e.port,
-        status: p.status || null,
-        cable_color: p.cable_color || null,
-        cable_connector: p.cable_connector || null,
-        cable_type: p.cable_type || null,
-        device_image: e.device_image || null,
-        full_rack_image: e.full_rack_image || null,
-        console: console_transcript ? {
-          host: console_transcript.host,
-          interface: console_transcript.interface,
-          updated_at: console_transcript.updated_at,
-          entries: console_transcript.entries || [],
-        } : null,
-      };
-    }),
+    selectedDevice,
+    port_identifications: portIdentificationsOut,
+    driftHistory: collectDriftHistory(portIdentificationsOut[0]?.port ?? null),
     feedback: {
       total: feedbackEntries.length,
       correct: fbCorrect,
@@ -1160,6 +1349,7 @@ function buildScanReportData(rackId) {
       entries: feedbackEntries,
     },
     images, // relative filenames under outputs/<rackId>/
+    rackOverviewImage,
     _rackDir: rackDir, // internal: used by renderers, not exported in JSON
   };
 }
@@ -1213,16 +1403,10 @@ async function shrinkImagesForReport(rackDir) {
   } catch { /* directory unreadable — skip entirely */ }
 }
 
-const TYPE_ACCENT = {
-  'Switch': '#22d3ee', 'Patch Panel': '#60a5fa', 'Server': '#a78bfa',
-  'Gateway': '#fb923c', 'Firewall': '#f87171', 'PDU': '#fbbf24',
-  'PSU': '#f472b6', 'UPS': '#34d399', 'Router': '#818cf8',
-  'Load Balancer': '#c084fc', 'Modem': '#94a3b8',
-  'Controller': '#67e8f9', 'Recorder': '#86efac', 'Amplifier': '#fda4af',
-  'Closed Unit': '#f43f5e', 'Empty': '#64748b',
-};
-const TYPE_DEFAULT_ACCENT = '#22d3ee';
-const accentFor = (cls) => TYPE_ACCENT[cls] || TYPE_DEFAULT_ACCENT;
+// Single subtle near-black accent everywhere — the report used to
+// color-code every card by device type (cyan/blue/purple/orange/...),
+// which read as busy. One consistent dark accent keeps focus on the data.
+const accentFor = () => '#18181b';
 
 function formatTimestamp(ts) {
   if (!ts) return 'unknown time';
@@ -1244,12 +1428,34 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
     return inlineImages ? imageToDataUri(abs) : fname;
   };
 
+  // Same category labels the Results page shows (main→RJ45, sfp→SFP,
+  // console→Console, other→USB) — the raw backend value ("main") isn't
+  // what the user actually picked/sees in the app.
+  const PORT_CATEGORY_LABELS = { main: 'RJ45', sfp: 'SFP', console: 'Console', other: 'USB' };
+
   const portIdsHtml = d.port_identifications.map(p => {
     const a = accentFor(p.device_class || '');
-    const devSrc  = srcFor(p.device_image);
-    const fullSrc = srcFor(p.full_rack_image);
-    const imgs = [fullSrc, devSrc].filter(Boolean)
-      .map(src => `<div class="portImg"><img src="${src}" alt=""/></div>`).join('');
+    // Only the selected-device crop — the full rack image is covered by
+    // the report's own "Rack Image" section, no need to repeat it here.
+    const devSrc = srcFor(p.device_image);
+    const imgs = devSrc ? `<div class="portImg"><img src="${devSrc}" alt=""/></div>` : '';
+
+    // Status / cable / confidence detail grid — the data was already
+    // computed by buildScanReportData but previously never rendered anywhere.
+    const statusClass = p.status === 'connected' ? 'ok' : p.status === 'empty' ? 'muted' : 'warn';
+    const detailItems = [];
+    if (p.status) detailItems.push(['Status', `<span class="statusPill ${statusClass}">${htmlEscape(p.status)}</span>`]);
+    if (p.port_category) detailItems.push(['Category', htmlEscape(PORT_CATEGORY_LABELS[p.port_category] || p.port_category)]);
+    if (p.cable_type) detailItems.push(['Cable', htmlEscape(p.cable_type)]);
+    else if (p.cable_connector || p.cable_color) {
+      detailItems.push(['Cable', htmlEscape([p.cable_connector, p.cable_color].filter(Boolean).join(' · '))]);
+    }
+    if (p.cable_color) detailItems.push(['Cable Color', htmlEscape(p.cable_color)]);
+    if (p.port_type) detailItems.push(['Port type', htmlEscape(p.port_type)]);
+    if (p.confidence != null) detailItems.push(['Confidence', `${Math.round(p.confidence * 100)}%`]);
+    const detailsHtml = detailItems.length
+      ? `<div class="portDetails">${detailItems.map(([k, v]) => `<div class="detailItem"><div class="k">${htmlEscape(k)}</div><div class="v">${v}</div></div>`).join('')}</div>`
+      : '';
 
     let consoleHtml = '';
     if (p.console && Array.isArray(p.console.entries) && p.console.entries.length) {
@@ -1282,6 +1488,7 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
     </div>
   </div>
   ${imgs ? `<div class="portImgs">${imgs}</div>` : ''}
+  ${detailsHtml}
   ${consoleHtml}
 </section>`;
   }).join('\n');
@@ -1296,39 +1503,137 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   const connectedPorts = devs.reduce((s, dv) => s + (dv.connected_ports || 0), 0);
   const identified     = devs.filter(dv => dv.make || dv.model).length;
 
-  // Annotated rack image (device + unit overlay) for the report hero.
-  const rackShot = srcFor((d.images || []).find(f => /3_units_and_devices|7_rack_all_ports/.test(f)) || (d.images || [])[0]);
+  // ── Rack Image ──
+  const rackImgSrc = srcFor(d.rackOverviewImage);
+  const rackImageHtml = rackImgSrc
+    ? `<div class="rackHero"><img src="${rackImgSrc}" alt="Rack overview"/></div>`
+    : `<p class="empty">No rack image available.</p>`;
 
-  const invRows = devs.map(dv => {
-    const a = accentFor(dv.class_name || '');
-    const occ = dv.port_count
-      ? `${dv.connected_ports || 0}/${dv.port_count}`
-      : (dv.power_total ? `${dv.power_connected || 0}/${dv.power_total} PDU` : '—');
-    const occPct = dv.port_count ? Math.round(100 * (dv.connected_ports || 0) / dv.port_count) : 0;
-    const makeModel = [dv.make, dv.model].filter(Boolean).join(' ');
+  // ── Devices ──
+  // "Closed Unit" and "Empty" aren't real devices — placeholder classes for
+  // rack slots with nothing identifiable in them — so they're excluded here
+  // (and their units aren't counted toward anything shown).
+  const NON_DEVICE_CLASSES = new Set(['Closed Unit', 'Empty']);
+  const realDevices = devs.filter(dev => !NON_DEVICE_CLASSES.has(dev.class_name));
+  const devicesHtml = realDevices.length ? `
+<div class="deviceList">
+${realDevices.map(dev => {
+    const initials = (CLASS_CODE_SRV[dev.class_name] || dev.class_name || '?').replace(/\s+/g, '').slice(0, 2).toUpperCase();
+    // Make & model carried over from the old inventory table — the faceplate
+    // read is the single most useful thing to see per row, so keep it on the
+    // subtitle line rather than losing it with the table.
+    const makeModel = [dev.make, dev.model].filter(Boolean).join(' ');
+    const stats = [];
+    if (dev.port_count) stats.push(`${dev.port_count} ports`);
+    if (dev.sfp_ports) stats.push(`${dev.sfp_ports} SFP`);
+    if (dev.console_ports) stats.push(`${dev.console_ports} console`);
+    if (dev.connected_ports) stats.push(`${dev.connected_ports} connected`);
+    if (dev.power_total) stats.push(`${dev.power_connected}/${dev.power_total} powered`);
     return `
-<tr>
-  <td class="invPos"><span class="invDot" style="background:${a}"></span>${htmlEscape(dv.position || '—')}</td>
-  <td>${htmlEscape(dv.class_name || 'Unknown')}</td>
-  <td class="invModel">${makeModel ? htmlEscape(makeModel) : '<span class="invNone">not read</span>'}</td>
-  <td class="invNum">${dv.port_count || (dv.power_total ? dv.power_total : '—')}</td>
-  <td class="invOcc">
-    ${dv.port_count ? `<span class="occBarWrap"><span class="occBar" style="width:${occPct}%;background:${a}"></span></span>` : ''}
-    <span class="occText">${occ}</span>
-  </td>
-</tr>`;
-  }).join('');
+  <div class="deviceRow" style="--accent:${accentFor(dev.class_name)}">
+    <div class="deviceRowIcon">${htmlEscape(initials)}</div>
+    <div class="deviceRowMain">
+      <div class="deviceRowLabel">${htmlEscape(dev.label)}${makeModel ? ` <span class="deviceRowModel">${htmlEscape(makeModel)}</span>` : ''}</div>
+      <div class="deviceRowClass">${htmlEscape(dev.class_name)} · ${htmlEscape(dev.position)}</div>
+    </div>
+    <div class="deviceRowStats">${stats.map(s => `<span class="deviceRowStat">${htmlEscape(s)}</span>`).join('')}</div>
+  </div>`;
+  }).join('')}
+</div>` : `<p class="empty">No devices detected.</p>`;
 
-  const inventoryHtml = devs.length ? `
-<div class="section">
-  <div class="sectionTitle">Device Inventory</div>
-  <div class="tableWrap">
-    <table class="invTable">
-      <thead><tr><th>Position</th><th>Type</th><th>Make &amp; Model</th><th>Ports</th><th>In use</th></tr></thead>
-      <tbody>${invRows}</tbody>
+  // ── Selected Device (make/model/firmware/specs) ──
+  let selectedDeviceHtml = `<p class="empty">No device has been selected yet.</p>`;
+  const sd = d.selectedDevice;
+  if (sd) {
+    const specs = sd.specs;
+    // Top 5 spec-sheet fields only — the full sheet has ~12 fields, but
+    // this section is meant as a quick summary, not the whole datasheet.
+    // Only rendered when the agent actually found a match; skipped
+    // entirely otherwise, same "no placeholder" rule as firmware.
+    const SPEC_SUMMARY_KEYS = ['SKU', 'Ports', 'Port config', 'Max port speed (Gbps)', 'Switching capacity (Gbps)'];
+    const specEntries = (specs?.ok && specs.specs)
+      ? SPEC_SUMMARY_KEYS.filter(k => specs.specs[k] != null).map(k => [k, specs.specs[k]])
+      : [];
+    const specsBlockHtml = specEntries.length ? `
+  <div class="infoSubhead">Specifications</div>
+  <div class="infoGrid">
+    ${specEntries.map(([k, v]) => `<div class="infoItem"><div class="k">${htmlEscape(k)}</div><div class="v">${htmlEscape(v)}</div></div>`).join('')}
+  </div>` : '';
+    const fw = sd.firmware;
+    const firmwareCurrent = (fw?.ok && fw.currentVersion) || sd.firmware_version_ocr || null;
+    // Make/model/firmware/specs are ALL skipped entirely when not
+    // found/entered — no "Not detected" placeholder clutter. Whatever the
+    // user manually saved (device_overrides.json) already wins over OCR
+    // in selectedDevice, so this naturally shows the user's entry once set.
+    const makeRow  = sd.make  ? `<div class="infoItem"><div class="k">Make</div><div class="v">${htmlEscape(sd.make)}</div></div>` : '';
+    const modelRow = sd.model ? `<div class="infoItem"><div class="k">Model</div><div class="v">${htmlEscape(sd.model)}</div></div>` : '';
+    let firmwareRows = '';
+    if (firmwareCurrent) {
+      firmwareRows += `<div class="infoItem"><div class="k">Firmware (current)</div><div class="v">${htmlEscape(firmwareCurrent)}</div></div>`;
+    }
+    if (fw?.ok && fw.latestVersion) {
+      const badge = fw.upToDate === true ? `<span class="pill ok">Up to date</span>`
+                  : fw.upToDate === false ? `<span class="pill warn">Update available</span>` : '';
+      firmwareRows += `<div class="infoItem"><div class="k">Latest available</div><div class="v">${htmlEscape(fw.latestVersion)} ${badge}</div></div>`;
+    }
+    // Ports count: prefer the vendor spec sheet (authoritative); fall back
+    // to the scan's own detection when no spec match exists. The fallback
+    // is RJ45 + Console + SFP combined — sd.port_count alone is only the
+    // main/RJ45 count, which reads as "0 ports" on an SFP-only switch even
+    // though it clearly has ports (just not RJ45 ones).
+    const specPorts = (specs?.ok && specs.specs?.Ports) ? specs.specs.Ports : null;
+    const detectedPortsTotal = (sd.port_count || 0) + (sd.console_ports || 0) + (sd.sfp_ports || 0);
+    const portsValue = specPorts != null ? specPorts : (detectedPortsTotal || null);
+    // Dropped entirely when there is neither a spec sheet nor a single
+    // detected port, rather than asserting "Ports 0" — on a device the scan
+    // found no ports for (a router, an unidentified unit), a literal zero
+    // reads as a measurement rather than the absence of one.
+    const portsRow = portsValue != null
+      ? `<div class="infoItem"><div class="k">Ports</div><div class="v">${htmlEscape(portsValue)}</div></div>` : '';
+    selectedDeviceHtml = `
+<div class="infoCard" style="--accent:${accentFor(sd.class_name)}">
+  <div class="portCardHead">
+    <div class="portCardTitle">
+      <div class="portDevice">${htmlEscape(sd.label)}</div>
+      <div class="portDeviceSub">${htmlEscape(sd.class_name)} · ${htmlEscape(sd.position)}</div>
+    </div>
+  </div>
+  <div class="infoGrid">
+    ${makeRow}
+    ${modelRow}
+    ${firmwareRows}
+    ${portsRow}
+  </div>
+  ${specsBlockHtml}
+</div>`;
+  }
+
+  // ── Drift History ──
+  const driftHtml = (d.driftHistory || []).length ? d.driftHistory.map(dev => {
+    const rows = dev.events.length ? dev.events.map(e => `
+    <tr>
+      <td>${htmlEscape(formatTimestamp(e.at))}</td>
+      <td>${htmlEscape(e.port)}</td>
+      <td>${htmlEscape(e.field)}</td>
+      <td>${htmlEscape(e.from ?? '—')}</td>
+      <td>${htmlEscape(e.to ?? '—')}</td>
+    </tr>`).join('') : `<tr><td colspan="5" class="empty">No drift events recorded yet.</td></tr>`;
+    return `
+<div class="driftCard">
+  <div class="portCardHead">
+    <div class="portCardTitle">
+      <div class="portDevice">${htmlEscape(dev.label)}</div>
+      <div class="portDeviceSub">${[dev.vendor, dev.model, dev.sw_version ? `v${dev.sw_version}` : null, dev.host].filter(Boolean).map(htmlEscape).join(' · ')}</div>
+    </div>
+  </div>
+  <div class="tableScroll">
+    <table class="driftTable">
+      <thead><tr><th>Time</th><th>Port</th><th>Field</th><th>From</th><th>To</th></tr></thead>
+      <tbody>${rows}</tbody>
     </table>
   </div>
-</div>` : '';
+</div>`;
+  }).join('\n') : `<p class="empty">No switches are currently being monitored for drift.</p>`;
 
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/>
@@ -1336,7 +1641,8 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
 <meta name="color-scheme" content="light"/>
 <title>Rack Scan Report — ${htmlEscape(d.rackId)}</title>
 <style>
-  /* Light theme — clean, attractive, looks the same on screen and in PDF.
+  /* Minimal light theme — white surfaces, one subtle black accent, tight
+     spacing. Looks the same on screen and in PDF.
      color-scheme:light opts this report out of Android WebView force-dark
      (the app's index.css does the same); with the native force-dark theme
      fix this is belt-and-suspenders so the report never darkens. */
@@ -1344,192 +1650,230 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
     color-scheme: light;
     --bg:#ffffff; --bg2:#ffffff;
     --card:#ffffff;
-    --fg:#121417; --muted:#717171; --softMuted:#a0a0a0;
-    --accent:#121417; --accent2:#4c4546; --accent3:#0d0d0f;
-    --border:#e0e0e0; --borderSoft:#efefef;
-    --shadow:0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
-    --shadowSm:0 1px 2px rgba(0,0,0,0.05);
+    --fg:#18181b; --muted:#7a7a7f; --softMuted:#a8a8ad;
+    --accent:#18181b; --accent2:#3f3f46; --accent3:#0a0a0b;
+    --border:#e4e4e7; --borderSoft:#f1f1f3;
+    --shadow:0 1px 2px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.04);
+    --shadowSm:0 1px 2px rgba(0,0,0,0.04);
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
+  html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
   body{
     background:#ffffff;
     color:var(--fg);
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    line-height:1.5; min-height:100vh;
+    line-height:1.45; min-height:100vh;
   }
-  .wrap{max-width:1080px;margin:0 auto;padding:24px 22px 48px}
+  .wrap{width:100%;max-width:1080px;margin:0 auto;padding:18px 20px 36px}
 
   /* ── Hero ── */
   .hero{
     position:relative;
-    padding:30px 30px 26px;
-    border-radius:20px;
+    padding:20px 22px 18px;
+    border-radius:14px;
     color:#fff;
-    background:linear-gradient(135deg, #121417 0%, #2a2a2e 55%, #0d0d0f 100%);
-    box-shadow:0 12px 32px rgba(0,0,0,0.16), 0 2px 6px rgba(0,0,0,0.08);
+    background:#121214;
     overflow:hidden;
   }
-  .hero::before{
-    content:'';position:absolute;inset:0;pointer-events:none;
-    background:
-      radial-gradient(420px 180px at 90% -10%, rgba(255,255,255,0.22), transparent 70%),
-      radial-gradient(280px 120px at 10% 110%, rgba(255,255,255,0.12), transparent 70%);
-  }
   .heroEyebrow{
-    display:inline-flex;align-items:center;gap:8px;
-    font-size:.7rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
-    color:#fff;
-    padding:5px 12px;border-radius:999px;
-    background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.35);
-    backdrop-filter:blur(4px);
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:.64rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:rgba(255,255,255,0.75);
   }
-  .heroEyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:#ffffff;box-shadow:0 0 10px rgba(255,255,255,0.6)}
+  .heroEyebrow::before{content:'';width:5px;height:5px;border-radius:50%;background:#fff}
   h1{
-    font-size:2.1rem;margin:14px 0 6px;letter-spacing:-0.025em;
-    color:#fff;font-weight:800;
-    text-shadow:0 2px 8px rgba(0,0,0,0.18);
+    font-size:1.5rem;margin:8px 0 4px;letter-spacing:-0.02em;
+    color:#fff;font-weight:700;
   }
-  .heroMeta{display:flex;flex-wrap:wrap;gap:14px;color:rgba(255,255,255,0.88);font-size:.88rem}
-  .heroMeta .k{color:rgba(255,255,255,0.65);margin-right:4px}
+  .heroMeta{display:flex;flex-wrap:wrap;gap:12px;color:rgba(255,255,255,0.7);font-size:.8rem}
+  .heroMeta .k{color:rgba(255,255,255,0.5);margin-right:4px}
   .heroMeta code{
     font-family:'SF Mono',Menlo,Consolas,monospace;
-    background:rgba(255,255,255,0.18);padding:3px 9px;border-radius:6px;
-    color:#fff;border:1px solid rgba(255,255,255,0.28);
+    background:rgba(255,255,255,0.12);padding:2px 8px;border-radius:5px;
+    color:#fff;
   }
 
   /* ── Stat cards ── */
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:18px 0 8px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0 4px}
   .stat{
-    position:relative;
-    padding:16px 18px;border-radius:14px;
+    padding:12px 14px;border-radius:10px;
     background:var(--card);
     border:1px solid var(--border);
-    box-shadow:var(--shadow);
     overflow:hidden;
   }
-  .stat::before{
-    content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-    background:linear-gradient(180deg, var(--accent), var(--accent2));
-  }
-  .stat .k{font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-  .stat .v{
-    font-size:2rem;font-weight:800;margin-top:4px;letter-spacing:-0.02em;
-    color:transparent;
-    background:linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip:text;background-clip:text;
-  }
-  .stat .statOf{font-size:1.05rem;font-weight:700;color:var(--softMuted);-webkit-text-fill-color:var(--softMuted)}
+  .stat .k{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .stat .v{font-size:1.4rem;font-weight:700;margin-top:2px;letter-spacing:-0.01em;color:var(--fg)}
+  .stat .statOf{font-size:.9rem;font-weight:600;color:var(--softMuted)}
 
   /* ── Rack image ── */
-  .rackShot{
-    border:1px solid var(--border);border-radius:14px;overflow:hidden;
-    background:#fafafa;box-shadow:var(--shadowSm);
+  .rackHero{
+    max-width:320px;margin:0 auto;
+    border-radius:10px;overflow:hidden;border:1px solid var(--border);
+    background:#fafafa;
   }
-  .rackShot img{display:block;width:100%;height:auto}
+  .rackHero img{width:100%;display:block}
 
-  /* ── Inventory table ── */
-  .tableWrap{
-    border:1px solid var(--border);border-radius:14px;overflow:hidden;
-    box-shadow:var(--shadowSm);overflow-x:auto;
+  /* ── Device list ── */
+  .deviceList{display:flex;flex-direction:column;gap:6px}
+  .deviceRow{
+    display:flex;align-items:center;gap:12px;
+    padding:8px 12px 8px 11px;border-radius:9px;
+    background:var(--card);
+    border:1px solid var(--border);border-left:2px solid var(--accent);
   }
-  .invTable{width:100%;border-collapse:collapse;font-size:.9rem}
-  .invTable thead th{
-    text-align:left;font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--muted);padding:11px 14px;background:#fafafa;border-bottom:1px solid var(--border);white-space:nowrap;
+  .deviceRowIcon{
+    flex-shrink:0;width:28px;height:28px;border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--accent);
+    color:#fff;font-weight:700;font-size:.62rem;letter-spacing:.02em;
   }
-  .invTable td{padding:11px 14px;border-bottom:1px solid var(--borderSoft);vertical-align:middle}
-  .invTable tbody tr:last-child td{border-bottom:none}
-  .invTable tbody tr:nth-child(even){background:#fcfcfc}
-  .invPos{font-family:'SF Mono',Menlo,Consolas,monospace;font-weight:700;white-space:nowrap}
-  .invDot{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:8px;vertical-align:middle}
-  .invModel{font-weight:600}
-  .invNone{color:var(--softMuted);font-weight:400;font-style:italic}
-  .invNum{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;width:64px}
-  .invOcc{min-width:120px}
-  .occBarWrap{display:inline-block;width:64px;height:6px;border-radius:99px;background:#eee;overflow:hidden;vertical-align:middle;margin-right:8px}
-  .occBar{display:block;height:100%;border-radius:99px}
-  .occText{font-variant-numeric:tabular-nums;font-size:.82rem;color:var(--muted);font-weight:600}
+  .deviceRowMain{flex:1;min-width:0}
+  .deviceRowLabel{font-weight:700;font-size:.82rem;color:var(--fg)}
+  .deviceRowModel{font-weight:600;color:var(--muted);font-size:.76rem;margin-left:4px}
+  .deviceRowClass{font-size:.72rem;color:var(--muted);margin-top:1px}
+  .deviceRowStats{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;max-width:45%}
+  .deviceRowStat{
+    font-size:.64rem;font-weight:600;color:var(--muted);white-space:nowrap;
+    background:#f4f4f5;padding:2px 8px;border-radius:999px;
+  }
+
+  /* ── Info card (Selected Device) ── */
+  .infoCard{
+    position:relative;padding:14px 16px 16px;border-radius:12px;
+    background:var(--card);border:1px solid var(--border);
+    overflow:hidden;
+  }
+  .infoCard::before{
+    content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:var(--accent);
+  }
+  .infoGrid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;
+    margin-top:10px;
+  }
+  .infoSubhead{
+    margin-top:14px;padding-top:10px;border-top:1px solid var(--borderSoft);
+    font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  }
+  .infoItem .k{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .infoItem .v{font-size:.86rem;font-weight:600;color:var(--fg);margin-top:2px}
+  .infoItem .v.muted{color:var(--softMuted);font-weight:500;font-style:italic}
+  .pill{
+    display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;
+    font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    margin-left:5px;
+  }
+  .pill.ok{background:#e8f5ec;color:#166534}
+  .pill.warn{background:#fdf1de;color:#92400e}
+
+  /* ── Port detail grid (inside port cards) ── */
+  .portDetails{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;
+    margin-top:10px;padding-top:10px;border-top:1px solid var(--borderSoft);
+  }
+  .detailItem .k{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .detailItem .v{font-size:.8rem;font-weight:600;color:var(--fg);margin-top:2px}
+  .statusPill{
+    display:inline-flex;align-items:center;padding:1px 9px;border-radius:999px;
+    font-size:.68rem;font-weight:700;text-transform:capitalize;
+  }
+  .statusPill.ok{background:#e8f5ec;color:#166534}
+  .statusPill.muted{background:#f4f4f5;color:#71717a}
+  .statusPill.warn{background:#fdf1de;color:#92400e}
+
+  /* ── Drift history ── */
+  .driftCard{
+    margin-top:10px;padding:14px 16px 16px;border-radius:12px;
+    background:var(--card);border:1px solid var(--border);
+  }
+  .tableScroll{overflow-x:auto;margin-top:10px}
+  .driftTable{width:100%;min-width:420px;border-collapse:collapse;font-size:.76rem}
+  .driftTable th{
+    text-align:left;padding:6px 8px;font-size:.62rem;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+    border-bottom:1px solid var(--border);
+  }
+  .driftTable td{padding:6px 8px;border-bottom:1px solid var(--borderSoft);color:var(--fg)}
+  .driftTable tr:last-child td{border-bottom:none}
 
   /* ── Section heading ── */
-  .section{margin-top:32px}
+  .section{margin-top:22px}
   .sectionTitle{
-    display:flex;align-items:center;gap:10px;margin:0 0 14px;
-    font-size:.78rem;font-weight:800;letter-spacing:.16em;
+    display:flex;align-items:center;gap:8px;margin:0 0 10px;
+    font-size:.68rem;font-weight:700;letter-spacing:.14em;
     text-transform:uppercase;color:var(--muted);
   }
-  .sectionTitle::before{content:'';width:22px;height:2px;border-radius:2px;background:linear-gradient(90deg, var(--accent), var(--accent2))}
-  .sectionTitle::after{content:'';flex:1;height:1px;background:linear-gradient(90deg, var(--border), transparent)}
+  .sectionTitle::before{content:'';width:14px;height:2px;border-radius:1px;background:var(--accent)}
+  .sectionTitle::after{content:'';flex:1;height:1px;background:var(--border)}
 
   /* ── Port identification cards ── */
   .portCard{
-    position:relative;margin-top:14px;
-    padding:18px 20px 20px;border-radius:16px;
+    position:relative;margin-top:10px;
+    padding:14px 16px 16px;border-radius:12px;
     background:var(--card);
     border:1px solid var(--border);
-    box-shadow:var(--shadow);
     overflow:hidden;
   }
   .portCard::before{
-    content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
-    background:linear-gradient(180deg, var(--accent), var(--accent2));
+    content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:var(--accent);
   }
-  .portCardHead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .portCardHead{display:flex;align-items:center;gap:12px;margin-bottom:10px}
   .portBadge{
     display:inline-flex;align-items:center;justify-content:center;
-    padding:8px 14px;border-radius:10px;
+    padding:6px 11px;border-radius:8px;
     font-family:'SF Mono',Menlo,Consolas,monospace;
-    font-size:.85rem;font-weight:800;color:#fff;letter-spacing:.02em;
-    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    font-size:.76rem;font-weight:700;color:#fff;letter-spacing:.02em;
+    background:var(--accent);
     flex-shrink:0;
   }
-  .portCardTitle{display:flex;flex-direction:column;gap:2px;min-width:0}
-  .portDevice{font-size:1.05rem;font-weight:800;color:var(--fg);letter-spacing:-0.01em}
-  .portDeviceSub{font-size:.78rem;color:var(--muted);font-weight:500}
+  .portCardTitle{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .portDevice{font-size:.92rem;font-weight:700;color:var(--fg);letter-spacing:-0.01em}
+  .portDeviceSub{font-size:.72rem;color:var(--muted);font-weight:500}
   .portImgs{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;
   }
   .portImg{
-    border-radius:12px;overflow:hidden;
+    border-radius:9px;overflow:hidden;
     border:1px solid var(--border);
-    background:#f8fafc;
-    box-shadow:var(--shadowSm);
+    background:#fafafa;
   }
   .portImg img{width:100%;display:block}
 
   .empty{
-    color:var(--muted);font-style:italic;padding:24px;text-align:center;
-    background:var(--card);border:1px dashed var(--border);border-radius:12px;
+    color:var(--muted);font-style:italic;padding:18px;text-align:center;
+    font-size:.82rem;
+    background:var(--card);border:1px dashed var(--border);border-radius:10px;
   }
 
   /* ── Console transcript inside port card ── */
-  .consoleWrap{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border)}
-  .consoleHead{margin-bottom:8px}
-  .consoleKey{font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+  .consoleWrap{margin-top:10px;padding-top:10px;border-top:1px solid var(--borderSoft)}
+  .consoleHead{margin-bottom:6px}
+  .consoleKey{font-size:.64rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
   .cmdBlock{
-    margin-top:10px;background:#f8fafc;border:1px solid var(--border);
-    border-radius:10px;overflow:hidden;
+    margin-top:8px;background:#fafafa;border:1px solid var(--border);
+    border-radius:8px;overflow:hidden;
   }
   .cmdHeader{
-    display:flex;align-items:baseline;gap:10px;padding:8px 12px;
-    background:#eef2f7;border-bottom:1px solid var(--border);
+    display:flex;align-items:baseline;gap:8px;padding:6px 10px;
+    background:#f4f4f5;border-bottom:1px solid var(--border);
   }
-  .cmdName{font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
-  .cmdLine{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.75rem;color:#334155;background:transparent}
+  .cmdName{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+  .cmdLine{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.72rem;color:#3f3f46;background:transparent}
   .cmdOut,.cmdErr{
-    margin:0;padding:12px 14px;
-    font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.78rem;line-height:1.5;
-    color:#1e293b;background:transparent;
+    margin:0;padding:10px 12px;
+    font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.74rem;line-height:1.5;
+    color:#27272a;background:transparent;
     white-space:pre-wrap;word-break:break-word;
-    max-height:420px;overflow:auto;
+    max-height:380px;overflow:auto;
   }
   .cmdErr{color:#b91c1c;background:#fef2f2}
 
   @media (max-width:600px){
-    .wrap{padding:18px 14px 40px}
-    .hero{padding:22px 20px}
-    h1{font-size:1.55rem}
-    .stat .v{font-size:1.6rem}
+    .wrap{padding:14px 12px 30px}
+    .hero{padding:16px 16px}
+    h1{font-size:1.3rem}
+    .stat .v{font-size:1.2rem}
     .portCardHead{flex-wrap:wrap}
   }
 
@@ -1547,13 +1891,12 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
     display:inline-flex;align-items:center;gap:8px;
     padding:8px 14px;border-radius:10px;
     font-size:.82rem;font-weight:700;
-    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    background:var(--accent);
     color:#fff;border:none;
-    box-shadow:0 4px 14px rgba(0,0,0,0.18);
     cursor:pointer; font-family:inherit;
-    transition:transform .12s, box-shadow .15s;
+    transition:opacity .12s;
   }
-  .pdfBtn:hover{transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,0,0,0.25);}
+  .pdfBtn:hover{opacity:.85}
   .pdfBtn svg{width:14px;height:14px}
 
   /* ── PDF / print niceties ── */
@@ -1561,20 +1904,9 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   body.pdfMode .topBar, @media print { .topBar{display:none} }
   body.pdfMode .cmdOut, body.pdfMode .cmdErr,
   @media print { .cmdOut, .cmdErr { max-height:none !important; overflow:visible !important } }
-  /* html2canvas can't render -webkit-background-clip:text, so any gradient
-     text (h1, .stat .v) needs to fall back to a solid colour. */
-  body.pdfMode h1 {
-    color:#fff !important;
-    -webkit-text-fill-color:#fff !important;
-    text-shadow:none !important;
-  }
-  body.pdfMode .stat .v {
-    background:none !important;
-    -webkit-background-clip:initial !important;
-    background-clip:initial !important;
-    -webkit-text-fill-color:initial !important;
-    color:#121417 !important;
-  }
+  /* The gradient-text fallbacks that used to live here are gone with the
+     gradients themselves — h1 and .stat .v are now solid colours, which
+     html2canvas renders correctly without help. */
   body.pdfMode .portImg img { max-height:300px; object-fit:contain; }
   /* Allow port cards to split across pages so we never leave huge gaps. */
   body.pdfMode .portCard { break-inside:auto; page-break-inside:auto; }
@@ -1641,19 +1973,31 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   <div class="stat"><div class="k">Models read</div><div class="v">${identified}<span class="statOf"> / ${devs.length}</span></div></div>
 </div>
 
-${rackShot ? `
 <div class="section">
-  <div class="sectionTitle">Rack</div>
-  <div class="rackShot"><img src="${rackShot}" alt="Annotated rack scan"/></div>
-</div>` : ''}
+  <div class="sectionTitle">Rack Image</div>
+  ${rackImageHtml}
+</div>
 
-${inventoryHtml}
+<div class="section">
+  <div class="sectionTitle">Devices</div>
+  ${devicesHtml}
+</div>
+
+<div class="section">
+  <div class="sectionTitle">Selected Device</div>
+  ${selectedDeviceHtml}
+</div>
 
 <div class="section">
   <div class="sectionTitle">Port Identifications</div>
   ${d.port_identifications.length
     ? portIdsHtml
     : `<p class="empty">No individual ports have been located yet. Use “Find Port” on a switch to add per-port detail here.</p>`}
+</div>
+
+<div class="section">
+  <div class="sectionTitle">Drift History</div>
+  ${driftHtml}
 </div>
 
 </div></body></html>`;
@@ -1728,8 +2072,115 @@ function renderCSVReport(data) {
 }
 
 // Generates the canonical HTML file on disk and returns all formats + paths.
-function buildScanReport(rackId, { inlineImages = true } = {}) {
+// Best-effort make/model → spec-sheet port count + firmware freshness for
+// the report's "Selected Device" section. Deliberately DB-cache-only
+// (--no-live): the report regenerates on every open, so this must never
+// trigger Agent_scrap's live web fallback (which the /api/specs comments
+// document as ~4-9s, up to the 60s worst case) — an unknown model here
+// just renders as "not in local catalog" instead of stalling the report.
+// Mutates selectedDevice.specs / .firmware in place; never throws.
+async function enrichSelectedDeviceSpecsFirmware(selectedDevice) {
+  const vendor = selectedDevice?.make;
+  let   model  = selectedDevice?.model;
+  if (!vendor || !model) return;
+
+  // OCR often garbles a digit or two (e.g. "CRS326-246-2S" for the real
+  // "CRS326-24G-2S+RM"). A plain DB lookup would miss that outright, so
+  // mirror /api/specs's fromOcr correction — but DB-only (no live retry) to
+  // keep this report path bounded. If the top suggestion is a strong match,
+  // switch to it for both the specs AND the firmware lookup below, so the
+  // two agree on which device they're describing.
+  try {
+    const specRes = await runAgentCli(['--no-live', `${vendor} ${model}`]);
+    if (specRes.ok) {
+      selectedDevice.specs = specPayloadFromAgent(specRes, vendor, model);
+    } else {
+      const suggestions = specRes?.response?.suggestions || [];
+      const best = _bestSuggestion(suggestions, model);
+      if (best && best.toLowerCase() !== model.toLowerCase()) {
+        const retry = await runAgentCli(['--no-live', `${vendor} ${best}`]);
+        if (retry.ok) {
+          selectedDevice.specs = specPayloadFromAgent(retry, vendor, best);
+          selectedDevice.model_matched_from = model;
+          model = best; // use the corrected model for the firmware lookup too
+          selectedDevice.model = best;
+        } else {
+          selectedDevice.specs = specPayloadFromAgent(specRes, vendor, model);
+        }
+      } else {
+        selectedDevice.specs = specPayloadFromAgent(specRes, vendor, model);
+      }
+    }
+  } catch (e) {
+    selectedDevice.specs = { ok: false, error: e.message };
+  }
+
+  // Firmware needs a currentVersion, which OCR only rarely reads off the
+  // faceplate. Fall back to the polled monitored_devices row whose model
+  // best matches — there's no rackId link between the two, so this is a
+  // best-effort fuzzy guess, not a guaranteed "this rack's switch" match.
+  let currentVersion = selectedDevice.firmware_version_ocr || null;
+  let versionSource = currentVersion ? 'ocr' : null;
+  if (!currentVersion) {
+    try {
+      const scored = portHistoryDb.listDevices()
+        .filter(d => d.sw_version && d.model)
+        .map(d => ({ d, score: _modelSimilarity(d.model, model) }))
+        .sort((a, b) => b.score - a.score);
+      if (scored.length && scored[0].score >= 0.5) {
+        currentVersion = scored[0].d.sw_version;
+        versionSource = `monitored:${scored[0].d.host}`;
+      }
+    } catch { /* best-effort */ }
+  }
+  if (!currentVersion) return;
+
+  try {
+    const fwRes = await runAgentCli(['--no-live', '--firmware', `${vendor} ${model}`, currentVersion]);
+    selectedDevice.firmware = firmwarePayloadFromAgent(fwRes, { vendor, model, currentVersion });
+    selectedDevice.firmware.currentVersionSource = versionSource;
+  } catch (e) {
+    selectedDevice.firmware = { ok: false, error: e.message };
+  }
+}
+
+// The original upload can be several MB at full camera resolution — fine
+// for the pipeline's detection accuracy, way more than a report needs to
+// just show what the rack looks like. Downscales + re-compresses to a
+// cached copy so the (base64-inlined) report HTML doesn't balloon in size.
+// Cached: only regenerated when the source file is newer than the cached
+// copy, so repeat report opens don't pay the resize cost again.
+async function ensureResizedRackImage(rackDir, relPath) {
+  if (!relPath) return relPath;
+  try {
+    const abs = resolveRelativeArtifact(rackDir, relPath);
+    if (!fs.existsSync(abs)) return relPath;
+    const imagesDir = path.join(rackDir, 'images');
+    const thumbAbs = path.join(imagesDir, 'report_rack_image.jpg');
+    const srcStat = fs.statSync(abs);
+    const needsBuild = !fs.existsSync(thumbAbs) || fs.statSync(thumbAbs).mtimeMs < srcStat.mtimeMs;
+    if (needsBuild) {
+      fs.mkdirSync(imagesDir, { recursive: true });
+      await sharp(abs)
+        .resize({ width: 720, withoutEnlargement: true })
+        .jpeg({ quality: 68 })
+        .toFile(thumbAbs);
+    }
+    return 'images/report_rack_image.jpg';
+  } catch (e) {
+    logger.warn(`[report] rack image resize failed, using original: ${e.message}`);
+    return relPath;
+  }
+}
+
+async function buildScanReport(rackId, { inlineImages = true } = {}) {
   const data = buildScanReportData(rackId);
+  data.rackOverviewImage = await ensureResizedRackImage(data._rackDir, data.rackOverviewImage);
+  if (data.selectedDevice) {
+    await enrichSelectedDeviceSpecsFirmware(data.selectedDevice).catch((e) => {
+      logger.warn(`[report] specs/firmware enrichment failed for ${rackId}: ${e.message}`);
+    });
+  }
   const html = renderHTMLReport(data, { inlineImages });
   const reportPath = path.join(data._rackDir, 'report.html');
   fs.writeFileSync(reportPath, html, 'utf8');
@@ -2069,9 +2520,9 @@ async function getBrowser() {
 
 // Renders the canonical report.html through headless Chromium and writes
 // report.pdf next to it. Body class `pdfMode` triggers the print-mode CSS that
-// already lives in the HTML (hides the top bar, fixes gradient text, etc.).
+// already lives in the HTML (hides the top bar, unclamps console output, etc.).
 async function buildScanReportPDF(rackId) {
-  const built = buildScanReport(rackId);
+  const built = await buildScanReport(rackId);
   const pdfPath = path.join(built.data._rackDir, 'report.pdf');
   const fileUrl = 'file:///' + built.reportPath.replace(/\\/g, '/').replace(/^\//, '');
 
@@ -2515,6 +2966,24 @@ setInterval(() => {
       ...summary, orphans: undefined,   // omit per-folder list from log
       sampleOrphans: (summary.orphans || []).slice(0, 5).map(o => o.rackId),
     }, `scheduled orphan GC: ${summary.removed}/${summary.scanned} ${_orphanGcApply ? 'pruned' : 'would-prune'}`);
+    // When the scheduled job actually deletes customer data, record it in the
+    // tamper-evident audit trail — same as the manual endpoint does. A system
+    // actor (no req) stands in for the cron. Dry-runs delete nothing, so this
+    // only fires once apply is deliberately enabled.
+    if (_orphanGcApply && summary.removed > 0) {
+      audit.log({
+        user: { id: null, username: 'system' },
+        action: 'orphan_gc.scheduled',
+        status: 'ok',
+        payload: {
+          scheduled: true,
+          retentionDays: _orphanGcRetentionDays,
+          scanned: summary.scanned, removed: summary.removed,
+          freedBytes: summary.freedBytes,
+          sampleOrphans: (summary.orphans || []).slice(0, 5).map(o => o.rackId),
+        },
+      });
+    }
   } catch (e) {
     logger.warn({ event: 'orphan_gc.scheduled_failed', err: e.message },
       `scheduled orphan GC failed: ${e.message}`);
@@ -2763,6 +3232,7 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
     const meta = {
       rackId,
       userId:     softAuthUserId(req),  // null for unauthenticated scans
+      tenantId:   softAuthPayload(req)?.tenantId ?? null,  // owning Site, so the folder carries a tenant signal on disk
       imageHash:  crypto.createHash('sha256').update(fs.readFileSync(imagePath)).digest('hex'),
       imagePath,
       timestamp:  new Date().toISOString(),
@@ -3045,6 +3515,7 @@ app.post('/api/stitch', scanLimit, upload.array('images', 8), async (req, res) =
     const meta = {
       rackId,
       userId:     softAuthUserId(req),
+      tenantId:   softAuthPayload(req)?.tenantId ?? null,  // owning Site, so the folder carries a tenant signal on disk
       imageHash:  crypto.createHash('sha256').update(fs.readFileSync(imagePath)).digest('hex'),
       imagePath,
       timestamp:  new Date().toISOString(),
@@ -3209,6 +3680,66 @@ app.post('/api/ocr/labels', scanLimit, upload.single('image'), async (req, res) 
     safeUnlink(tmpPath);
     logger.warn(`[ocr] failed: ${e.message}`);
     res.status(500).json({ error: 'OCR failed', labels: [] });
+  }
+});
+
+/**
+ * POST /api/ocr/device-label
+ * Identifies one device from a close-up photo of its label — the recovery
+ * path for a device the rack scan couldn't read.
+ *
+ * A rack photo gives each device only its slice of the frame, so a model
+ * string that was perfectly legible in person arrives here 20px tall and the
+ * identifier comes back empty. Rather than dead-ending the user in a text
+ * field, the app asks for one more photo — of that device alone, framed on
+ * its label — where the pixels actually exist. Same OCR engine and same
+ * make/model identifier as the rack pass; only the framing changes.
+ *
+ * The answer is a SUGGESTION for the user to confirm in the manual-entry
+ * editor, never a value written straight through. A close-up read is far
+ * better than a rack-crop read, which is not the same as trustworthy.
+ *
+ * Body (multipart/form-data):
+ *   image  (file, required)    — JPEG/PNG/HEIC close-up of one device
+ *   preset (string, optional)  — 'closeup' (default) | 'fast' | 'accurate'
+ *
+ * Response 200 (a read that found nothing is still a 200 — the client falls
+ * back to manual entry, which is an outcome, not an error):
+ *   { ok, make, model, version, raw_text, ocr_conf, match_conf,
+ *     alternates: [{make, model, conf}], source, elapsed_ms }
+ */
+const CLOSEUP_PRESETS = new Set(['closeup', 'fast', 'accurate']);
+
+app.post('/api/ocr/device-label', auth.requireAuth, scanLimit, upload.single('image'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ ok: false, error: 'No image file provided' });
+
+  const preset = CLOSEUP_PRESETS.has(req.body?.preset) ? req.body.preset : 'closeup';
+  const t0 = Date.now();
+  let tmpPath = req.file.path;
+  try {
+    // Auto-orients from EXIF and re-encodes to JPEG, so a HEIC from the iOS
+    // photo library and a canvas capture from the in-app camera arrive at
+    // the OCR engine identically.
+    tmpPath = await normalizeImage(tmpPath);
+    const result = await pool.request('closeup_ocr', { image_path: tmpPath, preset });
+    safeUnlink(tmpPath);
+
+    const elapsedMs = Date.now() - t0;
+    audit.log({ req, action: 'ocr.device_label',
+                status: result?.ok ? 'ok' : 'fail',
+                targetType: 'device', targetId: result?.model || result?.make || 'unread',
+                payload: { source: result?.source, preset, elapsed_ms: elapsedMs } });
+
+    if (!result?.ok) {
+      return res.status(500).json({ ok: false,
+        error: 'Could not read that photo. Enter the make and model instead.' });
+    }
+    res.json({ ...result, elapsed_ms: elapsedMs });
+  } catch (e) {
+    safeUnlink(tmpPath);
+    logger.warn(`[ocr] device-label failed: ${e.message}`);
+    res.status(500).json({ ok: false,
+      error: 'Could not read that photo. Enter the make and model instead.' });
   }
 });
 
@@ -4155,7 +4686,7 @@ app.post('/api/analyze-video', auth.requireAuth, scanLimit, upload.single('video
           await runPipelineAnalyze(imagePath, rackDir, softAuthPayload(req)?.organizationId || null);
           await ensurePortCounts(rackId);
           writeMeta(rackId, {
-            rackId, userId,
+            rackId, userId, tenantId,
             imageHash: crypto.createHash('sha256')
               .update(fs.readFileSync(imagePath)).digest('hex'),
             imagePath,
@@ -4499,7 +5030,7 @@ app.get('/api/rack-group/:groupId/report', auth.requireAuth, async (req, res) =>
     for (const m of members) {
       try {
         try { await shrinkImagesForReport(path.join(outputsDir, m.rack_id)); } catch (_) {}
-        const { html } = buildScanReport(m.rack_id);
+        const { html } = await buildScanReport(m.rack_id);
         if (!head) {
           const hm = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
           head = hm ? hm[1] : '';
@@ -5647,7 +6178,7 @@ app.get('/api/scan/:rackId/report', async (req, res) => {
     if (format === 'html') {
       // Downscale big renders first so the report renders on phones.
       try { await shrinkImagesForReport(path.join(outputsDir, rackId)); } catch (_) {}
-      const { html } = buildScanReport(rackId);
+      const { html } = await buildScanReport(rackId);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       // The app shows this report inside an <iframe>. helmet's default
       // X-Frame-Options: SAMEORIGIN blocks that because the iframe's parent
@@ -5699,10 +6230,10 @@ app.get('/api/scan/:rackId/report', async (req, res) => {
   }
 });
 
-app.post('/api/scan/:rackId/report', (req, res) => {
+app.post('/api/scan/:rackId/report', async (req, res) => {
   const { rackId } = req.params;
   try {
-    const { reportPath, data } = buildScanReport(rackId);
+    const { reportPath, data } = await buildScanReport(rackId);
     audit.log({ req, action: 'report.regen', status: 'ok', targetType: 'rack', targetId: rackId });
     res.json({
       rackId,
@@ -5716,6 +6247,55 @@ app.post('/api/scan/:rackId/report', (req, res) => {
     });
   } catch (err) {
     audit.log({ req, action: 'report.regen', status: 'fail', targetType: 'rack', targetId: rackId, error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/scan/:rackId/device-override  body: { position, make, model, firmware }
+// Persists a user's manual make/model/firmware correction (from the Switch
+// Information page) server-side, keyed by the device's "U04"-style
+// position — the same key the per-device OCR pass uses, so the report's
+// Selected Device section can prefer it over the (often partial/garbled)
+// OCR read. Previously this only lived in the browser's localStorage,
+// invisible to anything server-side including the report.
+app.post('/api/scan/:rackId/device-override', (req, res) => {
+  const { rackId } = req.params;
+  if (!/^RK-[A-Za-z0-9]{4,32}$/.test(rackId)) {
+    return res.status(400).json({ error: 'Invalid scanId' });
+  }
+  const _auth = softAuthPayload(req);
+  if (!canAccessRack(_auth, rackId)) {
+    return res.status(404).json({ error: 'Rack not found' });
+  }
+  const { position, make, model, firmware } = req.body || {};
+  if (!position || typeof position !== 'string') {
+    return res.status(400).json({ error: 'position is required' });
+  }
+  const rackDir = path.join(outputsDir, rackId);
+  if (!fs.existsSync(rackDir)) {
+    return res.status(404).json({ error: `Rack ${rackId} not found` });
+  }
+  try {
+    const overridesPath = deviceOverridesPath(rackDir);
+    let overrides = {};
+    if (fs.existsSync(overridesPath)) {
+      try { overrides = JSON.parse(fs.readFileSync(overridesPath, 'utf8')); } catch { overrides = {}; }
+    }
+    const entry = { ...(overrides[position] || {}) };
+    if (make     !== undefined) entry.make     = make     || null;
+    if (model    !== undefined) entry.model    = model    || null;
+    if (firmware !== undefined) entry.firmware = firmware || null;
+    entry.updated_at = new Date().toISOString();
+    // Drop the row once every field is cleared, so the file doesn't
+    // accumulate empty placeholders for corrections the user undid.
+    if (!entry.make && !entry.model && !entry.firmware) {
+      delete overrides[position];
+    } else {
+      overrides[position] = entry;
+    }
+    fs.writeFileSync(overridesPath, JSON.stringify(overrides, null, 2), 'utf8');
+    res.json({ ok: true, position, override: overrides[position] || null });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
@@ -7724,6 +8304,12 @@ app.get('/api/specs/vendors', auth.requireAuth, moduleLimit, async (req, res) =>
   res.json(result);
 });
 
+// Memo for the two lookup endpoints below — see server/lib/lookup_cache.js
+// for why they need one. Shared by both: the keys are namespaced.
+const { createLookupCache } = require('./lib/lookup_cache');
+const _vendorLookups = createLookupCache();
+const _lookupOnce = (key, produce) => _vendorLookups.once(key, produce);
+
 // POST /api/specs  body: { vendor, model }
 // → Switch Spec Agent (Agent_scrap): SQLite cache (~1ms) with free
 //   multi-engine web fallback (~4s) for unknown models. The agent's record
@@ -7741,18 +8327,23 @@ app.post('/api/specs', auth.requireAuth, moduleLimit, async (req, res) => {
   if (!vendor || !model) {
     return res.status(400).json({ ok: false, error: 'vendor and model are required' });
   }
-  let agentRes, matchedFrom = null, matchedTo = null;
-  if (fromOcr) {
-    ({ agentRes, matchedFrom, matchedTo } =
-      await resolveAgentWithOcrCorrection(vendor, model));
-  } else {
-    agentRes = await runAgentCli([`${vendor} ${model}`]);
-  }
-  const payload = specPayloadFromAgent(agentRes, vendor, model);
-  if (matchedFrom) {
-    payload.matchedFrom = matchedFrom;
-    payload.matchedTo   = matchedTo;
-  }
+  const payload = await _lookupOnce(
+    `specs::${vendor.toLowerCase()}::${model.toLowerCase()}::${fromOcr ? 'ocr' : 'exact'}`,
+    async () => {
+      let agentRes, matchedFrom = null, matchedTo = null;
+      if (fromOcr) {
+        ({ agentRes, matchedFrom, matchedTo } =
+          await resolveAgentWithOcrCorrection(vendor, model));
+      } else {
+        agentRes = await runAgentCli([`${vendor} ${model}`]);
+      }
+      const p = specPayloadFromAgent(agentRes, vendor, model);
+      if (matchedFrom) {
+        p.matchedFrom = matchedFrom;
+        p.matchedTo   = matchedTo;
+      }
+      return p;
+    });
   res.status(payload.ok ? 200 : 404).json(payload);
 });
 
@@ -7923,8 +8514,15 @@ app.post('/api/firmware', auth.requireAuth, moduleLimit, async (req, res) => {
     });
   }
 
-  const lookup  = await runFirmwareLookup(vendor, model, currentVersion);
-  const payload = firmwarePayloadFromLookup(lookup, { vendor, model, currentVersion });
+  const { lookup, payload } = await _lookupOnce(
+    `fw::${vendor.toLowerCase()}::${model.toLowerCase()}::${currentVersion.toLowerCase()}`,
+    async () => {
+      const l = await runFirmwareLookup(vendor, model, currentVersion);
+      const p = firmwarePayloadFromLookup(l, { vendor, model, currentVersion });
+      // A runner failure is transient — don't let it occupy the slot for the
+      // full TTL. `ok:false` gives it the short miss TTL instead.
+      return { lookup: l, payload: p, ok: !(l && l._runnerError) };
+    });
   // Always 200 when the lookup ran, even for auth-required / bot-walled /
   // unknown: those are not server errors — each carries a portal link the UI
   // shows the user. Only a genuine runner failure is non-200.
@@ -7996,6 +8594,83 @@ function firmwarePayloadFromLookup(r, req) {
     message:         r.message || null,
     confidence:      r.confidence || null,
     changelog:       [],       // package provides no changelog, by design
+  };
+}
+
+// Maps an Agent_scrap `--firmware` result onto the same UI contract that
+// firmwarePayloadFromLookup produces from the Python firmware_lookup package.
+// Both exist on purpose and are NOT interchangeable:
+//   * /api/firmware (user-initiated) uses firmware_lookup — it hits live
+//     vendor sites, which is slow but authoritative.
+//   * the scan report uses the agent in --no-live mode — cache-only and
+//     bounded, because the report regenerates on every open and must never
+//     block on a vendor website.
+// Kept in the shape the report's Selected Device section reads
+// (ok / latestVersion / upToDate / currentVersion).
+function firmwarePayloadFromAgent(agentRes, req) {
+  if (!agentRes || !agentRes.ok) {
+    return {
+      ok: false,
+      vendor: req.vendor,
+      model:  req.model,
+      currentVersion: req.currentVersion,
+      error: agentRes?.error || 'Agent failed to return a firmware response.',
+    };
+  }
+  const advice = agentRes.advice || {};
+  const target = (advice.diff && advice.diff.target) || null;
+  const agentLatest = (target && target.version) || null;
+
+  let upToDate = null;
+  if (agentLatest) {
+    upToDate = String(agentLatest).trim() === String(req.currentVersion).trim();
+  }
+
+  // NOTE: the agent also returns advice.advisories[] (CVE rows from NVD).
+  // They are deliberately NOT mapped through — CVE data was removed from the
+  // product and must not reappear anywhere in the app. Do not reintroduce it
+  // here just because the upstream payload happens to carry it.
+
+  // Synthesize the changelog section from the target firmware's
+  // structured release-note fields — no extra web scrape needed since the
+  // agent's firmware DB already carries the diff breakdown.
+  const changelog = [];
+  if (target) {
+    const v = target.version || '';
+    const push = (label, list) => {
+      if (Array.isArray(list) && list.length) {
+        changelog.push({
+          section: v ? `${label} in ${v}` : label,
+          version: v || null,
+          text: list.join('\n'),
+        });
+      }
+    };
+    push('Security fixes', target.security_fixes);
+    push('Bug fixes',      target.bug_fixes);
+    push('New features',   target.new_features);
+    push('Known issues',   target.known_issues);
+    push('Deprecations',   target.deprecations);
+  }
+
+  return {
+    ok: true,
+    vendor:         agentRes.vendor || advice.vendor || req.vendor,
+    model:          agentRes.model  || req.model,
+    currentVersion: req.currentVersion,
+    latestVersion:  agentLatest,
+    upToDate,
+    releaseNotesUrl:   (target && target.release_notes_url) || null,
+    releaseNotesError: (!target && advice.message) ? advice.message : null,
+    releaseNotesGated: !!advice.release_notes_gated,
+    advisoryMessage: advice.message || null,
+    hasAdvisoryData: !!advice.has_data,
+    nos: advice.nos || null,
+    versionsFound: [],
+    changelog,
+    portalUrl: advice.portal_url || null,
+    recommendedMinVersion: advice.recommended_min_version || null,
+    latestSource: `agent (${agentRes.elapsed_ms ?? '?'} ms)`,
   };
 }
 

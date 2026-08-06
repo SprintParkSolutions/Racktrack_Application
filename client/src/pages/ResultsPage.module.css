@@ -5380,7 +5380,6 @@
 :global([data-theme='light']) .siBadge_neutral {
   background: #f0f0f0; border-color: #f0f0f0; color: #474747;
 }
-:global([data-theme='light']) .siCveSub { color: #1c1c1c; }
 :global([data-theme='light']) .siLink { color: #000000; }
 :global([data-theme='light']) .siChevron { color: #474747; }
 :global([data-theme='light']) .siRawPre {

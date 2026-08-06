@@ -225,6 +225,21 @@ function saveOverride(rackId, sw, field, value) {
 function loadUserVersion(rackId, sw)        { return loadOverride(rackId, sw, 'fwVersion'); }
 function saveUserVersion(rackId, sw, value) { saveOverride(rackId, sw, 'fwVersion', value); }
 
+// Mirrors the override server-side (outputs/<rackId>/device_overrides.json,
+// keyed by sw.position — same "U04" key the OCR pass uses) so it's visible
+// to anything that isn't this browser, notably the Rack Scan Report.
+// localStorage above stays the source of truth for this page itself; this
+// is purely so the correction propagates. Best-effort — a failed sync
+// (offline, no rackId, device has no position yet) never blocks the UI.
+function syncDeviceOverride(rackId, sw, fields) {
+  if (!rackId || !sw?.position) return;
+  authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/device-override`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ position: sw.position, ...fields }),
+  }).catch(() => {});
+}
+
 function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false }) {
   const { theme } = useTheme();
   const lt = theme === 'light';
@@ -246,6 +261,21 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
   const [userMake, setUserMake]       = useState(() => loadOverride(rackId, sw, 'make'));
   const [userModel, setUserModel]     = useState(() => loadOverride(rackId, sw, 'model'));
   const [userVersion, setUserVersion] = useState(() => loadUserVersion(rackId, sw));
+
+  // One-time backfill sync: any correction saved to localStorage before the
+  // server-side sync existed only ever lived in this browser — the report
+  // (server-side) could never see it. On load, if there's a saved value
+  // here, push it up automatically so it shows up without the user having
+  // to re-type and re-save something that's already visible on screen.
+  useEffect(() => {
+    if (userMake || userModel || userVersion) {
+      syncDeviceOverride(rackId, sw, { make: userMake, model: userModel, firmware: userVersion });
+    }
+    // Intentionally once-per-mount: explicit save actions elsewhere already
+    // sync on every edit, this is purely a backfill for pre-existing data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [editingIdent, setEditingIdent] = useState(false);
   const [identDraftMake,  setIdentDraftMake]  = useState('');
   const [identDraftModel, setIdentDraftModel] = useState('');
@@ -389,6 +419,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     const v = versionDraft.trim();
     setUserVersion(v);
     saveUserVersion(rackId, sw, v);
+    syncDeviceOverride(rackId, sw, { make: userMake, model: userModel, firmware: v });
     setEditingVersion(false);
     setVersionDraft('');
     setFirmware(null);
@@ -398,6 +429,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
   const clearVersion = () => {
     setUserVersion('');
     saveUserVersion(rackId, sw, '');
+    syncDeviceOverride(rackId, sw, { make: userMake, model: userModel, firmware: '' });
     setEditingVersion(false);
     setVersionDraft('');
     setFirmware(null);
@@ -446,6 +478,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     setUserModel(newModel);
     saveOverride(rackId, sw, 'make',  newMake);
     saveOverride(rackId, sw, 'model', newModel);
+    syncDeviceOverride(rackId, sw, { make: newMake, model: newModel, firmware: userVersion });
     // The close-up usually catches the firmware string printed on the same
     // label. Keep it only when nothing else supplied one: an existing version
     // came from the device itself or from the user, and both outrank a photo.
@@ -475,6 +508,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     setUserModel('');
     saveOverride(rackId, sw, 'make',  '');
     saveOverride(rackId, sw, 'model', '');
+    syncDeviceOverride(rackId, sw, { make: '', model: '', firmware: userVersion });
     setEditingIdent(false);
     setIdentDraftMake('');
     setIdentDraftModel('');
