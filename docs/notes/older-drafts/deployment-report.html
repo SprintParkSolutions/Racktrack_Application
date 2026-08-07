@@ -1,0 +1,222 @@
+<meta charset="utf-8">
+<title>RackTrack — Deployment Report</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#ffffff; --ink:#0e1626; --soft:#48566f; --faint:#6b7a94;
+    --line:#e3e8f2; --line2:#eef2f9;
+    --accent:#3564e0; --accent-bg:#e9f0ff; --accent-line:#cfe0ff;
+    --green:#0d7a3c; --green-bg:#e7f6ec; --green-line:#bce6cc;
+    --amber:#9a5b06; --amber-bg:#fef2e0; --amber-line:#f2d5a3;
+    --code-bg:#0d1526; --code-ink:#dbe6f7; --code-dim:#8194b4;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#070b12; --panel:#101827; --ink:#eef3fb; --soft:#a1b0c8; --faint:#8496b2;
+    --line:#212c3e; --line2:#18212f; --accent:#6a9bff; --accent-bg:#132444; --accent-line:#294066;
+    --green:#63d197; --green-bg:#0d2418; --green-line:#1e4a32; --amber:#f0b869; --amber-bg:#281d0d; --amber-line:#48381a;
+    --code-bg:#05090f; --code-dim:#728098; }}
+  :root[data-theme="dark"]{--bg:#070b12; --panel:#101827; --ink:#eef3fb; --soft:#a1b0c8; --faint:#8496b2;
+    --line:#212c3e; --line2:#18212f; --accent:#6a9bff; --accent-bg:#132444; --accent-line:#294066;
+    --green:#63d197; --green-bg:#0d2418; --green-line:#1e4a32; --amber:#f0b869; --amber-bg:#281d0d; --amber-line:#48381a;
+    --code-bg:#05090f; --code-dim:#728098;}
+  :root[data-theme="light"]{--bg:#f4f6fb; --panel:#ffffff; --ink:#0e1626; --soft:#48566f; --faint:#6b7a94;
+    --line:#e3e8f2; --line2:#eef2f9; --accent:#3564e0; --accent-bg:#e9f0ff; --accent-line:#cfe0ff;
+    --green:#0d7a3c; --green-bg:#e7f6ec; --green-line:#bce6cc; --amber:#9a5b06; --amber-bg:#fef2e0; --amber-line:#f2d5a3;
+    --code-bg:#0d1526; --code-dim:#8194b4;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink); line-height:1.62;
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:840px; margin:0 auto; padding:clamp(20px,4vw,52px);}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace; background:var(--line2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:.86em;}
+
+  .kicker{font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--accent);}
+  h1{margin:10px 0 8px; font-size:clamp(28px,4.4vw,40px); letter-spacing:-.025em; line-height:1.08; text-wrap:balance;}
+  .sub{margin:0; color:var(--soft); font-size:clamp(16px,1.5vw,18px); max-width:64ch;}
+  .meta{display:flex; flex-wrap:wrap; gap:7px; margin-top:16px;}
+  .meta span{font-size:12px; font-weight:600; padding:5px 11px; border-radius:999px; background:var(--panel); border:1px solid var(--line); color:var(--soft);}
+  .meta b{color:var(--ink)}
+
+  h2{margin:0 0 4px; font-size:clamp(20px,2.4vw,26px); letter-spacing:-.02em;}
+  section{margin-top:clamp(34px,5vw,56px);}
+  .sechead{display:flex; align-items:baseline; gap:12px; margin-bottom:18px; padding-bottom:12px; border-bottom:2px solid var(--line);}
+  .sechead .day{font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); white-space:nowrap;}
+  h3{margin:24px 0 8px; font-size:17px; letter-spacing:-.01em;}
+  p{margin:0 0 13px;}
+  .lead-p{color:var(--soft); font-size:15.5px;}
+
+  .why{background:var(--accent-bg); border:1px solid var(--accent-line); border-radius:12px; padding:14px 18px; margin:14px 0; font-size:14.5px;}
+  .why b{color:var(--accent)}
+  .why .lbl{display:block; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:5px;}
+
+  ul.clean{margin:0 0 14px; padding:0; list-style:none; display:grid; gap:9px;}
+  ul.clean li{display:flex; gap:11px; align-items:flex-start; font-size:15px;}
+  ul.clean li::before{content:''; flex:0 0 auto; width:7px; height:7px; margin-top:8px; border-radius:50%; background:var(--accent);}
+  ul.clean li b{font-weight:650}
+
+  /* architecture flow */
+  .arch{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; margin:16px 0;}
+  .flow{display:flex; flex-wrap:wrap; align-items:stretch; gap:10px;}
+  .node{flex:1 1 150px; min-width:130px; border:1px solid var(--line); border-radius:11px; padding:13px 14px; background:var(--bg);}
+  .node .ic{font-size:22px} .node .t{font-weight:700; font-size:14.5px; margin-top:6px} .node .d{font-size:12.5px; color:var(--soft); margin-top:3px}
+  .node.key{border-color:var(--accent-line); background:var(--accent-bg);}
+  .arrow{align-self:center; color:var(--faint); font-weight:800; font-size:18px;}
+  @media(max-width:620px){.arrow{transform:rotate(90deg)}}
+
+  table{width:100%; border-collapse:collapse; font-size:14px; margin:8px 0 14px; border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line2); vertical-align:top;}
+  th{background:var(--line2); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--soft);}
+  tr:last-child td{border-bottom:none}
+  td b{font-weight:650}
+  .tw{overflow-x:auto}
+
+  .note{border-radius:12px; padding:15px 18px; font-size:14.5px; margin:14px 0;}
+  .note.warn{background:var(--amber-bg); border:1px solid var(--amber-line);} .note.warn b{color:var(--amber)}
+  .note.ok{background:var(--green-bg); border:1px solid var(--green-line);} .note.ok b{color:var(--green)}
+  .note .lbl{display:block; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px;}
+  .note.warn .lbl{color:var(--amber)} .note.ok .lbl{color:var(--green)}
+
+  footer{margin-top:52px; padding-top:18px; border-top:1px solid var(--line); color:var(--faint); font-size:13px; text-align:center;}
+</style>
+
+<div class="wrap">
+
+  <div class="kicker">RackTrack &middot; Deployment Report</div>
+  <h1>From a laptop demo to a system testers can use</h1>
+  <p class="sub">What we built over two days, how it's now deployed, and the reasoning behind each decision — in plain terms.</p>
+  <div class="meta">
+    <span>iOS: <b>TestFlight, build 9</b></span>
+    <span>Android: <b>live to testers</b></span>
+    <span>Backend: <b>Windows GPU server</b></span>
+    <span>Prepared: <b>14 Jul 2026</b></span>
+  </div>
+
+  <!-- WHAT RACKTRACK DOES -->
+  <section>
+    <div class="sechead"><h2>What RackTrack does</h2></div>
+    <p class="lead-p">You take a photo of a server rack. RackTrack reads it and produces a full, labelled map of
+      everything inside — every device, where it sits, and its details. It also connects to the network switch to show
+      live port information: which ports are free, which are in use, and what's plugged into them.</p>
+    <p>The phone doesn't do the heavy work. It sends the photo to a server, which runs the AI and talks to the switch,
+      then sends the answer back. That server is the part this report is really about — because where it runs decides
+      whether the app is a demo or something a team can rely on.</p>
+  </section>
+
+  <!-- YESTERDAY -->
+  <section>
+    <div class="sechead"><span class="day">Day 1</span><h2>Yesterday — getting it into testers' hands</h2></div>
+    <p>The goal for day one was simple: turn the working prototype into a real, installable app on both phone platforms.</p>
+    <ul class="clean">
+      <li>Put our <b>real RackTrack branding and logo</b> on the app.</li>
+      <li>Built and signed it as a proper iPhone app and published it to <b>Apple TestFlight</b>, so invited testers can install it like any App Store app.</li>
+      <li>Built the <b>Android version</b> as well.</li>
+      <li>Refined the experience based on early testing — the scanning flow, navigation, and a short first-time walkthrough so new users know what to do.</li>
+    </ul>
+    <div class="why">
+      <span class="lbl">The problem we were left with</span>
+      At the end of day one, the app still depended on <b>my laptop being switched on and connected</b> — because that's
+      where the server was running. A laptop can't stay on around the clock, and its internet address kept changing. That
+      meant testers could only use the app when my machine happened to be awake. Not workable for real testing.
+    </div>
+  </section>
+
+  <!-- TODAY -->
+  <section>
+    <div class="sechead"><span class="day">Day 2</span><h2>Today — moving it onto real infrastructure</h2></div>
+    <p>Today was about fixing that dependency for good, and it's the most important change of the two days.</p>
+
+    <h3>We moved the entire backend onto the Windows workstation</h3>
+    <p>The server now runs on the office Windows machine with the graphics card (GPU). This was deliberate, for three reasons:</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Reason</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td><b>It stays on</b></td><td>The machine runs around the clock, so testers can use the app anytime — not only when my laptop is awake.</td></tr>
+          <tr><td><b>It's faster</b></td><td>The GPU runs the AI far quicker than a laptop's processor, so scans come back faster.</td></tr>
+          <tr><td><b>Same network as the switch</b></td><td>The live port-and-cable features need to reach the switch directly. The Windows machine is on the same office network, so that works.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>My laptop is now out of the loop entirely for running the app. It's only used to build the iPhone version, which
+      Apple requires to be done on a Mac.</p>
+
+    <h3>We gave it a permanent address</h3>
+    <p>Every app needs a fixed web address to reach its server. Before, that address was random and changed on every
+      restart — which broke the installed apps. We set up a <b>permanent address</b> that stays the same, so the app keeps
+      working through restarts and reboots. This was the single biggest source of fragility, and it's now solved.</p>
+
+    <h3>We polished the app and simplified it</h3>
+    <ul class="clean">
+      <li>Simplified the camera down to <b>Photo and Video</b> only, with a clear, obvious capture button.</li>
+      <li><b>Removed unused features</b> to make the app lighter and let it install on a wider range of phones.</li>
+      <li>Added <b>profile pictures</b>.</li>
+      <li>Tightened the overall experience so a scan carries through cleanly to the results.</li>
+    </ul>
+
+    <h3>We automated how the app reaches testers</h3>
+    <p>Until now we were sharing the app file by hand in the group every time. We set up <b>automatic delivery</b>: testers
+      install once, and every new version arrives on their phone by itself, with a notification — the same way Apple's
+      TestFlight already works for iPhone.</p>
+  </section>
+
+  <!-- HOW IT'S DEPLOYED -->
+  <section>
+    <div class="sechead"><h2>How it's deployed now</h2></div>
+    <p class="lead-p">Here is the full path, from a tester's phone to the switch in the rack:</p>
+    <div class="arch">
+      <div class="flow">
+        <div class="node"><div class="ic">&#128241;</div><div class="t">Tester's phone</div><div class="d">The app. Just needs internet.</div></div>
+        <div class="arrow">&rarr;</div>
+        <div class="node key"><div class="ic">&#127760;</div><div class="t">Permanent address</div><div class="d">A fixed, secure web link to the office.</div></div>
+        <div class="arrow">&rarr;</div>
+        <div class="node key"><div class="ic">&#128421;</div><div class="t">Windows GPU server</div><div class="d">Always on. Runs the AI. The core of the system.</div></div>
+        <div class="arrow">&rarr;</div>
+        <div class="node"><div class="ic">&#128225;</div><div class="t">The switch</div><div class="d">Read live, on the same network.</div></div>
+      </div>
+    </div>
+    <p>A tester scans a rack. The photo travels over the permanent address to the Windows server. The server's GPU runs
+      the AI to identify the equipment, and — for live features — reads the switch directly. The result travels back to
+      the phone. The phone itself only ever needs a normal internet connection.</p>
+    <div class="note ok">
+      <span class="lbl">&#10003; Verified working end to end</span>
+      <b>Everything on the server side has been tested against the live system:</b> the app reaches the server, the AI
+      pipeline runs on the GPU, the switch is read successfully, and the equipment-details lookups return real data. The
+      Android app is already delivered to the four testers.
+    </div>
+  </section>
+
+  <!-- WHY THESE CHOICES -->
+  <section>
+    <div class="sechead"><h2>Why we deployed it this way</h2></div>
+    <p>Two questions decided the whole setup, and both had a clear answer:</p>
+
+    <h3>Why not keep it on the laptop / in the cloud?</h3>
+    <p>The live switch features <b>must</b> talk to equipment sitting on the office network. A cloud server somewhere on
+      the internet can't reach that switch. The Windows machine can, because it's physically on the same network — and it
+      has a GPU, so it's also the fastest option we have. Keeping the backend in the office, on an always-on machine, was
+      the only choice that supports every feature.</p>
+
+    <h3>Why a permanent address?</h3>
+    <p>The address is what the app uses to find the server. If it changes, every installed app breaks and has to be
+      rebuilt and re-sent. Making it permanent means we stop chasing that — the app is built once and keeps working.</p>
+  </section>
+
+  <!-- WHERE WE STAND -->
+  <section>
+    <div class="sechead"><h2>Where we stand &amp; what's next</h2></div>
+    <table class="tw" style="display:table">
+      <tbody>
+        <tr><td><b>Android</b></td><td>Live &mdash; delivered to the four testers, updates now automatic.</td></tr>
+        <tr><td><b>iPhone</b></td><td>Build ready &mdash; one upload step remaining to reach TestFlight testers.</td></tr>
+        <tr><td><b>Backend</b></td><td>Live on the Windows GPU server, verified end to end.</td></tr>
+      </tbody>
+    </table>
+    <div class="note warn">
+      <span class="lbl">&#9888; Two things to settle before opening it up widely</span>
+      <p style="margin:0 0 8px"><b>1. Tester accounts.</b> Testers can't simply sign themselves up — the app holds new
+        sign-ups in a waiting state by design. We need to <b>invite each tester properly</b> so they can log straight in.</p>
+      <p style="margin:0"><b>2. Security tidy-up.</b> Some credentials are currently stored inside the code. Before this
+        goes wider, they should be moved out and the passwords changed.</p>
+    </div>
+  </section>
+
+  <footer>RackTrack deployment report &middot; 14 Jul 2026</footer>
+</div>

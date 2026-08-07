@@ -260,6 +260,32 @@ def handle_split_video_racks(req):
     return {"ok": True, "racks": racks, "count": len(racks)}
 
 
+def handle_closeup_ocr(req):
+    """Identify one device from a close-up photo of its label.
+
+    Runs in the warm worker rather than a spawned process on purpose: the
+    OCR weights take ~3s to load, and a user who is standing in front of the
+    rack waiting for this answer will just type the model in instead if we
+    make them wait for a cold start on every photo. The reader is cached
+    inside pipeline.ocr_closeup, so only the first close-up per worker pays
+    it. The import is deferred for the same reason in reverse — a worker
+    that never sees a close-up should not carry the OCR models in memory.
+    """
+    from pipeline.ocr_closeup import run as closeup_run
+    image_path = req.get("image_path")
+    if not image_path or not os.path.exists(image_path):
+        return {"ok": False, "error": "image_path missing"}
+    # The OCR backends log to stderr, but a Paddle build that ever printed to
+    # stdout would corrupt the line-per-JSON protocol. Cheap insurance.
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        result = closeup_run(image_path, preset=req.get("preset") or "closeup")
+    stray = buf.getvalue().strip()
+    if stray:
+        log(f"closeup_ocr stdout (suppressed): {stray[-300:]}")
+    return result
+
+
 def handle_relabel_port_count(req):
     """Re-detect ports for one device with a user-supplied target count.
     Updates that device's entry in device_unit_map.json and returns it."""
@@ -797,6 +823,8 @@ def handle_request(req):
         return handle_split_video_racks(req)
     if command == "relabel_port_count":
         return handle_relabel_port_count(req)
+    if command == "closeup_ocr":
+        return handle_closeup_ocr(req)
     if command == "extract_ticket":
         return handle_extract_ticket(req)
     if command == "feedback_scoreboard":

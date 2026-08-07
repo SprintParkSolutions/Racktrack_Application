@@ -1,0 +1,139 @@
+<meta charset="utf-8">
+<title>RackTrack Android — Detailed Status</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#fff; --ink:#0f1826; --soft:#4a5876; --line:#e4e9f2; --line2:#eef2f8;
+    --accent:#0d7a3c; --accent-bg:#e7f6ec;
+    --amber:#a85b06; --amber-bg:#fff4e2; --amber-line:#f2d6a4;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#080b12; --panel:#111826; --ink:#eef3fb; --soft:#9db0cd; --line:#222c3d; --line2:#19212f;
+    --accent:#63d197; --accent-bg:#0d2418; --amber:#f0b665; --amber-bg:#271d0e; --amber-line:#463719; }}
+  :root[data-theme="dark"]{--bg:#080b12; --panel:#111826; --ink:#eef3fb; --soft:#9db0cd; --line:#222c3d; --line2:#19212f;
+    --accent:#63d197; --accent-bg:#0d2418; --amber:#f0b665; --amber-bg:#271d0e; --amber-line:#463719;}
+  :root[data-theme="light"]{--bg:#f5f7fb; --panel:#fff; --ink:#0f1826; --soft:#4a5876; --line:#e4e9f2; --line2:#eef2f8;
+    --accent:#0d7a3c; --accent-bg:#e7f6ec; --amber:#a85b06; --amber-bg:#fff4e2; --amber-line:#f2d6a4;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink); line-height:1.55;
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:900px; margin:0 auto; padding:clamp(18px,3.5vw,42px);}
+  .pill{display:inline-block; font-size:11.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--accent);
+    background:var(--accent-bg); border:1px solid var(--line); padding:5px 11px; border-radius:999px;}
+  h1{margin:12px 0 6px; font-size:clamp(23px,3.3vw,32px); letter-spacing:-.02em;}
+  .lead{margin:0; color:var(--soft); font-size:15px; max-width:74ch;}
+  .facts{display:flex; flex-wrap:wrap; gap:7px; margin-top:14px;}
+  .facts span{font-size:12px; padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:var(--line2); color:var(--soft); font-weight:600;}
+  .facts b{color:var(--ink)}
+  .topic{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 20px; margin-top:14px;}
+  .th{display:flex; align-items:center; gap:11px; margin-bottom:12px;}
+  .tnum{width:28px; height:28px; border-radius:8px; background:var(--accent-bg); color:var(--accent); font-weight:800; display:grid; place-items:center; font-size:13px; flex:0 0 auto;}
+  .th h3{margin:0; font-size:16px; letter-spacing:-.01em;}
+  dl{margin:0; display:grid; gap:8px;}
+  dl > div{display:grid; grid-template-columns:150px 1fr; gap:14px; align-items:start;}
+  @media(max-width:620px){ dl > div{grid-template-columns:1fr; gap:2px;} dt{padding-top:6px;} }
+  dt{font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--soft);}
+  dt.eff{color:var(--accent);} dt.fix{color:var(--amber);}
+  dd{margin:0; font-size:14px;} dd b{font-weight:650}
+  code{font-family:ui-monospace,Menlo,monospace; background:var(--line2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px;}
+  .stable{margin-top:22px; background:var(--amber-bg); border:1px solid var(--amber-line); border-radius:14px; padding:18px 20px;}
+  .stable h2{margin:0 0 10px; font-size:16px; color:var(--amber); display:flex; align-items:center; gap:8px;}
+  .stable ol{margin:0; padding-left:20px; display:grid; gap:7px; font-size:14px;}
+  .stable li b{font-weight:700}
+  footer{margin-top:22px; color:var(--soft); font-size:12.5px; text-align:center;}
+</style>
+
+<div class="wrap">
+  <span class="pill">RackTrack &middot; Android (APK) &middot; Detailed</span>
+  <h1>Android app &mdash; detailed status</h1>
+  <p class="lead">For each thing we did: <b>what</b> it is, <b>how</b> it works, <b>what we&rsquo;re using</b>, the
+    <b>effect</b> it has, and <b>what&rsquo;s needed to make it permanent &amp; stable</b>.</p>
+  <div class="facts">
+    <span>APK <b>built</b> (~11 MB)</span><span>ID <b>com.racktrack.app</b></span><span>Android <b>7+</b></span>
+    <span>Delivery <b>sideload</b></span>
+  </div>
+
+  <!-- 1 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">1</span><h3>App branding &amp; icon</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>Set the <b>RackTrack logo</b> as the Android launcher icon at every size (including the modern &ldquo;adaptive&rdquo; icon shape).</dd></div>
+      <div><dt>How it works</dt><dd>The logo is generated into each Android icon size and compiled into the APK.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>The app&rsquo;s Android icon folders + macOS image tools.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Real RackTrack brand on the Android home screen &mdash; consistent with the iPhone app.</dd></div>
+      <div><dt class="fix">To keep stable</dt><dd>Nothing further &mdash; baked into every APK.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 2 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">2</span><h3>Built the installable APK</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>Installed <b>Android Studio</b> and produced a working <b>APK</b> file (~11 MB) with the tunnel address baked in.</dd></div>
+      <div><dt>How it works</dt><dd>The same shared web app is wrapped into a native Android app and compiled into a single APK file that installs directly on a phone.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>Android Studio (build tool) &middot; Capacitor Android &middot; a <b>debug</b> build (fine for testing).</dd></div>
+      <div><dt class="eff">Effect</dt><dd>We can hand testers one file to install &mdash; no app store, no account, no review, no fee.</dd></div>
+      <div><dt class="fix">To make stable</dt><dd>For the Play Store later, we&rsquo;d make a <b>signed release</b> build (see plan below). Not needed for current testing.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 3 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">3</span><h3>Android scrolling &mdash; fixed</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>On some Android phones the pages wouldn&rsquo;t scroll at all. Fixed across the whole app.</dd></div>
+      <div><dt>How it works</dt><dd>The app sized its scroll areas with a <b>newer screen-measurement unit</b> that older Android app-browsers don&rsquo;t understand, which collapsed the scroll areas. We switched to the <b>standard unit</b> that every Android supports &mdash; it looks identical in a full-screen app.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>The app&rsquo;s styling (a one-line-per-place unit change).</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Pages scroll properly on Android now &mdash; content below the fold is reachable.</dd></div>
+      <div><dt class="fix">To confirm stable</dt><dd>Install this new APK on the phone that had the problem and confirm scrolling works.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 4 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">4</span><h3>Same app improvements as iPhone</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>Android gets all the shared fixes: <b>scan not lost</b> when switching apps, <b>back buttons</b> never stick, <b>first-time walkthrough</b>, compact <b>Ports</b> screen, and the <b>&ldquo;No switches detected&rdquo;</b> message on the Network screen.</dd></div>
+      <div><dt>How it works</dt><dd>iPhone and Android run the <b>same app code</b>, so one fix applies to both. Android also has proper <b>hardware Back button</b> support.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>The shared app + Android&rsquo;s native back handling.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Feature-for-feature parity with the iPhone app.</dd></div>
+      <div><dt class="fix">To keep stable</dt><dd>Stable &mdash; same as iOS.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 5 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">5</span><h3>Camera &amp; AR</h3></div>
+    <dl>
+      <div><dt>What we did</dt><dd>Camera scanning and the AR overlay are both built for Android natively.</dd></div>
+      <div><dt>How it works</dt><dd>Normal photo/camera scanning works on any Android phone. The <b>AR overlay</b> uses Google&rsquo;s ARCore.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>Android camera permission (already set) + Google ARCore for AR.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Everyday scanning works everywhere; the AR overlay works on <b>ARCore-supported</b> phones.</dd></div>
+      <div><dt class="fix">To keep stable</dt><dd>Note in tester instructions: AR needs an ARCore-supported phone with &ldquo;Google Play Services for AR&rdquo; installed. Regular scanning is unaffected.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 6 -->
+  <div class="topic">
+    <div class="th"><span class="tnum">6</span><h3>The backend &amp; the temporary tunnel <span style="font-weight:600;color:var(--amber);font-size:12px;">&larr; the important one</span></h3></div>
+    <dl>
+      <div><dt>What it is</dt><dd>Exactly like the iPhone app, Android talks to <b>our Mac</b> for the AI and the live switch read &mdash; the phone itself doesn&rsquo;t do the heavy work.</dd></div>
+      <div><dt>How it works</dt><dd>The APK has a web address baked in that points, through a Cloudflare tunnel, to the Mac&rsquo;s server.</dd></div>
+      <div><dt>What we&rsquo;re using</dt><dd>The same Mac server + <b>temporary</b> Cloudflare tunnel as the iPhone app.</dd></div>
+      <div><dt class="eff">Effect</dt><dd>Works while the Mac + server + tunnel are up. The address is <b>random and changes if the Mac restarts</b> &mdash; then the APK can&rsquo;t reach the server and we&rsquo;d have to rebuild.</dd></div>
+      <div><dt class="fix">To make permanent &amp; stable</dt><dd>Same plan as iPhone &mdash; a fixed address + an always-on server (below).</dd></div>
+    </dl>
+  </div>
+
+  <div class="stable">
+    <h2>&#9888; To make it permanent &amp; stable</h2>
+    <ol>
+      <li><b>Fixed web address.</b> Point <code>api.racktrack.ai</code> to a permanent Cloudflare tunnel so the address never changes &mdash; a Mac restart no longer breaks the app and we stop rebuilding for the address.</li>
+      <li><b>Always-on backend.</b> Run the server as a proper service so it&rsquo;s always up &mdash; this is essential because the Mac can&rsquo;t stay on all the time.</li>
+      <li><b>Move off the Mac (key).</b> Put the backend + AI on a dedicated always-on machine so the app works even when the Mac is off.</li>
+      <li><b>Real-device test.</b> Install this APK on real Android phones and confirm scrolling + scanning.</li>
+      <li><b>Optional &mdash; Play Store.</b> A signed release build + Google Play Console (one-time $25) if we want store distribution instead of sharing the file.</li>
+    </ol>
+  </div>
+
+  <footer>RackTrack Android &middot; detailed status &middot; 13 Jul 2026</footer>
+</div>

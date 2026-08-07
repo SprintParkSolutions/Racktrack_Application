@@ -9,15 +9,30 @@
 const { logger } = require('./observability');
 
 let _bot = null;
+let _llm = null;
 let _counts = {};
 
 // import() of an ES module from CommonJS is asynchronous, so kick it off at load
 // time, cache the warmup index counts once it resolves, and have ask() await
 // readiness. A failed load degrades to a plain "starting up" refusal rather than
 // taking the route down.
-const _ready = import('./dot/src/bot.js')
-  .then((m) => {
+//
+// llm.js is pulled in alongside so this bridge can answer "is a model
+// reachable?" — the status route asks, and until now this module simply did not
+// export it, so /api/support/status threw TypeError on EVERY request and the
+// Help page told every user "DOT isn't running right now" while DOT was running
+// perfectly well. A missing model is not a missing engine: search-only is a
+// fully working mode, so the two load independently.
+const _ready = Promise.all([
+  import('./dot/src/bot.js'),
+  import('./dot/src/llm.js').catch((e) => {
+    logger?.warn?.(`[support_bot] llm module unavailable: ${e.message}`);
+    return null;
+  }),
+])
+  .then(([m, llm]) => {
     _bot = m;
+    _llm = llm;
     try { _counts = typeof m.warmup === 'function' ? m.warmup() : {}; }
     catch (e) { logger?.warn?.(`[support_bot] warmup failed: ${e.message}`); }
     logger?.info?.('[support_bot] DOT engine loaded');
@@ -44,4 +59,26 @@ function tierForRole(role) {
 // finishes loading, then the real per-tier index sizes.
 function warmup() { return _counts; }
 
-module.exports = { ask, warmup, tierForRole };
+/**
+ * Is an LLM backend reachable? Answers {ok} for the status route's
+ * 'search+model' / 'search-only' badge.
+ *
+ * Never throws and never rejects: a probe that fails means no model, which the
+ * caller renders as search-only — it must not be able to fail the status check
+ * itself, because "the health probe errored" reads to the user as "Help is
+ * down". The engine caches the real probe for a minute, so this is one network
+ * round trip per minute at most, not one per page load.
+ */
+async function llmAvailable() {
+  if (!_llm) await _ready;
+  const llm = _llm;
+  if (!llm || typeof llm.isAvailable !== 'function') return { ok: false };
+  try {
+    return (await llm.isAvailable()) || { ok: false };
+  } catch (e) {
+    logger?.warn?.(`[support_bot] llm probe failed: ${e.message}`);
+    return { ok: false };
+  }
+}
+
+module.exports = { ask, warmup, tierForRole, llmAvailable };

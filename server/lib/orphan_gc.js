@@ -10,7 +10,8 @@
  * tenant got deleted. This module finds them and (optionally) deletes.
  *
  * Two safety belts:
- *   1. We only target folders matching /^RK-[A-F0-9]+$/ — won't touch
+ *   1. We only target folders matching the SAME rack-id shape the access
+ *      layer validates (RACK_ID_RE in lib/rack_access.js) — won't touch
  *      anything else under outputs/.
  *   2. `retentionDays` (default 14) — folder must also be older than
  *      this. Stops a race where a fresh scan's folder exists for a
@@ -45,7 +46,13 @@ const DB_PATH = path.join(__dirname, '..', 'data', 'auth.db');
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const OUTPUTS_DIR = path.join(REPO_ROOT, 'outputs');
 
-const RACK_FOLDER_RE = /^RK-[A-F0-9]+$/i;
+// Match the SAME rack-id shape the access layer validates, rather than a
+// private, divergent pattern. The old hex-only /^RK-[A-F0-9]+$/i silently
+// exempted any non-hex-but-valid id (e.g. RK-TESTRACK1) from GC forever —
+// exactly the "copies of one policy that drift" bug that consolidating
+// rack access into a single guard was meant to end. One regex, one source.
+const { RACK_ID_RE } = require('./rack_access');
+const RACK_FOLDER_RE = RACK_ID_RE;
 
 /** Return { rackId, fullPath, sizeBytes, ageDays } for every folder
  *  in outputs/ that has NO row in rack_owners and is older than the

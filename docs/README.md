@@ -101,6 +101,9 @@ Every screenshot was captured from the running application against real scan dat
 - [DEMO_SCRIPT_v2.docx](demo/DEMO_SCRIPT_v2.docx) — the current demo script
 - [DEMO_SCRIPT.docx](demo/DEMO_SCRIPT.docx) — the earlier version
 - [racktrack-client-demo-script.md](demo/racktrack-client-demo-script.md) — client-facing demo script
+- [**racktrack-feature-book-for-marketing.html**](demo/racktrack-feature-book-for-marketing.html) — every feature
+  in plain English, with its screenshot, why a client cares, and the shot worth filming. Written for the marketing
+  team to plan the demo video from. Self-contained — email it as-is.
 
 ## Feature notes
 

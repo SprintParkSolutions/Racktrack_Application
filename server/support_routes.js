@@ -225,12 +225,22 @@ router.get(
   '/api/support/status',
   safeAsync(async (req, res) => {
     const tier = bot.tierForRole(req.user?.role);
+    // The optional model is probed FIRST because awaiting it also waits out the
+    // engine's async load, so the counts read below are the real index sizes
+    // rather than the empty object the bridge reports before boot finishes.
+    //
+    // Guarded because the client turns any non-2xx here into a full-page "Help
+    // is unavailable — DOT isn't running right now", which is the harshest
+    // possible reading of "the optional model check misbehaved". Search-only
+    // answers every question the knowledge base covers; that is not an outage.
+    let model = { ok: false };
+    try { model = (await bot.llmAvailable()) || { ok: false }; }
+    catch (err) { logger?.warn?.(`[support] llm availability check failed: ${err.message}`); }
     const counts = bot.warmup();
-    const model = await bot.llmAvailable();
     res.json({
       ok: true,
       tier,
-      entries: counts[tier],
+      entries: counts[tier] ?? 0,
       mode: model.ok ? 'search+model' : 'search-only',
     });
   })

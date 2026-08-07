@@ -3,7 +3,7 @@
   "_note": "753 entries from two sources. 345 were mined from the RackTrack source tree and survived independent verification by 3 skeptical reviewers checking evidence, technical accuracy and end-user usefulness (entries refuted by 2 or more were discarded); they carry an evidence array and _votes, 329 of them at confidence \"certain\" and 16 hedged to \"likely\" or \"inferred\" by those reviewers. 155 were extracted from product .docx documentation by an LLM, carry _source \"doc-ingest\" and confidence \"likely\", and have had no reviewer pass. The remaining 253 carry partial verification; read their confidence field.",
   "generated": "2026-07-21",
   "counts": {
-    "total": 1267,
+    "total": 1273,
     "byCategory": {
       "admin": 68,
       "account": 67,
@@ -19608,6 +19608,13 @@
           "file": "docs/knowledge-base/glossary.md",
           "lines": "210-212"
         }
+      ],
+      "symptoms": [
+        "Does it handle occlusion cases",
+        "Is it handles occlusion cases",
+        "Will it still detect devices hidden behind cables",
+        "Some devices are blocked or obstructed in the photo",
+        "Can RackTrack cope with a partly hidden rack"
       ]
     },
     {
@@ -29379,6 +29386,221 @@
           "lines": "196-196"
         }
       ]
+    },
+    {
+      "id": "FBK-001",
+      "question": "The aisle is too dark — the shutter won't fire and the app can't read the labels. What do I do?",
+      "answer": "RackTrack checks the light level live, before it lets you take the photo. While the camera is open it samples the picture a few times a second and measures three things: sharpness, how much of the frame the rack fills, and brightness. The shutter button stays disabled until all three pass, and the hint above it tells you which one is failing — for light, it reads **\"Move to better lighting\"**.\n\nBrightness has to sit between roughly 35 and 235 on a 0–255 scale. That band is deliberately wide: it is there to reject a genuinely black frame and a blown-out one, not to demand good lighting. If you are seeing that hint, the aisle is dark enough that detection would suffer anyway.\n\nWhat actually works, in order:\n\n• **Add light rather than getting closer.** A phone torch held off to one side, or a work light on the floor pointing up, lifts the whole frame. Holding the torch right next to the lens tends to blow out the front of the devices and wash the labels out completely.\n• **Switch to VIDEO mode.** Video only waits for the camera to be ready — it does not apply the sharpness/framing/lighting gate at all, so the shutter will fire. Pan slowly across the rack and let RackTrack pull frames out of the clip.\n• **Use the Upload tab.** Take the picture with your phone's own camera app, where you can control exposure and the flash, then upload it. Uploads skip the live checks (they get a separate resolution and blur check instead).\n\nIf the aisle is dark enough that you are working by torchlight, expect labels to be the first thing that suffers — OCR needs more light than device detection does. It is usually faster to light the rack properly once than to re-scan three times.",
+      "symptoms": [
+        "\"Move to better lighting\"",
+        "Shutter button is greyed out and won't take the photo",
+        "Dark aisle, overnight maintenance window",
+        "Had to use a flashlight to get the app to recognise labels",
+        "The lighting in the aisle wasn't great and the app struggled",
+        "Cannot read device labels in a badly lit data hall"
+      ],
+      "rootCause": "ScanPage samples the live camera feed and sets quality.lit from mean luma (35 < meanLuma < 235). canShoot requires all three quality flags in photo mode, so a dark frame disables the shutter; video mode bypasses the gate entirely.",
+      "evidence": [
+        {
+          "file": "client/src/pages/ScanPage.jsx",
+          "lines": "389-391",
+          "snippet": "sharp:  sharpness > 60,\nframed: edgeDensity > 0.035,\nlit:    meanLuma > 35 && meanLuma < 235,"
+        },
+        {
+          "file": "client/src/pages/ScanPage.jsx",
+          "lines": "309-310",
+          "snippet": "const allGood = quality.sharp && quality.framed && quality.lit;\nconst canShoot = mode === 'video' ? ready : ready && allGood;"
+        },
+        {
+          "file": "client/src/pages/ScanPage.jsx",
+          "lines": "670-677",
+          "snippet": ": !quality.lit    ? 'Move to better lighting'"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "high",
+      "domain": "scanning",
+      "category": "Scanning a rack"
+    },
+    {
+      "id": "FBK-002",
+      "question": "What image quality does RackTrack actually need — resolution, sharpness, angle and lighting?",
+      "answer": "There are two different sets of checks, and which one you hit depends on how the picture got into RackTrack.\n\n**If you use the in-app camera**, the checks run live and the shutter stays locked until they all pass:\n\n• **Sharpness** — the picture must be in focus. Hint if it fails: \"Hold steady — keep still for focus\".\n• **Framing** — the rack has to fill the frame. RackTrack measures how much detail is inside the guide box, so a rack photographed from across the aisle fails this. Hint: \"Move closer so the rack fills the frame\".\n• **Lighting** — brightness must land between roughly 35 and 235 out of 255. Hint: \"Move to better lighting\".\n\nWhen all three pass you get **\"Looks great — tap the shutter below\"** and the shutter unlocks. The in-app camera asks for 1920×1080, so resolution is essentially never the problem on this path.\n\n**If you upload a file instead**, two different checks apply:\n\n• **Resolution** — the shorter side must be at least 480 pixels. Below that you get \"Image resolution is low (W×H). Results may be inaccurate.\"\n• **Blur** — measured by Laplacian variance, with a floor of 100. Below it: \"The image looks blurry. Results may be inaccurate.\"\n\nBoth of those are *retryable*, meaning you get a **Retake** / **Proceed anyway** choice rather than a hard stop. Be careful with Proceed anyway — it disables later safety checks, and it is the usual reason a rack comes back empty.\n\nOne exception worth knowing: **HEIC/HEIF photos from an iPhone skip the browser-side checks entirely** and are validated on the server after conversion, so you may not see a warning until later in the process.\n\n**Practical version:** shoot front-on, close enough that the rack fills the frame, in ordinary aisle lighting, holding still. Angle matters more than megapixels — a sharp, square-on photo from a three-year-old phone beats a tilted 48-megapixel one.",
+      "symptoms": [
+        "What resolution do I need for a rack photo",
+        "Recommended image quality requirements for accurate detection",
+        "What are the rules for capturing a rack",
+        "How good does the photo have to be",
+        "Minimum image quality that still gives a decent result",
+        "Will RackTrack accept blurry images of racks"
+      ],
+      "rootCause": "Two independent quality gates exist: live camera checks in ScanPage (sharpness/edge-density/luma thresholds) and file-upload checks in validateMedia (MIN_DIM 480, BLUR_THRESHOLD 100), with HEIC deferred to the server. No single screen states the requirements up front.",
+      "evidence": [
+        {
+          "file": "client/src/utils/validateMedia.js",
+          "lines": "1-2",
+          "snippet": "const MIN_DIM = 480;\nconst BLUR_THRESHOLD = 100;"
+        },
+        {
+          "file": "client/src/utils/validateMedia.js",
+          "lines": "48-54",
+          "snippet": "if (sharpness < BLUR_THRESHOLD) {\n  return { ok: false, kind: 'sharpness', retryable: true, error: 'The image looks blurry. Results may be inaccurate.' };"
+        },
+        {
+          "file": "client/src/utils/validateMedia.js",
+          "lines": "11-15",
+          "snippet": "if (/\\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' ...) {\n  return { ok: true, metrics: { skipped: 'heic-deferred-to-server' } };"
+        },
+        {
+          "file": "client/src/pages/ScanPage.jsx",
+          "lines": "389-391",
+          "snippet": "sharp:  sharpness > 60,\nframed: edgeDensity > 0.035,\nlit:    meanLuma > 35 && meanLuma < 235,"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "high",
+      "domain": "scanning",
+      "category": "Scanning a rack"
+    },
+    {
+      "id": "FBK-003",
+      "question": "I scanned the wrong thing — can I delete the scan or undo it?",
+      "answer": "**No — RackTrack has no delete-a-scan action**, in the app or in the API. There is no button for it and no way to ask support to reverse one. Scans are an append-only record, which is deliberate: an audit trail you can quietly edit is not worth much during a compliance review.\n\nSo there is also nothing to restore. If you are looking for a deleted scan, it has not been deleted — check **History**, because it is still there.\n\nWhat to do instead, depending on what went wrong:\n\n• **You scanned the wrong rack, or the photo was bad.** Just scan it again. History is ordered newest-first, so the correct scan sits at the top and becomes the one people see. The bad scan stays in the list but stops being the current picture of that rack.\n• **The scan is right but a device was identified wrongly.** Do not re-scan — correct it in place. Open the scan, tap the device, and answer the **\"Detected as <type> — right?\"** question. Your correction is stored against the device and also feeds back into improving detection.\n• **The port count is wrong.** Same route, but note the port-count question only appears *after* you have answered the device-type question for that device.\n\nThe practical effect is that a wrong scan costs you a re-scan, not a support ticket — but it stays in the history permanently, so it is worth taking the second photo properly.",
+      "symptoms": [
+        "Can I restore a deleted scan?",
+        "How do I undo an incorrect scan?",
+        "I want to delete a scan I did by mistake",
+        "Scanned the wrong rack, how do I remove it",
+        "Is there a way to reverse a scan",
+        "Can I start again and get rid of the bad result"
+      ],
+      "rootCause": "The server exposes no DELETE route for scans or racks — the only DELETE endpoints are for organizations, members, marketplace records, lab devices and connection profiles. Scan records are append-only; correction happens through the per-device feedback path on the results screen, not by removal.",
+      "evidence": [
+        {
+          "file": "server/auth.js",
+          "lines": "1292",
+          "snippet": "app.delete('/api/orgs/:orgId', requireRole('owner'), (req, res) => {"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "2834-2837",
+          "snippet": "timings.total_ms = Date.now() - reqStart;\ntimings.cached = false;\nlogger.info({ event: 'scan.created', rackId, durationMs: timings.total_ms, timings }, `new scan ${rackId} ...`);"
+        },
+        {
+          "file": "client/src/pages/HistoryPage.jsx",
+          "lines": "1-40",
+          "snippet": "History list of past scans — no delete affordance is rendered."
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "high",
+      "domain": "history",
+      "category": "Past work"
+    },
+    {
+      "id": "FBK-004",
+      "question": "How long should a scan take, from uploading the photo to a finished result?",
+      "answer": "There is no fixed number, and RackTrack does not promise one — the time is dominated by the analysis stage, which varies with how big the image is and how much is in the rack. A sparse half-populated rack is much quicker than a full one with 40 devices and a lot of cabling.\n\nWhat the server actually does, in order, is: normalize the image → run the quality check → run the detection pipeline → assemble the result. The pipeline stage is the long one; everything else is small in comparison. Every stage is timed and written into the scan log, so if a scan felt slow, the real breakdown exists and support can read it back for that specific scan.\n\nTwo things make a repeat scan dramatically faster:\n\n• **An unchanged image is served from cache.** Re-submitting the same photo returns the stored result almost immediately rather than re-running detection.\n• **A confirmed rack can skip re-identification.** Once a rack is confirmed, later scans can bypass part of the lookup.\n\nIf a scan seems stuck rather than slow, that is a different problem — check whether it is genuinely still processing or whether it failed. A scan that has been \"processing\" far longer than others of the same rack usually failed and is worth re-submitting.\n\n**Rule of thumb:** first scan of a busy rack is the slow one; everything after it is faster. If you need a hard number for a maintenance-window plan, time one scan on a rack of that size and use that — a figure measured on your own racks and phones is worth more than an average.",
+      "symptoms": [
+        "How much time does the end to end process take",
+        "How long from uploading the image to getting the report",
+        "Why is this scan still processing",
+        "Scan is taking a long time",
+        "How long does analysis normally take"
+      ],
+      "rootCause": "Scan duration is measured per stage (normalize_ms, quality_check_ms, pipeline_ms, total_ms) and logged with the scan.created event, but no fixed SLA exists. The cached and confirmed_bypass fast paths return early and account for most of the variance between a first and a repeat scan.",
+      "evidence": [
+        {
+          "file": "server/app.js",
+          "lines": "2789-2792",
+          "snippet": "const tPipeStart = Date.now();\nawait runPipelineAnalyze(imagePath, rackDir, ...);\ntimings.pipeline_ms = Date.now() - tPipeStart;"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "2689-2691",
+          "snippet": "timings.total_ms = Date.now() - reqStart;\ntimings.cached = true;"
+        },
+        {
+          "file": "server/app.js",
+          "lines": "2834-2837",
+          "snippet": "logger.info({ event: 'scan.created', rackId, durationMs: timings.total_ms, timings }, `new scan ${rackId} (analyze ${timings.total_ms}ms)`);"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "high",
+      "domain": "scanning",
+      "category": "Scanning a rack"
+    },
+    {
+      "id": "FBK-005",
+      "question": "What devices have been in this rack unit over time? Can I see the history of one U?",
+      "answer": "There is **no per-unit timeline** in RackTrack — you cannot tap U24 and get a list of everything that has occupied that slot. It is a reasonable thing to want and it does not exist today.\n\nThe feature with \"history\" in the name is a different thing. **Port History & Drift** tracks *switch-port telemetry over time* — link up/down, duplex, descriptions, LLDP neighbours — by polling the switch. It tells you what a port has been doing, not what hardware has been sitting in a rack unit.\n\nWhat you can do today, closest first:\n\n• **Put two scans side by side.** Open the rack and use the side-by-side comparison to see two past scans of the same rack together. This is the most direct way to answer \"what changed in this rack, and where\" — including a unit that used to hold something else.\n• **Open past scans from History.** Every scan is kept, so you can step back through them and read off what was in a given unit at each point. Tedious for a long history, but it is a complete record.\n• **For a switch port specifically**, use Port History & Drift — if your question is really \"what has this port been connected to\", that is the right tool.\n\nIf you need this often — for example reconstructing what was in a unit for an audit — say so, because the underlying scan data supports it and the gap is in the interface rather than the record.",
+      "symptoms": [
+        "What was in this unit before",
+        "History of one particular unit like which devices are in that unit till now",
+        "Which devices have occupied U24 over time",
+        "What was in rack 4 last month",
+        "Can I see the past history of a rack slot",
+        "Timeline of what was installed in this U"
+      ],
+      "rootCause": "Scan records are append-only and per-scan, with no index keyed by rack unit across time. The Port History & Drift feature covers switch-port telemetry, not physical unit occupancy, so the nearest available answers are the side-by-side scan comparison and the History list.",
+      "evidence": [
+        {
+          "file": "client/src/pages/SideBySideRacks.jsx",
+          "lines": "1-60",
+          "snippet": "Side-by-side comparison of two scans of the same rack."
+        },
+        {
+          "file": "client/src/pages/HistoryPage.jsx",
+          "lines": "1-40",
+          "snippet": "History list of past scans, newest first."
+        },
+        {
+          "file": "server/port_history.js",
+          "lines": "107-127",
+          "snippet": "router.get('/api/ports/:deviceId/:port/history', ...)\nrouter.get('/api/ports/:deviceId/:port/timeline', ...)"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "high",
+      "domain": "history",
+      "category": "Past work"
+    },
+    {
+      "id": "FBK-006",
+      "question": "How many users can I add? How do I raise the maximum number of people in my organization or site?",
+      "answer": "**There is no user limit to raise.** RackTrack does not cap how many people can be in an organization or a site — there is no seat count, no plan quota, and nothing to upgrade. If you cannot add someone, it is a permissions problem, not a capacity one.\n\nInviting is restricted by **role**. You can send an invite to a site if you are an **owner**, an **org admin**, or a **site manager**. Anyone below that will not see the option, and this is the usual reason \"I can't add another user\" comes up.\n\nSo if you are stuck:\n\n• **Check your own role first.** If you are a member, you cannot invite regardless of how many people are already in the site — ask an owner or org admin to send it, or to raise your role.\n• **Invite per site, not globally.** Invites are issued against a specific site, so someone who needs access to two sites needs to be added to both.\n• **If the invite was sent but not accepted**, it is waiting on the recipient rather than blocked by a limit — check whether it reached them.\n\nIf someone told you there is a user cap, they were mistaken, or they were describing a permissions error in different words.",
+      "symptoms": [
+        "How can I increase the maximum number of users allowed",
+        "Is there a limit on how many users I can add",
+        "Seat limit for my organization",
+        "Cannot add another user to the site",
+        "How many people can join my organisation",
+        "Do I need to upgrade to add more users"
+      ],
+      "rootCause": "No seat, quota or member cap exists anywhere in the server. Invite creation is gated purely by role via requireRole('owner', 'org_admin', 'site_manager'), so a permissions failure is frequently reported as a capacity limit.",
+      "evidence": [
+        {
+          "file": "server/auth.js",
+          "lines": "1501",
+          "snippet": "app.post('/api/sites/:siteId/invites', requireRole('owner', 'org_admin', 'site_manager'), (req, res) => {"
+        },
+        {
+          "file": "server/auth.js",
+          "lines": "1468",
+          "snippet": "app.delete('/api/orgs/:orgId/members/:memberId', requireRole('owner', 'org_admin', 'site_manager'), (req, res) => {"
+        }
+      ],
+      "userCanSelfFix": true,
+      "audience": "end-user",
+      "confidence": "high",
+      "domain": "account",
+      "category": "Your account & team"
     }
   ],
   "categories": [
