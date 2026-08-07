@@ -182,7 +182,6 @@
   box-shadow: none !important;
 }
 
-<<<<<<< Updated upstream
 /* ── SINGLE / MULTI / VIDEO — underline tab bar (mockup spec) ── */
 .uploadModes {
   display: flex;
@@ -199,41 +198,6 @@
   position: relative;
 }
 .uploadModeBtn {
-=======
-/* ── Upload sub-mode picker (Single | Tall Rack | Cabled Rack) ── */
-.subTabs {
-  display:flex;
-  background: rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:18px; padding:3px; gap:4px; flex-shrink:0;
-  margin: -4px 0 12px;
-}
-.subTab {
-  flex:1; display:flex; align-items:center; justify-content:center;
-  gap:6px; padding:7px 10px; border-radius:14px; border:1px solid transparent;
-  background: transparent;
-  color:rgba(255,255,255,0.45);
-  font-size:.78rem; font-weight:600; font-family:var(--font);
-  cursor:pointer; transition:all .15s; -webkit-tap-highlight-color:transparent;
-}
-.subTab:hover {
-  color:rgba(255,255,255,0.8);
-  background:rgba(255,255,255,0.05);
-}
-.subTabOn {
-  background: rgba(59,130,246,0.14);
-  color:#fff !important;
-  border-color:rgba(59,130,246,0.35) !important;
-}
-
-/* ── Media box — deep blue gradient ── */
-.mediaBox {
-  border-radius:26px; overflow:hidden;
-  margin-bottom: 14px;
-  background: linear-gradient(145deg, rgba(5,15,45,0.82), rgba(2,6,22,0.88));
-  border:1px solid rgba(80,120,255,0.25);
-  min-height: 0;
->>>>>>> Stashed changes
   flex: 1;
   min-width: 0;
   display: block;
