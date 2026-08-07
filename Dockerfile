@@ -53,10 +53,13 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 #   build-essential, python3-dev : native node modules (better-sqlite3, sharp)
 #                                  compile from source if no prebuilt binary
 #   ca-certificates           : outbound TLS (vendor scrapers, MSAL, etc.)
-# NOTE: puppeteer (a server dep) downloads its own Chromium during `npm ci`;
-#       it ships with most of the libs it needs, but if you exercise the PDF /
-#       topology-render paths you may need to add the usual headless-Chromium
-#       runtime libs (libnss3, libatk1.0-0, libcups2, libxkbcommon0, ...).
+# The headless-Chromium libs below are no longer optional. Puppeteer downloads
+# its own Chromium during `npm ci`, but that binary cannot start without them:
+# every PDF and Teams/Slack report share failed with
+#   pdf build: Failed to launch the browser process: Code: 127
+# which is the loader failing to resolve a shared object, not a missing binary.
+# The note that used to live here said these "may" be needed if the PDF paths
+# were exercised. They were, in production, and they were dead.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgl1 \
         libglib2.0-0 \
@@ -64,6 +67,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         python3-dev \
         ca-certificates \
+        libnss3 \
+        libnspr4 \
+        libatk1.0-0 \
+        libatk-bridge2.0-0 \
+        libcups2 \
+        libdrm2 \
+        libxkbcommon0 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxfixes3 \
+        libxrandr2 \
+        libgbm1 \
+        libasound2 \
+        libpango-1.0-0 \
+        libcairo2 \
+        fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -87,6 +106,10 @@ RUN cd server && npm ci --omit=dev
 COPY server/    ./server/
 COPY pipeline/  ./pipeline/
 COPY config.json ./config.json
+# Data input for the vendor spec lookup (pipeline.all_vendor reads it by an
+# absolute path under the app root). Without it /api/specs/vendors answers 500
+# and the Specifications page is dead in every containerised deployment.
+COPY Switch_Vendors_Websites.xlsx ./Switch_Vendors_Websites.xlsx
 
 # Built client assets from stage 1 -> /app/client/dist (served by app.js).
 COPY --from=client-build /build/client/dist ./client/dist

@@ -45,6 +45,11 @@ cmdb_racks
 docs
 *.md
 *.xlsx
+# ...except this one, which is a data input rather than a document. The vendor
+# spec lookup reads it directly, so excluding it made /api/specs/vendors answer
+# 500 "Excel not found: /app/Switch_Vendors_Websites.xlsx" on every deployed
+# build — the Specifications page was broken for everyone, and only in Docker.
+!Switch_Vendors_Websites.xlsx
 cloudflared
 netdisco-docker
 
