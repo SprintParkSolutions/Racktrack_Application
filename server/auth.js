@@ -715,6 +715,25 @@ function wantsBodyToken(req) {
   return /native app/i.test(String(req.get('user-agent') || ''));
 }
 
+// The token handed to native in the response body — long-lived, NOT the
+// 15-minute access token.
+//
+// The cookie migration gave native the access JWT, which expires in 15
+// minutes. Web survives that because the browser holds the refresh cookie and
+// renews silently; native holds no cookie for capacitor://localhost and so
+// cannot call /api/auth/refresh at all. The app therefore died a quarter of an
+// hour after sign-in, every request 401'd, the refresh it attempted could
+// never succeed, and it bounced the user back to the login screen — over and
+// over. Testers hit it as an endless sign-in loop.
+//
+// Native goes back to the long-lived token it carried before cookies existed.
+// This is not a downgrade from the new model: it is the model native was
+// always on, and it stays revocable through the same jti denylist and
+// token_version checks requireAuth already enforces.
+function nativeBodyToken(user) {
+  return makeToken(user, REFRESH_TOKEN_EXPIRY);
+}
+
 // Expired and long-revoked rows serve no purpose — a row is only needed while
 // the token it describes could still be presented. Mirrors revokeSweep().
 let _lastRefreshSweep = 0;
@@ -1121,7 +1140,7 @@ function registerRoutes(app) {
     const { accessJwt, refreshPlain } = issueTokenPair(user, req);
     setAuthCookies(res, accessJwt, refreshPlain);
     res.json({ ok: true, user: publicUser(user, tenant),
-      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
+      ...(wantsBodyToken(req) ? { token: nativeBodyToken(user) } : {}) });
   });
 
   // ── Resend verification code ───────────────────────────────
@@ -1242,7 +1261,7 @@ function registerRoutes(app) {
     const { accessJwt, refreshPlain } = issueTokenPair(user, req);
     setAuthCookies(res, accessJwt, refreshPlain);
     res.json({ ok: true, user: publicUser(user),
-      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
+      ...(wantsBodyToken(req) ? { token: nativeBodyToken(user) } : {}) });
   });
 
   // ── Forgot password — stage 1: request a reset code ─────────
@@ -1369,7 +1388,7 @@ function registerRoutes(app) {
     const { accessJwt, refreshPlain } = issueTokenPair(user, req);
     setAuthCookies(res, accessJwt, refreshPlain);
     res.json({ ok: true, user: publicUser(user),
-      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
+      ...(wantsBodyToken(req) ? { token: nativeBodyToken(user) } : {}) });
   });
 
   // ── Forgot password — stage 2: verify code + set new password ─
@@ -1439,7 +1458,7 @@ function registerRoutes(app) {
     const { accessJwt, refreshPlain } = issueTokenPair(refreshed, req);
     setAuthCookies(res, accessJwt, refreshPlain);
     res.json({ ok: true, user: publicUser(refreshed),
-      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
+      ...(wantsBodyToken(req) ? { token: nativeBodyToken(refreshed) } : {}) });
   });
 
   // ── Whoami ─────────────────────────────────────────────────
@@ -2032,7 +2051,7 @@ function registerRoutes(app) {
     const { accessJwt, refreshPlain } = issueTokenPair(user, req);
     setAuthCookies(res, accessJwt, refreshPlain);
     res.json({ ok: true, user: publicUser(user),
-      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
+      ...(wantsBodyToken(req) ? { token: nativeBodyToken(user) } : {}) });
   });
 
   // ── Dashboards ────────────────────────────────────────────────
