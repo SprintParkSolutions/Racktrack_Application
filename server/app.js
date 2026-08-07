@@ -335,7 +335,21 @@ app.use(cors((req, cb) => {
     || (_corsOrigins.length === 0 && _corsIsDev);
   cb(null, {
     origin: allowed ? (origin || true) : false,
-    credentials: isConfigured,
+    // Native counts as credentialed too.
+    //
+    // _nativeOrigins is a fixed, hardcoded set — the WebView origins our own
+    // packaged app runs from — not something an operator or a caller can
+    // widen, so this is not the blanket `credentials: true` the note above
+    // warns against.
+    //
+    // It has to be here because the client now sends `credentials:'include'`
+    // on every request, and a browser DISCARDS the response to such a request
+    // unless the server answers Access-Control-Allow-Credentials: true. The
+    // app was allowed through CORS, served correctly, and then had every reply
+    // thrown away by its own WebView — indistinguishable from the API being
+    // down, while the same server answered the web app (same-origin, and
+    // configured) perfectly.
+    credentials: isConfigured || isNative,
   });
 }));
 // Stripe signs the RAW request body, so its webhook must see the bytes exactly
