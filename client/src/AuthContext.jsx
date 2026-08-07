@@ -11,6 +11,24 @@ function readStored() {
   return { token: getItem(TOKEN_KEY), user: getJSON(USER_KEY) };
 }
 
+// Write the session to storage NOW, not on the next effect tick.
+//
+// authFetch reads rt_authToken synchronously out of localStorage, but the
+// persist effect below only runs after render — and React runs child effects
+// before parent ones. So the instant a sign-in succeeded, protected pages
+// mounted and fired their first requests before the token had been written.
+// Those went out with no Authorization header and came back 401; on native
+// there is no refresh cookie to recover with, so authFetch declared the
+// session expired and bounced the user straight back to the login screen.
+// Signing in again did the same thing — the endless loop testers hit.
+//
+// The effect still runs and is still the single place that clears storage and
+// mints the asset token; this only closes the window before it.
+function persistSessionNow(token, user) {
+  if (token) setItem(TOKEN_KEY, token); else removeItem(TOKEN_KEY);
+  if (user) setItem(USER_KEY, JSON.stringify(user)); else removeItem(USER_KEY);
+}
+
 // Sign-in calls must carry credentials so the server's Set-Cookie lands, and
 // must announce the platform: native gets a Bearer token back in the body
 // because its WebView has no cookie jar for capacitor://localhost, while the
@@ -108,6 +126,7 @@ export function AuthProvider({ children }) {
       const body = { username, password };
       if (tenant) body.tenant = tenant;
       const data = await callApi('/api/auth/login', { body });
+      persistSessionNow(data.token, data.user);
       setState({ token: data.token, user: data.user });
       // Fresh session — drop any "last rack" left in memory from a previous
       // login so the Overview / rack nav doesn't open a stale past scan. The
@@ -124,6 +143,7 @@ export function AuthProvider({ children }) {
   // above writes storage and mints the asset token, so this cannot drift from
   // the other sign-in paths.
   const adoptSession = useCallback((newToken, newUser) => {
+    persistSessionNow(newToken, newUser);
     setState({ token: newToken, user: newUser });
     try { window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: null })); } catch (_) {}
     return newUser;
@@ -147,6 +167,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const data = await callApi('/api/auth/reset-password', { body: { email, code, password } });
+      persistSessionNow(data.token, data.user);
       setState({ token: data.token, user: data.user });
       return data.user;
     } finally { setLoading(false); }
@@ -159,6 +180,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const data = await callApi('/api/auth/login-with-code', { body: { email, code } });
+      persistSessionNow(data.token, data.user);
       setState({ token: data.token, user: data.user });
       return data.user;
     } finally { setLoading(false); }
@@ -177,6 +199,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const data = await callApi('/api/auth/verify', { body: { email, code } });
+      persistSessionNow(data.token, data.user);
       setState({ token: data.token, user: data.user });
       return data.user;
     } finally { setLoading(false); }
