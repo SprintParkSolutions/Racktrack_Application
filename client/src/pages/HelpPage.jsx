@@ -24,6 +24,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useTheme } from '../ThemeContext.jsx';
+import { useTour } from '../TourContext.jsx';
 import BackButton from '../components/BackButton.jsx';
 import styles from './HelpPage.module.css';
 
@@ -73,6 +74,8 @@ function parseOptions(text) {
 
 export default function HelpPage() {
   const navigate = useNavigate();
+  // Null outside TourProvider, so the replay entry simply doesn't render.
+  const startTour = useTour()?.startTour;
   const [status, setStatus] = useState(null); // null = checking
   const [messages, setMessages] = useState([]);
   const [pending, setPending] = useState(false);
@@ -226,6 +229,20 @@ export default function HelpPage() {
                   </button>
                 ))}
               </div>
+
+              {/* Way back into the guided walkthrough. The first-run prompt is
+                  shown once per device and then never again, so without this
+                  there was no route back to it short of clearing site data. */}
+              {startTour && (<>
+                <div className={styles.startersLabel} style={{ marginTop: 22 }}>New here?</div>
+                <button type="button" className={styles.starter} onClick={startTour}>
+                  Take the guided tour
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </>)}
             </div>
           )}
 

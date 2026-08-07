@@ -29,22 +29,11 @@
   animation: rt-tour-rise 0.2s cubic-bezier(0.2, 0.6, 0.3, 1);
 }
 
-/* Speech-bubble tail pointing at the robot — two stacked triangles (a
-   slightly larger border-colored one behind, the fill-colored one in
-   front) so the tail reads as part of the same bordered card, not a
-   separate shape. Position matches the mascot's own `top` offset below,
-   so the tail keeps pointing at it if that ever moves. */
-
-
-.panel::before {
-  left: -18px;
-  border-right: 18px solid var(--md-outline-variant, #e0e0e0);
-}
-
-.panel::after {
-  left: -16px;
-  border-right: 16px solid var(--md-background, #fff);
-}
+/* NOTE: there were two rules here for a speech-bubble tail pointing at the
+   robot — `.panel::before` / `.panel::after`. Neither declared `content`, so
+   neither pseudo-element was ever generated and no tail has ever rendered.
+   Removed rather than completed: the robot now sits directly on the card's
+   edge in both layouts, so there is no gap for a tail to bridge. */
 
 @keyframes rt-tour-rise {
   from { opacity: 0; transform: translateY(12px); }
@@ -126,8 +115,9 @@
   margin: 0 0 4px;
   font-size: 11px;
   font-weight: 700;
-  /* Matches .bubbleStepLabel's tracking in TourOverlay.module.css so both
-     "eyebrow" labels across the tour read as the same type system. */
+  /* Tracking is shared with the step cards in TourOverlay.module.css so the
+     small uppercase labels across the tour read as one type system. (This
+     used to name .bubbleStepLabel, a class that no longer exists.) */
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--md-on-surface-variant, #666);

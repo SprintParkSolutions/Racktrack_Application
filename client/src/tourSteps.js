@@ -56,8 +56,12 @@ export const TOUR_STEPS = [
   },
   {
     id: 'full-report',
+    // Anchored to the View chip in the report row. The original copy named a
+    // "Full Device & Port Report" button, which exists in the prototype this
+    // came from but not here — the instruction has to match the label the user
+    // is actually looking at.
     target: 'full-report-btn',
     title: 'See the full report',
-    body: 'Tap Full Device & Port Report to open everything about this device and port.',
+    body: 'Tap View to open the full report for this device and port.',
   },
 ];

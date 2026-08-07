@@ -1,29 +1,59 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TOUR_STEPS } from './tourSteps.js';
+import { useAuth } from './AuthContext.jsx';
 import { getItem, setItem } from './utils/safeStorage';
 
 const TourContext = createContext(null);
 
-// Shown once per device: answering the "New to RackTrack?" prompt either way
+// Shown once per ACCOUNT: answering the "New to RackTrack?" prompt either way
 // (taking the tour, or declining it) is remembered, so it never interrupts a
 // returning user again. Storage that throws — blocked site data, full quota —
 // degrades to "ask again next load" rather than breaking the app, which is
 // what safeStorage guarantees.
-const ASKED_KEY = 'racktrack:tour-asked';
+//
+// The flag used to be one unsuffixed device-wide key, which meant the first
+// person to answer the prompt on a phone or browser answered it for everyone
+// after them: signing out and signing in with a brand-new account showed no
+// tour at all, because nothing about the key or the sign-out path was tied to
+// who was asked. Suffixing with the user id is what makes "once per account"
+// true. Signed-out callers keep the bare key — TourGate holds the prompt back
+// until sign-in anyway, so that branch only exists to keep this total.
+const ASKED_PREFIX = 'racktrack:tour-asked';
+
+function askedKey(userId) {
+  return userId ? `${ASKED_PREFIX}:${userId}` : ASKED_PREFIX;
+}
 
 export function TourProvider({ children }) {
   const navigate = useNavigate();
-  const [asked, setAsked] = useState(() => getItem(ASKED_KEY) === '1');
+  const { user } = useAuth();
+  const storageKey = askedKey(user?.id ?? null);
+
+  const [asked, setAsked] = useState(() => getItem(storageKey) === '1');
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+
+  // This provider lives above the router outlet and never unmounts, so the
+  // lazy initialiser above runs exactly once for the lifetime of the app — a
+  // sign-out / sign-in inside that one session has to re-read storage under
+  // the new account's key. Adjusting during render rather than in an effect
+  // keeps the intro from flashing for a frame with the previous account's
+  // answer (and tears down a walkthrough the previous account left running).
+  const [keyInState, setKeyInState] = useState(storageKey);
+  if (keyInState !== storageKey) {
+    setKeyInState(storageKey);
+    setAsked(getItem(storageKey) === '1');
+    setActive(false);
+    setStepIndex(0);
+  }
 
   const showIntro = !asked;
 
   const markAsked = useCallback(() => {
-    setItem(ASKED_KEY, '1');
+    setItem(storageKey, '1');
     setAsked(true);
-  }, []);
+  }, [storageKey]);
 
   const dismissIntro = useCallback(() => {
     markAsked();
