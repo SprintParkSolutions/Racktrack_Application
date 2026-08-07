@@ -1092,15 +1092,40 @@ export default function ScanPage() {
       // blip kills the request. Retrying is safe here: rack ids are content
       // hashes, so if the first attempt actually reached the server the retry
       // hits the cache and returns the same scan rather than making a second.
+      // Give up eventually.
+      //
+      // This request had no timeout, so when the server stopped answering —
+      // its pipeline worker times out internally at 120s, and a restarted
+      // container abandons in-flight work outright — the app sat on
+      // "Analyzing rack…" indefinitely. Testers reported watching it spin for
+      // five minutes and longer, with no way to tell whether anything was
+      // still happening. Anything past the server's own ceiling is not slow,
+      // it is not coming.
+      const ANALYZE_TIMEOUT_MS = 180000;   // server gives up on its worker at 120s
+      const attempt = () => authFetch(apiUrl(endpoint), {
+        method: 'POST', body, signal: AbortSignal.timeout(ANALYZE_TIMEOUT_MS),
+      });
+
       let res;
       try {
-        res = await authFetch(apiUrl(endpoint), { method: 'POST', body });
+        res = await attempt();
       } catch (netErr) {
+        // A timeout is not a dropped connection: the photo did reach the
+        // server and retrying would just wait out the same ceiling again.
+        if (netErr?.name === 'TimeoutError' || netErr?.name === 'AbortError') {
+          throw new Error(
+            'The scan took too long and was stopped. The photo reached the '
+            + 'server, so try again in a moment — if it keeps happening, the '
+            + 'rack photo may be too large or the server may be busy.');
+        }
         setStep('Connection dropped — retrying…');
         await new Promise((r) => setTimeout(r, 1200));
         try {
-          res = await authFetch(apiUrl(endpoint), { method: 'POST', body });
-        } catch {
+          res = await attempt();
+        } catch (retryErr) {
+          if (retryErr?.name === 'TimeoutError' || retryErr?.name === 'AbortError') {
+            throw new Error('The scan took too long and was stopped. Please try again.');
+          }
           throw new Error(
             'Upload failed — the connection dropped while sending the photo. '
             + 'Check your signal and try again.');
