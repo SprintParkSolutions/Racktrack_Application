@@ -19,6 +19,15 @@ TEST_ACCOUNT.md
 # Build artifacts
 client/dist/
 
+# Native mobile build output — regenerable, never commit (build_sim was tracked
+# by mistake: 3044 files / 254 MB of Xcode simulator output).
+client/ios/App/build/
+client/ios/App/build_sim/
+client/ios/App/DerivedData/
+client/android/app/build/
+client/android/build/
+client/android/.gradle/
+
 # Python
 __pycache__/
 *.pyc
@@ -188,3 +197,9 @@ firmware_lookup/cache_dir/
 # KB/embeddings/docx. Never commit — integration lands in server/ + client/.
 support-bot2/
 racktrack-support-bot/
+
+# Secrets and bulk artefacts that must never enter history.
+# auth_ngrok holds a live ngrok authtoken; server.zip is a 101 MB snapshot.
+auth_ngrok
+server.zip
+*.p8
