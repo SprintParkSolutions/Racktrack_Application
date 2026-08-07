@@ -1015,9 +1015,35 @@ async function ensurePortCounts(rackId) {
   if (!Array.isArray(data.devices)) return;
   if (data.devices.every(dev => typeof dev.port_count === 'number')) return;
 
+  // meta.imagePath may be a stale absolute path from another machine — the
+  // demo's outputs/ was copied off the retired Windows box, so its
+  // scan_meta.json files still say D:\RACKTRACK\dark_mobile\outputs\...
+  //
+  // This checked that the FIELD was set, never that the FILE was there, and
+  // handed the path straight to the pipeline. Every scan touching one of
+  // those racks died with "Unable to open input image: D:\..." — 15 of them
+  // on the demo in a single day, which testers experienced as a scan that
+  // never finished. The other two readers of meta.imagePath already guard
+  // this way; this one was missed.
+  let imagePath = fs.existsSync(meta.imagePath) ? meta.imagePath : null;
+  if (!imagePath) {
+    for (const ext of ['jpg', 'jpeg', 'png']) {
+      const candidate = path.join(rackDir, `original_image.${ext}`);
+      if (fs.existsSync(candidate)) { imagePath = candidate; break; }
+    }
+  }
+  // Nothing openable on this machine: leave the port counts as they are.
+  // A refresh that cannot run is not a failed scan, and must not be reported
+  // as one.
+  if (!imagePath) {
+    logger.warn({ event: 'scan.port_counts_skipped', rackId, storedPath: meta.imagePath },
+      `port-count refresh skipped for ${rackId}: source image not on this machine`);
+    return;
+  }
+
   // Re-analyze scopes to the rack's org so device-class active-learning
   // corrections re-apply (and aren't clobbered) on this refresh.
-  await runPipelineAnalyze(meta.imagePath, rackDir, tenant.orgForRack(rackId));
+  await runPipelineAnalyze(imagePath, rackDir, tenant.orgForRack(rackId));
 }
 
 function buildResponse(rackId, cached) {
