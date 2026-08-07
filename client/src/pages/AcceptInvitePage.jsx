@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import styles from './AuthPages.module.css';
 import AuthBackdrop from '../components/AuthBackdrop.jsx';
 import { setItem } from '../utils/safeStorage';
@@ -43,7 +44,11 @@ export default function AcceptInvitePage() {
     try {
       const r = await fetch(apiUrl(`/api/invites/${code}/accept`), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',   // so the server's session cookies land
+        headers: {
+          'Content-Type': 'application/json',
+          ...(Capacitor.isNativePlatform() ? { 'X-Client-Platform': 'native' } : {}),
+        },
         body: JSON.stringify({ username: username.trim(), password }),
       });
       const d = await r.json();
@@ -52,7 +57,10 @@ export default function AcceptInvitePage() {
         // Guarded: this is the same unguarded-write crash that blanked the
         // app at sign-in on storage-blocked browsers. Failing to persist means
         // signing in again next launch; throwing here means losing the app.
-        setItem('rt_authToken', d.token);
+        //
+        // d.token only comes back for native; on web the session is in the
+        // cookies set above and there is nothing to store but the cached user.
+        if (d.token) setItem('rt_authToken', d.token);
         setItem('rt_authUser', JSON.stringify(d.user));
       } catch (_) { /* ignore */ }
       window.location.assign('/scan');   // full reload so AuthContext picks up the session

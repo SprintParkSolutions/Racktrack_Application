@@ -51,6 +51,67 @@ const JWT_AUDIENCE = 'racktrack-app';
 // verifying — they are silently upgraded on next successful sign-in.
 const BCRYPT_COST = Number(process.env.BCRYPT_COST) || 12;
 
+// ── Cookie auth (web) ────────────────────────────────────────
+// Browsers get a short-lived access JWT plus a rotating refresh token, both as
+// httpOnly cookies, so no credential is reachable from JavaScript. Native
+// (Capacitor) keeps the Bearer flow: a custom-scheme deep link cannot set a
+// cookie in the app's WebView, and SameSite would not send one from
+// capacitor://localhost anyway. requireAuth accepts either.
+const ACCESS_TOKEN_EXPIRY  = process.env.ACCESS_TOKEN_EXPIRY  || '15m';
+const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || TOKEN_TTL;
+const COOKIE_DOMAIN   = process.env.COOKIE_DOMAIN || undefined;
+// Secure cookies are the right default, but a `secure` cookie is silently
+// dropped by the browser over plain http — which is exactly how local dev and
+// a bare-http box are served. Defaulting this to true unconditionally makes
+// login look like it succeeds and then behave as though it never happened.
+// Explicit env wins; otherwise on in production, off outside it.
+const COOKIE_SECURE = process.env.COOKIE_SECURE !== undefined
+  ? process.env.COOKIE_SECURE !== 'false'
+  : (process.env.NODE_ENV === 'production');
+const COOKIE_SAMESITE = process.env.COOKIE_SAMESITE || 'lax';
+// A refresh that arrives moments after its own rotation is almost always two
+// tabs racing, not theft. Anything later is treated as a stolen token.
+const REUSE_GRACE_MS = Number(process.env.REFRESH_REUSE_GRACE_MS) || 5000;
+
+function parseExpiryMs(str) {
+  const m = /^(\d+)(s|m|h|d)$/.exec(String(str));
+  if (!m) throw new Error(`Invalid expiry string: ${str}`);
+  return Number(m[1]) * { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 }[m[2]];
+}
+
+// Refresh tokens are stored hashed. A leaked database backup then yields no
+// usable sessions, the same reason passwords are not stored in the clear.
+function hashToken(plain) {
+  return crypto.createHash('sha256').update(String(plain)).digest('hex');
+}
+
+function genRefreshToken() {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+const ACCESS_COOKIE_OPTS = {
+  httpOnly: true, secure: COOKIE_SECURE, sameSite: COOKIE_SAMESITE,
+  path: '/', domain: COOKIE_DOMAIN,
+};
+// Scoped to /api/auth so the long-lived credential is not attached to every
+// image, upload and scan request — only to the endpoints that consume it.
+const REFRESH_COOKIE_OPTS = {
+  httpOnly: true, secure: COOKIE_SECURE, sameSite: COOKIE_SAMESITE,
+  path: '/api/auth', domain: COOKIE_DOMAIN,
+};
+
+function setAuthCookies(res, accessJwt, refreshPlain) {
+  res.cookie('rt_access', accessJwt,
+    { ...ACCESS_COOKIE_OPTS, maxAge: parseExpiryMs(ACCESS_TOKEN_EXPIRY) });
+  res.cookie('rt_refresh', refreshPlain,
+    { ...REFRESH_COOKIE_OPTS, maxAge: parseExpiryMs(REFRESH_TOKEN_EXPIRY) });
+}
+
+function clearAuthCookies(res) {
+  res.clearCookie('rt_access', ACCESS_COOKIE_OPTS);
+  res.clearCookie('rt_refresh', REFRESH_COOKIE_OPTS);
+}
+
 // ── Database schema ──────────────────────────────────────────
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
@@ -96,6 +157,29 @@ db.exec(`
     expires_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_revoked_tokens_exp ON revoked_tokens(expires_at);
+
+  -- Refresh tokens for the browser session (see "Cookie auth" above).
+  --
+  -- One row per generation. Rotating mints a new row and marks the old one
+  -- revoked with replaced_by_token_id pointing at its successor, so a token
+  -- presented after it was rotated away is recognisable as a replay rather
+  -- than merely unknown — that chain is what makes reuse detection possible.
+  CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id               INTEGER NOT NULL REFERENCES users(id),
+    token_hash            TEXT    NOT NULL UNIQUE,
+    created_at            TEXT    NOT NULL DEFAULT (datetime('now')),
+    expires_at            INTEGER NOT NULL,
+    revoked_at            INTEGER,
+    replaced_by_token_id  INTEGER REFERENCES refresh_tokens(id),
+    device_info           TEXT,
+    ip_address            TEXT,
+    last_used_at          INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user        ON refresh_tokens(user_id);
+  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash        ON refresh_tokens(token_hash);
+  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_active ON refresh_tokens(user_id, revoked_at);
+  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_exp         ON refresh_tokens(expires_at);
 `);
 
 // ── Tenant migration ─────────────────────────────────────────
@@ -555,7 +639,7 @@ function genCode() {
   return String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
 }
 
-function makeToken(user) {
+function makeToken(user, ttl = TOKEN_TTL) {
   // tenantId baked into the JWT so middleware can read it without a DB
   // round-trip on every request.
   //
@@ -577,13 +661,68 @@ function makeToken(user) {
       tv: Number(user.token_version || 0) },
     JWT_SECRET,
     {
-      expiresIn: TOKEN_TTL,
+      expiresIn: ttl,
       jwtid: crypto.randomUUID(),
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
       algorithm: 'HS256',
     }
   );
+}
+
+// Verify an access token to exactly the standard requireAuth applies.
+//
+// Deliberately not a bare jwt.verify(token, JWT_SECRET): without `algorithms`
+// the library honours whatever `alg` the token declares, which is the JWT
+// confusion attack requireAuth pins against, and without issuer/audience a
+// token minted by any other service sharing this secret would pass. Used by
+// app.js's softAuthPayload, which decides tenant scoping on ~25 endpoints —
+// it must not be a weaker check than the one guarding the authenticated ones.
+function verifyAccessToken(token) {
+  try {
+    const payload = jwt.verify(token, JWT_SECRET, {
+      algorithms: ['HS256'], issuer: JWT_ISSUER, audience: JWT_AUDIENCE,
+    });
+    if (isRevoked(payload.jti)) return null;
+    const user = db.prepare('SELECT active, token_version FROM users WHERE id = ?').get(payload.sub);
+    if (!user || user.active === 0) return null;
+    if (Number(payload.tv || 0) !== Number(user.token_version || 0)) return null;
+    return payload;
+  } catch { return null; }
+}
+
+// Signs an access JWT and mints/persists a matching refresh-token row. The
+// single entry point for every route that starts a session, so none of them
+// can drift on token shape or forget to record the refresh row.
+function issueTokenPair(user, req) {
+  const accessJwt = makeToken(user, ACCESS_TOKEN_EXPIRY);
+  const refreshPlain = genRefreshToken();
+  const expiresAt = Date.now() + parseExpiryMs(REFRESH_TOKEN_EXPIRY);
+  const info = db.prepare(`
+    INSERT INTO refresh_tokens (user_id, token_hash, expires_at, device_info, ip_address)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(user.id, hashToken(refreshPlain), expiresAt,
+    (req && req.headers && req.headers['user-agent']) || null, (req && req.ip) || null);
+  return { accessJwt, refreshPlain, refreshId: Number(info.lastInsertRowid) };
+}
+
+// Native (Capacitor) has no usable cookie jar for our custom scheme, so it
+// still reads a Bearer token out of the response body. Browsers must not get
+// one: handing the credential back in JSON would put it right back within
+// reach of any script on the page, which is the whole thing cookies fix.
+function wantsBodyToken(req) {
+  if (String(req.get('X-Client-Platform') || '').toLowerCase() === 'native') return true;
+  return /native app/i.test(String(req.get('user-agent') || ''));
+}
+
+// Expired and long-revoked rows serve no purpose — a row is only needed while
+// the token it describes could still be presented. Mirrors revokeSweep().
+let _lastRefreshSweep = 0;
+function refreshSweep() {
+  const now = Date.now();
+  if (now - _lastRefreshSweep < 60_000) return;
+  _lastRefreshSweep = now;
+  db.prepare('DELETE FROM refresh_tokens WHERE expires_at < ?').run(now);
 }
 
 // Deny one specific token. The row only has to outlive the token itself, so it
@@ -660,9 +799,13 @@ function publicUser(user, tenant = null) {
 // req.user is the full user row PLUS .tenant ({id, slug, name}) so route
 // handlers don't have to look it up themselves.
 function requireAuth(req, res, next) {
-  const header = req.headers.authorization || '';
-  const match  = header.match(/^Bearer\s+(.+)$/i);
-  if (!match) return res.status(401).json({ error: 'Authentication required' });
+  // Cookie first (browsers), Bearer second (the native app, which cannot hold
+  // a cookie for its custom scheme). Cookie wins when both are present so a
+  // stale token left in a browser's localStorage by an older build can't
+  // outrank the live session.
+  const bearer = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
+  const token = req.cookies?.rt_access || bearer;
+  if (!token) return res.status(401).json({ error: 'Authentication required' });
   try {
     // algorithms is pinned explicitly. Without it the library will honour
     // whatever `alg` the token itself declares, which is the classic JWT
@@ -670,7 +813,7 @@ function requireAuth(req, res, next) {
     // RS256 with our HMAC secret treated as a public key.
     //
     // issuer/audience are enforced here to match makeToken.
-    const payload = jwt.verify(match[1], JWT_SECRET, {
+    const payload = jwt.verify(token, JWT_SECRET, {
       algorithms: ['HS256'],
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
@@ -975,7 +1118,10 @@ function registerRoutes(app) {
       targetType: 'user', targetId: user.id,
       payload: { tenant_id: tenant.id, tenant_slug: tenant.slug, new_tenant: !!pending.company },
     });
-    res.json({ ok: true, token: makeToken(user), user: publicUser(user, tenant) });
+    const { accessJwt, refreshPlain } = issueTokenPair(user, req);
+    setAuthCookies(res, accessJwt, refreshPlain);
+    res.json({ ok: true, user: publicUser(user, tenant),
+      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
   });
 
   // ── Resend verification code ───────────────────────────────
@@ -1093,7 +1239,10 @@ function registerRoutes(app) {
     audit.log({ req, user, action: 'auth.login', status: 'ok',
       targetType: 'user', targetId: user.id,
       payload: { tenant_id: user.tenant_id } });
-    res.json({ ok: true, token: makeToken(user), user: publicUser(user) });
+    const { accessJwt, refreshPlain } = issueTokenPair(user, req);
+    setAuthCookies(res, accessJwt, refreshPlain);
+    res.json({ ok: true, user: publicUser(user),
+      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
   });
 
   // ── Forgot password — stage 1: request a reset code ─────────
@@ -1217,7 +1366,10 @@ function registerRoutes(app) {
     audit.log({ req, user, action: 'auth.forgot_password.login_with_code',
       status: 'ok', targetType: 'user', targetId: user.id });
 
-    res.json({ ok: true, token: makeToken(user), user: publicUser(user) });
+    const { accessJwt, refreshPlain } = issueTokenPair(user, req);
+    setAuthCookies(res, accessJwt, refreshPlain);
+    res.json({ ok: true, user: publicUser(user),
+      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
   });
 
   // ── Forgot password — stage 2: verify code + set new password ─
@@ -1284,12 +1436,96 @@ function registerRoutes(app) {
     // reject it on the very next request — a reset that appears to succeed and
     // then bounces the user to the login screen.
     const refreshed = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
-    res.json({ ok: true, token: makeToken(refreshed), user: publicUser(refreshed) });
+    const { accessJwt, refreshPlain } = issueTokenPair(refreshed, req);
+    setAuthCookies(res, accessJwt, refreshPlain);
+    res.json({ ok: true, user: publicUser(refreshed),
+      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
   });
 
   // ── Whoami ─────────────────────────────────────────────────
   app.get('/api/auth/me', requireAuth, (req, res) => {
     res.json({ ok: true, user: publicUser(req.user) });
+  });
+
+  // ── Refresh (browser sessions) ─────────────────────────────
+  // Trades a valid refresh cookie for a fresh access+refresh pair. Rotating on
+  // every use is what limits the damage of a stolen refresh token: the thief
+  // and the real user cannot both keep using it, and whichever one presents the
+  // superseded copy exposes the theft.
+  //
+  // Deliberately NOT behind requireAuth — the whole point is that it is reached
+  // when the access token has already expired.
+  app.post('/api/auth/refresh', (req, res) => {
+    const presented = req.cookies?.rt_refresh;
+    if (!presented) {
+      audit.log({ req, action: 'auth.refresh', status: 'fail', error: 'no_token' });
+      return res.status(401).json({ error: 'No refresh token' });
+    }
+    refreshSweep();
+    const row = db.prepare('SELECT * FROM refresh_tokens WHERE token_hash = ?')
+                  .get(hashToken(presented));
+
+    if (!row) {
+      audit.log({ req, action: 'auth.refresh', status: 'fail', error: 'unknown_token' });
+      clearAuthCookies(res);
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+    if (row.expires_at < Date.now()) {
+      audit.log({ req, action: 'auth.refresh', status: 'fail', error: 'expired',
+        targetType: 'user', targetId: row.user_id });
+      clearAuthCookies(res);
+      return res.status(401).json({ error: 'Refresh token expired' });
+    }
+
+    let graceReuse = false;
+    if (row.revoked_at !== null) {
+      if (row.replaced_by_token_id === null) {
+        // Revoked by an explicit logout rather than by rotation. A deliberate
+        // sign-out cannot legitimately race with itself, so no grace applies.
+        audit.log({ req, action: 'auth.refresh', status: 'fail', error: 'revoked',
+          targetType: 'user', targetId: row.user_id });
+        clearAuthCookies(res);
+        return res.status(401).json({ error: 'Refresh token revoked' });
+      }
+      if (Date.now() - row.revoked_at > REUSE_GRACE_MS) {
+        // Rotated away, then presented again well afterwards — treat as theft
+        // and drop every live session for this user, not just this chain.
+        db.prepare('UPDATE refresh_tokens SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL')
+          .run(Date.now(), row.user_id);
+        bumpTokenVersion(row.user_id);   // also kills access tokens already minted
+        audit.log({ req, action: 'auth.token_reuse_detected', status: 'fail',
+          targetType: 'user', targetId: row.user_id,
+          payload: { presented_token_id: row.id, elapsed_ms: Date.now() - row.revoked_at } });
+        clearAuthCookies(res);
+        return res.status(401).json({ error: 'Refresh token reuse detected', code: 'token_reuse' });
+      }
+      graceReuse = true;   // benign concurrent-tab race — mint a fresh generation
+    }
+
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(row.user_id);
+    if (!user || user.active === 0) {
+      audit.log({ req, action: 'auth.refresh', status: 'fail', error: 'user_inactive',
+        targetType: 'user', targetId: row.user_id });
+      clearAuthCookies(res);
+      return res.status(401).json({ error: 'Account unavailable' });
+    }
+
+    const { accessJwt, refreshPlain, refreshId } = issueTokenPair(user, req);
+    // Only the live row is revoked here. Re-stamping revoked_at on a row that
+    // was ALREADY rotated away would restart its grace window on every
+    // presentation, so a stolen token replayed every few seconds would stay
+    // usable forever and never trip the reuse check above.
+    if (!graceReuse) {
+      db.prepare('UPDATE refresh_tokens SET revoked_at = ?, replaced_by_token_id = ?, last_used_at = ? WHERE id = ?')
+        .run(Date.now(), refreshId, Date.now(), row.id);
+    } else {
+      db.prepare('UPDATE refresh_tokens SET last_used_at = ? WHERE id = ?').run(Date.now(), row.id);
+    }
+    setAuthCookies(res, accessJwt, refreshPlain);
+    audit.log({ req, user, action: 'auth.refresh', status: 'ok',
+      targetType: 'user', targetId: user.id,
+      payload: graceReuse ? { grace_reuse: true } : undefined });
+    res.json({ ok: true, user: publicUser(user) });
   });
 
   // ── Sign out (this device) ─────────────────────────────────
@@ -1298,10 +1534,33 @@ function registerRoutes(app) {
   // of its 30 days, so signing out on a shared or lost device protected
   // nothing against anyone who had already copied it. Denying the jti makes the
   // token dead server-side, which is what users assume "sign out" means.
-  app.post('/api/auth/logout', requireAuth, (req, res) => {
-    revokeToken(req.authPayload);
-    audit.log({ req, user: req.user, action: 'auth.logout', status: 'ok',
-      targetType: 'user', targetId: req.user.id });
+  //
+  // Not behind requireAuth: a browser whose 15-minute access token has already
+  // expired must still be able to sign out and have its refresh row revoked.
+  // Without that, the long-lived half of the session outlives the sign-out.
+  app.post('/api/auth/logout', (req, res) => {
+    const presented = req.cookies?.rt_refresh;
+    if (presented) {
+      db.prepare('UPDATE refresh_tokens SET revoked_at = ?, last_used_at = ? WHERE token_hash = ? AND revoked_at IS NULL')
+        .run(Date.now(), Date.now(), hashToken(presented));
+    }
+    // Deny this specific access token too, so it cannot be replayed for the
+    // remainder of its life. Best-effort: the token may already be expired.
+    const bearer = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
+    const token = req.cookies?.rt_access || bearer;
+    let uid = null;
+    if (token) {
+      try {
+        const payload = jwt.verify(token, JWT_SECRET, {
+          algorithms: ['HS256'], issuer: JWT_ISSUER, audience: JWT_AUDIENCE,
+        });
+        revokeToken(payload);
+        uid = payload.sub || null;
+      } catch { /* expired or malformed — the refresh row above is what matters */ }
+    }
+    clearAuthCookies(res);
+    audit.log({ req, action: 'auth.logout', status: 'ok',
+      targetType: 'user', targetId: uid });
     res.json({ ok: true });
   });
 
@@ -1311,6 +1570,12 @@ function registerRoutes(app) {
   // making this request.
   app.post('/api/auth/logout-all', requireAuth, (req, res) => {
     bumpTokenVersion(req.user.id);
+    // token_version only invalidates JWTs. The refresh rows are separate state
+    // and would otherwise survive, letting a stolen refresh cookie mint a fresh
+    // (now higher-version) access token immediately after "sign out everywhere".
+    db.prepare('UPDATE refresh_tokens SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL')
+      .run(Date.now(), req.user.id);
+    clearAuthCookies(res);
     audit.log({ req, user: req.user, action: 'auth.logout_all', status: 'ok',
       targetType: 'user', targetId: req.user.id });
     res.json({ ok: true });
@@ -1764,7 +2029,10 @@ function registerRoutes(app) {
     db.prepare("UPDATE invites SET accepted_at = datetime('now') WHERE code = ?").run(code);
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(r.lastInsertRowid);
     audit.log({ req, user, action: 'invite.accept', status: 'ok', targetType: 'user', targetId: user.id, payload: { code } });
-    res.json({ ok: true, token: makeToken(user), user: publicUser(user) });
+    const { accessJwt, refreshPlain } = issueTokenPair(user, req);
+    setAuthCookies(res, accessJwt, refreshPlain);
+    res.json({ ok: true, user: publicUser(user),
+      ...(wantsBodyToken(req) ? { token: accessJwt } : {}) });
   });
 
   // ── Dashboards ────────────────────────────────────────────────
@@ -1836,4 +2104,8 @@ module.exports = {
   // Kept as an explicit named list rather than exporting the module internals
   // wholesale, so it stays obvious what the social path is allowed to touch.
   db, makeToken, publicUser, assignPublicId, USERNAME_RE,
+  // Cookie-session helpers. socialAuth.js sets the same pair after an OAuth
+  // round-trip on web, and app.js's softAuthPayload verifies with the same
+  // rules requireAuth applies rather than a looser check of its own.
+  verifyAccessToken, issueTokenPair, setAuthCookies, clearAuthCookies, wantsBodyToken,
 };

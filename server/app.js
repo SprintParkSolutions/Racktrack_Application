@@ -20,6 +20,7 @@ const fs       = require('fs');
 
 const express  = require('express');
 const cors     = require('cors');
+const cookieParser = require('cookie-parser');
 const multer   = require('multer');
 const crypto   = require('crypto');
 const sharp    = require('sharp');
@@ -42,6 +43,7 @@ const { uploadLimiter } = require('./lib/rate_limit');
 const o11y = require('./lib/observability');
 const { logger, withSpan, recordEvent } = o11y;
 const portHistoryDb = require('./lib/port_history_db');
+const reportInsights = require('./lib/report_insights');
 
 // Merge stored env credentials (per vendor) into request body fields. Values
 // sent explicitly by the client take precedence over the env-stored defaults.
@@ -56,6 +58,15 @@ function isKnownSwitchHost(host) {
 }
 
 function resolveSwitchCreds(body) {
+  // Demo box: there are no stored credentials because no SSH session is ever
+  // opened — runSwitchCommand short-circuits to fixtures well before any
+  // socket. Placeholders here only satisfy the `!username || !password` guards
+  // on the routes below. This cannot leak anything: the exfiltration hole
+  // described further down needs a real secret to hand over, and in this mode
+  // there isn't one.
+  if (demoData.enabled) {
+    return { username: 'demo', password: 'demo', enablePassword: '' };
+  }
   // Precedence: explicit client-sent value → per-host stored → per-vendor stored.
   // Per-host lets two switches of the same vendor (e.g. .13 and .14, both
   // TP-Link) carry different passwords without one clobbering the other.
@@ -113,14 +124,20 @@ function jwtSecret() {
 // Same as above but returns the whole JWT payload (so callers can also
 // read tenantId for tenant-scoped reads on otherwise public routes).
 function softAuthPayload(req) {
-  const header = req.headers.authorization || '';
-  const m = header.match(/^Bearer\s+(.+)$/i);
-  if (!m) return null;
-  try {
-    const secret = jwtSecret();
-    if (!secret) return null;
-    return jwt.verify(m[1], secret);
-  } catch { return null; }
+  // Reads the cookie as well as the header. Its contract is "no payload means
+  // treat as anonymous", so the moment browsers stopped sending Authorization
+  // every signed-in user would have silently looked anonymous on the ~25
+  // endpoints that scope their reads through this — no error, just other
+  // tenants' data quietly missing.
+  //
+  // Verification is delegated to auth.verifyAccessToken rather than done here.
+  // The old local jwt.verify pinned no algorithm and asserted no issuer or
+  // audience, so it accepted tokens requireAuth would have rejected; and it
+  // re-read the secret from disk, returning null for every request whenever
+  // JWT_SECRET came from the environment instead of the generated file.
+  const bearer = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
+  const token = req.cookies?.rt_access || bearer;
+  return token ? auth.verifyAccessToken(token) : null;
 }
 
 // ── Report links ─────────────────────────────────────────────────────
@@ -300,14 +317,26 @@ const _nativeOrigins = new Set([
   'https://localhost',
   'http://localhost',
 ]);
-app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);                  // same-origin / curl
-    if (_nativeOrigins.has(origin)) return cb(null, true); // Capacitor native app
-    if (_corsOrigins.includes(origin)) return cb(null, true);
-    if (_corsOrigins.length === 0 && _corsIsDev) return cb(null, true);
-    return cb(null, false);
-  },
+// Credentials are granted PER ORIGIN, not globally, and only to origins an
+// operator listed explicitly in CORS_ALLOWED_ORIGINS.
+//
+// The safety argument in the comment above — that allowing http(s)://localhost
+// costs nothing — holds only while no ambient credential rides along. Now that
+// browser sessions are cookies, a blanket `credentials: true` would hand every
+// page running on a user's own machine (any local dev server, any other app
+// serving on localhost) the ability to make cookie-bearing calls to this API
+// and read the replies. The native app authenticates with a Bearer token and
+// needs no credentials at all, so it keeps CORS access without them.
+app.use(cors((req, cb) => {
+  const origin = req.headers.origin;
+  const isNative     = !!origin && _nativeOrigins.has(origin);
+  const isConfigured = !!origin && _corsOrigins.includes(origin);
+  const allowed = !origin || isNative || isConfigured
+    || (_corsOrigins.length === 0 && _corsIsDev);
+  cb(null, {
+    origin: allowed ? (origin || true) : false,
+    credentials: isConfigured,
+  });
 }));
 // Stripe signs the RAW request body, so its webhook must see the bytes exactly
 // as sent. express.json() below would consume the stream first, leaving the
@@ -317,6 +346,47 @@ app.use(cors({
 // place this can be done.
 app.use('/api/marketplace/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
+// Must precede anything that reads req.cookies — requireAuth, softAuthPayload
+// and the CSRF check below all do.
+app.use(cookieParser());
+
+// CSRF: a cookie is sent by the browser automatically, so a form on someone
+// else's site could trigger a state-changing call as the signed-in user. The
+// Bearer path has never had this problem — an attacker cannot set a header on
+// a cross-site request — so the check only engages when a request actually
+// carries one of our auth cookies. That keeps the native app, curl and
+// server-to-server callers (which authenticate by Bearer or app key, and have
+// no ambient credential to abuse) working unchanged.
+//
+// SameSite=lax already blocks the classic cross-site POST; this is the second
+// line, and the one that still holds if SameSite is ever loosened.
+function csrfOriginCheck(req, res, next) {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  if (!req.cookies?.rt_access && !req.cookies?.rt_refresh) return next();
+
+  const isTrusted = (originStr) => {
+    if (!originStr) return false;
+    if (_corsOrigins.includes(originStr)) return true;
+    if (_corsOrigins.length === 0 && _corsIsDev) return true;
+    try { return new URL(originStr).host === req.headers.host; } catch { return false; }
+  };
+
+  const origin = req.headers.origin;
+  if (origin) {
+    return isTrusted(origin) ? next() : res.status(403).json({ error: 'Origin not allowed' });
+  }
+  const referer = req.headers.referer;
+  if (referer) {
+    try {
+      if (isTrusted(new URL(referer).origin)) return next();
+    } catch { /* unparseable — fall through to reject */ }
+    return res.status(403).json({ error: 'Origin not allowed' });
+  }
+  // A browser always sends one of the two on a mutating request. Neither
+  // present, yet a session cookie attached, is not a shape a browser produces.
+  return res.status(403).json({ error: 'Origin required' });
+}
+app.use(csrfOriginCheck);
 // These are mounted before auth so that <img> tags (which cannot send an
 // Authorization header) can load rack photos. That previously exposed the
 // ENTIRE rack directory to anyone who knew the 8-char rack id — device maps,
@@ -1147,9 +1217,28 @@ function readDeviceOverride(rackDir, position) {
 // whether it was tagged RJ45/SFP/console in the scan. With no port context
 // (nothing identified yet) it falls back to showing everything polled.
 // Synchronous: better-sqlite3 has no async API.
-function collectDriftHistory(selectedPort = null, eventsPerDevice = 30) {
+// Which switches belong in THIS rack's report. Listing every monitored device
+// filled the section with three "No drift events recorded yet" tables for
+// switches that have never been reached at all, burying the one switch that
+// actually has history.
+//
+//   * once the console-session join has found this rack's switch, that is the
+//     only one shown — it is the only one the report can honestly claim is here
+//   * with no join yet, fall back to switches we have actually polled. A device
+//     we have never reached has nothing to report, and an empty table for it is
+//     noise rather than information.
+function driftDevicesFor(monitored) {
+  const all = portHistoryDb.listDevices();
+  if (monitored) {
+    const mine = all.filter(d => d.id === monitored.id);
+    if (mine.length) return mine;
+  }
+  return all.filter(d => d.last_seen);
+}
+
+function collectDriftHistory(selectedPort = null, monitored = null, eventsPerDevice = 30) {
   try {
-    return portHistoryDb.listDevices().map(dev => {
+    return driftDevicesFor(monitored).map(dev => {
       const all = portHistoryDb.eventsForDevice(dev.id, 1000);
       const filtered = selectedPort == null ? all : all.filter(e => {
         const m = String(e.port).match(/(\d+)$/);
@@ -1171,6 +1260,60 @@ function collectDriftHistory(selectedPort = null, eventsPerDevice = 30) {
   } catch (e) {
     logger.warn(`[report] drift history unavailable: ${e.message}`);
     return [];
+  }
+}
+
+// ── Join: a scanned rack → the switch we actually poll ───────────────
+// These two halves have never known about each other. A scanned device is
+// identified by where it sits (U08); a monitored switch by its address. The
+// bridge already exists in the data and was simply never walked: when a
+// technician identifies a port we save the console session, and that records
+// the host we talked to. getDeviceByHost turns it into the polled device.
+//
+// Without this, drift can list what changed but cannot say WHICH switch it
+// changed on — which is the difference between a table and a sentence.
+// Returns null whenever the chain breaks (no console session yet, host not
+// monitored); every caller treats that as "no live data", never as "fine".
+const DRIFT_WINDOW_DAYS = 7;
+function resolveMonitoredSwitch(portIdentifications, selectedPort) {
+  try {
+    const host = (portIdentifications || []).find(p => p.console?.host)?.console?.host;
+    if (!host) return null;
+    const dev = portHistoryDb.getDeviceByHost(host);
+    if (!dev) return null;
+
+    const cutoff = new Date(Date.now() - DRIFT_WINDOW_DAYS * 24 * 3600 * 1000).toISOString();
+    const events = portHistoryDb.eventsForDevice(dev.id, 2000)
+      .filter(e => e.at >= cutoff)
+      .map(e => ({ port: e.port, field: e.field, from: e.from_val, to: e.to_val, at: e.at }));
+
+    // The switch's own reading of the port the technician picked — matched on
+    // the trailing number, since the scan only ever knows "14" while the
+    // switch may call it "Gi1/0/14".
+    let portSnapshot = null;
+    if (selectedPort != null) {
+      const want = Number(selectedPort);
+      portSnapshot = portHistoryDb.latestSnapshotsForDevice(dev.id)
+        .find(s => Number(String(s.port).match(/(\d+)$/)?.[1]) === want) || null;
+    }
+
+    return {
+      id: dev.id,
+      host: dev.host,
+      label: dev.label || dev.system_name || dev.host,
+      vendor: dev.vendor,
+      model: dev.model,
+      serial: dev.serial,
+      sw_version: dev.sw_version,
+      last_seen: dev.last_seen,
+      last_error: dev.last_error || null,
+      window_days: DRIFT_WINDOW_DAYS,
+      events,
+      portSnapshot,
+    };
+  } catch (e) {
+    logger.warn(`[report] monitored-switch join unavailable: ${e.message}`);
+    return null;
   }
 }
 
@@ -1331,7 +1474,12 @@ function buildScanReportData(rackId) {
     }
   }
 
-  return {
+  // Resolve the join once: the drift section is scoped by it, and the summary
+  // reads its events. Computing it inside the object literal would run it twice.
+  const selectedPortNumber = portIdentificationsOut[0]?.port ?? null;
+  const monitoredSwitch = resolveMonitoredSwitch(portIdentificationsOut, selectedPortNumber);
+
+  return attachInsights({
     rackId,
     timestamp: meta.timestamp || null,
     quality_note: meta.quality?.note || null,
@@ -1340,7 +1488,10 @@ function buildScanReportData(rackId) {
     devices,
     selectedDevice,
     port_identifications: portIdentificationsOut,
-    driftHistory: collectDriftHistory(portIdentificationsOut[0]?.port ?? null),
+    driftHistory: collectDriftHistory(selectedPortNumber, monitoredSwitch),
+    // The joined switch, plus its recent events — what lets the summary name
+    // a switch rather than list changes from every device we happen to poll.
+    monitoredSwitch,
     feedback: {
       total: feedbackEntries.length,
       correct: fbCorrect,
@@ -1351,7 +1502,22 @@ function buildScanReportData(rackId) {
     images, // relative filenames under outputs/<rackId>/
     rackOverviewImage,
     _rackDir: rackDir, // internal: used by renderers, not exported in JSON
-  };
+  });
+}
+
+// The summary box. Computed here so the JSON export carries it too, and
+// computed AGAIN in buildScanReport once specs/firmware have been filled in —
+// the firmware rule can only speak after that lookup, and the report should
+// not show a weaker summary than the data can support. Best-effort by design:
+// a summary that throws must never take the whole report down with it.
+function attachInsights(data) {
+  try {
+    data.insights = reportInsights.buildInsights(data, { formatTimestamp });
+  } catch (e) {
+    logger.warn(`[report] summary could not be built: ${e.message}`);
+    data.insights = null;
+  }
+  return data;
 }
 
 function htmlEscape(s) {
@@ -1503,6 +1669,47 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   const connectedPorts = devs.reduce((s, dv) => s + (dv.connected_ports || 0), 0);
   const identified     = devs.filter(dv => dv.make || dv.model).length;
 
+  // ── Summary ──
+  // The four tiers, in reading order: verdict → what to do → the facts →
+  // what we could not check. Deliberately the inverse of the order the data
+  // was gathered in: someone up a ladder wants the answer, not the working.
+  // Urgency is carried by a WORD as well as a colour — this gets printed to
+  // PDF, mailed on, and read on a phone in a badly lit aisle.
+  const ins = d.insights;
+  const summaryHtml = !ins ? '' : `
+<section class="sumCard sev-${htmlEscape(ins.severity)}">
+  <div class="sumVerdict">
+    <h2>${htmlEscape(ins.verdict)}</h2>
+    <span class="sumStamp">${htmlEscape(ins.stamp)}</span>
+  </div>
+  ${ins.summary ? `
+  <div class="sumProse">
+    <div class="sumLabel">Summary</div>
+    <p>${htmlEscape(ins.summary)}</p>
+  </div>` : ''}
+  ${ins.actions.length ? `<div class="sumActs">
+    <div class="sumLabel">Recommendation</div>
+    ${ins.actions.map(a => `
+    <div class="sumAct">
+      <span class="sumTag ${htmlEscape(a.level)}">${htmlEscape(a.tag)}</span>
+      <div>
+        <p>${htmlEscape(a.text)}</p>
+        ${a.evidence ? `<p class="ev">${htmlEscape(a.evidence)}</p>` : ''}
+      </div>
+    </div>`).join('')}</div>` : ''}
+  ${ins.facts.length ? `<div class="sumFacts">${ins.facts.map(f => `
+    <div class="sumFact">
+      <div class="k">${htmlEscape(f.k)}</div>
+      <div class="v">${htmlEscape(f.v)}${f.pill ? ` <span class="sumPill ${htmlEscape(f.pill.tone)}">${htmlEscape(f.pill.text)}</span>` : ''}${f.detail ? `<small>${htmlEscape(f.detail)}</small>` : ''}</div>
+    </div>`).join('')}</div>` : ''}
+  ${''/* The "Not checked" line is deliberately not rendered — dropped on
+        request as noise on racks where OCR reads little. buildInsights still
+        returns insights.gaps, so the JSON export carries it and putting the
+        line back is one template change, not a rebuild. The verdict still
+        softens to "in what we could check" when coverage was partial, so the
+        box does not silently claim a result it never measured. */}
+</section>`;
+
   // ── Rack Image ──
   const rackImgSrc = srcFor(d.rackOverviewImage);
   const rackImageHtml = rackImgSrc
@@ -1513,7 +1720,11 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   // "Closed Unit" and "Empty" aren't real devices — placeholder classes for
   // rack slots with nothing identifiable in them — so they're excluded here
   // (and their units aren't counted toward anything shown).
-  const NON_DEVICE_CLASSES = new Set(['Closed Unit', 'Empty']);
+  // "Unidentified" joins the placeholder classes: a row reading
+  // "U11-UNID02 · Unidentified · U11" states only that something occupies the
+  // slot, which the rack image already shows. On these racks it was half the
+  // list, pushing the devices we DID identify off the first screen.
+  const NON_DEVICE_CLASSES = new Set(['Closed Unit', 'Empty', 'Unidentified']);
   const realDevices = devs.filter(dev => !NON_DEVICE_CLASSES.has(dev.class_name));
   const devicesHtml = realDevices.length ? `
 <div class="deviceList">
@@ -1704,6 +1915,67 @@ ${realDevices.map(dev => {
   .stat .k{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
   .stat .v{font-size:1.4rem;font-weight:700;margin-top:2px;letter-spacing:-0.01em;color:var(--fg)}
   .stat .statOf{font-size:.9rem;font-weight:600;color:var(--softMuted)}
+
+  /* ── Summary box (the four tiers) ──
+     Sits above everything else and is the only block allowed type this large,
+     so the eye lands here first whether or not the reader meant to read. */
+  .sumCard{
+    position:relative;margin:14px 0 4px;border:1px solid var(--border);
+    background:var(--card);overflow:hidden;
+  }
+  .sumCard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+  .sumCard.sev-critical::before{background:#991b1b}
+  .sumCard.sev-attention::before{background:#92400e}
+  .sumCard.sev-clear::before{background:#166534}
+
+  /* tier 1 — verdict */
+  .sumVerdict{
+    padding:16px 18px 14px 20px;border-bottom:1px solid var(--borderSoft);
+    display:flex;align-items:baseline;justify-content:space-between;gap:8px 24px;flex-wrap:wrap;
+  }
+  .sumVerdict h2{margin:0;font-size:1.42rem;font-weight:800;letter-spacing:-0.025em;line-height:1.15;color:var(--fg)}
+  .sumStamp{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.68rem;color:var(--muted);white-space:nowrap}
+
+  /* the prose account, for reading rather than scanning */
+  .sumProse{padding:12px 18px 12px 20px;border-bottom:1px solid var(--borderSoft)}
+  .sumProse p{margin:0;font-size:.85rem;line-height:1.55;color:var(--fg);max-width:78ch}
+  .sumLabel{
+    font-size:.58rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:5px;
+  }
+
+  /* tier 2 — what to do */
+  .sumActs{padding:13px 18px 14px 20px;display:grid;gap:8px}
+  .sumAct{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start}
+  .sumTag{
+    font-family:'SF Mono',Menlo,Consolas,monospace;
+    font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    padding:3px 6px;white-space:nowrap;min-width:82px;text-align:center;
+  }
+  .sumTag.crit{background:#fdeaea;color:#991b1b}
+  .sumTag.warn{background:#fdf1de;color:#92400e}
+  .sumTag.ok{background:#e8f5ec;color:#166534}
+  .sumAct p{margin:0;font-size:.92rem;font-weight:600;line-height:1.38;color:var(--fg)}
+  .sumAct p.ev{margin-top:2px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.68rem;font-weight:400;color:var(--muted)}
+
+  /* tier 3 — the facts. Never bolder than tier 2. */
+  .sumFacts{
+    border-top:1px solid var(--borderSoft);background:#fcfcfd;
+    padding:13px 18px 14px 20px;
+    display:grid;gap:11px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  }
+  .sumFact .k{font-size:.59rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .sumFact .v{font-size:.8rem;font-weight:600;margin-top:2px;line-height:1.4;color:var(--fg)}
+  .sumFact .v small{display:block;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.68rem;font-weight:400;color:var(--muted);margin-top:1px}
+  .sumPill{
+    display:inline-block;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    padding:1px 6px;margin-left:4px;vertical-align:1px;
+  }
+  .sumPill.warn{background:#fdf1de;color:#92400e}
+  .sumPill.ok{background:#e8f5ec;color:#166534}
+  .sumPill.muted{background:#f4f4f5;color:#71717a}
+
+  /* tier 4 — the quietest line, and never omitted */
 
   /* ── Rack image ── */
   .rackHero{
@@ -1973,6 +2245,8 @@ ${realDevices.map(dev => {
   <div class="stat"><div class="k">Models read</div><div class="v">${identified}<span class="statOf"> / ${devs.length}</span></div></div>
 </div>
 
+${summaryHtml}
+
 <div class="section">
   <div class="sectionTitle">Rack Image</div>
   ${rackImageHtml}
@@ -2180,6 +2454,9 @@ async function buildScanReport(rackId, { inlineImages = true } = {}) {
     await enrichSelectedDeviceSpecsFirmware(data.selectedDevice).catch((e) => {
       logger.warn(`[report] specs/firmware enrichment failed for ${rackId}: ${e.message}`);
     });
+    // Recompute now that specs and firmware are populated — the firmware rule
+    // and the "on paper" fact are only knowable after the lookup above.
+    attachInsights(data);
   }
   const html = renderHTMLReport(data, { inlineImages });
   const reportPath = path.join(data._rackDir, 'report.html');
@@ -6508,12 +6785,19 @@ function _maybeNoteManual(opts) {
     try { require('./lib/port_poller').noteManualProbe(opts.host); } catch (_) {}
   }
 }
+// Seeded demo network — see lib/demo_data.js. Intercepted at the two runners
+// rather than at each route, so the vendor parsers above them still run for
+// real against the fixture transcripts. Off unless RACKTRACK_DEMO_DATA is set.
+const demoData = require('./lib/demo_data');
+
 function runSwitchCommand(opts) {
+  if (demoData.enabled) return Promise.resolve(demoData.switchCommand(opts));
   // Serialize per host AND retry the whole connection on a transient drop.
   _maybeNoteManual(opts);
   return withHostLock(opts.host, () => _runWithReconnect(_runSwitchCommandRaw, opts));
 }
 function runSwitchCommandsSequential(opts) {
+  if (demoData.enabled) return demoData.switchCommandsSequential(opts);
   // Same treatment as runSwitchCommand: serialize per host AND full-reconnect on
   // a transient drop. Previously this multi-command path only had the host lock,
   // so a TP-Link "Not connected" mid-probe failed the whole thing instead of
@@ -7133,6 +7417,12 @@ app.get('/api/switch/console/intents', auth.requireAuth, (req, res) => {
 // the user for only the switch IP.
 app.get('/api/switch/creds-status', auth.requireAuth, (req, res) => {
   const vendor = String(req.query.vendor || 'cisco-ios');
+  // The demo box stores no credentials because it never opens an SSH session.
+  // Reporting "none saved" would send the demo user to a credentials form that
+  // cannot help them, so say the switch is ready to talk to.
+  if (demoData.enabled) {
+    return res.json({ vendor, has_username: true, has_password: true, has_enable: true, demo: true });
+  }
   const v = sshCreds.getForVendor(vendor) || {};
   res.json({
     vendor,
@@ -7227,6 +7517,12 @@ app.post('/api/oui/lookup', (req, res) => {
 
 app.get('/api/switch/default-host', auth.requireAuth, (req, res) => {
   const userId = softAuthUserId(req);
+  // Without this the demo's host box opens empty and the user has to invent an
+  // address before anything will run — pre-fill the demo core switch.
+  if (demoData.enabled) {
+    const demoHost = demoData.defaultHost();
+    return res.json({ suggested: demoHost, last_host: readLastHost(userId) || demoHost, gateway: null, demo: true });
+  }
   const last    = readLastHost(userId);
   const gateway = defaultGateway();
   // Suggested = last (preferred) → gateway (fallback). Either may be null.
@@ -10112,6 +10408,13 @@ if (require.main === module) {
         event: 'server.listening',
         attempt, outputsDir, workers: WORKER_COUNT,
       }, `listening on :${PORT}${attempt > 1 ? ` (after ${attempt} attempts)` : ''}`);
+      // Loud on purpose. Serving invented network data as though it were
+      // measured is the kind of thing that must never be discovered later.
+      if (demoData.enabled) {
+        logger.warn({ event: 'demo_data.enabled', devices: demoData.devices.length },
+          'RACKTRACK_DEMO_DATA is ON — Netdisco and the switch console are ' +
+          'answering from seeded fixtures, NOT from real equipment');
+      }
     });
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE' && attempt < MAX_ATTEMPTS) {

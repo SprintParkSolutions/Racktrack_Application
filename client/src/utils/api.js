@@ -100,9 +100,13 @@ const ASSET_REFRESH_MARGIN_MS = 30 * 60 * 1000;
 let assetRefreshInFlight = null;
 
 export function ensureFreshAssetToken({ force = false } = {}) {
-  let token = null;
-  try { token = localStorage.getItem('rt_authToken'); } catch { /* ignore */ }
-  if (!token) return Promise.resolve(null);   // signed out — nothing to mint
+  // "Am I signed in?" is answered by the cached user, not by a stored token.
+  // Web sessions are httpOnly cookies now, so rt_authToken is absent there —
+  // gating on it meant no asset token was ever minted on the web build, and
+  // every rack photograph 404'd while the rest of the app worked normally.
+  // rt_authUser is written on every sign-in path (see AuthContext) and cleared
+  // on sign-out, so it tracks the session on both web and native.
+  if (!getItem('rt_authUser')) return Promise.resolve(null);   // signed out
   if (!force && assetToken && Date.now() < assetTokenExpiry(assetToken) - ASSET_REFRESH_MARGIN_MS) {
     return Promise.resolve(assetToken);       // still comfortably valid
   }
@@ -216,24 +220,55 @@ export function installFetchInterceptor() {
   };
 }
 
-// Wrapper around fetch that automatically attaches the auth Bearer token
-// (read from localStorage where AuthContext persists it). Use this for any
-// API call that may need to be attributed to the signed-in user. When an
-// authenticated call comes back 401 (token missing/expired/invalid) it
-// dispatches a 'rt:auth-expired' event so AuthContext can sign the user out
-// and bounce to the login screen instead of leaving them on a silently-broken
-// page.
+// Collapses a burst of simultaneous 401s onto ONE refresh call. Without this,
+// a screen that fires eight requests the moment the 15-minute access token
+// expires would send eight refreshes; each rotates the refresh token, so seven
+// of them present a token that was just rotated away — which the server is
+// right to read as theft, and the user gets signed out for using the app
+// normally.
+let refreshPromise = null;
+
+function refreshSession() {
+  if (!refreshPromise) {
+    refreshPromise = fetch(apiUrl('/api/auth/refresh'), { method: 'POST', credentials: 'include' })
+      .then((res) => res.ok)
+      .catch(() => false)
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
+
+// Wrapper around fetch for anything that must be attributed to the signed-in
+// user.
+//
+// Web sessions ride httpOnly cookies, so `credentials: 'include'` is the whole
+// mechanism and there is no token for a script to read. The native app has no
+// usable cookie jar for capacitor://localhost, so it still carries a Bearer
+// token; sending both is harmless and lets one code path serve both.
+//
+// On a 401 it attempts a single silent refresh and retries once. Only if the
+// refresh itself fails does it dispatch 'rt:auth-expired' — otherwise an
+// ordinary 15-minute expiry would sign the user out mid-task.
 export function authFetch(input, init = {}) {
-  let token = null;
-  token = getItem('rt_authToken');
+  const token = getItem('rt_authToken');   // native only; null on web
   const headers = new Headers(init.headers || {});
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  return fetch(input, { ...init, headers }).then((res) => {
-    if (res.status === 401 && token) {
-      try { window.dispatchEvent(new Event('rt:auth-expired')); } catch { /* non-browser */ }
-    }
-    return res;
+  const doFetch = () => fetch(input, { ...init, headers, credentials: 'include' });
+
+  const expired = () => {
+    try { window.dispatchEvent(new Event('rt:auth-expired')); } catch { /* non-browser */ }
+  };
+
+  return doFetch().then((res) => {
+    if (res.status !== 401) return res;
+    return refreshSession().then((refreshed) => {
+      if (!refreshed) { expired(); return res; }
+      return doFetch().then((retryRes) => {
+        if (retryRes.status === 401) expired();
+        return retryRes;
+      });
+    });
   });
 }

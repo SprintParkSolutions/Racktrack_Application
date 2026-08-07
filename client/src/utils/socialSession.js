@@ -41,12 +41,17 @@ export function parseAuthFragment(hashOrUrl) {
     return { ok: false, code: err, message: p.get('error') || 'Sign-in failed. Please try again.' };
   }
 
+  // `user` is what identifies this as a social callback; `token` is optional.
+  // On web the server now plants the session as httpOnly cookies on the
+  // redirect itself and deliberately leaves the token out of the URL, so
+  // requiring one here sent every browser sign-in back to /login. Native still
+  // sends it, because a custom-scheme deep link reaches no cookie jar of ours.
   const token = p.get('token');
   const user = p.get('user');
-  if (!token || !user) return null;
+  if (!user) return null;
 
   try {
-    return { ok: true, token, user: decodeUser(user) };
+    return { ok: true, token: token || null, user: decodeUser(user) };
   } catch {
     // A truncated or mangled redirect. Better to send the user back to the
     // sign-in form than to store half a session.

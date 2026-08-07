@@ -35,7 +35,8 @@ const bcrypt = require('bcryptjs');
 const audit = require('./audit');
 const { logger } = require('./lib/observability');
 const { getProvider, enabledProviders, makePkce, makeNonce } = require('./lib/oauthProviders');
-const { db, makeToken, publicUser, assignPublicId, USERNAME_RE } = require('./auth');
+const { db, publicUser, assignPublicId, USERNAME_RE,
+        issueTokenPair, setAuthCookies } = require('./auth');
 
 const STATE_TTL_MS = 10 * 60 * 1000;   // a consent screen nobody finishes in 10 min is abandoned
 
@@ -446,10 +447,24 @@ function registerRoutes(app) {
         payload: { provider: name, created: !!result.created, linked: !!result.linked },
       });
 
-      return res.redirect(302, landingUrl(platform, {
-        token: makeToken(user),
-        user: encodeUser(user),
-      }));
+      // Web lands back on our own origin, so the session can be planted as
+      // httpOnly cookies on this very redirect — the token never enters the
+      // URL, and therefore never reaches browser history, a proxy log or the
+      // Referer of whatever the page loads next.
+      //
+      // Native cannot: the redirect leaves through the OS to
+      // com.racktrack.app://auth/callback, where no cookie jar of ours is
+      // reachable. It keeps the fragment token, matching the Bearer flow the
+      // native build still uses.
+      const { accessJwt, refreshPlain } = issueTokenPair(user, req);
+      if (platform === 'native') {
+        return res.redirect(302, landingUrl(platform, {
+          token: accessJwt,
+          user: encodeUser(user),
+        }));
+      }
+      setAuthCookies(res, accessJwt, refreshPlain);
+      return res.redirect(302, landingUrl(platform, { user: encodeUser(user) }));
 
     } catch (err) {
       const code_ = err instanceof SocialAuthError ? err.code : 'exchange_failed';

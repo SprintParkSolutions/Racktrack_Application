@@ -92,7 +92,14 @@ async function getApiKey({ force = false } = {}) {
 }
 
 // ── Authenticated GET helper with one auto-retry on 401 ──────────────────
-async function ndGet(pathAndQuery) {
+// Seeded demo network — see lib/demo_data.js. Intercepted here rather than at
+// each route so everything downstream (field mapping, neighbour resolution,
+// the MAC join) runs against the fixtures exactly as it does against a live
+// Netdisco. Off unless RACKTRACK_DEMO_DATA is set.
+const demoData = require('./lib/demo_data');
+
+async function ndGet(pathAndQuery, ctx = null) {
+  if (demoData.enabled) return demoData.netdiscoGet(pathAndQuery, ctx);
   const url = `${NETDISCO_URL}${pathAndQuery}`;
   const headers = { Accept: 'application/json' };
   const apiKey = await getApiKey().catch(() => null);
@@ -143,6 +150,11 @@ function safeAsync(handler) {
 
 // ── Health probe — does NOT require auth (so the page can show "down" state)
 router.get('/api/netdisco/health', safeAsync(async (req, res) => {
+  if (demoData.enabled) {
+    return res.json({
+      ok: true, url: 'demo-data', authenticated: true, status: 200, demo: true,
+    });
+  }
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 4000);
@@ -395,10 +407,23 @@ router.get('/api/netdisco/scan/:rackId/match', safeAsync(async (req, res) => {
     } catch (_) {}
   }
 
+  // The CMDB names this rack's devices would carry, derived the same way the
+  // loop below derives them. Passed to ndGet only so the seeded demo network
+  // can mint a live counterpart per name — a real Netdisco ignores the second
+  // argument entirely.
+  const cmdbNameFor = (d) => {
+    const m = d.units && d.units[0] ? String(d.units[0]).match(/(\d+)/) : null;
+    if (!m) return null;
+    const prefix = d.class_name === 'Patch Panel' ? 'PP-'
+                 : d.class_name === 'Server' ? 'SRV-' : 'SW-';
+    return `${prefix}U${m[1].padStart(2, '0')}`;
+  };
+
   // Pull the Netdisco inventory once and index it for matching.
   let ndDevices = [];
   try {
-    const nd = await ndGet('/api/v1/search/device?q=%25');
+    const nd = await ndGet('/api/v1/search/device?q=%25',
+      { cmdbNames: scanDevices.map(cmdbNameFor).filter(Boolean) });
     ndDevices = Array.isArray(nd) ? nd : (nd?.results || []);
   } catch (err) {
     // Surface a clean message — strip the wrapping "Netdisco unreachable:"

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { apiUrl, refreshAssetToken, clearAssetToken, installAssetTokenRefresh } from './utils/api';
+import { Capacitor } from '@capacitor/core';
+import { apiUrl, authFetch, refreshAssetToken, clearAssetToken, installAssetTokenRefresh } from './utils/api';
 import { getItem, getJSON, removeItem, setItem } from './utils/safeStorage';
 
 const AuthContext = createContext(null);
@@ -10,10 +11,19 @@ function readStored() {
   return { token: getItem(TOKEN_KEY), user: getJSON(USER_KEY) };
 }
 
+// Sign-in calls must carry credentials so the server's Set-Cookie lands, and
+// must announce the platform: native gets a Bearer token back in the body
+// because its WebView has no cookie jar for capacitor://localhost, while the
+// browser deliberately gets none.
 async function callApi(path, options = {}) {
   const res = await fetch(apiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(Capacitor.isNativePlatform() ? { 'X-Client-Platform': 'native' } : {}),
+      ...(options.headers || {}),
+    },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
   let data = {};
@@ -44,7 +54,7 @@ export function AuthProvider({ children }) {
     // here rather than at each of the five sign-in paths: this effect already
     // runs on every token change, so login, signup, code-login, logout and
     // session expiry are all covered by one place that cannot be forgotten.
-    if (token) {
+    if (user) {
       refreshAssetToken();
       // The capability expires in 12 hours while this token lasts 30 days, and
       // this effect only re-runs when the auth token itself changes. A phone
@@ -60,9 +70,12 @@ export function AuthProvider({ children }) {
   // must NOT clear the token, otherwise the user gets bounced to /login 
   // and that page also can't fetch.
   useEffect(() => {
-    if (!token) return;
+    // No `if (!token) return` guard: on web the credential is an httpOnly
+    // cookie this code cannot see, so asking the server is the only way to
+    // learn whether a session exists — which is also what makes the
+    // accept-invite reload and the social-callback redirect resolve.
     let cancelled = false;
-    fetch(apiUrl('/api/auth/me'), { headers: { Authorization: `Bearer ${token}` } })
+    authFetch(apiUrl('/api/auth/me'))
       .then(r => {
         if (cancelled) return null;
         if (r.ok) return r.json();
@@ -73,7 +86,7 @@ export function AuthProvider({ children }) {
       })
       .then(data => { if (!cancelled && data?.user) setState(prev => ({ ...prev, user: data.user })); })
       .catch(() => {
-        // Network error — keep the cached token. The user can still use
+        // Network error — keep the cached session. The user can still use
         // offline features; auth will revalidate next time the server is
         // reachable.
       });
@@ -186,29 +199,32 @@ export function AuthProvider({ children }) {
     const current = token;
     setState({ token: null, user: null });
     try { window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: null })); } catch (_) {}
-    if (current) {
-      fetch(apiUrl(opts.everywhere ? '/api/auth/logout-all' : '/api/auth/logout'), {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${current}` },
-        keepalive: true,   // survives the navigation that usually follows
-      }).catch(() => { /* best effort — local session is already gone */ });
-    }
+    // Fires unconditionally. It used to be gated on holding a token, which on
+    // web is now always null — so signing out would have cleared the tab and
+    // left the refresh cookie alive on the server, meaning the session was
+    // never actually revoked. The cookie is what the server needs, and
+    // credentials:'include' is what sends it.
+    fetch(apiUrl(opts.everywhere ? '/api/auth/logout-all' : '/api/auth/logout'), {
+      method: 'POST',
+      credentials: 'include',
+      headers: current ? { Authorization: `Bearer ${current}` } : undefined,
+      keepalive: true,   // survives the navigation that usually follows
+    }).catch(() => { /* best effort — local session is already gone */ });
   }, [token]);
 
   // Re-fetch the current user from the server and update state. Used by the
   // "awaiting approval" screen to detect the moment the owner activates the org.
   // Returns the fresh user (or null if the token was rejected).
   const refreshUser = useCallback(async () => {
-    if (!token) return null;
     try {
-      const r = await fetch(apiUrl('/api/auth/me'), { headers: { Authorization: `Bearer ${token}` } });
+      const r = await authFetch(apiUrl('/api/auth/me'));
       if (r.status === 401 || r.status === 403) { setState({ token: null, user: null }); return null; }
       if (!r.ok) return null;
       const data = await r.json();
       if (data?.user) { setState(prev => ({ ...prev, user: data.user })); return data.user; }
       return null;
     } catch { return null; }   // network error — keep current session
-  }, [token]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{
