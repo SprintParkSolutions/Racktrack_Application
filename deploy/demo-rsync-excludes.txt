@@ -54,7 +54,10 @@ docs
 Test_Image
 retraining_learning
 netdisco-docker
-servicenow
+# servicenow/ must ship: /api/topology spawns topology_generate.py from it.
+# Its bulk does not.
+servicenow/mock_scans
+servicenow/__pycache__
 servicenow_inbox
 racktrack-support-bot
 support-bot

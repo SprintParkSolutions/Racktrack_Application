@@ -106,6 +106,15 @@ RUN cd server && npm ci --omit=dev
 COPY server/    ./server/
 COPY pipeline/  ./pipeline/
 COPY config.json ./config.json
+# Topology generation. /api/topology/:rackId spawns
+# servicenow/topology_generate.py (which imports synth.py beside it) whenever a
+# rack has no topology.json, and serves 404 "pending" until it finishes. The
+# directory was never copied in, so that spawn failed instantly in every
+# container: the snapshot was never written, the next request scheduled another
+# doomed regen, and the rack sat on "pending" for ever. 11 of 16 racks on the
+# demo were in exactly that state, on web and app alike.
+# mock_scans (26 MB of fixtures) and __pycache__ are excluded in .dockerignore.
+COPY servicenow/ ./servicenow/
 # Data input for the vendor spec lookup (pipeline.all_vendor reads it by an
 # absolute path under the app root). Without it /api/specs/vendors answers 500
 # and the Specifications page is dead in every containerised deployment.

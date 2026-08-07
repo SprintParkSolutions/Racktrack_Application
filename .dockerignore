@@ -29,6 +29,10 @@ server/uploads
 active_learning_Cache/data
 retraining_learning
 servicenow_inbox
+# servicenow/ itself IS needed — topology_generate.py + synth.py run from there.
+# Only its bulk is not: 26 MB of sample scans and compiled bytecode.
+servicenow/mock_scans
+servicenow/__pycache__
 cmdb_racks
 
 # --- VCS / tooling ---
