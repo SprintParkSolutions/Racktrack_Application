@@ -25,7 +25,27 @@ process.env.JWT_SECRET = 'test-secret-for-asset-access';
 process.env.RACKTRACK_SKIP_WORKER_POOL = '1';
 
 const { app } = require('../app');
+const auth = require('../auth');
 const SECRET = process.env.JWT_SECRET;
+
+// A real user row + a token minted the way production mints them.
+//
+// These tests used to hand-sign `{role, tenantId}` with no issuer, audience or
+// subject. That only ever verified because softAuthPayload was the one place
+// that checked none of them — the very drift that let a token this service
+// would otherwise reject scope a request. Now that soft auth verifies to the
+// same standard as requireAuth, the fixture has to be a token the app would
+// actually issue.
+function seedOwner() {
+  const db = auth.db;
+  const existing = db.prepare('SELECT * FROM users WHERE username = ?').get('asset-test-owner');
+  if (existing) return existing;
+  db.prepare(`INSERT INTO users (email, username, password_hash, role, tenant_id, active)
+              VALUES (?, ?, ?, 'owner', 2, 1)`)
+    .run('asset-test-owner@example.com', 'asset-test-owner', 'x');
+  return db.prepare('SELECT * FROM users WHERE username = ?').get('asset-test-owner');
+}
+const sessionToken = () => auth.makeToken(seedOwner());
 
 const RACK = 'RK-ASSET001';
 const outputsDir = path.join(__dirname, '..', '..', 'outputs');
@@ -100,7 +120,7 @@ test('token scopes are not interchangeable', async (t) => {
 
   // A session JWT in the query string must not act as an asset capability —
   // otherwise a token leaked via a URL would be a full session.
-  const session = jwt.sign({ role: 'owner', tenantId: 2 }, SECRET, { expiresIn: 3600 });
+  const session = sessionToken();
   assert.equal(await get(port, `${url}?t=${session}`), 404);
 
   // And an asset token must not be usable where a report token is required.
@@ -112,7 +132,7 @@ test('a Bearer header still works, for non-image fetches of the same paths', asy
   const { server, port } = await listen();
   t.after(() => new Promise((r) => server.close(r)));
 
-  const session = jwt.sign({ role: 'owner', tenantId: 2 }, SECRET, { expiresIn: 3600 });
+  const session = sessionToken();
   assert.equal(await get(port, url, { Authorization: `Bearer ${session}` }), 200);
 });
 

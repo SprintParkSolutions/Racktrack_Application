@@ -36,6 +36,43 @@ function listen() {
   });
 }
 
+// ── Authentication ───────────────────────────────────────────
+// /api/analyze is behind requireAuth, so every request here needs a session.
+// These tests used to send none at all and assert 200, which cannot have
+// passed since the route was protected — they were failing long before the
+// cookie migration and simply went unnoticed.
+//
+// The session is the same shape a browser gets: an httpOnly rt_access cookie
+// plus an Origin header, because a cookie-bearing POST with no Origin is
+// refused by csrfOriginCheck. That means these also cover cookie auth and the
+// CSRF gate on a multipart route, which nothing else exercises.
+const bcrypt = require('bcryptjs');
+const Database = require('better-sqlite3');
+
+let authHeaders = {};      // Cookie + Origin, filled in by the setup test
+let testUser = null;       // { db, userId } — torn down in after()
+
+function postJson(port, urlPath, jsonBody, extraHeaders = {}) {
+  return new Promise((resolve, reject) => {
+    const payload = jsonBody === undefined ? undefined : JSON.stringify(jsonBody);
+    const req = http.request({
+      host: '127.0.0.1', port, path: urlPath, method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(payload ? { 'Content-Length': Buffer.byteLength(payload) } : {}),
+        ...extraHeaders,
+      },
+    }, (res) => {
+      let body = '';
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => resolve({ status: res.statusCode, body, headers: res.headers }));
+    });
+    req.on('error', reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
 /** Minimal multipart POST — avoids adding a test-only HTTP dependency. */
 function postImage(port, filePath, field = 'image') {
   const boundary = '----racktracktest' + Date.now();
@@ -52,6 +89,10 @@ function postImage(port, filePath, field = 'image') {
       headers: {
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
         'Content-Length': body.length,
+        ...authHeaders,
+        // Origin has to name the port too — csrfOriginCheck compares the
+        // origin's host against req.headers.host, which includes it.
+        Origin: `http://127.0.0.1:${port}`,
       },
     }, (res) => {
       let out = '';
@@ -88,11 +129,54 @@ test('setup: make a real test image', async () => {
   assert.ok(fs.existsSync(imagePath));
 });
 
+// Created directly in the DB so the suite still passes on a fresh checkout
+// with no seeded data. No organization_id, so orgBlocked() lets it straight
+// through — this is a pipeline test, not an org-permissions test.
+test('setup: sign in so /api/analyze accepts these requests', async (t) => {
+  const { server, port } = await listen();
+  t.after(() => new Promise((r) => server.close(r)));
+
+  const db = new Database(path.join(__dirname, '..', 'data', 'auth.db'));
+  const username = `scanpath_${process.pid}_${Date.now()}`;
+  const password = 'Sc4nPath!23';
+  const tenantId = db.prepare(`SELECT id FROM tenants WHERE slug = 'default'`).get().id;
+  const userId = db.prepare(`
+    INSERT INTO users (email, username, password_hash, email_verified, tenant_id, active)
+    VALUES (?, ?, ?, 1, ?, 1)
+  `).run(`${username}@example.test`, username, bcrypt.hashSync(password, 10), tenantId).lastInsertRowid;
+  testUser = { db, userId };
+
+  const res = await postJson(port, '/api/auth/login', { username, password },
+    { Origin: `http://127.0.0.1:${port}` });
+  assert.equal(res.status, 200, `login failed: ${res.body.slice(0, 200)}`);
+
+  const setCookie = res.headers['set-cookie'] || [];
+  const access = setCookie.find((c) => c.startsWith('rt_access='));
+  assert.ok(access, 'login must set an rt_access cookie');
+  authHeaders = { Cookie: access.split(';')[0] };
+});
+
 after(() => {
   try { fs.rmSync(imagePath, { force: true }); } catch { /* best effort */ }
   for (const id of createdRacks) {
     try { fs.rmSync(path.join(__dirname, '..', '..', 'outputs', id), { recursive: true, force: true }); }
     catch { /* best effort */ }
+  }
+  if (testUser) {
+    try {
+      // Order matters: scanning writes rack_owners rows that reference this
+      // user, so deleting the user first fails the foreign key. That failure
+      // used to be swallowed by the catch below, which quietly leaked a
+      // throwaway account into auth.db on every run.
+      testUser.db.prepare('DELETE FROM rack_owners WHERE created_by = ?').run(testUser.userId);
+      testUser.db.prepare('DELETE FROM refresh_tokens WHERE user_id = ?').run(testUser.userId);
+      testUser.db.prepare('DELETE FROM users WHERE id = ?').run(testUser.userId);
+      testUser.db.close();
+    } catch (err) {
+      // Still best-effort — a leaked test row must not fail the suite — but
+      // say so, rather than leaving the leak invisible.
+      console.error(`[scan_path] test user ${testUser.userId} not cleaned up: ${err.message}`);
+    }
   }
 });
 
@@ -137,15 +221,9 @@ test('a request with no file is rejected as a client error', async (t) => {
   const { server, port } = await listen();
   t.after(() => new Promise((r) => server.close(r)));
 
-  const res = await new Promise((resolve, reject) => {
-    const req = http.request({
-      host: '127.0.0.1', port, path: '/api/analyze', method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': 2 },
-    }, (r) => { let o = ''; r.on('data', (c) => { o += c; }); r.on('end', () => resolve({ status: r.statusCode, body: o })); });
-    req.on('error', reject);
-    req.end('{}');
-  });
-  assert.equal(res.status, 400);
+  const res = await postJson(port, '/api/analyze', {},
+    { ...authHeaders, Origin: `http://127.0.0.1:${port}` });
+  assert.equal(res.status, 400, `expected 400, got ${res.status}: ${res.body.slice(0, 200)}`);
 });
 
 test('a pipeline crash is reported as OUR failure, not a bad photo', async (t) => {
