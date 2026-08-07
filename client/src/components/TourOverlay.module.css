@@ -13,10 +13,16 @@
 .dim {
   position: fixed;
   background: rgba(10, 10, 12, 0.62);
-  /* Auto (not none): these four strips tile the whole viewport minus the
-     spotlighted rect, so making them event-capturing is what actually
-     confines the user to the highlighted step — without this, clicks pass
-     straight through to the dimmed app underneath. */
+  /* Auto: these four strips tile the viewport minus the spotlighted rect, and
+     capturing events is what actually holds the user on the current step —
+     the entire point of the walkthrough. Without it they can wander off
+     mid-pipeline.
+     This did briefly cost a click. The rect was re-measured on a timer, so on
+     a page still settling (the results view while its rack photo loads) the
+     hole lagged behind the control and the first tap hit dim instead. That is
+     fixed where it belongs — the geometry is now refreshed every frame while
+     the tour is up (see TourOverlay.jsx) — rather than by giving up on
+     confinement. */
   pointer-events: auto;
   transition: all 0.15s ease;
 }

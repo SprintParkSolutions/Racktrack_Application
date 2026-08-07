@@ -865,3 +865,32 @@ select:focus, textarea:focus,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Guided tour: hold the user on the pipeline ──────────────────────────
+   The tour's dim layer confines the user only while a step has a control to
+   spotlight. Between steps — during a rack analysis, or while the image
+   quality prompt is up — there is no spotlight, and the sidebar and bottom
+   nav stayed live. It was possible to wander off to Data Sources mid-run and
+   leave the walkthrough pointing at a control on a page you had left.
+
+   The whole purpose of the tour is to walk the pipeline end to end, so while
+   it is running the app's own navigation is shut. Targets the semantic
+   elements rather than the CSS-module classes, which are hashed per build.
+
+   Anything carrying data-tour-bypass stays live — that is the Back button,
+   which ends the tour, so there is always a way out. */
+:root[data-tour-active] aside nav,
+:root[data-tour-active] > body nav {
+  pointer-events: none;
+}
+:root[data-tour-active] aside nav a,
+:root[data-tour-active] nav a,
+:root[data-tour-active] nav button {
+  opacity: 0.35;
+  cursor: default;
+}
+:root[data-tour-active] [data-tour-bypass],
+:root[data-tour-active] [data-tour-bypass] * {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}

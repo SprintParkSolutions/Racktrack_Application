@@ -1676,6 +1676,15 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   // Urgency is carried by a WORD as well as a colour — this gets printed to
   // PDF, mailed on, and read on a phone in a badly lit aisle.
   const ins = d.insights;
+  // Only things a person could act on get a "Recommendation" heading.
+  //
+  // When nothing needs doing, buildInsights still appends an all-clear entry
+  // ("Otherwise — Nothing in this scan needs attention") so the JSON and CSV
+  // exports carry an explicit result rather than an empty list. Rendering it
+  // put a Recommendation heading over a non-recommendation, and repeated what
+  // the verdict directly above had already said. The entry stays in the data;
+  // it just no longer prints a heading promising advice that is not there.
+  const actionable = (ins?.actions || []).filter(a => a.level === 'crit' || a.level === 'warn');
   const summaryHtml = !ins ? '' : `
 <section class="sumCard sev-${htmlEscape(ins.severity)}">
   <div class="sumVerdict">
@@ -1684,12 +1693,11 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   </div>
   ${ins.summary ? `
   <div class="sumProse">
-    <div class="sumLabel">Summary</div>
     <p>${htmlEscape(ins.summary)}</p>
   </div>` : ''}
-  ${ins.actions.length ? `<div class="sumActs">
+  ${actionable.length ? `<div class="sumActs">
     <div class="sumLabel">Recommendation</div>
-    ${ins.actions.map(a => `
+    ${actionable.map(a => `
     <div class="sumAct">
       <span class="sumTag ${htmlEscape(a.level)}">${htmlEscape(a.tag)}</span>
       <div>

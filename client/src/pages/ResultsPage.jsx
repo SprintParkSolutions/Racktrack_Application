@@ -3132,7 +3132,11 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           {/* Annotated rack scan so the tech can eyeball what the camera saw */}
           {rackImgUrl && (
             <div style={{margin:'0 12px',borderRadius:10,overflow:'hidden',border:'1px solid rgba(255,255,255,0.08)'}}>
-              <img src={rackImgUrl} alt="Annotated rack scan" style={{display:'block',width:'100%',height:'auto'}} />
+              {/* AssetImg, not <img>: /outputs is served against a short-lived
+                  asset token, and a plain tag that painted before the token
+                  landed (or after it expired) gets a 404 and stays broken
+                  forever. AssetImg re-mints once and retries. */}
+              <AssetImg src={rackImgUrl} alt="Annotated rack scan" style={{display:'block',width:'100%',height:'auto'}} />
             </div>
           )}
         </div>
@@ -3599,7 +3603,11 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
             return (
               <div className={`${styles.portImgWrap} ${wrapClass}`} data-tour="port-image-tap" onClick={cycleView}>
-                <img src={imgSrc} alt="Port located"
+                {/* AssetImg so a token that landed late (or expired while the
+                    page sat open) re-mints and retries instead of leaving a
+                    permanently broken picture — this is the image users
+                    actually look at after a scan. */}
+                <AssetImg src={imgSrc} alt="Port located"
                   className={styles.portImg}
                   style={zoomStyle}
                   draggable="false" />
@@ -4316,7 +4324,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               <div style={{marginBottom:14}}>
                 <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Image</div>
                 {rackImg || resultImg ? (
-                  <img src={rackImg || resultImg} alt="Located port" style={{width:'100%',maxHeight:280,objectFit:'contain',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)'}}/>
+                  <AssetImg src={rackImg || resultImg} alt="Located port" style={{width:'100%',maxHeight:280,objectFit:'contain',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)'}}/>
                 ) : <div style={{fontSize:12,color:'var(--muted, #474747)'}}>not available</div>}
               </div>
 

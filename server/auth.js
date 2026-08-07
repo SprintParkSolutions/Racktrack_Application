@@ -2057,12 +2057,21 @@ function registerRoutes(app) {
       FROM organizations o ORDER BY scans DESC, o.created_at DESC
     `).all();
     const recentScans = db.prepare(`
-      SELECT r.rack_id, r.created_at, t.name AS site, o.name AS org, u.username AS by_user
+      SELECT r.rack_id, r.created_at,
+             COALESCE(t.name, '—') AS site,
+             COALESCE(o.name, '—') AS org,
+             COALESCE(u.username, '—') AS by_user
       FROM rack_owners r
-      JOIN tenants t ON t.id = r.tenant_id
+      -- LEFT, not INNER. This join used to drop any scan whose tenant_id was
+      -- null or pointed at a deleted site — and owners and admins have no
+      -- tenant_id at all, so their own scans never appeared here. The totals
+      -- above count rack_owners with no join, so the number was right while
+      -- the list below it was short: the owner dashboard quietly failed the
+      -- one thing it exists to do, show every scan on the platform.
+      LEFT JOIN tenants t ON t.id = r.tenant_id
       LEFT JOIN organizations o ON o.id = t.organization_id
       LEFT JOIN users u ON u.id = r.created_by
-      ORDER BY r.created_at DESC LIMIT 15
+      ORDER BY r.created_at DESC LIMIT 50
     `).all();
     res.json({ ok: true, totals, organizations, recentScans });
   });

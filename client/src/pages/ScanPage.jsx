@@ -899,8 +899,13 @@ export default function ScanPage() {
   const pickerShadow    = isLight ? '0 8px 24px rgba(0,0,0,0.10)' : '0 12px 32px rgba(0,0,0,0.6)';
   const pickerDivider   = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)';
   const pickerHoverBg   = isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)';
+<<<<<<< Updated upstream
   const isDesktop = useIsDesktop();
   const [tab,      setTab]      = useState('upload');
+=======
+  const [tab,      setTab]      = useState('upload');         // 'upload' | 'camera'
+  const [uploadMode, setUploadMode] = useState('single');     // 'single' | 'multi' | 'cabled' — sub-mode inside Upload
+>>>>>>> Stashed changes
   const [file,     setFile]     = useState(null);
   const [multiFiles, setMultiFiles] = useState([]);  // tall-rack mode (vertical stitch)
   const [loading,  setLoading]  = useState(false);
@@ -1316,10 +1321,42 @@ export default function ScanPage() {
         <div className={styles.scanIntro}>
         </div>
 
+<<<<<<< Updated upstream
         {/* Desktop-only eyebrow label (mobile: not rendered — isDesktop is
             false below 1024px, so the mobile layout is unchanged). */}
         {isDesktop && <div className={`${styles.eyebrow} ${styles.eyebrowCapture}`}>Capture method</div>}
         {/* Primary tabs */}
+=======
+        {/* Active-incident pill — just the chip, above the Upload/Camera tabs */}
+        {ticket && (
+          <div style={{display:'flex',justifyContent:'center',margin:'4px 0 12px'}}>
+            <div style={{
+              display:'inline-flex',
+              alignItems:'center',
+              gap:6,
+              padding:'4px 10px',
+              borderRadius:999,
+              background:'rgba(239,68,68,0.10)',
+              border:'1px solid rgba(239,68,68,0.35)',
+              fontSize:10,
+              fontWeight:700,
+              letterSpacing:'0.10em',
+              color:'#ef4444',
+              textTransform:'uppercase',
+            }}>
+              <span style={{
+                width:6, height:6, borderRadius:'50%',
+                background:'#ef4444',
+                boxShadow:'0 0 6px rgba(239,68,68,0.7)',
+              }} />
+              Active · {ticket.incident_number}
+            </div>
+          </div>
+        )}
+
+        {/* Tabs — only Upload and Camera at the top level. Upload contains
+            a sub-mode picker (Single | Tall Rack | Cabled Rack) below. */}
+>>>>>>> Stashed changes
         <div className={styles.tabs}>
           {[
             { id:'upload', label:'Upload', icon:<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> },
@@ -1348,6 +1385,7 @@ export default function ScanPage() {
           ))}
         </div>
 
+<<<<<<< Updated upstream
         {tab !== 'camera' && (
           <>
             {isDesktop && <div className={`${styles.eyebrow} ${styles.eyebrowMode}`}>Mode</div>}
@@ -1372,10 +1410,52 @@ export default function ScanPage() {
                 <span>{t.label}</span>
               </button>
             ))}
+=======
+        {/* Upload sub-mode picker */}
+        {tab === 'upload' && (
+          <div className={styles.subTabs}>
+            {[
+              { id:'single', label:'Single', icon:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg> },
+              { id:'multi',  label:'Tall Rack',   icon:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="5" rx="1"/><rect x="3" y="10" width="18" height="5" rx="1"/><rect x="3" y="17" width="18" height="5" rx="1"/></svg> },
+              { id:'cabled', label:'Cabled Rack', icon:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="3" width="8" height="18" rx="1"/><path d="M2 12 L8 12"/><path d="M16 12 L22 12"/><path d="M4 9 L8 12 L4 15"/><path d="M20 9 L16 12 L20 15"/></svg> },
+            ].map(s => (
+              <button key={s.id} className={`${styles.subTab} ${uploadMode===s.id ? styles.subTabOn : ''}`}
+                onClick={() => { setUploadMode(s.id); setFile(null); setMultiFiles([]); setCabledFiles([]); setError(null); setQualityChoice(null); }}>
+                {s.icon}{s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Expected-rack banner — only shows in ticket mode when a CMDB rack
+            record exists for the ticket. Tells the tech which physical rack
+            to photograph; the server will verify the upload's OCR labels
+            against the expected list before running analyze. */}
+        {ticket && expectedRack?.rack?.rack_name && (
+          <div style={{
+            margin:'0 0 12px',
+            padding:'12px 14px',
+            borderRadius:10,
+            border:'1px solid rgba(59,130,246,0.45)',
+            background:'rgba(59,130,246,0.07)',
+            display:'flex',
+            flexDirection:'column',
+            gap:6,
+          }}>
+            <div style={{
+              fontSize:10,
+              fontWeight:700,
+              letterSpacing:'0.10em',
+              color:'#60a5fa',
+              textTransform:'uppercase',
+            }}>
+              Photograph this rack
+>>>>>>> Stashed changes
             </div>
           </>
         )}
 
+<<<<<<< Updated upstream
 
         {/* Media box — also the guided tour's "add a photo" anchor. It wraps
             whichever picker is showing (upload / video / tall-rack / camera),
@@ -1405,6 +1485,22 @@ export default function ScanPage() {
                       }}
                       onCancel={() => setTab('upload')}
                     />}
+=======
+        {/* Media box */}
+        <div className={styles.mediaBox}>
+          {tab === 'camera'
+            ? <CameraCapture
+                onCapture={(f) => { setFile(f); setTab('upload'); setUploadMode('single'); }}
+                onCancel={() => setTab('upload')}
+              />
+            : uploadMode === 'multi'
+              ? <MultiUploadZone files={multiFiles} onChange={setMultiFiles}/>
+              : uploadMode === 'cabled'
+                ? <CabledUploadZone files={cabledFiles} onChange={setCabledFiles}/>
+                : file
+                  ? <PreviewCard file={file} onClear={() => setFile(null)}/>
+                  : <UploadZone onFile={setFile}/>}
+>>>>>>> Stashed changes
         </div>
 
         {/* The two-rack flow lives in the sidebar / bottom nav ("Two racks").
@@ -1631,10 +1727,32 @@ export default function ScanPage() {
             </div>
             <div className={styles.qualityChoiceActions}>
               <button className="btn btn-ghost" onClick={handleRetake}>Retake</button>
+<<<<<<< Updated upstream
+=======
+              {/* For occlusion warnings on a single-image scan, offer to jump
+                  into Cabled Rack mode pre-loaded with the current image as
+                  the Front shot. The user then adds 1-3 side angles. */}
+              {qualityChoice.kind === 'occlusion' && tab === 'upload' && uploadMode === 'single' && file && (
+                <button className="btn btn-primary"
+                  onClick={() => {
+                    setCabledFiles([file]);
+                    setUploadMode('cabled');
+                    setQualityChoice(null);
+                  }}>
+                  Add side angles
+                </button>
+              )}
+>>>>>>> Stashed changes
               <button className="btn btn-primary"
-                onClick={() => tab === 'multi'
+                onClick={() => uploadMode === 'multi'
                   ? analyzeMulti({ override: true })
+<<<<<<< Updated upstream
                   : analyze({ override: true })
+=======
+                  : uploadMode === 'cabled'
+                    ? analyzeCabled({ override: true })
+                    : analyze({ override: true })
+>>>>>>> Stashed changes
                 }>
                 Proceed anyway
               </button>
@@ -1642,9 +1760,16 @@ export default function ScanPage() {
           </div>
         )}
 
+<<<<<<< Updated upstream
         {/* CTA — dispatches to single-image analyze() or tall-rack analyzeMulti() */}
         {!qualityChoice && (() => {
           const isMulti  = tab === 'multi';
+=======
+        {/* CTA — dispatches to single-image analyze(), tall-rack analyzeMulti(), or cabled-rack analyzeCabled() */}
+        {!qualityChoice && tab === 'upload' && (() => {
+          const isMulti  = uploadMode === 'multi';
+          const isCabled = uploadMode === 'cabled';
+>>>>>>> Stashed changes
           const canSubmit = isMulti
             ? multiFiles.length >= 2
             : !!file;

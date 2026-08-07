@@ -75,6 +75,26 @@ export function TourProvider({ children }) {
   // `popstate` event — stopping the tour here catches all of those in one
   // place, on top of the explicit in-page "Back" buttons calling stopTour()
   // themselves before they navigate.
+  // Marks the document while the walkthrough is running so the app's own
+  // navigation can be held shut (see index.css).
+  //
+  // The dim layer only confines the user while a step has a control to point
+  // at. Between steps — during an analysis, or while the image-quality prompt
+  // is up — there is no spotlight and therefore no dim, and the sidebar and
+  // bottom nav stayed live: it was possible to wander off to Data Sources
+  // mid-pipeline and leave the tour asking for a control on a page you had
+  // left. The point of the walkthrough is to hold you on the pipeline from
+  // end to end, so navigation is shut for its duration.
+  //
+  // Back is deliberately exempt — it carries data-tour-bypass and ends the
+  // tour, so there is always a way out.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (active) root.setAttribute('data-tour-active', 'true');
+    else root.removeAttribute('data-tour-active');
+    return () => root.removeAttribute('data-tour-active');
+  }, [active]);
+
   const activeRef = useRef(active);
   useEffect(() => { activeRef.current = active; }, [active]);
   useEffect(() => {

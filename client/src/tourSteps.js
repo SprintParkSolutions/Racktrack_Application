@@ -31,6 +31,14 @@ export const TOUR_STEPS = [
   {
     id: 'analyze',
     target: 'analyze-rack-btn',
+    // Completes when the results actually arrive, not when the button is
+    // pressed. Pressing Analyze is not the same as analysing: the image
+    // quality gate can answer with "the image appears tilted — retake or
+    // proceed anyway", and the scan has not run. Advancing on the click sent
+    // the tour to "Pick a device" while the user was still on the scan page
+    // deciding, so it asked for something that was not on screen and could
+    // not be.
+    advanceWhenVisible: '[data-tour="device-picker"]',
     title: 'Analyze the rack',
     body: 'When the photo looks good, tap Analyze Rack to scan it.',
   },

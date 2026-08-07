@@ -180,7 +180,23 @@ export default function TourOverlay() {
     window.addEventListener('resize', scheduleMeasure);
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleMeasure) : null;
     if (ro) ro.observe(document.body);
-    const fallbackId = setInterval(measure, FALLBACK_MEASURE_MS);
+
+    // Re-measure every frame while a step is up.
+    //
+    // The dim layer blocks clicks everywhere except this rect, so a stale rect
+    // does not merely look wrong — it puts dim over the control the user was
+    // just told to press, and eats the tap. A timer left that window up to
+    // half a second wide, which is exactly how long the results view takes to
+    // settle while its rack photo loads, so the first click on the device
+    // picker did nothing and the second worked.
+    //
+    // Per-frame keeps it at most ~16ms behind, which no one can hit. It costs
+    // one getBoundingClientRect per frame, and only while the walkthrough is
+    // actually on screen — a few minutes, once per device. setRect below only
+    // triggers a render when the numbers really move.
+    let rafLoop = null;
+    const tick = () => { measure(); rafLoop = requestAnimationFrame(tick); };
+    rafLoop = requestAnimationFrame(tick);
 
     // An optional step whose control this org never sees (e.g. no open
     // incidents) steps aside on its own instead of stalling the walkthrough.
@@ -196,7 +212,7 @@ export default function TourOverlay() {
       window.removeEventListener('scroll', scheduleMeasure, { capture: true });
       window.removeEventListener('resize', scheduleMeasure);
       ro?.disconnect();
-      clearInterval(fallbackId);
+      if (rafLoop != null) cancelAnimationFrame(rafLoop);
       if (rafId != null) cancelAnimationFrame(rafId);
       if (skipTimer) clearTimeout(skipTimer);
       clearAdvanceTimer();
@@ -223,6 +239,19 @@ export default function TourOverlay() {
     return () => document.removeEventListener(evtType, handler, true);
   }, [active, currentStep, advance]);
 
+  // Give up quietly if a step's control never arrives.
+  //
+  // Nothing is drawn while we wait, so without this the walkthrough could sit
+  // invisibly active forever — and then reappear much later, out of nowhere,
+  // if a matching anchor happened to mount. The window is generous because a
+  // legitimate wait here is a rack analysis, which takes a while; it only
+  // expires when the step is genuinely unreachable.
+  useEffect(() => {
+    if (!active || !currentStep || rect) return undefined;
+    const id = setTimeout(() => stopTour(), 120_000);
+    return () => clearTimeout(id);
+  }, [active, currentStep, rect, stopTour]);
+
   // Runs before paint, so the card is positioned against a real height on the
   // frame it appears rather than jumping once it has been measured.
   useLayoutEffect(() => {
@@ -241,35 +270,16 @@ export default function TourOverlay() {
   // 46px on phones (see .mascot in TourOverlay.module.css).
   const TOP_GUTTER = 56;
 
-  // ── Waiting state ──────────────────────────────────────────────────
-  // Anchor not on screen yet. Show the card, without the dim layer, so the
-  // page stays usable and "Skip tour" stays reachable.
-  if (!rect) {
-    const waitLeft = Math.max(12, Math.round((vw - bubbleWidth) / 2));
-    const waitTop = Math.max(TOP_GUTTER, vh - bubbleH - 24);
-    return createPortal(
-      <div className={styles.overlayRoot} aria-live="polite">
-        <div
-          ref={bubbleRef}
-          className={styles.bubble}
-          style={{ width: bubbleWidth, left: waitLeft, top: waitTop }}
-          role="dialog"
-          aria-label={currentStep.title}
-        >
-          <div className={styles.mascot} style={{ width: mascotSize, height: mascotSize }}>
-            <TourMascot />
-          </div>
-          <p className={styles.bubbleTitle}>{currentStep.title}</p>
-          <p className={styles.bubbleBody}>Waiting for this to appear&hellip;</p>
-          <div className={styles.bubbleActions}>
-            <button className={styles.skipTourBtn} onClick={stopAndBlur}>Skip tour</button>
-            <button className={styles.skipStepBtn} onClick={advance}>Skip this step</button>
-          </div>
-        </div>
-      </div>,
-      document.body
-    );
-  }
+  // Anchor not on screen — show NOTHING.
+  //
+  // This used to render the card reading "Waiting for this to appear…", which
+  // was added so a step whose control never arrives could still be skipped.
+  // In practice it nagged: it sat over the app through an analysis run and
+  // through the image-quality prompt, asking for something that was not there
+  // and could not be. A walkthrough that cannot currently say anything useful
+  // should say nothing. It reappears by itself the moment the control does,
+  // and gives up quietly if it never does (see the effect above).
+  if (!rect) return null;
 
   // ── Spotlight state ────────────────────────────────────────────────
   const pad = 8;

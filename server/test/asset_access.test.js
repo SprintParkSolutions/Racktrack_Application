@@ -40,9 +40,16 @@ function seedOwner() {
   const db = auth.db;
   const existing = db.prepare('SELECT * FROM users WHERE username = ?').get('asset-test-owner');
   if (existing) return existing;
+  // Resolve the tenant rather than hardcoding an id. This used to insert
+  // tenant_id 2 literally, which is only right on a database where the default
+  // tenant happens to sit on that row. Reset the database and it comes back as
+  // id 1, so the insert failed a foreign key and two tests died in setup — a
+  // failure that says nothing about the behaviour they exist to check.
+  const tenantId = db.prepare(`SELECT id FROM tenants WHERE slug = 'default'`).get()?.id
+                ?? db.prepare('SELECT id FROM tenants ORDER BY id LIMIT 1').get()?.id;
   db.prepare(`INSERT INTO users (email, username, password_hash, role, tenant_id, active)
-              VALUES (?, ?, ?, 'owner', 2, 1)`)
-    .run('asset-test-owner@example.com', 'asset-test-owner', 'x');
+              VALUES (?, ?, ?, 'owner', ?, 1)`)
+    .run('asset-test-owner@example.com', 'asset-test-owner', 'x', tenantId);
   return db.prepare('SELECT * FROM users WHERE username = ?').get('asset-test-owner');
 }
 const sessionToken = () => auth.makeToken(seedOwner());
