@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './AuthPages.module.css';
 import AuthBackdrop from '../components/AuthBackdrop.jsx';
 import { useAuth } from '../AuthContext.jsx';
+import { safeRedirect } from '../utils/safeRedirect.js';
 
 export const PW_RULES = [
   { id: 'len',   label: '8 characters',   test: pw => pw.length >= 8 },
@@ -104,7 +105,7 @@ export default function SignupPage() {
   const [error, setError]       = useState(null);
   const [info, setInfo]         = useState(null);
 
-  const from = location.state?.from || '/scan';
+  const from = safeRedirect(location.state?.from, '/scan');
 
   // Live password strength: count satisfied rules, pick a color, name what's missing.
   const pwInfo = useMemo(() => {
