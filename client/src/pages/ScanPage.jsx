@@ -1702,16 +1702,23 @@ export default function ScanPage() {
           );
         })()}
         {/* Tips — desktop-only (not rendered on mobile). */}
-        {isDesktop && (
-          <div className={styles.tips}>
-            <div className={`${styles.eyebrow} ${styles.tipsTitle}`}>Tips for a clean scan</div>
-            <ul className={styles.tipsList}>
-              <li>Fill the frame with the rack front</li>
-              <li>Keep port labels in focus</li>
-              <li>Even lighting, no glare on the panel</li>
-            </ul>
-          </div>
-        )}
+        {/* Shown on every viewport, not just desktop. These are instructions
+            for someone standing in front of a rack holding a phone, and the
+            isDesktop gate meant the only people who could read them were the
+            ones not taking the photograph. Each line is now an action rather
+            than a quality ("Step back if needed", not "fill the frame") —
+            testers reported the previous wording did not tell them what to
+            physically do. */}
+        <div className={styles.tips}>
+          <div className={`${styles.eyebrow} ${styles.tipsTitle}`}>Tips for a clear scan</div>
+          <ul className={styles.tipsList}>
+            <li>Full rack in frame — keep the top and bottom visible</li>
+            <li>Phone straight and level — stand directly in front</li>
+            <li>Labels clearly visible — port and device labels readable</li>
+            <li>Good lighting, no glare — turn the flash off</li>
+            <li>Step back if needed — fit the whole rack on screen</li>
+          </ul>
+        </div>
 
         {/* Spacer so the last button isn't flush against the fixed bottom nav */}
         <div className={styles.scanSpacer} style={{height:'calc(env(safe-area-inset-bottom, 0px) + 72px)'}} aria-hidden="true" />

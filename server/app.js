@@ -666,14 +666,36 @@ if (fs.existsSync(clientDist)) {
 // copied verbatim — otherwise an upload named `evil.jpg.bat` (filter passes
 // on first match) or one with embedded path chars could land on disk with an
 // attacker-controlled suffix.
-function _safeExt(originalName) {
+// Extension for a file we are willing to store, from the NAME first and the
+// declared CONTENT TYPE second.
+//
+// Name-only was the whole test, and a filename is not something the client
+// controls. A camera capture is built here as `capture_<ts>.jpg` and always
+// passed; a gallery pick is forwarded as the raw File, carrying whatever name
+// the OS attached — and an Android content:// pick frequently has no extension
+// at all. The same photograph was therefore accepted when taken through the
+// camera and rejected as "Invalid file type" when chosen from the gallery,
+// which is exactly the "sometimes works, sometimes doesn't" the testers hit.
+// Falling back to the MIME type makes the decision about what the file IS.
+const MIME_EXT = {
+  'image/jpeg': '.jpg',  'image/jpg':  '.jpg',  'image/pjpeg': '.jpg',
+  'image/png':  '.png',  'image/gif':  '.gif',  'image/webp':  '.webp',
+  'image/tiff': '.tiff', 'image/avif': '.avif', 'image/bmp':   '.bmp',
+  'image/heic': '.heic', 'image/heif': '.heif',
+  'video/mp4':  '.mp4',  'video/quicktime': '.mov',
+  'video/webm': '.webm', 'video/x-m4v': '.m4v', 'video/avi': '.avi',
+};
+function _safeExt(originalName, mimetype) {
   const m = String(originalName || '').match(/\.(jpe?g|jfif|png|gif|webp|tiff?|avif|bmp|heic|heif|mp4|mov|webm|m4v|avi)$/i);
-  return m ? '.' + m[1].toLowerCase() : '';
+  if (m) return '.' + m[1].toLowerCase();
+  // `image/jpeg; charset=…` and casing both show up in the wild.
+  const mt = String(mimetype || '').split(';')[0].trim().toLowerCase();
+  return MIME_EXT[mt] || '';
 }
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename:    (req, file, cb) => {
-    const ext = _safeExt(file.originalname);
+    const ext = _safeExt(file.originalname, file.mimetype);
     cb(null, `tmp_${uuidv4()}${ext}`);
   },
 });
@@ -681,7 +703,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 340 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const ok = _safeExt(file.originalname) !== '';
+    const ok = _safeExt(file.originalname, file.mimetype) !== '';
     // Tag the rejection so the error handler answers 400 rather than 500.
     // A user picking the wrong file type is not a server fault, and every one
     // of these was polluting the uncaught-error rate that alerting watches.
