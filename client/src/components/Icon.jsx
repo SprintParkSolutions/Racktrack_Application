@@ -121,6 +121,31 @@ const P = {
     <rect x="8" y="8" width="3.2" height="3.2" rx="0.6" />
     <path d="M14.5 8.5h1.5M15.5 12.5h.5M8.5 15.5h1.5M13 15.5h3" />
   </>,
+
+  /* Support surfaces. Added for the Contact page rather than inlined there,
+     so the one icon set stays the single place a glyph is defined and the
+     "unknown name renders nothing" guarantee above keeps holding. */
+  mail: <>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3.6 6.7l8.4 5.8 8.4-5.8" />
+  </>,
+
+  chat: <path d="M20 11.7a7.4 7.4 0 0 1-10.9 6.6L4 19.6l1.4-4.1A7.4 7.4 0 1 1 20 11.7z" />,
+
+  book: <>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5" />
+    <path d="M9 13h6M9 17h4" />
+  </>,
+
+  shield: <path d="M12 3.2l7 2.9v5.6c0 4.3-2.9 7.5-7 9-4.1-1.5-7-4.7-7-9V6.1z" />,
+
+  clock: <>
+    <circle cx="12" cy="12" r="8.6" />
+    <path d="M12 7v5.2l3.4 2" />
+  </>,
+
+  paperclip: <path d="M21.2 11.3l-9.1 9.1a5.8 5.8 0 0 1-8.2-8.2l9.1-9.1a3.9 3.9 0 0 1 5.5 5.5l-9.1 9.1a1.9 1.9 0 0 1-2.7-2.7l8.2-8.2" />,
 };
 
 /** Names this set covers — used by the test that guards against typos. */

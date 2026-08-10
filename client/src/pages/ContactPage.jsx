@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext';
+import Icon from '../components/Icon.jsx';
 import styles from './ContactPage.module.css';
 
 const SUPPORT_EMAIL = 'support@racktrack.ai';
@@ -25,13 +26,17 @@ const prettyBytes = (n) =>
     : n < 1024 * 1024 ? `${(n / 1024).toFixed(0)} KB`
       : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
-// Contact support — full-bleed data-center hero + form, rendered inside the
-// shell. The message is sent server-side to the support inbox with the user's
-// identity + context attached (Reply-To is their email); if the server can't
-// send, a mailto: fallback keeps the user unstuck.
-//
-// Arrived-from-DOT: the assistant's "Contact support" button navigates here with
-// { context } — the question it couldn't answer — pre-filled into the message.
+// Stated plainly, and each one is either true of the product or checkable.
+// Deliberately not "10,000+ teams" or a 99.9% figure nobody audits — invented
+// numbers are the fastest way for an infrastructure buyer to stop believing
+// the rest of the page.
+const SIGNALS = [
+  { icon: 'group',  label: 'Real human support' },
+  { icon: 'clock',  label: 'Replies within a few hours' },
+  { icon: 'shield', label: 'Secure & confidential' },
+  { icon: 'rack',   label: 'Built for infrastructure teams' },
+];
+
 export default function ContactPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,14 +51,14 @@ export default function ContactPage() {
   const [error, setError] = useState(null);
   const [files, setFiles] = useState([]);       // [{ file, url? }]
   const [fileError, setFileError] = useState(null);
+  const [dragging, setDragging] = useState(false);
   const fileInput = useRef(null);
 
   // Object URLs for the thumbnails are a manual allocation: without the revoke
-  // the blobs stay alive for the life of the tab, which on a phone is every
-  // screenshot the technician ever previewed. Removal revokes its own URL, so
-  // this only has to catch what is still on screen when the page unmounts —
-  // hence the ref. Depending on `files` instead would revoke the URLs of the
-  // surviving items every time the list changed, blanking the previews.
+  // the blobs stay alive for the life of the tab. Removal revokes its own URL,
+  // so this only has to catch what is still on screen when the page unmounts —
+  // hence the ref. Depending on `files` would revoke the URLs of the surviving
+  // items every time the list changed, blanking the previews.
   const filesRef = useRef(files);
   filesRef.current = files;
   useEffect(() => () => {
@@ -62,8 +67,11 @@ export default function ContactPage() {
 
   const email = user?.email || 'your account email';
   const canSend = message.trim().length >= 4 && status !== 'sending';
-
   const totalBytes = files.reduce((n, f) => n + f.file.size, 0);
+
+  const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+    subject || 'Support request',
+  )}&body=${encodeURIComponent(message)}`;
 
   const addFiles = (picked) => {
     const incoming = Array.from(picked || []);
@@ -99,10 +107,7 @@ export default function ContactPage() {
         continue;
       }
       running += file.size;
-      accepted.push({
-        file,
-        url: type.startsWith('image/') ? URL.createObjectURL(file) : null,
-      });
+      accepted.push({ file, url: type.startsWith('image/') ? URL.createObjectURL(file) : null });
     }
 
     if (accepted.length) setFiles((prev) => [...prev, ...accepted]);
@@ -114,17 +119,18 @@ export default function ContactPage() {
 
   const removeFile = (idx) => {
     setFiles((prev) => {
-      const next = prev.filter((_, i) => i !== idx);
       const gone = prev[idx];
       if (gone?.url) URL.revokeObjectURL(gone.url);
-      return next;
+      return prev.filter((_, i) => i !== idx);
     });
     setFileError(null);
   };
 
-  const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-    subject || 'Support request',
-  )}&body=${encodeURIComponent(message)}`;
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    addFiles(e.dataTransfer?.files);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -133,9 +139,8 @@ export default function ContactPage() {
     setError(null);
     try {
       // Multipart only when there is something to attach. A plain message stays
-      // on the JSON path it has always used — no reason to make every send pay
-      // for a boundary-encoded body. Deliberately no Content-Type header for
-      // the multipart case: the browser has to set it itself so the boundary
+      // on the JSON path it has always used. Deliberately no Content-Type header
+      // for the multipart case: the browser has to set it itself so the boundary
       // matches, and supplying one produces a body the server cannot parse.
       const hasFiles = files.length > 0;
       let body;
@@ -151,11 +156,7 @@ export default function ContactPage() {
         body = JSON.stringify({ subject: subject.trim(), message: message.trim(), context: fromDot });
       }
 
-      const res = await authFetch(apiUrl('/api/support/contact'), {
-        method: 'POST',
-        headers,
-        body,
-      });
+      const res = await authFetch(apiUrl('/api/support/contact'), { method: 'POST', headers, body });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || `Couldn't send (HTTP ${res.status}).`);
       setStatus('sent');
@@ -165,62 +166,34 @@ export default function ContactPage() {
     }
   };
 
-  // The hero used to be the same dark datacenter photo as Home, dimmed by a
-  // 72% scrim. It read as heavy for the one screen a person reaches when
-  // something has already gone wrong, so it is now a light indigo field with
-  // the channels drawn as icons — warmer, and it loads nothing: no photo
-  // request, no decode, and nothing to go stale in the cache.
-  const channels = [
-    {
-      label: 'Email us',
-      paths: [
-        'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z',
-        'M22 6l-10 7L2 6',
-      ],
-    },
-    {
-      label: 'Ask DOT',
-      paths: [
-        'M21 11.5a8.4 8.4 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.4 8.4 0 0112.5 3 8.4 8.4 0 0121 11.5z',
-      ],
-    },
-    {
-      label: 'Attach a screenshot',
-      paths: [
-        'M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48',
-      ],
-    },
-    {
-      label: 'Replies in hours',
-      paths: ['M12 2a10 10 0 100 20 10 10 0 000-20z', 'M12 6v6l4 2'],
-    },
-  ];
-
-  const Hero = (
-    <section className={styles.hero}>
-      <nav className={styles.nav}>
-        <button className={styles.back} onClick={() => navigate(-1)} aria-label="Back">‹</button>
-        <span className={styles.brand}>RackTrack</span>
-      </nav>
-      <div className={styles.heroTitle}>
-        <div className={styles.eyebrow}>Support</div>
-        <h1 className={styles.h1}>Contact us</h1>
-        <p className={styles.heroSub}>
-          Something not working, or not sure how it should work? Tell us what happened —
-          a real person reads every message.
-        </p>
-        <ul className={styles.channels}>
-          {channels.map((c) => (
-            <li key={c.label} className={styles.channel}>
-              <span className={styles.channelIcon} aria-hidden="true">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                  {c.paths.map((d, i) => <path key={i} d={d} />)}
-                </svg>
-              </span>
-              <span className={styles.channelLabel}>{c.label}</span>
-            </li>
-          ))}
-        </ul>
+  const Intro = (
+    <section className={styles.intro}>
+      <div className={styles.introInner}>
+        <div className={styles.introText}>
+          <button className={styles.back} onClick={() => navigate(-1)}>
+            <Icon name="arrow_back" /> Back
+          </button>
+          <div className={styles.eyebrow}>Support</div>
+          <h1 className={styles.h1}>We&rsquo;re here to help.</h1>
+          <p className={styles.lede}>
+            Tell us what you&rsquo;re running into. Our team will review the details and get
+            back to you as soon as possible.
+          </p>
+          <ul className={styles.signals}>
+            {SIGNALS.map((s) => (
+              <li key={s.label} className={styles.signal}>
+                <Icon name={s.icon} className={styles.signalIcon} />
+                {s.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+        {/* An <img>, not a CSS background: index.css strips background-image
+            from a broad substring allow-list, and a photograph here is content
+            for the page rather than decoration for a box. */}
+        <div className={styles.media} aria-hidden="true">
+          <img src="/hero-rack.jpg" alt="" className={styles.mediaImg} loading="lazy" />
+        </div>
       </div>
     </section>
   );
@@ -228,94 +201,115 @@ export default function ContactPage() {
   if (status === 'sent') {
     return (
       <div className={styles.page}>
-        {Hero}
+        {Intro}
         <div className={styles.wrap}>
-          <div className={styles.doneCard}>
-            <div className={styles.doneMark} aria-hidden="true">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <div className={styles.done}>
+            <span className={styles.doneMark} aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+            </span>
+            <div>
+              <h2 className={styles.doneH}>Message sent</h2>
+              <p className={styles.doneP}>
+                Thanks — our team has received your message and will get back to you
+                shortly at <strong>{email}</strong>.
+              </p>
+              <button className={styles.secondary} onClick={() => navigate(-1)}>
+                Back to what I was doing
+              </button>
             </div>
-            <h2 className={styles.doneTitle}>Message sent</h2>
-            <p className={styles.doneText}>
-              Thanks — the RackTrack support team has it and will reply to{' '}
-              <strong>{email}</strong>.
-            </p>
-            <button className={styles.send} onClick={() => navigate(-1)}>Back to what I was doing</button>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
     <div className={styles.page}>
-      {Hero}
+      {Intro}
 
       <div className={styles.wrap}>
-        <div className={styles.grid}>
-          <form className={styles.formCard} onSubmit={submit}>
-            <label className={styles.label}>Subject <span className={styles.optional}>optional</span></label>
-            <input
-              className={styles.fld}
-              type="text"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g. Scan won't upload"
-              maxLength={140}
-            />
-
-            <label className={`${styles.label} ${styles.labelGap}`}>Message</label>
-            <textarea
-              className={`${styles.fld} ${styles.textarea}`}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="What happened? What were you doing when it happened? Paste any exact error text."
-              maxLength={5000}
-              autoFocus
-            />
-
-            <label className={`${styles.label} ${styles.labelGap}`}>
-              Attachments <span className={styles.optional}>optional</span>
-            </label>
-            <p className={styles.attachHint}>
-              A screenshot of what went wrong is the most useful thing you can send.
-              Up to {MAX_FILES} images, PDFs or text files, {prettyBytes(MAX_FILE_BYTES)} each.
+        <div className={styles.cols}>
+          {/* ── Form ── */}
+          <form className={styles.form} onSubmit={submit} noValidate>
+            <h2 className={styles.formH}>Send us a message</h2>
+            <p className={styles.formP}>
+              Include as much detail as you can. Screenshots and error messages help us
+              resolve issues faster.
             </p>
 
-            <input
-              ref={fileInput}
-              type="file"
-              className={styles.fileInput}
-              accept={ACCEPT}
-              multiple
-              onChange={(e) => addFiles(e.target.files)}
-            />
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="ct-subject">
+                Subject <span className={styles.optional}>Optional</span>
+              </label>
+              <input
+                id="ct-subject"
+                className={styles.input}
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="e.g. Scan won't upload"
+                maxLength={140}
+              />
+            </div>
 
-            <button
-              type="button"
-              className={styles.attachBtn}
-              onClick={() => fileInput.current?.click()}
-              disabled={files.length >= MAX_FILES}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-              </svg>
-              {files.length ? 'Add another file' : 'Attach a file'}
-            </button>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="ct-message">Message</label>
+              <textarea
+                id="ct-message"
+                className={`${styles.input} ${styles.textarea}`}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="What happened? What were you doing when it happened? Include any error message or relevant details."
+                maxLength={5000}
+              />
+            </div>
 
-            {files.length > 0 && (
-              <>
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Attachments <span className={styles.optional}>Optional</span>
+              </label>
+
+              <input
+                ref={fileInput}
+                type="file"
+                className={styles.fileInput}
+                accept={ACCEPT}
+                multiple
+                onChange={(e) => addFiles(e.target.files)}
+              />
+
+              {/* Drop target and picker in one. A button rather than a label so
+                  the keyboard path is the same as the pointer path. */}
+              <button
+                type="button"
+                className={`${styles.drop} ${dragging ? styles.dropOver : ''}`}
+                onClick={() => fileInput.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={onDrop}
+                disabled={files.length >= MAX_FILES}
+              >
+                <Icon name="paperclip" className={styles.dropIcon} />
+                <span className={styles.dropText}>
+                  <span className={styles.dropLead}>
+                    {files.length >= MAX_FILES
+                      ? `Maximum of ${MAX_FILES} files attached`
+                      : 'Attach screenshots, logs, or other files'}
+                  </span>
+                  <span className={styles.dropMeta}>
+                    Up to {MAX_FILES} files · {prettyBytes(MAX_FILE_BYTES)} each
+                  </span>
+                </span>
+              </button>
+
+              {files.length > 0 && (
                 <ul className={styles.fileList}>
                   {files.map((f, i) => (
-                    <li key={`${f.file.name}-${i}`} className={styles.fileItem}>
-                      {f.url ? (
-                        <img src={f.url} alt="" className={styles.thumb} />
-                      ) : (
-                        <span className={styles.thumbDoc} aria-hidden="true">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                          </svg>
-                        </span>
-                      )}
+                    <li key={`${f.file.name}-${i}`} className={styles.fileRow}>
+                      {f.url
+                        ? <img src={f.url} alt="" className={styles.thumb} />
+                        : <span className={styles.thumbDoc} aria-hidden="true"><Icon name="book" /></span>}
                       <span className={styles.fileMeta}>
                         <span className={styles.fileName}>{f.file.name}</span>
                         <span className={styles.fileSize}>{prettyBytes(f.file.size)}</span>
@@ -326,50 +320,141 @@ export default function ContactPage() {
                         onClick={() => removeFile(i)}
                         aria-label={`Remove ${f.file.name}`}
                       >
-                        ×
+                        <Icon name="close" />
                       </button>
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {files.length > 0 && (
                 <div className={styles.fileTotal}>
                   {files.length} of {MAX_FILES} · {prettyBytes(totalBytes)} of {prettyBytes(MAX_TOTAL_BYTES)}
                 </div>
-              </>
-            )}
+              )}
 
-            {fileError && <div className={styles.fileWarn}>{fileError}</div>}
+              {fileError && <p className={styles.fileWarn}>{fileError}</p>}
+            </div>
 
-            {error && (
-              <div className={styles.errorBox}>
-                {error}{' '}
-                <a href={mailto} className={styles.link}>Email us directly →</a>
+            {status === 'error' && (
+              <div className={styles.errorBox} role="alert">
+                <strong className={styles.errorH}>We couldn&rsquo;t send your message.</strong>
+                <span className={styles.errorP}>
+                  {error} Please try again, or email{' '}
+                  <a href={mailto} className={styles.link}>{SUPPORT_EMAIL}</a>.
+                </span>
               </div>
             )}
 
-            <button type="submit" className={styles.send} disabled={!canSend}>
-              {status === 'sending' ? 'Sending…' : 'Send message →'}
-            </button>
+            <div className={styles.actions}>
+              <button type="submit" className={styles.send} disabled={!canSend}>
+                {status === 'sending' ? 'Sending…' : 'Send message →'}
+              </button>
+              {!canSend && status !== 'sending' && (
+                <span className={styles.hint}>Add a message to send.</span>
+              )}
+            </div>
           </form>
 
-          {/* Desktop/iPad: support details rail */}
-          <aside className={styles.aside}>
-            <div className={styles.infoCard}>
-              <div className={styles.k}>Email</div>
-              <a className={styles.v} href={mailto}>{SUPPORT_EMAIL}</a>
-              <div className={styles.m}>Replies within a few hours</div>
-            </div>
+          {/* ── Rail ── */}
+          <aside className={styles.rail}>
+            <section className={styles.block}>
+              <h2 className={styles.blockH}>Other ways to reach us</h2>
+              <div className={styles.options}>
+                {/* /help is the DOT assistant — see the route table in
+                    DesktopShell, which titles it "Ask DOT". A separate
+                    "Documentation" row was specified for this rail, but this
+                    build has no docs route and no external docs URL, and DOT
+                    answers from the same verified documentation. A third row
+                    pointing at /help would be the same destination wearing a
+                    different name; add it here when a docs URL exists. */}
+                <button type="button" className={styles.option} onClick={() => navigate('/help')}>
+                  <Icon name="chat" className={styles.optionIcon} />
+                  <span className={styles.optionText}>
+                    <span className={styles.optionName}>Ask DOT</span>
+                    <span className={styles.optionSub}>
+                      Get a quick answer from our support assistant, drawn from verified documentation
+                    </span>
+                  </span>
+                  <Icon name="chevron_right" className={styles.optionGo} />
+                </button>
+
+                <a className={styles.option} href={mailto}>
+                  <Icon name="mail" className={styles.optionIcon} />
+                  <span className={styles.optionText}>
+                    <span className={styles.optionName}>Email support</span>
+                    <span className={styles.optionSub}>{SUPPORT_EMAIL}</span>
+                    <span className={styles.optionSub}>Replies within a few hours</span>
+                  </span>
+                  <Icon name="chevron_right" className={styles.optionGo} />
+                </a>
+              </div>
+            </section>
+
+            <section className={styles.block}>
+              <h2 className={styles.blockH}>What happens next?</h2>
+              <ol className={styles.steps}>
+                <li className={styles.step}>
+                  <span className={styles.stepNum}>1</span>
+                  <span className={styles.stepText}>
+                    <span className={styles.stepName}>We receive your message</span>
+                    <span className={styles.stepSub}>We review the details you&rsquo;ve shared.</span>
+                  </span>
+                </li>
+                <li className={styles.step}>
+                  <span className={styles.stepNum}>2</span>
+                  <span className={styles.stepText}>
+                    <span className={styles.stepName}>We investigate</span>
+                    <span className={styles.stepSub}>We gather the information needed to understand the issue.</span>
+                  </span>
+                </li>
+                <li className={styles.step}>
+                  <span className={styles.stepNum}>3</span>
+                  <span className={styles.stepText}>
+                    <span className={styles.stepName}>We get back to you</span>
+                    <span className={styles.stepSub}>We&rsquo;ll reply with next steps or a resolution.</span>
+                  </span>
+                </li>
+              </ol>
+            </section>
           </aside>
         </div>
-
-        {/* Mobile: compact email card */}
-        <a className={styles.emailCard} href={mailto}>
-          <div>
-            <div className={styles.k}>Prefer email?</div>
-            <div className={styles.v}>{SUPPORT_EMAIL}</div>
-          </div>
-          <span aria-hidden="true">›</span>
-        </a>
       </div>
+
+      <Footer />
     </div>
+  );
+}
+
+// Privacy / Terms / Security belong here, but this build has no route for any
+// of them and no marketing-site URL to point at — every candidate path 404s.
+// Dead links on the page a customer reaches when they already distrust
+// something cost more than the missing row does, so the footer carries the
+// notice only. Fill these in and the nav below renders itself:
+//
+//   const LEGAL = [
+//     { label: 'Privacy',  href: 'https://racktrack.ai/privacy'  },
+//     { label: 'Terms',    href: 'https://racktrack.ai/terms'    },
+//     { label: 'Security', href: 'https://racktrack.ai/security' },
+//   ];
+const LEGAL = [];
+
+function Footer() {
+  return (
+    <footer className={styles.foot}>
+      <div className={styles.footInner}>
+        <span className={styles.footCopy}>© 2026 RackTrack. All rights reserved.</span>
+        {LEGAL.length > 0 && (
+          <nav className={styles.footLinks}>
+            {LEGAL.map((l, i) => (
+              <span key={l.label} className={styles.footLink}>
+                {i > 0 && <span aria-hidden="true">·</span>}
+                <a href={l.href}>{l.label}</a>
+              </span>
+            ))}
+          </nav>
+        )}
+      </div>
+    </footer>
   );
 }

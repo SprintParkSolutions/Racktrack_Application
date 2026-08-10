@@ -1,287 +1,359 @@
-/* Contact support — full-bleed data-center hero + form, rendered inside the
-   shell. 1:1 with the contact-fullbleed references (iPad + mobile). Serif
-   headline falls back to Georgia (no Google Fonts request); mono labels use the
-   app's mono — both offline-safe. */
+/* Contact / Support.
+ *
+ * Restrained on purpose: white ground, 1px separators, no elevation except
+ * where a control has to read as pressable. The accent appears on exactly
+ * three things — the primary action, links, and the small glyphs — so it
+ * still means something when it shows up.
+ *
+ * Two global rules in index.css shape the class names here, and both are load-
+ * bearing rather than incidental:
+ *   1. `background-image: none !important` applies to any class containing
+ *      card / panel / tile / surface / hero / header / bg / btn / … so a
+ *      gradient or image set on such a class is silently dropped. The
+ *      photograph is therefore an <img>, not a background.
+ *   2. classes containing card / panel / tile / surface are auto-elevated with
+ *      a lift shadow and a raised tone. This page wants borders, not shadows,
+ *      so its containers are named .block / .form / .option / .media, which
+ *      match neither list and keep their flat treatment.
+ * Renaming any of these to something "clearer" like .contactCard will silently
+ * restyle the page.
+ *
+ * Spacing is an 8px scale throughout (8/16/24/32/40/56).
+ */
 
-.page { background: #fff; color: #111; min-height: 100%; }
-
-/* ── Hero ──
-   Indigo field rather than the dimmed datacenter photo this page used to
-   share with Home. Height is auto with generous padding instead of a fixed
-   42vh: the block now carries a subhead and a row of channels, and a viewport
-   fraction either crops them on a short laptop window or leaves a gap under
-   them on a tall phone. */
-.hero {
-  position: relative;
-  overflow: hidden;
-  padding: 0 24px 34px;
-  padding-top: max(74px, calc(env(safe-area-inset-top, 0px) + 74px));
+.page {
+  background: #fff;
+  color: #111214;
+  min-height: 100%;
+  display: flex; flex-direction: column;
+  /* The app's own font stack — no webfont request added by this page. */
+  font-family: var(--font, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
 }
 
-/* The gradient lives on pseudo-elements, not on .hero itself, and that is not
-   a style preference — index.css carries a global
-   `[class*="hero"] { background-image: none !important }` that strips legacy
-   module gradients, and its own comment names pseudo-elements and .rt-* as the
-   two things it deliberately skips. A `background` on .hero is silently
-   removed: the block still occupies its space, but white text lands on white
-   and the hero reads as a blank gap. This is also why the previous version
-   painted its backdrop with an <img> rather than CSS.
-   ::before is the indigo field, ::after the highlight that keeps it from
-   looking flat. Both are inert and clipped by the hero's overflow. */
-.hero::before,
-.hero::after {
-  content: ''; position: absolute; inset: 0;
-  pointer-events: none; z-index: 0;
+/* Local accent. Scoped to this page rather than added to :root because the
+   app's global --accent is near-black by design and other pages depend on it;
+   changing it here would repaint surfaces this work has no business touching. */
+.page {
+  --ct-accent:      #4F46E5;
+  --ct-accent-weak: #EEF0FE;
+  --ct-line:        #E6E7EB;
+  --ct-line-soft:   #F0F1F4;
+  --ct-ink:         #111214;
+  --ct-ink-2:       #5B5F6B;
+  --ct-ink-3:       #878B96;
 }
-.hero::before {
-  background: linear-gradient(160deg, #4F46E5 0%, #4338CA 45%, #312E81 100%);
+
+/* ── Intro ─────────────────────────────────────────────────────────────
+   Compact by intent: this is a utility page, and the form is the reason
+   anyone is here. The photograph sits to the side and is cropped by its
+   container rather than driving the height. */
+.intro { border-bottom: 1px solid var(--ct-line); }
+.introInner {
+  max-width: 1180px; margin: 0 auto;
+  padding: 40px 32px 32px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px;
+  align-items: center;
 }
-.hero::after {
-  background:
-    radial-gradient(60% 70% at 50% 0%,  rgba(255,255,255,.20), transparent 70%),
-    radial-gradient(40% 60% at 88% 18%, rgba(129,140,248,.35), transparent 72%);
-}
-.nav {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 1;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 22px;
-  padding-top: max(18px, env(safe-area-inset-top, 0px));
-}
+
 .back {
-  width: 40px; height: 40px; border-radius: 12px;
-  background: rgba(255,255,255,.16);
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 20px; line-height: 1; border: none; cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-bottom: 24px; padding: 0;
+  background: none; border: none; cursor: pointer;
+  color: var(--ct-ink-2); font-size: 13px; font-family: inherit;
+  transition: color .15s;
 }
-.back:hover { background: rgba(255,255,255,.26); }
-.brand { color: rgba(255,255,255,.9); font-weight: 600; font-size: 15px; }
-/* Centred, and in normal flow rather than absolutely positioned — the block
-   sizes the hero now instead of being pinned to its bottom edge. */
-.heroTitle { position: relative; z-index: 1; color: #fff; text-align: center; }
+.back:hover { color: var(--ct-ink); }
+
 .eyebrow {
-  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px; letter-spacing: .16em; text-transform: uppercase; opacity: .82;
+  font-size: 11px; font-weight: 600; letter-spacing: .10em;
+  text-transform: uppercase; color: var(--ct-accent);
 }
 .h1 {
-  font-family: var(--font, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-  font-weight: 700; font-size: 42px; line-height: 1.02; letter-spacing: -.03em; margin-top: 10px;
+  margin: 12px 0 0;
+  font-size: 30px; line-height: 1.18; letter-spacing: -.022em;
+  font-weight: 640; color: var(--ct-ink);
 }
-.heroSub {
-  max-width: 46ch; margin: 14px auto 0;
-  font-size: 14.5px; line-height: 1.6; color: rgba(255,255,255,.82);
+.lede {
+  margin: 12px 0 0; max-width: 60ch;
+  font-size: 15px; line-height: 1.62; color: var(--ct-ink-2);
 }
 
-/* The channel row. Wraps rather than scrolls: four short chips fit two-up on
-   the narrowest phone, and a horizontal scroller here would hide half of them
-   behind a gesture nobody is looking for on a hero. */
-.channels {
-  list-style: none; margin: 22px 0 0; padding: 0;
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+/* Understated by construction: no border, no fill, no pill. Reading as a row
+   of quiet facts is the point — a badge treatment here would turn them into
+   marketing and cost more trust than it buys. */
+.signals {
+  list-style: none; margin: 24px 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 12px 24px;
 }
-.channel {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px 9px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.12);
-  border: 1px solid rgba(255,255,255,.18);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+.signal {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--ct-ink-2);
 }
-.channelIcon { display: grid; place-items: center; color: #fff; opacity: .95; }
-.channelLabel { font-size: 13px; font-weight: 500; color: rgba(255,255,255,.94); white-space: nowrap; }
+.signalIcon { font-size: 15px; color: var(--ct-ink-3); flex: none; }
+
+/* Desaturated so a photograph with its own colour cast cannot fight the UI,
+   and so it reads as editorial rather than as a stock hero. */
+.media { display: none; }
+.mediaImg {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: 60% 50%;
+  display: block;
+  filter: grayscale(1) contrast(1.04) brightness(1.02);
+}
 
 /* ── Body ── */
-.wrap { padding: 24px 24px 48px; }
-.lede { font-size: 15px; line-height: 1.55; color: #4a4a4a; margin-bottom: 20px; }
-.lede strong { color: #111; font-weight: 600; }
+.wrap { flex: 1; max-width: 1180px; width: 100%; margin: 0 auto; padding: 32px; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
 
-.grid { display: block; }
+/* ── Form ── */
+.form { min-width: 0; }
+.formH { margin: 0; font-size: 17px; font-weight: 620; letter-spacing: -.01em; color: var(--ct-ink); }
+.formP { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--ct-ink-2); max-width: 62ch; }
 
+.field { margin-top: 24px; }
 .label {
-  display: block;
-  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px; letter-spacing: .12em; color: #6b6b6b; text-transform: uppercase; margin-bottom: 9px;
+  display: block; margin-bottom: 8px;
+  font-size: 13px; font-weight: 550; color: var(--ct-ink);
 }
-.labelGap { margin-top: 12px; }
-.optional { color: #c4c4c4; }
+.optional { font-weight: 400; color: var(--ct-ink-3); }
 
-.fld {
+/* index.css styles form controls as carved wells — `--sunken` fill, no border,
+   an inset `--press` shadow — through
+   `input:not([type=checkbox])…:not([type=color]), select, textarea`. Two
+   consequences have to be handled here rather than worked around:
+
+   1. That selector's five :not() clauses out-specify any single class, so a
+      plain `.input` rule loses on <input> — but it carries no weight against
+      <textarea>, which the same rule matches only by element name. The two
+      controls therefore render DIFFERENTLY from identical markup: a grey
+      well for Subject, a white bordered box for Message. That mismatch is
+      visible on this page before this redesign, and on every other form in
+      the app.
+   2. The inset shadow is set `!important`, so it cannot be outrun by
+      specificity at all.
+
+   This page wants one flat bordered treatment for both, so it overrides all
+   three properties explicitly. `!important` is load-bearing here, not
+   laziness: it is the only thing that beats an `!important` on the other
+   side. Removing any of these lines silently reintroduces the mismatch. */
+.input {
   width: 100%; box-sizing: border-box;
-  padding: 14px 15px; border: 1px solid #e2e2e2; border-radius: 12px;
-  font-size: 15px; background: #fff; color: #111;
-  transition: border-color .2s;
+  padding: 10px 12px;
+  font-family: inherit; font-size: 14.5px; line-height: 1.5;
+  color: var(--ct-ink);
+  background-color: #fff !important;
+  border: 1px solid var(--ct-line) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  transition: border-color .15s, box-shadow .15s;
 }
-.fld:focus { outline: none; border-color: #111; }
-.textarea { height: 130px; line-height: 1.5; resize: none; margin-top: 12px; }
-
-.send {
-  margin-top: 16px; width: 100%; padding: 16px;
-  background: #111; color: #fff; border: none; border-radius: 12px;
-  font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color .18s, transform .12s;
+.input::placeholder { color: var(--ct-ink-3); }
+.input:hover { border-color: #D6D8DE !important; }
+/* A 3px ring rather than a heavier border: focus has to be obvious without
+   shifting the control by a pixel. */
+.input:focus,
+.input:focus-visible {
+  outline: none;
+  border-color: var(--ct-accent) !important;
+  box-shadow: 0 0 0 3px var(--ct-accent-weak) !important;
 }
-.send:hover:not(:disabled) { background: #000; }
-.send:active:not(:disabled) { transform: scale(.98); }
-.send:disabled { opacity: .4; cursor: default; }
+.textarea { min-height: 168px; resize: vertical; }
 
-.errorBox {
-  margin-top: 14px; padding: 11px 13px; border-radius: 10px;
-  background: rgba(180,35,24,.06); border: 1px solid rgba(180,35,24,.2);
-  color: #b42318; font-size: 13px; line-height: 1.5;
-}
-.link { color: #111; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
-
-/* Desktop aside — hidden on mobile. */
-.aside { display: none; }
-
-/* Mobile email card — hidden on desktop. */
-.emailCard {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: 16px; padding: 15px 18px;
-  border: 1px solid #ececec; border-radius: 12px; color: #111;
-}
-.emailCard span { color: #6b6b6b; font-size: 18px; }
-.k {
-  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 10px; letter-spacing: .12em; color: #6b6b6b; text-transform: uppercase;
-}
-/* Used on an <a> as well as a <div>; without an explicit colour the
-   anchor fell back to the browser default blue (#0000EE). */
-.v { font-weight: 600; margin-top: 2px; font-size: 14px; color: var(--md-on-surface, #121212); text-decoration: none; }
-/* Anchor variant needs a 24px hit area (WCAG 2.5.8). */
-a.v { display: inline-flex; align-items: center; min-height: 24px; }
-.m { font-size: 13px; color: #6b6b6b; margin-top: 2px; }
-
-/* Sent confirmation */
-.doneCard { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 44px 24px; max-width: 440px; margin: 0 auto; }
-.doneMark { width: 56px; height: 56px; border-radius: 999px; display: grid; place-items: center; background: rgba(22,163,74,.1); color: #16a34a; }
-.doneTitle { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
-.doneText { margin: 0 0 10px; font-size: 14.5px; line-height: 1.6; color: #5d5d5d; }
-.doneText strong { color: #111; font-weight: 600; }
-
-/* ── iPad / desktop ── */
-@media (min-width: 768px) {
-  /* No fixed height here either — the hero is sized by its content now, so a
-     44vh rule would either crop the channel row on a short laptop window or
-     strand it above empty space on a tall one. */
-  .hero { padding: 96px clamp(32px, 4vw, 64px) 52px; }
-  .nav { padding: 26px 44px; padding-top: max(26px, env(safe-area-inset-top, 0px)); }
-  .back { width: 44px; height: 44px; border-radius: 13px; font-size: 20px; }
-  .brand { font-size: 18px; }
-  .eyebrow { font-size: 12px; }
-  .h1 { font-size: clamp(44px, 6vw, 60px); }
-  .heroSub { font-size: 16px; margin-top: 16px; }
-  .channels { gap: 12px; margin-top: 26px; }
-  .channel { padding: 10px 17px 10px 13px; }
-  .channelLabel { font-size: 13.5px; }
-
-  /* Use the full content width — no centered max-width column. */
-  .wrap { max-width: none; margin: 0; padding: 44px clamp(32px, 4vw, 64px) 72px; }
-  .lede { font-size: 18px; line-height: 1.6; max-width: 640px; margin-bottom: 30px; }
-
-  /* Form fills the remaining width; the details rail is a fixed rail on the right. */
-  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 40px; align-items: start; }
-
-  /* The form gets a defined card so the section reads as intentional, not a
-     lone control floating in white space. */
-  .formCard {
-    padding: 30px 30px 28px;
-    border: 1px solid #ececec; border-radius: 18px; background: #fff;
-    box-shadow: 0 1px 2px rgba(22, 22, 22,.03), 0 24px 48px -34px rgba(22, 22, 22,.28);
-  }
-  .textarea { height: 220px; }
-  .send { margin-top: 20px; }
-
-  /* Support details rail — small cards, no more sparse left-border list. */
-  .aside { display: flex; flex-direction: column; gap: 14px; }
-  .infoCard {
-    padding: 18px 20px; border: 1px solid #ececec; border-radius: 14px; background: #ffffff;
-  }
-  .infoCard .v { display: inline-block; font-size: 15px; margin-top: 5px; }
-  a.v:hover { text-decoration: underline; text-underline-offset: 2px; }
-  .dot { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: 600; }
-  .dot i { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.14); }
-
-  .emailCard { display: none; }
-}
-
-/* ── Attachments ──────────────────────────────────────────────────────
-   A screenshot is the most useful thing a bug report carries, so the
-   control sits inline in the form rather than behind a paperclip icon
-   nobody finds. Same flat light palette as the fields above. */
-
-.attachHint {
-  margin: -4px 0 10px;
-  font-size: 12.5px; line-height: 1.5; color: #8a8a8a;
-}
-
-/* The real input is driven by the styled button — visually hidden rather
-   than display:none so it stays reachable by assistive tech and by a
-   label click. */
+/* ── Attachments ── */
 .fileInput {
   position: absolute; width: 1px; height: 1px;
   padding: 0; margin: -1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-.attachBtn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 11px 15px;
-  background: #fff; color: #111;
-  border: 1px dashed #cfcfcf; border-radius: 12px;
-  font-size: 14px; font-weight: 500; cursor: pointer;
-  transition: border-color .18s, background-color .18s;
+.drop {
+  width: 100%; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; text-align: left;
+  font-family: inherit;
+  background: #fff;
+  border: 1px dashed var(--ct-line); border-radius: 8px;
+  cursor: pointer;
+  transition: border-color .15s, background-color .15s;
 }
-.attachBtn:hover:not(:disabled) { border-color: #111; background: #fafafa; }
-.attachBtn:disabled { opacity: .4; cursor: default; }
+.drop:hover:not(:disabled) { border-color: var(--ct-accent); background: #FCFCFE; }
+.drop:focus-visible { outline: none; border-color: var(--ct-accent); box-shadow: 0 0 0 3px var(--ct-accent-weak); }
+.dropOver { border-color: var(--ct-accent); border-style: solid; background: var(--ct-accent-weak); }
+.drop:disabled { cursor: default; opacity: .55; }
+
+.dropIcon { font-size: 18px; color: var(--ct-ink-3); flex: none; }
+.dropText { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dropLead { font-size: 14px; color: var(--ct-ink); }
+.dropMeta { font-size: 12.5px; color: var(--ct-ink-3); }
 
 .fileList { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
-
-.fileItem {
-  display: flex; align-items: center; gap: 11px;
+.fileRow {
+  display: flex; align-items: center; gap: 12px;
   padding: 8px 10px;
-  border: 1px solid #ececec; border-radius: 11px; background: #fcfcfc;
+  border: 1px solid var(--ct-line); border-radius: 8px; background: #fff;
 }
-
-.thumb {
-  width: 38px; height: 38px; flex: none;
-  object-fit: cover; border-radius: 8px; background: #f0f0f0;
-}
+.thumb { width: 32px; height: 32px; flex: none; object-fit: cover; border-radius: 6px; background: var(--ct-line-soft); }
 .thumbDoc {
-  width: 38px; height: 38px; flex: none;
+  width: 32px; height: 32px; flex: none;
   display: grid; place-items: center;
-  border-radius: 8px; background: #f0f0f0; color: #6b6b6b;
+  border-radius: 6px; background: var(--ct-line-soft); color: var(--ct-ink-3); font-size: 16px;
 }
-
-/* min-width:0 lets the filename ellipsis actually engage inside the flex
-   row — without it a long name forces the row wider than the card and the
-   remove button slides off the edge on a phone. */
-.fileMeta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.fileName {
-  font-size: 13.5px; color: #111;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.fileSize { font-size: 11.5px; color: #9a9a9a; }
-
+/* min-width:0 lets the filename ellipsis engage inside the flex row — without
+   it a long name pushes the remove control off the edge on a phone. */
+.fileMeta { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.fileName { font-size: 13.5px; color: var(--ct-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fileSize { font-size: 12px; color: var(--ct-ink-3); }
 .fileRemove {
   flex: none; width: 28px; height: 28px;
   display: grid; place-items: center;
-  border: none; border-radius: 8px; background: transparent;
-  color: #8a8a8a; font-size: 19px; line-height: 1; cursor: pointer;
+  border: none; border-radius: 6px; background: none;
+  color: var(--ct-ink-3); font-size: 15px; cursor: pointer;
   transition: background-color .15s, color .15s;
 }
-.fileRemove:hover { background: #f0f0f0; color: #111; }
+.fileRemove:hover { background: var(--ct-line-soft); color: var(--ct-ink); }
 
-.fileTotal {
-  margin-top: 8px;
-  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px; letter-spacing: .06em; color: #a0a0a0;
+.fileTotal { margin-top: 8px; font-size: 12px; color: var(--ct-ink-3); }
+.fileWarn { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: #92400E; }
+
+/* ── Error ── */
+.errorBox {
+  margin-top: 24px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 2px;
+  border: 1px solid #F3C9C5; border-left: 3px solid #C0392B; border-radius: 8px;
+  background: #FDF6F5;
+}
+.errorH { font-size: 13.5px; font-weight: 600; color: #8E2B21; }
+.errorP { font-size: 13px; line-height: 1.55; color: #8E2B21; }
+.link { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── Actions ── */
+.actions { margin-top: 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.send {
+  padding: 10px 18px;
+  font-family: inherit; font-size: 14.5px; font-weight: 560;
+  color: #fff; background: var(--ct-accent);
+  border: 1px solid var(--ct-accent); border-radius: 8px;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+.send:hover:not(:disabled) { background: #443CCB; border-color: #443CCB; }
+.send:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ct-accent-weak); }
+/* Grey rather than a faded accent: a dimmed primary still reads as "the thing
+   to press", which is exactly wrong while it cannot be pressed. */
+.send:disabled { background: #EBECEF; border-color: #EBECEF; color: var(--ct-ink-3); cursor: not-allowed; }
+.hint { font-size: 12.5px; color: var(--ct-ink-3); }
+
+.secondary {
+  margin-top: 16px; padding: 9px 16px;
+  font-family: inherit; font-size: 14px; font-weight: 520;
+  color: var(--ct-ink); background: #fff;
+  border: 1px solid var(--ct-line); border-radius: 8px; cursor: pointer;
+  transition: border-color .15s, background-color .15s;
+}
+.secondary:hover { border-color: #D6D8DE; background: #FAFAFB; }
+
+/* ── Rail ── */
+.rail { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.block { border: 1px solid var(--ct-line); border-radius: 10px; background: #fff; overflow: hidden; }
+.blockH {
+  margin: 0; padding: 14px 16px;
+  font-size: 13px; font-weight: 620; letter-spacing: -.005em; color: var(--ct-ink);
+  border-bottom: 1px solid var(--ct-line-soft);
 }
 
-/* Amber, not red: a rejected attachment is a nudge to pick a different
-   file, not a failure of the message the user is still composing. */
-.fileWarn {
-  margin-top: 10px; padding: 10px 12px; border-radius: 10px;
-  background: rgba(180,120,10,.06); border: 1px solid rgba(180,120,10,.2);
-  color: #8a5a08; font-size: 12.5px; line-height: 1.5;
+.options { display: flex; flex-direction: column; }
+.option {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; text-align: left; text-decoration: none;
+  font-family: inherit; background: none; border: none;
+  border-top: 1px solid var(--ct-line-soft);
+  cursor: pointer; color: inherit;
+  transition: background-color .15s;
+}
+.options .option:first-child { border-top: none; }
+.option:hover { background: #FAFAFB; }
+.option:hover .optionGo { color: var(--ct-accent); transform: translateX(2px); }
+.option:focus-visible { outline: none; background: #FAFAFB; box-shadow: inset 0 0 0 2px var(--ct-accent-weak); }
+
+.optionIcon { font-size: 17px; color: var(--ct-accent); flex: none; margin-top: 1px; }
+.optionText { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.optionName { font-size: 14px; font-weight: 550; color: var(--ct-ink); }
+.optionSub { font-size: 12.5px; line-height: 1.45; color: var(--ct-ink-2); overflow-wrap: anywhere; }
+.optionGo {
+  font-size: 15px; color: var(--ct-ink-3); flex: none; margin-top: 2px;
+  transition: color .15s, transform .15s;
+}
+
+/* ── Steps ──
+   The connector is a border on the number, not a pseudo-element spanning the
+   list, so it cannot drift out of alignment when a description wraps to a
+   different number of lines. :last-child drops the tail. */
+.steps { list-style: none; margin: 0; padding: 16px; display: flex; flex-direction: column; }
+.step { display: flex; gap: 12px; padding-bottom: 20px; }
+.step:last-child { padding-bottom: 0; }
+.stepNum {
+  position: relative; flex: none;
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  border: 1px solid var(--ct-line); border-radius: 50%;
+  font-size: 11.5px; font-weight: 600; color: var(--ct-ink-2); background: #fff;
+}
+.step:not(:last-child) .stepNum::after {
+  content: ''; position: absolute; top: 24px; left: 50%;
+  width: 1px; height: calc(100% + 8px);
+  background: var(--ct-line); transform: translateX(-50%);
+}
+.stepText { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-top: 1px; }
+.stepName { font-size: 13.5px; font-weight: 550; color: var(--ct-ink); }
+.stepSub { font-size: 12.5px; line-height: 1.5; color: var(--ct-ink-2); }
+
+/* ── Success ── */
+.done {
+  display: flex; gap: 14px; align-items: flex-start;
+  max-width: 620px; padding: 20px;
+  border: 1px solid var(--ct-line); border-radius: 10px; background: #fff;
+}
+.doneMark {
+  flex: none; width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: 50%; background: #ECFDF3; color: #067647;
+}
+.doneH { margin: 0; font-size: 16px; font-weight: 620; color: var(--ct-ink); }
+.doneP { margin: 6px 0 0; font-size: 14px; line-height: 1.6; color: var(--ct-ink-2); }
+.doneP strong { color: var(--ct-ink); font-weight: 550; }
+
+/* ── Footer ── */
+.foot { border-top: 1px solid var(--ct-line); }
+.footInner {
+  max-width: 1180px; margin: 0 auto; padding: 20px 32px;
+  display: flex; flex-wrap: wrap; gap: 8px 24px;
+  align-items: center; justify-content: space-between;
+  font-size: 12.5px; color: var(--ct-ink-3);
+}
+.footLinks { display: flex; align-items: center; gap: 8px; }
+.footLink { display: inline-flex; align-items: center; gap: 8px; }
+.footLinks a { color: var(--ct-ink-2); text-decoration: none; }
+.footLinks a:hover { color: var(--ct-ink); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── Tablet and up ────────────────────────────────────────────────────── */
+@media (min-width: 900px) {
+  .introInner {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    padding: 48px 32px 40px;
+    gap: 40px;
+  }
+  .h1 { font-size: 34px; }
+  /* Fixed aspect rather than stretching to the text column's height: the crop
+     stays deliberate whether the copy wraps to two lines or four. */
+  .media {
+    display: block; height: 200px;
+    border: 1px solid var(--ct-line); border-radius: 10px; overflow: hidden;
+  }
+  .wrap { padding: 40px 32px 56px; }
+  .cols { grid-template-columns: minmax(0, 1fr) 340px; gap: 56px; }
+}
+
+@media (min-width: 1200px) {
+  .cols { gap: 64px; }
+  .media { height: 224px; }
 }
