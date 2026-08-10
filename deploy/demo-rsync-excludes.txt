@@ -46,6 +46,13 @@ client/dist
 server/data
 server/.env
 server/.env.key
+# The tester roster: 30 real email addresses paired with plaintext passwords.
+# rsync does not read .gitignore, so without this line it ships to the VPS on
+# every deploy — a credential file on an internet-facing host that the running
+# app never reads. Only seed-testers.js and mail-credentials.js use it, and
+# both are run from a workstation. Copy it up by hand if you ever need to
+# re-seed on the box, and delete it afterwards.
+server/scripts/tester-roster.json
 server/feedback
 server/uploads
 
