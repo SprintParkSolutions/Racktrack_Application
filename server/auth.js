@@ -19,6 +19,7 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const multer = require('multer');
 const audit = require('./audit');
 const graphMail = require('./lib/graphMail');
 const { logger } = require('./lib/observability');
@@ -585,19 +586,78 @@ function escapeHtml(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ── Contact-form attachments ────────────────────────────────────────
+// A screenshot is the single most useful thing a technician can send with a bug
+// report — "the scan looks wrong" and a picture of what it drew are different
+// tickets. Held in memory, never written to disk: these are forwarded straight
+// into an email and are not scans, so giving them a path under uploads/ would
+// mean inventing a retention and access story for them for no reason.
+//
+// Limits are set by what email actually carries, not by what the phone can
+// produce. Five files at 5 MB each with a 10 MB total keeps the message inside
+// the range both transports handle; Graph takes the small ones directly and
+// anything larger falls through to SMTP.
+const CONTACT_MAX_FILES      = 5;
+const CONTACT_MAX_FILE_BYTES = 5  * 1024 * 1024;
+const CONTACT_MAX_TOTAL_BYTES = 10 * 1024 * 1024;
+
+// Screenshots, photos, exported reports, and pasted logs. Everything else is
+// refused at the door: the inbox is read by people, and an attachment that
+// needs explaining is one nobody opens.
+const CONTACT_ALLOWED_TYPES = new Set([
+  'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif',
+  'image/heic', 'image/heif',
+  'application/pdf',
+  'text/plain', 'text/csv', 'application/json',
+]);
+
+const contactUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: CONTACT_MAX_FILE_BYTES, files: CONTACT_MAX_FILES },
+  fileFilter: (req, file, cb) => {
+    const type = String(file.mimetype || '').toLowerCase();
+    if (CONTACT_ALLOWED_TYPES.has(type)) return cb(null, true);
+    // Tagged so the handler answers 400 rather than 500 — picking the wrong
+    // file type is a user mistake, not a server fault.
+    const err = new Error('Attachments must be an image, PDF, or text file.');
+    err.status = 400;
+    cb(err, false);
+  },
+});
+
+// multer surfaces its own limits as errors with a code; turn them into the
+// sentence the user needs rather than "Unexpected field" or a 500.
+function contactUploadErrorMessage(err) {
+  if (!err) return null;
+  if (err.code === 'LIMIT_FILE_SIZE')  return `Each attachment must be under ${CONTACT_MAX_FILE_BYTES / 1024 / 1024} MB.`;
+  if (err.code === 'LIMIT_FILE_COUNT') return `Please attach at most ${CONTACT_MAX_FILES} files.`;
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') return 'Unexpected attachment field.';
+  return err.message || 'Could not read the attachments.';
+}
+
 // Support contact form → the support inbox, over the same primary+fallback SMTP
 // as verification codes. Reply-To is the sender so support can reply straight
 // from their client. Returns true if any provider delivered.
-async function sendContactEmail({ fromEmail, fromName, meta, subject, message }) {
+async function sendContactEmail({ fromEmail, fromName, meta, subject, message, attachments }) {
+  const files = (attachments || []).filter((a) => a && a.content);
+  // Name the attachments in the body too. Mail clients vary in how visibly they
+  // surface them, and a screenshot nobody notices is the same as one that was
+  // never sent — support needs to know to go looking.
+  const fileLine = files.length
+    ? `Attachments (${files.length}): ${files.map((f) => f.filename).join(', ')}`
+    : '';
   const text = [
     message, '', '——',
     `From: ${fromName || 'Unknown'} <${fromEmail || 'no email'}>`,
     meta || '',
+    fileLine,
   ].filter(Boolean).join('\n');
   const html = `<div style="font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;line-height:1.6;color:#1a1a2e;">
     <p style="white-space:pre-wrap;margin:0 0 16px;">${escapeHtml(message)}</p>
     <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
-    <p style="color:#6b6b7a;font-size:12px;margin:0;">From: ${escapeHtml(fromName || 'Unknown')} &lt;${escapeHtml(fromEmail || 'no email')}&gt;<br>${escapeHtml(meta || '').replace(/\n/g, '<br>')}</p>
+    <p style="color:#6b6b7a;font-size:12px;margin:0;">From: ${escapeHtml(fromName || 'Unknown')} &lt;${escapeHtml(fromEmail || 'no email')}&gt;<br>${escapeHtml(meta || '').replace(/\n/g, '<br>')}${
+      fileLine ? `<br>${escapeHtml(fileLine)}` : ''
+    }</p>
   </div>`;
 
   // Prefer the support Microsoft 365 mailbox (support@racktrack.ai) via Graph,
@@ -609,6 +669,7 @@ async function sendContactEmail({ fromEmail, fromName, meta, subject, message })
       replyTo: fromEmail || undefined,
       subject: subject || 'Support request from the app',
       text, html,
+      attachments: files,
     });
     if (ok) return true;
   } catch (err) {
@@ -622,6 +683,7 @@ async function sendContactEmail({ fromEmail, fromName, meta, subject, message })
       await p.tx.sendMail({
         from: p.from, to: SUPPORT_EMAIL, replyTo: fromEmail || undefined,
         subject: subject || 'Support request from the app', text, html,
+        ...(files.length ? { attachments: files } : {}),
       });
       logger.info(`[auth] contact email delivered to ${SUPPORT_EMAIL} via ${p.label} (${p.host})`);
       return true;
@@ -1618,10 +1680,34 @@ function registerRoutes(app) {
   // retyping it. A short per-user cooldown blocks double-sends and spam. If SMTP
   // isn't configured or the send fails, the client falls back to a mailto: link.
   const _lastContactAt = new Map();
-  app.post('/api/support/contact', requireAuth, async (req, res) => {
+
+  // The form posts multipart when it carries attachments and JSON when it does
+  // not — older builds of the app only ever send JSON. multer ignores anything
+  // that is not multipart, and express.json() has already populated req.body in
+  // that case, so one handler serves both without a version check.
+  const acceptContactAttachments = (req, res, next) => {
+    contactUpload.array('attachments', CONTACT_MAX_FILES)(req, res, (err) => {
+      if (!err) return next();
+      const status = err.status || (err.code ? 400 : 500);
+      if (status >= 500) logger.error(`[auth] contact upload failed: ${err.message}`);
+      res.status(status).json({ error: contactUploadErrorMessage(err) });
+    });
+  };
+
+  app.post('/api/support/contact', requireAuth, acceptContactAttachments, async (req, res) => {
     const message = String(req.body?.message || '').trim();
     if (message.length < 4)    return res.status(400).json({ error: 'Please describe the problem.' });
     if (message.length > 5000) return res.status(400).json({ error: 'That message is too long — please shorten it.' });
+
+    // multer caps each file and the count, but not the sum, and five files just
+    // under the individual limit is a message no transport will accept.
+    const files = req.files || [];
+    const totalBytes = files.reduce((n, f) => n + f.size, 0);
+    if (totalBytes > CONTACT_MAX_TOTAL_BYTES) {
+      return res.status(400).json({
+        error: `Attachments total ${(totalBytes / 1024 / 1024).toFixed(1)} MB — please keep them under ${CONTACT_MAX_TOTAL_BYTES / 1024 / 1024} MB.`,
+      });
+    }
 
     const now = Date.now();
     if (now - (_lastContactAt.get(req.user.id) || 0) < 15_000) {
@@ -1641,13 +1727,26 @@ function registerRoutes(app) {
       meta,
       subject:   String(req.body?.subject || '').trim() || `Support request from ${u.username || 'a user'}`,
       message,
+      // multer already rejected anything outside the allow-list; the filename is
+      // the only attacker-influenced field left, and it reaches an email header
+      // rather than a filesystem path. Strip the separators and control bytes a
+      // client could use to forge a header line, and cap the length.
+      attachments: files.map((f) => ({
+        filename: String(f.originalname || 'attachment')
+          // eslint-disable-next-line no-control-regex
+          .replace(/[\r\n\x00-\x1f\x7f/\\]/g, '_')
+          .slice(0, 120) || 'attachment',
+        content: f.buffer,
+        contentType: f.mimetype,
+      })),
     });
 
     if (!sent) {
       return res.status(502).json({ error: `Could not send right now. Please email ${SUPPORT_EMAIL} directly.`, supportEmail: SUPPORT_EMAIL });
     }
     _lastContactAt.set(u.id, now);
-    audit.log({ req, user: u, action: 'support.contact', status: 'ok' });
+    audit.log({ req, user: u, action: 'support.contact', status: 'ok',
+      payload: files.length ? { attachments: files.length, bytes: totalBytes } : undefined });
     res.json({ ok: true, to: SUPPORT_EMAIL });
   });
 

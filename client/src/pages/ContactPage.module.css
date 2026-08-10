@@ -149,3 +149,84 @@ a.v { display: inline-flex; align-items: center; min-height: 24px; }
 
   .emailCard { display: none; }
 }
+
+/* ── Attachments ──────────────────────────────────────────────────────
+   A screenshot is the most useful thing a bug report carries, so the
+   control sits inline in the form rather than behind a paperclip icon
+   nobody finds. Same flat light palette as the fields above. */
+
+.attachHint {
+  margin: -4px 0 10px;
+  font-size: 12.5px; line-height: 1.5; color: #8a8a8a;
+}
+
+/* The real input is driven by the styled button — visually hidden rather
+   than display:none so it stays reachable by assistive tech and by a
+   label click. */
+.fileInput {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.attachBtn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 15px;
+  background: #fff; color: #111;
+  border: 1px dashed #cfcfcf; border-radius: 12px;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: border-color .18s, background-color .18s;
+}
+.attachBtn:hover:not(:disabled) { border-color: #111; background: #fafafa; }
+.attachBtn:disabled { opacity: .4; cursor: default; }
+
+.fileList { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+
+.fileItem {
+  display: flex; align-items: center; gap: 11px;
+  padding: 8px 10px;
+  border: 1px solid #ececec; border-radius: 11px; background: #fcfcfc;
+}
+
+.thumb {
+  width: 38px; height: 38px; flex: none;
+  object-fit: cover; border-radius: 8px; background: #f0f0f0;
+}
+.thumbDoc {
+  width: 38px; height: 38px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 8px; background: #f0f0f0; color: #6b6b6b;
+}
+
+/* min-width:0 lets the filename ellipsis actually engage inside the flex
+   row — without it a long name forces the row wider than the card and the
+   remove button slides off the edge on a phone. */
+.fileMeta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.fileName {
+  font-size: 13.5px; color: #111;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fileSize { font-size: 11.5px; color: #9a9a9a; }
+
+.fileRemove {
+  flex: none; width: 28px; height: 28px;
+  display: grid; place-items: center;
+  border: none; border-radius: 8px; background: transparent;
+  color: #8a8a8a; font-size: 19px; line-height: 1; cursor: pointer;
+  transition: background-color .15s, color .15s;
+}
+.fileRemove:hover { background: #f0f0f0; color: #111; }
+
+.fileTotal {
+  margin-top: 8px;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px; letter-spacing: .06em; color: #a0a0a0;
+}
+
+/* Amber, not red: a rejected attachment is a nudge to pick a different
+   file, not a failure of the message the user is still composing. */
+.fileWarn {
+  margin-top: 10px; padding: 10px 12px; border-radius: 10px;
+  background: rgba(180,120,10,.06); border: 1px solid rgba(180,120,10,.2);
+  color: #8a5a08; font-size: 12.5px; line-height: 1.5;
+}
