@@ -1614,15 +1614,32 @@ async function shrinkImagesForReport(rackDir) {
 // which read as busy. One consistent dark accent keeps focus on the data.
 const accentFor = () => '#18181b';
 
+// Reports are rendered SERVER-side, so an unqualified toLocaleString formats
+// in the container's timezone — not the technician's. Nothing sets TZ in the
+// Dockerfile or either compose file, so the demo container runs UTC and every
+// scan timestamp read 5h30m behind the people who took it. It looked correct
+// in development for the worst possible reason: the build Mac is already in
+// the team's zone, so the bug was invisible exactly where it would have been
+// caught.
+//
+// REPORT_TZ pins the zone the reports are written in, independent of whatever
+// the host happens to be set to. The zone name is always printed: a bare
+// "13:14" is the thing that made this hard to spot, and a reader who can see
+// "13:14 UTC" can tell at a glance that it is not their local time.
+const REPORT_TZ = process.env.REPORT_TZ || process.env.TZ || undefined;
+
 function formatTimestamp(ts) {
   if (!ts) return 'unknown time';
   try {
     const d = new Date(ts);
+    if (isNaN(d.getTime())) return String(ts);
     return d.toLocaleString('en-US', {
       year: 'numeric', month: 'short', day: '2-digit',
       hour: '2-digit', minute: '2-digit', hour12: false,
+      timeZoneName: 'short',
+      ...(REPORT_TZ ? { timeZone: REPORT_TZ } : {}),
     });
-  } catch { return ts; }
+  } catch { return String(ts); }
 }
 
 function renderHTMLReport(data, { inlineImages = true } = {}) {
@@ -1703,11 +1720,26 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
 
   // ── Inventory rollup ──────────────────────────────────────────────
   const devs = d.devices || [];
-  const isSwitch = (dv) => /switch|router|firewall|aggregation/i.test(dv.class_name || '');
-  const switchCount   = devs.filter(isSwitch).length;
+
+  // The detector emits a row for every rack position it resolves, and some of
+  // those positions hold no equipment: `Empty` is an unoccupied U and
+  // `Closed Unit` is a blanking panel. Counting them as devices inflated the
+  // headline number on every report — across the sample scans in outputs/,
+  // 29 of 205 rows are one of these two, and one rack reported 23 devices for
+  // 15 actual units. A patch panel IS equipment and stays counted.
+  const RACK_SLOT_CLASSES = new Set(['empty', 'closed unit', 'blank', 'blanking panel']);
+  const isRackSlot = (dv) => RACK_SLOT_CLASSES.has(String(dv.class_name || '').trim().toLowerCase());
+  const equipment = devs.filter(dv => !isRackSlot(dv));
+
+  // `gateway` was missing while the card is labelled "Switches & routers": a
+  // gateway is a router-class device, and the sample scans carry four of them
+  // that were being dropped from the count.
+  const isSwitch = (dv) => /switch|router|firewall|aggregation|gateway/i.test(dv.class_name || '');
+  const deviceCount   = equipment.length;
+  const switchCount   = equipment.filter(isSwitch).length;
   const totalPorts     = devs.reduce((s, dv) => s + (dv.port_count || 0), 0);
   const connectedPorts = devs.reduce((s, dv) => s + (dv.connected_ports || 0), 0);
-  const identified     = devs.filter(dv => dv.make || dv.model).length;
+  const identified     = equipment.filter(dv => dv.make || dv.model).length;
 
   // ── Summary ──
   // The four tiers, in reading order: verdict → what to do → the facts →
@@ -2282,15 +2314,15 @@ ${realDevices.map(dev => {
   <div class="heroMeta">
     <span><span class="k">Scanned:</span> <code>${htmlEscape(ts)}</code></span>
     ${d.units_range ? `<span><span class="k">Occupies:</span> <code>${htmlEscape(d.units_range)}</code></span>` : ''}
-    <span><span class="k">Devices:</span> <code>${devs.length}</code></span>
+    <span><span class="k">Devices:</span> <code>${deviceCount}</code></span>
   </div>
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="k">Devices</div><div class="v">${devs.length}</div></div>
+  <div class="stat"><div class="k">Devices</div><div class="v">${deviceCount}</div></div>
   <div class="stat"><div class="k">Switches &amp; routers</div><div class="v">${switchCount}</div></div>
   <div class="stat"><div class="k">Ports · in use</div><div class="v">${connectedPorts}<span class="statOf"> / ${totalPorts}</span></div></div>
-  <div class="stat"><div class="k">Models read</div><div class="v">${identified}<span class="statOf"> / ${devs.length}</span></div></div>
+  <div class="stat"><div class="k">Models read</div><div class="v">${identified}<span class="statOf"> / ${deviceCount}</span></div></div>
 </div>
 
 ${summaryHtml}

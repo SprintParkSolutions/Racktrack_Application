@@ -36,6 +36,13 @@ services:
 
     environment:
       - PORT=3001
+      # Scan reports are rendered server-side, so their timestamps come out in
+      # the CONTAINER's zone. Unset, that is UTC, and every report read 5h30m
+      # behind the technicians who took the scan — invisible on the build Mac,
+      # which is already in the team's zone. Set both: TZ fixes container-wide
+      # time (logs, cron), REPORT_TZ pins what reports print regardless of host.
+      - TZ=${TZ:-Asia/Kolkata}
+      - REPORT_TZ=${REPORT_TZ:-Asia/Kolkata}
       # Must be exactly this string. app.js's .env loader does not strip
       # inline comments, so a trailing "# ..." makes it !== "production" and
       # the server quietly stays in dev mode, leaking raw errors publicly.
