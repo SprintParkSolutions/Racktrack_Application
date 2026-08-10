@@ -5,19 +5,44 @@
 
 .page { background: #fff; color: #111; min-height: 100%; }
 
-/* ── Hero ── */
+/* ── Hero ──
+   Indigo field rather than the dimmed datacenter photo this page used to
+   share with Home. Height is auto with generous padding instead of a fixed
+   42vh: the block now carries a subhead and a row of channels, and a viewport
+   fraction either crops them on a short laptop window or leaves a gap under
+   them on a tall phone. */
 .hero {
   position: relative;
-  height: 42vh; min-height: 300px;
   overflow: hidden;
+  padding: 0 24px 34px;
+  padding-top: max(74px, calc(env(safe-area-inset-top, 0px) + 74px));
 }
-.heroImg { width: 100%; height: 100%; object-fit: cover; display: block; }
-.scrim {
-  position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(0, 0, 0,.35), rgba(0, 0, 0,.72));
+
+/* The gradient lives on pseudo-elements, not on .hero itself, and that is not
+   a style preference — index.css carries a global
+   `[class*="hero"] { background-image: none !important }` that strips legacy
+   module gradients, and its own comment names pseudo-elements and .rt-* as the
+   two things it deliberately skips. A `background` on .hero is silently
+   removed: the block still occupies its space, but white text lands on white
+   and the hero reads as a blank gap. This is also why the previous version
+   painted its backdrop with an <img> rather than CSS.
+   ::before is the indigo field, ::after the highlight that keeps it from
+   looking flat. Both are inert and clipped by the hero's overflow. */
+.hero::before,
+.hero::after {
+  content: ''; position: absolute; inset: 0;
+  pointer-events: none; z-index: 0;
+}
+.hero::before {
+  background: linear-gradient(160deg, #4F46E5 0%, #4338CA 45%, #312E81 100%);
+}
+.hero::after {
+  background:
+    radial-gradient(60% 70% at 50% 0%,  rgba(255,255,255,.20), transparent 70%),
+    radial-gradient(40% 60% at 88% 18%, rgba(129,140,248,.35), transparent 72%);
 }
 .nav {
-  position: absolute; top: 0; left: 0; right: 0;
+  position: absolute; top: 0; left: 0; right: 0; z-index: 1;
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 22px;
   padding-top: max(18px, env(safe-area-inset-top, 0px));
@@ -32,7 +57,9 @@
 }
 .back:hover { background: rgba(255,255,255,.26); }
 .brand { color: rgba(255,255,255,.9); font-weight: 600; font-size: 15px; }
-.heroTitle { position: absolute; left: 24px; right: 24px; bottom: 26px; color: #fff; }
+/* Centred, and in normal flow rather than absolutely positioned — the block
+   sizes the hero now instead of being pinned to its bottom edge. */
+.heroTitle { position: relative; z-index: 1; color: #fff; text-align: center; }
 .eyebrow {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 11px; letter-spacing: .16em; text-transform: uppercase; opacity: .82;
@@ -41,6 +68,28 @@
   font-family: var(--font, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
   font-weight: 700; font-size: 42px; line-height: 1.02; letter-spacing: -.03em; margin-top: 10px;
 }
+.heroSub {
+  max-width: 46ch; margin: 14px auto 0;
+  font-size: 14.5px; line-height: 1.6; color: rgba(255,255,255,.82);
+}
+
+/* The channel row. Wraps rather than scrolls: four short chips fit two-up on
+   the narrowest phone, and a horizontal scroller here would hide half of them
+   behind a gesture nobody is looking for on a hero. */
+.channels {
+  list-style: none; margin: 22px 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+}
+.channel {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px 9px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.18);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.channelIcon { display: grid; place-items: center; color: #fff; opacity: .95; }
+.channelLabel { font-size: 13px; font-weight: 500; color: rgba(255,255,255,.94); white-space: nowrap; }
 
 /* ── Body ── */
 .wrap { padding: 24px 24px 48px; }
@@ -112,13 +161,19 @@ a.v { display: inline-flex; align-items: center; min-height: 24px; }
 
 /* ── iPad / desktop ── */
 @media (min-width: 768px) {
-  .hero { height: 44vh; min-height: 320px; }
+  /* No fixed height here either — the hero is sized by its content now, so a
+     44vh rule would either crop the channel row on a short laptop window or
+     strand it above empty space on a tall one. */
+  .hero { padding: 96px clamp(32px, 4vw, 64px) 52px; }
   .nav { padding: 26px 44px; padding-top: max(26px, env(safe-area-inset-top, 0px)); }
   .back { width: 44px; height: 44px; border-radius: 13px; font-size: 20px; }
   .brand { font-size: 18px; }
-  .heroTitle { left: 44px; right: auto; bottom: 34px; }
   .eyebrow { font-size: 12px; }
-  .h1 { font-size: clamp(44px, 7vw, 64px); }
+  .h1 { font-size: clamp(44px, 6vw, 60px); }
+  .heroSub { font-size: 16px; margin-top: 16px; }
+  .channels { gap: 12px; margin-top: 26px; }
+  .channel { padding: 10px 17px 10px 13px; }
+  .channelLabel { font-size: 13.5px; }
 
   /* Use the full content width — no centered max-width column. */
   .wrap { max-width: none; margin: 0; padding: 44px clamp(32px, 4vw, 64px) 72px; }

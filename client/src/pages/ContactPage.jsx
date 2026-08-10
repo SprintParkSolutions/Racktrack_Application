@@ -165,10 +165,39 @@ export default function ContactPage() {
     }
   };
 
+  // The hero used to be the same dark datacenter photo as Home, dimmed by a
+  // 72% scrim. It read as heavy for the one screen a person reaches when
+  // something has already gone wrong, so it is now a light indigo field with
+  // the channels drawn as icons — warmer, and it loads nothing: no photo
+  // request, no decode, and nothing to go stale in the cache.
+  const channels = [
+    {
+      label: 'Email us',
+      paths: [
+        'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z',
+        'M22 6l-10 7L2 6',
+      ],
+    },
+    {
+      label: 'Ask DOT',
+      paths: [
+        'M21 11.5a8.4 8.4 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.4 8.4 0 0112.5 3 8.4 8.4 0 0121 11.5z',
+      ],
+    },
+    {
+      label: 'Attach a screenshot',
+      paths: [
+        'M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48',
+      ],
+    },
+    {
+      label: 'Replies in hours',
+      paths: ['M12 2a10 10 0 100 20 10 10 0 000-20z', 'M12 6v6l4 2'],
+    },
+  ];
+
   const Hero = (
     <section className={styles.hero}>
-      <img src="/home-bg.jpg" alt="" className={styles.heroImg} />
-      <div className={styles.scrim} aria-hidden="true" />
       <nav className={styles.nav}>
         <button className={styles.back} onClick={() => navigate(-1)} aria-label="Back">‹</button>
         <span className={styles.brand}>RackTrack</span>
@@ -176,6 +205,22 @@ export default function ContactPage() {
       <div className={styles.heroTitle}>
         <div className={styles.eyebrow}>Support</div>
         <h1 className={styles.h1}>Contact us</h1>
+        <p className={styles.heroSub}>
+          Something not working, or not sure how it should work? Tell us what happened —
+          a real person reads every message.
+        </p>
+        <ul className={styles.channels}>
+          {channels.map((c) => (
+            <li key={c.label} className={styles.channel}>
+              <span className={styles.channelIcon} aria-hidden="true">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  {c.paths.map((d, i) => <path key={i} d={d} />)}
+                </svg>
+              </span>
+              <span className={styles.channelLabel}>{c.label}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
