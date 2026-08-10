@@ -1,6 +1,15 @@
-/* Profile — flat white sheet with hairlines. Matches the mockup spec:
-   sticky header → centered avatar → identity → INTEGRATIONS / RECENT
-   SCANS sections each rendered as label + dot + row list. */
+/* Profile.
+ *
+ * Same restraint as Contact: white ground, 1px separators, no elevation.
+ * Two global rules in index.css shape the class names here:
+ *   - `background-image: none !important` hits any class containing
+ *     card / panel / tile / surface / hero / bg / …, so the banner is an <img>
+ *     rather than a CSS background.
+ *   - the same substrings are auto-elevated with a lift shadow and a raised
+ *     tone, so the containers are named .block / .row / .identity, which match
+ *     neither list and keep their flat, bordered treatment. Renaming .block to
+ *     .profileCard silently restyles the page.
+ */
 
 .profile {
   position: relative;
@@ -9,6 +18,13 @@
   min-height: 100vh;
   background: #ffffff;
   padding-bottom: calc(80px + env(safe-area-inset-bottom));
+
+  --pf-line:      #E6E7EB;
+  --pf-line-soft: #F0F1F4;
+  --pf-ink:       #111214;
+  --pf-ink-2:     #5B5F6B;
+  --pf-ink-3:     #878B96;
+  --pf-danger:    #C0392B;
 }
 
 /* ── Sticky white header ─────────────────────────────────────────── */
@@ -27,445 +43,301 @@
 }
 /* Back button + title as one left-hand group, so the title does not slide to
    the centre on the visits where the back button is present. */
-.topbarLeft {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
+.topbarLeft { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .topbarTitle {
   font-family: var(--font);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.10em;
-  line-height: 16px;
-  text-transform: uppercase;
-  color: var(--md-on-surface);
-  margin: 0;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.10em; line-height: 16px;
+  text-transform: uppercase; color: var(--md-on-surface); margin: 0;
 }
 .topbarIconBtn {
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  background: transparent;
-  border: none;
-  color: var(--md-on-surface);
-  cursor: pointer;
-  padding: 0;
+  width: 40px; height: 40px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 9999px; background: transparent; border: none;
+  color: var(--md-on-surface); cursor: pointer; padding: 0;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.18s;
 }
 .topbarIconBtn:hover { background: var(--md-surface-container-highest); }
-.topbarIconBtn :global(.appIcon) {
-  font-size: 24px;
-  font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
-}
+.topbarIconBtn :global(.appIcon) { font-size: 24px; }
 
-/* ── Main content rail (matches mockup max-w-md / px-margin-mobile) ── */
+/* ── Main ──
+   Full content width, matching every other page: a max-width here would box
+   Profile into a centred column with dead gutters while the page beside it
+   fills the screen. min-height:0 lets this flex child shrink so overflow-y
+   has something to scroll — without it the page clipped and the scan list
+   below the fold was unreachable. */
 .main {
-  flex: 1;
-  /* The page is a fixed-height, clipped box, and this filled it without
-     scrolling — so the scan history stopped at whatever fitted and the
-     "Show all" button sat below the fold, unreachable. min-height:0 lets a
-     flex child actually shrink so overflow-y has something to scroll. */
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  width: 100%;
-  max-width: 28rem;
-  margin: 0 auto;
-  padding: 32px 20px 128px;
-  display: flex;
-  flex-direction: column;
+  flex: 1; min-height: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  width: 100%; box-sizing: border-box;
+  padding: 20px 20px 128px;
+  display: flex; flex-direction: column; gap: 20px;
 }
-
-/* Sections keep their natural height instead of being compressed to fit —
-   without this the column squashes and there is nothing to scroll. */
 .main > * { flex-shrink: 0; }
 
-/* ── Hero: centered avatar + identity ────────────────────────────── */
-.hero {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 64px;
+/* ── Identity ── */
+.identity {
+  border: 1px solid var(--pf-line); border-radius: 12px;
+  background: #fff; overflow: hidden;
 }
-.avatar {
-  width: 96px;
-  height: 96px;
-  border-radius: 9999px;
-  background: var(--md-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 24px;
-}
-.avatarInitial {
-  font-family: var(--font);
-  font-size: 30px;
-  font-weight: 600;
-  color: var(--md-on-primary);
-  letter-spacing: -0.01em;
-  line-height: 1;
-}
-.name {
-  font-family: var(--font);
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 32px;
-  letter-spacing: -0.01em;
-  color: var(--md-on-surface);
-  margin: 0 0 4px;
-  text-align: center;
-}
-.email {
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 20px;
-  color: var(--md-on-surface-variant);
-  margin: 0 0 4px;
-  text-align: center;
-}
-.metaLine {
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  line-height: 16px;
-  text-transform: uppercase;
-  color: #6b6b6b;
-  margin: 0;
-  text-align: center;
-}
-
-/* ── Section: INTEGRATIONS / RECENT SCANS ────────────────────────── */
-.section {
-  margin-bottom: 48px;
-}
-.section:last-child { margin-bottom: 0; }
-
-.sectionHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 8px;
-  margin-bottom: 16px;
-}
-.sectionLabel {
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.10em;
-  line-height: 16px;
-  text-transform: uppercase;
-  color: #6b6b6b;
-  margin: 0;
-}
-.sectionDot {
-  width: 4px;
-  height: 4px;
-  border-radius: 9999px;
-  background: #000000;
-}
-
-/* ── Row list ────────────────────────────────────────────────────── */
-.rowList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px;
-  border-radius: 12px;
-  background: transparent;
-  cursor: pointer;
-  transition: background-color 0.18s;
-  -webkit-tap-highlight-color: transparent;
-}
-.row:hover { background: var(--md-surface-container-highest); }
-.row:focus-visible {
-  outline: 2px solid var(--md-on-surface);
-  outline-offset: 2px;
-}
-
-.rowIcon {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--md-surface-container-highest);
-  color: var(--md-on-surface-variant);
-  transition: background-color 0.18s;
-}
-.row:hover .rowIcon { background: #ffffff; }
-.rowIcon :global(.appIcon) {
-  font-size: 24px;
-  font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
-}
-
-.rowMain {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.rowTitle {
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
-  color: var(--md-on-surface);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.rowTitleMono {
-  text-transform: uppercase;
-  letter-spacing: -0.01em;
-}
-.rowMeta {
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 16px;
-  color: var(--md-on-surface-variant);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rowEnd {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.rowTime {
-  font-family: var(--font);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #6b6b6b;
-}
-.rowChevron {
-  font-size: 18px !important;
-  color: #6b6b6b;
-  flex-shrink: 0;
-  font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 18;
-}
-
-/* ── Empty state ─────────────────────────────────────────────────── */
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 24px 8px;
-}
-.emptyText {
-  font-family: var(--font);
-  font-size: 14px;
-  color: var(--md-on-surface-variant);
-  margin: 0;
-}
-.startBtn {
-  height: 44px;
-  padding: 0 24px;
-  border-radius: 9999px;
-  background: var(--md-primary);
-  color: var(--md-on-primary);
-  border: none;
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: opacity 0.18s;
-}
-.startBtn:hover { opacity: 0.9; }
-
-.showAllBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 14px;
-  padding: 12px 0;
-  border: 1px solid var(--md-outline, rgba(0,0,0,0.12));
-  border-radius: 12px;
-  background: transparent;
-  color: var(--md-on-surface, #1c1c1c);
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  transition: background 0.18s, border-color 0.18s;
-}
-.showAllBtn:hover { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.22); }
-.showAllChevron { font-size: 16px; color: #6b6b6b; }
-
-/* ── Error banner ────────────────────────────────────────────────── */
-.errBanner {
-  padding: 12px 16px;
-  border-radius: 8px;
-  background: var(--md-error-container);
-  color: var(--md-on-error-container);
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 16px;
-}
-
-/* ── Sign-out confirmation modal ─────────────────────────────────── */
-.confirmBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(18, 18, 18, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: 24px;
-  animation: fade-in 0.18s ease;
-}
-.confirmModal {
-  width: 100%;
-  max-width: 360px;
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid var(--md-outline-variant);
-  padding: 28px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-.confirmIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 9999px;
-  background: var(--md-surface-container-highest);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--md-on-surface);
-  margin-bottom: 4px;
-}
-.confirmIcon :global(.appIcon) { font-size: 24px; }
-.confirmTitle {
-  font-family: var(--font);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--md-on-surface);
-  margin: 0;
-}
-.confirmMsg {
-  font-family: var(--font);
-  font-size: 14px;
-  color: var(--md-on-surface-variant);
-  margin: 0;
-  text-align: center;
-}
-.confirmActions {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-  margin-top: 12px;
-}
-.confirmCancel, .confirmGo {
-  flex: 1;
-  height: 44px;
-  border-radius: 9999px;
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background-color 0.18s, opacity 0.18s;
-}
-.confirmCancel {
-  background: transparent;
-  color: var(--md-on-surface);
-  border: 1px solid var(--md-outline-variant);
-}
-.confirmCancel:hover { background: var(--md-surface-container-highest); }
-.confirmGo {
-  background: var(--md-primary);
-  color: var(--md-on-primary);
-  border: none;
-}
-.confirmGo:hover { opacity: 0.9; }
-
-/* Scan-history thumbnail (falls back to a centered icon when no image) */
-.rowThumb {
-  width: 52px;
-  height: 52px;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--md-surface-container-highest);
-  color: var(--md-on-surface-variant);
-}
-.rowThumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.banner { height: 132px; background: var(--pf-line-soft); }
+.bannerImg {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: 50% 55%;
   display: block;
 }
 
-/* ── Desktop / tablet layout ──────────────────────────────────────────
-   Inside the sidebar shell (≥768px) the content rail used to stay a 28rem
-   phone column, so Profile "looked like mobile" on a laptop or iPad. Widen
-   the rail on a tablet, and lay the section cards two-up on a wide screen so
-   the page actually uses the space. Appended last so these win on source
-   order over the base rules above. */
-@media (min-width: 768px) {
-  /* On desktop/tablet the shell crumb is the header, and Sign out lives in the
-     sidebar, so Profile's own sticky topbar is redundant — hide it so every
-     page shows the one identical header. */
-  .topbar { display: none; }
-  .main {
-    max-width: none;
-    padding: 40px 32px 96px;
-  }
-  .hero { margin-bottom: 44px; }
+/* Only the AVATAR overlaps the banner — the lift lives on it, not on the row.
+   Lifting the row instead (and bottom-aligning) put the name inside the photo:
+   the text block is taller than the avatar's visible overhang, so its top edge
+   cleared the banner's bottom and "owner" rendered as near-black type on a
+   dark rack image. The row therefore starts below the banner and the avatar
+   reaches up into it. */
+.idRow {
+  display: flex; align-items: flex-start; gap: 20px;
+  padding: 16px 24px 20px;
 }
+.avatarBtn {
+  position: relative; flex: none;
+  margin-top: -68px;
+  background: none; border: none; padding: 0; cursor: pointer;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+}
+.avatarBtn:focus-visible { outline: 2px solid var(--pf-ink); outline-offset: 3px; }
+.avatarEdit {
+  position: absolute; right: 2px; bottom: 2px;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #121212; color: #fff;
+  border: 3px solid #fff;
+  font-size: 15px;
+}
+
+.idText { min-width: 0; }
+.name {
+  font-family: var(--font);
+  font-size: 22px; font-weight: 640; line-height: 1.2; letter-spacing: -.015em;
+  color: var(--pf-ink); margin: 0;
+}
+.email {
+  display: flex; align-items: center; gap: 6px;
+  margin: 6px 0 0;
+  font-size: 13.5px; color: var(--pf-ink-2); min-width: 0;
+}
+.emailText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.copyBtn {
+  flex: none; width: 24px; height: 24px;
+  display: grid; place-items: center;
+  border: none; border-radius: 6px; background: none;
+  color: var(--pf-ink-3); font-size: 14px; cursor: pointer;
+  transition: background-color .15s, color .15s;
+}
+.copyBtn:hover { background: var(--pf-line-soft); color: var(--pf-ink); }
+.copied { font-size: 12px; color: #067647; }
+.metaLine {
+  margin: 8px 0 0;
+  font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--pf-ink-3);
+}
+
+/* ── Columns ── */
+.cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.colMain, .colSide { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ── Block ── */
+.block {
+  border: 1px solid var(--pf-line); border-radius: 12px;
+  background: #fff; overflow: hidden;
+}
+.blockH {
+  margin: 0; padding: 14px 16px;
+  font-family: var(--font);
+  font-size: 13px; font-weight: 620; letter-spacing: -.005em; color: var(--pf-ink);
+  border-bottom: 1px solid var(--pf-line-soft);
+}
+
+/* ── Rows ──
+   A <button> rather than a div with role=button: it gets keyboard activation,
+   focus and disabled semantics from the platform instead of from three hand
+   written handlers that have to stay in step. */
+.rowList { list-style: none; margin: 0; padding: 0; }
+.rowList > li + li { border-top: 1px solid var(--pf-line-soft); }
+.row {
+  width: 100%; box-sizing: border-box;
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px; text-align: left;
+  font-family: inherit; background: none; border: none;
+  cursor: pointer; color: inherit;
+  transition: background-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.row:hover { background: #FAFAFB; }
+.row:hover .rowChevron { color: var(--pf-ink); transform: translateX(2px); }
+.row:focus-visible { outline: none; background: #FAFAFB; box-shadow: inset 0 0 0 2px var(--pf-line); }
+
+.rowIcon {
+  width: 40px; height: 40px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 8px;
+  background: var(--pf-line-soft); color: var(--pf-ink-2);
+  font-size: 19px;
+}
+.rowThumb {
+  width: 44px; height: 44px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 8px; overflow: hidden;
+  background: var(--pf-line-soft); color: var(--pf-ink-3);
+  font-size: 18px;
+}
+.rowThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.rowMain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rowTitle {
+  font-size: 14px; font-weight: 560; line-height: 1.35; color: var(--pf-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rowTitleMono { font-variant-numeric: tabular-nums; letter-spacing: -.005em; }
+.rowMeta {
+  font-size: 12.5px; line-height: 1.4; color: var(--pf-ink-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ok { color: #067647; }
+
+.rowEnd { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.rowTime { font-size: 12px; color: var(--pf-ink-3); white-space: nowrap; }
+.rowChevron {
+  font-size: 16px; color: var(--pf-ink-3); flex-shrink: 0;
+  transition: color .15s, transform .15s;
+}
+
+/* ── Profile details ── */
+.details { margin: 0; padding: 4px 0; }
+.detail {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 10px 16px;
+}
+.detail + .detail { border-top: 1px solid var(--pf-line-soft); }
+.dt { font-size: 13px; color: var(--pf-ink-2); flex: none; }
+/* dd carries a browser default margin-inline-start of 40px, which pushes the
+   value out of the row on a narrow column. */
+.dd {
+  margin: 0; text-align: right; min-width: 0;
+  font-size: 13px; font-weight: 520; color: var(--pf-ink);
+  overflow-wrap: anywhere;
+}
+
+/* ── Account actions ── */
+.actionWrap { padding: 16px; }
+.danger {
+  width: 100%; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 16px;
+  font-family: inherit; font-size: 14px; font-weight: 540;
+  color: var(--pf-danger); background: #fff;
+  border: 1px solid #F0CFCB; border-radius: 8px;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+.danger:hover:not(:disabled) { background: #FDF6F5; border-color: var(--pf-danger); }
+.danger:disabled { opacity: .55; cursor: default; }
+.dangerIcon { font-size: 16px; }
+.actionNote { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--pf-ink-3); }
+
+/* ── States ── */
+.note { padding: 16px; font-size: 13px; color: var(--pf-ink-3); }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 16px; }
+.emptyText { font-size: 14px; color: var(--pf-ink-2); margin: 0; }
+.startBtn {
+  padding: 10px 20px;
+  border-radius: 8px; border: 1px solid var(--pf-line);
+  background: #fff; color: var(--pf-ink);
+  font-family: var(--font); font-size: 13.5px; font-weight: 550;
+  cursor: pointer; transition: background-color .15s, border-color .15s;
+}
+.startBtn:hover { background: #FAFAFB; border-color: #D6D8DE; }
+
+.showAllBtn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 12px 0;
+  border: none; border-top: 1px solid var(--pf-line-soft);
+  background: transparent; color: var(--pf-ink);
+  font-family: var(--font); font-size: 13px; font-weight: 550;
+  cursor: pointer; transition: background 0.15s;
+}
+.showAllBtn:hover { background: #FAFAFB; }
+.showAllChevron { font-size: 15px; color: var(--pf-ink-3); }
+
+.errBanner {
+  padding: 12px 14px;
+  border: 1px solid #F3C9C5; border-left: 3px solid var(--pf-danger); border-radius: 8px;
+  background: #FDF6F5; color: #8E2B21;
+  font-family: var(--font); font-size: 13px; line-height: 1.5;
+}
+
+/* ── Sign-out confirmation modal (unchanged) ─────────────────────── */
+.confirmBackdrop {
+  position: fixed; inset: 0;
+  background: rgba(18, 18, 18, 0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 24px;
+  animation: fade-in 0.18s ease;
+}
+.confirmModal {
+  width: 100%; max-width: 380px;
+  background: #ffffff; border-radius: 16px;
+  border: 1px solid var(--md-outline-variant);
+  padding: 28px 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.confirmIcon {
+  width: 48px; height: 48px; border-radius: 9999px;
+  background: var(--md-surface-container-highest);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--md-on-surface); margin-bottom: 4px;
+}
+.confirmIcon :global(.appIcon) { font-size: 24px; }
+.confirmTitle {
+  font-family: var(--font); font-size: 18px; font-weight: 600;
+  color: var(--md-on-surface); margin: 0; text-align: center;
+}
+.confirmMsg {
+  font-family: var(--font); font-size: 14px; line-height: 1.55;
+  color: var(--md-on-surface-variant); margin: 0; text-align: center;
+}
+.confirmActions { display: flex; gap: 12px; width: 100%; margin-top: 12px; }
+.confirmCancel, .confirmGo {
+  flex: 1; height: 44px; border-radius: 9999px;
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer; transition: background-color 0.18s, opacity 0.18s;
+}
+.confirmCancel {
+  background: transparent; color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+}
+.confirmCancel:hover { background: var(--md-surface-container-highest); }
+.confirmGo { background: var(--md-primary); color: var(--md-on-primary); border: none; }
+.confirmGo:hover { opacity: 0.9; }
+.confirmCancel:disabled, .confirmGo:disabled { opacity: .55; cursor: default; }
+
+/* ── Desktop / tablet ──────────────────────────────────────────────
+   The shell supplies the header at ≥768px and Sign out lives in the sidebar,
+   so Profile's own sticky topbar is redundant there — hiding it keeps one
+   identical header across every page. */
+@media (min-width: 768px) {
+  .topbar { display: none; }
+  .main { padding: 24px 32px 96px; gap: 24px; }
+  .banner { height: 168px; }
+  .idRow { padding: 18px 28px 24px; gap: 24px; }
+  .name { font-size: 25px; }
+  .cols { gap: 24px; }
+  .colMain, .colSide { gap: 24px; }
+}
+
+/* Two columns only once there is genuinely room for both. Below this the side
+   column's detail rows (label left, value right) start wrapping, which reads
+   worse than a single column. */
 @media (min-width: 1120px) {
-  .main {
-    max-width: none;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 24px;
-    row-gap: 20px;
-    align-content: start;
-  }
-  /* Hero (avatar + identity) spans the full width above the two columns. */
-  .hero { grid-column: 1 / -1; margin-bottom: 12px; }
-  /* Grid gap owns the spacing now — drop the per-card bottom margin. */
-  .section { margin-bottom: 0; }
+  .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }

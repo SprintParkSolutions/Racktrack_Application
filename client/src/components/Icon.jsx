@@ -146,6 +146,13 @@ const P = {
   </>,
 
   paperclip: <path d="M21.2 11.3l-9.1 9.1a5.8 5.8 0 0 1-8.2-8.2l9.1-9.1a3.9 3.9 0 0 1 5.5 5.5l-9.1 9.1a1.9 1.9 0 0 1-2.7-2.7l8.2-8.2" />,
+
+  copy: <>
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </>,
+
+  check: <path d="M20 6L9 17l-5-5" />,
 };
 
 /** Names this set covers — used by the test that guards against typos. */
