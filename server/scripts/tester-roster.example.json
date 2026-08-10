@@ -1,0 +1,16 @@
+[
+  {
+    "person": "Example Tester",
+    "username": "example",
+    "email": "example@your-domain.test",
+    "role": "member",
+    "password": "ReplaceMe@0000"
+  },
+  {
+    "person": "Example Org Admin",
+    "username": "example.admin",
+    "email": "example+admin@your-domain.test",
+    "role": "org_admin",
+    "password": "ReplaceMe@0001"
+  }
+]

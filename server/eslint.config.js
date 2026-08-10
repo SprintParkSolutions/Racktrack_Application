@@ -33,5 +33,14 @@ module.exports = [
     files: ['**/*.mjs'],
     languageOptions: { sourceType: 'module' },
   },
+  {
+    // lib/dot is a vendored sub-project with its own package.json declaring
+    // "type": "module", so its .js files are ES modules. The commonjs block
+    // above matches **/*.js and would otherwise fail to parse every one of
+    // them ("'import' and 'export' may appear only with sourceType: module"),
+    // which is 14 hard errors — enough to fail `npm run lint` and the CI gate.
+    files: ['lib/dot/**/*.js'],
+    languageOptions: { sourceType: 'module' },
+  },
   prettier,
 ];

@@ -203,3 +203,11 @@ racktrack-support-bot/
 auth_ngrok
 server.zip
 *.p8
+
+# The tester roster: real personal email addresses paired with plaintext
+# passwords for the demo deployment. This was committed as scripts/
+# tester-accounts.js until the move to a public repo, and had to be purged
+# from history. The loader (scripts/tester-accounts.js) reads this file and
+# fails with instructions when it is absent; tester-roster.example.json is the
+# committed template. Never commit the real one.
+server/scripts/tester-roster.json

@@ -205,11 +205,17 @@ describe('images', () => {
     });
   });
 
-  test('an undecodable image is rejected with the generic quality message', async () => {
+  test('an undecodable image is deferred to the server, not rejected', async () => {
+    // Deliberately fail-open. A full-resolution phone photo can fail to decode
+    // in the WebView under Android memory pressure, and failing closed rejected
+    // perfectly good rack photos with a "take a clearer photo" error that no
+    // retry could clear. The server normalizes and re-validates every upload
+    // (detect-gate + quality checks), so deferring loses no coverage — the HEIC
+    // and video paths already defer here for the same reason.
     nextImage = null;
     const r = await validateMedia(file('rack.jpg', 'image/jpeg'));
-    expect(r.ok).toBe(false);
-    expect(r.kind).toBeUndefined();
+    expect(r.ok).toBe(true);
+    expect(r.metrics.skipped).toBe('browser-decode-failed-deferred-to-server');
   });
 });
 

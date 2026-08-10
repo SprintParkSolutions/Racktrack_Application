@@ -150,7 +150,7 @@ export function parseSources(text) {
           .replace(/\bID:\s*/gi, '')
           .split(/[,\s]+/)
           // Small models wrap the list in brackets and end it with a full stop.
-          .map((s) => s.trim().replace(/^[[(]+/, '').replace(/[.,;\]\)]+$/, ''))
+          .map((s) => s.trim().replace(/^[[(]+/, '').replace(/[.,;\])]+$/, ''))
           .filter((s) => s && ID_PATTERN.test(s))
 
   // Remove the SOURCES line wherever it appears rather than truncating at it.
