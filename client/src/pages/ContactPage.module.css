@@ -47,9 +47,14 @@
    Compact by intent: this is a utility page, and the form is the reason
    anyone is here. The photograph sits to the side and is cropped by its
    container rather than driving the height. */
+/* No centred max-width column anywhere on this page. Every other page in the
+   app spans the full content width — a max-width here is only used for text
+   MEASURE (the ch-based caps below), never for the container, so Contact does
+   not sit in a boxed column with empty gutters while the page beside it fills
+   the screen. Line length stays readable because the copy is capped in ch and
+   the rail is a fixed track; it is the form that absorbs the extra width. */
 .intro { border-bottom: 1px solid var(--ct-line); }
 .introInner {
-  max-width: 1180px; margin: 0 auto;
   padding: 40px 32px 32px;
   display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px;
   align-items: center;
@@ -102,7 +107,7 @@
 }
 
 /* ── Body ── */
-.wrap { flex: 1; max-width: 1180px; width: 100%; margin: 0 auto; padding: 32px; }
+.wrap { flex: 1; width: 100%; padding: 32px; box-sizing: border-box; }
 .cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
 
 /* ── Form ── */
@@ -325,7 +330,7 @@
 /* ── Footer ── */
 .foot { border-top: 1px solid var(--ct-line); }
 .footInner {
-  max-width: 1180px; margin: 0 auto; padding: 20px 32px;
+  padding: 20px 32px;
   display: flex; flex-wrap: wrap; gap: 8px 24px;
   align-items: center; justify-content: space-between;
   font-size: 12.5px; color: var(--ct-ink-3);
