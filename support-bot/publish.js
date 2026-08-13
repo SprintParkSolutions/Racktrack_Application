@@ -162,7 +162,7 @@ console.log(`\n${'─'.repeat(58)}`)
 if (WRITE) {
   console.log(`${C.green}${C.bold}Published.${C.r} ${entryCount()} entries.`)
   console.log(`Page rebuilt at ${C.bold}dist/knowledge-base.html${C.r}`)
-  console.log(`${C.dim}The hosted artifact is uploaded separately — ask Claude to republish that file.${C.r}`)
+  console.log(`${C.dim}The hosted artifact is uploaded separately — that file has to be republished by hand.${C.r}`)
 } else {
   console.log(`${C.dim}Dry run complete. Nothing changed. Re-run with --write.${C.r}`)
 }

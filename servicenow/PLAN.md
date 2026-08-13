@@ -376,6 +376,6 @@ These are real features, but skipping them keeps you shippable:
 3. **Flow Designer** — ServiceNow's built-in automation UI. Have an incident create-trigger call a ServiceNow-side script that hits your correlator's HTTP endpoint. Fully native workflow.
 4. **Slack/Teams posting** (1 hour using your existing code).
 5. **Network Reality layer** (SNMP via `pysnmp`) — the 4th of your 7 steps.
-6. **LLM suggestion layer** — feed the reconciliation payload to Claude/GPT and ask for a ranked action list.
+6. **LLM suggestion layer** — feed the reconciliation payload to a hosted model and ask for a ranked action list.
 
 Ship Day 1 first. Don't let Days 2-6 keep you from finishing today.

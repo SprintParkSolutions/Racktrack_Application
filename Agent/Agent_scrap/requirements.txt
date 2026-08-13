@@ -14,4 +14,4 @@ pdfplumber>=0.10         # PDF tables
 pytest>=7.0
 
 # Deliberately NOT used (kept $0 / no-LLM by design):
-# anthropic / groq / google-generativeai
+# any hosted-model SDK

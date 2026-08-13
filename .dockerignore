@@ -43,7 +43,6 @@ cmdb_racks
 .github
 .vscode
 .idea
-.claude
 
 # --- Docs / spreadsheets / misc large assets ---
 docs

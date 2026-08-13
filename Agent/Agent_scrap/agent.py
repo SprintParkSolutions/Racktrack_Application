@@ -3,7 +3,7 @@ Switch Spec Agent - answers spec questions about network switches.
 
 Works in two modes:
 - Free mode (no LLM): rule-based query parsing + SQL/fuzzy lookup. Always available.
-- Enhanced mode (optional Claude API): better natural language understanding.
+- Enhanced mode (optional hosted LLM API): better natural language understanding.
 
 Designed for sub-second responses on a local SQLite DB.
 """
