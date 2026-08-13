@@ -61,6 +61,34 @@ router.get('/api/ports/devices', safeAsync(async (req, res) => {
   res.json({ devices: portsDb.listDevices({ scope: scopeOf(req) }).map(portsDb.toClientView) });
 }));
 
+// ── last known state, addressed by HOST ──────────────────────────────
+// The live-switch page knows the address it just tried to probe, but not which
+// monitored_devices row that is — toClientView withholds `host` on purpose, so
+// the client cannot do the join itself. Rather than start returning hosts to
+// every caller (undoing that decision), resolve it here.
+//
+// This reveals nothing new: the caller supplied the host, so a hit only confirms
+// "we also monitor that address". A miss and an out-of-scope device are the same
+// 404, so it cannot be used to enumerate other Sites' switches.
+//
+// Ordered BEFORE /:deviceId/overview — Express matches in registration order and
+// `by-host` would otherwise be captured as a deviceId.
+router.get('/api/ports/by-host/:host/overview', safeAsync(async (req, res) => {
+  const host = String(req.params.host || '').trim();
+  // Same shape the device-admin routes accept: a bare IP or hostname.
+  if (!/^[A-Za-z0-9]([A-Za-z0-9._-]{0,252}[A-Za-z0-9])?$/.test(host)) {
+    return res.status(400).json({ error: 'invalid host' });
+  }
+  // listDevices({ scope }) returns raw rows (host included) already filtered to
+  // the Sites this user can see — so the scope check and the lookup are one step.
+  const device = portsDb.listDevices({ scope: scopeOf(req) }).find((d) => d.host === host);
+  if (!device) return res.status(404).json({ error: 'device not found' });
+  res.json({
+    device: portsDb.toClientView(device),
+    ports:  portsDb.latestSnapshotsForDevice(device.id),
+  });
+}));
+
 // ── snapshots / overview ─────────────────────────────────────────────
 router.get('/api/ports/:deviceId/overview', safeAsync(async (req, res) => {
   const id = Number(req.params.deviceId);

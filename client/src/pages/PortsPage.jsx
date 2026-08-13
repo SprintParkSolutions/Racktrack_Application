@@ -11,6 +11,18 @@ import RackTabs from '../components/RackTabs.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import styles from './PortsPage.module.css';
 
+// "6d ago" / "just now" — same phrasing the Lab page uses, so a recorded
+// timestamp reads identically wherever it appears.
+function fmtAgo(iso) {
+  if (!iso) return 'a while ago';
+  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (!Number.isFinite(secs)) return 'a while ago';
+  if (secs < 60)    return 'just now';
+  if (secs < 3600)  return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  return `${Math.floor(secs / 86400)}d ago`;
+}
+
 function fmtMs(ms) {
   if (ms == null || !Number.isFinite(ms)) return '';
   return `${(ms / 1000).toFixed(2)} s`;
@@ -44,7 +56,8 @@ function classifyPorts(probePorts, scan) {
     return { rj45, sfp };
   }
 
-  // Fallback: use scan data's CV-detected port_count to find split point
+  // Fallback: the scan photo. port_count / sfp_ports come from what the model
+  // actually detected on the faceplate, so this is evidence about THIS switch.
   const switchDev = scan?.devices?.find(d =>
     d.class_name === 'Switch' && d.port_count > 0
   );
@@ -52,23 +65,24 @@ function classifyPorts(probePorts, scan) {
   const cvSfpCount = switchDev?.sfp_ports?.length || 0;
   const total = probePorts.length;
 
-  let splitAt;
   if (cvMainCount > 0 && cvMainCount < total) {
-    splitAt = cvMainCount;
-  } else if (cvSfpCount > 0 && (total - cvSfpCount) > 0) {
-    splitAt = total - cvSfpCount;
-  } else if (total > 24) {
-    splitAt = total - 4;
-  } else if (total > 8) {
-    splitAt = total - 2;
-  } else {
-    splitAt = total;
+    return { rj45: probePorts.slice(0, cvMainCount), sfp: probePorts.slice(cvMainCount) };
+  }
+  if (cvSfpCount > 0 && (total - cvSfpCount) > 0) {
+    const splitAt = total - cvSfpCount;
+    return { rj45: probePorts.slice(0, splitAt), sfp: probePorts.slice(splitAt) };
   }
 
-  return {
-    rj45: probePorts.slice(0, splitAt),
-    sfp: probePorts.slice(splitAt),
-  };
+  // Nothing told us which ports are fibre: not the switch (no Active-Medium
+  // column), not the interface names, not the scan. This used to GUESS from the
+  // port count — "more than 24 ports, so the last 4 are SFP" — and the faceplate
+  // then drew those as SFP slots, indistinguishable from ports the switch had
+  // actually reported as fibre. It was right for a 24+4 JetStream and wrong for
+  // everything else, and nothing on screen said it was an assumption.
+  //
+  // Report them all as they came instead. An SFP section that is absent because
+  // we do not know is honest; one that is populated by arithmetic is not.
+  return { rj45: probePorts, sfp: [] };
 }
 
 function shortLabel(iface) {
@@ -385,10 +399,38 @@ function portNumKey(iface) {
 
 function LogicalView({ probe, scan, scanDurationMs }) {
   const [filter, setFilter] = useState('all');
-  const [view, setView] = useState('ports');   // 'ports' (faceplate + list) | 'cables'
   const [neighbors, setNeighbors] = useState({});
   const [portMacs, setPortMacs] = useState({});
   const [audit, setAudit] = useState(null);     // { identity, ifstatus, poe, vlans }
+
+  // Last recorded state, for when the switch is unreachable right now.
+  //
+  // The poller has been writing every port's state to the drift store all along
+  // — the same rows the Drift page reads. An unreachable switch is no reason to
+  // show an empty page when we know what it last looked like.
+  //
+  // It is still LABELLED, just quietly: one muted line above the faceplate
+  // rather than the banner that used to sit here. A stored port table with no
+  // marker at all reads as current state, which is the thing this page was
+  // cleaned up to stop — so the label is small, not absent.
+  //
+  // Ports page only. Lab stays live-or-nothing: it is the owner's diagnostic
+  // view, where a cached table could be mistaken for proof a switch is answering.
+  const [lastKnown, setLastKnown] = useState(null);   // { device, ports }
+  useEffect(() => {
+    if (probe.status !== 'error' || !probe.triedHost) { setLastKnown(null); return undefined; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await authFetch(apiUrl(
+          `/api/ports/by-host/${encodeURIComponent(probe.triedHost)}/overview`));
+        if (!r.ok) return;                    // 404 = not a monitored switch
+        const d = await r.json();
+        if (!cancelled && d?.ports?.length) setLastKnown(d);
+      } catch { /* no history — the plain message stands on its own */ }
+    })();
+    return () => { cancelled = true; };
+  }, [probe.status, probe.triedHost]);
 
   // Pull the full switch audit in one pass — identity, per-port live status,
   // PoE, VLANs, LLDP neighbours and the MAC table — then join it into the port
@@ -431,20 +473,52 @@ function LogicalView({ probe, scan, scanDurationMs }) {
   if (probe.status === 'running' || probe.status === 'idle') {
     return <OrbitalLoader startedAt={probe.startedAt} />;
   }
-  if (probe.status === 'error') {
+  // Unreachable AND nothing on record — the message is all there is to say.
+  // With history, fall through and render it below under a muted "as of" line.
+  if (probe.status === 'error' && !lastKnown) {
+    // "Probe failed: <raw server string>" led with the word failure and then
+    // handed over jargon. Lead with the plain situation instead, and let the
+    // detail sit underneath as explanation rather than as the headline. The
+    // server messages are already written for a person (switchRequestBlocker),
+    // so they read as a next step, not a stack trace.
     return (
       <div className={styles.errorBox}>
-        <span>Probe failed: {probe.error}</span>
-        <button className={styles.retryBtn} onClick={() => triggerBackgroundProbe({ force: true })}>Retry</button>
+        <div className={styles.errorMsg}>
+          <strong className={styles.errorMsgHead}>No switch data yet</strong>
+          <div className={styles.errorMsgBody}>{probe.error}</div>
+        </div>
+        <button className={styles.retryBtn} onClick={() => triggerBackgroundProbe({ force: true })}>
+          Try again
+        </button>
       </div>
     );
   }
 
-  const ports = (Array.isArray(probe.ports) ? probe.ports : []).map(p => {
+  // Live rows when we have them; otherwise the poller's last snapshot, mapped
+  // into the same shape so everything below works unchanged. port_snapshots
+  // stores oper as 'up'/'down' — exactly what logicalVerdict and the faceplate
+  // test for — and keeps the LLDP columns, so neighbours survive. Nothing is
+  // invented: a column the poller never recorded stays empty.
+  const stale = probe.status === 'error' && !!lastKnown;
+  const sourceRows = stale
+    ? (lastKnown.ports || []).map(s => ({
+        iface:       s.port,
+        status:      s.oper || '',
+        medium:      (s.medium || '').toLowerCase(),
+        description: s.descr || '',
+        neighbor:    (s.lldp_system || s.lldp_chassis)
+          ? { found: true, system_name: s.lldp_system, chassis_id: s.lldp_chassis, port_id: s.lldp_port }
+          : undefined,
+      }))
+    : (Array.isArray(probe.ports) ? probe.ports : []);
+
+  const ports = sourceRows.map(p => {
     const k = portNumKey(p.iface);
     const patch = {};
-    if (k && neighbors[k]?.found) patch.neighbor = neighbors[k];
-    if (k && portMacs[k]) patch.macInfo = portMacs[k];
+    // Live joins only — the audit didn't run in the stale case, and the
+    // snapshot's own LLDP is already mapped above.
+    if (!stale && k && neighbors[k]?.found) patch.neighbor = neighbors[k];
+    if (!stale && k && portMacs[k]) patch.macInfo = portMacs[k];
     return Object.keys(patch).length ? { ...p, ...patch } : p;
   });
   const { rj45, sfp } = classifyPorts(ports, scan);
@@ -471,80 +545,42 @@ function LogicalView({ probe, scan, scanDurationMs }) {
     <div className={styles.invWrap}>
       <div className={styles.hero}>
         {audit?.identity && <IdentityCard identity={audit.identity} host={probe.host} poe={audit.poe} />}
-        <div className={styles.ptStats}>
-          <div className={styles.ptStat}>
-            <span className={styles.ptStatV}>{counts.used}<small> / {counts.all}</small></span>
-            <span className={styles.ptStatK}>In use</span>
-          </div>
-          <div className={styles.ptStat}>
-            <span className={styles.ptStatV}>{counts.available}</span>
-            <span className={styles.ptStatK}>Available</span>
-          </div>
-          <div className={styles.ptStat}>
-            <span className={styles.ptStatV}>{linkedCount}</span>
-            <span className={styles.ptStatK}>Identified</span>
-          </div>
-        </div>
       </div>
 
-      <div className={styles.viewTabs} role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={view === 'ports'}
-          className={`${styles.viewTab} ${view === 'ports' ? styles.viewTabActive : ''}`}
-          onClick={() => setView('ports')}
-        >Ports</button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={view === 'cables'}
-          className={`${styles.viewTab} ${view === 'cables' ? styles.viewTabActive : ''}`}
-          onClick={() => setView('cables')}
-        >Cables<span className={styles.viewTabCount}>{linkedCount || counts.used}</span></button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={view === 'trace'}
-          className={`${styles.viewTab} ${view === 'trace' ? styles.viewTabActive : ''}`}
-          onClick={() => setView('trace')}
-        >Ping</button>
-      </div>
-
-      {view === 'ports' ? (
-        <>
-          <FaceplateMap ports={ports} sfpPortIfaces={sfpPortIfaces} />
-
-          <div className={styles.invFilters}>
-            <FilterPill label="All"        count={counts.all}       active={filter === 'all'}       onClick={() => setFilter('all')} />
-            <FilterPill label="In Use"     count={counts.used}      active={filter === 'used'}      onClick={() => setFilter('used')} />
-            <FilterPill label="Available"  count={counts.available} active={filter === 'available'} onClick={() => setFilter('available')} />
-            <FilterPill label="Linked"     count={counts.linked}    active={filter === 'linked'}    onClick={() => setFilter('linked')} />
-            {counts.reserved > 0 && (
-              <FilterPill label="Errors"   count={counts.reserved}  active={filter === 'reserved'}  onClick={() => setFilter('reserved')} />
-            )}
-          </div>
-
-          <div className={styles.portsLayout}>
-            <div className={styles.portsMain}>
-              {ethFiltered.length > 0 && (
-                <PortGroup title="Ethernet (ETH) Modules" ports={ethFiltered} variant="eth" />
-              )}
-              {sfpFiltered.length > 0 && (
-                <PortGroup title="SFP Modules" ports={sfpFiltered} variant="sfp" />
-              )}
-              {ethFiltered.length === 0 && sfpFiltered.length === 0 && (
-                <div className={styles.invEmpty}>No ports match this filter.</div>
-              )}
-            </div>
-            <PoeVlanAside audit={audit} />
-          </div>
-        </>
-      ) : view === 'cables' ? (
-        <CablesView ports={ports} sfpPortIfaces={sfpPortIfaces} switchName={audit?.identity?.name || probe.host} />
-      ) : (
-        <ReachabilityTool host={probe.host} />
+      {/* A timestamp, not a warning. "Last recorded … — not live" read as an
+          apology for the page; Drift shows recorded data plainly and so does
+          this. Three words of muted text is still enough that a stored table is
+          never mistaken for a live one, which is the one thing worth keeping. */}
+      {stale && (
+        <p className={styles.asOfLine}>As of {fmtAgo(lastKnown.device?.last_seen)}</p>
       )}
+
+      <FaceplateMap ports={ports} sfpPortIfaces={sfpPortIfaces} />
+
+      <div className={styles.invFilters}>
+        <FilterPill label="All"        count={counts.all}       active={filter === 'all'}       onClick={() => setFilter('all')} />
+        <FilterPill label="In Use"     count={counts.used}      active={filter === 'used'}      onClick={() => setFilter('used')} />
+        <FilterPill label="Available"  count={counts.available} active={filter === 'available'} onClick={() => setFilter('available')} />
+        <FilterPill label="Linked"     count={counts.linked}    active={filter === 'linked'}    onClick={() => setFilter('linked')} />
+        {counts.reserved > 0 && (
+          <FilterPill label="Errors"   count={counts.reserved}  active={filter === 'reserved'}  onClick={() => setFilter('reserved')} />
+        )}
+      </div>
+
+      <div className={styles.portsLayout}>
+        <div className={styles.portsMain}>
+          {ethFiltered.length > 0 && (
+            <PortGroup title="Ethernet (ETH) Modules" ports={ethFiltered} variant="eth" />
+          )}
+          {sfpFiltered.length > 0 && (
+            <PortGroup title="SFP Modules" ports={sfpFiltered} variant="sfp" />
+          )}
+          {ethFiltered.length === 0 && sfpFiltered.length === 0 && (
+            <div className={styles.invEmpty}>No ports match this filter.</div>
+          )}
+        </div>
+        <PoeVlanAside audit={audit} />
+      </div>
     </div>
   );
 }

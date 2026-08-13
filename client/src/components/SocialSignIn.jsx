@@ -105,23 +105,25 @@ export default function SocialSignIn({ mode = 'login', inviteCode, onLoaded }) {
 
   return (
     <div className={styles.socialBlock}>
+      {/* Two providers sit side by side and one spans the row — the grid
+          decides, so adding a third on the server needs nothing here. */}
+      <div className={styles.socialGrid}>
+        {providers.map((p) => (
+          <button
+            key={p.name}
+            type="button"
+            className={styles.socialBtn}
+            onClick={() => start(p.name)}
+            disabled={!!busy}
+          >
+            <span className={styles.socialIcon}>
+              {busy === p.name ? <span className={styles.socialSpinner} /> : MARKS[p.name]}
+            </span>
+            <span>Sign in with {p.label}</span>
+          </button>
+        ))}
+      </div>
       <div className={styles.socialDivider}><span>or</span></div>
-      {providers.map((p) => (
-        <button
-          key={p.name}
-          type="button"
-          className={styles.socialBtn}
-          onClick={() => start(p.name)}
-          disabled={!!busy}
-        >
-          <span className={styles.socialIcon}>
-            {busy === p.name ? <span className={styles.socialSpinner} /> : MARKS[p.name]}
-          </span>
-          <span>Continue with {p.label}</span>
-          {/* Balances the icon so the label stays optically centred. */}
-          <span className={styles.socialIcon} aria-hidden="true" />
-        </button>
-      ))}
     </div>
   );
 }

@@ -1,625 +1,603 @@
-/* Auth pages — monochrome. White surface, black accents, gray hairlines. */
+/* ══ Auth pages ═══════════════════════════════════════════════════════
+   A photograph of a real aisle on the left, the form on plain white to the
+   right of a hard edge. Nothing here is decoration: the only shapes on the
+   right side are lines of type, hairline field borders and one filled
+   button.
+
+     < 768px     the form alone, full bleed
+     ≥ 768px     the form gains a measure and centres
+     ≥ 1024px    57 / 43 split
+
+   Class names avoid the substrings the depth-enforcement layer in index.css
+   matches on — panel, card, tile, surface. A class called `.panel` here was
+   handed --lift and a raised fill, which is where the stray white boxes
+   behind the back arrow and the top-right link came from. The field
+   appearance itself is handed back to these pages in index.css, under
+   `#root.rt-auth-wide`; the two files have to agree, so the tokens below are
+   the ones that rule reads. */
 
 .authPage {
+  --rt-auth-ink:  #1a1d21;   /* headings, the filled action, a focused border */
+  --rt-auth-line: #e1e3e6;   /* every hairline, including field borders */
+
+  /* The width of the content block on the form side. On a phone it is the
+     screen; on a laptop it is widened at the 1024px breakpoint so the form
+     carries its half of the page instead of floating in it. */
+  --measure: 420px;
+
+  --ink:  var(--rt-auth-ink);
+  --body: #6b7075;           /* labels, secondary copy */
+  --dim:  #9ba1a7;           /* footnotes, placeholders */
+  --line: var(--rt-auth-line);
+
   position: relative;
   flex: 1;
   min-height: 0;
   display: flex; flex-direction: column;
-  /* Transparent, not white: the soft-UI ground is painted on <body>, and a
-     hardcoded white page renders as a slab floating on it. */
   background: transparent;
-  color: #1c1c1c;
+  color: var(--ink);
   overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  font-family: inherit;
+  font-family: var(--font);
+  letter-spacing: -0.006em;
 }
 
-/* Decorative layers — hidden in monochrome */
-.orb { display: none; }
-.grain { display: none; }
+/* ══ The photograph ════════════════════════════════════════════════════
+   Hidden below 1024px, where the form already fills the screen and a
+   photograph would only sit behind the keyboard. */
+.media { display: none; }
 
-/* ── Header ── */
-.authHeader {
-  position: relative; z-index: 5;
-  display: grid;
-  grid-template-columns: 40px 1fr 40px;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f1f1f1;
+/* ══ The form side ═════════════════════════════════════════════════════ */
+.formSide {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex; flex-direction: column;
+  background: transparent;
+}
+
+/* Top line — a back arrow and one contextual link, both type-weight. */
+.topBar {
   flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 22px 0;
+  min-height: 40px;
 }
-.authBack {
-  width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-  background: #ffffff; border: 1px solid #ececec;
-  color: #1c1c1c;
-  cursor: pointer; border-radius: 12px;
-  transition: background .15s, color .15s, border-color .15s;
+.backArrow {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  margin-left: -7px;
+  display: grid; place-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--body);
+  cursor: pointer;
+  transition: color .15s;
   -webkit-tap-highlight-color: transparent;
 }
-.authBack:hover { background: rgba(0,0,0,0.04); color: #000000; border-color: rgba(0,0,0,0.22); }
-.authHeaderTitle {
-  grid-column: 2;
-  text-align: center;
-  font-family: var(--font);
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: #000000;
-}
+.backArrow:hover { color: var(--ink); }
 
-.headerActions {
-  display: flex; align-items: center; gap: 10px;
+.asideNote {
+  margin-left: auto;
+  display: flex; align-items: baseline; gap: 6px;
+  font-size: .8125rem;
+  color: var(--body);
 }
-.themeBtn {
-  width: 38px; height: 38px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 1px solid #ececec;
-  color: #1c1c1c;
+/* Below 420px the sentence and the link together crowd a narrow phone;
+   the link alone still says where it goes. */
+.asideText { display: none; }
+.asideLink {
+  background: none; border: 0; padding: 0;
+  font-family: inherit; font-size: .8125rem; font-weight: 550;
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color .15s;
 }
+.asideLink:hover { color: #000000; text-decoration: underline; text-underline-offset: 3px; }
 
-/* Small square brand chip */
-.logoChip {
-  position: absolute;
-  left: 20px; top: calc(max(16px, env(safe-area-inset-top, 0px)) + 52px);
-  width: 34px; height: 34px;
-  border-radius: 11px;
-  background: #000000;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.18),
-    0 8px 18px -8px rgba(0,0,0,0.4);
-  z-index: 5;
-}
-
-/* Stepper */
-.stepDots { display: flex; gap: 4px; padding: 12px 6px; }
+/* Sign-up progress — two rules, the live one longer and inked. */
+.stepDots { display: flex; align-items: center; gap: 5px; margin-left: auto; }
 .stepDot {
-  width: 18px; height: 2px;
-  background: #ececec;
-  border-radius: 999px;
+  width: 16px; height: 2px;
+  background: var(--line);
   transition: background .25s, width .25s;
 }
-.stepDotActive { width: 28px; background: #000000; }
-.stepDotDone   { background: #474747; }
+.stepDotActive { width: 26px; background: var(--ink); }
+.stepDotDone   { background: #c4c8cc; }
 
-/* ── Main shell ── */
+.formScroll {
+  flex: 1;
+  min-height: 0;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* On the same left edge as the form — a footnote, not a centred badge. */
+.footNote {
+  flex-shrink: 0;
+  width: 100%; max-width: var(--measure);
+  margin: 0 auto;
+  padding: 16px 22px calc(16px + env(safe-area-inset-bottom, 0px));
+  font-size: .75rem;
+  color: var(--dim);
+}
+
+/* ══ The measure ═══════════════════════════════════════════════════════
+   One number, used by the top bar, the form and the footnote alike, so the
+   three share a left and a right edge at every width. */
 .authShell {
-  position: relative; z-index: 1;
+  position: relative;
   flex: 1;
   display: flex; flex-direction: column;
   justify-content: safe center;
-  padding: 24px 28px 96px;
-  max-width: 440px; width: 100%;
+  padding: 14px 22px 20px;
+  max-width: var(--measure); width: 100%;
   margin: 0 auto;
-  animation: shellRise .45s cubic-bezier(.2,.8,.2,1);
-}
-@keyframes shellRise {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Hero sphere ── */
-.orbHero {
-  position: relative;
-  width: 220px; height: 150px;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 14px;
+/* Brand lockup — lives in the top bar, and is the stand-in for the mark on
+   the photograph at widths where there is no photograph. */
+.brand {
+  display: flex; align-items: center; gap: 8px;
+  min-width: 0;
 }
-.orbHeroSm {
-  transform: scale(0.8);
-  height: 120px;
-  margin-bottom: 4px;
-}
-.orbBall {
-  position: relative;
-  width: 116px; height: 116px;
-  border-radius: 50%;
-  background: #000000;
-  box-shadow:
-    inset -10px -12px 28px rgba(0,0,0,0.55),
-    inset 8px 8px 18px rgba(255,255,255,0.18),
-    0 22px 44px -14px rgba(0,0,0,0.5);
-  animation: orbFloat 6s ease-in-out infinite;
-}
-.orbBall::after {
-  content: '';
-  position: absolute; left: 22%; top: 14%;
-  width: 38%; height: 30%;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 40%, rgba(255,255,255,0.55), rgba(255,255,255,0) 70%);
-  filter: blur(2px);
-}
-.orbRing {
-  position: absolute;
-  left: 50%; top: 50%;
-  width: 178px; height: 178px;
-  margin: -89px 0 0 -89px;
-  border-radius: 50%;
-  border: 1px solid #ececec;
-  transform: rotate(-20deg) scaleY(0.42);
-  pointer-events: none;
-}
-.orbSat {
-  position: absolute;
-  border-radius: 50%;
-  background: #1c1c1c;
-  box-shadow: 0 4px 10px -3px rgba(0,0,0,0.4);
-}
-.sat1 { width: 16px; height: 16px; top: 26px;  right: 36px; }
-.sat2 { width: 11px; height: 11px; bottom: 30px; right: 44px; }
-.sat3 { width: 8px;  height: 8px;  top: 52px;  left: 38px; opacity: .85; }
-@keyframes orbFloat {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-9px); }
+.brandMark { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; object-fit: cover; }
+.brandName {
+  font-size: .875rem; font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  white-space: nowrap;
 }
 
-/* ── Headline ── */
+/* ── Headline ─────────────────────────────────────────────────────────
+   Sized to lead the form, not to shout over it. */
 .heading {
   margin: 0 0 6px;
-  font-family: var(--font);
-  font-size: 2.3rem;
-  font-weight: 800;
-  letter-spacing: -0.032em;
-  line-height: 1.08;
-  text-align: center;
-  color: #000000;
-}
-.heading::after {
-  content: '.';
-  color: #000000;
-  -webkit-text-fill-color: #000000;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.024em;
+  line-height: 1.2;
+  color: var(--ink);
 }
 .subheading {
-  margin: 0 0 30px;
-  font-family: var(--font);
-  font-size: .95rem;
-  text-align: center;
-  color: #474747;
-  font-weight: 500;
-  letter-spacing: -0.005em;
+  margin: 0 0 22px;
+  font-size: .9375rem;
+  line-height: 1.5;
+  color: var(--body);
+  font-weight: 400;
 }
 
 /* ── Form ── */
-.form { display: flex; flex-direction: column; gap: 18px; }
+.form { display: flex; flex-direction: column; gap: 14px; }
 
-.field {
-  position: relative;
+.field { position: relative; }
+
+/* Label left, an optional inline action right — puts "Forgot password?" on
+   a line that already exists instead of buying it a row of its own. */
+.labelRow {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
 }
 .label {
   display: block;
-  font-size: .68rem;
-  font-weight: 700;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: #474747;
-  pointer-events: none;
+  font-size: .8125rem;
+  font-weight: 500;
+  color: var(--body);
   margin-bottom: 6px;
 }
+.labelRow .label { margin-bottom: 0; }
+.labelOpt { color: var(--dim); font-weight: 400; }
+
+.inputWrap { position: relative; display: block; }
+
+/* Height, type and spacing only. The border, radius, fill and focus state
+   are set in index.css — see the header note. */
 .input {
   width: 100%;
-  background: transparent;
-  border: none;
-  border-bottom: 1.5px solid #ececec;
-  outline: none;
-  color: #1c1c1c;
+  height: 44px;
+  color: var(--ink);
   font-family: inherit;
-  font-size: 1.06rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  /* Filled-well padding: these were underline fields, so they had no inner
-     spacing. Inside a --press well the text needs to sit off the edges. */
-  padding: 13px 44px 13px 15px;
-  transition: border-color .2s;
+  font-size: .9375rem;
+  font-weight: 450;
+  letter-spacing: -0.006em;
+  padding: 0 14px;
+  outline: none;
+  -webkit-appearance: none;
 }
-.input::placeholder { color: rgba(0,0,0,0.35); }
-.input:focus { border-bottom-color: #000000; }
-.field::after { content: none; }
+.input::placeholder { color: var(--dim); font-weight: 400; }
+.input:disabled { color: var(--body); cursor: not-allowed; }
+/* Chrome paints its own tinted fill over an autofilled field, which puts a
+   yellow slab into a page built out of hairlines. */
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 40px #ffffff inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
 
-/* Extra right padding so typed text never runs under the "✓ matches" /
-   "✗ no match" hint pinned to the right of the confirm field. */
-.inputMatch { padding-right: 84px; }
+.inputPw    { padding-right: 42px; }
+.inputMatch { padding-right: 86px; }
 
-/* Show/hide password eye */
-/* Wrap a password input + its reveal button so the eye centres on the input
-   line itself — not the whole field (which also holds the label + strength
-   bar), which is what made it float to the wrong spot and get covered. */
-.pwRow { position: relative; display: block; }
-.pwRow .input { padding-right: 42px; }
 .eyeBtn {
   position: absolute;
-  right: 0; top: 50%; transform: translateY(-50%);
-  width: 40px; height: 40px;
+  right: 1px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px;
   background: transparent; border: none;
-  color: #5a5a5a;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; border-radius: 8px; z-index: 3;
+  color: var(--dim);
+  display: grid; place-items: center;
+  cursor: pointer; z-index: 3;
   -webkit-tap-highlight-color: transparent;
   transition: color .15s;
 }
-.eyeBtn:hover { color: #000000; }
+.eyeBtn:hover { color: var(--ink); }
+
+.fieldNote { margin: 6px 0 0; font-size: .75rem; line-height: 1.45; color: var(--dim); }
 
 /* ── Password strength ── */
-.strength { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+.strength { margin-top: 9px; display: flex; align-items: center; gap: 10px; }
 .strengthTrack {
-  flex: 1; height: 3px;
-  background: rgba(0,0,0,0.08);
-  border-radius: 999px; overflow: hidden; position: relative;
+  flex: 1; height: 2px;
+  background: var(--line);
+  overflow: hidden; position: relative;
 }
 .strengthFill {
   position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
-  border-radius: 999px;
-  background: #1c1c1c;
-  transition: width .25s ease;
+  background: var(--ink);
+  transition: width .28s ease;
 }
 .strengthHint {
-  font-size: .7rem; font-weight: 600;
-  color: #474747;
+  font-size: .72rem; font-weight: 500;
+  color: var(--body);
   white-space: nowrap;
-  font-family: var(--mono, monospace);
-  letter-spacing: .02em;
 }
-.strengthHintOk { color: #1c1c1c; font-weight: 800; }
+.strengthHintOk { color: var(--ink); }
 
 .matchHint {
   position: absolute;
-  right: 0; bottom: 11px;
-  font-size: .68rem; font-weight: 700;
-  letter-spacing: .04em;
-  color: #474747;
+  right: 12px; top: 50%; transform: translateY(-50%);
+  font-size: .72rem; font-weight: 500;
   pointer-events: none;
+  z-index: 3;
 }
-.matchOk  { color: #1c1c1c; font-weight: 800; }
-.matchBad { color: #1c1c1c; font-weight: 800; }
+.matchOk  { color: var(--ink); }
+.matchBad { color: var(--dim); }
 
-/* ── Error / info pills ── */
+/* ── Notices ──────────────────────────────────────────────────────────
+   A rule and a line of text. A tinted, rounded alert would be the one card
+   on a page that has none. */
 .errBox, .infoBox {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: .8rem; font-weight: 600; line-height: 1.4;
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 0 9px 11px;
+  font-size: .8125rem; font-weight: 450; line-height: 1.5;
 }
-.errBox {
-  background: #ffffff;
-  border: 1px solid #ececec;
-  color: #1c1c1c;
-}
-.infoBox {
-  background: #ffffff;
-  border: 1px solid #ececec;
-  color: #1c1c1c;
-}
+.errBox  { border-left: 2px solid #a5352b; color: #a5352b; }
+.infoBox { border-left: 2px solid var(--line); color: var(--body); }
+.errBox svg, .infoBox svg { flex-shrink: 0; margin-top: 2px; }
 
-/* ── Forgot link ── */
+/* ── Forgot link ─────────────────────────────────────────────────────
+   Its own line under the password field, pulled up tight against it so it
+   reads as belonging to that field rather than as another form row. */
 .forgotRow {
   display: flex; justify-content: flex-end;
-  margin: -2px 2px 0;
+  margin-top: -6px;
 }
 .forgotLink {
-  display: inline-flex; align-items: center; min-height: 24px;
-  font-size: .8rem; font-weight: 700;
-  color: #000000;
+  font-size: .8125rem; font-weight: 450;
+  color: var(--body);
   text-decoration: none;
+  white-space: nowrap;
+  transition: color .15s;
 }
-.forgotLink:hover { text-decoration: underline; }
+.forgotLink:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
-/* ── Primary button ── */
+/* ── Primary action ── */
 .primaryBtn {
-  position: relative;
   width: 100%;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 8px 8px 28px;
-  border-radius: 100px;
-  border: 1px solid #000000;
-  background: #000000;
+  min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 0 16px;
+  border-radius: 6px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
   color: #ffffff;
   font-family: inherit;
-  font-size: 1.04rem;
-  font-weight: 700;
-  letter-spacing: .005em;
+  font-size: .9375rem;
+  font-weight: 550;
+  letter-spacing: -0.004em;
   cursor: pointer;
-  margin-top: 8px;
-  box-shadow:
-    inset 0 1px 1px rgba(255,255,255,0.10),
-    0 16px 32px -14px rgba(0,0,0,0.5);
-  transition: transform .15s, box-shadow .2s, opacity .15s;
-  overflow: hidden;
+  margin-top: 6px;
+  transition: background .15s, border-color .15s, opacity .15s;
+  -webkit-tap-highlight-color: transparent;
 }
-.primaryBtn .btnArrow {
-  flex-shrink: 0;
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  display: grid; place-items: center;
+.primaryBtn:hover:not(:disabled) { background: #2c3036; border-color: #2c3036; }
+.primaryBtn:active:not(:disabled) { background: #101317; }
+.primaryBtn:disabled { opacity: .32; cursor: not-allowed; }
+.primaryBtn .spinner {
+  border-color: rgba(255,255,255,.32);
+  border-top-color: #ffffff;
+  margin: 0;
+}
+
+.ghostBtn {
+  width: 100%;
+  min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
   background: #ffffff;
-  color: #000000;
-  box-shadow: 0 6px 14px -6px rgba(0,0,0,0.4);
-  transition: transform .2s ease;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: .9375rem; font-weight: 500;
+  cursor: pointer;
+  transition: border-color .15s;
+  -webkit-tap-highlight-color: transparent;
 }
-.primaryBtn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow:
-    inset 0 1px 1px rgba(255,255,255,0.14),
-    0 20px 38px -14px rgba(0,0,0,0.55);
-}
-.primaryBtn:hover:not(:disabled) .btnArrow { transform: translateX(3px); }
-.primaryBtn:active:not(:disabled) { transform: translateY(0); }
-.primaryBtn:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
-.primaryBtn:disabled .btnArrow { background: #ffffff; opacity: .85; }
+.ghostBtn:hover:not(:disabled) { border-color: #c8ccd1; }
+.ghostBtn:disabled { opacity: .4; cursor: not-allowed; }
 
 .spinner {
-  width: 16px; height: 16px;
-  border: 2px solid rgba(0,0,0,0.18);
-  border-top-color: #000000;
+  width: 14px; height: 14px;
+  border: 1.5px solid rgba(26,29,33,.2);
+  border-top-color: var(--ink);
   border-radius: 50%;
   animation: spin .7s linear infinite;
-  margin: 14px auto;
+  margin: 0 auto;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Alt-link row ── */
 .altRow {
   margin-top: 20px;
-  text-align: center;
-  font-size: .88rem;
-  color: #474747;
+  font-size: .875rem;
+  color: var(--body);
 }
 .altLink {
-  display: inline-flex; align-items: center; min-height: 24px;
-  color: #000000;
-  font-weight: 700;
+  color: var(--ink);
+  font-weight: 550;
   text-decoration: none;
   background: transparent; border: none;
-  padding: 0 0 0 6px;
+  padding: 0;
+  margin-left: 4px;
   cursor: pointer;
   font-family: inherit; font-size: inherit;
-  position: relative;
+  white-space: nowrap;
 }
-.altLink::after {
-  content: '';
-  position: absolute;
-  left: 6px; right: 0; bottom: -2px;
-  height: 1px;
-  background: currentColor;
-  transform: scaleX(0); transform-origin: left;
-  transition: transform .2s ease;
-}
-.altLink:hover::after { transform: scaleX(1); }
+.altLink:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-/* ── Verification code grid ── */
+/* ── Footnote ─────────────────────────────────────────────────────────
+   A brand-new user has no way to know that joining an existing team is
+   invite-only, so the two routes in are spelled out — under a hairline, in
+   the smallest type on the page. */
+.note {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: .8125rem;
+  line-height: 1.6;
+  color: var(--body);
+}
+.noteLine + .noteLine { margin-top: 5px; }
+.note b { font-weight: 600; color: var(--ink); }
+
+/* ── Verification code ────────────────────────────────────────────────
+   The cells are inputs, so they inherit the field border and radius set in
+   index.css; only the size and the numeral treatment belong here. */
 .codeGrid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
-  margin-bottom: 6px;
+  gap: 8px;
 }
 .codeCell {
-  width: 100%; aspect-ratio: 1;
+  width: 100%; height: 56px;
+  min-width: 0;
   text-align: center;
-  font-family: var(--mono, 'SF Mono', Menlo, Consolas, monospace);
-  font-size: 1.6rem; font-weight: 600;
-  color: #1c1c1c;
-  background: #ffffff;
-  border: 1.5px solid #ececec;
-  border-radius: 14px;
+  font-family: inherit;
+  font-size: 1.25rem; font-weight: 550;
+  color: var(--ink);
   outline: none;
-  transition: all .18s ease;
+  padding: 0;
   -webkit-tap-highlight-color: transparent;
-}
-.codeCell:focus {
-  border-color: #000000;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.10), 0 0 22px rgba(0,0,0,0.10);
-  transform: translateY(-2px);
-}
-.codeCellFilled {
-  background: #ffffff;
-  border-color: #000000;
-  color: #000000;
+  -webkit-appearance: none;
 }
 
 .sentTo {
-  margin: 0 0 22px;
-  text-align: center;
-  font-size: .82rem;
-  color: #474747;
-  font-family: var(--mono, monospace);
+  margin: 0 0 26px;
+  font-size: .9375rem;
+  line-height: 1.5;
+  color: var(--body);
 }
-.sentToEmail {
-  color: #000000;
-  border-bottom: 1px dashed #ececec;
-  padding-bottom: 1px;
+.sentToEmail { color: var(--ink); font-weight: 500; }
+
+/* ── Social sign-in ───────────────────────────────────────────────────
+   Outlined, so the page keeps exactly one filled action. */
+.socialBlock { margin-bottom: 18px; }
+
+.socialGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(196px, 1fr));
+  gap: 8px;
 }
-
-/* Optional-field hint on a label */
-.labelOpt { font-weight: 500; color: #5f5f5f; letter-spacing: 0; text-transform: none; }
-
-/* ── Role segmented control (sign-in field guide) ── */
-.roleSeg {
-  display: flex; gap: 4px; padding: 4px;
-  background: #f3f3f3; border-radius: 12px; margin-bottom: 6px;
-}
-.roleSegBtn {
-  flex: 1; padding: 9px 8px; border: none; background: transparent;
-  border-radius: 9px; font-size: 13px; font-weight: 600; color: #6b6b6b;
-  cursor: pointer; transition: background .16s, color .16s, box-shadow .16s;
-  font-family: inherit; -webkit-tap-highlight-color: transparent;
-}
-.roleSegBtn:hover { color: #121212; }
-.roleSegBtnOn { background: #ffffff; color: #121212; box-shadow: 0 1px 3px rgba(0,0,0,.10); }
-
-/* Small helper text under a field */
-.fieldNote { margin: 6px 2px 0; font-size: 12px; line-height: 1.4; color: #6b6b6b; }
-
-/* ── iPad — center the form as a calm card instead of a stretched, top-clinging
-   column. Header pins to the top so the card can sit in the vertical middle. ── */
-@media (min-width: 768px) {
-  .authPage { justify-content: center; }
-  .authHeader {
-    position: absolute; top: 0; left: 0; right: 0;
-    padding: max(20px, env(safe-area-inset-top, 0px)) 28px 0;
-  }
-  .authShell {
-    flex: 0 0 auto;
-    align-self: center;
-    max-width: 468px;
-    margin: auto;
-    /* Top padding clears the absolutely-positioned header. The card is close
-       to viewport height, so centring leaves only ~30px above it and the
-       brand row was colliding with the "Sign in" title. */
-    padding: 78px 48px 52px;
-    /* Raised surface on the soft-UI ground: lighter than the page, carrying
-       --lift. The old 40px/26% drop shadow read as a consumer app. */
-    border: 0;
-    border-radius: 24px;
-    background: var(--raised);
-    box-shadow: var(--lift);
-  }
-  .heading { font-size: 40px; }
-  .form { gap: 24px; }
-  .input { font-size: 17px; padding-bottom: 12px; }
-}
-
-/* ── Social sign-in ─────────────────────────────────────────────
-   Deliberately the inverse of .primaryBtn: the password form stays the
-   filled black pill (the primary action), and these read as outlined
-   alternatives so the page still has exactly one visual primary. */
-.socialBlock { margin-top: 20px; }
 
 .socialDivider {
-  display: flex; align-items: center; gap: 12px;
-  margin: 0 0 14px;
-  font-size: 0.78rem; font-weight: 600; letter-spacing: .06em;
-  text-transform: uppercase; color: #6b6b6b;
+  display: flex; align-items: center; gap: 14px;
+  margin: 20px 0 0;
+  font-size: .78rem; font-weight: 400;
+  color: var(--dim);
 }
 .socialDivider::before,
 .socialDivider::after {
-  content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.12);
+  content: ''; flex: 1; height: 1px; background: var(--line);
 }
 
 .socialBtn {
   width: 100%;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px;
-  padding: 13px 18px;
-  margin-bottom: 10px;
-  border-radius: 100px;
-  border: 1px solid rgba(0,0,0,0.22);
+  min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
   background: #ffffff;
-  color: #1c1c1c;
+  color: var(--ink);
   font-family: inherit;
-  font-size: 0.97rem;
-  font-weight: 650;
+  font-size: .875rem;
+  font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 2px 6px -3px rgba(0,0,0,0.22);
-  transition: transform .15s, box-shadow .2s, border-color .2s, opacity .15s;
+  transition: border-color .15s, background .15s;
+  -webkit-tap-highlight-color: transparent;
 }
-.socialBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(0,0,0,0.42);
-  box-shadow: 0 8px 18px -10px rgba(0,0,0,0.45);
-}
-.socialBtn:active:not(:disabled) { transform: translateY(0); }
-.socialBtn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.socialBtn:hover:not(:disabled) { border-color: #c8ccd1; background: #fcfcfd; }
+.socialBtn:disabled { opacity: .45; cursor: not-allowed; }
 
-/* Fixed-width so every label lands on the same optical centre regardless of
-   how wide the brand mark is. */
-.socialIcon {
-  flex: 0 0 19px;
-  display: grid; place-items: center;
-  height: 19px;
-}
-
+.socialIcon { flex: 0 0 16px; display: grid; place-items: center; height: 16px; }
 .socialSpinner {
-  width: 15px; height: 15px;
-  border: 2px solid rgba(0,0,0,0.18);
-  border-top-color: #1c1c1c;
+  width: 13px; height: 13px;
+  border: 1.5px solid rgba(26,29,33,.2);
+  border-top-color: var(--ink);
   border-radius: 50%;
   animation: spin .7s linear infinite;
 }
 
-/* ── Wide-screen auth layout ────────────────────────────────────
-   These pages were a 440px column centred in whatever space existed, so on a
-   laptop or desktop they read as a phone screenshot dropped into an empty
-   page. The form itself stays a sensible measure — nobody wants 1400px-wide
-   inputs — and the surplus width gets a brand panel instead of being left
-   blank.
+/* ══ ≥420px — the top-right sentence fits ══════════════════════════════ */
+@media (min-width: 420px) {
+  .asideText { display: inline; }
+}
 
-   Below 900px nothing here applies and the existing single column stands. */
-
-.aside { display: none; }
-
-/* ── The photographic backdrop ──────────────────────────────────
-   Hidden by default; the phone layout is already right and a background
-   photograph there would only sit behind the keyboard. */
-.backdrop { display: none; }
-
+/* ══ Tablet — the same page, given a measure ═══════════════════════════ */
 @media (min-width: 768px) {
-  /* Set by AuthBackdrop while an auth page is mounted. Without it everything
-     below lays out inside #root's 540px frame — the reason these pages looked
-     like a phone screenshot on a laptop. */
+  /* Set by AuthLayout while an auth page is mounted. Without it everything
+     lays out inside #root's 540px frame — the reason these pages looked like
+     a phone screenshot on a laptop. */
   :global(#root.rt-auth-wide) { max-width: none; }
 
-  .backdrop {
+  .topBar     { padding: 24px 32px 0; }
+  .formScroll { justify-content: safe center; }
+  .authShell  { flex: 0 0 auto; margin: auto; padding: 36px 32px; }
+  .footNote   { padding: 20px 32px calc(20px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ══ Laptop and up — 60 / 40 ═══════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  :global(#root.rt-auth-wide) .authPage {
+    display: grid;
+    grid-template-columns: 57% 43%;
+    height: 100%;
+    overflow: hidden;
+    background: #ffffff;
+    /* The form block, sized to hold its own against the photograph. The
+       gutters below scale with the viewport, so this ceiling is only reached
+       on a genuinely wide screen — at 1440 the column itself is the limit and
+       the block lands near 480px. */
+    --measure: 560px;
+  }
+
+  .media {
     display: block;
-    position: fixed; inset: 0; z-index: 0;
-    pointer-events: none;
-    background: #f4f4f4;
-  }
-  /* Desaturated and lifted, then thrown out of focus: the room should be
-     legible as a room and nothing more. Scaled up so the blur has material to
-     work with at the edges instead of feathering into grey. */
-  .backdropImg {
-    position: absolute; inset: -3%;
-    width: 106%; height: 106%;
-    object-fit: cover; object-position: 50% 46%;
-    /* Already a bright, white-dominant photograph — white switch faces, pale
-       patch panels — so it needs lifting rather than rescuing. Desaturated to
-       keep the teal fibre from becoming the loudest thing on a sign-in page,
-       and softened just enough that the port rows read as texture. */
-    filter: brightness(2.55) saturate(.22) contrast(.78) blur(1.5px);
-  }
-  /* The wash is what makes it a WHITE page that happens to contain a
-     photograph, rather than a photograph with a form on it. Strongest through
-     the middle, where the card sits, and lightest at the edges so the aisle
-     still reads at the margins. */
-  .backdropWash {
-    position: absolute; inset: 0;
-    background:
-      radial-gradient(ellipse 48% 60% at 50% 46%, rgba(255,255,255,.88) 0%, rgba(255,255,255,.56) 58%, rgba(255,255,255,.26) 100%),
-      linear-gradient(180deg, rgba(255,255,255,.52) 0%, rgba(255,255,255,.22) 45%, rgba(255,255,255,.58) 100%);
-  }
-
-  /* The page becomes a stage for one centred card. */
-  .authPage {
     position: relative;
-    display: flex; flex-direction: column;
-    justify-content: safe center; align-items: center;
-    overflow-y: auto;
+    grid-column: 1;
+    overflow: hidden;
+    background: #16181c;
   }
-  .authHeader {
-    position: absolute; top: 0; left: 0; right: 0; z-index: 2;
-    background: transparent; border-bottom: 0;
-    padding: max(18px, env(safe-area-inset-top, 0px)) clamp(20px, 3vw, 40px) 0;
+  .mediaImg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    /* The aisle recedes to the left of frame; holding the crop right of
+       centre keeps the cabinet faces and the vanishing point both in shot. */
+    object-position: 62% 50%;
+    /* Pulled toward charcoal and stopped down. The room stays a room — the
+       point is that it is a real one — but it sits behind the type rather
+       than competing with it. */
+    filter: saturate(.32) brightness(.8) contrast(1.02);
+  }
+  /* A legibility floor for the mark at the top and the copy at the bottom.
+     The photograph has a bright wall on the left; without this the lower
+     copy would fall on it. */
+  .mediaWash {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg,
+      rgba(14,16,19,.55) 0%, rgba(14,16,19,.18) 24%,
+      rgba(14,16,19,.46) 62%, rgba(14,16,19,.9) 100%);
   }
 
-  .authShell {
-    position: relative; z-index: 1;
-    flex: 0 0 auto;
-    width: 100%; max-width: 468px;
-    margin: clamp(52px, 7vh, 88px) auto clamp(24px, 4vh, 48px);
-    border: 1px solid rgba(23, 23, 23,.06);
-    border-radius: 16px;
-    background: rgba(255,255,255,.94);
-    -webkit-backdrop-filter: blur(18px) saturate(1.2);
-    backdrop-filter: blur(18px) saturate(1.2);
-    /* One soft, wide shadow rather than a hard drop: the card should feel
-       lifted off the room, not stamped onto it. */
-    box-shadow:
-      0 1px 2px rgba(23, 23, 23,.04),
-      0 28px 60px -24px rgba(23, 23, 23,.28);
-    padding: clamp(24px, 3.4vh, 44px) clamp(26px, 3vw, 44px) clamp(24px, 3.4vh, 40px);
+  .mediaBrand {
+    position: absolute; z-index: 2;
+    top: 40px; left: 48px;
+    display: flex; align-items: center; gap: 9px;
   }
+  .mediaMark { width: 22px; height: 22px; border-radius: 5px; object-fit: cover; }
+  .mediaName {
+    font-size: .875rem; font-weight: 550;
+    letter-spacing: -0.012em;
+    color: rgba(255,255,255,.94);
+  }
+
+  .mediaCopy {
+    position: absolute; z-index: 2;
+    left: 48px; right: 48px; bottom: 44px;
+    max-width: 30rem;
+  }
+  .mediaTitle {
+    margin: 0 0 10px;
+    font-size: 1.4375rem;
+    font-weight: 550;
+    letter-spacing: -0.022em;
+    line-height: 1.28;
+    color: #ffffff;
+  }
+  .mediaSub {
+    margin: 0;
+    max-width: 42ch;
+    font-size: .875rem;
+    line-height: 1.6;
+    font-weight: 400;
+    color: rgba(255,255,255,.66);
+  }
+
+  /* The right column: plain white, one measure, no card.
+
+     The top bar, the form and the footnote are each the SAME 372px box,
+     centred in the same column — so all three share one left edge and one
+     right edge. Giving the top bar its own padding instead is what had the
+     back arrow sitting at a margin the form never used. */
+  :global(#root.rt-auth-wide) .formSide {
+    grid-column: 2;
+    height: 100%;
+    background: #ffffff;
+    /* Gutters, not a fixed inset: they grow with the viewport so the block
+       fills roughly four fifths of the column at 1280–1440 and stops
+       widening once it hits --measure. */
+    padding: 0 clamp(28px, 4.4vw, 92px);
+  }
+  :global(#root.rt-auth-wide) .topBar,
+  :global(#root.rt-auth-wide) .authShell,
+  :global(#root.rt-auth-wide) .footNote {
+    width: 100%; max-width: var(--measure);
+    margin-left: auto; margin-right: auto;
+    padding-left: 0; padding-right: 0;
+  }
+  .heading     { font-size: 1.625rem; margin-bottom: 7px; }
+  .subheading  { margin-bottom: 26px; }
+  .socialBlock { margin-bottom: 22px; }
+
+  :global(#root.rt-auth-wide) .topBar    { padding-top: 32px; }
+  :global(#root.rt-auth-wide) .authShell { padding-top: 20px; padding-bottom: 20px; }
+  :global(#root.rt-auth-wide) .footNote  { padding-top: 14px; padding-bottom: 30px; }
+
+  /* The photograph carries the mark; a second one above the heading would
+     just be the logo twice on one screen. */
+  :global(#root.rt-auth-wide) .brand { display: none; }
+}
+
+/* Wider still: let the block take the top of its range rather than stranding
+   it in the middle of a very wide column. Raising --measure (not overriding
+   max-width on individual parts) keeps the top bar, the form and the footnote
+   on the same two edges. */
+@media (min-width: 1600px) {
+  :global(#root.rt-auth-wide) .authPage { --measure: 600px; }
+  .mediaTitle { font-size: 1.5rem; }
 }

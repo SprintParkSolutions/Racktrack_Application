@@ -47,6 +47,44 @@ const reportInsights = require('./lib/report_insights');
 
 // Merge stored env credentials (per vendor) into request body fields. Values
 // sent explicitly by the client take precedence over the env-stored defaults.
+// Why a switch request could not even be attempted, in words the person
+// reading them can act on.
+//
+// These routes all used to answer "host, interface, and credentials (body or
+// env) required" — one string for four different causes, naming the mechanism
+// (body/env) instead of the fix. On a deployment with no stored credentials that
+// surfaced on the live-switch page as "Probe failed: host, command, and
+// credentials (body or env) required", which tells a user nothing about what to
+// do and does not even reveal WHICH of the three was missing.
+//
+// Written for the person reading them, not for the developer who wrote the
+// route: no "(body or env)", no variable names, no server paths or commands.
+//
+// NEVER put an operational instruction in here — no script names, no file paths,
+// no CLI. An API error is read by whoever is holding the screen, it ends up in
+// screenshots and support tickets, and on a public deployment it is readable by
+// anyone with a login. "Run node server/encrypt-creds.js" tells an attacker the
+// layout of the box and tells an ordinary user nothing they can use. Setup lives
+// in the docs; this string's only job is to say what happened and what the
+// person in front of it can do next.
+//
+// Returns null when nothing is missing.
+// `interface: iface` — the callers pass the field under its request-body name.
+// Destructuring plain `iface` here left it permanently undefined, so the
+// needIface branch never fired and a missing port fell through to the
+// credentials message instead.
+function switchRequestBlocker({ host, username, password, command, interface: iface }, opts = {}) {
+  if (!host) {
+    return 'No switch selected yet. Add the switch’s IP address or hostname to read it live.';
+  }
+  if (opts.needCommand && !command) return 'Nothing to run yet — choose a check first.';
+  if (opts.needIface && !iface)     return 'No port chosen yet — pick a port to look it up.';
+  if (!username || !password) {
+    return 'No sign-in saved for this switch. Enter a username and password to connect.';
+  }
+  return null;
+}
+
 // A host we are willing to spend stored credentials on: one that already has
 // its own per-host entry, or a row in monitored_devices. Anything else is a
 // host the caller invented.
@@ -58,15 +96,6 @@ function isKnownSwitchHost(host) {
 }
 
 function resolveSwitchCreds(body) {
-  // Demo box: there are no stored credentials because no SSH session is ever
-  // opened — runSwitchCommand short-circuits to fixtures well before any
-  // socket. Placeholders here only satisfy the `!username || !password` guards
-  // on the routes below. This cannot leak anything: the exfiltration hole
-  // described further down needs a real secret to hand over, and in this mode
-  // there isn't one.
-  if (demoData.enabled) {
-    return { username: 'demo', password: 'demo', enablePassword: '' };
-  }
   // Precedence: explicit client-sent value → per-host stored → per-vendor stored.
   // Per-host lets two switches of the same vendor (e.g. .13 and .14, both
   // TP-Link) carry different passwords without one clobbering the other.
@@ -6791,7 +6820,8 @@ app.get('/api/scan/:rackId/result', auth.requireAuth, (req, res) => {
   try {
     if (!fs.existsSync(resultPath)) {
       const result = writeCanonicalScanResult(rackId);
-      if (!result) return res.status(500).json({ error: 'Failed to build scan_result.json' });
+      // Internal filename kept out of the response — it goes in the log instead.
+      if (!result) return res.status(500).json({ error: 'Could not assemble the scan result.' });
       return res.json(result);
     }
     res.setHeader('Content-Type', 'application/json');
@@ -6887,25 +6917,93 @@ function _maybeNoteManual(opts) {
     try { require('./lib/port_poller').noteManualProbe(opts.host); } catch (_) {}
   }
 }
-// Seeded demo network — see lib/demo_data.js. Intercepted at the two runners
-// rather than at each route, so the vendor parsers above them still run for
-// real against the fixture transcripts. Off unless RACKTRACK_DEMO_DATA is set.
-const demoData = require('./lib/demo_data');
+// These two runners are the ONLY way anything reaches a switch, and they always
+// open a real SSH session — there is no fixture seam here, deliberately. The
+// screens they feed (the owner Lab page, the Live Network Switch page, the port
+// poller's drift history) all state on their face that they are showing a live
+// switch, so answering them from invented transcripts made every one of them
+// lie: PoE watts and negotiated speeds on virtual EVE-NG nodes that have
+// neither, "Live" pills on switches that were stopped. An unreachable switch
+// saying so is worth more than a reachable-looking fake. The demo box gets its
+// seeded network at the Netdisco seam only (see lib/demo_data.js).
+// ── Deployments that are not on the switch's network ────────────────
+//
+// RackTrack reads switches over SSH from the network it runs on. That works in a
+// customer install, which sits on the same network as their switches. It cannot
+// work on a public cloud instance — the demo — where every private address a
+// visitor could type is unroutable.
+//
+// The login form still works and the attempt still runs: someone typing their
+// own switch details deserves a real answer, not a disabled button. Two changes
+// only, so that answer arrives quickly and explains itself:
+//
+//   1. FAIL FAST. A route that does not exist takes the full SSH timeout to
+//      admit it — up to 30s of spinner before a reply. Clamped to a few seconds
+//      here, because "no route" is knowable long before then.
+//   2. SAY WHY. The raw failure is a handshake timeout, which the UI renders as
+//      "The switch didn't respond" — sending the reader off to check a switch
+//      that is fine. Replace it with the operator's sentence, which names the
+//      real reason and that it works on their own network.
+//
+// Only connectivity failures are rewritten. A rejected password still says the
+// password was rejected — that answer is true here and worth keeping.
+//
+// Deliberately NOT inferred from "no credentials stored": a customer install
+// mid-setup must keep getting the actionable "add a sign-in" message rather than
+// being told the network is wrong.
+const OFF_NETWORK = process.env.LIVE_SWITCH_OFF_NETWORK === '1'
+                 || process.env.LIVE_SWITCH_OFF_NETWORK === 'true';
+const OFF_NETWORK_TIMEOUT_MS = 6000;
+const OFF_NETWORK_NOTE = process.env.LIVE_SWITCH_NOTE
+  || 'This server isn’t on your switch’s network, so it can’t reach it. '
+   + 'RackTrack reads switches when it runs on the same network as them.';
+
+// ECONNREFUSED is deliberately ABSENT: a refused connection proves the host was
+// reached, which directly contradicts "not on your network". That case keeps its
+// own truthful message ("refused the connection — is SSH enabled on it?").
+// DNS failures stay in: an internal name like sw1.office.local genuinely cannot
+// resolve from off the network.
+const NO_ROUTE_RE = /timed out|etimedout|ehostunreach|enetunreach|no route|handshake|enotfound|eai_again/i;
+
+// The two runners name their timeouts differently, and the batch one keeps the
+// handshake timeout separate from the per-command one — so cap all three, or the
+// cap silently does nothing on whichever path the caller happened to use. The
+// handshake timeout is the one that actually matters here: an unroutable address
+// fails at connect, long before any command runs.
+function offNetworkOpts(opts) {
+  if (!OFF_NETWORK) return opts;
+  const cap = (v) => Math.min(Number(v) || OFF_NETWORK_TIMEOUT_MS, OFF_NETWORK_TIMEOUT_MS);
+  return {
+    ...opts,
+    timeoutMs:       cap(opts?.timeoutMs),        // _runSwitchCommandRaw
+    timeoutMsPerCmd: cap(opts?.timeoutMsPerCmd),  // _runSwitchCommandsSequentialRaw
+    readyTimeoutMs:  OFF_NETWORK_TIMEOUT_MS,      // the handshake, on both paths
+  };
+}
+function offNetworkRethrow(err) {
+  if (OFF_NETWORK && NO_ROUTE_RE.test(String(err?.message || ''))) {
+    const wrapped = new Error(OFF_NETWORK_NOTE);
+    wrapped.offNetwork = true;
+    wrapped.cause = err;
+    throw wrapped;
+  }
+  throw err;
+}
 
 function runSwitchCommand(opts) {
-  if (demoData.enabled) return Promise.resolve(demoData.switchCommand(opts));
   // Serialize per host AND retry the whole connection on a transient drop.
   _maybeNoteManual(opts);
-  return withHostLock(opts.host, () => _runWithReconnect(_runSwitchCommandRaw, opts));
+  return withHostLock(opts.host, () => _runWithReconnect(_runSwitchCommandRaw, offNetworkOpts(opts)))
+    .catch(offNetworkRethrow);
 }
 function runSwitchCommandsSequential(opts) {
-  if (demoData.enabled) return demoData.switchCommandsSequential(opts);
   // Same treatment as runSwitchCommand: serialize per host AND full-reconnect on
   // a transient drop. Previously this multi-command path only had the host lock,
   // so a TP-Link "Not connected" mid-probe failed the whole thing instead of
   // reconnecting once the switch freed its single SSH session.
   _maybeNoteManual(opts);
-  return withHostLock(opts.host, () => _runWithReconnect(_runSwitchCommandsSequentialRaw, opts));
+  return withHostLock(opts.host, () => _runWithReconnect(_runSwitchCommandsSequentialRaw, offNetworkOpts(opts)))
+    .catch(offNetworkRethrow);
 }
 
 function _runSwitchCommandRaw({ host, port = 22, username, password, command, timeoutMs = 20000, pagingOff = 'terminal length 0', enable = null, enablePassword = null }) {
@@ -7104,6 +7202,11 @@ function _runSwitchCommandsSequentialRaw({
   commands,                      // [{ name, cmd }]
   onEntry,                       // (index, entry) => void
   timeoutMsPerCmd = 20000,
+  // How long to wait for the SSH handshake itself. Was hardcoded to 15000 at the
+  // connect() call below, which made it the one timeout on this path a caller
+  // could not influence — so an unroutable host always cost a full 15s here even
+  // when the caller had asked to fail sooner.
+  readyTimeoutMs = 15000,
   pagingOff = 'terminal length 0',
   enable = null,
   enablePassword = null,
@@ -7228,7 +7331,7 @@ function _runSwitchCommandsSequentialRaw({
       .connect({
         host, port, username, password,
         tryKeyboard: true,
-        readyTimeout: 15000,
+        readyTimeout: readyTimeoutMs,
         algorithms: {
           kex: [
             'curve25519-sha256', 'curve25519-sha256@libssh.org',
@@ -7420,6 +7523,81 @@ function substIface(cmd, iface) {
   return String(cmd || '').replace(/\{iface\}/g, iface);
 }
 
+// ── Console allowlist for non-owners ────────────────────────────────
+//
+// /api/switch/console/run takes its command straight from the request body, and
+// the Results console renders a free-form terminal box that posts to it. That is
+// the right tool for an owner debugging a switch and completely wrong for anyone
+// else: every /api/switch/* route is requireAuth, not requireRole, so without
+// this gate any approved member could POST
+//   {"host":"192.168.1.62","command":"configure terminal"}
+// and reconfigure real equipment. It matters most where "member" means a person
+// we handed a demo login to, which is the whole point of a public demo.
+//
+// TWO independent gates, both of which a non-owner must pass:
+//   1. ALLOWLIST — the command must be one the product itself is built to send:
+//      every intent and auto-command in console_commands.json (all vendors),
+//      plus AUDIT_CMDS and the Switch Info commands. That is the complete set
+//      any UI control can produce, so the honest UI loses nothing.
+//   2. READ SHAPE — it must still begin with a read verb. Gate 1 alone would
+//      widen silently the day someone adds a write command to the JSON.
+//
+// Enforced on the command AFTER {iface} substitution — that is the string that
+// actually reaches the switch, so it is the only one worth checking.
+//
+// Owners keep the free-form box. They can already reach the credential store
+// and the lab admin routes, so restricting them protects nothing.
+const CONSOLE_READ_VERB_RE = /^(?:show|display|dir)\b/i;
+
+// A single interface token. Deliberately excludes whitespace and every CLI
+// separator (; | & newline), so a substituted {iface} cannot smuggle a second
+// command past a pattern that matched the first.
+const CONSOLE_IFACE_TOK = '[A-Za-z0-9][A-Za-z0-9/._:-]{0,31}';
+
+// The Switch Info modal's per-vendor command (client SWITCH_INFO_CMD). Kept
+// here too because that modal posts it to /console/run like any other command.
+const SWITCH_INFO_CMDS = ['show version', 'show system-info', 'show switch'];
+
+const normalizeConsoleCmd = (s) =>
+  String(s == null ? '' : s).replace(/\s+/g, ' ').trim().toLowerCase();
+
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Every command template the product can legitimately send, normalized.
+function consoleCommandTemplates() {
+  const raw = loadConsoleCommands();
+  const out = new Set();
+  const add = (c) => { const n = normalizeConsoleCmd(c); if (n) out.add(n); };
+
+  for (const item of (Array.isArray(raw?.auto_commands) ? raw.auto_commands : [])) add(item?.cmd);
+  for (const vconf of Object.values(raw?.vendors || {})) {
+    for (const key of ['intents', 'auto_commands']) {
+      for (const item of (Array.isArray(vconf?.[key]) ? vconf[key] : [])) add(item?.cmd);
+    }
+  }
+  for (const set of Object.values(AUDIT_CMDS)) for (const c of Object.values(set)) add(c);
+  for (const c of SWITCH_INFO_CMDS) add(c);
+  return out;
+}
+
+// Is this a command a non-owner is allowed to send to a switch?
+function isAllowedConsoleCommand(cmd) {
+  const n = normalizeConsoleCmd(cmd);
+  if (!n) return false;
+  // Gate 2 first — it is the cheap one, and it holds even if the JSON drifts.
+  if (!CONSOLE_READ_VERB_RE.test(n)) return false;
+  // An unsubstituted placeholder would reach the switch literally and fail
+  // there anyway; refuse it here rather than pattern-matching a broken command.
+  if (n.includes('{')) return false;
+  for (const tmpl of consoleCommandTemplates()) {
+    if (tmpl === n) return true;
+    if (!tmpl.includes('{iface}')) continue;
+    const re = new RegExp(`^${tmpl.split('{iface}').map(escapeRe).join(CONSOLE_IFACE_TOK)}$`);
+    if (re.test(n)) return true;
+  }
+  return false;
+}
+
 // Persist the current console transcript for a (scanId, device_index, port) tuple.
 // Guard for routes that take the rack id in the BODY rather than the path.
 // `app.param('rackId')` only fires for `:rackId` in a route pattern, so these
@@ -7519,12 +7697,6 @@ app.get('/api/switch/console/intents', auth.requireAuth, (req, res) => {
 // the user for only the switch IP.
 app.get('/api/switch/creds-status', auth.requireAuth, (req, res) => {
   const vendor = String(req.query.vendor || 'cisco-ios');
-  // The demo box stores no credentials because it never opens an SSH session.
-  // Reporting "none saved" would send the demo user to a credentials form that
-  // cannot help them, so say the switch is ready to talk to.
-  if (demoData.enabled) {
-    return res.json({ vendor, has_username: true, has_password: true, has_enable: true, demo: true });
-  }
   const v = sshCreds.getForVendor(vendor) || {};
   res.json({
     vendor,
@@ -7619,18 +7791,36 @@ app.post('/api/oui/lookup', (req, res) => {
 
 app.get('/api/switch/default-host', auth.requireAuth, (req, res) => {
   const userId = softAuthUserId(req);
-  // Without this the demo's host box opens empty and the user has to invent an
-  // address before anything will run — pre-fill the demo core switch.
-  if (demoData.enabled) {
-    const demoHost = demoData.defaultHost();
-    return res.json({ suggested: demoHost, last_host: readLastHost(userId) || demoHost, gateway: null, demo: true });
-  }
   const last    = readLastHost(userId);
   const gateway = defaultGateway();
-  // Suggested = last (preferred) → gateway (fallback). Either may be null.
+
+  // A REGISTERED switch, when this user has never probed one themselves.
+  //
+  // Without this the live-switch page had no way to learn an address on a fresh
+  // deployment: readLastHost is per-user and empty until that user has probed
+  // something, and the gateway is explicitly not the switch. The client used to
+  // paper over the gap with a hardcoded office IP compiled into every build.
+  // monitored_devices already holds the answer — an operator registered those
+  // switches deliberately — so ask it.
+  //
+  // SCOPED. monitored_devices grew a tenant_id precisely because this table
+  // leaked every customer's switch inventory to any authenticated caller, and
+  // this route is requireAuth, not owner-only. A member must only ever be
+  // offered a switch belonging to a Site they can see.
+  let registered = null;
+  try {
+    const portsDb = require('./lib/port_history_db');
+    const scope   = require('./lib/tenant').visibleTenantIds(req.user);
+    const mine    = portsDb.listDevices({ enabledOnly: true, scope });
+    registered    = mine.length ? mine[0].host : null;
+  } catch (_) { /* table missing on a fresh install — stay null */ }
+
+  // Suggested = last → registered → gateway. The gateway stays LAST and is
+  // never handed to the probe (see portsProbe.js): it is a router, not a switch.
   res.json({
-    suggested: last || gateway || null,
+    suggested: last || registered || gateway || null,
     last_host: last,
+    registered_host: registered,
     gateway,
   });
 });
@@ -7645,7 +7835,8 @@ app.post('/api/switch/console/run-auto', auth.requireAuth, async (req, res) => {
   if (!bodyRackAllowed(req, res, scanId)) return;
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !iface) {
-    return res.status(400).json({ error: 'host, interface, and credentials (body or env) required' });
+    const blocked = switchRequestBlocker({ host, username, password, interface: iface }, { needIface: true });
+    if (blocked) return res.status(400).json({ error: blocked });
   }
   const vconf = VENDORS[vendor] || VENDORS['cisco-ios'];
   // Vendor-specific auto-commands override the JSON file. The file is still
@@ -7685,7 +7876,8 @@ app.post('/api/switch/console/run-auto-stream', auth.requireAuth, async (req, re
   if (!bodyRackAllowed(req, res, scanId)) return;
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !iface) {
-    return res.status(400).json({ error: 'host, interface, and credentials (body or env) required' });
+    const blocked = switchRequestBlocker({ host, username, password, interface: iface }, { needIface: true });
+    if (blocked) return res.status(400).json({ error: blocked });
   }
   const vconf = VENDORS[vendor] || VENDORS['cisco-ios'];
   const autoCommands = loadConsoleCommandsForVendor(vendor || 'cisco-ios');
@@ -7781,13 +7973,28 @@ app.post('/api/switch/console/run', auth.requireAuth, async (req, res) => {
   if (!bodyRackAllowed(req, res, scanId)) return;
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !command) {
-    return res.status(400).json({ error: 'host, command, and credentials (body or env) required' });
+    const blocked = switchRequestBlocker({ host, username, password, command }, { needCommand: true });
+    if (blocked) return res.status(400).json({ error: blocked });
   }
   // Substitute the {iface} placeholder if the caller passed an interface.
   // Intent-driven commands carry placeholders like
   // `show lldp neighbor-information interface gigabitEthernet {iface}` and
   // would otherwise be sent literally to the switch.
   const cmd = iface ? substIface(command, iface) : command;
+  // Owners may run anything; everyone else is held to the commands the product
+  // itself issues. See the allowlist note above isAllowedConsoleCommand().
+  if (req.user?.role !== 'owner' && !isAllowedConsoleCommand(cmd)) {
+    // 'fail', not 'deny': the audit schema CHECKs status IN ('ok','fail') and
+    // audit.log() drops anything else, which would silently lose the one event
+    // here most worth keeping.
+    audit.log({ req, action: 'console.run_denied', status: 'fail',
+                targetType: scanId ? 'rack' : null, targetId: scanId || null,
+                error: 'command not allowlisted',
+                payload: { host, interface: iface || null, command: cmd } });
+    return res.status(403).json({
+      error: 'That command is not available on this account. Use one of the listed checks.',
+    });
+  }
   const vconf = VENDORS[vendor] || VENDORS['cisco-ios'];
   // Allow the client to extend the SSH/command timeout for slow commands
   // (e.g. `show interface status` on a 48-port TP-Link). Capped at 90s and
@@ -7991,7 +8198,8 @@ app.post('/api/switch/port-status', auth.requireAuth, async (req, res) => {
   const { host, sshPort, interface: iface, vendor } = req.body || {};
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !iface) {
-    return res.status(400).json({ error: 'host, interface, and credentials (body or env) required' });
+    const blocked = switchRequestBlocker({ host, username, password, interface: iface }, { needIface: true });
+    if (blocked) return res.status(400).json({ error: blocked });
   }
   const vendorKey = VENDORS[vendor] ? vendor : 'cisco-ios';
   const dialect = VENDORS[vendorKey];
@@ -8049,7 +8257,8 @@ app.post('/api/switch/lldp-neighbor', auth.requireAuth, async (req, res) => {
   const { host, sshPort, interface: iface, vendor } = req.body || {};
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password || !iface) {
-    return res.status(400).json({ error: 'host, interface, and credentials (body or env) required' });
+    const blocked = switchRequestBlocker({ host, username, password, interface: iface }, { needIface: true });
+    if (blocked) return res.status(400).json({ error: blocked });
   }
   const vendorKey = VENDORS[vendor] ? vendor : 'cisco-ios';
   try {
@@ -8196,7 +8405,8 @@ app.post('/api/switch/neighbors', auth.requireAuth, async (req, res) => {
   const { host, sshPort, vendor } = req.body || {};
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password) {
-    return res.status(400).json({ error: 'host and credentials (body or env) required' });
+    const blocked = switchRequestBlocker({ host, username, password });
+    if (blocked) return res.status(400).json({ error: blocked });
   }
   const vendorKey = VENDORS[vendor] ? vendor : 'cisco-ios';
   const vconf = VENDORS[vendorKey];
@@ -8512,8 +8722,10 @@ app.post('/api/lab/devices/:id/audit', auth.requireRole('owner'), async (req, re
     ? { ...(sshCreds.getForVendor(vendor) || {}), ...hostCreds }
     : sshCreds.getForVendor(vendor);
   if (!creds || !creds.username) {
+    // No script name, no path. Setup belongs in the docs, not in an API response
+    // that lands in screenshots and support tickets — see switchRequestBlocker.
     return res.status(409).json({
-      error: `no SSH credentials stored for vendor '${vendor}' — run: node encrypt-creds.js set ${vendor}`,
+      error: `No sign-in saved for ${vendor} switches, so this one can’t be read yet.`,
     });
   }
 
@@ -8560,7 +8772,8 @@ app.post('/api/switch/audit', auth.requireAuth, async (req, res) => {
   const _t0 = Date.now();
   if (!host || !username || !password) {
     _dbg(`400 missing host/creds`);
-    return res.status(400).json({ error: 'host and credentials (body or env) required' });
+    const blocked = switchRequestBlocker({ host, username, password });
+    if (blocked) return res.status(400).json({ error: blocked });
   }
   const vendorKey = VENDORS[vendor] ? vendor : 'cisco-ios';
   const gather = (h) => auditSwitchHost({
@@ -8607,11 +8820,18 @@ const NET_CMD = {
 // POST /api/switch/trace — quick verification from the switch itself: run a
 // ping or traceroute to a target and return the raw output. Rides the same SSH
 // console plumbing as every other switch command.
-app.post('/api/switch/trace', auth.requireAuth, async (req, res) => {
+// Owner-only, unlike the rest of /api/switch/*. This makes a switch INSIDE the
+// office LAN emit traffic to a target the caller chooses. The target is
+// validated as an IP/hostname and the command comes from a server-side template,
+// so it is not arbitrary CLI — but on a public demo it would hand every visitor
+// a probe originating on the far side of the tunnel, one host at a time. The
+// Ping tab is hidden for non-owners to match (PortsPage.jsx).
+app.post('/api/switch/trace', auth.requireRole('owner'), async (req, res) => {
   const { host, sshPort, vendor, target, kind } = req.body || {};
   const { username, password, enablePassword } = resolveSwitchCreds(req.body || {});
   if (!host || !username || !password) {
-    return res.status(400).json({ error: 'host and credentials (body or env) required' });
+    const blocked = switchRequestBlocker({ host, username, password });
+    if (blocked) return res.status(400).json({ error: blocked });
   }
   const tgt = String(target || '').trim();
   // Injection guard: the target is spliced into a shell command on the switch,
@@ -9448,7 +9668,12 @@ module.exports.app                       = app;
 // Test-only: lets tenant-isolation tests exercise the console path guard
 // against the REAL function rather than a copy (a copy proves nothing about
 // the shipped code — the mutation-testing lesson).
-module.exports._internals = { consoleLogPath, saveConsoleTranscript, outputsDir };
+module.exports._internals = {
+  consoleLogPath, saveConsoleTranscript, outputsDir,
+  // Same reasoning for the console allowlist: the test must exercise the
+  // function the route calls, not a reimplementation of it.
+  isAllowedConsoleCommand, consoleCommandTemplates,
+};
 
 // ── User feedback on port identification ──────────────────────
 const feedbackDir      = path.join(__dirname, 'feedback');
@@ -10512,10 +10737,15 @@ if (require.main === module) {
       }, `listening on :${PORT}${attempt > 1 ? ` (after ${attempt} attempts)` : ''}`);
       // Loud on purpose. Serving invented network data as though it were
       // measured is the kind of thing that must never be discovered later.
+      // Scope matters in this line: only the Netdisco seam is seeded. The Lab
+      // page and the Live Network Switch page always talk to real switches over
+      // SSH, in every mode.
+      const demoData = require('./lib/demo_data');
       if (demoData.enabled) {
         logger.warn({ event: 'demo_data.enabled', devices: demoData.devices.length },
-          'RACKTRACK_DEMO_DATA is ON — Netdisco and the switch console are ' +
-          'answering from seeded fixtures, NOT from real equipment');
+          'RACKTRACK_DEMO_DATA is ON — the Netdisco device inventory is ' +
+          'answering from seeded fixtures, NOT from a real Netdisco. The Lab ' +
+          'and live-switch screens are unaffected and still require real SSH');
       }
     });
     server.on('error', (err) => {

@@ -16,6 +16,7 @@ import { PortHistoryContent } from './PortHistoryPage.jsx';
 import AssetImg from '../components/AssetImg';
 import { useSmartBack } from '../hooks/useSmartBack';
 import { useTour } from '../TourContext.jsx';
+import { useAuth } from '../AuthContext';
 
 // ── Naming convention ─────────────────────────────────────────
 const CLASS_CODE = {
@@ -1099,6 +1100,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const stopTour = tour?.stopTour;
   const location = useLocation();
   const { state } = location;
+  // Only a platform owner may send a free-form command to a switch — the server
+  // holds everyone else to the curated checks (app.js isAllowedConsoleCommand).
+  // Rendering the terminal box to a member anyway would just be a text field
+  // that 403s on Enter, so it isn't rendered.
+  const { user } = useAuth();
+  const canRunFreeformCmd = user?.role === 'owner';
   const { rackId: paramRackId } = useParams();
   // When rendered side-by-side (a rack group), the rackId comes in as a prop
   // and there's no navigation state — the cold-link fetch path populates it.
@@ -1320,7 +1327,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // Host defaults to the in-office switch so the LLDP pre-fetch can fire
   // automatically as soon as a port is picked. Username/password still come
   // from the encrypted server-side store or the creds modal.
-  const [switchCreds, setSwitchCreds] = useState({ host: '192.168.1.33', username: '', password: '', vendor: 'tplink', enablePassword: '' });
+  // Host starts from the per-deployment default rather than a baked-in office
+  // address — on a deployment with no route to that LAN the old literal
+  // pre-filled a switch that could not be there. Unset → empty, and the
+  // /api/switch/default-host lookup or the user fills it in.
+  const [switchCreds, setSwitchCreds] = useState({
+    host: import.meta.env.VITE_FALLBACK_SWITCH_HOST || '',
+    username: '', password: '', vendor: 'tplink', enablePassword: '',
+  });
   // Track which port the in-flight LLDP call belongs to, so a rapid port
   // switch doesn't overwrite the current result with a stale one.
   const neighborPortRef = useRef(null);
@@ -4262,21 +4276,23 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 )}
               </div>
 
-              <div className={styles.consoleInputRow}>
-                <span className={styles.consolePrompt}>$</span>
-                <input className={styles.consoleInput}
-                  type="text"
-                  placeholder="Or type any command (e.g. show version)"
-                  value={manualCmd}
-                  onChange={e => setManualCmd(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && manualCmd.trim() && runManualCommand()}
-                  disabled={consoleStatus === 'running-manual'} />
-                <button className={styles.consoleSendBtn}
-                  onClick={runManualCommand}
-                  disabled={!manualCmd.trim() || consoleStatus === 'running-auto' || consoleStatus === 'running-manual'}>
-                  Run
-                </button>
-              </div>
+              {canRunFreeformCmd && (
+                <div className={styles.consoleInputRow}>
+                  <span className={styles.consolePrompt}>$</span>
+                  <input className={styles.consoleInput}
+                    type="text"
+                    placeholder="Or type any command (e.g. show version)"
+                    value={manualCmd}
+                    onChange={e => setManualCmd(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && manualCmd.trim() && runManualCommand()}
+                    disabled={consoleStatus === 'running-manual'} />
+                  <button className={styles.consoleSendBtn}
+                    onClick={runManualCommand}
+                    disabled={!manualCmd.trim() || consoleStatus === 'running-auto' || consoleStatus === 'running-manual'}>
+                    Run
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -480,6 +480,22 @@
   gap: 12px; flex-wrap: wrap;
   backdrop-filter: blur(20px);
 }
+/* The "as of" line above the faceplate when the table is a recording rather
+   than a live read. Deliberately quiet — a line of muted text, not a banner. */
+.asOfLine {
+  margin: 0 16px 10px;
+  font-size: 12px;
+  color: #7a7a7a;
+  letter-spacing: 0.01em;
+}
+
+/* The message block beside the retry button. `flex: 1 1 240px` with
+   `min-width: 0` lets a long explanation wrap instead of shoving the button off
+   the row — on a phone the box is barely wider than the sentence. */
+.errorMsg { flex: 1 1 240px; min-width: 0; }
+.errorMsgHead { display: block; color: #121212; }
+.errorMsgBody { margin-top: 4px; opacity: 0.78; overflow-wrap: break-word; }
+
 .retryBtn {
   background: rgba(255,255,255,0.06);
   color: #121212;

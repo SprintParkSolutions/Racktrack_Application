@@ -1,0 +1,41 @@
+# /etc/wireguard/wg0.conf — OFFICE side (the EVE-NG host)
+#
+# This end initiates: it is behind NAT, so it dials the VPS and holds the
+# association open. Copy to /etc/wireguard/wg0.conf, fill in the two keys, then
+#   sudo systemctl enable --now wg-quick@wg0
+#
+# Requires net.ipv4.ip_forward=1 — see ../lab-tunnel/README.md step 2.
+
+[Interface]
+# Contents of /etc/wireguard/privatekey on THIS host. Never leaves this host.
+PrivateKey = <EVENG_PRIVATE_KEY>
+Address    = 10.99.0.2/24
+
+# The switches have never heard of WireGuard and have no route back to
+# 10.99.0.0/24. MASQUERADE rewrites the source so packets arrive from this
+# host's own LAN address — exactly what the switches already see from the
+# office poller today, so no switch-side ACL or config change is needed.
+#
+# Scoped to the registered switches on purpose: a blanket rule would let the VPS
+# reach the whole office LAN the moment AllowedIPs on the other end widened.
+# iptables expands a comma-separated -d into one rule per address.
+#
+#   .33 = TL-SG2428P (real TP-Link bench)   .60 = L2SW2   .61 = L2SW1
+#   .62 = CoreSW                            .63 = Sw1
+#
+# Keep this list identical to AllowedIPs in wg0.vps.conf, and to what is
+# actually registered in monitored_devices — a switch in one and not the other
+# either fails to poll or is silently unreachable.
+PostUp   = iptables -t nat -A POSTROUTING -s 10.99.0.0/24 -d 192.168.1.33,192.168.1.60,192.168.1.61,192.168.1.62,192.168.1.63 -j MASQUERADE
+PostDown = iptables -t nat -D POSTROUTING -s 10.99.0.0/24 -d 192.168.1.33,192.168.1.60,192.168.1.61,192.168.1.62,192.168.1.63 -j MASQUERADE
+
+[Peer]
+# Contents of /etc/wireguard/publickey on the VPS.
+PublicKey  = <VPS_PUBLIC_KEY>
+Endpoint   = demo.racktrack.ai:51820
+# Only the tunnel subnet — this end must NOT route office traffic to the VPS.
+AllowedIPs = 10.99.0.1/32
+# Keeps the NAT mapping alive so the VPS-initiated SSH of a poll or an audit
+# arrives instead of being dropped by the office router. Without this the first
+# audit after an idle period fails and the switch looks Offline.
+PersistentKeepalive = 25

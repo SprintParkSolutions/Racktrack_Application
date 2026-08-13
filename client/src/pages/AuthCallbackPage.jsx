@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './AuthPages.module.css';
+import AuthLayout from '../components/AuthLayout.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import { parseAuthFragment } from '../utils/socialSession';
 
@@ -53,11 +54,9 @@ export default function AuthCallbackPage() {
   }, [adoptSession, navigate]);
 
   return (
-    <div className={styles.authPage}>
-      <main className={styles.authShell}>
-        <p className={styles.subheading} role="status" aria-live="polite">Signing you in&hellip;</p>
-        <span className={styles.spinner} />
-      </main>
-    </div>
+    <AuthLayout>
+      <p className={styles.subheading} role="status" aria-live="polite">Signing you in&hellip;</p>
+      <span className={styles.spinner} />
+    </AuthLayout>
   );
 }

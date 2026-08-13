@@ -51,7 +51,11 @@ export default function HomeHero() {
         </button>
       </nav>
 
-      <div className={styles.body}>
+      {/* <main>, matching every other page in the app (HomeStudio, HomeLight,
+          HistoryPage, ProfilePage…). This was the one screen where a keyboard
+          or screen-reader user got a <nav> landmark and then nothing to skip
+          to. Same className, so nothing moves. */}
+      <main className={styles.body}>
         <div className={styles.copy}>
           <p className={styles.eyebrow}>Physical infrastructure · documented</p>
 
@@ -92,28 +96,46 @@ export default function HomeHero() {
         </div>
 
         <figure className={styles.shot}>
+          {/* This photograph is the page's LCP element, and the technician often
+              loads it on a weak signal in an aisle — so it claims the connection
+              ahead of the rest of the page's assets instead of queueing behind
+              them. Lowercase `fetchpriority` because React 18 only started
+              recognising the camelCase spelling in 18.3; the lowercase form is
+              passed straight through as an attribute on every version. */}
           <div className={styles.shotImg}>
-            <img src="/home-bg.jpg" alt="A network rack of switches, patch panels and cabling" />
+            <img
+              src="/home-bg.jpg"
+              alt="A network rack of switches, patch panels and cabling"
+              fetchpriority="high"
+              decoding="async"
+            />
           </div>
 
           {/* Readings from an example scan, placed as instruments rather than a
               caption bar: the point is that these numbers are ABOUT the rack
               behind them. Labelled as an example so the meter is never mistaken
-              for a live feed. */}
-          <figcaption className={`${styles.chip} ${styles.chipTop}`}>
+              for a live feed.
+
+              Plain <div>s, not <figcaption>: a figure may hold ONE figcaption
+              and it has to be the first or last child. This was the middle
+              child of three, with a second readout after it — invalid, and it
+              claimed to caption the photograph when it actually annotates it. */}
+          <div className={`${styles.chip} ${styles.chipTop}`}>
             <span className={styles.chipKey}>Rack R-101 · space</span>
             <span className={styles.chipVal}>24<small>/ 42U</small></span>
-            <span className={styles.meter}>
+            {/* The bar restates "24 / 42U" one line above it, so a screen reader
+                announcing it again would just be noise. */}
+            <span className={styles.meter} aria-hidden="true">
               <span className={styles.meterFill} style={{ width: '57%' }} />
             </span>
-          </figcaption>
+          </div>
 
           <div className={`${styles.chip} ${styles.chipBottom}`}>
             <span className={styles.chipKey}>Mapped ports · example</span>
             <span className={styles.chipVal}>48</span>
           </div>
         </figure>
-      </div>
+      </main>
     </section>,
     document.body,
   );

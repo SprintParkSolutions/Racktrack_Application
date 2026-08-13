@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './AuthPages.module.css';
-import AuthBackdrop from '../components/AuthBackdrop.jsx';
+import AuthLayout, { AuthAside, IcAlert, IcEye, IcInfo } from '../components/AuthLayout.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import { safeRedirect } from '../utils/safeRedirect.js';
 
@@ -12,18 +12,7 @@ export const PW_RULES = [
   { id: 'digit', label: 'a digit',        test: pw => /[0-9]/.test(pw) },
   { id: 'spec',  label: 'a special char', test: pw => /[^A-Za-z0-9]/.test(pw) },
 ];
-export const STRENGTH_COLORS = ['#484848', '#484848', '#1c1c1c', '#1c1c1c', '#000000', '#000000'];
-
-const Arrow = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-  </svg>
-);
-const Check = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12"/>
-  </svg>
-);
+export const STRENGTH_COLORS = ['#b42318', '#b42318', '#b54708', '#b54708', '#067647', '#067647'];
 
 export function CodeGrid({ value, onChange, disabled }) {
   const refs = useRef([]);
@@ -112,7 +101,7 @@ export default function SignupPage() {
     const checks = PW_RULES.map(r => ({ ...r, ok: r.test(password) }));
     const satisfied = checks.filter(c => c.ok).length;
     const missing   = checks.filter(c => !c.ok).map(c => c.label);
-    const color = STRENGTH_COLORS[satisfied] || '#000000';
+    const color = STRENGTH_COLORS[satisfied] || '#067647';
     let label;
     if (password.length === 0)     label = '';
     else if (satisfied < 5)        label = `Need ${missing[0]}`;
@@ -165,97 +154,92 @@ export default function SignupPage() {
   }, [step]);
 
   return (
-    <div className={styles.authPage}>
-      <AuthBackdrop />
-
-      <header className={styles.authHeader}>
-        <button className={styles.authBack}
-          onClick={() => step === 'code' ? setStep('details') : navigate('/')}
-          aria-label="Back">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-          </svg>
-        </button>
-        <div className={styles.headerActions}>
+    <AuthLayout
+      onBack={() => step === 'code' ? setStep('details') : navigate('/')}
+      backLabel="Back"
+      aside={
+        step === 'details' ? (
+          <AuthAside text="Already have an account?">
+            <Link to="/login" state={{ from }} className={styles.asideLink}>Sign in</Link>
+          </AuthAside>
+        ) : (
           <div className={styles.stepDots}>
-            <span className={`${styles.stepDot} ${step === 'details' ? styles.stepDotActive : styles.stepDotDone}`}/>
-            <span className={`${styles.stepDot} ${step === 'code' ? styles.stepDotActive : ''}`}/>
+            <span className={`${styles.stepDot} ${styles.stepDotDone}`} />
+            <span className={`${styles.stepDot} ${styles.stepDotActive}`} />
           </div>
-        </div>
-      </header>
+        )
+      }
+    >
+      {step === 'details' ? (
+        <>
+          <h1 className={styles.heading}>Create your organization</h1>
+          <p className={styles.subheading}>
+            You'll be its first member, and can invite the rest of your team afterwards.
+          </p>
 
-      <main className={styles.authShell}>
-
-        <div className={styles.authBrandLockup} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginBottom:'22px' }}>
-          <img src="/logo.jpg" alt="" style={{ width:'40px', height:'40px', borderRadius:'11px', objectFit:'cover', boxShadow:'var(--lift)' }} />
-          <span style={{ fontFamily: 'var(--font)', fontWeight:800, fontSize:'1.15rem', letterSpacing:'-0.01em' }}>RackTrack</span>
-        </div>
-
-        {step === 'details' ? (
-          <>
-            <h1 className={styles.heading}>Create an organization</h1>
-
-            <form className={styles.form} onSubmit={submitDetails} autoComplete="on">
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="su-email">Email</label>
+          <form className={styles.form} onSubmit={submitDetails} autoComplete="on">
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="su-email">Email</label>
+              <div className={styles.inputWrap}>
                 <input id="su-email" className={styles.input} type="email"
                   autoComplete="email" value={email}
                   onChange={e => { setEmail(e.target.value); setError(null); }} autoFocus />
               </div>
+            </div>
 
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="su-user">Username</label>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="su-user">Username</label>
+              <div className={styles.inputWrap}>
                 <input id="su-user" className={styles.input} type="text"
                   autoComplete="username" value={username}
                   onChange={e => { setUsername(e.target.value); setError(null); }} />
               </div>
+            </div>
 
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="su-company">Organization</label>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="su-company">Organization</label>
+              <div className={styles.inputWrap}>
                 <input id="su-company" className={styles.input} type="text"
                   autoComplete="organization" value={company}
                   onChange={e => { setCompany(e.target.value); setError(null); }}
                   required />
-                <p className={styles.fieldNote}>
-                  Creates a new organization.
-                </p>
               </div>
+              <p className={styles.fieldNote}>Creates a new organization.</p>
+            </div>
 
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="su-pw">Password</label>
-                <div className={styles.pwRow}>
-                <input id="su-pw" className={styles.input} type={showPw ? 'text' : 'password'}
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="su-pw">Password</label>
+              <div className={styles.inputWrap}>
+                <input id="su-pw" className={`${styles.input} ${styles.inputPw}`} type={showPw ? 'text' : 'password'}
                   autoComplete="new-password" value={password}
                   onChange={e => { setPassword(e.target.value); setError(null); }} />
                 <button type="button" className={styles.eyeBtn} onClick={() => setShowPw(v => !v)}
                   aria-label={showPw ? 'Hide password' : 'Show password'}>
-                  {showPw
-                    ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                  <IcEye off={showPw} />
                 </button>
-                </div>
-
-                {/* Single strength bar + 1-line hint */}
-                {password.length > 0 && (
-                  <div className={styles.strength}>
-                    <div className={styles.strengthTrack}>
-                      <div className={styles.strengthFill}
-                        style={{
-                          width: `${(pwInfo.satisfied / pwInfo.total) * 100}%`,
-                          background: pwInfo.color,
-                          color: pwInfo.color,
-                        }}/>
-                    </div>
-                    <span className={`${styles.strengthHint} ${pwInfo.allOk ? styles.strengthHintOk : ''}`}
-                      style={pwInfo.allOk ? {} : { color: pwInfo.color }}>
-                      {pwInfo.label}
-                    </span>
-                  </div>
-                )}
               </div>
 
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="su-confirm">Confirm password</label>
+              {/* Single strength bar + 1-line hint */}
+              {password.length > 0 && (
+                <div className={styles.strength}>
+                  <div className={styles.strengthTrack}>
+                    <div className={styles.strengthFill}
+                      style={{
+                        width: `${(pwInfo.satisfied / pwInfo.total) * 100}%`,
+                        background: pwInfo.color,
+                      }}/>
+                  </div>
+                  <span className={`${styles.strengthHint} ${pwInfo.allOk ? styles.strengthHintOk : ''}`}
+                    style={pwInfo.allOk ? {} : { color: pwInfo.color }}>
+                    {pwInfo.label}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="su-confirm">Confirm password</label>
+              <div className={styles.inputWrap}>
                 <input id="su-confirm" className={`${styles.input} ${styles.inputMatch}`} type={showPw ? 'text' : 'password'}
                   autoComplete="new-password" value={confirm}
                   onChange={e => { setConfirm(e.target.value); setError(null); }} />
@@ -265,66 +249,50 @@ export default function SignupPage() {
                   </span>
                 )}
               </div>
-
-              {error && (
-                <div className={styles.errBox}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  {error}
-                </div>
-              )}
-
-              <button type="submit" className={styles.primaryBtn}
-                disabled={loading || !pwInfo.allOk || !matchOk || !email || !username}>
-                <span>Continue</span>
-                <span className={styles.btnArrow}>
-                  {loading ? <span className={styles.spinner}/> : <Arrow />}
-                </span>
-              </button>
-            </form>
-
-            <div className={styles.altRow}>
-              Already have an account?
-              <Link to="/login" state={{ from }} className={styles.altLink}>Sign in</Link>
             </div>
-          </>
-        ) : (
-          <>
-            <h1 className={styles.heading}>Almost there</h1>
-            <p className={styles.sentTo}>
-              Code sent to <span className={styles.sentToEmail}>{email}</span>
-            </p>
 
-            <form className={styles.form} onSubmit={submitCode}>
-              <CodeGrid value={code} onChange={(v) => { setCode(v); setError(null); }} disabled={loading} />
+            {error && (
+              <div className={styles.errBox}><IcAlert width="14" height="14" />{error}</div>
+            )}
 
-              {info && (
-                <div className={styles.infoBox}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  {info}
-                </div>
-              )}
-              {error && (
-                <div className={styles.errBox}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  {error}
-                </div>
-              )}
+            <button type="submit" className={styles.primaryBtn}
+              disabled={loading || !pwInfo.allOk || !matchOk || !email || !username}>
+              {loading && <span className={styles.spinner} />}
+              <span>Create organization</span>
+            </button>
+          </form>
+          {/* No "Already have an account? Sign in" row here — the top bar
+              already carries exactly that link, word for word. */}
+        </>
+      ) : (
+        <>
+          <h1 className={styles.heading}>Check your email</h1>
+          <p className={styles.sentTo}>
+            We sent a 6-digit code to <span className={styles.sentToEmail}>{email}</span>.
+          </p>
 
-              <button type="submit" className={styles.primaryBtn} disabled={loading || code.length !== 6}>
-                <span>Verify</span>
-                <span className={styles.btnArrow}>
-                  {loading ? <span className={styles.spinner}/> : <Check />}
-                </span>
-              </button>
-            </form>
+          <form className={styles.form} onSubmit={submitCode}>
+            <CodeGrid value={code} onChange={(v) => { setCode(v); setError(null); }} disabled={loading} />
 
-            <div className={styles.altRow}>
-              Didn't get it?
-              <button type="button" className={styles.altLink} onClick={onResend}>Resend</button>
-            </div>
-          </>
-        )}
-      </main>
-    </div>
+            {info && !error && (
+              <div className={styles.infoBox}><IcInfo width="14" height="14" />{info}</div>
+            )}
+            {error && (
+              <div className={styles.errBox}><IcAlert width="14" height="14" />{error}</div>
+            )}
+
+            <button type="submit" className={styles.primaryBtn} disabled={loading || code.length !== 6}>
+              {loading && <span className={styles.spinner} />}
+              <span>Verify and continue</span>
+            </button>
+          </form>
+
+          <div className={styles.altRow}>
+            Didn't get it?
+            <button type="button" className={styles.altLink} onClick={onResend}>Resend code</button>
+          </div>
+        </>
+      )}
+    </AuthLayout>
   );
 }

@@ -1,27 +1,28 @@
 /**
- * Seeded network data for the public demo.
+ * Seeded Netdisco inventory for the public demo.
  *
- * demo.racktrack.ai runs on a cloud VPS. Netdisco discovers devices on its own
- * network and the switch console SSHes into real hardware — neither of which
- * exists next to that box, so both features answered "unreachable" and the
- * demo looked broken rather than empty. This module answers those two
- * subsystems with a small, self-consistent fake network instead.
+ * demo.racktrack.ai runs on a cloud VPS with no Netdisco beside it, so the
+ * Network view answered "unreachable" and looked broken rather than empty.
+ * This module answers that one subsystem with a small, self-consistent fake
+ * network instead.
  *
  * OFF unless RACKTRACK_DEMO_DATA is set. A real deployment must never serve
  * invented network data as though it were measured, so the switch is explicit,
  * opt-in, and logged loudly on startup.
  *
- * Two seams, chosen so the real code above them still runs:
- *   - netdisco_proxy.ndGet()   — fixtures are shaped like Netdisco's own
- *                                /api/v1 responses, so the proxy's mapping,
- *                                neighbour resolution and MAC joins all
- *                                execute for real against them.
- *   - runSwitchCommand()       — fixtures are raw CLI transcripts, so the
- *                                vendor parsers are exercised exactly as they
- *                                are against a live TP-Link JetStream.
- *
- * That matters: stubbing the routes instead would have demoed a code path
+ * ONE seam, chosen so the real code above it still runs: netdisco_proxy.ndGet().
+ * Fixtures are shaped like Netdisco's own /api/v1 responses, so the proxy's
+ * field mapping, neighbour resolution and MAC joins all execute for real against
+ * them. That matters — stubbing the routes instead would have demoed a code path
  * nobody ships.
+ *
+ * DELIBERATELY NOT SEAMED: the SSH runners in app.js. This module used to answer
+ * those too with raw CLI transcripts, which put invented PoE watts, negotiated
+ * speeds and "Live" status onto the two screens that promise a live switch — the
+ * owner Lab page and the Live Network Switch page — including for virtual EVE-NG
+ * nodes that have no PoE hardware and never negotiate a link. Those screens now
+ * always talk to real hardware and say so plainly when they cannot reach it. Do
+ * not add a fixture seam back there.
  */
 
 const ENABLED = process.env.RACKTRACK_DEMO_DATA === '1'
@@ -265,178 +266,8 @@ function netdiscoGet(pathAndQuery, ctx = null) {
   return [];
 }
 
-// ── Switch console seam ─────────────────────────────────────────────
-// Raw TP-Link JetStream transcripts. Column widths matter: parseInterfaceStatus
-// wants six columns before the description, and getting that wrong yields zero
-// rows and a "probe returned no port rows" that looks like a switch fault.
-function ifStatusTable(ip) {
-  const rows = portsFor(ip).map((p) => {
-    const status = p.up === 'up' ? 'LinkUp' : 'LinkDown';
-    const speed = p.up === 'up' ? (p.speed === '10 Gbps' ? '10000M' : '1000M') : 'Auto';
-    const duplex = p.up === 'up' ? 'Full' : 'Auto';
-    const medium = p.speed === '10 Gbps' ? 'Fiber' : 'Copper';
-    return [
-      p.port.padEnd(10),
-      status.padEnd(12),
-      speed.padEnd(10),
-      duplex.padEnd(10),
-      'Disable'.padEnd(10),
-      medium.padEnd(15),
-      p.descr || '',
-    ].join('').trimEnd();
-  });
-  return [
-    'Port      Status      Speed     Duplex    FlowCtrl  Active-Medium  Description',
-    '--------- ----------- --------- --------- --------- -------------- -----------',
-    ...rows,
-  ].join('\n');
-}
-
-function sysInfo(ip) {
-  const d = byIp(ip) || DEVICES[0];
-  const days = Math.floor(d.uptime / 86400);
-  return [
-    `System Description - ${d.vendor} ${d.model} ${d.os} Switch`,
-    `Device Name        - ${d.dns}`,
-    `Device Location    - ${d.location}`,
-    `System Contact     - ${d.contact}`,
-    `Hardware Version   - ${d.model} 2.0`,
-    `Software Version   - ${d.os_ver} Build 20250114 Rel.58321`,
-    `Serial Number      - ${d.serial}`,
-    `System Time        - ${iso(0)}`,
-    `Running Time       - ${days} day(s) 4 hour(s) 12 minute(s)`,
-  ].join('\n');
-}
-
-function lldpTable(ip) {
-  const links = LINKS[ip] || {};
-  const rows = Object.entries(links).map(([local, l]) => {
-    const peer = byIp(l.ip);
-    return [
-      `Local Port    : ${local}`,
-      `Chassis ID    : ${peer?.chassis_id || '-'}`,
-      `Port ID       : ${l.port}`,
-      `System Name   : ${peer?.dns || l.ip}`,
-      `System Descr  : ${peer?.vendor || ''} ${peer?.model || ''} ${peer?.os || ''}`.trimEnd(),
-      `Management IP : ${l.ip}`,
-      '',
-    ].join('\n');
-  });
-  return rows.length
-    ? `LLDP neighbor-information of port [ALL]\n\n${rows.join('\n')}`
-    : 'LLDP neighbor-information of port [ALL]\n\nNo neighbor information found.';
-}
-
-// Column order matters and is not the order a JetStream prints it in the
-// manual: parseMacTable() reads MAC, then VLAN, then port. Getting it wrong
-// yields an empty table and a switch that looks like it learned nothing.
-function macTable(ip) {
-  const rows = nodesFor(ip).map(n =>
-    `${n.mac.toLowerCase().padEnd(20)}${String(n.vlan).padEnd(6)}${n.port.padEnd(12)}dynamic   aging`);
-  return [
-    'MAC Address Table',
-    '',
-    'MAC Address         Vlan  Port        Type      Status',
-    '------------------- ----- ----------- --------- --------',
-    ...rows,
-    '',
-    `Total MAC Addresses: ${rows.length}`,
-  ].join('\n');
-}
-
-// parsePoe() reads the SECOND whitespace token as watts and decides "powered"
-// from the LAST token being "On", so the column order here is dictated by the
-// parser rather than by any one vendor's manual.
-function poeTable(ip) {
-  const occupied = OCCUPIED[ip] || [];
-  let total = 0;
-  const rows = portsFor(ip).map((p, idx) => {
-    const on = occupied.includes(idx + 1) && (idx + 1) % 2 === 1;
-    const watts = on ? (4.2 + ((idx * 7) % 9) * 0.4).toFixed(1) : '0.0';
-    if (on) total += parseFloat(watts);
-    return [
-      p.port.padEnd(10),
-      String(watts).padEnd(9),
-      (on ? 'Class3' : '-').padEnd(8),
-      on ? 'On' : 'Off',
-    ].join('');
-  });
-  return [
-    'Interface Power(W)  Class   Status',
-    '--------- --------- ------- ------',
-    ...rows,
-    '',
-    'System Power Limit       : 250.0',
-    `System Power Consumption : ${total.toFixed(1)}`,
-  ].join('\n');
-}
-
-function vlanTable() {
-  return [
-    'VLAN  Name                 Status    Ports',
-    '----- -------------------- --------- ------------------------------',
-    '1     System-VLAN          active    Gi1/0/28',
-    '10    DEMO-Office          active    Gi1/0/1, Gi1/0/5, Gi1/0/11, Gi1/0/17',
-    '20    DEMO-Voice           active    Gi1/0/2, Gi1/0/8, Gi1/0/12, Gi1/0/22',
-    '30    DEMO-Cameras         active    Gi1/0/3',
-  ].join('\n');
-}
-
-function ifConfig(ip) {
-  const rows = portsFor(ip).map(p =>
-    `${p.port.padEnd(10)}${(p.up_admin === 'up' ? 'Enable' : 'Disable').padEnd(9)}${String(p.vlan).padEnd(7)}${p.descr || ''}`.trimEnd());
-  return [
-    'Interface Status   PVID   Description',
-    '--------- -------- ------ --------------------',
-    ...rows,
-  ].join('\n');
-}
-
-/** Raw transcript for one CLI command, as a live switch would return it. */
-function switchCommand({ host, command }) {
-  const cmd = String(command || '').toLowerCase();
-  const ip = byIp(host) ? host : DEVICES[0].ip;
-  let body;
-  if (cmd.includes('system-info') || cmd.includes('show version') || cmd.includes('show switch')) body = sysInfo(ip);
-  else if (cmd.includes('interface status') || cmd.includes('interfaces status') || cmd.includes('show ports')) body = ifStatusTable(ip);
-  else if (cmd.includes('interface configuration') || cmd.includes('interfaces description')) body = ifConfig(ip);
-  else if (cmd.includes('power inline')) body = poeTable(ip);
-  else if (cmd.includes('vlan')) body = vlanTable();
-  else if (cmd.includes('lldp')) body = lldpTable(ip);
-  else if (cmd.includes('mac address') || cmd.includes('mac-address')) body = macTable(ip);
-  else if (cmd.includes('cdp')) body = 'CDP is not enabled on this device.';
-  else body = `% Unrecognized command "${command}" (demo data)`;
-  // Echo + prompt, because cleanShellOutput() strips exactly that and we want
-  // the same code path a real session takes.
-  const name = byIp(ip)?.dns || 'DEMO-SW';
-  return `${command}\n${body}\n${name}#`;
-}
-
-/** Multi-command batch, mirroring runSwitchCommandsSequential's contract. */
-async function switchCommandsSequential({ host, commands = [], onEntry }) {
-  const entries = [];
-  for (let i = 0; i < commands.length; i++) {
-    const c = commands[i];
-    const entry = {
-      name: c.name,
-      cmd: c.cmd,
-      output: switchCommand({ host, command: c.cmd }),
-      error: null,
-      startedAt: new Date().toISOString(),
-    };
-    entries.push(entry);
-    if (typeof onEntry === 'function') {
-      try { onEntry(i, entry); } catch { /* a listener must not break collection */ }
-    }
-  }
-  return entries;
-}
-
 module.exports = {
   enabled: ENABLED,
   devices: DEVICES,
-  defaultHost: () => DEVICES[0].ip,
   netdiscoGet,
-  switchCommand,
-  switchCommandsSequential,
 };

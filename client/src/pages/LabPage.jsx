@@ -88,6 +88,20 @@ function explainSshError(raw) {
   return null; // unknown shape — caller falls back to showing the raw string
 }
 
+// "Live" needs an age bound, or it is just a claim.
+//
+// The poller runs hourly by default (PORT_POLL_INTERVAL_MS) and only records
+// last_error when an attempt actually FAILS. So a switch that stopped being
+// polled at all — credentials pulled, poller not running, host quietly
+// unreachable in a way that never surfaced an error — keeps its old last_seen
+// and its green pill forever. That is how the Lab page came to show five
+// switches as Live whose own detail panel read "Last polled 6d ago".
+//
+// Two intervals of grace: one missed pass is normal (backoff, a manual audit
+// holding the switch's single SSH session), two is a pattern.
+const POLL_INTERVAL_MS = 60 * 60 * 1000;   // matches the server-side default
+const LIVE_MAX_AGE_MS  = 2 * POLL_INTERVAL_MS;
+
 // A device is only healthy once a poll has SUCCEEDED. last_seen is stamped on
 // metadata write, so null means "never got data" even with zero failures —
 // exactly what a missing-credentials device looks like, because the poller
@@ -97,6 +111,12 @@ function statusMeta(d, connecting) {
   if (!d.enabled)    return { label: 'Disabled',    cls: styles.stIdle };
   if (d.last_error)  return { label: 'Offline',     cls: styles.stOff };
   if (!d.last_seen)  return { label: 'No data',     cls: styles.stIdle };
+  const age = Date.now() - new Date(d.last_seen).getTime();
+  // NaN (unparseable stamp) must not read as fresh — compare so that only a
+  // genuinely recent, genuinely parseable timestamp earns "Live".
+  if (!(age < LIVE_MAX_AGE_MS)) {
+    return { label: `Stale · ${fmtAgo(d.last_seen)}`, cls: styles.stIdle };
+  }
   return { label: 'Live', cls: styles.stLive };
 }
 
@@ -266,9 +286,10 @@ export default function LabPage() {
   const neighbors = audit?.neighbors || {};
   const ports = Object.keys(ifstatus).length ? Object.keys(ifstatus) : Object.keys(ifconfig);
 
-  // Fleet tallies for the strip.
-  const liveN = devices.filter((d) => d.enabled && !d.last_error && d.last_seen).length;
-  const offN  = devices.filter((d) => d.enabled && d.last_error).length;
+  // (A "fleet tallies" pair lived here — unused since the strip was dropped,
+  // and it counted Live the old unbounded way, so it would have disagreed with
+  // the pills the moment a switch went stale. Removed rather than fixed twice:
+  // statusMeta() is the single place that decides what Live means.)
 
   // No badge on Identity — it's a fixed field set, not a collection.
   // Neighbour count is per DEVICE seen, not per port — a port on a shared
@@ -551,11 +572,16 @@ export default function LabPage() {
                     Auditing {selected.host} over SSH — identity, ports, PoE, VLANs, LLDP and the MAC table…
                   </p>
                 </div>
-              ) : selected.enabled && !selected.last_error ? (
+              ) : selected.enabled && !selected.last_error && !entry?.error ? (
                 <div className={styles.section}>
                   <p className={styles.sectionNote}>Starting audit…</p>
                 </div>
               ) : null
+              /* `!entry?.error` matters: the poller records last_error, but an
+                 on-demand audit failure lands in entry.error instead. Without it
+                 the panel showed "Last audit failed …" and "Starting audit…"
+                 stacked together — claiming to be mid-attempt when the attempt
+                 had already returned, and nothing further was scheduled. */
             )}
           </div>
         )}

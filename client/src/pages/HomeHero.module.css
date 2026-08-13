@@ -9,23 +9,34 @@
    · NO colour anywhere. The accent was blue (#1D3FD1) on the primary button
      and the meter; the app is pure white with subtle black, so the accent is
      now ink and the button is a black fill on white.
-   · WEIGHT 700. Geist ships 400–700 (fonts.css); asking for 800 makes the
-     browser synthesise a fake bold, which smears the stems at hero size.
-   · The stat row is mono because those are measurements, not prose. */
+   · WEIGHT. Geist ships 400/500/600/700 only (fonts.css) — no 650, no 800.
+     Asking for a weight it doesn't have makes the browser synthesise or round,
+     which smears the stems at hero size.
+   · The stat row is mono because those are measurements, not prose.
+
+   The local tokens below now READ THE APP'S tokens with a hex fallback, which
+   is the convention DashboardPage.module.css sets. The hero used to hardcode
+   its own greys, so it quietly drifted out of step with index.css. */
 
 .hero {
   position: fixed; inset: 0; z-index: 40;
   display: flex; flex-direction: column;
   overflow-y: auto; overflow-x: hidden;
-  background: #FFFFFF;
-  color: #121212;
+  background: var(--ground, #FFFFFF);
+  color: var(--md-on-surface, #121212);
   color-scheme: light;
   font-family: var(--font, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-  --accent: #121212;
-  --ink: #121212;
+  --accent: var(--md-primary, #121212);
+  --ink: var(--md-on-surface, #121212);
   --muted: #606060;
-  --faint: #a0a0a0;
-  --hair: #e8e8e8;
+  /* Was #a0a0a0, which measures 2.6:1 on white — under the 4.5:1 AA floor,
+     and these are the only characters on the page below 12px. They're read
+     off a phone in a lit aisle, so they have to survive glare. 5.3:1 here,
+     still a step lighter than --muted so the hierarchy holds. */
+  --faint: var(--md-on-surface-variant, #6b6b6b);
+  --hair: var(--md-outline-variant, #e8e8e8);
+  /* Literal, not var(--mono, …) — a custom property that references itself is
+     a cycle and resolves to nothing. index.css declares the same stack. */
   --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -38,13 +49,19 @@
 }
 .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16.5px; letter-spacing: -.014em; }
 .logoMark { width: 30px; height: 30px; border-radius: 7px; object-fit: cover; display: block; }
+/* 44px floor: this is the one control in the nav and it is tapped with a
+   gloved thumb. index.css:388 sets the same floor on the global .btn. */
 .navBtn {
-  border: 1px solid var(--hair); border-radius: 3px; padding: 9px 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 9px 20px;
+  border: 1px solid var(--hair); border-radius: 3px;
   font-size: 14px; font-weight: 600; background: #fff; color: var(--ink);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: border-color .16s, background-color .16s;
 }
 .navBtn:hover { border-color: var(--ink); }
+/* tap-highlight is off, so without this a touch produces no feedback at all. */
+.navBtn:active { background: var(--accent-soft, rgba(18, 18, 18, .06)); }
 
 /* ── Two columns ──────────────────────────────────────── */
 .body {
@@ -88,31 +105,45 @@
 
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(16px, 2.8vh, 36px); }
 .btn {
-  display: inline-flex; align-items: center; gap: 11px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 11px;
+  min-height: 44px;
   border-radius: 3px;
   padding: clamp(12px, 1.8vh, 17px) clamp(20px, 1.9vw, 30px);
-  font-size: clamp(14.5px, 1.7vh, 15.5px); font-weight: 650; letter-spacing: -.006em;
+  font-size: clamp(14.5px, 1.7vh, 15.5px); font-weight: 600; letter-spacing: -.006em;
   border: 1px solid transparent; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color .16s, border-color .16s, transform .14s;
+  transition: background-color .16s, border-color .16s;
 }
 .primary { background: var(--accent); color: #fff; }
-.primary:hover { background: #1834B4; }
+/* Was #1834B4 — a leftover from the blue accent this page was built on, and
+   the one patch of colour left in an app that has none. Hovering the main CTA
+   turned it blue. It now deepens to true black, which is the same move the
+   rest of the app makes (--accent → --accent-strong). */
+.primary:hover { background: var(--accent-strong, #000000); }
+.primary:active { background: var(--accent-strong, #000000); }
 .primary svg { transition: transform .18s; }
 .primary:hover svg { transform: translateX(3px); }
 .ghost { background: #fff; color: var(--ink); border-color: var(--hair); }
 .ghost:hover { border-color: var(--ink); }
+.ghost:active { background: var(--accent-soft, rgba(18, 18, 18, .06)); border-color: var(--ink); }
 
 /* Hairline plus measurements. Vertical rules BETWEEN cells rather than around
-   them, so the row reads as one instrument panel instead of three boxes. */
+   them, so the row reads as one instrument panel instead of three boxes.
+
+   GRID, not flex-wrap. Wrapping broke the instrument-panel idea on a phone:
+   the third measurement dropped to a second line and took its `border-left`
+   with it, leaving a vertical rule hanging in front of nothing. Three fixed
+   columns can't wrap, so the rules always fall between cells. */
 .stats {
-  display: flex; flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, max-content));
+  justify-content: start;
   margin-top: clamp(18px, 3.4vh, 48px);
   padding-top: clamp(14px, 2.2vh, 26px);
   border-top: 1px solid var(--hair);
   width: 100%;
 }
-.stat { padding-right: clamp(20px, 2.4vw, 40px); }
+.stat { padding-right: clamp(20px, 2.4vw, 40px); min-width: 0; }
 .stat + .stat {
   padding-left: clamp(20px, 2.4vw, 40px);
   border-left: 1px solid var(--hair);
@@ -147,14 +178,19 @@
 .shotImg img { width: 100%; height: 100%; object-fit: cover; display: block; object-position: 46% center; }
 
 /* Small white instruments over the photograph. They overhang the frame so the
-   image reads as something being measured rather than a picture in a box. */
+   image reads as something being measured rather than a picture in a box.
+
+   No box-shadow: index.css's surface-enforcement block matches [class*="chip"]
+   and sets `box-shadow: none !important`, so the drop shadow that used to be
+   declared here never rendered. Rather than rename around the rule, the chips
+   do what that rule intends — accessories stay flat — and lean on the hairline,
+   which is enough separation when the backdrop is a dark photograph. */
 .chip {
   position: absolute; z-index: 2;
   background: #fff;
-  border: 1px solid rgba(23, 23, 23,.07);
+  border: 1px solid var(--md-outline, rgba(18, 18, 18, .14));
   border-radius: 4px;
   padding: 11px 14px 12px;
-  box-shadow: 0 10px 26px -12px rgba(23, 23, 23,.32);
   min-width: clamp(140px, 13vw, 186px);
 }
 .chipTop    { top: clamp(16px, 3vh, 40px); left: clamp(-14px, -1vw, 0px); }
@@ -181,7 +217,13 @@
   .body {
     grid-template-columns: minmax(0, 1fr);
     gap: clamp(20px, 3vh, 34px);
-    align-content: center;
+    /* `safe` matters: plain `center` centres the overflow too, so on a small
+       phone the eyebrow and the top of the headline are pushed above .hero's
+       scroll origin and can never be scrolled back to. `safe` reverts to
+       start-alignment the moment the column is taller than the viewport.
+       Browsers without the keyword drop the declaration and get the default,
+       which errs the same way. */
+    align-content: safe center;
     padding-bottom: calc(clamp(16px, 2.5vh, 34px) + env(safe-area-inset-bottom, 0px));
   }
   .h1 { max-width: 15ch; }
@@ -193,8 +235,12 @@
 }
 @media (max-width: 480px) {
   .btn { flex: 1 1 0; justify-content: center; padding-left: 14px; padding-right: 14px; }
-  .stat { padding-right: 16px; }
-  .stat + .stat { padding-left: 16px; }
+  /* Equal columns rather than max-content: "SCAN TO INVENTORY" is wider than a
+     third of a 390px screen, so max-content would push the row into overflow. */
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stat { padding-right: 14px; }
+  .stat + .stat { padding-left: 14px; }
+  .statKey { letter-spacing: .1em; }
 }
 /* Short screens: the measurement row restates what the page already shows. */
 @media (max-height: 700px) and (max-width: 900px) {
