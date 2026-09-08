@@ -70,10 +70,16 @@ def _safe_imread(filename, flags=cv2.IMREAD_COLOR):
     if not data:
         return None
     file_bytes = np.frombuffer(data, np.uint8)
-    im = cv2.imdecode(file_bytes, flags)
-    if im is not None and im.ndim == 2:
-        im = im[..., None]
-    return im
+    # Hand back exactly what cv2.imread would. The shape matters: a caller that
+    # asks for IMREAD_GRAYSCALE is promised a 2-D (h, w) array, and easyocr
+    # takes that promise literally — `maximum_y, maximum_x = img.shape` in its
+    # get_image_list. This used to expand a grayscale read to (h, w, 1), so
+    # every label read inside the warm worker died on "too many values to
+    # unpack (expected 2)" and the server quietly fell back to a fresh process
+    # per photo: a 15-30 second wait instead of one or two. IMREAD_COLOR — the
+    # default, and what the ultralytics callers this patch exists for use —
+    # already decodes to three channels, so nothing needed the extra axis.
+    return cv2.imdecode(file_bytes, flags)
 
 
 cv2.imread = _safe_imread
