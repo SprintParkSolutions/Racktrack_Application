@@ -1,107 +1,186 @@
-# Finding a rack's switches
+# Rack and network, case by case
 
-*Design note, 8 September 2026. Rewritten after checking the real hardware.*
+A photograph of a rack and a list of switches on the network are two different
+pictures of the same room. This is every way they fail to line up, and what we
+do about each one.
 
-## The problem
+Measured on the office rack, 8 September 2026. Nothing here is built yet, apart
+from the label repair in case 16.
 
-A customer has five hundred switches. An engineer photographs one rack and needs
-to know which switches are in it.
+## The two sides
 
-Today they must type in every switch by hand, address by address. And once
-typed, we work out which box is which mostly by counting ports, because the
-camera can rarely read a model off a faceplate. With sixty identical
-forty-eight port switches that tells us nothing, and we still show an answer.
+**What a photograph knows.** A picture of a rack gives us boxes and the shelf
+each one sits on. Sometimes a printed label. Usually a port count. Rarely a
+readable model name. It never gives us a serial number, an address, or anything
+the network would recognise.
 
-## What the switches actually publish
+**What the network knows.** A switch on the network gives us an address that
+reaches it, a port table, its neighbours, and a chassis address burned in at the
+factory. It has no idea which rack it is in, or which shelf. Nobody ever told it.
 
-I asked the three switches in our own rack, over SNMP, on 8 September.
+## A — When the counts do not match
 
-| | D-Link .100 | TP-Link .11 | TP-Link .12 |
+**01. More boxes than switches.** Twelve boxes on the shelves, eight switches
+answer. Leave four boxes unnamed. Most of them will be unmanaged switches, patch
+panels or power strips. We never stretch eight names across twelve boxes.
+
+**02. More switches than boxes.** Eight boxes, twelve switches answer. Four of
+them live somewhere else. We list those as not in this rack, rather than finding
+a home for them here.
+
+**03. The counts match and the pairing is still wrong.** Eight boxes, eight
+switches. Treat equal counts as no evidence at all. We pair only the boxes we can
+actually identify and leave the others blank.
+
+**04. The photograph cut the rack off.** The top shelves are out of frame, and
+switches answer that belong to those shelves. Notice that the rack frame runs
+past the edge of the picture, say so, and ask for a second photograph before
+matching anything.
+
+## B — When the device will not say who it is
+
+This is not a guess. I asked the three switches in our own rack what they know
+about themselves, and most of the answers were blank.
+
+| Field | D-Link .100 | TP-Link .11 | TP-Link .12 |
 |---|---|---|---|
-| Name it calls itself | empty | `SG2428P` | `SG2428P` |
-| Standard serial | not available | not available | not available |
-| Maker's own serial | none published | `222B0K4000121` | `222B0K4000217` |
-| Chassis address | `C8:78:7D:3D:E5:30` | `30:DE:4B:23:70:AC` | `30:DE:4B:23:71:0C` |
+| The name it calls itself | empty | SG2428P | SG2428P |
+| Its location | empty | empty | empty |
+| Its port descriptions | empty | empty | empty |
+| Serial, the standard way | not available | not available | not available |
+| Serial, the maker's own way | none published | 222B0K4000121 | 222B0K4000217 |
+| Chassis address | C8:78:7D:3D:E5:30 | 30:DE:4B:23:70:AC | 30:DE:4B:23:71:0C |
 
-I also checked every other field a person could have written an identity into.
-The location field, the contact field and the port descriptions are all empty on
-all three. Nobody has ever configured these switches with a name or a place.
+**05. It has no name.** A box at U18; the name field comes back empty, as it does
+on our D-Link. Fall back to the chassis address. It is the one value that is
+always there and never repeats.
 
-Three things follow, and they decide the whole design.
+**06. Its name is its model number.** Two identical boxes; both answer with the
+same word, SG2428P, which is what they are, not who they are. Treat a name that
+equals the model as no name at all. Sixty switches of that model would all answer
+the same.
 
-**A switch's name is not a name.** One returns nothing. The other two return
-their model number, and the same one. Matching a rack label against a switch
-name cannot be the answer, because half our own kit has no usable name.
+**07. Two devices share one name.** Boxes in two different racks both call
+themselves the same thing, because someone copied a configuration. Never pair on
+a name that appears more than once anywhere in the estate. One repeat makes that
+name useless everywhere.
 
-**The standard serial field is empty everywhere.** Only the maker's own private
-field carries it, and only some makers publish one. TP-Link does. D-Link does
-not.
+**08. It publishes no serial.** The D-Link gave no serial by any method we tried.
+The TP-Links gave theirs. Use the serial where a maker publishes one, and the
+chassis address everywhere else. Both are unique, so either will do.
 
-**The chassis address is the one thing every switch has.** It is unique, it is
-always present, and it never changes.
+## C — When one box is not one switch
 
-## So the photo alone can never name a switch
+**09. A stack.** Four boxes cabled together, one address answering for all four.
+Read the list of stack members and give each one its own shelf, instead of
+showing one switch and three blanks.
 
-A chassis address is not written on the front of a box. Neither is a name that
-does not exist. Whatever the camera sees, it cannot by itself say which of five
-hundred switches it is looking at.
+**10. A chassis with cards in it.** One large box, one device reporting many
+modules and hundreds of ports. Place the chassis at its shelf and hang the
+modules underneath it. The ports belong to the cards, not to the shelf.
 
-The link has to come from somewhere else. There are three honest ways.
+**11. A tall device.** One box filling four shelves, U10 up to U13, and one
+switch. Record the range and its bottom shelf, not a single number, so the
+shelves above it are not reported as empty.
 
-## One: let NetBox hold the map
+**12. A pair that behaves as one.** Two boxes, two addresses that the rest of the
+network treats as a single switch. Place both. They are two pieces of hardware
+whatever the network chooses to believe, and someone has to service them
+separately.
 
-If the estate is modelled in NetBox, the rack and the shelf position are the
-key. The photograph tells us which rack this is and which shelves are occupied.
-NetBox tells us which device sits at each shelf and the address to reach it on.
+**13. The device faces the other way.** A box showing no ports, because its ports
+are at the back, and a switch reporting twenty-four ports. Do not count ports on
+that box at all. Fall back to its position and its cabled neighbours.
 
-Nothing needs to match by name. This is the strongest route and the product
-already talks to NetBox.
+**14. Identical twins side by side.** Two boxes of the same model, same size,
+same port count, one above the other, alike in every field we can read. Admit
+that nothing in the picture separates them. Ask the engineer once, remember the
+answer against each chassis address, and never ask again.
 
-## Two: learn it once, remember it forever
+## D — When the label is missing, wrong or misread
 
-The first time a person places a switch in a rack by hand, remember it against
-its chassis address.
+**15. No label at all.** A blank faceplate and a switch that has to belong to some
+box. Position and neighbours only. This is the common case, not the exception.
 
-From then on, any rack holding that switch is recognised without being told.
-The estate gets learned as engineers walk it, rather than typed up in advance.
+**16. The label was misread.** The print comes back as `SP-RI-UIS-SW04` for a
+switch that sits at shelf 15. Repair the characters that confuse in the shelf
+part of a label, so UIS becomes U15. This one is built and tested already.
 
-## Three: read the sticker
+**17. The label is out of date.** A sticker naming a switch that was replaced last
+year, with different hardware answering at that address. When the sticker and the
+chassis address disagree, believe the hardware, and tell the engineer the sticker
+needs changing.
 
-Where a serial or address is printed on the box, a close-up photograph can read
-it and match exactly. That works today for TP-Link, which publishes its serial.
-It does not work for D-Link, which publishes none, so only the chassis address
-would serve there.
+**18. Two labels on one box.** A rail label giving the position and an asset tag
+giving the device. Keep the two apart. A position is not an identity, and a
+device that moves takes only one of them with it.
 
-## Four: write it back
+**19. The label names nothing we know.** A clear, well-printed name, and no switch
+anywhere by that name. Show it as an unknown device and keep the text. We never
+attach it to the nearest similar name.
 
-The name and location fields are not read-only. They are empty because nobody
-filled them in.
+## E — When things move
 
-So when an engineer places a switch at a shelf, we could write it: the rack and
-the position, into the switch itself. Every future scan then reads its own
-answer straight off the box, and the estate documents itself as it is walked.
+**20. The switch moved to another rack.** Its old shelf is now empty, but the same
+address still answers with the same chassis address. Move its position. One
+device, a new home. We do not create a second entry, and we do not leave a ghost
+in the old rack.
 
-This needs write access over SNMP, which is a bigger ask than reading and which
-many customers will refuse. Worth offering, never worth assuming.
+**21. The switch was replaced.** A box at the same shelf, the same address, but a
+chassis address we have never seen. Call it new hardware at an old position, and
+say so in the report. This is the case a name-based match gets silently wrong.
 
-## What still helps
+**22. The switch got a new address.** Nothing changed in the rack. The old address
+is silent and a new one answers with a chassis address we already know. Update
+the address and keep the identity. Renumbering a network should not lose a single
+device.
 
-Switches in one rack are almost always cabled to each other. Once one switch in
-a photograph is certain, its neighbours are very likely the rest.
+**23. Everything shifted a shelf.** A tidy-up moved every device up by one, with
+no change whatsoever on the network. Read positions fresh from the new photograph
+every time, and never carry the old ones forward as though they were still true.
 
-Port counts stay useful only as a tie-break, never on their own.
+## F — When the network cannot answer
 
-And when we are unsure, say so, and say why. With five hundred candidates a
-confident wrong answer is worse than no answer.
+Being in the rack and being on the network are separate facts. Either can be true
+without the other.
 
-## What to do first
+**24. In the rack, but unreachable.** A box plainly there in the picture, and
+silence from the network. Monitoring is switched off, or the credentials are
+wrong, or a firewall is in the way, or it has no power. Keep it as a real box with
+no partner, and name which of those four it is when we can tell them apart.
 
-Start remembering switches by their chassis address rather than by which rack
-they were typed into. That single change is what makes every other route
-possible, including learning the estate as it is walked.
+**25. It answers, but it is not here.** A perfectly healthy switch, and nothing in
+the picture that matches it. Remember that answering is not evidence of being in
+this rack. Only a remembered position or a cabled neighbour is.
+
+**26. Only reachable from somewhere else.** The phone cannot reach the management
+network the switch sits on. Let the server try where the phone cannot, and mark it
+pending rather than missing until one of them gets an answer.
+
+## G — When the estate is large
+
+**27. Five hundred switches, twenty boxes.** Narrow the list before matching
+anything. Ask NetBox which devices belong to this rack. Then use chassis addresses
+we have already seen here. Then follow the cabled neighbours of any switch we have
+identified, because switches in one rack are nearly always cabled to each other.
+
+**28. The same address in forty buildings.** `192.168.1.11` answers in every one
+of them. Stop treating an address as an identity. Everything we remember is keyed
+on the chassis address together with the site.
+
+## What all of this comes down to
+
+1. Remember a switch by its chassis address, not by which rack somebody typed it
+   into. Every case above gets easier the moment we do.
+2. Ask NetBox first where the rack is modelled there. It already holds the
+   answer, and no matching is needed at all.
+3. Ask the engineer once, then never again. A position confirmed by a person is
+   worth more than any guess, and it keeps working after the device moves.
+4. Say when we do not know. With five hundred candidates, a confident wrong
+   answer costs more than a blank.
 
 ## Honesty
 
-None of this is built. The measurements above are real and were taken from our
-own rack. The name-matching idea in the first version of this note was wrong,
-and our own hardware is what disproved it.
+The measurements above are real, taken from the office rack on 8 September 2026.
+An earlier version of this note proposed matching printed rack labels against the
+names switches publish. The measurements disproved it and it was rewritten.
