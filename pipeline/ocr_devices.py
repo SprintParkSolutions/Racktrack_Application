@@ -675,7 +675,7 @@ def run(rack_id: str) -> dict:
         # very end, after doing all the reading, and wrote no file. That is
         # why make and model never arrived. timezone.utc is the same instant
         # and has been there since 3.2.
-        "generated_at": _dt.datetime.now(_dt.UTC)
+        "generated_at": _dt.datetime.now(_dt.timezone.utc)
         .replace(microsecond=0)
         .isoformat()
         .replace("+00:00", "Z"),

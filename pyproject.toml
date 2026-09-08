@@ -14,7 +14,16 @@
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+# The FLOOR the code has to run on, not the newest version we test against.
+# CI installs 3.11, but the venv this pipeline actually runs in — and the demo
+# server with it — is 3.10, so anything 3.11-only passes CI and then raises at
+# runtime. It already did: with py311 here, pyupgrade's UP017 rewrites
+# `datetime.timezone.utc` into the 3.10-less `datetime.UTC`, and a `ruff --fix`
+# put that into ocr_devices.run's return. Every rack-wide make/model read
+# crashed on its last line after doing all the OCR, and wrote no file. Keep
+# this at the oldest interpreter we deploy on and the linter defends 3.10
+# instead of breaking it; 3.10-safe code still lints and runs clean on 3.11.
+target-version = "py310"
 # Start with the pipeline (the AI engine). Widen to other Python dirs over time.
 src = ["pipeline"]
 extend-exclude = ["Models", "outputs", ".venv", "active_learning_Cache"]
