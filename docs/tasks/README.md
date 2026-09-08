@@ -1,7 +1,11 @@
 # What we built, task by task
 
-Nine pieces of work from the first week of September 2026, one document each.
-Every document says what the thing is, why we did it, what was built, how to check it, and what is still open.
+Nine pieces of work from the first week of September 2026, with a document each.
+
+Every document follows the same shape: how it was before, what we decided and why,
+what we built, how it works, how to check it yourself, where the code lives, and what
+is still open. Figures are measured, not estimated, and where something is unfinished
+the document says so.
 
 | Ticket | Task | Document |
 |---|---|---|
@@ -15,4 +19,4 @@ Every document says what the thing is, why we did it, what was built, how to che
 | SPRTMS-1639 | The app's screens on a phone | [08-mobile-screens.md](08-mobile-screens.md) |
 | SPRTMS-1640 | Sign-in and the front of the app | [09-sign-in.md](09-sign-in.md) |
 
-The tickets live in Jira project SPRTMS. Each one carries the same wording in its comments.
+The tickets live in Jira project SPRTMS and carry the same wording in their comments.
