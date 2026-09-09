@@ -9,6 +9,7 @@ const express = require('express');
 
 const cfg = require('../../lib/netbox/config');
 const store = require('../../lib/netbox/store');
+const plans = require('../../lib/netbox/plans');
 const unmanaged = require('../../lib/netbox/unmanaged');
 const entered = require('../../lib/netbox/entered');
 const { NetBox } = require('../../lib/netbox/netbox');
@@ -106,7 +107,19 @@ router.post('/:id/preview', async (req, res) => {
     const report = await plan(got.snap, client(req),
       { ensureField: req.query.ensureField === 'true' });
     store.recordStage(got.scan.id, 'preview', 'ok', countLine(report.counts));
-    res.json(report);
+
+    // File the diff rather than throw it away. Everything downstream — the
+    // approval, the tickets, the write and the history — points at this.
+    const filed = plans.create({
+      scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
+      report, by: (req.user && (req.user.username || req.user.email)) || null,
+    });
+    res.json({
+      ...report,
+      planId: filed.id,
+      fingerprint: filed.fingerprint,
+      summary: plans.summarise(filed.items),
+    });
   } catch (err) {
     store.recordStage(got.scan.id, 'preview', 'failed', String(err.message).slice(0, 400));
     res.status(502).json({ stage: 'preview', url: t.url,
@@ -114,14 +127,82 @@ router.post('/:id/preview', async (req, res) => {
   }
 });
 
+/**
+ * Write to NetBox — but only what an admin approved, and only if NetBox has
+ * not moved since they approved it.
+ *
+ * Body: { planId }. Without one this refuses, because a push nobody signed is
+ * the thing the whole workflow exists to prevent. Pass force:true only to
+ * accept a plan whose items are not all decided; it can never bypass the
+ * fingerprint check.
+ */
 router.post('/:id/export', async (req, res) => {
   const got = snapshotOf(req, res);
   if (!got) return;
   if (target(req).source === 'none') return res.status(428).json({ stage: 'export', ...NOT_CONFIGURED });
+
+  // An engineer scans and compares. Only an admin writes.
+  if (!['owner', 'org_admin'].includes(req.user?.role)) {
+    return res.status(403).json({
+      stage: 'export',
+      error: 'An admin approves and writes. Send this plan to yours to review.',
+    });
+  }
+
+  const by = (req.user && (req.user.username || req.user.email)) || null;
+  const { planId, force } = req.body || {};
+  if (!planId) {
+    return res.status(428).json({
+      stage: 'export',
+      error: 'Compare first, then have an admin approve it. Send { planId }.',
+    });
+  }
+  const approvedPlan = plans.get(planId);
+  if (!approvedPlan) return res.status(404).json({ stage: 'export', error: 'no such plan' });
+  if (approvedPlan.status === 'applied') {
+    return res.status(409).json({ stage: 'export', error: 'that plan has already been written' });
+  }
+  if (String(approvedPlan.scanId) !== String(got.scan.id)) {
+    return res.status(409).json({ stage: 'export', error: 'that plan belongs to a different scan' });
+  }
+  if (!plans.isSettled(approvedPlan) && !force) {
+    const s = plans.summarise(approvedPlan.items);
+    return res.status(409).json({
+      stage: 'export', error: 'some items are still waiting on somebody',
+      summary: s,
+    });
+  }
+
   try {
-    const report = await push(got.snap, client(req));
+    // Look again, right before writing. If anything moved since the plan was
+    // frozen, stop: somebody edited NetBox between the approval and now, and
+    // writing would erase their work without anyone noticing.
+    const fresh = await plan(got.snap, client(req));
+    const now = plans.fingerprint(fresh.changes);
+    if (now !== approvedPlan.fingerprint) {
+      const replan = plans.create({
+        scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
+        report: fresh, by,
+      });
+      store.recordStage(got.scan.id, 'export', 'failed', 'NetBox changed since approval');
+      return res.status(409).json({
+        stage: 'export',
+        error: 'NetBox has changed since this plan was approved, so nothing was written.',
+        approvedFingerprint: approvedPlan.fingerprint,
+        currentFingerprint: now,
+        newPlanId: replan.id,
+        next: 'Review the new plan and approve it if it is still what you want.',
+      });
+    }
+
+    const excluded = plans.excludedUids(approvedPlan);
+    const toWrite = plans.filterSnapshot(got.snap, excluded);
+    const report = await push(toWrite, client(req));
+    report.planId = approvedPlan.id;
+    report.withheld = excluded.size;
     const status = report.counts.fail ? 'failed' : 'ok';
     store.recordStage(got.scan.id, 'export', status, countLine(report.counts));
+    plans.markApplied(approvedPlan.id, { by, result: report });
     res.json(report);
   } catch (err) {
     store.recordStage(got.scan.id, 'export', 'failed', String(err.message).slice(0, 400));
