@@ -1,0 +1,4 @@
+address,status,device,interface,description
+192.168.1.12/24,active,SW2,gigabitEthernet 1/0/1,Management address
+192.168.1.11/24,active,Sw1,gigabitEthernet 1/0/1,Management address
+192.168.1.100/24,active,Core switch,Slot0/1,Management address

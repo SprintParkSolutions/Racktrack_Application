@@ -1,0 +1,3 @@
+manufacturer,model,slug,u_height,is_full_depth,description
+TP-Link,SG2428P,sg2428p,1,true,"28 ports, read over SNMP"
+D-Link,DGS-1210-52,dgs-1210-52,1,true,"52 ports, read over SNMP"

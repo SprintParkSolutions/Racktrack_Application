@@ -1,0 +1,4 @@
+name,role,manufacturer,device_type,site,rack,position,face,status,serial,description
+SW2,Access Switch,TP-Link,SG2428P,Sprintpark HQ,RACK-01,15,front,active,222B0K4000217,Omada 28-Port Gigabit Smart Switch with 24-Port PoE+
+Sw1,Access Switch,TP-Link,SG2428P,Sprintpark HQ,RACK-01,12,front,active,222B0K4000121,Omada 28-Port Gigabit Smart Switch with 24-Port PoE+
+Core switch,Core Switch,D-Link,DGS-1210-52,Sprintpark HQ,RACK-01,10,front,active,,WS6-DGS-1210-52/F1 6.30.016
