@@ -1,0 +1,11 @@
+manufacturer,model,slug,part_number,u_height,is_full_depth,description,comments
+Cisco,Catalyst 9300-48P,catalyst-9300-48p,C9300-48P,1,true,52 ports,Example data for demonstration. Not observed equipment.
+Cisco,Catalyst 9200-48P,catalyst-9200-48p,C9200-48P,1,true,52 ports,Example data for demonstration. Not observed equipment.
+Cisco,Catalyst 9200-24P,catalyst-9200-24p,C9200-24P,1,true,28 ports,Example data for demonstration. Not observed equipment.
+Cisco,Catalyst 9407R,catalyst-9407r,C9407R,4,true,104 ports,Example data for demonstration. Not observed equipment.
+Dell,PowerEdge R750,poweredge-r750,R750,2,true,4 ports,Example data for demonstration. Not observed equipment.
+Fortinet,FortiGate 100F,fortigate-100f,FG-100F,1,true,10 ports,Example data for demonstration. Not observed equipment.
+Cisco,ISR 4331,isr-4331,ISR4331/K9,1,true,4 ports,Example data for demonstration. Not observed equipment.
+Generic,24-Port Patch Panel,24-port-patch-panel,PP-24-C6,1,false,Passive,Example data for demonstration. Not observed equipment.
+APC,AP8853 Rack PDU,ap8853-rack-pdu,AP8853,1,false,Passive,Example data for demonstration. Not observed equipment.
+Opengear,OpenGear CM8148,opengear-cm8148,CM8148,1,true,48 ports,Example data for demonstration. Not observed equipment.

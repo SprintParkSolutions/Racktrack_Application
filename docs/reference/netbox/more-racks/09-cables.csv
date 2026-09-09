@@ -1,0 +1,100 @@
+type,status,label,a_device,a_type,a_name,b_device,b_type,b_name
+smf-os2,connected,R03-ACC-01 uplink,R03-ACC-01,interface,TenGigabitEthernet1/1/1,R03-CORE-01,interface,GigabitEthernet1/0/1
+smf-os2,connected,R03-ACC-02 uplink,R03-ACC-02,interface,TenGigabitEthernet1/1/1,R03-CORE-01,interface,GigabitEthernet1/0/2
+smf-os2,connected,Stack member 1 uplink,R04-STACK-01-SW1,interface,TenGigabitEthernet1/1/1,R04-CHASSIS-01,interface,GigabitEthernet1/0/1
+smf-os2,connected,Stack member 2 uplink,R04-STACK-01-SW2,interface,TenGigabitEthernet1/1/1,R04-CHASSIS-01,interface,GigabitEthernet1/0/2
+smf-os2,connected,Stack member 3 uplink,R04-STACK-01-SW3,interface,TenGigabitEthernet1/1/1,R04-CHASSIS-01,interface,GigabitEthernet1/0/3
+smf-os2,connected,Stack member 4 uplink,R04-STACK-01-SW4,interface,TenGigabitEthernet1/1/1,R04-CHASSIS-01,interface,GigabitEthernet1/0/4
+cat6,connected,R04-SRV-01 NIC 1,R04-SRV-01,interface,GigabitEthernet1/0/1,R04-STACK-01-SW1,interface,GigabitEthernet1/0/41
+cat6,connected,R04-SRV-02 NIC 1,R04-SRV-02,interface,GigabitEthernet1/0/1,R04-STACK-01-SW1,interface,GigabitEthernet1/0/42
+smf-os2,connected,R06 switch interlink,R06-ACC-01,interface,TenGigabitEthernet1/1/1,R06-ACC-02,interface,TenGigabitEthernet1/1/1
+cat6,connected,Branch router to firewall,R08-RTR-01,interface,GigabitEthernet1/0/1,R08-FW-01,interface,GigabitEthernet1/0/1
+cat6,connected,Branch firewall to switch 1,R08-FW-01,interface,GigabitEthernet1/0/2,R08-SW-01,interface,GigabitEthernet1/0/24
+smf-os2,connected,Branch switch interlink,R08-SW-01,interface,TenGigabitEthernet1/1/1,R08-SW-02,interface,TenGigabitEthernet1/1/1
+power,connected,R03-CORE-01 PSU1,R03-CORE-01,powerport,PSU1,R03-PDU-A,poweroutlet,Outlet1
+power,connected,R03-CORE-01 PSU2,R03-CORE-01,powerport,PSU2,R03-PDU-B,poweroutlet,Outlet1
+power,connected,R03-ACC-01 PSU1,R03-ACC-01,powerport,PSU1,R03-PDU-A,poweroutlet,Outlet2
+power,connected,R03-ACC-01 PSU2,R03-ACC-01,powerport,PSU2,R03-PDU-B,poweroutlet,Outlet2
+power,connected,R03-ACC-02 PSU1,R03-ACC-02,powerport,PSU1,R03-PDU-A,poweroutlet,Outlet3
+power,connected,R03-ACC-02 PSU2,R03-ACC-02,powerport,PSU2,R03-PDU-B,poweroutlet,Outlet3
+power,connected,R03-OOB-01 PSU1,R03-OOB-01,powerport,PSU1,R03-PDU-A,poweroutlet,Outlet4
+power,connected,R03-OOB-01 PSU2,R03-OOB-01,powerport,PSU2,R03-PDU-B,poweroutlet,Outlet4
+power,connected,R04-STACK-01-SW1 PSU1,R04-STACK-01-SW1,powerport,PSU1,R04-PDU-A,poweroutlet,Outlet1
+power,connected,R04-STACK-01-SW1 PSU2,R04-STACK-01-SW1,powerport,PSU2,R04-PDU-B,poweroutlet,Outlet1
+power,connected,R04-STACK-01-SW2 PSU1,R04-STACK-01-SW2,powerport,PSU1,R04-PDU-A,poweroutlet,Outlet2
+power,connected,R04-STACK-01-SW2 PSU2,R04-STACK-01-SW2,powerport,PSU2,R04-PDU-B,poweroutlet,Outlet2
+power,connected,R04-STACK-01-SW3 PSU1,R04-STACK-01-SW3,powerport,PSU1,R04-PDU-A,poweroutlet,Outlet3
+power,connected,R04-STACK-01-SW3 PSU2,R04-STACK-01-SW3,powerport,PSU2,R04-PDU-B,poweroutlet,Outlet3
+power,connected,R04-STACK-01-SW4 PSU1,R04-STACK-01-SW4,powerport,PSU1,R04-PDU-A,poweroutlet,Outlet4
+power,connected,R04-STACK-01-SW4 PSU2,R04-STACK-01-SW4,powerport,PSU2,R04-PDU-B,poweroutlet,Outlet4
+power,connected,R04-CHASSIS-01 PSU1,R04-CHASSIS-01,powerport,PSU1,R04-PDU-A,poweroutlet,Outlet5
+power,connected,R04-CHASSIS-01 PSU2,R04-CHASSIS-01,powerport,PSU2,R04-PDU-B,poweroutlet,Outlet5
+power,connected,R04-SRV-01 PSU1,R04-SRV-01,powerport,PSU1,R04-PDU-A,poweroutlet,Outlet6
+power,connected,R04-SRV-01 PSU2,R04-SRV-01,powerport,PSU2,R04-PDU-B,poweroutlet,Outlet6
+power,connected,R04-SRV-02 PSU1,R04-SRV-02,powerport,PSU1,R04-PDU-A,poweroutlet,Outlet7
+power,connected,R04-SRV-02 PSU2,R04-SRV-02,powerport,PSU2,R04-PDU-B,poweroutlet,Outlet7
+power,connected,R05-SW-01 PSU1,R05-SW-01,powerport,PSU1,R05-PDU-A,poweroutlet,Outlet1
+power,connected,R05-SW-02 PSU1,R05-SW-02,powerport,PSU1,R05-PDU-A,poweroutlet,Outlet2
+power,connected,R05-SW-03 PSU1,R05-SW-03,powerport,PSU1,R05-PDU-A,poweroutlet,Outlet3
+power,connected,R05-SW-04 PSU1,R05-SW-04,powerport,PSU1,R05-PDU-A,poweroutlet,Outlet4
+power,connected,R05-SW-05 PSU1,R05-SW-05,powerport,PSU1,R05-PDU-A,poweroutlet,Outlet5
+power,connected,R05-SW-06 PSU1,R05-SW-06,powerport,PSU1,R05-PDU-A,poweroutlet,Outlet6
+power,connected,R05-SW-07 PSU1,R05-SW-07,powerport,PSU1,R05-PDU-A,poweroutlet,Outlet7
+power,connected,R05-FW-01 PSU1,R05-FW-01,powerport,PSU1,R05-PDU-A,poweroutlet,Outlet8
+power,connected,R05-RTR-01 PSU1,R05-RTR-01,powerport,PSU1,R05-PDU-A,poweroutlet,Outlet9
+power,connected,R06-ACC-01 PSU1,R06-ACC-01,powerport,PSU1,R06-PDU-A,poweroutlet,Outlet1
+power,connected,R06-ACC-01 PSU2,R06-ACC-01,powerport,PSU2,R06-PDU-B,poweroutlet,Outlet1
+power,connected,R06-ACC-02 PSU1,R06-ACC-02,powerport,PSU1,R06-PDU-A,poweroutlet,Outlet2
+power,connected,R06-ACC-02 PSU2,R06-ACC-02,powerport,PSU2,R06-PDU-B,poweroutlet,Outlet2
+power,connected,R06-ACC-03 PSU1,R06-ACC-03,powerport,PSU1,R06-PDU-A,poweroutlet,Outlet3
+power,connected,R06-ACC-03 PSU2,R06-ACC-03,powerport,PSU2,R06-PDU-B,poweroutlet,Outlet3
+power,connected,R06-ACC-04 PSU1,R06-ACC-04,powerport,PSU1,R06-PDU-A,poweroutlet,Outlet4
+power,connected,R06-ACC-04 PSU2,R06-ACC-04,powerport,PSU2,R06-PDU-B,poweroutlet,Outlet4
+power,connected,R06-ACC-05 PSU1,R06-ACC-05,powerport,PSU1,R06-PDU-A,poweroutlet,Outlet5
+power,connected,R06-ACC-05 PSU2,R06-ACC-05,powerport,PSU2,R06-PDU-B,poweroutlet,Outlet5
+power,connected,R06-ACC-06 PSU1,R06-ACC-06,powerport,PSU1,R06-PDU-A,poweroutlet,Outlet6
+power,connected,R06-ACC-06 PSU2,R06-ACC-06,powerport,PSU2,R06-PDU-B,poweroutlet,Outlet6
+power,connected,R07-SW-01 PSU1,R07-SW-01,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet1
+power,connected,R07-SW-01 PSU2,R07-SW-01,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet1
+power,connected,R07-SW-02 PSU1,R07-SW-02,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet2
+power,connected,R07-SW-02 PSU2,R07-SW-02,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet2
+power,connected,R07-SW-03 PSU1,R07-SW-03,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet3
+power,connected,R07-SW-03 PSU2,R07-SW-03,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet3
+power,connected,R07-SW-04 PSU1,R07-SW-04,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet4
+power,connected,R07-SW-04 PSU2,R07-SW-04,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet4
+power,connected,R07-SW-05 PSU1,R07-SW-05,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet5
+power,connected,R07-SW-05 PSU2,R07-SW-05,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet5
+power,connected,R07-SW-06 PSU1,R07-SW-06,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet6
+power,connected,R07-SW-06 PSU2,R07-SW-06,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet6
+power,connected,R07-SW-07 PSU1,R07-SW-07,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet7
+power,connected,R07-SW-07 PSU2,R07-SW-07,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet7
+power,connected,R07-SW-08 PSU1,R07-SW-08,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet8
+power,connected,R07-SW-08 PSU2,R07-SW-08,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet8
+power,connected,R07-SW-09 PSU1,R07-SW-09,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet9
+power,connected,R07-SW-09 PSU2,R07-SW-09,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet9
+power,connected,R07-SW-10 PSU1,R07-SW-10,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet10
+power,connected,R07-SW-10 PSU2,R07-SW-10,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet10
+power,connected,R07-SW-11 PSU1,R07-SW-11,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet11
+power,connected,R07-SW-11 PSU2,R07-SW-11,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet11
+power,connected,R07-SW-12 PSU1,R07-SW-12,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet12
+power,connected,R07-SW-12 PSU2,R07-SW-12,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet12
+power,connected,R07-SW-13 PSU1,R07-SW-13,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet13
+power,connected,R07-SW-13 PSU2,R07-SW-13,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet13
+power,connected,R07-SW-14 PSU1,R07-SW-14,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet14
+power,connected,R07-SW-14 PSU2,R07-SW-14,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet14
+power,connected,R07-SW-15 PSU1,R07-SW-15,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet15
+power,connected,R07-SW-15 PSU2,R07-SW-15,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet15
+power,connected,R07-SW-16 PSU1,R07-SW-16,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet16
+power,connected,R07-SW-16 PSU2,R07-SW-16,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet16
+power,connected,R07-SW-17 PSU1,R07-SW-17,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet17
+power,connected,R07-SW-17 PSU2,R07-SW-17,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet17
+power,connected,R07-SW-18 PSU1,R07-SW-18,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet18
+power,connected,R07-SW-18 PSU2,R07-SW-18,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet18
+power,connected,R07-SW-19 PSU1,R07-SW-19,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet19
+power,connected,R07-SW-19 PSU2,R07-SW-19,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet19
+power,connected,R07-SW-20 PSU1,R07-SW-20,powerport,PSU1,R07-PDU-A,poweroutlet,Outlet20
+power,connected,R07-SW-20 PSU2,R07-SW-20,powerport,PSU2,R07-PDU-B,poweroutlet,Outlet20
+power,connected,R08-RTR-01 PSU1,R08-RTR-01,powerport,PSU1,R08-PDU-A,poweroutlet,Outlet1
+power,connected,R08-FW-01 PSU1,R08-FW-01,powerport,PSU1,R08-PDU-A,poweroutlet,Outlet2
+power,connected,R08-SW-01 PSU1,R08-SW-01,powerport,PSU1,R08-PDU-A,poweroutlet,Outlet3
+power,connected,R08-SW-02 PSU1,R08-SW-02,powerport,PSU1,R08-PDU-A,poweroutlet,Outlet4
