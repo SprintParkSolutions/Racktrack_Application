@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RackTrack for NetBox</title>
+<!-- Local copy of the published artifact (RackTrack for NetBox: compare, identify, pass to admin).
+     Written 8 September 2026. Open directly in a browser; fonts load from Google Fonts when online
+     and fall back to system fonts when not. -->
+<style>body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #f3f7fc; --panel: #ffffff;
+    --ink: #10203c; --ink-2: #3b4d6b; --ink-3: #6b7c99;
+    --line: #d6e2f0; --line-2: #b9cbe2;
+    --accent: #1a56db; --accent-ink: #123c9c; --accent-wash: #e8effc;
+    --good: #1a7f4b; --good-wash: #e5f4ec;
+    --warn: #b45309; --warn-wash: #fbf0e0;
+    --crit: #b91c1c; --crit-wash: #fbe7e7;
+    --sans: "Geist", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "Geist Mono", "SF Mono", Menlo, Consolas, monospace;
+    --r: 3px; --pad: clamp(16px, 3vw, 44px);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent-ink); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3, h4 { text-wrap: balance; line-height: 1.15; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(26px, 3vw, 38px); font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: clamp(19px, 1.9vw, 24px); }
+  h3 { font-size: 16.5px; } h4 { font-size: 13.5px; }
+  p { margin: 0; } p + p { margin-top: 10px; }
+  code { font-family: var(--mono); font-size: 0.92em; background: var(--accent-wash); color: var(--accent-ink); padding: 1px 5px; border-radius: var(--r); }
+  pre { margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; background: var(--ink); color: #e8eefb; padding: 12px 14px; border-radius: var(--r); overflow-x: auto; white-space: pre; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .muted { color: var(--ink-2); } .small { font-size: 13.5px; }
+  ul, ol { margin: 0; padding-left: 20px; } li + li { margin-top: 6px; }
+
+  .doc-head { background: var(--panel); border-bottom: 1px solid var(--line); padding: 28px var(--pad) 0; }
+  .doc-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 40px; align-items: end; padding-bottom: 18px; border-bottom: 2px solid var(--ink); }
+  .doc-title .sub { color: var(--ink-2); margin-top: 8px; font-size: 16px; }
+  .doc-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 24px; margin: 0; font-size: 13.5px; }
+  .doc-meta dt { font-size: 11.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .doc-meta dd { margin: 2px 0 0; }
+
+  .tabs { display: flex; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; padding: 12px 16px 11px; font: inherit; font-size: 14.5px; font-weight: 500; color: var(--ink-2); cursor: pointer; white-space: nowrap; display: flex; gap: 8px; align-items: baseline; }
+  .tab .n { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--accent-ink); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab[aria-selected="true"] .n { color: var(--accent-ink); }
+  .panel { padding: 26px var(--pad) 40px; }
+  .panel > * + * { margin-top: 26px; }
+  .panel[hidden] { display: none; }
+
+  .lead { border: 1px solid var(--line-2); border-left: 4px solid var(--accent); background: var(--accent-wash); border-radius: var(--r); padding: 14px 18px; }
+  .note { border: 1px solid var(--line-2); border-left: 4px solid var(--warn); background: var(--warn-wash); border-radius: var(--r); padding: 14px 18px; }
+  .firm { border: 1px solid var(--line-2); border-left: 4px solid var(--ink); background: var(--panel); border-radius: var(--r); padding: 14px 18px; }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 40px; align-items: start; }
+  .sec { display: grid; gap: 12px; }
+  .sec-h { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .prose > * + * { margin-top: 10px; }
+
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; background: var(--paper); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.k { font-weight: 600; }
+  td.num { font-family: var(--mono); white-space: nowrap; }
+
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; letter-spacing: 0.03em; padding: 2px 8px; border-radius: var(--r); white-space: nowrap; border: 1px solid transparent; vertical-align: middle; }
+  .chip.ok { background: var(--good-wash); color: var(--good); border-color: #bfe3cf; }
+  .chip.warn { background: var(--warn-wash); color: var(--warn); border-color: #efd3ab; }
+  .chip.crit { background: var(--crit-wash); color: var(--crit); border-color: #f0c0c0; }
+  .chip.opt { background: var(--panel); color: var(--ink-2); border-color: var(--line-2); }
+  .chip.req { background: var(--accent-wash); color: var(--accent-ink); border-color: #c5d5f5; }
+
+  details.proof { border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); font-size: 13px; }
+  details.proof summary { cursor: pointer; padding: 8px 12px; color: var(--accent-ink); font-weight: 600; list-style: none; display: flex; gap: 8px; align-items: center; }
+  details.proof summary::-webkit-details-marker { display: none; }
+  details.proof summary::before { content: "+"; font-family: var(--mono); width: 14px; color: var(--ink-3); }
+  details.proof[open] summary::before { content: "–"; }
+  details.proof .pf { border-top: 1px solid var(--line); padding: 10px 12px 12px; display: grid; gap: 8px; }
+  .src { font-family: var(--mono); font-size: 12px; color: var(--ink-2); line-height: 1.55; }
+
+  /* ── the flow ─────────────────────────────────────────────────── */
+  .flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+  .stage { position: relative; border: 1px solid var(--line-2); background: var(--panel); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
+  .stage .sn { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-ink); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .stage h3 { font-size: 22px; }
+  .stage .one { font-size: 15px; }
+  .stage h4 { margin-top: 6px; color: var(--ink-3); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .stage ul { font-size: 14px; } .stage li + li { margin-top: 4px; }
+  .stage + .stage::before { content: "\2192"; position: absolute; left: -15px; top: 14px; color: var(--ink-3); font-size: 18px; line-height: 1; }
+  .screen { border: 1px solid var(--line-2); border-radius: var(--r); background: var(--paper); padding: 10px 12px; font-size: 13.5px; display: grid; gap: 4px; }
+  .screen .t { font-weight: 600; }
+  .screen .row { display: flex; justify-content: space-between; gap: 10px; }
+  .screen .btn { display: inline-block; margin-top: 6px; padding: 4px 10px; border-radius: var(--r); background: var(--accent); color: #fff; font-weight: 600; font-size: 13px; }
+  .screen .btn.ghost { background: var(--panel); color: var(--accent-ink); border: 1px solid var(--line-2); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  .card { border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 13px 15px; display: grid; gap: 6px; align-content: start; }
+  .card h3 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .card p { font-size: 13.5px; color: var(--ink-2); }
+  .card .sol { font-size: 13.5px; color: var(--ink); border-top: 1px solid var(--line); padding-top: 6px; margin-top: 2px; }
+  .card .sol b { color: var(--accent-ink); }
+
+  footer { padding: 18px var(--pad) 28px; color: var(--ink-3); font-size: 13px; border-top: 1px solid var(--line); }
+
+  @media (max-width: 1000px) {
+    .flow { grid-template-columns: minmax(0, 1fr); }
+    .stage + .stage::before { content: "\2193"; left: 18px; top: -16px; }
+  }
+  @media (max-width: 900px) {
+    .two { grid-template-columns: minmax(0, 1fr); }
+    .doc-title { grid-template-columns: minmax(0, 1fr); }
+    body { font-size: 15px; }
+  }
+  @media print {
+    .tabs { display: none; }
+    .panel[hidden] { display: block; }
+    .panel { break-before: page; }
+    .panel:first-of-type { break-before: auto; }
+    details.proof { display: none; }
+    pre { white-space: pre-wrap; }
+  }
+</style>
+
+<header class="doc-head">
+  <div class="doc-title">
+    <div>
+      <div class="eyebrow">Compare · Identify · Pass to admin</div>
+      <h1 style="margin-top:6px">RackTrack for NetBox</h1>
+      <p class="sub">How a rack scan should reach NetBox: the technician compares the rack with NetBox, RackTrack identifies what is different, and the differences go to the NetBox administrator, who approves before anything is written.</p>
+      <p class="sub small">Every fact is <span class="chip ok">Verified</span> with its proof under "Read more", or marked <span class="chip warn">Estimate</span> or <span class="chip opt">To build</span>.</p>
+    </div>
+    <dl class="doc-meta">
+      <div><dt>Version</dt><dd>0.1 · for owner review</dd></div>
+      <div><dt>Date</dt><dd>8 September 2026</dd></div>
+      <div><dt>Verified against</dt><dd>Repo at commit 8d3f111 (server/lib/netbox, server/routes/netbox, client)</dd></div>
+      <div><dt>Prepared for</dt><dd>RackTrack owner</dd></div>
+    </dl>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Document sections">
+    <button class="tab" role="tab" id="tab-flow" aria-controls="panel-flow" aria-selected="true"><span class="n">1</span>The flow</button>
+    <button class="tab" role="tab" id="tab-today" aria-controls="panel-today" aria-selected="false" tabindex="-1"><span class="n">2</span>What exists today</button>
+    <button class="tab" role="tab" id="tab-build" aria-controls="panel-build" aria-selected="false" tabindex="-1"><span class="n">3</span>What must be built</button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════ 1 · THE FLOW ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-flow" aria-labelledby="tab-flow">
+  <div class="lead">
+    <p><b>In one line: the technician never writes to NetBox. RackTrack shows the differences, and the administrator who owns NetBox says yes or no.</b> Three steps, three screens, two people.</p>
+  </div>
+
+  <div class="flow">
+    <div class="stage">
+      <div class="sn"><span>Step 1 · Technician</span><span class="chip warn">Partly exists</span></div>
+      <h3>Compare</h3>
+      <p class="one">Scan the rack, then put the scan next to what NetBox already says about that rack.</p>
+      <h4>What RackTrack does</h4>
+      <ul>
+        <li>Reads the rack back from NetBox: the devices, their positions, their ports and cables.</li>
+        <li>Lines each photographed device up with a NetBox device, strongest clue first: serial, then name, then model and U position, then port count.</li>
+        <li>Writes nothing. This step is read-only.</li>
+      </ul>
+      <h4>What the technician sees</h4>
+      <div class="screen">
+        <div class="t">Rack A-12 · scan of 8 Sep, 14:02</div>
+        <div class="row"><span>In NetBox</span><span>11 devices</span></div>
+        <div class="row"><span>In the photo</span><span>12 devices</span></div>
+        <div class="row"><span>Matched</span><span>10</span></div>
+        <span class="btn">See the differences</span>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="sn"><span>Step 2 · RackTrack</span><span class="chip warn">Partly exists</span></div>
+      <h3>Identify</h3>
+      <p class="one">Turn the comparison into a short list a person can act on, one line per difference.</p>
+      <h4>The five kinds of difference</h4>
+      <ul>
+        <li><b>New:</b> in the rack, not in NetBox.</li>
+        <li><b>Changed:</b> in both, but moved, renamed or a different model.</li>
+        <li><b>Missing:</b> in NetBox, not seen in the rack.</li>
+        <li><b>Conflict:</b> the camera and the switch disagree. Never written to NetBox.</li>
+        <li><b>Unconfirmed:</b> camera only, no switch reading. Written as "planned", not "connected".</li>
+      </ul>
+      <h4>What the technician sees</h4>
+      <div class="screen">
+        <div class="t">Differences · Rack A-12</div>
+        <div class="row"><span>New</span><span>2 devices</span></div>
+        <div class="row"><span>Changed</span><span>1 device moved U10 → U12</span></div>
+        <div class="row"><span>Missing</span><span>1 device</span></div>
+        <div class="row"><span>Conflict</span><span>1 cable</span></div>
+        <span class="btn">Send to admin</span> <span class="btn ghost">Download as file</span>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="sn"><span>Step 3 · Administrator</span><span class="chip crit">Not built</span></div>
+      <h3>Pass to admin</h3>
+      <p class="one">The list goes to the person who owns NetBox. They approve, and only then RackTrack writes.</p>
+      <h4>What RackTrack does</h4>
+      <ul>
+        <li>Stores the list as a pending request and emails the administrator.</li>
+        <li>On approval, creates and updates in NetBox. Never deletes. Safe to run twice.</li>
+        <li>A missing device is marked offline only if the administrator ticks it.</li>
+        <li>Records who approved what, and when, in the audit log.</li>
+      </ul>
+      <h4>What the administrator sees</h4>
+      <div class="screen">
+        <div class="t">Request from Priya · Rack A-12</div>
+        <div class="row"><span>Will create</span><span>2 devices, 50 ports</span></div>
+        <div class="row"><span>Will update</span><span>1 device</span></div>
+        <div class="row"><span>Held back</span><span>1 conflict, for review</span></div>
+        <div class="row"><span>Missing device</span><span>☐ mark offline</span></div>
+        <span class="btn">Approve and write</span> <span class="btn ghost">Reject</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="firm">
+      <h3>Rules that never change</h3>
+      <ul style="margin-top:8px">
+        <li><b>Preview before write.</b> Every write is shown as a list first, and the list is exactly what will happen.</li>
+        <li><b>Never delete.</b> A device that vanished from the rack is reported, not removed.</li>
+        <li><b>Conflicts are never written.</b> A disagreement between the camera and the switch is a finding for a person.</li>
+        <li><b>Safe to repeat.</b> Every object RackTrack writes carries its own tag, so writing the same rack twice updates instead of duplicating.</li>
+        <li><b>Nothing invented.</b> A value no source stated stays blank.</li>
+      </ul>
+      <details class="proof" style="margin-top:10px"><summary>Read more: proof these rules are in the code</summary><div class="pf"><div class="src">server/lib/netbox/writer.js:1-20, the four rules: "1. IDEMPOTENT … 2. DRY-RUN FIRST. plan() performs no writes and returns the exact diff push() would apply. 3. NEVER DELETE. There is no delete path in this module or in the client it uses. 4. CONFIDENCE → STATUS. Proven becomes connected, camera-only becomes planned, and a CONFLICT is not exported at all". server/lib/netbox/netbox.js:8 "There is deliberately NO delete method on this class". The tag is the <code>racktrack_uid</code> custom field, netbox.js:15. "Nothing is invented" is reconcile.js:16 and the ReviewPage header.</div></div></details>
+    </div>
+    <div class="note">
+      <h3>Who does what</h3>
+      <ul style="margin-top:8px">
+        <li><b>Technician:</b> scans, compares, reads the list, sends it. Cannot write to NetBox.</li>
+        <li><b>Administrator</b> (organisation admin or owner): sets up the NetBox connection once, receives requests, approves or rejects, decides about missing devices.</li>
+        <li><b>RackTrack:</b> reads, matches, lists, waits, writes on approval, records.</li>
+      </ul>
+      <p class="small" style="margin-top:10px">This is the same shape the ServiceNow bridge already has: raise a request, wait for approval, then synchronise. NetBox gets the same gate.</p>
+      <details class="proof" style="margin-top:10px"><summary>Read more: the ServiceNow pattern this copies</summary><div class="pf"><div class="src">docs/features/cmdb-registration-reconciliation-users.md §1: "RackTrack first raises a request (a ServiceNow Service Request) and only pushes the inventory once that request is approved. That approval gate is the whole point." server/cmdb_ticket_proxy.js: routes create, refresh, cancel, poll; a 5-minute poller sweeps open tickets.</div></div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 2 · WHAT EXISTS TODAY ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-today" aria-labelledby="tab-today" hidden>
+  <div class="lead">
+    <p><b>Most of the machinery exists. What is missing is the middle and the end: a comparison against records the customer typed into NetBox themselves, one plain list of differences, and the administrator's approval.</b> Today the report's Export sheet shows a preview and then writes straight away, and only the account owner can use it.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Piece by piece</h2><span class="chip ok">Verified</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Piece</th><th>What it does today</th><th>Where in the flow</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="k">NetBox connection</td><td>An organisation admin adds the NetBox address and token once under Data Sources. Technicians are never asked for a token. A server setting is the fallback for a single-customer box.</td><td>Setup</td><td><span class="chip ok">Exists</span></td></tr>
+        <tr><td class="k">Review</td><td>Matches a switch reading to a position in the photo. The camera knows where a device sits; the switch knows what it is. Today the match is proposed from model and port count and a person confirms it; then the switch's model, serial, real ports and cabling are merged onto the layout. The serial-first matching order in the flow is the plan, not yet built.</td><td>Before Compare</td><td><span class="chip ok">Exists</span></td></tr>
+        <tr><td class="k">Preview (dry run)</td><td>Reads NetBox and lists exactly what Export would do: new, updated, same, held back, failed, per kind of object. Writes nothing.</td><td>Compare, Identify</td><td><span class="chip ok">Exists</span></td></tr>
+        <tr><td class="k">Matching</td><td>Only by RackTrack's own tag, the racktrack_uid custom field. Records a person entered into NetBox by hand are invisible to the comparison, on purpose, so they can never be touched.</td><td>Compare</td><td><span class="chip warn">Partial</span></td></tr>
+        <tr><td class="k">Missing devices</td><td>Devices NetBox holds for this rack, tagged by RackTrack, that this scan did not see. Listed with the advice "Review. Not deleted. Set status offline only after a human checks."</td><td>Identify</td><td><span class="chip ok">Exists</span></td></tr>
+        <tr><td class="k">Conflicts</td><td>A device or cable whose sources disagree is held back with the reason "goes to review and never to NetBox".</td><td>Identify</td><td><span class="chip ok">Exists</span></td></tr>
+        <tr><td class="k">Files a person can read</td><td>The same snapshot as Markdown, JSON and NetBox bulk-import CSV, every value with its evidence.</td><td>Identify, Pass to admin</td><td><span class="chip ok">Exists</span></td></tr>
+        <tr><td class="k">Scan-to-scan change</td><td>The rack history compares each scan with the previous one and summarises what changed.</td><td>Compare (rack vs its own past)</td><td><span class="chip ok">Exists</span></td></tr>
+        <tr><td class="k">Export (write)</td><td>Creates and updates 16 kinds of NetBox object in dependency order, from manufacturer down to cable. Never deletes. Safe to run twice.</td><td>After approval</td><td><span class="chip ok">Exists</span></td></tr>
+        <tr><td class="k">Approval</td><td>None. The Export sheet runs Preview, then the same person presses Export and NetBox is written immediately.</td><td>Pass to admin</td><td><span class="chip crit">Missing</span></td></tr>
+        <tr><td class="k">Who can use it</td><td>The whole NetBox area of the API is owner-only. A technician or an organisation admin sees "Only the account owner can open the NetBox tools for now."</td><td>All steps</td><td><span class="chip crit">Blocks the flow</span></td></tr>
+        <tr><td class="k">Audit trail</td><td>Preview and Export results are recorded on the scan (status and counts). No entry is written to the audit log, so "who wrote this to NetBox" is not answerable today.</td><td>Pass to admin</td><td><span class="chip crit">Missing</span></td></tr>
+        <tr><td class="k">Notification</td><td>None. Nobody is told that a rack is waiting.</td><td>Pass to admin</td><td><span class="chip crit">Missing</span></td></tr>
+      </tbody>
+    </table></div>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf">
+      <div class="src"><b>Connection.</b> server/routes/netbox/netbox.js:22-47: "the NetBox login belongs to the organisation and lives where every other data source does — Data Sources (/connections), encrypted, set once by an admin — so nobody standing at a rack is ever asked for a token. The server env is kept only as a fallback"; <code>target(req)</code> resolves the organisation's profile, then the caller's, then NETBOX_URL/NETBOX_TOKEN. server/connection_profiles_routes.js:144 <code>router.use('/api/org-connections', requireAuth, requireOrgAdmin)</code>.</div>
+      <div class="src"><b>Review.</b> client/src/pages/ReviewPage.jsx header: "the operator confirms the match here: this switch is that box in the rack. Once confirmed, the switch's own model, serial, real ports and LLDP cabling are merged onto the camera's layout, and that merged result is what Export writes." server/lib/netbox/reconcile.js:1-19.</div>
+      <div class="src"><b>Preview.</b> server/routes/netbox/netbox.js:100-115 <code>POST /:id/preview</code> calls <code>plan()</code>; writer.js:270-289 "Dry run. Performs no writes and returns exactly what push() would do." Counts create/update/noop/skip/fail (writer.js:124-219); client/src/components/ExportSheet.jsx:20 labels them new, updated, same, held back, failed, and its header: "Preview always comes first and it writes nothing".</div>
+      <div class="src"><b>Matching by tag only.</b> netbox.js:11-15 "The custom field that makes re-scanning safe … racktrack_uid"; netbox.js:107-148 look-ups filter on that field; writer.js:232-236 orphans are "only objects carrying our own uid — so a device someone else created … is invisible to this check and can never be touched by it."</div>
+      <div class="src"><b>Missing devices.</b> writer.js:228-254 <code>orphans()</code>, recommendation text quoted above. <b>Conflicts.</b> writer.js:125 reason "evidence=CONFLICT, so it goes to review and never to NetBox". <b>Files.</b> netbox.js:134-185 export.md, export.json, export.csv; lib/netbox/files.js. <b>Scan-to-scan.</b> server/routes/netbox/scans.js:59-75 <code>changeSummary(older.snapshot, s.snapshot)</code>.</div>
+      <div class="src"><b>Export.</b> netbox.js:117-131 <code>POST /:id/export</code> calls <code>push()</code>; mapping.js SPECS: manufacturers, deviceTypes, deviceRoles, sites, locations, racks, devices, interfaces, rearPorts, frontPorts, powerPorts, powerOutlets, vlans, prefixes, ipAddresses, cables (16 kinds).</div>
+      <div class="src"><b>No approval, owner-only, no audit.</b> ExportSheet.jsx: the sheet has Preview and Export and nothing between them. server/app.js:611-613 "OWNER-ONLY for now … until scans and switches are scoped per organisation"; :635-640 every /api/nb router is mounted behind <code>auth.requireRole('owner')</code>. client/src/pages/ReportPage.jsx:62 the 403 message. <code>grep -rn audit server/routes/netbox/</code> returns nothing; store.js:144 <code>recordStage()</code> only writes status and counts on the scan record.</div>
+    </div></details>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>What the owner's own plan said</h2><span class="chip ok">Verified</span></div>
+    <div class="prose">
+      <p>The NetBox build plan already asked for this shape. It called Review "the trust step: a tool that writes into a customer's system of record without showing its working will not survive its first mistake." It asked for a dry run before every write, for conflicts to be surfaced and never silently settled, and for files a person can read "before it touches their system of record". The compare and approval steps in this document are that plan carried to its end.</p>
+      <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">/Volumes/Racktrack/racktrack_netbox/docs/PLAN.md, M2 Export: "Dry-run first. A diff of what would change, before anything is written"; "Universities want a file a human can review before it touches their system of record". M4 Reconcile: "CONFLICT — sources disagree — not exported … Surface it. Never silently pick a winner." M5 Review: "This is the trust step." The same repo has no compare module: its server/lib holds 19 entries (v1's server/lib/netbox holds 22), none named compare.</div></div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 3 · WHAT MUST BE BUILT ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-build" aria-labelledby="tab-build" hidden>
+  <div class="lead">
+    <p><b>Six pieces, in this order. The first two make Compare and Identify honest; the next three make Pass to admin real; the last opens it to the people who will use it.</b> Effort figures are estimates.</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h3>1. Compare against what the customer already has <span class="chip warn">3 days</span></h3>
+      <p>Today the comparison only recognises objects RackTrack wrote earlier. A customer whose racks are already in NetBox, typed by hand, gets "everything is new" and a second copy of each device on write.</p>
+      <div class="sol"><b>Build:</b> read the rack's devices from NetBox by rack, then match each photographed device to a NetBox device strongest clue first: serial, name, model plus U position, port count. Adopt a match by writing RackTrack's tag onto that existing NetBox device, so the next scan recognises it. This is the same order the build plan set for reconcile.</div>
+    </div>
+    <div class="card"><h3>2. One list of differences <span class="chip warn">2 days</span></h3>
+      <p>The facts exist but are spread over the Preview counts, the Review page, the missing-device list and the warnings.</p>
+      <div class="sol"><b>Build:</b> one screen, five groups: New, Changed, Missing, Conflict, Unconfirmed. Each line says the device, the U position, and what is different, in words. Two buttons: Send to admin, Download as file.</div>
+    </div>
+    <div class="card"><h3>3. Send to admin, approve, write <span class="chip warn">3 days</span></h3>
+      <p>Nothing between Preview and Export today.</p>
+      <div class="sol"><b>Build:</b> a pending request stored on the server with the exact list; an approvals page for organisation admins and the owner; Approve runs the existing write and records the outcome on the request; Reject records the reason. The technician sees the request's state on the report: waiting, approved, written, rejected.</div>
+    </div>
+    <div class="card"><h3>4. Tell the administrator <span class="chip warn">1 day</span></h3>
+      <p>Nobody is told a rack is waiting.</p>
+      <div class="sol"><b>Build:</b> one email through the existing mail transport when a request is sent, and one back to the technician when it is approved or rejected. A badge on the admin's menu with the number waiting.</div>
+    </div>
+    <div class="card"><h3>5. Audit trail and the missing-device decision <span class="chip warn">1 day</span></h3>
+      <p>No audit entry says who wrote to NetBox, and a missing device can only be reported.</p>
+      <div class="sol"><b>Build:</b> audit entries for sent, approved, rejected, written, with counts. On the approval page, a tick box per missing device: "mark offline in NetBox". Only ticked devices are changed, and only to offline, never deleted.</div>
+    </div>
+    <div class="card"><h3>6. Open it to technicians and admins <span class="chip warn">2 days</span></h3>
+      <p>The whole NetBox area is owner-only because its scan and switch records are not yet tied to an organisation.</p>
+      <div class="sol"><b>Build:</b> apply the organisation guard that already exists in the code but is not yet used, then mount the area for every signed-in user, with write actions limited to admins and the owner. Until this is done, only the owner can run the flow at all.</div>
+      <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">server/app.js:611-613 explains the owner-only gate and its reason. server/routes/netbox/scope.js exists (guards <code>requireRack</code>, <code>visible()</code> built on <code>canAccessRack</code>) and is not referenced by any other router: <code>grep -rn "scope" server/routes/netbox/*.js</code> shows only the file itself. Organisation admins already manage Data Sources at /api/org-connections.</div></div></details>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="firm">
+      <h3>Our firm positions</h3>
+      <ul style="margin-top:8px">
+        <li>The technician never writes to NetBox. Only an administrator's approval does.</li>
+        <li>RackTrack never deletes in NetBox, and marks a device offline only when the administrator ticks it.</li>
+        <li>A conflict is shown, never resolved by the software.</li>
+        <li>Every write is preceded by a list, and the list is what gets written.</li>
+        <li>Records the customer typed into NetBox themselves are matched, never duplicated.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Total and order</h3>
+      <p style="margin-top:8px"><span class="chip warn">Estimate</span> about twelve working days, in the order above. Steps 1 and 2 can be shown on our own rack and NetBox on the demo box. Step 3 onward needs two accounts, a technician and an admin, which the seeded demo already has.</p>
+      <p style="margin-top:10px">The ServiceNow bridge keeps its own request-and-approve flow. Both CMDBs end up with the same three steps, which is what the customer sees as one product.</p>
+    </div>
+  </div>
+</section>
+
+<footer>Sources: server/lib/netbox/writer.js, netbox.js, mapping.js, reconcile.js, store.js; server/routes/netbox/netbox.js, scans.js, scope.js; server/connection_profiles_routes.js; server/app.js; server/cmdb_ticket_proxy.js; client/src/components/ExportSheet.jsx; client/src/pages/ReviewPage.jsx, ReportPage.jsx; docs/features/cmdb-registration-reconciliation-users.md; /Volumes/Racktrack/racktrack_netbox/docs/PLAN.md. All read on 8 September 2026.</footer>
+
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('[role="tabpanel"]'));
+  function select(id, focus) {
+    tabs.forEach(function (t) {
+      var on = t.id === id;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      if (on && focus) t.focus();
+    });
+    panels.forEach(function (p) { p.hidden = p.getAttribute('aria-labelledby') !== id; });
+    try { history.replaceState(null, '', '#' + id.replace('tab-', '')); } catch (e) {}
+    try { window.scrollTo({ top: 0 }); } catch (e) {}
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(t.id, false); });
+    t.addEventListener('keydown', function (e) {
+      var j = i;
+      if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') j = 0;
+      else if (e.key === 'End') j = tabs.length - 1;
+      else return;
+      e.preventDefault();
+      select(tabs[j].id, true);
+    });
+  });
+  var h = (location.hash || '').replace('#', '');
+  if (h && document.getElementById('tab-' + h)) select('tab-' + h, false);
+})();
+</script>
+
+</body>
+</html>

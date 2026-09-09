@@ -1,0 +1,446 @@
+<title>NetBox Export Schema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --paper:#ffffff; --ink:#14181b; --body:#2f3733; --muted:#5c6560; --quiet:#8e9893;
+    --rule:#e4e8e6; --rule-firm:#c7cfcb;
+    --good:#0b6a44; --good-bg:#eef5f1;
+    --hold:#8a6d1f; --hold-bg:#f8f4e8;
+    --stop:#9d4a3f; --stop-bg:#f9f1f0;
+    --serif:"Newsreader",Georgia,"Times New Roman",serif;
+    --sans:"Source Sans 3","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono","SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--body);
+       font-family:var(--sans);font-size:16.5px;line-height:1.58;-webkit-font-smoothing:antialiased}
+  .pad{padding:0 clamp(20px,4vw,64px)}
+
+  header{padding-top:52px;padding-bottom:24px;border-bottom:3px double var(--ink)}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.14em;
+           text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(33px,4.8vw,50px);line-height:1.06;
+     letter-spacing:-.015em;color:var(--ink);margin:0 0 13px;max-width:16ch;text-wrap:balance}
+  .lede{font-family:var(--serif);font-size:clamp(17px,2vw,21px);line-height:1.48;color:var(--muted);
+        margin:0;max-width:64ch}
+  .byline{margin:18px 0 0;font-family:var(--mono);font-size:11.5px;color:var(--quiet);
+          display:flex;flex-wrap:wrap;gap:4px 26px}
+
+  section{padding-top:74px}
+  .s-head{display:flex;align-items:flex-start;gap:16px;padding-bottom:9px;border-bottom:2px solid var(--ink)}
+  .s-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--good);
+         letter-spacing:.06em;flex:none;padding-top:11px}
+  .s-head h2{font-family:var(--serif);font-weight:600;font-size:clamp(23px,2.8vw,30px);
+             line-height:1.14;color:var(--ink);margin:0}
+  .s-intro{margin:16px 0 0;max-width:76ch;color:var(--muted)}
+
+  /* the two carry-alongs */
+  .carry{display:grid;grid-template-columns:1fr;gap:0 52px;margin-top:22px}
+  @media(min-width:900px){.carry{grid-template-columns:1fr 1fr}}
+  .cbox{padding:20px 0;border-top:3px solid var(--good)}
+  .cbox h3{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--good);margin:0 0 8px}
+  .cbox p{margin:0 0 9px;font-size:16px}
+  .cbox p:last-child{margin:0}
+
+  /* order strip */
+  .order{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .ochip{font-family:var(--mono);font-size:12px;padding:5px 11px;border:1px solid var(--rule-firm);
+         background:#fff;color:var(--ink);white-space:nowrap}
+  .ochip i{font-style:normal;color:var(--quiet);margin-right:7px}
+  .ochip.arrow{border:none;padding:5px 0;color:var(--quiet)}
+
+  /* object blocks */
+  .objs{display:grid;grid-template-columns:1fr;gap:0 52px;margin-top:6px}
+  @media(min-width:1080px){.objs{grid-template-columns:1fr 1fr}}
+  .obj{padding:24px 0 8px;border-top:1px solid var(--rule)}
+  .obj.wide{grid-column:1/-1}
+  .o-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:4px}
+  .obj h3{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--ink);margin:0;line-height:1.2}
+  .o-type{font-family:var(--mono);font-size:12px;color:var(--good);white-space:nowrap}
+  .o-ep{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin:0 0 12px;word-break:break-all}
+  .obj > p.o-note{margin:0 0 12px;font-size:15.5px;color:var(--muted);max-width:60ch}
+  .fields{width:100%;border-collapse:collapse;font-size:14.5px}
+  .fields td{padding:7px 14px 7px 0;border-top:1px solid var(--rule);vertical-align:top}
+  .fields tr:first-child td{border-top:none}
+  .f-ours{font-family:var(--mono);font-size:13px;color:var(--ink);white-space:nowrap;width:1%}
+  .f-arrow{color:var(--quiet);width:1%;padding-right:12px}
+  .f-nb{font-family:var(--mono);font-size:13px;color:var(--good);white-space:nowrap;width:1%}
+  .f-note{color:var(--muted);font-size:14px;line-height:1.45}
+  .derived{color:var(--quiet)}
+
+  /* evidence ladder */
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:22px}
+  table.lad{border-collapse:collapse;width:100%;min-width:620px;font-size:15.5px}
+  table.lad thead th{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);text-align:left;padding:0 22px 9px 0;
+    border-bottom:1px solid var(--rule-firm);white-space:nowrap}
+  table.lad tbody th{text-align:left;font-family:var(--mono);font-size:13.5px;font-weight:600;color:var(--ink);
+    padding:12px 22px 12px 0;border-bottom:1px solid var(--rule);white-space:nowrap;vertical-align:top}
+  table.lad td{padding:12px 22px 12px 0;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.45}
+  td.num{font-family:var(--mono);font-size:13.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.st{font-family:var(--mono);font-size:13px;white-space:nowrap}
+  .conn{color:var(--good);font-weight:600}
+  .plan{color:var(--hold);font-weight:600}
+  .never{color:var(--stop);font-weight:600}
+  tr.out th,tr.out td{background:var(--stop-bg)}
+
+  /* traps */
+  .traps{margin-top:8px}
+  .trap{display:grid;grid-template-columns:1fr;gap:2px 32px;padding:18px 0;border-top:1px solid var(--rule)}
+  @media(min-width:860px){.trap{grid-template-columns:190px minmax(0,1fr)}}
+  .trap b{font-family:var(--mono);font-size:13px;color:var(--stop);padding-top:2px}
+  .trap span{font-size:16px;line-height:1.5}
+  .trap code{font-family:var(--mono);font-size:.87em;background:#f2f5f3;padding:1px 5px;border-radius:2px}
+
+  footer{margin-top:56px;padding-top:20px;padding-bottom:70px;border-top:1px solid var(--rule);
+         color:var(--quiet);font-size:14.5px}
+  footer p{margin:0 0 8px;max-width:80ch}
+  footer code{font-family:var(--mono);font-size:.9em}
+</style>
+
+<header class="pad">
+  <p class="eyebrow">RackTrack · Reference</p>
+  <h1>NetBox export schema</h1>
+  <p class="lede">Every object a rack scan writes into NetBox, what it is called on each side, and the order it has to be created in.</p>
+  <p class="byline">
+    <span>16 object types</span>
+    <span>NetBox 4.x</span>
+    <span>Verified against 4.6.9</span>
+  </p>
+</header>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">01</span><h2>Two things every object carries</h2></div>
+  <p class="s-intro">NetBox has no native place for either of these, and nothing in the export works without them.</p>
+  <div class="carry">
+    <div class="cbox">
+      <h3>uid → custom_fields.racktrack_uid</h3>
+      <p>Our own stable id for the object, written into a NetBox custom field.</p>
+      <p>NetBox has no upsert. Without this, re-scanning a rack duplicates every object in it. Instead we look the object up by this field, then create it or patch it.</p>
+      <p>The custom field is created automatically on first export and widened to cover every object type we write.</p>
+    </div>
+    <div class="cbox">
+      <h3>evidence → status</h3>
+      <p>What proved this object exists. Never guessed, never invented — if nothing observed it, it is not created.</p>
+      <p>Confidence is a property of the method, not a feeling. It maps onto NetBox's own <span class="conn">connected</span> and <span class="plan">planned</span>, so the customer filters for what we were unsure about inside their own tooling.</p>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <table class="lad">
+      <thead><tr>
+        <th scope="col">Evidence</th><th scope="col">Confidence</th><th scope="col">What it means</th><th scope="col">Becomes</th>
+      </tr></thead>
+      <tbody>
+        <tr><th scope="row">manual</th><td class="num">1.00</td><td>A person looked and typed it.</td><td class="st conn">connected</td></tr>
+        <tr><th scope="row">lldp_both</th><td class="num">1.00</td><td>Both ends report each other. A proven cable.</td><td class="st conn">connected</td></tr>
+        <tr><th scope="row">snmp</th><td class="num">0.98</td><td>The device said so about itself, from its own inventory.</td><td class="st conn">connected</td></tr>
+        <tr><th scope="row">lldp_one</th><td class="num">0.90</td><td>One end reports it, the other is silent.</td><td class="st conn">connected</td></tr>
+        <tr><th scope="row">mac_arp</th><td class="num">0.75</td><td>MAC table plus ARP. Good enough for end devices.</td><td class="st conn">connected</td></tr>
+        <tr><th scope="row">cv_ocr</th><td class="num">0.60</td><td>Read off the photograph.</td><td class="st plan">planned</td></tr>
+        <tr><th scope="row">cv_only</th><td class="num">0.50</td><td>Seen in the photograph, nothing on the network confirms it.</td><td class="st plan">planned</td></tr>
+        <tr class="out"><th scope="row">conflict</th><td class="num">0.00</td><td>The sources disagree. This is a finding for a person, not a fact.</td><td class="st never">never exported</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="s-intro">The line is at 0.75. At or above it the object is written as <span class="conn">connected</span>; below it, <span class="plan">planned</span>. A conflict is held back entirely and reported instead.</p>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">02</span><h2>Creation order</h2></div>
+  <p class="s-intro">NetBox refuses out-of-order creates: you cannot rack a device whose type does not exist, or cable two ports that were never made. The writer walks exactly this sequence.</p>
+  <div class="order">
+    <span class="ochip"><i>1</i>manufacturers</span>
+    <span class="ochip"><i>2</i>deviceTypes</span>
+    <span class="ochip"><i>3</i>deviceRoles</span>
+    <span class="ochip arrow">→</span>
+    <span class="ochip"><i>4</i>sites</span>
+    <span class="ochip"><i>5</i>locations</span>
+    <span class="ochip"><i>6</i>racks</span>
+    <span class="ochip arrow">→</span>
+    <span class="ochip"><i>7</i>devices</span>
+    <span class="ochip arrow">→</span>
+    <span class="ochip"><i>8</i>interfaces</span>
+    <span class="ochip"><i>9</i>rearPorts</span>
+    <span class="ochip"><i>10</i>frontPorts</span>
+    <span class="ochip"><i>11</i>powerPorts</span>
+    <span class="ochip"><i>12</i>powerOutlets</span>
+    <span class="ochip arrow">→</span>
+    <span class="ochip"><i>13</i>vlans</span>
+    <span class="ochip"><i>14</i>prefixes</span>
+    <span class="ochip"><i>15</i>ipAddresses</span>
+    <span class="ochip arrow">→</span>
+    <span class="ochip"><i>16</i>cables</span>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">03</span><h2>Reference data</h2></div>
+  <p class="s-intro">Shared across racks and sites. Created once and reused, so these carry no rack id in their uid and are looked up one at a time.</p>
+  <div class="objs">
+
+    <div class="obj">
+      <div class="o-head"><h3>Manufacturer</h3><span class="o-type">dcim.manufacturer</span></div>
+      <p class="o-ep">/api/dcim/manufacturers/</p>
+      <table class="fields">
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">slug</td><td class="f-arrow">→</td><td class="f-nb">slug</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+
+    <div class="obj">
+      <div class="o-head"><h3>Device role</h3><span class="o-type">dcim.devicerole</span></div>
+      <p class="o-ep">/api/dcim/device-roles/</p>
+      <table class="fields">
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">slug</td><td class="f-arrow">→</td><td class="f-nb">slug</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+
+    <div class="obj wide">
+      <div class="o-head"><h3>Device type</h3><span class="o-type">dcim.devicetype</span></div>
+      <p class="o-ep">/api/dcim/device-types/</p>
+      <p class="o-note">The model, not the box. One row however many of them you own.</p>
+      <table class="fields">
+        <tr><td class="f-ours">manufacturerUid</td><td class="f-arrow">→</td><td class="f-nb">manufacturer</td><td class="f-note">resolved to the numeric id created earlier in this walk</td></tr>
+        <tr><td class="f-ours">model</td><td class="f-arrow">→</td><td class="f-nb">model</td><td class="f-note">for example DGS-1210-52</td></tr>
+        <tr><td class="f-ours">slug</td><td class="f-arrow">→</td><td class="f-nb">slug</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">uHeight</td><td class="f-arrow">→</td><td class="f-nb">u_height</td><td class="f-note">how many shelves the model occupies, default 1</td></tr>
+        <tr><td class="f-ours">isFullDepth</td><td class="f-arrow">→</td><td class="f-nb">is_full_depth</td><td class="f-note">default true</td></tr>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">04</span><h2>Places</h2></div>
+  <div class="objs">
+
+    <div class="obj">
+      <div class="o-head"><h3>Site</h3><span class="o-type">dcim.site</span></div>
+      <p class="o-ep">/api/dcim/sites/</p>
+      <table class="fields">
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">slug</td><td class="f-arrow">→</td><td class="f-nb">slug</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+
+    <div class="obj">
+      <div class="o-head"><h3>Location</h3><span class="o-type">dcim.location</span></div>
+      <p class="o-ep">/api/dcim/locations/</p>
+      <table class="fields">
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours derived">—</td><td class="f-arrow">→</td><td class="f-nb">slug</td><td class="f-note">derived from the name: lowercased, spaces to hyphens</td></tr>
+        <tr><td class="f-ours">siteUid</td><td class="f-arrow">→</td><td class="f-nb">site</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+
+    <div class="obj wide">
+      <div class="o-head"><h3>Rack</h3><span class="o-type">dcim.rack</span></div>
+      <p class="o-ep">/api/dcim/racks/</p>
+      <table class="fields">
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">siteUid</td><td class="f-arrow">→</td><td class="f-nb">site</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">locationUid</td><td class="f-arrow">→</td><td class="f-nb">location</td><td class="f-note">null when the rack sits directly under a site</td></tr>
+        <tr><td class="f-ours">uHeight</td><td class="f-arrow">→</td><td class="f-nb">u_height</td><td class="f-note">omitted from the payload entirely when unknown — NetBox applies its own default and rejects an explicit null</td></tr>
+        <tr><td class="f-ours">descUnits</td><td class="f-arrow">→</td><td class="f-nb">desc_units</td><td class="f-note">true when the rack is numbered from the top down</td></tr>
+        <tr><td class="f-ours">description</td><td class="f-arrow">→</td><td class="f-nb">description</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">comments</td><td class="f-arrow">→</td><td class="f-nb">comments</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">05</span><h2>The device</h2></div>
+  <p class="s-intro">The actual physical box in the actual rack. This is where the photograph and the network finally meet.</p>
+  <div class="objs">
+    <div class="obj wide">
+      <div class="o-head"><h3>Device</h3><span class="o-type">dcim.device</span></div>
+      <p class="o-ep">/api/dcim/devices/</p>
+      <table class="fields">
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">deviceTypeUid</td><td class="f-arrow">→</td><td class="f-nb">device_type</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">roleUid</td><td class="f-arrow">→</td><td class="f-nb">role</td><td class="f-note">this field was called device_role in NetBox 3.x and fails silently if you get it wrong</td></tr>
+        <tr><td class="f-ours">siteUid</td><td class="f-arrow">→</td><td class="f-nb">site</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">rackUid</td><td class="f-arrow">→</td><td class="f-nb">rack</td><td class="f-note">null for a device we know exists but cannot place</td></tr>
+        <tr><td class="f-ours">position</td><td class="f-arrow">→</td><td class="f-nb">position</td><td class="f-note">the shelf number</td></tr>
+        <tr><td class="f-ours">face</td><td class="f-arrow">→</td><td class="f-nb">face</td><td class="f-note">front or rear — sent as an empty string when there is no position, because NetBox rejects a face on an unracked device</td></tr>
+        <tr><td class="f-ours">serial</td><td class="f-arrow">→</td><td class="f-nb">serial</td><td class="f-note">prefer the device's own inventory over reading it off a photograph</td></tr>
+        <tr><td class="f-ours">assetTag</td><td class="f-arrow">→</td><td class="f-nb">asset_tag</td><td class="f-note">unique across the whole NetBox install, not per site — two racks each with an "01" sticker will collide, so prefix them</td></tr>
+        <tr><td class="f-ours">status</td><td class="f-arrow">→</td><td class="f-nb">status</td><td class="f-note">active by default</td></tr>
+        <tr><td class="f-ours">description</td><td class="f-arrow">→</td><td class="f-nb">description</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">customFields</td><td class="f-arrow">→</td><td class="f-nb">custom_fields</td><td class="f-note">where firmware version goes — NetBox has no native field for it</td></tr>
+      </table>
+      <p class="o-note" style="margin-top:12px">Our model also carries <span class="f-ours">mac</span>, <span class="f-ours">primaryIp</span> and <span class="f-ours">platform</span>. They are held on the object but not sent today: the primary IP has to be assigned after its interface exists, and platform needs a NetBox platform record we do not create.</p>
+    </div>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">06</span><h2>Ports</h2></div>
+  <p class="s-intro">Everything that can have a cable plugged into it. The front and rear port pair is how NetBox threads a cable <em>through</em> a patch panel — and it is the one capability no amount of network telemetry can replace, because there is nothing inside a patch panel to interrogate.</p>
+  <div class="objs">
+
+    <div class="obj">
+      <div class="o-head"><h3>Interface</h3><span class="o-type">dcim.interface</span></div>
+      <p class="o-ep">/api/dcim/interfaces/</p>
+      <p class="o-note">A port that carries traffic and can speak LLDP.</p>
+      <table class="fields">
+        <tr><td class="f-ours">deviceUid</td><td class="f-arrow">→</td><td class="f-nb">device</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">type</td><td class="f-arrow">→</td><td class="f-nb">type</td><td class="f-note">default 1000base-t</td></tr>
+        <tr><td class="f-ours">mac</td><td class="f-arrow">→</td><td class="f-nb">mac_address</td><td class="f-note">a plain string up to NetBox 4.1; 4.2 moved MACs to their own object</td></tr>
+        <tr><td class="f-ours">enabled</td><td class="f-arrow">→</td><td class="f-nb">enabled</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">label</td><td class="f-arrow">→</td><td class="f-nb">label</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">description</td><td class="f-arrow">→</td><td class="f-nb">description</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+
+    <div class="obj">
+      <div class="o-head"><h3>Rear port</h3><span class="o-type">dcim.rearport</span></div>
+      <p class="o-ep">/api/dcim/rear-ports/</p>
+      <p class="o-note">Patch panel, back side. Passive — no electronics, no address, ever.</p>
+      <table class="fields">
+        <tr><td class="f-ours">deviceUid</td><td class="f-arrow">→</td><td class="f-nb">device</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">type</td><td class="f-arrow">→</td><td class="f-nb">type</td><td class="f-note">default 8p8c</td></tr>
+        <tr><td class="f-ours">positions</td><td class="f-arrow">→</td><td class="f-nb">positions</td><td class="f-note">how many front ports may map onto it</td></tr>
+      </table>
+    </div>
+
+    <div class="obj wide">
+      <div class="o-head"><h3>Front port</h3><span class="o-type">dcim.frontport</span></div>
+      <p class="o-ep">/api/dcim/front-ports/</p>
+      <p class="o-note">Patch panel, front side. It points at a rear port, and that pairing is what lets NetBox compute a full cable path on its own.</p>
+      <table class="fields">
+        <tr><td class="f-ours">deviceUid</td><td class="f-arrow">→</td><td class="f-nb">device</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">type</td><td class="f-arrow">→</td><td class="f-nb">type</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours derived">—</td><td class="f-arrow">→</td><td class="f-nb">positions</td><td class="f-note">always 1</td></tr>
+        <tr><td class="f-ours">rearPortUid<br>rearPortPosition</td><td class="f-arrow">→</td><td class="f-nb">rear_ports</td><td class="f-note">a list since NetBox 4.6, one entry per front position: <code style="font-family:var(--mono);font-size:12.5px">[{ position, rear_port, rear_port_position }]</code>. Up to 4.5 it was two flat fields, and 4.6 ignores those silently — the port is created with no mapping and a cable trace stops dead at the panel</td></tr>
+      </table>
+    </div>
+
+    <div class="obj">
+      <div class="o-head"><h3>Power port</h3><span class="o-type">dcim.powerport</span></div>
+      <p class="o-ep">/api/dcim/power-ports/</p>
+      <p class="o-note">Where a device draws power. Its inlet.</p>
+      <table class="fields">
+        <tr><td class="f-ours">deviceUid</td><td class="f-arrow">→</td><td class="f-nb">device</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+
+    <div class="obj">
+      <div class="o-head"><h3>Power outlet</h3><span class="o-type">dcim.poweroutlet</span></div>
+      <p class="o-ep">/api/dcim/power-outlets/</p>
+      <p class="o-note">A socket on a power strip, which something else plugs into.</p>
+      <table class="fields">
+        <tr><td class="f-ours">deviceUid</td><td class="f-arrow">→</td><td class="f-nb">device</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">07</span><h2>Addressing</h2></div>
+  <div class="objs">
+
+    <div class="obj">
+      <div class="o-head"><h3>VLAN</h3><span class="o-type">ipam.vlan</span></div>
+      <p class="o-ep">/api/ipam/vlans/</p>
+      <table class="fields">
+        <tr><td class="f-ours">vid</td><td class="f-arrow">→</td><td class="f-nb">vid</td><td class="f-note">the VLAN number</td></tr>
+        <tr><td class="f-ours">name</td><td class="f-arrow">→</td><td class="f-nb">name</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">siteUid</td><td class="f-arrow">→</td><td class="f-nb">site</td><td class="f-note">null for a VLAN that spans sites</td></tr>
+      </table>
+    </div>
+
+    <div class="obj">
+      <div class="o-head"><h3>Prefix</h3><span class="o-type">ipam.prefix</span></div>
+      <p class="o-ep">/api/ipam/prefixes/</p>
+      <table class="fields">
+        <tr><td class="f-ours">prefix</td><td class="f-arrow">→</td><td class="f-nb">prefix</td><td class="f-note">for example 10.20.30.0/24</td></tr>
+        <tr><td class="f-ours">vlanUid</td><td class="f-arrow">→</td><td class="f-nb">vlan</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">description</td><td class="f-arrow">→</td><td class="f-nb">description</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+
+    <div class="obj wide">
+      <div class="o-head"><h3>IP address</h3><span class="o-type">ipam.ipaddress</span></div>
+      <p class="o-ep">/api/ipam/ip-addresses/</p>
+      <table class="fields">
+        <tr><td class="f-ours">address</td><td class="f-arrow">→</td><td class="f-nb">address</td><td class="f-note">with its mask, for example 10.20.30.11/24</td></tr>
+        <tr><td class="f-ours">interfaceUid</td><td class="f-arrow">→</td><td class="f-nb">assigned_object_id</td><td class="f-note">sent together with <code style="font-family:var(--mono);font-size:12.5px">assigned_object_type: "dcim.interface"</code>. Both fields are omitted for an address that belongs to no interface we found</td></tr>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">08</span><h2>Cables</h2></div>
+  <p class="s-intro">A cable with one end is not a cable, it is a note. This object may only be built from evidence for both ends.</p>
+  <div class="objs">
+    <div class="obj wide">
+      <div class="o-head"><h3>Cable</h3><span class="o-type">dcim.cable</span></div>
+      <p class="o-ep">/api/dcim/cables/</p>
+      <table class="fields">
+        <tr><td class="f-ours">a</td><td class="f-arrow">→</td><td class="f-nb">a_terminations</td><td class="f-note"><code style="font-family:var(--mono);font-size:12.5px">[{ object_type, object_id }]</code>. The object type is carried through verbatim, because NetBox wants <code style="font-family:var(--mono);font-size:12.5px">dcim.frontport</code> and rejects <code style="font-family:var(--mono);font-size:12.5px">dcim.front-port</code></td></tr>
+        <tr><td class="f-ours">b</td><td class="f-arrow">→</td><td class="f-nb">b_terminations</td><td class="f-note">the far end, same shape</td></tr>
+        <tr><td class="f-ours derived">evidence</td><td class="f-arrow">→</td><td class="f-nb">status</td><td class="f-note">connected or planned, from the ladder in section 1 — never set by hand. A source may also assert planned itself, when it knows a link exists but not which of two ports carries it</td></tr>
+        <tr><td class="f-ours">type</td><td class="f-arrow">→</td><td class="f-nb">type</td><td class="f-note">cat6 by default; an empty string is NetBox's "not set", and null is rejected</td></tr>
+        <tr><td class="f-ours">label</td><td class="f-arrow">→</td><td class="f-nb">label</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">color</td><td class="f-arrow">→</td><td class="f-nb">color</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">length</td><td class="f-arrow">→</td><td class="f-nb">length</td><td class="f-note"></td></tr>
+        <tr><td class="f-ours">lengthUnit</td><td class="f-arrow">→</td><td class="f-nb">length_unit</td><td class="f-note">sent as an empty string when there is no length</td></tr>
+        <tr><td class="f-ours">description</td><td class="f-arrow">→</td><td class="f-nb">description</td><td class="f-note"></td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">09</span><h2>The one thing that is never exported</h2></div>
+  <div class="objs">
+    <div class="obj wide">
+      <div class="o-head"><h3>Conflict</h3><span class="o-type" style="color:var(--stop)">not sent to NetBox</span></div>
+      <p class="o-note">Two sources disagreed. This is the most valuable thing the system produces: a disagreement between the camera and the switch usually means somebody repatched a cable and never updated the documentation — the exact problem the customer bought this to find. We surface it and never pick a winner.</p>
+      <table class="fields">
+        <tr><td class="f-ours">subjectUid</td><td class="f-arrow"></td><td class="f-nb" style="color:var(--muted)">—</td><td class="f-note">which object the disagreement is about</td></tr>
+        <tr><td class="f-ours">field</td><td class="f-arrow"></td><td class="f-nb" style="color:var(--muted)">—</td><td class="f-note">which field they disagree on</td></tr>
+        <tr><td class="f-ours">cvSays</td><td class="f-arrow"></td><td class="f-nb" style="color:var(--muted)">—</td><td class="f-note">what the photograph said</td></tr>
+        <tr><td class="f-ours">telemetrySays</td><td class="f-arrow"></td><td class="f-nb" style="color:var(--muted)">—</td><td class="f-note">what the network said</td></tr>
+        <tr><td class="f-ours">note</td><td class="f-arrow"></td><td class="f-nb" style="color:var(--muted)">—</td><td class="f-note">anything that helps a person judge it</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">10</span><h2>Traps</h2></div>
+  <p class="s-intro">Things NetBox accepts without complaint and then does not do. Every one of these was found the hard way.</p>
+  <div class="traps">
+    <div class="trap"><b>role vs device_role</b><span>Device role is <code>role</code> in NetBox 4.x. It was <code>device_role</code> in 3.x. Get it wrong and the device is created with no role at all.</span></div>
+    <div class="trap"><b>rear_ports</b><span>From 4.6, a front port's link to its rear port is the list <code>rear_ports</code>. The old flat <code>rear_port</code> and <code>rear_port_position</code> are ignored silently, and a cable trace then stops dead at the patch panel. Verified against 4.6.9.</span></div>
+    <div class="trap"><b>mac_address</b><span>An interface MAC is a plain string up to 4.1. From 4.2 MACs became their own object. If the pinned version moves past 4.1, the interface mapping has to be revisited.</span></div>
+    <div class="trap"><b>'' not null</b><span>NetBox wants an empty string for an absent string field. A null is rejected on choice fields such as cable <code>type</code> and <code>length_unit</code>.</span></div>
+    <div class="trap"><b>u_height</b><span>On a rack, omit the field entirely when the height is unknown. NetBox then applies its own default. An explicit null is rejected.</span></div>
+    <div class="trap"><b>face</b><span>NetBox rejects a face on a device with no position, so the face is sent as an empty string whenever the device is not racked.</span></div>
+    <div class="trap"><b>asset_tag</b><span>Unique across the entire install, not per site. Two racks that each have an "01" sticker will collide, so tags are prefixed.</span></div>
+    <div class="trap"><b>object_type</b><span>A cable termination wants <code>dcim.frontport</code>. <code>dcim.front-port</code> fails. The string is carried through verbatim rather than being generated.</span></div>
+    <div class="trap"><b>no upsert</b><span>NetBox has no create-or-update. Every write is a lookup by <code>racktrack_uid</code> followed by a create or a patch, which is the only reason re-scanning a rack does not duplicate all of it.</span></div>
+  </div>
+</section>
+
+<footer class="pad">
+  <p>Field names track NetBox 4.x, which the docker-compose pins. The full mapping lives in <code>server/lib/netbox/mapping.js</code>, the object shapes in <code>server/lib/netbox/model.js</code>, and the writer that walks them in <code>server/lib/netbox/writer.js</code>.</p>
+  <p>The writer holds four rules: every write is idempotent through <code>racktrack_uid</code>; a dry run produces exactly the diff the real push would apply; nothing is ever deleted, only reported; and confidence sets status rather than being discarded.</p>
+</footer>
