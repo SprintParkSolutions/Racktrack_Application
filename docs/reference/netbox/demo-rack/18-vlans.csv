@@ -1,0 +1,6 @@
+site,vid,name,status,tenant,description
+Sprintpark HQ,10,Data,active,Sprintpark IT,User workstations
+Sprintpark HQ,20,Voice,active,Sprintpark IT,Handsets
+Sprintpark HQ,30,Management,active,Sprintpark IT,Switch and firewall management
+Sprintpark HQ,40,Servers,active,Sprintpark IT,Physical compute
+Sprintpark HQ,99,Native,active,Sprintpark IT,"Untagged, unused"

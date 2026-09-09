@@ -1,0 +1,9 @@
+manufacturer,model,slug,part_number,u_height,is_full_depth,airflow,weight,weight_unit,default_platform,exclude_from_utilization,description,comments
+Fortinet,FortiGate 100F,fortigate-100f,FG-100F,1,true,front-to-rear,4.0,kg,FortiOS 7.4,false,10 ports,Example data for demonstration. Not observed equipment.
+Cisco,ISR 4331,isr-4331,ISR4331/K9,1,true,front-to-rear,5.4,kg,Cisco IOS-XE 17,false,4 ports,Example data for demonstration. Not observed equipment.
+Cisco,Catalyst 9300-48P,catalyst-9300-48p,C9300-48P,1,true,front-to-rear,7.6,kg,Cisco IOS-XE 17,false,52 ports,Example data for demonstration. Not observed equipment.
+Cisco,Catalyst 9200-48P,catalyst-9200-48p,C9200-48P,1,true,front-to-rear,6.4,kg,Cisco IOS-XE 17,false,52 ports,Example data for demonstration. Not observed equipment.
+Dell,PowerEdge R650,poweredge-r650,R650,1,true,front-to-rear,19.5,kg,Ubuntu 24.04,false,4 ports,Example data for demonstration. Not observed equipment.
+APC,AP8853 Rack PDU,ap8853-rack-pdu,AP8853,1,true,passive,6.8,kg,,false,Passive,Example data for demonstration. Not observed equipment.
+Generic,24-Port Patch Panel,24-port-patch-panel,PP-24-C6,1,true,passive,1.9,kg,,false,Passive,Example data for demonstration. Not observed equipment.
+Opengear,OpenGear CM8148,opengear-cm8148,CM8148,1,true,front-to-rear,4.5,kg,Opengear 23.03,false,48 ports,Example data for demonstration. Not observed equipment.

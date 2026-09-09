@@ -1,0 +1,2 @@
+site,location,name,facility_id,tenant,status,role,type,serial,asset_tag,width,u_height,starting_unit,desc_units,outer_width,outer_depth,outer_unit,mounting_depth,weight,max_weight,weight_unit,airflow,description,comments
+Sprintpark HQ,Ground Floor Comms Room,RACK-02,GF-R02,Sprintpark IT,active,Network,4-post-cabinet,DEMO-RACK-0002,SPK-RACK-0002,19,42,1,false,600,1000,mm,800,120,1000,kg,front-to-rear,"Full-height cabinet, every shelf occupied",Example data for demonstration. Not observed equipment.

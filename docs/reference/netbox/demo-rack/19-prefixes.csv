@@ -1,0 +1,5 @@
+prefix,vlan,site,status,tenant,is_pool,description
+10.20.10.0/24,10,Sprintpark HQ,active,Sprintpark IT,false,Data
+10.20.20.0/24,20,Sprintpark HQ,active,Sprintpark IT,false,Voice
+10.20.30.0/24,30,Sprintpark HQ,active,Sprintpark IT,false,Management
+10.20.40.0/24,40,Sprintpark HQ,active,Sprintpark IT,false,Servers

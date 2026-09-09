@@ -1,0 +1,227 @@
+type,status,color,length,length_unit,label,tenant,description,a_device,a_type,a_name,b_device,b_type,b_name
+smf-os2,connected,0091ff,3,m,ACC-01 uplink A,Sprintpark IT,ACC-01 uplink A,ACC-01,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/1
+smf-os2,connected,ffc107,3,m,ACC-01 uplink B,Sprintpark IT,ACC-01 uplink B,ACC-01,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/1
+smf-os2,connected,0091ff,3,m,ACC-02 uplink A,Sprintpark IT,ACC-02 uplink A,ACC-02,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/2
+smf-os2,connected,ffc107,3,m,ACC-02 uplink B,Sprintpark IT,ACC-02 uplink B,ACC-02,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/2
+smf-os2,connected,0091ff,3,m,ACC-03 uplink A,Sprintpark IT,ACC-03 uplink A,ACC-03,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/3
+smf-os2,connected,ffc107,3,m,ACC-03 uplink B,Sprintpark IT,ACC-03 uplink B,ACC-03,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/3
+smf-os2,connected,0091ff,3,m,ACC-04 uplink A,Sprintpark IT,ACC-04 uplink A,ACC-04,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/4
+smf-os2,connected,ffc107,3,m,ACC-04 uplink B,Sprintpark IT,ACC-04 uplink B,ACC-04,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/4
+smf-os2,connected,0091ff,3,m,ACC-05 uplink A,Sprintpark IT,ACC-05 uplink A,ACC-05,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/5
+smf-os2,connected,ffc107,3,m,ACC-05 uplink B,Sprintpark IT,ACC-05 uplink B,ACC-05,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/5
+smf-os2,connected,0091ff,3,m,ACC-06 uplink A,Sprintpark IT,ACC-06 uplink A,ACC-06,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/6
+smf-os2,connected,ffc107,3,m,ACC-06 uplink B,Sprintpark IT,ACC-06 uplink B,ACC-06,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/6
+smf-os2,connected,0091ff,3,m,ACC-07 uplink A,Sprintpark IT,ACC-07 uplink A,ACC-07,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/7
+smf-os2,connected,ffc107,3,m,ACC-07 uplink B,Sprintpark IT,ACC-07 uplink B,ACC-07,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/7
+smf-os2,connected,0091ff,3,m,ACC-08 uplink A,Sprintpark IT,ACC-08 uplink A,ACC-08,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/8
+smf-os2,connected,ffc107,3,m,ACC-08 uplink B,Sprintpark IT,ACC-08 uplink B,ACC-08,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/8
+smf-os2,connected,0091ff,3,m,ACC-09 uplink A,Sprintpark IT,ACC-09 uplink A,ACC-09,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/9
+smf-os2,connected,ffc107,3,m,ACC-09 uplink B,Sprintpark IT,ACC-09 uplink B,ACC-09,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/9
+smf-os2,connected,0091ff,3,m,ACC-10 uplink A,Sprintpark IT,ACC-10 uplink A,ACC-10,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/10
+smf-os2,connected,ffc107,3,m,ACC-10 uplink B,Sprintpark IT,ACC-10 uplink B,ACC-10,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/10
+smf-os2,connected,0091ff,3,m,ACC-11 uplink A,Sprintpark IT,ACC-11 uplink A,ACC-11,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/11
+smf-os2,connected,ffc107,3,m,ACC-11 uplink B,Sprintpark IT,ACC-11 uplink B,ACC-11,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/11
+smf-os2,connected,0091ff,3,m,ACC-12 uplink A,Sprintpark IT,ACC-12 uplink A,ACC-12,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/12
+smf-os2,connected,ffc107,3,m,ACC-12 uplink B,Sprintpark IT,ACC-12 uplink B,ACC-12,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/12
+smf-os2,connected,0091ff,3,m,ACC-13 uplink A,Sprintpark IT,ACC-13 uplink A,ACC-13,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/13
+smf-os2,connected,ffc107,3,m,ACC-13 uplink B,Sprintpark IT,ACC-13 uplink B,ACC-13,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/13
+smf-os2,connected,0091ff,3,m,ACC-14 uplink A,Sprintpark IT,ACC-14 uplink A,ACC-14,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/14
+smf-os2,connected,ffc107,3,m,ACC-14 uplink B,Sprintpark IT,ACC-14 uplink B,ACC-14,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/14
+smf-os2,connected,0091ff,3,m,ACC-15 uplink A,Sprintpark IT,ACC-15 uplink A,ACC-15,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/15
+smf-os2,connected,ffc107,3,m,ACC-15 uplink B,Sprintpark IT,ACC-15 uplink B,ACC-15,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/15
+smf-os2,connected,0091ff,3,m,ACC-16 uplink A,Sprintpark IT,ACC-16 uplink A,ACC-16,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/16
+smf-os2,connected,ffc107,3,m,ACC-16 uplink B,Sprintpark IT,ACC-16 uplink B,ACC-16,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/16
+smf-os2,connected,0091ff,3,m,ACC-17 uplink A,Sprintpark IT,ACC-17 uplink A,ACC-17,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/17
+smf-os2,connected,ffc107,3,m,ACC-17 uplink B,Sprintpark IT,ACC-17 uplink B,ACC-17,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/17
+smf-os2,connected,0091ff,3,m,ACC-18 uplink A,Sprintpark IT,ACC-18 uplink A,ACC-18,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/18
+smf-os2,connected,ffc107,3,m,ACC-18 uplink B,Sprintpark IT,ACC-18 uplink B,ACC-18,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/18
+smf-os2,connected,0091ff,3,m,ACC-19 uplink A,Sprintpark IT,ACC-19 uplink A,ACC-19,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/19
+smf-os2,connected,ffc107,3,m,ACC-19 uplink B,Sprintpark IT,ACC-19 uplink B,ACC-19,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/19
+smf-os2,connected,0091ff,3,m,ACC-20 uplink A,Sprintpark IT,ACC-20 uplink A,ACC-20,interface,TenGigabitEthernet1/1/1,CORE-01,interface,GigabitEthernet1/0/20
+smf-os2,connected,ffc107,3,m,ACC-20 uplink B,Sprintpark IT,ACC-20 uplink B,ACC-20,interface,TenGigabitEthernet1/1/2,CORE-02,interface,GigabitEthernet1/0/20
+smf-os2,connected,f44336,1,m,Core interlink,Sprintpark IT,Core interlink,CORE-01,interface,TenGigabitEthernet1/1/1,CORE-02,interface,TenGigabitEthernet1/1/1
+cat6,connected,4caf50,2,m,Core 1 to firewall 1,Sprintpark IT,Core 1 to firewall 1,CORE-01,interface,GigabitEthernet1/0/47,FW-01,interface,GigabitEthernet1/0/1
+cat6,connected,4caf50,2,m,Core 2 to firewall 2,Sprintpark IT,Core 2 to firewall 2,CORE-02,interface,GigabitEthernet1/0/47,FW-02,interface,GigabitEthernet1/0/1
+cat6,connected,9e9e9e,1,m,Firewall HA heartbeat,Sprintpark IT,Firewall HA heartbeat,FW-01,interface,GigabitEthernet1/0/10,FW-02,interface,GigabitEthernet1/0/10
+cat6,connected,ff9800,2,m,Firewall 1 to router 1,Sprintpark IT,Firewall 1 to router 1,FW-01,interface,GigabitEthernet1/0/2,RTR-01,interface,GigabitEthernet1/0/1
+cat6,connected,ff9800,2,m,Firewall 2 to router 2,Sprintpark IT,Firewall 2 to router 2,FW-02,interface,GigabitEthernet1/0/2,RTR-02,interface,GigabitEthernet1/0/1
+cat6,connected,2196f3,1,m,PP-01 port 1 to ACC-01,Sprintpark IT,PP-01 port 1 to ACC-01,PP-01,frontport,Front1,ACC-01,interface,GigabitEthernet1/0/1
+cat6,connected,2196f3,1,m,PP-01 port 2 to ACC-01,Sprintpark IT,PP-01 port 2 to ACC-01,PP-01,frontport,Front2,ACC-01,interface,GigabitEthernet1/0/2
+cat6,connected,2196f3,1,m,PP-01 port 3 to ACC-01,Sprintpark IT,PP-01 port 3 to ACC-01,PP-01,frontport,Front3,ACC-01,interface,GigabitEthernet1/0/3
+cat6,connected,2196f3,1,m,PP-01 port 4 to ACC-01,Sprintpark IT,PP-01 port 4 to ACC-01,PP-01,frontport,Front4,ACC-01,interface,GigabitEthernet1/0/4
+cat6,connected,2196f3,1,m,PP-01 port 5 to ACC-01,Sprintpark IT,PP-01 port 5 to ACC-01,PP-01,frontport,Front5,ACC-01,interface,GigabitEthernet1/0/5
+cat6,connected,2196f3,1,m,PP-01 port 6 to ACC-01,Sprintpark IT,PP-01 port 6 to ACC-01,PP-01,frontport,Front6,ACC-01,interface,GigabitEthernet1/0/6
+cat6,connected,2196f3,1,m,PP-01 port 7 to ACC-01,Sprintpark IT,PP-01 port 7 to ACC-01,PP-01,frontport,Front7,ACC-01,interface,GigabitEthernet1/0/7
+cat6,connected,2196f3,1,m,PP-01 port 8 to ACC-01,Sprintpark IT,PP-01 port 8 to ACC-01,PP-01,frontport,Front8,ACC-01,interface,GigabitEthernet1/0/8
+cat6,connected,2196f3,1,m,PP-01 port 9 to ACC-01,Sprintpark IT,PP-01 port 9 to ACC-01,PP-01,frontport,Front9,ACC-01,interface,GigabitEthernet1/0/9
+cat6,connected,2196f3,1,m,PP-01 port 10 to ACC-01,Sprintpark IT,PP-01 port 10 to ACC-01,PP-01,frontport,Front10,ACC-01,interface,GigabitEthernet1/0/10
+cat6,connected,2196f3,1,m,PP-01 port 11 to ACC-01,Sprintpark IT,PP-01 port 11 to ACC-01,PP-01,frontport,Front11,ACC-01,interface,GigabitEthernet1/0/11
+cat6,connected,2196f3,1,m,PP-01 port 12 to ACC-01,Sprintpark IT,PP-01 port 12 to ACC-01,PP-01,frontport,Front12,ACC-01,interface,GigabitEthernet1/0/12
+cat6,connected,2196f3,1,m,PP-01 port 13 to ACC-01,Sprintpark IT,PP-01 port 13 to ACC-01,PP-01,frontport,Front13,ACC-01,interface,GigabitEthernet1/0/13
+cat6,connected,2196f3,1,m,PP-01 port 14 to ACC-01,Sprintpark IT,PP-01 port 14 to ACC-01,PP-01,frontport,Front14,ACC-01,interface,GigabitEthernet1/0/14
+cat6,connected,2196f3,1,m,PP-01 port 15 to ACC-01,Sprintpark IT,PP-01 port 15 to ACC-01,PP-01,frontport,Front15,ACC-01,interface,GigabitEthernet1/0/15
+cat6,connected,2196f3,1,m,PP-01 port 16 to ACC-01,Sprintpark IT,PP-01 port 16 to ACC-01,PP-01,frontport,Front16,ACC-01,interface,GigabitEthernet1/0/16
+cat6,connected,2196f3,1,m,PP-01 port 17 to ACC-01,Sprintpark IT,PP-01 port 17 to ACC-01,PP-01,frontport,Front17,ACC-01,interface,GigabitEthernet1/0/17
+cat6,connected,2196f3,1,m,PP-01 port 18 to ACC-01,Sprintpark IT,PP-01 port 18 to ACC-01,PP-01,frontport,Front18,ACC-01,interface,GigabitEthernet1/0/18
+cat6,connected,2196f3,1,m,PP-01 port 19 to ACC-01,Sprintpark IT,PP-01 port 19 to ACC-01,PP-01,frontport,Front19,ACC-01,interface,GigabitEthernet1/0/19
+cat6,connected,2196f3,1,m,PP-01 port 20 to ACC-01,Sprintpark IT,PP-01 port 20 to ACC-01,PP-01,frontport,Front20,ACC-01,interface,GigabitEthernet1/0/20
+cat6,connected,2196f3,1,m,PP-01 port 21 to ACC-01,Sprintpark IT,PP-01 port 21 to ACC-01,PP-01,frontport,Front21,ACC-01,interface,GigabitEthernet1/0/21
+cat6,connected,2196f3,1,m,PP-01 port 22 to ACC-01,Sprintpark IT,PP-01 port 22 to ACC-01,PP-01,frontport,Front22,ACC-01,interface,GigabitEthernet1/0/22
+cat6,connected,2196f3,1,m,PP-01 port 23 to ACC-01,Sprintpark IT,PP-01 port 23 to ACC-01,PP-01,frontport,Front23,ACC-01,interface,GigabitEthernet1/0/23
+cat6,connected,2196f3,1,m,PP-01 port 24 to ACC-01,Sprintpark IT,PP-01 port 24 to ACC-01,PP-01,frontport,Front24,ACC-01,interface,GigabitEthernet1/0/24
+cat6,connected,2196f3,1,m,PP-02 port 1 to ACC-02,Sprintpark IT,PP-02 port 1 to ACC-02,PP-02,frontport,Front1,ACC-02,interface,GigabitEthernet1/0/1
+cat6,connected,2196f3,1,m,PP-02 port 2 to ACC-02,Sprintpark IT,PP-02 port 2 to ACC-02,PP-02,frontport,Front2,ACC-02,interface,GigabitEthernet1/0/2
+cat6,connected,2196f3,1,m,PP-02 port 3 to ACC-02,Sprintpark IT,PP-02 port 3 to ACC-02,PP-02,frontport,Front3,ACC-02,interface,GigabitEthernet1/0/3
+cat6,connected,2196f3,1,m,PP-02 port 4 to ACC-02,Sprintpark IT,PP-02 port 4 to ACC-02,PP-02,frontport,Front4,ACC-02,interface,GigabitEthernet1/0/4
+cat6,connected,2196f3,1,m,PP-02 port 5 to ACC-02,Sprintpark IT,PP-02 port 5 to ACC-02,PP-02,frontport,Front5,ACC-02,interface,GigabitEthernet1/0/5
+cat6,connected,2196f3,1,m,PP-02 port 6 to ACC-02,Sprintpark IT,PP-02 port 6 to ACC-02,PP-02,frontport,Front6,ACC-02,interface,GigabitEthernet1/0/6
+cat6,connected,2196f3,1,m,PP-02 port 7 to ACC-02,Sprintpark IT,PP-02 port 7 to ACC-02,PP-02,frontport,Front7,ACC-02,interface,GigabitEthernet1/0/7
+cat6,connected,2196f3,1,m,PP-02 port 8 to ACC-02,Sprintpark IT,PP-02 port 8 to ACC-02,PP-02,frontport,Front8,ACC-02,interface,GigabitEthernet1/0/8
+cat6,connected,2196f3,1,m,PP-02 port 9 to ACC-02,Sprintpark IT,PP-02 port 9 to ACC-02,PP-02,frontport,Front9,ACC-02,interface,GigabitEthernet1/0/9
+cat6,connected,2196f3,1,m,PP-02 port 10 to ACC-02,Sprintpark IT,PP-02 port 10 to ACC-02,PP-02,frontport,Front10,ACC-02,interface,GigabitEthernet1/0/10
+cat6,connected,2196f3,1,m,PP-02 port 11 to ACC-02,Sprintpark IT,PP-02 port 11 to ACC-02,PP-02,frontport,Front11,ACC-02,interface,GigabitEthernet1/0/11
+cat6,connected,2196f3,1,m,PP-02 port 12 to ACC-02,Sprintpark IT,PP-02 port 12 to ACC-02,PP-02,frontport,Front12,ACC-02,interface,GigabitEthernet1/0/12
+cat6,connected,2196f3,1,m,PP-02 port 13 to ACC-02,Sprintpark IT,PP-02 port 13 to ACC-02,PP-02,frontport,Front13,ACC-02,interface,GigabitEthernet1/0/13
+cat6,connected,2196f3,1,m,PP-02 port 14 to ACC-02,Sprintpark IT,PP-02 port 14 to ACC-02,PP-02,frontport,Front14,ACC-02,interface,GigabitEthernet1/0/14
+cat6,connected,2196f3,1,m,PP-02 port 15 to ACC-02,Sprintpark IT,PP-02 port 15 to ACC-02,PP-02,frontport,Front15,ACC-02,interface,GigabitEthernet1/0/15
+cat6,connected,2196f3,1,m,PP-02 port 16 to ACC-02,Sprintpark IT,PP-02 port 16 to ACC-02,PP-02,frontport,Front16,ACC-02,interface,GigabitEthernet1/0/16
+cat6,connected,2196f3,1,m,PP-02 port 17 to ACC-02,Sprintpark IT,PP-02 port 17 to ACC-02,PP-02,frontport,Front17,ACC-02,interface,GigabitEthernet1/0/17
+cat6,connected,2196f3,1,m,PP-02 port 18 to ACC-02,Sprintpark IT,PP-02 port 18 to ACC-02,PP-02,frontport,Front18,ACC-02,interface,GigabitEthernet1/0/18
+cat6,connected,2196f3,1,m,PP-02 port 19 to ACC-02,Sprintpark IT,PP-02 port 19 to ACC-02,PP-02,frontport,Front19,ACC-02,interface,GigabitEthernet1/0/19
+cat6,connected,2196f3,1,m,PP-02 port 20 to ACC-02,Sprintpark IT,PP-02 port 20 to ACC-02,PP-02,frontport,Front20,ACC-02,interface,GigabitEthernet1/0/20
+cat6,connected,2196f3,1,m,PP-02 port 21 to ACC-02,Sprintpark IT,PP-02 port 21 to ACC-02,PP-02,frontport,Front21,ACC-02,interface,GigabitEthernet1/0/21
+cat6,connected,2196f3,1,m,PP-02 port 22 to ACC-02,Sprintpark IT,PP-02 port 22 to ACC-02,PP-02,frontport,Front22,ACC-02,interface,GigabitEthernet1/0/22
+cat6,connected,2196f3,1,m,PP-02 port 23 to ACC-02,Sprintpark IT,PP-02 port 23 to ACC-02,PP-02,frontport,Front23,ACC-02,interface,GigabitEthernet1/0/23
+cat6,connected,2196f3,1,m,PP-02 port 24 to ACC-02,Sprintpark IT,PP-02 port 24 to ACC-02,PP-02,frontport,Front24,ACC-02,interface,GigabitEthernet1/0/24
+cat6,connected,2196f3,1,m,PP-03 port 1 to ACC-03,Sprintpark IT,PP-03 port 1 to ACC-03,PP-03,frontport,Front1,ACC-03,interface,GigabitEthernet1/0/1
+cat6,connected,2196f3,1,m,PP-03 port 2 to ACC-03,Sprintpark IT,PP-03 port 2 to ACC-03,PP-03,frontport,Front2,ACC-03,interface,GigabitEthernet1/0/2
+cat6,connected,2196f3,1,m,PP-03 port 3 to ACC-03,Sprintpark IT,PP-03 port 3 to ACC-03,PP-03,frontport,Front3,ACC-03,interface,GigabitEthernet1/0/3
+cat6,connected,2196f3,1,m,PP-03 port 4 to ACC-03,Sprintpark IT,PP-03 port 4 to ACC-03,PP-03,frontport,Front4,ACC-03,interface,GigabitEthernet1/0/4
+cat6,connected,2196f3,1,m,PP-03 port 5 to ACC-03,Sprintpark IT,PP-03 port 5 to ACC-03,PP-03,frontport,Front5,ACC-03,interface,GigabitEthernet1/0/5
+cat6,connected,2196f3,1,m,PP-03 port 6 to ACC-03,Sprintpark IT,PP-03 port 6 to ACC-03,PP-03,frontport,Front6,ACC-03,interface,GigabitEthernet1/0/6
+cat6,connected,2196f3,1,m,PP-03 port 7 to ACC-03,Sprintpark IT,PP-03 port 7 to ACC-03,PP-03,frontport,Front7,ACC-03,interface,GigabitEthernet1/0/7
+cat6,connected,2196f3,1,m,PP-03 port 8 to ACC-03,Sprintpark IT,PP-03 port 8 to ACC-03,PP-03,frontport,Front8,ACC-03,interface,GigabitEthernet1/0/8
+cat6,connected,2196f3,1,m,PP-03 port 9 to ACC-03,Sprintpark IT,PP-03 port 9 to ACC-03,PP-03,frontport,Front9,ACC-03,interface,GigabitEthernet1/0/9
+cat6,connected,2196f3,1,m,PP-03 port 10 to ACC-03,Sprintpark IT,PP-03 port 10 to ACC-03,PP-03,frontport,Front10,ACC-03,interface,GigabitEthernet1/0/10
+cat6,connected,2196f3,1,m,PP-03 port 11 to ACC-03,Sprintpark IT,PP-03 port 11 to ACC-03,PP-03,frontport,Front11,ACC-03,interface,GigabitEthernet1/0/11
+cat6,connected,2196f3,1,m,PP-03 port 12 to ACC-03,Sprintpark IT,PP-03 port 12 to ACC-03,PP-03,frontport,Front12,ACC-03,interface,GigabitEthernet1/0/12
+cat6,connected,2196f3,1,m,PP-03 port 13 to ACC-03,Sprintpark IT,PP-03 port 13 to ACC-03,PP-03,frontport,Front13,ACC-03,interface,GigabitEthernet1/0/13
+cat6,connected,2196f3,1,m,PP-03 port 14 to ACC-03,Sprintpark IT,PP-03 port 14 to ACC-03,PP-03,frontport,Front14,ACC-03,interface,GigabitEthernet1/0/14
+cat6,connected,2196f3,1,m,PP-03 port 15 to ACC-03,Sprintpark IT,PP-03 port 15 to ACC-03,PP-03,frontport,Front15,ACC-03,interface,GigabitEthernet1/0/15
+cat6,connected,2196f3,1,m,PP-03 port 16 to ACC-03,Sprintpark IT,PP-03 port 16 to ACC-03,PP-03,frontport,Front16,ACC-03,interface,GigabitEthernet1/0/16
+cat6,connected,2196f3,1,m,PP-03 port 17 to ACC-03,Sprintpark IT,PP-03 port 17 to ACC-03,PP-03,frontport,Front17,ACC-03,interface,GigabitEthernet1/0/17
+cat6,connected,2196f3,1,m,PP-03 port 18 to ACC-03,Sprintpark IT,PP-03 port 18 to ACC-03,PP-03,frontport,Front18,ACC-03,interface,GigabitEthernet1/0/18
+cat6,connected,2196f3,1,m,PP-03 port 19 to ACC-03,Sprintpark IT,PP-03 port 19 to ACC-03,PP-03,frontport,Front19,ACC-03,interface,GigabitEthernet1/0/19
+cat6,connected,2196f3,1,m,PP-03 port 20 to ACC-03,Sprintpark IT,PP-03 port 20 to ACC-03,PP-03,frontport,Front20,ACC-03,interface,GigabitEthernet1/0/20
+cat6,connected,2196f3,1,m,PP-03 port 21 to ACC-03,Sprintpark IT,PP-03 port 21 to ACC-03,PP-03,frontport,Front21,ACC-03,interface,GigabitEthernet1/0/21
+cat6,connected,2196f3,1,m,PP-03 port 22 to ACC-03,Sprintpark IT,PP-03 port 22 to ACC-03,PP-03,frontport,Front22,ACC-03,interface,GigabitEthernet1/0/22
+cat6,connected,2196f3,1,m,PP-03 port 23 to ACC-03,Sprintpark IT,PP-03 port 23 to ACC-03,PP-03,frontport,Front23,ACC-03,interface,GigabitEthernet1/0/23
+cat6,connected,2196f3,1,m,PP-03 port 24 to ACC-03,Sprintpark IT,PP-03 port 24 to ACC-03,PP-03,frontport,Front24,ACC-03,interface,GigabitEthernet1/0/24
+cat6,connected,2196f3,1,m,PP-04 port 1 to ACC-04,Sprintpark IT,PP-04 port 1 to ACC-04,PP-04,frontport,Front1,ACC-04,interface,GigabitEthernet1/0/1
+cat6,connected,2196f3,1,m,PP-04 port 2 to ACC-04,Sprintpark IT,PP-04 port 2 to ACC-04,PP-04,frontport,Front2,ACC-04,interface,GigabitEthernet1/0/2
+cat6,connected,2196f3,1,m,PP-04 port 3 to ACC-04,Sprintpark IT,PP-04 port 3 to ACC-04,PP-04,frontport,Front3,ACC-04,interface,GigabitEthernet1/0/3
+cat6,connected,2196f3,1,m,PP-04 port 4 to ACC-04,Sprintpark IT,PP-04 port 4 to ACC-04,PP-04,frontport,Front4,ACC-04,interface,GigabitEthernet1/0/4
+cat6,connected,2196f3,1,m,PP-04 port 5 to ACC-04,Sprintpark IT,PP-04 port 5 to ACC-04,PP-04,frontport,Front5,ACC-04,interface,GigabitEthernet1/0/5
+cat6,connected,2196f3,1,m,PP-04 port 6 to ACC-04,Sprintpark IT,PP-04 port 6 to ACC-04,PP-04,frontport,Front6,ACC-04,interface,GigabitEthernet1/0/6
+cat6,connected,2196f3,1,m,PP-04 port 7 to ACC-04,Sprintpark IT,PP-04 port 7 to ACC-04,PP-04,frontport,Front7,ACC-04,interface,GigabitEthernet1/0/7
+cat6,connected,2196f3,1,m,PP-04 port 8 to ACC-04,Sprintpark IT,PP-04 port 8 to ACC-04,PP-04,frontport,Front8,ACC-04,interface,GigabitEthernet1/0/8
+cat6,connected,2196f3,1,m,PP-04 port 9 to ACC-04,Sprintpark IT,PP-04 port 9 to ACC-04,PP-04,frontport,Front9,ACC-04,interface,GigabitEthernet1/0/9
+cat6,connected,2196f3,1,m,PP-04 port 10 to ACC-04,Sprintpark IT,PP-04 port 10 to ACC-04,PP-04,frontport,Front10,ACC-04,interface,GigabitEthernet1/0/10
+cat6,connected,2196f3,1,m,PP-04 port 11 to ACC-04,Sprintpark IT,PP-04 port 11 to ACC-04,PP-04,frontport,Front11,ACC-04,interface,GigabitEthernet1/0/11
+cat6,connected,2196f3,1,m,PP-04 port 12 to ACC-04,Sprintpark IT,PP-04 port 12 to ACC-04,PP-04,frontport,Front12,ACC-04,interface,GigabitEthernet1/0/12
+cat6,connected,2196f3,1,m,PP-04 port 13 to ACC-04,Sprintpark IT,PP-04 port 13 to ACC-04,PP-04,frontport,Front13,ACC-04,interface,GigabitEthernet1/0/13
+cat6,connected,2196f3,1,m,PP-04 port 14 to ACC-04,Sprintpark IT,PP-04 port 14 to ACC-04,PP-04,frontport,Front14,ACC-04,interface,GigabitEthernet1/0/14
+cat6,connected,2196f3,1,m,PP-04 port 15 to ACC-04,Sprintpark IT,PP-04 port 15 to ACC-04,PP-04,frontport,Front15,ACC-04,interface,GigabitEthernet1/0/15
+cat6,connected,2196f3,1,m,PP-04 port 16 to ACC-04,Sprintpark IT,PP-04 port 16 to ACC-04,PP-04,frontport,Front16,ACC-04,interface,GigabitEthernet1/0/16
+cat6,connected,2196f3,1,m,PP-04 port 17 to ACC-04,Sprintpark IT,PP-04 port 17 to ACC-04,PP-04,frontport,Front17,ACC-04,interface,GigabitEthernet1/0/17
+cat6,connected,2196f3,1,m,PP-04 port 18 to ACC-04,Sprintpark IT,PP-04 port 18 to ACC-04,PP-04,frontport,Front18,ACC-04,interface,GigabitEthernet1/0/18
+cat6,connected,2196f3,1,m,PP-04 port 19 to ACC-04,Sprintpark IT,PP-04 port 19 to ACC-04,PP-04,frontport,Front19,ACC-04,interface,GigabitEthernet1/0/19
+cat6,connected,2196f3,1,m,PP-04 port 20 to ACC-04,Sprintpark IT,PP-04 port 20 to ACC-04,PP-04,frontport,Front20,ACC-04,interface,GigabitEthernet1/0/20
+cat6,connected,2196f3,1,m,PP-04 port 21 to ACC-04,Sprintpark IT,PP-04 port 21 to ACC-04,PP-04,frontport,Front21,ACC-04,interface,GigabitEthernet1/0/21
+cat6,connected,2196f3,1,m,PP-04 port 22 to ACC-04,Sprintpark IT,PP-04 port 22 to ACC-04,PP-04,frontport,Front22,ACC-04,interface,GigabitEthernet1/0/22
+cat6,connected,2196f3,1,m,PP-04 port 23 to ACC-04,Sprintpark IT,PP-04 port 23 to ACC-04,PP-04,frontport,Front23,ACC-04,interface,GigabitEthernet1/0/23
+cat6,connected,2196f3,1,m,PP-04 port 24 to ACC-04,Sprintpark IT,PP-04 port 24 to ACC-04,PP-04,frontport,Front24,ACC-04,interface,GigabitEthernet1/0/24
+cat6,connected,673ab7,2,m,SRV-01 NIC 1,Sprintpark IT,SRV-01 NIC 1,SRV-01,interface,GigabitEthernet1/0/1,ACC-01,interface,GigabitEthernet1/0/45
+cat6,connected,673ab7,2,m,SRV-01 NIC 2,Sprintpark IT,SRV-01 NIC 2,SRV-01,interface,GigabitEthernet1/0/2,ACC-02,interface,GigabitEthernet1/0/45
+cat6,connected,673ab7,2,m,SRV-02 NIC 1,Sprintpark IT,SRV-02 NIC 1,SRV-02,interface,GigabitEthernet1/0/1,ACC-03,interface,GigabitEthernet1/0/46
+cat6,connected,673ab7,2,m,SRV-02 NIC 2,Sprintpark IT,SRV-02 NIC 2,SRV-02,interface,GigabitEthernet1/0/2,ACC-04,interface,GigabitEthernet1/0/46
+cat6,connected,673ab7,2,m,SRV-03 NIC 1,Sprintpark IT,SRV-03 NIC 1,SRV-03,interface,GigabitEthernet1/0/1,ACC-05,interface,GigabitEthernet1/0/45
+cat6,connected,673ab7,2,m,SRV-03 NIC 2,Sprintpark IT,SRV-03 NIC 2,SRV-03,interface,GigabitEthernet1/0/2,ACC-06,interface,GigabitEthernet1/0/45
+cat6,connected,673ab7,2,m,SRV-04 NIC 1,Sprintpark IT,SRV-04 NIC 1,SRV-04,interface,GigabitEthernet1/0/1,ACC-07,interface,GigabitEthernet1/0/46
+cat6,connected,673ab7,2,m,SRV-04 NIC 2,Sprintpark IT,SRV-04 NIC 2,SRV-04,interface,GigabitEthernet1/0/2,ACC-08,interface,GigabitEthernet1/0/46
+cat6,connected,673ab7,2,m,SRV-05 NIC 1,Sprintpark IT,SRV-05 NIC 1,SRV-05,interface,GigabitEthernet1/0/1,ACC-09,interface,GigabitEthernet1/0/45
+cat6,connected,673ab7,2,m,SRV-05 NIC 2,Sprintpark IT,SRV-05 NIC 2,SRV-05,interface,GigabitEthernet1/0/2,ACC-10,interface,GigabitEthernet1/0/45
+cat6,connected,673ab7,2,m,SRV-06 NIC 1,Sprintpark IT,SRV-06 NIC 1,SRV-06,interface,GigabitEthernet1/0/1,ACC-11,interface,GigabitEthernet1/0/46
+cat6,connected,673ab7,2,m,SRV-06 NIC 2,Sprintpark IT,SRV-06 NIC 2,SRV-06,interface,GigabitEthernet1/0/2,ACC-12,interface,GigabitEthernet1/0/46
+cat6,connected,673ab7,2,m,SRV-07 NIC 1,Sprintpark IT,SRV-07 NIC 1,SRV-07,interface,GigabitEthernet1/0/1,ACC-13,interface,GigabitEthernet1/0/45
+cat6,connected,673ab7,2,m,SRV-07 NIC 2,Sprintpark IT,SRV-07 NIC 2,SRV-07,interface,GigabitEthernet1/0/2,ACC-14,interface,GigabitEthernet1/0/45
+cat6,connected,673ab7,2,m,SRV-08 NIC 1,Sprintpark IT,SRV-08 NIC 1,SRV-08,interface,GigabitEthernet1/0/1,ACC-15,interface,GigabitEthernet1/0/46
+cat6,connected,673ab7,2,m,SRV-08 NIC 2,Sprintpark IT,SRV-08 NIC 2,SRV-08,interface,GigabitEthernet1/0/2,ACC-16,interface,GigabitEthernet1/0/46
+power,connected,795548,1,m,FW-01 PSU1,Sprintpark IT,FW-01 PSU1,FW-01,powerport,PSU1,PDU-01,poweroutlet,Outlet1
+power,connected,795548,1,m,FW-02 PSU1,Sprintpark IT,FW-02 PSU1,FW-02,powerport,PSU1,PDU-01,poweroutlet,Outlet2
+power,connected,795548,1,m,RTR-01 PSU1,Sprintpark IT,RTR-01 PSU1,RTR-01,powerport,PSU1,PDU-01,poweroutlet,Outlet3
+power,connected,795548,1,m,RTR-02 PSU1,Sprintpark IT,RTR-02 PSU1,RTR-02,powerport,PSU1,PDU-01,poweroutlet,Outlet4
+power,connected,795548,1,m,CORE-01 PSU1,Sprintpark IT,CORE-01 PSU1,CORE-01,powerport,PSU1,PDU-01,poweroutlet,Outlet5
+power,connected,795548,1,m,CORE-01 PSU2,Sprintpark IT,CORE-01 PSU2,CORE-01,powerport,PSU2,PDU-02,poweroutlet,Outlet1
+power,connected,795548,1,m,CORE-02 PSU1,Sprintpark IT,CORE-02 PSU1,CORE-02,powerport,PSU1,PDU-01,poweroutlet,Outlet6
+power,connected,795548,1,m,CORE-02 PSU2,Sprintpark IT,CORE-02 PSU2,CORE-02,powerport,PSU2,PDU-02,poweroutlet,Outlet2
+power,connected,795548,1,m,ACC-01 PSU1,Sprintpark IT,ACC-01 PSU1,ACC-01,powerport,PSU1,PDU-01,poweroutlet,Outlet7
+power,connected,795548,1,m,ACC-01 PSU2,Sprintpark IT,ACC-01 PSU2,ACC-01,powerport,PSU2,PDU-02,poweroutlet,Outlet3
+power,connected,795548,1,m,ACC-02 PSU1,Sprintpark IT,ACC-02 PSU1,ACC-02,powerport,PSU1,PDU-01,poweroutlet,Outlet8
+power,connected,795548,1,m,ACC-02 PSU2,Sprintpark IT,ACC-02 PSU2,ACC-02,powerport,PSU2,PDU-02,poweroutlet,Outlet4
+power,connected,795548,1,m,ACC-03 PSU1,Sprintpark IT,ACC-03 PSU1,ACC-03,powerport,PSU1,PDU-01,poweroutlet,Outlet9
+power,connected,795548,1,m,ACC-03 PSU2,Sprintpark IT,ACC-03 PSU2,ACC-03,powerport,PSU2,PDU-02,poweroutlet,Outlet5
+power,connected,795548,1,m,ACC-04 PSU1,Sprintpark IT,ACC-04 PSU1,ACC-04,powerport,PSU1,PDU-01,poweroutlet,Outlet10
+power,connected,795548,1,m,ACC-04 PSU2,Sprintpark IT,ACC-04 PSU2,ACC-04,powerport,PSU2,PDU-02,poweroutlet,Outlet6
+power,connected,795548,1,m,ACC-05 PSU1,Sprintpark IT,ACC-05 PSU1,ACC-05,powerport,PSU1,PDU-01,poweroutlet,Outlet11
+power,connected,795548,1,m,ACC-05 PSU2,Sprintpark IT,ACC-05 PSU2,ACC-05,powerport,PSU2,PDU-02,poweroutlet,Outlet7
+power,connected,795548,1,m,ACC-06 PSU1,Sprintpark IT,ACC-06 PSU1,ACC-06,powerport,PSU1,PDU-01,poweroutlet,Outlet12
+power,connected,795548,1,m,ACC-06 PSU2,Sprintpark IT,ACC-06 PSU2,ACC-06,powerport,PSU2,PDU-02,poweroutlet,Outlet8
+power,connected,795548,1,m,ACC-07 PSU1,Sprintpark IT,ACC-07 PSU1,ACC-07,powerport,PSU1,PDU-01,poweroutlet,Outlet13
+power,connected,795548,1,m,ACC-07 PSU2,Sprintpark IT,ACC-07 PSU2,ACC-07,powerport,PSU2,PDU-02,poweroutlet,Outlet9
+power,connected,795548,1,m,ACC-08 PSU1,Sprintpark IT,ACC-08 PSU1,ACC-08,powerport,PSU1,PDU-01,poweroutlet,Outlet14
+power,connected,795548,1,m,ACC-08 PSU2,Sprintpark IT,ACC-08 PSU2,ACC-08,powerport,PSU2,PDU-02,poweroutlet,Outlet10
+power,connected,795548,1,m,ACC-09 PSU1,Sprintpark IT,ACC-09 PSU1,ACC-09,powerport,PSU1,PDU-01,poweroutlet,Outlet15
+power,connected,795548,1,m,ACC-09 PSU2,Sprintpark IT,ACC-09 PSU2,ACC-09,powerport,PSU2,PDU-02,poweroutlet,Outlet11
+power,connected,795548,1,m,ACC-10 PSU1,Sprintpark IT,ACC-10 PSU1,ACC-10,powerport,PSU1,PDU-01,poweroutlet,Outlet16
+power,connected,795548,1,m,ACC-10 PSU2,Sprintpark IT,ACC-10 PSU2,ACC-10,powerport,PSU2,PDU-02,poweroutlet,Outlet12
+power,connected,795548,1,m,ACC-11 PSU1,Sprintpark IT,ACC-11 PSU1,ACC-11,powerport,PSU1,PDU-01,poweroutlet,Outlet17
+power,connected,795548,1,m,ACC-11 PSU2,Sprintpark IT,ACC-11 PSU2,ACC-11,powerport,PSU2,PDU-02,poweroutlet,Outlet13
+power,connected,795548,1,m,ACC-12 PSU1,Sprintpark IT,ACC-12 PSU1,ACC-12,powerport,PSU1,PDU-01,poweroutlet,Outlet18
+power,connected,795548,1,m,ACC-12 PSU2,Sprintpark IT,ACC-12 PSU2,ACC-12,powerport,PSU2,PDU-02,poweroutlet,Outlet14
+power,connected,795548,1,m,ACC-13 PSU1,Sprintpark IT,ACC-13 PSU1,ACC-13,powerport,PSU1,PDU-01,poweroutlet,Outlet19
+power,connected,795548,1,m,ACC-13 PSU2,Sprintpark IT,ACC-13 PSU2,ACC-13,powerport,PSU2,PDU-02,poweroutlet,Outlet15
+power,connected,795548,1,m,ACC-14 PSU1,Sprintpark IT,ACC-14 PSU1,ACC-14,powerport,PSU1,PDU-01,poweroutlet,Outlet20
+power,connected,795548,1,m,ACC-14 PSU2,Sprintpark IT,ACC-14 PSU2,ACC-14,powerport,PSU2,PDU-02,poweroutlet,Outlet16
+power,connected,795548,1,m,ACC-15 PSU1,Sprintpark IT,ACC-15 PSU1,ACC-15,powerport,PSU1,PDU-01,poweroutlet,Outlet21
+power,connected,795548,1,m,ACC-15 PSU2,Sprintpark IT,ACC-15 PSU2,ACC-15,powerport,PSU2,PDU-02,poweroutlet,Outlet17
+power,connected,795548,1,m,ACC-16 PSU1,Sprintpark IT,ACC-16 PSU1,ACC-16,powerport,PSU1,PDU-01,poweroutlet,Outlet22
+power,connected,795548,1,m,ACC-16 PSU2,Sprintpark IT,ACC-16 PSU2,ACC-16,powerport,PSU2,PDU-02,poweroutlet,Outlet18
+power,connected,795548,1,m,ACC-17 PSU1,Sprintpark IT,ACC-17 PSU1,ACC-17,powerport,PSU1,PDU-01,poweroutlet,Outlet23
+power,connected,795548,1,m,ACC-17 PSU2,Sprintpark IT,ACC-17 PSU2,ACC-17,powerport,PSU2,PDU-02,poweroutlet,Outlet19
+power,connected,795548,1,m,ACC-18 PSU1,Sprintpark IT,ACC-18 PSU1,ACC-18,powerport,PSU1,PDU-01,poweroutlet,Outlet24
+power,connected,795548,1,m,ACC-18 PSU2,Sprintpark IT,ACC-18 PSU2,ACC-18,powerport,PSU2,PDU-02,poweroutlet,Outlet20
+power,connected,795548,1,m,ACC-19 PSU1,Sprintpark IT,ACC-19 PSU1,ACC-19,powerport,PSU1,PDU-01,poweroutlet,Outlet25
+power,connected,795548,1,m,ACC-19 PSU2,Sprintpark IT,ACC-19 PSU2,ACC-19,powerport,PSU2,PDU-02,poweroutlet,Outlet21
+power,connected,795548,1,m,ACC-20 PSU1,Sprintpark IT,ACC-20 PSU1,ACC-20,powerport,PSU1,PDU-01,poweroutlet,Outlet26
+power,connected,795548,1,m,ACC-20 PSU2,Sprintpark IT,ACC-20 PSU2,ACC-20,powerport,PSU2,PDU-02,poweroutlet,Outlet22
+power,connected,795548,1,m,SRV-01 PSU1,Sprintpark IT,SRV-01 PSU1,SRV-01,powerport,PSU1,PDU-01,poweroutlet,Outlet27
+power,connected,795548,1,m,SRV-01 PSU2,Sprintpark IT,SRV-01 PSU2,SRV-01,powerport,PSU2,PDU-02,poweroutlet,Outlet23
+power,connected,795548,1,m,SRV-02 PSU1,Sprintpark IT,SRV-02 PSU1,SRV-02,powerport,PSU1,PDU-01,poweroutlet,Outlet28
+power,connected,795548,1,m,SRV-02 PSU2,Sprintpark IT,SRV-02 PSU2,SRV-02,powerport,PSU2,PDU-02,poweroutlet,Outlet24
+power,connected,795548,1,m,SRV-03 PSU1,Sprintpark IT,SRV-03 PSU1,SRV-03,powerport,PSU1,PDU-01,poweroutlet,Outlet29
+power,connected,795548,1,m,SRV-03 PSU2,Sprintpark IT,SRV-03 PSU2,SRV-03,powerport,PSU2,PDU-02,poweroutlet,Outlet25
+power,connected,795548,1,m,SRV-04 PSU1,Sprintpark IT,SRV-04 PSU1,SRV-04,powerport,PSU1,PDU-01,poweroutlet,Outlet30
+power,connected,795548,1,m,SRV-04 PSU2,Sprintpark IT,SRV-04 PSU2,SRV-04,powerport,PSU2,PDU-02,poweroutlet,Outlet26
+power,connected,795548,1,m,SRV-05 PSU1,Sprintpark IT,SRV-05 PSU1,SRV-05,powerport,PSU1,PDU-01,poweroutlet,Outlet31
+power,connected,795548,1,m,SRV-05 PSU2,Sprintpark IT,SRV-05 PSU2,SRV-05,powerport,PSU2,PDU-02,poweroutlet,Outlet27
+power,connected,795548,1,m,SRV-06 PSU1,Sprintpark IT,SRV-06 PSU1,SRV-06,powerport,PSU1,PDU-01,poweroutlet,Outlet32
+power,connected,795548,1,m,SRV-06 PSU2,Sprintpark IT,SRV-06 PSU2,SRV-06,powerport,PSU2,PDU-02,poweroutlet,Outlet28
+power,connected,795548,1,m,SRV-07 PSU1,Sprintpark IT,SRV-07 PSU1,SRV-07,powerport,PSU1,PDU-01,poweroutlet,Outlet33
+power,connected,795548,1,m,SRV-07 PSU2,Sprintpark IT,SRV-07 PSU2,SRV-07,powerport,PSU2,PDU-02,poweroutlet,Outlet29
+power,connected,795548,1,m,SRV-08 PSU1,Sprintpark IT,SRV-08 PSU1,SRV-08,powerport,PSU1,PDU-01,poweroutlet,Outlet34
+power,connected,795548,1,m,SRV-08 PSU2,Sprintpark IT,SRV-08 PSU2,SRV-08,powerport,PSU2,PDU-02,poweroutlet,Outlet30
+power,connected,795548,1,m,OOB-01 PSU1,Sprintpark IT,OOB-01 PSU1,OOB-01,powerport,PSU1,PDU-01,poweroutlet,Outlet35
+power,connected,795548,1,m,OOB-01 PSU2,Sprintpark IT,OOB-01 PSU2,OOB-01,powerport,PSU2,PDU-02,poweroutlet,Outlet31
+power,connected,795548,1,m,OOB-02 PSU1,Sprintpark IT,OOB-02 PSU1,OOB-02,powerport,PSU1,PDU-01,poweroutlet,Outlet36
+power,connected,795548,1,m,OOB-02 PSU2,Sprintpark IT,OOB-02 PSU2,OOB-02,powerport,PSU2,PDU-02,poweroutlet,Outlet32

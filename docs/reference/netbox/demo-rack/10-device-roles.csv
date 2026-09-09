@@ -1,0 +1,9 @@
+name,slug,color,vm_role,description
+Firewall,firewall,f44336,false,Perimeter and internal firewalls
+Router,router,ff9800,false,WAN edge routers
+Core Switch,core-switch,2196f3,false,Distribution and core layer
+Access Switch,access-switch,4caf50,false,Edge ports for desks and handsets
+Patch Panel,patch-panel,9e9e9e,false,Passive copper termination
+Server,server,673ab7,false,Physical compute
+Console Server,console-server,00897b,false,Out-of-band management
+Power Distribution,power-distribution,795548,false,Rack power strips

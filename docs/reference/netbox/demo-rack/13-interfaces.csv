@@ -1,0 +1,1301 @@
+device,name,label,type,speed,duplex,enabled,mgmt_only,mtu,mode,untagged_vlan,poe_mode,poe_type,description
+FW-01,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-01,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-01,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-01,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-01,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-01,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-01,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-01,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-01,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-01,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,,,
+FW-02,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,,,
+RTR-01,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+RTR-01,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+RTR-01,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+RTR-01,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+RTR-02,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+RTR-02,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+RTR-02,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+RTR-02,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-01,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+CORE-01,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+CORE-01,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+CORE-01,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+CORE-02,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,,,
+CORE-02,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+CORE-02,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+CORE-02,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+CORE-02,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-01,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-01,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-01,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-01,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-01,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-01,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-01,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-01,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-01,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-01,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-01,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-01,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-01,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-01,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-01,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-01,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-01,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-01,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-01,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-01,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-01,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-01,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-01,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-01,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-01,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-01,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-01,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-01,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-01,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-01,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-01,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-01,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-01,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-01,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-01,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-01,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-01,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-01,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-01,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-01,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-01,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-01,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-01,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-01,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-01,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-01,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-01,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-01,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-01,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-01,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-01,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-01,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-02,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-02,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-02,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-02,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-02,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-02,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-02,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-02,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-02,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-02,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-02,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-02,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-02,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-02,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-02,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-02,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-02,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-02,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-02,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-02,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-02,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-02,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-02,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-02,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-02,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-02,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-02,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-02,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-02,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-02,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-02,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-02,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-02,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-02,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-02,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-02,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-02,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-02,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-02,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-02,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-02,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-02,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-02,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-02,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-02,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-02,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-02,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-02,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-02,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-02,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-02,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-02,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-03,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-03,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-03,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-03,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-03,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-03,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-03,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-03,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-03,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-03,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-03,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-03,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-03,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-03,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-03,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-03,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-03,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-03,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-03,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-03,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-03,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-03,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-03,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-03,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-03,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-03,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-03,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-03,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-03,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-03,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-03,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-03,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-03,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-03,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-03,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-03,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-03,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-03,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-03,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-03,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-03,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-03,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-03,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-03,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-03,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-03,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-03,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-03,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-03,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-03,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-03,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-03,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-04,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-04,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-04,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-04,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-04,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-04,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-04,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-04,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-04,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-04,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-04,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-04,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-04,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-04,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-04,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-04,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-04,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-04,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-04,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-04,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-04,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-04,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-04,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-04,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-04,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-04,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-04,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-04,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-04,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-04,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-04,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-04,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-04,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-04,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-04,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-04,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-04,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-04,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-04,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-04,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-04,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-04,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-04,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-04,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-04,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-04,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-04,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-04,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-04,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-04,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-04,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-04,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-05,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-05,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-05,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-05,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-05,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-05,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-05,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-05,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-05,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-05,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-05,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-05,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-05,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-05,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-05,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-05,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-05,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-05,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-05,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-05,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-05,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-05,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-05,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-05,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-05,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-05,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-05,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-05,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-05,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-05,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-05,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-05,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-05,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-05,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-05,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-05,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-05,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-05,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-05,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-05,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-05,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-05,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-05,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-05,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-05,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-05,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-05,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-05,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-05,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-05,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-05,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-05,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-06,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-06,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-06,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-06,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-06,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-06,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-06,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-06,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-06,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-06,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-06,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-06,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-06,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-06,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-06,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-06,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-06,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-06,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-06,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-06,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-06,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-06,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-06,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-06,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-06,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-06,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-06,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-06,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-06,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-06,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-06,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-06,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-06,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-06,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-06,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-06,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-06,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-06,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-06,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-06,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-06,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-06,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-06,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-06,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-06,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-06,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-06,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-06,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-06,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-06,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-06,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-06,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-07,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-07,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-07,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-07,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-07,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-07,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-07,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-07,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-07,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-07,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-07,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-07,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-07,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-07,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-07,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-07,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-07,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-07,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-07,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-07,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-07,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-07,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-07,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-07,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-07,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-07,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-07,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-07,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-07,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-07,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-07,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-07,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-07,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-07,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-07,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-07,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-07,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-07,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-07,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-07,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-07,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-07,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-07,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-07,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-07,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-07,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-07,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-07,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-07,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-07,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-07,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-07,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-08,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-08,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-08,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-08,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-08,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-08,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-08,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-08,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-08,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-08,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-08,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-08,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-08,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-08,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-08,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-08,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-08,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-08,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-08,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-08,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-08,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-08,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-08,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-08,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-08,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-08,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-08,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-08,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-08,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-08,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-08,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-08,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-08,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-08,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-08,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-08,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-08,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-08,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-08,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-08,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-08,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-08,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-08,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-08,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-08,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-08,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-08,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-08,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-08,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-08,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-08,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-08,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-09,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-09,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-09,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-09,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-09,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-09,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-09,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-09,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-09,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-09,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-09,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-09,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-09,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-09,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-09,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-09,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-09,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-09,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-09,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-09,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-09,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-09,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-09,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-09,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-09,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-09,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-09,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-09,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-09,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-09,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-09,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-09,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-09,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-09,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-09,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-09,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-09,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-09,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-09,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-09,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-09,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-09,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-09,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-09,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-09,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-09,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-09,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-09,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-09,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-09,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-09,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-09,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-10,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-10,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-10,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-10,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-10,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-10,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-10,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-10,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-10,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-10,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-10,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-10,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-10,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-10,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-10,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-10,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-10,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-10,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-10,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-10,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-10,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-10,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-10,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-10,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-10,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-10,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-10,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-10,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-10,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-10,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-10,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-10,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-10,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-10,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-10,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-10,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-10,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-10,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-10,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-10,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-10,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-10,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-10,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-10,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-10,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-10,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-10,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-10,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-10,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-10,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-10,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-10,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-11,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-11,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-11,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-11,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-11,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-11,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-11,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-11,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-11,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-11,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-11,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-11,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-11,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-11,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-11,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-11,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-11,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-11,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-11,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-11,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-11,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-11,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-11,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-11,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-11,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-11,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-11,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-11,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-11,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-11,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-11,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-11,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-11,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-11,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-11,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-11,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-11,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-11,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-11,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-11,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-11,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-11,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-11,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-11,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-11,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-11,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-11,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-11,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-11,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-11,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-11,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-11,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-12,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-12,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-12,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-12,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-12,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-12,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-12,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-12,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-12,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-12,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-12,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-12,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-12,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-12,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-12,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-12,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-12,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-12,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-12,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-12,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-12,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-12,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-12,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-12,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-12,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-12,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-12,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-12,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-12,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-12,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-12,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-12,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-12,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-12,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-12,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-12,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-12,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-12,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-12,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-12,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-12,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-12,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-12,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-12,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-12,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-12,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-12,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-12,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-12,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-12,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-12,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-12,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-13,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-13,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-13,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-13,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-13,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-13,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-13,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-13,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-13,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-13,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-13,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-13,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-13,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-13,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-13,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-13,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-13,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-13,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-13,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-13,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-13,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-13,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-13,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-13,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-13,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-13,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-13,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-13,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-13,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-13,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-13,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-13,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-13,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-13,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-13,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-13,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-13,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-13,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-13,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-13,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-13,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-13,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-13,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-13,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-13,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-13,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-13,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-13,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-13,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-13,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-13,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-13,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-14,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-14,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-14,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-14,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-14,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-14,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-14,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-14,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-14,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-14,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-14,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-14,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-14,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-14,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-14,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-14,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-14,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-14,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-14,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-14,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-14,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-14,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-14,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-14,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-14,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-14,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-14,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-14,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-14,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-14,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-14,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-14,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-14,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-14,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-14,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-14,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-14,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-14,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-14,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-14,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-14,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-14,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-14,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-14,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-14,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-14,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-14,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-14,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-14,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-14,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-14,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-14,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-15,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-15,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-15,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-15,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-15,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-15,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-15,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-15,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-15,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-15,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-15,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-15,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-15,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-15,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-15,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-15,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-15,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-15,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-15,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-15,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-15,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-15,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-15,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-15,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-15,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-15,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-15,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-15,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-15,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-15,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-15,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-15,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-15,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-15,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-15,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-15,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-15,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-15,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-15,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-15,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-15,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-15,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-15,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-15,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-15,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-15,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-15,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-15,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-15,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-15,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-15,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-15,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-16,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-16,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-16,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-16,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-16,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-16,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-16,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-16,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-16,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-16,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-16,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-16,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-16,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-16,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-16,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-16,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-16,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-16,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-16,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-16,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-16,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-16,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-16,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-16,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-16,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-16,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-16,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-16,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-16,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-16,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-16,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-16,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-16,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-16,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-16,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-16,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-16,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-16,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-16,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-16,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-16,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-16,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-16,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-16,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-16,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-16,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-16,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-16,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-16,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-16,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-16,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-16,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-17,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-17,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-17,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-17,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-17,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-17,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-17,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-17,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-17,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-17,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-17,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-17,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-17,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-17,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-17,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-17,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-17,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-17,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-17,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-17,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-17,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-17,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-17,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-17,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-17,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-17,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-17,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-17,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-17,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-17,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-17,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-17,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-17,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-17,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-17,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-17,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-17,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-17,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-17,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-17,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-17,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-17,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-17,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-17,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-17,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-17,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-17,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-17,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-17,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-17,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-17,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-17,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-18,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-18,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-18,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-18,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-18,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-18,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-18,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-18,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-18,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-18,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-18,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-18,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-18,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-18,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-18,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-18,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-18,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-18,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-18,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-18,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-18,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-18,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-18,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-18,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-18,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-18,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-18,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-18,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-18,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-18,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-18,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-18,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-18,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-18,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-18,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-18,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-18,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-18,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-18,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-18,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-18,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-18,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-18,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-18,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-18,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-18,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-18,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-18,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-18,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-18,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-18,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-18,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-19,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-19,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-19,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-19,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-19,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-19,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-19,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-19,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-19,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-19,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-19,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-19,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-19,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-19,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-19,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-19,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-19,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-19,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-19,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-19,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-19,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-19,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-19,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-19,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-19,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-19,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-19,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-19,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-19,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-19,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-19,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-19,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-19,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-19,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-19,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-19,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-19,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-19,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-19,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-19,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-19,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-19,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-19,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-19,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-19,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-19,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-19,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-19,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-19,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-19,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-19,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-19,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-20,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 1
+ACC-20,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 2
+ACC-20,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 3
+ACC-20,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 4
+ACC-20,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 5
+ACC-20,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 6
+ACC-20,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 7
+ACC-20,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 8
+ACC-20,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 9
+ACC-20,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 10
+ACC-20,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 11
+ACC-20,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 12
+ACC-20,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 13
+ACC-20,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 14
+ACC-20,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 15
+ACC-20,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 16
+ACC-20,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 17
+ACC-20,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 18
+ACC-20,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 19
+ACC-20,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 20
+ACC-20,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 21
+ACC-20,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 22
+ACC-20,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 23
+ACC-20,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 24
+ACC-20,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 25
+ACC-20,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 26
+ACC-20,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 27
+ACC-20,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 28
+ACC-20,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 29
+ACC-20,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 30
+ACC-20,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 31
+ACC-20,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 32
+ACC-20,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 33
+ACC-20,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 34
+ACC-20,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 35
+ACC-20,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 36
+ACC-20,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 37
+ACC-20,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 38
+ACC-20,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 39
+ACC-20,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 40
+ACC-20,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 41
+ACC-20,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 42
+ACC-20,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 43
+ACC-20,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 44
+ACC-20,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 45
+ACC-20,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 46
+ACC-20,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 47
+ACC-20,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,pse,type2-ieee802.3at,Edge port 48
+ACC-20,TenGigabitEthernet1/1/1,Uplink 1,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-20,TenGigabitEthernet1/1/2,Uplink 2,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-20,TenGigabitEthernet1/1/3,Uplink 3,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+ACC-20,TenGigabitEthernet1/1/4,Uplink 4,10gbase-x-sfpp,10000000,full,true,false,9216,tagged,99,,,Uplink
+SRV-01,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-01,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-01,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-01,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-02,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-02,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-02,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-02,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-03,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-03,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-03,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-03,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-04,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-04,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-04,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-04,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-05,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-05,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-05,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-05,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-06,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-06,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-06,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-06,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-07,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-07,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-07,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-07,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-08,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-08,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-08,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+SRV-08,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-01,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/1,Port 1,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/2,Port 2,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/3,Port 3,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/4,Port 4,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/5,Port 5,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/6,Port 6,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/7,Port 7,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/8,Port 8,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/9,Port 9,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/10,Port 10,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/11,Port 11,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/12,Port 12,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/13,Port 13,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/14,Port 14,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/15,Port 15,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/16,Port 16,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/17,Port 17,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/18,Port 18,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/19,Port 19,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/20,Port 20,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/21,Port 21,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/22,Port 22,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/23,Port 23,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/24,Port 24,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/25,Port 25,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/26,Port 26,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/27,Port 27,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/28,Port 28,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/29,Port 29,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/30,Port 30,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/31,Port 31,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/32,Port 32,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/33,Port 33,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/34,Port 34,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/35,Port 35,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/36,Port 36,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/37,Port 37,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/38,Port 38,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/39,Port 39,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/40,Port 40,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/41,Port 41,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/42,Port 42,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/43,Port 43,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/44,Port 44,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/45,Port 45,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/46,Port 46,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/47,Port 47,1000base-t,1000000,full,true,false,1500,access,10,,,
+OOB-02,GigabitEthernet1/0/48,Port 48,1000base-t,1000000,full,true,false,1500,access,10,,,
