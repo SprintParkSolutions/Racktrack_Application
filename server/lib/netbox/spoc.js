@@ -14,14 +14,19 @@
 const SPOC_ROLE = 'spoc';
 
 /** One assignment row -> the bit we need. */
-function toPerson(row, via) {
+function toPerson(row, via, full) {
   const c = row.contact || {};
   if (!c.name) return null;
+  // NetBox serialises the contact on an assignment in BRIEF form — id, name and
+  // description, and nothing else. No email. That matters because a ServiceNow
+  // incident is assigned by email; a name matches nothing on most instances. So
+  // the real details are fetched once and joined on here by contact id.
+  const detail = (full && full.get(c.id)) || {};
   return {
     name: c.name,
-    email: c.email || null,
-    phone: c.phone || null,
-    title: c.title || null,
+    email: detail.email || c.email || null,
+    phone: detail.phone || c.phone || null,
+    title: detail.title || c.title || null,
     role: (row.role && (row.role.name || row.role.slug)) || null,
     priority: (row.priority && (row.priority.value || row.priority)) || null,
     via,
