@@ -54,6 +54,7 @@ const MarketplacePartnerAccountsPage = lazy(() => import('./pages/MarketplacePar
 // Marketplace: most sessions never reach them and they should not sit in
 // front of the login.
 const ReviewPage = lazy(() => import('./pages/ReviewPage.jsx'));
+const ApprovalsPage = lazy(() => import('./pages/ApprovalsPage.jsx'));
 const ReportPage = lazy(() => import('./pages/ReportPage.jsx'));
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
@@ -465,6 +466,10 @@ export default function App() {
                 download, share and the NetBox export all happen on it. */}
             <Route path="/results/:rackId/report" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ReportPage /></ResponsiveLayout></ProtectedRoute>
+            } />
+            {/* Approvals — an admin decides what reaches NetBox, item by item. */}
+            <Route path="/results/:rackId/approvals" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><ApprovalsPage /></ResponsiveLayout></ProtectedRoute>
             } />
             {/* Review is reachable but not a step. */}
             <Route path="/results/:rackId/review" element={

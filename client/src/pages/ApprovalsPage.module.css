@@ -1,0 +1,182 @@
+/* Approvals — the admin's screen. Phone first: this is used standing up. */
+
+.page {
+  min-height: 100%;
+  padding: 0 0 120px;
+  background: var(--bg, #fff);
+  color: var(--text, #1c1c1c);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+  border-bottom: 1px solid var(--border, #e6eae8);
+}
+.back {
+  flex: none;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border: none; background: none; color: inherit; cursor: pointer;
+}
+.title { margin: 4px 0 2px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.sub { margin: 0; font-size: 13px; color: var(--muted, #5f6864); }
+.fp { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+
+.busy, .error, .empty, .warnRow {
+  margin: 12px 16px; font-size: 14.5px; line-height: 1.5;
+}
+.busy { color: var(--muted, #5f6864); }
+.error { color: #9d4a3f; }
+.empty { color: var(--muted, #5f6864); }
+.warnRow {
+  color: #8a6d1f; background: #fbf8ef;
+  border-left: 3px solid #8a6d1f; padding: 10px 12px; border-radius: 3px;
+}
+
+/* the counts, so you know the size of the job before scrolling */
+.summary {
+  display: flex; flex-wrap: wrap; gap: 7px;
+  padding: 12px 16px 4px;
+}
+.pill, .pillOk, .pillWait, .pillQuiet {
+  font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+  background: #f1f4f2; color: var(--muted, #5f6864); white-space: nowrap;
+}
+.pillWait { background: #fbf0dc; color: #8a6d1f; }
+.pillOk   { background: #eef5f1; color: #0b6a44; }
+.pillQuiet { background: transparent; color: #949d98; }
+
+/* who a ticket goes to */
+.spoc {
+  margin: 12px 16px; padding: 12px 14px;
+  background: #eef5f1; border-left: 3px solid #0b6a44; border-radius: 3px;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+  font-size: 14.5px;
+}
+.spocTag {
+  width: 100%; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: #0b6a44; font-weight: 700;
+}
+.spocRole { color: var(--muted, #5f6864); font-size: 13.5px; }
+.spocMail { color: #0b6a44; text-decoration: underline; font-size: 13.5px; }
+.spocVia { width: 100%; font-size: 12.5px; color: #949d98; }
+
+.list { list-style: none; margin: 8px 0 0; padding: 0; }
+
+.item {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border, #e6eae8);
+}
+.item.approved { background: #f7fbf9; }
+.item.rejected { background: #fdf8f7; }
+.item.ticketed { background: #fdfbf5; }
+
+.itemTop { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.type {
+  font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #949d98; font-weight: 700;
+}
+.name { font-size: 17px; font-weight: 700; }
+.action { font-size: 13px; color: var(--muted, #5f6864); }
+.state {
+  margin-left: auto; font-size: 12px; font-weight: 700;
+  color: #8a6d1f; white-space: nowrap;
+}
+.item.approved .state { color: #0b6a44; }
+.item.rejected .state { color: #9d4a3f; }
+
+/* what actually differs */
+.diff { list-style: none; margin: 10px 0 0; padding: 0; }
+.diff li {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  padding: 5px 0; font-size: 14px;
+  font-family: ui-monospace, Menlo, monospace;
+}
+.field { color: #949d98; min-width: 92px; }
+.from { color: #9d4a3f; text-decoration: line-through; }
+.arrow { color: #949d98; }
+.to { color: #0b6a44; font-weight: 600; }
+
+.ticket {
+  margin-top: 10px; padding: 10px 12px;
+  background: #fff; border: 1px solid #e6d9b8; border-radius: 4px;
+}
+.ticketTag {
+  font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #8a6d1f; font-weight: 700;
+}
+.q { margin: 6px 0 0; font-size: 14px; color: var(--muted, #5f6864); }
+.finding { margin: 6px 0 0; font-size: 14px; color: #0b6a44; }
+.snLink {
+  display: inline-block; margin-top: 8px; font-size: 14px; font-weight: 600;
+  color: #0b6a44; text-decoration: underline;
+}
+.snErr { margin: 6px 0 0; font-size: 13.5px; color: #9d4a3f; }
+
+.actions { display: flex; gap: 8px; margin-top: 12px; }
+.approve, .ticketBtn, .reject {
+  flex: 1; padding: 11px 8px; border-radius: 8px; font-size: 14.5px; font-weight: 600;
+  border: 1px solid; cursor: pointer; background: #fff;
+}
+.approve { border-color: #0b6a44; color: #0b6a44; }
+.ticketBtn { border-color: #8a6d1f; color: #8a6d1f; }
+.reject { border-color: #9d4a3f; color: #9d4a3f; }
+.approve:disabled, .ticketBtn:disabled, .reject:disabled { opacity: 0.45; cursor: default; }
+
+.note { margin: 10px 0 0; font-size: 13.5px; color: var(--muted, #5f6864); font-style: italic; }
+
+/* the write, and the two things that can stop it */
+.footer {
+  position: sticky; bottom: 0;
+  padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  background: var(--bg, #fff);
+  border-top: 1px solid var(--border, #e6eae8);
+}
+.primary {
+  width: 100%; padding: 15px; border: none; border-radius: 10px;
+  background: #0b6a44; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.primary:disabled { background: #c9d0cc; color: #fff; cursor: default; }
+.footNote { margin: 8px 0 0; font-size: 12.5px; color: #949d98; text-align: center; }
+.linkBtn {
+  background: none; border: none; color: #0b6a44; font-size: 15px;
+  font-weight: 600; cursor: pointer; padding: 12px 4px;
+}
+
+.drift, .done { margin: 12px 16px; padding: 14px; border-radius: 6px; }
+.drift { background: #f9f1f0; border-left: 3px solid #9d4a3f; }
+.done  { background: #eef5f1; border-left: 3px solid #0b6a44; }
+.drift h2, .done h2 { margin: 0 0 6px; font-size: 17px; font-weight: 700; }
+.drift p, .done p { margin: 0 0 8px; font-size: 14.5px; line-height: 1.5; }
+.driftFp { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #949d98; }
+
+/* the ticket sheet — top-anchored so the keyboard never covers the button */
+.sheetWrap {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(20, 24, 27, 0.4);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 12px 0;
+}
+.sheet {
+  width: 100%; max-width: 560px;
+  background: var(--bg, #fff); border-radius: 12px; padding: 18px 16px 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+}
+.sheetTitle { margin: 0 0 3px; font-size: 19px; font-weight: 700; }
+.sheetSub { margin: 0 0 14px; font-size: 14px; color: var(--muted, #5f6864); }
+.label {
+  display: block; margin: 12px 0 5px;
+  font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted, #5f6864); font-weight: 700;
+}
+.select, .textarea {
+  width: 100%; padding: 12px; font-size: 16px; font-family: inherit;
+  border: 1px solid var(--border, #c9d0cc); border-radius: 8px;
+  background: var(--bg, #fff); color: inherit;
+}
+.textarea { min-height: 88px; resize: vertical; }
+.sheetNote { margin: 12px 0 0; font-size: 13px; color: var(--muted, #5f6864); }
+.sheetActions { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.sheetActions .primary { width: auto; flex: 1; }

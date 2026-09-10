@@ -310,7 +310,10 @@ export default function ReportPage() {
             ['PDF', openPdf, fileBusy === 'pdf'],
           ]],
           ['export', 'Export', <IconExport key="i" />, [
-            ['NetBox', () => setExporting(true), false],
+            // Export no longer writes straight through. It opens the plan an
+            // admin approves item by item, which is what actually reaches
+            // NetBox — and what raises a ticket for anything they cannot judge.
+            ['NetBox', () => navigate(`/results/${encodeURIComponent(rackId)}/approvals`), false],
           ]],
           ['share', 'Share', <IconSend key="i" />, [
             ['Teams', () => setSharing('teams'), false],
