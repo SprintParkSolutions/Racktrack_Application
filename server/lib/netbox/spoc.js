@@ -55,6 +55,10 @@ async function forRack(client, rackName) {
   const out = { spoc: null, others: [], rack: null, site: null, why: null };
   if (!rackName) { out.why = 'no rack name'; return out; }
 
+  // One call for everybody's real details, joined on by id below. Cheaper than
+  // fetching each contact as it is found, and the list is small.
+  const full = new Map((await everyone(client)).map((c) => [c.netboxId, c]));
+
   let rack;
   try {
     const res = await client.get('/api/dcim/racks/', { name: rackName, limit: 1 });
@@ -69,12 +73,12 @@ async function forRack(client, rackName) {
   out.site = rack.site ? { id: rack.site.id, name: rack.site.name } : null;
 
   const onRack = await assignmentsFor(client, 'dcim.rack', rack.id, SPOC_ROLE);
-  const first = onRack.map((r) => toPerson(r, 'rack')).filter(Boolean)[0];
+  const first = onRack.map((r) => toPerson(r, 'rack', full)).filter(Boolean)[0];
   if (first) {
     out.spoc = first;
   } else if (out.site) {
     const onSite = await assignmentsFor(client, 'dcim.site', out.site.id, SPOC_ROLE);
-    out.spoc = onSite.map((r) => toPerson(r, 'site')).filter(Boolean)[0] || null;
+    out.spoc = onSite.map((r) => toPerson(r, 'site', full)).filter(Boolean)[0] || null;
     if (!out.spoc) out.why = 'no contact with the SPOC role on this rack or its site';
   } else {
     out.why = 'the rack has no site, and no SPOC of its own';
@@ -82,7 +86,7 @@ async function forRack(client, rackName) {
 
   // Everyone else attached to the rack, so a person can pick somebody different.
   const all = await assignmentsFor(client, 'dcim.rack', rack.id, null);
-  out.others = all.map((r) => toPerson(r, 'rack'))
+  out.others = all.map((r) => toPerson(r, 'rack', full))
     .filter(Boolean)
     .filter((p) => !out.spoc || p.name !== out.spoc.name);
 
