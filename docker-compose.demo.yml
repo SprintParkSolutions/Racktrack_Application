@@ -16,7 +16,7 @@
 #   * server/data is persisted; the local file omits it, which is fine for a
 #     throwaway run and would silently wipe the demo on every redeploy.
 #
-# Setup, DNS and first-run steps: docs/setup/DEMO-VPS-SETUP.md
+# Setup, DNS and first-run steps: docs/setup/demo-vps-setup.md
 
 services:
   racktrack:
@@ -65,6 +65,14 @@ services:
       # 7.8 GB VPS into OOM kills mid-scan, which is what "the rack takes
       # forever" was. One worker answers a scan in one pass instead.
       - RACKTRACK_WORKERS=1
+      # Plans and scans persist on the mounted volume, not the ephemeral
+      # container FS. Without this a restart wiped every pending approval.
+      - RT_DATA_DIR=/app/server/data
+      # Pin the credential-encryption key so a restart cannot orphan saved
+      # connections. Without this every restart regenerated a random key and
+      # made every stored ServiceNow/NetBox credential undecryptable.
+      - SSH_CREDS_KEY=931c8137c2d8ffab89f63718ba730b64fab20ce1ec7a050f0ac8533fef187636
+      - UV_THREADPOOL_SIZE=16
       - OMP_NUM_THREADS=2
       # app.js reads this exact name (not CORS_ORIGINS). It must match the
       # browser's origin or every API call from the demo site is refused.
@@ -74,6 +82,8 @@ services:
     expose:
       - "3001"
 
+    extra_hosts:
+      - "dev322173.service-now.com:148.139.174.209"
     volumes:
       # Model weights — git-ignored, ~483 MB, rsync'd to the host separately.
       - ./Models:/app/Models:ro
@@ -114,6 +124,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    extra_hosts:
+      - "dev322173.service-now.com:148.139.174.209"
     volumes:
       - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       # Certificates and the ACME account key. Lose this volume and Caddy
