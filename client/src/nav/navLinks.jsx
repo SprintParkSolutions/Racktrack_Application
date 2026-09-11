@@ -61,6 +61,9 @@ export const ContactIcon = () => (
 export const SwitchTestIcon = () => (
   <svg {...s}><rect x="2" y="8" width="20" height="8" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01"/><path d="M18 3v3M16.5 4.5h3"/></svg>
 );
+export const InboxIcon = () => (
+  <svg {...s}><path d="M3 12h5l2 3h4l2-3h5"/><path d="M3 12V6a2 2 0 012-2h14a2 2 0 012 2v6"/><path d="M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6"/></svg>
+);
 export const MoreIcon = () => (
   <svg {...s}><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>
 );
@@ -78,6 +81,12 @@ export function usePrimaryNav() {
   return [
     // No Home. The app opens on the work — Scan is the first destination.
     { to: '/scan',           label: 'Scan',         icon: <ScanIcon />,        end: false, inBar: true },
+    // The admin's inbox: drift checks a technician has sent for a decision.
+    // Admins only, and in the bottom bar so it is the first place an admin
+    // looks — a workflow nobody is told about is a workflow nobody uses.
+    ...(isAdmin ? [{ to: '/approvals', label: 'Approvals', icon: <InboxIcon />, end: true,
+      inBar: true, barLabel: 'Inbox',
+      hint: 'Drift checks waiting on your decision' }] : []),
     // In the phone's bottom bar as well as the sidebar. It used to be behind
     // "More", and testers reported not knowing the mode existed at all —
     // the scan page deliberately has no two-rack card (one home for the entry),
