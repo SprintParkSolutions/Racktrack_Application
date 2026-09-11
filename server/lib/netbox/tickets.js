@@ -95,29 +95,123 @@ function toIncident({ item, rackId, rackName, siteName, spoc, question, planId, 
   };
 }
 
-const base = (cfg, table) =>
-  `${String(cfg.instanceUrl || '').replace(/\/+$/, '')}/api/now/table/${table || 'incident'}`;
+const origin = (cfg) => String(cfg.instanceUrl || '').replace(/\/+$/, '');
+const base = (cfg, table) => `${origin(cfg)}/api/now/table/${table || 'incident'}`;
 
-const headers = (cfg) => ({
+/*
+ * HOW WE AUTHENTICATE, AND WHY IT IS NOT THE OBVIOUS WAY.
+ *
+ * Every integration guide says: send `Authorization: Basic user:password`.
+ * ServiceNow's Zurich release (2025) refuses that for REST on developer
+ * instances — every call returns 401 "User is not authenticated", for every
+ * user, every role, every password, even though the same credentials sign in
+ * fine through a browser. It cost an afternoon to find out that the message
+ * means "not this way", not "wrong password".
+ *
+ * So we sign in the way the browser does: POST the login form, keep the
+ * cookies it sets, and send them with the CSRF token (`X-UserToken`) on every
+ * REST call. That path is open on every release, and it is what a person's
+ * browser is doing anyway. Sessions are cached per instance+user and rebuilt
+ * on a 401, so a login happens once, not once per call.
+ */
+const sessions = new Map();
+
+/** Cookies from a response, folded into a Cookie header we can send back. */
+function harvestCookies(res, jar) {
+  const set = typeof res.headers.getSetCookie === 'function'
+    ? res.headers.getSetCookie()
+    : [res.headers.get('set-cookie')].filter(Boolean);
+  for (const line of set) {
+    const [pair] = String(line).split(';');
+    const eq = pair.indexOf('=');
+    if (eq > 0) jar.set(pair.slice(0, eq).trim(), pair.slice(eq + 1).trim());
+  }
+}
+const cookieHeader = (jar) => [...jar.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+
+/** Sign in as the browser does. Returns {cookie, token} or throws with the reason. */
+async function login(cfg, fetchImpl = fetch) {
+  const jar = new Map();
+  const ua = { 'User-Agent': 'RackTrack/1.0', Accept: 'text/html,application/json' };
+
+  const page = await fetchImpl(`${origin(cfg)}/login.do`, { headers: ua, redirect: 'follow' });
+  harvestCookies(page, jar);
+  const html = await page.text();
+  const ck = html.match(/name="sysparm_ck"\s+value="([^"]+)"/);
+
+  const form = new URLSearchParams({
+    user_name: cfg.username || '', user_password: cfg.password || '',
+    sys_action: 'sysverb_login', ...(ck ? { sysparm_ck: ck[1] } : {}),
+  });
+  const post = await fetchImpl(`${origin(cfg)}/login.do`, {
+    method: 'POST', redirect: 'manual',
+    headers: { ...ua, 'Content-Type': 'application/x-www-form-urlencoded', Cookie: cookieHeader(jar) },
+    body: form.toString(),
+  });
+  harvestCookies(post, jar);
+
+  // A successful login sets glide_user_route; a failed one bounces to login.do
+  // with the same pre-auth cookies and nothing else.
+  if (!jar.has('glide_user_route')) {
+    throw new Error('ServiceNow refused the sign-in: check the instance, user and password');
+  }
+
+  // The CSRF token lives on the page after login. Fetch a small one to read it.
+  const after = await fetchImpl(`${origin(cfg)}/login_redirect.do?sysparm_stack=no`, {
+    headers: { ...ua, Cookie: cookieHeader(jar) }, redirect: 'follow',
+  });
+  harvestCookies(after, jar);
+  const body = await after.text();
+  const tok = body.match(/g_ck\s*=\s*['"]([0-9a-f]{72})['"]/);
+  return { cookie: cookieHeader(jar), token: tok ? tok[1] : null, at: Date.now() };
+}
+
+const sessionKey = (cfg) => `${origin(cfg)}|${cfg.username || ''}`;
+
+async function session(cfg, fetchImpl, fresh = false) {
+  const key = sessionKey(cfg);
+  if (!fresh && sessions.has(key)) return sessions.get(key);
+  const s = await login(cfg, fetchImpl);
+  sessions.set(key, s);
+  return s;
+}
+
+const headers = (cfg, s) => ({
   'Content-Type': 'application/json',
   Accept: 'application/json',
-  Authorization: `Basic ${Buffer.from(`${cfg.username || ''}:${cfg.password || ''}`).toString('base64')}`,
+  Cookie: s.cookie,
+  ...(s.token ? { 'X-UserToken': s.token } : {}),
 });
 
-async function req(url, method, hdrs, body, timeoutMs = 15000) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      method, headers: hdrs, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal,
-    });
-    const text = await res.text();
-    let parsed;
-    try { parsed = text ? JSON.parse(text) : {}; } catch { parsed = text.slice(0, 300); }
-    return { status: res.status, ok: res.ok, body: parsed };
-  } finally {
-    clearTimeout(timer);
+/**
+ * One REST call, signed with a session. On a 401 the session is rebuilt once
+ * and the call retried, so an expired login heals itself.
+ */
+async function req(url, method, _hdrsUnused, body, timeoutMs = 15000, cfg = null, fetchImpl = fetch) {
+  const doCall = async (s) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetchImpl(url, {
+        method, headers: headers(cfg, s), body: body ? JSON.stringify(body) : undefined,
+        signal: ctrl.signal,
+      });
+      const text = await res.text();
+      let parsed;
+      try { parsed = text ? JSON.parse(text) : {}; } catch { parsed = text.slice(0, 300); }
+      return { status: res.status, ok: res.ok, body: parsed };
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  if (!cfg) throw new Error('req() needs the ServiceNow config to sign the call');
+  let s = await session(cfg, fetchImpl);
+  let out = await doCall(s);
+  if (out.status === 401) {
+    s = await session(cfg, fetchImpl, true);
+    out = await doCall(s);
   }
+  return out;
 }
 
 /** Find an incident we raised before for exactly this problem. */
@@ -125,7 +219,7 @@ async function findExisting(cfg, correlationId, fetchImpl = req) {
   const url = `${base(cfg, cfg.incidentTable)}`
     + `?sysparm_query=correlation_id=${encodeURIComponent(correlationId)}`
     + '&sysparm_limit=1&sysparm_display_value=false';
-  const r = await fetchImpl(url, 'GET', headers(cfg));
+  const r = await fetchImpl(url, 'GET', null, undefined, 15000, cfg);
   if (!r.ok) return { ok: false, status: r.status, error: r.body };
   const row = (r.body && r.body.result && r.body.result[0]) || null;
   return { ok: true, incident: row };
@@ -150,7 +244,7 @@ async function raise(cfg, ctx, fetchImpl = req) {
     const patch = CLOSED_STATES.has(state)
       ? { state: 2, work_notes: 'Seen again on a later RackTrack scan. Reopened.' }
       : { work_notes: `Seen again on a later RackTrack scan.\n\n${fields.description}` };
-    const r = await fetchImpl(`${base(cfg, cfg.incidentTable)}/${sysId}`, 'PATCH', headers(cfg), patch);
+    const r = await fetchImpl(`${base(cfg, cfg.incidentTable)}/${sysId}`, 'PATCH', null, patch, 15000, cfg);
     if (!r.ok) return { ok: false, status: r.status, error: r.body };
     const row = (r.body && r.body.result) || found.incident;
     return {
@@ -161,7 +255,7 @@ async function raise(cfg, ctx, fetchImpl = req) {
     };
   }
 
-  const r = await fetchImpl(base(cfg, cfg.incidentTable), 'POST', headers(cfg), fields);
+  const r = await fetchImpl(base(cfg, cfg.incidentTable), 'POST', null, fields, 15000, cfg);
   if (!r.ok) return { ok: false, status: r.status, error: r.body };
   const row = (r.body && r.body.result) || {};
   return {
@@ -187,7 +281,7 @@ async function statusOf(cfg, sysIds, fetchImpl = req) {
     + `?sysparm_query=sys_idIN${ids.join(',')}`
     + '&sysparm_fields=sys_id,number,state,close_notes,resolved_at,assigned_to'
     + `&sysparm_limit=${ids.length}`;
-  const r = await fetchImpl(url, 'GET', headers(cfg));
+  const r = await fetchImpl(url, 'GET', null, undefined, 15000, cfg);
   if (!r.ok) return { ok: false, status: r.status, error: r.body };
 
   const states = {};
@@ -206,7 +300,7 @@ async function statusOf(cfg, sysIds, fetchImpl = req) {
 
 module.exports = {
   toIncident, describe, correlationFor, urgencyFor,
-  raise, statusOf, findExisting,
+  raise, statusOf, findExisting, login,
   STATE, CLOSED_STATES,
-  _req: req,
+  _req: req, _sessions: sessions,
 };
