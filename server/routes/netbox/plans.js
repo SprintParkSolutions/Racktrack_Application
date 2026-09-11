@@ -43,9 +43,21 @@ function serviceNowFor(req) {
     || (req.user?.id ? profiles.resolveCredsForType(req.user.id, 'servicenow') : null);
   const s = creds?.secret;
   if (!s || !(s.instance || s.instanceUrl)) return null;
-  const instance = s.instanceUrl || s.instance;
+
+  // The connection form stores just the instance name ("dev322173"), or a full
+  // URL. Build a real base URL either way: a bare name needs the domain
+  // appended, or every call resolves the wrong host.
+  const raw = String(s.instanceUrl || s.instance).trim();
+  let instanceUrl;
+  if (/^https?:\/\//i.test(raw)) {
+    instanceUrl = raw.replace(/\/+$/, '');
+  } else if (raw.includes('.')) {
+    instanceUrl = `https://${raw.replace(/\/+$/, '')}`;
+  } else {
+    instanceUrl = `https://${raw}.service-now.com`;
+  }
   return {
-    instanceUrl: /^https?:\/\//i.test(instance) ? instance : `https://${instance}`,
+    instanceUrl,
     username: s.user || s.username || '',
     password: s.password || '',
     incidentTable: s.incidentTable || 'incident',

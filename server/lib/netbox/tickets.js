@@ -95,6 +95,96 @@ function toIncident({ item, rackId, rackName, siteName, spoc, question, planId, 
   };
 }
 
+const https = require('https');
+const dns = require('dns');
+const { URL } = require('url');
+
+// host -> IPv4, resolved once. getaddrinfo runs on the libuv threadpool, which
+// the server's other outbound calls saturate; a resolved-once cache plus a
+// synchronous lookup keeps ServiceNow calls off it entirely.
+const ipCache = new Map();
+
+// Seed the cache from /etc/hosts at load time — synchronously, no threadpool.
+// The demo pins the instance there via extra_hosts, so this alone resolves it
+// and getaddrinfo is never called for the ServiceNow host under load.
+(function seedFromHostsFile() {
+  try {
+    const fsMod = require('fs');
+    for (const line of fsMod.readFileSync('/etc/hosts', 'utf8').split('\n')) {
+      const t = line.replace(/#.*/, '').trim().split(/\s+/);
+      const ip = t[0];
+      if (!/^\d+\.\d+\.\d+\.\d+$/.test(ip)) continue;
+      for (const name of t.slice(1)) if (name) ipCache.set(name, ip);
+    }
+  } catch { /* no hosts file, or unreadable — fall back to dns.lookup */ }
+})();
+
+function primeIp(hostname) {
+  if (ipCache.has(hostname)) return Promise.resolve(ipCache.get(hostname));
+  return new Promise((resolve) => {
+    dns.lookup(hostname, { family: 4 }, (err, address) => {
+      if (!err && address) ipCache.set(hostname, address);
+      resolve(ipCache.get(hostname) || null);
+    });
+  });
+}
+// A lookup() for https.request: answer from cache with no threadpool hop; fall
+// back to the real resolver only if we have not primed the host yet.
+function cachedLookup(hostname, options, cb) {
+  const ip = ipCache.get(hostname);
+  if (!ip) { dns.lookup(hostname, options, cb); return; }
+  // https.request calls lookup with { all: true }, which expects an array of
+  // {address, family}; the plain form expects (err, address, family). Answer in
+  // whichever shape the caller asked for, or the socket gets undefined.
+  const opts = options && typeof options === 'object' ? options : {};
+  process.nextTick(() => {
+    if (opts.all) cb(null, [{ address: ip, family: 4 }]);
+    else cb(null, ip, 4);
+  });
+}
+
+/**
+ * A fetch() work-alike over Node's https module, for ServiceNow only.
+ *
+ * Why not global fetch: on the demo VPS, undici bypassed /etc/hosts and leaned
+ * on Docker's embedded DNS, which drops lookups under the server's concurrent
+ * load — every ServiceNow call then failed with EAI_AGAIN or ENOTFOUND, while a
+ * bare process in the same container always worked. The https module resolves
+ * through dns.lookup (which honours the pinned host) and, with keep-alive off,
+ * never reuses a stale socket. Returns the small slice of the fetch interface
+ * this file uses: status, ok, text(), and headers.getSetCookie().
+ */
+function httpsFetch(urlStr, opts = {}) {
+  const u = new URL(urlStr);
+  const body = opts.body;
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: u.hostname, port: u.port || 443, path: u.pathname + u.search,
+      method: opts.method || 'GET', headers: opts.headers || {},
+      agent: new https.Agent({ keepAlive: false }),
+      lookup: cachedLookup,
+      timeout: 12000,
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf8');
+        const setCookie = res.headers['set-cookie'] || [];
+        resolve({
+          status: res.statusCode, ok: res.statusCode >= 200 && res.statusCode < 300,
+          headers: { get: (k) => res.headers[String(k).toLowerCase()],
+                     getSetCookie: () => setCookie },
+          text: async () => text,
+        });
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(new Error('request timed out')); });
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
 const origin = (cfg) => String(cfg.instanceUrl || '').replace(/\/+$/, '');
 const base = (cfg, table) => `${origin(cfg)}/api/now/table/${table || 'incident'}`;
 
@@ -130,11 +220,30 @@ function harvestCookies(res, jar) {
 const cookieHeader = (jar) => [...jar.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
 
 /** Sign in as the browser does. Returns {cookie, token} or throws with the reason. */
-async function login(cfg, fetchImpl = fetch) {
-  const jar = new Map();
-  const ua = { 'User-Agent': 'RackTrack/1.0', Accept: 'text/html,application/json' };
+/** fetch with a bounded time and one retry on a dropped connection. */
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function tryFetch(fetchImpl, url, opts, attempts = 4) {
+  let last;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await fetchImpl(url, { signal: AbortSignal.timeout(12000), ...opts });
+    } catch (err) {
+      last = err;
+      // A dropped socket or a transient DNS failure (EAI_AGAIN, common under
+      // Docker's embedded resolver) usually clears on a short pause.
+      if (i < attempts - 1) await sleep(250 * (i + 1));
+    }
+  }
+  throw last;
+}
 
-  const page = await fetchImpl(`${origin(cfg)}/login.do`, { headers: ua, redirect: 'follow' });
+async function login(cfg, fetchImpl = httpsFetch) {
+  await primeIp(new URL(origin(cfg)).hostname);
+  const jar = new Map();
+  const ua = { 'User-Agent': 'RackTrack/1.0', Accept: 'text/html,application/json', Connection: 'close' };
+  const timed = (url, opts) => tryFetch(fetchImpl, url, opts);
+
+  const page = await timed(`${origin(cfg)}/login.do`, { headers: ua, redirect: 'follow' });
   harvestCookies(page, jar);
   const html = await page.text();
   const ck = html.match(/name="sysparm_ck"\s+value="([^"]+)"/);
@@ -143,7 +252,7 @@ async function login(cfg, fetchImpl = fetch) {
     user_name: cfg.username || '', user_password: cfg.password || '',
     sys_action: 'sysverb_login', ...(ck ? { sysparm_ck: ck[1] } : {}),
   });
-  const post = await fetchImpl(`${origin(cfg)}/login.do`, {
+  const post = await timed(`${origin(cfg)}/login.do`, {
     method: 'POST', redirect: 'manual',
     headers: { ...ua, 'Content-Type': 'application/x-www-form-urlencoded', Cookie: cookieHeader(jar) },
     body: form.toString(),
@@ -157,7 +266,7 @@ async function login(cfg, fetchImpl = fetch) {
   }
 
   // The CSRF token lives on the page after login. Fetch a small one to read it.
-  const after = await fetchImpl(`${origin(cfg)}/login_redirect.do?sysparm_stack=no`, {
+  const after = await timed(`${origin(cfg)}/login_redirect.do?sysparm_stack=no`, {
     headers: { ...ua, Cookie: cookieHeader(jar) }, redirect: 'follow',
   });
   harvestCookies(after, jar);
@@ -168,7 +277,7 @@ async function login(cfg, fetchImpl = fetch) {
 
 const sessionKey = (cfg) => `${origin(cfg)}|${cfg.username || ''}`;
 
-async function session(cfg, fetchImpl, fresh = false) {
+async function session(cfg, fetchImpl = httpsFetch, fresh = false) {
   const key = sessionKey(cfg);
   if (!fresh && sessions.has(key)) return sessions.get(key);
   const s = await login(cfg, fetchImpl);
@@ -179,6 +288,7 @@ async function session(cfg, fetchImpl, fresh = false) {
 const headers = (cfg, s) => ({
   'Content-Type': 'application/json',
   Accept: 'application/json',
+  Connection: 'close',
   Cookie: s.cookie,
   ...(s.token ? { 'X-UserToken': s.token } : {}),
 });
@@ -187,12 +297,12 @@ const headers = (cfg, s) => ({
  * One REST call, signed with a session. On a 401 the session is rebuilt once
  * and the call retried, so an expired login heals itself.
  */
-async function req(url, method, _hdrsUnused, body, timeoutMs = 15000, cfg = null, fetchImpl = fetch) {
+async function req(url, method, _hdrsUnused, body, timeoutMs = 15000, cfg = null, fetchImpl = httpsFetch) {
   const doCall = async (s) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      const res = await fetchImpl(url, {
+      const res = await tryFetch(fetchImpl, url, {
         method, headers: headers(cfg, s), body: body ? JSON.stringify(body) : undefined,
         signal: ctrl.signal,
       });
@@ -207,10 +317,15 @@ async function req(url, method, _hdrsUnused, body, timeoutMs = 15000, cfg = null
   if (!cfg) throw new Error('req() needs the ServiceNow config to sign the call');
   let s = await session(cfg, fetchImpl);
   let out = await doCall(s);
-  if (out.status === 401) {
+  // 401 or 403 means the session is no good. Drop it and log in fresh, once.
+  if (out.status === 401 || out.status === 403) {
+    sessions.delete(sessionKey(cfg));
     s = await session(cfg, fetchImpl, true);
     out = await doCall(s);
   }
+  // A poisoned session must never persist: any failure clears it, so the next
+  // request starts clean rather than reusing a login that no longer works.
+  if (!out.ok) sessions.delete(sessionKey(cfg));
   return out;
 }
 
@@ -233,6 +348,17 @@ async function findExisting(cfg, correlationId, fetchImpl = req) {
  * pretending it is new.
  */
 async function raise(cfg, ctx, fetchImpl = req) {
+  try {
+    return await raiseInner(cfg, ctx, fetchImpl);
+  } catch (err) {
+    // A login or a network failure must not take down the whole decision.
+    // The ticket still exists in RackTrack; it simply has no incident yet.
+    const cause = err && err.cause ? ` (${err.cause.code || err.cause.message})` : '';
+    return { ok: false, status: 0, error: `could not reach ServiceNow: ${err.message}${cause}` };
+  }
+}
+
+async function raiseInner(cfg, ctx, fetchImpl = req) {
   const fields = toIncident(ctx);
   const found = await findExisting(cfg, fields.correlation_id, fetchImpl);
   if (!found.ok) return { ok: false, error: found.error, status: found.status };
@@ -277,6 +403,14 @@ async function raise(cfg, ctx, fetchImpl = req) {
 async function statusOf(cfg, sysIds, fetchImpl = req) {
   const ids = (sysIds || []).filter(Boolean);
   if (!ids.length) return { ok: true, states: {} };
+  try {
+    return await statusOfInner(cfg, ids, fetchImpl);
+  } catch (err) {
+    return { ok: false, status: 0, error: `could not reach ServiceNow: ${err.message}` };
+  }
+}
+
+async function statusOfInner(cfg, ids, fetchImpl = req) {
   const url = `${base(cfg, cfg.incidentTable)}`
     + `?sysparm_query=sys_idIN${ids.join(',')}`
     + '&sysparm_fields=sys_id,number,state,close_notes,resolved_at,assigned_to'
