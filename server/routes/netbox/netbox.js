@@ -113,6 +113,7 @@ router.post('/:id/preview', async (req, res) => {
     const filed = plans.create({
       scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
       report, by: (req.user && (req.user.username || req.user.email)) || null,
+      orgId: req.user?.organization_id ?? null, tenantId: req.user?.tenant_id ?? null,
     });
     res.json({
       ...report,
@@ -165,6 +166,9 @@ router.post('/:id/export', async (req, res) => {
   if (String(approvedPlan.scanId) !== String(got.scan.id)) {
     return res.status(409).json({ stage: 'export', error: 'that plan belongs to a different scan' });
   }
+  if (!plans.canSee(approvedPlan.orgId ?? null, req.user?.organization_id ?? null)) {
+    return res.status(404).json({ stage: 'export', error: 'no such plan' });
+  }
   if (!plans.isSettled(approvedPlan) && !force) {
     const s = plans.summarise(approvedPlan.items);
     return res.status(409).json({
@@ -183,6 +187,7 @@ router.post('/:id/export', async (req, res) => {
       const replan = plans.create({
         scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
         report: fresh, by,
+        orgId: req.user?.organization_id ?? null, tenantId: req.user?.tenant_id ?? null,
       });
       store.recordStage(got.scan.id, 'export', 'failed', 'NetBox changed since approval');
       return res.status(409).json({

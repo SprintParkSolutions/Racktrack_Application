@@ -66,6 +66,11 @@ function serviceNowFor(req) {
 }
 
 const who = (req) => (req.user && (req.user.username || req.user.email)) || null;
+const orgOf = (req) => req.user?.organization_id ?? null;
+// A plan the caller's organisation does not own is, to them, 404 — the same
+// answer they get for a plan that does not exist. No cross-org leak, no owner
+// bypass.
+const mine = (req, plan) => plan && plans.canSee(plan.orgId ?? null, orgOf(req));
 const isAdmin = (req) => ['owner', 'org_admin', 'site_manager'].includes(req.user?.role);
 
 /**
@@ -81,6 +86,7 @@ router.get('/', (req, res) => {
       scanId: req.query.scanId ?? null,
       rackId: req.query.rackId ?? null,
       status: req.query.status ?? null,
+      orgId: orgOf(req),
       limit: Math.min(Number(req.query.limit) || 50, 200),
     }),
     youAre: req.user?.role || null,
@@ -94,6 +100,7 @@ router.get('/', (req, res) => {
  * waiting on an admin and carries their note across.
  */
 router.post('/:planId/submit', (req, res) => {
+  if (!mine(req, plans.get(req.params.planId))) return res.status(404).json({ error: 'no such plan' });
   const out = plans.submit(req.params.planId, {
     by: who(req), note: (req.body || {}).note,
   });
@@ -115,7 +122,7 @@ router.post('/:planId/submit', (req, res) => {
  */
 router.get('/:planId/contacts', async (req, res) => {
   const plan = plans.get(req.params.planId);
-  if (!plan) return res.status(404).json({ error: 'no such plan' });
+  if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
   const client = netboxFor(req);
   if (!client) {
     return res.json({ spoc: null, others: [], everyone: [],
@@ -138,7 +145,7 @@ router.get('/:planId/contacts', async (req, res) => {
  */
 router.get('/:planId', async (req, res) => {
   let plan = plans.get(req.params.planId);
-  if (!plan) return res.status(404).json({ error: 'no such plan' });
+  if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
 
   let heardBack = [];
   const sn = serviceNowFor(req);
@@ -174,7 +181,7 @@ router.get('/:planId', async (req, res) => {
 router.get('/tickets/all', (req, res) => {
   const status = req.query.status || null;
   const rows = [];
-  for (const idx of plans.list({ limit: 200 })) {
+  for (const idx of plans.list({ orgId: orgOf(req), limit: 200 })) {
     const plan = plans.get(idx.id);
     if (!plan) continue;
     for (const it of plan.items) {
@@ -209,7 +216,7 @@ router.get('/tickets/all', (req, res) => {
 /** Just the tickets, for whoever has to work them. */
 router.get('/:planId/tickets', (req, res) => {
   const plan = plans.get(req.params.planId);
-  if (!plan) return res.status(404).json({ error: 'no such plan' });
+  if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
   const rows = plan.items
     .filter((i) => i.ticket)
     .filter((i) => !req.query.assignee || i.ticket.assignee === req.query.assignee)
@@ -231,6 +238,7 @@ router.post('/:planId/decide', async (req, res) => {
       error: 'Only an admin decides what gets written. Ask yours to review this plan.',
     });
   }
+  if (!mine(req, plans.get(req.params.planId))) return res.status(404).json({ error: 'no such plan' });
   const { decisions } = req.body || {};
   if (!Array.isArray(decisions) || !decisions.length) {
     return res.status(400).json({ error: 'send { decisions: [ { uid, decision } ] }' });
@@ -334,7 +342,7 @@ router.post('/:planId/decide', async (req, res) => {
 router.post('/:planId/tickets/:uid/resolve', (req, res) => {
   const { finding, outcome } = req.body || {};
   const plan = plans.get(req.params.planId);
-  if (!plan) return res.status(404).json({ error: 'no such plan' });
+  if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
 
   const item = plan.items.find((i) => i.uid === req.params.uid);
   if (!item || !item.ticket) return res.status(404).json({ error: 'no ticket on that item' });

@@ -285,3 +285,32 @@ describe('hearing back from ServiceNow', () => {
     assert.deepEqual(plans.openSysIds(plans.get(id)), [], 'nothing left to ask about');
   });
 });
+
+describe('plans are isolated by organisation', () => {
+  const rep = () => ({ rackUid: 'rack:RK-ISO', counts: {}, warnings: [], orphans: [],
+    changes: [{ type: 'Device', uid: 'dev:x', name: 'X', action: 'create' }] });
+
+  it('a plan belongs to one org, and only that org lists it', () => {
+    plans.create({ scanId: 90, rackId: 'RK-ISO', report: rep(), by: 'a', orgId: 13, tenantId: 14 });
+    plans.create({ scanId: 91, rackId: 'RK-ISO', report: rep(), by: 'b', orgId: 99, tenantId: 88 });
+
+    const org13 = plans.list({ rackId: 'RK-ISO', orgId: 13 });
+    const org99 = plans.list({ rackId: 'RK-ISO', orgId: 99 });
+    assert.equal(org13.length, 1, 'org 13 sees only its own');
+    assert.equal(org99.length, 1, 'org 99 sees only its own');
+    assert.notEqual(org13[0].id, org99[0].id);
+  });
+
+  it('canSee is strict — no owner bypass, no cross-org, no unowned', () => {
+    assert.equal(plans.canSee(13, 13), true, 'same org sees it');
+    assert.equal(plans.canSee(13, 99), false, 'another org cannot');
+    assert.equal(plans.canSee(13, null), false, 'a caller with no org cannot');
+    assert.equal(plans.canSee(null, 13), false, 'an unowned plan is visible to nobody');
+    assert.equal(plans.canSee(null, null), false, 'null does not match null');
+  });
+
+  it('an org filter of undefined returns everything (server-side callers)', () => {
+    const all = plans.list({ rackId: 'RK-ISO' });
+    assert.ok(all.length >= 2, 'no orgId given = no scoping');
+  });
+});
