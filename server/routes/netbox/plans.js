@@ -235,7 +235,8 @@ router.post('/:planId/decide', async (req, res) => {
   if (!Array.isArray(decisions) || !decisions.length) {
     return res.status(400).json({ error: 'send { decisions: [ { uid, decision } ] }' });
   }
-  const out = plans.decide(req.params.planId, decisions, { by: who(req) });
+  const by = who(req);
+  const out = plans.decide(req.params.planId, decisions, { by });
   if (out.error) return res.status(out.error === 'no such plan' ? 404 : 409).json(out);
 
   // Mirror every new ticket into ServiceNow, if one is configured. The row
