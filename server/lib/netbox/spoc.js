@@ -72,7 +72,20 @@ async function forRack(client, rackName) {
     out.why = `could not reach NetBox: ${err.message}`;
     return out;
   }
-  if (!rack) { out.why = `no rack named ${rackName} in NetBox`; return out; }
+  if (!rack) {
+    // A rack photographed for the first time is not in NetBox yet, and a
+    // ticket about it still has to reach somebody. Fall back to whoever covers
+    // the site — "we do not know this rack, but we know who looks after this
+    // room" is useful; "nobody" is not.
+    out.why = `${rackName} is not in NetBox yet, so this is the site contact`;
+    const site = await defaultSite(client);
+    if (!site) { out.why = `no rack named ${rackName}, and no site to fall back to`; return out; }
+    out.site = { id: site.id, name: site.name };
+    const onSite = await assignmentsFor(client, 'dcim.site', site.id, SPOC_ROLE);
+    out.spoc = onSite.map((r) => toPerson(r, 'site', full)).filter(Boolean)[0] || null;
+    if (!out.spoc) out.why = `${rackName} is not in NetBox, and ${site.name} has no SPOC`;
+    return out;
+  }
 
   out.rack = { id: rack.id, name: rack.name };
   out.site = rack.site ? { id: rack.site.id, name: rack.site.name } : null;
@@ -96,6 +109,25 @@ async function forRack(client, rackName) {
     .filter((p) => !out.spoc || p.name !== out.spoc.name);
 
   return out;
+}
+
+/**
+ * The site to answer for a rack NetBox has never heard of.
+ *
+ * The one with the most racks, on the reasoning that it is the main room and
+ * whoever covers it is the best guess. Only used as a fallback, and the caller
+ * is told that is what happened.
+ */
+async function defaultSite(client) {
+  try {
+    const res = await client.get('/api/dcim/sites/', { limit: 20 });
+    const sites = res.results || [];
+    if (!sites.length) return null;
+    sites.sort((a, b) => (b.rack_count || 0) - (a.rack_count || 0));
+    return sites[0];
+  } catch {
+    return null;
+  }
 }
 
 /** Everybody NetBox knows about, for an assignee dropdown. */
