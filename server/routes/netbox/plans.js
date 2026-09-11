@@ -162,6 +162,49 @@ router.get('/:planId', async (req, res) => {
   });
 });
 
+/**
+ * Every drift ticket this account has raised, across all plans.
+ *
+ * The Incidents view reads this: one row per ticket, with its ServiceNow
+ * number and link, who it went to, its state, and what the rack it came from
+ * is — so an admin sees the whole picture in one place, before and after each
+ * one is resolved.
+ */
+router.get('/tickets/all', (req, res) => {
+  const status = req.query.status || null;
+  const rows = [];
+  for (const idx of plans.list({ limit: 200 })) {
+    const plan = plans.get(idx.id);
+    if (!plan) continue;
+    for (const it of plan.items) {
+      if (!it.ticket) continue;
+      if (status && it.ticket.status !== status) continue;
+      const ext = it.ticket.external || {};
+      rows.push({
+        planId: plan.id,
+        rackId: plan.rackId,
+        uid: it.uid,
+        type: it.type,
+        name: it.name,
+        action: it.action,
+        assignee: it.ticket.assignee,
+        status: it.ticket.status,               // open | resolved | closed
+        question: it.ticket.question,
+        finding: it.ticket.finding,
+        raisedAt: it.ticket.raisedAt,
+        resolvedAt: it.ticket.resolvedAt,
+        number: ext.number || null,
+        state: ext.state || null,               // ServiceNow state
+        url: ext.url || null,
+        system: ext.system || 'none',
+        error: ext.error || null,
+      });
+    }
+  }
+  rows.sort((a, b) => String(b.raisedAt || '').localeCompare(String(a.raisedAt || '')));
+  res.json({ tickets: rows });
+});
+
 /** Just the tickets, for whoever has to work them. */
 router.get('/:planId/tickets', (req, res) => {
   const plan = plans.get(req.params.planId);
