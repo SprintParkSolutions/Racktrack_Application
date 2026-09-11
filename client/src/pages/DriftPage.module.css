@@ -64,3 +64,17 @@
 }
 .primary:disabled { background: #c9d0cc; cursor: default; }
 .footNote { margin: 9px 0 0; font-size: 12.5px; color: #949d98; text-align: center; }
+
+/* optional rack name — set it here, edit it any time */
+.nameRow { padding: 14px 16px 4px; }
+.nameLabel {
+  display: block; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted, #5f6864); font-weight: 700;
+}
+.nameInput {
+  width: 100%; padding: 12px 14px; font-size: 16px; font-family: inherit;
+  border: 1px solid var(--border, #c9d0cc); border-radius: 8px;
+  background: var(--bg, #fff); color: inherit;
+}
+.nameInput:focus { outline: 2px solid #0b6a44; outline-offset: 1px; border-color: #0b6a44; }
+.nameHint { display: block; margin-top: 6px; font-size: 12.5px; color: #949d98; }

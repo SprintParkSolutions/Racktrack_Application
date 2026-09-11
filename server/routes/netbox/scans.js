@@ -10,6 +10,7 @@ const cfg = require('../../lib/netbox/config');
 const reader = require('../../lib/netbox/reader');
 const cv = require('../../lib/netbox/cv');
 const store = require('../../lib/netbox/store');
+const rackNames = require('../../lib/netbox/rack_names');
 const switches = require('../../lib/netbox/switches');
 const reconcile = require('../../lib/netbox/reconcile');
 const report = require('../../lib/netbox/report');
@@ -104,6 +105,28 @@ const OUTPUTS_DIR = process.env.RT_OUTPUTS_DIR || path.resolve(__dirname, '..', 
 
 router.param('rackId', rackOwnershipParam({ tenant, logger }));
 
+/**
+ * A rack's name — read it, or change it.
+ *
+ * GET returns the person-given name and the id it falls back to, so a screen
+ * can show "Comms Room A" while everything underneath still keys on the id.
+ * PUT sets it; an empty name clears it and the id shows again. Guarded by the
+ * same rack-ownership check as every other :rackId route, so you can only
+ * rename a rack you can see.
+ */
+router.get('/rack/:rackId/name', (req, res) => {
+  res.json({
+    rackId: req.params.rackId,
+    name: rackNames.get(req.params.rackId),
+    display: rackNames.display(req.params.rackId),
+  });
+});
+
+router.put('/rack/:rackId/name', (req, res) => {
+  const name = rackNames.set(req.params.rackId, (req.body || {}).name);
+  res.json({ rackId: req.params.rackId, name, display: rackNames.display(req.params.rackId) });
+});
+
 // Bump when cv.toSnapshot starts reading the same map differently, so every
 // adopted rack is re-read under the new rules the next time it is opened.
 //   2 — a Switch with fewer than ten ports is a Router
@@ -157,7 +180,9 @@ router.post('/adopt/:rackId', (req, res) => {
     } catch { /* an older schema without a name column: fall through */ }
   }
   if (!siteName) siteName = 'RackTrack';
-  const rackName = String((req.body && req.body.rackName) || rackId).trim();
+  // A name given now wins; a name saved earlier stands; otherwise the id.
+  if (req.body && req.body.rackName != null) rackNames.set(rackId, req.body.rackName);
+  const rackName = String((req.body && req.body.rackName) || rackNames.get(rackId) || rackId).trim();
   const scannedAt = meta.timestamp || new Date().toISOString();
 
   // The map may carry the photo's path from wherever the engine ran; point it
@@ -244,7 +269,8 @@ router.post('/', upload.single('image'), async (req, res) => {
     });
   }
   const rackId = (req.body.rackId || `RK-${Date.now().toString(36).toUpperCase()}`).trim();
-  const rackName = (req.body.rackName || cfg.RACK_NAME || rackId).trim();
+  if (req.body.rackName != null) rackNames.set(rackId, req.body.rackName);
+  const rackName = (req.body.rackName || rackNames.get(rackId) || cfg.RACK_NAME || rackId).trim();
 
   // Rack height is not asked for and not guessed. The camera cannot see it,
   // the operator was being made to type a number they often do not know, and

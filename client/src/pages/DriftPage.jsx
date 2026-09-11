@@ -52,6 +52,8 @@ export default function DriftPage() {
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
+  const [name, setName] = useState('');   // the person's name for this rack
+  const [nameSaved, setNameSaved] = useState('');
 
   const items = plan?.items || [];
   const changed = useMemo(() => items.filter((i) => i.decidable), [items]);
@@ -80,6 +82,9 @@ export default function DriftPage() {
 
       const c = await authFetch(apiUrl(`/api/nb/plans/${report.planId}/contacts`));
       if (c.ok) setSpoc((await c.json()).spoc);
+
+      const nm = await authFetch(apiUrl(`/api/nb/scans/rack/${encodeURIComponent(rackId)}/name`));
+      if (nm.ok) { const j = await nm.json(); setName(j.name || ''); setNameSaved(j.name || ''); }
     } catch (e) {
       setError(e.message || String(e));
     } finally {
@@ -88,6 +93,19 @@ export default function DriftPage() {
   }, [rackId]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function saveName() {
+    const trimmed = name.trim();
+    if (trimmed === nameSaved) return;
+    try {
+      const r = await authFetch(apiUrl(`/api/nb/scans/rack/${encodeURIComponent(rackId)}/name`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (r.ok) setNameSaved(trimmed);
+    } catch { /* a name is a convenience; a failure here is not worth a red banner */ }
+  }
 
   async function send() {
     setBusy('Sending it to the admin');
@@ -123,6 +141,21 @@ export default function DriftPage() {
           <p className={styles.sub}>{rackId}</p>
         </div>
       </header>
+
+      <div className={styles.nameRow}>
+        <label className={styles.nameLabel} htmlFor="rackname">Rack name (optional)</label>
+        <input
+          id="rackname"
+          className={styles.nameInput}
+          value={name}
+          placeholder={rackId}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={saveName}
+        />
+        <span className={styles.nameHint}>
+          {nameSaved ? 'Saved. Edit any time.' : 'Leave blank to keep the generated id.'}
+        </span>
+      </div>
 
       {busy && <p className={styles.busy}>{busy}…</p>}
       {error && <p className={styles.error} role="alert">{error}</p>}
