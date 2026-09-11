@@ -18,6 +18,7 @@ const spoc = require('../../lib/netbox/spoc');
 const store = require('../../lib/netbox/store');
 const tickets = require('../../lib/netbox/tickets');
 const { NetBox } = require('../../lib/netbox/netbox');
+const { sendNotice } = require('../../auth');
 
 const router = express.Router();
 
@@ -274,6 +275,39 @@ router.post('/:planId/decide', async (req, res) => {
         : { system: 'servicenow', error: `ServiceNow replied ${r.status || 'nothing'}`,
             detail: typeof r.error === 'string' ? r.error.slice(0, 200) : r.error };
       raised.push({ uid: d.uid, ...item.ticket.external });
+
+      // Tell the person it went to. The email is a courtesy on top of the
+      // ServiceNow incident, not the record — a failure here never blocks the
+      // decision. Sent to the SPOC's own address, read from NetBox.
+      if (person && person.email) {
+        const where = [rackName, people?.site?.name].filter(Boolean).join(', ');
+        const inc = item.ticket.external && item.ticket.external.number;
+        sendNotice({
+          to: person.email,
+          subject: `RackTrack: please check ${item.type} "${item.name}" in ${rackName}`,
+          text: [
+            `Hello ${person.name},`,
+            '',
+            `A rack scan of ${where} found something that does not match NetBox, and `
+              + `${by || 'an admin'} has asked you to check it at the rack.`,
+            '',
+            `  ${item.type} "${item.name}" — ${item.action === 'create'
+              ? 'found in the rack, not in NetBox' : 'does not match NetBox'}`,
+            item.ticket.question ? `\nThey ask: ${item.ticket.question}` : '',
+            inc ? `\nServiceNow incident: ${inc}` : '',
+            item.ticket.external && item.ticket.external.url ? item.ticket.external.url : '',
+            '',
+            'Nothing has been written to NetBox. Please check the rack and resolve the '
+              + 'incident with what you find; it then comes back for approval.',
+            '',
+            '— RackTrack',
+          ].filter((l) => l !== undefined).join('\n'),
+        }).then((ok) => {
+          if (ok) item.ticket.emailedAt = new Date().toISOString();
+          else item.ticket.emailNote = 'no mail transport configured';
+          plans.save(plan);
+        }).catch(() => {});
+      }
     }
     plans.save(plan);
     plan = plans.get(req.params.planId);

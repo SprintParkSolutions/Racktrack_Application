@@ -716,6 +716,39 @@ async function sendContactEmail({ fromEmail, fromName, meta, subject, message, a
   return false;
 }
 
+/**
+ * Send a plain notice to any address, reusing the same transports as the rest
+ * of the app: Microsoft 365 Graph first, then SMTP. Returns true if a provider
+ * accepted it, false if none is configured or all failed — the caller decides
+ * whether that is worth surfacing.
+ *
+ * This is what the drift workflow uses to tell a rack's single point of contact
+ * that something has been handed to them.
+ */
+async function sendNotice({ to, subject, text, html, replyTo }) {
+  if (!to) return false;
+  try {
+    const ok = await graphMail.sendGraphMail({
+      sender: 'racktrack', to, replyTo, subject, text, html: html || undefined,
+    });
+    if (ok) { logger.info(`[mail] notice delivered to ${to} via Graph`); return true; }
+  } catch (err) {
+    logger.error(`[mail] Graph notice failed: ${err.message} — trying SMTP`);
+  }
+  const providers = mailProviders();
+  for (const pr of providers) {
+    try {
+      await pr.tx.sendMail({ from: pr.from, to, replyTo, subject, text, html: html || undefined });
+      logger.info(`[mail] notice delivered to ${to} via ${pr.label} (${pr.host})`);
+      return true;
+    } catch (err) {
+      logger.error(`[mail] ${pr.label} notice failed (${pr.host}): ${err.message}`);
+    }
+  }
+  logger.warn(`[mail] no transport delivered the notice to ${to}`);
+  return false;
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 function genCode() {
   // 6-digit zero-padded
@@ -2262,7 +2295,7 @@ function registerRoutes(app) {
 }
 
 module.exports = {
-  registerRoutes, requireAuth, requireRole, isOrgActive,
+  registerRoutes, sendNotice, requireAuth, requireRole, isOrgActive,
   // Exposed for socialAuth.js, which mints sessions for the same users through
   // a different front door and must produce byte-identical tokens and payloads.
   // Kept as an explicit named list rather than exporting the module internals
