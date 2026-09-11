@@ -1,0 +1,55 @@
+/* The admin's inbox. Scannable in one look — how many, from whom, how old. */
+
+.page { min-height: 100%; padding: 0 0 60px; background: var(--bg, #fff); color: var(--text, #1c1c1c); }
+
+.head {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+  border-bottom: 1px solid var(--border, #e6eae8);
+}
+.back { flex: none; width: 38px; height: 38px; display: grid; place-items: center;
+        border: none; background: none; color: inherit; cursor: pointer; }
+.title { margin: 4px 0 2px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.sub { margin: 0; font-size: 13.5px; color: var(--muted, #5f6864); }
+.refresh {
+  margin-left: auto; align-self: center; padding: 8px 12px;
+  border: 1px solid var(--border, #c9d0cc); border-radius: 8px;
+  background: none; color: var(--muted, #5f6864);
+  font-size: 13.5px; font-weight: 600; cursor: pointer;
+}
+.refresh:disabled { opacity: 0.5; cursor: default; }
+
+.busy, .error, .empty { margin: 16px; font-size: 14.5px; line-height: 1.5; }
+.busy { color: var(--muted, #5f6864); }
+.error { color: #9d4a3f; }
+.empty { color: var(--muted, #5f6864); }
+
+.sectionTitle {
+  margin: 30px 16px 2px; font-size: 12px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #949d98; font-weight: 700;
+}
+
+.list { list-style: none; margin: 6px 0 0; padding: 0; }
+
+.row {
+  display: block; width: 100%; text-align: left;
+  padding: 15px 16px; border: none; border-top: 1px solid var(--border, #e6eae8);
+  background: none; color: inherit; cursor: pointer; font: inherit;
+}
+.row:active { background: #f6f8f7; }
+.rowDone { opacity: 0.62; }
+
+.rowTop { display: flex; align-items: baseline; gap: 10px; }
+.rack { font-size: 17px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; }
+.ago { margin-left: auto; font-size: 12.5px; color: #949d98; white-space: nowrap; }
+.by { margin: 3px 0 0; font-size: 13.5px; color: var(--muted, #5f6864); }
+
+.counts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.counts span {
+  font-size: 12.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+}
+.wait   { background: #fbf0dc; color: #8a6d1f; }
+.ticket { background: #fdf6e3; color: #8a6d1f; }
+.ok     { background: #eef5f1; color: #0b6a44; }
+.no     { background: #f9f1f0; color: #9d4a3f; }
+.quiet  { background: #f1f4f2; color: #949d98; }

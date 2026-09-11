@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { BackIcon } from '../components/BackButton.jsx';
 import { apiUrl, authFetch } from '../utils/api';
+import { useAuth } from '../AuthContext.jsx';
 import ExportSheet from '../components/ExportSheet.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
 import { Capacitor } from '@capacitor/core';
@@ -191,6 +192,9 @@ function derive(doc, view) {
 export default function ReportPage() {
   const { rackId } = useParams();
   const navigate = useNavigate();
+  // Only an admin may write to NetBox, so only an admin is offered it.
+  const { user } = useAuth();
+  const canWrite = user?.role === 'owner' || user?.role === 'org_admin';
   const goBack = useSmartBack(`/results/${rackId}`);
 
   const [doc, setDoc] = useState(null);     // the report
@@ -309,12 +313,18 @@ export default function ReportPage() {
             ['JSON', () => getFile('json'), fileBusy === 'json'],
             ['PDF', openPdf, fileBusy === 'pdf'],
           ]],
-          ['export', 'Export', <IconExport key="i" />, [
-            // Export no longer writes straight through. It opens the plan an
-            // admin approves item by item, which is what actually reaches
-            // NetBox — and what raises a ticket for anything they cannot judge.
-            ['NetBox', () => navigate(`/results/${encodeURIComponent(rackId)}/approvals`), false],
-          ]],
+          // The same button means two different jobs. A technician standing at
+          // a rack is checking whether it matches the record and handing the
+          // answer over; an admin is deciding what actually gets written. So
+          // it is labelled for whoever is holding the phone, and never says
+          // "export" to somebody who is not allowed to write.
+          canWrite
+            ? ['export', 'Export', <IconExport key="i" />, [
+                ['NetBox', () => navigate(`/results/${encodeURIComponent(rackId)}/approvals`), false],
+              ]]
+            : ['export', 'Check', <IconExport key="i" />, [
+                ['Drift vs NetBox', () => navigate(`/results/${encodeURIComponent(rackId)}/drift`), false],
+              ]],
           ['share', 'Share', <IconSend key="i" />, [
             ['Teams', () => setSharing('teams'), false],
             ['Email', () => setSharing('outlook'), false],

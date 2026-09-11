@@ -1,0 +1,66 @@
+/* Drift check — the technician's screen. No write button anywhere. */
+
+.page { min-height: 100%; padding: 0 0 40px; background: var(--bg, #fff); color: var(--text, #1c1c1c); }
+
+.head {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+  border-bottom: 1px solid var(--border, #e6eae8);
+}
+.back { flex: none; width: 38px; height: 38px; display: grid; place-items: center;
+        border: none; background: none; color: inherit; cursor: pointer; }
+.title { margin: 4px 0 2px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.sub { margin: 0; font-size: 13px; color: var(--muted, #5f6864); font-family: ui-monospace, Menlo, monospace; }
+
+.busy, .error { margin: 14px 16px; font-size: 14.5px; }
+.busy { color: var(--muted, #5f6864); }
+.error { color: #9d4a3f; }
+
+/* the answer, before the detail */
+.verdict { margin: 16px 16px 4px; padding: 16px; border-radius: 8px; background: #f6f8f7; }
+.verdict h2 { margin: 0 0 6px; font-size: 20px; font-weight: 700; }
+.verdict p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted, #5f6864); }
+.tick { display: block; font-size: 30px; color: #0b6a44; line-height: 1; margin-bottom: 6px; }
+
+.waiting, .done { margin: 14px 16px; padding: 14px 16px; border-radius: 8px; }
+.waiting { background: #fbf8ef; border-left: 3px solid #8a6d1f; }
+.done { background: #eef5f1; border-left: 3px solid #0b6a44; }
+.waiting h2, .done h2 { margin: 0 0 5px; font-size: 17px; font-weight: 700; }
+.waiting p, .done p { margin: 0 0 6px; font-size: 14.5px; line-height: 1.5; }
+.spoc { color: var(--muted, #5f6864); }
+
+.list { list-style: none; margin: 10px 0 0; padding: 0; }
+.item { padding: 14px 16px; border-top: 1px solid var(--border, #e6eae8); }
+.item.approved { background: #f7fbf9; }
+.item.rejected { background: #fdf8f7; }
+.item.ticketed { background: #fdfbf5; }
+
+.itemTop { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.type { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+        color: #949d98; font-weight: 700; }
+.name { font-size: 17px; font-weight: 700; }
+.what { margin-left: auto; font-size: 12.5px; font-weight: 600; color: #8a6d1f; white-space: nowrap; }
+
+.diff { list-style: none; margin: 9px 0 0; padding: 0; }
+.diff li { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 4px 0; font-size: 14px; }
+.field { font-family: ui-monospace, Menlo, monospace; color: #949d98; min-width: 88px; }
+.from { color: #9d4a3f; }
+.to { color: #0b6a44; font-weight: 600; }
+
+.state { margin: 10px 0 0; font-size: 13.5px; font-weight: 600; color: var(--muted, #5f6864); }
+.finding { margin: 5px 0 0; font-size: 13.5px; color: #0b6a44; }
+
+.footer { margin-top: 22px; padding: 16px; border-top: 1px solid var(--border, #e6eae8); }
+.label { display: block; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.06em;
+         text-transform: uppercase; color: var(--muted, #5f6864); font-weight: 700; }
+.textarea {
+  width: 100%; min-height: 78px; resize: vertical; padding: 12px; font-size: 16px;
+  font-family: inherit; border: 1px solid var(--border, #c9d0cc); border-radius: 8px;
+  background: var(--bg, #fff); color: inherit;
+}
+.primary {
+  width: 100%; margin-top: 12px; padding: 15px; border: none; border-radius: 10px;
+  background: #0b6a44; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.primary:disabled { background: #c9d0cc; cursor: default; }
+.footNote { margin: 9px 0 0; font-size: 12.5px; color: #949d98; text-align: center; }

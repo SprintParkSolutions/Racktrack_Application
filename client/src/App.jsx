@@ -55,6 +55,8 @@ const MarketplacePartnerAccountsPage = lazy(() => import('./pages/MarketplacePar
 // front of the login.
 const ReviewPage = lazy(() => import('./pages/ReviewPage.jsx'));
 const ApprovalsPage = lazy(() => import('./pages/ApprovalsPage.jsx'));
+const DriftPage = lazy(() => import('./pages/DriftPage.jsx'));
+const AdminInboxPage = lazy(() => import('./pages/AdminInboxPage.jsx'));
 const ReportPage = lazy(() => import('./pages/ReportPage.jsx'));
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
@@ -466,6 +468,14 @@ export default function App() {
                 download, share and the NetBox export all happen on it. */}
             <Route path="/results/:rackId/report" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ReportPage /></ResponsiveLayout></ProtectedRoute>
+            } />
+            {/* Drift check — a technician compares and hands it over. No write button. */}
+            <Route path="/results/:rackId/drift" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><DriftPage /></ResponsiveLayout></ProtectedRoute>
+            } />
+            {/* The admin's inbox: drift checks waiting on a decision. */}
+            <Route path="/approvals" element={
+              <AdminRoute><ResponsiveLayout withBottomNav><AdminInboxPage /></ResponsiveLayout></AdminRoute>
             } />
             {/* Approvals — an admin decides what reaches NetBox, item by item. */}
             <Route path="/results/:rackId/approvals" element={

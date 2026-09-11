@@ -55,14 +55,42 @@ function serviceNowFor(req) {
 const who = (req) => (req.user && (req.user.username || req.user.email)) || null;
 const isAdmin = (req) => ['owner', 'org_admin', 'site_manager'].includes(req.user?.role);
 
-/** Everything in one place for a report or a board. */
+/**
+ * Everything in one place.
+ *
+ * `?status=submitted` is the admin's inbox: comparisons a technician has
+ * handed over and nobody has acted on. Without it an admin would have to know
+ * a scan happened and go looking for it.
+ */
 router.get('/', (req, res) => {
   res.json({
     plans: plans.list({
       scanId: req.query.scanId ?? null,
       rackId: req.query.rackId ?? null,
+      status: req.query.status ?? null,
       limit: Math.min(Number(req.query.limit) || 50, 200),
     }),
+    youAre: req.user?.role || null,
+  });
+});
+
+/**
+ * A technician hands the comparison over.
+ *
+ * They cannot write to NetBox and this does not try to. It marks the plan as
+ * waiting on an admin and carries their note across.
+ */
+router.post('/:planId/submit', (req, res) => {
+  const out = plans.submit(req.params.planId, {
+    by: who(req), note: (req.body || {}).note,
+  });
+  if (out.error) return res.status(out.error === 'no such plan' ? 404 : 409).json(out);
+  res.json({
+    planId: out.plan.id,
+    status: out.plan.status,
+    already: Boolean(out.already),
+    submittedBy: out.plan.submittedBy,
+    summary: plans.summarise(out.plan.items),
   });
 });
 
@@ -87,10 +115,39 @@ router.get('/:planId/contacts', async (req, res) => {
              serviceNow: Boolean(serviceNowFor(req)) });
 });
 
-router.get('/:planId', (req, res) => {
-  const plan = plans.get(req.params.planId);
+/**
+ * One plan, with its tickets brought up to date first.
+ *
+ * ServiceNow owns whether an incident is open or closed, so opening a plan
+ * asks it rather than trusting what we last wrote down. An incident somebody
+ * resolved over there returns its item here as UNDECIDED — having looked is
+ * not the same as having approved.
+ */
+router.get('/:planId', async (req, res) => {
+  let plan = plans.get(req.params.planId);
   if (!plan) return res.status(404).json({ error: 'no such plan' });
-  res.json({ ...plan, settled: plans.isSettled(plan), summary: plans.summarise(plan.items) });
+
+  let heardBack = [];
+  const sn = serviceNowFor(req);
+  const waiting = plans.openSysIds(plan);
+  if (sn && waiting.length) {
+    try {
+      const r = await tickets.statusOf(sn, waiting);
+      if (r.ok) {
+        const applied = plans.applyTicketStates(plan.id, r.states);
+        plan = applied.plan;
+        heardBack = applied.changed;
+      }
+    } catch { /* ServiceNow being unreachable must not hide the plan */ }
+  }
+
+  res.json({
+    ...plan,
+    settled: plans.isSettled(plan),
+    summary: plans.summarise(plan.items),
+    heardBack,
+    serviceNowConfigured: Boolean(sn),
+  });
 });
 
 /** Just the tickets, for whoever has to work them. */

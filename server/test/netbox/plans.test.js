@@ -207,3 +207,81 @@ describe('the history survives', () => {
     assert.ok(mine[0].summary, 'the index carries a summary, so a board needs no file reads');
   });
 });
+
+describe('a technician hands it to an admin', () => {
+  it('marks it waiting, and carries their note across', () => {
+    const p = plans.create({ scanId: 20, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    assert.equal(p.status, 'open', 'a fresh comparison is nobody else’s problem yet');
+
+    const out = plans.submit(p.id, { by: 'ravi', note: 'U15 looks wrong to me' });
+    assert.equal(out.plan.status, 'submitted');
+    assert.equal(out.plan.submittedBy, 'ravi');
+    assert.equal(out.plan.submittedNote, 'U15 looks wrong to me');
+    assert.ok(out.plan.events.some((e) => e.what === 'sent to the admin'));
+  });
+
+  it('shows up in the admin inbox, and an unsent one does not', () => {
+    const sent = plans.create({ scanId: 21, rackId: 'RK-INBOX', report: report(), by: 'ravi' });
+    plans.submit(sent.id, { by: 'ravi' });
+    plans.create({ scanId: 22, rackId: 'RK-INBOX', report: report(), by: 'ravi' });
+
+    const inbox = plans.list({ rackId: 'RK-INBOX', status: 'submitted' });
+    assert.equal(inbox.length, 1);
+    assert.equal(inbox[0].id, sent.id);
+    assert.equal(inbox[0].submittedBy, 'ravi', 'the index carries it, so an inbox needs no file reads');
+  });
+
+  it('is idempotent, and refuses once written', () => {
+    const p = plans.create({ scanId: 23, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    plans.submit(p.id, { by: 'ravi' });
+    assert.equal(plans.submit(p.id, { by: 'ravi' }).already, true);
+
+    plans.markApplied(p.id, { by: 'meera', result: { counts: {}, changes: [] } });
+    assert.match(plans.submit(p.id, { by: 'ravi' }).error, /already been written/);
+  });
+});
+
+describe('hearing back from ServiceNow', () => {
+  const withTicket = (scanId) => {
+    const p = plans.create({ scanId, rackId: 'RK-SN', report: report(), by: 'ravi' });
+    plans.decide(p.id, [{ uid: 'dev:u12', decision: 'ticketed', assignee: 'sam' }], { by: 'meera' });
+    const plan = plans.get(p.id);
+    const item = plan.items.find((i) => i.uid === 'dev:u12');
+    item.ticket.external = { system: 'servicenow', sysId: 'abc123', number: 'INC001', state: 'new' };
+    plans.save(plan);
+    return p.id;
+  };
+
+  it('a closed incident returns the item to the admin, undecided', () => {
+    const id = withTicket(30);
+    const { changed } = plans.applyTicketStates(id, {
+      abc123: { number: 'INC001', state: 'resolved', closed: true,
+                notes: 'It is at U12. NetBox was wrong.' },
+    });
+
+    assert.equal(changed.length, 1);
+    const item = plans.get(id).items.find((i) => i.uid === 'dev:u12');
+    assert.equal(item.ticket.status, 'resolved');
+    assert.equal(item.ticket.finding, 'It is at U12. NetBox was wrong.');
+    assert.equal(item.decision, 'pending', 'somebody having looked is not somebody having approved');
+    assert.ok(plans.excludedUids(plans.get(id)).has('dev:u12'), 'still withheld from the write');
+  });
+
+  it('an incident still open only updates its state', () => {
+    const id = withTicket(31);
+    plans.applyTicketStates(id, {
+      abc123: { number: 'INC001', state: 'in progress', closed: false },
+    });
+    const item = plans.get(id).items.find((i) => i.uid === 'dev:u12');
+    assert.equal(item.ticket.external.state, 'in progress');
+    assert.equal(item.ticket.status, 'open');
+    assert.equal(item.decision, 'ticketed', 'nothing comes back until it is closed');
+  });
+
+  it('lists what it is waiting on, and stops once resolved', () => {
+    const id = withTicket(32);
+    assert.deepEqual(plans.openSysIds(plans.get(id)), ['abc123']);
+    plans.applyTicketStates(id, { abc123: { number: 'INC001', state: 'closed', closed: true } });
+    assert.deepEqual(plans.openSysIds(plans.get(id)), [], 'nothing left to ask about');
+  });
+});
