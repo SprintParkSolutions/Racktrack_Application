@@ -78,3 +78,14 @@
 }
 .nameInput:focus { outline: 2px solid #0b6a44; outline-offset: 1px; border-color: #0b6a44; }
 .nameHint { display: block; margin-top: 6px; font-size: 12.5px; color: #949d98; }
+
+/* Before sending: who this drift check will go to (the rack's SPOC from NetBox). */
+.goesTo { margin: 8px 16px 4px; padding: 12px 16px; border-radius: 8px;
+          background: #eef4fb; border-left: 3px solid #1f6feb; }
+.goesToLabel { display: block; font-size: 10.5px; letter-spacing: 0.08em;
+               text-transform: uppercase; color: #1f6feb; font-weight: 700; margin-bottom: 3px; }
+.goesToName { font-size: 16px; font-weight: 700; }
+.goesToRole { margin-left: 8px; font-size: 13px; color: var(--muted, #5f6864); }
+.goesToMail { display: block; margin-top: 2px; font-size: 13px; color: var(--muted, #5f6864);
+              font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+.goesToNote { margin: 6px 0 0; font-size: 12.5px; color: #66706a; line-height: 1.45; }

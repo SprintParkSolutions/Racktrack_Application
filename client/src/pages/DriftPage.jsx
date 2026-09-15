@@ -180,6 +180,26 @@ export default function DriftPage() {
         </div>
       )}
 
+      {plan && !busy && changed.length > 0 && !sent && (
+        <div className={styles.goesTo}>
+          {spoc ? (
+            <>
+              <span className={styles.goesToLabel}>Goes to</span>
+              <strong className={styles.goesToName}>{spoc.name}</strong>
+              {spoc.title && <span className={styles.goesToRole}>{spoc.title}</span>}
+              {spoc.email && <span className={styles.goesToMail}>{spoc.email}</span>}
+              <p className={styles.goesToNote}>
+                The rack&rsquo;s single point of contact, from NetBox. The admin can still pick someone else.
+              </p>
+            </>
+          ) : (
+            <p className={styles.goesToNote}>
+              NetBox names no single point of contact for this rack, so the admin will choose who checks it.
+            </p>
+          )}
+        </div>
+      )}
+
       {applied && (
         <div className={styles.done}>
           <h2>The record has been updated</h2>
