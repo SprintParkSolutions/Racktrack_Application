@@ -258,15 +258,32 @@ router.post('/:planId/decide', async (req, res) => {
     const scan = plan.scanId ? store.getScan(plan.scanId) : null;
     const rackName = (scan && (scan.rackName || scan.rackId)) || plan.rackId;
     let people = null;
+    let roster = [];
     const client = netboxFor(req);
-    if (client) { try { people = await spoc.forRack(client, rackName); } catch { people = null; } }
+    if (client) {
+      try { people = await spoc.forRack(client, rackName); } catch { people = null; }
+      // Everyone NetBox knows, so an assignee the admin picked by hand — not the
+      // SPOC — still resolves to a real contact with an email to write to.
+      let all = [];
+      try { all = await spoc.everyone(client); } catch { all = []; }
+      roster = [people && people.spoc, ...((people && people.others) || []), ...all].filter(Boolean);
+    }
+    const spocPerson = (people && people.spoc) || null;
 
     for (const d of ticketed) {
       const item = plan.items.find((i) => i.uid === d.uid);
       if (!item || !item.ticket) continue;
-      const person = (people && people.spoc) || null;
-      item.ticket.spoc = person;
-      if (person && person.email && !item.ticket.assignee) item.ticket.assignee = person.name;
+
+      // Who it actually goes to. NetBox names the single point of contact and
+      // that is the default the admin was shown; but the admin may assign to
+      // someone else, and when NetBox names no SPOC at all the admin has picked
+      // the person by hand. The chosen name is already on the ticket — resolve
+      // it to a full contact so the incident and the email reach that person,
+      // not whoever NetBox happens to call the SPOC.
+      const chosen = item.ticket.assignee || (spocPerson && spocPerson.name) || null;
+      const person = (chosen && roster.find((p) => p.name === chosen)) || spocPerson || null;
+      item.ticket.spoc = spocPerson;
+      if (person && !item.ticket.assignee) item.ticket.assignee = person.name;
 
       if (!sn) {
         item.ticket.external = { system: 'none',
@@ -316,6 +333,8 @@ router.post('/:planId/decide', async (req, res) => {
           else item.ticket.emailNote = 'no mail transport configured';
           plans.save(plan);
         }).catch(() => {});
+      } else if (person) {
+        item.ticket.emailNote = `no email in NetBox for ${person.name}, so no notice was sent`;
       }
     }
     plans.save(plan);

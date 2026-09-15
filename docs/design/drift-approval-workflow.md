@@ -12,7 +12,7 @@ from a one-line message; change it here first, deliberately, or not at all.
 | # | Step | Who | What they can do | What they cannot do |
 |---|---|---|---|---|
 | 1 | **Check** | Technician | Scan a rack, compare it to NetBox, see what differs, send the whole list to the admin. | Approve, reject, assign, or write anything. |
-| 2 | **Assign** | Admin | Hand each difference to the person who looks after that rack (its SPOC), which raises a ServiceNow incident and emails them. | Approve or reject on their own judgment. |
+| 2 | **Assign** | Admin | Hand each difference to a person. NetBox names the rack’s SPOC and that is the default; if NetBox names none, the admin picks someone. It raises a ServiceNow incident and emails whoever it is assigned to. | Approve or reject on their own judgment. Leave it unassigned. |
 | 3 | **Resolve** | Assignee | Go to the rack, check it, resolve the incident in ServiceNow with a finding. | Change NetBox. A resolved incident writes nothing by itself. |
 | 4 | **Decide** | Admin | With the finding in hand, approve the item, reject it, or assign it again. | Approve before it has come back. |
 | 5 | **Write** | System | Write only the approved items to NetBox, after one last check that NetBox has not moved. | Write anything not approved. Delete anything. |
@@ -32,6 +32,11 @@ from a one-line message; change it here first, deliberately, or not at all.
 5. **Nothing is written if NetBox moved.** The plan is fingerprinted at compare
    time and checked again just before the write. If it changed, nothing is
    written and a fresh plan goes back to the admin.
+6. **It goes to the person NetBox names, or the one the admin picks.** The
+   rack’s SPOC in NetBox is the default assignee. The admin may choose someone
+   else, and when NetBox names no SPOC the admin must pick a person — the ticket
+   is never left assigned to nobody. The ServiceNow incident and the email reach
+   whoever is actually assigned, not whoever NetBox happens to call the SPOC.
 
 ## Where each step happens
 
@@ -51,6 +56,7 @@ from a one-line message; change it here first, deliberately, or not at all.
 
 ## Notifications
 
-When the admin assigns (step 2), the SPOC is emailed and a ServiceNow incident
-is raised in their name. When the incident is resolved (step 3), the item
+When the admin assigns (step 2), the person it is assigned to — the SPOC by
+default, or whoever the admin picked — is emailed, and a ServiceNow incident is
+raised for the rack. When the incident is resolved (step 3), the item
 returns to the admin's Approvals inbox and appears resolved in Drift tickets.
