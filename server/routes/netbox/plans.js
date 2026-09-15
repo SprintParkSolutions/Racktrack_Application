@@ -14,6 +14,7 @@ const express = require('express');
 const cfg = require('../../lib/netbox/config');
 const plans = require('../../lib/netbox/plans');
 const profiles = require('../../lib/connection_profiles');
+const rackMatch = require('../../lib/netbox/rack_match');
 const spoc = require('../../lib/netbox/spoc');
 const store = require('../../lib/netbox/store');
 const tickets = require('../../lib/netbox/tickets');
@@ -129,10 +130,15 @@ router.get('/:planId/contacts', async (req, res) => {
                       why: 'no NetBox is configured for this account' });
   }
   const scan = plan.scanId ? store.getScan(plan.scanId) : null;
-  const rackName = (scan && (scan.rackName || scan.rackId)) || plan.rackId;
-  const found = await spoc.forRack(client, rackName);
+  const fallbackName = (scan && (scan.rackName || scan.rackId)) || plan.rackId;
+  const resolved = await rackMatch.resolveRack(client, {
+    tenantId: plan.tenantId ?? null, rackId: plan.rackId,
+    scanName: scan && scan.rackName, fallbackName,
+  });
+  const found = await spoc.forRack(client, resolved.name);
   res.json({ ...found, everyone: await spoc.everyone(client),
-             serviceNow: Boolean(serviceNowFor(req)) });
+             serviceNow: Boolean(serviceNowFor(req)),
+             matchedRack: { name: resolved.name, confidence: resolved.confidence, why: resolved.why } });
 });
 
 /**
@@ -256,10 +262,17 @@ router.post('/:planId/decide', async (req, res) => {
   let plan = plans.get(req.params.planId);
   if (ticketed.length) {
     const scan = plan.scanId ? store.getScan(plan.scanId) : null;
-    const rackName = (scan && (scan.rackName || scan.rackId)) || plan.rackId;
+    const fallbackName = (scan && (scan.rackName || scan.rackId)) || plan.rackId;
     let people = null;
     let roster = [];
     const client = netboxFor(req);
+    // Recognise the rack: use the customer's real rack name, not the scan hash,
+    // so the SPOC, the incident and the email all name the right rack.
+    const resolved = await rackMatch.resolveRack(client, {
+      tenantId: plan.tenantId ?? null, rackId: plan.rackId,
+      scanName: scan && scan.rackName, fallbackName,
+    });
+    const rackName = resolved.name;
     if (client) {
       try { people = await spoc.forRack(client, rackName); } catch { people = null; }
       // Everyone NetBox knows, so an assignee the admin picked by hand — not the
