@@ -6,7 +6,10 @@
  *
  *   1. IDEMPOTENT.  NetBox has no upsert. Every object carries our uid in the
  *      racktrack_uid custom field; we GET by it, then POST or PATCH. Push the
- *      same scan twice and NetBox holds one clean set of records.
+ *      same scan twice and NetBox holds one clean set of records. A scan
+ *      later keyed on the customer's rack finds the records it wrote under
+ *      its photo hash and REBINDS them (the uid field alone, and only once
+ *      the admin has seen and approved it) rather than writing a second set.
  *   2. DRY-RUN FIRST.  plan() performs no writes and returns the exact diff
  *      push() would apply.
  *   3. NEVER DELETE.  There is no delete path in this module or in the client
@@ -82,6 +85,26 @@ function diff(payload, existing) {
   return { changed, pending };
 }
 
+/**
+ * The uid an object carried before its rack was keyed, or null.
+ *
+ * A keyed snapshot builds every rack-scoped uid on the customer's rack key
+ * where the photo hash used to be: rack:<key>, dev:<key>:u10,
+ * if:dev:<key>:u10:1. Putting the hash back into that one segment gives the
+ * uid the same object was written under before it was keyed. A uid that does
+ * not carry the key (a manufacturer, a device type, a site) was never
+ * rack-scoped and has no alias.
+ */
+function aliasUid(uid, key, hash) {
+  if (!uid || !key || !hash) return null;
+  const at = String(uid).indexOf(`:${key}`);
+  if (at < 0) return null;
+  const end = at + 1 + key.length;
+  // The key has to be the whole segment: rack:t7:5 is not rack:t7:51.
+  if (end < uid.length && uid[end] !== ':') return null;
+  return `${uid.slice(0, at + 1)}${hash}${uid.slice(end)}`;
+}
+
 async function walk(snapshot, client, apply, report) {
   const resolved = new Map();   // our uid -> NetBox id (or Pending)
   const skipped = new Set();    // uids excluded, so dependents can say why
@@ -98,10 +121,20 @@ async function walk(snapshot, client, apply, report) {
   // on that endpoint. Shared objects — manufacturers, device types, roles —
   // carry no rack id and still resolve one at a time; there are a handful.
   const rackKey = String(snapshot.rackUid || '').replace(/^rack:/, '');
+  // A snapshot keyed on the customer's rack remembers the hash-based rack uid
+  // it carried before (aliasOf). Objects written under that hash are the same
+  // objects: the plan REBINDS each one (our custom field moves to the new uid,
+  // nothing else is touched, and the admin sees it as a row like any other)
+  // instead of creating a twin beside it.
+  const aliasHash = String(snapshot.aliasOf || '').replace(/^rack:/, '');
+  const alias = rackKey && aliasHash && aliasHash !== rackKey ? { key: rackKey, hash: aliasHash } : null;
   if (rackKey && typeof client.preloadByUid === 'function') {
     const endpoints = [...new Set(orderedSpecs().map((s) => s.endpoint))];
     for (const ep of endpoints) {
       await client.preloadByUid(ep, { [`cf_${UID_FIELD}__ic`]: rackKey });
+      // What a rebind looks for carries the hash, not the key, so it needs its
+      // own preload or every rebound object costs a round trip.
+      if (alias) await client.preloadByUid(ep, { [`cf_${UID_FIELD}__ic`]: alias.hash });
     }
   }
 
@@ -190,6 +223,73 @@ async function walk(snapshot, client, apply, report) {
         continue;
       }
 
+      // Nothing carries this uid. Before calling it a create: was this same
+      // object written under the scan's old hash uid? Then it is not new, it
+      // is ours to rebind. Only the custom field moves; the object's name,
+      // site, height and position are left exactly as they are.
+      const oldUid = alias ? aliasUid(obj.uid, alias.key, alias.hash) : null;
+      let previous = null;
+      if (oldUid) {
+        try {
+          previous = await client.findByUid(spec.endpoint, oldUid);
+        } catch (err) {
+          failed.add(obj.uid);
+          report.changes.push({
+            type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
+            reason: `lookup of ${oldUid} failed: ${JSON.stringify(err.detail ?? err.message)}`,
+          });
+          bump('fail');
+          continue;
+        }
+      }
+      if (previous) {
+        if (apply) {
+          // Look once more, right before the patch. The plan found the new uid
+          // absent, but another writer may have minted it since, and two
+          // objects with one uid is the failure the uid exists to prevent.
+          let taken;
+          try {
+            taken = await client.findByUid(spec.endpoint, obj.uid);
+          } catch (err) {
+            failed.add(obj.uid);
+            report.changes.push({
+              type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
+              netboxId: previous.id, reason: `lookup failed: ${JSON.stringify(err.detail ?? err.message)}`,
+            });
+            bump('fail');
+            continue;
+          }
+          if (taken) {
+            failed.add(obj.uid);
+            report.changes.push({
+              type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
+              netboxId: previous.id, reason: 'target uid already exists',
+            });
+            bump('fail');
+            continue;
+          }
+          try {
+            await client.patch(spec.endpoint, previous.id, { custom_fields: { [UID_FIELD]: obj.uid } });
+          } catch (err) {
+            failed.add(obj.uid);
+            report.changes.push({
+              type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
+              netboxId: previous.id, reason: JSON.stringify(err.detail ?? err.message),
+            });
+            bump('fail');
+            continue;
+          }
+        }
+        resolved.set(obj.uid, previous.id);
+        if (spec.field === 'racks') rackNetboxId = previous.id;
+        report.changes.push({
+          type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'rebind',
+          netboxId: previous.id, diff: { [UID_FIELD]: { from: oldUid, to: obj.uid } },
+        });
+        bump('rebind');
+        continue;
+      }
+
       // Nothing in NetBox carries this uid — it is a create.
       if (apply) {
         let created;
@@ -221,7 +321,7 @@ async function walk(snapshot, client, apply, report) {
   }
 
   report.counts = counts;
-  report.orphans = await orphans(snapshot, client, rackNetboxId, report);
+  report.orphans = await orphans(snapshot, client, rackNetboxId, report, alias);
   return report;
 }
 
@@ -233,7 +333,7 @@ async function walk(snapshot, client, apply, report) {
  * device someone else created, or one in another rack, is invisible to this
  * check and can never be touched by it.
  */
-async function orphans(snapshot, client, rackNetboxId, report) {
+async function orphans(snapshot, client, rackNetboxId, report, alias = null) {
   if (rackNetboxId === null || isPending(rackNetboxId)) return [];
   let present;
   try {
@@ -242,7 +342,14 @@ async function orphans(snapshot, client, rackNetboxId, report) {
     report.warnings.push(`could not check for orphaned devices: ${err.message}`);
     return [];
   }
-  const seen = new Set((snapshot.devices || []).map((d) => d.uid));
+  const seen = new Set();
+  for (const d of snapshot.devices || []) {
+    seen.add(d.uid);
+    // A device this plan rebinds still carries its old uid until the push
+    // runs. It was seen; it simply has not been renamed yet.
+    const old = alias ? aliasUid(d.uid, alias.key, alias.hash) : null;
+    if (old) seen.add(old);
+  }
   return present.flatMap((d) => {
     const uid = (d.custom_fields || {})[UID_FIELD];
     if (!uid || seen.has(uid)) return [];
@@ -295,4 +402,4 @@ async function push(snapshot, client) {
   return walk(snapshot, client, true, report);
 }
 
-module.exports = { plan, push, Pending, isPending, diff, current, EXPORT_ORDER, NetBoxError };
+module.exports = { plan, push, Pending, isPending, diff, current, aliasUid, EXPORT_ORDER, NetBoxError };

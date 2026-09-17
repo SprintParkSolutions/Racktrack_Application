@@ -72,9 +72,16 @@ const EXPORT_ORDER = Object.freeze([
   'cables',
 ]);
 
-/** An empty snapshot: everything one scan produced, ready to export. */
-function emptySnapshot(rackUid = '', scannedAt = '') {
-  const snap = { rackUid, scannedAt, conflicts: [] };
+/**
+ * An empty snapshot: everything one scan produced, ready to export.
+ *
+ * `rackUid` is the uid every rack-scoped object hangs off. `aliasOf` is the
+ * rack uid this same scan carried before it was keyed on the customer's rack
+ * (the photo-hash form, rack:RK-...), or null. The planner uses it to find
+ * objects written under the old uid and rebind them instead of creating twins.
+ */
+function emptySnapshot(rackUid = '', scannedAt = '', aliasOf = null) {
+  const snap = { rackUid, scannedAt, aliasOf, conflicts: [] };
   for (const key of EXPORT_ORDER) snap[key] = [];
   return snap;
 }

@@ -14,6 +14,8 @@ const rackNames = require('../../lib/netbox/rack_names');
 const switches = require('../../lib/netbox/switches');
 const reconcile = require('../../lib/netbox/reconcile');
 const report = require('../../lib/netbox/report');
+const rackMatch = require('../../lib/netbox/rack_match');
+const { clientForUser } = require('../../lib/netbox/client_for');
 // RackTrack's own libraries: who may touch which rack, and where its scans live.
 const tenant = require('../../lib/tenant');
 const { rackOwnershipParam } = require('../../lib/rack_access');
@@ -127,12 +129,45 @@ router.put('/rack/:rackId/name', (req, res) => {
   res.json({ rackId: req.params.rackId, name, display: rackNames.display(req.params.rackId) });
 });
 
+/**
+ * Recognise the rack before its uids are minted.
+ *
+ * Preview and export read the snapshot exactly as it is stored, so the moment
+ * it is built is the one moment the customer's rack can become the key its
+ * NetBox uids are built on. The resolver (rack_match) hands out that key only
+ * when the scan was identified explicitly; otherwise the uids stay on the
+ * photo hash, as they always were. Nothing here can fail the caller: no
+ * NetBox, an unreachable one or an unbound scan all mean "no key".
+ */
+async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
+  let client = null;
+  try { client = clientForUser(req.user); } catch { client = null; }
+  let found;
+  try {
+    found = await rackMatch.resolveRack(client, {
+      tenantId, rackId, scanName: rackNames.get(rackId) || null, fallbackName,
+    });
+  } catch (err) {
+    found = { name: fallbackName, rackKey: null, source: 'scan',
+              why: `the rack could not be looked up: ${err.message}` };
+  }
+  return {
+    rackKey: found.rackKey || null,
+    rackKeySource: found.source || null,
+    rackKeyWhy: found.why || null,
+    tenantId: tenantId ?? null,
+    // A keyed rack is named as the customer's record names it. The local alias
+    // stands in only for a rack nobody has identified.
+    rackName: found.rackKey ? String(found.name || fallbackName) : fallbackName,
+  };
+}
+
 // Bump when cv.toSnapshot starts reading the same map differently, so every
 // adopted rack is re-read under the new rules the next time it is opened.
 //   2 — a Switch with fewer than ten ports is a Router
 const SNAPSHOT_RULES = 2;
 
-router.post('/adopt/:rackId', (req, res) => {
+router.post('/adopt/:rackId', async (req, res) => {
   const { rackId } = req.params;
   const dir = path.join(OUTPUTS_DIR, rackId);
   const mapFile = path.join(dir, 'device_unit_map.json');
@@ -182,8 +217,18 @@ router.post('/adopt/:rackId', (req, res) => {
   if (!siteName) siteName = 'RackTrack';
   // A name given now wins; a name saved earlier stands; otherwise the id.
   if (req.body && req.body.rackName != null) rackNames.set(rackId, req.body.rackName);
-  const rackName = String((req.body && req.body.rackName) || rackNames.get(rackId) || rackId).trim();
+  const localName = String((req.body && req.body.rackName) || rackNames.get(rackId) || rackId).trim();
   const scannedAt = meta.timestamp || new Date().toISOString();
+
+  // Recognise the rack with the scan's own tenant, written beside the
+  // detection when the photo was taken, not the caller's, which for an owner
+  // or an org admin can be a different one. The key is minted here because
+  // the uids are frozen here: preview and export read this snapshot as stored.
+  const tenantId = meta.tenantId == null || meta.tenantId === '' ? null : Number(meta.tenantId);
+  const known = await recogniseRack(req, {
+    tenantId: Number.isFinite(tenantId) ? tenantId : null, rackId, fallbackName: localName,
+  });
+  const rackName = known.rackName;
 
   // The map may carry the photo's path from wherever the engine ran; point it
   // at the file that is actually here, or at nothing.
@@ -214,7 +259,9 @@ router.post('/adopt/:rackId', (req, res) => {
 
   let snapshot;
   try {
-    snapshot = cv.toSnapshot(map, { rackId, siteName, rackName, uHeight: cfg.U_HEIGHT, scannedAt });
+    snapshot = cv.toSnapshot(map, {
+      rackId, rackKey: known.rackKey, siteName, rackName, uHeight: cfg.U_HEIGHT, scannedAt,
+    });
   } catch (err) {
     return res.status(500).json({ error: `The detection result could not be converted: ${err.message}` });
   }
@@ -224,6 +271,10 @@ router.post('/adopt/:rackId', (req, res) => {
   // "no detections" while plainly having them.
   const payload = {
     snapshot, map, siteName, rackName,
+    // The key the uids were built on, and why, so a re-detect keeps it and the
+    // plan reads the same tenant. A null key means the uids are on the hash.
+    rackKey: known.rackKey, rackKeySource: known.rackKeySource, rackKeyWhy: known.rackKeyWhy,
+    tenantId: known.tenantId,
     adoptedFrom: rackId, adoptedAt: new Date().toISOString(), engineOutput: dir,
     rulesVersion: SNAPSHOT_RULES,
   };
@@ -238,13 +289,16 @@ router.post('/adopt/:rackId', (req, res) => {
     // hashes, and one would be mistaken for the other.
     rec = store.addScan({
       rackId, source: 'adopted', imagePath: image,
-      imageHash: null, rackName, siteName, payload,
+      imageHash: null, rackName: localName, siteName, payload,
     });
   }
   const devices = (map.devices || []).length;
   store.recordStage(rec.id, 'capture', 'ok', 'adopted from the RackTrack scan');
   store.recordStage(rec.id, 'detect', 'ok', `${devices} device${devices === 1 ? '' : 's'} from the existing detection`);
-  res.status(existing ? 200 : 201).json({ id: rec.id, rackId, adopted: true, devices });
+  res.status(existing ? 200 : 201).json({
+    id: rec.id, rackId, adopted: true, devices,
+    rackKey: known.rackKey, rackKeyWhy: known.rackKeyWhy,
+  });
 });
 
 router.post('/', upload.single('image'), async (req, res) => {
@@ -270,7 +324,19 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
   const rackId = (req.body.rackId || `RK-${Date.now().toString(36).toUpperCase()}`).trim();
   if (req.body.rackName != null) rackNames.set(rackId, req.body.rackName);
-  const rackName = (req.body.rackName || rackNames.get(rackId) || cfg.RACK_NAME || rackId).trim();
+  const localName = (req.body.rackName || rackNames.get(rackId) || cfg.RACK_NAME || rackId).trim();
+  // Recognise the rack the same way adopt does, so a capture never quietly
+  // keys on the hash where an adopt would have keyed on the customer's record.
+  // A fresh capture has no scan meta on disk yet, so the caller's tenant is
+  // the scan's tenant; it is stored with the scan and read from there after.
+  const known = await recogniseRack(req, {
+    tenantId: req.user?.tenant_id ?? null, rackId, fallbackName: localName,
+  });
+  const rackName = known.rackName;
+  const keyFields = {
+    rackKey: known.rackKey, rackKeySource: known.rackKeySource,
+    rackKeyWhy: known.rackKeyWhy, tenantId: known.tenantId,
+  };
 
   // Rack height is not asked for and not guessed. The camera cannot see it,
   // the operator was being made to type a number they often do not know, and
@@ -294,8 +360,8 @@ router.post('/', upload.single('image'), async (req, res) => {
       // Keep the photo and file the scan, but hold off on detection until the
       // operator decides. Nothing is analysed and nothing is thrown away.
       const rec = store.addScan({
-        rackId, source: 'capture', imagePath: req.file.path, imageHash, rackName, siteName,
-        payload: { siteName, rackName, uHeight, imageHash, pending: true },
+        rackId, source: 'capture', imagePath: req.file.path, imageHash, rackName: localName, siteName,
+        payload: { siteName, rackName, uHeight, imageHash, ...keyFields, pending: true },
       });
       store.recordStage(rec.id, 'capture', 'ok', path.basename(req.file.path));
       return res.json({
@@ -313,16 +379,16 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 
   const rec = store.addScan({
-    rackId, source: 'capture', imagePath: req.file.path, imageHash, rackName, siteName, payload: {},
+    rackId, source: 'capture', imagePath: req.file.path, imageHash, rackName: localName, siteName, payload: {},
   });
   const outputDir = path.join(store.SCANS_DIR, `${rec.id}-cv`);
 
   try {
     const { map, stderr } = await cv.runDetect(req.file.path, outputDir);
     const snapshot = cv.toSnapshot(map, {
-      rackId, siteName, rackName, uHeight, scannedAt: rec.createdAt,
+      rackId, rackKey: known.rackKey, siteName, rackName, uHeight, scannedAt: rec.createdAt,
     });
-    store.setPayload(rec.id, { map, snapshot, siteName, rackName, uHeight, imageHash });
+    store.setPayload(rec.id, { map, snapshot, siteName, rackName, uHeight, imageHash, ...keyFields });
     store.recordStage(rec.id, 'capture', 'ok', path.basename(req.file.path));
     store.recordStage(rec.id, 'detect', 'ok',
       `${snapshot.devices.length} devices · ${snapshot.interfaces.length} ports`
@@ -370,12 +436,21 @@ router.post('/:id/detect', async (req, res) => {
   const siteName = scan.payload.siteName || cfg.SITE_NAME || '';
   const rackName = scan.payload.rackName || scan.rackId;
   const uHeight = scan.payload.uHeight ?? null;
+  // The key the scan was filed under stays too. A scan keyed on the customer's
+  // rack must not slide back onto its photo hash because it was read again.
+  const keyFields = {
+    rackKey: scan.payload.rackKey || null,
+    rackKeySource: scan.payload.rackKeySource ?? null,
+    rackKeyWhy: scan.payload.rackKeyWhy ?? null,
+    tenantId: scan.payload.tenantId ?? null,
+  };
   const outputDir = path.join(store.SCANS_DIR, `${scan.id}-cv`);
 
   try {
     const { map, stderr } = await cv.runDetect(scan.imagePath, outputDir);
     const snapshot = cv.toSnapshot(map, {
-      rackId: scan.rackId, siteName, rackName, uHeight, scannedAt: scan.createdAt,
+      rackId: scan.rackId, rackKey: keyFields.rackKey, siteName, rackName, uHeight,
+      scannedAt: scan.createdAt,
     });
     // The operator's note on what changed since the last scan, kept with the
     // scan so the rack's history reads as a record, not just a pile of scans.
@@ -383,6 +458,7 @@ router.post('/:id/detect', async (req, res) => {
     store.setPayload(scan.id, {
       map, snapshot, siteName, rackName, uHeight,
       imageHash: scan.payload.imageHash || null,
+      ...keyFields,
       changeNote,
     });
     store.recordStage(scan.id, 'detect', 'ok',
