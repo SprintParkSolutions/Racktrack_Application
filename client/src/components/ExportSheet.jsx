@@ -19,13 +19,15 @@ import styles from './ExportSheet.module.css';
  */
 
 
-const ORDER = [['create', 'new'], ['update', 'updated'], ['noop', 'same'], ['skip', 'held back'], ['fail', 'failed']];
+// A rebind is a record already in NetBox under this rack's old id: only its
+// RackTrack id moves to the rack's own key, nothing else on it changes.
+const ORDER = [['create', 'new'], ['update', 'updated'], ['rebind', 'rebound'], ['noop', 'same'], ['skip', 'held back'], ['fail', 'failed']];
 
 /** One row per kind of object, counted by what is about to happen to it. */
 function byType(changes) {
   const rows = new Map();
   for (const ch of changes || []) {
-    if (!rows.has(ch.type)) rows.set(ch.type, { type: ch.type, create: 0, update: 0, noop: 0, skip: 0, fail: 0 });
+    if (!rows.has(ch.type)) rows.set(ch.type, { type: ch.type, create: 0, update: 0, rebind: 0, noop: 0, skip: 0, fail: 0 });
     const row = rows.get(ch.type);
     if (row[ch.action] !== undefined) row[ch.action] += 1;
   }
@@ -106,7 +108,7 @@ export default function ExportSheet({ scanId, rackId, onClose }) {
   const hv = healthView(health);
   const authed = Boolean(health && health.reachable && health.authenticated);
   const c = (report && report.counts) || {};
-  const pushCount = (c.create || 0) + (c.update || 0);
+  const pushCount = (c.create || 0) + (c.update || 0) + (c.rebind || 0);
 
   return createPortal(
     <div className={styles.scrim} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -140,7 +142,7 @@ export default function ExportSheet({ scanId, rackId, onClose }) {
               <span className={styles.doneMark} aria-hidden="true">✓</span>
               <div>
                 <b>Exported to NetBox</b>
-                <span>{(c.create || 0) + (c.update || 0)} object{((c.create || 0) + (c.update || 0)) === 1 ? '' : 's'} written{c.noop ? `, ${c.noop} already there` : ''}.</span>
+                <span>{pushCount} object{pushCount === 1 ? '' : 's'} written{c.noop ? `, ${c.noop} already there` : ''}.</span>
                 {openUrl && <a href={openUrl} target="_blank" rel="noreferrer noopener" className={styles.openLink}>Open NetBox ↗</a>}
               </div>
             </div>

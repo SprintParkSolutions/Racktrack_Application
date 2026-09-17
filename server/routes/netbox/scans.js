@@ -165,7 +165,8 @@ async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
 // Bump when cv.toSnapshot starts reading the same map differently, so every
 // adopted rack is re-read under the new rules the next time it is opened.
 //   2 — a Switch with fewer than ten ports is a Router
-const SNAPSHOT_RULES = 2;
+//   3 - uids keyed on the customer's rack (Part B Stage 1)
+const SNAPSHOT_RULES = 3;
 
 router.post('/adopt/:rackId', async (req, res) => {
   const { rackId } = req.params;

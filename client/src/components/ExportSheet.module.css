@@ -122,4 +122,5 @@
 .allAction { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .act_create { color: #0f7b4f; font-weight: 650; }
 .act_update { color: #b26a00; font-weight: 650; }
+.act_rebind { color: #4a5fc1; font-weight: 650; }
 .act_fail { color: #c0392b; font-weight: 650; }

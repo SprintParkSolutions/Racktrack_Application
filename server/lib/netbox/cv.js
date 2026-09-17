@@ -315,9 +315,10 @@ function extractPorts(d) {
  * becomes the key and a moved device becomes a simple update.
  *
  * `rackKey` is the customer's rack this scan was recognised as, minted by the
- * server (rack:t<tenant>:<row>) and passed only when the identification was
+ * server (t<tenant>:<row>) and passed only when the identification was
  * explicit. Every rack-scoped uid is then built on it where the photo hash
- * used to be, so two photos of one rack become one set of NetBox objects.
+ * used to be (rack:t7:5, dev:t7:5:u10), so two photos of one rack become one
+ * set of NetBox objects.
  * Without it the uids are exactly what they always were. When the key differs
  * from the hash, `aliasOf` keeps the hash-based rack uid so the planner can
  * find objects written before the key existed and rebind them.

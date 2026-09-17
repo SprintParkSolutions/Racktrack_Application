@@ -213,3 +213,49 @@ describe('the whole rack in one move', () => {
       'nothing is written while it is with somebody');
   });
 });
+
+describe('what cannot be sent to the rack, and what cannot be resolved on its own', () => {
+  const KEYED = 'dev:t7:5:u16';
+
+  it('refuses to ticket a rebind: there is nothing to check at the rack', () => {
+    const p = plans.create({ scanId: 10, rackId: 'RK-NEW', by: 'ravi', report: report([
+      { type: 'Device', uid: KEYED, name: 'SW-16', action: 'rebind', netboxId: 7,
+        diff: { racktrack_uid: { from: DEV, to: KEYED } } },
+      { type: 'Device', uid: DEV2, name: 'FW-20', action: 'create' },
+    ]) });
+    const out = plans.decide(p.id, [
+      { uid: KEYED, decision: 'ticketed', assignee: 'sam' },
+      { uid: DEV2, decision: 'ticketed', assignee: 'sam' },
+    ], { by: 'meera' });
+    assert.deepEqual(out.applied, [{ uid: DEV2, decision: 'ticketed' }], 'the create is assigned as usual');
+    assert.equal(out.refused.length, 1);
+    assert.equal(out.refused[0].uid, KEYED);
+    assert.equal(out.refused[0].why,
+      'a rebind only re-labels a record already in NetBox; approve or reject it, there is nothing to check at the rack');
+    const items = byUid(plans.get(p.id));
+    assert.equal(items[KEYED].decision, 'pending', 'the rebind is still waiting on the admin');
+    assert.equal(items[KEYED].ticket, null, 'no ticket was opened for it');
+
+    // Approving and rejecting a rebind work as for any other item.
+    const ok = plans.decide(p.id, [{ uid: KEYED, decision: 'approved' }], { by: 'meera' });
+    assert.deepEqual(ok.applied, [{ uid: KEYED, decision: 'approved' }]);
+    assert.equal(ok.refused.length, 0);
+  });
+
+  it("refuses to resolve a port's shared ticket: the device ticket is the one to resolve", () => {
+    const p = plans.create({ scanId: 11, rackId: 'RK-NEW', report: report(), by: 'ravi' });
+    plans.decide(p.id, [{ uid: DEV, decision: 'ticketed', assignee: 'sam' }], { by: 'meera' });
+
+    const out = plans.resolveTicket(p.id, `if:${DEV}:2`, { by: 'sam', finding: 'port 2 is fine' });
+    assert.equal(out.error, 'this port follows its device; resolve the device ticket instead');
+    const items = byUid(plans.get(p.id));
+    assert.equal(items[`if:${DEV}:2`].ticket.status, 'open', 'the reference is untouched');
+    assert.equal(items[`if:${DEV}:2`].decision, 'ticketed');
+    assert.equal(items[DEV].ticket.status, 'open', 'and so is the device ticket');
+    assert.equal(items[DEV].decision, 'ticketed');
+
+    const dev = plans.resolveTicket(p.id, DEV, { by: 'sam', finding: 'all there' });
+    assert.equal(dev.error, undefined);
+    assert.equal(byUid(plans.get(p.id))[DEV].decision, 'pending', 'the device comes back to the admin');
+  });
+});

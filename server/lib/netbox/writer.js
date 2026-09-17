@@ -24,6 +24,7 @@
 const { exportable, EXPORT_ORDER } = require('./model');
 const { orderedSpecs, objectTypes, withUid } = require('./mapping');
 const { UID_FIELD, NetBoxError } = require('./netbox');
+const { slug } = require('./reconcile');
 
 /**
  * A reference to an object that will not exist until this push runs.
@@ -94,15 +95,29 @@ function diff(payload, existing) {
  * uid the same object was written under before it was keyed. A uid that does
  * not carry the key (a manufacturer, a device type, a site) was never
  * rack-scoped and has no alias.
+ *
+ * A cable is the one exception to the segment form. reconcile.js mints its uid
+ * as cable:<slug of both interface uids>, and slug turns every colon into a
+ * dash: cable:if-dev-t7-5-u10-1-if-dev-t7-5-u12-1. So for a cable the slugged
+ * key (t7-5) is swapped for the slugged hash (rk-old00001), and only where it
+ * is a whole dash-delimited token, so t7-5 never matches inside t7-51.
  */
 function aliasUid(uid, key, hash) {
   if (!uid || !key || !hash) return null;
-  const at = String(uid).indexOf(`:${key}`);
-  if (at < 0) return null;
-  const end = at + 1 + key.length;
-  // The key has to be the whole segment: rack:t7:5 is not rack:t7:51.
-  if (end < uid.length && uid[end] !== ':') return null;
-  return `${uid.slice(0, at + 1)}${hash}${uid.slice(end)}`;
+  const s = String(uid);
+  const at = s.indexOf(`:${key}`);
+  if (at >= 0) {
+    const end = at + 1 + key.length;
+    // The key has to be the whole segment: rack:t7:5 is not rack:t7:51.
+    if (end < s.length && s[end] !== ':') return null;
+    return `${s.slice(0, at + 1)}${hash}${s.slice(end)}`;
+  }
+  if (!s.startsWith('cable:')) return null;
+  const escaped = slug(key).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Preceded by ':' or '-', followed by '-' or the end: a whole token.
+  const token = new RegExp(`([:-])${escaped}(?=-|$)`, 'g');
+  const swapped = s.replace(token, `$1${slug(hash)}`);
+  return swapped === s ? null : swapped;
 }
 
 async function walk(snapshot, client, apply, report) {
@@ -128,13 +143,17 @@ async function walk(snapshot, client, apply, report) {
   // instead of creating a twin beside it.
   const aliasHash = String(snapshot.aliasOf || '').replace(/^rack:/, '');
   const alias = rackKey && aliasHash && aliasHash !== rackKey ? { key: rackKey, hash: aliasHash } : null;
+  // How many records each endpoint still holds under the hash, per the alias
+  // preload. An endpoint that answered zero has nothing left under the old
+  // uid, so the leftover-twin check below can skip it without a round trip.
+  const underHash = new Map();
   if (rackKey && typeof client.preloadByUid === 'function') {
     const endpoints = [...new Set(orderedSpecs().map((s) => s.endpoint))];
     for (const ep of endpoints) {
       await client.preloadByUid(ep, { [`cf_${UID_FIELD}__ic`]: rackKey });
       // What a rebind looks for carries the hash, not the key, so it needs its
       // own preload or every rebound object costs a round trip.
-      if (alias) await client.preloadByUid(ep, { [`cf_${UID_FIELD}__ic`]: alias.hash });
+      if (alias) underHash.set(ep, await client.preloadByUid(ep, { [`cf_${UID_FIELD}__ic`]: alias.hash }));
     }
   }
 
@@ -193,6 +212,22 @@ async function walk(snapshot, client, apply, report) {
         const { changed, pending } = diff(payload, existing);
         resolved.set(obj.uid, existing.id);
         if (spec.field === 'racks') rackNetboxId = existing.id;
+
+        // The keyed record is here. Is there ALSO one under the old hash uid?
+        // Then a twin was left behind (a rebind that never ran, or a second
+        // photo pushed before this rack was keyed). Say so, plainly. Nothing
+        // is patched or removed for it: which of the two is right is a
+        // person's call, and rule 3 stands.
+        const staleUid = alias ? aliasUid(obj.uid, alias.key, alias.hash) : null;
+        if (staleUid && underHash.get(spec.endpoint) !== 0) {
+          let twin = null;
+          try { twin = await client.findByUid(spec.endpoint, staleUid); } catch { twin = null; }
+          if (twin) {
+            report.warnings.push(
+              `${spec.label} "${name}" (${obj.uid}) also has a record under its previous id `
+              + `${staleUid} (NetBox id ${twin.id}); it was not merged`);
+          }
+        }
 
         if (!Object.keys(changed).length) {
           report.changes.push({

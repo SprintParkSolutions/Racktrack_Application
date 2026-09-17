@@ -433,4 +433,6 @@ function view(base, rackId, storedMatches) {
   };
 }
 
-module.exports = { gatherSwitches, cameraDevices, suggest, reconcile, view };
+// slug is shared with the writer, which has to undo it to find the hash-based
+// uid a keyed cable was written under: the two must agree on one rule.
+module.exports = { gatherSwitches, cameraDevices, suggest, reconcile, view, slug };

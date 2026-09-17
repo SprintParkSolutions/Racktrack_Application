@@ -347,6 +347,14 @@ router.post('/:planId/decide', async (req, res) => {
   let decisions = Array.isArray(body.decisions) ? body.decisions : [];
 
   const star = decisions.find((d) => d && d.uid === '*');
+  // A whole-rack request replaces the decision list with every waiting item.
+  // Anything else sent beside it would be dropped without a word, so a mixed
+  // body is refused before anything is applied.
+  if (star && decisions.some((d) => !d || d.uid !== '*')) {
+    return res.status(400).json({
+      error: 'send the whole-rack decision on its own, not mixed with single items',
+    });
+  }
   const rackAsk = star || (body.scope === 'rack'
     ? { decision: 'ticketed', assignee: body.assignee, note: body.note } : null);
   const wholeRack = Boolean(rackAsk);
@@ -507,6 +515,10 @@ router.post('/:planId/tickets/:uid/resolve', (req, res) => {
 
   const item = plan.items.find((i) => i.uid === req.params.uid);
   if (!item || !item.ticket) return res.status(404).json({ error: 'no ticket on that item' });
+  // A port shares its device's ticket; the device row is the one to resolve.
+  if (item.ticket.sharedWith) {
+    return res.status(409).json({ error: 'this port follows its device; resolve the device ticket instead' });
+  }
 
   // The person it was assigned to can resolve it; so can an admin.
   const me = who(req);

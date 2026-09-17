@@ -3,8 +3,9 @@
  *
  * A scan used to key every NetBox uid on the hash of its photo, so two photos
  * of one rack wrote two racks. Stage 1 keys a recognised scan on the
- * customer's rack instead (rack:t<tenant>:<row>) and teaches the planner to
- * find records written under the old hash and rebind them. What is proved:
+ * customer's rack instead (t<tenant>:<row> where the hash stood, so the rack
+ * reads rack:t7:5 and a device dev:t7:5:u10) and teaches the planner to find
+ * records written under the old hash and rebind them. What is proved:
  *
  *   a. two photos of one rack (two hashes, one key): the second write is all
  *      no-op, nothing created, nothing deleted;
@@ -39,6 +40,7 @@ const { NetBox, UID_FIELD } = require('../../lib/netbox/netbox');
 function looseWorld() {
   const store = new Map();
   const calls = [];
+  const arrivals = [];
   let nextId = 1;
   const rows = (p) => { if (!store.has(p)) store.set(p, []); return store.get(p); };
   const request = async (method, path, body = null, params = null) => {
@@ -50,6 +52,13 @@ function looseWorld() {
         if (want === undefined) return params?.name === undefined || o.name === params.name;
         return String((o.custom_fields || {})[UID_FIELD] || '').toLowerCase().includes(String(want).toLowerCase());
       });
+      // Another writer: a row that lands the moment somebody first asks for
+      // its exact uid, after this answer has been given. The asker was told
+      // "absent"; the row is there for whoever asks next.
+      if (key === `cf_${UID_FIELD}`) {
+        const i = arrivals.findIndex((a) => a.path === path && a.uid === want);
+        if (i >= 0) { rows(path).push({ id: nextId++, ...arrivals[i].row }); arrivals.splice(i, 1); }
+      }
       return { results: list, next: null };
     }
     if (method === 'POST') { const obj = { id: nextId++, ...body }; rows(path).push(obj); return obj; }
@@ -66,6 +75,8 @@ function looseWorld() {
   return {
     calls,
     rows,
+    /** Have `row` appear on `path` right after the first exact lookup of `uid`. */
+    arriveOnLookup: (path, uid, row) => arrivals.push({ path, uid, row }),
     methods: () => calls.map((c) => c.method),
     client() { const nb = new NetBox('http://fake.invalid', 'nbt_test'); nb.request = request; return nb; },
     uidsOn: (endpoint) => rows(endpoint).map((o) => (o.custom_fields || {})[UID_FIELD]).filter(Boolean),
@@ -107,7 +118,7 @@ const snap = ({ rackId, rackKey = null, rackName = 'A01', siteName = 'Test Site'
     rackId, rackKey, siteName, rackName, uHeight: 42, scannedAt: '2026-01-01T00:00:00Z',
   });
 
-const KEY = 'rack:t7:5';
+const KEY = 't7:5';
 // What the sample rack writes: seven rack-scoped records (the rack, two devices,
 // four ports) and five shared ones (site, manufacturer, two types, one role).
 const RACK_SCOPED = 7;
@@ -162,7 +173,26 @@ test('the alias of a keyed uid is the uid the same object had under the hash', (
   assert.equal(writer.aliasUid(`dev:${KEY}:u10`, KEY, hash), 'dev:RK-TEST0001:u10');
   assert.equal(writer.aliasUid(`if:dev:${KEY}:u10:1`, KEY, hash), 'if:dev:RK-TEST0001:u10:1');
   assert.equal(writer.aliasUid('mfr:cisco', KEY, hash), null, 'a shared object has no alias');
-  assert.equal(writer.aliasUid('dev:rack:t7:51:u10', KEY, hash), null, 'rack:t7:5 is not rack:t7:51');
+  assert.equal(writer.aliasUid('dev:t7:51:u10', KEY, hash), null, 't7:5 is not t7:51');
+});
+
+test('the alias of a keyed cable uid swaps the slugged key for the slugged hash, whole tokens only', () => {
+  // reconcile.js mints cable:<slug of both interface uids>, and slug turns
+  // every colon into a dash, so the segment form cannot see ':t7:5' in it.
+  const hash = 'RK-OLD00001';
+  assert.equal(
+    writer.aliasUid('cable:if-dev-t7-5-u10-1-if-dev-t7-5-u12-1', KEY, hash),
+    'cable:if-dev-rk-old00001-u10-1-if-dev-rk-old00001-u12-1',
+    'both ends of the cable go back to the hash');
+  assert.equal(writer.aliasUid('cable:if-dev-t7-51-u10-1-if-dev-t7-51-u12-1', KEY, hash), null,
+    't7-5 is not t7-51');
+  assert.equal(writer.aliasUid('cable:if-dev-rk-other-u1-1-if-dev-rk-other-u2-1', KEY, hash), null,
+    'a cable of another rack has no alias');
+  // The slug rule is reconcile's own, so the two cannot drift apart.
+  const { slug } = require('../../lib/netbox/reconcile');
+  const cableUid = `cable:${slug(`if:dev:${KEY}:u10:1::if:dev:${KEY}:u12:1`)}`;
+  assert.equal(writer.aliasUid(cableUid, KEY, hash),
+    `cable:${slug(`if:dev:${hash}:u10:1::if:dev:${hash}:u12:1`)}`);
 });
 
 // ── a. two photos, one rack ─────────────────────────────────────────────────
@@ -259,23 +289,35 @@ test('b. a rebind refuses when the new uid has appeared since the plan, and patc
   await writer.push(snap({ rackId: HASH }), w.client());
   const keyed = snap({ rackId: HASH, rackKey: KEY });
   const target = `dev:${KEY}:u10`;
+  const oldUid = `dev:${HASH}:u10`;
+  const oldRow = w.rows('/api/dcim/devices/').find((o) => o.custom_fields[UID_FIELD] === oldUid);
 
-  // The plan's lookup finds the new uid absent; the re-check right before the
-  // patch finds a twin somebody else wrote in the meantime.
-  const nb = w.client();
-  const real = nb.findByUid.bind(nb);
-  let looks = 0;
-  nb.findByUid = async (endpoint, uid) => {
-    if (uid === target && ++looks === 2) return { id: 999, custom_fields: { [UID_FIELD]: target } };
-    return real(endpoint, uid);
-  };
-  const out = await writer.push(keyed, nb);
+  // The plan finds the new uid absent and plans the rebind.
+  const planned = await writer.plan(keyed, w.client());
+  assert.equal(planned.changes.find((c) => c.uid === target).action, 'rebind');
+
+  // Between plan and push somebody else writes a real device under the new
+  // uid. It lands in NetBox the moment the push first asks for that uid, so
+  // the push's own lookup says "absent" and only the re-check right before
+  // the patch sees it: the same client, nothing faked on it.
+  w.arriveOnLookup('/api/dcim/devices/', target, {
+    name: 'somebody else wrote this', custom_fields: { [UID_FIELD]: target },
+  });
+  const mark = w.calls.length;
+  const out = await writer.push(keyed, w.client());
+  const twin = w.rows('/api/dcim/devices/').find((o) => o.name === 'somebody else wrote this');
+  assert.ok(twin, 'the twin is a real row in NetBox');
 
   const dev = out.changes.find((c) => c.uid === target);
   assert.equal(dev.action, 'fail');
   assert.equal(dev.reason, 'target uid already exists');
-  assert.equal(dev.fromUid, `dev:${HASH}:u10`);
-  assert.ok(w.uidsOn('/api/dcim/devices/').includes(`dev:${HASH}:u10`), 'the old record was not touched');
+  assert.equal(dev.fromUid, oldUid);
+  assert.equal(dev.netboxId, oldRow.id, 'it names the record it would have rebound');
+  assert.ok(w.uidsOn('/api/dcim/devices/').includes(oldUid), 'the old record was not touched');
+  assert.equal(oldRow.custom_fields[UID_FIELD], oldUid);
+  const patched = w.calls.slice(mark).filter((c) => c.method === 'PATCH').map((c) => c.path);
+  assert.ok(!patched.includes(`/api/dcim/devices/${oldRow.id}/`), 'no PATCH hit the old record');
+  assert.ok(!patched.includes(`/api/dcim/devices/${twin.id}/`), 'and none hit the twin');
   const ports = out.changes.filter((c) => c.type === 'Interface' && c.uid.startsWith(`if:${target}:`));
   assert.equal(ports.length, 2);
   assert.ok(ports.every((p) => p.action === 'skip'), 'its ports wait rather than bind to a failed device');
@@ -283,6 +325,40 @@ test('b. a rebind refuses when the new uid has appeared since the plan, and patc
   assert.equal(out.counts.rebind, RACK_SCOPED - 3, 'the rack, the other device and its two ports');
   assert.equal(out.counts.fail, 1);
   assert.ok(!w.methods().includes('DELETE'));
+  assertOneRecordPerUid(w);
+});
+
+test('b. a twin left under the old hash beside the keyed record is reported, not touched', async () => {
+  const w = looseWorld();
+  const HASH = 'RK-OLD00003';
+  await writer.push(snap({ rackId: HASH }), w.client());
+  const keyed = snap({ rackId: HASH, rackKey: KEY });
+  await writer.push(keyed, w.client());
+  const clean = await writer.plan(keyed, w.client());
+  assert.deepEqual(clean.warnings, [], 'nothing under the hash: nothing to warn about');
+
+  // A record under the old rack uid appears again beside the rebound one.
+  w.rows('/api/dcim/racks/').push({ id: 900, name: 'A01', custom_fields: { [UID_FIELD]: `rack:${HASH}` } });
+  const mark = w.calls.length;
+  const planned = await writer.plan(keyed, w.client());
+  const line = planned.warnings.find((s) => s.includes(`rack:${HASH}`));
+  assert.ok(line, `a warning names the stale uid: ${JSON.stringify(planned.warnings)}`);
+  assert.match(line, /also has a record under its previous id/);
+  assert.match(line, /not merged/);
+  assert.ok(line.includes(`rack:${KEY}`), 'and the keyed uid it stands beside');
+  assert.equal(planned.warnings.length, 1, 'one twin, one line');
+  assert.equal(planned.counts.noop, RACK_SCOPED + SHARED, 'the plan itself is unchanged');
+  assert.equal(planned.counts.rebind || 0, 0);
+  assert.equal(planned.counts.create || 0, 0);
+  assert.ok(!w.calls.slice(mark).some((c) => c.method !== 'GET'), 'a plan still writes nothing');
+  assert.equal(w.rows('/api/dcim/racks/').length, 2, 'the twin is still there');
+
+  // The push does not touch it either.
+  const pushed = await writer.push(keyed, w.client());
+  assert.ok(pushed.warnings.some((s) => s.includes(`rack:${HASH}`)));
+  assert.ok(!w.methods().includes('DELETE'));
+  const stale = w.rows('/api/dcim/racks/').find((o) => o.id === 900);
+  assert.equal(stale.custom_fields[UID_FIELD], `rack:${HASH}`, 'the twin still carries the old uid');
 });
 
 // ── c. two tenants, one typed id ────────────────────────────────────────────
@@ -310,8 +386,8 @@ test('c. two tenants typing the same rack id get two keys and two racks', async 
   estate.listRacks = () => { throw new Error('a typed row needs no look across the space'); };
   const one = await rackMatch.resolveRack(null, { tenantId: 1, rackId: 'RK-ROW1', fallbackName: 'RK-ROW1' });
   const two = await rackMatch.resolveRack(null, { tenantId: 2, rackId: 'RK-ROW1', fallbackName: 'RK-ROW1' });
-  assert.equal(one.rackKey, 'rack:t1:31');
-  assert.equal(two.rackKey, 'rack:t2:32');
+  assert.equal(one.rackKey, 't1:31');
+  assert.equal(two.rackKey, 't2:32');
   assert.equal(one.tenantId, 1);
   assert.equal(two.tenantId, 2);
   assert.notEqual(one.rackKey, two.rackKey);
@@ -367,7 +443,7 @@ test('e. a name match keys on the typed row it matched', async () => {
   });
   assert.equal(r.source, 'name');
   assert.equal(r.knownRackId, 12);
-  assert.equal(r.rackKey, 'rack:t7:12');
+  assert.equal(r.rackKey, 't7:12');
   assert.equal(r.tenantId, 7);
 });
 
@@ -379,19 +455,38 @@ test('e. a rack set up directly keys on its own row, with or without NetBox', as
   const alone = await rackMatch.resolveRack(null, { tenantId: 7, rackId: 'RK-ABCD1234', fallbackName: 'RK-ABCD1234' });
   assert.equal(alone.source, 'set-up-directly');
   assert.equal(alone.confidence, 'known');
-  assert.equal(alone.rackKey, 'rack:t7:5');
+  assert.equal(alone.rackKey, 't7:5');
 
   const confirmed = await rackMatch.resolveRack(netboxWith([{ id: 99, name: 'Rack A01', facility_id: 'F-A01' }]), {
     tenantId: 7, rackId: 'RK-ABCD1234', fallbackName: 'RK-ABCD1234',
   });
   assert.equal(confirmed.source, 'facility-id');
   assert.equal(confirmed.name, 'Rack A01');
-  assert.equal(confirmed.rackKey, 'rack:t7:5', 'the key is the same whether or not NetBox knows the rack');
+  assert.equal(confirmed.rackKey, 't7:5', 'the key is the same whether or not NetBox knows the rack');
 
   // The key is minted by the server, never from anything the admin typed.
   for (const typedThing of ['A01', 'F-A01', 'RK-ABCD1234', 'Rack A01']) {
     assert.ok(!confirmed.rackKey.includes(typedThing), `the key does not carry ${typedThing}`);
   }
+});
+
+test('e. a rack typed with only a facility id, not in NetBox, stays unresolved with no key', async () => {
+  // Set up directly, so the explicit rule would mint a key; but there is no
+  // name anywhere to write under, and an unresolved result must not carry one.
+  estate.getRackByRackId = () => ({ id: 5, rack_id: 'RK-FAC00001', name: null, facility_id: 'F-77', space_id: 3 });
+  estate.listRacks = () => { throw new Error('should not look across the space'); };
+  const r = await rackMatch.resolveRack(netboxWith([]), { tenantId: 7, rackId: 'RK-FAC00001', fallbackName: 'RK-FAC00001' });
+  assert.equal(r.confidence, 'none');
+  assert.equal(r.name, 'RK-FAC00001', 'the fallback name, not an invented one');
+  assert.equal(r.rackKey, null, 'confidence none never carries a key');
+  assert.equal(r.knownRackId, 5, 'the typed row is still named, for whoever wants to finish it');
+
+  // The same rack once NetBox knows it by facility id is keyed as usual.
+  const found = await rackMatch.resolveRack(netboxWith([{ id: 42, name: 'Rack 77', facility_id: 'F-77' }]), {
+    tenantId: 7, rackId: 'RK-FAC00001', fallbackName: 'RK-FAC00001',
+  });
+  assert.equal(found.confidence, 'confirmed');
+  assert.equal(found.rackKey, 't7:5');
 });
 
 test('e. an unbound scan has no key and keeps its fallback name', async () => {

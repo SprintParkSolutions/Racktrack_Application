@@ -24,13 +24,15 @@
 const estate = require('../estate');
 
 /**
- * The write key for a typed rack: rack:t<tenant>:<racks_known.id>.
+ * The write key for a typed rack: t<tenant>:<racks_known.id>.
  *
- * Minted from the row's own id, which is unique across every tenant that
- * shares a NetBox, and never from anything the admin typed: two tenants each
- * typing RK-ROW1 must not merge their racks in a NetBox both of them use.
+ * It stands where the photo hash stood in every rack-scoped uid, so the rack
+ * reads rack:t7:5, a device dev:t7:5:u10 and a port if:dev:t7:5:u10:1. Minted
+ * from the row's own id, which is unique across every tenant that shares a
+ * NetBox, and never from anything the admin typed: two tenants each typing
+ * RK-ROW1 must not merge their racks in a NetBox both of them use.
  */
-const rackKeyFor = (tenantId, rowId) => `rack:t${Number(tenantId)}:${Number(rowId)}`;
+const rackKeyFor = (tenantId, rowId) => `t${Number(tenantId)}:${Number(rowId)}`;
 
 /** Choose the one typed rack this scan is, or none when it cannot be told. */
 function pickCandidate(candidates, scanName) {
@@ -72,10 +74,12 @@ async function findInNetBox(client, known) {
  * 'confirmed' (found in NetBox), 'known' (a typed rack, not yet in NetBox), or
  * 'none' (unresolved — behave exactly as before).
  *
- * `rackKey` is the key NetBox uids are built on, rack:t<tenant>:<row>. It is
- * set only when the scan was identified explicitly (source 'name' or
- * 'set-up-directly') and is null under the only-rack-in-the-space rule, which
- * may name the rack and its contact but never chooses the write key.
+ * `rackKey` is the key NetBox uids are built on, t<tenant>:<row>, standing
+ * where the photo hash stood (rack:t7:5, dev:t7:5:u10). It is set only when
+ * the scan was identified explicitly (source 'name' or 'set-up-directly') and
+ * is null under the only-rack-in-the-space rule, which may name the rack and
+ * its contact but never chooses the write key. An unresolved result
+ * (confidence 'none') never carries a key.
  */
 async function resolveRack(client, { tenantId, rackId, scanName = null, fallbackName = null } = {}) {
   const out = {
@@ -140,9 +144,11 @@ async function resolveRack(client, { tenantId, rackId, scanName = null, fallback
     out.why = 'matched a rack the customer set up; not in NetBox yet';
   } else {
     // The typed rack has only a facility id and NetBox has no such rack, so
-    // there is no name to use. Stay unresolved rather than invent one.
+    // there is no name to use. Stay unresolved rather than invent one, and
+    // hand out no key: an unresolved scan writes under its hash, as before.
     out.name = fallbackName ?? rackId;
     out.confidence = 'none';
+    out.rackKey = null;
     out.why = 'a rack is set up here but has no name and is not in NetBox';
   }
   return out;
