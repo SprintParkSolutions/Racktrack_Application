@@ -1,0 +1,549 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Audit Catalog" | https://claude.ai/code/artifact/09606904-25ee-4530-a85b-27c705c5cb24 | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack Audit Catalog</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root {
+    --paper: #ffffff; --panel: #f7f7f4; --ink: #16181d; --muted: #5b5f66;
+    --hairline: rgba(22,24,29,0.12); --hairline-soft: rgba(22,24,29,0.07);
+    --done: #1a7f37; --done-bg: #e9f3ec; --part: #8a5a1d; --part-bg: #f7efe3;
+    --none: #5b5f66; --none-bg: #eeeeeb; --na: #7a7d84;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15.5px; line-height: 1.58; margin: 0; }
+  .wrap { padding: clamp(28px,5vw,56px) clamp(18px,4vw,56px) 56px; }
+
+  .kicker { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  h1 { margin: 0 0 12px; font-size: clamp(27px,4.3vw,40px); font-weight: 650; letter-spacing: -0.022em; line-height: 1.1; text-wrap: balance; }
+  .sub { margin: 0; color: var(--muted); font-size: 16.5px; max-width: 72ch; }
+  .sub b { color: var(--ink); font-weight: 600; }
+
+  .gate { margin-top: 22px; border-radius: 14px; padding: 15px 20px; display: flex; gap: 12px; align-items: flex-start; font-size: 14.5px; max-width: 92ch; }
+  .gate svg { flex: 0 0 auto; margin-top: 2px; }
+  .gate.plan { border: 1px solid rgba(138,90,29,0.3); background: var(--part-bg); color: #6f4917; }
+  .gate.plan b { color: #4f340f; }
+  .gate.go { border: 1px solid rgba(26,127,55,0.3); background: var(--done-bg); color: #155e2b; }
+  .gate.go b { color: #114a22; }
+
+  .legend { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 9px 16px; align-items: center; font-size: 13.5px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.03em; border-radius: 999px; padding: 3px 11px; }
+  .chip.done { background: var(--done-bg); color: var(--done); border: 1px solid rgba(26,127,55,0.22); }
+  .chip.part { background: var(--part-bg); color: var(--part); border: 1px solid rgba(138,90,29,0.28); }
+  .chip.none { background: var(--none-bg); color: var(--none); border: 1px solid var(--hairline); }
+  .chip.na { background: #fff; color: var(--na); border: 1px dashed var(--hairline); }
+  .legend .lbl { color: var(--muted); }
+
+  .counts { margin-top: 20px; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(148px,1fr)); }
+  .cbox { border: 1px solid var(--hairline-soft); border-radius: 12px; padding: 13px 16px; background: var(--panel); }
+  .cbox .n { font-size: 25px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .cbox .l { margin-top: 3px; font-size: 12.3px; color: var(--muted); }
+  .readnote { margin-top: 14px; font-size: 14px; color: var(--muted); max-width: 88ch; }
+  .readnote b { color: var(--ink); }
+
+  section { margin-top: 46px; }
+  .dom { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 4px; }
+  .dom .n { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--muted); border: 1px solid var(--hairline); border-radius: 7px; padding: 2px 8px; }
+  h2 { margin: 0; font-size: clamp(18px,2.3vw,23px); font-weight: 650; letter-spacing: -0.015em; }
+  .domsub { margin: 4px 0 14px; color: var(--muted); font-size: 14.5px; max-width: 82ch; }
+
+  .list { border: 1px solid var(--hairline); border-radius: 14px; overflow: hidden; }
+  details { border-bottom: 1px solid var(--hairline-soft); }
+  details:last-child { border-bottom: 0; }
+  summary { list-style: none; cursor: pointer; padding: 13px 18px; display: flex; gap: 11px; align-items: center; }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: var(--panel); }
+  summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; border-radius: 8px; }
+  summary .st { flex: 0 0 auto; }
+  summary .nm { font-weight: 650; }
+  summary .q { color: var(--muted); font-weight: 400; font-size: 13.6px; }
+  .chev { margin-left: auto; flex: 0 0 auto; color: var(--muted); transition: transform 0.15s; }
+  details[open] .chev { transform: rotate(90deg); }
+  @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+  .dbody { padding: 2px 18px 16px 18px; font-size: 14px; line-height: 1.62; }
+  .dbody p { margin: 0 0 9px; color: var(--ink); }
+  .dbody p:last-child { margin-bottom: 0; }
+  .dbody .lead { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+  .dbody .why .lead { color: var(--muted); }
+  .dbody .now .lead { color: var(--done); }
+  .dbody .todo .lead { color: var(--part); }
+  .dbody .how .lead { color: #175d8d; }
+  .m { font-family: var(--mono); font-size: 0.88em; background: var(--panel); border: 1px solid var(--hairline-soft); border-radius: 5px; padding: 0 5px; }
+
+  footer { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--hairline); font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.8; }
+</style>
+
+<div class="wrap">
+  <p class="kicker">RackTrack · audit plan, in plain english · august 19, 2026</p>
+  <h1>RackTrack Audit Catalog</h1>
+  <p class="sub">Think of this as a <b>home inspection checklist for software</b>. It lists every standard check a
+     serious web + mobile product should pass before big companies trust it, explains each one in plain words —
+     <b>why it matters, where we stand, what's left, and how it's done</b> — and marks what RackTrack has already
+     passed. Researched against the current industry standards. <b>Click any check to read it in full.</b></p>
+
+  <div class="gate plan">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5l6.5 11.5h-13z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 6.5v3.2M8 11.3v.05" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <div><b>This is a plan, not results.</b> It shows what should be done and what we've done so far. I will not run any new check until you tell me to — reading this changes nothing in your code.</div>
+  </div>
+
+  <div class="legend">
+    <span class="chip done">✓ DONE</span><span class="lbl">run and passed</span>
+    <span class="chip part">◐ PARTLY</span><span class="lbl">some of it covered</span>
+    <span class="chip none">○ TO DO</span><span class="lbl">not started</span>
+    <span class="chip na">— N/A</span><span class="lbl">doesn't apply to us</span>
+  </div>
+
+  <div class="counts">
+    <div class="cbox"><div class="n">42</div><div class="l">standard checks in total</div></div>
+    <div class="cbox"><div class="n" style="color:var(--done)">5</div><div class="l">done &amp; passed</div></div>
+    <div class="cbox"><div class="n" style="color:var(--part)">14</div><div class="l">partly covered</div></div>
+    <div class="cbox"><div class="n" style="color:var(--none)">22</div><div class="l">still to do</div></div>
+    <div class="cbox"><div class="n" style="color:var(--na)">1</div><div class="l">doesn't apply</div></div>
+  </div>
+  <p class="readnote"><b>The honest summary:</b> 19 of the 42 checks are already touched (5 fully done, 14 partly). Of the 22 not started, more than half are <b>compliance paperwork</b> (like SOC 2 and privacy) that you're <em>supposed</em> to start only when a real enterprise deal is on the table — so they are "later," not "neglected." Nothing below is still being researched; this is the finished list.</p>
+
+  <!-- ============ DOMAIN 1 ============ -->
+  <section>
+    <div class="dom"><span class="n">1</span><h2>Automated scanning</h2></div>
+    <p class="domsub">Robot checks that run every time the code changes. This is the area we've covered best — most of it is already green.</p>
+    <div class="list">
+
+      <details>
+        <summary><span class="st"><span class="chip done">✓</span></span><span><span class="nm">Static code scan (SAST)</span> — <span class="q">reads our own code hunting for attack doors</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Most break-ins happen because code accidentally trusts bad input. This scanner reads every line looking for those exact mistakes (database injection, file-path tricks, unsafe commands) before anyone can exploit them.</p>
+          <p class="now"><span class="lead">Where we are</span> — Done. We ran it in two passes, including the full OWASP security ruleset. It raised alarms; we checked each by hand and confirmed no real holes in our code.</p>
+          <p class="how"><span class="lead">How it's done</span> — The tool <span class="m">Semgrep</span> scans the whole codebase in a couple of minutes. Next small step: make it run automatically on every change (about an hour of setup).</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip done">✓</span></span><span><span class="nm">Library scan (SCA)</span> — <span class="q">checks the borrowed code we build on</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Every app is built on hundreds of pieces of free code written by others. When a security hole is found in one of them, everyone using it is exposed. This check compares our pieces against the public list of known holes.</p>
+          <p class="now"><span class="lead">Where we are</span> — Done, both languages. Everything with an available fix was updated, and we re-ran all 240 tests to prove nothing broke. Two holes have no fix anywhere yet and can't be reached by an attacker — both written down.</p>
+          <p class="how"><span class="lead">How it's done</span> — <span class="m">npm audit</span> for the app/server, <span class="m">pip-audit</span> for the AI. To keep it effortless, a robot called <span class="m">Dependabot</span> can open the fix automatically the day a hole is patched (see "auto-update robot" below).</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip done">✓</span></span><span><span class="nm">Secret scan</span> — <span class="q">makes sure no passwords or keys hide in the code</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — If a password or key is ever pasted into code, anyone who can read that code can use it. This is one of the most common ways small teams get breached.</p>
+          <p class="now"><span class="lead">Where we are</span> — Done. The current code is clean, and we checked every kind of sensitive file individually.</p>
+          <p class="how"><span class="lead">How it's done</span> — The tool <span class="m">gitleaks</span> reads the code and its whole past. It already runs on every change and blocks anything that looks like a secret, so this stays clean automatically.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Live-app attack scan (DAST)</span> — <span class="q">attacks the running app from outside</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — The code scan reads the blueprints; this one rattles the doors of the finished building. It catches problems that only appear when the app is actually running — bad security settings, session handling, misconfigured pages.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started, because it needs the whole app running live on a server with a database. We can't do it on a laptop.</p>
+          <p class="how"><span class="lead">How it's done</span> — Once a test server exists, the tool <span class="m">OWASP ZAP</span> points at it and fires real attack traffic, then reports anything that got through. Runs monthly.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">Container scan</span> — <span class="q">checks the shipping box the app runs in</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — The app ships inside a "container" — a packaged mini computer with its own operating system. That system can have its own holes, separate from our code.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. By hand we already found that the container runs as the all-powerful "root" user (it should run as a limited one) — but the automatic scan isn't wired in.</p>
+          <p class="how"><span class="lead">How it's done</span> — The tool <span class="m">Trivy</span> scans the container image on every build and flags holes and misconfigurations, including the root-user issue. About half a day to set up.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Auto-update robot</span> — <span class="q">fixes a library the day a hole is announced</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — New holes in borrowed libraries are found constantly. Without a robot watching, you only find out when someone runs a scan. With one, the fix is waiting for you the same day.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. It's a single switch we simply haven't flipped yet.</p>
+          <p class="how"><span class="lead">How it's done</span> — Turn on <span class="m">Dependabot</span> in GitHub — one setting, about 30 minutes. From then on it opens a ready-made fix automatically.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip na">—</span></span><span><span class="nm">Infrastructure scan</span> — <span class="q">checks cloud setup files</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why it exists</span> — Big systems describe their servers in code ("infrastructure as code"). A scanner checks those files for insecure defaults before they go live.</p>
+          <p class="now"><span class="lead">Where we are</span> — Doesn't apply. RackTrack runs on one server set up by hand, with no infrastructure code to scan. Revisit this only if you move to a cloud setup like AWS with Terraform.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ DOMAIN 2 ============ -->
+  <section>
+    <div class="dom"><span class="n">2</span><h2>Human-led security</h2></div>
+    <p class="domsub">The judgment work a robot can't do — a skilled person attacking the app and thinking about its design.</p>
+    <div class="list">
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Penetration test</span> — <span class="q">a paid expert tries to break in</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Scanners find known patterns; a human finds clever chains — logging in as one company and reaching another's data, or bypassing a check in a way no tool expects. This is also <em>the</em> report enterprise buyers ask for.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. It needs the live app and an outside firm; it can't be faked on a laptop.</p>
+          <p class="how"><span class="lead">How it's done</span> — Hire a security firm for about a week (a few thousand dollars). They follow a standard playbook (PTES / OWASP testing guide), include an explicit "can one company reach another's data?" test, write up findings, and re-test after you fix them. Done yearly.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">Manual code review (security)</span> — <span class="q">an expert reads the most sensitive code</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Some things only a human understands — is the login logic sound? Are payments handled safely? A scanner can't reason about intent; a reviewer can.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. This week I read the login guard, token handling, sessions, sharing rules, upload limits and encryption by hand. What's <em>not</em> done is a full path-by-path review of the payment flow and every admin page.</p>
+          <p class="how"><span class="lead">How it's done</span> — A security-minded engineer walks the critical paths line by line, ideally on every important change. No tool required — just focused time.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Threat modeling</span> — <span class="q">list what could go wrong, by design</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Cheaper to imagine attacks on a whiteboard than to discover them in production. You map how data flows, then ask "how could each step be abused?" and add defenses up front.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. It's a design exercise we simply haven't run yet; most valuable before big new features (like the payment or tenant model).</p>
+          <p class="how"><span class="lead">How it's done</span> — A structured session using a standard method (<span class="m">STRIDE</span> for security, <span class="m">LINDDUN</span> for privacy across companies), producing a short list of risks and the fix for each. A day or two.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ DOMAIN 3 ============ -->
+  <section>
+    <div class="dom"><span class="n">3</span><h2>Security standards to measure against</h2></div>
+    <p class="domsub">These aren't tools — they're official checklists you formally sign off against, so "probably fine" becomes "checked, item by item."</p>
+    <div class="list">
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">OWASP Top 10</span> — <span class="q">the 10 most common web risks</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — It's the industry's shared list of the ten ways web apps most often get hurt. Everyone maps their security to it; buyers expect you to know it.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. Our scans and manual review touch most of the ten, but nobody has walked the list and formally signed off each item.</p>
+          <p class="how"><span class="lead">How it's done</span> — Go through the current list (the 2025 edition) one risk at a time and record how RackTrack handles each. Half a day of documentation.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">OWASP API Top 10</span> — <span class="q">the same, for the behind-the-scenes API</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — The app talks to a server through an "API" (the messenger between phone and server). APIs have their own top-10 risk list; the #1 is one user reaching another user's data by changing an ID in the request.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. We have ownership checks on data requests (good), but haven't formally tested every endpoint against the full list.</p>
+          <p class="how"><span class="lead">How it's done</span> — Replay real requests as a different user / different company and confirm each one is refused, checked against the 2023 API list.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">ASVS Level 2</span> — <span class="q">the detailed 350-point security checklist</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — The Top 10 is awareness; this is the thorough version — about 350 specific, testable requirements. "Level 2" is the right depth for an app with logins, personal data and payments.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. It's the structured way to turn our scattered checks into a signed, complete record — the kind of evidence a serious buyer or auditor wants.</p>
+          <p class="how"><span class="lead">How it's done</span> — Work through the <span class="m">OWASP ASVS 5.0</span> Level 2 list, marking each requirement pass/fail/not-applicable, fixing the fails. A focused multi-day effort, usually paired with the pen test.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">MASVS (mobile)</span> — <span class="q">the security checklist for the phone app</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Phone apps have their own risks — how they store data on the device, use the keychain, handle the network. The web checklist doesn't cover these.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. Matters more as the iPhone/Android app moves from testers to real customers.</p>
+          <p class="how"><span class="lead">How it's done</span> — Verify against the <span class="m">OWASP MASVS</span> mobile standard using its companion testing guide, typically as part of a mobile pen test.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">SAMM</span> — <span class="q">how mature is our security process itself</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — This one scores your <em>habits</em>, not one app — do you threat-model, train, review, respond to incidents? It gives you a maturity grade and a roadmap to improve.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. It's an organizational self-assessment, useful once the team and process grow.</p>
+          <p class="how"><span class="lead">How it's done</span> — A yearly self-scoring against the <span class="m">OWASP SAMM</span> model across five areas (governance, design, build, verify, operate).</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ DOMAIN 4 ============ -->
+  <section>
+    <div class="dom"><span class="n">4</span><h2>Logins &amp; who-can-see-what</h2></div>
+    <p class="domsub">How users prove who they are and stay locked to their own data. This is the area corporate IT scrutinizes hardest.</p>
+    <div class="list">
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">Password &amp; session security</span> — <span class="q">how logins are stored and kept safe</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — If passwords are stored carelessly or login tokens can be stolen, everything else fails. This checks hashing, expiry, and defenses against rapid guessing.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. Verified by hand: passwords are scrambled properly, login tokens are built and checked correctly, and guessing is throttled. One known weak spot: the login token sits in browser storage a script could read — the standard is a protected cookie instead.</p>
+          <p class="how"><span class="lead">How it's done</span> — Review against the OWASP session-management standard; move the token to a protected cookie (best done together with company sign-in, below).</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">Company isolation test</span> — <span class="q">can one company reach another's data?</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Many companies share one system. The one thing that must never happen is company A seeing company B's data. It's the first question every buyer asks.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly, and strongly. An automatic test proves the wall holds and re-proves it on every change. What's left is a deliberate outside attempt to break it (part of the pen test), not just our own test.</p>
+          <p class="how"><span class="lead">How it's done</span> — Keep the automatic test; add a tester who deliberately tries to cross the wall by tampering with IDs in requests.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Company sign-in (SSO)</span> — <span class="q">"Sign in with Microsoft"</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Staff use their existing company account instead of a new password. IT insists on it because when someone leaves, disabling one account locks them out of everything — including RackTrack. Without it, many companies literally cannot buy.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started, and it's the single biggest sales blocker on this whole page.</p>
+          <p class="how"><span class="lead">How it's done</span> — Add sign-in through Microsoft using the standard protocols (<span class="m">OIDC</span> / <span class="m">SAML</span>). About 1–2 weeks; our customers are Microsoft shops, so start there.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Auto account provisioning (SCIM)</span> — <span class="q">create and remove staff accounts automatically</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — The step beyond sign-in: when a company adds or removes an employee in their own system, RackTrack accounts appear or disappear automatically. Big companies expect it so nobody is left with access after leaving.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. Usually added after sign-in, when a large customer asks.</p>
+          <p class="how"><span class="lead">How it's done</span> — Implement the <span class="m">SCIM</span> standard so the company's directory can manage RackTrack accounts.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Two-factor login (MFA)</span> — <span class="q">a second check beyond the password</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — A stolen password alone shouldn't be enough to get in. A second factor (a code from an app, or a passkey) stops the vast majority of account takeovers.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. Often comes for free once company sign-in is added, because the company's own two-factor applies.</p>
+          <p class="how"><span class="lead">How it's done</span> — Support app-based codes or passkeys; aim for the standard "AAL2" level and avoid text-message codes (now discouraged).</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ DOMAIN 5 ============ -->
+  <section>
+    <div class="dom"><span class="n">5</span><h2>Code quality, structure &amp; staying up</h2></div>
+    <p class="domsub">Is the code clean, is the design sound, and can the system stay running under real use?</p>
+    <div class="list">
+
+      <details>
+        <summary><span class="st"><span class="chip done">✓</span></span><span><span class="nm">Code checker (lint)</span> — <span class="q">flags mistakes and messy code</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Consistent, mistake-free code is cheaper to maintain and less likely to hide bugs. The checker enforces it automatically so quality doesn't rely on memory.</p>
+          <p class="now"><span class="lead">Where we are</span> — Done. Zero errors across the app and server, and the warning count is locked so it can only go down.</p>
+          <p class="how"><span class="lead">How it's done</span> — <span class="m">ESLint</span> runs on every change. A deeper option (<span class="m">SonarQube</span>) can add complexity and duplication grades later.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip done">✓</span></span><span><span class="nm">Automatic tests</span> — <span class="q">240 checks that prove the app works</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Tests catch a broken change before it reaches users. The more of the important behavior they cover, the safer every update is.</p>
+          <p class="now"><span class="lead">Where we are</span> — Done. 240 tests across the app, server and AI all pass, plus a robot that clicks through all 13 screens in a real browser.</p>
+          <p class="how"><span class="lead">How it's done</span> — <span class="m">Vitest</span>, <span class="m">node:test</span>, <span class="m">pytest</span> and <span class="m">Playwright</span>, all run on every change.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">Test coverage</span> — <span class="q">how much of the code the tests actually touch</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — "240 tests pass" is good, but which parts of the code do they actually exercise? A coverage number turns that from a guess into a fact, and shows the thin spots.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. The important parts are tested; the marketplace and integration bridges have few tests. The percentage is simply unmeasured.</p>
+          <p class="how"><span class="lead">How it's done</span> — Switch on the built-in coverage counter, read the number, then lock it as a floor so it can only rise. About a day.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Mutation testing</span> — <span class="q">checks the tests actually catch bugs</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — A test can run a line of code without really checking it. This tool deliberately breaks the code and watches whether the tests notice — proving they have teeth, not just presence.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. It's an advanced, optional depth check — worth it for the most critical logic once coverage is measured.</p>
+          <p class="how"><span class="lead">How it's done</span> — The tool <span class="m">Stryker</span> introduces small bugs and reports how many the tests caught. Run weekly, not on every change (it's slow).</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">API design &amp; contract</span> — <span class="q">is the server's interface clean and documented</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — The API is the contract between the app and the server (and any future integrations). A consistent, documented, rate-limited interface is easier to maintain and safer to expose.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. The API works and has rate limits, but there's no formal written spec that documents every endpoint.</p>
+          <p class="how"><span class="lead">How it's done</span> — Write an <span class="m">OpenAPI</span> spec (a machine-readable menu of every endpoint) and lint it for consistency. Ongoing as the API grows.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">Architecture &amp; data-safety review</span> — <span class="q">can a crash lose or corrupt data?</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — The most damaging failures aren't hacks — they're a design where a crash at the wrong moment corrupts or loses customer data.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly, and this found something real: a scan is saved in two separate steps (the images, then the ownership record). A crash between them leaves a scan with no owner — the code even carries repair scripts because it has happened.</p>
+          <p class="how"><span class="lead">How it's done</span> — Move to a proper database where both steps save as one all-or-nothing action (see "real database" in domain notes on the status report). This is the highest-value fix on the roadmap.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">Speed &amp; load-time check</span> — <span class="q">how fast the app feels</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — A slow app frustrates technicians standing in a datacenter aisle on weak signal. There's a standard score for load speed and responsiveness.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. The browser robot catches layout problems, and we flagged that the app downloads one oversized code bundle. No formal speed score exists yet.</p>
+          <p class="how"><span class="lead">How it's done</span> — Run <span class="m">Google Lighthouse</span> for a score, set a bundle-size budget, and split the code by screen so each loads only what it needs.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Load / stress test</span> — <span class="q">how many users before it strains</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — The AI scan is heavy work. Nobody yet knows whether 30 technicians scanning at 9 a.m. is fine or crashes the one server. Sales will eventually be asked "how many users does it support?"</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started; it needs the test server first, so the real system isn't disturbed.</p>
+          <p class="how"><span class="lead">How it's done</span> — A tool like <span class="m">k6</span> fires many pretend users at once and measures where it slows or breaks. A few days.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Monitoring &amp; recovery</span> — <span class="q">know when it breaks; be able to recover</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Today, if the app goes down at 2 a.m., a tester tells you hours later. Real customers expect it to be watched, and expect proof you could recover from a disaster.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. The measuring instruments (logs, performance meters) already exist — they just don't alert anyone yet.</p>
+          <p class="how"><span class="lead">How it's done</span> — An uptime monitor that messages your phone in a minute, plus crash reporting (<span class="m">Sentry</span>). Set target uptime goals and do a practice recovery. About 2 days for the basics.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Database &amp; backup check</span> — <span class="q">is data safe, and can we restore it?</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — A backup nobody has ever restored is just a hope. This confirms the data is stored soundly and can actually be brought back after a disaster.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started, and important: right now nothing is backed up at all. If the disk dies, everything is gone.</p>
+          <p class="how"><span class="lead">How it's done</span> — Move to a proper database, turn on nightly off-site backups, then do one real restore drill to prove it works. Part of the "real database" project.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">Delivery health (DORA)</span> — <span class="q">how smoothly we ship updates</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — There are four well-known measures of a healthy team: how often you ship, how fast, how often a release breaks, and how quickly you recover. They reveal whether delivery is smooth or risky.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. Automated checks are strong, but deploys are still by hand with no undo — which these measures would score low, and which the roadmap fixes.</p>
+          <p class="how"><span class="lead">How it's done</span> — Track the four numbers from your GitHub history; they improve automatically once staging and one-button deploys exist.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">App-store readiness</span> — <span class="q">meets Apple &amp; Google's rules</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Apple and Google reject apps that break their rules — crashes, missing privacy details, outdated targets. A rejected app can't ship.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. The app is already on TestFlight and builds as a signed Android app. One firm deadline to note: Google requires apps to target the latest Android by <b>Aug 31, 2026</b>.</p>
+          <p class="how"><span class="lead">How it's done</span> — Run through Apple's and Google's published checklists before each submission; keep a crash-reporting tool watching the live crash rate.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ DOMAIN 6 ============ -->
+  <section>
+    <div class="dom"><span class="n">6</span><h2>Compliance &amp; paperwork</h2></div>
+    <p class="domsub">The certificates and documents enterprise buyers and regulators ask for. Mostly process, not code — and correctly started when a real deal appears, not before.</p>
+    <div class="list">
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">SOC 2</span> — <span class="q">the security report buyers ask for first</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — In North America it's the entry ticket to selling to big companies — an independent report saying your security controls are real and working. Buyers ask for it before signing.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started, and that's fine now. It's a months-long program with real cost; you start it when a genuine enterprise deal is on the table.</p>
+          <p class="how"><span class="lead">How it's done</span> — Adopt a controls-tracking tool (Vanta / Drata), run for a 3–12 month observation window, then a licensed auditor writes the "Type II" report. Roughly $20K–$150K all-in the first year.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">ISO 27001</span> — <span class="q">the international security certificate</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — The global counterpart to SOC 2 — a pass/fail certificate that EU, UK and Asian buyers prefer. It proves you run a real security management system, not just ad-hoc controls.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. It overlaps ~70% with SOC 2, so many companies do both together; pursue when selling internationally.</p>
+          <p class="how"><span class="lead">How it's done</span> — Document a security management system, pick your controls, then an accredited body audits and certifies you (3-year cycle with yearly check-ins).</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">PCI (card payments) — SAQ A</span> — <span class="q">the light payment-security form</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Taking card payments legally requires a yearly security self-assessment. The good news: because Stripe handles the card details, you qualify for the <em>lightest</em> version.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started, but it's a quick win — as long as you keep card entry fully hosted by Stripe (their checkout or redirect), you stay on the short form.</p>
+          <p class="how"><span class="lead">How it's done</span> — Fill in the "SAQ A" questionnaire once a year and get Stripe's written confirmation that their embedded payment is protected. Mostly internal time; near-zero cost.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Privacy (GDPR / CCPA)</span> — <span class="q">how personal data is handled</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — If you store data about people in Europe or California, the law requires clear rules on how it's collected, stored, and deleted — and the ability to honor deletion requests. Fines are large.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. It's law, not a buyer preference, and applies as soon as you have EU or California users.</p>
+          <p class="how"><span class="lead">How it's done</span> — With privacy counsel: a data-processing agreement, a record of what data you hold, a deletion process, and a risk assessment for anything sensitive.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Vendor security questionnaire</span> — <span class="q">the form buyers actually send you</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Before signing, a company's risk team emails a long spreadsheet of security questions. Having good answers ready wins deals faster; having none stalls them.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. Comes with your first serious enterprise conversation.</p>
+          <p class="how"><span class="lead">How it's done</span> — Pre-fill the two standard ones (<span class="m">SIG</span>, <span class="m">CAIQ</span>) and host a "trust page" so buyers can self-serve. SOC 2 makes these far easier.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Parts list (SBOM)</span> — <span class="q">a signed list of everything you ship</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Like an ingredients label for software — a complete list of every component inside. Increasingly required in regulated and government sales (the EU makes it mandatory by end of 2027).</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started, but it's a genuine quick win — it generates automatically from files you already have.</p>
+          <p class="how"><span class="lead">How it's done</span> — A one-step tool (<span class="m">Syft</span> or <span class="m">Trivy</span>) produces the list on every release in a standard format. Under an hour to wire in.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ DOMAIN 7 ============ -->
+  <section>
+    <div class="dom"><span class="n">7</span><h2>Accessibility &amp; our specific field</h2></div>
+    <p class="domsub">Usable by everyone, and correct for the datacenter world RackTrack operates in.</p>
+    <div class="list">
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">Web accessibility (WCAG)</span> — <span class="q">usable with a screen reader &amp; keyboard</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — People with disabilities must be able to use the app — enough contrast, keyboard navigation, screen-reader labels. It's increasingly the law: the EU's Accessibility Act took effect June 2025 and reaches US companies with EU customers.</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. The browser robot already enforces some of it (readable text sizes, no sideways scrolling), but a full audit with a screen reader hasn't been done — and automated tools only catch about a third of the criteria.</p>
+          <p class="how"><span class="lead">How it's done</span> — Automated scan (<span class="m">axe</span> / Lighthouse) plus manual testing with a screen reader, against the <span class="m">WCAG 2.2 AA</span> standard. Produces a "VPAT" statement buyers ask for.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Mobile accessibility</span> — <span class="q">works with VoiceOver &amp; TalkBack</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — Phones have their own screen readers (VoiceOver on iPhone, TalkBack on Android). The app needs to work with them, tested on a real device.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. Done per release once the mobile app has real users.</p>
+          <p class="how"><span class="lead">How it's done</span> — Walk the core journeys on a device with the screen reader on, plus large-text and high-contrast modes.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip part">◐</span></span><span><span class="nm">AI accuracy report</span> — <span class="q">how often the scanner is right</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — RackTrack's core promise is that the AI reads racks correctly. Enterprise buyers of an AI product will ask, in writing, "how accurate is it, and how often is it wrong?"</p>
+          <p class="now"><span class="lead">Where we are</span> — Partly. A ground-truth set and pipeline tests exist, but there's no published accuracy / false-alarm report.</p>
+          <p class="how"><span class="lead">How it's done</span> — Measure the model against a labeled truth set (precision, recall, false-positive rate), publish the numbers, and watch for "drift" over time — governed by the <span class="m">NIST AI</span> risk framework.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="st"><span class="chip none">○</span></span><span><span class="nm">Integration data quality</span> — <span class="q">is the data we send ServiceNow clean?</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p class="why"><span class="lead">Why we need it</span> — RackTrack feeds a customer's IT database (ServiceNow). If it creates duplicates or wrong entries, it damages trust in the whole system.</p>
+          <p class="todo"><span class="lead">What's left &amp; why</span> — Not started. Matters as real customers connect their live ServiceNow.</p>
+          <p class="how"><span class="lead">How it's done</span> — Check the data against ServiceNow's completeness/correctness rules and tune the matching so it never creates duplicate entries; a formal "Built for ServiceNow" certification exists for listing in their store.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div class="gate go" style="margin-top:44px">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div><b>Your move.</b> This is the complete list, explained. When you're ready, the cheapest high-value batch I can run right now — no server or outside firm needed — is: <b>generate the parts list (SBOM)</b>, <b>wire the container scan</b>, <b>measure test coverage</b>, and <b>formally walk the OWASP Top 10 / ASVS list</b>. The rest (live-app scan, pen test, load test, SOC 2) need the running system or outside people. Just tell me which to start.</div>
+  </div>
+
+  <footer>RackTrack audit plan, in plain english · august 19, 2026 · researched against OWASP Top 10:2025 · ASVS 5.0 ·
+    MASVS · OWASP API Top 10:2023 · PCI DSS 4.0.1 · SOC 2 · ISO 27001:2022 · NIST (CSF 2.0, 800-63B, AI RMF) ·
+    GDPR / CCPA · WCAG 2.2 · DORA · SBOM · this is a plan; no new check runs until you approve.</footer>
+</div>
+
+</body></html>

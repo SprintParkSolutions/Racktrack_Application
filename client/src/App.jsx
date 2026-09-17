@@ -34,12 +34,13 @@ import LabPage from './pages/LabPage.jsx';
 import GroundTruthPage from './pages/GroundTruthPage.jsx';
 import TenantMatPage from './pages/TenantMatPage.jsx';
 import ConnectionsPage from './pages/ConnectionsPage.jsx';
-// ── Deferred routes ──────────────────────────────────────────────────
+import { setupDecision, setupUnknown } from './utils/setupGuard';
+// -- Deferred routes --------------------------------------------------
 // Everything below loads on navigation rather than at startup.
 //
 // MultiRackTopologyPage imports three.js, @react-three/fiber and drei at the
 // top level, so importing it eagerly put the entire 3D engine in front of the
-// login form — every user paid for it to reach a page most never open. The
+// login form - every user paid for it to reach a page most never open. The
 // Marketplace cluster is admin-only, so ordinary members were downloading
 // seven pages they cannot navigate to.
 const MultiRackTopologyPage = lazy(() => import('./pages/MultiRackTopologyPage.jsx'));
@@ -58,6 +59,8 @@ const ApprovalsPage = lazy(() => import('./pages/ApprovalsPage.jsx'));
 const DriftPage = lazy(() => import('./pages/DriftPage.jsx'));
 const AdminInboxPage = lazy(() => import('./pages/AdminInboxPage.jsx'));
 const ReportPage = lazy(() => import('./pages/ReportPage.jsx'));
+// Organization settings: admins only, opened at first run and from Profile.
+const SetupPage = lazy(() => import('./pages/SetupPage.jsx'));
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
@@ -74,7 +77,7 @@ import { ThemeProvider } from './ThemeContext.jsx';
 // trying to go so we can send them back after login/signup.
 // Development-only tripwire. index.css hides overflow-x on body / #root so any
 // element that lays out wider than the viewport is silently CLIPPED instead of
-// producing a scrollbar — which is how the "content is off screen" bugs reach
+// producing a scrollbar - which is how the "content is off screen" bugs reach
 // testers unseen. This measures the page after each navigation and on resize
 // and warns when something exceeds its container, so the next overflow shows up
 // in a developer's console first. Gated on import.meta.env.DEV: never ships.
@@ -115,7 +118,7 @@ function OverflowGuard() {
   return null;
 }
 
-// True when the signed-in user's organization is NOT active — pending owner
+// True when the signed-in user's organization is NOT active - pending owner
 // approval, rejected, or deactivated. Owners have no org and are never gated.
 // Such users are held on the /pending screen (which explains the exact state)
 // instead of being let into an app they can't actually use.
@@ -155,7 +158,7 @@ function AdminRoute({ children }) {
 
 // Ground Truth is owner-only for now. To open it to every role later, swap
 // <OwnerRoute> for <ProtectedRoute> on its route and drop the isOwner wrap on
-// its nav entry — the server queries are already role-scoped.
+// its nav entry - the server queries are already role-scoped.
 function OwnerRoute({ children }) {
   const { isAuthed, user } = useAuth();
   const location = useLocation();
@@ -171,6 +174,30 @@ function OwnerRoute({ children }) {
   return children;
 }
 
+// The organisation-setup gate on Scan (utils/setupGuard decides):
+//   owner / org_admin with a Site still lacking a required item -> /setup
+//   everyone else -> straight through; a technician is never gated
+// user.setup arrives on /api/auth/me. The login response does not carry it,
+// so a record that has never seen the field is re-read once before deciding;
+// if that read fails the user goes through - the gate never blocks on an
+// absence. SetupPage re-reads /me after every write, which is what lifts
+// this without a re-login.
+function SetupGate({ children }) {
+  const { user, refreshUser } = useAuth();
+  const [checked, setChecked] = useState(false);
+  const unknown = setupUnknown(user) && !checked;
+  useEffect(() => {
+    if (!unknown) return undefined;
+    let cancelled = false;
+    refreshUser().finally(() => { if (!cancelled) setChecked(true); });
+    return () => { cancelled = true; };
+  }, [unknown, refreshUser]);
+  if (unknown) return <div className="route-loading" aria-busy="true" />;
+  const decision = setupDecision(user);
+  if (decision === 'setup') return <Navigate to="/setup" replace />;
+  return children;
+}
+
 // The /pending waiting screen: only for a signed-in user whose org is pending.
 // If they're not authed -> login; if their org is already active -> into the app.
 function PendingRoute({ children }) {
@@ -181,13 +208,17 @@ function PendingRoute({ children }) {
 }
 
 // Gate for the guided tour. The walkthrough drives the user through
-// /scan → /results, so it only makes sense for someone who can actually
+// /scan -> /results, so it only makes sense for someone who can actually
 // reach those pages: signed in, with an active organization. Held back on
 // the sign-in / pending screens, where the prompt would cover the form the
 // user is trying to fill in.
 function TourGate() {
   const { isAuthed, user } = useAuth();
+  const location = useLocation();
   if (!isAuthed || orgNotActive(user)) return null;
+  // Organization settings opens its own guided container on first run; the
+  // tour prompt on top of it would be two walkthroughs at once.
+  if (location.pathname.startsWith('/setup')) return null;
   return (
     <>
       <TourIntroModal />
@@ -196,10 +227,10 @@ function TourGate() {
   );
 }
 
-// Responsive layout wrapper — at ≥1024px viewports every page renders
+// Responsive layout wrapper - at ≥1024px viewports every page renders
 // inside DesktopShell (sidebar + topbar + full-width main canvas).
 // Below the breakpoint the page renders bare, exactly as the mobile
-// build does today — so the mobile experience is untouched.
+// build does today - so the mobile experience is untouched.
 function ResponsiveLayout({ children, withBottomNav = false }) {
   const showSidebar = useHasSidebar();
   if (showSidebar) {
@@ -237,12 +268,12 @@ function AndroidBackHandler() {
 // The web build lands on /auth/callback as a page load; native cannot, because
 // the OAuth happens in an in-app browser tab and the app underneath never
 // navigated anywhere. Instead the server redirects to
-// com.racktrack.app://auth/callback#token=… , the OS hands that to the running
+// com.racktrack.app://auth/callback#token=... , the OS hands that to the running
 // app as appUrlOpen, and we adopt the session here.
 //
 // Registered unconditionally at the app root rather than on the login page: the
 // tab is a separate process, and on a memory-pressured phone the WebView can be
-// reclaimed and rebuilt while it's in front — landing the deep link on a
+// reclaimed and rebuilt while it's in front - landing the deep link on a
 // freshly mounted tree that was never on /login.
 function SocialDeepLinkHandler() {
   const navigate = useNavigate();
@@ -253,7 +284,7 @@ function SocialDeepLinkHandler() {
     let sub;
     (async () => {
       sub = await CapApp.addListener('appUrlOpen', ({ url }) => {
-        if (!isAuthCallbackUrl(url)) return;   // some other deep link — leave it alone
+        if (!isAuthCallbackUrl(url)) return;   // some other deep link - leave it alone
         const result = parseAuthFragment(url);
         if (!result) return;
 
@@ -280,12 +311,12 @@ function SocialDeepLinkHandler() {
 // resume, bounced the user from /results back to /scan "to start fresh". In
 // practice that threw away the scan they had just run: switch to another app,
 // come back, and their results were gone. Leaving the WebView on whatever page
-// the user was on is the correct behaviour — an in-flight scan is separately
+// the user was on is the correct behaviour - an in-flight scan is separately
 // reclaimed by PendingScanResumer below.
 
 // Reclaims a scan that was analyzing when the app got suspended. ScanPage left
 // a marker (see utils/pendingScan); here we poll the server for that scan and,
-// once it's done, drop the user straight on its results — instead of the empty
+// once it's done, drop the user straight on its results - instead of the empty
 // upload screen they'd otherwise see. Runs on cold start (leftover marker) and
 // on every native resume.
 function PendingScanResumer() {
@@ -317,7 +348,7 @@ function PendingScanResumer() {
           return;   // fall back to whatever screen they're on (usually /scan)
         }
         if (Date.now() > deadline) { setResuming(false); return; }  // keep marker; let them retry
-        pollTimer = setTimeout(poll, 1500);   // 'running' or transient error — keep waiting
+        pollTimer = setTimeout(poll, 1500);   // 'running' or transient error - keep waiting
       };
       poll();
     };
@@ -361,8 +392,7 @@ export default function App() {
           <ConnectionsProvider>
           <ShutterProvider>
             {/* The opening: mark and name, over everything, then gone. It is
-                mounted here rather than per-route so it covers the first paint
-                — including the moment the session is being restored, which is
+                mounted here rather than per-route so it covers the first paint - including the moment the session is being restored, which is
                 when a route would otherwise flash past. */}
             <Splash />
             <AndroidBackHandler />
@@ -376,10 +406,10 @@ export default function App() {
             {/* Per-route boundary INSIDE the shell: a chunk-load failure or a
                 render error in one route is contained here instead of unmounting
                 the whole app at the root boundary. Deferred routes suspend while
-                their chunk loads; the fallback is deliberately quiet — a spinner
+                their chunk loads; the fallback is deliberately quiet - a spinner
                 that flashes for 80 ms on a warm connection reads as jank. */}
             {/* The tour spotlights real controls on /scan and /results, so the
-                pages themselves call useTour() — the provider has to be above
+                pages themselves call useTour() - the provider has to be above
                 the router outlet, not beside it. TourGate renders last so that
                 the intro card and the dim layer win any z-index tie against
                 page chrome painted before them. */}
@@ -406,15 +436,21 @@ export default function App() {
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/pending" element={<PendingRoute><PendingApprovalPage /></PendingRoute>} />
             <Route path="/scan" element={
-              <ProtectedRoute><ResponsiveLayout withBottomNav><ScanPage /></ResponsiveLayout></ProtectedRoute>
+              <ProtectedRoute><ResponsiveLayout withBottomNav><SetupGate><ScanPage /></SetupGate></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Two-rack scan: pick 2 images (or a video) → detect both →
+            {/* Organization settings. Owners and org admins; the gate above
+                sends them here while a Site still lacks a required item, and
+                Profile and the console link back to it. */}
+            <Route path="/setup" element={
+              <AdminRoute><ResponsiveLayout withBottomNav><SetupPage /></ResponsiveLayout></AdminRoute>
+            } />
+            {/* Two-rack scan: pick 2 images (or a video) -> detect both ->
                 combined topology with the uplinks that cross between racks.
                 Static segment, so it out-ranks /multi-rack/:groupId. */}
             <Route path="/multi-rack/new" element={
-              <ProtectedRoute><ResponsiveLayout><MultiRackNewPage /></ResponsiveLayout></ProtectedRoute>
+              <ProtectedRoute><ResponsiveLayout><SetupGate><MultiRackNewPage /></SetupGate></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Legacy multi-rack landing → redirect to first member rack's
+            {/* Legacy multi-rack landing -> redirect to first member rack's
                 Ports page (the rack-tabs strip there lets the user reach
                 every other rack in the group + the combined 3D topology). */}
             <Route path="/multi-rack/:groupId" element={
@@ -423,26 +459,26 @@ export default function App() {
             <Route path="/multi-rack/:groupId/topology" element={
               <ProtectedRoute><ResponsiveLayout><MultiRackTopologyPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* RackTrack Assist — the full-screen help page. The floating
+            {/* RackTrack Assist - the full-screen help page. The floating
                 panel covers mid-task questions; this is the destination. */}
             <Route path="/help" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><HelpPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Contact support — where "Reach a person" (from DOT) lands. */}
+            {/* Contact support - where "Reach a person" (from DOT) lands. */}
             <Route path="/contact" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ContactPage /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/profile" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ProfilePage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Organization console — owner (platform) + org_admin manage
-                Organizations → Sites → Members. Renders inside the shell
+            {/* Organization console - owner (platform) + org_admin manage
+                Organizations -> Sites -> Members. Renders inside the shell
                 (sidebar) on tablet/desktop like every other page; it keeps its
-                own header because it needs a back button for org→list. */}
+                own header because it needs a back button for org->list. */}
             <Route path="/organizations" element={
               <ProtectedRoute><ResponsiveLayout><OrgConsolePage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Live operations dashboard — owner-gated on the server; the page
+            {/* Live operations dashboard - owner-gated on the server; the page
                 itself shows a clear message if a non-owner reaches it. */}
             <Route path="/dashboard" element={
               <AdminRoute><ResponsiveLayout><DashboardPage /></ResponsiveLayout></AdminRoute>
@@ -453,23 +489,22 @@ export default function App() {
             <Route path="/connections" element={
               <AdminRoute><ResponsiveLayout><ConnectionsPage /></ResponsiveLayout></AdminRoute>
             } />
-            {/* Switch test — the phone talking SNMP to a switch directly,
+            {/* Switch test - the phone talking SNMP to a switch directly,
                 instead of asking the server to (which cannot reach a switch
                 inside a customer's network). One build, one question. Open to
                 any signed-in tester: the whole point is getting it in front of
                 people standing next to real switches. */}
             {/* The Network step of a rack's chain: the live switches, read from
                 this phone over SNMP, filed against the rack. Only reachable after
-                a scan — it is a step, not a destination. */}
+                a scan - it is a step, not a destination. */}
             <Route path="/results/:rackId/network" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><SwitchTestPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Report: rack and network on one page, and the end of the chain —
-                download, share and the NetBox export all happen on it. */}
+            {/* Report: rack and network on one page, and the end of the chain - download, share and the NetBox export all happen on it. */}
             <Route path="/results/:rackId/report" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ReportPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Drift check — a technician compares and hands it over. No write button. */}
+            {/* Drift check - a technician compares and hands it over. No write button. */}
             <Route path="/results/:rackId/drift" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><DriftPage /></ResponsiveLayout></ProtectedRoute>
             } />
@@ -477,7 +512,7 @@ export default function App() {
             <Route path="/approvals" element={
               <AdminRoute><ResponsiveLayout withBottomNav><AdminInboxPage /></ResponsiveLayout></AdminRoute>
             } />
-            {/* Approvals — an admin decides what reaches NetBox, item by item. */}
+            {/* Approvals - an admin decides what reaches NetBox, item by item. */}
             <Route path="/results/:rackId/approvals" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ApprovalsPage /></ResponsiveLayout></ProtectedRoute>
             } />
@@ -485,7 +520,7 @@ export default function App() {
             <Route path="/results/:rackId/review" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ReviewPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Ground Truth — technicians verify what the model detected.
+            {/* Ground Truth - technicians verify what the model detected.
                 Owner-only for now (OwnerRoute); the page also refuses non-owners
                 and the server API is requireRole('owner'). */}
             {/* Per-scan now: reached from a rack's results after analyse, scoped
@@ -493,7 +528,7 @@ export default function App() {
             <Route path="/ground-truth/:rackId" element={
               <OwnerRoute><ResponsiveLayout withBottomNav><GroundTruthPage /></ResponsiveLayout></OwnerRoute>
             } />
-            {/* Marketplace — restricted to Admin / Owner only. */}
+            {/* Marketplace - restricted to Admin / Owner only. */}
             <Route path="/marketplace" element={
               <AdminRoute><ResponsiveLayout withBottomNav><MarketplacePage /></ResponsiveLayout></AdminRoute>
             } />
@@ -526,7 +561,7 @@ export default function App() {
             <Route path="/switch-info/:rackId" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><RackSwitchesRoute /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* The full scan archive — searchable, filtered and paged. Profile
+            {/* The full scan archive - searchable, filtered and paged. Profile
                 keeps the five most recent and links here for the rest. */}
             <Route path="/history" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><HistoryPage /></ResponsiveLayout></ProtectedRoute>
@@ -534,7 +569,7 @@ export default function App() {
             <Route path="/results" element={
               <ProtectedRoute><ResponsiveLayout><ResultsPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Deep-linkable variant — when state.result is absent (cold link
+            {/* Deep-linkable variant - when state.result is absent (cold link
                 or rack-tab switch in a multi-rack scan), ResultsPage uses
                 useParams + /api/scan/:rackId to populate itself. */}
             <Route path="/results/:rackId" element={
@@ -556,7 +591,7 @@ export default function App() {
             <Route path="/lab" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><LabPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Demo: unified tenant rack-layout view. No auth — backed by
+            {/* Demo: unified tenant rack-layout view. No auth - backed by
                 server/data/demo_tenant.json, isolated from real scan data. */}
             <Route path="/demo/topology" element={<TenantMatPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

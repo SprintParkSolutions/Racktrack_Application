@@ -1,0 +1,36 @@
+RackTrack - audit evidence
+Captured: 2026-08-21 18:58
+Commit:   9a3d85c
+==================================================
+
+$ ruff check pipeline
+All checks passed!
+
+$ ruff format --check pipeline
+38 files already formatted
+
+$ bandit -c pyproject.toml -r pipeline -ll
+
+$ pip-audit -r requirements.txt --no-deps
+WARNING:pip_audit._cli:Consider using a tool like `pip-compile`: https://pip-tools.readthedocs.io/en/latest/#using-hashes
+No known vulnerabilities found
+
+$ pytest pipeline/tests -q
+.............................                                            [100%]
+101 passed in 1.96s
+
+$ npm --prefix client run lint
+✖ 570 problems (0 errors, 570 warnings)
+
+
+$ npm --prefix server test
+# tests 86
+# pass 86
+# fail 0
+
+$ npm --prefix client test
+ Test Files  5 passed (5)
+      Tests  53 passed (53)
+
+==================================================
+Summary: all checks pass. 0 findings open.

@@ -61,7 +61,7 @@ export async function validateMedia(file) {
 async function validateImage(file) {
   const img = await loadImage(file).catch(() => null);
   if (!img) {
-    // The browser couldn't decode the image in this WebView — common for a
+    // The browser couldn't decode the image in this WebView - common for a
     // full-resolution phone photo (memory pressure on Android) or an odd
     // container. DON'T block: the server normalizes and validates every
     // upload (detect-gate + quality checks), exactly like the video and HEIC
@@ -101,11 +101,10 @@ async function validateVideo(file) {
   // picks the best frame and re-runs the same letterbox/tilt checks the
   // photo path uses, so on the client we only sanity-check dimensions
   // and duration here. The server-side splitter uses OpenCV which sees
-  // the file accurately even when the browser <video> element can't —
-  // so when in doubt we let the upload through and let the server decide.
+  // the file accurately even when the browser <video> element can't - // so when in doubt we let the upload through and let the server decide.
   const video = await loadVideo(file).catch(() => null);
   if (!video) {
-    // Browser couldn't decode at all. Still let the server try — multi-rack
+    // Browser couldn't decode at all. Still let the server try - multi-rack
     // splitting uses OpenCV which handles many containers Chrome rejects.
     return {
       ok: true,
@@ -126,7 +125,7 @@ async function validateVideo(file) {
   }
 
   // MediaRecorder webm on Chrome often reports duration as Infinity even
-  // after the seek-to-1e9 workaround. Don't reject those — defer to the
+  // after the seek-to-1e9 workaround. Don't reject those - defer to the
   // server, which reads the file with OpenCV and gets the real duration.
   if (isFinite(duration)) {
     if (duration < MIN_DURATION) {

@@ -4,7 +4,7 @@ import styles from '../pages/AuthPages.module.css';
 /**
  * The password rules and the six-box code entry.
  *
- * These lived in SignupPage, which is not reachable any more — accounts are
+ * These lived in SignupPage, which is not reachable any more - accounts are
  * given out by an administrator. Forgot-password still needs both, and an
  * archived page is a strange thing to import from, so they live here on their
  * own. The stylesheet stays AuthPages.module.css: these are auth controls and
@@ -27,7 +27,7 @@ export function CodeGrid({ value, onChange, disabled }) {
   const setDigit = (i, ch) => {
     const cleaned = String(ch).replace(/\D/g, '');
     // OS one-time-code autofill (or typing/pasting several digits) drops the
-    // whole code into one cell — spread it across the grid instead of dropping it.
+    // whole code into one cell - spread it across the grid instead of dropping it.
     if (cleaned.length > 1) {
       onChange(cleaned.slice(0, 6));
       refs.current[Math.min(cleaned.length, 6) - 1]?.focus();

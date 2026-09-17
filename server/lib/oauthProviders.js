@@ -35,7 +35,7 @@
  * client; both are cheap and are what the current OAuth 2.1 / BCP guidance
  * asks for.
  *
- * Configuration lives entirely in env vars — see docs/SOCIAL-LOGIN-SETUP.md.
+ * Configuration lives entirely in env vars — see docs/setup/social-login-setup.md.
  * A provider with no credentials configured is simply reported as disabled and
  * its button never renders; it is never a boot error.
  */

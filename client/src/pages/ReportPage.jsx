@@ -15,7 +15,7 @@ import { useSmartBack } from '../hooks/useSmartBack';
 import styles from './ReportPage.module.css';
 
 /**
- * Report — the rack and its network on one page.
+ * Report - the rack and its network on one page.
  *
  * Scan → Physical → Network → **Report**. The report is the end of the chain:
  * downloading it, pushing it to NetBox and sending it to somebody all happen
@@ -32,7 +32,7 @@ import styles from './ReportPage.module.css';
  *
  * Ported from RackTrack for NetBox. The route carries V1's rack id; the NetBox
  * side keeps its own numeric scan id, obtained (or created) once per visit with
- * POST /api/nb/scans/adopt/:rackId — the same call Export makes.
+ * POST /api/nb/scans/adopt/:rackId - the same call Export makes.
  */
 
 /**
@@ -149,7 +149,7 @@ const proofText = (ev) => PROOF[ev] || String(ev || '').replace(/_/g, ' ');
  * `doc` is the report (confirmed matches only). `view` is the Review picture
  * for the same scan, optional: it carries the camera's un-merged identity per
  * device and each filed switch's own headline facts. Its suggested matches
- * are never used — a proposal is not a fact.
+ * are never used - a proposal is not a fact.
  */
 function derive(doc, view) {
   const devices = doc.devices || [];
@@ -393,7 +393,7 @@ export default function ReportPage() {
 
             {/* At a glance.
                 A wrapping row of number-and-word pairs put "6 ADDRESSES" alone
-                on a third line and left every column ragged — nine facts in a
+                on a third line and left every column ragged - nine facts in a
                 shape that has to be read rather than seen. A fixed grid for the
                 counts, and the ports as what they actually are: a proportion,
                 drawn. */}
@@ -500,9 +500,9 @@ export default function ReportPage() {
                     <ul className={styles.links}>
                       {cables.map((c, i) => (
                         <li key={i}>
-                          <span className={styles.end}><b>{c.a?.device || '—'}</b> {c.a?.port || ''}</span>
+                          <span className={styles.end}><b>{c.a?.device || ' - '}</b> {c.a?.port || ''}</span>
                           <span className={styles.arrow} aria-hidden="true">→</span>
-                          <span className={styles.end}><b>{c.b?.device || '—'}</b> {c.b?.port || ''}</span>
+                          <span className={styles.end}><b>{c.b?.device || ' - '}</b> {c.b?.port || ''}</span>
                           <span className={`${styles.proof} ${c.evidence === 'lldp_both' ? styles.proofGood : ''}`}>
                             {proofText(c.evidence)}
                           </span>
@@ -567,8 +567,8 @@ export default function ReportPage() {
 }
 
 /**
- * One device: its U, what the camera saw, and — where a switch was matched to
- * it — what the switch said about itself. Ports fold out underneath.
+ * One device: its U, what the camera saw, and - where a switch was matched to
+ * it - what the switch said about itself. Ports fold out underneath.
  */
 function DeviceRow({ d, cam, sw, open, onToggle }) {
   const matched = String(d.source || '').startsWith('switch');
@@ -588,7 +588,7 @@ function DeviceRow({ d, cam, sw, open, onToggle }) {
   const identity = matched ? said(sw ? sw.vendor : d.vendor, sw ? sw.model : d.model)
     : said(camMake, camModel);
 
-  // How it is doing, as numbers with their names — a sentence of six facts
+  // How it is doing, as numbers with their names - a sentence of six facts
   // separated by dots wraps into a shape nobody can scan, and "1 of 28 ports
   // up" next to a button saying "16 ports in use" reads as a contradiction
   // when it is two different questions. Each count is labelled with what it
@@ -617,7 +617,7 @@ function DeviceRow({ d, cam, sw, open, onToggle }) {
   return (
     <div className={styles.row}>
       <span className={`${styles.u} ${d.u == null ? styles.uNone : ''}`}>
-        {d.u != null ? `U${d.u}` : '—'}
+        {d.u != null ? `U${d.u}` : ' - '}
       </span>
       <div className={styles.rowMain}>
         <div className={styles.rowTop}>

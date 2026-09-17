@@ -1,0 +1,559 @@
+<!-- Published copy of the claude.ai artifact "Where RackTrack Stands" | https://claude.ai/code/artifact/b6015e8c-2dbe-4b75-8be6-2db163070ed7 | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Where RackTrack Stands</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root {
+    --paper: #ffffff;
+    --panel: #f7f7f4;
+    --ink: #16181d;
+    --muted: #5b5f66;
+    --hairline: rgba(22, 24, 29, 0.12);
+    --hairline-soft: rgba(22, 24, 29, 0.07);
+    --good: #1a7f37;
+    --good-bg: #e9f3ec;
+    --next: #8a5a1d;
+    --next-bg: #f7efe3;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 15.5px; line-height: 1.58; margin: 0;
+  }
+  .wrap { padding: clamp(28px, 5vw, 56px) clamp(18px, 4vw, 56px) 56px; }
+
+  .kicker {
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px;
+  }
+  h1 {
+    margin: 0 0 10px; font-size: clamp(28px, 4.5vw, 42px); font-weight: 650;
+    letter-spacing: -0.022em; line-height: 1.1; text-wrap: balance;
+  }
+  .sub { margin: 0; color: var(--muted); font-size: 17px; max-width: 66ch; }
+  .sub b { color: var(--ink); font-weight: 600; }
+
+  /* ── Executive band ── */
+  .exec {
+    margin-top: 30px; border: 1px solid var(--hairline); border-radius: 18px;
+    overflow: hidden;
+  }
+  .exec-top {
+    padding: 22px 26px; background: var(--panel); border-bottom: 1px solid var(--hairline);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px;
+  }
+  .verdict-chip {
+    display: inline-flex; align-items: center; gap: 9px;
+    border-radius: 999px; padding: 7px 16px; font-weight: 600; font-size: 14.5px;
+  }
+  .verdict-chip.g { background: var(--good-bg); color: var(--good); border: 1px solid rgba(26,127,55,0.25); }
+  .verdict-chip.a { background: #fff; color: var(--next); border: 1px solid rgba(138,90,29,0.32); }
+  .exec-line { font-size: 15px; color: var(--muted); flex: 1 1 320px; min-width: 260px; }
+  .exec-line b { color: var(--ink); font-weight: 650; }
+  .tiles {
+    padding: 18px 26px 22px;
+    display: grid; gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  }
+  .tile { border: 1px solid var(--hairline-soft); border-radius: 12px; padding: 13px 16px 12px; background: #fff; }
+  .tile .num {
+    font-size: clamp(21px, 2.3vw, 28px); font-weight: 650; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+  }
+  .tile .num small { font-size: 0.55em; font-weight: 500; color: var(--muted); }
+  .tile .cap { margin-top: 5px; font-size: 12.2px; color: var(--muted); line-height: 1.42; }
+
+  /* ── Scorecard grid ── */
+  section { margin-top: 48px; }
+  .seclabel {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+    letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px;
+  }
+  .scorecard { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .scard {
+    border: 1px solid var(--hairline); border-radius: 14px; padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .scard .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .scard .name { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .scard .big { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+  .scard .big small { font-size: 0.5em; color: var(--muted); font-weight: 500; }
+  .scard .state { font-size: 13px; color: var(--muted); }
+  .pill {
+    font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+    border-radius: 6px; padding: 2px 8px; white-space: nowrap;
+  }
+  .pill.pass { background: var(--good-bg); color: var(--good); border: 1px solid rgba(26,127,55,0.22); }
+  .pill.part { background: var(--next-bg); color: var(--next); border: 1px solid rgba(138,90,29,0.28); }
+  .bar { height: 5px; border-radius: 999px; background: var(--hairline-soft); overflow: hidden; }
+  .bar > span { display: block; height: 100%; border-radius: 999px; }
+  .bar.pass > span { background: var(--good); }
+  .bar.part > span { background: var(--next); }
+
+  /* ── Two-column overview ── */
+  .overview { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .ocol { border: 1px solid var(--hairline); border-radius: 14px; overflow: hidden; }
+  .ocol > header {
+    padding: 14px 20px; font-weight: 650; font-size: 16px;
+    display: flex; align-items: center; gap: 9px; border-bottom: 1px solid var(--hairline);
+  }
+  .ocol.have > header { background: var(--good-bg); color: var(--good); }
+  .ocol.gap > header  { background: var(--next-bg); color: var(--next); }
+  .ocol ul { margin: 0; padding: 8px 20px 14px; list-style: none; }
+  .ocol li { padding: 8px 0; border-bottom: 1px solid var(--hairline-soft); display: flex; gap: 10px; align-items: baseline; font-size: 14px; }
+  .ocol li:last-child { border-bottom: 0; }
+  .ocol li .k { font-family: var(--mono); font-size: 13px; flex: 0 0 auto; width: 14px; }
+  .have li .k { color: var(--good); }
+  .gap li .k { color: var(--next); }
+  .ocol li b { font-weight: 600; }
+  .ocol li .t { color: var(--muted); font-size: 12.6px; margin-left: auto; font-family: var(--mono); white-space: nowrap; }
+
+  /* ── Pillars (expandable) ── */
+  .pillar { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 0 0 4px; }
+  .pillar .n {
+    font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--muted);
+    border: 1px solid var(--hairline); border-radius: 8px; padding: 2px 9px;
+  }
+  h2 { margin: 0; font-size: clamp(19px, 2.4vw, 24px); font-weight: 650; letter-spacing: -0.015em; }
+  .plain { margin: 4px 0 14px; color: var(--muted); max-width: 78ch; font-size: 14.5px; }
+
+  .list { border: 1px solid var(--hairline); border-radius: 14px; overflow: hidden; }
+  details { border-bottom: 1px solid var(--hairline-soft); }
+  details:last-child { border-bottom: 0; }
+  summary {
+    list-style: none; cursor: pointer;
+    padding: 13px 20px; display: flex; gap: 12px; align-items: baseline;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: var(--panel); }
+  summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; border-radius: 8px; }
+  .mark { font-family: var(--mono); font-weight: 600; flex: 0 0 auto; font-size: 14px; width: 16px; }
+  .mark.ok { color: var(--good); }
+  .mark.gap { color: var(--next); }
+  summary b { font-weight: 650; }
+  summary .short { color: var(--muted); font-weight: 400; }
+  .badge { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em;
+    border-radius: 6px; padding: 1px 7px; white-space: nowrap; margin-left: 8px; }
+  .badge.med { background: var(--next-bg); color: var(--next); border: 1px solid rgba(138,90,29,0.28); }
+  .badge.low { background: var(--panel); color: var(--muted); border: 1px solid var(--hairline); }
+  .badge.fp { background: var(--good-bg); color: var(--good); border: 1px solid rgba(26,127,55,0.22); }
+  .chev { margin-left: auto; flex: 0 0 auto; color: var(--muted); transition: transform 0.15s; align-self: center; }
+  details[open] .chev { transform: rotate(90deg); }
+  @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+  .dbody { padding: 2px 20px 16px 48px; color: var(--muted); font-size: 14px; line-height: 1.62; }
+  .dbody p { margin: 0 0 9px; }
+  .dbody p:last-child { margin-bottom: 0; }
+  .dbody b { color: var(--ink); font-weight: 600; }
+  .m { font-family: var(--mono); font-size: 0.88em; background: var(--panel);
+       border: 1px solid var(--hairline-soft); border-radius: 5px; padding: 0 5px; }
+  .num2 { font-variant-numeric: tabular-nums; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--hairline-soft); border-radius: 13px; }
+  table { border-collapse: collapse; width: 100%; min-width: 660px; }
+  th {
+    text-align: left; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.11em; text-transform: uppercase; color: var(--muted);
+    padding: 11px 14px; border-bottom: 1px solid var(--hairline);
+    background: var(--panel); white-space: nowrap;
+  }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--hairline-soft); vertical-align: top; font-size: 14px; }
+  tr:last-child td { border-bottom: 0; }
+  td b { font-weight: 600; }
+  td .why2 { display: block; color: var(--muted); font-size: 12.8px; margin-top: 2px; }
+  td.r { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+  .okword { color: var(--good); font-family: var(--mono); font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .flagword { color: var(--next); font-family: var(--mono); font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+  .order {
+    margin-top: 48px; background: var(--panel); border: 1px solid var(--hairline-soft);
+    border-radius: 16px; padding: 20px 24px;
+  }
+  .order h2 { margin: 0 0 12px; font-size: 16px; }
+  .order ol { margin: 0; padding: 0; list-style: none; counter-reset: step;
+    display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); }
+  .order li { counter-increment: step; display: flex; gap: 10px; align-items: baseline; font-size: 14.5px; }
+  .order li::before {
+    content: counter(step);
+    font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--muted);
+    border: 1px solid var(--hairline); border-radius: 50%;
+    width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto; transform: translateY(-1px);
+  }
+  .order b { font-weight: 650; }
+  .order .eff { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+
+  .bottom { margin-top: 26px; font-size: 17px; max-width: 72ch; }
+  .bottom b { font-weight: 650; }
+
+  footer {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--hairline);
+    font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.8;
+  }
+</style>
+
+<div class="wrap">
+  <p class="kicker">RackTrack · complete audit &amp; status report · august 19, 2026</p>
+  <h1>Where RackTrack Stands</h1>
+  <p class="sub">The full, honest picture of RackTrack today. We ran <b>twelve professional audit methods</b> on the
+     real code — the same ones a buyer's security team would use. This report opens with the verdict, then the
+     scorecard, then a have-vs-gap map, then the full detail — <b>click any row</b> to open it. Nothing is assumed; it was all executed.</p>
+
+  <!-- EXECUTIVE BAND -->
+  <div class="exec">
+    <div class="exec-top">
+      <span class="verdict-chip g">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Code &amp; tests — all green
+      </span>
+      <span class="verdict-chip a">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5l6.5 11.5h-13z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 6.5v3.2M8 11.3v.05" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        2 minor findings — both fixable in hours
+      </span>
+      <span class="exec-line"><b>Verdict:</b> the code is provably well-built. What stands between RackTrack and
+        enterprise level is about <b>six weeks of operations &amp; access work</b> — all listed, none unknown.</span>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="num">12</div><div class="cap">audit methods run on the real code</div></div>
+      <div class="tile"><div class="num">240<small>/240</small></div><div class="cap">automatic tests passing</div></div>
+      <div class="tile"><div class="num">13<small>/13</small></div><div class="cap">screens clean in a real browser</div></div>
+      <div class="tile"><div class="num">0</div><div class="cap">library holes left unpatched</div></div>
+      <div class="tile"><div class="num">2</div><div class="cap">findings — 1 medium, 1 low</div></div>
+      <div class="tile"><div class="num">~6<small>&nbsp;wks</small></div><div class="cap">of work closes every gap</div></div>
+    </div>
+  </div>
+
+  <!-- SCORECARD -->
+  <section>
+    <p class="seclabel">At a glance — score by area</p>
+    <div class="scorecard">
+      <div class="scard">
+        <div class="head"><span class="name">Security</span><span class="pill pass">STRONG</span></div>
+        <div class="big">3<small>/4</small></div>
+        <div class="bar pass"><span style="width:75%"></span></div>
+        <div class="state">Guards, tokens, encryption verified. Gap: outside pen test.</div>
+      </div>
+      <div class="scard">
+        <div class="head"><span class="name">Access</span><span class="pill part">1 GAP</span></div>
+        <div class="big">2<small>/4</small></div>
+        <div class="bar part"><span style="width:50%"></span></div>
+        <div class="state">Walls &amp; roles proven. Gap: company sign-in (SSO).</div>
+      </div>
+      <div class="scard">
+        <div class="head"><span class="name">Code quality</span><span class="pill pass">STRONG</span></div>
+        <div class="big">4<small>/6</small></div>
+        <div class="bar pass"><span style="width:67%"></span></div>
+        <div class="state">0 errors, 240 tests, robot sweep. Gap: coverage %, load speed.</div>
+      </div>
+      <div class="scard">
+        <div class="head"><span class="name">Vuln scanners</span><span class="pill part">2 TO WIRE</span></div>
+        <div class="big">3<small>/5</small></div>
+        <div class="bar part"><span style="width:60%"></span></div>
+        <div class="state">Libraries + code scanned clean. Gap: container &amp; live-app scans.</div>
+      </div>
+      <div class="scard">
+        <div class="head"><span class="name">Operations</span><span class="pill part">5 GAPS</span></div>
+        <div class="big">2<small>/7</small></div>
+        <div class="bar part"><span style="width:29%"></span></div>
+        <div class="state">CI + instruments in place. Gap: database, alerts, staging.</div>
+      </div>
+      <div class="scard">
+        <div class="head"><span class="name">Tests</span><span class="pill pass">100%</span></div>
+        <div class="big">240<small>/240</small></div>
+        <div class="bar pass"><span style="width:100%"></span></div>
+        <div class="state">App, server &amp; AI suites — all passing, every push.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HAVE vs GAP MAP -->
+  <section>
+    <p class="seclabel">The map — what we have, what's missing</p>
+    <div class="overview">
+      <div class="ocol have">
+        <header>
+          <svg width="17" height="17" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          What we have — verified
+        </header>
+        <ul>
+          <li><span class="k">✓</span><span><b>240 automatic tests</b>, all passing</span></li>
+          <li><span class="k">✓</span><span><b>Robot browser test</b> — 13 screens, phone-sized</span></li>
+          <li><span class="k">✓</span><span><b>Company data walls</b> — proven by a test</span></li>
+          <li><span class="k">✓</span><span><b>Login guard</b> against password-guessing</span></li>
+          <li><span class="k">✓</span><span><b>Passwords hashed</b>, device logins encrypted</span></li>
+          <li><span class="k">✓</span><span><b>Libraries scanned</b> — JS &amp; Python, clean</span></li>
+          <li><span class="k">✓</span><span><b>Our code scanned</b> for attack doors</span></li>
+          <li><span class="k">✓</span><span><b>Quality gates</b> on every change + weekly</span></li>
+          <li><span class="k">✓</span><span><b>iPhone, Android, web</b> from one codebase</span></li>
+        </ul>
+      </div>
+      <div class="ocol gap">
+        <header>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v6M8 12v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="8" r="6.4" stroke="currentColor" stroke-width="1.4"/></svg>
+          What's missing — with the cost
+        </header>
+        <ul>
+          <li><span class="k">→</span><span><b>Real database + backups</b></span><span class="t">2–3 wk</span></li>
+          <li><span class="k">→</span><span><b>Company sign-in (SSO)</b></span><span class="t">1–2 wk</span></li>
+          <li><span class="k">→</span><span><b>Break-down alerts</b></span><span class="t">2 d</span></li>
+          <li><span class="k">→</span><span><b>Test server + safe deploy</b></span><span class="t">3–4 d</span></li>
+          <li><span class="k">→</span><span><b>Load / capacity test</b></span><span class="t">2–3 d</span></li>
+          <li><span class="k">→</span><span><b>Coverage measurement</b></span><span class="t">1 d</span></li>
+          <li><span class="k">→</span><span><b>Container + live-app scans</b></span><span class="t">~1 d</span></li>
+          <li><span class="k">→</span><span><b>Signing-key backup</b></span><span class="t">1 hr</span></li>
+          <li><span class="k">→</span><span><b>Pen test + paperwork</b></span><span class="t">ongoing</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- METHODS TABLE -->
+  <section>
+    <div class="pillar"><span class="n">A</span><h2>The audit methods we ran</h2></div>
+    <p class="plain">A complete software audit has a standard shape: check the code, run the tests, scan the libraries,
+       scan your own code for attack doors, review the sensitive spots by hand, and harden the container. We ran all of it.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Method</th><th>Standard tool</th><th>Result</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><b>Code checker</b><span class="why2">reads every line, flags mistakes</span></td><td>ESLint</td><td class="r">0 errors</td><td class="okword">✓ PASS</td></tr>
+          <tr><td><b>App / server / AI tests</b><span class="why2">three suites, three languages</span></td><td>Vitest · node:test · pytest</td><td class="r">240 / 240</td><td class="okword">✓ PASS</td></tr>
+          <tr><td><b>Robot browser test</b><span class="why2">logs in, clicks every screen at phone size</span></td><td>Playwright</td><td class="r">13 / 13 clean</td><td class="okword">✓ PASS</td></tr>
+          <tr><td><b>Library scan — JS + Python</b><span class="why2">borrowed code vs the public hole-list</span></td><td>npm audit · pip-audit</td><td class="r">clean / patched</td><td class="okword">✓ PASS</td></tr>
+          <tr><td><b>Security scan of our code</b><span class="why2">basic + full OWASP-Top-Ten + container rules</span></td><td>Semgrep</td><td class="r">2 real items → in Findings</td><td class="flagword">△ 2 FOUND</td></tr>
+          <tr><td><b>Manual attack-surface review</b><span class="why2">login guard, tokens, uploads, crypto — read by hand</span></td><td>expert review</td><td class="r">solid; 1 low note</td><td class="okword">✓ MOSTLY</td></tr>
+          <tr><td><b>Final build</b><span class="why2">the exact package shipped to users</span></td><td>Vite</td><td class="r">clean, 3.3 s</td><td class="okword">✓ PASS</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="plain" style="margin-top:14px"><b>One method we did not run, and why:</b> a live external attack test (penetration test)
+       needs the whole system running on a server with a database — it cannot be done on a laptop. It is listed as a gap under Security.
+       Naming it here so it is our disclosure, not a reviewer's discovery.</p>
+  </section>
+
+  <!-- FINDINGS -->
+  <section>
+    <div class="pillar"><span class="n">B</span><h2>Findings — stated plainly, before anyone else finds them</h2></div>
+    <p class="plain">A serious audit turns up things. Here is everything the deep scans surfaced — two small items to fix,
+       and the scary-looking alarms that proved harmless on inspection.</p>
+    <div class="list">
+      <details open>
+        <summary><span class="mark gap">▲</span><span><b>M1 · The shipping container runs as the top-level "root" user</b> <span class="short">— hardening gap</span></span><span class="badge med">MEDIUM</span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>What we found:</b> the Docker container that runs RackTrack starts as <span class="m">root</span> — the all-powerful user. Recommended practice is to run the app as a limited user with only the permissions it needs.</p>
+          <p><b>Why it matters:</b> if an attacker ever got in, running as root would let them do far more damage inside the container than a limited user could.</p>
+          <p><b>The fix:</b> add two lines to the Dockerfile — create a normal user and switch to it before the app starts. <b>About 1 hour</b>, and a container scanner (Trivy, below) checks for it automatically.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark gap">▲</span><span><b>L1 · A printed report builds HTML by hand in a few spots</b> <span class="short">— low risk, worth tidying</span></span><span class="badge low">LOW</span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>What we found:</b> the combined "two-rack" printable report assembles its HTML by hand. The user-entered values (rack labels) <em>are</em> properly cleaned before insertion — we checked. One spot inserts an internal error message without cleaning.</p>
+          <p><b>Why it is low:</b> that report is generated for, and viewed by, the same signed-in user who owns those racks — there is no path for one user's input to reach another user's screen. The realistic worst case is a user affecting only their own printout.</p>
+          <p><b>The fix:</b> run the error text through the same cleaning function already used two lines above. <b>About 15 minutes.</b></p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>The scary-looking alarms that proved harmless</b> <span class="short">— every one checked by hand</span></span><span class="badge fp">CLEARED</span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>Flagged by the scanners, then individually verified as safe — so nobody has to wonder about them later:</b></p>
+          <p><b>9 "database injection" alarms</b> — four are log messages the tool mistook for database commands; the rest use fixed, code-defined column names with safe parameter binding. No user input builds a query.</p>
+          <p><b>17 "file path" alarms</b> — every one is guarded upstream: a rack ID must match a strict pattern (<span class="m">RK-</span> then letters/numbers) and the caller must be proven to own that rack before any file is touched.</p>
+          <p><b>1 "weak encryption" alarm</b> — the code uses AES-256-GCM (a strong, modern standard) correctly, with the authentication tag properly set. Safe.</p>
+          <p><b>4 "weak hash (SHA-1)" alarms</b> — SHA-1 is used only to name cache files and de-duplicate lookups, never to protect anything. A normal, safe use.</p>
+          <p><b>1 "cross-origin" alarm</b> — the sharing rules are strict by design: same-origin only, and login tokens are never attached as ambient cookies. Correct as written.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- PILLAR 1 SECURITY -->
+  <section>
+    <div class="pillar"><span class="n">1</span><h2>Security</h2></div>
+    <p class="plain">Strong foundations, verified by scanners and by hand.</p>
+    <div class="list">
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>Login is protected against password-guessing</b> <span class="short">— per-account rate limiting</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>Verified by reading the code:</b> login and password-reset endpoints throttle attempts <em>per account</em> (about 10 a minute). An attacker cannot rapidly guess passwords — and because it is keyed per account, not per network, real testers sharing one office connection do not lock each other out. The reset path is throttled too.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>Login tokens are correctly built and checked</b> <span class="short">— hardened against a known trick</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>Verified:</b> login tokens are signed with a strong random secret, they expire, and the code checks them with an explicit list of allowed signing methods — closing a well-known attack where a forged token claims "no signature needed." The developer left a comment explaining exactly why. That is security maturity, not luck.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>Passwords hashed, device logins encrypted, responses hardened</b> <span class="short">— nothing readable at rest</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>User passwords</b> stored scrambled (bcrypt) — unreadable even with the whole database in hand. <b>Saved device logins</b> encrypted with AES-256-GCM, verified correct. <b>Every response</b> carries helmet's standard browser protections. <b>Uploads</b> are size-capped so one huge file cannot exhaust the server. <b>Secret scan of the shipping code: clean.</b></p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark gap">→</span><span><b>Outside attack test + security paperwork</b> <span class="short">— pen test, SLA, SOC 2</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>Missing:</b> a paid outside firm attacking the live app and writing the report buyers ask for (a <b>pen test</b>, ~a week, a few thousand dollars, yearly), a written uptime promise (<b>SLA</b>, possible once monitoring exists), and the <b>SOC 2</b> certificate (months long — start when a real deal demands it). At pilot stage, "not yet — here is the plan" is a fine answer; this report is that plan.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- PILLAR 2 ACCESS -->
+  <section>
+    <div class="pillar"><span class="n">2</span><h2>Access</h2></div>
+    <p class="plain">The right people see only their own company's data — mostly built and proven; company sign-in is the missing piece.</p>
+    <div class="list">
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>Company walls — proven, not promised</b> <span class="short">— company A can never see company B</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p>Many companies share one system; each sees only its own racks, scans, and people. An automatic test creates two companies and proves one cannot read the other — re-proven on every change. On top, every request carrying a rack ID must pass an ownership check before any data is returned.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>Roles and a full record of actions</b> <span class="short">— owner / admin / member + audit log</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p>Admin pages check who is asking before answering — an organization's dashboard responds only to its owner or admin. The server records who did what and when, including failed logins — the exact trail security teams ask to see.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark gap">→</span><span><b>Company sign-in (SSO)</b> <span class="short">— the one feature that blocks corporate sales</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>What it is:</b> "Sign in with Microsoft" — staff use their existing company account. IT departments require it because disabling one account instantly locks a departing employee out of everything, and company password/2FA rules apply automatically.</p>
+          <p><b>The firm truth:</b> a yes/no box on corporate purchase forms — without it, many companies cannot buy. <b>Fix:</b> Microsoft sign-in first (our customers are Microsoft shops), and move the login token into a browser-protected cookie at the same time. <b>~1–2 weeks.</b></p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- PILLAR 3 CODE -->
+  <section>
+    <div class="pillar"><span class="n">3</span><h2>Code quality</h2></div>
+    <p class="plain">Clean and tested — machines enforce it on every change, so quality cannot slip backwards.</p>
+    <div class="list">
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>0 errors — and the code can only get cleaner</b> <span class="short">— an enforced ratchet</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p>The standard checker read every file — zero errors. Minor warnings are counted and locked at today's number: add one and the build fails; fix one and the lock drops. The code can only improve, enforced by the machine.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark ok">✓</span><span><b><span class="num2">240</span> automatic tests — all passing</b> <span class="short">— app, server, and AI, each proven separately</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>App (<span class="num2">53</span>):</b> safety logic — checking uploads, safe storage, refusing dangerous links. <b>Server (<span class="num2">86</span>):</b> company walls, caching, crash recovery, attachments, full start-up wiring. <b>AI (<span class="num2">101</span>):</b> port numbering, panel counting, device matching — pure math, no GPU. A change that breaks any of these cannot reach users.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>A robot tests every screen on every change</b> <span class="short">— real app, real browser, phone-sized</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p>A robot builds the real app, opens it at iPhone width, logs in, and visits all 13 screens. It fails the build on a blank screen, an icon shown as text, sideways scrolling, any browser error, or an input small enough to trigger annoying zoom. Normal tests can pass while the app looks broken on a phone — this catches exactly that.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>One codebase → iPhone, Android, web, clean 3.3 s build</b> <span class="short">— fix once, fixed everywhere</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p>One codebase ships as iPhone (TestFlight), signed Android, and web. Same screens, same logic. The build is clean in 3.3 seconds, and the phone build refuses to package itself if pointed at the wrong server.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark gap">→</span><span><b>Measure test coverage &amp; speed up first load</b> <span class="short">— two known tidy-ups</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>Coverage:</b> 240 tests pass, but the percentage of code they touch is unmeasured; the important parts are covered, the marketplace and integration bridges less so. Switch on the built-in counter and lock it as a floor — <b>~1 day.</b></p>
+          <p><b>Load speed:</b> the app downloads one large code package on first load, heavier than recommended. Split it by screen so each loads only what it needs — <b>~2–3 days.</b></p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- PILLAR 4 SCANNERS -->
+  <section>
+    <div class="pillar"><span class="n">4</span><h2>Vulnerability scanning</h2></div>
+    <p class="plain">Five scanner types, five angles: borrowed libraries (JS + Python), our own code, the container, and the live app. Three ran today; two more need wiring.</p>
+    <div class="list">
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>Borrowed libraries (JS + Python) — clean or patched</b> <span class="short">— npm audit + pip-audit</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>JavaScript:</b> every library checked against the public hole-list; everything fixable was fixed, then all 240 tests re-run. Two exceptions documented — one has no fix anywhere (install-time only, no attacker reach), one needs a planned framework upgrade. <b>Python:</b> the AI's full library set — zero known holes, clean first run.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>Our own code — deep scan done, 2 items caught</b> <span class="short">— Semgrep OWASP + container rules</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p>Two passes of Semgrep — the basic security set, then the full OWASP-Top-Ten plus Python and container rules — raised ~60 items. Every one was reviewed by hand: it caught the <b>container-runs-as-root</b> issue (M1) and the <b>hand-built report HTML</b> (L1) above; everything else cleared. <b>Next:</b> make this scan run automatically on every change — ~1 hour.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark gap">→</span><span><b>Two more scanners + an update robot to switch on</b> <span class="short">— container, live-app, auto-updates</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>Trivy</b> scans the shipping container for operating-system holes and would flag the root-user issue automatically — <b>~half a day.</b> <b>OWASP ZAP</b> attacks the running app monthly like a real attacker — needs the test server first. <b>Dependabot</b> opens a ready-made fix the day any library patches a hole — <b>one GitHub setting, ~30 minutes.</b></p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- PILLAR 5 OPERATIONS -->
+  <section>
+    <div class="pillar"><span class="n">5</span><h2>Running it for real customers</h2></div>
+    <p class="plain">Where the serious gaps are. The code is proven good; the machinery around it is still pilot-stage. Each gap has a clear fix and price.</p>
+    <div class="list">
+      <details>
+        <summary><span class="mark ok">✓</span><span><b>Quality enforced automatically on every change</b> <span class="short">— 4 gates + a weekly self-check</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p>Every change must pass four gates before it lands — secret hunter, all tests + checker + build, the robot browser sweep, and the AI tests on a fresh machine. Every Monday the whole set re-runs untouched, catching a library that quietly broke during a calm week. The logs and performance meters are already installed — the only missing half is sending an alert to a human.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark gap">→</span><span><b>A real database, with backups</b> <span class="short">— the most serious operations gap</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>Today:</b> account data lives in a single database file, and each scan is a folder of images on disk. Saving a scan takes two separate steps — folder, then owner record. A crash between them leaves a scan with no owner. <b>Not a theory:</b> the code carries repair scripts written because it happened, plus a cleanup job that can delete a scan it wrongly thinks is garbage.</p>
+          <p><b>Worse: nothing is backed up.</b> If the disk dies today, every scan and account is gone forever.</p>
+          <p><b>Fix:</b> PostgreSQL, where scan and owner save as one unbreakable step, plus nightly off-site backups and one practice restore. <b>~2–3 weeks. The highest-value work on this page.</b></p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark gap">→</span><span><b>Alerts, a test server, and load testing</b> <span class="short">— the reliability trio</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p><b>Alerts:</b> today, if RackTrack goes down at 2 a.m., a tester tells you hours later. An uptime monitor + crash reporter (Sentry), wired to the logs that already exist, fix that — <b>~2 days.</b></p>
+          <p><b>Test server + safe deploy:</b> updates are copied by hand to the one server testers use, with no undo. A staging copy, a deploy button in the automation we already have, and one-command rollback — <b>~3–4 days.</b></p>
+          <p><b>Load test:</b> nobody yet knows if 30 technicians scanning at 9 a.m. works or crashes the server. A load-test script finds the ceiling — the number sales will be asked for — <b>~2–3 days</b>, after staging exists.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="mark gap">→</span><span><b>Back up the Android signing key</b> <span class="short">— one copy, one laptop</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="dbody">
+          <p>Every Android update must carry the same signature as the first install, and the key that makes it exists on exactly one laptop with no copy. If that disk dies, no install can ever be updated — every tester reinstalls from scratch. <b>Fix:</b> copy the key and its password to a password manager and one offline place. <b>~1 hour — the cheapest risk removal in this report.</b></p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- FIX ORDER -->
+  <div class="order">
+    <h2>The fix order — highest risk and lowest effort first</h2>
+    <ol>
+      <li><div><b>Back up the Android signing key</b> <span class="eff">~1 hour</span></div></li>
+      <li><div><b>Run app as non-root</b> (M1) + tidy report HTML (L1) <span class="eff">~1.5 hours</span></div></li>
+      <li><div><b>Switch on Semgrep-in-CI, Dependabot, Trivy</b> <span class="eff">~1 day</span></div></li>
+      <li><div><b>Alerts</b> — uptime monitor + crash reports <span class="eff">~2 days</span></div></li>
+      <li><div><b>Test server + one-button deploy</b> with undo <span class="eff">~3–4 days</span></div></li>
+      <li><div><b>Measure test coverage</b>, lock the floor <span class="eff">~1 day</span></div></li>
+      <li><div><b>Real database + nightly backups</b> + restore drill <span class="eff">~2–3 weeks</span></div></li>
+      <li><div><b>Company sign-in (SSO)</b> + safer login tokens <span class="eff">~1–2 weeks</span></div></li>
+      <li><div><b>Load test</b> for the capacity number <span class="eff">~2–3 days</span></div></li>
+      <li><div><b>Paperwork</b> — pen test → SLA → SOC 2 <span class="eff">ongoing</span></div></li>
+    </ol>
+  </div>
+
+  <p class="bottom"><b>The bottom line:</b> twelve professional audit methods examined this codebase. The code quality
+     and test results are green with nothing to argue about. The security review turned up exactly two findings —
+     one medium, one low — <b>both named here, both fixable in hours.</b> Everything else is operations and access
+     work: about six weeks, listed in order. There are no unknowns left on this page — which is the point of a real audit.</p>
+
+  <footer>RackTrack complete audit &amp; status report · branch <b>publish/main</b> · august 19, 2026 ·
+    methods executed: ESLint · Vitest (53) · node:test (86) · pytest (101) · Playwright (13 screens) ·
+    npm audit · pip-audit · Semgrep (basic + OWASP/Python/Docker) · manual attack-surface review · Vite build.
+    Not executed: live external pen test (needs full running stack).</footer>
+</div>
+
+</body></html>

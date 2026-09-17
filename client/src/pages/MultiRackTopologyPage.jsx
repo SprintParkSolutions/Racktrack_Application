@@ -15,7 +15,7 @@ const RackBundle = lazy(() => import('./TopologyScene3D.jsx').then(m => ({
       palette={palette}
       selected={selected}
       setSelected={setSelected}
-      // Hide neighbor-ghosts in multi-rack — the real neighbors are visible.
+      // Hide neighbor-ghosts in multi-rack - the real neighbors are visible.
       showNeighbors={false}
     />
   ),
@@ -35,7 +35,7 @@ function labelForRack(placed, rackId) {
   return p ? (p.member.label || `Rack ${p.member.position}`) : rackId;
 }
 
-// Live theme palette hook — same source TopologyScene3D uses internally.
+// Live theme palette hook - same source TopologyScene3D uses internally.
 // Imported lazily because TopologyScene3D pulls in three.js (~150kb).
 function usePaletteHook() {
   const [palette, setPalette] = useState(null);
@@ -68,8 +68,8 @@ function usePaletteHook() {
 /**
  * Combined topology view for a multi-rack scan.
  *
- * Renders ALL member racks inside ONE shared <Canvas> — same floor, same
- * lights, same camera — laid out side-by-side at consistent X spacing.
+ * Renders ALL member racks inside ONE shared <Canvas> - same floor, same
+ * lights, same camera - laid out side-by-side at consistent X spacing.
  * This is the "one 3D space with 3 racks side-by-side with gaps" view,
  * not the old "N independent canvases in a grid" approach.
  *
@@ -134,7 +134,7 @@ export default function MultiRackTopologyPage({ groupId: groupIdProp, hideHeader
           const lRes = await authFetch(apiUrl(`/api/rack-group/${encodeURIComponent(groupId)}/links`));
           const lJson = await lRes.json().catch(() => ({}));
           if (alive && lRes.ok && Array.isArray(lJson.links)) setLinks(lJson.links);
-        } catch (_) { /* non-fatal — racks still render without cross links */ }
+        } catch (_) { /* non-fatal - racks still render without cross links */ }
       } catch (e) {
         if (alive) setErrors({ __group: e.message });
       } finally {
@@ -186,7 +186,7 @@ export default function MultiRackTopologyPage({ groupId: groupIdProp, hideHeader
       8,
     );
 
-    // World-Y of the shared floor — same formula DataCenterFloor uses.
+    // World-Y of the shared floor - same formula DataCenterFloor uses.
     // Each rack lifts itself so its bottom hits this Y + clearance,
     // regardless of its individual chassisU.
     const floorY = -maxChassisU * U_HEIGHT / 2 - 0.4;
@@ -270,7 +270,7 @@ export default function MultiRackTopologyPage({ groupId: groupIdProp, hideHeader
           </Suspense>
         </div>
 
-        {/* Per-rack quick-jump strip — sits in normal flow under the canvas,
+        {/* Per-rack quick-jump strip - sits in normal flow under the canvas,
             so the 3D scene doesn't have to fight a giant empty void below it. */}
         <div className={styles.rackStrip}>
           {layout.placed.map(p => (
@@ -287,7 +287,7 @@ export default function MultiRackTopologyPage({ groupId: groupIdProp, hideHeader
           ))}
         </div>
 
-        {/* Inter-rack connections — the cables that cross between racks. Most
+        {/* Inter-rack connections - the cables that cross between racks. Most
             cabling stays inside each rack; only these few uplinks span racks. */}
         {links.length > 0 && (
           <div className={styles.linksPanel}>
@@ -385,7 +385,7 @@ function SharedScene({ layout, palette, links = [], selectedByRack, setSelectedB
   );
 }
 
-// CameraRig — runs inside <Canvas> so it has access to the real canvas
+// CameraRig - runs inside <Canvas> so it has access to the real canvas
 // dimensions via useThree(). Computes the smallest camera distance that
 // still fits both sceneW and sceneH given the *actual* canvas aspect,
 // then writes the camera position once on mount + whenever the canvas
@@ -430,7 +430,7 @@ function SceneLights({ chassisU, sceneWidth, ambientBoost = 1 }) {
       <ambientLight intensity={1.15 * ambientBoost} />
       <directionalLight position={[ half + 4, 8,  6]} intensity={1.1} color="#ffffff" />
       <directionalLight position={[-half - 4, 8,  6]} intensity={1.1} color="#ffffff" />
-      {/* Wide overhead spot — covers the full row from above */}
+      {/* Wide overhead spot - covers the full row from above */}
       <spotLight
         position={[0, topY + 4, 2.6]}
         angle={Math.min(1.2, Math.atan2(half + 2, topY + 4))}
@@ -477,7 +477,7 @@ function SceneFloor({ chassisU, fadeDistance = 60, palette }) {
 
 // Draws the synthesized rack-to-rack uplinks as real cables that leave the
 // FRONT of a specific switch inside rack A (at that switch's U-height), route
-// across the gap, and land on a specific switch inside rack B — not floating
+// across the gap, and land on a specific switch inside rack B - not floating
 // arcs over the top. Each rack's own intra-rack cabling is drawn by its
 // RackBundle; these are only the few links that cross. Fiber = amber, DAC = cyan.
 const _FLOOR_CLEARANCE = 0.4;   // matches TopologyScene3D
@@ -517,7 +517,7 @@ function _portWorldPos(place, ep, computePortPositions, U_HEIGHT, floorY) {
 }
 
 // A connector plug (RJ-45/SFP-style dark body with a coloured boot) sitting on
-// a device port, pointing out of the face along the cable — the "natural
+// a device port, pointing out of the face along the cable - the "natural
 // connector" instead of a glowing dot.
 function CablePlug({ pos, dir, color }) {
   const quat = useMemo(() => {
@@ -564,7 +564,7 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, comput
       const p1 = _portWorldPos(R, Re, computePortPositions, U_HEIGHT, floorY);
       // Cables leave the face forwards (a plug sticks out), then run across the
       // gap with a gravity-style SAG (control point pulled DOWN + slightly
-      // forward), so it reads as a real patch cable — not a straight ruled line.
+      // forward), so it reads as a real patch cable - not a straight ruled line.
       const zLane = (k % 3) * 0.05;
       const s = new THREE.Vector3(p0[0], p0[1], p0[2] + 0.19 + zLane);   // just past the plug
       const e = new THREE.Vector3(p1[0], p1[1], p1[2] + 0.19 + zLane);
@@ -591,7 +591,7 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, comput
     <group>
       {cables.map(c => (
         <group key={c.key}>
-          {/* the cable itself — a real tube with volume, so it catches light */}
+          {/* the cable itself - a real tube with volume, so it catches light */}
           <mesh>
             <tubeGeometry args={[c.curve, 32, 0.026, 8, false]} />
             <meshStandardMaterial color={c.color} roughness={0.62} metalness={0.08} />

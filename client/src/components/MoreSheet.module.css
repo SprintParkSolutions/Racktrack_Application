@@ -1,6 +1,6 @@
 /* The navigation drawer.
    Comes from the left edge, over a dimmed page. Grouped, with the account at
-   the top and the way out at the bottom — the shape every tool uses, so it
+   the top and the way out at the bottom - the shape every tool uses, so it
    needs no explaining. Black, white and one blue for the current place, which
    is the whole palette this app has. */
 
@@ -150,7 +150,7 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* Where you are: a filled row, not a tinted one — at a glance, from arm's
+/* Where you are: a filled row, not a tinted one - at a glance, from arm's
    length, in a bright room. */
 .rowActive { background: rgba(15, 123, 79, .08); color: #0c1420; }
 .rowActive .icon { background: #0f7b4f; color: #ffffff; }

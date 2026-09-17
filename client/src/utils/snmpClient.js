@@ -1,13 +1,12 @@
 // SNMP, spoken by the phone itself.
 //
-// The server cannot reach a switch that lives on the customer's own network —
-// it sits in a data centre, the switch sits behind their firewall on a private
+// The server cannot reach a switch that lives on the customer's own network - // it sits in a data centre, the switch sits behind their firewall on a private
 // address. The phone is standing next to it on the same Wi-Fi. So the phone
 // asks, and this is what does the asking.
 //
 // Two dialects:
 //   v2c   a community string. What the D-Link answers to.
-//   v3    a user name, at the noAuthNoPriv level — no password check and no
+//   v3    a user name, at the noAuthNoPriv level - no password check and no
 //         encryption, which is how the TP-Links are configured today (and how
 //         every stored reading of them was taken). It needs USM engine
 //         discovery and the v3 message shape, and no cryptography at all.
@@ -20,7 +19,7 @@
 // to the phone as its own step once these switches are hardened.
 //
 // READ ONLY. GET, GETNEXT and GETBULK. There is no SET here, the same way there
-// is none in the server's engine — a read-only tool should be read-only in its
+// is none in the server's engine - a read-only tool should be read-only in its
 // transport, where the guarantee is structural rather than a matter of
 // discipline.
 //
@@ -38,8 +37,7 @@ import {
 const SnmpUdp = registerPlugin('SnmpUdp');
 
 /**
- * Reading a switch needs a UDP socket, and a web page is not allowed one —
- * only the installed app is. Checked here, once, so the reason is said in
+ * Reading a switch needs a UDP socket, and a web page is not allowed one - * only the installed app is. Checked here, once, so the reason is said in
  * words that name the fix rather than letting Capacitor's own '"SnmpUdp"
  * plugin is not implemented on web' reach someone standing at a rack.
  */
@@ -53,7 +51,7 @@ export const OID = {
   sysLocation: '1.3.6.1.2.1.1.6.0',
   sysContact:  '1.3.6.1.2.1.1.4.0',
 
-  // ENTITY-MIB. The standard place for model and serial — and empty on every
+  // ENTITY-MIB. The standard place for model and serial - and empty on every
   // switch we have tested so far, which is why the model is also parsed out of
   // sysDescr below. Asked for anyway: when a switch does implement it, it is
   // the switch stating its own identity, which beats any amount of parsing.
@@ -72,7 +70,7 @@ export const OID = {
   ifPhysAddress: '1.3.6.1.2.1.2.2.1.6',
   dot3Duplex:    '1.3.6.1.2.1.10.7.2.1.19',
 
-  // BRIDGE-MIB / Q-BRIDGE-MIB: the forwarding table — every MAC the switch has
+  // BRIDGE-MIB / Q-BRIDGE-MIB: the forwarding table - every MAC the switch has
   // learned and the port it learned it on. This is how a port says what is
   // plugged into it when nothing on the other end speaks LLDP, which on the
   // switches we have tested is almost everything.
@@ -84,7 +82,7 @@ export const OID = {
   ipNetToMediaMac: '1.3.6.1.2.1.4.22.1.2',
 
   // Our own end of a neighbour: the local port number LLDP reports, and the
-  // name that goes with it. Read rather than derived — the number is LLDP's
+  // name that goes with it. Read rather than derived - the number is LLDP's
   // own port numbering, which on the TP-Links is neither the ifIndex (49153+)
   // nor anything a person would recognise.
   lldpLocPortId:    '1.0.8802.1.1.2.1.3.7.1.3',
@@ -98,7 +96,7 @@ export const OID = {
  *
  * ENTITY-MIB is the standard place for a serial number and neither of the
  * switches in the lab answers it. Both makers publish a private MIB that does,
- * and it is documented support in both cases — so where we already know the
+ * and it is documented support in both cases - so where we already know the
  * vendor (from sysObjectID), we ask that vendor's own leaves. One GET, four
  * or five values.
  *
@@ -162,7 +160,7 @@ export function vendorOf(sysObjectID) {
  * The model, pulled out of whatever the switch says about itself.
  *
  * These switches leave ENTITY-MIB empty, so they never state their model in
- * the standard place — but it is almost always sitting in sysDescr as a token
+ * the standard place - but it is almost always sitting in sysDescr as a token
  * ("WS6-DGS-1210-52/F1 6.30.016"), and when it is not, it is often what the
  * device has been named ("SG2428P"). Both are checked, description first,
  * because a name can be changed by whoever set the switch up and a description
@@ -269,7 +267,7 @@ export class Snmp {
   // ── transport ────────────────────────────────────────────────────────
 
   /**
-   * One datagram out, one back, with retries — a dropped packet is not a
+   * One datagram out, one back, with retries - a dropped packet is not a
    * failure. `matches` turns raw bytes into a result or null; null means the
    * reply was for some other request and we keep waiting for ours.
    */
@@ -468,7 +466,7 @@ export class Snmp {
       // so the hint asks rather than tells.
       if (e instanceof SnmpError && e.kind === 'timeout') {
         throw new SnmpError('timeout', e.message,
-          'Nothing came back from the SNMPv3 discovery — the first packet, before '
+          'Nothing came back from the SNMPv3 discovery - the first packet, before '
           + 'any user name is sent. Check the address, and that SNMPv3 is enabled '
           + 'on the switch.');
       }
@@ -597,7 +595,7 @@ export async function testLogin(config) {
   };
 }
 
-// Loopbacks, tunnels, VLAN interfaces, aggregates — and 53 (propVirtual),
+// Loopbacks, tunnels, VLAN interfaces, aggregates - and 53 (propVirtual),
 // which is what several vendors call the VLAN interface a switch answers on.
 // None of them is a socket on the front of the box.
 const IF_TYPE_SKIP = new Set([24, 23, 131, 135, 136, 161, 53]);
@@ -605,8 +603,7 @@ const IF_TYPE_SKIP = new Set([24, 23, 131, 135, 136, 161, 53]);
 /**
  * ...and the ones that lie about their type.
  *
- * The TP-Link SG2428P reports "Vlan-interface1" as ifType 6, ethernetCsmacd —
- * the same type as the 28 sockets on the front. Believing it made a 28-port
+ * The TP-Link SG2428P reports "Vlan-interface1" as ifType 6, ethernetCsmacd - * the same type as the 28 sockets on the front. Believing it made a 28-port
  * switch a 29-port switch. Nothing physical is called this.
  */
 const NOT_A_SOCKET = /vlan|loopback|^lo\d|tunnel|null ?0|port-?channel|^po\d|aggregat|^ae\d/i;
@@ -637,7 +634,7 @@ export async function readSwitch(config, onProgress = () => {}, onPartial = () =
   onPartial({ kind: 'hello', ...identity });
 
   // One table at a time, not seven at once. The native side runs a small
-  // thread pool, and a phone on office Wi-Fi loses datagrams under load — a
+  // thread pool, and a phone on office Wi-Fi loses datagrams under load - a
   // burst of parallel walks turns into retries and reads slower than doing it
   // in order. A switch also tends to have one SNMP worker; asking politely
   // gets a faster answer than asking seven times simultaneously.
@@ -730,13 +727,13 @@ export async function readSwitch(config, onProgress = () => {}, onPartial = () =
 
   onProgress('Asking for its serial');
   // Almost always empty on these switches. Asked anyway, and left empty when
-  // it is — an empty serial is a fact, a filled-in one would be a liability.
+  // it is - an empty serial is a fact, a filled-in one would be a liability.
   // Soft, because a switch without ENTITY-MIB says nothing at all, and this
   // sat between "what is it" and "what are its ports" costing six seconds on
   // every TP-Link read.
   const entSerial = (await soft(OID.entPhysicalSerialNum, 64))
     .map((e) => e.value).find((v) => v && String(v).trim()) || null;
-  // ENTITY-MIB first when it answers — it is the standard and the switch
+  // ENTITY-MIB first when it answers - it is the standard and the switch
   // stating it in the standard place. The maker's own MIB is the fallback,
   // which on both of these switches is the only one that answers.
   const serial = entSerial || vendorFacts.serial || null;
@@ -777,7 +774,7 @@ export async function readSwitch(config, onProgress = () => {}, onPartial = () =
     // there were none.
     const seen = [...new Set([...remName, ...remPort, ...remChassis].map((r) => r.index))];
     neighbours = seen.map((idx) => {
-      // The index is time.localPort.entry — the middle arc is our own port,
+      // The index is time.localPort.entry - the middle arc is our own port,
       // in LLDP's numbering. Named from LLDP's own local-port table, falling
       // back to the interface table, and finally to the bare number rather
       // than to a name that would be somebody else's port.
@@ -804,7 +801,7 @@ export async function readSwitch(config, onProgress = () => {}, onPartial = () =
   );
   // Q-BRIDGE indexes by VLAN and MAC, the older BRIDGE-MIB by MAC alone. Both
   // report a BRIDGE port, its own numbering, which is only sometimes the same
-  // as ifIndex — hence the translation table above rather than an assumption.
+  // as ifIndex - hence the translation table above rather than an assumption.
   const qFdb = await soft(OID.dot1qTpFdbPort, 8192);
   const rawFdb = qFdb.length
     ? qFdb.map((r) => {
@@ -825,7 +822,7 @@ export async function readSwitch(config, onProgress = () => {}, onPartial = () =
   }
 
   const attached = rawFdb
-    // Port 0 means "learned, but not on a port" — not a fact about cabling.
+    // Port 0 means "learned, but not on a port" - not a fact about cabling.
     .filter((r) => Number(r.port) > 0)
     .map((r) => {
       const ifIndex = bridgeToIf.get(r.port) ?? Number(r.port);
@@ -844,7 +841,7 @@ export async function readSwitch(config, onProgress = () => {}, onPartial = () =
     i.attached = attached.filter((d) => d.ifIndex === i.index).length;
   }
 
-  // What the switch did not say. Each line states only that — what was asked
+  // What the switch did not say. Each line states only that - what was asked
   // for and not given. Why it was not given is not something a reading can
   // know, and a guess written in the same voice as a measurement reads as one.
   const gaps = [];
@@ -876,11 +873,11 @@ export async function readSwitch(config, onProgress = () => {}, onPartial = () =
  * The phone's reading, in the shape the server stores.
  *
  * The NetBox side of the server was written for readings its own collector
- * took, and everything downstream — reconcile, the review screen, the export
- * — consumes that one shape (see any data/netbox/switch-data/*.json). Now the
+ * took, and everything downstream - reconcile, the review screen, the export
+ * - consumes that one shape (see any data/netbox/switch-data/*.json). Now the
  * phone takes the reading and posts it up, so it has to arrive looking the
  * same. Fields the phone does not read (MTU, duplex, PVID, per-port MAC, VLANs,
- * ARP, IP addresses) are null or empty rather than guessed — an absent value
+ * ARP, IP addresses) are null or empty rather than guessed - an absent value
  * is a fact, an invented one is a liability. `source` says who read it.
  */
 export function toServerReading(r, { tookMs = null } = {}) {
@@ -905,7 +902,7 @@ export function toServerReading(r, { tookMs = null } = {}) {
     chassisId: n.named ? null : (n.sysName ?? null),
   }));
   // Every device the switch has learned about, with the port it learned it on
-  // — the server's `macs` field, which its own collector fills the same way.
+  // - the server's `macs` field, which its own collector fills the same way.
   const macs = (r.attached || []).map((d) => ({
     mac: d.mac, vlan: d.vlan ?? null, ifIndex: d.ifIndex ?? null,
     port: d.port ?? null, ip: d.ip ?? null,

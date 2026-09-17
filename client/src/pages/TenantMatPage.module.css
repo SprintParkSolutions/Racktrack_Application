@@ -128,7 +128,7 @@
   padding: 12px 14px 6px;
 }
 .treeBody { padding: 4px 0 14px; font-size: 13px; }
-/* Caret and row are two separate buttons side by side — the indent lives on
+/* Caret and row are two separate buttons side by side - the indent lives on
    the caret so the row still lines up the way the old padding-left did. */
 .treeRowWrap { display: flex; align-items: center; }
 .treeRow {
@@ -379,7 +379,7 @@
   font: inherit; color: inherit; background: none; border: 0;
   padding: 0; margin: 0; text-align: left; cursor: pointer;
 }
-/* Keyboard focus has to be visible everywhere it can land — the SVG map racks
+/* Keyboard focus has to be visible everywhere it can land - the SVG map racks
    and tree-graph nodes especially, since they get no browser default. */
 .rowOpenBtn:focus-visible,
 .rackG:focus-visible,
@@ -408,7 +408,7 @@
   overflow: hidden;
   background: #000000;
 }
-/* TopologyScene3D mounts its own <Canvas> — give it room to fill. */
+/* TopologyScene3D mounts its own <Canvas> - give it room to fill. */
 .r3dWrap > :global(div) { flex: 1; }
 .r3dCaption {
   position: absolute;

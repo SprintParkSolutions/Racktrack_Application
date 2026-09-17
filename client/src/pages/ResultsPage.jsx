@@ -141,8 +141,7 @@ const PORT_TYPE_OPTIONS = [
 const prettyPortType = (t) => t ? t.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ') : '';
 
 // Real cable colours so the swatch matches the detected colour name (the
-// monochrome theme applies to the app chrome, not to physical cable colours —
-// showing an orange cable as a black dot is confusing/wrong).
+// monochrome theme applies to the app chrome, not to physical cable colours - // showing an orange cable as a black dot is confusing/wrong).
 const CABLE_COLOR_MAP = {
   black: '#1c1c1c', blue: '#2f6bd8', brown: '#8b5a2b', green: '#1f9d55',
   grey: '#9f9f9f', gray: '#9f9f9f', orange: '#e8792b', pink: '#e86fa6',
@@ -168,7 +167,7 @@ function parseCableType(label) {
 }
 
 // Aggregate a device's CONNECTED ports (main + SFP + other) into
-// connector+colour groups with counts — e.g. [{connector:'RJ-45', color:'Blue',
+// connector+colour groups with counts - e.g. [{connector:'RJ-45', color:'Blue',
 // count:12}, {connector:'LC', color:'Aqua', count:2}]. Fed by the background
 // cable enrichment (cable_connector / cable_color on each connected port);
 // returns [] until enrichment has run, so the chips simply appear when ready.
@@ -195,7 +194,7 @@ function cableChips(dev) {
 // ── Port report builder ──────────────────────────────────────
 // Parses the console transcript into a structured report:
 //   { switch, port, link, learnedMacs[{mac,vlan,type,vendor,ip}], lldp, cable, stp, vlan }
-// Heuristic regexes — tolerant to TP-Link, Cisco, D-Link dialects.
+// Heuristic regexes - tolerant to TP-Link, Cisco, D-Link dialects.
 
 function normalizeMac(s) {
   const hex = (s || '').replace(/[^0-9a-fA-F]/g, '').toLowerCase();
@@ -321,7 +320,7 @@ function buildPortReport({ host, vendor, iface, portNum, entries = [], neighbor,
 
 // ── Switch info parser ───────────────────────────────────────
 // Parses live SSH output (show version / show system-info) into a small set
-// of fields we surface in the Switch Info modal. Live data only — never
+// of fields we surface in the Switch Info modal. Live data only - never
 // persisted, never reconciled with CMDB.
 function parseSwitchInfo(raw, vendor) {
   const text = String(raw || '').replace(/\r/g, '');
@@ -397,7 +396,7 @@ function cleanModelForLookup(m) {
 function cleanFirmwareVersion(raw) {
   if (!raw) return '';
   const s = String(raw).trim();
-  // Cisco NX-OS form first — has parentheses our generic regex would miss.
+  // Cisco NX-OS form first - has parentheses our generic regex would miss.
   const nx = s.match(/\b\d+\.\d+\([^)]+\)(?:[A-Z]\d+(?:\([^)]+\))?)?/);
   if (nx) return nx[0];
   const dotted = s.match(/\b\d+\.\d+(?:\.\d+){0,3}(?:[A-Za-z][A-Za-z0-9]{0,5})?(?:-[A-Za-z0-9]{1,8})?\b/);
@@ -405,7 +404,7 @@ function cleanFirmwareVersion(raw) {
 }
 
 // ── Switch info modal ────────────────────────────────────────
-// Live snapshot of the switch over SSH — model, firmware, uptime, serial.
+// Live snapshot of the switch over SSH - model, firmware, uptime, serial.
 // Independent of CMDB / Netdisco / any synthesized data.
 function SwitchInfoModal({
   status, info, raw, error, host, vendor,
@@ -532,13 +531,12 @@ function SwitchInfoModal({
                 {firmwareStatus === 'skipped' && (
                   // Model and version come from the live SSH snapshot, so with
                   // no switch reachable this card used to state a requirement
-                  // and stop — the user was told what was missing with no way
+                  // and stop - the user was told what was missing with no way
                   // to supply it, which is why "Firmware is disabled" was
                   // reported. The Switches tab is where a make, model and version are
                   // entered by hand, so name that instead of dead-ending.
                   <p className={styles.prEmpty}>
-                    Need both model and firmware version to check for updates —
-                    set them on the Switches tab.
+                    Need both model and firmware version to check for updates - set them on the Switches tab.
                   </p>
                 )}
               </div>
@@ -573,9 +571,9 @@ function SwitchInfoModal({
                   </div>
                 )}
                 {specsStatus === 'skipped' && (
-                  // Same dead end as the firmware card above — see the note there.
+                  // Same dead end as the firmware card above - see the note there.
                   <p className={styles.prEmpty}>
-                    Need a model to look up specs — set one on the Switches tab.
+                    Need a model to look up specs - set one on the Switches tab.
                   </p>
                 )}
               </div>
@@ -718,7 +716,7 @@ function PortReportModal({ report, onClose }) {
 }
 
 // ── Switch credentials modal ──────────────────────────────────
-// Vendor is locked to TP-Link for now — multi-vendor picker can be
+// Vendor is locked to TP-Link for now - multi-vendor picker can be
 // reintroduced later by restoring VENDOR_CHOICES + the segmented control.
 const STATIC_VENDOR = 'tplink';
 const STATIC_VENDOR_LABEL = 'TP-Link';
@@ -796,13 +794,13 @@ function CredsModal({ initial, onCancel, onSubmit }) {
 
 // ── Device picker dropdown ────────────────────────────────────
 // 'Unidentified' is a synthetic placeholder the pipeline inserts for rack
-// rows where no detector produced a class even at low confidence — hide
+// rows where no detector produced a class even at low confidence - hide
 // it from the picker (nothing to inspect) while keeping it on the rack
 // map / report so the row isn't lost visually.
 const HIDDEN_DEVICE_TYPES = new Set(['Empty', 'Closed Unit', 'Unidentified']);
 
 // Small badge shown next to a value that came from a USER correction (active
-// learning), not the model's own output — so a tester doesn't mistake their
+// learning), not the model's own output - so a tester doesn't mistake their
 // own confirmed value for a model mistake.
 function UserTag({ label = 'Your correction' }) {
   return (
@@ -830,7 +828,7 @@ function isSwitchLike(dev) {
   return false;
 }
 
-// These port-bearing device types are selectable — the kinds with
+// These port-bearing device types are selectable - the kinds with
 // user-inspectable ports. PDUs are included because they have their own
 // power-outlet detection and a dedicated power view (outlets · in use · free ·
 // powered) on selection. Servers, PSUs, UPSes, etc. are shown in the annotated
@@ -869,7 +867,7 @@ function totalPortCount(dev) {
   return PORT_CATEGORIES.reduce((sum, c) => sum + portCatCount(dev, c.k), 0);
 }
 
-// Per-type breakdown string, e.g. "24 RJ45 · 2 SFP · 1 Console" — only the
+// Per-type breakdown string, e.g. "24 RJ45 · 2 SFP · 1 Console" - only the
 // categories the device actually has. Empty string when it has no ports.
 function portBreakdown(dev) {
   return PORT_CATEGORIES
@@ -891,7 +889,7 @@ function powerSummary(dev) {
 }
 
 // ── All components ───────────────────────────────────────────
-// Marks a rack as confirmed by the user — a later re-upload that perceptually
+// Marks a rack as confirmed by the user - a later re-upload that perceptually
 // matches will serve this confirmed result instead of re-detecting it.
 function ConfirmRackButton({ scanId }) {
   const [state, setState] = useState('idle'); // 'idle' | 'saving' | 'done' | 'error'
@@ -932,7 +930,7 @@ export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, o
     || `/outputs/${scanId}/original_image.${originalExt || 'jpg'}`;
   const heroSrc = apiUrl(heroPath);
 
-  // CMDB approval modal — shows once after a fresh detect-mode scan when
+  // CMDB approval modal - shows once after a fresh detect-mode scan when
   // the rack isn't yet registered in CMDB. Skipped for ticket-mode scans
   // (which are investigating a specific incident on a known device) and
   // for navigation arrivals without a fresh scan (history, back button).
@@ -1128,7 +1126,7 @@ export function AllDevicesView({ devices, labels, rackId, scanId, originalExt, o
 export default function ResultsPage({ rackId: propRackId = null, embedded: embeddedProp = false } = {}) {
   const navigate = useNavigate();
   // Back from a rack leaves the rack. There is no Home any more, so it lands
-  // on Scan — the start of the next job, which is what someone who has
+  // on Scan - the start of the next job, which is what someone who has
   // finished with this rack is about to do.
   const exitRack = () => navigate('/scan');
   // Null outside TourProvider (this page is also rendered embedded), so read
@@ -1138,7 +1136,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const stopTour = tour?.stopTour;
   const location = useLocation();
   const { state } = location;
-  // Only a platform owner may send a free-form command to a switch — the server
+  // Only a platform owner may send a free-form command to a switch - the server
   // holds everyone else to the curated checks (app.js isAllowedConsoleCommand).
   // Rendering the terminal box to a member anyway would just be a text field
   // that 403s on Enter, so it isn't rendered.
@@ -1146,7 +1144,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const canRunFreeformCmd = user?.role === 'owner';
   const { rackId: paramRackId } = useParams();
   // When rendered side-by-side (a rack group), the rackId comes in as a prop
-  // and there's no navigation state — the cold-link fetch path populates it.
+  // and there's no navigation state - the cold-link fetch path populates it.
   const urlRackId = propRackId || paramRackId;
   // The in-page tab strip (ScanTabBar) is redundant on desktop because
   // the DesktopShell sidebar already shows the same OVERVIEW / PORTS /
@@ -1154,7 +1152,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const isDesktop = useIsDesktop();
   // Two ways to land here:
   //   1. ScanPage navigated with state.result = full /api/analyze response
-  //   2. RackTabs navigated to /results/<rackId> (no state) — fetch via API
+  //   2. RackTabs navigated to /results/<rackId> (no state) - fetch via API
   const [fetchedResult, setFetchedResult] = useState(null);
   const result = state?.result || fetchedResult;
 
@@ -1169,7 +1167,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       try {
         const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(urlRackId)}`));
         if (!r.ok) {
-          // Stale rackId — server doesn't have this rack anymore (or
+          // Stale rackId - server doesn't have this rack anymore (or
           // never did). Clear the sidebar's in-memory rackId, prune the
           // local history, and route the user somewhere usable.
           if (r.status === 404 && !cancelled) {
@@ -1186,7 +1184,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         }
         const data = await r.json();
         if (!cancelled) setFetchedResult(data);
-      } catch { /* leave fetchedResult null — page renders an empty state */ }
+      } catch { /* leave fetchedResult null - page renders an empty state */ }
     })();
     return () => { cancelled = true; };
   }, [urlRackId, state?.result, fetchedResult?.rackId, navigate]);
@@ -1232,8 +1230,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const handleTabChange = (newTab) => {
     // Network is the live switches, read from this phone over SNMP. It is a
     // page of its own rather than a tab of this one, because reading a switch
-    // is work with its own state — credentials, a reading, where it sits in
-    // the rack — not another view of the photograph.
+    // is work with its own state - credentials, a reading, where it sits in
+    // the rack - not another view of the photograph.
     if (newTab === 'network' || newTab === 'report') {
       // urlRackId first: it is the id in the address bar and is set before the
       // scan result has loaded, whereas `rackId` comes out of that result.
@@ -1244,19 +1242,18 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       if (prev !== newTab) tabHistoryRef.current.push(prev);
       return newTab;
     });
-    // Leaving the port-detail sub-view whenever the user picks a tab —
-    // otherwise the `phase === 'port'` early return below swallows the
+    // Leaving the port-detail sub-view whenever the user picks a tab - // otherwise the `phase === 'port'` early return below swallows the
     // new tab's content (notably the drift tab, which would render blank).
     setPhase('detect');
   };
   // Header back button:
   //   • on the Overview tab → ALWAYS leave the rack and go to /scan
-  //     (overview is the root of this rack — back means "exit the rack")
+  //     (overview is the root of this rack - back means "exit the rack")
   //   • on any other tab → pop the in-page tab history if there's any,
   //     otherwise fall back to Overview.
   const handleHeaderBack = () => {
     // Four of the seven tour steps happen on this page, so leaving it means
-    // abandoning the walkthrough — end it rather than leave the spotlight
+    // abandoning the walkthrough - end it rather than leave the spotlight
     // hunting for anchors that are no longer rendered.
     if (tourActive) stopTour?.();
     if (tab === 'overview') {
@@ -1279,7 +1276,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     setTab('overview');
     setPhase('detect');
   };
-  // React to subsequent hash changes too — e.g. user clicks Drift in the
+  // React to subsequent hash changes too - e.g. user clicks Drift in the
   // sidebar while already on the rack page, no remount happens.
   useEffect(() => {
     const h = (location.hash || '').replace(/^#/, '').toLowerCase();
@@ -1307,7 +1304,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // selected (red-bordered) device on the rack; exited by the back button.
   const [focusMode,   setFocusMode]   = useState(false);
   // Drag origin lives in a ref, not state. It used to be state, and
-  // handlePointerMove set BOTH it and the offset on every pointermove — two
+  // handlePointerMove set BOTH it and the offset on every pointermove - two
   // re-renders of this 4,900-line component per move event, 60-120 times a
   // second. That is what made the screen freeze while panning on Android.
   const dragRef = useRef(null);
@@ -1323,7 +1320,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const [feedbackError, setFeedbackError] = useState(null);
   // Cable-only feedback (separate Yes/No block below the port one)
   const [cableFbStatus, setCableFbStatus] = useState('idle'); // 'idle' | 'wrong' | 'submitting' | 'submitted' | 'hidden'
-  // Port-TYPE correction (RJ45/SFP/USB/…) — tags the physical port type,
+  // Port-TYPE correction (RJ45/SFP/USB/…) - tags the physical port type,
   // feeding the active-learning memory + retraining dataset.
   const [portTypeStatus, setPortTypeStatus] = useState('idle'); // 'idle' | 'picking' | 'submitting' | 'submitted' | 'error'
   const [cableFbColor, setCableFbColor] = useState('');
@@ -1332,7 +1329,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const [deviceFbStatus, setDeviceFbStatus] = useState('idle'); // 'idle' | 'wrong-pending' | 'submitting' | 'submitted' | 'hidden'
   const [actualDeviceClass, setActualDeviceClass] = useState('');
   const [deviceFbError, setDeviceFbError] = useState(null);
-  // Port-count feedback (main ports detected per device — separate flow)
+  // Port-count feedback (main ports detected per device - separate flow)
   const [portCountFbStatus, setPortCountFbStatus] = useState('idle');
   const [actualPortCount, setActualPortCount] = useState('');
   const [portCountFbError, setPortCountFbError] = useState(null);
@@ -1353,38 +1350,38 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // makes the report auto-trigger window.print() (Save-as-PDF) INSIDE the
   // WebView. (The reason given here used to be ngrok's browser-warning
   // interstitial; the backend is on the Hostinger VPS now, so that no longer
-  // applies — keeping it in-WebView is simply the shorter path for a preview.)
+  // applies - keeping it in-WebView is simply the shorter path for a preview.)
   const [reportDownload, setReportDownload] = useState(false);
   // The report <iframe src> can't send an Authorization header, which is why
-  // /api/scan/:rackId/report used to be public — and therefore served any
+  // /api/scan/:rackId/report used to be public - and therefore served any
   // tenant's rack to anyone with an id. It now needs a short-lived token scoped
   // to this one rack, fetched (authenticated) whenever the modal opens.
   const [reportToken, setReportToken] = useState(null);
   const [reportTokenErr, setReportTokenErr] = useState(null);
   const [sessionPorts, setSessionPorts] = useState([]); // [{deviceIdx, port, deviceLabel, deviceClass, status}]
   // The device picker's own open state. It is a listbox we draw, not a native
-  // <select>, so the open/closed state is ours to hold — see the note where it
+  // <select>, so the open/closed state is ours to hold - see the note where it
   // is rendered.
   const [deviceListOpen, setDeviceListOpen] = useState(false);
   // Which of the two things the person chose to do with this rack. Until they
-  // choose, the page is the photograph and the choice — nothing else.
+  // choose, the page is the photograph and the choice - nothing else.
   const [portMode, setPortMode] = useState(false);
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
   const [shareMsg, setShareMsg] = useState(null);
   const [shareChannel, setShareChannel] = useState(null); // 'slack' | 'teams' | 'outlook'
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
-  // Recipient prompt — channel is the active dialog (null = closed). Email +
+  // Recipient prompt - channel is the active dialog (null = closed). Email +
   // optional note (Outlook subject / Teams + Slack message) are filled by the user.
   const [shareDialogChannel, setShareDialogChannel] = useState(null);
   const [shareEmailInput, setShareEmailInput] = useState('');
   const [shareNoteInput, setShareNoteInput]   = useState('');
   const [shareEmailErr, setShareEmailErr]     = useState(null);
-  // Switch SSH / LLDP neighbor lookup — credentials held in memory only.
+  // Switch SSH / LLDP neighbor lookup - credentials held in memory only.
   // Host defaults to the in-office switch so the LLDP pre-fetch can fire
   // automatically as soon as a port is picked. Username/password still come
   // from the encrypted server-side store or the creds modal.
   // Host starts from the per-deployment default rather than a baked-in office
-  // address — on a deployment with no route to that LAN the old literal
+  // address - on a deployment with no route to that LAN the old literal
   // pre-filled a switch that could not be there. Unset → empty, and the
   // /api/switch/default-host lookup or the user fills it in.
   const [switchCreds, setSwitchCreds] = useState({
@@ -1411,13 +1408,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // Detailed per-port console report (shown when the user presses "Done")
   const [portReportOpen, setPortReportOpen] = useState(false);
   const [portReport, setPortReport] = useState(null);
-  // Switch Info modal — live SSH snapshot, independent of CMDB/Netdisco.
+  // Switch Info modal - live SSH snapshot, independent of CMDB/Netdisco.
   const [switchInfoOpen, setSwitchInfoOpen] = useState(false);
   const [switchInfoStatus, setSwitchInfoStatus] = useState('idle'); // 'idle' | 'loading' | 'ready' | 'error'
   const [switchInfoData, setSwitchInfoData] = useState(null);
   const [switchInfoRaw, setSwitchInfoRaw] = useState('');
   const [switchInfoError, setSwitchInfoError] = useState(null);
-  // Specifications + firmware-update lookups — fired after we have a model
+  // Specifications + firmware-update lookups - fired after we have a model
   // from SSH. Independent of the SSH call so a slow vendor scrape doesn't
   // hold back the basic info section.
   const [switchSpecs, setSwitchSpecs] = useState(null);
@@ -1434,7 +1431,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [consoleEntries.length, runningIdx, consolePlan.length]);
-  // After which action: the console was invoked with creds already — otherwise we prompt.
+  // After which action: the console was invoked with creds already - otherwise we prompt.
   const [pendingConsoleOpen, setPendingConsoleOpen] = useState(false);
   // How long the auto-run took to complete (ms). Set when the stream ends.
   const [consoleRunMs, setConsoleRunMs] = useState(null);
@@ -1448,8 +1445,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const [consoleIntents, setConsoleIntents] = useState([]);
   const [selectedIntentId, setSelectedIntentId] = useState('');
   // ── Switch credentials status (per vendor, booleans only) ──
-  // True when the encrypted env store already has user/pass for this vendor —
-  // lets the page send requests with just `host` and have the server fill
+  // True when the encrypted env store already has user/pass for this vendor - // lets the page send requests with just `host` and have the server fill
   // username/password from the encrypted store on its side.
   const [credsStatus, setCredsStatus] = useState({ has_username: false, has_password: false, has_enable: false });
   useEffect(() => {
@@ -1479,7 +1475,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         .catch((err) => {
           if (cancelled) return;
           attempt += 1;
-          // One quick retry — covers transient WebView/network hiccups.
+          // One quick retry - covers transient WebView/network hiccups.
           if (attempt < 2) {
             setTimeout(tryFetch, 600);
           } else {
@@ -1507,7 +1503,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
   // ── Live port monitoring (ticket mode only) ──
   // Polls /api/switch/port-status every 5s while we're in the port view of a
-  // ticket. Surfaces a "cable attached — problem solved" banner as soon as
+  // ticket. Surfaces a "cable attached - problem solved" banner as soon as
   // the port transitions from "no activity" (no neighbor, no MACs) to active.
   const [liveSnapshot, setLiveSnapshot] = useState(null);
   const [liveLastAt,   setLiveLastAt]   = useState(null);
@@ -1565,7 +1561,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     if (result.resultImageUrl) setResultImg(apiUrl(result.resultImageUrl));
     if (result.rackImageUrl)   setRackImg(apiUrl(result.rackImageUrl));
     if (result.portInfo)       setPortInfo(result.portInfo);
-    // Don't pre-populate neighbor state here — the native LLDP panel
+    // Don't pre-populate neighbor state here - the native LLDP panel
     // auto-fires against the configured switch host (which is the reachable
     // real switch) and shows live data. Our server-side LLDP against CMDB's
     // mgmt_ip is best-effort and may fail for demo IPs.
@@ -1576,7 +1572,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // Live polling loop: in ticket-mode port phase, hit /api/switch/port-status
   // every LIVE_POLL_MS. Uses the configured switchCreds.host (which is the
   // real reachable switch). The interface name must match the vendor dialect
-  // (TP-Link expects "1/0/15", Cisco IOS expects "Gi1/0/15") — derive from
+  // (TP-Link expects "1/0/15", Cisco IOS expects "Gi1/0/15") - derive from
   // the ticket's raw port number using VENDOR_IFACE.
   useEffect(() => {
     if (!ticketMode || phase !== 'port') return;
@@ -1642,7 +1638,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   }, [ticketMode, phase, ticket?.target?.port, switchCreds.host, switchCreds.vendor, credsStatus.has_username, credsStatus.has_password]);
   // Mutable copy of devices so feedback-triggered re-labels (port count) can
   // patch a single entry without round-tripping the whole result. Reset only
-  // when the scan itself changes — not on every render (result destructures
+  // when the scan itself changes - not on every render (result destructures
   // create a new array reference each pass).
   const [devices, setDevices] = useState(initialDevices);
   useEffect(() => { setDevices(initialDevices); }, [scanId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1671,10 +1667,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           if (cancelled) return;
           if (Array.isArray(fresh.devices)) {
             setDevices(fresh.devices);
-            if (hasCable(fresh.devices)) return;    // enriched — stop polling
+            if (hasCable(fresh.devices)) return;    // enriched - stop polling
           }
         }
-      } catch { /* network blip — keep what we have */ }
+      } catch { /* network blip - keep what we have */ }
       if (!cancelled && ++tries < MAX_TRIES) timer = setTimeout(poll, 5000);
     };
     poll();
@@ -1696,7 +1692,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         const hasLabels = Array.isArray(data?.deviceLabels) && data.deviceLabels.some(d => d.label);
         const hasReclass = Array.isArray(data?.reclassifications) && data.reclassifications.length > 0;
         if (hasLabels || data?.pattern || hasReclass) setFetchedOcrLabels(data);
-      } catch { /* ignore — fall back to synthesized names */ }
+      } catch { /* ignore - fall back to synthesized names */ }
     })();
     return () => { cancelled = true; };
   }, [scanId]);
@@ -1712,8 +1708,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // Overview hero: ALWAYS the clean raw photo. The SVG overlay below draws the
   // device boxes and labels on top, and highlights the selected one.
   //
-  // Selecting a device used to swap this to result.overlayImageUrl —
-  // 7_rack_all_ports.png — described in the old comment here as showing "the
+  // Selecting a device used to swap this to result.overlayImageUrl - // 7_rack_all_ports.png - described in the old comment here as showing "the
   // selected device's ports". It does not: runner.py builds that image by
   // looping over EVERY port-bearing device in the rack and baking in all of
   // their port boxes. So picking one device lit up the ports on all of them,
@@ -1723,18 +1718,18 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // reopened scan either.
   //
   // It doesn't need to. The per-device view already exists below: the port
-  // result panel's 'device' mode shows 5_selected_device_with_port.png — that
-  // device's ports with the chosen one highlighted — and its 'rack' mode shows
+  // result panel's 'device' mode shows 5_selected_device_with_port.png - that
+  // device's ports with the chosen one highlighted - and its 'rack' mode shows
   // the selected port on the full rack. Those are separate elements from this
   // hero, so leaving the hero clean loses nothing.
   //
   // The old fallback chain was also unsound: with overlayImageUrl absent it
   // dropped to resultImg, a DEVICE CROP, while the SVG overlay above it keeps
-  // drawing in full-image coordinates — a crop under a full-rack overlay.
+  // drawing in full-image coordinates - a crop under a full-rack overlay.
   // Prefer the path the server resolved from the file that actually exists.
   // Guessing it here as `original_image.${originalExt || 'png'}` meant any
   // payload that arrived without an extension asked for a .png the camera
-  // never produced — an iPhone sends JPEG or HEIC — and the rack photo came up
+  // never produced - an iPhone sends JPEG or HEIC - and the rack photo came up
   // as a broken image while the rest of the result rendered fine. The guess is
   // kept only as a fallback for a server that predates originalImageUrl.
   const originalPath = originalImageUrl
@@ -1798,7 +1793,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     setZoom((prev) => clampZoom(prev + delta));
   };
   // Keep the image on screen. The offset was unbounded, so a determined drag
-  // translated the picture entirely out of view — which is exactly the
+  // translated the picture entirely out of view - which is exactly the
   // "image disappears" testers reported. Allow panning only as far as the
   // parts of the scaled image that are actually off-screen.
   const clampOffset = (next, z, el) => {
@@ -1814,7 +1809,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   };
 
   const releaseCapture = (event) => {
-    // Throws NotFoundError if the pointer was already released — e.g. the
+    // Throws NotFoundError if the pointer was already released - e.g. the
     // browser fired pointercancel first. An uncaught throw here left the drag
     // permanently engaged.
     try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* already released */ }
@@ -1822,7 +1817,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
   const handlePointerDown = (event) => {
     if (event.button !== 0) return;
-    // Only engage pan when zoomed in — otherwise capturing the pointer would
+    // Only engage pan when zoomed in - otherwise capturing the pointer would
     // swallow taps meant for the device rectangles on the hero overlay.
     if (zoom <= 1) return;
     dragRef.current = { x: event.clientX, y: event.clientY };
@@ -1865,14 +1860,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // frame behind is not worth a render per pointermove.
   const cursorStyle = zoom > 1 ? 'grab' : 'zoom-in';
   // The translate is applied in screen space (after scale), so it must match the
-  // drag 1:1 — NOT divided by zoom. Dividing made panning sluggish at high zoom,
+  // drag 1:1 - NOT divided by zoom. Dividing made panning sluggish at high zoom,
   // so a tall rack couldn't be dragged far enough to reveal its top devices.
   const imageTransform = `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`;
 
   useEffect(() => {
     if (!result) return;
     // Tell the desktop sidebar which rack we're on. Pure in-memory
-    // event — no sessionStorage / localStorage. The sidebar's RACK
+    // event - no sessionStorage / localStorage. The sidebar's RACK
     // section only appears after this fires (i.e. after a real upload
     // completes in this view session). A browser refresh clears it,
     // so a stale rack from a previous visit doesn't linger in the nav.
@@ -1882,8 +1877,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     } catch { /* ignore */ }
 
     // History holds a SUMMARY per scan, never the whole payload. It used to
-    // store `fullResult` — every detected device with its box and confidence —
-    // twelve times over, which reliably outgrew the ~5 MB origin quota. The
+    // store `fullResult` - every detected device with its box and confidence - // twelve times over, which reliably outgrew the ~5 MB origin quota. The
     // write then threw inside this effect and, with no boundary above it, took
     // the whole app down on the Results page: on success, right after a scan
     // the user had waited through, and stickily, because the oversized history
@@ -1910,7 +1904,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // 'port' phase, or any other state would otherwise block the main
   // render. This is the cleanest path to a guaranteed-visible drift
   // view from the sidebar link.
-  // ── Selection-driven effects — MUST stay above the early `return` below
+  // ── Selection-driven effects - MUST stay above the early `return` below
   //    so they run unconditionally on every render (Rules of Hooks). They
   //    compute the selected device inline from effectiveDevices (defined
   //    above) rather than the `selectedDevice` const declared after the gate.
@@ -1959,7 +1953,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   }, [selectedIdx]);
 
   // NOTE: the previous version of this file early-returned here when
-  // tab === 'drift', but that violated the Rules of Hooks — there are
+  // tab === 'drift', but that violated the Rules of Hooks - there are
   // useEffect/useMemo hooks defined further down, and skipping them
   // produced "Rendered fewer hooks than expected". Drift now renders
   // through the normal layout below (which already has the header and
@@ -1968,7 +1962,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // where the rack payload is still being fetched.
 
   if (!result && tab !== 'drift') {
-    // Deep-linked /results/:rackId — fetch in flight. Show a benign
+    // Deep-linked /results/:rackId - fetch in flight. Show a benign
     // loading state instead of the cold "No scan result" panel.
     if (urlRackId) {
       return (
@@ -2010,7 +2004,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     );
   }
 
-  // phase='all' is now handled by the 'all' tab — no early return needed
+  // phase='all' is now handled by the 'all' tab - no early return needed
 
   const selectedDevice = selectedIdx ? effectiveDevices[selectedIdx - 1] : null;
   const selectedLabel  = selectedIdx ? labels[selectedIdx - 1]  : null;
@@ -2019,7 +2013,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
   // Which port categories this device actually has (so an all-SFP firewall
   // offers SFP/Console, not just RJ45), and the max port # for the currently
-  // selected category — used for both validation and the input's max.
+  // selected category - used for both validation and the input's max.
   const availablePortCats = selectedDevice
     ? PORT_CATEGORIES.filter(c => portCatCount(selectedDevice, c.k) > 0)
     : [];
@@ -2035,7 +2029,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // or leading zeros), capped at 4 digits so nothing absurd reaches the API.
   //
   // This deliberately does NOT clamp to portMaxLimit any more. It used to
-  // silently rewrite an over-range number down to the max — type 48 on a device
+  // silently rewrite an over-range number down to the max - type 48 on a device
   // we believe has 24 ports and the box became 24, so the user was shown port
   // 24 having asked for 48, with nothing on screen saying so. That is the
   // "gave me a different port than I entered" report, and it was worst exactly
@@ -2124,7 +2118,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       });
       setPhase('port');
       // Pre-fetch the LLDP neighbour in the background so end-device info
-      // is ready by the time the user looks for it — silent on missing creds.
+      // is ready by the time the user looks for it - silent on missing creds.
       findNeighbor(null, { port: p, silent: true });
     } catch (err) {
       setError(err.message);
@@ -2242,7 +2236,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     const creds = credsOverride || switchCreds;
     const targetPort = portOverride != null ? portOverride : portNum;
     // Host is always required from the user. User/pass can come from the
-    // encrypted env store on the server side — if it has them, the client
+    // encrypted env store on the server side - if it has them, the client
     // doesn't need to ask.
     const userOk = !!creds.username || credsStatus.has_username;
     const passOk = !!creds.password || credsStatus.has_password;
@@ -2293,20 +2287,20 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     const next = { host: host.trim(), username: username.trim(), password, vendor: vendor || 'tplink', enablePassword: enablePassword || '' };
     setSwitchCreds(next);
     setCredsOpen(false);
-    // No automatic console run any more — user picks an action from the
+    // No automatic console run any more - user picks an action from the
     // intent dropdown inside the console sheet.
     if (pendingConsoleOpen) {
       setPendingConsoleOpen(false);
       setConsoleOpen(true);
     } else {
-      // "Find another end of device" is the only auto-fired action — and
+      // "Find another end of device" is the only auto-fired action - and
       // only when that's why we asked for creds.
       findNeighbor(next);
     }
   };
 
   // Streams the predefined console commands one-at-a-time via SSE.
-  // Runs in the background — does NOT open the console sheet. The user can
+  // Runs in the background - does NOT open the console sheet. The user can
   // open the sheet later to watch live progress / inspect completed entries.
   const startAutoConsoleRun = async (credsOverride) => {
     const creds = credsOverride || switchCreds;
@@ -2419,13 +2413,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     setConsoleOpen(true);
   };
 
-  // Live SSH snapshot of the switch — model, firmware, uptime, serial.
+  // Live SSH snapshot of the switch - model, firmware, uptime, serial.
   // Fires the vendor's "switch info" command (show version / show
   // system-info) and parses the output. Does NOT pass scanId/device_index/
-  // port so the server skips appending to the persisted transcript — this
+  // port so the server skips appending to the persisted transcript - this
   // is an out-of-band lookup, not part of the rack scan record.
   // Fire /api/specs in the background once we know vendor + model.
-  // No await on the caller — this runs in parallel with the firmware check.
+  // No await on the caller - this runs in parallel with the firmware check.
   const lookupSpecs = async (displayVendor, lookupModel) => {
     if (!displayVendor || !lookupModel) {
       setSwitchSpecsStatus('skipped');
@@ -2458,7 +2452,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     }
   };
 
-  // Fire /api/firmware in the background — needs vendor + model + version.
+  // Fire /api/firmware in the background - needs vendor + model + version.
   const lookupFirmware = async (displayVendor, lookupModel, currentVersion) => {
     if (!displayVendor || !lookupModel || !currentVersion) {
       setSwitchFirmwareStatus('skipped');
@@ -2553,7 +2547,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     fetchSwitchInfo();
   };
 
-  // Run a single intent — exactly the command behind the user's chosen
+  // Run a single intent - exactly the command behind the user's chosen
   // dropdown option, nothing else. Result lands in consoleEntries with the
   // intent's English label as the entry name (we hide the raw cmd in the UI).
   const runIntent = async (intentId) => {
@@ -2755,7 +2749,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     } catch (err) {
       setShareStatus('error');
       setShareMsg(err.message);
-      // Clear eventually even if untouched — long enough to read a real
+      // Clear eventually even if untouched - long enough to read a real
       // explanation, short enough that it cannot sit over the page forever.
       setTimeout(() => { setShareStatus('idle'); setShareMsg(null); setShareChannel(null); }, 15000);
     }
@@ -2786,7 +2780,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     }
   };
   const viewReport = () => { setReportDownload(false); setReportOpen(true); fetchReportToken(); };
-  // Same in-app modal as View, but with the auto-print hash — keeps the whole
+  // Same in-app modal as View, but with the auto-print hash - keeps the whole
   // download flow inside the app (no external browser, no ngrok URL shown).
   const openReportForDownload = () => { setReportDownload(true); setReportOpen(true); fetchReportToken(); };
   const downloadReport = async (format) => {
@@ -2795,7 +2789,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
       // Inside the packaged app the WebView ignores both blob: URLs and the
       // <a download> attribute, so the tap did nothing at all and there was no
-      // error to show — the report simply never arrived. Hand the URL to the
+      // error to show - the report simply never arrived. Hand the URL to the
       // system instead, which downloads it properly. The URL already carries
       // the short-lived report token, so it works without an auth header.
       const isNative = typeof window !== 'undefined'
@@ -2803,7 +2797,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       if (isNative) {
         // `window.open(url, '_system')` is a Cordova convention. Capacitor has
         // no handler for that target, so the tap did nothing at all in the
-        // packaged app — testers reported the Download button as dead. The
+        // packaged app - testers reported the Download button as dead. The
         // Capacitor equivalent is Browser.open, which this app already uses for
         // OAuth in SocialSignIn.jsx; it hands the URL to a Custom Tab / Safari
         // view that honours the attachment header and saves the file.
@@ -2875,8 +2869,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         return;
       }
       payloadActualPort = a;
-      // Cable color is now collected via the separate cable Yes/No block —
-      // not required here. If somehow set in state (legacy override), still
+      // Cable color is now collected via the separate cable Yes/No block - // not required here. If somehow set in state (legacy override), still
       // include it so a combined correction still works.
       const colorOverride = overrides.actualCableColor ?? actualCableColor;
       if (colorOverride) payloadActualCableColor = colorOverride;
@@ -2919,7 +2912,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
       // Port-number correction (with optional cable-color in the same submit):
       // The user said "this position (model called it port N) is actually
-      // port M". Their goal hasn't changed — they were looking for port N
+      // port M". Their goal hasn't changed - they were looking for port N
       // and still want port N. After saving the shift, re-select port N
       // so the highlight moves to where port N really lives under the new
       // numbering. The server's /api/select translates user→raw via the
@@ -2943,7 +2936,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             if (sdata.resultImageUrl) setResultImg(bustUrl(apiUrl(sdata.resultImageUrl)));
             if (sdata.rackImageUrl)   setRackImg(bustUrl(apiUrl(sdata.rackImageUrl)));
             if (sdata.portInfo) {
-              // Server's /api/select doesn't apply cable-color overrides — so
+              // Server's /api/select doesn't apply cable-color overrides - so
               // if the user corrected the cable color in this same submit,
               // overlay it on top of the fresh portInfo. Otherwise the new
               // highlight would briefly show the OLD cable color.
@@ -3129,19 +3122,18 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       markAnswered(`${scanId}:d:${selectedIdx}:count`);
       // If the server re-labeled the device with the user's target count,
       // patch the local devices array so the picker reflects the new count
-      // immediately — no page refresh needed.
+      // immediately - no page refresh needed.
       if (data.relabel?.ok && data.relabel?.device) {
         const idx = data.relabel.device_index;
         setDevices(prev => prev.map((d, i) => (i + 1 === idx ? data.relabel.device : d)));
-        // The server redrew the device image with the corrected port count —
-        // cache-bust so the port view shows the new dots/indices immediately.
+        // The server redrew the device image with the corrected port count - // cache-bust so the port view shows the new dots/indices immediately.
         if (data.relabel.image_updated) {
           setResultImg(prev => (prev ? bustUrl(prev) : prev));
         }
       } else if (!isCorrect && actualNum > 0) {
         // The server didn't relabel, but the user still told us the real count.
-        // Reflect it locally so the port-number input's 1–N bound follows the
-        // correction straight away (correct it to 28 → only 1–28 is accepted).
+        // Reflect it locally so the port-number input's 1 - N bound follows the
+        // correction straight away (correct it to 28 → only 1-28 is accepted).
         setDevices(prev => prev.map((d, i) => (
           i + 1 === selectedIdx ? { ...d, port_count: actualNum } : d
         )));
@@ -3164,7 +3156,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // e.g. Switch at U15 but scan sees Closed Unit), we don't have a port to
   // pinpoint. Render a dedicated "something is wrong" view instead of the
   // port layout.
-  // Only take over the Overview tab (the ticket landing) — and only until the
+  // Only take over the Overview tab (the ticket landing) - and only until the
   // user dismisses it or switches to another tab. Otherwise this return fired
   // for EVERY tab, so navigating away changed the state but never the screen.
   if (ticketMode && result?.driftDetected && tab === 'overview' && !driftDismissed) {
@@ -3332,7 +3324,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 {ticket.cmdb?.mgmt_ip && <><span>·</span><span>{ticket.cmdb.mgmt_ip}</span></>}
               </div>
 
-              {/* Resolved banner — shows when the port transitions to active */}
+              {/* Resolved banner - shows when the port transitions to active */}
               {liveResolvedAt && (
                 <div style={{
                   marginTop:8,
@@ -3405,7 +3397,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
           )}
 
-          {/* Agent Analysis — zero-LLM extraction + reasoning chain + work-note preview.
+          {/* Agent Analysis - zero-LLM extraction + reasoning chain + work-note preview.
               Only shown in ticket mode when /api/analyze-for-ticket returned an `agent` payload. */}
           {ticketMode && agent && (
             <div style={{
@@ -3462,7 +3454,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 {agent.extraction?.one_line_summary || 'no extractable details'}
               </div>
 
-              {/* Field grid — always visible, terse */}
+              {/* Field grid - always visible, terse */}
               <div style={{display:'flex',flexWrap:'wrap',gap:8,fontSize:11,color:'var(--muted, #474747)'}}>
                 {agent.extraction?.failure_mode && (
                   <span>mode: <strong style={{color:'var(--text, #c6c6c6)'}}>{agent.extraction.failure_mode.replace(/_/g,' ')}</strong></span>
@@ -3487,7 +3479,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 )}
               </div>
 
-              {/* Expanded body — reasoning chain + signals + work-note preview */}
+              {/* Expanded body - reasoning chain + signals + work-note preview */}
               {agentExpanded && (
                 <div style={{marginTop:6,display:'flex',flexDirection:'column',gap:10,fontSize:12}}>
 
@@ -3691,7 +3683,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
           )}
 
-          {/* Port image — tap to cycle: rack → device → zoomed port → rack */}
+          {/* Port image - tap to cycle: rack → device → zoomed port → rack */}
           {(() => {
             const cycleView = () => {
               if (portView === 'rack') setPortView('device');
@@ -3726,7 +3718,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               <div className={`${styles.portImgWrap} ${wrapClass}`} data-tour="port-image-tap" onClick={cycleView}>
                 {/* AssetImg so a token that landed late (or expired while the
                     page sat open) re-mints and retries instead of leaving a
-                    permanently broken picture — this is the image users
+                    permanently broken picture - this is the image users
                     actually look at after a scan. */}
                 <AssetImg src={imgSrc} alt="Port located"
                   className={styles.portImg}
@@ -3745,12 +3737,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             );
           })()}
 
-          {/* Port label — plain text, no container, below hero image */}
+          {/* Port label - plain text, no container, below hero image */}
           <div className={styles.prLabelLine} style={{ '--ac': rc }}>
             {resultLabel}
           </div>
 
-          {/* Port verdict — telemetry-style dashboard */}
+          {/* Port verdict - telemetry-style dashboard */}
           {(() => {
             const s = portInfo?.status;
             const isOn = s === 'connected';
@@ -3811,7 +3803,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             );
           })()}
 
-          {/* Port-TYPE tag / correction — record the physical port type
+          {/* Port-TYPE tag / correction - record the physical port type
               (RJ45 / SFP / USB / …). Feeds active-learning memory + retraining.
               Only shown once a port is selected. */}
           {portInfo && portInfo.status !== 'invalid' && portInfo.port_type && (
@@ -3830,7 +3822,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             />
           )}
 
-          {/* Low-confidence nudge — when the cable read is uncertain (usually a
+          {/* Low-confidence nudge - when the cable read is uncertain (usually a
               low-resolution / poorly-lit photo), tell the tech plainly and ask
               them to verify and correct it with the feedback below. */}
           {portInfo?.status === 'connected' && portInfo?.cable_confidence != null
@@ -3848,14 +3840,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
           )}
 
-          {/* End device (LLDP) — shown for any non-empty port. The inner states
+          {/* End device (LLDP) - shown for any non-empty port. The inner states
               cover the whole flow: idle → a "Find end device" button, loading,
               resolved neighbour, none-found, and error/retry. Previously the
               outer gate also required neighborStatus==='ok', which meant the
-              button (and every other state) could never render — so the LLDP
+              button (and every other state) could never render - so the LLDP
               lookup was unreachable unless it happened to auto-resolve.
               We ALSO show it when the switch found a live neighbour (or is
-              resolving one) even if the photo called the port empty — the live
+              resolving one) even if the photo called the port empty - the live
               switch is ground truth, so a real endpoint must never be hidden by
               a mis-classified photo. */}
           {(portInfo?.status !== 'empty'
@@ -3970,7 +3962,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           </div>
           )}
 
-          {/* Port-location feedback — standard Yes/No → dropdown of ports + Other# */}
+          {/* Port-location feedback - standard Yes/No → dropdown of ports + Other# */}
           {!ticketMode && selectedDevice && portNum && (
             <StandardFeedback
               key={`${scanId}:${selectedIdx}:${portNum}:loc`}
@@ -3985,7 +3977,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             />
           )}
 
-          {/* Cable-colour feedback — standard Yes/No → colour dropdown + Other */}
+          {/* Cable-colour feedback - standard Yes/No → colour dropdown + Other */}
           {!ticketMode && portInfo?.status === 'connected' && portInfo?.cable_color && (
             <StandardFeedback
               key={`${scanId}:${selectedIdx}:${portNum}:cable`}
@@ -4000,7 +3992,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             />
           )}
 
-          {/* Jump to another port — optional type switch, then a compact input.
+          {/* Jump to another port - optional type switch, then a compact input.
               Switching type (e.g. RJ45 → SFP) re-points the input at that port
               set so the user can locate a different type without going back. */}
           {!ticketMode && selectedDevice && portCatsToShow.length > 1 && (
@@ -4077,8 +4069,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   a few pixels from the real dismiss × on the right and read as a
                   second, broken close button ("remove cross mark here when there
                   is error to send report in teams"). The red background already
-                  says this failed, so one cross on the toast — the one that
-                  actually closes it — is enough. */}
+                  says this failed, so one cross on the toast - the one that
+                  actually closes it - is enough. */}
               {shareStatus !== 'error' && (
                 <span style={{ fontSize: '1.1rem', lineHeight: 1, flexShrink: 0 }} aria-hidden="true">
                   ✓
@@ -4086,7 +4078,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               )}
               <span style={{ flex: 1, minWidth: 0 }}>{shareMsg}</span>
               {/* A real dismiss control. The ✕ on the left is a status glyph
-                  with no handler — testers reasonably read it as a close
+                  with no handler - testers reasonably read it as a close
                   button and reported it broken. Errors also never cleared
                   themselves (only successes did), so the banner sat there for
                   good until the page was left. */}
@@ -4107,7 +4099,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
           )}
 
-          {/* Report row — View / Download / Share as labeled chips */}
+          {/* Report row - View / Download / Share as labeled chips */}
           <div className={styles.reportRow} style={{ '--ac': rc }}>
             <button className={`${styles.reportChip} ${styles.reportChipView}`}
               data-tour="full-report-btn"
@@ -4161,8 +4153,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               setDeviceFbStatus('idle'); setActualDeviceClass(''); setDeviceFbError(null);
               setPortCountFbStatus('idle'); setActualPortCount(''); setPortCountFbError(null);
               setError(null); resetZoom();
-              // Land at the top so the device picker / dropdown is in view —
-              // otherwise the page stays scrolled to the bottom (where this
+              // Land at the top so the device picker / dropdown is in view - // otherwise the page stays scrolled to the bottom (where this
               // button lives) and the dropdown appears hidden above the fold.
               if (typeof window !== 'undefined') {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4333,7 +4324,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 </div>
               </div>
 
-              {/* ── Intent picker bar — user-driven, no automation ── */}
+              {/* ── Intent picker bar - user-driven, no automation ── */}
               <div className={styles.intentBar}>
                 <select
                   className={styles.intentSelect}
@@ -4341,7 +4332,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   onChange={e => {
                     const id = e.target.value;
                     setSelectedIntentId(id);
-                    // Run immediately on selection — users expect picking an
+                    // Run immediately on selection - users expect picking an
                     // option to query the switch, not to require a second click
                     // on the separate Run button.
                     if (id && consoleStatus !== 'running-manual') runIntent(id);
@@ -4371,7 +4362,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   </div>
                 )}
 
-                {/* Result list — show only the friendly label + the cleaned
+                {/* Result list - show only the friendly label + the cleaned
                     output. The raw shell command is intentionally hidden. */}
                 {consoleEntries.map((entry, i) => (
                   <div key={`e-${i}`} className={styles.consoleEntry}>
@@ -4414,7 +4405,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           </div>
         )}
 
-        {/* Ticket-mode simplified report modal — just the essentials */}
+        {/* Ticket-mode simplified report modal - just the essentials */}
         {ticketReportOpen && ticketMode && ticket && (
           <div
             onClick={() => setTicketReportOpen(false)}
@@ -4549,7 +4540,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       <header className={styles.header}>
         {/* The one back control the app has: a filled 38px square, same mark,
             same place. This header used the global ghost icon button, which is
-            a circle — two different back buttons on adjacent screens. */}
+            a circle - two different back buttons on adjacent screens. */}
         <BackButton
           onBack={handleHeaderBack}
           data-tour-bypass={tourActive ? 'true' : undefined}
@@ -4572,12 +4563,11 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       </header>
       )}
 
-      {/* Rack-tab strip — only renders when this rack is part of a multi-rack scan */}
+      {/* Rack-tab strip - only renders when this rack is part of a multi-rack scan */}
       {!embeddedProp && <RackTabs rackId={rackId || scanId} />}
 
       {/* The rack's tabs appear once there is a job in progress, not before.
-          Straight after a scan the page is the photograph and one question —
-          read the switches, or look at a port — and a row of tabs under it
+          Straight after a scan the page is the photograph and one question - read the switches, or look at a port - and a row of tabs under it
           would be five more answers to a question nobody asked yet. Choosing
           either one brings the tabs in, and they stay for the rest of the rack. */}
       {!isDesktop && !embeddedProp && (tab !== 'overview' || portMode) && (
@@ -4659,7 +4649,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                     Hero overlay shows every real detection (switches, patch
                     panels, PDUs, servers, etc.) so the user sees the full
                     coverage at a glance. Placeholder Empty / Unidentified /
-                    Closed-Unit boxes are hidden — they're rack-slot fillers,
+                    Closed-Unit boxes are hidden - they're rack-slot fillers,
                     not actionable. The overlay is purely visual: device
                     selection happens through the dropdown below, not by
                     tapping the image. */}
@@ -4668,7 +4658,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   const idx = i + 1;
                   const isSel = selectedIdx === idx;
                   if (isSel) return null; // selected rendered last for z-order
-                  // In focus mode, only the selected device is shown — drop
+                  // In focus mode, only the selected device is shown - drop
                   // every other overlay so the user gets a clean drill-in view.
                   if (focusMode) return null;
                   const [bx1, by1, bx2, by2] = dev.box;
@@ -4740,7 +4730,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   const poly = selectedDevice.mask_polygon;
                   return (
                     <g>
-                      {/* Bright red neon border — silhouette when seg mask is
+                      {/* Bright red neon border - silhouette when seg mask is
                           available, falls back to bbox rect otherwise. Click
                           handler is on the outline shape so the corner
                           brackets (always bbox-based) stay decorative. */}
@@ -4772,7 +4762,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                         <path d={`M${bx1},${by2-c} L${bx1},${by2} L${bx1+c},${by2}`} fill="none" stroke="#ffffff" strokeWidth="5" strokeLinecap="round" />
                         <path d={`M${bx2-c},${by2} L${bx2},${by2} L${bx2},${by2-c}`} fill="none" stroke="#ffffff" strokeWidth="5" strokeLinecap="round" />
                       </g>
-                      {/* Name chip for the selected device — the per-device loop
+                      {/* Name chip for the selected device - the per-device loop
                           above skips the selected one (rendered here for z-order),
                           so without this its label disappears behind the shade. */}
                       {(() => {
@@ -4861,7 +4851,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         </div>
       </div>
 
-      {/* Selected device label — plain subtle-black header, no class-colour
+      {/* Selected device label - plain subtle-black header, no class-colour
           accent (kept monochrome per the user's white-focused brief). */}
       {selectedDevice && (
         <div className={styles.heroLabel}>
@@ -4875,7 +4865,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
         {/* What next. After seeing the rack there are two things to do: read
             its switches, or look at one port. Nothing else is on screen until
-            one of them is chosen — the picker used to sit here open at the
+            one of them is chosen - the picker used to sit here open at the
             same time, which made the choice above it meaningless. */}
         {/* The photograph, and the two ways on. Nothing else: the rack is on
             screen above, so a tally of it and a list of what is in it were
@@ -4910,7 +4900,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           </button>
         )}
 
-        {/* Manual-mode device dropdown — alternative to tapping the hero
+        {/* Manual-mode device dropdown - alternative to tapping the hero
             rectangle (mobile-friendly). Hidden in ticket-mode and when the
             all-devices view is up. */}
         {!ticketMode && phase !== 'all' && portMode && (() => {
@@ -4918,9 +4908,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             .map((dev, i) => ({ dev, idx: i + 1, label: labels[i] || `Device ${i + 1}` }))
             .filter(({ dev }) => isDevicePickable(dev));
           if (pickables.length === 0) {
-            // When the scan already worked out WHY nothing was found — a rack
-            // hidden behind cable bundles, a shot taken at too steep an angle —
-            // say that. "No devices detected" on a photo where the rack is
+            // When the scan already worked out WHY nothing was found - a rack
+            // hidden behind cable bundles, a shot taken at too steep an angle - // say that. "No devices detected" on a photo where the rack is
             // plainly visible reads as the app being broken, and gives the user
             // nothing to do differently. The reason was already being sent to
             // this page and thrown away.
@@ -4955,7 +4944,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   The native control's popup is drawn by the OS: on Android it
                   is a full-bleed list in the system font with no room to
                   breathe, and every option here is three facts joined by
-                  middots — "U01-SW01 · switch · 24 RJ45" — which that popup
+                  middots - "U01-SW01 · switch · 24 RJ45" - which that popup
                   truncates. Testers read the result as broken. Rendering the
                   list ourselves lets each device be a row with its identifier
                   on one line and its detail beneath, in the app's own type. */}
@@ -4979,7 +4968,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
               {/* Portalled to <body>, and a sheet rather than a dropdown
                   anchored under the trigger. The picker lives inside .sheet,
-                  which is an `overflow-y: auto` scroll container — an absolutely
+                  which is an `overflow-y: auto` scroll container - an absolutely
                   positioned list would be clipped by it, which is the same trap
                   the native <select> was avoiding by handing its popup to the
                   OS. A sheet also gives the list the room the tester asked for:
@@ -5069,7 +5058,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <div className={styles.portCard} style={{ '--accent': selColor }}>
             {/* One line says everything: what to type and how many there are.
                 The instruction that used to sit in its own box, and the single
-                port-type pill, are folded into it — on a phone the card was
+                port-type pill, are folded into it - on a phone the card was
                 taller than the photo it points at. */}
             <div className={styles.portCardTop}>
               <div>
@@ -5086,7 +5075,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 </span>
               )}
             </div>
-            {/* Port type — RJ45 / SFP / Console / USB — only when there is a
+            {/* Port type - RJ45 / SFP / Console / USB - only when there is a
                 choice to make. Sent as port_category so the pipeline
                 highlights the right port set. */}
             {portCatsToShow.length > 1 && (
@@ -5141,7 +5130,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           </div>
         )}
 
-        {/* Device-classification feedback — standard Yes/No → type dropdown + Other */}
+        {/* Device-classification feedback - standard Yes/No → type dropdown + Other */}
         {selectedDevice && (
           <StandardFeedback
             key={`${scanId}:${selectedIdx}:class`}
@@ -5156,12 +5145,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           />
         )}
 
-        {/* Port-count feedback — shown independently once the device feedback is
+        {/* Port-count feedback - shown independently once the device feedback is
             no longer visible ('hidden' or 'submitted'). Using both states makes
             the chain robust even if the device fb is skipped. PDUs have power
             outlets, not RJ45 ports, so the "Detected N RJ45 ports" confirmation
-            is irrelevant for them — the Power card already summarises outlets. */}
-        {/* Port-count feedback — standard Yes/No → count dropdown + Other#. Shown
+            is irrelevant for them - the Power card already summarises outlets. */}
+        {/* Port-count feedback - standard Yes/No → count dropdown + Other#. Shown
             after the device-class question is answered (keeps it to one prompt at
             a time). PDUs have power outlets, not RJ45 ports, so it's skipped. */}
         {selectedDevice && !isPdu(selectedDevice)

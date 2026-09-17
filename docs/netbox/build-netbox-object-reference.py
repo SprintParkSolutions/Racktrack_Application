@@ -9,7 +9,7 @@ import sys
 USAGE = """Rebuild the NetBox object reference.
 
     curl -s "$NETBOX_URL/api/schema/?format=json" -o schema.json
-    python3 build-object-reference.py schema.json netbox-objects.html
+    python3 build-netbox-object-reference.py schema-dumps/netbox-4.6.10-openapi.json netbox-object-reference.html
 """
 
 if len(sys.argv) != 3:

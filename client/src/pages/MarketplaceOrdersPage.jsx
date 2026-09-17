@@ -7,7 +7,7 @@ import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
 import CategoryIcon from '../components/marketplace/CategoryIcon.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
-   MarketplaceOrdersPage — order list, order detail and the buyer/seller
+   MarketplaceOrdersPage - order list, order detail and the buyer/seller
    message thread.
 
    The old page carried five differently-coloured status chips (amber,
@@ -17,7 +17,7 @@ import CategoryIcon from '../components/marketplace/CategoryIcon.jsx';
    shape with a coloured dot, and every control is the same hairline
    button.
 
-   Three window-modal calls also lived here — alert() on every failed
+   Three window-modal calls also lived here - alert() on every failed
    request and confirm() on complete/cancel. Errors now surface as an
    in-page banner and the two destructive-ish transitions use a
    two-step inline confirm, matching MarketplacePage.
@@ -106,7 +106,7 @@ function OrderRow({ order, role, onOpen }) {
 
 /* ── Message thread ──────────────────────────────────────────────────
    Own and other messages are told apart by alignment plus a fill /
-   hairline distinction, never by hue — the old thread used the same
+   hairline distinction, never by hue - the old thread used the same
    black bubble but there was no reason to give the section a second
    colour system when this one already reads at a glance. */
 function MessageThread({ messages = [], meId, endRef }) {
@@ -153,7 +153,7 @@ export default function MarketplaceOrdersPage() {
   const [sending, setSending]   = useState(false);
   const [trackCarrier, setTrackCarrier] = useState('');
   const [trackNumber, setTrackNumber]   = useState('');
-  // Replaces confirm() — 'complete' | 'cancel' | null.
+  // Replaces confirm() - 'complete' | 'cancel' | null.
   const [confirming, setConfirming]     = useState(null);
   const msgsEndRef = useRef(null);
 
@@ -382,7 +382,7 @@ export default function MarketplaceOrdersPage() {
               </div>
             </div>
 
-            {/* Seller ships — carrier + number, then one transition. */}
+            {/* Seller ships - carrier + number, then one transition. */}
             {isSeller && order.status === 'paid' && (
               <div className={styles.ship}>
                 <p className="mkt-label">Ship this order</p>
@@ -421,7 +421,7 @@ export default function MarketplaceOrdersPage() {
               </div>
             )}
 
-            {/* Two-step confirms — these change money-bearing state, so
+            {/* Two-step confirms - these change money-bearing state, so
                 they ask once inline rather than through window.confirm. */}
             {confirming ? (
               <div className={styles.confirm}>

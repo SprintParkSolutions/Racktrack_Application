@@ -7,13 +7,13 @@ import { assetTokenGeneration } from '../utils/api';
  * Rack images are served from /outputs and /uploads, which now require a
  * short-lived capability appended to the URL. That token is held in a module
  * variable and `apiUrl()` is a plain function, so React has no idea when it
- * changes — an <img> rendered before the token arrived kept its stale `src`
+ * changes - an <img> rendered before the token arrived kept its stale `src`
  * and showed a broken thumbnail until the component happened to remount.
  *
  * Two cases where that bites, both ordinary:
- *   * cold start on a new device — nothing is stored, so the first render
+ *   * cold start on a new device - nothing is stored, so the first render
  *     emits URLs with no token at all
- *   * the morning after — the stored token has expired, so the first render
+ *   * the morning after - the stored token has expired, so the first render
  *     emits URLs the server refuses
  *
  * Mounting this once near the root is enough: the returned generation number

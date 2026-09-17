@@ -4,11 +4,11 @@ import { apiUrl } from '../utils/api';
 import styles from './TenantMatPage.module.css';
 
 // Lazy-load the real 3D scene used by /results/:rackId/topology and
-// /multi-rack/.../topology — keeps three.js out of the initial bundle.
+// /multi-rack/.../topology - keeps three.js out of the initial bundle.
 const TopologyScene3D = lazy(() => import('./TopologyScene3D.jsx'));
 
 /**
- * Tenant rack-layout view — modelled on Arista CloudVision's
+ * Tenant rack-layout view - modelled on Arista CloudVision's
  * Network Provisioning page: left tree-explorer, canvas with view-mode
  * toggle (Map | Tree | Table | 3D), right detail panel.
  *
@@ -395,7 +395,7 @@ function TreeView({ tree, selectedId, onSelect }) {
 
 /* ─── Table view ────────────────────────────────────────────────────── */
 
-// Enter/Space on an element that had to stay a <tr>/<g> — those can't become
+// Enter/Space on an element that had to stay a <tr>/<g> - those can't become
 // <button>s without losing table semantics or the SVG transform.
 function activateOnKey(fn) {
   return (e) => {
@@ -455,7 +455,7 @@ function TableView({ racks, onPickRack }) {
         </thead>
         <tbody>
           {sorted.map(r => (
-            // The row stays a row — putting role="button" on the <tr> would
+            // The row stays a row - putting role="button" on the <tr> would
             // strip the table semantics. The rack name is the real control, so
             // that is what a keyboard user tabs to and presses.
             <tr key={r.id} onClick={() => onPickRack(r.id)}>
@@ -486,15 +486,15 @@ function TableView({ racks, onPickRack }) {
 }
 
 /* ─── Rack 3D view ─────────────────────────────────────────────────────
-   Reuses TopologyScene3D — the same component that renders the
-   per-rack 3D view at /results/:rackId/topology — so the demo
+   Reuses TopologyScene3D - the same component that renders the
+   per-rack 3D view at /results/:rackId/topology - so the demo
    3D matches the rest of the app pixel-for-pixel. We synthesize a
    topo JSON from the rack metadata since demo racks don't have a
    real scan-derived topology.json on disk.
    ──────────────────────────────────────────────────────────────────── */
 
 function Rack3DView({ rack }) {
-  // Hook must run unconditionally — compute before the early return, guard null.
+  // Hook must run unconditionally - compute before the early return, guard null.
   const topo = useMemo(() => (rack ? synthTopology(rack) : null), [rack?.id]);
   if (!rack) {
     return <div className={styles.empty}>Pick a rack from the tree to see it in 3D.</div>;

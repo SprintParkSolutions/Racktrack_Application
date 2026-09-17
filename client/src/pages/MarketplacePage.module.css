@@ -5,7 +5,7 @@
    specific to this page: the toolbar, the listing grid, the card, the
    my-listings row, the detail modal and the partner strip.
 
-   CORE RULE OF THIS PAGE: exactly one accent — ink on white. A card
+   CORE RULE OF THIS PAGE: exactly one accent - ink on white. A card
    earns attention through the weight of its title and price, and hover
    is always the same gesture (hairline → ink). Nothing on a resting
    card is coloured. */
@@ -18,7 +18,7 @@
 
 /* ── Toolbar ─────────────────────────────────────────────────────────
    Search, category and kind on one line. This replaces a tab row plus
-   a separate two-row filter grid — same controls, one band. */
+   a separate two-row filter grid - same controls, one band. */
 .toolbar {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
@@ -103,7 +103,7 @@
   overflow: hidden;
 }
 .cardThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* The glyph is a placeholder, not an illustration — it sits well back
+/* The glyph is a placeholder, not an illustration - it sits well back
    so a card without a photo reads as quiet, never as broken. */
 .cardThumbIcon { color: var(--mkt-ink, #121212); opacity: 0.16; }
 
@@ -289,7 +289,7 @@
   border-bottom: 1px solid var(--mkt-line, #e0e0e0);
   overflow: hidden;
 }
-/* A real photo earns 16:9. A placeholder glyph does not — at that ratio
+/* A real photo earns 16:9. A placeholder glyph does not - at that ratio
    it pushed the title and price below the fold and gave four-tenths of
    the dialog to an icon. */
 .modalThumbEmpty { aspect-ratio: auto; height: 116px; }
@@ -327,7 +327,7 @@
 
 .offerNote { margin: 0; }
 
-/* Inline confirm — replaces window.confirm(). */
+/* Inline confirm - replaces window.confirm(). */
 .confirmBar {
   display: flex; flex-direction: column; gap: 10px;
   padding: 12px 14px;
@@ -338,7 +338,7 @@
 .confirmText { font-size: 12.5px; line-height: 1.5; color: var(--mkt-ink, #121212); }
 .confirmBtns { display: flex; gap: 8px; justify-content: flex-end; }
 
-/* Inline report form — replaces window.prompt(). */
+/* Inline report form - replaces window.prompt(). */
 .reportBox {
   display: flex; flex-direction: column; gap: 8px;
   padding: 12px 14px;

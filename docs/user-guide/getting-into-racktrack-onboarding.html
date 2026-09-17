@@ -1,0 +1,439 @@
+<!-- Published copy of the claude.ai artifact "Getting Into RackTrack" | https://claude.ai/code/artifact/481a6112-dc47-4a6a-952d-fe2dc22a1e21 | artifact last updated 2026-09-02 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Getting Into RackTrack</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --page:#FFFFFF;
+    --panel:#F8FBFB;
+    --ink:#14181C;
+    --ink-2:#48545E;
+    --ink-3:#7A8590;
+    --rule:#DFE5E8;
+    --rule-2:#EDF1F2;
+    --accent:#0E6E78;
+    --accent-bg:#EAF4F5;
+    --ok:#2E6A47;
+    --ok-bg:#EEF6F1;
+    --warn:#8A5D14;
+    --warn-bg:#FBF5E9;
+    --stop:#93382F;
+    --stop-bg:#FAEFED;
+    --display:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --measure:68ch;
+  }
+
+  body{
+    background:var(--page);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:16px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{ padding: clamp(1.5rem,4vw,3.25rem) clamp(1rem,4vw,3.5rem) clamp(3rem,6vw,5rem); }
+
+  p{ margin:0 0 .75rem; max-width:var(--measure); }
+  strong{ font-weight:600; }
+  a{ color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+  a:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:3px; }
+  code{
+    font-family:var(--mono); font-size:.84em; background:var(--rule-2);
+    border:1px solid var(--rule); border-radius:3px; padding:.06em .34em; word-break:break-word;
+  }
+
+  /* ── masthead ─────────────────────────────────────────── */
+  .masthead{ border-bottom:2px solid var(--ink); padding-bottom:1.15rem; margin-bottom:2rem; }
+  .eyebrow{
+    font-family:var(--mono); font-size:.68rem; font-weight:500; letter-spacing:.15em;
+    text-transform:uppercase; color:var(--ink-3); margin:0 0 .6rem;
+  }
+  h1{
+    font-family:var(--display); font-weight:700; font-size:clamp(1.85rem,4.2vw,2.6rem);
+    letter-spacing:-.022em; line-height:1.1; margin:0 0 .55rem; text-wrap:balance;
+  }
+  .lede{ font-size:1.06rem; color:var(--ink-2); max-width:72ch; margin:0; }
+
+  /* ── section headings ─────────────────────────────────── */
+  h2{
+    font-family:var(--mono); font-size:.72rem; font-weight:600; letter-spacing:.13em;
+    text-transform:uppercase; color:var(--accent); margin:2.9rem 0 .9rem;
+    padding-bottom:.45rem; border-bottom:1px solid var(--rule);
+  }
+  h3{
+    font-family:var(--display); font-weight:600; font-size:1.08rem; letter-spacing:-.01em;
+    margin:0 0 .3rem; text-wrap:balance;
+  }
+
+  /* ── the three rules that break onboarding ────────────── */
+  .rules{ display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(19rem,1fr)); margin:0 0 .5rem; }
+  .rule-card{
+    background:var(--panel); border:1px solid var(--rule); border-top:3px solid var(--accent);
+    border-radius:0 0 8px 8px; padding:1.05rem 1.15rem 1.15rem;
+  }
+  .rule-card .tagline{
+    font-family:var(--mono); font-size:.64rem; font-weight:600; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--ink-3); margin:0 0 .5rem;
+  }
+  .rule-card p{ font-size:.95rem; color:var(--ink-2); max-width:none; margin:0; }
+  .rule-card p + p{ margin-top:.5rem; }
+
+  /* ── where to open it ─────────────────────────────────── */
+  .access{ display:grid; gap:0; grid-template-columns:repeat(auto-fit,minmax(17rem,1fr));
+    border:1px solid var(--rule); border-radius:8px; overflow:hidden; }
+  .access > div{ padding:.95rem 1.1rem; border-right:1px solid var(--rule-2); }
+  .access > div:last-child{ border-right:none; }
+  .access .where{
+    font-family:var(--mono); font-size:.64rem; font-weight:600; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 .35rem;
+  }
+  .access p{ font-size:.93rem; color:var(--ink-2); margin:0; max-width:none; }
+
+  /* ── the two paths ────────────────────────────────────── */
+  .paths{ display:grid; gap:1.5rem; grid-template-columns:repeat(auto-fit,minmax(26rem,1fr)); align-items:start; }
+  .path{ border:1px solid var(--rule); border-radius:10px; padding:1.2rem 1.3rem 1.35rem; background:var(--page); }
+  .path.primary{ background:var(--panel); border-color:#C9DADC; }
+  .path-head{ display:flex; align-items:baseline; gap:.6rem; flex-wrap:wrap; margin-bottom:.15rem; }
+  .path-mark{
+    font-family:var(--mono); font-size:.66rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-bg); border-radius:4px; padding:.2rem .45rem;
+  }
+  .path-who{ font-size:.9rem; color:var(--ink-3); font-style:italic; margin:0 0 .9rem; max-width:none; }
+
+  ol.steps{ list-style:none; counter-reset:s; padding:0; margin:0; }
+  ol.steps > li{
+    counter-increment:s; position:relative; padding:.7rem 0 .75rem 2.35rem;
+    border-bottom:1px solid var(--rule-2); font-size:.96rem; color:var(--ink-2); max-width:var(--measure);
+  }
+  ol.steps > li:last-child{ border-bottom:none; padding-bottom:.2rem; }
+  ol.steps > li::before{
+    content:counter(s); position:absolute; left:0; top:.78rem;
+    width:1.55rem; height:1.55rem; border-radius:5px;
+    background:var(--accent-bg); color:var(--accent);
+    font-family:var(--mono); font-size:.74rem; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+  }
+  ol.steps b{ color:var(--ink); font-weight:600; }
+
+  /* ── notes ────────────────────────────────────────────── */
+  .note{
+    background:var(--warn-bg); border:1px solid var(--rule); border-left:3px solid var(--warn);
+    border-radius:0 7px 7px 0; padding:.8rem 1rem; margin:.9rem 0 0; font-size:.92rem; color:var(--ink-2);
+  }
+  .note :last-child{ margin-bottom:0; }
+  .note p{ max-width:none; }
+  .note .tag{ font-family:var(--mono); font-size:.66rem; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--warn); }
+  .note.ok{ background:var(--ok-bg); border-left-color:var(--ok); }
+  .note.ok .tag{ color:var(--ok); }
+  .note.stop{ background:var(--stop-bg); border-left-color:var(--stop); }
+  .note.stop .tag{ color:var(--stop); }
+
+  /* ── tables ───────────────────────────────────────────── */
+  .tablewrap{ overflow-x:auto; margin:.35rem 0 0; }
+  table{ border-collapse:collapse; width:100%; font-size:.92rem; border:1px solid var(--rule); border-radius:8px; overflow:hidden; }
+  th,td{ text-align:left; padding:.7rem .9rem; border-bottom:1px solid var(--rule-2); vertical-align:top; color:var(--ink-2); }
+  tr:last-child td{ border-bottom:none; }
+  th{
+    font-family:var(--mono); font-size:.63rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-3); background:var(--panel); white-space:nowrap;
+  }
+  td:first-child{ color:var(--ink); }
+  td .said{ font-family:var(--display); font-weight:600; font-size:.93rem; }
+
+  /* ── foot ─────────────────────────────────────────────── */
+  .foot{ margin-top:3rem; padding-top:1.1rem; border-top:1px solid var(--rule); color:var(--ink-3); font-size:.85rem; }
+  .foot p{ max-width:74ch; }
+
+  @media (max-width:640px){
+    body{ font-size:15.5px; }
+    .access > div{ border-right:none; border-bottom:1px solid var(--rule-2); }
+    .access > div:last-child{ border-bottom:none; }
+  }
+  @media print{
+    body{ font-size:10.5pt; }
+    .wrap{ padding:0; }
+    h2{ margin-top:1.5rem; }
+    .path, .rule-card, table, .note, .access{ break-inside:avoid; }
+    h2,h3{ break-after:avoid; }
+    a{ color:var(--ink); text-decoration:none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">RackTrack &middot; Onboarding &middot; 2 September 2026</p>
+    <h1>Getting into RackTrack</h1>
+    <p class="lede">There are only two ways in: someone invites you, or you create your company&rsquo;s account.
+      Work out which one you are, follow the steps on that side, and you will be scanning in about five minutes.</p>
+  </header>
+
+  <h2>Read this first - it is where almost everyone gets stuck</h2>
+  <div class="rules">
+    <div class="rule-card">
+      <p class="tagline">Rule 1 · Your email decides your path</p>
+      <p>Only a <code>@gmail.com</code> address can create an account by itself. If your address is
+        <code>@yourcompany.com</code>, the sign-up screen will refuse it.</p>
+      <p>That is not a fault - it means you are meant to be <strong>invited</strong> instead. An invitation
+        accepts any address, work email included.</p>
+    </div>
+    <div class="rule-card">
+      <p class="tagline">Rule 2 · The email code lasts 60 seconds</p>
+      <p>When RackTrack sends you a six-digit code, it is valid for <strong>one minute</strong>.</p>
+      <p>Open your inbox <em>before</em> you ask for the code, so you can read it the moment it lands. If the
+        minute runs out, tap <strong>Resend</strong> and use the fresh one straight away.</p>
+    </div>
+    <div class="rule-card">
+      <p class="tagline">Rule 3 · Nothing happens automatically</p>
+      <p>RackTrack does not email invitations, and nobody is alerted when a new company signs up.</p>
+      <p>A person has to send you the link, and a person has to approve a new organization. If you are waiting,
+        <strong>message them</strong> - waiting quietly will not move it along.</p>
+    </div>
+  </div>
+
+  <h2>Where to open RackTrack</h2>
+  <div class="access">
+    <div>
+      <p class="where">Any device · fastest</p>
+      <p>Open <a href="https://demo.racktrack.ai">demo.racktrack.ai</a> in your browser. Nothing to install, and it
+        works the same on a laptop and a phone.</p>
+    </div>
+    <div>
+      <p class="where">iPhone / iPad</p>
+      <p>The RackTrack team sends you a <strong>TestFlight</strong> invitation. Install Apple&rsquo;s free TestFlight
+        app first, then RackTrack from inside it.</p>
+    </div>
+    <div>
+      <p class="where">Android</p>
+      <p>The team sends you an <strong>APK</strong> file. Open it and allow the install when your phone asks.</p>
+    </div>
+  </div>
+
+  <h2>Two ways in - pick your side</h2>
+  <div class="paths">
+
+    <section class="path primary">
+      <div class="path-head">
+        <span class="path-mark">Path A</span>
+        <h3>Someone sent you a link</h3>
+      </div>
+      <p class="path-who">This is how nearly everyone joins, including leaders and directors on a work email address.</p>
+      <ol class="steps">
+        <li>Open the link you were sent. The top of the page names what you are joining - for example
+          <b>&ldquo;Join Acme &middot; London as Member&rdquo;</b>. Check it is the right team and the right role.</li>
+        <li>Your email is already filled in and cannot be edited. The invitation was issued to that exact address,
+          which is how RackTrack knows the link is yours.</li>
+        <li>Choose a <b>username</b> and a <b>password</b>. The password needs all five at once: 8 characters, an
+          uppercase letter, a lowercase letter, a digit, and a special character such as <code>!</code> or
+          <code>#</code>. The meter under the box names the one thing still missing.</li>
+        <li>Tap <b>Join</b>. That is it - no code, no waiting. You are signed in and dropped straight onto the
+          scan screen.</li>
+      </ol>
+      <div class="note ok">
+        <p><span class="tag">Shortcut</span> - If the invitation was sent to a Gmail address, tap
+          <strong>Continue with Google</strong> on that same page. It does steps 2 to 4 in one tap, as long as the
+          Google account you pick is the address the invitation was sent to.</p>
+      </div>
+      <div class="note">
+        <p><span class="tag">Important</span> - An invitation link works <strong>once</strong> and stops working
+          <strong>seven days</strong> after it was created. A used or stale link cannot be revived; ask for a new one.</p>
+      </div>
+    </section>
+
+    <section class="path">
+      <div class="path-head">
+        <span class="path-mark">Path B</span>
+        <h3>You are the first person from your company</h3>
+      </div>
+      <p class="path-who">Do this once per company. Everyone after you joins by invitation, not through this screen.</p>
+      <ol class="steps">
+        <li>Open RackTrack and tap <b>Get Started</b>.</li>
+        <li>Fill in a <b>@gmail.com</b> email, a <b>username</b>, your <b>Organization</b> name (your company - this
+          is what teammates will see), and a <b>password</b>, typed twice.</li>
+        <li>Tap <b>Continue</b>. A six-digit code is sent to that inbox.</li>
+        <li>Type the code into the six boxes and tap <b>Verify</b>. It expires after one minute - tap <b>Resend</b>
+          if you miss it.</li>
+        <li>You land on <b>Waiting for approval</b>. Your organization now exists, but it cannot scan yet.</li>
+        <li><b>Message the RackTrack team and ask them to approve it.</b> Then leave the screen open - it checks by
+          itself every few seconds and lets you through the instant you are approved.</li>
+      </ol>
+      <div class="note stop">
+        <p><span class="tag">Why people get stuck here</span> - Nobody is emailed when you sign up. The approval
+          screen is not a queue that someone is watching; the RackTrack team only sees you by opening their console
+          and looking. Sending them one message is almost always the whole fix.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <h2>Signing in from then on</h2>
+  <ol class="steps">
+    <li>Leave the first box, <b>Organization</b>, <b>empty</b>. It is marked optional, and is only needed in the
+      rare case where the same username exists in two organizations and RackTrack needs you to say which.</li>
+    <li>Enter your <b>username or email</b>, then your <b>password</b>.</li>
+    <li>Tap <b>Sign in</b>. Administrators land on the Organizations console; everyone else lands on the scan screen.</li>
+  </ol>
+  <div class="note ok">
+    <p><span class="tag">Good to know</span> - You stay signed in for <strong>30 days</strong>, so you will not be
+      typing your password every visit. Losing signal does not sign you out either: RackTrack keeps working in the
+      parts of a datacenter with no reception and syncs up again afterwards.</p>
+  </div>
+
+  <h2>Roles - who can do what</h2>
+  <p>Everybody in RackTrack has one role. It decides what appears in your menu and which scans you are allowed to
+    see. To check your own, open <b>Profile</b> - it is listed there.</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Role</th><th>Who this usually is</th><th>What they can do</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="said">Member</span></td>
+          <td>Most of your team. The people who go to the rack and scan it.</td>
+          <td>Scan racks, read the results and correct them, reopen earlier scans, look up switch and firmware
+            details, ask DOT for help, and edit their own profile.</td>
+        </tr>
+        <tr>
+          <td><span class="said">Site Manager</span></td>
+          <td>The person who runs one building or site.</td>
+          <td>Everything a Member can do, and they look after the people at their own site: invite someone new, add
+            an account by hand, switch a person off, or reset a person's password.</td>
+        </tr>
+        <tr>
+          <td><span class="said">Org Admin</span></td>
+          <td>The person who looks after your company's RackTrack account.</td>
+          <td>Everything above, across every site in the company. They also create sites, connect your Data Sources
+            such as a CMDB, and use the Marketplace.</td>
+        </tr>
+        <tr>
+          <td><span class="said">Owner</span></td>
+          <td>The RackTrack team, not somebody at your company.</td>
+          <td>Runs the platform. Approves new companies and supports every organization.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:1.4rem"><strong>Which scans each role can see</strong></p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Role</th><th>Scans visible to them</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="said">Member</span></td><td>Their own site only.</td></tr>
+        <tr><td><span class="said">Site Manager</span></td><td>Their own site only. The same scans a Member at that site sees.</td></tr>
+        <tr><td><span class="said">Org Admin</span></td><td>Every site in their own company.</td></tr>
+        <tr><td><span class="said">Owner</span></td><td>Everything on the platform. This is the RackTrack team.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note ok">
+    <p><span class="tag">What you see in the menu</span> - Everybody gets Home, Scan, 2 Racks, Ask DOT, Contact and
+      Profile. An <strong>Org Admin</strong> also gets Organizations, Data Sources and Marketplace. The Owner
+      additionally gets Console and Lab. If a colleague has menu items you do not have, it is their role that
+      differs, not a fault.</p>
+  </div>
+  <div class="note">
+    <p><span class="tag">What a Site Manager cannot do</span> - Within their own site a Site Manager may switch a
+      Member on or off and reset that Member's password. They cannot change a Member's username, email address,
+      role or site, and they cannot manage another Site Manager.</p>
+  </div>
+  <div class="note">
+    <p><span class="tag">One rule about Org Admins</span> - Only the Owner can change an Org Admin account. One Org
+      Admin cannot edit another, which keeps two administrators from locking each other out.</p>
+  </div>
+
+  <h2>If you get stuck - find the words on your screen</h2>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>What you see</th><th>What it actually means</th><th>What to do</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="said">Please use a @gmail.com email address to create an account</span></td>
+          <td>You are on the sign-up screen with a work email. Only Gmail addresses can create an account unassisted.</td>
+          <td>Do not fight it. Ask your administrator to <strong>invite</strong> your work address - invitations accept any domain.</td>
+        </tr>
+        <tr>
+          <td><span class="said">Waiting for approval</span></td>
+          <td>Your organization was created, but no one has approved it yet - and no one was told you are there.</td>
+          <td>Message the RackTrack team. Leave the screen open; it lets you in by itself once approved.</td>
+        </tr>
+        <tr>
+          <td><span class="said">Request not approved</span> &nbsp;/&nbsp; <span class="said">Organization deactivated</span></td>
+          <td>A person declined the request, or switched a previously active organization off.</td>
+          <td>Contact the RackTrack team to discuss it. Nothing you tap in the app changes this.</td>
+        </tr>
+        <tr>
+          <td>The code never arrives, or it is rejected</td>
+          <td>The code lives for one minute. It may also be sitting in spam, or the email was mistyped.</td>
+          <td>Check spam, confirm the address, tap <strong>Resend</strong>, and enter the new code immediately.</td>
+        </tr>
+        <tr>
+          <td><span class="said">This invite has already been used</span> &nbsp;/&nbsp; <span class="said">This invite has expired</span></td>
+          <td>Invitation links are single-use and die after seven days.</td>
+          <td>Ask your administrator for a brand-new link. The old one cannot be revived.</td>
+        </tr>
+        <tr>
+          <td><span class="said">This invite was sent to&hellip; but your Google account uses&hellip;</span></td>
+          <td>You tapped <strong>Continue with Google</strong> and picked a different Google account from the invited address.</td>
+          <td>Pick the account matching the invited address, or set a username and password on the page instead.</td>
+        </tr>
+        <tr>
+          <td><span class="said">No RackTrack account uses&hellip;</span></td>
+          <td>You tapped <strong>Continue with Google</strong> without an account. Google can sign you in or open an invitation - it cannot create a new organization.</td>
+          <td>Open an invitation link, or use <strong>Path B</strong> with email and password.</td>
+        </tr>
+        <tr>
+          <td><code>rate_limited</code></td>
+          <td>More than ten sign-in attempts in one minute. Nothing is broken and your account is not locked.</td>
+          <td>Wait a full 60 seconds, then try once more.</td>
+        </tr>
+        <tr>
+          <td>You have simply forgotten the password</td>
+          <td>No administrator needed - the sign-in screen handles this.</td>
+          <td>Tap <strong>Forgot password?</strong>, enter your email, type the code, then choose <strong>No, take me to the app</strong> to get straight in without inventing a new password.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>If you are the one inviting people</h2>
+  <ol class="steps">
+    <li>Open the console, find the <b>Site</b> row the person belongs to, and tap <b>Invite</b>.</li>
+    <li>Enter their email address and pick a role - <b>Member</b> or <b>Site Manager</b>. If you are a Site
+      Manager yourself, every invitation you create is a Member: only an Org Admin can appoint a Site
+      Manager.</li>
+    <li>Tap <b>Create invite link</b>, then <b>Copy</b>.</li>
+    <li><b>Send them the link yourself</b> - email, chat, whatever actually reaches them.</li>
+  </ol>
+  <div class="note stop">
+    <p><span class="tag">The two rules that matter</span> - RackTrack <strong>does not send the invitation for
+      you</strong>: if you do not copy the link and send it, nothing reaches the person. And each link works
+      <strong>once</strong> and expires after <strong>seven days</strong>.</p>
+  </div>
+  <div class="note">
+    <p><span class="tag">Two other cases</span> - For a shared account, a contractor, or someone with no reachable
+      email, use <strong>+ Add member</strong> instead: you set their username and password and hand them over. And if
+      you see <em>&ldquo;Someone with that email already has an account&rdquo;</em>, they are already registered - send
+      them to the sign-in screen, or to <strong>Forgot password?</strong>, rather than issuing an invitation.</p>
+  </div>
+
+  <div class="foot">
+    <p>Have ready before you start: the device you will scan from, the inbox for the address you are signing up with,
+      and - if you were invited - the link itself. Everything in this guide describes the current build at
+      demo.racktrack.ai. Anything not covered here is in the full RackTrack User Guide.</p>
+  </div>
+
+</div>
+
+</body></html>

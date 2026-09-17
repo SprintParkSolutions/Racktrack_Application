@@ -1,0 +1,131 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Explainer — Sample" | https://claude.ai/code/artifact/909b4dab-4ea1-485b-858b-aa4b32fe9606 | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack Explainer — Sample</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --paper:#fff;--panel:#f7f7f4;--ink:#1a1c22;--muted:#5b5f66;
+    --hairline:rgba(22,24,29,.12);--hairline-soft:rgba(22,24,29,.07);
+    --done:#1a7f37;--done-bg:#e9f3ec;--part:#8a5a1d;--part-bg:#f7efe3;--crit:#a1352a;--crit-bg:#f6e9e7;
+    --blue:#175d8d;--accent:#175d8d;
+    --sans:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.72}
+  .wrap{max-width:900px;margin:0 auto;padding:clamp(28px,5vw,56px) clamp(20px,4vw,44px) 70px}
+
+  .flag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--part);background:var(--part-bg);border:1px solid rgba(138,90,29,.28);border-radius:8px;padding:5px 11px;margin-bottom:18px}
+  h1{margin:0 0 10px;font-size:clamp(27px,4vw,38px);font-weight:650;letter-spacing:-.02em;line-height:1.12;text-wrap:balance}
+  .dek{margin:0 0 8px;color:var(--muted);font-size:17px}
+
+  .ex{border:1px solid var(--hairline);border-radius:16px;padding:clamp(20px,3vw,30px);margin-top:26px;background:#fff}
+  .ex .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .pill{font-family:var(--mono);font-size:11px;font-weight:600;border-radius:999px;padding:3px 11px;white-space:nowrap}
+  .pill.crit{background:var(--crit-bg);color:var(--crit);border:1px solid rgba(161,53,42,.28)}
+  .pill.none{background:#eeeeeb;color:var(--muted);border:1px solid var(--hairline)}
+  .ex h2{margin:0;font-size:22px;font-weight:650;letter-spacing:-.012em}
+  .ex .oneline{margin:2px 0 20px;color:var(--muted);font-size:15px}
+
+  .beat{margin:0 0 22px}
+  .beat:last-child{margin-bottom:0}
+  .beat .lbl{display:flex;align-items:center;gap:9px;margin:0 0 7px}
+  .beat .lbl .ic{width:22px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .beat .lbl .tx{font-weight:650;font-size:15.5px;letter-spacing:-.005em}
+  .beat.now .ic{background:var(--part-bg);color:var(--part)}
+  .beat.why .ic{background:#e7f0f7;color:var(--blue)}
+  .beat.good .ic{background:var(--done-bg);color:var(--done)}
+  .beat.how .ic{background:#eef0f2;color:var(--ink)}
+  .beat.big .ic{background:#f0e9f5;color:#6b3fa0}
+  .beat p{margin:0 0 11px}
+  .beat p:last-child{margin-bottom:0}
+  .beat b{font-weight:600}
+  .term{border-bottom:1px dotted var(--muted);cursor:help}
+  .m{font-family:var(--mono);font-size:.86em;background:var(--panel);border:1px solid var(--hairline-soft);border-radius:5px;padding:0 5px}
+
+  .pullquote{margin:14px 0 0;padding:13px 16px;border-left:3px solid var(--done);background:var(--done-bg);border-radius:0 10px 10px 0;font-size:15px;color:#155e2b}
+  .pullquote b{color:#114a22}
+
+  .note{margin-top:28px;padding:16px 19px;border:1px dashed var(--hairline);border-radius:13px;background:var(--panel);color:var(--muted);font-size:14.5px}
+  .note b{color:var(--ink)}
+</style>
+
+<div class="wrap">
+  <span class="flag">Sample · one topic in the new style</span>
+  <h1>The single most important fix: a real database with backups</h1>
+  <p class="dek">This is one topic, written the way I'd rewrite <em>all</em> of them if you like it —
+    more explanation, plain words, every technical term spelled out.</p>
+
+  <div class="ex">
+    <div class="top">
+      <span class="pill crit">▲ HIGHEST PRIORITY</span>
+      <span class="pill none">○ NOT STARTED</span>
+    </div>
+    <h2>Where RackTrack keeps its data — and why that's risky</h2>
+    <p class="oneline">In one line: everything a customer creates lives on a single computer, with no spare copy anywhere.</p>
+
+    <div class="beat now">
+      <div class="lbl"><span class="ic">◉</span><span class="tx">What's happening today</span></div>
+      <p>Right now, all of RackTrack's information sits in <b>two places on one single computer</b>. The account
+        information — who the users are, which company they belong to, their settings — lives in a
+        <span class="term" title="A database is an organised store of information a program can read and write.">database</span>
+        file called <span class="m">SQLite</span>, which is really just one file on the disk. The scan photos themselves
+        live in ordinary <b>folders</b> on that same computer's hard drive. That's the whole setup: one machine, one copy of everything.</p>
+    </div>
+
+    <div class="beat why">
+      <div class="lbl"><span class="ic">!</span><span class="tx">Why that is a serious problem — two separate dangers</span></div>
+      <p><b>Danger one: there is no backup.</b> A backup is simply a second copy of your data, kept somewhere else, so
+        that if the first copy is lost you can restore it. RackTrack has none. If that one hard drive fails — and hard
+        drives do fail, it's a matter of "when," not "if" — then <b>every customer's scans and every account are gone
+        permanently</b>, with no way to get them back. That is the kind of event a business does not recover from.</p>
+      <p><b>Danger two: a scan can be half-saved.</b> When RackTrack saves a new scan, it does it in <b>two separate
+        steps</b>: first it writes the photos to a folder, and then, a moment later, it records <em>who owns</em> those
+        photos in the database. If the computer crashes or restarts in the tiny gap between those two steps, you're left
+        with photos that belong to nobody — an "orphan." This isn't hypothetical: the code already contains special
+        <b>repair scripts</b> that were written specifically to clean up orphans after they happened.</p>
+    </div>
+
+    <div class="beat good">
+      <div class="lbl"><span class="ic">✓</span><span class="tx">What "good" looks like</span></div>
+      <p>A proper setup fixes both dangers at once, and it does three things:</p>
+      <p><b>1. It uses a real database.</b> The industry-standard one is called
+        <span class="term" title="PostgreSQL — a widely-used, professional-grade open-source database.">PostgreSQL</span>.
+        Its key trick is that it can save the photos <em>and</em> the ownership record as a <b>single all-or-nothing
+        action</b> — either both succeed together, or neither does. A crash can no longer leave a scan half-saved.
+        (The technical word for this all-or-nothing guarantee is a <b>transaction</b>.)</p>
+      <p><b>2. It backs up automatically.</b> Every night, a complete copy of everything is written to a separate
+        location — a different building, really a different data centre — so a dead disk can never take the data with it.</p>
+      <p><b>3. Someone actually tests the restore.</b> This is the step everyone skips: you take a backup and practise
+        bringing it back to life, to <em>prove</em> it works. A backup nobody has ever restored is just a hope, not a safety net.</p>
+    </div>
+
+    <div class="beat how">
+      <div class="lbl"><span class="ic">→</span><span class="tx">How we actually get there</span></div>
+      <p>The good news is you don't build this from scratch. Both big cloud providers — <b>Amazon AWS</b> and
+        <b>Microsoft Azure</b> — offer a "managed database" where the automatic backups are simply a setting you switch
+        on, and they run and store the copies for you. So this fix arrives naturally as part of moving to the cloud.</p>
+      <p><b>Effort:</b> roughly <b>two to three weeks</b> of engineering work — moving the data across, rewriting the
+        save step to be all-or-nothing, turning on backups, and doing that one practice restore. It is the <b>single
+        highest-value piece of work</b> on the entire roadmap.</p>
+    </div>
+
+    <div class="beat big">
+      <div class="lbl"><span class="ic">★</span><span class="tx">Why this one fix matters far beyond safety</span></div>
+      <p>This isn't only about not losing data. <b>You cannot earn the ISO 27001 or SOC 2 certificates without it.</b>
+        Those audits specifically check that a company backs up its data and can prove it can restore it. So this single
+        fix does triple duty: it removes the scariest risk, it's a headline item enterprise buyers ask about, and it
+        unlocks the certifications later. That's why it sits at the very top.</p>
+      <div class="pullquote"><b>In one sentence:</b> today a single dead hard drive could erase the whole product, and
+        fixing that is both the most urgent safety step and the foundation the certifications stand on.</div>
+    </div>
+  </div>
+
+  <div class="note"><b>Is this the right level?</b> This is one topic — expanded from the two-line card you saw into
+    something that actually explains it. If this depth and tone work for you, I'll rewrite <b>every</b> topic across all
+    seven areas the same way (still with the sidebar to jump between them). If you'd like it even simpler, or a bit
+    shorter, or more technical, tell me and I'll tune it before doing the whole thing.</div>
+</div>
+
+</body></html>

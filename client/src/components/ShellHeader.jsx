@@ -2,8 +2,8 @@ import { createContext, useContext, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 /**
- * One header, everywhere. DesktopShell draws a single top bar — [back] [Title]
- * on the left, an actions slot on the right — and every page uses it instead of
+ * One header, everywhere. DesktopShell draws a single top bar - [back] [Title]
+ * on the left, an actions slot on the right - and every page uses it instead of
  * drawing its own. Pages only ever contribute two things to that header:
  *
  *   • right-side actions (List an item, Live/Refresh, …) via <HeaderActions>
@@ -11,8 +11,7 @@ import { createPortal } from 'react-dom';
  *     useHeaderBack()
  *
  * The title itself comes from the route (see DesktopShell's PAGE_TITLE), so the
- * header is identical page to page — same position, font, size, back button —
- * and only the title text differs.
+ * header is identical page to page - same position, font, size, back button - * and only the title text differs.
  *
  * On a phone there is no shell, so the context value is null: <HeaderActions>
  * renders nothing and pages fall back to their own mobile headers, unchanged.
@@ -35,7 +34,7 @@ export function HeaderActions({ children }) {
 // falsy handler restores the default (history back).
 //
 // The latest handler is kept in a ref so we can register a STABLE wrapper with
-// the shell once — depending on the handler's identity would re-run the effect
+// the shell once - depending on the handler's identity would re-run the effect
 // every render, and since it calls setState in the shell that would loop.
 export function useHeaderBack(handler) {
   const ctx = useContext(ShellHeaderContext);

@@ -1,8 +1,8 @@
-/* Send this report — see ShareSheet.jsx. */
+/* Send this report - see ShareSheet.jsx. */
 
 /* The card sits at the TOP of the screen, not the bottom: the app does not
    shrink for the iOS keyboard, so anything anchored to the bottom is behind
-   the keyboard the moment the address field is focused — which is exactly
+   the keyboard the moment the address field is focused - which is exactly
    when the Send button has to be visible. */
 .scrim {
   position: fixed; inset: 0; z-index: 1000;
@@ -31,7 +31,7 @@
   font-size: 14px; cursor: pointer;
 }
 
-/* Which way — one row of three. */
+/* Which way - one row of three. */
 .seg {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
   padding: 4px; border-radius: 12px;

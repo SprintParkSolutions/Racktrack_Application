@@ -4,7 +4,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import styles from './DesktopShell.module.css';
 import ThemeToggle from './ThemeToggle.jsx';
 import { useAuth } from '../AuthContext';
-import { usePrimaryNav, GroundTruthIcon } from '../nav/navLinks.jsx';
+import { usePrimaryNav, NAV_GROUPS, GroundTruthIcon } from '../nav/navLinks.jsx';
 import { ShellHeaderContext } from './ShellHeader.jsx';
 
 // Persistent record of the last rack the user opened. Once an image has
@@ -13,7 +13,7 @@ import { ShellHeaderContext } from './ShellHeader.jsx';
 // (Topology, Network, Switches, etc.) even when the user navigates back
 // to Home or Scan. Cleared only when the user starts a brand-new scan
 // flow that hasn't produced a rackId yet.
-// The rackId is held in module-level memory only — NOT in sessionStorage
+// The rackId is held in module-level memory only - NOT in sessionStorage
 // or localStorage. That way the RACK section in the sidebar only appears
 // after the user actively uploads an image in the current view (which
 // fires the rt:rack-id-changed event). A browser refresh wipes this
@@ -23,7 +23,7 @@ let _liveRackId = null;
 function readLiveRackId() { return _liveRackId; }
 function writeLiveRackId(id) { _liveRackId = id || null; }
 
-// DesktopShell — full landscape SaaS layout for ≥1024px renders.
+// DesktopShell - full landscape SaaS layout for ≥1024px renders.
 // Portalled to <body> so it escapes #root's max-width:540px.
 //
 // Structure: persistent left sidebar (240px) + top breadcrumb bar +
@@ -33,9 +33,9 @@ function writeLiveRackId(id) { _liveRackId = id || null; }
 // Pages that don't yet have a dedicated landscape layout will appear
 // at full viewport width; their mobile components were designed for
 // narrow widths, so their internal max-width / centering still works
-// — they just sit in a wider, sidebar-anchored canvas.
+// - they just sit in a wider, sidebar-anchored canvas.
 
-// Rack-context icons — used for the contextual section nav that appears
+// Rack-context icons - used for the contextual section nav that appears
 // in the sidebar when the user is viewing a specific rack's results.
 const OverviewIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -108,6 +108,7 @@ const PAGE_TITLE = {
   '/profile':          { title: 'Profile',             sub: 'Account & history' },
   '/history':          { title: 'Scan history',        sub: 'Every rack you have scanned' },
   '/organizations':    { title: 'Organizations',       sub: 'Members, sites & approvals' },
+  '/setup':            { title: 'Organization settings', sub: 'Datacentres, spaces, approvers and rules' },
   '/connections':      { title: 'Connections',         sub: 'Active data sources' },
   '/results':          { title: 'Scan results',        sub: 'Devices & ports' },
   '/switch-info':      { title: 'Switch info',         sub: 'CMDB switch list' },
@@ -150,11 +151,11 @@ export default function DesktopShell({ children }) {
   // ── The one header ────────────────────────────────────────────────────
   // Every page renders inside this shell and shares ONE top bar: [back]
   // [Title] on the left, an actions slot on the right. Pages no longer draw
-  // their own header on desktop — they hide it and, if they have right-side
+  // their own header on desktop - they hide it and, if they have right-side
   // controls, portal them into `actionsEl` via <HeaderActions>. `backHandler`
   // lets a page override what Back does (the org console clears the active org
   // instead of navigating). This is what makes the header identical page to
-  // page — same position, font, size, back button — with only the title
+  // page - same position, font, size, back button - with only the title
   // changing.
   const [actionsEl, setActionsEl] = useState(null);
   const [backHandler, setBackHandler] = useState(null);
@@ -169,25 +170,24 @@ export default function DesktopShell({ children }) {
   const { user, logout } = useAuth();
   const isOwner = user?.role === 'owner';
 
-  // Shared with the phone's bottom bar — see nav/navLinks.jsx. The two used
+  // Shared with the phone's bottom bar - see nav/navLinks.jsx. The two used
   // to keep separate hardcoded lists and drifted apart, which is how Lab and
   // Marketplace ended up unreachable on a phone.
   const links = usePrimaryNav();
 
-  // Rack-context links — show OVERVIEW / PORTS / TOPOLOGY / NETWORK /
+  // Rack-context links - show OVERVIEW / PORTS / TOPOLOGY / NETWORK /
   // SWITCHES / DRIFT in the sidebar after the user has uploaded an image
   // in this browser session. We use sessionStorage so the RACK section
-  // doesn't show on a fresh tab — it only appears once the user lands on
+  // doesn't show on a fresh tab - it only appears once the user lands on
   // a /results/<rackId> URL (which happens immediately after upload).
   // The rackId then persists across in-app navigation (Home, Scan) so
   // the user can jump back to Topology/Network without re-uploading.
   const urlRackId = extractRackId(location.pathname);
   // Only two paths populate the rackId:
-  //   1. The URL carries it (/results/<id> or /switch-info/<id>) — the
+  //   1. The URL carries it (/results/<id> or /switch-info/<id>) - the
   //      user is actively viewing a rack.
   //   2. ResultsPage just fired rt:rack-id-changed because an upload
-  //      finished. The rackId is held in module-level memory only —
-  //      a full page refresh wipes it, so stale racks from prior visits
+  //      finished. The rackId is held in module-level memory only - //      a full page refresh wipes it, so stale racks from prior visits
   //      don't leak into the sidebar.
   const [liveRackId, setLiveRackId] = useState(() => readLiveRackId());
   useEffect(() => {
@@ -205,7 +205,7 @@ export default function DesktopShell({ children }) {
     window.addEventListener('rt:rack-id-changed', onChange);
     return () => window.removeEventListener('rt:rack-id-changed', onChange);
   }, []);
-  // Landing on the Scan page means the user is starting a NEW scan — drop the
+  // Landing on the Scan page means the user is starting a NEW scan - drop the
   // remembered rack so the sidebar's rack tabs (Overview / Ports / Topology /
   // Network / Switches / Drift) stop showing the PREVIOUS scan's data. This is
   // deterministic (runs on every navigation to /scan), unlike ScanPage's
@@ -218,7 +218,7 @@ export default function DesktopShell({ children }) {
   }, [location.pathname, liveRackId]);
   const rackId = urlRackId || liveRackId;
   // Overview and Drift share the same pathname (/results/<id>) and differ only
-  // by the #drift hash — NavLink ignores the hash, so we resolve their active
+  // by the #drift hash - NavLink ignores the hash, so we resolve their active
   // state manually. (Without this, Drift's end:false prefix-matched every rack
   // sub-page and showed active everywhere.)
   const onRackRoot  = location.pathname === `/results/${rackId}`;
@@ -228,11 +228,11 @@ export default function DesktopShell({ children }) {
   // ?group, so they stay single everywhere.
   const groupParam = new URLSearchParams(location.search).get('group');
   const gq = groupParam ? `?group=${encodeURIComponent(groupParam)}` : '';
-  // The views that are not steps of the chain — things you look at rather than
+  // The views that are not steps of the chain - things you look at rather than
   // complete. Overview is the chain's Physical step and Ports is superseded by
   // its Network step, so neither is listed here; Netdisco is Discovery now,
   // because the chain's own Network step took the word.
-  // The rack's own pages. Ports is gone — the Network page reads the switches
+  // The rack's own pages. Ports is gone - the Network page reads the switches
   // themselves over SNMP, which is what Ports tried to do over SSH from a
   // server that could never reach them.
   const rackLinks = rackId ? [
@@ -242,7 +242,7 @@ export default function DesktopShell({ children }) {
     { to: `/results/${rackId}/topology${gq}`,  label: 'Topology', icon: <TopologyIcon />, end: false },
     { to: `/results/${rackId}${gq}#drift`,     label: 'Drift',    icon: <DriftIcon />,    end: false, active: isDriftView },
     { to: `/switch-info/${rackId}${gq}`,       label: 'Switches', icon: <SwitchesIcon />, end: false },
-    // Ground Truth — owner-only, per this scan. Only reachable here, after a
+    // Ground Truth - owner-only, per this scan. Only reachable here, after a
     // rack has been analysed (there IS a rackId).
     ...(isOwner ? [{ to: `/ground-truth/${rackId}`, label: 'Ground Truth', icon: <GroundTruthIcon />, end: false }] : []),
   ] : [];
@@ -256,17 +256,27 @@ export default function DesktopShell({ children }) {
           <span>RackTrack</span>
         </a>
 
-        <div className={styles.navSection}>Workflow</div>
-        <ul className={styles.navLinks}>
-          {links.map(l => (
-            <li key={l.to}>
-              <NavLink end={l.end} to={l.to}
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}>
-                {l.icon}{l.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+        {/* One line per destination, grouped. The description lives in the
+            hover text and in the phone's Menu; in the rail it read as clutter. */}
+        {NAV_GROUPS.filter((g) => g.key !== 'account').map((g) => {
+          const items = links.filter((l) => l.group === g.key);
+          if (!items.length) return null;
+          return (
+            <div key={g.key}>
+              <div className={styles.navSection}>{g.title}</div>
+              <ul className={styles.navLinks}>
+                {items.map(l => (
+                  <li key={l.to}>
+                    <NavLink end={l.end} to={l.to} title={l.hint || undefined}
+                      className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}>
+                      {l.icon}{l.label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
 
         {rackLinks.length > 0 && (
           <>
@@ -285,24 +295,30 @@ export default function DesktopShell({ children }) {
         )}
 
         <div className={styles.sidebarBottom}>
+          {links.filter((l) => l.group === 'account').map((l) => (
+            <NavLink key={l.to} end={l.end} to={l.to} title={l.hint || undefined}
+              className={({ isActive }) => `${styles.navLink} ${styles.navLinkFoot} ${isActive ? styles.active : ''}`}>
+              {l.icon}{l.label}
+            </NavLink>
+          ))}
           <ThemeToggle />
           {/* Sign out lives here so Profile no longer needs its own header on
-              desktop — the shell's crumb can be the single header there too. */}
+              desktop - the shell's crumb can be the single header there too. */}
           <button
             type="button"
             className={styles.signOut}
             onClick={() => { logout(); navigate('/'); }}
             aria-label="Sign out"
+            title="Sign out"
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            <span>Sign out</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </button>
         </div>
       </aside>
 
       {/* ── Main area ───────────────────────────────────────────── */}
       <section className={styles.main}>
-        {/* The ONE header — back + title on the left, page actions on the
+        {/* The ONE header - back + title on the left, page actions on the
             right. Same on every page; only the title text changes. Contact and
             Organizations draw their own full-bleed hero header, so the crumb is
             suppressed there. */}

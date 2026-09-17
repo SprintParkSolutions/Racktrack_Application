@@ -1,4 +1,4 @@
-// AUTO-GENERATED from login-info.xlsx — vendor → login portal URL.
+// AUTO-GENERATED from login-info.xlsx - vendor → login portal URL.
 // Keys are vendor names normalized to lowercase alphanumerics (no spaces
 // or punctuation). Used by SwitchCard to surface a per-vendor login link.
 export const VENDOR_LOGIN = {
@@ -109,7 +109,7 @@ export const VENDOR_LOGIN = {
   'zyxel': { name: 'Zyxel', url: 'https://www.zyxel.com/global/en/user/login' },
 };
 
-// Generic fallback portals — used when the vendor isn't in our curated
+// Generic fallback portals - used when the vendor isn't in our curated
 // login-info list but we still want to send the user to *some* official
 // vendor surface. These deep-link to the vendor's home / search page; the
 // switch's model is appended where it makes sense.
@@ -129,7 +129,7 @@ export const VENDOR_FALLBACK = {
   mikrotik:  'https://mikrotik.com/support',
 };
 
-// Aliases — map common short names to their canonical entry.
+// Aliases - map common short names to their canonical entry.
 export const VENDOR_ALIAS = {
   'mikrotik': 'mikrotik',
   'cisco': 'cisco',
@@ -190,7 +190,7 @@ export function findVendorLogin(vendor) {
   if (VENDOR_ALIAS[key] && VENDOR_LOGIN[VENDOR_ALIAS[key]]) {
     return { ...VENDOR_LOGIN[VENDOR_ALIAS[key]], source: 'login' };
   }
-  // Substring scan — pick the longest matching key so e.g. "alliedtelesis"
+  // Substring scan - pick the longest matching key so e.g. "alliedtelesis"
   // wins over "allied" when both could match.
   let best = null;
   for (const k of Object.keys(VENDOR_LOGIN)) {

@@ -1,4 +1,4 @@
-﻿/* PortsPage — visual language matched to ProfilePage / HistoryPage:
+﻿/* PortsPage - visual language matched to ProfilePage / HistoryPage:
    - dark navy base, ambient cyan/blue/violet radial gradients
    - frosted glass cards with subtle inner highlight
    - gradient text title (cyan → blue → violet)
@@ -481,7 +481,7 @@
   backdrop-filter: blur(20px);
 }
 /* The "as of" line above the faceplate when the table is a recording rather
-   than a live read. Deliberately quiet — a line of muted text, not a banner. */
+   than a live read. Deliberately quiet - a line of muted text, not a banner. */
 .asOfLine {
   margin: 0 16px 10px;
   font-size: 12px;
@@ -491,7 +491,7 @@
 
 /* The message block beside the retry button. `flex: 1 1 240px` with
    `min-width: 0` lets a long explanation wrap instead of shoving the button off
-   the row — on a phone the box is barely wider than the sentence. */
+   the row - on a phone the box is barely wider than the sentence. */
 .errorMsg { flex: 1 1 240px; min-width: 0; }
 .errorMsgHead { display: block; color: #121212; }
 .errorMsgBody { margin-top: 4px; opacity: 0.78; overflow-wrap: break-word; }
@@ -873,7 +873,7 @@
   color: rgba(255,255,255,0.85);
   font-weight: 700;
 }
-/* "No SFP required" — a resolved/positive state, not an error */
+/* "No SFP required" - a resolved/positive state, not an error */
 .noSfpMsg {
   display: flex; align-items: center; gap: 10px;
   margin: 0 0 12px; padding: 12px 14px;
@@ -890,7 +890,7 @@
 }
 :global([data-theme='light']) .noSfpMsg svg { color: #0f7040; }
 :global([data-theme='light']) .noSfpMsg b { color: #0f5132; }
-/* "Nearest match" note — shown above modules when no exact listing was found */
+/* "Nearest match" note - shown above modules when no exact listing was found */
 .nearestNote {
   margin: 0 0 10px; padding: 9px 12px;
   font-size: 12px; line-height: 1.5;
@@ -1063,12 +1063,12 @@
   font-family: ui-monospace, Menlo, monospace;
 }
 
-/* ── No price available — removed from card, kept for any legacy use ── */
+/* ── No price available - removed from card, kept for any legacy use ── */
 .priceBlockUnavailable { display: none; }
 .priceUnavailableIcon  { display: none; }
 .priceUnavailableText  { display: none; }
 
-/* ── Action link — compact, right-aligned ── */
+/* ── Action link - compact, right-aligned ── */
 .moduleActionLink {
   font-size: 12px;
   font-weight: 800;
@@ -1084,7 +1084,7 @@
   text-decoration: underline;
 }
 
-/* ── Old full-width button — kept for any legacy use ── */
+/* ── Old full-width button - kept for any legacy use ── */
 .moduleActionBtn {
   padding: 10px 14px;
   background: linear-gradient(135deg, rgba(0,0,0,0.2), rgba(0,0,0,0.1));
@@ -1185,7 +1185,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   SFP ADVISOR — REDESIGNED LAYOUT
+   SFP ADVISOR - REDESIGNED LAYOUT
    ══════════════════════════════════════════════════════════════════════ */
 
 /* ── Inline meta (in header row) ── */
@@ -1229,7 +1229,7 @@
   font-family: ui-monospace, Menlo, monospace;
 }
 
-/* ── HERO TOP PICK — visually dominant ── */
+/* ── HERO TOP PICK - visually dominant ── */
 .heroPick {
   position: relative;
   margin-bottom: 12px;
@@ -1245,7 +1245,7 @@
   overflow: hidden;
 }
 
-/* SfpModuleImage slots — hero (right of info column) and compact thumb.
+/* SfpModuleImage slots - hero (right of info column) and compact thumb.
    The image element itself has NO chrome (no border, no background) so
    only the photo shows. The slot just reserves a fixed size to prevent
    layout shift while the image loads. */
@@ -1393,7 +1393,7 @@
   transform: translateY(-1px);
 }
 
-/* ── COMPACT BUDGET — single-row card ── */
+/* ── COMPACT BUDGET - single-row card ── */
 .compactPick {
   display: flex;
   align-items: center;
@@ -1476,7 +1476,7 @@
   transform: translateX(2px);
 }
 
-/* ── ALTERNATIVES — preview chips + expandable list ── */
+/* ── ALTERNATIVES - preview chips + expandable list ── */
 .altsBlock {
   margin-bottom: 12px;
   padding: 0;
@@ -1625,7 +1625,7 @@
 }
 .altsRow:hover .altsRowArrow { color: #c6c6c6; }
 
-/* ── CABLING — compact horizontal strip ── */
+/* ── CABLING - compact horizontal strip ── */
 .cableStrip {
   margin-bottom: 12px;
   padding: 12px;
@@ -1685,7 +1685,7 @@
   border-top: 1px solid rgba(255,255,255,0.05);
 }
 
-/* ── FOOTER — datasheet link + sources count ── */
+/* ── FOOTER - datasheet link + sources count ── */
 .advisorFooter {
   display: flex; align-items: center; justify-content: space-between;
   gap: 10px;
@@ -2123,7 +2123,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   LIGHT: SFP ADVISOR — REDESIGNED LAYOUT
+   LIGHT: SFP ADVISOR - REDESIGNED LAYOUT
    ══════════════════════════════════════════════════════════════════════ */
 
 /* Inline meta (in header row) */
@@ -2319,7 +2319,7 @@
   gap: 14px;
 }
 
-/* Big count badge — the hero element */
+/* Big count badge - the hero element */
 .heroBadge {
   flex-shrink: 0;
   display: flex;
@@ -2481,7 +2481,7 @@
   text-align: right;
 }
 
-/* Backwards-compat aliases — older parts of the page still reference these */
+/* Backwards-compat aliases - older parts of the page still reference these */
 .summaryStats {
   display: flex;
   align-items: center;
@@ -2544,7 +2544,7 @@
   padding: 4px 0 2px;
 }
 
-/* Toggle pill — sits at the right of the hero row, opens the full table */
+/* Toggle pill - sits at the right of the hero row, opens the full table */
 .summaryInlineToggle {
   display: inline-flex;
   align-items: center;
@@ -2699,7 +2699,7 @@
 }
 :global([data-theme='light']) .utilPct { color: #717171; }
 
-/* Backwards-compat — older labels still in light theme */
+/* Backwards-compat - older labels still in light theme */
 :global([data-theme='light']) .summaryNum { color: #121212; }
 :global([data-theme='light']) .summaryNumGreen { color: #121212; filter: none; }
 :global([data-theme='light']) .summaryLabel { color: #717171; }
@@ -2750,7 +2750,7 @@
 :global([data-theme='light']) .portTableStatus { color: #121212; }
 
 /* ══════════════════════════════════════════════════════════════════════
-   Ports Inventory layout — pill filter + ETH/SFP card sections.
+   Ports Inventory layout - pill filter + ETH/SFP card sections.
    Flat white surfaces, hairline borders, no shadows. Status uses a
    single coloured dot on the right edge of the card.
    ══════════════════════════════════════════════════════════════════════ */
@@ -2884,7 +2884,7 @@
   }
 }
 
-/* ── Detailed port row — 3 columns, each with stacked sub-rows ─ */
+/* ── Detailed port row - 3 columns, each with stacked sub-rows ─ */
 .invRow {
   position: relative;
   display: grid;
@@ -2901,7 +2901,7 @@
 }
 .invRow:hover { background: var(--md-surface-container); }
 
-/* Vertical accent bar — sits at the left edge of the row */
+/* Vertical accent bar - sits at the left edge of the row */
 .invAccent {
   position: absolute;
   left: 0;
@@ -2941,7 +2941,7 @@
   min-width: 0;
 }
 
-/* Left — port number (big tabular) + iface (mono small) */
+/* Left - port number (big tabular) + iface (mono small) */
 .invRowNum {
   font-family: var(--font);
   font-size: 15px;
@@ -2965,7 +2965,7 @@
   max-width: 100%;
 }
 
-/* Middle — description (primary) + medium (secondary uppercase) */
+/* Middle - description (primary) + medium (secondary uppercase) */
 .invRowDesc {
   font-family: var(--font);
   font-size: 13px;
@@ -2989,7 +2989,7 @@
   white-space: nowrap;
 }
 
-/* Right — switch-reported status (top) + computed verdict (bottom) */
+/* Right - switch-reported status (top) + computed verdict (bottom) */
 .invRowStatus {
   font-family: var(--font);
   font-size: 12px;
@@ -2999,7 +2999,7 @@
   text-align: right;
   white-space: nowrap;
 }
-/* Same flip — status text colour follows link state */
+/* Same flip - status text colour follows link state */
 .invStatusUsed  { color: #16a34a; } /* link up */
 .invStatusAvail { color: #dc2626; } /* link down */
 .invStatusErr   { color: #d97706; } /* admin-down / err */
@@ -3031,7 +3031,7 @@
 }
 
 
-/* LLDP neighbour on a port row — the other end of the cable */
+/* LLDP neighbour on a port row - the other end of the cable */
 .invRowNeighbor {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 0.74rem; font-weight: 600; color: #1c1c1c;
@@ -3041,7 +3041,7 @@
 }
 .invRowNeighbor svg { flex: none; color: rgba(0,0,0,0.4); }
 
-/* ── Ports redesign — stat tiles + single-column endpoint rows (pt*) ── */
+/* ── Ports redesign - stat tiles + single-column endpoint rows (pt*) ── */
 .ptStats { display:flex; gap:10px; margin:10px 0 4px; flex-wrap:wrap; }
 .ptStat { flex:1; min-width:118px; background:#fff; border:1px solid rgba(0,0,0,.09); border-radius:12px; padding:8px 12px; }
 .ptStatV { display:block; font-size:1.25rem; font-weight:800; letter-spacing:-.02em; color:#171717; font-variant-numeric:tabular-nums; line-height:1.1; }
@@ -3131,7 +3131,7 @@
           transition:background .15s,border-color .15s; }
 .dsCopy:hover { background:#f3f3f3; border-color:rgba(26,79,149,.45); }
 
-/* Vendor mix — the make-up of the far side at a glance. */
+/* Vendor mix - the make-up of the far side at a glance. */
 .dsMix { display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
 .dsMixChip { display:inline-flex; align-items:center; gap:5px; font-size:.68rem; font-weight:600;
              color:#3c3c3c; background:#fff; border:1px solid rgba(0,0,0,.09);

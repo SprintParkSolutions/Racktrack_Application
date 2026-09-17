@@ -4,7 +4,7 @@ import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext';
 import styles from './LabPage.module.css';
 
-// Owner-only lab view — the client side of /api/lab/*.
+// Owner-only lab view - the client side of /api/lab/*.
 //
 // Shows the SAME audit the live-switch Ports tab shows (identity, port
 // faceplate, PoE, VLANs, LLDP neighbours, MAC table), addressed by
@@ -19,7 +19,7 @@ import styles from './LabPage.module.css';
 // how old it is. Nothing is ever blanked just because a refresh is in flight.
 //
 // EXPECT EMPTY SPEED/DUPLEX/PoE ON LAB SWITCHES: Cisco IOL is virtual. It never
-// negotiates a link and has no PoE hardware, so those read "—". That is the
+// negotiates a link and has no PoE hardware, so those read " - ". That is the
 // truth, not a parse failure. The real TP-Link fills them in.
 //
 // LAYOUT CONTRACT: no value is ever clipped. Fields wrap (overflow-wrap set in
@@ -55,7 +55,7 @@ function fmtAgo(iso) {
 // for handshake", "connect ECONNREFUSED", ...). For an owner staring at dead
 // lab switches that's noise, so translate the common shapes into what's actually
 // wrong + what to do. These are EVE-NG IOL nodes whose running-config (its
-// management IP + SSH host key) is VOLATILE — it evaporates when the node is
+// management IP + SSH host key) is VOLATILE - it evaporates when the node is
 // stopped or the EVE-NG VM reboots. So "was Live, now dark on :22" almost always
 // means the node is stopped or came back unconfigured, not a RackTrack fault.
 function explainSshError(raw) {
@@ -85,15 +85,15 @@ function explainSshError(raw) {
       hint: 'The stored credentials don’t match the switch’s local account. Fix the username/password in the encrypted cred store.',
     };
   }
-  return null; // unknown shape — caller falls back to showing the raw string
+  return null; // unknown shape - caller falls back to showing the raw string
 }
 
 // "Live" needs an age bound, or it is just a claim.
 //
 // The poller runs hourly by default (PORT_POLL_INTERVAL_MS) and only records
 // last_error when an attempt actually FAILS. So a switch that stopped being
-// polled at all — credentials pulled, poller not running, host quietly
-// unreachable in a way that never surfaced an error — keeps its old last_seen
+// polled at all - credentials pulled, poller not running, host quietly
+// unreachable in a way that never surfaced an error - keeps its old last_seen
 // and its green pill forever. That is how the Lab page came to show five
 // switches as Live whose own detail panel read "Last polled 6d ago".
 //
@@ -103,8 +103,7 @@ const POLL_INTERVAL_MS = 60 * 60 * 1000;   // matches the server-side default
 const LIVE_MAX_AGE_MS  = 2 * POLL_INTERVAL_MS;
 
 // A device is only healthy once a poll has SUCCEEDED. last_seen is stamped on
-// metadata write, so null means "never got data" even with zero failures —
-// exactly what a missing-credentials device looks like, because the poller
+// metadata write, so null means "never got data" even with zero failures - // exactly what a missing-credentials device looks like, because the poller
 // early-returns there without recording a failure.
 function statusMeta(d, connecting) {
   if (connecting)    return { label: 'Connecting…', cls: styles.stWarn };
@@ -112,7 +111,7 @@ function statusMeta(d, connecting) {
   if (d.last_error)  return { label: 'Offline',     cls: styles.stOff };
   if (!d.last_seen)  return { label: 'No data',     cls: styles.stIdle };
   const age = Date.now() - new Date(d.last_seen).getTime();
-  // NaN (unparseable stamp) must not read as fresh — compare so that only a
+  // NaN (unparseable stamp) must not read as fresh - compare so that only a
   // genuinely recent, genuinely parseable timestamp earns "Live".
   if (!(age < LIVE_MAX_AGE_MS)) {
     return { label: `Stale · ${fmtAgo(d.last_seen)}`, cls: styles.stIdle };
@@ -120,8 +119,8 @@ function statusMeta(d, connecting) {
   return { label: 'Live', cls: styles.stLive };
 }
 
-// parseInterfaceStatus returns { up: boolean, ... } — there is no `link`/`status`
-// field. Reading those made every port render "—".
+// parseInterfaceStatus returns { up: boolean, ... } - there is no `link`/`status`
+// field. Reading those made every port render " - ".
 function linkOf(s) {
   if (!s || s.up === undefined) return null;
   return s.up ? 'up' : 'down';
@@ -143,7 +142,7 @@ function Pill({ meta }) {
   );
 }
 
-// Three tabs, not five. Identity moved up into the summary strip — it is a fixed
+// Three tabs, not five. Identity moved up into the summary strip - it is a fixed
 // set of facts about the device, not a collection to browse, so a whole tab for
 // it just added a click. The MAC table went with it: these switches report an
 // empty forwarding table, so it was a permanently empty tab.
@@ -168,7 +167,7 @@ export default function LabPage() {
   // deviceId -> { data, at, error }. A ref, not state: it must survive device
   // switches without re-triggering the effects that would refetch.
   const auditsRef = useRef(new Map());
-  // Devices whose live audit we've already kicked off this session — so opening
+  // Devices whose live audit we've already kicked off this session - so opening
   // the page refreshes each device once in the background, not on every tab
   // switch or 15s device-list poll.
   const refreshedRef = useRef(new Set());
@@ -187,7 +186,7 @@ export default function LabPage() {
         setLoadErr(null);
         setSelected((cur) => cur ?? data.devices?.[0]?.id ?? null);
       } catch (err) {
-        // Keep whatever list we already have — a blip shouldn't empty the page.
+        // Keep whatever list we already have - a blip shouldn't empty the page.
         if (!cancelled) setLoadErr(err.message);
       }
     };
@@ -221,7 +220,7 @@ export default function LabPage() {
       const cached = loadCachedAudit(selectedId);
       if (cached) { auditsRef.current.set(selectedId, cached); bump(); }
     }
-    // 2. Refresh live in the BACKGROUND — once per device per session, never
+    // 2. Refresh live in the BACKGROUND - once per device per session, never
     //    blocking the view. The cached data above stays on screen (marked
     //    "Refreshing…") and updates in place when the pass returns.
     if (busyId) return;                              // one SSH session at a time
@@ -258,7 +257,7 @@ export default function LabPage() {
       auditsRef.current.set(id, { data, at, error: null });
       saveCachedAudit(id, data, at);   // survive refresh/reopen
     } catch (err) {
-      // Preserve the previous audit — an error annotates it, never erases it.
+      // Preserve the previous audit - an error annotates it, never erases it.
       const prev = auditsRef.current.get(id);
       auditsRef.current.set(id, { data: prev?.data || null, at: prev?.at || null, error: err.message });
     } finally {
@@ -286,13 +285,13 @@ export default function LabPage() {
   const neighbors = audit?.neighbors || {};
   const ports = Object.keys(ifstatus).length ? Object.keys(ifstatus) : Object.keys(ifconfig);
 
-  // (A "fleet tallies" pair lived here — unused since the strip was dropped,
+  // (A "fleet tallies" pair lived here - unused since the strip was dropped,
   // and it counted Live the old unbounded way, so it would have disagreed with
   // the pills the moment a switch went stale. Removed rather than fixed twice:
   // statusMeta() is the single place that decides what Live means.)
 
-  // No badge on Identity — it's a fixed field set, not a collection.
-  // Neighbour count is per DEVICE seen, not per port — a port on a shared
+  // No badge on Identity - it's a fixed field set, not a collection.
+  // Neighbour count is per DEVICE seen, not per port - a port on a shared
   // segment sees several, and the tab lists them individually.
   const neighbourCount = Object.values(neighbors)
     .reduce((n, v) => n + ((v.peers && v.peers.length) || 1), 0);
@@ -357,7 +356,7 @@ export default function LabPage() {
               </div>
             </div>
 
-            {/* Key facts — every value complete, wraps instead of truncating. */}
+            {/* Key facts - every value complete, wraps instead of truncating. */}
             <div className={styles.factGrid}>
               <div className={styles.fact}>
                 <span className={styles.factKey}>IP address</span>
@@ -418,7 +417,7 @@ export default function LabPage() {
               </p>
             )}
 
-            {/* Sections — tabs when we have data; a prompt otherwise. */}
+            {/* Sections - tabs when we have data; a prompt otherwise. */}
             {audit ? (
               <>
                 <div role="tablist" aria-label="Audit sections" className={styles.tabs}>
@@ -478,8 +477,7 @@ export default function LabPage() {
                                     <td>{dash(s.duplex)}</td>
                                     <td>{dash(s.medium)}</td>
                                     <td>{dash(pe.power)}</td>
-                                    {/* `also` counts extra neighbours on the same local port —
-                                        every lab switch's e0/3 shares one pnet0 bridge, so a port
+                                    {/* `also` counts extra neighbours on the same local port - every lab switch's e0/3 shares one pnet0 bridge, so a port
                                         can genuinely see several devices. Showing only the first
                                         would misrepresent the link as point-to-point. */}
                                     <td>
@@ -537,7 +535,7 @@ export default function LabPage() {
                           <thead><tr>{['Local port', 'Device', 'Address', 'Its port'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
                           <tbody>
                             {/* One row per NEIGHBOUR, not per port. A port on a shared segment
-                                sees several devices — listing only the first hid the other
+                                sees several devices - listing only the first hid the other
                                 switches and the desk phone entirely. */}
                             {Object.entries(neighbors).flatMap(([p, n]) =>
                               (n.peers && n.peers.length ? n.peers : [n]).map((peer, i) => (
@@ -564,8 +562,7 @@ export default function LabPage() {
               </>
             ) : (
               /* No audit data. The offline / polling-disabled cases already have
-                 a banner above saying exactly why, so don't repeat it here —
-                 only render a section when there's something new to say. */
+                 a banner above saying exactly why, so don't repeat it here - only render a section when there's something new to say. */
               busy ? (
                 <div className={styles.section}>
                   <p className={styles.sectionNote}>
@@ -580,7 +577,7 @@ export default function LabPage() {
               /* `!entry?.error` matters: the poller records last_error, but an
                  on-demand audit failure lands in entry.error instead. Without it
                  the panel showed "Last audit failed …" and "Starting audit…"
-                 stacked together — claiming to be mid-attempt when the attempt
+                 stacked together - claiming to be mid-attempt when the attempt
                  had already returned, and nothing further was scheduled. */
             )}
           </div>

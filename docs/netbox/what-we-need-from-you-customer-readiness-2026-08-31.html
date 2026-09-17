@@ -1,0 +1,228 @@
+<!-- Published copy of the claude.ai artifact "What We Need From You" | https://claude.ai/code/artifact/df1e8aa7-a410-4471-a4ff-3dfb3495d279 | artifact last updated 2026-08-31 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>What We Need From You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground: #eef1f6; --surface: #ffffff; --surface-2: #f4f6fa; --ink: #131a24;
+    --muted: #58626f; --faint: #8b95a3; --line: #e1e6ed; --line-strong: #cdd4de;
+    --accent: #10897f; --accent-2: #0e6f66; --accent-soft: #dcf1ee;
+    --have: #17915a; --have-soft: #e0f2e9;
+    --turn: #b9770a; --turn-soft: #f8eed6;
+    --add:  #cf4436; --add-soft: #fbe5e2;
+    --shadow: 0 1px 2px rgba(20,30,45,.05), 0 6px 22px rgba(20,30,45,.06);
+  }
+  :root:not([data-theme="light"]) { @media (prefers-color-scheme: dark) {
+    --ground: #0c1118; --surface: #151d27; --surface-2: #1b2531; --ink: #e8edf3;
+    --muted: #a1acba; --faint: #6a7482; --line: #263140; --line-strong: #35414f;
+    --accent: #3fc9ba; --accent-2: #59d3c5; --accent-soft: #123028;
+    --have: #4cc584; --have-soft: #15271e;
+    --turn: #e0a63c; --turn-soft: #2b2312;
+    --add: #ef7368; --add-soft: #2e1a18;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 26px rgba(0,0,0,.4);
+  } }
+  :root[data-theme="dark"] {
+    --ground: #0c1118; --surface: #151d27; --surface-2: #1b2531; --ink: #e8edf3;
+    --muted: #a1acba; --faint: #6a7482; --line: #263140; --line-strong: #35414f;
+    --accent: #3fc9ba; --accent-2: #59d3c5; --accent-soft: #123028;
+    --have: #4cc584; --have-soft: #15271e;
+    --turn: #e0a63c; --turn-soft: #2b2312;
+    --add: #ef7368; --add-soft: #2e1a18;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 26px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15.5px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(16px, 3.5vw, 40px); }
+  h1, h2, h3 { font-family: "Archivo", system-ui, sans-serif; line-height: 1.12; margin: 0; text-wrap: balance; }
+  .mono { font-family: "IBM Plex Mono", monospace; }
+
+  /* hero */
+  header { background:
+      radial-gradient(1200px 340px at 12% -40%, var(--accent-soft), transparent 70%),
+      var(--surface);
+    border-bottom: 1px solid var(--line); }
+  .hero { padding: clamp(26px, 5vw, 48px) 0 clamp(22px, 3.5vw, 34px); }
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent-2); font-weight: 500; }
+  h1 { font-size: clamp(27px, 5vw, 44px); font-weight: 800; letter-spacing: -.025em; margin: 12px 0 10px; }
+  .lede { font-size: clamp(15px, 1.7vw, 18px); color: var(--muted); max-width: 60ch; }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  .board { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; font-size: 13px; }
+  .chip b { font-family: "Archivo", sans-serif; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .chip .mono { color: var(--muted); font-size: 12px; }
+
+  /* lanes */
+  section { padding: clamp(28px, 4vw, 44px) 0; }
+  section + section { border-top: 1px solid var(--line); }
+  .lane-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .lane-head .ic { width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft);
+    color: var(--accent-2); display: grid; place-items: center; font-size: 19px; flex: none; }
+  h2 { font-size: clamp(19px, 2.6vw, 25px); font-weight: 700; letter-spacing: -.02em; }
+  .lane-sub { color: var(--muted); font-size: 14px; margin: 2px 0 20px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .req { background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 18px 18px 16px; border-left: 4px solid var(--edge);
+    display: flex; flex-direction: column; gap: 9px; }
+  .req.have { --edge: var(--have); } .req.turn { --edge: var(--turn); } .req.add { --edge: var(--add); }
+  .req .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .req h3 { font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+  .state { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 6px; white-space: nowrap; flex: none; }
+  .state.have { color: var(--have); background: var(--have-soft); }
+  .state.turn { color: var(--turn); background: var(--turn-soft); }
+  .state.add  { color: var(--add);  background: var(--add-soft); }
+  .spec { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; }
+  .req p { margin: 0; font-size: 14px; color: var(--muted); }
+  .req .get { font-size: 13.5px; color: var(--ink); margin-top: auto; padding-top: 4px; }
+  .req .get::before { content: "→ "; color: var(--edge); font-weight: 700; }
+  .req .get b { color: var(--edge); font-weight: 700; }
+
+  /* payoff removed into cards; ask list */
+  .ask { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 10px;
+    counter-reset: a; margin-top: 4px; }
+  .ask .item { position: relative; padding: 14px 16px 14px 50px; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+  .ask .item::before { counter-increment: a; content: counter(a); position: absolute; left: 13px; top: 13px;
+    width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: #fff;
+    font-family: "Archivo", sans-serif; font-weight: 800; font-size: 14px; display: grid; place-items: center; }
+  .ask .item b { font-weight: 700; font-size: 14.5px; }
+  .ask .item .d { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .safe { margin-top: 16px; font-size: 13px; color: var(--muted);
+    background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius: 10px; padding: 12px 15px; }
+  .safe b { color: var(--ink); }
+  footer { padding: 24px 0 42px; color: var(--faint); font-size: 12.5px; border-top: 1px solid var(--line); }
+</style>
+
+<header>
+  <div class="wrap hero">
+    <span class="eyebrow">RackTrack · Readiness at your end</span>
+    <h1>What we need from you to capture the whole rack.</h1>
+    <p class="lede">
+      The tool reports only what is there to read. A few things must be <b>on</b> or <b>exist</b> at
+      your end first. Here is each one, exactly, with the payoff it unlocks.
+    </p>
+    <div class="board">
+      <span class="chip"><b>3</b> of 5 switches readable <span class="mono">2 unmanaged</span></span>
+      <span class="chip"><b>6</b> cable links proven <span class="mono">LLDP partial</span></span>
+      <span class="chip"><b>168</b> panel sockets seen <span class="mono">4 panels</span></span>
+      <span class="chip">Asset tags <b>?</b> <span class="mono">unconfirmed</span></span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="lane-head"><span class="ic">🖧</span><h2>Network side · the switches</h2></div>
+    <p class="lane-sub">Decides how much the tool learns by asking the devices directly.</p>
+    <div class="grid">
+
+      <div class="req have">
+        <div class="top"><h3>Read-only access</h3><span class="state have">Done</span></div>
+        <div class="spec">SNMP read-only · v2c community or v3 user</div>
+        <p>You gave us this, so the D-Link DGS-1210-52 and both TP-Link TL-SG2428P read fully. No write access is used, ever.</p>
+        <div class="get"><b>Have it:</b> ports, status, VLANs, addresses on all 3 managed switches.</div>
+      </div>
+
+      <div class="req turn">
+        <div class="top"><h3>Neighbour announcements</h3><span class="state turn">Switch on</span></div>
+        <div class="spec">LLDP transmit + receive · every port · both ends</div>
+        <p>On for only a handful of links today, which is why just <b>6</b> cables are confirmed. It is a passive advertisement, safe to enable.</p>
+        <div class="get"><b>You get:</b> which cable joins which two ports, proven by both switches.</div>
+      </div>
+
+      <div class="req turn">
+        <div class="top"><h3>Address table readable</h3><span class="state turn">Check</span></div>
+        <div class="spec">MAC forwarding table + ARP · comes with read access</div>
+        <p>This is how a port is named with the PC or laptop on it. It ships with the read access, so just confirm it is not filtered.</p>
+        <div class="get"><b>You get:</b> the host on each port, matched to its IP.</div>
+      </div>
+
+      <div class="req turn">
+        <div class="top"><h3>Firewall opened for reading</h3><span class="state turn">Switch on</span></div>
+        <div class="spec">Sophos XGS 116 · SNMP read-only</div>
+        <p>The firewall speaks SNMP but is closed today, so it lands as a blank box (U17, 0 ports). Open read access and it joins the record.</p>
+        <div class="get"><b>You get:</b> the firewall with its WAN + LAN ports, not an empty slot.</div>
+      </div>
+
+      <div class="req add">
+        <div class="top"><h3>The two unmanaged switches</h3><span class="state add">Add / manual</span></div>
+        <div class="spec">DGS-1024C (24) + DGS-1016D (16) = 40 ports · no management</div>
+        <p>These have no brain to answer anything, over any protocol. They stay photo-only unless replaced with managed units, or entered by hand.</p>
+        <div class="get"><b>To fill them:</b> swap for managed, or we type them from your notes.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="lane-head"><span class="ic">🏷️</span><h2>Rack side · labels and stickers</h2></div>
+    <p class="lane-sub">Decides how much the camera reads, and whether a device ties back to your own records.</p>
+    <div class="grid">
+
+      <div class="req turn">
+        <div class="top"><h3>Model &amp; serial close-ups</h3><span class="state turn">Photo</span></div>
+        <div class="spec">sharp close-up · sticker not hidden by cables</div>
+        <p>Managed switch models now read over the network. For the unmanaged switches and the firewall, the model and serial need a close photo of the faceplate, not the wide shot.</p>
+        <div class="get"><b>You get:</b> exact model and serial on the devices SNMP can't name.</div>
+      </div>
+
+      <div class="req add">
+        <div class="top"><h3>Asset tags</h3><span class="state add">Only if used</span></div>
+        <div class="spec">your ID sticker · barcode / QR / printed · unique per NetBox</div>
+        <p>An asset tag is your own inventory label on a device (say <span class="mono">SP-00123</span>). If your kit carries them we can capture them. If it does not, there is nothing to read and a labelling scheme has to come first.</p>
+        <div class="get"><b>If they exist:</b> we read them by close-up, or take a tag→device list.</div>
+      </div>
+
+      <div class="req have">
+        <div class="top"><h3>Cable colour coding</h3><span class="state have">Done</span></div>
+        <div class="spec">blue = uplink · grey = end device (your scheme)</div>
+        <p>Already in place, and the camera reads it. That is how uplinks are told apart from desktop runs without asking anything.</p>
+        <div class="get"><b>Have it:</b> cable colour on every socket the camera can see.</div>
+      </div>
+
+      <div class="req turn">
+        <div class="top"><h3>Patch-panel numbering</h3><span class="state turn">Helps</span></div>
+        <div class="spec">printed port numbers on each of the 4 panels</div>
+        <p>Clear numbers let each of the 168 panel sockets line up with the record on your side. Without them we still show the panel, just cannot name each port.</p>
+        <div class="get"><b>You get:</b> named panel ports, so a wiring path reads end to end.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="lane-head"><span class="ic">📋</span><h2>The list to hand your admin</h2></div>
+    <p class="lane-sub">Copy straight into an email. None of it exposes a password to us.</p>
+    <div class="ask">
+      <div class="item"><b>Enable LLDP</b> (send + receive) on every managed-switch port.<div class="d">Proves which cable connects which two ports.</div></div>
+      <div class="item"><b>Keep read-only SNMP live</b> on all managed switches, address table included.<div class="d">Names the host on each port.</div></div>
+      <div class="item"><b>Open read-only SNMP on the Sophos XGS 116.</b><div class="d">Captures the firewall instead of a blank box.</div></div>
+      <div class="item"><b>Confirm asset tags</b> — do devices carry them? If so, share tag→device.<div class="d">We attach each tag to the right device.</div></div>
+      <div class="item"><b>Allow a few close-ups</b> of hidden model / serial stickers.<div class="d">Fills identity the wide photo can't read.</div></div>
+      <div class="item"><b>List the two unmanaged switches</b> and their port use.<div class="d">Nothing can read them; we enter them by hand.</div></div>
+    </div>
+    <div class="safe"><b>All read-only.</b> Every request above reads or advertises. Nothing changes a switch config, and no password is ever shared with the AI tools.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">RackTrack · readiness at your end · figures from a real scanned rack (RACK_1807).</div>
+</footer>
+
+</body></html>

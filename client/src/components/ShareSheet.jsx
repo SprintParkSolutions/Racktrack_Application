@@ -14,7 +14,7 @@ import styles from './ShareSheet.module.css';
  * button is on screen while the keyboard is up.
  *
  * The two Microsoft ones need an address because that is who the message goes
- * to — the server will not guess a recipient, and a report is not a thing to
+ * to - the server will not guess a recipient, and a report is not a thing to
  * send to the wrong person.
  */
 
@@ -70,7 +70,7 @@ export default function ShareSheet({ rackId, onClose, initial = null }) {
       const url = `${publicOrigin()}/api/scan/${encodeURIComponent(rackId)}`
         + `/report?format=html&t=${encodeURIComponent(token)}`;
       if (typeof navigator.share === 'function') {
-        try { await navigator.share({ title: `RackTrack — ${rackId}`, url }); setNote(null); return; }
+        try { await navigator.share({ title: `RackTrack - ${rackId}`, url }); setNote(null); return; }
         catch (e) { if (e && e.name === 'AbortError') { setNote(null); return; } }
       }
       await navigator.clipboard.writeText(url);

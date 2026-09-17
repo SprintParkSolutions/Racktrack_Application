@@ -5,16 +5,14 @@ import { useEffect, useState } from 'react';
 // false so the existing mobile components render unchanged. The check is
 // re-evaluated on resize so DevTools device-toggling reflects immediately.
 //
-// 1024px is the standard landscape-tablet / small-laptop breakpoint —
-// below that the layout would feel cramped for the side-by-side
+// 1024px is the standard landscape-tablet / small-laptop breakpoint - // below that the layout would feel cramped for the side-by-side
 // landscape design.
 // Wait for a viewport wide enough that the sidebar + content layout has
 // real room to breathe. Below this threshold the mobile build is a
 // better experience.
 const DESKTOP_BREAKPOINT = 1024;
 
-// The sidebar shell wants LESS room than the side-by-side content layouts —
-// a tablet in portrait (iPad ≈ 768–834px) comfortably fits sidebar + one
+// The sidebar shell wants LESS room than the side-by-side content layouts - // a tablet in portrait (iPad ≈ 768-834px) comfortably fits sidebar + one
 // column, so it gets the shell too. Content that needs real width for a
 // two-up layout (e.g. side-by-side racks) keeps using useIsDesktop (1024).
 const SIDEBAR_BREAKPOINT = 768;

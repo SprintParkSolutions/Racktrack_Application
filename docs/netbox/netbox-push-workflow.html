@@ -1,0 +1,309 @@
+<!-- Published copy of the claude.ai artifact "NetBox Push Workflow" | https://claude.ai/code/artifact/54fca09a-c2af-4afa-b95a-7ffe8074d586 | artifact last updated 2026-09-08 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>NetBox Push Workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --paper:#ffffff; --ink:#14181b; --body:#2f3733; --muted:#5c6560; --quiet:#8e9893;
+    --rule:#e4e8e6; --rule-firm:#c7cfcb;
+    --good:#0b6a44; --good-bg:#eef5f1;
+    --hold:#8a6d1f; --hold-bg:#f8f4e8;
+    --stop:#9d4a3f; --stop-bg:#f9f1f0;
+    --serif:"Newsreader",Georgia,"Times New Roman",serif;
+    --sans:"Source Sans 3","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono","SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--body);
+       font-family:var(--sans);font-size:17.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .pad{padding:0 clamp(20px,4.5vw,72px)}
+
+  header{padding-top:54px;padding-bottom:26px;border-bottom:3px double var(--ink)}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.14em;
+           text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,5vw,52px);line-height:1.06;
+     letter-spacing:-.015em;color:var(--ink);margin:0 0 14px;max-width:15ch;text-wrap:balance}
+  .lede{font-family:var(--serif);font-size:clamp(18px,2.1vw,22px);line-height:1.48;color:var(--muted);
+        margin:0;max-width:60ch}
+
+  figure{margin:40px 0 0;padding:0}
+  .frame{border:1px solid var(--rule-firm);padding:clamp(16px,3vw,28px);background:#fcfdfc}
+  svg{display:block;width:100%;height:auto}
+  figcaption{margin-top:12px;font-size:14.5px;line-height:1.5;color:var(--quiet);max-width:80ch}
+
+  /* three phases */
+  .phase{padding-top:54px}
+  .p-head{display:flex;align-items:flex-start;gap:18px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+  .p-num{font-family:var(--serif);font-size:clamp(30px,4vw,44px);font-weight:500;color:var(--good);
+         line-height:1;flex:none}
+  .p-title h2{font-family:var(--serif);font-weight:600;font-size:clamp(26px,3.2vw,34px);line-height:1.1;
+              color:var(--ink);margin:0 0 4px}
+  .p-title p{margin:0;font-size:16.5px;color:var(--muted)}
+  .p-body{margin-top:20px;display:grid;grid-template-columns:1fr;gap:22px 56px}
+  @media(min-width:940px){.p-body{grid-template-columns:minmax(0,52ch) minmax(0,1fr)}}
+  .p-body > p{margin:0 0 12px}
+  .p-body > p:last-child{margin-bottom:0}
+
+  .plain{list-style:none;margin:0;padding:0}
+  .plain li{padding:13px 0;border-top:1px solid var(--rule);font-size:16.5px;line-height:1.5}
+  .plain li:first-child{border-top:none;padding-top:0}
+  .plain b{color:var(--ink)}
+
+  .note{padding:18px 22px;border-left:3px solid var(--good);background:var(--good-bg);font-size:16px;line-height:1.5}
+  .note.warn{border-color:var(--stop);background:var(--stop-bg)}
+  .note b{display:block;color:var(--ink);margin-bottom:4px}
+
+  /* the admin's three choices */
+  .ways{display:grid;grid-template-columns:1fr;gap:0;margin-top:6px}
+  @media(min-width:760px){.ways{grid-template-columns:repeat(3,1fr);column-gap:32px}}
+  .way{padding:16px 0 4px;border-top:3px solid}
+  .way.ok{border-color:var(--good)} .way.tk{border-color:var(--hold)} .way.no{border-color:var(--stop)}
+  .way b{display:block;font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .way p{margin:0;font-size:16px;line-height:1.5}
+  .way .then{display:block;margin-top:8px;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;
+             text-transform:uppercase}
+  .way.ok .then{color:var(--good)} .way.tk .then{color:var(--hold)} .way.no .then{color:var(--stop)}
+
+  .rules{margin-top:60px;display:grid;grid-template-columns:1fr;gap:0 48px}
+  @media(min-width:1000px){.rules{grid-template-columns:repeat(3,1fr)}}
+  .rule{padding:22px 0;border-top:3px solid var(--ink)}
+  .rule h3{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);margin:0 0 9px;line-height:1.2}
+  .rule p{margin:0;font-size:16px;line-height:1.55}
+
+  .who-table{margin-top:54px}
+  .who-table h3{font-family:var(--serif);font-size:25px;font-weight:600;color:var(--ink);
+                margin:0 0 4px;padding-bottom:9px;border-bottom:2px solid var(--ink)}
+  .row{display:grid;grid-template-columns:1fr;gap:2px 40px;padding:16px 0;border-top:1px solid var(--rule)}
+  @media(min-width:700px){.row{grid-template-columns:210px minmax(0,1fr)}}
+  .row b{font-size:17px;color:var(--ink)}
+  .row span{font-size:16.5px}
+  .row.hub b{color:var(--good)}
+  .row.never b{color:var(--stop)}
+
+  footer{margin-top:54px;padding-top:20px;padding-bottom:70px;border-top:1px solid var(--rule);
+         color:var(--quiet);font-size:14.5px}
+  footer p{margin:0 0 8px;max-width:78ch}
+</style>
+
+<header class="pad">
+  <p class="eyebrow">RackTrack · Workflow</p>
+  <h1>Pushing a rack into NetBox</h1>
+  <p class="lede">Three things happen. We compare, we work out what changed, and we hand it to one person who decides.</p>
+</header>
+
+<div class="pad">
+<figure>
+  <div class="frame">
+    <svg viewBox="-2 -2 924 362" role="img" aria-label="The NetBox record and the rack scan are compared, the result is frozen, and what changed is identified. It goes to the admin, who reviews each item. Approving sends it to a final check against NetBox: if NetBox has changed it goes back to the admin, otherwise it is written and recorded. Rejecting records a reason and writes nothing. Raising a ticket sends it to a person who checks the rack, and their answer returns to the admin.">
+      <defs>
+        <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#0b6a44"/></marker>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#8a6d1f"/></marker>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#9d4a3f"/></marker>
+        <marker id="aq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#8e9893"/></marker>
+      </defs>
+      <g font-family="Source Sans 3, sans-serif" font-size="14.5" fill="#14181b">
+
+      <!-- ROW 1 — the two pictures, compared -->
+      <rect x="0" y="10" width="170" height="42" fill="#fff" stroke="#c7cfcb"/>
+      <text x="85" y="36" text-anchor="middle">What NetBox holds</text>
+      <rect x="0" y="62" width="170" height="42" fill="#fff" stroke="#c7cfcb"/>
+      <text x="85" y="88" text-anchor="middle">What the scan saw</text>
+      <line x1="170" y1="31" x2="204" y2="52" stroke="#8e9893" stroke-width="1.3" marker-end="url(#aq)"/>
+      <line x1="170" y1="83" x2="204" y2="62" stroke="#8e9893" stroke-width="1.3" marker-end="url(#aq)"/>
+
+      <rect x="212" y="36" width="130" height="42" fill="#fff" stroke="#c7cfcb"/>
+      <text x="277" y="62" text-anchor="middle">Compare</text>
+      <line x1="342" y1="57" x2="370" y2="57" stroke="#8e9893" stroke-width="1.3" marker-end="url(#aq)"/>
+
+      <rect x="376" y="36" width="160" height="42" fill="#fff" stroke="#c7cfcb"/>
+      <text x="456" y="62" text-anchor="middle">Freeze the list</text>
+      <line x1="536" y1="57" x2="564" y2="57" stroke="#8e9893" stroke-width="1.3" marker-end="url(#aq)"/>
+
+      <rect x="570" y="36" width="212" height="42" fill="#fff" stroke="#c7cfcb"/>
+      <text x="676" y="62" text-anchor="middle">Identify what changed</text>
+
+      <!-- down to the admin -->
+      <path d="M676 78 L676 114 L40 114 L40 148" fill="none" stroke="#8e9893" stroke-width="1.3" marker-end="url(#aq)"/>
+
+      <!-- THE ADMIN -->
+      <rect x="0" y="150" width="170" height="76" fill="#eef5f1" stroke="#0b6a44" stroke-width="2"/>
+      <text x="85" y="181" text-anchor="middle" font-size="16" font-weight="700">The admin</text>
+      <text x="85" y="202" text-anchor="middle" font-size="13" fill="#2f3733">reviews each item</text>
+
+      <!-- BRANCH 1 — approve -->
+      <line x1="170" y1="178" x2="200" y2="178" stroke="#0b6a44" stroke-width="1.4" marker-end="url(#ag)"/>
+      <rect x="206" y="157" width="128" height="42" fill="#fff" stroke="#0b6a44"/>
+      <text x="270" y="183" text-anchor="middle">Approve</text>
+      <line x1="334" y1="178" x2="360" y2="178" stroke="#0b6a44" stroke-width="1.4" marker-end="url(#ag)"/>
+
+      <path d="M430 145 L497 178 L430 211 L363 178 Z" fill="#fff" stroke="#0b6a44"/>
+      <text x="430" y="175" text-anchor="middle" font-size="12">Has NetBox</text>
+      <text x="430" y="190" text-anchor="middle" font-size="12">changed?</text>
+
+      <text x="508" y="171" font-family="IBM Plex Mono, monospace" font-size="11" fill="#0b6a44">no</text>
+      <line x1="497" y1="178" x2="530" y2="178" stroke="#0b6a44" stroke-width="1.4" marker-end="url(#ag)"/>
+      <rect x="536" y="157" width="146" height="42" fill="#0b6a44"/>
+      <text x="609" y="183" text-anchor="middle" font-weight="700" fill="#ffffff">Write it</text>
+      <line x1="682" y1="178" x2="708" y2="178" stroke="#0b6a44" stroke-width="1.4" marker-end="url(#ag)"/>
+      <rect x="714" y="157" width="206" height="42" fill="#fff" stroke="#0b6a44"/>
+      <text x="817" y="183" text-anchor="middle">Record what happened</text>
+
+      <!-- yes: it moved under us, go back -->
+      <text x="442" y="137" font-family="IBM Plex Mono, monospace" font-size="11" fill="#9d4a3f">yes — somebody edited it</text>
+      <path d="M430 145 L430 133 L128 133 L128 148" fill="none" stroke="#9d4a3f" stroke-width="1.4"
+            stroke-dasharray="5 4" marker-end="url(#ar)"/>
+
+      <!-- BRANCH 2 — reject -->
+      <line x1="170" y1="206" x2="202" y2="248" stroke="#9d4a3f" stroke-width="1.4" marker-end="url(#ar)"/>
+      <rect x="206" y="231" width="300" height="42" fill="#f9f1f0" stroke="#9d4a3f"/>
+      <text x="356" y="257" text-anchor="middle">Reject — the reason is kept</text>
+      <text x="522" y="257" font-family="IBM Plex Mono, monospace" font-size="11" fill="#9d4a3f">nothing is written</text>
+
+      <!-- BRANCH 3 — the ticket loop, under the admin -->
+      <text x="62" y="262" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="#8a6d1f">assign</text>
+      <line x1="70" y1="228" x2="70" y2="290" stroke="#8a6d1f" stroke-width="1.4" marker-end="url(#ah)"/>
+      <rect x="0" y="292" width="170" height="56" fill="#f8f4e8" stroke="#8a6d1f"/>
+      <text x="85" y="316" text-anchor="middle">A person goes</text>
+      <text x="85" y="336" text-anchor="middle">and checks the rack</text>
+      <text x="130" y="262" font-family="IBM Plex Mono, monospace" font-size="11" fill="#8a6d1f">resolved</text>
+      <line x1="120" y1="290" x2="120" y2="230" stroke="#8a6d1f" stroke-width="1.4"
+            stroke-dasharray="5 4" marker-end="url(#ah)"/>
+
+      <text x="206" y="316" font-size="13.5" fill="#5c6560">They fix it or confirm it, and their answer goes straight back</text>
+      <text x="206" y="336" font-size="13.5" fill="#5c6560">to the admin. A finished ticket never writes anything itself.</text>
+
+      </g>
+    </svg>
+  </div>
+  <figcaption>Everything meets one person. Two of the three ways out come back to them — a ticket when someone has checked the rack, and the final check when NetBox turned out to have moved underneath us.</figcaption>
+</figure>
+
+<section class="phase">
+  <div class="p-head">
+    <span class="p-num">1</span>
+    <div class="p-title">
+      <h2>Compare</h2>
+      <p>What NetBox thinks is in the rack, next to what we just saw.</p>
+    </div>
+  </div>
+  <div class="p-body">
+    <div>
+      <p>We pull the rack's record out of NetBox and lay it beside the scan. Then we freeze the result, so it stops moving while people are looking at it.</p>
+      <p>Nothing is written. Nothing is decided. This is only the two pictures, side by side.</p>
+    </div>
+    <div class="note">
+      <b>Why freeze it</b>
+      A live list changes every minute. If the admin approves something on Monday, we need to know exactly what they were looking at when they did.
+    </div>
+  </div>
+</section>
+
+<section class="phase">
+  <div class="p-head">
+    <span class="p-num">2</span>
+    <div class="p-title">
+      <h2>Identify</h2>
+      <p>Work out what actually changed, and how sure we are about each one.</p>
+    </div>
+  </div>
+  <div class="p-body">
+    <div>
+      <p>The two pictures differ in a handful of places. We name each difference in plain words, and we say how confident we are:</p>
+      <ul class="plain">
+        <li><b>Three switches moved shelf.</b> We are sure — the hardware matches, only the position changed.</li>
+        <li><b>One was replaced.</b> Same address, different hardware inside.</li>
+        <li><b>One is new.</b> Nothing in NetBox matches it.</li>
+        <li><b>One we cannot place.</b> Two switches in that rack look identical and nothing separates them.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <b>Nothing is dropped here</b>
+      The one we cannot place still goes forward, just marked as uncertain. It is the admin's job to decide what to do about it, not ours to hide it.
+    </div>
+  </div>
+</section>
+
+<section class="phase">
+  <div class="p-head">
+    <span class="p-num">3</span>
+    <div class="p-title">
+      <h2>Pass it to the admin</h2>
+      <p>One person sees the whole list and decides each item.</p>
+    </div>
+  </div>
+  <div class="p-body">
+    <div>
+      <p>The engineer who scanned the rack does not push it. The frozen list goes to the admin for that site, and they go through it item by item. Nothing is all-or-nothing.</p>
+    </div>
+    <div class="note">
+      <b>Why one person</b>
+      However many people end up involved, there is still a single name against every change that reaches the customer's record.
+    </div>
+  </div>
+
+  <div class="ways">
+    <div class="way ok">
+      <b>Approve</b>
+      <p>It is clear enough to act on. The admin says yes.</p>
+      <span class="then">Goes into the push</span>
+    </div>
+    <div class="way tk">
+      <b>Raise a ticket</b>
+      <p>Somebody needs to go and look at the rack first. The admin picks who, and assigns it.</p>
+      <span class="then">Comes back here when done</span>
+    </div>
+    <div class="way no">
+      <b>Reject</b>
+      <p>It is wrong, or it is not ours to change. The reason is kept.</p>
+      <span class="then">Never written</span>
+    </div>
+  </div>
+
+  <div class="p-body">
+    <div>
+      <p><b>When a ticket comes back,</b> it lands on the same admin, carrying whatever the person found. They then approve it or reject it, exactly as above. A finished ticket does not write anything by itself.</p>
+      <p><b>Then, just before writing,</b> we compare against NetBox one last time. If anything has moved since we froze the list, we stop and show the admin what changed.</p>
+      <p><b>And then it is written.</b> Create what is missing, update what differs, delete nothing. Everything that happened is recorded — what changed, who approved it, who worked the ticket, when it went in.</p>
+    </div>
+    <div class="note warn">
+      <b>The last check matters</b>
+      Approve at ten o'clock. Somebody edits NetBox at five past. Push at ten past. Without that check, their work is simply gone and nobody ever finds out.
+    </div>
+  </div>
+</section>
+
+<div class="pad rules" style="padding-left:0;padding-right:0">
+  <div class="rule">
+    <h3>Only the admin's approval writes</h3>
+    <p>Not a scan, not a finished ticket, not a confident guess. Every change in the customer's record has one person's name on it.</p>
+  </div>
+  <div class="rule">
+    <h3>Everyone talks about the same list</h3>
+    <p>The approvals, the tickets, the push and the history all point at the one frozen list, so they can never tell different stories about the same rack.</p>
+  </div>
+  <div class="rule">
+    <h3>A switch is its hardware, not its shelf</h3>
+    <p>Track it by what the factory built into it. Track it by the slot, and a switch moving one shelf reads as one device gone and another appearing.</p>
+  </div>
+</div>
+
+<div class="who-table">
+  <h3>Who does what</h3>
+  <div class="row"><b>Engineer</b><span>Scans the rack, checks the mapping, runs the comparison, hands it over. Cannot push.</span></div>
+  <div class="row hub"><b>Admin</b><span>Sees everything. Approves, tickets or rejects each item, picks who works a ticket, and pushes — for their own site.</span></div>
+  <div class="row"><b>Whoever gets the ticket</b><span>Goes and looks at the rack, sorts it out, sends the answer back to the admin. Cannot push.</span></div>
+  <div class="row never"><b>Nobody</b><span>Deletes anything from NetBox. There is no way to, on purpose.</span></div>
+</div>
+</div>
+
+<footer class="pad">
+  <p>This is how it should work, not how it works today. Right now the comparison works and the push works, and nothing joins them — nothing forces a comparison first, nothing re-checks NetBox before writing, and the list of differences is shown on screen and then thrown away. There is no admin step, no ticket, and no history. And the only person who can push at all today is us, not the customer.</p>
+</footer>
+
+</body></html>

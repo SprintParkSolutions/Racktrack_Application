@@ -1,4 +1,4 @@
-﻿/* TopologyPage — node-and-edge graph: tiered layout, aggregated edges */
+﻿/* TopologyPage - node-and-edge graph: tiered layout, aggregated edges */
 
 .page {
   position: relative;
@@ -170,8 +170,7 @@
   color: rgba(255,255,255,0.5);
   letter-spacing: 0.08em;
 }
-/* The five-tile stats strip that used to sit under the rack name is gone —
-   see RackBanner. Its light-theme overrides went with it. */
+/* The five-tile stats strip that used to sit under the rack name is gone - see RackBanner. Its light-theme overrides went with it. */
 
 /* ── Toolbar: cable filter pills + capacity toggle ── */
 .toolbar {
@@ -291,7 +290,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ── 3D scene canvas wrap — sized to fill the rest of the viewport while
+/* ── 3D scene canvas wrap - sized to fill the rest of the viewport while
    leaving room for the bottom panel underneath. ── */
 .scene3dWrap {
   position: relative;
@@ -316,7 +315,7 @@
    grabbing while the user is actively dragging to pan. */
 .scene3dWrap canvas[style*="grab"]:active { cursor: grabbing !important; }
 
-/* Hover info card — pinned top-left of the canvas, fixed footprint, never
+/* Hover info card - pinned top-left of the canvas, fixed footprint, never
    covers devices. Updates as you move between devices. */
 .hoverCard {
   position: absolute;
@@ -847,9 +846,9 @@
 }
 :global([data-theme='light']) .statusDotFree { color: #e7e7e7; }
 
-/* ── Minimalistic refresh — white + subtle black accents. Wins via cascade order. ── */
+/* ── Minimalistic refresh - white + subtle black accents. Wins via cascade order. ── */
 
-/* Page shell — flat white, no atmospheric gradients */
+/* Page shell - flat white, no atmospheric gradients */
 .page,
 :global([data-theme='light']) .page {
   background: var(--md-background) !important;
@@ -862,7 +861,7 @@
   display: none !important;
 }
 
-/* ── Header — sticky, hairline only, no blur / gradient / glow ── */
+/* ── Header - sticky, hairline only, no blur / gradient / glow ── */
 .header,
 :global([data-theme='light']) .header {
   background: var(--md-background) !important;
@@ -889,7 +888,7 @@
   opacity: 0.6;
 }
 
-/* Back button — outlined, no fill */
+/* Back button - outlined, no fill */
 .backBtn,
 :global([data-theme='light']) .backBtn {
   background: var(--md-surface-container-lowest) !important;
@@ -906,7 +905,7 @@
   color: var(--md-on-surface) !important;
 }
 
-/* ── 2D / 3D view toggle — outlined group, active = solid white + bold black ── */
+/* ── 2D / 3D view toggle - outlined group, active = solid white + bold black ── */
 .viewToggle,
 :global([data-theme='light']) .viewToggle {
   background: var(--md-surface-container) !important;
@@ -929,7 +928,7 @@
 :global([data-theme='light']) .viewBtnActive {
   /* Selected = a lit surface with a hard edge, NOT a black fill.
      A solid ink block over a light page reads as something covering the control
-     rather than the control being chosen — testers described it as "overlaying
+     rather than the control being chosen - testers described it as "overlaying
      the black instead of highlighting". Tinted ground + full-strength border +
      ink text at bold gives the same at-a-glance answer to "which one is on?"
      without the button disappearing under a slab. */
@@ -970,7 +969,7 @@
   border: 1px solid var(--md-outline-variant);
 }
 
-/* ── Rack banner — flat white card ── */
+/* ── Rack banner - flat white card ── */
 .rackBanner,
 :global([data-theme='light']) .rackBanner {
   background: var(--md-surface-container-lowest) !important;
@@ -1017,7 +1016,7 @@
   filter: none !important;
 }
 
-/* Filter pills — outlined, active = solid white + black border + bold */
+/* Filter pills - outlined, active = solid white + black border + bold */
 .filterPill,
 :global([data-theme='light']) .filterPill {
   background: var(--md-surface-container-lowest) !important;
@@ -1108,7 +1107,7 @@
   opacity: 0.85;
 }
 
-/* ── Graph canvas wrappers — flat white with hairline ── */
+/* ── Graph canvas wrappers - flat white with hairline ── */
 .graphSvg,
 :global([data-theme='light']) .graphSvg {
   background: var(--md-surface-container-lowest) !important;
@@ -1126,7 +1125,7 @@
   filter: none !important;
 }
 
-/* Hover card on 3D canvas — flat white tile */
+/* Hover card on 3D canvas - flat white tile */
 .hoverCard,
 :global([data-theme='light']) .hoverCard {
   background: var(--md-surface-container-lowest) !important;
@@ -1155,7 +1154,7 @@
   box-shadow: none !important;
 }
 
-/* ── Bottom bar — flat white panel ── */
+/* ── Bottom bar - flat white panel ── */
 .bottomBar,
 :global([data-theme='light']) .bottomBar {
   background: var(--md-surface-container-lowest) !important;
@@ -1167,7 +1166,7 @@
   filter: none !important;
 }
 
-/* Legend — section-label style */
+/* Legend - section-label style */
 .legend,
 :global([data-theme='light']) .legend {
   color: var(--md-on-surface) !important;
@@ -1253,7 +1252,7 @@
   opacity: 0.55;
 }
 
-/* Clear button — outlined */
+/* Clear button - outlined */
 .clearBtn,
 :global([data-theme='light']) .clearBtn {
   background: var(--md-surface-container-lowest) !important;
@@ -1338,7 +1337,7 @@
   opacity: 0.75;
 }
 
-/* Tags — outlined, no fill */
+/* Tags - outlined, no fill */
 .tag,
 :global([data-theme='light']) .tag {
   background: var(--md-surface-container-lowest) !important;
@@ -1360,7 +1359,7 @@
   box-shadow: none !important;
 }
 
-/* Status dots — use semantic accents, no glow */
+/* Status dots - use semantic accents, no glow */
 .statusDotConnected,
 :global([data-theme='light']) .statusDotConnected {
   color: #22c55e !important;

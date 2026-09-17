@@ -52,7 +52,7 @@ const ACTION_LABELS = {
 };
 
 // Anything still unmapped becomes readable rather than raw ("rack_group.create"
-// → "Rack group create") — no dotted machine names leak into the dashboard.
+// → "Rack group create") - no dotted machine names leak into the dashboard.
 const humanizeAction = (a) =>
   String(a || '')
     .replace(/[._]/g, ' ')
@@ -92,7 +92,7 @@ function StatCard({ label, value, sub, tone }) {
   );
 }
 
-// The operations view — headline stats, live feed, errors, rankings, users,
+// The operations view - headline stats, live feed, errors, rankings, users,
 // and organizations. The console (below) owns the page chrome and the
 // Live / Refresh controls, driving this via `live` and `refreshTick`.
 function OperationsView({ live = true, refreshTick = 0 }) {
@@ -297,7 +297,7 @@ function OperationsView({ live = true, refreshTick = 0 }) {
         </div>
       </div>
 
-      {/* ── The scans themselves — who scanned what, where ── */}
+      {/* ── The scans themselves - who scanned what, where ── */}
       <section className={styles.card} style={{ marginTop: 16 }}>
         <div className={styles.cardHead}>
           <h2>Recent scans</h2>

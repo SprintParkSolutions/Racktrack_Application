@@ -1,11 +1,11 @@
 // Web Storage that cannot crash the app.
 //
-// localStorage is not a plain object with a null fallback — accessing it
+// localStorage is not a plain object with a null fallback - accessing it
 // THROWS when site data is blocked (iOS Safari "Block All Cookies",
 // Chrome/Edge blocking third-party-and-site-data, some managed WebViews), and
 // setItem throws QuotaExceededError once the ~5 MB origin budget is full.
 // Every one of those throws used to happen inside a React effect, and an
-// uncaught throw in an effect unmounts the tree — so a storage-blocked browser
+// uncaught throw in an effect unmounts the tree - so a storage-blocked browser
 // or a full quota blanked the entire product.
 //
 // Reads were already guarded case by case; writes mostly were not, which is
@@ -54,12 +54,12 @@ export function getJSON(key, fallback = null, storage = 'local') {
 /**
  * Persist a JSON value, surviving a full quota.
  *
- * When the write fails and the value is an array, drop entries and retry — a
+ * When the write fails and the value is an array, drop entries and retry - a
  * truncated history is worth far more to the user than a crash.
  *
  * Which END gets dropped is the whole point, and the first version got it
  * wrong. It kept the tail, but the only caller builds its history with
- * `unshift`, i.e. NEWEST-first — so a user who completed a scan, waited
+ * `unshift`, i.e. NEWEST-first - so a user who completed a scan, waited
  * through the analysis and opened History found that scan missing while a
  * week-old one survived. `newestFirst` is explicit rather than guessed
  * because there is no way to infer ordering from the array itself.
@@ -70,7 +70,7 @@ export function getJSON(key, fallback = null, storage = 'local') {
  * @returns {boolean} true if anything was persisted.
  */
 export function setJSON(key, value, storage = 'local', { newestFirst = true } = {}) {
-  // JSON.stringify itself can throw — on a circular structure, a BigInt, or a
+  // JSON.stringify itself can throw - on a circular structure, a BigInt, or a
   // value too large to serialise. It sat outside the guard, so the one thing
   // this module promises (never throw) was not true of its main entry point.
   let serialised;
@@ -96,7 +96,7 @@ export function setJSON(key, value, storage = 'local', { newestFirst = true } = 
 
   // Deliberately NOT removing the key here any more. The previous version
   // cleared it on any failure, so a quota exhausted by UNRELATED keys destroyed
-  // a perfectly good stored history — twelve scans lost to one failed write of
+  // a perfectly good stored history - twelve scans lost to one failed write of
   // the thirteenth. Leaving the old value is strictly better: it is stale at
   // worst, whereas deleting it is data loss the user never asked for.
   return false;

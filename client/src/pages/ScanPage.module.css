@@ -7,8 +7,8 @@
 .amb { display: none; }
 .art { display: none; }
 
-/* ── Header — back chevron left, letter-spaced uppercase title center,
-   spacer right. No pill background, no shadow — just type. ── */
+/* ── Header - back chevron left, letter-spaced uppercase title center,
+   spacer right. No pill background, no shadow - just type. ── */
 .header {
   display: flex;
   align-items: center;
@@ -45,7 +45,7 @@
   flex: 0 0 auto;
 }
 
-/* Plain uppercase title — no pill, no shadow */
+/* Plain uppercase title - no pill, no shadow */
 .headerTitle {
   display: inline-flex;
   align-items: center;
@@ -74,9 +74,9 @@
 
 /* Written as .pc.scanContent, not .scanContent. The element carries both
    classes, and the global `.pc { overflow: hidden }` in index.css was winning
-   on equal specificity, so the overflow-y:auto below never applied — the page
+   on equal specificity, so the overflow-y:auto below never applied - the page
    computed `hidden` and testers could not scroll to the Analyze button at all.
-   `.pc` must be wrapped in :global() — this is a CSS module, so a bare `.pc`
+   `.pc` must be wrapped in :global() - this is a CSS module, so a bare `.pc`
    is hashed to a local name and matches nothing. */
 :global(.pc).scanContent {
   position: relative;
@@ -141,7 +141,7 @@
   font-weight: 700;
 }
 
-/* ── Upload / Camera — 2-col grid of outlined buttons (mockup spec) ── */
+/* ── Upload / Camera - 2-col grid of outlined buttons (mockup spec) ── */
 .tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -182,7 +182,7 @@
   box-shadow: none !important;
 }
 
-/* ── SINGLE / MULTI / VIDEO — underline tab bar (mockup spec) ── */
+/* ── SINGLE / MULTI / VIDEO - underline tab bar (mockup spec) ── */
 .uploadModes {
   display: flex;
   gap: 0;
@@ -229,7 +229,7 @@
   box-shadow: none;
 }
 
-/* ── Media box — soft gray surface, large radius, inset shadow.
+/* ── Media box - soft gray surface, large radius, inset shadow.
    Elastic: flex:1 absorbs whatever vertical space the other rows leave,
    so the page always fits in one viewport regardless of incident-mode
    extras. Hard caps prevent runaway height on tall screens. */
@@ -258,7 +258,7 @@
   border-color: rgba(18, 18, 18, 0.50);
 }
 
-/* ── Drop zone — content centered, soft brackets ── */
+/* ── Drop zone - content centered, soft brackets ── */
 .dropZone {
   position: relative;
   display: flex;
@@ -290,7 +290,7 @@
 /* The old corner dots are replaced by the dashed frame above. */
 .zc { display: none; }
 
-/* Viewfinder mark — no box. Faded primary icon that brightens on hover. */
+/* Viewfinder mark - no box. Faded primary icon that brightens on hover. */
 .iconRing {
   position: relative;
   display: flex;
@@ -370,7 +370,7 @@
   /* !important is required, not cosmetic: the mobile rule
      `:global(.pc).scanContent { max-width: 28rem; margin: 0 auto }` has
      specificity (0,2,0) and outranks this single-class selector (0,1,0), so
-     without it the desktop grid stayed capped at 448px — a two-column layout
+     without it the desktop grid stayed capped at 448px - a two-column layout
      crushed into a phone-width column, which is exactly the "still looks like
      mobile on my laptop" report. Match the display/padding overrides already
      here. */
@@ -383,7 +383,7 @@
 }
 
 /* Media box anchors the left column, sized to the viewport height (with a 600px
-   floor) so it fills the screen — no dead band below — WITHOUT running past one
+   floor) so it fills the screen - no dead band below - WITHOUT running past one
    screen. */
 .scanContentDesktop .mediaBox {
   grid-column: 1;
@@ -394,7 +394,7 @@
   margin: 0 !important;
 }
 
-/* The dropzone (or preview/camera) fills the tall media box — no gap inside. */
+/* The dropzone (or preview/camera) fills the tall media box - no gap inside. */
 .scanContentDesktop .dropZone { flex: 1 1 auto; }
 
 /* Every other child stacks in the right column in natural DOM order. */
@@ -408,14 +408,14 @@
   background: rgba(0, 0, 0, 0.25);
 }
 
-/* Hide the portrait ambient SVG — it's mobile-only decoration. */
+/* Hide the portrait ambient SVG - it's mobile-only decoration. */
 @media (min-width: 1180px) {
   .amb { display: none; }
   .scan { background: transparent; }
   .header { padding-inline: 48px; }
 }
 
-/* ─── Tablet portrait (1024–1179px, e.g. iPad in portrait) ────────────
+/* ─── Tablet portrait (1024-1179px, e.g. iPad in portrait) ────────────
    The desktop shell (sidebar) is active here, but the 2-column media/rail
    grid above doesn't have room and overlaps. Collapse it to a single
    full-width column so everything stacks cleanly in DOM order. */
@@ -604,7 +604,7 @@
    invisible: #c6c6c6 text on a 10%-black wash over white measures about 1.3:1,
    a leftover from when the app was dark-themed and that grey was LIGHT text on
    a DARK surface. A dashed border on top of it read as an inert drop-zone
-   outline rather than something to press — which is what testers meant by the
+   outline rather than something to press - which is what testers meant by the
    button being "dull".
    It is now the solid primary action it always should have been, matching
    .btn-primary so the one thing to press on this screen looks like it. */
@@ -633,7 +633,7 @@
 .multiEmpty {
   flex:1; min-height:0; display:flex; flex-direction:column; align-items:center;
   /* safe center + scroll: on short screens the content (icon + title + sub +
-     button) is taller than the box — centering used to clip the button, so
+     button) is taller than the box - centering used to clip the button, so
      top-align + scroll when it overflows, center when it fits. */
   justify-content:safe center;
   overflow-y:auto;
@@ -652,7 +652,7 @@
 .multiEmptyTitle { font-size:.92rem; font-weight:800; color:var(--t1); }
 .multiEmptySub { font-size:.72rem; color:var(--t2); line-height:1.5; max-width: 260px; }
 
-/* ── CTA — full-width pill, uppercase letter-spaced (mockup spec) ── */
+/* ── CTA - full-width pill, uppercase letter-spaced (mockup spec) ── */
 .cta {
   margin-top: 0;
   justify-content: center !important;
@@ -735,7 +735,7 @@
 
 .hud { position:absolute; inset:0; z-index:10; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:12px; }
 /* Corner brackets. They sit over a live camera feed, so they are white with a
-   dark drop shadow — the old black brackets vanished against anything dark.
+   dark drop shadow - the old black brackets vanished against anything dark.
    The wrapper carries the state so all four change together. */
 .corners { position:absolute; inset:0; pointer-events:none; color:rgba(255,255,255,0.92); }
 .cornersOn  { color:#34d17a; }
@@ -758,13 +758,13 @@
   background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
   border:1px solid rgba(255,255,255,0.18); border-radius:100px;
   /* Sits on a near-black pill over a live camera feed, so it needs light
-     type — var(--c2) is the near-black brand ink and was invisible here. */
+     type - var(--c2) is the near-black brand ink and was invisible here. */
   padding:5px 14px; font-size:.62rem; font-weight:700; color:#ffffff;
   letter-spacing:.1em; text-transform:uppercase;
   box-shadow: 0 0 16px rgba(0,0,0,0.35);
 }
 .hudBottom { display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:auto; }
-/* Readable over a live camera feed — the old 40%-white text vanished against
+/* Readable over a live camera feed - the old 40%-white text vanished against
    bright racks. Dark pill + near-white type reads on any background. */
 .hudHint {
   margin:0;
@@ -813,7 +813,7 @@
 }
 
 /* ── Photo / Video mode toggle ─────────────────────────── */
-/* Photo | Video — now sits in the bottom control bar with the shutter,
+/* Photo | Video - now sits in the bottom control bar with the shutter,
    instead of floating at the top of the frame away from the action. */
 .modeToggle {
   position:static; transform:none;
@@ -836,9 +836,9 @@
 }
 
 /* The shutter. It used to be hidden inside the bottom nav's Scan tab, so
-   there was no visible way to capture — this is a real, obvious button. */
+   there was no visible way to capture - this is a real, obvious button. */
 /* 74px of ring around a 58px red disc, with a 22px drop shadow and a pulse
-   that threw a 12px halo twice a second, was reported as simply too big — it
+   that threw a 12px halo twice a second, was reported as simply too big - it
    was the largest element on the camera screen and the thing least in need of
    emphasis, since the whole screen is already the camera. 58/42 is the iOS
    camera's own proportion, the shadow is a hairline's worth of separation
@@ -954,7 +954,7 @@
 }
 
 /* The 3D rack, its drop shadow and its pulsing radial glow used to sit above
-   the title. All three are gone with the model — see AnalyzingOverlay. */
+   the title. All three are gone with the model - see AnalyzingOverlay. */
 
 .ovTitle { font-size:1.1rem; font-weight:700; color:var(--t1); }
 .ovStep  { font-size:.78rem; color:var(--c2); font-family:var(--mono); }
@@ -1003,7 +1003,7 @@
    LIGHT THEME OVERRIDES
    ══════════════════════════════════════════════════════════════════════ */
 
-/* Soft pastel field — pink → lavender → blue blobs on white.
+/* Soft pastel field - pink → lavender → blue blobs on white.
    Simple, attractive, and lets the glass cards read cleanly on top. */
 :global([data-theme='light']) .scan {
   background:
@@ -1012,7 +1012,7 @@
     radial-gradient(ellipse 60% 55% at 88% 90%,  rgba(0,0,0,0.02) 0%, transparent 62%),
     #ffffff;
 }
-/* Faint radar/crosshair scanner overlay — thematic for the Scan page,
+/* Faint radar/crosshair scanner overlay - thematic for the Scan page,
    stays well below the cards (z-index 0) and ignores pointer events. */
 :global([data-theme='light']) .amb {
   background: transparent;
@@ -1028,7 +1028,7 @@
   transform: translate(-50%, -50%);
   opacity: .35;
   /* Replace the sphere composition with a clean radar reticle drawn
-     via SVG mask — the actual SVG content in JSX is hidden by the
+     via SVG mask - the actual SVG content in JSX is hidden by the
      `display:none` rule below; we paint the radar with CSS instead. */
   background:
     radial-gradient(circle at 50% 50%, rgba(0,0,0,0.55) 0 1.5px, transparent 2px),
@@ -1040,14 +1040,14 @@
 }
 :global([data-theme='light']) .art > * { display: none; }
 
-/* Light header — clear bar with a violet pill title (matches the reference) */
+/* Light header - clear bar with a violet pill title (matches the reference) */
 :global([data-theme='light']) .header {
   background: transparent;
   backdrop-filter: none; -webkit-backdrop-filter: none;
   border-bottom: 0;
 }
 :global([data-theme='light']) .headerTitle {
-  /* No override — the base .headerTitle rule wins. Plain letter-spaced
+  /* No override - the base .headerTitle rule wins. Plain letter-spaced
      uppercase text against the white page, no pill, no shadow. */
 }
 :global([data-theme='light']) .cta:disabled {
@@ -1070,7 +1070,7 @@
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
 
-/* Tabs — light pills */
+/* Tabs - light pills */
 :global([data-theme='light']) .tabs {
   background: linear-gradient(135deg, rgba(255,255,255,.72) 0%, rgba(255,255,255,.44) 50%, rgba(255,255,255,.58) 100%);
   border: 1px solid rgba(255,255,255,.9);
@@ -1112,7 +1112,7 @@
   box-shadow: 0 14px 30px -18px rgba(0,0,0,.46);
 }
 
-/* Media + drop zone — white card, indigo dashed border */
+/* Media + drop zone - white card, indigo dashed border */
 :global([data-theme='light']) .mediaBox {
   background: linear-gradient(160deg, rgba(255,255,255,.74) 0%, rgba(255,255,255,.46) 48%, rgba(255,255,255,.60) 100%);
   border: 1px solid rgba(255,255,255,.9);
@@ -1205,7 +1205,7 @@
   color: #1c1c1c;
 }
 
-/* CTA — keep pill consistent */
+/* CTA - keep pill consistent */
 :global([data-theme='light']) .cta {
   border-radius: 18px !important;
   background:
@@ -1219,7 +1219,7 @@
     0 30px 50px -16px rgba(0,0,0,.72) !important;
 }
 
-/* HUD on camera (overlays still on dark video, so left mostly dark — but the modeToggle, hudBadge can lighten subtly) */
+/* HUD on camera (overlays still on dark video, so left mostly dark - but the modeToggle, hudBadge can lighten subtly) */
 :global([data-theme='light']) .modeToggle {
   background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.35);
@@ -1229,12 +1229,12 @@
   box-shadow: 0 0 12px rgba(0,0,0,0.45);
 }
 
-/* Camera wrap — lavender placeholder when no video stream yet */
+/* Camera wrap - lavender placeholder when no video stream yet */
 :global([data-theme='light']) .camWrap {
   background: #ffffff;
 }
 :global([data-theme='light']) .camWrapFull {
-  background: #1c1c1c;  /* fullscreen camera stays dark — better video contrast */
+  background: #1c1c1c;  /* fullscreen camera stays dark - better video contrast */
 }
 :global([data-theme='light']) .camErrorIcon { color: rgba(0,0,0,0.55); }
 :global([data-theme='light']) .camErrorText { color: #474747; }
@@ -1281,7 +1281,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   DARK THEME — ELEVATED SURFACES
+   DARK THEME - ELEVATED SURFACES
    The page is near-black; lift the card / tabs / icon tile to a lighter
    slate with defined borders + a soft drop so layers read with depth
    (page → raised panel → navy brand bands). Same recipe as Profile.
@@ -1318,12 +1318,12 @@
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   Desktop layout collision fix — Upload/Camera buttons were visually
+   Desktop layout collision fix - Upload/Camera buttons were visually
    crashing into the dropzone's top-right corner because the right
    column starts at the same vertical position as the dropzone's top
    edge. This adds breathing room between columns + a small top offset
    so the first right-column item doesn't align with the dropzone top.
-   Position/spacing only — no color or background changes.
+   Position/spacing only - no color or background changes.
    ══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
   .scanContentDesktop {
@@ -1332,11 +1332,11 @@
     padding: 32px clamp(32px, 5vw, 64px) 64px !important;
   }
   /* Push the right column down a touch so its first row doesn't share
-     the dropzone's top edge — eliminates the visual collision. */
+     the dropzone's top edge - eliminates the visual collision. */
   .scanContentDesktop > *:not(.mediaBox):first-of-type {
     margin-top: 6px;
   }
-  /* Give Upload + Camera buttons a clear cluster — better spacing,
+  /* Give Upload + Camera buttons a clear cluster - better spacing,
      consistent size, no overlap with whatever sits above/below. */
   .scanContentDesktop .uploadModes {
     margin-top: 12px !important;
@@ -1507,7 +1507,7 @@
    format pills below on desktop. */
 .scanContentDesktop .dropSub { display: none !important; }
 
-/* Desktop-only dropzone extras — hidden everywhere by default, shown here. */
+/* Desktop-only dropzone extras - hidden everywhere by default, shown here. */
 .dropSubAlt,
 .fmtPills,
 .readyCaption { display: none; }
@@ -1587,13 +1587,13 @@
   flex-shrink: 0;
 }
 
-/* The tips list that used to be styled here is now a one-time sheet — see
+/* The tips list that used to be styled here is now a one-time sheet - see
    .tipsSheet at the foot of this file. */
 
 /* ══════════════════════════════════════════════════════════════════════
    TWO-COLUMN REFERENCE GRID (≥1180px only)
-   Kept above the tablet band (1024–1179px) so that range stays single-column
-   as before — the sidebar leaves no room for a 400px rail there. Order is
+   Kept above the tablet band (1024-1179px) so that range stays single-column
+   as before - the sidebar leaves no room for a 400px rail there. Order is
    applied here so the right rail reads MODE → CAPTURE → INCIDENT → ANALYZE →
    TIPS regardless of DOM order; irrelevant to the single-column tablet band.
    ══════════════════════════════════════════════════════════════════════ */
@@ -1608,6 +1608,7 @@
   .scanContentDesktop .uploadModes    { order: 11; }
   .scanContentDesktop .eyebrowCapture { order: 20; }
   .scanContentDesktop .tabs           { order: 21; }
+  .scanContentDesktop .spaceBlock     { order: 25; }
   .scanContentDesktop .ticketHeadline { order: 29; }
   .scanContentDesktop .incidentBlock  { order: 30; }
   .scanContentDesktop .errBox         { order: 40; }
@@ -1621,17 +1622,17 @@
    MOTION LAYER
    Movement in service of the task, not decoration. Four things earn it:
 
-     · the page ARRIVING     — a short stagger so the eye is led down the
+     · the page ARRIVING - a short stagger so the eye is led down the
                                rail rather than hit with everything at once
-     · the drop zone WAITING — a slow ping under the viewfinder mark, the
+     · the drop zone WAITING - a slow ping under the viewfinder mark, the
                                one thing on screen asking to be used
-     · the drop zone ARMED   — corner brackets snap in and a single sweep
+     · the drop zone ARMED - corner brackets snap in and a single sweep
                                crosses the frame the moment a file is over
                                it: the viewfinder locking on
-     · controls ANSWERING    — every button takes a press
+     · controls ANSWERING - every button takes a press
 
    Everything animates `transform` and `opacity` only, so it runs on the
-   compositor and — importantly — survives the surface-enforcement layer in
+   compositor and - importantly - survives the surface-enforcement layer in
    index.css, which strips box-shadow, filter and background-image from
    half these class names but never touches motion.
 
@@ -1645,7 +1646,7 @@
   to   { opacity: 1; transform: none; }
 }
 /* Under the viewfinder mark. Ends fully transparent so the resting state of
-   the page is completely still — it pings, then the frame is quiet again. */
+   the page is completely still - it pings, then the frame is quiet again. */
 @keyframes rtPing {
   0%        { transform: scale(.82); opacity: .34; }
   70%, 100% { transform: scale(1.5);  opacity: 0;   }
@@ -1689,7 +1690,7 @@
   z-index: 0;
 }
 .scanContentDesktop .iconRing::after { width: 92px; height: 92px; }
-/* Once a file is in hand the zone has done its job — stop asking. */
+/* Once a file is in hand the zone has done its job - stop asking. */
 .dragOver .iconRing::after { animation: none; opacity: 0; }
 
 .iconWrap { will-change: transform; }
@@ -1697,7 +1698,7 @@
 /* ── The drop zone, armed ──────────────────────────────────────────────
    The moment a file is over the frame, the zone stops being a suggestion:
    the dashed rule goes to ink, the fill deepens, the mark swells, and one
-   hairline crosses the frame. No extra ornament — a set of corner brackets
+   hairline crosses the frame. No extra ornament - a set of corner brackets
    was tried here and read as four stray marks inside an already-dashed
    frame, one of them landing on the READY caption. The frame IS the
    viewfinder; it just has to commit. */
@@ -1721,7 +1722,7 @@
 }
 .dragOver::after { opacity: .5; animation: rtSweep 1.15s linear infinite; }
 
-/* The mark answers the drag too — the desktop block above pinned it to
+/* The mark answers the drag too - the desktop block above pinned it to
    `transform: none !important`, which is re-opened here rather than edited
    in place so the reference layout stays one readable block. */
 .scanContentDesktop .dropZone:hover .iconWrap { transform: scale(1.04) !important; }
@@ -1754,7 +1755,7 @@
 /* ══════════════════════════════════════════════════════════════════════
    RESTING STATE
    The motion layer above is invisible until the page loads or a file is
-   dragged. These are the changes you see standing still — same layout,
+   dragged. These are the changes you see standing still - same layout,
    same words, better manners.
    ══════════════════════════════════════════════════════════════════════ */
 
@@ -1775,7 +1776,7 @@
 }
 
 /* ── Analyze, before it can run ────────────────────────────────────────
-   It was a black slab at 45% — which on white reads as a mid-grey button
+   It was a black slab at 45% - which on white reads as a mid-grey button
    that is simply broken, and it is the largest object in the rail. An
    outline says the same thing correctly: the control exists, it is not
    armed yet, and it is not asking for your attention until it is. */
@@ -1786,7 +1787,7 @@
   border: 1px solid #e4e4e4 !important;
   color: #9b9b9b !important;
 }
-/* The arrow goes with it — an arrow on a control that cannot advance is a
+/* The arrow goes with it - an arrow on a control that cannot advance is a
    promise the page can't keep. */
 .scanContentDesktop .cta:disabled svg { opacity: .45; }
 
@@ -1794,7 +1795,7 @@
    The capture guidance, shown once on the first scan a device ever starts
    rather than printed under the button on every visit. Numbered, because the
    person reading it is holding a phone in front of a rack working through
-   them in order — the same mono-label-plus-hairline vocabulary as the rest of
+   them in order - the same mono-label-plus-hairline vocabulary as the rest of
    the app.
 
    Portalled to <body>, so it is styled from the viewport rather than from
@@ -1867,7 +1868,7 @@
 
 /* ── Format pills → format marks ───────────────────────────────────────
    999px pills are consumer-app chrome. The app's language is square
-   corners and mono measurements, and these are file formats — data, not
+   corners and mono measurements, and these are file formats - data, not
    decoration. */
 .scanContentDesktop .fmtPill {
   border-radius: 3px !important;
@@ -1908,3 +1909,18 @@
 @media (prefers-reduced-motion: reduce) {
   .ovRackFallback { animation: none; opacity: .7; }
 }
+
+/* ── Space picker (organisation setup) ─────────────────────────────────
+   A native <select> of the caller's Site spaces, shown only when the Site
+   has any. Sits above the media box on a phone and in the right rail on
+   a laptop (order 25, between the capture tabs and the incident link). */
+.spaceBlock { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; text-align: left; }
+.spaceLabel {
+  font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+}
+.spaceSelect {
+  width: 100%; min-height: 44px; padding: 0 12px;
+  font-size: 15px; color: var(--md-on-surface); border-radius: 8px;
+}
+.spaceHelp { font-size: .74rem; line-height: 1.45; color: var(--md-on-surface-variant); }

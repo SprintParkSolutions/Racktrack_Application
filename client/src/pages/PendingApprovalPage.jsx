@@ -82,7 +82,7 @@ export default function PendingApprovalPage() {
   );
 }
 
-// No colour accent in this app — ink does the accenting.
+// No colour accent in this app - ink does the accenting.
 const BLUE = '#121212';
 const S = {
   wrap: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',

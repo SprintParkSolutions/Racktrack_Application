@@ -5,7 +5,7 @@ import styles from './ErrorBoundary.module.css';
  * Catches render and lifecycle errors anywhere below it.
  *
  * Without this, a single thrown error unmounts the whole React tree and the
- * user is left on a blank white page — no message, no way back, and nothing
+ * user is left on a blank white page - no message, no way back, and nothing
  * to report except "the app broke". That is the worst possible failure for a
  * tester, because it destroys the information we need to fix it.
  *
@@ -24,8 +24,7 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, info) {
     this.setState({ info });
     // Keep it in the console for anyone with a debugger attached, and make a
-    // best effort to tell the server. Never let the reporting itself throw —
-    // an error handler that crashes is worse than no error handler.
+    // best effort to tell the server. Never let the reporting itself throw - // an error handler that crashes is worse than no error handler.
      
     console.error('[RackTrack] render error:', error, info?.componentStack);
     try {
@@ -55,7 +54,7 @@ export default class ErrorBoundary extends Component {
     ].join('\n\n');
     navigator.clipboard?.writeText(text).then(
       () => this.setState({ copied: true }),
-      () => { /* clipboard blocked — the details are on screen anyway */ },
+      () => { /* clipboard blocked - the details are on screen anyway */ },
     );
   };
 

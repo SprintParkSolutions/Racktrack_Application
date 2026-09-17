@@ -2,7 +2,7 @@ import { Suspense, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-// Mini server rack — realistic chassis, active port LEDs, swaying patch
+// Mini server rack - realistic chassis, active port LEDs, swaying patch
 // cables, traveling scan beam, mounting hardware. Slow Y-axis rotation
 // showcases all sides; the active unit (driven by progress, top→bottom)
 // pulses brighter.

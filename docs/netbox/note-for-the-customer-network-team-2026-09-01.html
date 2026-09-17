@@ -1,0 +1,100 @@
+<!-- Published copy of the claude.ai artifact "For the Network Team" | https://claude.ai/code/artifact/c3181ddc-1417-4074-bb5a-cb9859a2a988 | artifact last updated 2026-09-01 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>For the Network Team</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground: #f3f1ec; --surface: #ffffff; --ink: #20242b; --muted: #55606b;
+    --faint: #8a9099; --line: #e4e0d7; --accent: #1f7a6b; --accent-soft: #e2efeb;
+    --shadow: 0 1px 2px rgba(30,30,20,.05), 0 10px 30px rgba(30,30,20,.06);
+  }
+  :root:not([data-theme="light"]) { @media (prefers-color-scheme: dark) {
+    --ground: #12140f; --surface: #1a1d18; --ink: #e9ebe3; --muted: #a7ada2;
+    --faint: #737a6d; --line: #2a2e26; --accent: #57c3b1; --accent-soft: #17271f;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 34px rgba(0,0,0,.4);
+  } }
+  :root[data-theme="dark"] {
+    --ground: #12140f; --surface: #1a1d18; --ink: #e9ebe3; --muted: #a7ada2;
+    --faint: #737a6d; --line: #2a2e26; --accent: #57c3b1; --accent-soft: #17271f;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 34px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 17px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased; }
+  .sheet { max-width: 720px; margin: clamp(20px, 5vw, 56px) auto; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
+    padding: clamp(28px, 5vw, 56px); }
+
+  .kicker { font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; }
+  h1 { font-family: "Newsreader", Georgia, serif; font-weight: 600; font-size: clamp(28px, 5vw, 40px);
+    letter-spacing: -.01em; line-height: 1.1; margin: 10px 0 6px; }
+  .meta { color: var(--faint); font-size: 14px; margin-bottom: 26px;
+    padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+
+  p { margin: 0 0 18px; color: var(--muted); }
+  p.open { color: var(--ink); }
+  .sheet strong { color: var(--ink); font-weight: 600; }
+
+  h2 { font-family: "Newsreader", Georgia, serif; font-weight: 600; font-size: 20px;
+    color: var(--ink); margin: 26px 0 8px; }
+  h2 .m { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 9px;
+    vertical-align: middle; background: var(--accent); }
+
+  .safe { margin: 22px 0 0; padding: 14px 16px; background: var(--accent-soft);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 10px;
+    font-size: 14.5px; color: var(--muted); }
+  .safe strong { color: var(--ink); }
+
+  .close { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 15.5px; }
+  .close .sign { color: var(--ink); font-weight: 600; margin-top: 4px; }
+</style>
+
+<div class="sheet">
+  <div class="kicker">RackTrack · for the network team</div>
+  <h1>A quick look, and what we'd need from you</h1>
+  <div class="meta">Attached: a short screen recording of the tool running on your rack</div>
+
+  <p class="open">
+    Hi [name], sharing a short screen recording of the RackTrack tool running on your rack so you can
+    see what it does. It scans the rack from a photo and reads the managed switches over the network to
+    pull the ports, VLANs, addresses, and the device on each port, then shows the physical and network
+    views together and exports the whole thing into NetBox.
+  </p>
+
+  <h2><span class="m"></span>What we'd need from your side</h2>
+  <p>
+    Thanks for confirming <strong>LLDP is already on across the three managed switches</strong>. That is
+    the hard part done: the links between those switches are already proven for us. The cables going to
+    PCs and to the two unmanaged switches will not show up through LLDP, since those ends cannot speak
+    it, so for those we lean on the photo and the switch's address table instead.
+  </p>
+  <p>
+    The remaining <strong>read-only</strong> help: keeping the SNMP access live, with the address table
+    readable, so we can name the device on each port, and opening that same read-only access on the
+    <strong>Sophos firewall</strong> so it is captured too instead of a blank box.
+  </p>
+  <p>
+    It would also help to know whether the devices carry <strong>asset tags</strong>, and if so to share
+    a simple tag-to-device list, plus a few <strong>close-up photos</strong> of any model or serial
+    stickers that are hidden in the wide shot.
+  </p>
+
+  <div class="safe">
+    <strong>All read-only.</strong> Everything above only reads or advertises. Nothing changes a switch
+    configuration, and no passwords are shared with any AI tool.
+  </div>
+
+  <div class="close">
+    Happy to jump on a quick call to set it up.
+    <div class="sign">— [your name]</div>
+  </div>
+</div>
+
+</body></html>

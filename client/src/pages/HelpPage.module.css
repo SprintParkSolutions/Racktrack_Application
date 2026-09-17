@@ -1,8 +1,7 @@
-/* RackTrack — "Ask DOT" support assistant.
+/* RackTrack - "Ask DOT" support assistant.
 
    Styled in the app's own light idiom (DesktopShell / ContactPage): pure white
-   surfaces, hairline #ececec borders, 12px radii, and black as the only accent
-   — the same black as the sidebar's active pill and the Contact page's send
+   surfaces, hairline #ececec borders, 12px radii, and black as the only accent - the same black as the sidebar's active pill and the Contact page's send
    button. The previous neumorphic port read as a foreign app inside the shell;
    this sheet retires it.
 
@@ -99,7 +98,7 @@
 .log::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.18); border-radius: 6px; }
 .log::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.32); }
 
-/* The message column — full content width on every device (this app never
+/* The message column - full content width on every device (this app never
    uses a centered max-width column; see ContactPage). Individual bubbles are
    capped for readable line lengths, but the canvas itself is the whole screen.
    min-height lets the empty state centre in the viewport while messages stack
@@ -232,7 +231,7 @@
   color: var(--faint);
 }
 
-/* ── empty state — mark + heading + starters ─────────────────────────── */
+/* ── empty state - mark + heading + starters ─────────────────────────── */
 /* Full width; only the copy inside is capped, for readable lines. */
 .intro {
   margin: auto;
@@ -240,7 +239,7 @@
   width: 100%;
   padding: 0 4px;
 }
-/* A black tile with three stacked bars — a rack, in the same black as the
+/* A black tile with three stacked bars - a rack, in the same black as the
    sidebar's active pill and brand mark. */
 .introRule {
   width: 56px; height: 56px;
@@ -285,7 +284,7 @@
   text-align: left;
 }
 /* repeat(auto-fit, minmax(13rem, 1fr)): one column on a phone, filling out to
-   two as the column widens — no per-breakpoint column counts needed. */
+   two as the column widens - no per-breakpoint column counts needed. */
 .starters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
@@ -329,7 +328,7 @@
 .dots i:nth-child(3) { animation-delay: 0.36s; }
 @keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
 
-/* ── composer — bordered field + black send ──────────────────────────── */
+/* ── composer - bordered field + black send ──────────────────────────── */
 .form {
   flex-shrink: 0;
   background: #fff;
@@ -389,7 +388,7 @@
 
 /* ══════════════════════════════════════════════════════════════════════
    Responsive. auto-fit handles the starter columns; these rules cover what a
-   clamp can't — hover only where a pointer exists, the composer clearing the
+   clamp can't - hover only where a pointer exists, the composer clearing the
    fixed bottom nav on phones, and the desktop shell owning the header.
    ══════════════════════════════════════════════════════════════════════ */
 
@@ -428,11 +427,9 @@
   .starters { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* Permanent route to a human from the assistant's header. Quiet on purpose —
-   it must not compete with DOT itself, only be findable without a menu. */
+/* Permanent route to a human from the assistant's header. Quiet on purpose - it must not compete with DOT itself, only be findable without a menu. */
 /* "Support", not "Contact support", and a filled control rather than grey
-   underlined text. It is the way through to a human when the bot cannot help —
-   the single most important thing in this header — and it was the quietest
+   underlined text. It is the way through to a human when the bot cannot help - the single most important thing in this header - and it was the quietest
    thing on it. Short enough now that it never competes with the name for width
    on a phone. */
 .headContact {

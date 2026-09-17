@@ -1,0 +1,435 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Build Notes" | https://claude.ai/code/artifact/b4d3d74b-eff7-49c2-90db-c270e8c2727f | artifact last updated 2026-09-08 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>RackTrack Build Notes</title>
+<style>
+  /* A plain document: white paper, black ink, hairline rules. System type,
+     because a working document should not look designed. */
+  :root{
+    --paper:#ffffff;--ink:#1c1c1c;--second:#4d4d4d;--quiet:#8a8a8a;
+    --rule:#dcdcdc;--mark:#0b6a44;
+    --sans:"Helvetica Neue",Helvetica,Arial,"Segoe UI",Roboto,sans-serif;
+    --mono:"SF Mono",Menlo,Consolas,"Courier New",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .pad{padding:0 clamp(20px,4vw,64px)}
+  header{padding-top:44px;padding-bottom:26px;border-bottom:2px solid var(--ink)}
+  h1{margin:0 0 10px;font-size:31px;font-weight:700;letter-spacing:-.01em;line-height:1.15}
+  .lede{margin:0;max-width:80ch;color:var(--second);font-size:17px}
+  .facts{margin:20px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:4px 34px;
+    font-family:var(--mono);font-size:12.5px;color:var(--quiet)}
+  .toc{padding-top:22px;padding-bottom:26px;border-bottom:1px solid var(--rule)}
+  .toc h2{margin:0 0 12px;font-size:12.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.1em;color:var(--quiet)}
+  .toc ol{margin:0;padding-left:22px;columns:2;column-gap:48px}
+  @media(max-width:760px){.toc ol{columns:1}}
+  .toc li{margin-bottom:6px;break-inside:avoid}
+  .toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule)}
+  .toc a:hover{border-bottom-color:var(--ink)}
+  section{padding-top:44px;padding-bottom:44px;border-bottom:1px solid var(--rule)}
+  .row{display:grid;grid-template-columns:1fr;gap:10px 56px}
+  @media(min-width:960px){.row{grid-template-columns:330px minmax(0,1fr)}}
+  @media(min-width:1500px){.row{grid-template-columns:410px minmax(0,1fr)}}
+  .side{position:sticky;top:0;align-self:start;padding-top:2px}
+  @media(max-width:959px){.side{position:static}}
+  .num{font-family:var(--mono);font-size:12.5px;color:var(--quiet)}
+  h2.t{margin:4px 0 10px;font-size:24px;font-weight:700;line-height:1.2;letter-spacing:-.01em}
+  .key{display:inline-block;font-family:var(--mono);font-size:12.5px;color:var(--mark);
+    border:1px solid var(--rule);padding:2px 7px}
+  .what{margin:14px 0 0;color:var(--second);font-size:15.5px;max-width:46ch}
+  .body{max-width:84ch}
+  h3{margin:26px 0 8px;font-size:12.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.1em;color:var(--quiet)}
+  h3:first-child{margin-top:0}
+  p{margin:0 0 11px}
+  h4{margin:16px 0 3px;font-size:16px;font-weight:700}
+  ul,ol{margin:0 0 6px;padding-left:22px}
+  li{margin-bottom:8px}
+  .quote{margin:0;padding:3px 0 3px 16px;border-left:3px solid var(--ink)}
+  .quote p{margin:0}
+  table{border-collapse:collapse;margin:2px 0 8px;width:100%;max-width:620px}
+  td{border-bottom:1px solid var(--rule);padding:8px 16px 8px 0;font-size:15px;vertical-align:top}
+  td.n{font-family:var(--mono);white-space:nowrap}
+  .where{font-family:var(--mono);font-size:13.5px;color:var(--second)}
+  .where li{margin-bottom:5px}
+  .open{color:var(--second)}
+  .open strong{color:var(--mark)}
+  footer{padding-top:32px;padding-bottom:64px;color:var(--quiet);font-size:14px}
+  footer p{max-width:82ch}
+</style>
+<header class="pad">
+  <h1>RackTrack build notes</h1>
+  <p class="lede">Nine pieces of work from the first week of September 2026. Each document says how the thing was before, what we decided and why, what was built, how it works, how to check it yourself, where the code lives, and what is still open. Figures are measured, not estimated. The same wording sits in the Jira tickets.</p>
+  <ul class="facts"><li>3 to 7 September 2026</li><li>62 commits</li><li>232 files</li>
+  <li>iOS builds 58 to 61</li><li>Jira project SPRTMS</li></ul>
+</header>
+<nav class="toc pad"><h2>The nine</h2><ol>
+<li><a href="#01-read-switches-over-snmp">Read live switches over SNMP from the phone</a></li>
+<li><a href="#02-full-switch-read">Read everything the switch will tell us</a></li>
+<li><a href="#03-network-page-cards">The Network page: one card per switch</a></li>
+<li><a href="#04-scan-report">The scan report, as a summary</a></li>
+<li><a href="#05-netbox-export">Export a rack into NetBox</a></li>
+<li><a href="#06-device-identity-firmware">Make, model and firmware</a></li>
+<li><a href="#07-drift-and-port-history">Drift and port history</a></li>
+<li><a href="#08-mobile-screens">The app&#x27;s screens on a phone</a></li>
+<li><a href="#09-sign-in">Sign-in and the front of the app</a></li>
+</ol></nav>
+<section class="pad" id="01-read-switches-over-snmp"><div class="row"><div class="side">
+<div class="num">1 of 9</div>
+<h2 class="t">Read live switches over SNMP from the phone</h2>
+<span class="key">SPRTMS-1632</span>
+<p class="what">The app asks a switch about itself, directly, with nothing in between.</p>
+</div><div class="body">
+<h3>How it was before</h3>
+<p>A switch knows a great deal about itself. It knows its own model and serial number, which of its sockets have a cable in them, how fast each link negotiated, and often what is on the other end. All of that is available over SNMP, a decades-old protocol that every managed switch speaks.</p>
+<p>Until now we did not ask the switch. The phone asked our server, and our server logged into the switch over SSH, ran commands, and read the text that came back.</p>
+<p>That approach had three costs. The switch had to be reachable from wherever the server lives, which in a customer&#x27;s building it usually is not. The switch&#x27;s login and password had to be stored on the server, which is a thing nobody wants to own. And parsing screen output written for humans is fragile: the same command prints differently on two makes, and a firmware update can change the wording overnight.</p>
+<p>Meanwhile the engineer is standing in front of the rack holding a phone that is already on the same network as the switch. The short path was there the whole time.</p>
+<h3>What we decided, and why</h3>
+<p>We moved the read onto the phone and switched from SSH to SNMP.</p>
+<p>SNMP is the right tool because it returns structured values rather than text meant for a person. When we ask for the port table we get a table, not a screenful of columns to guess at.</p>
+<p>We support two ways of asking. SNMP version 2c, where the switch accepts a shared word called a community string, and SNMP version 3 without a password, which is how the switches in the office rack are configured. Version 3 with encryption is deliberately out of scope for now.</p>
+<h3>What we built</h3>
+<h4>A direct path from the phone</h4><p>The app carries its own SNMP code on both iPhone and Android. The request leaves the handset and reaches the switch on the local network. No server, no SSH session, no stored switch password.</p>
+<h4>Two protocol versions, no more than the read needs</h4><p>Version 2c with a community string, and version 3 without authentication. The screen never asks for a credential the read does not use.</p>
+<h4>Answers appear as they arrive</h4><p>A full read of a large switch is dozens of separate questions. Rather than wait for all of them, the screen paints in stages: first the name and model, then the port faceplate, then the detail. The engineer sees something within a fraction of a second.</p>
+<h4>Give up quickly and say so</h4><p>Each question waits about a second and a half and is not retried. A switch that is not answering should be reported as not answering, not treated as slow. There is a Stop button for a read that is going nowhere.</p>
+<h3>How it works</h3>
+<p>A read runs in phases, and each phase paints the screen as soon as it has something worth showing.</p>
+<p>The first phase asks for the switch&#x27;s own description and name. That is one exchange and comes back in roughly twenty milliseconds, which is why the card seems to appear instantly.</p>
+<p>The second phase walks the port table and draws the faceplate. The third phase collects everything else: what is plugged in, the neighbours, the serial and firmware.</p>
+<p>Because each phase reports separately, a switch that answers the first two questions and then goes quiet still produces a useful card, with the missing parts marked as not returned rather than left blank.</p>
+<h3>Measured</h3><table><tbody>
+<tr><td>Name and model</td><td class="n">10 to 22 milliseconds</td></tr>
+<tr><td>Faceplate drawn</td><td class="n">61 milliseconds on the fastest switch, about 1.2 seconds on the slowest</td></tr>
+<tr><td>Complete read, 52-port D-Link</td><td class="n">0.36 seconds</td></tr>
+<tr><td>Complete read, slowest switch in the rack</td><td class="n">6.5 seconds</td></tr>
+</tbody></table>
+<h3>How to check it yourself</h3><ol>
+<li>Open the Network page and add a switch with its address and community string.</li>
+<li>Press read. The name and model should appear almost at once, then the faceplate, then the rest.</li>
+<li>If it fills in all at once after a pause, the staged painting is not working.</li>
+<li>Point it at an address with nothing on it. It should give up within a couple of seconds and say the switch did not answer.</li>
+</ol>
+<h3>Where it lives</h3><ul class="where">
+<li>The read itself: client/src/utils/snmpClient.js</li>
+<li>The screen: client/src/pages/SwitchTestPage.jsx</li>
+<li>A test against a real switch, off by default: client/src/utils/liveprobe.test.js</li>
+<li>On iPhone the SNMP code is a native plugin, and it must be registered from a subclass of the Capacitor bridge view controller or the app cannot see it.</li>
+</ul>
+<h3>What is not done</h3>
+<p class="open">Nothing outstanding. SNMP version 3 with authentication and encryption is not built, by choice, and is not needed for the switches we have.</p>
+</div></div></section>
+<section class="pad" id="02-full-switch-read"><div class="row"><div class="side">
+<div class="num">2 of 9</div>
+<h2 class="t">Read everything the switch will tell us</h2>
+<span class="key">SPRTMS-1633</span>
+<p class="what">One pass now collects every fact a switch is willing to publish about itself.</p>
+</div><div class="body">
+<h3>How it was before</h3>
+<p>We were reading a small fraction of what these switches make available. The port table told us a port was up, and that was the end of it.</p>
+<p>So a report could say twenty ports are in use and still leave the obvious question unanswered: in use by what?</p>
+<p>The information was there. A managed switch keeps a forwarding table listing which hardware addresses it has seen on which port, and often an address table mapping those to network addresses. It also publishes its own serial number, hardware revision and firmware version, though each manufacturer puts those in its own private section.</p>
+<h3>What we decided, and why</h3>
+<p>Read all of it in a single pass, and never invent anything.</p>
+<p>The second half of that sentence matters as much as the first. Once a screen starts filling gaps with plausible guesses, an engineer cannot tell which lines are measurements and which are decoration, and the whole report stops being usable as evidence.</p>
+<p>So the rule is: show what the switch answered. Where it answered nothing, say it returned nothing. Never a blank, never a guess, and never the phrase &#x27;not supported&#x27;, because we cannot know whether a switch supports something or merely declined to answer us.</p>
+<h3>What we built</h3>
+<h4>Every port, in full</h4><p>Name, whether the link is up, the speed and duplex it agreed with the far end, and its VLAN. Virtual interfaces are filtered out, so a 28-port switch shows 28 ports rather than 29 with a management interface pretending to be a socket.</p>
+<h4>What is on the other end</h4><p>The neighbours the switch can see through the standard discovery protocol, its forwarding table of hardware addresses, and its address table. Read together, a port can name the device behind it, by name where the neighbour announces one and by hardware address otherwise.</p>
+<h4>The switch&#x27;s own identity</h4><p>Serial number, hardware revision and firmware version, taken from each manufacturer&#x27;s private section. TP-Link and D-Link are covered, which is every switch in the office rack.</p>
+<h4>Traffic counters and a timestamp</h4><p>The high-capacity byte counters for each port, and the moment the reading was taken, so two readings can be compared later to show what changed.</p>
+<h4>A written record of what we ask and why</h4><p>Every value we request is documented with the reason we want it and what we do when it is missing.</p>
+<h3>How it works</h3>
+<p>SNMP organises everything into numbered addresses, and a group of related addresses is called a MIB.</p>
+<p>The port list comes from the standard interface MIB, which every switch implements. The forwarding table comes from the bridge MIBs. Network addresses come from the address translation table.</p>
+<p>Manufacturer facts are different. There is a standard place for a serial number, but in practice most switches leave it empty, so each maker keeps its own copy in a private section reserved for that company. We read TP-Link&#x27;s and D-Link&#x27;s directly.</p>
+<p>Where the standard place is empty and we have no private reading for that make, the screen says the switch did not return the value.</p>
+<h3>What we found on the office rack</h3><ul>
+<li>The 52-port D-Link reports 52 ports with 20 cables attached.</li>
+<li>The two TP-Links report 28 ports each once the management interface is filtered out, and both publish a serial number in their private section.</li>
+<li>One TP-Link sees three neighbours. None of them announce a name, so they are listed by hardware address against the correctly named local port.</li>
+</ul>
+<h3>How to check it yourself</h3><ol>
+<li>Read a switch on the Network page, then open Read more.</li>
+<li>A port carrying traffic should name what is behind it, where the switch knows.</li>
+<li>Look for the serial number and firmware version. On a TP-Link or D-Link they should be filled in.</li>
+<li>Find something the switch does not publish. It should say it returned nothing, not sit blank.</li>
+</ol>
+<h3>Where it lives</h3><ul class="where">
+<li>The read: client/src/utils/snmpClient.js</li>
+<li>The written record of every value we ask for: docs/snmp-what-we-ask.md</li>
+</ul>
+<h3>What is not done</h3>
+<p class="open"><strong>Still open.</strong> The manufacturer-specific reads cover TP-Link and D-Link. Other makes still get everything standard, and their serial and firmware simply come back as not returned. Adding a make is a small, self-contained piece of work.</p>
+</div></div></section>
+<section class="pad" id="03-network-page-cards"><div class="row"><div class="side">
+<div class="num">3 of 9</div>
+<h2 class="t">The Network page: one card per switch</h2>
+<span class="key">SPRTMS-1634</span>
+<p class="what">The live-switch screen, rebuilt so three switches can be understood at a glance.</p>
+</div><div class="body">
+<h3>How it was before</h3>
+<p>The screen had grown by accretion. Each new thing we learned how to read was appended to the page, and by the time it could read everything it was a wall of text.</p>
+<p>Three switches produced a page that had to be scrolled several times to find a single fact, and the faceplate did not fit the width of a phone, so a 52-port switch had to be scrolled sideways.</p>
+<p>The form for adding a switch pre-filled an address and a community string. That looked helpful and was not: when a read failed there was no way to tell whether the switch was unreachable or the guess had simply been wrong.</p>
+<h3>What we decided, and why</h3>
+<p>Give each switch a card, put the summary on the face of it, and hide everything else one tap away.</p>
+<p>The measure we held to is that a person should be able to hold the phone at arm&#x27;s length and see, for each switch, its name, what it is, and how much of it is in use, without reading a word of detail.</p>
+<h3>What we built</h3>
+<h4>One numbered card per switch</h4><p>Numbered because engineers refer to them by position in the list. Each card carries the name, the model, the address, and how many ports are up out of the total.</p>
+<h4>A faceplate that fits the phone</h4><p>The ports are drawn in two rows across the width of the screen, numbered, coloured by state. A 52-port switch fits without pinching or scrolling sideways. Virtual interfaces are left out, because they are not sockets and drawing them makes the count wrong.</p>
+<h4>Actions on the card they belong to</h4><p>Each card has its own small menu, and a switch can be edited where it sits rather than in a form somewhere below the fold. When you press edit, the fields open on that card, in view.</p>
+<h4>Detail behind Read more</h4><p>What is plugged in, the neighbours, the labels, the addresses and the traffic counters are all one tap away and folded by default.</p>
+<h4>An empty form when adding</h4><p>Every field starts blank, and the form names what is still needed rather than refusing silently.</p>
+<h3>How it works</h3>
+<p>The cards are held per rack, so a scan you did yesterday shows the switches you read yesterday, and a new scan starts clean.</p>
+<p>Reads are filed against the rack automatically when the page opens, which is what makes the same switches appear on the report and on the drift screen without anyone pressing a button.</p>
+<h3>The rule we hold to</h3><blockquote class="quote"><p>Nothing is pre-filled when a switch is added. A guessed address that half works is worse than a blank one, because a failure then has two possible causes and the engineer cannot tell them apart.</p></blockquote>
+<h3>How to check it yourself</h3><ol>
+<li>Add three switches and read them. You should get three cards, each fitting the screen width.</li>
+<li>Count the ports on the faceplate against the physical switch. A 28-port switch should draw 28 ports.</li>
+<li>Press edit on the second card. The fields should open on that card, without scrolling.</li>
+<li>Press add. Every field should be empty, and the form should say what is still needed.</li>
+</ol>
+<h3>Where it lives</h3><ul class="where">
+<li>The page: client/src/pages/SwitchTestPage.jsx and its stylesheet</li>
+</ul>
+<h3>What is not done</h3>
+<p class="open">Nothing outstanding.</p>
+</div></div></section>
+<section class="pad" id="04-scan-report"><div class="row"><div class="side">
+<div class="num">4 of 9</div>
+<h2 class="t">The scan report, as a summary</h2>
+<span class="key">SPRTMS-1635</span>
+<p class="what">The document a person reads after scanning a rack, rewritten to show only what we can prove.</p>
+</div><div class="body">
+<h3>How it was before</h3>
+<p>The report printed a fixed set of fields for every device, whether or not we had a value for each.</p>
+<p>The result was that roughly half of it read &#x27;not stated&#x27;. That is worse than it sounds. A reader skimming a page of empty fields learns to skim past the filled ones too, so the facts we did have were being lost inside the ones we did not.</p>
+<p>It also opened with the least useful thing, a list, rather than with the figures people actually ask for.</p>
+<h3>What we decided, and why</h3>
+<p>Lead with the numbers, then go device by device, and print nothing we cannot support.</p>
+<p>Where a list is long we shorten it, but we always say how long it really is and offer to show the rest, so no figure on the page has to be taken on trust.</p>
+<h3>What we built</h3>
+<h4>The rack&#x27;s figures first</h4><p>Ports in use against the total, with a bar. Then devices found, switches read, cables identified, addresses seen. These are the five things people ask for before anything else.</p>
+<h4>Then each device, with what we hold</h4><p>Position in the rack, name, make and model, serial, address, firmware, port count and how many are in use, and what is plugged into them.</p>
+<h4>Empty fields are absent, not blank</h4><p>If we have no serial number for a device, the report has no serial line for that device. Nothing reads &#x27;not stated&#x27;.</p>
+<h4>View all on anything shortened</h4><p>A trimmed list carries a control naming the true count, for example 284 ports, which opens the full list.</p>
+<h3>How it works</h3>
+<p>The report is assembled on the server from the scan record and from any switch readings filed against that rack, so a rack whose switches have been read is richer than one that has only been photographed.</p>
+<p>Every figure is derived rather than stored, which is why the numbers agree with the device list underneath them.</p>
+<h3>How to check it yourself</h3><ol>
+<li>Open a report on a rack whose switches have been read.</li>
+<li>The top should carry the five figures, and the bar should match the in-use count beside it.</li>
+<li>Search the page for &#x27;not stated&#x27;. There should be none.</li>
+<li>Find a trimmed list and press its control. The full list should open and its length should match the number on the control.</li>
+</ol>
+<h3>Where it lives</h3><ul class="where">
+<li>The screen: client/src/pages/ReportPage.jsx</li>
+<li>What the server assembles: server/lib/netbox/report.js</li>
+</ul>
+<h3>What is not done</h3>
+<p class="open">Nothing outstanding.</p>
+</div></div></section>
+<section class="pad" id="05-netbox-export"><div class="row"><div class="side">
+<div class="num">5 of 9</div>
+<h2 class="t">Export a rack into NetBox</h2>
+<span class="key">SPRTMS-1636</span>
+<p class="what">Sending a scanned rack into the system of record, with the comparison already done before you ask for it.</p>
+</div><div class="body">
+<h3>How it was before</h3>
+<p>The export worked but felt broken. Pressing Preview started a comparison against NetBox that took about five seconds with nothing on screen, so people pressed it twice or assumed it had failed.</p>
+<p>After pressing Push you were told a number of objects had been written, with no way to see which ones, and no route to the result.</p>
+<p>It also lived on a separate screen, so finishing a report meant walking to a second page to press two buttons.</p>
+<h3>What we decided, and why</h3>
+<p>Do the waiting before the engineer asks, show every object by name, and end with something unmistakable.</p>
+<p>Comparing costs nothing and writes nothing, so there is no reason not to start it the moment the report opens. By the time anybody opens Export, the answer is already there.</p>
+<h3>What we built</h3>
+<h4>The comparison runs while you read</h4><p>Opening a report starts the comparison in the background and keeps the result. Export then opens with the counts already on screen. It can still be run again on demand.</p>
+<h4>Counts, then every object by name</h4><p>How many objects are new, changed, unchanged and held back, and a control that lists all of them: each rack, device, interface and cable, with what would happen to it.</p>
+<h4>An unmistakable end</h4><p>After the write, a green panel says it was exported, how many objects were written and how many were already there, with a link that opens the rack in NetBox.</p>
+<h4>Safe to run twice</h4><p>Every object we create carries a stable identifier of our own. A second run finds what it made last time and updates it rather than creating a duplicate. Nothing is ever deleted.</p>
+<h3>How it works</h3>
+<p>The comparison is a dry run of the write. It walks the same objects in the same order and records what it would do, without sending a single change.</p>
+<p>Objects are matched by an identifier we store on the NetBox record itself, so matching does not depend on names, which people rename.</p>
+<p>Speed came from fetching in bulk. The comparison used to look up each object one at a time; it now loads all the objects for a rack in a small number of requests and matches them in memory.</p>
+<h3>Measured</h3><table><tbody>
+<tr><td>Comparison on the demo server</td><td class="n">3 to 5 seconds, now spent while you read the report</td></tr>
+<tr><td>A typical office rack</td><td class="n">37 objects new, 241 already correct</td></tr>
+</tbody></table>
+<h3>How to check it yourself</h3><ol>
+<li>Open a report, wait a moment, then open Export. The counts should already be there.</li>
+<li>Press View all. Every object should be named, with what would happen to it.</li>
+<li>Push. The panel should say exported, with a count and a link.</li>
+<li>Follow the link and find the rack in NetBox.</li>
+<li>Run the whole thing again. The second run should report almost everything as unchanged, and should not create duplicates.</li>
+</ol>
+<h3>Where it lives</h3><ul class="where">
+<li>The sheet: client/src/components/ExportSheet.jsx</li>
+<li>The comparison and the write: server/lib/netbox/writer.js</li>
+<li>The route the app calls: server/routes/netbox/netbox.js</li>
+</ul>
+<h3>What is not done</h3>
+<p class="open">Nothing outstanding.</p>
+</div></div></section>
+<section class="pad" id="06-device-identity-firmware"><div class="row"><div class="side">
+<div class="num">6 of 9</div>
+<h2 class="t">Make, model and firmware</h2>
+<span class="key">SPRTMS-1637</span>
+<p class="what">Deciding what a device actually is, and telling the truth about whether its firmware is current.</p>
+</div><div class="body">
+<h3>How it was before</h3>
+<p>Two separate things were wrong, and both undermined trust in the app.</p>
+<p>First, a person typing a make and model by hand could be overruled by the camera. Someone would enter TP-Link TL-SG2428P, and a later reading of a blurry photograph would replace it with something else. The one source of information we can be most confident about, a human being who is standing in front of the device, was being treated as the least reliable.</p>
+<p>Second, the firmware tab said it could not check for updates. Not for some switches. For every switch we own. The feature existed and had never once produced an answer.</p>
+<p>There was a third, smaller problem underneath both. Rack labels read by the camera came back wrong in a specific and repeatable way: U15 was read as UIS, because a one looks like an I and a five looks like an S.</p>
+<h3>What we decided, and why</h3>
+<p>Rank the sources of truth honestly, and go to the manufacturers for firmware rather than guessing.</p>
+<p>The ranking is simple: what a person typed beats what a camera read, and what the switch says about itself beats both. A photograph is evidence, not testimony.</p>
+<p>For firmware we stopped trying to infer a version and went to the source. Each manufacturer publishes its own list of releases. That list is the only thing worth quoting.</p>
+<h3>What we built</h3>
+<h4>A typed make and model wins, and travels</h4><p>Values entered by hand take precedence over anything read from a photo, and they carry through to the report and into the NetBox export, so the whole system agrees about what a device is.</p>
+<h4>Misread unit numbers are repaired</h4><p>Where a label reads U followed by two characters, letters that the camera commonly substitutes for digits are converted back. UIS becomes U15. Words that merely start with a U, such as USB, are left alone.</p>
+<h4>Readings are remembered per photograph</h4><p>The result of reading a photograph is stored against the image itself, so the same photo is never read twice. This is what makes the make and model appear immediately on a rack you have already scanned.</p>
+<h4>Real firmware versions from the manufacturers</h4><p>TP-Link&#x27;s is read from the public part of its support portal, and D-Link&#x27;s from its official firmware mirror. Both are matched to the hardware revision the switch reports, because one model can have several firmware lines that must not be mixed.</p>
+<h4>The tab always says something true</h4><p>Either the verified latest version, or that the maker keeps its downloads behind a sign-in, or which page to check. Never a dead end and never a version we cannot support.</p>
+<h4>Ports and cables for the model</h4><p>The advisor shows the ports a given model has and the cables that fit them, rather than cables alone.</p>
+<h3>How it works</h3>
+<p>Matching a firmware release to a switch is harder than it sounds, because a manufacturer will sell one model number in several hardware revisions and publish a different firmware line for each. Quote the wrong line and you tell an engineer to install something that will not run.</p>
+<p>So the switch is asked for its hardware revision over SNMP, and that revision picks the line before any version is compared. TP-Link renamed part of its range in 2023, dropping a prefix, which means one switch can be listed under two names; both are checked.</p>
+<p>Where a manufacturer puts its downloads behind a sign-in, we say so plainly and link to the page rather than pretending to have failed.</p>
+<h3>What we found on the office rack</h3><ul>
+<li>A TL-SG2428P running 5.20.27 is correctly reported as current, with high confidence, instead of being sent away to a download page.</li>
+<li>A DGS-1210-52 running 6.30.016 is correctly told an update exists, 6.33.B005.</li>
+<li>A DGS-1024C returns an empty firmware folder, which is the correct answer: it is an unmanaged switch and has no firmware to publish.</li>
+</ul>
+<h3>Measured</h3><table><tbody>
+<tr><td>Firmware lookup test suite</td><td class="n">522 tests, all passing</td></tr>
+<tr><td>A lookup against the live manufacturer site</td><td class="n">about 3 seconds</td></tr>
+</tbody></table>
+<h3>How to check it yourself</h3><ol>
+<li>On the Switches tab, type a make and model for a device. It should hold, and appear on the report and in the export.</li>
+<li>Photograph a rack whose labels include a unit number. Check that U15 does not come back as UIS.</li>
+<li>Open the Firmware tab on a TP-Link or a D-Link switch. It should name a version or a sign-in wall, not a failure.</li>
+<li>Open the same rack a second time. The make and model should appear at once, not after a wait.</li>
+</ol>
+<h3>Where it lives</h3><ul class="where">
+<li>Label repair: pipeline/ocr_labels.py</li>
+<li>Remembering readings per image: server/lib/ocr_cache.js</li>
+<li>Manufacturer lookups: firmware_lookup/providers/tplink.py and firmware_lookup/providers/dlink.py</li>
+<li>The screen: client/src/pages/SwitchInformationPage.jsx</li>
+</ul>
+<h3>What is not done</h3>
+<p class="open"><strong>Still open.</strong> Firmware lookup covers TP-Link and D-Link. Every other make gets the manufacturer&#x27;s download page instead of a version. Each additional manufacturer is a self-contained piece of work of roughly the same size.</p>
+</div></div></section>
+<section class="pad" id="07-drift-and-port-history"><div class="row"><div class="side">
+<div class="num">7 of 9</div>
+<h2 class="t">Drift and port history</h2>
+<span class="key">SPRTMS-1638</span>
+<p class="what">What has changed in the rack since the last time anyone looked, in words a person would use.</p>
+</div><div class="body">
+<h3>How it was before</h3>
+<p>The drift screen showed one switch, and showed it paused, while three switches were being read on the Network page a tap away.</p>
+<p>It also reported change as a difference between two states, which is accurate and unreadable. An engineer wants to know that a port went down twenty minutes ago, not that a field changed from one value to another.</p>
+<h3>What we decided, and why</h3>
+<p>Follow the rack rather than a single device, and write the changes the way a person would say them out loud.</p>
+<p>Keep a record per port, so a port that goes up and down repeatedly can be recognised as a flapping port rather than as whatever it happens to be at the moment you look.</p>
+<h3>What we built</h3>
+<h4>Every switch in the rack, polled</h4><p>All of the rack&#x27;s switches appear, each in its own band, and each is polled so its state is current rather than remembered from an old read.</p>
+<h4>Ports laid out as they sit on the device</h4><p>A grid matching the physical faceplate, showing which ports are up, which are down, and which did not answer.</p>
+<h4>A change list in plain words</h4><p>Ports going up or down, speed or duplex changes, neighbours appearing or disappearing, VLAN changes. Each one carries how long ago it happened, in a short form: 5m, 3h, 26h.</p>
+<h4>A record for every port</h4><p>Tap a port to read its own history rather than only its present state.</p>
+<h4>Say when it was read, and read it again</h4><p>Each switch says how long ago it was last read, with a control to read it again without leaving the screen.</p>
+<h3>How it works</h3>
+<p>Every reading filed for a rack is compared against the one before it, and the differences are turned into events with a timestamp.</p>
+<p>Events are stored per port, which is what allows a port&#x27;s own history to be shown and what makes a flapping port visible.</p>
+<p>Readings arrive from two directions and are treated identically: a read done by hand on the Network page, and the server&#x27;s own background polling.</p>
+<h3>An example</h3><p>The change list reads like a person wrote it. Slot0/9 went down, 5m. Slot0/3 1 Gbps to 100 Mbps, 3h. Slot0/49 neighbour appeared: AP-Floor2, 26h.</p>
+<h3>How to check it yourself</h3><ol>
+<li>Open Drift on a rack whose switches have been read. All of them should be listed, not one.</li>
+<li>Unplug a cable, read the switch again, and look at the change list. It should name the port and say it went down, with a time.</li>
+<li>Tap a port. Its own history should open.</li>
+</ol>
+<h3>Where it lives</h3><ul class="where">
+<li>The screen: client/src/pages/PortHistoryPage.jsx</li>
+<li>Turning readings into events: server/lib/netbox/drift_feed.js</li>
+<li>Background polling: server/lib/port_poller.js</li>
+</ul>
+<h3>What is not done</h3>
+<p class="open">Nothing outstanding.</p>
+</div></div></section>
+<section class="pad" id="08-mobile-screens"><div class="row"><div class="side">
+<div class="num">8 of 9</div>
+<h2 class="t">The app&#x27;s screens on a phone</h2>
+<span class="key">SPRTMS-1639</span>
+<p class="what">Three screens reshaped around the job, rather than around the order they happened to be built in.</p>
+</div><div class="body">
+<h3>How it was before</h3>
+<p>The same complaint arrived from three directions during the tester round, and it took a while to see that it was one complaint.</p>
+<p>A switch read over the network and a device seen in the rack photograph were two unrelated things, so the app knew a switch existed and knew a device sat at U15 and could not connect the two.</p>
+<p>The report&#x27;s actions sat at the bottom of a long document and were split across a second screen, so finishing a report meant scrolling past everything and then navigating away.</p>
+<p>The side menu had grown past the height of a phone. The last entries could only be reached by scrolling a list that did not look like it scrolled, which means for most people they did not exist.</p>
+<h3>What we decided, and why</h3>
+<p>Put each screen in the order the work actually happens, and make sure the last thing you need is not off the bottom.</p>
+<p>That principle decided all three: the match belongs where the switch was read, the actions belong at the top of the report, and a menu must fit the device it is on.</p>
+<h3>What we built</h3>
+<h4>Putting a switch where it physically sits</h4><p>A switch read over the network can be matched to the device in the rack photograph, either by choosing from a list of the rack&#x27;s devices or by tapping the unit on the photo itself. Where only one device could possibly fit, the app takes the match without asking, because asking a question with one answer is not a choice. The placement survives a reload, including a deliberate decision that a switch is not in this rack, and saving reports back in words: Sw1 went to U15, Sw2 to U14.</p>
+<h4>The report&#x27;s actions, at the top</h4><p>Download, Export and Share sit above the report, each opening its own choices underneath. Download offers CSV, JSON or PDF. Export goes to NetBox. Share sends by Teams, by email, or as a link that opens without an account. The separate export screen is gone.</p>
+<h4>Five steps for a rack</h4><p>Overview, Network, Topology, Switches and Report, in the order a person walks them, with Drift behind More.</p>
+<h4>A menu that fits</h4><p>The side menu spreads across whatever height the screen has, so no entry needs scrolling. History sits under Support, and the person&#x27;s name and role show beside their avatar.</p>
+<h4>Buttons that stay above the keyboard</h4><p>The app now shrinks when the keyboard opens. Any sheet that takes typing keeps its own button in view.</p>
+<h3>How it works</h3>
+<p>The match is proposed by the server, which compares what the switch says about itself against what the camera found: port counts, position, make and model. Where exactly one device fits, the proposal is accepted automatically.</p>
+<p>A placement made by hand is stored as the truth and is never overwritten by a later proposal, including a deliberate &#x27;not in this rack&#x27;.</p>
+<p>The keyboard fix is at the application level rather than per screen, so the same trap cannot reappear on a screen built next month.</p>
+<h3>How to check it yourself</h3><ol>
+<li>Read a switch, then save its place. The message should name where each switch went, not just say saved.</li>
+<li>Set a switch to &#x27;not in this rack&#x27;, reload, and check it stayed that way.</li>
+<li>Open a report. Download, Export and Share should be the first thing you see.</li>
+<li>Open Share and choose Teams. There should be one field and one Send button, both visible with the keyboard open.</li>
+<li>Open the menu on a small phone. Every entry should be visible without scrolling.</li>
+</ol>
+<h3>Where it lives</h3><ul class="where">
+<li>Choosing a place: client/src/components/PlacePicker.jsx</li>
+<li>The report&#x27;s actions: client/src/pages/ReportPage.jsx</li>
+<li>Sending: client/src/components/ShareSheet.jsx</li>
+<li>The menu: client/src/nav/navLinks.jsx</li>
+<li>The tab bar: client/src/components/ScanTabBar.jsx</li>
+</ul>
+<h3>What is not done</h3>
+<p class="open">Nothing outstanding.</p>
+</div></div></section>
+<section class="pad" id="09-sign-in"><div class="row"><div class="side">
+<div class="num">9 of 9</div>
+<h2 class="t">Sign-in and the front of the app</h2>
+<span class="key">SPRTMS-1640</span>
+<p class="what">The first screen anyone sees, cut back to what it is for.</p>
+</div><div class="body">
+<h3>How it was before</h3>
+<p>Sign-in was sized from the browser window rather than from the space it actually occupies. On several phones that put the button below the fold, so the first thing a new person met was a screen that appeared to have no way forward.</p>
+<p>The styling was soft and raised, with shadows suggesting depth that is not there. It dated the app and did not match the rest of it.</p>
+<h3>What we decided, and why</h3>
+<p>Reduce it to the four things it needs and size it from its own box.</p>
+<p>A sign-in screen has one job. Anything on it that is not the logo, the name, the two fields or the button is in the way.</p>
+<h3>What we built</h3>
+<h4>Four things and nothing else</h4><p>A logo, the product name, a username field, a password field, and a button.</p>
+<h4>Sized from its own box</h4><p>The layout takes its measurements from the container it sits in rather than from the browser window, so the button is on screen on every phone we have tested.</p>
+<h4>A line that says what the product is</h4><p>Physical Infrastructure Intelligence for Data Centers.</p>
+<h4>Flat, and the full width of the device</h4><p>The raised, soft-shadowed treatment is gone. The page uses the whole width of the screen rather than a narrow column down the middle.</p>
+<h3>How to check it yourself</h3><ol>
+<li>Open the app on the smallest phone you have. The button should be visible without scrolling.</li>
+<li>Rotate the phone. The button should stay visible.</li>
+<li>Check the line under the product name reads the new tagline.</li>
+</ol>
+<h3>Where it lives</h3><ul class="where">
+<li>The screen: client/src/pages/LoginPage.jsx</li>
+</ul>
+<h3>What is not done</h3>
+<p class="open">Nothing outstanding.</p>
+</div></div></section>
+<footer class="pad">
+  <p>Written from the work itself. Every figure here was measured on the office rack or on the demo server, and where something is unfinished the document says so rather than rounding it up. The same documents live in the repository under docs/tasks.</p>
+</footer>
+</body></html>

@@ -1,3 +1,4 @@
+import { NAV_GROUPS } from '../nav/navLinks.jsx';
 import { createPortal } from 'react-dom';
 import { NavLink, useNavigate } from 'react-router-dom';
 import styles from './MoreSheet.module.css';
@@ -7,7 +8,7 @@ import { useAuth } from '../AuthContext.jsx';
 /**
  * The navigation drawer.
  *
- * It was a bottom sheet titled "Go to" — a flat list with no sense of what
+ * It was a bottom sheet titled "Go to" - a flat list with no sense of what
  * belonged with what, and the account nowhere in it. A drawer instead: it
  * comes from the edge, it is grouped, and it ends with who you are signed in
  * as and the way out. That is the shape people already know from every tool
@@ -21,21 +22,8 @@ import { useAuth } from '../AuthContext.jsx';
  * viewport, not its parent.
  */
 
-const SECTIONS = [
-  { key: 'work', title: 'Racks', match: ['/scan', '/multi-rack/new', '/results'] },
-  { key: 'manage', title: 'Manage', match: ['/organizations', '/dashboard', '/lab', '/connections', '/marketplace'] },
-  { key: 'help', title: 'Support', match: ['/help', '/contact'] },
-  // History sits under Support, on its own, with no heading: it is the one
-  // place to go back to, not a kind of work.
-  { key: 'past', title: null, match: ['/history'] },
-];
-
-/** Which section a destination belongs to; anything unmatched goes last. */
-function sectionOf(to) {
-  const hit = SECTIONS.find((s) => s.match.some((m) => to === m || to.startsWith(`${m}/`)));
-  return hit ? hit.key : 'more';
-}
-
+/* Sections come from the list itself (nav/navLinks.jsx), so the phone's Menu
+   and the desktop sidebar always group the same way. */
 /** Initials for the avatar, from whatever name we actually hold. */
 function initials(user) {
   const from = user?.username || user?.name || user?.email || '';
@@ -46,15 +34,15 @@ function initials(user) {
 export default function MoreSheet({ links, onClose }) {
   // Escape closes, Tab stays inside, and focus moves into the drawer so a
   // keyboard or screen-reader user is not left behind on the button that
-  // opened it — and back to that button on close.
+  // opened it - and back to that button on close.
   const panelRef = useModalA11y(onClose);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   // Profile is in the footer beside Sign out, so it is not also listed above.
   const listed = links.filter((l) => l.to !== '/profile');
-  const grouped = [...SECTIONS, { key: 'more', title: 'More' }]
-    .map((s) => ({ ...s, items: listed.filter((l) => sectionOf(l.to) === s.key) }))
+  const grouped = [...NAV_GROUPS, { key: 'more', title: 'More' }]
+    .map((s) => ({ ...s, items: listed.filter((l) => (l.group || 'more') === s.key) }))
     .filter((s) => s.items.length > 0);
 
   // Rows arrive one after another as the drawer settles; this numbers them.

@@ -1,11 +1,11 @@
-/* Marketplace orders — list, detail and the buyer/seller thread.
+/* Marketplace orders - list, detail and the buyer/seller thread.
 
    Buttons, fields, cards, pills, fact grids, totals, empty states and
    the spinner all come from marketplace-theme.css. This file only holds
    what is specific to orders: the order row grid, the detail header,
    the message thread and its composer.
 
-   CORE RULE OF THIS PAGE: one accent — ink on white. Status is carried
+   CORE RULE OF THIS PAGE: one accent - ink on white. Status is carried
    by the dot inside a pill and by nothing else, so a list of five
    orders in five states still reads as one calm column. Every hover is
    the same gesture: hairline → ink, no lift and no shadow. */
@@ -137,7 +137,7 @@
 
 /* ── Message thread ──────────────────────────────────────────────────
    Own messages are ink-filled and right-aligned, theirs are hairline on
-   white and left-aligned. Two variables — side and fill — are enough to
+   white and left-aligned. Two variables - side and fill - are enough to
    read a conversation, so the thread needs no colour of its own. */
 .thread {
   display: flex; flex-direction: column; gap: 10px;
@@ -189,6 +189,6 @@
 
 /* ── Composer ────────────────────────────────────────────────────── */
 .composer { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-/* Square icon button — the send glyph needs no side padding, so the
+/* Square icon button - the send glyph needs no side padding, so the
    base .mkt-btn box is narrowed rather than restyled. */
 .sendBtn { width: 38px; height: 38px; padding: 0; flex-shrink: 0; }

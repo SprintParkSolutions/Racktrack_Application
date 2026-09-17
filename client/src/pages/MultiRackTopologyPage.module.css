@@ -156,7 +156,7 @@
   flex-direction: column;
   overflow: hidden;
 }
-/* Canvas fills all available column space — same color as the page
+/* Canvas fills all available column space - same color as the page
    gradient's top stop so it blends seamlessly into the page chrome.
    No rounded corners or margin: with .page now using a real fixed
    height (instead of min-height), flex:1 actually expands the canvas

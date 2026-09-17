@@ -2,17 +2,17 @@
 //
 // Recommends compatible SFP transceivers for a switch identified from the
 // rack photo (OCR-derived make/model). Lives alongside the switch info on
-// SwitchInformationPage — NOT under "Available Ports", because available
+// SwitchInformationPage - NOT under "Available Ports", because available
 // ports come from live SSH against a single switch, while this advisor is
 // scoped to whatever switch the OCR pinned down.
 //
 // Props:
-//   rackId    — required, used to pull OCR-devices fallback when vendor/model unknown
-//   position  — optional rack unit ('U14'), so the OCR fallback reads THIS switch
-//   vendor    — string, OCR-derived switch vendor ('Unknown' or null when unidentified)
-//   model     — string, OCR-derived switch model  ('Unknown' or null when unidentified)
-//   sfpPorts  — optional [{iface, ...}], passed when caller knows the SFP slot list
-//   sfpCounts — optional { avail, total }, passed when caller knows free-slot count
+//   rackId - required, used to pull OCR-devices fallback when vendor/model unknown
+//   position - optional rack unit ('U14'), so the OCR fallback reads THIS switch
+//   vendor - string, OCR-derived switch vendor ('Unknown' or null when unidentified)
+//   model - string, OCR-derived switch model  ('Unknown' or null when unidentified)
+//   sfpPorts - optional [{iface, ...}], passed when caller knows the SFP slot list
+//   sfpCounts - optional { avail, total }, passed when caller knows free-slot count
 
 import { useEffect, useState } from 'react';
 import { apiUrl, authFetch } from '../utils/api';
@@ -27,7 +27,7 @@ import styles from '../pages/PortsPage.module.css';
 export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model: modelProp, sfpPorts = [], sfpCounts }) {
   const [advice, setAdvice] = useState(null);
   const [loading, setLoading] = useState(true);
-  // "More compatible modules" section is collapsed by default — the user
+  // "More compatible modules" section is collapsed by default - the user
   // only sees the count and a + button. Toggling expands the full list of
   // alternatives so they're hidden behind one click instead of forcing
   // every visit to scroll past them.
@@ -43,7 +43,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
     setLoading(true);
     (async () => {
       let v = vendor, m = model;
-      // OCR fallback — if the caller's vendor/model came in as 'Unknown',
+      // OCR fallback - if the caller's vendor/model came in as 'Unknown',
       // ask the server's per-device crop OCR for any Switch entry that
       // pinned vendor/model down (different OCR pass with different bias).
       try {
@@ -53,7 +53,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
           const devices = Array.isArray(ocrData) ? ocrData : (ocrData.devices || []);
           // Match on rack unit first. Without it this took the first switch in
           // the rack that OCR had read, so opening switch #3 in a three-switch
-          // rack could recommend modules for switch #1's slots — a wrong answer
+          // rack could recommend modules for switch #1's slots - a wrong answer
           // presented with the same confidence as a right one. Only fall back to
           // "any switch we could read" when the caller didn't say which unit it
           // is asking about.
@@ -69,7 +69,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
       } catch (_) {}
       if (cancelled) return;
 
-      // Nothing identified the switch — not the rack scan, not the per-device
+      // Nothing identified the switch - not the rack scan, not the per-device
       // OCR pass above. Say that, and stop.
       //
       // This used to fall through to `generateOfflineFallback`, whose result has
@@ -186,15 +186,15 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
   let recommended  = isBlocked(advice.recommended) ? null : advice.recommended;
   let budgetOption = isBlocked(advice.budget)      ? null : advice.budget;
 
-  // CURATED CATALOG — every entry below was verified live against the
+  // CURATED CATALOG - every entry below was verified live against the
   // manufacturer's own product page on 2026-05-28. URL, image, and price
   // are real. If Mikrotik renames a slug or rotates an image, an entry
-  // here may need refreshing — but everything links to the manufacturer
+  // here may need refreshing - but everything links to the manufacturer
   // (no third-party reseller), so the destination is always the actual
   // product. No SVG fallback, no random search-result interstitial.
   const slotKey = (advice.slotType || 'SFP').toUpperCase();
   const CURATED_CATALOG = {
-    // SFP+ TRANSCEIVERS only — these are the modules that go INTO an
+    // SFP+ TRANSCEIVERS only - these are the modules that go INTO an
     // SFP+ port. DAC / AOC cables (which terminate in SFP+ ends and
     // replace the module+fiber pair) are listed separately so the user
     // sees them as cabling, not as port-fillers.
@@ -242,7 +242,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
   };
   const curatedFallback = CURATED_CATALOG[slotKey] || [];
 
-  // Pre-terminated cables (DAC/AOC) — these REPLACE the module+fiber
+  // Pre-terminated cables (DAC/AOC) - these REPLACE the module+fiber
   // combo by plugging into the SFP+ port directly on both ends. We list
   // them separately from the transceiver modules so the user sees a
   // clear distinction: "what goes in the port" vs "the cable to run".
@@ -284,8 +284,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
     if (!recommended) recommended = curatedFallback[0];
     allModules = curatedFallback;
   }
-  // Intentionally collapse "BEST PRICE" into the main alternatives list —
-  // having a duplicate pick was confusing for the user.
+  // Intentionally collapse "BEST PRICE" into the main alternatives list - // having a duplicate pick was confusing for the user.
   budgetOption = null;
 
   const cables = advice.cables || [];
@@ -294,7 +293,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
   const currentQty = sfpsToProcure;
 
   const recPN = recommended?.partNumber;
-  // Up to 3 more compatible modules — a tight, curated list rather than
+  // Up to 3 more compatible modules - a tight, curated list rather than
   // a long expandable scroll. These appear flat (no collapse toggle).
   const alternativeModules = allModules
     .filter(m => m.partNumber !== recPN)
@@ -315,7 +314,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
   // Detect when the scraped sourceUrl is actually a *switch* product page
   // (which merely lists this SFP as a compatible accessory) rather than the
   // SFP's own product page. Only the switch *model* number is a reliable
-  // signal — the vendor name appears legitimately in many accessory URLs
+  // signal - the vendor name appears legitimately in many accessory URLs
   // on the vendor's own store (e.g. mikrotik.com/product/s_da0001).
   const modelToken = model && model !== 'Unknown'
     ? String(model).toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -365,7 +364,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
       )}
 
       <div className={styles.advisorContent}>
-        {/* EMPTY STATE — couldn't find live listings. Cause is usually one of:
+        {/* EMPTY STATE - couldn't find live listings. Cause is usually one of:
             (a) the chassis OCR couldn't read vendor/model from the rack photo,
             (b) the vendor/model was identified but no live listings matched.
             Tell the user which case they're in, and build a useful search
@@ -391,7 +390,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
           );
         })()}
 
-        {/* HERO TOP PICK — visually dominant card for the recommended module */}
+        {/* HERO TOP PICK - visually dominant card for the recommended module */}
         {recommended && (() => {
           const unit = parsePrice(recommended.price);
           const total = fmtTotal(unit, currentQty);
@@ -445,7 +444,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
           );
         })()}
 
-        {/* COMPACT BUDGET — single-row layout, less visual weight than the hero */}
+        {/* COMPACT BUDGET - single-row layout, less visual weight than the hero */}
         {budgetOption && budgetOption.partNumber !== recPN && (() => {
           const unit = parsePrice(budgetOption.price);
           const total = fmtTotal(unit, currentQty);
@@ -489,7 +488,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
           );
         })()}
 
-        {/* MORE COMPATIBLE — collapsed by default behind a + button.
+        {/* MORE COMPATIBLE - collapsed by default behind a + button.
             User sees the count next to a toggle; clicking expands the
             full list of alternative transceivers. */}
         {alternativeModules.length > 0 && (
@@ -544,7 +543,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
           </div>
         )}
 
-        {/* PLUG-AND-PLAY CABLES — pre-terminated DAC/AOC that replace the
+        {/* PLUG-AND-PLAY CABLES - pre-terminated DAC/AOC that replace the
             module-plus-fiber combo. Rendered as a 3-up horizontal grid of
             mini product cards so they sit together compactly. */}
         {curatedCables.length > 0 && (
@@ -641,7 +640,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
           </div>
         )}
 
-        {/* FOOTER — datasheet link + sources count, single line */}
+        {/* FOOTER - datasheet link + sources count, single line */}
         {(advice.searchResults?.length > 0 || advice.productUrl) && (
           <div className={styles.advisorFooter}>
             {advice.productUrl && (

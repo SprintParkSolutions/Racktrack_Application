@@ -124,7 +124,7 @@ Two stores, on purpose: **SQLite for identity/records, filesystem for scan artif
 6. **Show & correct** — `ResultsPage.jsx` draws boxes over the photo; corrections post to the `/api/feedback/*` family, append to `feedback.jsonl`, and feed active-learning memory.
 7. **Report & share** — `buildScanReportData` → `renderHTMLReport` (HTML/PDF/CSV/JSON); a 5-minute report token authorises the iframe; PDF shares to Slack/Teams/Outlook.
 
-*(For the full trace see the [Scan Results & Device Detection](../features/scan-results-device-detection.md) doc.)*
+*(For the full trace see the [Scan Results & Device Detection](../features/scan-results-device-detection-developers.md) doc.)*
 
 ## 8. Identity, tenancy & access
 

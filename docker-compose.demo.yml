@@ -128,6 +128,10 @@ services:
       - "dev322173.service-now.com:148.139.174.209"
     volumes:
       - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # The owner and manager portal, a static bundle served by the Caddy site
+      # block for portal.racktrack.ai. Without this mount a recreate of the
+      # caddy container takes the portal down (11 Sep 2026).
+      - ./portal-dist:/srv/portal:ro
       # Certificates and the ACME account key. Lose this volume and Caddy
       # re-issues on every restart, which will hit Let's Encrypt's rate limit
       # (5 certs per domain per week) and leave the demo without TLS for days.

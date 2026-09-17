@@ -6,11 +6,11 @@ import { useAuth } from '../AuthContext.jsx';
 import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
-   MarketplaceAlertsPage — saved-search matches and the searches
+   MarketplaceAlertsPage - saved-search matches and the searches
    themselves.
 
    The old page announced an unread alert with an indigo badge, a
-   periwinkle card, a blue eyebrow and a blue link — four shades to say
+   periwinkle card, a blue eyebrow and a blue link - four shades to say
    one thing. Unread is now a single ink dot on a slightly raised row,
    which is legible without turning the list into a colour chart, and
    leaves the coloured pill vocabulary free for genuine status.
@@ -103,7 +103,7 @@ function AlertRow({ alert, onView, onDismiss }) {
 
 /* ── Saved-search row ────────────────────────────────────────────────
    The filters are the content here, so they render as pills rather than
-   as a run-on sentence — a user scanning six saved searches is looking
+   as a run-on sentence - a user scanning six saved searches is looking
    for one facet, not reading prose. */
 function SavedSearchRow({ search, confirming, onConfirm, onCancel, onDelete }) {
   return (
@@ -158,7 +158,7 @@ export default function MarketplaceAlertsPage() {
   const [searches, setSearches]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showNew, setShowNew]     = useState(false);
-  // Replaces confirm() on delete — holds the id awaiting confirmation.
+  // Replaces confirm() on delete - holds the id awaiting confirmation.
   const [confirmId, setConfirmId] = useState(null);
 
   // New search form

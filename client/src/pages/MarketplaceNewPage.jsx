@@ -7,7 +7,7 @@ import { useAuth } from '../AuthContext.jsx';
 import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
-   MarketplaceNewPage — create a marketplace listing.
+   MarketplaceNewPage - create a marketplace listing.
 
    Prefill via query params so a "Sell this" button on the
    SwitchInformationPage / ResultsPage can deep-link in:
@@ -15,8 +15,8 @@ import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
 
    The form was previously one undifferentiated stack of eleven fields
    with no grouping, so "Currency" and "Description" carried the same
-   visual weight. It is now four named sections — Item, Condition &
-   pricing, Photo, Details — and the submit pair lives in a bar pinned to
+   visual weight. It is now four named sections - Item, Condition &
+   pricing, Photo, Details - and the submit pair lives in a bar pinned to
    the bottom of the viewport, because on a form this tall the primary
    action was otherwise below the fold from the moment the page opened.
    ────────────────────────────────────────────────────────────────────── */

@@ -1,4 +1,4 @@
-/* Port-history & drift page — same dark navy + cyan/blue/violet palette
+/* Port-history & drift page - same dark navy + cyan/blue/violet palette
    and card density as NetdiscoPage / ResultsPage. Mobile-first. The
    per-port detail mirrors the Arista CloudVision layout: identity head,
    port grid, then Interface Details / Status (stacked bars) / Config /
@@ -307,7 +307,7 @@
 .kvValue.down { color: #dc2626; }
 .kvValue.unknown { color: #a2a2a2; }
 
-/* ── Interface Status — stacked timeline ─────────────────────────── */
+/* ── Interface Status - stacked timeline ─────────────────────────── */
 .statusBlockHead {
   display: flex; align-items: center; justify-content: space-between;
   margin: 14px 0 8px;
@@ -381,7 +381,7 @@
   background: rgba(0,0,0,0.45);
   border: 1px solid rgba(0,0,0,0.12);
   border-radius: 12px;
-  /* Was overflow:hidden, which CLIPPED the table on a phone — the Recorded
+  /* Was overflow:hidden, which CLIPPED the table on a phone - the Recorded
      timestamp column simply could not be reached, so the history was
      incomplete with nothing on screen to say so. Scroll it instead. */
   overflow-x: auto;
@@ -440,7 +440,7 @@
 .eventTime { color: #c6c6c6; font-size: 11px; white-space: nowrap; padding-top: 1px; }
 
 /* ══════════════════════════════════════════════════════════════════════
-   LIGHT THEME — re-skin the page using the global tokens from index.css.
+   LIGHT THEME - re-skin the page using the global tokens from index.css.
    Activated by <html data-theme="light"> via ThemeContext. The dark rules
    above use hardcoded rgba so we override them explicitly here.
    ══════════════════════════════════════════════════════════════════════ */
@@ -605,9 +605,9 @@
 :global([data-theme='light']) .arrow,
 :global([data-theme='light']) .eventTime { color: #474747; }
 
-/* ── Minimalistic refresh — white + subtle black accents. Wins via cascade order. ── */
+/* ── Minimalistic refresh - white + subtle black accents. Wins via cascade order. ── */
 
-/* Page shell — pure white canvas, no ambient gradients, no dark wash. */
+/* Page shell - pure white canvas, no ambient gradients, no dark wash. */
 .page {
   background: var(--md-background, #FFFFFF);
   color: var(--md-on-surface, #121212);
@@ -619,7 +619,7 @@
 }
 :global([data-theme='light']) .amb { display: none; }
 
-/* Header — flat white, hairline rule, no blur, no gradient. */
+/* Header - flat white, hairline rule, no blur, no gradient. */
 .header {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border-bottom: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -661,7 +661,7 @@
   opacity: 0.65;
 }
 
-/* Cards — white, 12px radius, hairline only, no shadow, no gradient, no blur. */
+/* Cards - white, 12px radius, hairline only, no shadow, no gradient, no blur. */
 .card {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -683,7 +683,7 @@
 }
 :global([data-theme='light']) .cardTitle { color: var(--md-on-surface, #121212); }
 
-/* Section labels — 11/700/uppercase/0.10em, pure black. */
+/* Section labels - 11/700/uppercase/0.10em, pure black. */
 .subTitle {
   color: var(--md-on-surface, #121212);
   font-size: 11px;
@@ -701,7 +701,7 @@
   opacity: 1;
 }
 
-/* Muted helper text — opacity, not grey ramps. */
+/* Muted helper text - opacity, not grey ramps. */
 .muted {
   color: var(--md-on-surface, #121212);
   opacity: 0.6;
@@ -719,7 +719,7 @@
   opacity: 0.7;
 }
 
-/* Buttons & pills — outlined, never solid black. */
+/* Buttons & pills - outlined, never solid black. */
 .ghostBtn {
   background: var(--md-surface-container-lowest, #FFFFFF);
   /* --md-outline-variant is a #E0E0E0 hairline: invisible on white. */
@@ -745,7 +745,7 @@
   color: var(--md-on-surface, #121212);
 }
 
-/* Selects / inputs — white fill, hairline border, black focus. */
+/* Selects / inputs - white fill, hairline border, black focus. */
 .select {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -765,7 +765,7 @@
   color: var(--md-on-surface, #121212);
 }
 
-/* Switch hero — flat white card, hairline, no shadows, no gradients, no glow. */
+/* Switch hero - flat white card, hairline, no shadows, no gradients, no glow. */
 .switchHero {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -837,7 +837,7 @@
   opacity: 0.7;
 }
 
-/* Switch status pill — outlined, green/red link colours. */
+/* Switch status pill - outlined, green/red link colours. */
 .switchStatus {
   border-radius: 999px;
   box-shadow: none;
@@ -872,7 +872,7 @@
   color: #dc2626;
 }
 
-/* Refresh / poll button — outlined, white. */
+/* Refresh / poll button - outlined, white. */
 .pollBtn {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -896,7 +896,7 @@
   color: var(--md-on-surface, #121212);
 }
 
-/* Legend — secondary via opacity, dots keep status colours. */
+/* Legend - secondary via opacity, dots keep status colours. */
 .legend {
   color: var(--md-on-surface, #121212);
   opacity: 0.65;
@@ -918,7 +918,7 @@
 :global([data-theme='light']) .dot.down    { background: #ef4444; }
 :global([data-theme='light']) .dot.unknown { background: rgba(18, 18, 18, 0.30); }
 
-/* Port grid — white tile by default; up/down keep green/red explicitly. */
+/* Port grid - white tile by default; up/down keep green/red explicitly. */
 .portCell {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -984,7 +984,7 @@
   outline-color: var(--md-on-surface, #121212);
 }
 
-/* Port chip & subtitle — outlined mono identifier. */
+/* Port chip & subtitle - outlined mono identifier. */
 .portChip {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -1009,7 +1009,7 @@
   opacity: 0.6;
 }
 
-/* Key/value grid — white card, hairline rows. */
+/* Key/value grid - white card, hairline rows. */
 .kvGrid {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -1060,7 +1060,7 @@
 :global([data-theme='light']) .kvValue.down    { color: #dc2626; }
 :global([data-theme='light']) .kvValue.unknown { color: rgba(18, 18, 18, 0.30); }
 
-/* Timeline (Interface Status) — white card, hairline, subtle track. */
+/* Timeline (Interface Status) - white card, hairline, subtle track. */
 .statusBlockHead { color: var(--md-on-surface, #121212); }
 .timelineCard {
   background: var(--md-surface-container-lowest, #FFFFFF);
@@ -1120,7 +1120,7 @@
   opacity: 0.5;
 }
 
-/* Window chip — outlined pill. */
+/* Window chip - outlined pill. */
 .windowChip {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -1134,7 +1134,7 @@
   color: var(--md-on-surface, #121212);
 }
 
-/* Value-at table & change log — white panels, hairline rows. */
+/* Value-at table & change log - white panels, hairline rows. */
 .offsetTableWrap {
   background: var(--md-surface-container-lowest, #FFFFFF);
   border: 1px solid var(--md-outline-variant, #E0E0E0);
@@ -1236,12 +1236,12 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   Drift tab refresh — port tile redesign + tighter cards. Per-port
+   Drift tab refresh - port tile redesign + tighter cards. Per-port
    detail uses an in-panel tab strip (Specs / Timeline / History) so the
    user gets one focused view at a time instead of a 4-section scroll.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ── Per-port detail header — port chip + close button ─────────── */
+/* ── Per-port detail header - port chip + close button ─────────── */
 .detailHead {
   display: flex !important;
   align-items: center !important;
@@ -1282,7 +1282,7 @@
   border-color: var(--md-on-surface, #121212) !important;
 }
 
-/* ── In-panel tab strip — Specs / Timeline / History ─────────── */
+/* ── In-panel tab strip - Specs / Timeline / History ─────────── */
 .detailTabs {
   display: flex !important;
   gap: 0 !important;
@@ -1323,7 +1323,7 @@
   border-bottom-color: var(--md-on-surface, #121212) !important;
 }
 
-/* Status block head when inside the Timeline tab — drop the heading,
+/* Status block head when inside the Timeline tab - drop the heading,
    keep just the window selector + a tiny "Window" label */
 .detailMutedLabel {
   font-size: 10px !important;
@@ -1335,7 +1335,7 @@
   opacity: 0.55 !important;
 }
 
-/* ── Port tile redesign — white tile + number + small status peg ── */
+/* ── Port tile redesign - white tile + number + small status peg ── */
 .portGrid {
   display: grid !important;
   /* Columns are set inline from JSX as ceil(N / 2) so the whole strip
@@ -1373,7 +1373,7 @@
   color: var(--md-on-surface, #121212) !important;
   font-variant-numeric: tabular-nums !important;
 }
-/* Status line — coloured strip flush against the tile's bottom edge so
+/* Status line - coloured strip flush against the tile's bottom edge so
    it reads as the tile's bottom border, not a floating bar. */
 .portCell {
   padding-bottom: 0 !important;
@@ -1398,7 +1398,7 @@
 .portCell.unknown::after,
 :global([data-theme='light']) .portCell.unknown::after { background: var(--md-outline-variant, #E0E0E0) !important; }
 
-/* Light/up/down/unknown tile backgrounds — flat white only, the peg
+/* Light/up/down/unknown tile backgrounds - flat white only, the peg
    carries the colour. Defends against earlier rules that re-tinted the
    whole tile. */
 .portCell.up,
@@ -1412,7 +1412,7 @@
   color: var(--md-on-surface, #121212) !important;
 }
 
-/* Active (currently-selected) tile — solid black outline */
+/* Active (currently-selected) tile - solid black outline */
 .portCellActive,
 :global([data-theme='light']) .portCellActive {
   outline: 2px solid var(--md-on-surface, #121212) !important;
@@ -1425,7 +1425,7 @@
   filter: none !important;
 }
 
-/* Legend dots stay green/red — always single row, no wrap */
+/* Legend dots stay green/red - always single row, no wrap */
 .legend {
   display: flex !important;
   align-items: center !important;
@@ -1447,7 +1447,7 @@
 .legend > * { flex: 0 0 auto !important; }
 
 /* ══════════════════════════════════════════════════════════════════════
-   Desktop / tablet (≥768px) — the DesktopShell already renders a sidebar
+   Desktop / tablet (≥768px) - the DesktopShell already renders a sidebar
    plus a top crumb header (title + back), so the page's own phone header
    is a duplicate: hide it. And let the telemetry/timeline content use the
    screen width instead of the mobile phone column. Appended last so it
@@ -1459,7 +1459,7 @@
 }
 
 
-/* ── Which switch — one row of names above the hero ── */
+/* ── Which switch - one row of names above the hero ── */
 .switcher {
   display: flex; gap: 6px; flex-wrap: wrap;
   margin: 0 0 12px;
@@ -1476,7 +1476,7 @@
 .switcherOn { background: #121212; border-color: #121212; color: #ffffff; }
 
 /* ── Drift as bands (the rack view) ─────────────────────────────────────
-   The switch, then its ports, then what changed — parted by hairlines, no
+   The switch, then its ports, then what changed - parted by hairlines, no
    cards. */
 .band { padding: 14px 0 16px; border-bottom: 1px solid rgba(0,0,0,.08); }
 .bandTop { display: flex; align-items: flex-start; gap: 12px; }

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RackTrack — Major Certifications, Policies & Documentation</title>
+<style>
+:root{--navy:#102a43;--blue:#1769e0;--green:#137a56;--amber:#996300;--ink:#17212b;--muted:#647281;--bg:#f5f7fa;--card:#fff;--line:#dce3ea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.55}.wrap{max-width:1120px;margin:auto;padding:28px}
+.hero{background:linear-gradient(135deg,#102a43,#1c527d);color:#fff;border-radius:20px;padding:40px;margin-bottom:22px}.hero h1{font-size:36px;margin:0 0 8px}.hero p{margin:0;color:#dce8f2}.tag{display:inline-block;background:#fff;color:#102a43;border-radius:20px;padding:5px 11px;margin-top:14px;font-size:12px;font-weight:bold}
+.card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:24px;margin:18px 0;box-shadow:0 3px 14px #102a4310}h2{font-size:24px;margin:0 0 12px}h3{margin:7px 0}.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.mini{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fbfcfd}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f0f3f6}
+.badge{display:inline-block;border-radius:14px;padding:4px 8px;font-size:11px;font-weight:bold}.primary{background:#e7f7ef;color:#0d704a}.conditional{background:#fff3d8;color:#805300}.customer{background:#edf5ff;color:#1554a3}
+.callout{border-left:4px solid var(--blue);background:#edf5ff;padding:13px 16px}.good{border-left:4px solid var(--green);background:#edf9f4;padding:13px 16px}.warn{border-left:4px solid var(--amber);background:#fff8e9;padding:13px 16px}
+.step{display:flex;gap:12px;margin:11px 0}.num{min-width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;text-align:center;padding-top:4px;font-weight:bold}li{margin:5px 0}
+a{color:var(--blue);text-decoration:none}.footer{font-size:12px;color:var(--muted);padding:18px 0 45px}@media print{body{background:#fff}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section class="hero">
+<h1>RackTrack — Major Certifications, Policies & Documentation</h1>
+<p>A focused enterprise-readiness checklist containing only the major certifications, policies and documents RackTrack should prioritize.</p>
+<span class="tag">FOCUSED CHECKLIST • AI SOFTWARE • ENTERPRISE READINESS</span>
+</section>
+
+<div class="card">
+<h2>1. The Short Answer</h2>
+<p>For RackTrack, there is no need to maintain a huge list of unrelated certifications. The practical core is:</p>
+<div class="grid">
+<div class="mini"><h3>4 Major Certifications / Assurance Targets</h3><p>ISO/IEC 27001, ISO/IEC 42001, ISO/IEC 27701 when applicable, and SOC 2 Type II when customers require it.</p></div>
+<div class="mini"><h3>8 Major Policies</h3><p>Security, access, privacy, AI governance, secure development, incident response, retention/deletion, and backup/DR.</p></div>
+<div class="mini"><h3>11 Major Documents</h3><p>Architecture, data flow, security, AI/model, dataset, validation, risk, security testing, API/deployment, DR and customer compliance documentation.</p></div>
+</div>
+<div class="good"><b>Recommended first focus:</b> Build the policies and evidence first, then pursue <b>ISO/IEC 27001:2022</b> and <b>ISO/IEC 42001:2023</b> as the two main certification targets.</div>
+</div>
+
+<div class="card">
+<h2>2. Major Certifications & Assurance</h2>
+<table>
+<tr><th>Priority</th><th>Certification / Assurance</th><th>Purpose</th><th>RackTrack Action</th></tr>
+<tr><td><span class="badge primary">PRIMARY</span></td><td><b>ISO/IEC 27001:2022</b></td><td>Information Security Management System (ISMS).</td><td><b>Primary certification target.</b> Establishes a formal approach to information-security risk and controls. <a href="https://www.iso.org/standard/27001" target="_blank">Official ISO reference</a></td></tr>
+<tr><td><span class="badge primary">PRIMARY</span></td><td><b>ISO/IEC 42001:2023</b></td><td>Artificial Intelligence Management System (AIMS).</td><td><b>Primary AI certification target.</b> Establishes formal AI governance, risk management and lifecycle controls. <a href="https://www.iso.org/standard/42001" target="_blank">Official ISO reference</a></td></tr>
+<tr><td><span class="badge conditional">CONDITIONAL</span></td><td><b>ISO/IEC 27701:2025</b></td><td>Privacy Information Management System.</td><td>Consider when RackTrack's data-processing model and customers make formal privacy assurance valuable. <a href="https://www.iso.org/standard/27701" target="_blank">Official ISO reference</a></td></tr>
+<tr><td><span class="badge customer">CUSTOMER-DRIVEN</span></td><td><b>SOC 2 Type II</b></td><td>Independent assurance over service-organization controls.</td><td>Consider when US/global enterprise customers or procurement teams request SOC 2 evidence. <a href="https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022" target="_blank">AICPA Trust Services Criteria</a></td></tr>
+</table>
+<div class="callout"><b>Do not treat every item as mandatory.</b> ISO 27001 and ISO 42001 are the main strategic targets. ISO 27701 and SOC 2 depend more strongly on RackTrack's data model, market and customer requirements.</div>
+</div>
+
+<div class="card">
+<h2>3. Major Policies RackTrack Should Have</h2>
+<table>
+<tr><th>Policy</th><th>What it should define</th></tr>
+<tr><td><b>1. Information Security Policy</b></td><td>Security objectives, responsibilities, risk management, protection of company and customer information.</td></tr>
+<tr><td><b>2. Access Control Policy</b></td><td>User roles, least privilege, authentication, privileged access, access reviews and account lifecycle.</td></tr>
+<tr><td><b>3. Data Protection & Privacy Policy</b></td><td>What data is collected, why it is processed, access, storage, sharing, retention and deletion.</td></tr>
+<tr><td><b>4. AI Governance / Responsible AI Policy</b></td><td>AI inventory, intended use, risk assessment, human oversight, validation, monitoring and model changes.</td></tr>
+<tr><td><b>5. Secure Software Development Policy</b></td><td>Secure coding, code review, dependency management, secrets, testing and secure release practices.</td></tr>
+<tr><td><b>6. Incident Response Policy</b></td><td>Security-event detection, classification, escalation, containment, recovery, reporting and lessons learned.</td></tr>
+<tr><td><b>7. Data Retention & Deletion Policy</b></td><td>Retention periods and secure deletion for images, reports, metadata, logs and backups.</td></tr>
+<tr><td><b>8. Backup & Disaster Recovery Policy</b></td><td>Backup frequency, recovery objectives, restoration procedures, testing and responsibilities.</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>4. Core Security Documentation</h2>
+<table>
+<tr><th>Document</th><th>Required Content</th></tr>
+<tr><td><b>System Architecture Document</b></td><td>Application components, AI services, databases, storage, APIs, integrations and deployment architecture.</td></tr>
+<tr><td><b>Data Flow Diagram</b></td><td>Customer upload → processing → AI/OCR → storage → report → deletion, including third-party services.</td></tr>
+<tr><td><b>Security Architecture / Security Overview</b></td><td>Authentication, authorization, encryption, network controls, secrets, logging, monitoring and security boundaries.</td></tr>
+<tr><td><b>Risk Assessment & Risk Treatment</b></td><td>Assets, threats, vulnerabilities, impact, likelihood, risk level, controls, owners and treatment status.</td></tr>
+<tr><td><b>Vulnerability / Security Testing Report</b></td><td>Security tests, findings, severity, remediation and retest results.</td></tr>
+<tr><td><b>Asset Inventory</b></td><td>Applications, servers, cloud resources, repositories, databases, endpoints and important information assets.</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>5. Core AI/ML Documentation</h2>
+<table>
+<tr><th>Document</th><th>Required Content</th></tr>
+<tr><td><b>AI System Inventory</b></td><td>Each model/AI component, purpose, owner, version, environment and production status.</td></tr>
+<tr><td><b>Dataset Documentation / Dataset Card</b></td><td>Sources, classes, annotation method, licensing/permissions, dataset versions, quality and limitations.</td></tr>
+<tr><td><b>Model Card</b></td><td>Model purpose, architecture, intended/out-of-scope use, training data, metrics, limitations and failure cases.</td></tr>
+<tr><td><b>Training Record</b></td><td>Dataset version, model version, hyperparameters, augmentation, environment, hardware and training date.</td></tr>
+<tr><td><b>AI/ML Validation Report</b></td><td>Test methodology, frozen test set, precision, recall, mAP or task-specific metrics, latency and results.</td></tr>
+<tr><td><b>Model Change / Retraining Record</b></td><td>What changed, why it changed, evaluation results, approval and deployment information.</td></tr>
+<tr><td><b>Failure & Limitations Report</b></td><td>Known difficult cases such as blur, occlusion, reflections, unusual layouts, poor lighting and vendor variation.</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>6. Privacy & Data Documentation</h2>
+<table>
+<tr><th>Document</th><th>Purpose</th></tr>
+<tr><td><b>Data Inventory</b></td><td>Identify customer images, metadata, account data, logs and generated reports.</td></tr>
+<tr><td><b>Data Processing / Data Map</b></td><td>Record where data originates, how it is processed, where it is stored and who receives it.</td></tr>
+<tr><td><b>Privacy Notice</b></td><td>Explain applicable personal-data processing and user/customer rights.</td></tr>
+<tr><td><b>Retention & Deletion Schedule</b></td><td>Define how long data is kept and how deletion is performed.</td></tr>
+<tr><td><b>Subprocessor Register</b></td><td>List cloud, OCR, AI, analytics and other third parties that process customer data.</td></tr>
+<tr><td><b>Data Processing Agreement</b></td><td>Define controller/processor responsibilities and security obligations where applicable.</td></tr>
+</table>
+<div class="warn"><b>India:</b> Assess applicable requirements under India's current digital personal-data/privacy framework based on RackTrack's actual data processing and customer relationships. Do not assume one privacy certification automatically equals legal compliance.</div>
+</div>
+
+<div class="card">
+<h2>7. Software Quality & Operational Documentation</h2>
+<table>
+<tr><th>Document</th><th>Purpose</th></tr>
+<tr><td><b>Product Requirements Document</b></td><td>Functional requirements, acceptance criteria, constraints and expected behavior.</td></tr>
+<tr><td><b>Test Plan & Test Report</b></td><td>Functional, integration, regression, performance and security testing.</td></tr>
+<tr><td><b>API Documentation</b></td><td>Endpoints, authentication, request/response formats, errors and versioning.</td></tr>
+<tr><td><b>Deployment Guide</b></td><td>Cloud/on-premise requirements, installation, dependencies, configuration and upgrades.</td></tr>
+<tr><td><b>Release Notes</b></td><td>Features, fixes, AI/model changes, breaking changes and known issues.</td></tr>
+<tr><td><b>Version Control / Traceability</b></td><td>Source-code version, build version, model version and release approval.</td></tr>
+<tr><td><b>SLA & Support Policy</b></td><td>Availability target, support levels, response times, escalation and maintenance.</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>8. Business Continuity & Incident Evidence</h2>
+<div class="grid">
+<div class="mini"><h3>Incident Response</h3><ul><li>Incident response plan</li><li>Severity definitions</li><li>Escalation matrix</li><li>Communication process</li><li>Post-incident review</li></ul></div>
+<div class="mini"><h3>Backup & Recovery</h3><ul><li>Backup schedule</li><li>Recovery objectives</li><li>Restore procedure</li><li>Recovery test records</li></ul></div>
+<div class="mini"><h3>Business Continuity</h3><ul><li>Critical services</li><li>Dependencies</li><li>Continuity strategy</li><li>Alternative procedures</li></ul></div>
+<div class="mini"><h3>Security Evidence</h3><ul><li>Audit logs</li><li>Access reviews</li><li>Vulnerability results</li><li>Corrective actions</li></ul></div>
+</div>
+<p class="muted">A formal ISO 22301 certification is not included in the core RackTrack target list; consider it later if customers require formal business-continuity certification.</p>
+</div>
+
+<div class="card">
+<h2>9. Enterprise Customer Compliance Pack</h2>
+<p>Keep one controlled package that can be provided to customers or procurement/security teams.</p>
+<div class="grid">
+<div class="mini"><b>Security</b><p>Security overview, architecture, controls, encryption, access management, incident response and testing evidence.</p></div>
+<div class="mini"><b>AI</b><p>AI governance summary, model cards, validation reports, limitations and lifecycle controls.</p></div>
+<div class="mini"><b>Privacy</b><p>Privacy notice, data flow, retention, subprocessors and applicable DPA.</p></div>
+<div class="mini"><b>Product</b><p>Datasheet, architecture, deployment guide, API documentation and release process.</p></div>
+<div class="mini"><b>Operations</b><p>SLA, support process, backup/DR and business continuity information.</p></div>
+<div class="mini"><b>Certification</b><p>Actual certificates and audit/assurance reports only after they have been formally obtained.</p></div>
+</div>
+</div>
+
+<div class="card">
+<h2>10. Recommended Order of Implementation</h2>
+<div class="step"><div class="num">1</div><div><b>Define scope and data.</b><br>Finalize architecture, deployment model, systems, teams and customer data handled by RackTrack.</div></div>
+<div class="step"><div class="num">2</div><div><b>Build the eight core policies.</b><br>Security, access, privacy, AI governance, secure development, incident response, retention/deletion and backup/DR.</div></div>
+<div class="step"><div class="num">3</div><div><b>Build security evidence.</b><br>Risk assessment, asset inventory, access reviews, logs, vulnerability testing, incident process and recovery tests.</div></div>
+<div class="step"><div class="num">4</div><div><b>Build AI evidence.</b><br>Dataset documentation, model cards, training records, frozen test set, validation metrics, failure analysis and model change records.</div></div>
+<div class="step"><div class="num">5</div><div><b>Complete privacy and software documentation.</b><br>Data map, retention, subprocessors, DPA where applicable, architecture, API, deployment, testing and release documents.</div></div>
+<div class="step"><div class="num">6</div><div><b>Perform a gap assessment.</b><br>Compare the complete evidence set against ISO/IEC 27001 and ISO/IEC 42001 requirements.</div></div>
+<div class="step"><div class="num">7</div><div><b>Pursue ISO/IEC 27001.</b><br>Use an appropriate independent certification body for the defined scope.</div></div>
+<div class="step"><div class="num">8</div><div><b>Pursue ISO/IEC 42001.</b><br>Formalize and independently assess the AI management system.</div></div>
+<div class="step"><div class="num">9</div><div><b>Add ISO/IEC 27701 or SOC 2 only when justified.</b><br>Use customer requirements, target markets and data-processing needs to decide.</div></div>
+<div class="step"><div class="num">10</div><div><b>Maintain continuously.</b><br>Update policies, risks, models, evidence, audits and certifications as RackTrack changes.</div></div>
+</div>
+
+<div class="card">
+<h2>Final Priority List</h2>
+<table>
+<tr><th>Priority</th><th>Keep</th><th>Status Goal</th></tr>
+<tr><td>1</td><td><b>ISO/IEC 27001:2022</b></td><td>Major certification target</td></tr>
+<tr><td>2</td><td><b>ISO/IEC 42001:2023</b></td><td>Major certification target</td></tr>
+<tr><td>3</td><td><b>8 Core Policies</b></td><td>Implement and maintain</td></tr>
+<tr><td>4</td><td><b>AI/ML Documentation & Validation</b></td><td>Implement and maintain</td></tr>
+<tr><td>5</td><td><b>Security & Risk Documentation</b></td><td>Implement and maintain</td></tr>
+<tr><td>6</td><td><b>Privacy/Data Documentation</b></td><td>Implement and maintain</td></tr>
+<tr><td>7</td><td><b>Software/Product Documentation</b></td><td>Implement and maintain</td></tr>
+<tr><td>8</td><td><b>ISO/IEC 27701:2025</b></td><td>Only if privacy assurance is needed</td></tr>
+<tr><td>9</td><td><b>SOC 2 Type II</b></td><td>Only if customers/market require it</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>Official References</h2>
+<ul>
+<li><a href="https://www.iso.org/standard/27001" target="_blank">ISO/IEC 27001 — Information Security Management Systems</a></li>
+<li><a href="https://www.iso.org/standard/42001" target="_blank">ISO/IEC 42001 — Artificial Intelligence Management Systems</a></li>
+<li><a href="https://www.iso.org/standard/27701" target="_blank">ISO/IEC 27701:2025 — Privacy Information Management Systems</a></li>
+<li><a href="https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022" target="_blank">AICPA — Trust Services Criteria / SOC 2</a></li>
+<li><a href="https://www.cert-in.org.in/Directions70B.jsp" target="_blank">CERT-In — Directions under Section 70B</a></li>
+</ul>
+</div>
+
+<div class="footer">
+<b>Important:</b> This is a practical readiness guide, not legal advice or a formal certification determination. Exact mandatory requirements depend on RackTrack's final architecture, legal entity, hosting model, data processed, customers, contracts and target countries. Certification applies to a defined scope and requires an appropriate independent assessment.
+</div>
+
+</div>
+</body>
+</html>

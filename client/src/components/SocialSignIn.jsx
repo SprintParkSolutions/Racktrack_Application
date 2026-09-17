@@ -8,7 +8,7 @@ import styles from '../pages/AuthPages.module.css';
  * "Continue with Google / Apple / Facebook".
  *
  * Which buttons appear is decided by the SERVER (/api/auth/providers), not by a
- * build flag — so switching a provider on is an env change and a restart, with
+ * build flag - so switching a provider on is an env change and a restart, with
  * no App Store resubmission. Renders nothing at all when none are configured,
  * which keeps this safe to drop into the auth pages before the credentials
  * exist.
@@ -26,7 +26,7 @@ import styles from '../pages/AuthPages.module.css';
  * GOOGLE_* on the box: the env change would also disturb the callback URLs that
  * are registered with Google, and it would come back the moment someone copied
  * a working .env forward. Accounts already created through Google are
- * untouched — the OAuth routes still exist, so an existing session and the
+ * untouched - the OAuth routes still exist, so an existing session and the
  * /auth/callback deep link both keep working; there is simply no button.
  *
  * Deleting the name from this set is the whole of putting it back. */
@@ -122,7 +122,7 @@ export default function SocialSignIn({ mode = 'login', inviteCode, onLoaded }) {
 
   return (
     <div className={styles.socialBlock}>
-      {/* Two providers sit side by side and one spans the row — the grid
+      {/* Two providers sit side by side and one spans the row - the grid
           decides, so adding a third on the server needs nothing here. */}
       <div className={styles.socialGrid}>
         {providers.map((p) => (

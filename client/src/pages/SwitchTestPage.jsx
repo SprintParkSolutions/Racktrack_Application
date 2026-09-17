@@ -8,7 +8,7 @@ import { apiUrl, authFetch } from '../utils/api';
 import { testLogin, readSwitch, toServerReading, canReadSwitches } from '../utils/snmpClient';
 import styles from './SwitchTestPage.module.css';
 
-// Switch test — the phone talking to a switch directly, over SNMP.
+// Switch test - the phone talking to a switch directly, over SNMP.
 //
 // This screen exists to answer one question: can the handset reach a managed
 // switch on the network it is standing on? Every previous attempt went
@@ -32,7 +32,7 @@ import styles from './SwitchTestPage.module.css';
 // Network step (/results/:rackId/network); the rack-less menu entry keeps the
 // original list. A rack that has none yet inherits the rack-less list once, so
 // the switches someone already typed in show up where the chain needs them.
-// The switches a person adds are THEIR switches — the ones standing on the
+// The switches a person adds are THEIR switches - the ones standing on the
 // network they are standing on. They were kept per rack, so three typed in
 // from the menu were invisible on a rack's Network step and vice versa: the
 // same lab, two lists, and no way to tell from the screen which one you were
@@ -84,7 +84,7 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' };
  * The phone took the reading because the server cannot reach the switch; the
  * server still keeps the record, because that is where the rest of the chain
  * reads from. The first time a switch is filed, a server-side record is made
- * for it (credentials go up over HTTPS and are stored encrypted there — never
+ * for it (credentials go up over HTTPS and are stored encrypted there - never
  * shown back), and its id is remembered on the phone so the next reading
  * lands on the same record. A server that cannot be reached is not an error
  * in the reading: the result is kept on the phone and marked "phone only".
@@ -148,8 +148,8 @@ class SnmpishError extends Error {
 /**
  * A server-side reading, in the shape this screen draws.
  *
- * The server's collector returns the record it stores — the same one
- * toServerReading() produces from a phone reading — so this is that
+ * The server's collector returns the record it stores - the same one
+ * toServerReading() produces from a phone reading - so this is that
  * conversion run backwards, and the screen never learns which machine asked.
  */
 function fromServerReading(body) {
@@ -211,7 +211,7 @@ function saveNetworkState(rackId, resultsMap) {
 }
 
 // Nothing is filled in. A pre-filled 161 and "public" are guesses about
-// somebody else's network wearing the clothes of a fact — and a person who
+// somebody else's network wearing the clothes of a fact - and a person who
 // taps past them has told us nothing while the screen looks like they did.
 const BLANK = {
   label: '', host: '', port: '',
@@ -287,8 +287,8 @@ export default function SwitchTestPage() {
   //
   // The camera knows WHERE a device is and guesses what it is; the switch
   // states exactly what it is and has no idea where it sits. Neither can be
-  // matched to the other with certainty — two identical switches in one rack
-  // look the same to both — so the server proposes a match by port count and a
+  // matched to the other with certainty - two identical switches in one rack
+  // look the same to both - so the server proposes a match by port count and a
   // person confirms it here, next to the reading, rather than on a separate
   // screen. Nothing is written until Save.
   const [scanId, setScanId] = useState(null);
@@ -337,7 +337,7 @@ export default function SwitchTestPage() {
       // Only a HIGH-confidence proposal used to be taken, which in practice
       // meant almost none: the camera reads "Unidentified Switch, make
       // unknown" off most boxes, so the port count is the only evidence and
-      // the score never reached high — and the screen said "Not placed yet"
+      // the score never reached high - and the screen said "Not placed yet"
       // about a rack the server had already worked out. Every proposal is
       // taken now; it is shown as a suggestion, and one tap changes it.
       // Once places have been saved they are the truth, including "not in
@@ -461,12 +461,12 @@ export default function SwitchTestPage() {
     setResults((m) => ({ ...m, [id]: null }));
   };
 
-  // Test login — one question, answered in one round trip. If this works, the
+  // Test login - one question, answered in one round trip. If this works, the
   // phone can reach the switch and the community string is right; everything
   // else is detail.
   // Who talks to the switch.
   //
-  // On a phone, this phone does — it is the thing standing on the customer's
+  // On a phone, this phone does - it is the thing standing on the customer's
   // network. In a browser it cannot: a web page is not allowed a UDP socket.
   // But the server can, whenever it is itself on that network, which is the
   // case for a local install. So the browser asks the server to read instead
@@ -567,7 +567,7 @@ export default function SwitchTestPage() {
    * step took it. Two ordinary things break that: a switch read from the menu
    * entry, which belongs to no rack, and a filing that failed because the
    * server was not reachable at that second. Either way the phone shows the
-   * reading and the report says none has been filed — which is exactly what
+   * reading and the report says none has been filed - which is exactly what
    * happened, and is fixable without asking anyone to read anything again.
    *
    * So: on opening a rack's Network step, everything read and not yet filed
@@ -588,7 +588,7 @@ export default function SwitchTestPage() {
         const filed = await fileOnServer(rackId, sw, r, (id) => rememberServerId(sw, id));
         // Recorded even if this pass has been torn down. Remembering the
         // server's id changes `switches`, which is in this effect's dependency
-        // array — so filing the first switch cancels the very pass doing the
+        // array - so filing the first switch cancels the very pass doing the
         // filing, and skipping the write here left the reading filed on the
         // server while the phone went on saying it was not. The next pass
         // skips what this one has already tried.
@@ -705,7 +705,7 @@ export default function SwitchTestPage() {
       {form.version === 'v3' ? (
         <p className={styles.fieldNote}>
           The SNMPv3 user your network team created on the switch, at the
-          <b> noAuthNoPriv</b> level — no password, no encryption. That is how
+          <b> noAuthNoPriv</b> level - no password, no encryption. That is how
           the TP-Links are set up today. A user with a password comes in the
           next build. The name stays on this phone.
         </p>
@@ -716,7 +716,7 @@ export default function SwitchTestPage() {
         </p>
       ) : (
         <p className={styles.fieldNote}>
-          Choose how this switch is set up — your network team knows which, and
+          Choose how this switch is set up - your network team knows which, and
           the switch's own SNMP settings page says so too.
         </p>
       )}
@@ -755,7 +755,7 @@ export default function SwitchTestPage() {
         {viaServer && (
           <p className={styles.notice}>
             <b>The server is reading these switches.</b> A browser cannot open the kind of
-            network connection SNMP needs, so this asks the server to do it — which works
+            network connection SNMP needs, so this asks the server to do it - which works
             whenever the server is on the same network as the switches. On a phone, the
             phone reads them itself.
           </p>
@@ -765,7 +765,7 @@ export default function SwitchTestPage() {
           <div className={styles.empty}>
             <p>No switches on this rack yet.</p>
             <p className={styles.emptySub}>
-              Add one and it is read straight away — every value comes from the switch itself.
+              Add one and it is read straight away - every value comes from the switch itself.
             </p>
             <button type="button" className={styles.primary} onClick={() => setForm(BLANK)}>
               Add a switch
@@ -894,7 +894,7 @@ export default function SwitchTestPage() {
 
               {/* ── The faceplate ──
                   Every port on the switch, two rows, fitted to the width of
-                  the screen however many there are — the shape of the front of
+                  the screen however many there are - the shape of the front of
                   the box. Lit means up. Tap one and the line underneath says
                   which it is and what is on it. */}
               {r?.kind === 'full' && sockets.length > 0 && !editing && (
@@ -965,14 +965,14 @@ export default function SwitchTestPage() {
                   reading is, and offer the retry. */}
               {rackId && r?.kind === 'full' && !r.filed && !editing && (
                 <p className={styles.unfiled}>
-                  Not in the report yet{r.filedWhy ? ` — ${r.filedWhy}` : ''}
+                  Not in the report yet{r.filedWhy ? ` - ${r.filedWhy}` : ''}
                   <button type="button" onClick={() => doRead(sw)}>Read and file it</button>
                 </p>
               )}
 
               {/* Where this switch sits, once it has been read and the rack has
                   places to offer. The camera found the boxes; this says which
-                  box this switch is — from the list, or off the photo. */}
+                  box this switch is - from the list, or off the photo. */}
               {r?.kind === 'full' && serverIdFor(sw, rackId) && places?.devices?.length > 0 && !editing && (
                 <PlacePicker
                   devices={places.devices}
@@ -1049,7 +1049,7 @@ export default function SwitchTestPage() {
                             <li key={k}>
                               <span className={styles.nbrName}>{n.sysName}</span>
                               <span className={styles.nbrWhere}>
-                                {n.localPort || '—'}{n.port ? ` → ${n.port}` : ''}
+                                {n.localPort || ' - '}{n.port ? ` → ${n.port}` : ''}
                               </span>
                             </li>
                           ))}
@@ -1122,7 +1122,7 @@ export default function SwitchTestPage() {
         {/* Save the places, then go on to the report. Only once something has
             been read and the rack has boxes to put it in. */}
         {/* The way on is always there once a switch has been read. Save places
-            needs boxes to put the switches in; Go to report does not — it
+            needs boxes to put the switches in; Go to report does not - it
             waited on the rack's places loading, and when that call was slow or
             failed the page had no way forward at all. */}
         {!form && Object.values(results).some((x) => x?.kind === 'full') && (

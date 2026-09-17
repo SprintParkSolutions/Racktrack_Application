@@ -11,7 +11,7 @@ import RackTabs from '../components/RackTabs.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import styles from './PortsPage.module.css';
 
-// "6d ago" / "just now" — same phrasing the Lab page uses, so a recorded
+// "6d ago" / "just now" - same phrasing the Lab page uses, so a recorded
 // timestamp reads identically wherever it appears.
 function fmtAgo(iso) {
   if (!iso) return 'a while ago';
@@ -75,7 +75,7 @@ function classifyPorts(probePorts, scan) {
 
   // Nothing told us which ports are fibre: not the switch (no Active-Medium
   // column), not the interface names, not the scan. This used to GUESS from the
-  // port count — "more than 24 ports, so the last 4 are SFP" — and the faceplate
+  // port count - "more than 24 ports, so the last 4 are SFP" - and the faceplate
   // then drew those as SFP slots, indistinguishable from ports the switch had
   // actually reported as fibre. It was right for a 24+4 JetStream and wrong for
   // everything else, and nothing on screen said it was an assumption.
@@ -110,7 +110,7 @@ function PortsSummaryCard({ totalPorts, sfpCount, availableCount, availablePorts
   const [showTable, setShowTable] = useState(false);
 
   // Breakdown so the card can show ETH vs SFP availability at a glance
-  // — a single "5 ports free" doesn't tell you whether you can plug in
+  // - a single "5 ports free" doesn't tell you whether you can plug in
   // an SFP+ uplink.
   const availSfp = availablePorts.filter(p => sfpPortIfaces.has(p.iface)).length;
   const availEth = availableCount - availSfp;
@@ -165,7 +165,7 @@ function PortsSummaryCard({ totalPorts, sfpCount, availableCount, availablePorts
         )}
       </div>
 
-      {/* Utilization bar — visual context for "how full is this switch" */}
+      {/* Utilization bar - visual context for "how full is this switch" */}
       {totalPorts > 0 && (
         <div className={styles.utilWrap} role="img" aria-label={`${utilizationPct}% utilized`}>
           <div className={styles.utilBar}>
@@ -178,7 +178,7 @@ function PortsSummaryCard({ totalPorts, sfpCount, availableCount, availablePorts
         </div>
       )}
 
-      {/* Available ports table — only shown when toggled */}
+      {/* Available ports table - only shown when toggled */}
       {showTable && (
         availableCount === 0
           ? <div className={styles.summaryNone}>None available</div>
@@ -406,13 +406,13 @@ function LogicalView({ probe, scan, scanDurationMs }) {
   // Last recorded state, for when the switch is unreachable right now.
   //
   // The poller has been writing every port's state to the drift store all along
-  // — the same rows the Drift page reads. An unreachable switch is no reason to
+  // - the same rows the Drift page reads. An unreachable switch is no reason to
   // show an empty page when we know what it last looked like.
   //
   // It is still LABELLED, just quietly: one muted line above the faceplate
   // rather than the banner that used to sit here. A stored port table with no
   // marker at all reads as current state, which is the thing this page was
-  // cleaned up to stop — so the label is small, not absent.
+  // cleaned up to stop - so the label is small, not absent.
   //
   // Ports page only. Lab stays live-or-nothing: it is the owner's diagnostic
   // view, where a cached table could be mistaken for proof a switch is answering.
@@ -427,27 +427,26 @@ function LogicalView({ probe, scan, scanDurationMs }) {
         if (!r.ok) return;                    // 404 = not a monitored switch
         const d = await r.json();
         if (!cancelled && d?.ports?.length) setLastKnown(d);
-      } catch { /* no history — the plain message stands on its own */ }
+      } catch { /* no history - the plain message stands on its own */ }
     })();
     return () => { cancelled = true; };
   }, [probe.status, probe.triedHost]);
 
-  // Pull the full switch audit in one pass — identity, per-port live status,
-  // PoE, VLANs, LLDP neighbours and the MAC table — then join it into the port
+  // Pull the full switch audit in one pass - identity, per-port live status,
+  // PoE, VLANs, LLDP neighbours and the MAC table - then join it into the port
   // list so each view shows what's really on the switch. We query the CURRENT
   // switch (server default-host) rather than probe.host, which can be a stale
-  // cached IP from an earlier scan — the port numbers (Gi1/0/N) match regardless.
+  // cached IP from an earlier scan - the port numbers (Gi1/0/N) match regardless.
   useEffect(() => {
     if (probe.status !== 'ok') return;
     let cancelled = false;
     (async () => {
-      // The probe already succeeded, so probe.host is a known-reachable switch —
-      // use it directly. (Never the /default-host "suggested" value: that's the
+      // The probe already succeeded, so probe.host is a known-reachable switch - // use it directly. (Never the /default-host "suggested" value: that's the
       // network gateway, not the switch, and would send the audit to the wrong box.)
       const host = probe.host;
       if (!host) return;
       // The switch allows ~1 SSH session, so this can lose to the port probe /
-      // poller and come back empty. Retry a few times — once the switch frees
+      // poller and come back empty. Retry a few times - once the switch frees
       // the session it succeeds.
       for (let attempt = 0; attempt < 4 && !cancelled; attempt++) {
         try {
@@ -463,7 +462,7 @@ function LogicalView({ probe, scan, scanDurationMs }) {
             setAudit({ identity: d.identity || {}, ifstatus: d.ifstatus || {}, ifconfig: d.ifconfig || {}, poe: d.poe || null, vlans: d.vlans || [] });
             return;
           }
-        } catch { /* transient — retry */ }
+        } catch { /* transient - retry */ }
         if (!cancelled) await new Promise(res => setTimeout(res, 4000));
       }
     })();
@@ -473,7 +472,7 @@ function LogicalView({ probe, scan, scanDurationMs }) {
   if (probe.status === 'running' || probe.status === 'idle') {
     return <ProbeWaiting probe={probe} onRetry={() => triggerBackgroundProbe({ force: true })} />;
   }
-  // Unreachable AND nothing on record — the message is all there is to say.
+  // Unreachable AND nothing on record - the message is all there is to say.
   // With history, fall through and render it below under a muted "as of" line.
   if (probe.status === 'error' && !lastKnown) {
     // "Probe failed: <raw server string>" led with the word failure and then
@@ -496,8 +495,8 @@ function LogicalView({ probe, scan, scanDurationMs }) {
 
   // Live rows when we have them; otherwise the poller's last snapshot, mapped
   // into the same shape so everything below works unchanged. port_snapshots
-  // stores oper as 'up'/'down' — exactly what logicalVerdict and the faceplate
-  // test for — and keeps the LLDP columns, so neighbours survive. Nothing is
+  // stores oper as 'up'/'down' - exactly what logicalVerdict and the faceplate
+  // test for - and keeps the LLDP columns, so neighbours survive. Nothing is
   // invented: a column the poller never recorded stays empty.
   const stale = probe.status === 'error' && !!lastKnown;
   const sourceRows = stale
@@ -515,7 +514,7 @@ function LogicalView({ probe, scan, scanDurationMs }) {
   const ports = sourceRows.map(p => {
     const k = portNumKey(p.iface);
     const patch = {};
-    // Live joins only — the audit didn't run in the stale case, and the
+    // Live joins only - the audit didn't run in the stale case, and the
     // snapshot's own LLDP is already mapped above.
     if (!stale && k && neighbors[k]?.found) patch.neighbor = neighbors[k];
     if (!stale && k && portMacs[k]) patch.macInfo = portMacs[k];
@@ -547,7 +546,7 @@ function LogicalView({ probe, scan, scanDurationMs }) {
         {audit?.identity && <IdentityCard identity={audit.identity} host={probe.host} poe={audit.poe} />}
       </div>
 
-      {/* A timestamp, not a warning. "Last recorded … — not live" read as an
+      {/* A timestamp, not a warning. "Last recorded … - not live" read as an
           apology for the page; Drift shows recorded data plainly and so does
           this. Three words of muted text is still enough that a stored table is
           never mistaken for a live one, which is the one thing worth keeping. */}
@@ -585,7 +584,7 @@ function LogicalView({ probe, scan, scanDurationMs }) {
   );
 }
 
-// ── Reachability check — ping / traceroute from the switch ───
+// ── Reachability check - ping / traceroute from the switch ───
 function ReachabilityTool({ host }) {
   const [target, setTarget] = useState('');
   const [running, setRunning] = useState(null);   // 'ping' | 'traceroute' | null
@@ -668,7 +667,7 @@ function ReachabilityTool({ host }) {
 
 // ── Switch identity card ─────────────────────────────────────
 // Model / firmware / uptime / mgmt IP pulled live from system-info, plus the
-// live PoE draw. No raw command text — just the parsed facts.
+// live PoE draw. No raw command text - just the parsed facts.
 function IdentityCard({ identity, host, poe }) {
   const model = identity.name || (identity.description || '').replace(/JetStream\s*/i, '') || 'Switch';
   const poeUsed = poe && typeof poe.used === 'number' ? poe.used : null;
@@ -838,7 +837,7 @@ function PortGroup({ title, ports, variant }) {
   );
 }
 
-// ── Port row — 3-column detail layout with left accent ───────
+// ── Port row - 3-column detail layout with left accent ───────
 function PortCard({ port, variant }) {
   const verdict     = logicalVerdict(port);
   const accentClass = verdict === 'available' ? styles.invAccentAvail
@@ -852,7 +851,7 @@ function PortCard({ port, variant }) {
     : verdict === 'used'      ? 'In use'
     :                            'Reserved';
 
-  // Raw status text from the switch — e.g. "connected", "notconnect",
+  // Raw status text from the switch - e.g. "connected", "notconnect",
   // "err-disabled". Title-cased for display, falls back to the verdict.
   const statusRaw  = (port.status || '').trim();
   const statusText = statusRaw
@@ -931,8 +930,8 @@ function PortCard({ port, variant }) {
 
 // ── Cables view ──────────────────────────────────────────────
 // A cable is a live port with something identified on the other end. We only
-// know the LOGICAL layer (LLDP neighbour + MAC table) — passive patch panels
-// have no chip and are invisible — so each row is: this switch port ↔ the
+// know the LOGICAL layer (LLDP neighbour + MAC table) - passive patch panels
+// have no chip and are invisible - so each row is: this switch port ↔ the
 // endpoint we can see, with its kind, VLAN and medium.
 const MAC_RE = /^[0-9a-f]{2}([:.-])[0-9a-f]{2}(?:\1?[0-9a-f]{2}){4}$/i;
 
@@ -1053,7 +1052,7 @@ function ouiKey(mac) {
   return hex.length === 12 ? hex.slice(0, 6) : null;
 }
 
-// Vendor names are looked up once per prefix and memoised for the session — the
+// Vendor names are looked up once per prefix and memoised for the session - the
 // switch re-reports the same MACs on every poll, and the table lives server-side.
 const vendorCache = new Map();
 
@@ -1067,7 +1066,7 @@ async function lookupVendors(prefixes) {
         body: JSON.stringify({ prefixes: missing }),
       });
       const d = await r.json();
-      // Cache misses too, as null — an unregistered prefix must not be re-asked.
+      // Cache misses too, as null - an unregistered prefix must not be re-asked.
       for (const p of missing) vendorCache.set(p, d?.vendors?.[p] || null);
     } catch (_) {
       for (const p of missing) vendorCache.set(p, null);
@@ -1093,7 +1092,7 @@ function DownstreamMacs({ macs }) {
     return () => { cancelled = true; };
   }, [prefixes]);
 
-  // One row per device — each MAC is a distinct machine on the far side. Sorting
+  // One row per device - each MAC is a distinct machine on the far side. Sorting
   // by vendor puts same-make devices together without merging their identities.
   const devices = useMemo(() => macs
     .map(mac => {
@@ -1110,7 +1109,7 @@ function DownstreamMacs({ macs }) {
   const hidden = showAll ? 0 : Math.max(0, devices.length - DEVICES_SHOWN);
   const shown = hidden ? devices.slice(0, DEVICES_SHOWN) : devices;
 
-  // "4 Dell · 3 Realtek · …" — the make-up of the far side at a glance.
+  // "4 Dell · 3 Realtek · …" - the make-up of the far side at a glance.
   const mix = useMemo(() => {
     const counts = new Map();
     for (const d of devices) {
@@ -1223,7 +1222,7 @@ function CableTrace({ cable, switchName }) {
 
 // ── Orbital loader ───────────────────────────────────────────
 // The probe sits in `idle` forever when no switch is configured for this
-// deployment at all — which is the normal state on the demo, where there is no
+// deployment at all - which is the normal state on the demo, where there is no
 // switch on the network to read. OrbitalLoader only counts up when `startedAt`
 // is set, so with no probe actually running it span with no text and no end,
 // and testers reported the Ports page as simply blank.

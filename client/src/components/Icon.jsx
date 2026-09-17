@@ -2,7 +2,7 @@
  *
  * These used to be Material Symbols ligatures: <span class="material-symbols-
  * outlined">logout</span>, which renders the WORD "logout" until the icon font
- * loads. That failed twice in production for two different reasons — first the
+ * loads. That failed twice in production for two different reasons - first the
  * font-family rule was dropped when the Google stylesheet was removed, then the
  * self-hosted subset that replaced it shipped with 43 glyphs and no ligatures at
  * all (.notdef, space, underscore). Both times the build, the linter and the
@@ -36,7 +36,7 @@ const P = {
     <path d="M12 7.5V12l3 2" />
   </>,
 
-  /* A rack, drawn — the placeholder when a scan has no thumbnail. Nested
+  /* A rack, drawn - the placeholder when a scan has no thumbnail. Nested
      slots rather than lines: three bars inside a frame read as mounted
      equipment, where evenly spaced rules read as a document. */
   rack: <>
@@ -155,7 +155,7 @@ const P = {
   check: <path d="M20 6L9 17l-5-5" />,
 };
 
-/** Names this set covers — used by the test that guards against typos. */
+/** Names this set covers - used by the test that guards against typos. */
 export const ICON_NAMES = Object.keys(P);
 
 export default function Icon({ name, className = '', style, ...rest }) {

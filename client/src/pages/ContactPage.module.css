@@ -2,7 +2,7 @@
  *
  * Restrained on purpose: white ground, 1px separators, no elevation except
  * where a control has to read as pressable. The accent appears on exactly
- * three things — the primary action, links, and the small glyphs — so it
+ * three things - the primary action, links, and the small glyphs - so it
  * still means something when it shows up.
  *
  * Two global rules in index.css shape the class names here, and both are load-
@@ -26,7 +26,7 @@
   color: #111214;
   min-height: 100%;
   display: flex; flex-direction: column;
-  /* The app's own font stack — no webfont request added by this page. */
+  /* The app's own font stack - no webfont request added by this page. */
   font-family: var(--font, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
 }
 
@@ -48,7 +48,7 @@
    anyone is here. The photograph sits to the side and is cropped by its
    container rather than driving the height. */
 /* No centred max-width column anywhere on this page. Every other page in the
-   app spans the full content width — a max-width here is only used for text
+   app spans the full content width - a max-width here is only used for text
    MEASURE (the ch-based caps below), never for the container, so Contact does
    not sit in a boxed column with empty gutters while the page beside it fills
    the screen. Line length stays readable because the copy is capped in ch and
@@ -84,7 +84,7 @@
 }
 
 /* Understated by construction: no border, no fill, no pill. Reading as a row
-   of quiet facts is the point — a badge treatment here would turn them into
+   of quiet facts is the point - a badge treatment here would turn them into
    marketing and cost more trust than it buys. */
 .signals {
   list-style: none; margin: 24px 0 0; padding: 0;
@@ -136,13 +136,13 @@
 }
 .optional { font-weight: 400; color: var(--ct-ink-3); }
 
-/* index.css styles form controls as carved wells — `--sunken` fill, no border,
-   an inset `--press` shadow — through
+/* index.css styles form controls as carved wells - `--sunken` fill, no border,
+   an inset `--press` shadow - through
    `input:not([type=checkbox])…:not([type=color]), select, textarea`. Two
    consequences have to be handled here rather than worked around:
 
    1. That selector's five :not() clauses out-specify any single class, so a
-      plain `.input` rule loses on <input> — but it carries no weight against
+      plain `.input` rule loses on <input> - but it carries no weight against
       <textarea>, which the same rule matches only by element name. The two
       controls therefore render DIFFERENTLY from identical markup: a grey
       well for Subject, a white bordered box for Message. That mismatch is
@@ -217,7 +217,7 @@
   display: grid; place-items: center;
   border-radius: 6px; background: var(--ct-line-soft); color: var(--ct-ink-3); font-size: 16px;
 }
-/* min-width:0 lets the filename ellipsis engage inside the flex row — without
+/* min-width:0 lets the filename ellipsis engage inside the flex row - without
    it a long name pushes the remove control off the edge on a phone. */
 .fileMeta { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .fileName { font-size: 13.5px; color: var(--ct-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

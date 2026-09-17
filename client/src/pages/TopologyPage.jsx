@@ -10,10 +10,10 @@ import { getItem, setItem } from '../utils/safeStorage';
 const TopologyScene3D = lazy(() => import('./TopologyScene3D.jsx'));
 
 const TIER_COLOR = {
-  core: '#4f46e5',          // indigo — uplink / core
-  distribution: '#2563eb',  // blue — switches
-  access: '#0d9488',        // teal — patch panels
-  endpoint: '#f59e0b',      // amber — servers / hosts
+  core: '#4f46e5',          // indigo - uplink / core
+  distribution: '#2563eb',  // blue - switches
+  access: '#0d9488',        // teal - patch panels
+  endpoint: '#f59e0b',      // amber - servers / hosts
 };
 
 const CLASS_LABEL = {
@@ -53,7 +53,7 @@ const TIER_LABEL = {
 
 const VIEW_KEY = 'topology.view';
 
-// Cable-type filter — matches the same buckets as cableColor() in TopologyScene3D.
+// Cable-type filter - matches the same buckets as cableColor() in TopologyScene3D.
 function matchesCableType(cable_type, filter) {
   if (filter === 'all') return true;
   const t = (cable_type || '').toLowerCase();
@@ -174,7 +174,7 @@ function TopologyInner({ rackId, embedded }) {
           setCached(cacheKey.topology(rackId), data);
         }
       } catch (e) {
-        // Transient (server restarting, network blip) — retry a few times
+        // Transient (server restarting, network blip) - retry a few times
         // before giving up so a brief hiccup doesn't strand the page.
         attempts += 1;
         if (!cancelled) {
@@ -190,7 +190,7 @@ function TopologyInner({ rackId, embedded }) {
 
   const retry = () => { setErr(null); setReloadKey(k => k + 1); };
 
-  // Filtered topology — same shape, just with cables narrowed by the active
+  // Filtered topology - same shape, just with cables narrowed by the active
   // pill. Filter at the topo level so both 2D + 3D + bottom-panel agree.
   const filteredTopo = useMemo(() => {
     if (!topo) return null;
@@ -215,7 +215,7 @@ function TopologyInner({ rackId, embedded }) {
     return c;
   }, [topo]);
 
-  // Free-port % per device — drives the capacity heatmap when toggled on.
+  // Free-port % per device - drives the capacity heatmap when toggled on.
   const freePctByDevice = useMemo(() => {
     const m = new Map();
     if (!topo) return m;
@@ -297,7 +297,7 @@ function TopologyInner({ rackId, embedded }) {
     setSelected(sel);
   };
 
-  // Selection details (used by BottomPanel — works for both 2D and 3D views)
+  // Selection details (used by BottomPanel - works for both 2D and 3D views)
   const selectionInfo = useMemo(() => {
     if (!topo || !selected) return null;
     const deviceMap = new Map(topo.devices.map(d => [d.name, d]));
@@ -418,7 +418,7 @@ function TopologyInner({ rackId, embedded }) {
 }
 
 // The rack's identity and the view switch. It used to carry a strip of five
-// counted tiles under that — size, switches, panels, servers, cables — which is
+// counted tiles under that - size, switches, panels, servers, cables - which is
 // what a dashboard does, not what a diagram does: every one of those numbers is
 // visible by looking at the drawing directly below, and the strip pushed the
 // drawing itself off the top of a phone screen.
@@ -526,7 +526,7 @@ function Toolbar({ cableFilter, setCableFilter, cableCounts, heatmap, setHeatmap
   );
 }
 
-// Trace banner — appears under the toolbar when trace mode is on. Shows
+// Trace banner - appears under the toolbar when trace mode is on. Shows
 // which endpoints are picked + path summary + clear button.
 function TraceBanner({ traceA, traceB, tracePath, clear }) {
   let body;
@@ -584,8 +584,8 @@ function FilterPill({ active, onClick, label, count, color }) {
 }
 
 // ── 3D scene chrome: a single orbit hint pinned to the bottom-right corner.
-// (Tier legend is already in the bottom panel — no need to duplicate it here.)
-// Pinned hover card in the top-left of the 3D scene — never overlaps devices.
+// (Tier legend is already in the bottom panel - no need to duplicate it here.)
+// Pinned hover card in the top-left of the 3D scene - never overlaps devices.
 function HoverInfoCard({ info }) {
   const ports     = info.dev.ports || [];
   const total     = ports.length;
@@ -867,7 +867,7 @@ function Graph2D({ topo, selected, setSelected, aggEdges, heatmap, freePctByDevi
         </filter>
       </defs>
 
-      {/* Coloured tier bands — make the hierarchy read at a glance */}
+      {/* Coloured tier bands - make the hierarchy read at a glance */}
       {TIER_ORDER.map(tier => (
         tiers[tier].length > 0 && (
           <g key={tier}>
@@ -1127,7 +1127,7 @@ function BottomPanel({ info, clear, topo, aggEdges }) {
     );
   }
 
-  // Single cable selected — drilled in from the 3D scene's tube click.
+  // Single cable selected - drilled in from the 3D scene's tube click.
   if (info.kind === 'cable') {
     const c = info.cable;
     return (

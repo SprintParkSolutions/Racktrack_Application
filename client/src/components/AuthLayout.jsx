@@ -7,7 +7,7 @@ import styles from '../pages/AuthPages.module.css';
  *
  * On a laptop the screen is split 57 / 43: footage of a real datacenter hall
  * on the left, the form on plain white to the right of a hard edge. On a phone
- * the footage drops away — it would only sit behind the keyboard — and the
+ * the footage drops away - it would only sit behind the keyboard - and the
  * form is the screen.
  *
  * Pages pass their form as children and never think about the chrome: the
@@ -16,7 +16,7 @@ import styles from '../pages/AuthPages.module.css';
  * from each other.
  *
  * Note the class names in AuthPages.module.css deliberately avoid `panel`,
- * `card`, `tile` and `surface` — index.css matches those substrings and hands
+ * `card`, `tile` and `surface` - index.css matches those substrings and hands
  * anything wearing one a raised fill and a soft shadow.
  */
 
@@ -42,7 +42,7 @@ const IcBack = (p) => (<svg {...ic} width="18" height="18" strokeWidth="1.7" {..
  * @param {React.ReactNode} [aside]    top-right slot (contextual link / stepper)
  */
 export default function AuthLayout({ children, onBack, backLabel = 'Back', aside }) {
-  // #root is capped at 540px and centred (index.css) — the frame that makes the
+  // #root is capped at 540px and centred (index.css) - the frame that makes the
   // app feel like an app on a phone. On a desktop it would also render these
   // pages as a phone-width strip, so lift the cap for as long as an auth page
   // is mounted and put it back on the way out. The same class is what scopes
@@ -53,7 +53,7 @@ export default function AuthLayout({ children, onBack, backLabel = 'Back', aside
     return () => root?.classList.remove('rt-auth-wide');
   }, []);
 
-  // The footage is only ON SCREEN at ≥1024px — below that the form is the whole
+  // The footage is only ON SCREEN at ≥1024px - below that the form is the whole
   // page and .media is display:none. A hidden <video> still downloads, so this
   // decides in JS rather than CSS: a phone signing in over cell data must not
   // pull megabytes for something it will never show. useIsDesktop is the same
@@ -78,7 +78,7 @@ export default function AuthLayout({ children, onBack, backLabel = 'Back', aside
         {/* Footage of a real hall, not a still. Decorative, so it is muted and
             silent by definition; muted + playsInline is also what lets it
             autoplay at all. The poster is the photograph it replaced, so a slow
-            connection still gets the right frame — and so does anyone who asks
+            connection still gets the right frame - and so does anyone who asks
             for reduced motion, since the effect above pauses to it. The parent
             is aria-hidden, so none of this reaches the accessibility tree. */}
         {wide && (

@@ -64,7 +64,7 @@
    Full content width, matching every other page: a max-width here would box
    Profile into a centred column with dead gutters while the page beside it
    fills the screen. min-height:0 lets this flex child shrink so overflow-y
-   has something to scroll — without it the page clipped and the scan list
+   has something to scroll - without it the page clipped and the scan list
    below the fold was unreachable. */
 .main {
   flex: 1; min-height: 0;
@@ -87,7 +87,7 @@
   display: block;
 }
 
-/* Only the AVATAR overlaps the banner — the lift lives on it, not on the row.
+/* Only the AVATAR overlaps the banner - the lift lives on it, not on the row.
    Lifting the row instead (and bottom-aligning) put the name inside the photo:
    the text block is taller than the avatar's visible overhang, so its top edge
    cleared the banner's bottom and "owner" rendered as near-black type on a
@@ -323,7 +323,7 @@
 
 /* ── Desktop / tablet ──────────────────────────────────────────────
    The shell supplies the header at ≥768px and Sign out lives in the sidebar,
-   so Profile's own sticky topbar is redundant there — hiding it keeps one
+   so Profile's own sticky topbar is redundant there - hiding it keeps one
    identical header across every page. */
 @media (min-width: 768px) {
   .topbar { display: none; }

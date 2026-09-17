@@ -14,8 +14,7 @@ import { getItem, setItem, removeItem } from '../utils/safeStorage';
 
 // CMDB-driven switch info. Reads the list of switches stored in CMDB for
 // this rack, and on demand fetches vendor specs + firmware-update info per
-// device. Distinct from the live SSH "Switch Info" modal in port mode —
-// that one talks directly to the device; this one trusts what's in CMDB.
+// device. Distinct from the live SSH "Switch Info" modal in port mode - // that one talks directly to the device; this one trusts what's in CMDB.
 
 // Map common CMDB manufacturer strings to the display name in the
 // vendor-spec Excel sheet so /api/specs matches.
@@ -128,7 +127,7 @@ function cleanVersion(raw) {
 // Spot raw Python tracebacks / JSONDecodeError text leaking from the
 // backend so we can hide them behind a friendly empty state rather than
 // dumping them in the UI. The user shouldn't have to read "Expecting
-// value: line 1 column 1 (char 0)" — that's a backend signal, not a
+// value: line 1 column 1 (char 0)" - that's a backend signal, not a
 // user-actionable message.
 function looksLikeBackendNoise(msg) {
   if (!msg || typeof msg !== 'string') return false;
@@ -142,7 +141,7 @@ function looksLikeBackendNoise(msg) {
     m.includes('econnrefused') ||
     m.includes('etimedout') ||
     // Catch anything that looks like a Python module / dotted path or
-    // a stray "X timed out" message — those are developer-facing
+    // a stray "X timed out" message - those are developer-facing
     // strings that occasionally slip through the server's friendly
     // wrapper and shouldn't reach end users.
     m.includes('pipeline.') ||
@@ -164,7 +163,7 @@ function SourceBadge({ sw }) {
     bg = 'rgba(15,123,79,.10)';
     color = '#0f7b4f';
   } else if (sw._fromOcr) {
-    // From the rack photo — confidence shown when available.
+    // From the rack photo - confidence shown when available.
     label = conf != null ? `Photo ${conf}%` : 'From photo';
     bg = '#ffffff';
     color = '#717171';
@@ -198,7 +197,7 @@ function SourceBadge({ sw }) {
 }
 
 // Stable per-switch identifier for localStorage keys. Uses serial > mac >
-// position as the primary key — deliberately NOT manufacturer/model
+// position as the primary key - deliberately NOT manufacturer/model
 // because those are exactly the fields the user can override, and the
 // key needs to be stable across edits so a saved override survives a
 // re-scan that returns different OCR text.
@@ -206,7 +205,7 @@ function switchStableId(sw) {
   if (sw.serial_number) return `s:${sw.serial_number}`;
   if (sw.mac_address)   return `m:${sw.mac_address}`;
   if (sw.position)      return `p:${sw.position}`;
-  // Last-ditch fallback — at least pin to the original (CV-derived) name
+  // Last-ditch fallback - at least pin to the original (CV-derived) name
   // so multiple unidentified devices at the same scan don't collide.
   return `n:${sw.name || 'unknown'}`;
 }
@@ -235,10 +234,10 @@ function loadUserVersion(rackId, sw)        { return loadOverride(rackId, sw, 'f
 function saveUserVersion(rackId, sw, value) { saveOverride(rackId, sw, 'fwVersion', value); }
 
 // Mirrors the override server-side (outputs/<rackId>/device_overrides.json,
-// keyed by sw.position — same "U04" key the OCR pass uses) so it's visible
+// keyed by sw.position - same "U04" key the OCR pass uses) so it's visible
 // to anything that isn't this browser, notably the Rack Scan Report.
 // localStorage above stays the source of truth for this page itself; this
-// is purely so the correction propagates. Best-effort — a failed sync
+// is purely so the correction propagates. Best-effort - a failed sync
 // (offline, no rackId, device has no position yet) never blocks the UI.
 function syncDeviceOverride(rackId, sw, fields) {
   if (!rackId || !sw?.position) return;
@@ -258,12 +257,12 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
   const [specsStatus, setSpecsStatus] = useState('idle');
   const [firmware, setFirmware] = useState(null);
   const [firmwareStatus, setFirmwareStatus] = useState('idle');
-  // In-card tab strip — Specifications first (the vendor spec sheet),
+  // In-card tab strip - Specifications first (the vendor spec sheet),
   // then Firmware (version check), then the SFP Advisor (which optics
   // fit this chassis). Order chosen by the user.
   const [swTab, setSwTab] = useState('hardware');
 
-  // User-supplied overrides — used when OCR / CMDB didn't capture the
+  // User-supplied overrides - used when OCR / CMDB didn't capture the
   // value. Persisted per switch (keyed by serial > mac > position) so
   // they survive reloads and aren't disturbed by a re-scan that returns
   // different OCR text. Empty string means "not set".
@@ -272,7 +271,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
   const [userVersion, setUserVersion] = useState(() => loadUserVersion(rackId, sw));
 
   // One-time backfill sync: any correction saved to localStorage before the
-  // server-side sync existed only ever lived in this browser — the report
+  // server-side sync existed only ever lived in this browser - the report
   // (server-side) could never see it. On load, if there's a saved value
   // here, push it up automatically so it shows up without the user having
   // to re-type and re-save something that's already visible on screen.
@@ -288,7 +287,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
   const [editingIdent, setEditingIdent] = useState(false);
   const [identDraftMake,  setIdentDraftMake]  = useState('');
   const [identDraftModel, setIdentDraftModel] = useState('');
-  // Close-up capture — the step between "the rack photo couldn't read this"
+  // Close-up capture - the step between "the rack photo couldn't read this"
   // and "type it yourself". captureRead holds the last close-up result so
   // the editor can say where its prefill came from and offer the runner-up
   // readings; null means the editor was opened by hand.
@@ -317,17 +316,17 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
   const versionIsUserSupplied = !sw.os_version && !!userVersion;
 
   // This card came from the scan and its label hasn't been read yet. Empty
-  // make/model here means "not yet", not "couldn't" — so none of the failure
+  // make/model here means "not yet", not "couldn't" - so none of the failure
   // copy or the manual-entry prompts below apply. Telling someone we failed
   // to read a label we haven't finished reading is just wrong.
   const awaitingLabel = !!sw._awaitingLabel && !userMake && !userModel;
 
-  // OCR/CMDB returned nothing for either field — surface the editor as
+  // OCR/CMDB returned nothing for either field - surface the editor as
   // the primary call-to-action instead of a tiny "edit" affordance.
   const identMissing = !awaitingLabel && !effectiveMake && !effectiveModel;
   // OCR got vendor but missed model (the common case after fuzzy-match
   // recovery) or vice-versa. Still surface the editor, just less
-  // prominently — the user requested manual entry whenever the pipeline
+  // prominently - the user requested manual entry whenever the pipeline
   // failed on *either* field, not just both.
   const identIncomplete = !awaitingLabel && !identMissing && (!effectiveMake || !effectiveModel);
 
@@ -341,7 +340,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
       ? cleanVersion(overrideVersion)
       : lookupVersion;
 
-    // Check the prefetch cache first — if scanPrefetch already populated
+    // Check the prefetch cache first - if scanPrefetch already populated
     // this (vendor, model) pair, render synchronously and skip the network.
     const specsCached = (rackId && !firmwareOnly) ? getCached(cacheKey.specs(rackId, displayVendor, lookupModel)) : null;
     if (specsCached) {
@@ -423,7 +422,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     loadDetails(undefined, { firmwareOnly: true });
   };
 
-  // Auto-fire details on mount (rather than waiting for expand) — the
+  // Auto-fire details on mount (rather than waiting for expand) - the
   // prefetcher has already done the network work, so this just wires the
   // cached payload into the card's render state. If the cache misses,
   // it falls back to the same on-mount fetch a one-time visit would do.
@@ -469,7 +468,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     setFirmwareStatus('skipped');
   };
 
-  // Make/model editor — used when OCR couldn't pin down vendor or model.
+  // Make/model editor - used when OCR couldn't pin down vendor or model.
   // Saving triggers a fresh specs/firmware lookup against the new values.
   const startEditIdent = () => {
     setIdentDraftMake(userMake || sw.manufacturer || '');
@@ -485,7 +484,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
 
   // Photograph the device's own label instead of typing it. The rack photo
   // gives each device only a slice of the frame, so a model number that was
-  // legible in person can reach OCR too small to survive — which makes a
+  // legible in person can reach OCR too small to survive - which makes a
   // second, closer photo a better recovery than a keyboard.
   const startCaptureIdent = () => {
     setCaptureRead(null);
@@ -494,7 +493,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
 
   // A close-up read PREFILLS the editor and stops there. The user is standing
   // in front of the device and can confirm at a glance, and a confident wrong
-  // model number is worse downstream than an empty one — so "read failed" and
+  // model number is worse downstream than an empty one - so "read failed" and
   // "read wrong" both land on the same correction path.
   const onIdentCaptured = (read) => {
     setCapturingIdent(false);
@@ -524,7 +523,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
     setIdentDraftMake('');
     setIdentDraftModel('');
     setCaptureRead(null);
-    // New values invalidate any cached spec/firmware results — re-fetch.
+    // New values invalidate any cached spec/firmware results - re-fetch.
     setSpecs(null);
     setSpecsStatus('idle');
     setFirmware(null);
@@ -748,7 +747,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
       {expanded && (
         <div style={{ borderTop: `1px solid ${divider}`, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Identifier section — shown whenever OCR didn't pin down the
+          {/* Identifier section - shown whenever OCR didn't pin down the
               full make + model, or whenever the user wants to correct
               what OCR returned. The user explicitly asked for manual
               entry on either-missing, not just both-missing. */}
@@ -757,8 +756,8 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
               being read, which is the one moment a user most needs it: the read
               is slow, the card shows a pulsing "Reading label" and nothing else,
               and testers concluded there was no way to type it in and that the
-              page had hung. Now the block is there throughout — reading, failed
-              or done — and only the wording changes. */}
+              page had hung. Now the block is there throughout - reading, failed
+              or done - and only the wording changes. */}
           {(awaitingLabel || identMissing || identIncomplete || editingIdent || makeIsUserSupplied || modelIsUserSupplied) && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -802,7 +801,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                     }}
                   >{
                     // Name the subject. "Type it in" next to a heading reading
-                    // "Identification" left testers asking type WHAT in — and
+                    // "Identification" left testers asking type WHAT in - and
                     // while the label was still being read they did not see this
                     // control at all, so nothing on the card said the make and
                     // model could be entered by hand.
@@ -856,7 +855,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
 
                   {/* Close-up capture, offered ahead of the keyboard. The rack
                       photo spends its pixels on the whole rack, so this device's
-                      label reached OCR too small to read — which a second photo
+                      label reached OCR too small to read - which a second photo
                       fixes and typing only works around. Weighted by how much is
                       missing: a full CTA when nothing was identified, a quiet
                       link when only one field is. */}
@@ -902,7 +901,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
             </div>
           )}
 
-          {/* Tab strip — Firmware / Hardware / Optics. Renders one focused
+          {/* Tab strip - Firmware / Hardware / Optics. Renders one focused
               section at a time so the card stays compact and each tab maps
               to a real data source (firmware lookup / vendor spec sheet /
               SFP procurement advisor). */}
@@ -1309,7 +1308,7 @@ function VersionEditor({
 
 // Make + model editor. Used when OCR couldn't pin down identification
 // or when the user is correcting what OCR returned. Saves both fields
-// atomically — model regex resolution happens server-side at /api/specs
+// atomically - model regex resolution happens server-side at /api/specs
 // time, so the UI doesn't need to validate model strings.
 function IdentEditor({
   draftMake, setDraftMake, draftModel, setDraftModel,
@@ -1317,7 +1316,7 @@ function IdentEditor({
   accent, fieldBg, fieldBorder, valueColor, statusColor,
 }) {
   // `read` is the last close-up result, present only when the editor was
-  // opened from the camera. Its values are already in the drafts — this
+  // opened from the camera. Its values are already in the drafts - this
   // block exists to say where they came from, because a prefilled field the
   // user didn't type is one they have to be told to check.
   const readSomething = !!(read && (read.make || read.model));
@@ -1515,28 +1514,28 @@ function Field({ label, value }) {
 // A rack scan schedules per-device OCR in the background (server-side
 // scheduleOcrDevices) and EasyOCR on CPU takes 1-2 minutes for a full rack.
 // Until it writes ocr_devices.json the GET below answers 404. That 404 means
-// "not finished yet", NOT "never coming" — so we keep checking instead of
+// "not finished yet", NOT "never coming" - so we keep checking instead of
 // freezing on the first miss, which is what stranded this page on a
 // permanent "Scanning…" panel that nothing would ever clear.
 const OCR_POLL_INTERVAL_MS = 3_000;
 const OCR_POLL_DEADLINE_MS = 4 * 60_000;   // comfortably past the server's own 5-min cap on a fresh run
 
-// Switch Information is switches only — routers are a different device class
+// Switch Information is switches only - routers are a different device class
 // and were showing up here mislabelled as switches (e.g. a Mikrotik router).
 const NETWORK_CLASSES = ['switch'];
 const isSwitchClass = (d) => NETWORK_CLASSES.includes((d?.class_name || '').toLowerCase());
 
 function useSwitchData(rackId) {
   // The Switches tab is driven purely by what the rack scan saw (detection,
-  // then OCR) plus any user overrides — CMDB is intentionally excluded here.
+  // then OCR) plus any user overrides - CMDB is intentionally excluded here.
   // The user doesn't want this page to surface ServiceNow-sourced facts; the
   // page's purpose is "what's actually in front of me", not "what does the
   // asset DB claim is in front of me".
   //
   // TWO sources, deliberately, because they arrive minutes apart:
-  //   scan_result.json  — written when the scan finishes. Already knows which
+  //   scan_result.json - written when the scan finishes. Already knows which
   //                       units hold a switch. Available immediately.
-  //   ocr_devices.json  — EasyOCR over the photo, 1-2 min later on CPU. Adds
+  //   ocr_devices.json - EasyOCR over the photo, 1-2 min later on CPU. Adds
   //                       make / model / firmware to those same devices.
   // The page used to wait for the second one before drawing anything, so a
   // rack whose switches were known the whole time showed an empty panel for
@@ -1551,11 +1550,11 @@ function useSwitchData(rackId) {
   const [ocrDevices, setOcrDevices]   = useState(ocrCachedDevs);
   const [scanDevices, setScanDevices] = useState(scanCachedDevs);
   // How the label pass is going. Only decides the footnote under the list
-  // now — it no longer gates whether the list renders at all.
-  //   pending — not ready yet (404); still polling
-  //   ready   — labels merged in
-  //   stalled — polled past the deadline; stopped
-  //   error   — failed for a reason other than "not yet"
+  // now - it no longer gates whether the list renders at all.
+  //   pending - not ready yet (404); still polling
+  //   ready - labels merged in
+  //   stalled - polled past the deadline; stopped
+  //   error - failed for a reason other than "not yet"
   const [ocrStatus, setOcrStatus] = useState(ocrCachedDevs ? 'ready' : 'pending');
   // What the live switches said about themselves, by rack position. A switch
   // stating its own model outranks OCR of a photograph of it, so where a
@@ -1639,7 +1638,7 @@ function useSwitchData(rackId) {
 
   // ── The third source: whatever the phone read off the switches ──
   //
-  // The Switches tab was the camera's view alone — detection, then OCR. But
+  // The Switches tab was the camera's view alone - detection, then OCR. But
   // for any switch somebody has actually read over SNMP, the make, model and
   // serial are not a guess from a photograph: they are the box saying what it
   // is. Where a reading has been matched to a position in this rack, those
@@ -1670,8 +1669,8 @@ function useSwitchData(rackId) {
             host: sw.host || '',
             label: sw.label || '',
             // The switch's own count of its sockets. The camera counted 24
-            // RJ45 on a box whose spec sheet says 28 — it cannot see the four
-            // SFP cages as ports — and the card showed 24 above a table
+            // RJ45 on a box whose spec sheet says 28 - it cannot see the four
+            // SFP cages as ports - and the card showed 24 above a table
             // saying 28. The box knows.
             ports: Number(sw.ports) || 0,
           };
@@ -1693,7 +1692,7 @@ function useSwitchData(rackId) {
     return () => window.removeEventListener('rt:device-override', onSaved);
   }, []);
 
-  // OCR is authoritative once it lands — it covers the same devices as the
+  // OCR is authoritative once it lands - it covers the same devices as the
   // scan (both derive from device_unit_map.json) and adds make/model. Until
   // then the scan's switches stand in, keyed by position so React swaps the
   // labels in place rather than remounting the cards.
@@ -1739,7 +1738,7 @@ function useSwitchData(rackId) {
       sfp_count: sfpCount,
       _fromOcr: true,
       // True while this card is a scan-detected switch whose label hasn't
-      // been read yet — distinct from "OCR ran and couldn't read it", which
+      // been read yet - distinct from "OCR ran and couldn't read it", which
       // is what the manual-entry prompts are for.
       _awaitingLabel: awaitingLabels && !live,
       _key: position || `i${i}`,
@@ -1756,7 +1755,7 @@ function useSwitchData(rackId) {
   //
   // The note under the list says the labels are being read. It was tied to
   // the OCR poll alone, so it stayed up after somebody typed the make and
-  // model in themselves — the page telling a person it was busy finding out
+  // model in themselves - the page telling a person it was busy finding out
   // the very thing they had just told it. It is about what is missing, so it
   // asks what is missing.
   const unidentified = switches.filter((sw) => (
@@ -1768,7 +1767,7 @@ function useSwitchData(rackId) {
 }
 
 // The states where work is genuinely in flight. Carries a live indicator so
-// "in progress" and "given up" don't look the same on screen — the old panel
+// "in progress" and "given up" don't look the same on screen - the old panel
 // said "Scanning…" in both cases and animated in neither.
 function WorkingPanel({ title, detail }) {
   return (
@@ -1817,7 +1816,7 @@ function RestingPanel({ title, detail, onRetry, retryLabel = 'Check again' }) {
 
 // A one-line footnote under the list, for when the switches are on screen but
 // their labels are still being read. It belongs under the cards rather than in
-// front of them — the list is already useful, and blocking it behind this
+// front of them - the list is already useful, and blocking it behind this
 // message is the thing that made the page feel slow.
 function LabelProgressNote({ ocrStatus, unidentified, onRetry }) {
   if (ocrStatus === 'ready') return null;
@@ -1882,7 +1881,7 @@ function SwitchInfoBody({ rackId, status, ocrStatus, switches, recheck, unidenti
   );
 }
 
-// ── Switch picker — replaces the old stacked-rows layout ────
+// ── Switch picker - replaces the old stacked-rows layout ────
 // Horizontal tab strip of every detected switch. Selecting a tab swaps
 // in its fully-expanded detail panel. For single-switch racks the picker
 // collapses to just the panel (no point in a single tab).
@@ -1916,7 +1915,7 @@ function SwitchPicker({ switches, rackId }) {
     readScroll();
     el.addEventListener('scroll', readScroll, { passive: true });
     // The rail also becomes a vertical list at container widths over 880px,
-    // where none of this applies — a resize observer catches that flip as well
+    // where none of this applies - a resize observer catches that flip as well
     // as the phone rotating.
     const ro = new ResizeObserver(readScroll);
     ro.observe(el);
@@ -1933,7 +1932,7 @@ function SwitchPicker({ switches, rackId }) {
     el.scrollBy({ left: dir * step, behavior: 'smooth' });
   };
 
-  // Build a short label per switch — prefer position (U09 / U07) when the
+  // Build a short label per switch - prefer position (U09 / U07) when the
   // OCR caught it, fall back to the short model, then to the index.
   const tabLabel = (sw, i) => {
     if (sw.position) return sw.position;
@@ -2022,7 +2021,7 @@ function SwitchPicker({ switches, rackId }) {
                   }} />
                 )}
 
-                {/* Tiny status dot — black filled for active, hollow for inactive */}
+                {/* Tiny status dot - black filled for active, hollow for inactive */}
                 <span aria-hidden="true" style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -2111,7 +2110,7 @@ export default function SwitchInformationPage() {
   const switchData = useSwitchData(rackId);
 
   // The page root is `.page.page-full` (height:100dvh, overflow:hidden), so the
-  // content must scroll in its OWN container — otherwise long spec tables get
+  // content must scroll in its OWN container - otherwise long spec tables get
   // clipped and the page can't be scrolled on mobile. A ref on that container
   // also drives the "Back to top" button.
   const scrollRef = useRef(null);

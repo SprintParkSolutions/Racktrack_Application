@@ -4,8 +4,8 @@ import styles from './ErrorBoundary.module.css';
 
 /**
  * Per-route error boundary. The root ErrorBoundary (around <App/>) catches
- * everything, but when it does it replaces the WHOLE app — providers, nav,
- * background handlers and all — and its "Try again" only re-renders the same
+ * everything, but when it does it replaces the WHOLE app - providers, nav,
+ * background handlers and all - and its "Try again" only re-renders the same
  * cached failure. This boundary sits between the router and the route elements
  * so a failure in one route is contained: the shell, the Android back handler
  * and the scan resumer keep running, and recovery is meaningful.
@@ -14,7 +14,7 @@ import styles from './ErrorBoundary.module.css';
  *
  *  - A code-split chunk that fails to download. React caches a rejected lazy
  *    import PERMANENTLY (the Rejected status is terminal), so re-rendering the
- *    same <Suspense> just re-throws the cached rejection — only a fresh page
+ *    same <Suspense> just re-throws the cached rejection - only a fresh page
  *    load can re-request the chunk. So the recovery here is a hard reload, and
  *    the copy says the page could not be loaded rather than "something broke".
  *

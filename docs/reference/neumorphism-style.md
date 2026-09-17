@@ -4,7 +4,7 @@
 **Document date:** 31 July 2026 · Part of the RackTrack documentation set.
 
 The look used on the help-bot feedback form
-(`docs/handouts/racktrack-bot-feedback-form.html`), written down so it can be
+(`docs/support-bot/help-bot-feedback-form.html`), written down so it can be
 applied to the app. See also [ui-reference-developers.md](ui-reference-developers.md)
 for the design system this has to live inside.
 

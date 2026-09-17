@@ -1,0 +1,139 @@
+<!-- https://claude.ai/artifact/43cMa7YaDsPgENG2GREcjn -->
+<title>Knowing Which Device</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --paper:#fbfcfb; --ink:#161a17; --body:#39423c; --muted:#66706a; --quiet:#98a19b;
+    --rule:#e6ebe7; --rule2:#cfd6d0; --card:#fff;
+    --accent:#8a6d1f; --accent-bg:#f7f1e2; --sure:#0b6a44; --sure-bg:#eaf4ee;
+    --no:#9d4a3f; --no-bg:#f7efed; --info:#1f6feb; --info-bg:#eaf1fd;
+    --serif:"Newsreader",Georgia,serif; --sans:"Source Sans 3",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--body);font-family:var(--sans);font-size:16.5px;line-height:1.58;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px}
+
+  header{padding:48px 0 22px;border-bottom:1px solid var(--rule)}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(33px,6vw,48px);line-height:1.04;letter-spacing:-.015em;color:var(--ink);margin:0 0 12px}
+  .lede{font-family:var(--serif);font-size:clamp(17px,2.4vw,20px);line-height:1.45;color:var(--muted);margin:0;max-width:56ch}
+  .meta{margin:18px 0 0;display:flex;flex-wrap:wrap;gap:5px 22px;font-family:var(--mono);font-size:11px;color:var(--quiet)}
+  .meta a{color:var(--info);text-decoration:none}
+
+  .problem{margin:26px 0 0;padding:18px 20px;border-radius:10px;background:var(--accent-bg);border-left:3px solid var(--accent)}
+  .problem h2{font-family:var(--serif);font-weight:600;font-size:20px;color:var(--ink);margin:0 0 7px}
+  .problem p{margin:0;font-size:16px;color:var(--body);max-width:64ch}
+
+  .items{margin:30px 0 0}
+  .sectlabel{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--quiet);margin:0 0 4px}
+  .item{padding:22px 0;border-bottom:1px solid var(--rule)}
+  .item-head{display:flex;align-items:center;gap:12px}
+  .num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--mono);font-size:14px;font-weight:600;display:grid;place-items:center}
+  .item h3{font-family:var(--serif);font-weight:600;font-size:clamp(20px,3.2vw,24px);color:var(--ink);margin:0;letter-spacing:-.01em}
+  .lines{margin:11px 0 0;padding-left:42px}
+  .lines p{margin:0 0 6px;font-size:16px;max-width:62ch}
+  .lines .b{font-weight:700;color:var(--ink)}
+
+  .tiers{margin:12px 0 0;padding-left:42px;display:grid;gap:8px}
+  .tier{display:flex;gap:10px;font-size:15px;align-items:baseline}
+  .tier b{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);white-space:nowrap;min-width:56px}
+
+  .ranks{margin:12px 0 0;padding-left:42px;font-size:15.5px;color:var(--body)}
+  .ranks ol{margin:0;padding-left:20px} .ranks li{margin:0 0 3px}
+  .ranks .strong{color:var(--sure);font-weight:600} .ranks .weak{color:var(--muted)}
+
+  .outcomes{margin:12px 0 0;padding-left:42px;display:grid;gap:7px}
+  .oc{display:flex;gap:10px;align-items:baseline;font-size:15.5px}
+  .oc b{font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:20px;white-space:nowrap;min-width:92px;text-align:center}
+  .oc.y b{background:var(--sure-bg);color:var(--sure)} .oc.n b{background:var(--no-bg);color:var(--no)}
+
+  .built{margin:32px 0 0;padding:18px 20px;border-radius:10px;background:var(--no-bg);border-left:3px solid var(--no)}
+  .built h2{font-family:var(--serif);font-weight:600;font-size:20px;color:var(--ink);margin:0 0 7px}
+  .built p{margin:0;font-size:16px;color:var(--body);max-width:64ch}
+
+  footer{padding:24px 0 60px;color:var(--muted);font-size:13.5px}
+  footer p{margin:0 0 6px;max-width:72ch} footer b{color:var(--ink);font-weight:600}
+  footer a{color:var(--info);text-decoration:none}
+  @media(max-width:520px){ .lines,.tiers,.ranks,.outcomes{padding-left:0} }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">RackTrack &middot; design, the companion to Knowing Which Rack</p>
+    <h1>Knowing Which Device</h1>
+    <p class="lede">Once we know which rack it is, the next question is which network device is which box in the photo, and whether it is the one the records expect.</p>
+    <div class="meta"><span>15 September 2026</span><span>from the Rack Binding Standard, draft 2</span><span>almost none built</span></div>
+  </header>
+
+  <div class="problem">
+    <h2>The problem, in one breath</h2>
+    <p>The physical rack and the network records are kept by different people, and the line between them is the part nobody owns. Today a device belongs to whatever rack someone typed it into, we tell one box from another by its shape (how many ports it has), which decides nothing in a room of identical switches, and every guess is shown with the same certainty. The fix is to take a device's identity from the hardware itself, rate every match, and be willing to say "not sure."</p>
+  </div>
+
+  <div class="items">
+    <p class="sectlabel">How we decide which device is which box</p>
+
+    <section class="item">
+      <div class="item-head"><span class="num">1</span><h3>Identity comes from the hardware, never a name</h3></div>
+      <div class="lines">
+        <p>A device is what the factory set: the address or serial burned into the chassis, which you can also read off the printed label. That survives a rename, a new IP address, a config wipe, or a move to another rack. A name someone typed, even a tidy one, is never an identity, because it is configuration and it drifts.</p>
+      </div>
+    </section>
+
+    <section class="item">
+      <div class="item-head"><span class="num">2</span><h3>Grade the gear first</h3></div>
+      <div class="tiers">
+        <div class="tier"><b>Modelled</b><span>The records already hold every device's rack and shelf. Matching becomes a check: the photo confirms it and reports where it drifted.</span></div>
+        <div class="tier"><b>Instrumented</b><span>The hardware publishes its own serial, parts list, and neighbours. Identity is certain without any database, and position reads well from stack order and the photo.</span></div>
+        <div class="tier"><b>Bare</b><span>Almost nothing published, like our own office switches. Identity still works from the chassis address; position is learned once from a person, then remembered.</span></div>
+      </div>
+      <div class="lines"><p style="margin-top:10px">One rack routinely holds all three, so the grade is judged per device, never for the whole customer.</p></div>
+    </section>
+
+    <section class="item">
+      <div class="item-head"><span class="num">3</span><h3>Rank the evidence, strongest first</h3></div>
+      <div class="ranks">
+        <ol>
+          <li><span class="strong">A person on site placed this device at this shelf.</span></li>
+          <li>The device states its own rack and shelf.</li>
+          <li>The records say so.</li>
+          <li>It was bound here before and nothing has contradicted it.</li>
+          <li>A serial or asset tag read off the box matches a known device.</li>
+          <li>Stack order lines up with the order of boxes in the photo.</li>
+          <li>It sits next to a device we have already placed.</li>
+          <li><span class="weak">Only the shape agrees: port count, size, model. Weakest.</span></li>
+        </ol>
+        <p style="margin:8px 0 0;color:var(--muted);font-size:14.5px">Higher rank wins a conflict, the loser is kept, and the disagreement is reported as a finding of its own. In a well-run estate, that finding is the most valuable thing we produce.</p>
+      </div>
+    </section>
+
+    <section class="item">
+      <div class="item-head"><span class="num">4</span><h3>Four honest outcomes, and only the sure ones are written</h3></div>
+      <div class="outcomes">
+        <div class="oc y"><b>Confirmed</b><span>A person, the device, or the records said so. Written plainly.</span></div>
+        <div class="oc y"><b>Probable</b><span>A clear winner on good evidence. Written, but marked as probable, and correctable in one tap.</span></div>
+        <div class="oc n"><b>Possible</b><span>Only the shape fits, and exactly one candidate. Put to a person. Never written.</span></div>
+        <div class="oc n"><b>Unidentified</b><span>Nothing fits, or several fit equally. Shown with the reason. Never written.</span></div>
+      </div>
+      <div class="lines"><p style="margin-top:10px">Writing a guess into the customer's records turns our uncertainty into their fact, so a guess never gets written.</p></div>
+    </section>
+
+    <section class="item">
+      <div class="item-head"><span class="num">5</span><h3>Narrow before matching, never the whole estate</h3></div>
+      <div class="lines">
+        <p>In an estate of five hundred devices, comparing against all of them is a filtering problem, not a matching one. Start from the devices the records place in this rack, then ones bound here before, then their stack peers and neighbours, then what draws power in this rack. If the shortlist stays too large to be honest, the answer is "unidentified," with the reason, rather than a confident wrong pick.</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="built">
+    <h2>What is built today</h2>
+    <p>Almost none of this. Right now a device belongs to the rack someone typed it into, matching leans on shape, and every result looks equally sure. The one rule already in place is repairing a misread shelf label, so <b>U1S</b> becomes <b>U15</b>. Everything above is the "sort out the devices inside" piece of the build plan, and the largest of the four.</p>
+  </div>
+
+  <footer>
+    <p>Drawn from the <b>Rack Binding Standard</b> (draft 2), which sets it out in forty numbered clauses, with the real situations written up in the finding-a-racks-switches note.</p>
+    <p>Companion to <b>Knowing Which Rack</b>, which covers the step before this one: telling which real rack a photo is. See both together.</p>
+  </footer>
+</div>

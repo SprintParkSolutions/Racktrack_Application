@@ -10,7 +10,7 @@ export default function TourIntroModal() {
   const [stage, setStage] = useState('ask'); // 'ask' | 'welcome'
 
   // Escape closes it, Tab stays inside it, focus returns where it came from,
-  // and the page behind stops scrolling — the same contract every other dialog
+  // and the page behind stops scrolling - the same contract every other dialog
   // in the app honours (MoreSheet, CmdbApprovalModal, OrgConsolePage). The
   // hook must run before the early return below.
   const panelRef = useModalA11y(dismissIntro, { active: showIntro });

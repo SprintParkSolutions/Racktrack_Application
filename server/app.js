@@ -29,6 +29,7 @@ const { WorkerPool, isFatalWorkerError } = require('./worker-pool');
 const auth = require('./auth');
 const audit = require('./audit');
 const tenant = require('./lib/tenant');
+const estate = require('./lib/estate');
 const rackAccess = require('./lib/rack_access');
 const ocrCache = require('./lib/ocr_cache');
 const imageIntake = require('./lib/image_intake');
@@ -391,6 +392,12 @@ app.use(cors((req, cb) => {
 // confirmed. Capturing the raw body here, ahead of the JSON parser, is the only
 // place this can be done.
 app.use('/api/marketplace/stripe/webhook', express.raw({ type: 'application/json' }));
+// The organisation profile carries a small logo as a data: URI (200 KB
+// decoded, ~275 KB as base64). The default 100 kb JSON limit below would
+// refuse it with a 413 before the setup router ever saw it, so that one path
+// is parsed here with a larger limit; the parser below then skips a body
+// already read.
+app.use('/api/setup/org', express.json({ limit: '320kb' }));
 app.use(express.json());
 // Must precede anything that reads req.cookies — requireAuth, softAuthPayload
 // and the CSRF check below all do.
@@ -659,6 +666,25 @@ try {
 } catch (err) {
   logger.warn({ event: 'router.load_failed', router: 'netbox', err: err.message },
     'NetBox routers not loaded');
+}
+
+// Organisation setup — the estate tree behind the minimal setup: what a
+// datacentre (a Site) contains, who approves writes for it, which rules it
+// accepted, and whether it is set up enough to scan. Read and written from
+// the portal and the app; both gate on GET /api/setup/state.
+//
+// Mounted behind requireAuth the way the NetBox routers are behind theirs;
+// who may read or write WHICH Site is decided inside the router (owner, the
+// org's admin, the Site's manager write; the Site's members read; strangers
+// get 404). /api/analyze is deliberately NOT gated on canScan — the client
+// decides what to show; the server keeps accepting scans.
+try {
+  app.use('/api/setup', auth.requireAuth, require('./routes/setup'));
+  logger.info({ event: 'router.loaded', router: 'setup', prefix: '/api/setup' },
+    'setup router loaded');
+} catch (err) {
+  logger.warn({ event: 'router.load_failed', router: 'setup', err: err.message },
+    'setup router not loaded');
 }
 
 // Demo tenant-mat — a prototype dataset for the /demo/topology UI.
@@ -3834,6 +3860,47 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
     return res.status(403).json({ error: 'Your organization is awaiting owner approval before you can scan.' });
   }
 
+  // Optional binding to a space the admin set up (organisation setup). The
+  // phone sends `spaceId` alongside the image. The space must belong to the
+  // same Site the scan is claimed for — the tenant claimRack uses below — or
+  // the scan is refused before any work is done, 404 like any resource in
+  // another Site. Without spaceId nothing in this handler changes.
+  let _scanSpace = null;
+  const _spaceIdRaw = req.body?.spaceId;
+  if (_spaceIdRaw !== undefined && _spaceIdRaw !== null && String(_spaceIdRaw).trim() !== '') {
+    const raw = String(_spaceIdRaw).trim();
+    let sp = null;
+    try {
+      sp = /^\d+$/.test(raw) ? estate.getSpace(Number(raw)) : null;
+    } catch (err) {
+      safeUnlink(req.file.path);
+      logger.error({ event: 'scan.space_lookup_failed', spaceId: raw, err: err.message }, 'space lookup failed');
+      return res.status(500).json({ error: 'Could not look up the space' });
+    }
+    const bindTenant = scanOwnerTenantId(_a);
+    if (!sp || !bindTenant || Number(sp.tenant_id) !== Number(bindTenant)) {
+      safeUnlink(req.file.path);
+      logger.warn({ event: 'scan.space_denied', spaceId: raw, tenantId: bindTenant, userId: _a?.sub },
+        'scan asked for a space outside the caller Site');
+      return res.status(404).json({ error: 'Space not found' });
+    }
+    _scanSpace = { id: sp.id, name: sp.name };
+  }
+  // Spread into the response and the persisted meta; empty when no space was given.
+  const _spaceFields = _scanSpace ? { space: _scanSpace } : {};
+  // Record "this rack lives in that space" (source: learned) for whichever
+  // rack id the scan ends up serving. Never fatal: the scan result is the
+  // product, the binding is bookkeeping.
+  const _bindScanSpace = (boundRackId, tenantId, userId) => {
+    if (!_scanSpace || !tenantId) return;
+    try {
+      estate.upsertRack(tenantId, { rack_id: boundRackId, space_id: _scanSpace.id, source: 'learned' }, userId);
+    } catch (err) {
+      logger.warn({ event: 'scan.space_bind_failed', rackId: boundRackId, spaceId: _scanSpace.id, err: err.message },
+        'could not record the rack in its space');
+    }
+  };
+
   let tmpPath = req.file.path;
   const reqStart = Date.now();
   const timings = {};
@@ -3900,15 +3967,17 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
         const m = readMeta(rackId) || {};
         if (!m.first_scanned_at) m.first_scanned_at = m.timestamp || new Date().toISOString();
         m.timestamp = new Date().toISOString();
+        if (_scanSpace) m.space = _scanSpace;
         writeMeta(rackId, m);
       } catch (_) { /* non-fatal — history just keeps the old time */ }
+      _bindScanSpace(rackId, _scanTenantId, _scanUserId);
 
       timings.total_ms = Date.now() - reqStart;
       timings.cached = true;
       timings.al_applied = _alAppliedCacheHit;
       audit.log({ req, action: 'scan.create', status: 'ok', targetType: 'rack', targetId: rackId, payload: { cached: true, al_applied: _alAppliedCacheHit } });
       scheduleCanonicalRefresh(rackId);
-      return res.json({ ...buildResponse(rackId, true), timings });
+      return res.json({ ...buildResponse(rackId, true), ..._spaceFields, timings });
     }
 
     // ── Confirmed-rack bypass ──────────────────────────────
@@ -3932,11 +4001,18 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
             match: cr.confirmed.match_type }, `served confirmed rack ${matchId} for re-upload`);
           recordEvent('scan.confirmed_bypass', { matchId, match: cr.confirmed.match_type });
           if (_scanTenantId) tenant.claimRack(_scanTenantId, matchId, _scanUserId);
+          // The rack the user is looking at is the confirmed one, so that is
+          // the id the space is recorded against.
+          _bindScanSpace(matchId, _scanTenantId, _scanUserId);
+          if (_scanSpace) {
+            try { const m = readMeta(matchId) || {}; m.space = _scanSpace; writeMeta(matchId, m); }
+            catch (_) { /* non-fatal — the DB row above still carries the binding */ }
+          }
           timings.total_ms = Date.now() - reqStart;
           timings.confirmed_bypass = true;
           audit.log({ req, action: 'scan.create', status: 'ok', targetType: 'rack',
             targetId: matchId, payload: { confirmed_bypass: true, match: cr.confirmed.match_type } });
-          return res.json({ ...buildResponse(matchId, true), timings,
+          return res.json({ ...buildResponse(matchId, true), ..._spaceFields, timings,
             servedFromConfirmed: true, confirmedRackId: matchId });
         }
       }
@@ -4027,8 +4103,10 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
       quality:    quality.metrics || null,
       qualityWarning:    quality.warning || null,
       qualityWarningMsg: quality.warning_msg || null,
+      ..._spaceFields,  // { space: { id, name } } only when the scan named one
     };
     writeMeta(rackId, meta);
+    _bindScanSpace(rackId, _scanTenantId, _scanUserId);
 
     const tPipeStart = Date.now();
     await runPipelineAnalyze(imagePath, rackDir, softAuthPayload(req)?.organizationId || null);
@@ -4122,7 +4200,7 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
     }
 
     scheduleCanonicalRefresh(rackId);
-    res.json({ ...buildResponse(rackId, false), timings });
+    res.json({ ...buildResponse(rackId, false), ..._spaceFields, timings });
 
   } catch (err) {
     // Clean up tmp if still around
@@ -9924,6 +10002,53 @@ app.get('/api/scan/:rackId/ocr-devices', (req, res) => {
 // EasyOCR on CPU). Cheaper than the full-image pass because we only OCR
 // ~24% of the pixels (12% on each margin).
 const SIDE_LABELS_TIMEOUT_MS = 3 * 60_000;
+// GET /api/scan/:rackId/physical-layer
+// The physical layer report for one rack: rack label or id, device labels,
+// ports, cables and OCR metadata, built by pipeline.physical_layer from what
+// the scan produced (device_unit_map, labels-front, side_labels, ocr_devices).
+// Cached as outputs/<rackId>/physical_layer.json; pass ?refresh=1 to rebuild.
+const PHYSICAL_LAYER_TIMEOUT_MS = 60_000;
+app.get('/api/scan/:rackId/physical-layer', (req, res) => {
+  const { rackId } = req.params;
+  if (!/^RK-[A-Z0-9]+$/i.test(rackId)) {
+    return res.status(400).json({ ok: false, error: 'bad rack id' });
+  }
+  const rackDir = path.join(outputsDir, rackId);
+  const outPath = path.join(rackDir, 'physical_layer.json');
+  if (!fs.existsSync(rackDir)) {
+    return res.status(404).json({ ok: false, error: `rack ${rackId} not found` });
+  }
+  const serve = () => {
+    try {
+      return res.json(JSON.parse(fs.readFileSync(outPath, 'utf8')));
+    } catch (e) {
+      return res.status(500).json({ ok: false, error: `physical layer unreadable: ${e.message}` });
+    }
+  };
+  if (!req.query.refresh && fs.existsSync(outPath)) return serve();
+  const child = spawnChild(pythonCmd,
+    ['-u', '-m', 'pipeline.physical_layer', rackId],
+    { cwd: PROJECT_ROOT,
+      env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' } });
+  let stderr = '', settled = false;
+  const send = (status, body) => { if (settled) return; settled = true; res.status(status).json(body); };
+  const killer = setTimeout(() => {
+    try { child.kill('SIGKILL'); } catch (_) {}
+    send(504, { ok: false, error: 'physical layer timed out', rackId });
+  }, PHYSICAL_LAYER_TIMEOUT_MS);
+  child.stderr.on('data', c => { stderr += c.toString(); });
+  child.on('error', err => { clearTimeout(killer); send(500, { ok: false, error: `spawn failed: ${err.message}` }); });
+  child.on('close', (code) => {
+    clearTimeout(killer);
+    if (settled) return;
+    if (code !== 0 || !fs.existsSync(outPath)) {
+      return send(500, { ok: false, error: stderr.slice(-400) || `exit ${code}`, rackId });
+    }
+    settled = true;
+    serve();
+  });
+});
+
 app.post('/api/scan/:rackId/side-labels', (req, res) => {
   const { rackId } = req.params;
   const rackDir = path.join(outputsDir, rackId);

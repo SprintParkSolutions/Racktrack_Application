@@ -43,6 +43,6 @@ export async function fetchScanJob(id) {
     if (!r.ok) return { status: 'missing' };
     return await r.json();
   } catch (_) {
-    return { status: 'unknown' };   // transient network error — caller retries
+    return { status: 'unknown' };   // transient network error - caller retries
   }
 }

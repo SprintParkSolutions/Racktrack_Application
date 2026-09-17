@@ -1,4 +1,4 @@
-// Help — the full-screen home for DOT, the RackTrack assistant.
+// Help - the full-screen home for DOT, the RackTrack assistant.
 //
 // The floating panel (SupportBot) is for when you are mid-task and need one
 // answer. This page is for when you came here to ask something.
@@ -9,7 +9,7 @@
 //      with the number". Making people type a number into a chat box is poor
 //      on a phone, so the list renders as buttons. Tapping one sends that
 //      question verbatim, which the server matches exactly and answers from
-//      the verified text — no guessing in between.
+//      the verified text - no guessing in between.
 //
 //   2. Every reply is labelled with how it was produced: answered from
 //      verified documentation, unsure, or declined. A support bot that looks
@@ -29,7 +29,7 @@ import styles from './HelpPage.module.css';
 
 /* DOT's mark: a speech bubble carrying a single dot.
  *
- * Replaces /white_DOT.png + /dark_DOT.png — two raster files, one per theme,
+ * Replaces /white_DOT.png + /dark_DOT.png - two raster files, one per theme,
  * neither of which read as anything at 22px. Drawn here it inherits
  * currentColor (so one glyph covers both themes), stays sharp on every screen,
  * and is the same mark the home screen's Ask DOT button uses, which is what
@@ -69,7 +69,7 @@ function badgeFor(route) {
 /**
  * Split a suggestions reply into its lead-in and the numbered options, so the
  * options can be rendered as real controls. Falls back to plain text whenever
- * the shape is not what we expect — never lose the message trying to prettify it.
+ * the shape is not what we expect - never lose the message trying to prettify it.
  */
 function parseOptions(text) {
   const lines = String(text || '').split('\n');
@@ -146,7 +146,7 @@ export default function HelpPage() {
       if (!res.ok) {
         // Read the body before deciding what to say: on a 429 the server sends
         // the real limit and how long to wait. This used to hardcode "give it
-        // a few seconds", which was simply wrong — the wait can be minutes.
+        // a few seconds", which was simply wrong - the wait can be minutes.
         let err = null;
         try { err = await res.json(); } catch { /* non-JSON error body */ }
         setMessages((prev) => [...prev, {
@@ -209,8 +209,7 @@ export default function HelpPage() {
         {/* Every other destination reached from the menu has a back control;
             Help was the one that did not, so it was a dead end. */}
         <BackButton fallback="/scan" always />
-        {/* One line: mark, name, what it is. It used to be a stacked block —
-            a boxed logo, a heading and a subtitle — which took a third of a
+        {/* One line: mark, name, what it is. It used to be a stacked block - a boxed logo, a heading and a subtitle - which took a third of a
             phone screen before a single answer appeared. */}
         <span className={styles.mark} aria-hidden="true"><DotMark /></span>
         <h1 className={styles.title}>DOT</h1>
@@ -218,7 +217,7 @@ export default function HelpPage() {
 
         {/* A permanent way through to a human.
             Contact used to be reachable only from the phone's More menu, which
-            testers reported as not knowing it was there — and the one link to
+            testers reported as not knowing it was there - and the one link to
             it from this page appeared solely when DOT failed to answer, so a
             user who simply preferred a person had no route. The bottom bar is
             full at five slots, and Ask DOT now has a button on the home screen,

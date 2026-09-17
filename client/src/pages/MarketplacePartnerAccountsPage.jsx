@@ -6,7 +6,7 @@ import { useAuth } from '../AuthContext.jsx';
 import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
-   MarketplacePartnerAccountsPage — connect eBay, Amazon and Discord.
+   MarketplacePartnerAccountsPage - connect eBay, Amazon and Discord.
 
    Each card used to wear its partner's colours (a peach tile for eBay, a
    cream one for Amazon, periwinkle for Discord) around an emoji, which
@@ -15,14 +15,13 @@ import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
    thing that varies between them is the sentence explaining what
    connecting does and whether the status dot is green or grey.
 
-   Every alert() and confirm() on this page — six of them — is now
+   Every alert() and confirm() on this page - six of them - is now
    in-page: failures land in an error banner at the top, the webhook test
    reports into a success banner, and Disconnect asks for a second click
    in the card itself rather than in a browser dialog.
    ────────────────────────────────────────────────────────────────────── */
 
-/* Flat stroke glyphs at the page's ink, never the partner's brand mark —
-   a coloured logo would reintroduce exactly the inconsistency the
+/* Flat stroke glyphs at the page's ink, never the partner's brand mark - a coloured logo would reintroduce exactly the inconsistency the
    monochrome cards were built to remove. */
 const GLYPH = {
   ebay: (
@@ -86,7 +85,7 @@ export default function MarketplacePartnerAccountsPage() {
 
   // Feedback that used to be alert()/confirm(): one error banner, one
   // success banner, and the id of the card currently asking "are you
-  // sure?" — only ever one, so a second Disconnect closes the first.
+  // sure?" - only ever one, so a second Disconnect closes the first.
   const [error, setError]     = useState(null);
   const [notice, setNotice]   = useState(null);
   const [confirmId, setConfirmId] = useState(null);

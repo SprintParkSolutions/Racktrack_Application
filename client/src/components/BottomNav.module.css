@@ -1,4 +1,4 @@
-/* BottomNav — white bar, hairline top border, 3 inline tabs with a tiny
+/* BottomNav - white bar, hairline top border, 3 inline tabs with a tiny
    black dot below the active label. No floating FAB. */
 
 .nav {
@@ -25,7 +25,7 @@
   pointer-events: auto;
 }
 
-/* Each tab — vertical stack: icon + label + (active-only) dot indicator.
+/* Each tab - vertical stack: icon + label + (active-only) dot indicator.
    MORE is a <button>, the rest are links, so the element defaults have to be
    reset here or the button renders with a border and the system font. */
 .tab {
@@ -40,7 +40,7 @@
   padding: 8px 4px;
   gap: 2px;
   /* #757575 (not the old #6b6b6b) because the 10px uppercase label has to
-     clear WCAG AA 4.5:1 against the bar's white — #6b6b6b measured 1.92:1,
+     clear WCAG AA 4.5:1 against the bar's white - #6b6b6b measured 1.92:1,
      this measures 4.61:1. */
   color: #757575;
   transition: color 0.18s;
@@ -49,8 +49,8 @@
   background: none;
   border: 0;
   /* Equal slots that shrink together, so the bar fits a 320px phone rather
-     than pushing the last tab off the edge. Now five of them — Home, Scan,
-     2 Racks, Profile and More — which is why the two-rack entry carries a
+     than pushing the last tab off the edge. Now five of them - Home, Scan,
+     2 Racks, Profile and More - which is why the two-rack entry carries a
      shortened barLabel. */
   flex: 1 1 0;
   min-width: 0;
@@ -70,7 +70,7 @@
   color: var(--md-primary);
 }
 
-/* Inline SVG rather than the Material icon font — the tabs now share their
+/* Inline SVG rather than the Material icon font - the tabs now share their
    icons with the sidebar, so both navigations look like the same app. */
 .icon {
   width: 23px;
@@ -100,7 +100,7 @@
   margin-top: 2px;
 }
 
-/* Tiny dot indicator below the label — only visible on the active tab */
+/* Tiny dot indicator below the label - only visible on the active tab */
 .dot {
   width: 4px;
   height: 4px;

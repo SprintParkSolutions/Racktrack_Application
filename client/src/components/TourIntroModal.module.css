@@ -23,14 +23,13 @@
   border: 1px solid var(--md-outline-variant, #e0e0e0);
   border-radius: 16px;
   padding: 24px 20px;
-  /* Same two-layer shadow language as the step bubbles (TourOverlay.module.css)
-     — a tight contact shadow plus a soft ambient one. */
+  /* Same two-layer shadow language as the step bubbles (TourOverlay.module.css) - a tight contact shadow plus a soft ambient one. */
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.10), 0 20px 44px rgba(0, 0, 0, 0.18);
   animation: rt-tour-rise 0.2s cubic-bezier(0.2, 0.6, 0.3, 1);
 }
 
 /* NOTE: there were two rules here for a speech-bubble tail pointing at the
-   robot — `.panel::before` / `.panel::after`. Neither declared `content`, so
+   robot - `.panel::before` / `.panel::after`. Neither declared `content`, so
    neither pseudo-element was ever generated and no tail has ever rendered.
    Removed rather than completed: the robot now sits directly on the card's
    edge in both layouts, so there is no gap for a tail to bridge. */

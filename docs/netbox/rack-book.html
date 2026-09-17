@@ -1,0 +1,674 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Rack Book" | https://claude.ai/code/artifact/d035dd87-c330-4333-bf9c-b17f5de670c9 | artifact last updated 2026-09-11 | saved 2026-09-11 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>RackTrack Rack Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  color-scheme:light;
+  --ground:#ffffff; --surface:#f6f7fa; --surface-2:#edf0f5;
+  --hairline:#e3e7ee; --hairline-strong:#ccd4df;
+  --ink:#14181f; --ink-2:#4b5563; --ink-3:#79838f;
+  --physical:#b85f33; --logical:#0f7c79; --database:#3a51a0; --human:#a8710f;
+  --physical-bg:#fbf1eb; --logical-bg:#ebf5f4; --database-bg:#eef1fa; --human-bg:#fbf3e4;
+  --risk:#a8443c; --fix:#2b7350; --fix-bg:#ecf5f0; --risk-bg:#fbf0ef;
+  --display:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --sans:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.shell{padding:0 clamp(16px,3vw,48px) 80px}
+header.mast{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 28px;padding:30px 0 18px;border-bottom:1px solid var(--hairline)}
+.brandline{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(1.6rem,3vw,2.2rem);line-height:1.05;letter-spacing:-.025em;margin:0}
+.rackpick{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.rackpick select,.rackpick button{font:inherit}
+.status{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.status.ok{color:var(--fix)} .status.bad{color:var(--risk)}
+
+nav.steps{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--hairline);margin:0 0 26px;position:sticky;top:0;background:var(--ground);z-index:10}
+nav.steps::-webkit-scrollbar{display:none}
+nav.steps button{background:none;border:0;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--display);font-weight:600;font-size:.9rem;color:var(--ink-3);padding:13px 16px 11px;white-space:nowrap;display:flex;gap:9px;align-items:baseline}
+nav.steps button em{font-family:var(--mono);font-style:normal;font-size:.68rem;opacity:.7}
+nav.steps button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+nav.steps button:focus-visible{outline:2px solid var(--database);outline-offset:-3px}
+
+.panel{display:none}.panel.on{display:block}
+.sec-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 16px;margin:0 0 6px}
+h2{font-family:var(--display);font-weight:600;font-size:1.35rem;letter-spacing:-.02em;margin:0}
+h3{font-family:var(--display);font-weight:600;font-size:1.02rem;margin:22px 0 8px}
+.lede{color:var(--ink-2);margin:0 0 18px;max-width:80ch}
+.hint{font-size:.86rem;color:var(--ink-3);margin:6px 0 0}
+code{font-family:var(--mono);font-size:.8em;background:var(--surface-2);border:1px solid var(--hairline);border-radius:4px;padding:1px 6px}
+
+.grid{display:grid;grid-template-columns:1fr;gap:12px 22px}
+@media (min-width:760px){.grid{grid-template-columns:1fr 1fr}}
+@media (min-width:1200px){.grid.four{grid-template-columns:repeat(4,1fr)}.grid.three{grid-template-columns:repeat(3,1fr)}}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.84rem;color:var(--ink-3)}
+label.f b{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+input,select,textarea{font:inherit;font-size:.93rem;color:var(--ink);background:var(--ground);border:1px solid var(--hairline-strong);border-radius:7px;padding:7px 9px;min-width:0;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--database);outline-offset:-1px;border-color:var(--database)}
+input[type=checkbox]{width:auto;transform:translateY(1px)}
+input.num{font-family:var(--mono);font-size:.86rem}
+
+.tscroll{overflow-x:auto;margin-top:10px;border:1px solid var(--hairline);border-radius:10px;max-width:100%}
+.split > *,.panel,.panel > *{min-width:0}
+#panels{min-width:0;max-width:100%}
+table.ed{width:100%;border-collapse:collapse;font-size:.9rem;min-width:720px}
+table.ed th{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:500;text-align:left;padding:10px 8px;background:var(--surface);border-bottom:1px solid var(--hairline);white-space:nowrap;position:sticky;top:0}
+table.ed td{padding:5px 6px;border-bottom:1px solid var(--hairline);vertical-align:middle}
+table.ed tr:last-child td{border-bottom:0}
+table.ed input,table.ed select{padding:5px 7px;font-size:.88rem;border-color:var(--hairline)}
+table.ed td.n{width:44px;text-align:center;font-family:var(--mono);font-size:.72rem;color:var(--ink-3)}
+table.ed td.x{width:40px;text-align:center}
+table.ed .del{background:none;border:0;color:var(--ink-3);cursor:pointer;font-size:1.1rem;line-height:1;padding:4px 6px;border-radius:6px}
+table.ed .del:hover{color:var(--risk);background:var(--risk-bg)}
+tr.bad td{background:var(--risk-bg)}
+
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 0}
+button.btn{font:inherit;font-family:var(--display);font-weight:600;font-size:.86rem;color:var(--ink);background:var(--surface);border:1px solid var(--hairline-strong);border-radius:8px;padding:8px 14px;cursor:pointer}
+button.btn:hover{border-color:var(--ink)}
+button.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+button.btn.primary:hover{background:#000}
+button.btn.quiet{background:none;border-color:transparent;color:var(--ink-2)}
+button.btn:disabled{opacity:.45;cursor:default}
+button.btn:focus-visible{outline:2px solid var(--database);outline-offset:2px}
+
+.gen{border:1px dashed var(--hairline-strong);border-radius:10px;padding:14px 16px;margin-top:16px;background:var(--surface)}
+.gen h4{font-family:var(--mono);font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;font-weight:500}
+.gen .row{display:grid;grid-template-columns:1fr;gap:8px 12px;align-items:end}
+@media (min-width:900px){.gen .row{grid-template-columns:repeat(6,minmax(0,1fr)) auto}}
+
+.split{display:grid;grid-template-columns:1fr;gap:22px}
+@media (min-width:1100px){.split{grid-template-columns:minmax(0,1fr) 300px;align-items:start}}
+.elev{position:sticky;top:60px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface);padding:14px 14px 10px}
+.elev h4{font-family:var(--mono);font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;font-weight:500}
+.elev svg{display:block;width:100%;height:auto}
+.elev .u{fill:var(--ground);stroke:var(--hairline)}
+.elev .dev{fill:var(--database-bg);stroke:var(--database);stroke-width:1}
+.elev .dev.pp{fill:var(--physical-bg);stroke:var(--physical)}
+.elev .dev.pdu{fill:var(--human-bg);stroke:var(--human)}
+.elev .dev.bad{fill:var(--risk-bg);stroke:var(--risk)}
+.elev text{font-family:var(--sans);font-size:9.5px;fill:var(--ink)}
+.elev text.un{font-family:var(--mono);font-size:7.5px;fill:var(--ink-3)}
+
+.cards{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+@media (min-width:760px){.cards{grid-template-columns:1fr 1fr}}
+@media (min-width:1200px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{border:1px solid var(--hairline);border-radius:12px;padding:16px 18px;background:var(--ground);display:flex;flex-direction:column;gap:8px}
+.card h4{font-family:var(--display);font-weight:600;font-size:1rem;margin:0}
+.card p{font-size:.88rem;color:var(--ink-2);margin:0;flex:1}
+.card .btn{align-self:flex-start}
+.card span.fmt{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--database)}
+
+.checks{list-style:none;margin:10px 0 0;padding:0;border:1px solid var(--hairline);border-radius:10px;background:var(--surface)}
+.checks li{padding:9px 14px;border-top:1px solid var(--hairline);font-size:.9rem;display:flex;gap:10px;align-items:baseline}
+.checks li:first-child{border-top:0}
+.checks li b{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;font-weight:500;flex:none;width:52px}
+.checks li.ok b{color:var(--fix)} .checks li.bad b{color:var(--risk)} .checks li.warn b{color:var(--human)}
+textarea.io{font-family:var(--mono);font-size:.78rem;min-height:140px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:.88rem;padding:9px 16px;border-radius:99px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="shell">
+<header class="mast">
+  <div>
+    <p class="brandline">RackTrack &middot; ground truth for one rack</p>
+    <h1>Rack Book</h1>
+  </div>
+  <div class="rackpick">
+    <label class="f"><b>Rack</b><select id="rackSel"></select></label>
+    <button class="btn" id="newRack">New rack</button>
+    <button class="btn quiet" id="delRack">Delete</button>
+    <span class="status" id="saveStatus">not saved yet</span>
+  </div>
+</header>
+
+<nav class="steps" role="tablist" aria-label="Steps"></nav>
+
+<main id="panels"></main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+// ---------- NetBox choice lists (values are NetBox's own) ----------
+const C = {
+  ifType: [['1000base-t','1G RJ45'],['100base-tx','100M RJ45'],['2.5gbase-t','2.5G RJ45'],['10gbase-t','10G RJ45'],['1000base-x-sfp','1G SFP'],['10gbase-x-sfpp','10G SFP+'],['25gbase-x-sfp28','25G SFP28'],['40gbase-x-qsfpp','40G QSFP+'],['100gbase-x-qsfp28','100G QSFP28'],['lag','LAG'],['virtual','Virtual'],['other','Other']],
+  portType: [['8p8c','RJ45 (8P8C)'],['lc','LC'],['lc-upc','LC/UPC'],['sc','SC'],['mpo','MPO'],['other','Other']],
+  ppType: [['iec-60320-c14','IEC C14'],['iec-60320-c20','IEC C20'],['nema-5-15p','NEMA 5-15P'],['nema-l6-30p','NEMA L6-30P'],['other','Other']],
+  poType: [['iec-60320-c13','IEC C13'],['iec-60320-c19','IEC C19'],['nema-5-15r','NEMA 5-15R'],['other','Other']],
+  cableType: [['cat5e','Cat5e'],['cat6','Cat6'],['cat6a','Cat6a'],['dac-passive','DAC passive'],['dac-active','DAC active'],['mmf-om3','MMF OM3'],['mmf-om4','MMF OM4'],['smf-os2','SMF OS2'],['power','Power'],['other','Other']],
+  cableStatus: [['connected','Connected'],['planned','Planned'],['decommissioning','Decommissioning']],
+  devStatus: [['active','Active'],['planned','Planned'],['staged','Staged'],['offline','Offline'],['failed','Failed'],['decommissioning','Decommissioning']],
+  rackStatus: [['active','Active'],['planned','Planned'],['reserved','Reserved'],['available','Available'],['deprecated','Deprecated']],
+  rackForm: [['4-post-cabinet','4-post cabinet'],['4-post-frame','4-post frame'],['2-post-frame','2-post frame'],['wall-frame','Wall frame'],['wall-cabinet','Wall cabinet']],
+  width: [['19','19 inch'],['21','21 inch'],['23','23 inch'],['10','10 inch']],
+  face: [['front','Front'],['rear','Rear']],
+  airflow: [['front-to-rear','Front to rear'],['rear-to-front','Rear to front'],['passive','Passive'],['','Unknown']],
+  sideType: [['dcim.interface','Interface'],['dcim.frontport','Front port'],['dcim.rearport','Rear port'],['dcim.powerport','Power port'],['dcim.poweroutlet','Power outlet']],
+  ifMode: [['','Access or none'],['access','Access'],['tagged','Tagged'],['tagged-all','Tagged all']],
+  cRole: [['Administrative','Administrative'],['Technical','Technical'],['On-site','On-site'],['Escalation','Escalation'],['Vendor','Vendor']],
+  cScope: [['site','Site'],['rack','Rack']],
+  lengthUnit: [['m','m'],['cm','cm'],['ft','ft'],['in','in']],
+};
+const slug = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+
+// ---------- state ----------
+function blank(name){
+  return {
+    schema:'rackbook/1', updatedAt:'', title:name||'Rack',
+    site:{name:'',slug:'',status:'active',facility:'',time_zone:'',physical_address:'',latitude:'',longitude:''},
+    location:{name:'',slug:''},
+    rack:{name:name||'',facility_id:'',status:'active',form_factor:'4-post-cabinet',width:'19',u_height:42,desc_units:false,serial:'',asset_tag:'',comments:''},
+    manufacturers:[], device_types:[], device_roles:[{name:'Access switch',slug:'access-switch',color:'2196f3'},{name:'Patch panel',slug:'patch-panel',color:'9e9e9e'},{name:'PDU',slug:'pdu',color:'ff9800'}],
+    devices:[], interfaces:[], rear_ports:[], front_ports:[], power_ports:[], power_outlets:[], inventory_items:[],
+    vlans:[], prefixes:[], ip_addresses:[], cables:[], contacts:[],
+  };
+}
+let S = blank('Rack');
+let rackId = null;
+let db = null, downloads = null;
+let dirty = false, saveTimer = null;
+
+const $ = (s,el)=> (el||document).querySelector(s);
+const el = (tag, attrs, ...kids) => { const e=document.createElement(tag); for (const [k,v] of Object.entries(attrs||{})){ if(v==null) continue; if(k==='class') e.className=v; else if(k.startsWith('on')) e.addEventListener(k.slice(2),v); else if(k==='html') e.innerHTML=v; else e.setAttribute(k,v);} for (const k of kids){ if(k==null) continue; e.append(k.nodeType?k:document.createTextNode(String(k))); } return e; };
+function toast(t){ const x=$('#toast'); x.textContent=t; x.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>x.classList.remove('on'),1800); }
+function setStatus(t,cls){ const s=$('#saveStatus'); s.textContent=t; s.className='status'+(cls?' '+cls:''); }
+
+// ---------- persistence: db when available, localStorage always ----------
+function lsKey(id){ return 'rackbook:'+id; }
+function lsIndexKey(){ return 'rackbook:index'; }
+function lsIndex(){ try{ return JSON.parse(localStorage.getItem(lsIndexKey())||'[]'); }catch(e){ return []; } }
+function lsSetIndex(ids){ try{ localStorage.setItem(lsIndexKey(), JSON.stringify(ids)); }catch(e){} }
+
+function markDirty(){ dirty=true; setStatus('unsaved'); clearTimeout(saveTimer); saveTimer=setTimeout(saveNow, 900); }
+async function saveNow(){
+  if(!rackId) return;
+  S.updatedAt = new Date().toISOString();
+  try{ localStorage.setItem(lsKey(rackId), JSON.stringify(S)); const ix=lsIndex(); if(!ix.includes(rackId)) lsSetIndex(ix.concat(rackId)); }catch(e){}
+  if(db){
+    try{ await db.doc('racks/'+rackId).set(JSON.parse(JSON.stringify(S))); dirty=false; setStatus('saved to the page database','ok'); }
+    catch(e){ setStatus('saved on this device only','bad'); }
+  } else { dirty=false; setStatus('saved on this device only'); }
+  refreshRackList();
+}
+async function listRacks(){
+  const ids=new Set(lsIndex());
+  if(db){ try{ const q=await db.collection('racks').get(); q.docs.forEach(d=>ids.add(d.id)); }catch(e){} }
+  return [...ids].sort();
+}
+async function loadRack(id){
+  let data=null;
+  if(db){ try{ const snap=await db.doc('racks/'+id).get(); if(snap.exists) data=JSON.parse(JSON.stringify(snap.data())); }catch(e){} }
+  if(!data){ try{ data=JSON.parse(localStorage.getItem(lsKey(id))||'null'); }catch(e){} }
+  if(!data) data=blank(id);
+  S = Object.assign(blank(id), data);
+  rackId=id; dirty=false; setStatus(db?'loaded':'loaded from this device');
+  try{ localStorage.setItem('rackbook:last', id); }catch(e){}
+  renderAll();
+}
+async function refreshRackList(){
+  const sel=$('#rackSel'); const ids=await listRacks(); sel.innerHTML='';
+  ids.forEach(id=>sel.append(el('option',{value:id, selected: id===rackId?'':null}, id)));
+  if(rackId && !ids.includes(rackId)) sel.append(el('option',{value:rackId,selected:''},rackId));
+}
+
+// ---------- generic table editor ----------
+// cols: {key,label,type:'text'|'num'|'sel'|'chk', opts:[[v,l]] | ()=>[[v,l]], w, ph}
+function table(listKey, cols, opts){
+  opts=opts||{};
+  const rows=S[listKey];
+  const wrap=el('div');
+  const scroll=el('div',{class:'tscroll'});
+  const t=el('table',{class:'ed'});
+  const thead=el('tr'); thead.append(el('th',{},'#')); cols.forEach(c=>thead.append(el('th',{style:c.w?('min-width:'+c.w+'px'):''},c.label))); thead.append(el('th',{},''));
+  t.append(el('thead',{},thead));
+  const tb=el('tbody');
+  rows.forEach((r,i)=>{
+    const tr=el('tr'); tr.append(el('td',{class:'n'},String(i+1)));
+    cols.forEach(c=>{
+      let inp;
+      const o=typeof c.opts==='function'?c.opts(r):c.opts;
+      if(c.type==='sel'){ inp=el('select'); (c.blank?[['','']]:[]).concat(o||[]).forEach(([v,l])=>inp.append(el('option',{value:v, selected: String(r[c.key]??'')===String(v)?'':null},l||v))); if(r[c.key]!=null && r[c.key]!=='' && !(o||[]).some(([v])=>String(v)===String(r[c.key]))) { inp.append(el('option',{value:r[c.key],selected:''},String(r[c.key]))); } inp.addEventListener('change',()=>{ r[c.key]=inp.value; if(c.after) c.after(r); markDirty(); if(opts.rerenderOn && opts.rerenderOn.includes(c.key)) rerender(listKey); }); }
+      else if(c.type==='chk'){ inp=el('input',{type:'checkbox'}); inp.checked=!!r[c.key]; inp.addEventListener('change',()=>{ r[c.key]=inp.checked; markDirty(); }); }
+      else { inp=el('input',{type:'text', class:c.type==='num'?'num':'', placeholder:c.ph||''}); inp.value=r[c.key]??''; inp.addEventListener('input',()=>{ r[c.key]= c.type==='num' ? (inp.value===''?'':Number(inp.value)) : inp.value; if(c.after) c.after(r); markDirty(); }); inp.addEventListener('change',()=>{ if(opts.rerenderOn && opts.rerenderOn.includes(c.key)) rerender(listKey); }); }
+      tr.append(el('td',{},inp));
+    });
+    tr.append(el('td',{class:'x'}, el('button',{class:'del',title:'Remove row',onclick:()=>{ rows.splice(i,1); markDirty(); rerender(listKey); }},'×')));
+    tb.append(tr);
+  });
+  t.append(tb); scroll.append(t); wrap.append(scroll);
+  const bar=el('div',{class:'bar'});
+  bar.append(el('button',{class:'btn',onclick:()=>{ rows.push(Object.assign({}, opts.blankRow?opts.blankRow():{})); markDirty(); rerender(listKey); }},'+ Add row'));
+  if(opts.extra) opts.extra.forEach(b=>bar.append(b));
+  wrap.append(bar);
+  return wrap;
+}
+const rerenderers={};
+function rerender(listKey){ (rerenderers[listKey]||[]).forEach(fn=>fn()); renderElevation(); }
+function mount(host, listKey, build){ const box=el('div'); const fn=()=>{ box.innerHTML=''; box.append(build()); }; (rerenderers[listKey]=rerenderers[listKey]||[]).push(fn); fn(); host.append(box); return box; }
+
+// option helpers
+const devOpts = ()=> S.devices.map(d=>[d.name,d.name]).filter(([v])=>v);
+const dtOpts = ()=> S.device_types.map(t=>[t.model,t.manufacturer+' '+t.model]).filter(([v])=>v);
+const mfrOpts= ()=> S.manufacturers.map(m=>[m.name,m.name]).filter(([v])=>v);
+const roleOpts=()=> S.device_roles.map(r=>[r.name,r.name]).filter(([v])=>v);
+const vlanOpts=()=> S.vlans.map(v=>[String(v.vid),v.vid+' '+(v.name||'')]).filter(([v])=>v && v!=='undefined');
+const portsOf = (dev,type)=>{
+  const list = type==='dcim.frontport'?S.front_ports : type==='dcim.rearport'?S.rear_ports : type==='dcim.powerport'?S.power_ports : type==='dcim.poweroutlet'?S.power_outlets : S.interfaces;
+  return list.filter(p=>p.device===dev).map(p=>[p.name,p.name]);
+};
+const ifOpts = r => portsOf(r.device,'dcim.interface');
+const rpOpts = r => S.rear_ports.filter(p=>p.device===r.device).map(p=>[p.name,p.name]);
+const ppOpts = r => S.power_ports.filter(p=>p.device===r.device).map(p=>[p.name,p.name]);
+
+// ---------- field groups ----------
+function field(obj, key, label, type, opts, extra){
+  const lab=el('label',{class:'f'}); lab.append(el('b',{},label));
+  let inp;
+  if(type==='sel'){ inp=el('select'); (opts||[]).forEach(([v,l])=>inp.append(el('option',{value:v,selected:String(obj[key]??'')===String(v)?'':null},l))); inp.addEventListener('change',()=>{ obj[key]=inp.value; if(extra&&extra.after) extra.after(); markDirty(); }); }
+  else if(type==='chk'){ inp=el('input',{type:'checkbox'}); inp.checked=!!obj[key]; inp.addEventListener('change',()=>{ obj[key]=inp.checked; markDirty(); }); }
+  else if(type==='area'){ inp=el('textarea',{rows:'3'}); inp.value=obj[key]??''; inp.addEventListener('input',()=>{ obj[key]=inp.value; markDirty(); }); }
+  else { inp=el('input',{type:'text',class:type==='num'?'num':'',placeholder:(extra&&extra.ph)||''}); inp.value=obj[key]??''; inp.addEventListener('input',()=>{ obj[key]= type==='num'?(inp.value===''?'':Number(inp.value)):inp.value; if(extra&&extra.after) extra.after(); markDirty(); }); }
+  lab.append(inp); if(extra&&extra.hint) lab.append(el('span',{class:'hint'},extra.hint)); return lab;
+}
+
+// ---------- steps ----------
+const STEPS=[
+  {id:'site', label:'Site and rack', build: buildSite},
+  {id:'types', label:'Types', build: buildTypes},
+  {id:'devices', label:'Devices', build: buildDevices},
+  {id:'ports', label:'Ports', build: buildPorts},
+  {id:'net', label:'Addresses', build: buildNet},
+  {id:'cables', label:'Cables', build: buildCables},
+  {id:'people', label:'Contacts', build: buildPeople},
+  {id:'export', label:'Export', build: buildExport},
+];
+let current='site';
+function renderAll(){
+  const nav=$('nav.steps'); nav.innerHTML='';
+  STEPS.forEach((s,i)=>nav.append(el('button',{role:'tab','aria-selected':String(s.id===current),onclick:()=>{ current=s.id; renderAll(); window.scrollTo(0,0); }},el('em',{},String(i+1).padStart(2,'0')),s.label)));
+  const host=$('#panels'); host.innerHTML='';
+  Object.keys(rerenderers).forEach(k=>delete rerenderers[k]);
+  const st=STEPS.find(s=>s.id===current);
+  const p=el('section',{class:'panel on'}); p.append(st.build()); host.append(p);
+  renderElevation();
+}
+
+function buildSite(){
+  const w=el('div');
+  w.append(el('div',{class:'sec-head'},el('h2',{},'Site and rack')));
+  w.append(el('p',{class:'lede'},'Where the rack stands, in NetBox\'s own fields. The rack name is the key everything else hangs on.'));
+  w.append(el('h3',{},'Site'));
+  const g=el('div',{class:'grid four'});
+  g.append(field(S.site,'name','Site name','text',null,{after:()=>{S.site.slug=slug(S.site.name);}}));
+  g.append(field(S.site,'facility','Facility (datacentre name)','text'));
+  g.append(field(S.site,'time_zone','Time zone','text',null,{ph:'Europe/London'}));
+  g.append(field(S.site,'status','Status','sel',[['active','Active'],['planned','Planned'],['staging','Staging'],['decommissioning','Decommissioning'],['retired','Retired']]));
+  g.append(field(S.site,'physical_address','Address','text'));
+  g.append(field(S.site,'latitude','Latitude','text',null,{ph:'51.4543'}));
+  g.append(field(S.site,'longitude','Longitude','text',null,{ph:'-0.9781'}));
+  w.append(g);
+  w.append(el('h3',{},'Location (room, hall, row)'));
+  const g2=el('div',{class:'grid four'});
+  g2.append(field(S.location,'name','Location name','text',null,{after:()=>{S.location.slug=slug(S.location.name);},hint:'Leave empty if the rack sits directly in the site'}));
+  w.append(g2);
+  w.append(el('h3',{},'Rack'));
+  const g3=el('div',{class:'grid four'});
+  g3.append(field(S.rack,'name','Rack name','text',null,{after:()=>{S.title=S.rack.name;}}));
+  g3.append(field(S.rack,'facility_id','Facility ID (grid, e.g. 1A-AJ05)','text'));
+  g3.append(field(S.rack,'u_height','Height in U','num',null,{after:renderElevation}));
+  g3.append(field(S.rack,'width','Width','sel',C.width));
+  g3.append(field(S.rack,'form_factor','Form factor','sel',C.rackForm));
+  g3.append(field(S.rack,'status','Status','sel',C.rackStatus));
+  g3.append(field(S.rack,'serial','Rack serial','text'));
+  g3.append(field(S.rack,'asset_tag','Rack asset tag','text'));
+  g3.append(field(S.rack,'desc_units','Units numbered top down','chk'));
+  w.append(g3);
+  const g4=el('div',{class:'grid'}); g4.append(field(S.rack,'comments','Comments','area')); w.append(g4);
+  return w;
+}
+
+function buildTypes(){
+  const w=el('div');
+  w.append(el('div',{class:'sec-head'},el('h2',{},'Manufacturers, device types, roles')));
+  w.append(el('p',{class:'lede'},'A device type is one model. Every device in the rack points at one. Use the part number the maker prints, so the type matches the public device-type library.'));
+  w.append(el('h3',{},'Manufacturers'));
+  mount(w,'manufacturers',()=>table('manufacturers',[{key:'name',label:'Name',w:200,after:r=>{r.slug=slug(r.name);}},{key:'slug',label:'Slug',w:160}],{blankRow:()=>({name:'',slug:''})}));
+  w.append(el('h3',{},'Device types'));
+  mount(w,'device_types',()=>table('device_types',[
+    {key:'manufacturer',label:'Manufacturer',type:'sel',opts:mfrOpts,blank:true,w:150},
+    {key:'model',label:'Model',w:180,after:r=>{r.slug=slug((r.manufacturer||'')+' '+r.model);}},
+    {key:'part_number',label:'Part number',w:140},
+    {key:'u_height',label:'U height',type:'num',w:70},
+    {key:'is_full_depth',label:'Full depth',type:'chk'},
+    {key:'airflow',label:'Airflow',type:'sel',opts:C.airflow,w:130},
+    {key:'slug',label:'Slug',w:180},
+  ],{blankRow:()=>({manufacturer:'',model:'',slug:'',part_number:'',u_height:1,is_full_depth:true,airflow:'front-to-rear'})}));
+  w.append(el('h3',{},'Device roles'));
+  mount(w,'device_roles',()=>table('device_roles',[{key:'name',label:'Name',w:180,after:r=>{r.slug=slug(r.name);}},{key:'slug',label:'Slug',w:150},{key:'color',label:'Colour (hex, no #)',w:120}],{blankRow:()=>({name:'',slug:'',color:'2196f3'})}));
+  return w;
+}
+
+function buildDevices(){
+  const w=el('div',{class:'split'});
+  const left=el('div');
+  left.append(el('div',{class:'sec-head'},el('h2',{},'Devices in the rack')));
+  left.append(el('p',{class:'lede'},'One row per box. Position is the lowest U the device occupies, counted from the bottom. Serial and asset tag are what the sticker says.'));
+  mount(left,'devices',()=>table('devices',[
+    {key:'name',label:'Name',w:170},
+    {key:'device_type',label:'Device type',type:'sel',opts:dtOpts,blank:true,w:170},
+    {key:'role',label:'Role',type:'sel',opts:roleOpts,blank:true,w:130},
+    {key:'position',label:'Position (U)',type:'num',w:70},
+    {key:'face',label:'Face',type:'sel',opts:C.face,w:90},
+    {key:'status',label:'Status',type:'sel',opts:C.devStatus,w:110},
+    {key:'serial',label:'Serial',w:150},
+    {key:'asset_tag',label:'Asset tag',w:120},
+    {key:'platform',label:'Platform / OS',w:120},
+    {key:'comments',label:'Comments',w:160},
+  ],{blankRow:()=>({name:'',device_type:'',role:'',position:'',face:'front',status:'active',serial:'',asset_tag:'',platform:'',comments:''}),rerenderOn:['position','device_type','name']}));
+  w.append(left);
+  const right=el('div',{class:'elev'}); right.append(el('h4',{},'Elevation')); right.append(el('div',{id:'elevHost'})); w.append(right);
+  return w;
+}
+function renderElevation(){
+  const host=$('#elevHost'); if(!host) return;
+  const H=Math.max(1,Number(S.rack.u_height)||42); const rowH=14, W=272, top=6;
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('viewBox',`0 0 ${W} ${top+H*rowH+6}`);
+  const y=u=> top+(H-u)*rowH;
+  for(let u=1;u<=H;u++){ const r=document.createElementNS('http://www.w3.org/2000/svg','rect'); r.setAttribute('x',30); r.setAttribute('y',y(u)); r.setAttribute('width',W-36); r.setAttribute('height',rowH); r.setAttribute('class','u'); svg.append(r); const t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',24); t.setAttribute('y',y(u)+10); t.setAttribute('text-anchor','end'); t.setAttribute('class','un'); t.textContent='U'+u; svg.append(t); }
+  const taken=new Map();
+  S.devices.forEach(d=>{
+    if(d.position==='' || d.position==null) return; const pos=Number(d.position); const dt=S.device_types.find(t=>t.model===d.device_type); const span=Math.max(1,Number(dt&&dt.u_height)||1);
+    let bad=false; for(let u=pos;u<pos+span;u++){ if(u<1||u>H||taken.has(u)) bad=true; taken.set(u,d.name); }
+    const r=document.createElementNS('http://www.w3.org/2000/svg','rect'); r.setAttribute('x',31); r.setAttribute('y',y(pos+span-1)+1); r.setAttribute('width',W-38); r.setAttribute('height',rowH*span-2); r.setAttribute('rx',2);
+    const role=(d.role||'').toLowerCase(); r.setAttribute('class','dev'+(bad?' bad':role.includes('patch')?' pp':role.includes('pdu')||role.includes('power')?' pdu':'')); svg.append(r);
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',36); t.setAttribute('y',y(pos+span-1)+10); t.textContent=(d.name||'(unnamed)')+(dt?'  '+dt.model:''); svg.append(t);
+  });
+  host.innerHTML=''; host.append(svg);
+}
+
+function buildPorts(){
+  const w=el('div');
+  w.append(el('div',{class:'sec-head'},el('h2',{},'Ports on each device')));
+  w.append(el('p',{class:'lede'},'Interfaces for switches, routers, firewalls and servers. Rear and front ports for patch panels. Power ports and outlets for PDUs. Use the generators for the long lists, then correct by hand.'));
+
+  w.append(el('h3',{},'Interfaces'));
+  const gen=el('div',{class:'gen'}); gen.append(el('h4',{},'Generate interfaces'));
+  const g={device:'',pattern:'GigabitEthernet1/0/{n}',from:1,count:48,type:'1000base-t'};
+  const row=el('div',{class:'row'});
+  row.append(field(g,'device','Device','sel',[['','']].concat(devOpts())));
+  row.append(field(g,'pattern','Name pattern, {n} is the number','text'));
+  row.append(field(g,'from','From','num')); row.append(field(g,'count','Count','num'));
+  row.append(field(g,'type','Type','sel',C.ifType));
+  row.append(el('button',{class:'btn primary',onclick:()=>{ if(!g.device) return toast('Pick a device'); for(let i=0;i<Number(g.count);i++){ const n=Number(g.from)+i; const name=g.pattern.replace('{n}',n); if(S.interfaces.some(x=>x.device===g.device&&x.name===name)) continue; S.interfaces.push({device:g.device,name,type:g.type,enabled:true,mac_address:'',mgmt_only:false,description:'',mode:'',untagged_vlan:''}); } markDirty(); rerender('interfaces'); toast('Interfaces added'); }},'Generate'));
+  gen.append(row); w.append(gen);
+  mount(w,'interfaces',()=>table('interfaces',[
+    {key:'device',label:'Device',type:'sel',opts:devOpts,blank:true,w:150},
+    {key:'name',label:'Name',w:170},
+    {key:'type',label:'Type',type:'sel',opts:C.ifType,w:120},
+    {key:'enabled',label:'Enabled',type:'chk'},
+    {key:'mgmt_only',label:'Mgmt only',type:'chk'},
+    {key:'mac_address',label:'MAC',w:140,ph:'aa:bb:cc:dd:ee:ff'},
+    {key:'mode',label:'802.1Q mode',type:'sel',opts:C.ifMode,w:110},
+    {key:'untagged_vlan',label:'Untagged VLAN',type:'sel',opts:vlanOpts,blank:true,w:100},
+    {key:'description',label:'Description',w:170},
+  ],{blankRow:()=>({device:'',name:'',type:'1000base-t',enabled:true,mgmt_only:false,mac_address:'',mode:'',untagged_vlan:'',description:''})}));
+
+  w.append(el('h3',{},'Patch panels: rear ports and front ports'));
+  const gp=el('div',{class:'gen'}); gp.append(el('h4',{},'Generate a panel: rear ports plus front ports mapped one to one'));
+  const p={device:'',count:24,type:'8p8c',prefix:''};
+  const rowp=el('div',{class:'row'});
+  rowp.append(field(p,'device','Panel device','sel',[['','']].concat(devOpts())));
+  rowp.append(field(p,'prefix','Name prefix','text',null,{ph:'empty gives 1..24'}));
+  rowp.append(field(p,'count','Ports','num')); rowp.append(field(p,'type','Port type','sel',C.portType));
+  rowp.append(el('div')); rowp.append(el('div'));
+  rowp.append(el('button',{class:'btn primary',onclick:()=>{ if(!p.device) return toast('Pick the panel'); for(let i=1;i<=Number(p.count);i++){ const name=(p.prefix||'')+i; if(!S.rear_ports.some(x=>x.device===p.device&&x.name===name)) S.rear_ports.push({device:p.device,name,type:p.type,positions:1}); if(!S.front_ports.some(x=>x.device===p.device&&x.name===name)) S.front_ports.push({device:p.device,name,type:p.type,rear_port:name,rear_port_position:1}); } markDirty(); rerender('rear_ports'); rerender('front_ports'); toast('Panel ports added'); }},'Generate'));
+  gp.append(rowp); w.append(gp);
+  w.append(el('h3',{},'Rear ports'));
+  mount(w,'rear_ports',()=>table('rear_ports',[{key:'device',label:'Device',type:'sel',opts:devOpts,blank:true,w:150},{key:'name',label:'Name',w:120},{key:'type',label:'Type',type:'sel',opts:C.portType,w:110},{key:'positions',label:'Positions',type:'num',w:70}],{blankRow:()=>({device:'',name:'',type:'8p8c',positions:1})}));
+  w.append(el('h3',{},'Front ports'));
+  mount(w,'front_ports',()=>table('front_ports',[{key:'device',label:'Device',type:'sel',opts:devOpts,blank:true,w:150},{key:'name',label:'Name',w:120},{key:'type',label:'Type',type:'sel',opts:C.portType,w:110},{key:'rear_port',label:'Rear port',type:'sel',opts:rpOpts,blank:true,w:110},{key:'rear_port_position',label:'Rear position',type:'num',w:70}],{blankRow:()=>({device:'',name:'',type:'8p8c',rear_port:'',rear_port_position:1})}));
+
+  w.append(el('h3',{},'PDUs: power ports and outlets'));
+  const go=el('div',{class:'gen'}); go.append(el('h4',{},'Generate outlets'));
+  const o={device:'',count:8,type:'iec-60320-c13',prefix:'Outlet '};
+  const rowo=el('div',{class:'row'});
+  rowo.append(field(o,'device','PDU device','sel',[['','']].concat(devOpts())));
+  rowo.append(field(o,'prefix','Name prefix','text')); rowo.append(field(o,'count','Outlets','num')); rowo.append(field(o,'type','Outlet type','sel',C.poType));
+  rowo.append(el('div')); rowo.append(el('div'));
+  rowo.append(el('button',{class:'btn primary',onclick:()=>{ if(!o.device) return toast('Pick the PDU'); if(!S.power_ports.some(x=>x.device===o.device)) S.power_ports.push({device:o.device,name:'Input',type:'iec-60320-c14',maximum_draw:'',allocated_draw:''}); for(let i=1;i<=Number(o.count);i++){ const name=(o.prefix||'')+i; if(!S.power_outlets.some(x=>x.device===o.device&&x.name===name)) S.power_outlets.push({device:o.device,name,type:o.type,power_port:'Input',feed_leg:''}); } markDirty(); rerender('power_ports'); rerender('power_outlets'); toast('Outlets added'); }},'Generate'));
+  go.append(rowo); w.append(go);
+  w.append(el('h3',{},'Power ports (what a device plugs in with)'));
+  mount(w,'power_ports',()=>table('power_ports',[{key:'device',label:'Device',type:'sel',opts:devOpts,blank:true,w:150},{key:'name',label:'Name',w:120},{key:'type',label:'Type',type:'sel',opts:C.ppType,w:120},{key:'maximum_draw',label:'Max draw (W)',type:'num',w:80},{key:'allocated_draw',label:'Allocated (W)',type:'num',w:80}],{blankRow:()=>({device:'',name:'PSU1',type:'iec-60320-c14',maximum_draw:'',allocated_draw:''})}));
+  w.append(el('h3',{},'Power outlets (on a PDU)'));
+  mount(w,'power_outlets',()=>table('power_outlets',[{key:'device',label:'PDU',type:'sel',opts:devOpts,blank:true,w:150},{key:'name',label:'Name',w:120},{key:'type',label:'Type',type:'sel',opts:C.poType,w:120},{key:'power_port',label:'Fed by power port',type:'sel',opts:ppOpts,blank:true,w:110},{key:'feed_leg',label:'Feed leg',type:'sel',opts:[['',''],['A','A'],['B','B'],['C','C']],w:70}],{blankRow:()=>({device:'',name:'',type:'iec-60320-c13',power_port:'',feed_leg:''})}));
+
+  w.append(el('h3',{},'Inventory items: transceivers, modules, PSUs with their own serial'));
+  mount(w,'inventory_items',()=>table('inventory_items',[{key:'device',label:'Device',type:'sel',opts:devOpts,blank:true,w:150},{key:'name',label:'Name',w:130,ph:'SFP+ in Te1/1/1'},{key:'manufacturer',label:'Manufacturer',type:'sel',opts:mfrOpts,blank:true,w:130},{key:'part_id',label:'Part ID',w:120},{key:'serial',label:'Serial',w:140},{key:'asset_tag',label:'Asset tag',w:110},{key:'component_name',label:'Sits in interface',type:'sel',opts:ifOpts,blank:true,w:150}],{blankRow:()=>({device:'',name:'',manufacturer:'',part_id:'',serial:'',asset_tag:'',component_type:'dcim.interface',component_name:''})}));
+  return w;
+}
+
+function buildNet(){
+  const w=el('div');
+  w.append(el('div',{class:'sec-head'},el('h2',{},'VLANs, prefixes, addresses')));
+  w.append(el('p',{class:'lede'},'The management address of each device is what RackTrack will poll. Mark it primary.'));
+  w.append(el('h3',{},'VLANs'));
+  mount(w,'vlans',()=>table('vlans',[{key:'vid',label:'VID',type:'num',w:70},{key:'name',label:'Name',w:160},{key:'status',label:'Status',type:'sel',opts:[['active','Active'],['reserved','Reserved'],['deprecated','Deprecated']],w:110}],{blankRow:()=>({vid:'',name:'',status:'active'})}));
+  w.append(el('h3',{},'Prefixes'));
+  mount(w,'prefixes',()=>table('prefixes',[{key:'prefix',label:'Prefix',w:150,ph:'10.10.4.0/24'},{key:'vlan',label:'VLAN',type:'sel',opts:vlanOpts,blank:true,w:100},{key:'status',label:'Status',type:'sel',opts:[['active','Active'],['reserved','Reserved'],['deprecated','Deprecated'],['container','Container']],w:110},{key:'description',label:'Description',w:200}],{blankRow:()=>({prefix:'',vlan:'',status:'active',description:''})}));
+  w.append(el('h3',{},'IP addresses'));
+  mount(w,'ip_addresses',()=>table('ip_addresses',[{key:'address',label:'Address with mask',w:150,ph:'10.10.4.18/24'},{key:'device',label:'Device',type:'sel',opts:devOpts,blank:true,w:150},{key:'interface',label:'Interface',type:'sel',opts:ifOpts,blank:true,w:150},{key:'is_primary',label:'Primary',type:'chk'},{key:'dns_name',label:'DNS name',w:170},{key:'status',label:'Status',type:'sel',opts:[['active','Active'],['reserved','Reserved'],['dhcp','DHCP'],['deprecated','Deprecated']],w:100}],{blankRow:()=>({address:'',device:'',interface:'',is_primary:true,dns_name:'',status:'active'})}));
+  return w;
+}
+
+function buildCables(){
+  const w=el('div');
+  w.append(el('div',{class:'sec-head'},el('h2',{},'Cables')));
+  w.append(el('p',{class:'lede'},'One row per cable, both ends. Colour is six hex digits without the hash, as NetBox stores it: 2196f3 is blue, ffeb3b yellow, f44336 red, 4caf50 green.'));
+  mount(w,'cables',()=>table('cables',[
+    {key:'side_a_device',label:'A device',type:'sel',opts:devOpts,blank:true,w:140},
+    {key:'side_a_type',label:'A port kind',type:'sel',opts:C.sideType,w:110},
+    {key:'side_a_name',label:'A port',type:'sel',opts:r=>portsOf(r.side_a_device,r.side_a_type),blank:true,w:130},
+    {key:'side_b_device',label:'B device',type:'sel',opts:devOpts,blank:true,w:140},
+    {key:'side_b_type',label:'B port kind',type:'sel',opts:C.sideType,w:110},
+    {key:'side_b_name',label:'B port',type:'sel',opts:r=>portsOf(r.side_b_device,r.side_b_type),blank:true,w:130},
+    {key:'type',label:'Type',type:'sel',opts:C.cableType,w:110},
+    {key:'status',label:'Status',type:'sel',opts:C.cableStatus,w:110},
+    {key:'color',label:'Colour hex',w:90},
+    {key:'label',label:'Label',w:120},
+    {key:'length',label:'Length',type:'num',w:60},
+    {key:'length_unit',label:'Unit',type:'sel',opts:C.lengthUnit,w:60},
+  ],{blankRow:()=>({side_a_device:'',side_a_type:'dcim.interface',side_a_name:'',side_b_device:'',side_b_type:'dcim.frontport',side_b_name:'',type:'cat6',status:'connected',color:'2196f3',label:'',length:'',length_unit:'m'}),rerenderOn:['side_a_device','side_a_type','side_b_device','side_b_type']}));
+  return w;
+}
+
+function buildPeople(){
+  const w=el('div');
+  w.append(el('div',{class:'sec-head'},el('h2',{},'Contacts')));
+  w.append(el('p',{class:'lede'},'Who a ticket about this rack or this site should reach. NetBox holds these as contacts with a role, assigned to the site or the rack.'));
+  mount(w,'contacts',()=>table('contacts',[{key:'name',label:'Name',w:160},{key:'role',label:'Role',type:'sel',opts:C.cRole,w:120},{key:'assigned_to',label:'Assigned to',type:'sel',opts:C.cScope,w:90},{key:'title',label:'Title',w:140},{key:'email',label:'Email',w:180},{key:'phone',label:'Phone',w:130}],{blankRow:()=>({name:'',role:'On-site',assigned_to:'rack',title:'',email:'',phone:''})}));
+  return w;
+}
+
+// ---------- validation ----------
+function checks(){
+  const out=[]; const add=(cls,msg)=>out.push({cls,msg});
+  if(!S.site.name) add('bad','Site name is empty'); if(!S.rack.name) add('bad','Rack name is empty');
+  if(!Number.isInteger(Number(S.rack.u_height))||Number(S.rack.u_height)<1) add('bad','Rack height must be a whole number of U');
+  const names=new Set(); S.devices.forEach(d=>{ if(!d.name) add('bad','A device has no name'); else if(names.has(d.name)) add('bad','Device name repeated: '+d.name); names.add(d.name); if(!d.device_type) add('bad',(d.name||'a device')+' has no device type'); if(!d.role) add('warn',(d.name||'a device')+' has no role'); if(d.device_type && !S.device_types.some(t=>t.model===d.device_type)) add('bad',d.name+' points at a device type that does not exist'); });
+  const H=Number(S.rack.u_height)||0; const taken=new Map();
+  S.devices.forEach(d=>{ if(d.position===''||d.position==null) { add('warn',(d.name||'a device')+' has no position'); return;} const pos=Number(d.position); const dt=S.device_types.find(t=>t.model===d.device_type); const span=Math.max(1,Number(dt&&dt.u_height)||1); for(let u=pos;u<pos+span;u++){ if(u<1||u>H) add('bad',d.name+' sits outside U1 to U'+H); else if(taken.has(u)) add('bad',d.name+' overlaps '+taken.get(u)+' at U'+u); taken.set(u,d.name);} });
+  const ifKeys=new Set(); S.interfaces.forEach(i=>{ const k=i.device+'|'+i.name; if(!i.device||!i.name) add('bad','An interface has no device or name'); else if(ifKeys.has(k)) add('bad','Interface repeated: '+k); ifKeys.add(k); if(i.device && !names.has(i.device)) add('bad','Interface on unknown device '+i.device); });
+  S.cables.forEach((c,i)=>{ for(const s of ['a','b']){ const dev=c['side_'+s+'_device'], nm=c['side_'+s+'_name'], ty=c['side_'+s+'_type']; if(!dev||!nm) { add('bad','Cable '+(i+1)+' side '+s.toUpperCase()+' is incomplete'); continue; } if(!portsOf(dev,ty).some(([v])=>v===nm)) add('bad','Cable '+(i+1)+': '+dev+' has no '+ty.replace('dcim.','')+' named '+nm); } if(c.color && !/^[0-9a-f]{6}$/.test(c.color)) add('bad','Cable '+(i+1)+' colour must be six lower-case hex digits'); });
+  const ends=new Map(); S.cables.forEach((c,i)=>{ for(const s of ['a','b']){ const k=c['side_'+s+'_device']+'|'+c['side_'+s+'_type']+'|'+c['side_'+s+'_name']; if(ends.has(k)) add('bad','Port used by two cables: '+k.replace(/\|/g,' ')); ends.set(k,i);} });
+  S.devices.forEach(d=>{ if(!d.serial) add('warn',d.name+' has no serial'); });
+  const prim=new Map(); S.ip_addresses.forEach(a=>{ if(a.is_primary&&a.device){ if(prim.has(a.device)) add('warn',a.device+' has two primary addresses'); prim.set(a.device,1);} });
+  if(!out.length) add('ok','Everything checks out');
+  return out;
+}
+
+// ---------- exports ----------
+const csvEsc = v => { const s = v==null?'':String(v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+const toCSV = (cols, rows) => [cols.join(',')].concat(rows.map(r=>cols.map(c=>csvEsc(typeof r[c]==='boolean'?(r[c]?'true':'false'):r[c])).join(','))).join('\n')+'\n';
+const loc = ()=> S.location.name||'';
+function netboxTables(){
+  const site=S.site.name, rack=S.rack.name;
+  const T={};
+  T['01-sites']=[['name','slug','status','facility','time_zone','physical_address','latitude','longitude'],[{name:site,slug:S.site.slug||slug(site),status:S.site.status||'active',facility:S.site.facility,time_zone:S.site.time_zone,physical_address:S.site.physical_address,latitude:S.site.latitude,longitude:S.site.longitude}]];
+  if(loc()) T['02-locations']=[['site','name','slug','status'],[{site,name:loc(),slug:S.location.slug||slug(loc()),status:'active'}]];
+  T['03-manufacturers']=[['name','slug'],S.manufacturers.map(m=>({name:m.name,slug:m.slug||slug(m.name)}))];
+  T['04-device_types']=[['manufacturer','model','slug','part_number','u_height','is_full_depth','airflow'],S.device_types.map(t=>({manufacturer:t.manufacturer,model:t.model,slug:t.slug||slug(t.manufacturer+' '+t.model),part_number:t.part_number,u_height:t.u_height,is_full_depth:!!t.is_full_depth,airflow:t.airflow}))];
+  T['05-device_roles']=[['name','slug','color'],S.device_roles.map(r=>({name:r.name,slug:r.slug||slug(r.name),color:r.color}))];
+  T['06-racks']=[['site','location','name','facility_id','status','form_factor','width','u_height','desc_units','serial','asset_tag','comments'],[{site,location:loc(),name:rack,facility_id:S.rack.facility_id,status:S.rack.status,form_factor:S.rack.form_factor,width:S.rack.width,u_height:S.rack.u_height,desc_units:!!S.rack.desc_units,serial:S.rack.serial,asset_tag:S.rack.asset_tag,comments:S.rack.comments}]];
+  T['07-devices']=[['name','role','device_type','site','location','rack','position','face','status','serial','asset_tag','platform','comments'],S.devices.map(d=>({name:d.name,role:d.role,device_type:d.device_type,site,location:loc(),rack,position:d.position,face:d.position===''||d.position==null?'':d.face,status:d.status,serial:d.serial,asset_tag:d.asset_tag,platform:d.platform,comments:d.comments}))];
+  T['08-interfaces']=[['device','name','type','enabled','mgmt_only','mac_address','mode','untagged_vlan','description'],S.interfaces.map(i=>({device:i.device,name:i.name,type:i.type,enabled:!!i.enabled,mgmt_only:!!i.mgmt_only,mac_address:i.mac_address,mode:i.mode,untagged_vlan:i.untagged_vlan,description:i.description}))];
+  T['09-rear_ports']=[['device','name','type','positions'],S.rear_ports];
+  T['10-front_ports']=[['device','name','type','rear_port','rear_port_position'],S.front_ports];
+  T['11-power_ports']=[['device','name','type','maximum_draw','allocated_draw'],S.power_ports];
+  T['12-power_outlets']=[['device','name','type','power_port','feed_leg'],S.power_outlets];
+  T['13-inventory_items']=[['device','name','manufacturer','part_id','serial','asset_tag','component_type','component_name'],S.inventory_items];
+  T['14-vlans']=[['site','vid','name','status'],S.vlans.map(v=>({site,vid:v.vid,name:v.name,status:v.status}))];
+  T['15-prefixes']=[['prefix','status','site','vlan','description'],S.prefixes.map(p=>({prefix:p.prefix,status:p.status,site,vlan:p.vlan,description:p.description}))];
+  T['16-ip_addresses']=[['address','status','dns_name','device','interface','is_primary'],S.ip_addresses.map(a=>({address:a.address,status:a.status,dns_name:a.dns_name,device:a.device,interface:a.interface,is_primary:!!a.is_primary}))];
+  T['17-cables']=[['side_a_device','side_a_type','side_a_name','side_b_device','side_b_type','side_b_name','type','status','label','color','length','length_unit'],S.cables];
+  T['18-contacts']=[['name','title','phone','email','role','assigned_to'],S.contacts];
+  return T;
+}
+async function save(filename, data){
+  if(downloads){ try{ await downloads.save({filename,data}); toast('Saved '+filename); return; }catch(e){ if(e&&e.code==='declined') return; toast('Could not save: '+(e&&e.code||'error')); return; } }
+  // fallback: show in a textarea to copy
+  const ta=$('#fallback'); if(ta){ ta.value = typeof data==='string'?data:'(binary file: downloads are not available in this view)'; ta.focus(); ta.select(); toast('Downloads unavailable here: copy from the box below'); }
+}
+async function zipOf(files){ const z=new JSZip(); for(const [n,c] of Object.entries(files)) z.file(n,c); return await z.generateAsync({type:'blob'}); }
+const stamp = ()=> slug(S.rack.name||'rack');
+
+async function exportNetboxCsv(){
+  const T=netboxTables(); const files={};
+  files['00-README.txt']='NetBox bulk import, one file per object type, in this order.\nIn NetBox: the object list page > Import > paste the CSV.\nSkip files with only a header row.\n\n'+Object.keys(T).map(k=>k+'.csv').join('\n')+'\n\nContacts (18) are plain contacts; assign them to the site or rack after import.\n';
+  for(const [k,[cols,rows]] of Object.entries(T)) files[k+'.csv']=toCSV(cols,rows);
+  await save(stamp()+'-netbox-csv.zip', await zipOf(files));
+}
+async function exportNetboxJson(){
+  const T=netboxTables(); const bundle={schema:'rackbook/netbox-bundle/1',generated:new Date().toISOString(),rack:S.rack.name,site:S.site.name,objects:{}};
+  for(const [k,[cols,rows]] of Object.entries(T)) bundle.objects[k.replace(/^\d+-/,'')]=rows.map(r=>Object.fromEntries(cols.map(c=>[c,r[c]??''])));
+  await save(stamp()+'-netbox-bundle.json', JSON.stringify(bundle,null,2));
+}
+function yamlStr(v){ v=String(v??''); return /^[\w./+-]+$/.test(v)&&v!==''?v:JSON.stringify(v); }
+async function exportDeviceTypes(){
+  const files={};
+  S.device_types.forEach(t=>{
+    const dev=S.devices.find(d=>d.device_type===t.model);
+    let y=`manufacturer: ${yamlStr(t.manufacturer)}\nmodel: ${yamlStr(t.model)}\nslug: ${yamlStr(t.slug||slug(t.manufacturer+' '+t.model))}\n`;
+    if(t.part_number) y+=`part_number: ${yamlStr(t.part_number)}\n`;
+    y+=`u_height: ${Number(t.u_height)||1}\nis_full_depth: ${t.is_full_depth?'true':'false'}\n`;
+    if(t.airflow) y+=`airflow: ${t.airflow}\n`;
+    const sec=(title,rows,fmt)=>{ if(!rows.length) return; y+=title+':\n'; rows.forEach(r=>{ y+=fmt(r); }); };
+    if(dev){
+      sec('interfaces',S.interfaces.filter(i=>i.device===dev.name),i=>`  - name: ${yamlStr(i.name)}\n    type: ${i.type}\n${i.mgmt_only?'    mgmt_only: true\n':''}`);
+      sec('rear-ports',S.rear_ports.filter(i=>i.device===dev.name),i=>`  - name: ${yamlStr(i.name)}\n    type: ${i.type}\n    positions: ${Number(i.positions)||1}\n`);
+      sec('front-ports',S.front_ports.filter(i=>i.device===dev.name),i=>`  - name: ${yamlStr(i.name)}\n    type: ${i.type}\n    rear_port: ${yamlStr(i.rear_port)}\n    rear_port_position: ${Number(i.rear_port_position)||1}\n`);
+      sec('power-ports',S.power_ports.filter(i=>i.device===dev.name),i=>`  - name: ${yamlStr(i.name)}\n    type: ${i.type}\n`);
+      sec('power-outlets',S.power_outlets.filter(i=>i.device===dev.name),i=>`  - name: ${yamlStr(i.name)}\n    type: ${i.type}\n${i.power_port?'    power_port: '+yamlStr(i.power_port)+'\n':''}`);
+    }
+    files[slug(t.manufacturer)+'/'+(slug(t.part_number||t.model))+'.yaml']=y;
+  });
+  if(!Object.keys(files).length) return toast('No device types yet');
+  await save(stamp()+'-device-types.zip', await zipOf(files));
+}
+async function exportXlsx(){
+  const T=netboxTables(); const wb=XLSX.utils.book_new();
+  for(const [k,[cols,rows]] of Object.entries(T)){ const ws=XLSX.utils.json_to_sheet(rows.map(r=>Object.fromEntries(cols.map(c=>[c,r[c]??'']))),{header:cols}); XLSX.utils.book_append_sheet(wb,ws,k.replace(/^\d+-/,'').slice(0,31)); }
+  const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+  await save(stamp()+'-rack-book.xlsx', new Blob([buf],{type:'application/octet-stream'}));
+}
+async function exportServiceNow(){
+  const files={};
+  files['00-README.txt']='ServiceNow import sets, one CSV per class. Map columns in the Transform Map; names are the coalesce fields.\n';
+  files['cmdb_ci_rack.csv']=toCSV(['name','location','rack_units','serial_number','asset_tag','u_facility_id'],[{name:S.rack.name,location:S.site.name,rack_units:S.rack.u_height,serial_number:S.rack.serial,asset_tag:S.rack.asset_tag,u_facility_id:S.rack.facility_id}]);
+  const cls=r=>{ const s=(r||'').toLowerCase(); if(s.includes('patch')) return 'cmdb_ci_patch_panel'; if(s.includes('pdu')||s.includes('power')) return 'cmdb_ci_pdu'; if(s.includes('server')) return 'cmdb_ci_server'; if(s.includes('fire')) return 'cmdb_ci_ip_firewall'; if(s.includes('router')) return 'cmdb_ci_ip_router'; return 'cmdb_ci_ip_switch'; };
+  files['cmdb_ci_hardware.csv']=toCSV(['name','sys_class_name','manufacturer','model_id','serial_number','asset_tag','location','rack','rack_unit_position','u_height','install_status','ip_address'],S.devices.map(d=>{ const t=S.device_types.find(x=>x.model===d.device_type)||{}; const ip=S.ip_addresses.find(a=>a.device===d.name&&a.is_primary); return {name:d.name,sys_class_name:cls(d.role),manufacturer:t.manufacturer||'',model_id:d.device_type,serial_number:d.serial,asset_tag:d.asset_tag,location:S.site.name,rack:S.rack.name,rack_unit_position:d.position,u_height:t.u_height||'',install_status:d.status==='active'?'1':'7',ip_address:ip?ip.address.split('/')[0]:''}; }));
+  files['cmdb_ci_network_adapter.csv']=toCSV(['name','cmdb_ci','mac_address','ip_address','netmask'],S.interfaces.map(i=>{ const ip=S.ip_addresses.find(a=>a.device===i.device&&a.interface===i.name); return {name:i.name,cmdb_ci:i.device,mac_address:i.mac_address,ip_address:ip?ip.address.split('/')[0]:'',netmask:''}; }));
+  files['sys_user_contacts.csv']=toCSV(['name','title','email','phone','u_role','u_assigned_to'],S.contacts.map(c=>({name:c.name,title:c.title,email:c.email,phone:c.phone,u_role:c.role,u_assigned_to:c.assigned_to==='rack'?S.rack.name:S.site.name})));
+  await save(stamp()+'-servicenow-csv.zip', await zipOf(files));
+}
+async function exportAsBuilt(){
+  const key=d=>slug(d.name).toUpperCase().replace(/-/g,'');
+  const doc={ $schema:'racktrack-asbuilt/1', source:{file:'rack-book/'+stamp(),transcribed:new Date().toISOString().slice(0,10),note:'Entered by hand in the Rack Book page'},
+    site:{code:S.site.slug||slug(S.site.name),name:S.site.name}, rack:{name:S.rack.name,uHeight:Number(S.rack.u_height)||42,description:S.rack.comments||''},
+    manufacturers:S.manufacturers.map(m=>({name:m.name,slug:m.slug||slug(m.name),source:'rack book'})),
+    deviceTypes:S.device_types.map(t=>({key:slug(t.part_number||t.model),manufacturer:t.manufacturer,model:t.model,uHeight:Number(t.u_height)||1,source:'rack book'})),
+    roles:S.device_roles.map(r=>({name:r.name,source:'rack book'})),
+    devices:S.devices.map(d=>{ const t=S.device_types.find(x=>x.model===d.device_type)||{}; const k=key(d); const isPanel=(d.role||'').toLowerCase().includes('patch'); return { key:k,name:d.name,type:slug(t.part_number||t.model||''),role:d.role,rack:true,position:d.position===''||d.position==null?null:Number(d.position),serial:d.serial||null,assetTag:d.asset_tag||null,description:d.comments||'',
+      interfaces:isPanel?[]:S.interfaces.filter(i=>i.device===d.name).map(i=>({name:i.name,type:i.type,description:i.description||''})),
+      panelPorts:isPanel?S.front_ports.filter(p=>p.device===d.name).map(p=>p.name):[], source:'rack book' }; }),
+    cables:S.cables.map(c=>({a:[key({name:c.side_a_device}),c.side_a_name],b:[key({name:c.side_b_device}),c.side_b_name],type:c.type,color:c.color||null,label:c.label||null,status:c.status||'connected',description:'',source:'rack book'})),
+    prefixes:S.prefixes.map(p=>({prefix:p.prefix,description:p.description||''})),
+    held:[] };
+  await save(stamp()+'-racktrack-asbuilt.json', JSON.stringify(doc,null,2));
+}
+async function exportMarkdown(){
+  const H=Number(S.rack.u_height)||42; const byU=new Map();
+  S.devices.forEach(d=>{ if(d.position===''||d.position==null) return; const t=S.device_types.find(x=>x.model===d.device_type)||{}; byU.set(Number(d.position),{d,t}); });
+  let md=`# ${S.rack.name}\n\nSite: ${S.site.name}${loc()?' / '+loc():''}  \nHeight: ${H}U  \nGenerated: ${new Date().toISOString().slice(0,16).replace('T',' ')}\n\n## Elevation\n\n| U | Device | Type | Serial | Asset tag |\n|---|---|---|---|---|\n`;
+  const covered=new Set();
+  for(let u=H;u>=1;u--){ if(covered.has(u)) continue; const hit=[...byU.entries()].find(([pos,{t}])=>u>=pos && u<pos+Math.max(1,Number(t.u_height)||1)); if(hit){ const [pos,{d,t}]=hit; const span=Math.max(1,Number(t.u_height)||1); for(let k=pos;k<pos+span;k++) covered.add(k); md+=`| U${pos}${span>1?'-U'+(pos+span-1):''} | ${d.name} | ${t.manufacturer||''} ${t.model||''} | ${d.serial||''} | ${d.asset_tag||''} |\n`; } else md+=`| U${u} | | | | |\n`; }
+  md+=`\n## Cables\n\n| A | B | Type | Colour | Label |\n|---|---|---|---|---|\n`+S.cables.map(c=>`| ${c.side_a_device} ${c.side_a_name} | ${c.side_b_device} ${c.side_b_name} | ${c.type} | ${c.color} | ${c.label||''} |`).join('\n')+'\n';
+  md+=`\n## Addresses\n\n`+S.ip_addresses.map(a=>`- ${a.device} ${a.interface||''}: ${a.address}${a.is_primary?' (primary)':''}`).join('\n')+'\n';
+  md+=`\n## Contacts\n\n`+S.contacts.map(c=>`- ${c.name}, ${c.role}, ${c.assigned_to}: ${c.email||''} ${c.phone||''}`).join('\n')+'\n';
+  await save(stamp()+'-rack-elevation.md', md);
+}
+
+function buildExport(){
+  const w=el('div');
+  w.append(el('div',{class:'sec-head'},el('h2',{},'Check and export')));
+  w.append(el('p',{class:'lede'},'Every export is built from the same entries. Fix what the checks flag first; NetBox refuses overlaps and unknown ports at import time, after the objects above them are already written.'));
+  const ul=el('ul',{class:'checks'}); checks().forEach(c=>ul.append(el('li',{class:c.cls},el('b',{},c.cls==='ok'?'ok':c.cls==='bad'?'fix':'note'),c.msg))); w.append(ul);
+  const cards=el('div',{class:'cards'});
+  const card=(fmt,title,text,fn)=>{ const c=el('div',{class:'card'}); c.append(el('span',{class:'fmt'},fmt),el('h4',{},title),el('p',{},text),el('button',{class:'btn primary',onclick:fn},'Save')); return c; };
+  cards.append(card('zip of csv','NetBox bulk import','One CSV per object type in NetBox\'s own import columns, numbered in the order NetBox needs them.',exportNetboxCsv));
+  cards.append(card('json','NetBox bundle','Every object with natural keys in one file, for a scripted load with pynetbox.',exportNetboxJson));
+  cards.append(card('zip of yaml','Device-type library','One YAML per model in the public devicetype-library format, with the port templates taken from the first device of each type.',exportDeviceTypes));
+  cards.append(card('xlsx','Workbook','One sheet per object type, for whoever prefers a spreadsheet.',exportXlsx));
+  cards.append(card('zip of csv','ServiceNow import sets','Rack, hardware by class, network adapters and contacts, ready for an import set and transform map.',exportServiceNow));
+  cards.append(card('json','RackTrack as-built','The document our own writer reads, so the same rack can be loaded through RackTrack directly.',exportAsBuilt));
+  cards.append(card('md','Elevation summary','A readable rack elevation with serials, cables, addresses and contacts.',exportMarkdown));
+  w.append(cards);
+  w.append(el('h3',{},'Backup and restore the whole book'));
+  const bar=el('div',{class:'bar'});
+  bar.append(el('button',{class:'btn',onclick:()=>save(stamp()+'-rack-book.json',JSON.stringify(S,null,2))},'Save the book as JSON'));
+  bar.append(el('button',{class:'btn',onclick:()=>{ const ta=$('#fallback'); try{ const d=JSON.parse(ta.value); if(d.schema!=='rackbook/1') throw new Error('not a rack book'); S=Object.assign(blank(rackId),d); markDirty(); renderAll(); toast('Book restored'); }catch(e){ toast('Paste a rack book JSON first'); } }},'Restore from the box below'));
+  w.append(bar);
+  w.append(el('textarea',{id:'fallback',class:'io',placeholder:'Exports appear here when downloads are unavailable. Paste a saved book here to restore it.'}));
+  return w;
+}
+
+// ---------- boot ----------
+async function boot(){
+  $('#rackSel').addEventListener('change',e=>loadRack(e.target.value));
+  $('#newRack').addEventListener('click',async()=>{ const name=prompt('Rack name (as printed on it)'); if(!name) return; const id=slug(name); if(!id) return; S=blank(name); rackId=id; renderAll(); await saveNow(); await refreshRackList(); $('#rackSel').value=id; });
+  $('#delRack').addEventListener('click',async()=>{ if(!rackId) return; if(!confirm('Delete the book for '+rackId+'? This cannot be undone.')) return; try{ localStorage.removeItem(lsKey(rackId)); lsSetIndex(lsIndex().filter(x=>x!==rackId)); }catch(e){} if(db){ try{ await db.doc('racks/'+rackId).delete(); }catch(e){} } rackId=null; const ids=await listRacks(); if(ids.length) await loadRack(ids[0]); else { S=blank('Rack'); rackId=null; renderAll(); } await refreshRackList(); });
+  window.addEventListener('beforeunload',e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
+  // render immediately from local storage, light up db when it answers
+  let last=null; try{ last=localStorage.getItem('rackbook:last'); }catch(e){}
+  const ids=lsIndex();
+  if(last && ids.includes(last)) await loadRack(last); else if(ids.length) await loadRack(ids[0]); else { S=blank('Rack'); rackId=null; renderAll(); setStatus('create a rack to start'); }
+  await refreshRackList();
+  if(window.claude && window.claude.use){
+    claude.use('db').then(async ns=>{ db=ns; if(!db){ setStatus('database unavailable: saving on this device only'); return; } const all=await listRacks(); await refreshRackList(); if(!rackId && all.length) await loadRack(all[0]); else if(rackId) { /* prefer the shared copy if newer */ try{ const snap=await db.doc('racks/'+rackId).get(); if(snap.exists){ const d=snap.data(); if(d && d.updatedAt && (!S.updatedAt || d.updatedAt>S.updatedAt)) { S=Object.assign(blank(rackId),JSON.parse(JSON.stringify(d))); renderAll(); } } }catch(e){} setStatus('connected to the page database','ok'); } });
+    claude.use('downloads').then(ns=>{ downloads=ns; });
+  }
+}
+boot();
+})();
+</script>
+</body></html>

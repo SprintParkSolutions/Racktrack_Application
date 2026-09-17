@@ -7,7 +7,7 @@ import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
 import CategoryIcon from '../components/marketplace/CategoryIcon.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
-   MarketplaceDashboardPage — the seller's numbers.
+   MarketplaceDashboardPage - the seller's numbers.
 
    This page used to be four unrelated visual languages stacked on top of
    each other: plain white stat cards, a mint-green revenue pair, a grey
@@ -15,7 +15,7 @@ import CategoryIcon from '../components/marketplace/CategoryIcon.jsx';
    navigation the shell nav now owns. Nothing lined up, and the green
    revenue block implied a status the number does not carry.
 
-   It is now one object repeated — a stat tile — grouped under three
+   It is now one object repeated - a stat tile - grouped under three
    headings that answer three questions in order: what have I listed,
    what have I sold, what have I bought. Every figure is tabular so the
    columns align down the grid, and the only emphasis available is size
@@ -43,7 +43,7 @@ function plural(n, word) {
 }
 
 /* One tile, one number. `lead` gives a figure the full width of a two-up
-   row and a larger value — used for revenue and spend, where the amount
+   row and a larger value - used for revenue and spend, where the amount
    is the answer and the count beside it is only context. */
 function Stat({ label, value, meta, lead }) {
   return (

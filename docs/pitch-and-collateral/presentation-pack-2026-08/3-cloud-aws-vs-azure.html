@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RackTrack - AWS vs Azure</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+</head>
+<body>
+<style>
+  :root{
+    --paper:#fafaf8; --card:#fff; --ink:#16181c; --muted:#5c5f66; --faint:#90939a;
+    --line:rgba(22,24,28,.11);
+    --accent:#1e5f8e; --hl:rgba(255,214,92,.55);
+    --good:#15803d; --good-soft:#eaf5ee;
+    --warn:#b45309; --warn-soft:#fdf1e3;
+    --aws:#b45c0d; --aws-soft:#fdf0e2;
+    --azure:#1e63c4; --azure-soft:#eaf1fd;
+    --f:"Inter",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:var(--f);-webkit-text-size-adjust:100%;overflow:hidden;
+       -webkit-font-smoothing:antialiased}
+
+  .prog{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0;z-index:60;transition:width .4s ease}
+  .back{position:fixed;top:16px;left:clamp(26px,3.4vw,54px);z-index:60;display:inline-flex;align-items:center;gap:7px;
+        text-decoration:none;color:var(--accent);background:var(--card);border:1px solid var(--line);border-radius:8px;
+        padding:7px 13px;font-size:12.5px;font-weight:600}
+  .back:hover{border-color:var(--accent)}
+  .hint{position:fixed;top:20px;right:clamp(26px,3.4vw,54px);font-size:11px;color:var(--faint);z-index:50}
+
+  .stage{position:relative;height:100vh;width:100%;display:flex;align-items:center;justify-content:center;
+         padding:70px clamp(28px,4vw,72px) 84px}
+  .slide{display:none;width:100%;max-width:1480px;margin:0 auto;animation:f .38s cubic-bezier(.2,.7,.3,1)}
+  .slide.on{display:block}
+  @keyframes f{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.slide.on{animation:none}}
+
+  .two{display:grid;grid-template-columns:minmax(0,42%) minmax(0,58%);gap:clamp(34px,4.6vw,74px);align-items:center}
+  .one{max-width:1060px}
+  @media (max-width:940px){.two{grid-template-columns:1fr;gap:24px}}
+
+  .kick{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 18px}
+  h1{margin:0 0 20px;font-size:clamp(40px,5.2vw,78px);font-weight:800;letter-spacing:-.035em;line-height:1;text-wrap:balance}
+  h2{margin:0 0 16px;font-size:clamp(32px,3.9vw,58px);font-weight:800;letter-spacing:-.032em;line-height:1.04;text-wrap:balance}
+  .hl{background:linear-gradient(180deg,transparent 58%,var(--hl) 58%,var(--hl) 95%,transparent 95%);padding:0 .06em}
+
+  .lead{margin:0;font-size:clamp(17.5px,1.45vw,24px);color:var(--muted);line-height:1.45;max-width:38ch}
+  .lead b{color:var(--ink);font-weight:600}
+  .say{margin:14px 0 0;font-size:clamp(16px,1.24vw,19.5px);color:var(--muted);line-height:1.55;max-width:48ch}
+  .say b{color:var(--ink);font-weight:600}
+  .foot{margin-top:18px;font-size:clamp(13.5px,1vw,15.5px);color:var(--faint);max-width:48ch;line-height:1.5}
+
+  .card,.li,.st,.opt,.cc{background:var(--card);border:1px solid var(--line);border-radius:14px;
+                          box-shadow:0 1px 2px rgba(22,24,28,.035)}
+
+  /* my read box - the recurring recommendation */
+  .read{margin-top:22px;border-radius:14px;padding:17px 20px;background:var(--good-soft);
+        border:1px solid rgba(21,128,61,.26)}
+  .read .rh{font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--good);margin-bottom:7px}
+  .read p{margin:0;font-size:clamp(15px,1.16vw,18px);line-height:1.5;color:#14532d}
+  .read p b{color:#0f3d22;font-weight:700}
+  .read p+p{margin-top:8px}
+
+  /* two option cards */
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:560px){.vs{grid-template-columns:1fr}}
+  .opt{padding:20px 22px}
+  .opt.aws{border-color:rgba(180,92,13,.3);background:linear-gradient(180deg,var(--aws-soft),var(--card) 60%)}
+  .opt.azure{border-color:rgba(30,99,196,.28);background:linear-gradient(180deg,var(--azure-soft),var(--card) 60%)}
+  .opt .bn{display:flex;align-items:center;gap:9px;font-size:clamp(17px,1.35vw,22px);font-weight:800;
+           letter-spacing:-.02em;margin-bottom:10px}
+  .opt.aws .bn{color:var(--aws)} .opt.azure .bn{color:var(--azure)}
+  .opt .bn i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .opt.aws .bn i{background:var(--aws)} .opt.azure .bn i{background:var(--azure)}
+  .opt .txt{font-size:clamp(14px,1.05vw,16.5px);line-height:1.5;color:var(--muted)}
+  .opt .txt b{color:var(--ink);font-weight:700}
+  .opt .verdict{margin-top:12px;padding-top:11px;border-top:1px solid var(--line);font-size:13px;font-weight:700}
+  .opt.aws .verdict{color:var(--aws)} .opt.azure .verdict{color:var(--azure)}
+  .opt .verdict.tie{color:var(--faint)}
+
+  /* list cards */
+  .list{display:flex;flex-direction:column;gap:10px}
+  .li{display:flex;align-items:center;gap:15px;padding:15px 19px;font-size:clamp(15px,1.2vw,19px)}
+  .li .n{font-size:clamp(13.5px,1vw,16px);color:#fff;background:var(--accent);font-weight:700;flex:0 0 auto;
+         width:29px;height:29px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+  .li .tx{flex:1;min-width:0}
+  .li .tx b{font-weight:700}
+  .li .sub{display:block;color:var(--faint);font-size:.72em;margin-top:3px;font-weight:400;line-height:1.4}
+  .li .tag{margin-left:auto;flex:0 0 auto;font-size:12px;font-weight:700;border-radius:7px;padding:5px 11px;white-space:nowrap}
+  .li .tag.aws{color:var(--aws);background:var(--aws-soft)}
+  .li .tag.azure{color:var(--azure);background:var(--azure-soft)}
+  .li .tag.tie{color:var(--faint);background:rgba(22,24,28,.05)}
+
+  /* stats */
+  .stats{margin-top:30px;display:flex;flex-wrap:wrap;gap:12px}
+  .st{padding:17px 22px;min-width:128px}
+  .st .v{font-size:clamp(28px,2.7vw,42px);font-weight:800;letter-spacing:-.03em;line-height:1}
+  .st .k{margin-top:6px;font-size:12.5px;color:var(--faint);font-weight:500}
+
+  /* cost cards */
+  .cc{padding:19px 22px}
+  .cc .bn{display:flex;align-items:center;gap:9px;font-size:clamp(16px,1.25vw,20px);font-weight:800;margin-bottom:12px}
+  .cc.aws .bn{color:var(--aws)} .cc.azure .bn{color:var(--azure)}
+  .cc .bn i{width:10px;height:10px;border-radius:3px}
+  .cc.aws .bn i{background:var(--aws)} .cc.azure .bn i{background:var(--azure)}
+  .cc .cr{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);
+          font-size:clamp(13.5px,1.02vw,16px);color:var(--muted)}
+  .cc .cr:first-of-type{border-top:0}
+  .cc .cr .v{font-weight:700;color:var(--ink);white-space:nowrap}
+
+  .strip{margin-top:22px;padding:16px 20px;border-radius:13px;font-size:clamp(14.5px,1.14vw,18px);line-height:1.5}
+  .strip.n{border:1px solid var(--line);background:var(--card);color:var(--muted)}
+  .strip.n b{color:var(--ink);font-weight:700}
+
+  .bar{position:fixed;left:0;right:0;bottom:0;height:56px;display:flex;align-items:center;justify-content:space-between;
+       padding:0 clamp(26px,3.4vw,54px);z-index:50;pointer-events:none}
+  .side{pointer-events:auto}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:9px 16px;
+       font-family:var(--f);font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn[disabled]{opacity:.3;cursor:default}
+  .count{font-size:12px;color:var(--faint);pointer-events:auto;font-weight:500}
+  .dots{position:fixed;left:50%;bottom:68px;transform:translateX(-50%);display:flex;gap:6px;z-index:50;
+        pointer-events:auto;flex-wrap:wrap;max-width:80vw;justify-content:center}
+  .pd{width:6px;height:6px;border-radius:50%;background:var(--line);border:0;cursor:pointer;padding:0}
+  .pd.on{background:var(--accent);transform:scale(1.4)}
+</style>
+
+<div class="prog" id="prog"></div>
+<a class="back" href="1-enterprise-pitch.html">← Back to the pitch</a>
+<div class="hint">use ← → or the buttons below</div>
+
+<div class="stage" id="stage">
+
+  <!-- 1 -->
+  <section class="slide on"><div class="one">
+    <p class="kick">The cloud decision</p>
+    <h1>Which cloud,<br>and <span class="hl">why</span>?</h1>
+    <p class="lead" style="max-width:56ch">Two genuinely strong platforms. I've gone through them area by area, set out what each is best at, and formed a view on which fits RackTrack. That view is mine as an engineer, and the call is yours.</p>
+    <div class="stats">
+      <div class="st"><div class="v">9</div><div class="k">areas compared</div></div>
+      <div class="st"><div class="v">3</div><div class="k">where each one leads</div></div>
+      <div class="st"><div class="v">3</div><div class="k">genuinely tied</div></div>
+    </div>
+  </div></section>
+
+  <!-- 2 WHY MOVE -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">First, why move at all</p>
+      <h2>One server is<br>the <span class="hl">weak point.</span></h2>
+      <p class="say">Everything today depends on a single machine we update by hand. Fine for a demo. A real risk once customers depend on us.</p>
+      <div class="read">
+        <div class="rh">My read</div>
+        <p><b>The move matters more than the brand.</b> Either cloud fixes all four problems on the right. That's why I'd rather we decide quickly than debate it for weeks.</p>
+      </div>
+    </div>
+    <div><div class="list">
+      <div class="li"><span class="n">1</span><span class="tx"><b>No backups</b><span class="sub">one dead disk erases every customer scan, permanently</span></span></div>
+      <div class="li"><span class="n">2</span><span class="tx"><b>One point of failure</b><span class="sub">if that server stops, the whole product stops</span></span></div>
+      <div class="li"><span class="n">3</span><span class="tx"><b>Can't handle a rush</b><span class="sub">no way to scale when many technicians scan at once</span></span></div>
+      <div class="li"><span class="n">4</span><span class="tx"><b>Updated by hand</b><span class="sub">no test copy, no undo if something breaks</span></span></div>
+    </div></div>
+  </div></section>
+
+  <!-- 3 THE TWO -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">The two contenders</p>
+      <h2>Both are<br><span class="hl">excellent.</span></h2>
+      <p class="say">I want to be fair here. This isn't a case where one is good and one is bad. They're both mature, both used by enormous companies, and either would serve us well.</p>
+      <p class="foot">The question is only which fits <b>our</b> product better.</p>
+    </div>
+    <div><div class="vs">
+      <div class="opt aws">
+        <div class="bn"><i></i> AWS</div>
+        <div class="txt">Amazon's cloud. The largest and longest established, with the widest range of services and the biggest community.</div>
+        <div class="verdict">Strength: the deepest AI and GPU toolkit</div>
+      </div>
+      <div class="opt azure">
+        <div class="bn"><i></i> Azure</div>
+        <div class="txt">Microsoft's cloud. Equally capable, particularly strong inside organisations already built on Microsoft tools.</div>
+        <div class="verdict">Strength: unmatched inside Microsoft estates</div>
+      </div>
+    </div></div>
+  </div></section>
+
+  <!-- 4 RUNNING THE APP -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Area 1 of 6</p>
+      <h2>Running<br>the <span class="hl">app.</span></h2>
+      <p class="say">Both run our app in containers that copy themselves when busy and restart themselves if one crashes.</p>
+      <div class="read">
+        <div class="rh">Both are strong here</div>
+        <p>AWS is the more battle tested, Azure is the quicker to stand up. <b>Both end the "one server and we're down" problem</b>, which is what we actually need.</p>
+        <p><b>Why it doesn't decide it:</b> genuinely nothing to choose between them, so I wouldn't pick a cloud on this page.</p>
+      </div>
+    </div>
+    <div><div class="vs">
+      <div class="opt aws">
+        <div class="bn"><i></i> AWS</div>
+        <div class="txt"><b>Fargate.</b> The most proven option, with the largest community and the most examples to follow. Slightly more setup the first time.</div>
+        <div class="verdict">Strength: the most proven at scale</div>
+      </div>
+      <div class="opt azure">
+        <div class="bn"><i></i> Azure</div>
+        <div class="txt"><b>Container Apps.</b> Newer and a little simpler to start, and it can idle down to nothing when unused.</div>
+        <div class="verdict">Strength: simpler to get running</div>
+      </div>
+    </div></div>
+  </div></section>
+
+  <!-- 5 DATA -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Area 2 of 6</p>
+      <h2>The data<br>and <span class="hl">backups.</span></h2>
+      <p class="say">This is the problem we most need solved. Both give us a proper managed PostgreSQL database with automatic backups, plus durable storage for the scan photos.</p>
+      <div class="read">
+        <div class="rh">Both are strong here, and that's good news</div>
+        <p>AWS storage is the most widely used on the internet; Azure's managed database tooling is excellent. <b>The most important fix we need is solved equally well either way.</b></p>
+        <p><b>Why it doesn't decide it:</b> whichever we choose, we stop being one disk failure away from losing everything.</p>
+      </div>
+    </div>
+    <div><div class="vs">
+      <div class="opt aws">
+        <div class="bn"><i></i> AWS</div>
+        <div class="txt"><b>RDS PostgreSQL</b> for the database, with automatic failover, plus <b>S3</b> for the scan photos.</div>
+        <div class="verdict">Strength: the most widely used storage anywhere</div>
+      </div>
+      <div class="opt azure">
+        <div class="bn"><i></i> Azure</div>
+        <div class="txt"><b>Azure Database for PostgreSQL</b> plus <b>Blob Storage</b>. Feature for feature, the same capability.</div>
+        <div class="verdict">Strength: excellent managed database tooling</div>
+      </div>
+    </div></div>
+  </div></section>
+
+  <!-- 6 THE AI - the decider -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Area 3 of 6 - the decider</p>
+      <h2>The AI<br><span class="hl">scanning.</span></h2>
+      <p class="say">This is the one area where they genuinely differ, and it happens to be our heaviest and most expensive workload. The AI needs GPUs, which are specialised and costly.</p>
+      <div class="read">
+        <div class="rh">Both are strong, but this is where they part</div>
+        <p>Azure has a capable AI platform and is superb if you build on Microsoft AI services. <b>AWS has the wider choice of GPUs, better pricing on them, and the more mature AI tooling.</b></p>
+        <p><b>Why AWS is my choice:</b> we don't use Microsoft AI services, so Azure's strength here isn't one we'd draw on. Meanwhile the biggest line on our future bill is GPUs, and that is exactly where AWS is strongest. Our scanning is bursty too, so GPUs can wake for a scan and shut down when idle, and we pay only while scanning.</p>
+      </div>
+    </div>
+    <div><div class="vs">
+      <div class="opt aws">
+        <div class="bn"><i></i> AWS</div>
+        <div class="txt">Widest selection of GPU types, generally the best prices, and <b>SageMaker</b>, the most mature set of AI tools of any cloud.</div>
+        <div class="verdict">Strength: widest GPU range, best GPU pricing</div>
+      </div>
+      <div class="opt azure">
+        <div class="bn"><i></i> Azure</div>
+        <div class="txt">Fully capable through <b>Azure ML</b>, with a somewhat narrower GPU menu. It would work, it just isn't the strong point.</div>
+        <div class="verdict">Strength: strong AI platform, superb if you use Microsoft AI services</div>
+      </div>
+    </div></div>
+  </div></section>
+
+  <!-- 7 LOGIN -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Area 4 of 6</p>
+      <h2>How people<br><span class="hl">sign in.</span></h2>
+      <p class="say">This is usually the reason teams choose Azure, because it plugs straight into Microsoft accounts. I looked at it carefully, and I don't think it applies to us.</p>
+      <div class="read">
+        <div class="rh">Azure is genuinely better here, but we can't use it</div>
+        <p>Credit where it's due: <b>Microsoft Entra is the best identity system of the two.</b> If our users signed in with Microsoft accounts, that alone might decide this.</p>
+        <p><b>Why it doesn't decide it for us:</b> our users are datacenter technicians signing in with accounts their own employer issues. They aren't Microsoft users, so we'd never draw on that strength. Both clouds handle the standard company sign in we actually need.</p>
+      </div>
+    </div>
+    <div><div class="vs">
+      <div class="opt aws">
+        <div class="bn"><i></i> AWS</div>
+        <div class="txt"><b>Cognito</b> handles standard company sign-in, connecting to whatever identity system the customer already uses.</div>
+        <div class="verdict">Strength: flexible, connects to any identity system</div>
+      </div>
+      <div class="opt azure">
+        <div class="bn"><i></i> Azure</div>
+        <div class="txt"><b>Microsoft Entra.</b> Genuinely best in class if your users are on Microsoft accounts. Ours aren't, so we simply don't get to use that strength.</div>
+        <div class="verdict">Strength: the best in the business for Microsoft logins</div>
+      </div>
+    </div></div>
+  </div></section>
+
+  <!-- 8 OPS -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Area 5 of 6</p>
+      <h2>Watching it,<br>and <span class="hl">shipping safely.</span></h2>
+      <p class="say">Both give us live dashboards, alerts to our phones, and a safe one button way to release updates with an undo.</p>
+      <div class="read">
+        <div class="rh">Azure is slightly nicer here</div>
+        <p>Being honest: <b>Azure's dashboards are friendlier out of the box.</b> AWS gives deeper control once you know it, but Azure is the easier start.</p>
+        <p><b>Why it doesn't change my choice:</b> this is a comfort difference, not a capability one. It isn't enough to outweigh the GPU gap on our heaviest workload.</p>
+      </div>
+    </div>
+    <div><div class="vs">
+      <div class="opt aws">
+        <div class="bn"><i></i> AWS</div>
+        <div class="txt"><b>CloudWatch</b> for dashboards and alerts, <b>CodePipeline</b> for automatic releases with rollback. Deep and mature.</div>
+        <div class="verdict">Strength: deepest control once you know it</div>
+      </div>
+      <div class="opt azure">
+        <div class="bn"><i></i> Azure</div>
+        <div class="txt"><b>Azure Monitor</b> with friendly dashboards, and <b>deploy slots</b> for instant swap and rollback.</div>
+        <div class="verdict">Strength: friendliest dashboards out of the box</div>
+      </div>
+    </div></div>
+  </div></section>
+
+  <!-- 9 COST -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Area 6 of 6</p>
+      <h2>What it<br><span class="hl">costs.</span></h2>
+      <p class="say">Broadly the same on both. The GPU choice drives the bill far more than the provider does.</p>
+      <div class="read">
+        <div class="rh">Level pegging on price</div>
+        <p><b>These are research estimates, not quotes.</b> Both are priced similarly and both offer startup credits that could cover much of the first year.</p>
+        <p><b>Why AWS still edges it:</b> not the sticker price, but the GPUs. Cheaper GPU rates plus scaling them to zero means our <b>largest variable cost</b> is lower over time.</p>
+      </div>
+    </div>
+    <div><div class="vs" style="grid-template-columns:1fr 1fr">
+      <div class="cc aws">
+        <div class="bn"><i></i> AWS</div>
+        <div class="cr"><span>Lean pilot</span><span class="v">~$150-400</span></div>
+        <div class="cr"><span>Production, no GPU</span><span class="v">~$500-1,200</span></div>
+        <div class="cr"><span>With GPU on demand</span><span class="v">~$900-2,500+</span></div>
+      </div>
+      <div class="cc azure">
+        <div class="bn"><i></i> Azure</div>
+        <div class="cr"><span>Lean pilot</span><span class="v">~$150-400</span></div>
+        <div class="cr"><span>Production, no GPU</span><span class="v">~$500-1,200</span></div>
+        <div class="cr"><span>With GPU on demand</span><span class="v">~$900-2,500+</span></div>
+      </div>
+    </div>
+    <div class="strip n"><b>Monthly, rough order of magnitude.</b> I'd want a proper costing before we commit to anything.</div>
+    </div>
+  </div></section>
+
+  <!-- 9a AWS'S REAL STRENGTHS -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Where AWS leads</p>
+      <h2>AWS's real<br><span class="hl">strengths.</span></h2>
+      <p class="say">Before I pick a side, here is what each platform is genuinely best at. These are AWS's, and the first one lands directly on our heaviest workload.</p>
+      <div class="read">
+        <div class="rh">The one that matters most to us</div>
+        <p><b>AI and GPU work.</b> The scanning is the most expensive thing we do. AWS has the widest GPU choice, the keenest pricing, and the deepest machine learning toolkit of any cloud.</p>
+      </div>
+    </div>
+    <div><div class="list">
+      <div class="li"><span class="n">1</span><span class="tx"><b>The deepest AI and GPU toolkit</b><span class="sub">widest GPU range, best GPU pricing, and SageMaker, the most mature ML platform available</span></span><span class="tag aws">AWS</span></div>
+      <div class="li"><span class="n">2</span><span class="tx"><b>The largest service catalogue</b><span class="sub">if we ever need something unusual, AWS almost certainly already has a managed version of it</span></span><span class="tag aws">AWS</span></div>
+      <div class="li"><span class="n">3</span><span class="tx"><b>Biggest talent pool and documentation</b><span class="sub">easier to hire for, and far more answers online when we get stuck</span></span><span class="tag aws">AWS</span></div>
+      <div class="li"><span class="n">4</span><span class="tx"><b>The longest track record at scale</b><span class="sub">the most battle tested of the two, running some of the largest systems in the world</span></span><span class="tag aws">AWS</span></div>
+      <div class="li"><span class="n">5</span><span class="tx"><b>The widest third party ecosystem</b><span class="sub">most tools and vendors integrate with AWS first</span></span><span class="tag aws">AWS</span></div>
+    </div></div>
+  </div></section>
+
+  <!-- 9b AZURE'S REAL STRENGTHS -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Where Azure leads</p>
+      <h2>Azure's real<br><span class="hl">strengths.</span></h2>
+      <p class="say">It would be dishonest to reduce Azure to "good for Microsoft logins". These are the areas where it genuinely leads, and one of them deserves a proper conversation.</p>
+      <div class="read">
+        <div class="rh">The one I want to flag</div>
+        <p><b>Hybrid and on-premises.</b> Our customers are datacenter operators. Some may not want our software in a public cloud at all, and would rather run it on their own hardware. Azure is clearly the strongest platform for that.</p>
+      </div>
+    </div>
+    <div><div class="list">
+      <div class="li"><span class="n">1</span><span class="tx"><b>Running inside a customer's own datacenter</b><span class="sub">Azure Arc and Azure Stack are the best in the industry for this. AWS has an answer, but it isn't as strong</span></span><span class="tag azure">Azure</span></div>
+      <div class="li"><span class="n">2</span><span class="tx"><b>Compliance and regulated industries</b><span class="sub">an exceptionally broad set of certifications, plus dedicated government regions. Matters if we sell to banks, healthcare or government</span></span><span class="tag azure">Azure</span></div>
+      <div class="li"><span class="n">3</span><span class="tx"><b>More geographic regions</b><span class="sub">relevant to "where is our data allowed to live", which enterprise buyers always ask</span></span><span class="tag azure">Azure</span></div>
+      <div class="li"><span class="n">4</span><span class="tx"><b>Can idle down to zero natively</b><span class="sub">Container Apps does this out of the box; the AWS equivalent needs more setup</span></span><span class="tag azure">Azure</span></div>
+      <div class="li"><span class="n">5</span><span class="tx"><b>Commercially easy for Microsoft customers</b><span class="sub">if a buyer already has a Microsoft agreement, adding Azure is frictionless</span></span><span class="tag azure">Azure</span></div>
+    </div></div>
+  </div></section>
+
+  <!-- 9c THE OPEN QUESTION -->
+  <section class="slide"><div class="one">
+    <p class="kick">An honest open question</p>
+    <h1>One thing could<br><span class="hl">change my answer.</span></h1>
+    <p class="say" style="max-width:66ch;font-size:clamp(17.5px,1.42vw,22px)">Everything I've recommended assumes we run RackTrack as a service that customers connect to. <b>If instead we need to ship it into customers' own datacenters, Azure becomes the stronger choice</b> and I'd change my recommendation.</p>
+    <p class="say" style="max-width:66ch;font-size:clamp(17.5px,1.42vw,22px)">I don't have visibility on that. It's a product and sales question, not an engineering one.</p>
+    <div class="read" style="max-width:68ch">
+      <div class="rh">What I need to know</div>
+      <p><b>Do we expect customers to ask for an on-premises version?</b> If the answer is yes, or even likely, tell me now and I'll re-run this comparison with that as a requirement.</p>
+    </div>
+  </div></section>
+
+  <!-- 10 OTHER OPTIONS -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Being fair about it</p>
+      <h2>We do have<br><span class="hl">other options.</span></h2>
+      <p class="say">I focused on AWS and Azure because they're the two most likely to satisfy an enterprise buyer's questions. But they aren't the only paths, and I'd rather put the alternatives on the table than pretend it's a two horse race.</p>
+      <div class="read">
+        <div class="rh">My read</div>
+        <p>I'd still choose a major cloud, <b>because enterprise buyers ask who hosts us and recognise these names</b>. But if cost or simplicity matters more than that, options 2 and 3 are legitimate.</p>
+      </div>
+    </div>
+    <div><div class="list">
+      <div class="li"><span class="n">1</span><span class="tx"><b>Google Cloud</b><span class="sub">also strong for AI work. I left it out mainly because it's less commonly asked for by enterprise buyers, not because it's weaker</span></span></div>
+      <div class="li"><span class="n">2</span><span class="tx"><b>Stay where we are, add backups</b><span class="sub">cheapest and fastest. Fixes the data risk but not the single server problem or scaling</span></span></div>
+      <div class="li"><span class="n">3</span><span class="tx"><b>A simpler managed platform</b><span class="sub">easier and cheaper to run, but less of the enterprise paperwork buyers expect</span></span></div>
+      <div class="li"><span class="n">4</span><span class="tx"><b>A hybrid</b><span class="sub">keep the app where it is, move only storage and backups to a cloud. A halfway step</span></span></div>
+    </div></div>
+  </div></section>
+
+  <!-- 11 SCORECARD -->
+  <section class="slide"><div class="two">
+    <div>
+      <p class="kick">Putting it together</p>
+      <h2>Two strong platforms.<br>Different <span class="hl">strengths.</span></h2>
+      <p class="say">Neither is the better cloud. They lead in different places, and several categories are genuinely tied. So this isn't a scoreboard, it's a question of fit.</p>
+      <div class="read">
+        <div class="rh">How I'd decide it</div>
+        <p><b>Ask which strengths we would actually use.</b> Both lists below are real. The difference is that AWS's lead sits on the workload that will dominate our bill, while most of Azure's lead sits on things our product doesn't currently need.</p>
+      </div>
+    </div>
+    <div><div class="list">
+      <div class="li"><span class="n">·</span><span class="tx"><b>AI and GPU work</b><span class="sub">our heaviest and most expensive workload</span></span><span class="tag aws">AWS</span></div>
+      <div class="li"><span class="n">·</span><span class="tx"><b>Service range and ecosystem</b><span class="sub">most tools integrate with AWS first</span></span><span class="tag aws">AWS</span></div>
+      <div class="li"><span class="n">·</span><span class="tx"><b>Hiring and finding help</b><span class="sub">larger talent pool, more documentation</span></span><span class="tag aws">AWS</span></div>
+      <div class="li"><span class="n">·</span><span class="tx"><b>Hybrid and on-premises</b><span class="sub">running inside a customer's own datacenter</span></span><span class="tag azure">Azure</span></div>
+      <div class="li"><span class="n">·</span><span class="tx"><b>Compliance and regions</b><span class="sub">matters more as we chase regulated buyers</span></span><span class="tag azure">Azure</span></div>
+      <div class="li"><span class="n">·</span><span class="tx"><b>Identity and sign-in</b><span class="sub">genuinely better, though our users aren't Microsoft accounts</span></span><span class="tag azure">Azure</span></div>
+      <div class="li"><span class="n">·</span><span class="tx"><b>Database, backups and uptime</b><span class="sub">the fix we most need, solved equally well by both</span></span><span class="tag tie">Even</span></div>
+      <div class="li"><span class="n">·</span><span class="tx"><b>Cost to run</b><span class="sub">priced similarly; our GPU setup drives it more than the provider</span></span><span class="tag tie">Even</span></div>
+      <div class="li"><span class="n">·</span><span class="tx"><b>Monitoring and safe releases</b><span class="sub">both capable; Azure friendlier at first, AWS deeper later</span></span><span class="tag tie">Even</span></div>
+    </div></div>
+  </div></section>
+
+  <!-- 12 RECOMMENDATION -->
+  <section class="slide"><div class="one">
+    <p class="kick">My recommendation</p>
+    <h1 style="font-size:clamp(38px,4.6vw,70px)">I'd go <span class="hl">AWS</span>.</h1>
+    <p class="say" style="max-width:68ch;font-size:clamp(17.5px,1.42vw,22px)">We're an AI product first. The scanning is the heaviest and most expensive thing we do, and it's the one area where the two genuinely differ. <b>Choosing the platform that's strongest at our largest cost is the decision I can most easily defend.</b></p>
+    <p class="say" style="max-width:68ch;font-size:clamp(17.5px,1.42vw,22px)">Azure is an equally strong platform and leads in real areas. But those areas, hybrid deployment and Microsoft identity, are ones our product doesn't currently draw on. If that changes, so does my answer.</p>
+    <div class="read" style="max-width:70ch">
+      <div class="rh">Three things that would change my mind</div>
+      <p><b>1.</b> If customers will want RackTrack on their own hardware, Azure is stronger.<br>
+         <b>2.</b> If we're targeting regulated buyers where compliance breadth matters.<br>
+         <b>3.</b> If our own team is already fluent in Microsoft tooling, because familiarity beats any feature comparison.</p>
+    </div>
+    <div class="strip n" style="max-width:70ch"><b>Whichever we pick, I'd build on standard components</b> so most of it could move later. I don't want this to be a one way door.</div>
+  </div></section>
+
+  <!-- 13 IT'S YOUR CALL -->
+  <section class="slide"><div class="one">
+    <p class="kick">Over to you</p>
+    <h1>This is my read.<br>The <span class="hl">call is yours.</span></h1>
+    <p class="say" style="max-width:64ch;font-size:clamp(17.5px,1.42vw,22px)">What I've given you here is research and an engineering opinion. I've tried to be fair to both, and to show you where they genuinely tie rather than manufacture a difference.</p>
+    <p class="say" style="max-width:64ch;font-size:clamp(17.5px,1.42vw,22px)">There will be things I can't see from where I sit. Existing contracts or credits. Cost constraints. A commercial relationship. Where customer data is allowed to live. <b>Any of those could reasonably outweigh what's on these slides</b>, and I'd want to know before we commit.</p>
+    <div class="read" style="max-width:66ch">
+      <div class="rh">What I'd like from you</div>
+      <p>A direction, so I can start the first stage. If it's AWS I'll begin the foundation work. <b>If you'd rather go another way, tell me why and I'll plan around it.</b></p>
+    </div>
+  </div></section>
+
+</div>
+
+<div class="bar">
+  <div class="side"><button class="btn" id="prev">← Back</button></div>
+  <div class="count" id="count">1 / 16</div>
+  <div class="side"><button class="btn" id="next">Next →</button></div>
+</div>
+<div class="dots" id="dots"></div>
+
+<script>
+  (function(){
+    var slides=[].slice.call(document.querySelectorAll('.slide'));
+    var i=0,n=slides.length;
+    var prev=document.getElementById('prev'),next=document.getElementById('next'),
+        count=document.getElementById('count'),dots=document.getElementById('dots'),prog=document.getElementById('prog');
+    for(var d=0;d<n;d++){(function(k){var b=document.createElement('button');b.className='pd';
+      b.setAttribute('aria-label','Slide '+(k+1));
+      b.addEventListener('click',function(ev){ev.stopPropagation();go(k);});dots.appendChild(b);})(d);}
+    var pds=[].slice.call(dots.children);
+    function go(k){
+      i=Math.max(0,Math.min(n-1,k));
+      slides.forEach(function(s,x){s.classList.toggle('on',x===i);});
+      pds.forEach(function(p,x){p.classList.toggle('on',x===i);});
+      count.textContent=(i+1)+' / '+n;
+      prev.disabled=i===0;next.disabled=i===n-1;
+      prog.style.width=((i+1)/n*100)+'%';
+    }
+    prev.addEventListener('click',function(e){e.stopPropagation();go(i-1);});
+    next.addEventListener('click',function(e){e.stopPropagation();go(i+1);});
+    document.addEventListener('keydown',function(e){
+      if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(i+1);}
+      else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(i-1);}
+      else if(e.key==='Home'){go(0);} else if(e.key==='End'){go(n-1);}
+    });
+    go(0);
+  })();
+</script>
+</body>
+</html>

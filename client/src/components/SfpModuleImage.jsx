@@ -17,7 +17,7 @@ import { useState } from 'react';
 //   connector (RJ45 / LC duplex / MPO / DAC)
 //       from `type` (T / SR / LR / SX / LX / SR4 / LR4 / DAC ...)
 //
-// All inputs are best-effort — unknown values fall through to a generic
+// All inputs are best-effort - unknown values fall through to a generic
 // SFP silhouette so we always render *something*.
 
 const BRAND_COLOURS = {
@@ -78,7 +78,7 @@ const FORM_HEIGHTS = {
   'qsfp-dd': 22,
 };
 
-// SfpModuleImage — props:
+// SfpModuleImage - props:
 //   module: the SFP module object (partNumber, brand, type, speed, imageUrl?)
 //   size:   'hero' (large, used in TOP PICK card) | 'compact' (small, list rows)
 export default function SfpModuleImage({ module, size = 'compact' }) {
@@ -88,7 +88,7 @@ export default function SfpModuleImage({ module, size = 'compact' }) {
   // don't retry within a render lifetime.
   const [imgFailed, setImgFailed] = useState(false);
   if (module?.imageUrl && !imgFailed) {
-    // No decorative container — the parent card supplies whatever
+    // No decorative container - the parent card supplies whatever
     // framing is wanted. Hero size uses `cover` so the product photo
     // visually fills its slot; compact thumb uses `contain` so small
     // images don't get cropped.
@@ -111,7 +111,7 @@ export default function SfpModuleImage({ module, size = 'compact' }) {
     );
   }
 
-  // No real image available — render nothing (used to draw an SVG
+  // No real image available - render nothing (used to draw an SVG
   // silhouette here but the user explicitly asked for no generated
   // graphics). The parent card layout still works because the image
   // slot collapses gracefully.

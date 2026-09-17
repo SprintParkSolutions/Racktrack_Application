@@ -1,0 +1,32 @@
+/* Setup completeness marks. Flat by design: these are labels, not
+   controls, so no lift and no fill - a hairline and ink. Class names avoid
+   the card / chip / pill / badge substrings that index.css restyles. */
+
+.flags {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.flag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 999px;
+  border: 1px solid rgba(18, 18, 18, 0.16);
+  color: #6b6b6b; background: #fff;
+  font-size: 11.5px; font-weight: 600; letter-spacing: .01em;
+  white-space: nowrap;
+}
+.flagOn { border-color: #121212; color: #121212; }
+.mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 50%;
+  font-size: 10px; line-height: 1;
+  background: rgba(18, 18, 18, 0.08); color: #6b6b6b;
+}
+.flagOn .mark { background: #121212; color: #fff; }
+
+.line { font-size: 12px; color: #6b6b6b; font-weight: 500; }
+.lineOn { color: #121212; }
+
+.sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}

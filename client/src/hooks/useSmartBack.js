@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 // A back handler that never dead-ends. Plain navigate(-1) does nothing when
-// there's no history to go back to — which happens a lot on mobile: a cold
+// there's no history to go back to - which happens a lot on mobile: a cold
 // start straight onto a page, a deep link, or after a replace-navigation (e.g.
 // the scan-resume redirect). In those cases we send the user to a sensible
 // fallback instead of leaving the button inert.

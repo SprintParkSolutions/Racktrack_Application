@@ -2,7 +2,7 @@
  * SFP Module Database Query
  *
  * Queries vendor SFP specifications to advise procurement and validate
- * cable compatibility in the switch. Server-side lookup only — no on-device inference.
+ * cable compatibility in the switch. Server-side lookup only - no on-device inference.
  */
 
 import { apiUrl, authFetch } from './api';

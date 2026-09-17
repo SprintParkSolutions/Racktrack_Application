@@ -4,7 +4,7 @@ import styles from './CmdbApprovalModal.module.css';
 import useModalA11y from '../hooks/useModalA11y.js';
 
 /**
- * CMDB approval flow modal — three sequential states:
+ * CMDB approval flow modal - three sequential states:
  *   1. "missing"   → Device(s) not in CMDB. CTA: Raise Service Request.
  *   2. "pending"   → SR raised, awaiting approval. CTA: Dev Approve & Apply.
  *   3. "applied"   → Pushed scan + dummy data. Shows what was applied.
@@ -60,7 +60,7 @@ export default function CmdbApprovalModal({ rackId, ticket, onClose, onTicketUpd
         { method: 'POST' });
       const data = await r.json();
       // Hold the "synchronizing" view for at least 1.2s so the transition
-      // doesn't feel jarring — server-side this is now near-instant.
+      // doesn't feel jarring - server-side this is now near-instant.
       const elapsed = Date.now() - startedAt;
       if (elapsed < 1200) await new Promise((res) => setTimeout(res, 1200 - elapsed));
       if (!data?.ok) {

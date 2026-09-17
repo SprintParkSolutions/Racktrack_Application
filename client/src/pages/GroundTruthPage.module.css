@@ -1,4 +1,4 @@
-/* Ground Truth — white-focused, subtle black accents. Matches the app's flat
+/* Ground Truth - white-focused, subtle black accents. Matches the app's flat
    card language: #fff surfaces, 1px hairlines, no shadows (the global theme
    strips them anyway), ink #121212 as the accent. */
 
@@ -246,7 +246,7 @@
 .emptyBody { margin: 8px auto 18px; max-width: 42ch; color: var(--muted, #717171); font-size: 0.9rem; }
 .empty .btnPrimary { display: inline-block; flex: 0 0 auto; padding: 12px 22px; }
 
-/* ── Browse — scan grid ── */
+/* ── Browse - scan grid ── */
 .scanGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -272,7 +272,7 @@
 .progBar { display: block; height: 100%; border-radius: 99px; background: #121212; }
 .progText { font-size: 0.72rem; font-weight: 600; color: var(--muted, #717171); white-space: nowrap; }
 
-/* ── Browse — detail ── */
+/* ── Browse - detail ── */
 .backLink {
   background: none; border: none; cursor: pointer;
   color: var(--muted, #717171); font-family: inherit; font-size: 0.86rem; font-weight: 600;

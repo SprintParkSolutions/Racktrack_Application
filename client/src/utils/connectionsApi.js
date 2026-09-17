@@ -1,4 +1,4 @@
-// HTTP wrappers around /api/connections — saved per-user credentials for
+// HTTP wrappers around /api/connections - saved per-user credentials for
 // external data sources (ServiceNow, NetBox, SolarWinds Orion, etc.).
 // All calls go through authFetch so the user's bearer token is attached.
 import { apiUrl, authFetch } from './api';
@@ -81,7 +81,7 @@ export async function deleteConnection(id) {
 }
 
 // Kicks off the ServiceNow inbox poll against the user's active profile
-// and returns IMMEDIATELY — the poll itself can take up to a few minutes
+// and returns IMMEDIATELY - the poll itself can take up to a few minutes
 // when a developer PDI is cold. Caller should poll getRefreshStatus()
 // until state !== 'running'.
 export async function refreshIncidents() {
@@ -93,7 +93,7 @@ export async function refreshIncidents() {
 
 // Returns the latest poll job state: { state, instance, startedAt,
 // finishedAt, count, error }. state is one of 'idle' | 'running' |
-// 'done' | 'failed'. Safe to call frequently — the server just reads
+// 'done' | 'failed'. Safe to call frequently - the server just reads
 // an in-memory record.
 export async function getRefreshStatus() {
   const res = await authFetch(apiUrl('/api/incidents/refresh/status'));
@@ -102,7 +102,7 @@ export async function getRefreshStatus() {
 
 // ── Org-scoped connections (admin-set, org-wide, write-only) ──
 // Managed by an org_admin; used by the whole org's pipeline. The server never
-// returns the secret — list() gives metadata only. Create replaces any prior
+// returns the secret - list() gives metadata only. Create replaces any prior
 // credential of the same type.
 export async function listOrgConnections() {
   const res = await authFetch(apiUrl('/api/org-connections'));

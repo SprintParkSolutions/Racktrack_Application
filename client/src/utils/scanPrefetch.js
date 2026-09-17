@@ -1,17 +1,17 @@
-// Scan prefetch coordinator — fires every per-rack data fetch the moment
+// Scan prefetch coordinator - fires every per-rack data fetch the moment
 // the analyze succeeds, so that by the time the user lands on the
 // Overview / Ports / Topology / Switches tabs, the data is already in
 // memory and the cards render instantly.
 //
 // Architecture:
-//   1. prefetchScan(rackId) — fire once from ScanPage.jsx after the
-//      analyze succeeds. Idempotent — calling twice for the same rackId
+//   1. prefetchScan(rackId) - fire once from ScanPage.jsx after the
+//      analyze succeeds. Idempotent - calling twice for the same rackId
 //      is a no-op.
 //   2. Each prefetch step writes into the shared cache (Map<key,Promise>).
 //   3. Data-consuming pages call getCached(key) for instant access; if
 //      the cache miss, they fall back to their existing fetch.
 //
-// All prefetches are best-effort and silent — failures don't propagate
+// All prefetches are best-effort and silent - failures don't propagate
 // to the user. The fallback fetch on the consuming page handles errors.
 
 import { apiUrl, authFetch } from './api';
@@ -29,7 +29,7 @@ function _key(rackId, kind, ...parts) {
 /**
  * Synchronously look up a previously-prefetched value.
  * Returns null if not yet cached. Pages should treat this as an
- * optimization — always have a fallback fetch path.
+ * optimization - always have a fallback fetch path.
  */
 export function getCached(key) {
   return _values.has(key) ? _values.get(key) : null;
@@ -206,7 +206,7 @@ async function _prefetchOcrDependents(rackId, scan) {
   if (!ocr || !Array.isArray(ocr.devices)) return;
 
   // Per-device specs + firmware. Limit concurrency implicitly via the
-  // server's request handling — we kick all in parallel and let them
+  // server's request handling - we kick all in parallel and let them
   // queue up server-side.
   for (const dev of ocr.devices) {
     if (dev.make && dev.model) {
@@ -220,7 +220,7 @@ async function _prefetchOcrDependents(rackId, scan) {
   // SFP advisor: identify the primary switch and prefetch SFP analysis.
   const primarySwitch = ocr.devices.find(d => d.class_name === 'Switch' && d.make);
   if (primarySwitch) {
-    // We need the SFP port interfaces — those come from the SSH probe,
+    // We need the SFP port interfaces - those come from the SSH probe,
     // not OCR. The probe is already running (kicked off in ScanPage via
     // triggerBackgroundProbe). We can't reliably prefetch SFP analysis
     // here without that info; instead we just warm the cache from the
@@ -244,7 +244,7 @@ export function prefetchScan(rackId) {
   const scan = { startedAt: Date.now(), cache: new Map() };
   _scans.set(rackId, scan);
 
-  // Independent fetches — fire all at once, no dependencies.
+  // Independent fetches - fire all at once, no dependencies.
   _prefetchScanResult(rackId, scan);
   _prefetchTopology(rackId, scan);
   _prefetchCmdb(rackId, scan);

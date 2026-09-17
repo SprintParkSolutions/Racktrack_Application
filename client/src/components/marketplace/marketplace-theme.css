@@ -5,12 +5,11 @@
    its layout from these, so a button, an input and a card are the same
    object on all seven screens. Before this file the section had 86
    hardcoded hex values across seven stylesheets and no shared vocabulary
-   at all — Edit was blue, Mark Sold was green, Delete was red, Buy Now
+   at all - Edit was blue, Mark Sold was green, Delete was red, Buy Now
    was indigo and "Post to Amazon" was amber, all on the same card.
 
    THE RULE OF THIS SECTION: the interface is white, black and one
-   hairline. Colour is reserved for state that a user must not misread —
-   a status dot, a destructive confirm — and never used for decoration.
+   hairline. Colour is reserved for state that a user must not misread - a status dot, a destructive confirm - and never used for decoration.
    Everything else earns emphasis through weight, size and space.
 
    These are deliberately global (not CSS-module) classes so the pages
@@ -31,7 +30,7 @@
   --mkt-ink:      var(--md-on-surface, #121212);
   --mkt-muted:    var(--md-on-surface-variant, #717171);
 
-  /* Semantic — small doses only. */
+  /* Semantic - small doses only. */
   --mkt-pos:      #16a34a;
   --mkt-warn:     #b45309;
   --mkt-neg:      #b42318;
@@ -99,7 +98,7 @@
 .mkt-btn--block { width: 100%; }
 .mkt-btn--tall  { height: 42px; font-size: 13.5px; }
 
-/* Quiet text button — for tertiary actions like "Report listing". */
+/* Quiet text button - for tertiary actions like "Report listing". */
 .mkt-linkBtn {
   background: none; border: none; padding: 0;
   font: inherit; font-size: 12px; font-weight: 500;
@@ -134,7 +133,7 @@ select.mkt-field {
 .mkt-hint { font-size: 11.5px; color: var(--mkt-muted); line-height: 1.45; }
 
 /* ── Surfaces ────────────────────────────────────────────────────────
-   One card. Hover darkens the hairline to ink — the whole interaction
+   One card. Hover darkens the hairline to ink - the whole interaction
    vocabulary of this section, used identically on every clickable
    surface, replacing the old translateY lift. */
 .mkt-card {
@@ -147,7 +146,7 @@ select.mkt-field {
 .mkt-card--hover { transition: var(--mkt-t); }
 .mkt-card--hover:hover { border-color: var(--mkt-ink); }
 
-/* Section header — a title with an optional right-aligned control. */
+/* Section header - a title with an optional right-aligned control. */
 .mkt-sectionHead {
   display: flex; align-items: baseline; justify-content: space-between;
   gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
@@ -196,7 +195,7 @@ select.mkt-field {
   transition: var(--mkt-t);
 }
 .mkt-segment:hover:not(:disabled) { color: var(--mkt-ink); }
-/* Selected: lit ground, hard edge, ink text — not a filled black pill. */
+/* Selected: lit ground, hard edge, ink text - not a filled black pill. */
 .mkt-segment[aria-pressed='true'] {
   background: rgba(18, 18, 18, 0.06);
   color: var(--mkt-ink);
@@ -245,8 +244,8 @@ select.mkt-field {
 
    Separators are drawn by each cell's own top/left border pulled back
    1px, NOT by the "1px gap over a coloured container" trick. That trick
-   paints any cell the content doesn't reach — an odd number of facts in
-   a two-column grid, which the listing detail produces routinely — as a
+   paints any cell the content doesn't reach - an odd number of facts in
+   a two-column grid, which the listing detail produces routinely - as a
    solid grey block. Here an unfilled cell is simply white. */
 .mkt-facts {
   display: grid;

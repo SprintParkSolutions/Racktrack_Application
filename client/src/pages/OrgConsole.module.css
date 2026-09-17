@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════
-   Organization Console — minimal, white-focused, subtle black accents.
+   Organization Console - minimal, white-focused, subtle black accents.
    Type-led hierarchy · hairline borders · icon-anchored sections.
    Compact by design: tight vertical rhythm, dense grids, small radii.
    ══════════════════════════════════════════════════════════════════ */
@@ -39,7 +39,7 @@
 }
 /* .headBackBtn is gone: this header now renders the shared <BackButton>, like
    every other page. Its `align-self: center` was also why the control appeared
-   CENTRED at the top of the org dashboard on a phone — below 640px .head
+   CENTRED at the top of the org dashboard on a phone - below 640px .head
    becomes a column, and centring an item in a column centres it horizontally. */
 .eyebrow {
   margin: 0 0 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .16em;
@@ -55,7 +55,7 @@
   padding: 5px 10px; border-radius: 999px;
   background: #000000; color: #fff;
 }
-/* Was a #ececec hairline with #545454 text on white — testers reported
+/* Was a #ececec hairline with #545454 text on white - testers reported
    secondary controls "too dull and blending into the background", and this is
    one of them. The border is now dark enough to read as an edge and the label
    is ink, matching the global .btn-ghost in index.css, which was already fixed
@@ -110,7 +110,7 @@
 }
 .smallBtn:hover { border-color: #000000; color: #000000; }
 
-/* Destructive action — permanently remove an org. */
+/* Destructive action - permanently remove an org. */
 .dangerBtn {
   font-size: 12px; font-weight: 600; padding: 7px 12px;
   border-radius: 9px; border: 1px solid rgba(220,38,38,0.35); background: #fff; color: #dc2626;
@@ -241,7 +241,7 @@
 }
 .form .primaryBtn { margin-top: 4px; padding: 12px; font-size: 14px; border-radius: 12px; }
 
-/* ── iPad / desktop — use the reclaimed width ── */
+/* ── iPad / desktop - use the reclaimed width ── */
 @media (min-width: 768px) {
   .page {
     padding-top: calc(40px + env(safe-area-inset-top));
@@ -264,8 +264,8 @@
 @media (max-width: 640px) {
   .page { padding: calc(20px + env(safe-area-inset-top)) 15px calc(40px + env(safe-area-inset-bottom)); }
   /* Back and the title stay on ONE row; only the actions drop below. Stacking
-     everything put the back control on a line of its own, where — with the old
-     `align-self: center` — it landed in the middle of the screen. */
+     everything put the back control on a line of its own, where - with the old
+     `align-self: center` - it landed in the middle of the screen. */
   .head { flex-wrap: wrap; align-items: center; gap: 12px 10px; }
   .head > div { flex: 1 1 auto; min-width: 0; }
   .headActions { flex-basis: 100%; }
@@ -356,7 +356,7 @@
    column. Inside DesktopShell that fixed overlay covered the sidebar and made
    Organizations feel like a separate app. At tablet/desktop widths the shell
    already owns the scroll area, so stand the fixed positioning down and let
-   the page flow in the shell's content canvas — sidebar stays visible, exactly
+   the page flow in the shell's content canvas - sidebar stays visible, exactly
    like every other page. Phones (<768px) keep the full-screen scroller. */
 @media (min-width: 768px) {
   .scroll {
@@ -368,7 +368,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Owner org-LIST view — full-bleed dark hero + full-width white list.
+   Owner org-LIST view - full-bleed dark hero + full-width white list.
    `.bleed` cancels the .page side padding so bands reach both edges;
    its negative margins track the page padding at every breakpoint.
    ══════════════════════════════════════════════════════════════════ */
@@ -377,7 +377,7 @@
   margin-right: calc(-1 * max(22px, env(safe-area-inset-right)));
 }
 
-/* ── Hero (light — matches the app theme; same layout as the reference) ── */
+/* ── Hero (light - matches the app theme; same layout as the reference) ── */
 .hero {
   font-family: var(--font);
   background: #fff; color: #000000;
@@ -393,7 +393,7 @@
 }
 .heroTopLeft { display: flex; align-items: center; gap: 16px; min-width: 0; }
 /* The .heroBack override that repainted BackButton white-on-hairline here is
-   gone too — testers reported the back control as inconsistent and hard to
+   gone too - testers reported the back control as inconsistent and hard to
    find, and it was: filled black on every other screen, nearly invisible on
    this one. */
 .heroTitle {
@@ -466,7 +466,7 @@
 }
 .orgArrow { flex: none; color: #6b6b6b; font-size: 18px; line-height: 1; }
 
-/* ── Breakpoints — negative margins mirror the .page padding ── */
+/* ── Breakpoints - negative margins mirror the .page padding ── */
 @media (max-width: 640px) {
   .bleed { margin-left: -15px; margin-right: -15px; }
   .hero { margin-top: -20px; }

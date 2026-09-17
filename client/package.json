@@ -12,8 +12,10 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --max-warnings=570",
     "format": "prettier --write \"src/**/*.{js,jsx,css}\"",
-    "build:mobile": "node scripts/check-api-base.mjs && vite build",
-    "sync:ios": "npm run build:mobile && npx cap sync ios"
+    "build:mobile": "node scripts/check-api-base.mjs && vite build && node scripts/stamp-api-base.mjs",
+    "sync:ios": "npm run build:mobile && npx cap sync ios",
+    "capacitor:copy:before": "node scripts/check-dist-api-base.mjs",
+    "capacitor:sync:before": "node scripts/check-dist-api-base.mjs"
   },
   "engines": {
     "node": ">=18"

@@ -1,4 +1,4 @@
-/* Where a switch sits in the rack — see PlacePicker.jsx. */
+/* Where a switch sits in the rack - see PlacePicker.jsx. */
 
 .wrap { display: flex; flex-direction: column; gap: 4px; }
 

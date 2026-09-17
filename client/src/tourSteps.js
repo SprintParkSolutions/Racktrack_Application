@@ -1,6 +1,6 @@
 // Guided-tour step config for first-time users. Each step names a
 // `data-tour="..."` anchor already present in the real page (ScanPage.jsx /
-// ResultsPage.jsx) — the tour never renders fake UI, it spotlights the real
+// ResultsPage.jsx) - the tour never renders fake UI, it spotlights the real
 // element and waits for the real interaction before advancing.
 //
 // event: which DOM event on the anchor (or `advanceSelector`, if set) counts
@@ -8,7 +8,7 @@
 // optional: if the anchor never appears (e.g. no incident tickets for this
 // org), the step is skipped automatically instead of stalling the tour.
 // advanceWhenVisible: some steps don't complete via a click on their own
-// target — they complete once the app reaches a new state (a photo was
+// target - they complete once the app reaches a new state (a photo was
 // actually chosen, however that happened: file picker, drag-drop, camera
 // capture, or enough photos for multi-mode). A raw CSS selector that
 // matches once that state is reached advances the step automatically,
@@ -33,7 +33,7 @@ export const TOUR_STEPS = [
     target: 'analyze-rack-btn',
     // Completes when the results actually arrive, not when the button is
     // pressed. Pressing Analyze is not the same as analysing: the image
-    // quality gate can answer with "the image appears tilted — retake or
+    // quality gate can answer with "the image appears tilted - retake or
     // proceed anyway", and the scan has not run. Advancing on the click sent
     // the tour to "Pick a device" while the user was still on the scan page
     // deciding, so it asked for something that was not on screen and could
@@ -78,7 +78,7 @@ export const TOUR_STEPS = [
     id: 'full-report',
     // Anchored to the View chip in the report row. The original copy named a
     // "Full Device & Port Report" button, which exists in the prototype this
-    // came from but not here — the instruction has to match the label the user
+    // came from but not here - the instruction has to match the label the user
     // is actually looking at.
     target: 'full-report-btn',
     title: 'See the full report',

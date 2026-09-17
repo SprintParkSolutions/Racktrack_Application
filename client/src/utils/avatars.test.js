@@ -3,7 +3,7 @@
 // The load-bearing fact here is that users.avatar stores an INDEX into the
 // AVATARS array. Re-ordering or removing an entry silently reassigns every
 // user who ever picked one, and there is no way to detect that after the fact
-// — so the first test pins the array's shape, and the rest pin that an
+// - so the first test pins the array's shape, and the rest pin that an
 // unchosen user gets the same avatar on every load rather than a new one.
 
 import { describe, test, expect } from 'vitest';
@@ -21,7 +21,7 @@ describe('the AVATARS table', () => {
     // ramp above was blue-tinted: #3A3F47 is not R=G=B). Both are VALUE
     // changes, not shape changes: there are still eight entries in the same
     // eight slots, so every stored users.avatar index still resolves to the
-    // slot it always did — those users simply render monochrome now.
+    // slot it always did - those users simply render monochrome now.
     expect(AVATARS.slice(0, 8)).toEqual([
       { from: '#3f3f3f', to: '#171717' },
       { from: '#4f4f4f', to: '#262626' },

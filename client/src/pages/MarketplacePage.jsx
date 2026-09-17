@@ -8,16 +8,16 @@ import CategoryIcon from '../components/marketplace/CategoryIcon.jsx';
 import useModalA11y from '../hooks/useModalA11y.js';
 
 /* ──────────────────────────────────────────────────────────────────────
-   MarketplacePage — browse + my-listings.
+   MarketplacePage - browse + my-listings.
 
    Layout note: this page used to stack five full-width bands before a
-   user saw a single listing — header, intro paragraph, a large partner
+   user saw a single listing - header, intro paragraph, a large partner
    search card, a tab row, then a filter row. The partner search sat at
    the very top, which put "leave RackTrack" above "shop RackTrack".
 
    It is now one toolbar (search + category + kind + result count) and
    then the grid. The partner search still exists, demoted to a quiet
-   strip beneath the results where it reads as a fallback — which is
+   strip beneath the results where it reads as a fallback - which is
    what it is. Browse / My listings moved up into the shell nav so this
    page owns one level of controls instead of two.
    ────────────────────────────────────────────────────────────────────── */
@@ -48,7 +48,7 @@ const STATUS_PILL = {
   closed: 'mkt-pill--neutral',
 };
 
-/* Was 2 — the grid could never look like a marketplace, and because
+/* Was 2 - the grid could never look like a marketplace, and because
    "has more" was inferred from a full page, Next stayed live on the
    last page and landed the user on an empty one. We now ask for one
    extra row and render all but that, so the control reflects reality. */
@@ -169,7 +169,7 @@ function ListingCard({ listing, onOpen, onBuy }) {
 
 /* ── My-listings row ────────────────────────────────────────────────── */
 function MyListingRow({ listing, onOpen, onPatch, onDelete, onEdit }) {
-  // Two-step inline delete instead of window.confirm — the confirmation
+  // Two-step inline delete instead of window.confirm - the confirmation
   // stays inside the page and inside the design.
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -405,7 +405,7 @@ function ListingDetailModal({ listing, partners, onClose, onPatch, onDelete, isM
                 </p>
               )}
 
-              {/* Report — an inline form, replacing window.prompt(). */}
+              {/* Report - an inline form, replacing window.prompt(). */}
               {reported ? (
                 <p className="mkt-banner mkt-banner--success">
                   Reported. An admin will review this listing.
@@ -541,7 +541,7 @@ export default function MarketplacePage() {
   const [params, setParams] = useSearchParams();
 
   // The shell nav owns Browse / My listings, so the tab is read from the
-  // URL rather than held here — otherwise the two would drift apart.
+  // URL rather than held here - otherwise the two would drift apart.
   const tab = params.get('tab') === 'mine' ? 'mine' : 'browse';
 
   const [kind, setKind]         = useState(params.get('kind') === 'want' ? 'want' : 'sell');
@@ -603,7 +603,7 @@ export default function MarketplacePage() {
 
   useEffect(() => { fetchListings(); }, [fetchListings]);
 
-  // Reset to page 1 when the filters change — but not on first render,
+  // Reset to page 1 when the filters change - but not on first render,
   // or a bookmarked ?page=3 would be thrown away before it loaded.
   const firstRun = useRef(true);
   useEffect(() => {

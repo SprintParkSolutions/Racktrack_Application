@@ -20,6 +20,15 @@ export default [
   },
   js.configs.recommended,
   {
+    // Build and release scripts run under Node, not in the browser.
+    files: ['scripts/**/*.{js,mjs}', '*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { ...globals.node, ...globals.es2021 },
+    },
+  },
+  {
     files: ['src/**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2022,

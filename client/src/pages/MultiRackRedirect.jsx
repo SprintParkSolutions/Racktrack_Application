@@ -27,7 +27,7 @@ export default function MultiRackRedirect() {
         if (first) {
           navigate(`/results/${encodeURIComponent(first.rack_id)}`, { replace: true });
         } else {
-          // Group exists but has no members — fall back to the combined
+          // Group exists but has no members - fall back to the combined
           // topology, which will surface the empty-state.
           navigate(`/multi-rack/${encodeURIComponent(groupId)}/topology`, { replace: true });
         }

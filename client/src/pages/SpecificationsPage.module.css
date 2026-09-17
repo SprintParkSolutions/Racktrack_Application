@@ -2,7 +2,7 @@
   position: relative;
   /* Flex column so the header stays put and .scrollBody owns the scroll.
      The page root is `.page.page-full` (height:100vh, overflow:hidden), so
-     scrolling MUST live in an inner container — otherwise long spec tables
+     scrolling MUST live in an inner container - otherwise long spec tables
      are clipped and the page can't scroll on mobile. */
   display: flex;
   flex-direction: column;
@@ -12,7 +12,7 @@
   overflow: hidden;
 }
 
-/* The actual scroll container — grows to fill the page and scrolls its
+/* The actual scroll container - grows to fill the page and scrolls its
    overflow. Bottom padding clears the mobile tab bar / gives breathing room. */
 .scrollBody {
   flex: 1;
@@ -22,7 +22,7 @@
   padding-bottom: 90px;
 }
 
-/* Circular "Back to top" button — appears once the user scrolls down. */
+/* Circular "Back to top" button - appears once the user scrolls down. */
 .backToTop {
   position: absolute;
   right: 18px;
@@ -331,16 +331,16 @@
   word-break: break-word;
 }
 
-/* ── Minimalistic refresh — white + subtle black accents. Wins via cascade order. ── */
+/* ── Minimalistic refresh - white + subtle black accents. Wins via cascade order. ── */
 
-/* Page shell — kill the diagonal dark gradient, flatten to pure white. */
+/* Page shell - kill the diagonal dark gradient, flatten to pure white. */
 .specs {
   background: var(--md-background, #FFFFFF) !important;
   background-image: none !important;
   color: var(--md-on-surface, #121212);
 }
 
-/* Ambient blobs — the radial dark "glow" reads as dirt against white. Hide them. */
+/* Ambient blobs - the radial dark "glow" reads as dirt against white. Hide them. */
 .amb,
 .amb2 {
   display: none !important;
@@ -348,7 +348,7 @@
   filter: none !important;
 }
 
-/* Header — flat, no shadow, hairline only when needed. */
+/* Header - flat, no shadow, hairline only when needed. */
 .header {
   background: transparent;
   border: 0;
@@ -363,7 +363,7 @@
   letter-spacing: -0.01em;
 }
 
-/* Back button — outlined pill, no fill, no glow. */
+/* Back button - outlined pill, no fill, no glow. */
 .backBtn {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
@@ -380,7 +380,7 @@
   border-color: var(--md-on-surface, #121212) !important;
 }
 
-/* Intro / eyebrow / sub — hierarchy via weight + opacity, no grey ramp. */
+/* Intro / eyebrow / sub - hierarchy via weight + opacity, no grey ramp. */
 .eyebrow {
   color: var(--md-on-surface, #121212);
   opacity: 1;
@@ -399,7 +399,7 @@
   opacity: 0.65;
 }
 
-/* Inputs — white, hairline, no focus glow. */
+/* Inputs - white, hairline, no focus glow. */
 .input {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
@@ -422,7 +422,7 @@
   outline: none !important;
 }
 
-/* Suggestion list — flat white, hairline, no blur. */
+/* Suggestion list - flat white, hairline, no blur. */
 .suggestList {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
@@ -444,7 +444,7 @@
   opacity: 0.6;
 }
 
-/* Section labels — solid black, 11/700/uppercase/0.10em. */
+/* Section labels - solid black, 11/700/uppercase/0.10em. */
 .label,
 .highlightLabel,
 .specKey,
@@ -457,7 +457,7 @@
   text-transform: uppercase !important;
 }
 
-/* Spec values + highlight values — primary text, mono identifiers slightly muted. */
+/* Spec values + highlight values - primary text, mono identifiers slightly muted. */
 .highlightVal,
 .specVal,
 .summaryBody,
@@ -469,7 +469,7 @@
   font-weight: 500;
 }
 
-/* Error banner — flat, red border + red text, no glow. */
+/* Error banner - flat, red border + red text, no glow. */
 .errBanner {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
@@ -480,7 +480,7 @@
   border-radius: 10px;
 }
 
-/* Summary card — white, hairline, no shadow, no blur. */
+/* Summary card - white, hairline, no shadow, no blur. */
 .summaryCard,
 .result {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
@@ -493,7 +493,7 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* Subtle step container for highlight rows — white, hairline, flat. */
+/* Subtle step container for highlight rows - white, hairline, flat. */
 .highlights {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
@@ -510,12 +510,12 @@
   border-bottom: none !important;
 }
 
-/* Result head divider — hairline. */
+/* Result head divider - hairline. */
 .resultHead {
   border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
 }
 
-/* Source link pill — outlined, no fill on idle. */
+/* Source link pill - outlined, no fill on idle. */
 .sourceLink {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   background-image: none !important;
@@ -531,7 +531,7 @@
   color: var(--md-on-surface, #121212) !important;
 }
 
-/* CTA / summary buttons — outlined pill, active = solid black border + bold. */
+/* CTA / summary buttons - outlined pill, active = solid black border + bold. */
 .cta,
 .summaryBtn {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
@@ -555,7 +555,7 @@
   outline: none !important;
 }
 
-/* ── SwitchInformationPage — SwitchCard renders via inline styles, so we
+/* ── SwitchInformationPage - SwitchCard renders via inline styles, so we
    need !important descendants of .specs to neutralise drop-shadows,
    gradients, blurs, and dark fills on cards / rows / pills. ── */
 
@@ -573,7 +573,7 @@
   color: var(--md-on-surface, #121212) !important;
 }
 
-/* Everything nested inside switch cards — strip shadows, blurs, gradients. */
+/* Everything nested inside switch cards - strip shadows, blurs, gradients. */
 .specs article *,
 .specs article *::before,
 .specs article *::after {
@@ -584,14 +584,14 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* Header button inside switch card — flat, no fill on hover. */
+/* Header button inside switch card - flat, no fill on hover. */
 .specs article > button {
   background: transparent !important;
   background-image: none !important;
   color: var(--md-on-surface, #121212) !important;
 }
 
-/* Fields grid + tiles inside expanded card — #ffffff tiles on white card. */
+/* Fields grid + tiles inside expanded card - #ffffff tiles on white card. */
 .specs article div[style*="grid"] > div {
   background-image: none !important;
 }
@@ -610,7 +610,7 @@
   opacity: 0.7;
 }
 
-/* ── Status accent palette — green / red / amber, no blue. ── */
+/* ── Status accent palette - green / red / amber, no blue. ── */
 [data-status="ok"],
 [data-status="healthy"],
 [data-status="active"] {
@@ -688,7 +688,7 @@
   color: var(--md-on-surface, #121212) !important;
 }
 
-/* Scrollable areas — neutral white bg, hairline only. */
+/* Scrollable areas - neutral white bg, hairline only. */
 .specs [class*="scroll"],
 .specs [class*="Scroll"],
 .suggestList {
@@ -697,7 +697,7 @@
   scrollbar-color: var(--md-outline-variant, #E0E0E0) transparent;
 }
 
-/* List containers — when authored as <ul>/<ol> inside switch cards. */
+/* List containers - when authored as <ul>/<ol> inside switch cards. */
 .specs article ul,
 .specs article ol {
   list-style: none;
@@ -717,7 +717,7 @@
   color: var(--md-on-surface, #121212) !important;
 }
 
-/* Empty / loading / error state blocks — white card, hairline, no glow. */
+/* Empty / loading / error state blocks - white card, hairline, no glow. */
 .specs > div[style*="textAlign"],
 .specs > div[style*="text-align"] {
   background: transparent !important;

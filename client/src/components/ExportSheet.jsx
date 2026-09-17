@@ -10,8 +10,8 @@ import styles from './ExportSheet.module.css';
  *
  * Preview always comes first and it writes nothing: the engineer sees exactly
  * what would change in the system of record before anything does. Push is
- * safe to run twice — every object carries a stable id, so a second run
- * updates rather than duplicates — and it never deletes.
+ * safe to run twice - every object carries a stable id, so a second run
+ * updates rather than duplicates - and it never deletes.
  *
  * This was a page of its own. It is a sheet now, because everything it needs
  * is on the report and walking to a second screen to press two buttons is not
@@ -48,8 +48,7 @@ export default function ExportSheet({ scanId, rackId, onClose }) {
   const panelRef = useModalA11y(onClose, { active: true });
 
   // The report compared with NetBox in the background when it opened; if
-  // that answer is here, show it at once. Otherwise compare now, unasked —
-  // the preview writes nothing and is the first thing anyone would press.
+  // that answer is here, show it at once. Otherwise compare now, unasked - // the preview writes nothing and is the first thing anyone would press.
   useEffect(() => {
     const pre = scanId ? getCached(`nb-preview:${scanId}`) : null;
     if (pre && pre.body) { setReport(pre.body); setPreviewed(true); setComparedAt(pre.at); return; }

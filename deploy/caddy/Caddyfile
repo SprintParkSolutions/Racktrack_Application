@@ -39,3 +39,38 @@ demo.racktrack.ai {
 		}
 	}
 }
+
+# The owner and manager portal. A static bundle in /srv/portal (bind-mounted
+# from ./portal-dist), with the API and rack photos proxied to the same app
+# container the demo uses, so the portal is same-origin with its own API and
+# the session cookie behaves exactly as it does in the phone app.
+portal.racktrack.ai {
+	encode zstd gzip
+	root * /srv/portal
+
+	handle /api/* {
+		reverse_proxy racktrack:3001
+	}
+
+	handle /outputs/* {
+		reverse_proxy racktrack:3001
+	}
+
+	handle /uploads/* {
+		reverse_proxy racktrack:3001
+	}
+
+	# try_files is what makes a reload on a deep path such as /overview or
+	# /audit serve the app rather than a 404.
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output file /data/portal-access.log {
+			roll_size 10MB
+			roll_keep 5
+		}
+	}
+}

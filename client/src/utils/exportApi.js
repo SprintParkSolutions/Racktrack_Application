@@ -4,7 +4,7 @@ import { apiUrl, authFetch } from './api';
 /**
  * The NetBox end of the chain, without a page of its own.
  *
- * Export used to be a screen you navigated to after the report — a second
+ * Export used to be a screen you navigated to after the report - a second
  * place to be, for three buttons that all say "the report you are already
  * looking at, somewhere else". These are the pieces that screen was made of,
  * so the report can offer them where the report is.
@@ -53,7 +53,7 @@ export function explain(r, fallback) {
   if (r.status === 403) return 'Only the account owner can use the NetBox tools for now. Ask them to sign in and export this rack.';
   if (r.status === 409) return `${msg.replace(/\.$/, '')}. Analyse the rack photo first, then come back here.`;
   // Every :rackId and :id on the NetBox routes goes through the ownership
-  // guard, which answers 404 for a rack the caller cannot see — so 404 here
+  // guard, which answers 404 for a rack the caller cannot see - so 404 here
   // is "not yours", not a missing route.
   if (r.status === 404) return 'This rack is not available to your account.';
   return msg;
@@ -63,7 +63,7 @@ export function explain(r, fallback) {
  * What the health check means, in the words on the sheet.
  *
  * Never the raw one. NetBox's own failures arrive as things like
- * `NetBox HTTP 0 on /api/status/: "unreachable: fetch failed"` — true, and
+ * `NetBox HTTP 0 on /api/status/: "unreachable: fetch failed"` - true, and
  * addressed to whoever wrote the fetch. A person holding a phone in front of
  * a rack needs to know which of three things is wrong and who fixes it.
  */
@@ -73,7 +73,7 @@ export function healthView(h) {
     return {
       tone: 'none',
       title: 'No NetBox connected',
-      text: 'Nobody has set up a NetBox for this organisation yet. An admin adds one under Data Sources — its address and an API token — once, for everyone.',
+      text: 'Nobody has set up a NetBox for this organisation yet. An admin adds one under Data Sources - its address and an API token - once, for everyone.',
       blocked: true,
     };
   }
@@ -132,12 +132,12 @@ export async function saveBlob(blob, name, kind) {
     if (typeof navigator.share === 'function' && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: name });
-        return { tone: 'good', text: `${name} is on the share sheet — save it to Files or send it on.` };
+        return { tone: 'good', text: `${name} is on the share sheet - save it to Files or send it on.` };
       } catch (e) {
         if (e && e.name === 'AbortError') return null;
       }
     }
-  } catch { /* File or share unavailable — fall through */ }
+  } catch { /* File or share unavailable - fall through */ }
 
   if (kind === 'json') {
     try {
@@ -147,7 +147,7 @@ export async function saveBlob(blob, name, kind) {
   }
   return {
     tone: 'bad',
-    text: 'This phone cannot save files from inside the app. Open RackTrack in a browser on a computer and download it from there — the same button is there.',
+    text: 'This phone cannot save files from inside the app. Open RackTrack in a browser on a computer and download it from there - the same button is there.',
   };
 }
 

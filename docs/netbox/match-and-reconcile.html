@@ -1,0 +1,388 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Match and Reconcile" | https://claude.ai/code/artifact/d77ffa65-545a-43c6-a599-ea8fcec34155 | artifact last updated 2026-09-11 | saved 2026-09-11 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>RackTrack Match and Reconcile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --paper:#fbfcfb; --ink:#161a17; --body:#39423c; --muted:#5a6560; --hair:#e6ebe7; --hair-2:#cfd6d1;
+  --photo:#b85f33; --photo-bg:#fbf1eb;
+  --switch:#0f7c79; --switch-bg:#ebf5f4;
+  --record:#3a51a0; --record-bg:#eef1fa;
+  --person:#0b6a44; --person-bg:#e8f3ee;
+  --amber:#8a6d1f; --amber-bg:#faf3e1;
+  --risk:#a8443c; --risk-bg:#fbf0ef;
+  --grey-bg:#f1f4f2;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --sans:'Source Sans 3','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--body);font-family:var(--sans);font-size:16.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.page{padding:0 clamp(20px,4vw,64px);padding-block:48px 72px}
+p{margin:0 0 .9em}
+p:last-child{margin-bottom:0}
+strong{font-weight:600;color:var(--ink)}
+.mono{font-family:var(--mono)}
+
+/* ---------- header ---------- */
+header{display:grid;grid-template-columns:1fr;gap:20px 64px;padding-bottom:28px;border-bottom:1.5px solid var(--ink)}
+@media (min-width:1000px){header{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:end}}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 16px}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(2.1rem,4.4vw,3.2rem);line-height:1.06;letter-spacing:-.015em;color:var(--ink);margin:0 0 16px;max-width:18ch;text-wrap:balance}
+.lede{font-family:var(--serif);font-size:1.3rem;line-height:1.45;color:var(--ink);max-width:58ch;margin:0}
+.meta{font-family:var(--mono);font-size:.76rem;color:var(--muted);margin:14px 0 0}
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px}
+@media (min-width:560px){.legend{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (min-width:1000px){.legend{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.legend div{border-top:3px solid var(--c);padding-top:8px;font-size:.92rem;line-height:1.4;color:var(--muted)}
+.legend b{display:block;font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:2px}
+
+/* ---------- flow strip ---------- */
+.flow{display:grid;grid-template-columns:1fr;gap:10px;margin:32px 0 0}
+@media (min-width:640px){.flow{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:1100px){.flow{grid-template-columns:repeat(6,1fr);gap:12px}}
+.flow div{border:1px solid var(--c);background:var(--bg);border-radius:8px;padding:12px 14px 14px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;align-items:baseline}
+.flow b{font-family:var(--mono);font-size:.74rem;color:var(--c);grid-row:1/3;padding-top:.2em}
+.flow h4{font-family:var(--serif);font-weight:500;font-size:1.12rem;color:var(--ink);margin:0;line-height:1.25}
+.flow span{font-size:.88rem;line-height:1.4;color:var(--muted)}
+
+/* ---------- sections: left rail + content ---------- */
+section{display:grid;grid-template-columns:1fr;gap:18px 56px;padding:40px 0;border-bottom:1px solid var(--hair)}
+@media (min-width:1000px){section{grid-template-columns:280px minmax(0,1fr)}}
+.rail{position:sticky;top:24px;align-self:start}
+.rail .no{font-family:var(--mono);font-size:.74rem;letter-spacing:.12em;color:var(--c,var(--muted));margin:0 0 10px}
+h2{font-family:var(--serif);font-weight:500;font-size:clamp(1.5rem,2.4vw,1.85rem);line-height:1.18;letter-spacing:-.01em;color:var(--ink);margin:0 0 12px;text-wrap:balance}
+.rail p{font-size:1rem;line-height:1.5;color:var(--body);max-width:34ch}
+@media (max-width:999px){.rail{position:static}.rail p{max-width:60ch}}
+h3{font-family:var(--serif);font-weight:500;font-size:1.28rem;line-height:1.3;color:var(--ink);margin:0 0 10px}
+.sub{margin-top:34px}
+.sub:first-child{margin-top:0}
+
+/* ---------- aligned grids ---------- */
+.g{border-top:1.5px solid var(--ink)}
+.r,.h{display:grid;grid-template-columns:var(--cols);gap:0 24px;padding:14px 0;border-bottom:1px solid var(--hair);align-items:start}
+.h{padding:8px 0 9px;font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--hair-2)}
+.r>div{font-size:.98rem;line-height:1.5;min-width:0}
+.r .n{font-family:var(--mono);font-size:.76rem;color:var(--c,var(--muted));padding-top:.35em}
+.r .t{font-weight:600;color:var(--ink)}
+.r .t small{display:block;font-weight:400;color:var(--muted);font-size:.9rem;margin-top:2px}
+.r ul{margin:0;padding:0;list-style:none}
+.r li{padding:2px 0}
+.r li::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c,var(--muted));margin:0 9px 3px 0}
+.r .tag{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;padding:2px 8px;border-radius:4px;background:var(--bg,var(--grey-bg));color:var(--c,var(--muted));margin:0 6px 4px 0;white-space:nowrap}
+.r>div[data-l]::before{display:none}
+@media (max-width:760px){
+  .h{display:none}
+  .r{grid-template-columns:1fr;gap:8px;padding:16px 0}
+  .r .n{padding-top:0}
+  .r>div[data-l]::before{display:block;content:attr(data-l);font-family:var(--mono);font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+  .r .t[data-l]::before{display:none}
+}
+
+/* ---------- matrix (three sources) ---------- */
+.mx{border-top:1.5px solid var(--ink)}
+.mx .h,.mx .r{--cols:150px repeat(3,minmax(0,1fr))}
+.mx .h span{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--c,var(--muted))}
+.mx .r .k{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding-top:.4em}
+.mx .r>div{font-size:.96rem}
+.mx .r>div.c{border-left:3px solid var(--c);padding-left:12px}
+@media (max-width:760px){
+  .mx .r{grid-template-columns:1fr}
+  .mx .r .k{padding-top:0}
+  .mx .r>div.c[data-l]::before{color:var(--c)}
+}
+
+/* ---------- notes ---------- */
+.note{margin:22px 0 0;padding:14px 18px;border-left:3px solid var(--c,var(--switch));background:var(--bg,var(--switch-bg));border-radius:0 8px 8px 0}
+.note p{font-family:var(--serif);font-size:1.08rem;line-height:1.5;color:var(--ink);max-width:70ch}
+.rulesbox{margin:18px 0 0;display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:760px){.rulesbox{grid-template-columns:repeat(3,1fr);gap:14px}}
+.rulesbox div{border:1px solid var(--hair-2);border-radius:8px;padding:12px 14px;background:#fff;font-size:.94rem;line-height:1.45}
+.rulesbox b{display:block;font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--record);margin-bottom:4px}
+.rulesbox code{font-family:var(--mono);font-size:.8rem;color:var(--ink);background:var(--grey-bg);padding:1px 6px;border-radius:4px}
+
+/* ---------- rules ---------- */
+.rules .r{--cols:34px minmax(0,1fr)}
+.rules .n{width:30px;height:30px;border-radius:50%;background:var(--person);color:#fff;font-family:var(--mono);font-size:.76rem;display:flex;align-items:center;justify-content:center;padding:0}
+
+footer{margin-top:0;padding-top:22px;font-size:.92rem;color:var(--muted)}
+footer code{font-family:var(--mono);font-size:.82rem;color:var(--body)}
+</style>
+
+<div class="page">
+
+<header>
+  <div>
+    <p class="eyebrow">RackTrack &middot; how it works</p>
+    <h1>Matching a real rack to the record</h1>
+    <p class="lede">Somebody wrote the rack into a database when it was built. RackTrack looks at the rack as it is today, finds what changed, and one person approves each change before it is written back.</p>
+    <p class="meta">11 Sep 2026 &middot; one page &middot; six steps, two ladders, one admin</p>
+  </div>
+  <div class="legend">
+    <div style="--c:var(--photo)"><b>The photo</b>what is physically in the rack</div>
+    <div style="--c:var(--switch)"><b>The switches</b>what each switch says over SNMP</div>
+    <div style="--c:var(--record)"><b>The record</b>NetBox, a DCIM or a CMDB</div>
+    <div style="--c:var(--person)"><b>A person</b>the admin who decides</div>
+  </div>
+</header>
+
+<div class="flow">
+  <div style="--c:var(--photo);--bg:var(--photo-bg)"><b>01</b><h4>Photograph</h4><span>one photo of the rack from the aisle</span></div>
+  <div style="--c:var(--record);--bg:var(--record-bg)"><b>02</b><h4>Find the rack</h4><span>hundreds of switches become a handful</span></div>
+  <div style="--c:var(--switch);--bg:var(--switch-bg)"><b>03</b><h4>Name each box</h4><span>one record and one live switch per box</span></div>
+  <div style="--c:var(--muted);--bg:var(--grey-bg)"><b>04</b><h4>Compare, freeze</h4><span>a fixed list of what changed</span></div>
+  <div style="--c:var(--person);--bg:var(--person-bg)"><b>05</b><h4>Admin decides</h4><span>approve, ticket or reject each item</span></div>
+  <div style="--c:var(--record);--bg:var(--record-bg)"><b>06</b><h4>Write back</h4><span>create, update, never delete</span></div>
+</div>
+
+<!-- ============ 01 ============ -->
+<section>
+  <div class="rail" style="--c:var(--record)">
+    <p class="no">01</p>
+    <h2>Three things RackTrack looks at</h2>
+    <p>None of the three agree by default. The differences between them are the whole point.</p>
+  </div>
+  <div>
+    <div class="mx">
+      <div class="h"><span></span><span style="--c:var(--photo)">The photo</span><span style="--c:var(--switch)">The switches</span><span style="--c:var(--record)">The record</span></div>
+      <div class="r">
+        <div class="k">What it is</div>
+        <div class="c" data-l="The photo" style="--c:var(--photo)">The rack as it physically is today, from the aisle.</div>
+        <div class="c" data-l="The switches" style="--c:var(--switch)">What each switch says about itself when asked live over the network.</div>
+        <div class="c" data-l="The record" style="--c:var(--record)">What somebody wrote down when the rack was built or last touched.</div>
+      </div>
+      <div class="r">
+        <div class="k">What it gives us</div>
+        <div class="c" data-l="The photo" style="--c:var(--photo)">Which boxes, on which shelf, how tall. The maker's name and model on the front. Stickers and codes. Which sockets have a cable, and its colour.</div>
+        <div class="c" data-l="The switches" style="--c:var(--switch)">Serial number, model, hostname, address, every port and whether it is up, and who is cabled to it (LLDP).</div>
+        <div class="c" data-l="The record" style="--c:var(--record)">Every rack and device with its serial, MAC, address, position and cabling, and when it was last synchronised.</div>
+      </div>
+      <div class="r">
+        <div class="k">What it cannot say</div>
+        <div class="c" data-l="The photo" style="--c:var(--photo)">Which live switch a box is. A serial or MAC on the back. Whether a cabled port is actually in use.</div>
+        <div class="c" data-l="The switches" style="--c:var(--switch)">Where the switch physically is. Anything about patch panels, PDUs or unmanaged gear, which cannot be asked.</div>
+        <div class="c" data-l="The record" style="--c:var(--record)">Whether it is still true. It stays as written until somebody changes it.</div>
+      </div>
+      <div class="r">
+        <div class="k">Role</div>
+        <div class="c" data-l="The photo" style="--c:var(--photo)">Says which rack this is and what is in it.</div>
+        <div class="c" data-l="The switches" style="--c:var(--switch)">The truth about the hardware. When the record is wrong, the wire wins.</div>
+        <div class="c" data-l="The record" style="--c:var(--record)">The bridge. It says which few switches belong to this rack, so only those are compared.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 ============ -->
+<section>
+  <div class="rail" style="--c:var(--muted)">
+    <p class="no">02</p>
+    <h2>The six steps</h2>
+    <p>Every scan goes through the same six, in this order. Nothing is written until step six, and nothing is written without a person.</p>
+  </div>
+  <div>
+    <div class="g" style="--cols:36px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
+      <div class="h"><span></span><span>What happens</span><span>What it uses</span><span>What comes out</span></div>
+      <div class="r" style="--c:var(--photo)">
+        <div class="n">01</div>
+        <div class="t">Photograph the rack<small>One photo from the aisle with the whole rack in frame. A close-up of a single box only when the print on it is too small to read.</small></div>
+        <div data-l="What it uses">The phone camera and the U mapping that turns pixels into shelves.</div>
+        <div data-l="What comes out">Every box with its shelf and height, the text and stickers on it, and each socket marked cabled, empty or not visible.</div>
+      </div>
+      <div class="r" style="--c:var(--record)">
+        <div class="n">02</div>
+        <div class="t">Find the rack<small>Try the rack ladder (section 03), cheapest and surest clue first.</small></div>
+        <div data-l="What it uses">Codes and labels, the rack ID, where it stands, print on the rack, what is inside it, and last of all a person.</div>
+        <div data-l="What comes out">The rack's record, and the live switches filtered from hundreds down to the few that belong in this rack.</div>
+      </div>
+      <div class="r" style="--c:var(--switch)">
+        <div class="n">03</div>
+        <div class="t">Name each box<small>Tie every box in the photo to one line in the record and one live switch, using the box ladder (section 04).</small></div>
+        <div data-l="What it uses">Shelf, code, sticker, print, shape, the cable pattern against live ports, the beacon, and last of all a person.</div>
+        <div data-l="What comes out">A binding per box: which device, from what evidence, on what date, and how sure. Confirmed, Probable, Possible or Unidentified.</div>
+      </div>
+      <div class="r" style="--c:var(--muted)">
+        <div class="n">04</div>
+        <div class="t">Compare and freeze<small>Lay the record beside the photo and the switches. Freeze the result so it stops moving while people look at it.</small></div>
+        <div data-l="What it uses">The record's last-sync date against the site's refresh interval, so a stale record is marked stale all the way through.</div>
+        <div data-l="What comes out">A frozen list of differences, each one New, Changed, Missing, Conflict or Unconfirmed, with a confidence. A slot that does not match stays marked until something verifies it.</div>
+      </div>
+      <div class="r" style="--c:var(--person)">
+        <div class="n">05</div>
+        <div class="t">One admin decides<small>The admin for that site works the list item by item. The person who took the photo cannot write to the record.</small></div>
+        <div data-l="What it uses">Approve, raise a ticket for somebody to go and look, or reject with a reason. A finished ticket comes back to the same admin.</div>
+        <div data-l="What comes out">An approved set, open tickets with a named person on each, and rejections with their reasons kept.</div>
+      </div>
+      <div class="r" style="--c:var(--record)">
+        <div class="n">06</div>
+        <div class="t">Write it back<small>Check the record has not changed since the list was frozen. If it has, stop and show the admin what moved.</small></div>
+        <div data-l="What it uses">The customer's own API. Create what is missing, update what differs, delete nothing.</div>
+        <div data-l="What comes out">The record updated, and a log of what changed, who approved it, who worked the ticket, and when it went in.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 ============ -->
+<section>
+  <div class="rail" style="--c:var(--record)">
+    <p class="no">03</p>
+    <h2>Which rack: the six rungs</h2>
+    <p>One rack out of every rack the customer has. Each rung is the fallback for the one above it, and whichever rung finds the rack, what happens next is identical.</p>
+  </div>
+  <div>
+    <div class="g" style="--cols:36px minmax(0,1fr) minmax(0,1.3fr) minmax(0,.9fr)">
+      <div class="h"><span></span><span>Clue</span><span>How it is used</span><span>Move down when</span></div>
+      <div class="r" style="--c:var(--record)"><div class="n">01</div><div class="t">A code or label on the switches</div><div data-l="How it is used">A QR or barcode is scanned, a label is read, and either is looked up in the record. That names the rack and its switches in one step.</div><div data-l="Move down when">There are no labels on the switches.</div></div>
+      <div class="r" style="--c:var(--record)"><div class="n">02</div><div class="t">The rack's own ID</div><div data-l="How it is used">Matched to the record, which lists the switches that should be inside.</div><div data-l="Move down when">No rack ID is found.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="n">03</div><div class="t">Where it stands</div><div data-l="How it is used">The room, or its coordinates on the original floor plan. A capture device that knows where it is standing resolves to exactly one rack.</div><div data-l="Move down when">Many racks share that location.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="n">04</div><div class="t">Print on the rack itself</div><div data-l="How it is used">Words read off the frame or the door, matched against the remaining candidates.</div><div data-l="Move down when">Two or three similar racks are still in play.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="n">05</div><div class="t">What is inside it</div><div data-l="How it is used">The devices, the units, the empty shelves and the cables, compared with the records of the racks still in play.</div><div data-l="Move down when">More than one rack still fits.</div></div>
+      <div class="r" style="--c:var(--person)"><div class="n">06</div><div class="t">A person picks it</div><div data-l="How it is used">From the short list the rungs above left, never from the whole site. The flow carries on exactly as if a label had found it.</div><div data-l="Move down when">This is the end of the ladder.</div></div>
+    </div>
+    <div class="rulesbox">
+      <div><b>Before rung 1</b>Ask for the site and room first, so the same rack ID in two buildings cannot collide.</div>
+      <div><b>Not in the record at all</b>Rung 6 has a second choice: this rack is new. It is created rather than forced onto a bad match, and a new rack with everything new gets one approval, not twenty.</div>
+      <div><b>On a repeat scan</b>The saved match is reused and the ladder is skipped, until the rack stops looking like itself.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 ============ -->
+<section>
+  <div class="rail" style="--c:var(--switch)">
+    <p class="no">04</p>
+    <h2>Which box: the eight rungs</h2>
+    <p>One box out of the few in this rack. With a handful of candidates, weak clues add up, and a rung that does not settle it still shortens the list.</p>
+  </div>
+  <div>
+    <div class="g" style="--cols:36px minmax(0,1fr) minmax(0,1.3fr) minmax(0,.9fr)">
+      <div class="h"><span></span><span>Clue</span><span>What it proves</span><span>Move down when</span></div>
+      <div class="r" style="--c:var(--record)"><div class="n">01</div><div class="t">Which shelf it sits on<small>and what was on that shelf last time</small></div><div data-l="What it proves">Provisional only. The shelf is where the record says the device is, not what the hardware says it is.</div><div data-l="Move down when">More than one record fits the shelf.</div></div>
+      <div class="r" style="--c:var(--photo)"><div class="n">02</div><div class="t">A code on the box<small>QR, barcode, pull-out service tag</small></div><div data-l="What it proves">Scanned, not read. Asset tag or serial straight to the record, then confirmed on the wire. Where the estate is tagged, this is the whole ladder in one step.</div><div data-l="Move down when">There is no code.</div></div>
+      <div class="r" style="--c:var(--photo)"><div class="n">03</div><div class="t">A sticker<small>hostname, asset tag, address</small></div><div data-l="What it proves">Finds the record. Proves nothing about the hardware, because the sticker stays when the device is swapped. The switch must agree before it is trusted.</div><div data-l="Move down when">There is no sticker, or the switch disagrees with it.</div></div>
+      <div class="r" style="--c:var(--photo)"><div class="n">04</div><div class="t">The maker's print<small>wordmark and model on the front</small></div><div data-l="What it proves">The hardware type, when the model string is actually read. In a full-rack photo it is eight pixels tall, so a close-up is taken. A guessed model is shown as "probably" and never written.</div><div data-l="Move down when">The print is unreadable, or read but shared by more than one candidate.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="n">05</div><div class="t">Its shape<small>height, port count, cage count, layout</small></div><div data-l="What it proves">Rules out every candidate of the wrong shape and gives the model family without reading a character.</div><div data-l="Move down when">More than one candidate has the same shape.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="n">06</div><div class="t">Its cables<small>cabled sockets against ports that are up</small></div><div data-l="What it proves">A 48-port switch with 31 cables is carrying a 48-digit number on its face, and the live switch reports the same number. This ties the box to the switch directly, and it is what tells two identical unlabelled switches apart. Uplinks are the sharpest digits. The winner must clearly beat the runner-up.</div><div data-l="Move down when">Two candidates show the same pattern.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="n">07</div><div class="t">The beacon<small>locator LED</small></div><div data-l="What it proves">The admin lights the locator LED from their own console and the phone sees which box answers. The strongest proof there is. RackTrack never sends the command itself.</div><div data-l="Move down when">This gear has no beacon.</div></div>
+      <div class="r" style="--c:var(--person)"><div class="n">08</div><div class="t">A person picks it</div><div data-l="What it proves">From a shortlist of two or three boxes. Recorded as Confirmed with the person as its source, and the next scan starts from it.</div><div data-l="Move down when">This is the end of the ladder.</div></div>
+    </div>
+
+    <h3 class="sub">How sure we are</h3>
+    <div class="g" style="--cols:130px minmax(0,1.2fr) minmax(0,1fr)">
+      <div class="h"><span>Outcome</span><span>When</span><span>What happens</span></div>
+      <div class="r" style="--c:var(--person)"><div class="t"><span class="tag" style="--c:var(--person);--bg:var(--person-bg)">Confirmed</span></div><div data-l="When">The switch itself, a code, the beacon or a person said so, and the wire agrees.</div><div data-l="What happens">Stated plainly. Written when the admin approves.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="t"><span class="tag" style="--c:var(--switch);--bg:var(--switch-bg)">Probable</span></div><div data-l="When">A sticker, the print or the cable pattern picked a clear winner.</div><div data-l="What happens">Reason attached, one tap to correct. Written when approved, marked as probable at the destination.</div></div>
+      <div class="r" style="--c:var(--amber)"><div class="t"><span class="tag" style="--c:var(--amber);--bg:var(--amber-bg)">Possible</span></div><div data-l="When">Only the shelf or the shape fits, and exactly one candidate does.</div><div data-l="What happens">Put to a person as a question. Never written.</div></div>
+      <div class="r" style="--c:var(--risk)"><div class="t"><span class="tag" style="--c:var(--risk);--bg:var(--risk-bg)">Unidentified</span></div><div data-l="When">Nothing fits, or more than one fits equally.</div><div data-l="What happens">Listed with the reason and the size of the shortlist. Never written. A tie is never broken by picking the first one.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section>
+  <div class="rail" style="--c:var(--switch)">
+    <p class="no">05</p>
+    <h2>What a match is made of</h2>
+    <p>No single field is enough. Several are scored together, and the best candidate must beat the second best by a clear margin or the question goes to a person.</p>
+  </div>
+  <div>
+    <div class="g" style="--cols:120px minmax(0,1.4fr) minmax(0,1fr)">
+      <div class="h"><span>Strength</span><span>Fields</span><span>Why it sits here</span></div>
+      <div class="r" style="--c:var(--person)"><div class="t"><span class="tag" style="--c:var(--person);--bg:var(--person-bg)">Strongest</span></div><div data-l="Fields">Chassis serial number. Base MAC of the chassis. Model and part number. Vendor. Asset tag where it is set. The serial of each member in a stack.</div><div data-l="Why it sits here">Burned in at the factory. Does not change when the device is renamed, readdressed or moved.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="t"><span class="tag" style="--c:var(--switch);--bg:var(--switch-bg)">Strong</span></div><div data-l="Fields">Management address. MAC of each interface. Hostname. Platform and OS string. Port count and port types. Uptime.</div><div data-l="Why it sits here">Right most of the time, and wrong exactly when someone has been working in the rack.</div></div>
+      <div class="r" style="--c:var(--record)"><div class="t"><span class="tag" style="--c:var(--record);--bg:var(--record-bg)">Position</span></div><div data-l="Fields">What the neighbours report over LLDP and CDP: the chassis, port, name and address at the far end of each cable, and the cabling pattern itself.</div><div data-l="Why it sits here">Advertised live between cabled devices with no record involved. The way in when the record is stale or the device itself cannot be polled.</div></div>
+      <div class="r" style="--c:var(--photo)"><div class="t"><span class="tag" style="--c:var(--photo);--bg:var(--photo-bg)">Photo</span></div><div data-l="Fields">Codes. Label text. A serial, asset tag or MAC printed on the front. Model name and logo. Port layout. Shelf, height and face.</div><div data-l="Why it sits here">Every field above needs a counterpart on this side to be matched at all.</div></div>
+      <div class="r" style="--c:var(--muted)"><div class="t"><span class="tag">Tiebreaker</span></div><div data-l="Fields">Rack and shelf. Site, room and tenant. Which sockets are cabled and the cable colours. Free units and rack layout.</div><div data-l="Why it sits here">Changes whenever somebody does routine work. Separates two identical candidates, never proves one on its own.</div></div>
+    </div>
+    <div class="rulesbox">
+      <div><b>Normalise first</b><code>FDO-2117-A0X9</code>, <code>fdo 2117 a0x9</code> and <code>FDO2117a0x9</code> are one serial from three sources. MACs with colons, dashes or dots are one address. Everything is put in one shape before anything is compared.</div>
+      <div><b>When the record is wrong</b>If the MAC the record expects is not live anywhere, the slot is marked outdated and the neighbours are asked what is cabled into that position right now. The answer identifies the switch from the wire, and a correction is prepared for the admin.</div>
+      <div><b>Prepared, not written</b>Even a high-confidence correction lands on the admin's list. They click approve instead of investigating, and every change still carries one person's name.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 ============ -->
+<section>
+  <div class="rail" style="--c:var(--person)">
+    <p class="no">06</p>
+    <h2>What the admin sees</h2>
+    <p>Every difference lands on the one admin for that site. Three ways out for each item, and the list is sorted so the serious things come first.</p>
+  </div>
+  <div>
+    <div class="g" style="--cols:130px minmax(0,1fr) minmax(0,1fr)">
+      <div class="h"><span>Choice</span><span>When</span><span>What happens next</span></div>
+      <div class="r" style="--c:var(--person)"><div class="t"><span class="tag" style="--c:var(--person);--bg:var(--person-bg)">Approve</span></div><div data-l="When">It is clear enough to act on.</div><div data-l="What happens next">Goes into the write. The record is checked once more just before, and if it moved, the admin is shown what changed.</div></div>
+      <div class="r" style="--c:var(--amber)"><div class="t"><span class="tag" style="--c:var(--amber);--bg:var(--amber-bg)">Raise a ticket</span></div><div data-l="When">Somebody needs to go and look at the rack first.</div><div data-l="What happens next">The admin picks who. The single point of contact for the rack is emailed. The answer comes back to the same admin, who then approves or rejects. A finished ticket writes nothing by itself.</div></div>
+      <div class="r" style="--c:var(--risk)"><div class="t"><span class="tag" style="--c:var(--risk);--bg:var(--risk-bg)">Reject</span></div><div data-l="When">It is wrong, or it is not ours to change.</div><div data-l="What happens next">Nothing is written. The reason is kept.</div></div>
+    </div>
+
+    <h3 class="sub">What is on the list</h3>
+    <div class="g" style="--cols:110px minmax(0,.9fr) minmax(0,1.5fr) minmax(0,.8fr)">
+      <div class="h"><span>Tier</span><span>Meaning</span><span>Examples</span><span>Handled as</span></div>
+      <div class="r" style="--c:var(--risk)"><div class="t"><span class="tag" style="--c:var(--risk);--bg:var(--risk-bg)">High</span></div><div data-l="Meaning">The hardware is not what the record says, or nobody knows about it.</div><div data-l="Examples"><ul><li>A box in the rack and nowhere in the record</li><li>A device on the record, gone from the rack, and unreachable</li><li>Replaced: same shelf, same address, different serial inside</li><li>A different make or model from the one recorded</li><li>A device turning up in a different rack from its record</li></ul></div><div data-l="Handled as">A ticket, dealt with first.</div></div>
+      <div class="r" style="--c:var(--amber)"><div class="t"><span class="tag" style="--c:var(--amber);--bg:var(--amber-bg)">Medium</span></div><div data-l="Meaning">The hardware is accounted for. What was written about it has drifted.</div><div data-l="Examples"><ul><li>Moved shelf inside the same rack</li><li>Address or hostname changed</li><li>Serial on the device differs from the serial on record</li><li>Record says planned, device is live. Record says active, device is unreachable</li><li>A stale sticker naming a device that left</li><li>A patch panel or PDU present and not recorded</li></ul></div><div data-l="Handled as">A ticket.</div></div>
+      <div class="r" style="--c:var(--person)"><div class="t"><span class="tag" style="--c:var(--person);--bg:var(--person-bg)">Low</span></div><div data-l="Meaning">The record has a gap and we can fill it. Not really drift.</div><div data-l="Examples"><ul><li>No serial, asset tag, model or position on record, and we read one</li><li>Cable colours and flag labels the record does not hold</li></ul></div><div data-l="Handled as">One bulk fill, not a ticket each.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="t"><span class="tag" style="--c:var(--switch);--bg:var(--switch-bg)">Cabling</span></div><div data-l="Meaning">Only where the record holds cabling. Every line has two witnesses: the socket and the port.</div><div data-l="Examples"><ul><li>A cabled socket with no cable on record, or the reverse</li><li>A port recorded connected and the socket empty</li><li>LLDP names a different far end than the record does</li><li>Copper where the record says fibre</li></ul></div><div data-l="Handled as">A ticket, per socket.</div></div>
+      <div class="r" style="--c:var(--muted)"><div class="t"><span class="tag">Not a ticket</span></div><div data-l="Meaning">Things that look like findings and are not.</div><div data-l="Examples"><ul><li>The photo and the switch disagree with each other: ours to resolve, never the customer's</li><li>A cable in a socket whose port is down: unknown, not wrong</li><li>A device with its lights off and no answer: present and unreachable, not missing</li><li>A model that was guessed rather than read</li><li>The first scan of a record that was never accurate: a baseline, not drift</li></ul></div><div data-l="Handled as">Held back, or noted.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 07 ============ -->
+<section>
+  <div class="rail" style="--c:var(--amber)">
+    <p class="no">07</p>
+    <h2>Situations that need a rule</h2>
+    <p>None of these changes the shape of the flow. Each one adds a small rule at one point in it.</p>
+  </div>
+  <div>
+    <div class="g" style="--cols:minmax(0,1fr) minmax(0,1.6fr)">
+      <div class="h"><span>Situation</span><span>What we do</span></div>
+      <div class="r" style="--c:var(--record)"><div class="t">A switch moved to another rack</div><div data-l="What we do">Search the whole record before calling a device new here and missing there. Confirmed on the wire before it is called a move.</div></div>
+      <div class="r" style="--c:var(--record)"><div class="t">A switch swapped for a different one</div><div data-l="What we do">Same shelf and same address with different hardware inside is one line, "was X, now Y", not a removal plus an addition.</div></div>
+      <div class="r" style="--c:var(--record)"><div class="t">A switch removed</div><div data-l="What we do">An empty shelf is not proof. Removed only when the photo, the network and the record all agree, and then marked decommissioned, never deleted.</div></div>
+      <div class="r" style="--c:var(--record)"><div class="t">A box that is in no record</div><div data-l="What we do">Check in order: a move, then a planned device, then a decommissioned one. Only then create it.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="t">Two identical switches, no stickers, one shelf apart</div><div data-l="What we do">Shelf, print and shape all tie. The cable pattern decides, then the uplinks, then the beacon, then a person with a two-item shortlist. Never guessed.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="t">One switch on the network, three boxes in the rack</div><div data-l="What we do">A stack. One device per member, in the order they sit in the photo, with a serial per member where the switch offers it.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="t">Patch panel, PDU, unmanaged switch</div><div data-l="What we do">Nothing to ask, ever. Bound by shelf, sticker and record only. Never called unreachable, because there was nothing to reach.</div></div>
+      <div class="r" style="--c:var(--switch)"><div class="t">Ports on the back, blank front</div><div data-l="What we do">The face is recorded as rear. A rear photo is taken and the cable pattern runs on that.</div></div>
+      <div class="r" style="--c:var(--photo)"><div class="t">Sockets hidden behind a cable bundle</div><div data-l="What we do">Marked "not visible", never "empty". They drop out of the cable pattern instead of counting against a candidate.</div></div>
+      <div class="r" style="--c:var(--photo)"><div class="t">The sticker says one thing, the switch says another</div><div data-l="What we do">The wire wins. The sticker is reported as stale and a re-label ticket goes on the list at the low tier.</div></div>
+      <div class="r" style="--c:var(--photo)"><div class="t">The photo is at an angle and the top shelves are small</div><div data-l="What we do">A close-up is asked for on those shelves only, not the whole rack.</div></div>
+      <div class="r" style="--c:var(--person)"><div class="t">The customer has no database at all</div><div data-l="What we do">RackTrack's own store is the baseline. Their database becomes an integration, not a requirement.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 08 ============ -->
+<section>
+  <div class="rail" style="--c:var(--person)">
+    <p class="no">08</p>
+    <h2>Six rules that never change</h2>
+    <p>Whatever the ladder found and however sure it was, these hold at the point where anything reaches the customer's record.</p>
+  </div>
+  <div>
+    <div class="g rules">
+      <div class="r"><div class="n">1</div><div><strong>Preview before write.</strong> The preview is exactly what happens.</div></div>
+      <div class="r"><div class="n">2</div><div><strong>Never delete.</strong> A missing device is marked offline only after a person ticks it.</div></div>
+      <div class="r"><div class="n">3</div><div><strong>Nothing invented.</strong> A value no source stated stays blank. A guessed model is shown as "probably" and never written.</div></div>
+      <div class="r"><div class="n">4</div><div><strong>Conflicts are never written.</strong> If the photo and the switch disagree, the item waits for a person.</div></div>
+      <div class="r"><div class="n">5</div><div><strong>One admin per site.</strong> One name against every change that reaches the record.</div></div>
+      <div class="r"><div class="n">6</div><div><strong>RackTrack never writes to a switch.</strong> Not even to blink a light.</div></div>
+    </div>
+    <div class="note" style="--c:var(--switch);--bg:var(--switch-bg)"><p>The two ladders change how a rack and a box get their identity. They change nothing about how a change reaches the customer's record: the same list, the same admin, the same write.</p></div>
+  </div>
+</section>
+
+<footer>
+  The full fourteen-section write-up, with every field's SNMP name, the measured OCR results and what exists in the code today, is kept in the repo at <code>docs/netbox/match-and-reconcile-detailed.html</code>.
+</footer>
+
+</div>
+
+</body></html>

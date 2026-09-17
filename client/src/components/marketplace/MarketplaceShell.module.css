@@ -1,5 +1,5 @@
-/* Layout for the shared marketplace chrome. Visual vocabulary — buttons,
-   fields, cards, pills — lives in marketplace-theme.css; this file only
+/* Layout for the shared marketplace chrome. Visual vocabulary - buttons,
+   fields, cards, pills - lives in marketplace-theme.css; this file only
    positions the header, the section nav and the content column. */
 
 .page {
@@ -107,7 +107,7 @@
 }
 .navItem:hover { color: var(--mkt-ink, #121212); }
 /* The current section: a 2.5px rule and a lit ground. A 2px underline in the
-   same weight as the label was reported as "not highlighting" — at a glance,
+   same weight as the label was reported as "not highlighting" - at a glance,
    on a phone, against five other tabs, it simply did not register. */
 .navItemActive {
   color: var(--mkt-ink, #121212); font-weight: 700;
@@ -139,7 +139,7 @@
    right-side actions slot. Hide THIS header's top row (back + title +
    subtitle + actions) so there is no double header; the primary action is
    ported into the shell header via <HeaderActions>. The section nav is NOT
-   part of the shared header — it's sub-navigation — so it stays visible and
+   part of the shared header - it's sub-navigation - so it stays visible and
    stays sticky, pinning flush under the shell's top bar while a long
    listings grid scrolls beneath it (.fluid is the scroll container). */
 @media (min-width: 768px) {

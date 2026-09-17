@@ -8,7 +8,7 @@ import Icon from '../components/Icon';
 import AssetImg from '../components/AssetImg';
 
 /**
- * Scan history — the full archive, on its own page.
+ * Scan history - the full archive, on its own page.
  *
  * Profile shows the five most recent scans; "View all" used to expand that
  * list in place, which on an account with a hundred racks turned the profile
@@ -20,7 +20,7 @@ import AssetImg from '../components/AssetImg';
  * One markup, two layouts: a phone gets stacked rows (thumbnail, rack, counts
  * on a meta line), a tablet or desktop gets the same rows as aligned columns
  * under a header strip. The numeric cells and the phone meta line are exact
- * alternates — at any width exactly one of the two is in the DOM's a11y tree.
+ * alternates - at any width exactly one of the two is in the DOM's a11y tree.
  */
 
 // Deliberately small: the point of this page is that a page ENDS. Twelve rows
@@ -66,7 +66,7 @@ function formatRelative(d) {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-// Wall-clock time of day — the precise half of "3d ago".
+// Wall-clock time of day - the precise half of "3d ago".
 function formatClock(d) {
   const t = time(d);
   if (!t) return '';
@@ -99,7 +99,7 @@ function dayLabel(d) {
   });
 }
 
-// 1 … 4 5 6 … 20 — never more than seven controls, however deep the archive,
+// 1 … 4 5 6 … 20 - never more than seven controls, however deep the archive,
 // and always three numbers in the middle: at the ends the window slides inward
 // instead of collapsing (page 1 of 8 shows 1 2 3 4 … 8, not 1 2 … 8).
 function pageWindow(current, total) {
@@ -138,7 +138,7 @@ export default function HistoryPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // Any change to what's being listed puts you back on page 1 — otherwise a
+  // Any change to what's being listed puts you back on page 1 - otherwise a
   // search that narrows 90 scans to 3 leaves you on page 5, looking at nothing.
   useEffect(() => { setPage(1); }, [query, rangeKey, sortKey]);
 
@@ -170,7 +170,7 @@ export default function HistoryPage() {
   const from      = (current - 1) * PAGE_SIZE;
   const pageItems = filtered.slice(from, from + PAGE_SIZE);
 
-  // Day headings only make sense while the gallery is IN day order — sorting
+  // Day headings only make sense while the gallery is IN day order - sorting
   // by rack ID would otherwise scatter one day across the page. Every tile
   // still carries both its date and its ID, so nothing is lost when the
   // headings go.
@@ -252,7 +252,7 @@ export default function HistoryPage() {
               placeholder="Search rack ID"
               aria-label="Search scans by rack ID"
               /* Chrome draws its own autofill chevron inside a text field that
-                 has saved entries — a stray control in the middle of the
+                 has saved entries - a stray control in the middle of the
                  toolbar that isn't ours. */
               autoComplete="off"
             />
@@ -350,14 +350,14 @@ export default function HistoryPage() {
                 )}
                 {/* The gallery. A tile is the scan's own photograph, captioned
                     with the two things that identify it: the rack ID and when
-                    it was taken. No metric columns — the counts belong on the
+                    it was taken. No metric columns - the counts belong on the
                     scan's own page, not repeated across a wall of thumbnails. */}
                 <ul className={styles.grid}>
                   {group.items.map((s, i) => (
                     <li
                       key={s.rackId}
                       className={styles.tile}
-                      /* Staggers the tiles in as a page lands — 18ms apart, so
+                      /* Staggers the tiles in as a page lands - 18ms apart, so
                          it reads as one movement rather than eighteen. */
                       style={{ '--i': i }}
                       role="button"

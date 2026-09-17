@@ -9,15 +9,15 @@ import styles from './StandardFeedback.module.css';
 // never re-asks. Handlers stay in the parent; this is presentation + flow only.
 //
 // Props:
-//   prompt        the question, e.g. 'Port 12 on Switch — right?'
+//   prompt        the question, e.g. 'Port 12 on Switch - right?'
 //   options       [{ value, label }]  choices for the No dropdown
 //   otherInput    'text' | 'number' | null   input type when "Other" is picked
 //   directPick    true → skip Yes/No, open the dropdown straight away
 //   answered      true → render the collapsed confirmed line, no prompt
 //   answeredText  what the confirmed line says
 //   accent        accent colour for the buttons
-//   onYes()       async — user confirmed the detection is right
-//   onSubmit(v)   async — user picked/typed the correct value `v`
+//   onYes()       async - user confirmed the detection is right
+//   onSubmit(v)   async - user picked/typed the correct value `v`
 export default function StandardFeedback({
   prompt,
   options = [],

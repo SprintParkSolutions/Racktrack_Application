@@ -90,7 +90,7 @@ retraining_learning/   Offline retraining pipeline that consumes them
 netdisco-docker/       Netdisco container — live-network source of truth for topology
 e2e/                   Playwright browser sweep used by CI
 deploy/                Caddy config and demo deployment assets
-docs/                  Architecture notes, feature docs, knowledge base
+docs/                  All documentation, indexed in docs/README.md
 Test_Image/            Sample rack images for testing
 cmdb_racks/            Exported CMDB rack JSON
 config.json            Model paths and detection thresholds

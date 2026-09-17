@@ -8,6 +8,7 @@ import BackButton from '../components/BackButton.jsx';
 import { useHeaderBack } from '../components/ShellHeader.jsx';
 import useModalA11y from '../hooks/useModalA11y.js';
 import Icon from '../components/Icon';
+import { CompletenessLine } from '../components/SetupCompleteness.jsx';
 
 // Organization console. Role-aware:
 //   owner     → list/create organizations, drill into any org's Sites + Members
@@ -66,6 +67,7 @@ export default function OrgConsolePage() {
   const [scanFilter, setScanFilter] = useState(null);      // {type:'user',id,name} | {type:'site',name}
   const [menuFor, setMenuFor] = useState(null);            // member id whose ⋮ menu is open
   const [orgMenuFor, setOrgMenuFor] = useState(null);      // org id whose ⋮ menu is open
+  const [setupBySite, setSetupBySite] = useState({});      // site id → setup completeness (GET /api/setup/state)
 
   const loadOrgs = useCallback(async () => {
     const d = await getJSON('/api/dashboard/owner');
@@ -79,7 +81,7 @@ export default function OrgConsolePage() {
     setActiveOrg(org);
     setError(null);
     // Clear the previous org's data before loading the new one. Without this,
-    // one org's members/sites — and their Edit / Remove options — lingered
+    // one org's members/sites - and their Edit / Remove options - lingered
     // under the new org's header while the fetch was in flight, so controls for
     // a different organization appeared to "come back". Also close any open ⋮.
     setMembers([]); setSites([]); setOdash(null);
@@ -93,6 +95,14 @@ export default function OrgConsolePage() {
       setSites(d.sites || []);
       setMembers(m.members || []);
     } catch (e) { setError(e.message); }
+    // One extra call for a line per site saying whether it is set up. A
+    // nicety: if it fails the list simply has no such line.
+    try {
+      const st = await getJSON('/api/setup/state');
+      const map = {};
+      for (const t of st.tenants || []) map[t.id] = t.completeness || null;
+      setSetupBySite(map);
+    } catch (_) { /* no completeness line */ }
   }, []);
 
   useEffect(() => {
@@ -156,7 +166,7 @@ export default function OrgConsolePage() {
     try { await postJSON(`/api/orgs/${o.id}/reject`, {}); flash(`Rejected ${o.name}`); await loadOrgs(); }
     catch (e) { setError(e.message); }
   };
-  // These do the actual API call — invoked from the in-app modals below.
+  // These do the actual API call - invoked from the in-app modals below.
   // (We use modals instead of window.confirm/prompt because browsers can block
   // native dialogs, which silently made "Remove"/"Edit" appear to do nothing.)
   const doRenameOrg = async (o, name) => {
@@ -192,7 +202,7 @@ export default function OrgConsolePage() {
   };
 
   // The shared shell Back button clears the active org (returns to the org
-  // list) when an owner is inside one — mirroring the page's own in-page back.
+  // list) when an owner is inside one - mirroring the page's own in-page back.
   // At the list it falls back to the default history back.
   useHeaderBack(
     activeOrg && isOwner
@@ -215,7 +225,10 @@ export default function OrgConsolePage() {
               <BackButton fallback="/" always />
               <h1 className={styles.heroTitle}>Organizations</h1>
             </div>
-            <span className={styles.ownerPill}>{roleLabel(user?.role)}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <button className={styles.ghostBtn} onClick={() => navigate('/setup')}>Organization settings</button>
+              <span className={styles.ownerPill}>{roleLabel(user?.role)}</span>
+            </div>
           </div>
           {dash && (
             <div className={styles.heroStats}>
@@ -236,7 +249,7 @@ export default function OrgConsolePage() {
                 {/* "Racks scanned", not "Total scans". A rack id is derived
                     from the image, so re-scanning the same photograph
                     deliberately returns the earlier result rather than creating
-                    a second one — the number counts racks, and calling it scans
+                    a second one - the number counts racks, and calling it scans
                     made it look broken every time it did not move. */}
                 <div className={styles.heroStatLbl}>Racks scanned</div>
               </div>
@@ -269,6 +282,9 @@ export default function OrgConsolePage() {
         </div>
         <div className={styles.headActions}>
           <span className={styles.roleBadge}>{roleLabel(user?.role)}</span>
+          {/* Organisation setup: where the racks are, who decides, rules. The
+              gate sends a new admin there; this is how they come back. */}
+          <button className={styles.ghostBtn} onClick={() => navigate('/setup')}>Organization settings</button>
           {isOwner && (
             <button className={styles.ghostBtn} onClick={() => navigate('/dashboard')}>Console</button>
           )}
@@ -400,7 +416,7 @@ export default function OrgConsolePage() {
             ]} />
           )}
 
-          {/* People — scan counts, click to see that person's scans */}
+          {/* People - scan counts, click to see that person's scans */}
           <section className={styles.block}>
             <div className={styles.sectionHead}><SecTitle icon="group">People</SecTitle></div>
             {members.length === 0 ? (
@@ -455,7 +471,7 @@ export default function OrgConsolePage() {
             )}
           </section>
 
-          {/* Sites — click to see that site's scans */}
+          {/* Sites - click to see that site's scans */}
           <section className={styles.block}>
             <div className={styles.sectionHead}>
               <SecTitle icon="location_on">Sites</SecTitle>
@@ -476,6 +492,7 @@ export default function OrgConsolePage() {
                         <div className={styles.rowSub}>
                           {s.users} user{s.users === 1 ? '' : 's'} · {s.scans} scan{s.scans === 1 ? '' : 's'}
                           {s.last_scan ? ` · last ${fmtDate(s.last_scan)}` : ''}
+                          {setupBySite[s.id] !== undefined && <> · <CompletenessLine completeness={setupBySite[s.id]} /></>}
                         </div>
                       </button>
                       <div className={styles.rowActions}>
@@ -491,7 +508,7 @@ export default function OrgConsolePage() {
             )}
           </section>
 
-          {/* Scans — thumbnails, filtered by the selected person / site */}
+          {/* Scans - thumbnails, filtered by the selected person / site */}
           {odash && (
             <ScanGrid
               scans={(odash.recentScans || []).filter(s => !scanFilter
@@ -502,7 +519,7 @@ export default function OrgConsolePage() {
             />
           )}
 
-          {/* Org-wide external access — admin sets encrypted credentials the
+          {/* Org-wide external access - admin sets encrypted credentials the
               whole org's pipeline uses. Owner has no org context, so admin-only. */}
           {!isOwner && <OrgConnectionsPanel />}
         </>
@@ -613,7 +630,7 @@ function roleLabel(r) {
   return { owner: 'Owner', org_admin: 'Org Admin', site_manager: 'Site Manager', member: 'Member' }[r] || r || 'Member';
 }
 
-// 1–2 letter initials for an org's badge (e.g. "Acme Corp" → "AC").
+// 1-2 letter initials for an org's badge (e.g. "Acme Corp" → "AC").
 function orgInitials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';

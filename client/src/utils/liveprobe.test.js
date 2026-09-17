@@ -41,7 +41,7 @@ live('read the lab', async () => {
         if (partial.kind === 'full' && !partial.serial) console.log(`  ports painted at ${Date.now() - t0} ms`);
       });
       const ms = Date.now() - t0;
-      console.log(`\n### ${t.label} ${t.host} — ${r.vendor} ${r.model || '(no model)'} — identity at ${firstPaint} ms, all in at ${ms} ms`);
+      console.log(`\n### ${t.label} ${t.host} - ${r.vendor} ${r.model || '(no model)'} - identity at ${firstPaint} ms, all in at ${ms} ms`);
       console.log(`  ports ${r.counts.ports}, up ${r.counts.up}, neighbours ${r.counts.neighbours}, attached ${r.counts.attached}`);
       console.log('  gaps:', r.gaps.join(' | ') || 'none');
       const p = r.interfaces.find((i) => i.up) || r.interfaces[0];
@@ -49,7 +49,7 @@ live('read the lab', async () => {
       for (const d of r.attached.slice(0, 6)) console.log(`  attached: ${d.mac} ${d.ip || '(no ip)'} on ${d.port} vlan ${d.vlan}`);
       for (const n of r.neighbours.slice(0, 5)) console.log(`  neighbour: ${n.sysName} named=${n.named} their ${n.port} on our ${n.localPort}`);
     } catch (e) {
-      console.log(`\n### ${t.label} ${t.host} — FAILED after ${Date.now() - t0} ms: ${e.message}`);
+      console.log(`\n### ${t.label} ${t.host} - FAILED after ${Date.now() - t0} ms: ${e.message}`);
     }
   }
 }, 300000);

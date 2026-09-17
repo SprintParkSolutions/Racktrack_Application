@@ -27,7 +27,7 @@ const prettyBytes = (n) =>
       : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
 // Stated plainly, and each one is either true of the product or checkable.
-// Deliberately not "10,000+ teams" or a 99.9% figure nobody audits — invented
+// Deliberately not "10,000+ teams" or a 99.9% figure nobody audits - invented
 // numbers are the fastest way for an infrastructure buyer to stop believing
 // the rest of the page.
 const SIGNALS = [
@@ -56,8 +56,7 @@ export default function ContactPage() {
 
   // Object URLs for the thumbnails are a manual allocation: without the revoke
   // the blobs stay alive for the life of the tab. Removal revokes its own URL,
-  // so this only has to catch what is still on screen when the page unmounts —
-  // hence the ref. Depending on `files` would revoke the URLs of the surviving
+  // so this only has to catch what is still on screen when the page unmounts - // hence the ref. Depending on `files` would revoke the URLs of the surviving
   // items every time the list changed, blanking the previews.
   const filesRef = useRef(files);
   filesRef.current = files;
@@ -84,7 +83,7 @@ export default function ContactPage() {
 
     for (const file of incoming) {
       if (files.length + accepted.length >= MAX_FILES) {
-        rejected.push(`${file.name} — at most ${MAX_FILES} files`);
+        rejected.push(`${file.name} - at most ${MAX_FILES} files`);
         continue;
       }
       // Some Android pickers hand back an empty type for a file they cannot
@@ -95,15 +94,15 @@ export default function ContactPage() {
         ? ALLOWED_TYPES.has(type)
         : /\.(png|jpe?g|webp|gif|heic|heif|pdf|txt|csv|json|log)$/i.test(file.name);
       if (!looksAllowed) {
-        rejected.push(`${file.name} — must be an image, PDF, or text file`);
+        rejected.push(`${file.name} - must be an image, PDF, or text file`);
         continue;
       }
       if (file.size > MAX_FILE_BYTES) {
-        rejected.push(`${file.name} — ${prettyBytes(file.size)}, over the ${prettyBytes(MAX_FILE_BYTES)} limit`);
+        rejected.push(`${file.name} - ${prettyBytes(file.size)}, over the ${prettyBytes(MAX_FILE_BYTES)} limit`);
         continue;
       }
       if (running + file.size > MAX_TOTAL_BYTES) {
-        rejected.push(`${file.name} — would exceed the ${prettyBytes(MAX_TOTAL_BYTES)} total`);
+        rejected.push(`${file.name} - would exceed the ${prettyBytes(MAX_TOTAL_BYTES)} total`);
         continue;
       }
       running += file.size;
@@ -362,7 +361,7 @@ export default function ContactPage() {
             <section className={styles.block}>
               <h2 className={styles.blockH}>Other ways to reach us</h2>
               <div className={styles.options}>
-                {/* /help is the DOT assistant — see the route table in
+                {/* /help is the DOT assistant - see the route table in
                     DesktopShell, which titles it "Ask DOT". A separate
                     "Documentation" row was specified for this rail, but this
                     build has no docs route and no external docs URL, and DOT
@@ -428,7 +427,7 @@ export default function ContactPage() {
 }
 
 // Privacy / Terms / Security belong here, but this build has no route for any
-// of them and no marketing-site URL to point at — every candidate path 404s.
+// of them and no marketing-site URL to point at - every candidate path 404s.
 // Dead links on the page a customer reaches when they already distrust
 // something cost more than the missing row does, so the footer carries the
 // notice only. Fill these in and the nav below renders itself:

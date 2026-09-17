@@ -10,12 +10,11 @@ const _cache = new Map(); // rackId → { group, members } | null
  *
  * Returns { group, members, loading, error } describing the multi-rack
  * scan this rackId belongs to (if any). When the rack is standalone,
- * `group` is null — callers should treat that as "no rack tabs".
+ * `group` is null - callers should treat that as "no rack tabs".
  */
 // A cached entry is only trustworthy if we aren't expecting a specific group
 // that it doesn't contain. Otherwise a stale `null` (cached when the rack had
-// no group yet, or during the old dedupe behaviour) would hide a real group —
-// which is exactly what made two-rack scans show as single on mobile, where the
+// no group yet, or during the old dedupe behaviour) would hide a real group - // which is exactly what made two-rack scans show as single on mobile, where the
 // in-memory cache isn't cleared by a page refresh.
 function _cacheValid(rackId, expectedGroupId) {
   if (!_cache.has(rackId)) return false;

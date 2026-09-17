@@ -117,8 +117,10 @@ token/
 # Word lock files (created when a .docx is open in Microsoft Word).
 ~$*.docx
 
-# Local handout/deliverable docs (sprint updates, matrices) — working files, not source.
-docs/handouts/
+# Raw NetBox schema dumps (33 MB, regenerable). Rebuild with:
+#   curl -s "$NETBOX_URL/api/schema/?format=json" -o docs/netbox/schema-dumps/netbox-<version>-openapi.json
+# The generated docs/netbox/netbox-object-reference.html and its build script stay tracked.
+docs/netbox/schema-dumps/
 
 # Old documentation archives — superseded by docs/features/.
 /docs.zip
@@ -138,8 +140,9 @@ RACKTRACK_INVITES.md
 server/data/racktrack-invites.json
 RACKTRACK_INVITES.txt
 
-# Local demo & tester materials (scripts, packets, credentials) — not for version control
-demo/
+# Local demo & tester materials (scripts, packets, credentials) — not for version control.
+# Anchored to the repo root so docs/demo/ (demo scripts, feature book, screenshots) stays tracked.
+/demo/
 testers/
 THE-TESTERS_INVITES.txt
 

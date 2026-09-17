@@ -8,8 +8,8 @@ function findAnchor(target) {
 }
 
 // How long an `optional` step waits for its anchor before giving up and moving
-// on. It exists because some anchors arrive late — the incident dropdown only
-// renders once /api/incidents/active has answered — so an immediate skip would
+// on. It exists because some anchors arrive late - the incident dropdown only
+// renders once /api/incidents/active has answered - so an immediate skip would
 // race the fetch. This used to be 4000ms, which on the common path (an org with
 // no open tickets) left the walkthrough showing NOTHING for four seconds: no
 // dim and no card. Testers read that as the tour crashing. The card now
@@ -25,7 +25,7 @@ const ADVANCE_GRACE_MS = 900;
 // about, e.g. a CSS animation settling.
 const FALLBACK_MEASURE_MS = 500;
 
-// Renders nothing fake — it spotlights the real `data-tour` anchor already in
+// Renders nothing fake - it spotlights the real `data-tour` anchor already in
 // the page and waits for the real click/change on it before moving on.
 //
 // When the anchor is NOT on screen (page still loading, mid-navigation, or a
@@ -37,8 +37,8 @@ export default function TourOverlay() {
   const { active, currentStep, advance, stopTour } = useTour();
   const [rect, setRect] = useState(null);
   const [bypassRect, setBypassRect] = useState(null);
-  // The card has to be placed against its own measured height — see the
-  // clamp below — so measure it after every layout that can change it.
+  // The card has to be placed against its own measured height - see the
+  // clamp below - so measure it after every layout that can change it.
   const bubbleRef = useRef(null);
   const [bubbleH, setBubbleH] = useState(0);
   // Which step we have already scrolled into view, so a step that starts off
@@ -46,8 +46,7 @@ export default function TourOverlay() {
   // they scroll away from it.
   const scrolledForRef = useRef(null);
 
-  // The dim layer blocks clicks everywhere except the spotlighted control —
-  // including the page's own Back button, which would otherwise leave the
+  // The dim layer blocks clicks everywhere except the spotlighted control - // including the page's own Back button, which would otherwise leave the
   // user stuck mid-tour with no way out except finishing it. Any element
   // marked data-tour-bypass gets the same click-through hole treatment as
   // the spotlight itself, and clicking it stops the tour first.
@@ -88,7 +87,7 @@ export default function TourOverlay() {
   // Track the current step's real anchor.
   //
   // Position used to be re-read on a 200ms interval, which meant the spotlight
-  // trailed a fifth of a second behind the page whenever anything moved — very
+  // trailed a fifth of a second behind the page whenever anything moved - very
   // visible while scrolling. It is now driven by the events that actually
   // change the geometry (scroll, resize, the anchor resizing itself), each
   // coalesced into one measurement per frame, with a slow interval left in as a
@@ -108,7 +107,7 @@ export default function TourOverlay() {
       if (cancelled) return;
 
       // Steps that complete on a state change rather than a click. The pending
-      // advance is cancelled if the condition goes back to false — otherwise
+      // advance is cancelled if the condition goes back to false - otherwise
       // picking a photo and removing it inside the grace window still advanced
       // the tour, leaving the user on "Analyze the rack" with nothing to
       // analyze.
@@ -171,7 +170,7 @@ export default function TourOverlay() {
     // Re-measure every frame while a step is up.
     //
     // The dim layer blocks clicks everywhere except this rect, so a stale rect
-    // does not merely look wrong — it puts dim over the control the user was
+    // does not merely look wrong - it puts dim over the control the user was
     // just told to press, and eats the tap. A timer left that window up to
     // half a second wide, which is exactly how long the results view takes to
     // settle while its rack photo loads, so the first click on the device
@@ -179,7 +178,7 @@ export default function TourOverlay() {
     //
     // Per-frame keeps it at most ~16ms behind, which no one can hit. It costs
     // one getBoundingClientRect per frame, and only while the walkthrough is
-    // actually on screen — a few minutes, once per device. setRect below only
+    // actually on screen - a few minutes, once per device. setRect below only
     // triggers a render when the numbers really move.
     let rafLoop = null;
     const tick = () => { measure(); rafLoop = requestAnimationFrame(tick); };
@@ -206,11 +205,11 @@ export default function TourOverlay() {
     };
   }, [active, currentStep, advance]);
 
-  // Advance on the real interaction with the real element — never a fake button.
+  // Advance on the real interaction with the real element - never a fake button.
   useEffect(() => {
     if (!active || !currentStep) return undefined;
     // Steps that complete via a state change (advanceWhenVisible) must not
-    // also advance on a bare click of their target — e.g. clicking the photo
+    // also advance on a bare click of their target - e.g. clicking the photo
     // drop zone only opens the file picker, it doesn't mean a photo was
     // actually chosen. Only the state watcher above may advance these steps.
     if (currentStep.advanceWhenVisible) return undefined;
@@ -229,7 +228,7 @@ export default function TourOverlay() {
   // Give up quietly if a step's control never arrives.
   //
   // Nothing is drawn while we wait, so without this the walkthrough could sit
-  // invisibly active forever — and then reappear much later, out of nowhere,
+  // invisibly active forever - and then reappear much later, out of nowhere,
   // if a matching anchor happened to mount. The window is generous because a
   // legitimate wait here is a rack analysis, which takes a while; it only
   // expires when the step is genuinely unreachable.
@@ -257,7 +256,7 @@ export default function TourOverlay() {
   // needs only enough clearance not to sit against the edge of the screen.
   const TOP_GUTTER = 16;
 
-  // Anchor not on screen — show NOTHING.
+  // Anchor not on screen - show NOTHING.
   //
   // This used to render the card reading "Waiting for this to appear…", which
   // was added so a step whose control never arrives could still be skipped.
@@ -279,7 +278,7 @@ export default function TourOverlay() {
 
   // Which side of the spotlight the card goes on.
   //
-  // This used to be `spaceBelow > 90` — a fixed threshold that takes no account
+  // This used to be `spaceBelow > 90` - a fixed threshold that takes no account
   // of how tall the card actually is. On a 375x667 phone the Analyze button
   // left 109px below it, which cleared the threshold, so the card was placed
   // below and then dragged back up by the on-screen clamp until it sat directly
@@ -295,7 +294,7 @@ export default function TourOverlay() {
   const fitsBelow = spaceBelow >= bubbleH + 12;
   const fitsAbove = spaceAbove >= bubbleH + TOP_GUTTER;
   // If neither side fits (an anchor taller than the space around it) the card
-  // has to overlap something — take the roomier side and let the clamp handle it.
+  // has to overlap something - take the roomier side and let the clamp handle it.
   const placeBelow = fitsBelow || (!fitsAbove && spaceBelow >= spaceAbove);
   const bubbleLeft = Math.min(Math.max(12, left), vw - bubbleWidth - 12);
 
@@ -304,7 +303,7 @@ export default function TourOverlay() {
   // Clamp the card's OWN top edge into the viewport.
   //
   // Placing it above the spotlight used to mean `top: max(12, anchorTop - 20)`
-  // plus `translateY(-100%)` — which clamps the anchor-relative coordinate and
+  // plus `translateY(-100%)` - which clamps the anchor-relative coordinate and
   // then shifts the card up by its full height, so the clamp guards nothing.
   // A tall anchor (the desktop drop zone is ~780px, which leaves no room
   // below) pushed the card's title clean off the top of the screen;
@@ -317,7 +316,7 @@ export default function TourOverlay() {
     Math.max(TOP_GUTTER, vh - bubbleH - 12),
   );
   // The tail points back at the spotlight, so it sits on whichever edge of the
-  // card faces it — the top when the card is below, the bottom when above.
+  // card faces it - the top when the card is below, the bottom when above.
   const tailY = placeBelow ? bubbleTop : bubbleTop + bubbleH;
 
   return createPortal(

@@ -305,7 +305,7 @@ export default function ReviewPage() {
                           </>
                         ) : (
                           <em className={styles.unstated}>
-                            not read yet — read it in the Network step
+                            not read yet - read it in the Network step
                           </em>
                         )}
                       </div>
@@ -319,7 +319,7 @@ export default function ReviewPage() {
                           disabled={!s.read}
                           onChange={(e) => setMatch(s.id, e.target.value)}
                         >
-                          <option value={NOT_HERE}>— not in this rack —</option>
+                          <option value={NOT_HERE}> - not in this rack - </option>
                           {deviceOptions.map((d) => {
                             const taken = claimedBy[d.uid];
                             const mine = matches[s.id] === d.uid;
@@ -466,7 +466,7 @@ export default function ReviewPage() {
                       {result.unresolved.length} LLDP neighbour{result.unresolved.length === 1 ? '' : 's'} not turned into a cable
                     </b>
                     {result.unresolved.map((u, i) => (
-                      <span key={i}>{u.from}: saw {u.seen || 'a neighbour'} — {u.why}.</span>
+                      <span key={i}>{u.from}: saw {u.seen || 'a neighbour'} - {u.why}.</span>
                     ))}
                   </div>
                 )}
@@ -540,7 +540,7 @@ export default function ReviewPage() {
 function Stat({ v, k, n }) {
   return (
     <div>
-      <b>{v ?? '—'}</b>
+      <b>{v ?? ' - '}</b>
       <span>{k}</span>
       {n ? <small>{n}</small> : null}
     </div>
@@ -562,7 +562,7 @@ function byDevice(changes) {
   return out;
 }
 
-/** "3 manufacturers, 3 port counts" — what the number above is made of. */
+/** "3 manufacturers, 3 port counts" - what the number above is made of. */
 function fieldSummary(changes) {
   const n = {};
   for (const c of changes) n[c.field] = (n[c.field] || 0) + 1;
@@ -573,8 +573,8 @@ function fieldSummary(changes) {
 
 /* ── Pick a device off the photograph ─────────────────────────────────────
    The same picture and the same boxes the scan drew, made tappable. The join
-   between a detection box and a reconcile device is the U it sits in — the
-   only handle the two sides share — so a box the engine could not place is
+   between a detection box and a reconcile device is the U it sits in - the
+   only handle the two sides share - so a box the engine could not place is
    drawn but not offered.
 
    The photograph comes from /api/nb/scans/:id/image, which sits behind the

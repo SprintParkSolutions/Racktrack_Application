@@ -9,7 +9,7 @@ import styles from './ApprovalsPage.module.css';
  * Approvals: the admin's screen.
  *
  * Everything a scan would change is listed here, and nothing reaches NetBox
- * until somebody says so item by item. Three ways out of every row — approve
+ * until somebody says so item by item. Three ways out of every row - approve
  * it, reject it with a reason, or hand it to whoever looks after the rack.
  *
  * Two things on this screen are load-bearing and easy to miss.
@@ -42,7 +42,7 @@ function diffLines(diff) {
   }));
 }
 
-const show = (v) => (v === null || v === undefined || v === '' ? '—' : String(v));
+const show = (v) => (v === null || v === undefined || v === '' ? ' - ' : String(v));
 
 export default function ApprovalsPage() {
   const { rackId } = useParams();
@@ -205,7 +205,7 @@ export default function ApprovalsPage() {
       {people && !spoc && (
         <p className={styles.warnRow}>
           No single point of contact is set for this rack in NetBox
-          {people.why ? ` — ${people.why}` : ''}. A ticket can still be raised and assigned by hand.
+          {people.why ? ` - ${people.why}` : ''}. A ticket can still be raised and assigned by hand.
         </p>
       )}
       {people && people.serviceNow === false && (
@@ -312,7 +312,7 @@ export default function ApprovalsPage() {
                   </button>
                 </div>
               )}
-              {item.note && <p className={styles.note}>“{item.note}” — {item.decidedBy}</p>}
+              {item.note && <p className={styles.note}>“{item.note}” - {item.decidedBy}</p>}
             </li>
           );
         })}
@@ -347,7 +347,7 @@ export default function ApprovalsPage() {
               <option value="">Choose a person</option>
               {roster.map((p) => (
                 <option key={p.name} value={p.name}>
-                  {p.name}{p.name === spoc?.name ? ' — single point of contact' : ''}
+                  {p.name}{p.name === spoc?.name ? ' - single point of contact' : ''}
                   {p.title ? ` (${p.title})` : ''}
                 </option>
               ))}

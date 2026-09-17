@@ -9,7 +9,7 @@
 }
 
 /* …but only while that bar is actually on screen. Straight after a scan there
-   are no tabs yet — the page is the photograph and two buttons — and the
+   are no tabs yet - the page is the photograph and two buttons - and the
    reserved 64px sat under them as an empty band. */
 .results[data-tabs="none"] {
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -21,7 +21,7 @@
    content renders in the natural document flow. The data-tab attribute
    on .results lets us scope the grid only to the overview view. */
 /* ≥1024px matches where DesktopShell (the sidebar) activates, so the overview
-   gets its proper 2-column layout on iPad landscape too — not just ≥1180.
+   gets its proper 2-column layout on iPad landscape too - not just ≥1180.
    Height is 100% (fill DesktopShell's .fluid) rather than 100vh, because .fluid
    sits below a breadcrumb bar and is shorter than the viewport; 100vh here
    overflowed past the bottom on shorter screens (iPad landscape). */
@@ -43,8 +43,8 @@
   }
 
   /* Embedded (two-rack side-by-side column): the 2-col grid would squeeze the
-     photo into ~300px. Stack instead — photo full column width on top, the
-     device picker below — so each rack's photo is large and readable. */
+     photo into ~300px. Stack instead - photo full column width on top, the
+     device picker below - so each rack's photo is large and readable. */
   .results[data-embedded='true'][data-tab='overview'] {
     grid-template-columns: 1fr !important;
     grid-template-areas: "hero" "sheet" !important;
@@ -111,7 +111,7 @@
     padding: 16px 24px 32px;
   }
   /* Same issue affects the loading/empty fallback at the top of
-     ResultsPage's early return — give it a real viewport height so the
+     ResultsPage's early return - give it a real viewport height so the
      "Loading rack …" / "No scan result" message is actually visible. */
   .results .empty {
     flex: none;
@@ -120,13 +120,13 @@
   }
 }
 
-/* ── Desktop shell (≥1024px) — free the non-overview / drift views from the
+/* ── Desktop shell (≥1024px) - free the non-overview / drift views from the
    fixed 100vh + internal scroll. DesktopShell activates at ≥1024px and wraps
    pages in its own `.fluid` scroller, but ResultsPage's base `.results` stays
-   locked to `height:100vh; overflow:hidden` until 1180px. Between 1024–1179px
+   locked to `height:100vh; overflow:hidden` until 1180px. Between 1024-1179px
    that clips tall content (e.g. the drift view's annotated rack image) at the
    fold. This extends the existing ≥1180 non-overview release down to 1024 so
-   `.results` grows to its natural height and `.fluid` handles the scroll — the
+   `.results` grows to its natural height and `.fluid` handles the scroll - the
    flex:1 `.portBody` / `.tabContent` then size to content and never clip.
    Also drop the mobile ScanTabBar reserve; there's no ScanTabBar on desktop. */
 @media (min-width: 1024px) {
@@ -161,7 +161,7 @@
     radial-gradient(ellipse 45% 35% at 5%  65%,  rgba(0,0,0,0.06) 0%, transparent 50%);
 }
 
-/* ── Header — white-focused, black accent ── */
+/* ── Header - white-focused, black accent ── */
 .header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 16px 12px;
@@ -231,7 +231,7 @@
   display: flex; gap: 6px; flex-shrink: 0;
 }
 
-/* Pill text label — hidden in favour of icon at narrow widths */
+/* Pill text label - hidden in favour of icon at narrow widths */
 .navPillLabel { display: inline; }
 
 /* Compact headers on narrow phones */
@@ -280,7 +280,7 @@
    port / device controls in the sheet. */
 /* The hero was pinned at 74vh and could not shrink, so on a 727px phone it took
    538px and left the panel below it 33px to show 102px of content. It scrolled,
-   technically — but scrolling a 33px window reads as "the page isn't showing".
+   technically - but scrolling a 33px window reads as "the page isn't showing".
    `flex: 0 1` lets the image give ground, and the panel's min-height below
    guarantees it. */
 /* Straight after a scan the photograph is evidence, not the subject: the
@@ -298,7 +298,7 @@
 .results[data-device="sel"]  .heroWrap { flex: 0 1 44vh; min-height: 0; }
 .results[data-device="sel"]  .sheet    { flex: 1 1 auto; min-height: 200px; }
 
-/* On a short screen the image yields further still — the controls matter more
+/* On a short screen the image yields further still - the controls matter more
    than a larger picture you can already pinch-zoom. */
 @media (max-height: 720px) {
   .results[data-device="sel"]  .heroWrap { flex: 0 1 38vh; }
@@ -327,7 +327,7 @@
   touch-action: pan-y;
 }
 
-/* SVG overlay for device highlight — same viewBox as image, scales identically */
+/* SVG overlay for device highlight - same viewBox as image, scales identically */
 .devOverlay {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -384,7 +384,7 @@
   transform: scale(1.03);
 }
 
-/* Focus-mode "back to rack" pill — replaces the zoom controls when the
+/* Focus-mode "back to rack" pill - replaces the zoom controls when the
    user has drilled into a single selected device. Sits in the same
    top-right corner of the hero so the affordance lives where the user
    last looked. */
@@ -519,7 +519,7 @@
 .sheet {
   /* Fill the space left below the hero and scroll INSIDE that box, so extra
      content (e.g. the low-confidence cable warning) never pushes the pills /
-     action buttons off-screen — it just scrolls. Was flex:0 1 auto + a fixed
+     action buttons off-screen - it just scrolls. Was flex:0 1 auto + a fixed
      max-height:50vh, which clipped the bottom when the warning appeared. */
   flex: 1 1 auto;
   min-height: 0;
@@ -769,7 +769,7 @@
   cursor: not-allowed;
 }
 
-/* Physical-layout port grid — mirrors the rows/columns of the real device */
+/* Physical-layout port grid - mirrors the rows/columns of the real device */
 .portGrid {
   display: flex;
   flex-direction: column;
@@ -883,7 +883,7 @@
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* Device label shown just below the hero image — minimal, no container. */
+/* Device label shown just below the hero image - minimal, no container. */
 .heroLabel {
   display: flex; align-items: baseline; gap: 10px;
   padding: 4px 18px 12px;
@@ -948,7 +948,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PORT RESULT — fresh visual design
+   PORT RESULT - fresh visual design
 ══════════════════════════════════════════════════════════════ */
 
 /* Ambient glow tinted to device color */
@@ -961,9 +961,9 @@
     radial-gradient(ellipse 90% 50% at 50% -5%, rgba(0,0,0,0.25) 0%, transparent 50%);
 }
 
-/* port hero — removed, replaced by portBody layout */
+/* port hero - removed, replaced by portBody layout */
 
-/* ── Port body — fills screen ── */
+/* ── Port body - fills screen ── */
 .portBody {
   flex: 1; min-height: 0;
   display: flex; flex-direction: column;
@@ -974,14 +974,14 @@
   position: relative; z-index: 10;
   background: var(--md-background, #ffffff);
 }
-/* This is a scrolling flex column — its children must keep their natural
+/* This is a scrolling flex column - its children must keep their natural
    height and let the column scroll, never compress to fit. Without this the
    flex algorithm shrinks tall blocks (e.g. the linked-endpoint card) below
    their content height, so the content overflows and the next block (the
    feedback prompt) renders on top of it. */
 .portBody > * { flex-shrink: 0; }
 
-/* Port image — grows to fill remaining space, capped slightly so it's not overwhelming */
+/* Port image - grows to fill remaining space, capped slightly so it's not overwhelming */
 .portImgWrap {
   /* Definite, compact height so the image never collapses AND doesn't push the
      status/buttons below the fold on phones. */
@@ -1026,7 +1026,7 @@
   letter-spacing: .04em;
 }
 
-/* ── Port details — creative layout ── */
+/* ── Port details - creative layout ── */
 .pDetails {
   flex: 1;
   display: flex; flex-direction: column;
@@ -1135,7 +1135,7 @@
   border: 2px solid rgba(255,255,255,0.15);
 }
 
-/* ── Port label — prominent, glowing ── */
+/* ── Port label - prominent, glowing ── */
 .pLabel {
   text-align: center;
   padding: 12px 18px;
@@ -1358,7 +1358,7 @@
   flex: 1; min-width: 0;
 }
 
-/* Status tile — special: dot with pulse */
+/* Status tile - special: dot with pulse */
 .statusDot {
   position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
   width: 10px; height: 10px; border-radius: 50%;
@@ -2257,8 +2257,8 @@
   min-width: 0;
 }
 /* Testers could not find the way out of the report. It was a dark chip
-   (rgba(0,0,0,.6)) on a near-black header with a 12%-alpha border — nearly
-   invisible — and its hover state flipped to light, which read as a different
+   (rgba(0,0,0,.6)) on a near-black header with a 12%-alpha border - nearly
+   invisible - and its hover state flipped to light, which read as a different
    control. It is now the one light element on a dark bar, carries the word
    "Close" rather than an X alone, and is a 40px target. */
 .reportModalClose {
@@ -2277,7 +2277,7 @@
 .reportModalClose:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
 .reportModalFrame {
   /* White (was #000000) so there's no black flash before the light report
-     paints — the report itself is a white document. */
+     paints - the report itself is a white document. */
   flex: 1; width: 100%; border: 0; background: #ffffff;
 }
 
@@ -2286,12 +2286,12 @@
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
   margin: 0 14px 10px;
 }
-/* On narrow phones 4 equal columns leave ~33px per label — the words clip
+/* On narrow phones 4 equal columns leave ~33px per label - the words clip
    mid-character. Drop to 2 columns so each chip's text fits. */
 @media (max-width: 400px) {
   .reportRow { grid-template-columns: repeat(2, 1fr); }
 }
-/* Unified action pill — white-focused, black accent */
+/* Unified action pill - white-focused, black accent */
 .reportChip {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-width: 0;
@@ -2625,7 +2625,7 @@
   border: 1px solid rgba(255,255,255,0.2);
 }
 
-/* ── Feedback card (validate device class) — flat, no card chrome ── */
+/* ── Feedback card (validate device class) - flat, no card chrome ── */
 .fbCard {
   display: flex; flex-direction: column; gap: 10px;
   padding: 0;
@@ -2968,7 +2968,7 @@
 }
 .noPorts { color: rgba(0,0,0,0.2); font-size: .72rem; }
 
-/* Inline cable chips — one per connector+colour group of connected ports,
+/* Inline cable chips - one per connector+colour group of connected ports,
    filled in by the background cable enrichment. */
 .cableChipRow {
   display: flex; flex-wrap: wrap; gap: 5px;
@@ -3041,7 +3041,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   LOADING OVERLAY — premium dark
+   LOADING OVERLAY - premium dark
 ══════════════════════════════════════════════════════════════ */
 .loadOverlay {
   position: fixed; inset: 0; z-index: 200;
@@ -3425,7 +3425,7 @@
   box-shadow: 0 4px 14px rgba(0,0,0,0.4), 0 0 12px rgba(0,0,0,0.25);
 }
 
-/* Confidence chip inside port-info tiles — pinned to the bottom-right
+/* Confidence chip inside port-info tiles - pinned to the bottom-right
    corner as a small unobtrusive badge. Does NOT participate in flex
    layout, so the value text (Switch, connected, RJ-45, colour, etc.)
    keeps its full horizontal space and renders correctly. */
@@ -3460,7 +3460,7 @@
 }
 .consoleStatusRow svg { color: #000000; flex-shrink: 0; }
 
-/* The PDF chip in the report row shows a long filename — keep it on one
+/* The PDF chip in the report row shows a long filename - keep it on one
    line and ellipsize if the row is narrow. */
 .reportChipFile {
   font-family: var(--mono, 'SF Mono', Menlo, Consolas, monospace);
@@ -3557,7 +3557,7 @@
 }
 .credsStored svg { flex-shrink: 0; color: #1c1c1c; }
 
-/* Compact vendor badge shown in the CredsModal header — TP-Link is the only
+/* Compact vendor badge shown in the CredsModal header - TP-Link is the only
    option right now, so this is a read-only status pill, not a selector. */
 .vendorStaticPill {
   display: inline-flex;
@@ -3581,12 +3581,12 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Port-result redesign — minimalistic, glowy, app-native
+   Port-result redesign - minimalistic, glowy, app-native
    ───────────────────────────────────────────────────────────── */
 
 .prHidden { display: none !important; }
 
-/* Port label — plain text below hero image, no container */
+/* Port label - plain text below hero image, no container */
 /* ── Port-located info section: white-focused, black accent ── */
 .prLabelLine {
   text-align: center;
@@ -3704,7 +3704,7 @@
   letter-spacing: 0.02em;
 }
 
-/* "Your correction" badge — marks a value that came from the user's own
+/* "Your correction" badge - marks a value that came from the user's own
    correction (active learning), so it isn't mistaken for a model result. */
 .userTag {
   display: inline-flex;
@@ -3821,7 +3821,7 @@
   flex-shrink: 0;
 }
 
-/* ── "Linked endpoint" card — neutral surface, green "live" accent ── */
+/* ── "Linked endpoint" card - neutral surface, green "live" accent ── */
 .prEndCreative {
   flex: 1; min-width: 0;
   display: flex; align-items: flex-start; gap: 12px;
@@ -3957,7 +3957,7 @@
   font-size: .98rem;
   line-height: 1.2;
   /* Long unbreakable tokens (MAC / FQDN) were overflowing and pushing the reset
-     button off-screen — shrink + ellipsis inside the flex row instead. */
+     button off-screen - shrink + ellipsis inside the flex row instead. */
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4016,7 +4016,7 @@
 .prConsoleBtn svg { opacity: 0.85; }
 .prConsoleTiming { color: rgba(0,0,0,0.6); font-family: var(--mono); font-size: .68rem; margin-left: 4px; }
 
-/* Feedback — bare row so it shares width with .prAnother and action rows */
+/* Feedback - bare row so it shares width with .prAnother and action rows */
 .prFb {
   position: relative;
   margin: 0 14px 10px;
@@ -4226,7 +4226,7 @@
   font-size: .78rem;
 }
 
-/* Jump-to-another-port — same card shell as the feedback and button rows */
+/* Jump-to-another-port - same card shell as the feedback and button rows */
 .prAnother {
   position: relative;
   display: flex; align-items: stretch; gap: 8px;
@@ -4262,7 +4262,7 @@
   font-weight: 600 !important;
 }
 
-/* Bottom action bar — icon-only */
+/* Bottom action bar - icon-only */
 .prBottomBar {
   display: flex; align-items: center; gap: 8px;
   margin: 4px 14px 18px;
@@ -4311,7 +4311,7 @@
    LIGHT THEME OVERRIDES
    ══════════════════════════════════════════════════════════════════════ */
 
-/* Photo viewer surfaces — light lavender so the whole app feels light */
+/* Photo viewer surfaces - light lavender so the whole app feels light */
 :global([data-theme='light']) .heroWrap,
 :global([data-theme='light']) .resultHero,
 :global([data-theme='light']) .zoomViewport {
@@ -4340,12 +4340,12 @@
   background: rgba(0,0,0,0.14);
 }
 
-/* HUD corner brackets — muted indigo on light */
+/* HUD corner brackets - muted indigo on light */
 :global([data-theme='light']) .hc {
   border-color: rgba(0,0,0,0.45);
 }
 
-/* Scan line — keep visible but indigo-tinted */
+/* Scan line - keep visible but indigo-tinted */
 :global([data-theme='light']) .scanLine {
   background: linear-gradient(90deg,
     transparent 0%,
@@ -4393,7 +4393,7 @@
 :global([data-theme='light']) .cacheBadgeCached { color: #1c1c1c; }
 :global([data-theme='light']) .cacheBadgeLive   { color: #000000; }
 
-/* Hero fade — fade to light bg */
+/* Hero fade - fade to light bg */
 :global([data-theme='light']) .heroFade {
   background: linear-gradient(to bottom, transparent 0%, rgba(255, 255, 255,0.55) 50%, var(--bg) 100%);
 }
@@ -4509,7 +4509,7 @@
   border-color: rgba(0,0,0,0.30);
 }
 
-/* Port card — flat white, hairline border, no shadow */
+/* Port card - flat white, hairline border, no shadow */
 :global([data-theme='light']) .portCard {
   background: var(--md-surface-container-lowest);
   border: 1px solid var(--md-outline-variant);
@@ -4543,7 +4543,7 @@
   color: var(--md-on-surface);
 }
 
-/* Find button — secondary surface, not the primary black */
+/* Find button - secondary surface, not the primary black */
 :global([data-theme='light']) .findBtn {
   background: var(--md-surface-container-high) !important;
   border: 1px solid var(--md-outline-variant) !important;
@@ -4564,13 +4564,13 @@
   box-shadow: none !important;
 }
 
-/* Port grid (small dense tiles — keep dark since they represent device ports) */
+/* Port grid (small dense tiles - keep dark since they represent device ports) */
 :global([data-theme='light']) .portGrid {
   background: #1c1c1c;
   border: 1px solid #f0f0f0;
 }
 
-/* Port input (mono number entry) — flat outlined */
+/* Port input (mono number entry) - flat outlined */
 :global([data-theme='light']) .portInput {
   background: var(--md-surface-container-lowest) !important;
   border: 1px solid var(--md-outline-variant) !important;
@@ -4584,7 +4584,7 @@
   box-shadow: none !important;
 }
 
-/* ── Overview action sheet (light theme) — device picker + RJ45/SFP ── */
+/* ── Overview action sheet (light theme) - device picker + RJ45/SFP ── */
 .devicePicker {
   margin: 0 0 14px;
   padding: 0 2px;
@@ -4600,7 +4600,7 @@
   text-transform: uppercase;
   color: var(--md-on-surface);
 }
-/* ── Device picker — a listbox we draw ourselves ───────────────────────
+/* ── Device picker - a listbox we draw ourselves ───────────────────────
    The native <select> handed its popup to the OS: system font, no padding,
    and every option truncated, because each one carries an identifier, a
    class and a port breakdown. Here each device is a two-line row with room
@@ -4714,7 +4714,7 @@
 }
 .devicePickerOption:hover { background: rgba(18, 18, 18, .04); }
 /* Selected: lit ground and a hard edge, the same as every other chosen
-   control in the app — never a black fill. */
+   control in the app - never a black fill. */
 .devicePickerOptionOn {
   background: rgba(18, 18, 18, .06);
   border-color: var(--md-on-surface);
@@ -4747,7 +4747,7 @@
   pointer-events: none;
 }
 
-/* RJ45 / SFP toggle row — outlined buttons, primary border + tint when active */
+/* RJ45 / SFP toggle row - outlined buttons, primary border + tint when active */
 .portTypeRow {
   display: flex;
   flex-wrap: wrap;
@@ -4836,7 +4836,7 @@
   color: #000000;
 }
 
-/* Stat / connection / info / cable cards — white on lavender */
+/* Stat / connection / info / cable cards - white on lavender */
 :global([data-theme='light']) .pStatRow {
   background: #ffffff;
   border: 1px solid #f0f0f0;
@@ -4993,7 +4993,7 @@
   color: #121212;
 }
 
-/* prDash and prMetric — white-focused, black accent (no colored glows) */
+/* prDash and prMetric - white-focused, black accent (no colored glows) */
 :global([data-theme='light']) .prDash { color: #000000; }
 :global([data-theme='light']) .prLabelLine {
   color: #000000;
@@ -5111,7 +5111,7 @@
   font-weight: 700;
 }
 :global([data-theme='light']) .fbBtnYes:hover:not(:disabled) {
-  /* Keep the resting palette — only deepen the shadow slightly so the
+  /* Keep the resting palette - only deepen the shadow slightly so the
      hover reads as "interactive" without flipping to a saturated solid. */
   background: linear-gradient(135deg, #f3f3f3, #f3f3f3);
   color: #1c1c1c;
@@ -5139,7 +5139,7 @@
     0 1px 0 rgba(255, 255, 255, 0.6) inset;
 }
 
-/* Header nav pills — light variants */
+/* Header nav pills - light variants */
 :global([data-theme='light']) .navPillNetdisco {
   background: linear-gradient(135deg, #ffffff, #ffffff);
   border: 1.5px solid #000000;
@@ -5201,7 +5201,7 @@
 :global([data-theme='light']) .prFbDone { color: #1c1c1c; }
 :global([data-theme='light']) .prFbErr { color: #1c1c1c; }
 
-/* prAnother — input + button */
+/* prAnother - input + button */
 :global([data-theme='light']) .prAnother input {
   background: #ffffff !important;
   border: 1px solid #c6c6c6 !important;
@@ -5325,7 +5325,7 @@
   color: #000000;
 }
 
-/* Console sheet — fully lightened */
+/* Console sheet - fully lightened */
 :global([data-theme='light']) .consoleSheetBackdrop {
   background: rgba(0,0,0,0.20);
 }
@@ -5432,7 +5432,7 @@
   color: #1c1c1c;
 }
 
-/* Intent bar (above terminal — light side) */
+/* Intent bar (above terminal - light side) */
 :global([data-theme='light']) .intentBar {
   background: #ffffff;
   border-bottom: 1px solid #f0f0f0;
@@ -5492,7 +5492,7 @@
   border: 1px solid #f0f0f0;
 }
 
-/* Switch Info modal — light overrides */
+/* Switch Info modal - light overrides */
 :global([data-theme='light']) .siHeaderIcon {
   background: rgba(0,0,0,0.1); color: #000000;
 }
@@ -5715,7 +5715,7 @@
 /* Empty state */
 :global([data-theme='light']) .empty { color: #474747; }
 
-/* Cable diag, neighbor card etc — broad lightening */
+/* Cable diag, neighbor card etc - broad lightening */
 :global([data-theme='light']) .cableCard {
   background: #ffffff;
   border-color: #f0f0f0;
@@ -5783,13 +5783,13 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   Overview action-sheet refresh — compact, white, subtle black accents.
+   Overview action-sheet refresh - compact, white, subtle black accents.
    Kills the per-class accent colour on the selected-device header and
    tightens the device picker + port card + feedback so the whole panel
    reads as one cohesive section rather than three boxed-up cards.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ── Selected-device header — flat black, no class colour ───── */
+/* ── Selected-device header - flat black, no class colour ───── */
 :global([data-theme='light']) .heroLabel {
   display: flex !important;
   align-items: baseline !important;
@@ -5820,7 +5820,7 @@
   opacity: 0.55 !important;
 }
 
-/* ── Device picker — flat label + clean select ──────────────── */
+/* ── Device picker - flat label + clean select ──────────────── */
 :global([data-theme='light']) .devicePicker {
   margin: 0 0 14px !important;
   padding: 0 16px !important;
@@ -5841,7 +5841,7 @@
   color: var(--md-on-surface, #121212) !important;
 }
 
-/* ── Port section — single bordered card holding everything ──── */
+/* ── Port section - single bordered card holding everything ──── */
 :global([data-theme='light']) .portCard {
   margin: 0 16px 16px !important;
   padding: 14px !important;
@@ -5871,7 +5871,7 @@
   margin-top: 2px !important;
 }
 
-/* ── RJ45 / SFP — segmented control inside a grey background ── */
+/* ── RJ45 / SFP - segmented control inside a grey background ── */
 :global([data-theme='light']) .portTypeRow {
   display: flex !important;
   flex-wrap: wrap !important;
@@ -5912,7 +5912,7 @@
   box-shadow: none !important;
 }
 
-/* ── Port input + Find Port — both outlined boxes inside the card ── */
+/* ── Port input + Find Port - both outlined boxes inside the card ── */
 :global([data-theme='light']) .portInputRow {
   display: flex !important;
   align-items: stretch !important;
@@ -5971,7 +5971,7 @@
   text-decoration: none !important;
 }
 
-/* ── Feedback card — flat inline section with subtle accent ─── */
+/* ── Feedback card - flat inline section with subtle accent ─── */
 :global([data-theme='light']) .fbCard {
   margin: 0 16px 16px !important;
   padding: 0 !important;
@@ -6017,7 +6017,7 @@
   font-weight: 600 !important;
   box-shadow: none !important;
 }
-/* Yes button — green border signals the recommended/confirm action. */
+/* Yes button - green border signals the recommended/confirm action. */
 :global([data-theme='light']) .fbBtnYes {
   border: 1.5px solid #22c55e !important;
   color: var(--md-on-surface, #121212) !important;
@@ -6031,11 +6031,11 @@
   border-color: var(--md-on-surface, #121212) !important;
 }
 
-/* v2 tablet/desktop skin rolled back — it forced page bg to white but
+/* v2 tablet/desktop skin rolled back - it forced page bg to white but
    inner content still had white text colors → invisible content. Skin
    to be re-applied later with full inner-color overrides per element. */
 
-/* ── TESTING overlay (devices + ports) — remove before production ── */
+/* ── TESTING overlay (devices + ports) - remove before production ── */
 .testOverlay {
   margin: 0 0 18px;
   border: 1px solid #f0f0f0;

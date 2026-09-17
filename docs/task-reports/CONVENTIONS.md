@@ -20,6 +20,16 @@ the next batch matches this one.
 Nine tasks, twenty-three sub-tasks, thirty-two issues, fifty-eight points on the
 parents.
 
+## The second batch, 15 September 2026
+
+| Ticket | Title | Points | Sub-tasks |
+|---|---|---|---|
+| SPRTMS-1666 | Portal: first-run onboarding flow and organisation settings | 8 | 5 |
+| SPRTMS-1667 | Rack Book: enter one rack in NetBox's own fields and export it for the end-to-end test | 8 | 3 |
+| SPRTMS-1676 | Application: first-time setup screens, the Being set up hold, and the space picker on Scan | 5 | 0 |
+
+Documents 10 to 12 in this folder; design documents are linked from each ticket's first comment, since the connector cannot attach files.
+
 ## Structure
 
 - **Task** is the parent. **Sub-task** sits beneath it. We do not use Epics for
@@ -128,7 +138,7 @@ this directory. Its sections are fixed:
 
 ## Documents
 
-- One markdown file per task in `docs/tasks/`, named by number and slug.
+- One markdown file per task in `docs/task-reports/`, named by number and slug.
 - `README.md` in the same directory indexes them.
 - The same text is posted as the second Jira comment, so the ticket is readable
   without the repository and the repository is readable without Jira.

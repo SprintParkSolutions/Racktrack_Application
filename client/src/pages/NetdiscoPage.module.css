@@ -1,4 +1,4 @@
-﻿/* Netdisco page — visually consistent with ResultsPage / TopologyPage.
+﻿/* Netdisco page - visually consistent with ResultsPage / TopologyPage.
    Same dark navy + cyan/blue/violet palette, same card density, same chip
    shapes. The page should feel like a peer view of the rest of the app. */
 
@@ -148,7 +148,7 @@
   color: rgba(0,0,0,0.55);
 }
 
-/* 0.7rem at 55% black is below the app's floor for something tappable — it
+/* 0.7rem at 55% black is below the app's floor for something tappable - it
    read as a caption, not a control. */
 .linkBtn {
   background: none; border: none;
@@ -322,7 +322,7 @@
   background: rgba(0, 0, 0, 0.18);
 }
 
-/* Legacy match table — kept in case anything else still references it. */
+/* Legacy match table - kept in case anything else still references it. */
 .matchTable {
   display: flex; flex-direction: column; gap: 6px;
 }
@@ -385,7 +385,7 @@
   display: flex; gap: 5px; align-items: center; flex-wrap: wrap;
 }
 
-/* Port pills — same shape as ResultsPage portPill family */
+/* Port pills - same shape as ResultsPage portPill family */
 .portCount {
   font-family: var(--mono); font-size: 0.64rem; font-weight: 700;
   color: #1c1c1c;
@@ -501,7 +501,7 @@
   border-radius: 2px;
 }
 
-/* Port table grid — 3 cols when no MACs are reported (the common case
+/* Port table grid - 3 cols when no MACs are reported (the common case
    for RackTrack-pushed devices), 4 cols when at least one port has an
    active MAC sighting. The Neighbour column is intentionally removed:
    passive patch panels were polluting it and the LLDP-only neighbours
@@ -589,7 +589,7 @@
 
 .macChip:hover { background: rgba(0,0,0,0.18); }
 
-/* End-device fallback button — shown in the Neighbour column when the
+/* End-device fallback button - shown in the Neighbour column when the
    LLDP neighbour was a patch panel. We surface the MAC the switch sees
    behind that port instead, since the patch panel is passive. */
 .endDeviceBtn {
@@ -797,12 +797,12 @@
   .chev         { grid-area: chev; }
   .deviceCounts { grid-area: counts; justify-self: stretch; justify-content: space-between; }
 
-  /* Hide the desktop table header on mobile — each port is a
+  /* Hide the desktop table header on mobile - each port is a
      denser self-describing card now. */
   .portTable4 .portHead,
   .portTable5 .portHead { display: none; }
 
-  /* Compact port card — at most two lines of content:
+  /* Compact port card - at most two lines of content:
        Line 1: port name (bold)            · state pill (right)
        Line 2: descr · "VLAN N"
      Neighbour column has been removed from the table entirely. */
@@ -861,7 +861,7 @@
     text-transform: uppercase;
   }
 
-  /* MAC chip — its own bottom row only when present. */
+  /* MAC chip - its own bottom row only when present. */
   .portTable5 .portRow > div:nth-child(4) {
     display: flex;
     align-items: center;
@@ -1131,9 +1131,9 @@
   color: #1c1c1c;
 }
 
-/* ── Minimalistic refresh — white + subtle black accents. Wins via cascade order. ── */
+/* ── Minimalistic refresh - white + subtle black accents. Wins via cascade order. ── */
 
-/* Page shell — white, no gradients, no ambient glow. */
+/* Page shell - white, no gradients, no ambient glow. */
 .page,
 :global([data-theme='light']) .page {
   background: var(--md-background) !important;
@@ -1145,7 +1145,7 @@
   display: none !important;
 }
 
-/* Header — flat white, hairline bottom border, no blur, no shadow. */
+/* Header - flat white, hairline bottom border, no blur, no shadow. */
 .header,
 :global([data-theme='light']) .header {
   background: var(--md-surface-container-lowest) !important;
@@ -1173,7 +1173,7 @@
   font-family: var(--mono);
 }
 
-/* Health pill — outlined, status accents only via class. */
+/* Health pill - outlined, status accents only via class. */
 .healthPill,
 :global([data-theme='light']) .healthPill {
   background: var(--md-surface-container-lowest) !important;
@@ -1199,12 +1199,12 @@
   box-shadow: none !important;
 }
 
-/* Main wrap — neutral. */
+/* Main wrap - neutral. */
 .main {
   background: transparent;
 }
 
-/* Section card — white, hairline, no shadow, no blur. */
+/* Section card - white, hairline, no shadow, no blur. */
 .section,
 :global([data-theme='light']) .section {
   background: var(--md-surface-container-lowest) !important;
@@ -1248,7 +1248,7 @@
   opacity: 1;
 }
 
-/* Sync button — outlined, no fill. */
+/* Sync button - outlined, no fill. */
 .syncBtn,
 :global([data-theme='light']) .syncBtn {
   background: var(--md-surface-container-lowest) !important;
@@ -1262,7 +1262,7 @@
   border-color: var(--md-on-surface) !important;
 }
 
-/* Device list — white cards, hairline borders, no shadow, no left bar fill. */
+/* Device list - white cards, hairline borders, no shadow, no left bar fill. */
 .deviceCard,
 :global([data-theme='light']) .deviceCard {
   background: var(--md-surface-container-lowest) !important;
@@ -1328,7 +1328,7 @@
   opacity: 0.55;
 }
 
-/* Inline counts — solid black numerals, no glow, status colors only for live/down. */
+/* Inline counts - solid black numerals, no glow, status colors only for live/down. */
 .cnt,
 :global([data-theme='light']) .cnt {
   color: var(--md-on-surface) !important;
@@ -1348,14 +1348,14 @@
 .cntLive b,
 :global([data-theme='light']) .cntLive b { color: var(--md-on-surface) !important; }
 
-/* Device body — subtle step. */
+/* Device body - subtle step. */
 .deviceBody,
 :global([data-theme='light']) .deviceBody {
   background: var(--md-surface-container) !important;
   border-top: 1px solid var(--md-outline-variant) !important;
 }
 
-/* Match table — same hairline treatment. */
+/* Match table - same hairline treatment. */
 .matchRow,
 :global([data-theme='light']) .matchRow {
   background: var(--md-surface-container-lowest) !important;
@@ -1391,7 +1391,7 @@
   opacity: 0.75;
 }
 
-/* Pills / tags / port counts — outlined only, no fill. */
+/* Pills / tags / port counts - outlined only, no fill. */
 .portCount,
 .connCount,
 :global([data-theme='light']) .portCount,
@@ -1412,7 +1412,7 @@
   box-shadow: none !important;
 }
 
-/* Detail grid — subtle step, hairline. */
+/* Detail grid - subtle step, hairline. */
 .detailGrid,
 :global([data-theme='light']) .detailGrid {
   background: var(--md-surface-container) !important;
@@ -1434,7 +1434,7 @@
   opacity: 0.85;
 }
 
-/* Filter pills — outlined; active = solid black border + bold. */
+/* Filter pills - outlined; active = solid black border + bold. */
 .filterBtn,
 :global([data-theme='light']) .filterBtn {
   background: var(--md-surface-container-lowest) !important;
@@ -1460,7 +1460,7 @@
   font-weight: 800;
 }
 
-/* Port table — white, hairline rows. */
+/* Port table - white, hairline rows. */
 .portTable,
 :global([data-theme='light']) .portTable {
   border: 1px solid var(--md-outline-variant) !important;
@@ -1504,7 +1504,7 @@
   font-family: var(--mono);
 }
 
-/* Status dots — flat, no glow. */
+/* Status dots - flat, no glow. */
 .dotActive,
 :global([data-theme='light']) .dotActive {
   background: #22c55e !important;
@@ -1517,7 +1517,7 @@
   box-shadow: none !important;
 }
 
-/* MAC chip — outlined, no fill, mono. */
+/* MAC chip - outlined, no fill, mono. */
 .macChip,
 :global([data-theme='light']) .macChip {
   background: var(--md-surface-container-lowest) !important;
@@ -1534,7 +1534,7 @@
   opacity: 1;
 }
 
-/* MAC lookup — white panel, white input, hairline focus. */
+/* MAC lookup - white panel, white input, hairline focus. */
 .macSection,
 :global([data-theme='light']) .macSection {
   background: var(--md-surface-container) !important;
@@ -1577,7 +1577,7 @@
   border-color: var(--md-on-surface) !important;
 }
 
-/* Current location card / mini rows — white, hairline. */
+/* Current location card / mini rows - white, hairline. */
 .currentLoc,
 :global([data-theme='light']) .currentLoc {
   background: var(--md-surface-container) !important;
@@ -1613,7 +1613,7 @@
   opacity: 0.75;
 }
 
-/* End-device button — keep flat. */
+/* End-device button - keep flat. */
 .endDeviceBtn strong,
 :global([data-theme='light']) .endDeviceBtn strong {
   color: var(--md-on-surface) !important;
@@ -1630,7 +1630,7 @@
   opacity: 1;
 }
 
-/* States — white cards with status border accent. */
+/* States - white cards with status border accent. */
 .loading,
 :global([data-theme='light']) .loading {
   color: var(--md-on-surface) !important;
@@ -1669,7 +1669,7 @@
   box-shadow: none !important;
 }
 
-/* Final sweep — kill any remaining shadows / blurs / gradients / filters
+/* Final sweep - kill any remaining shadows / blurs / gradients / filters
    inside the page. Targets common decorative properties without disturbing
    structural layout. */
 .page *,
@@ -1706,7 +1706,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   Floating Precision mockup pattern — large rounded cards with a left
+   Floating Precision mockup pattern - large rounded cards with a left
    accent strip, port LIST (not table) rows, glass-badge status pills.
    Appended last so it beats everything above by cascade order.
    ══════════════════════════════════════════════════════════════════════ */
@@ -1766,7 +1766,7 @@
   gap: 24px !important;
 }
 
-/* ── Device CARD — floating module with left accent ──────────── */
+/* ── Device CARD - floating module with left accent ──────────── */
 .deviceCard {
   position: relative !important;
   background: var(--md-surface-container-lowest) !important;
@@ -1801,7 +1801,7 @@
 }
 .deviceCardDim { opacity: 0.6 !important; }
 
-/* ── Device header — name + Switch chip · model · IP · live count ── */
+/* ── Device header - name + Switch chip · model · IP · live count ── */
 .deviceHead {
   display: grid !important;
   grid-template-columns: 1fr auto !important;
@@ -1926,7 +1926,7 @@
   padding: 0 !important;
 }
 
-/* ── Filter pills row — full-width strip, scrollable ──────────── */
+/* ── Filter pills row - full-width strip, scrollable ──────────── */
 .portFilter {
   display: flex !important;
   gap: 8px !important;
@@ -1959,7 +1959,7 @@
 }
 .filterBtn:hover { opacity: 0.9 !important; }
 .filterBtnActive {
-  /* Lit surface + hard edge, not an ink slab — see the note on
+  /* Lit surface + hard edge, not an ink slab - see the note on
      .viewBtnActive in TopologyPage.module.css. */
   background: rgba(18, 18, 18, 0.06) !important;
   color: var(--md-on-surface) !important;
@@ -1976,7 +1976,7 @@
   padding: 0 6px 8px !important;
   background: var(--md-surface-container-lowest) !important;
 }
-.portHead { display: none !important; } /* Hide the table header — list pattern uses inline labels */
+.portHead { display: none !important; } /* Hide the table header - list pattern uses inline labels */
 
 .portRow {
   display: grid !important;
@@ -2039,7 +2039,7 @@
 }
 .portVlan { display: none !important; }
 
-/* State pill — green dot + lowercase "up" / "down" text in a glass pill */
+/* State pill - green dot + lowercase "up" / "down" text in a glass pill */
 .portState {
   display: inline-flex !important;
   align-items: center !important;
@@ -2112,13 +2112,13 @@
 :global([data-theme='light']) .dotIdle { background: #ef4444 !important; }
 
 /* ══════════════════════════════════════════════════════════════════════
-   Network tab — tight, white-focused, subtle-black-accent final pass.
+   Network tab - tight, white-focused, subtle-black-accent final pass.
    Strips the accent strip, pill fills, and heavy chrome. Cards become
    small flat tiles; rows are dense; filters are text tabs (underline
    active). Hierarchy comes from weight + opacity only.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ── Section head — compact label + summary line ─────────────── */
+/* ── Section head - compact label + summary line ─────────────── */
 .section { padding: 0 !important; gap: 12px !important; }
 .sectionHead {
   align-items: baseline !important;
@@ -2145,10 +2145,10 @@
 }
 .syncBtn:hover { background: var(--md-surface-container, #ffffff) !important; }
 
-/* ── Device list spacing — tighter gaps between cards ────────── */
+/* ── Device list spacing - tighter gaps between cards ────────── */
 .deviceList { gap: 10px !important; }
 
-/* ── Device card — flat tile, no accent strip ────────────────── */
+/* ── Device card - flat tile, no accent strip ────────────────── */
 .deviceCard {
   border-radius: 10px !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
@@ -2159,7 +2159,7 @@
 .deviceCardOpen { border-radius: 10px !important; }
 .deviceCardOpen::before { display: none !important; }
 
-/* ── Device header — two-row compact pattern ─────────────────── */
+/* ── Device header - two-row compact pattern ─────────────────── */
 .deviceHead {
   display: grid !important;
   grid-template-columns: 1fr auto auto !important;
@@ -2223,7 +2223,7 @@
   font-style: normal !important;
 }
 
-/* Counts column — small "5 live" inline */
+/* Counts column - small "5 live" inline */
 .deviceCounts {
   grid-area: counts !important;
   display: inline-flex !important;
@@ -2274,7 +2274,7 @@
   padding: 4px 14px 8px !important;
 }
 
-/* ── Filter row — UNDERLINE TABS, not pills ──────────────────── */
+/* ── Filter row - UNDERLINE TABS, not pills ──────────────────── */
 .portFilter {
   display: flex !important;
   gap: 18px !important;
@@ -2317,7 +2317,7 @@
   font-weight: 700 !important;
 }
 
-/* ── Port rows — dense, no rounding, hairline dividers ───────── */
+/* ── Port rows - dense, no rounding, hairline dividers ───────── */
 .portTable, .portTable4, .portTable5 {
   padding: 0 !important;
   background: transparent !important;
@@ -2358,7 +2358,7 @@
   opacity: 0.45 !important;
 }
 
-/* ── State pill — small, flat, monochrome — colour is on the dot ── */
+/* ── State pill - small, flat, monochrome - colour is on the dot ── */
 .portState {
   padding: 3px 8px !important;
   border-radius: 9999px !important;
@@ -2426,12 +2426,12 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   Final pass — refined, intentional, white-focused, subtle-black accents.
+   Final pass - refined, intentional, white-focused, subtle-black accents.
    Adds confident typography + a small device-glyph block + proper filter
    pills + breathing room so the tab reads as "designed" instead of "flat".
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ── Section header — confident, not whispering ──────────────── */
+/* ── Section header - confident, not whispering ──────────────── */
 .sectionHead {
   align-items: flex-end !important;
   margin-bottom: 16px !important;
@@ -2473,10 +2473,10 @@
   border-color: var(--md-on-surface, #121212) !important;
 }
 
-/* ── Device list — slightly more space between cards ─────────── */
+/* ── Device list - slightly more space between cards ─────────── */
 .deviceList { gap: 12px !important; }
 
-/* ── Device card — flat white tile, hairline, a touch of polish ── */
+/* ── Device card - flat white tile, hairline, a touch of polish ── */
 .deviceCard {
   border-radius: 12px !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
@@ -2488,7 +2488,7 @@
 .deviceCard::before,
 :global([data-theme='light']) .deviceCard::before { display: none !important; content: none !important; }
 
-/* ── Header layout — icon + content + counts/chev ────────────── */
+/* ── Header layout - icon + content + counts/chev ────────────── */
 .deviceHead {
   display: grid !important;
   grid-template-columns: 40px 1fr auto auto !important;
@@ -2572,7 +2572,7 @@
   font-style: normal !important;
 }
 
-/* Counts pill — small black pill on the right of the title row */
+/* Counts pill - small black pill on the right of the title row */
 .deviceCounts {
   grid-area: counts !important;
   align-self: center !important;
@@ -2617,14 +2617,14 @@
   padding-top: 0 !important;
 }
 
-/* ── Expanded body — give it room to breathe ─────────────────── */
+/* ── Expanded body - give it room to breathe ─────────────────── */
 .deviceBody {
   border-top: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   padding: 6px 16px 12px !important;
 }
 
-/* ── Filter — pills again, with confident active-black state ── */
+/* ── Filter - pills again, with confident active-black state ── */
 .portFilter {
   display: flex !important;
   gap: 6px !important;
@@ -2669,7 +2669,7 @@
   font-weight: 700 !important;
 }
 
-/* ── Port rows — a bit more padding, hover surface tint back ── */
+/* ── Port rows - a bit more padding, hover surface tint back ── */
 .portRow {
   display: grid !important;
   grid-template-columns: 1fr auto !important;
@@ -2718,7 +2718,7 @@
   opacity: 0.5 !important;
 }
 
-/* State pill — bigger glow on the dot, refined typography */
+/* State pill - bigger glow on the dot, refined typography */
 .portState {
   padding: 5px 10px !important;
   border-radius: 9999px !important;
@@ -2771,14 +2771,14 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   EDITORIAL — final replacement pass.
+   EDITORIAL - final replacement pass.
    No cards. No grey containers. No pills. Each device is a typographic
    block on the white page, separated only by a hairline rule. Big
    confident names, mono detail line, status as a coloured dot + word.
    Wins via cascade + `!important` over every earlier layer.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ── Section head — clean, full-width with bottom hairline ──── */
+/* ── Section head - clean, full-width with bottom hairline ──── */
 .section {
   display: flex !important;
   flex-direction: column !important;
@@ -2842,7 +2842,7 @@
   opacity: 1 !important;
 }
 
-/* ── Device list — counter-numbered editorial list ───────────── */
+/* ── Device list - counter-numbered editorial list ───────────── */
 .deviceList {
   counter-reset: dev !important;
   display: block !important;
@@ -2852,7 +2852,7 @@
   border: none !important;
 }
 
-/* ── Device "card" — NO card. Just a typographic block. ──────── */
+/* ── Device "card" - NO card. Just a typographic block. ──────── */
 .deviceCard,
 .deviceCardOpen,
 :global([data-theme='light']) .deviceCard,
@@ -2888,7 +2888,7 @@
   border: none !important;
 }
 
-/* ── Header — flex row, big device name, mono detail line ───── */
+/* ── Header - flex row, big device name, mono detail line ───── */
 .deviceHead {
   display: flex !important;
   align-items: flex-start !important;
@@ -2957,7 +2957,7 @@
   text-transform: lowercase !important;
 }
 
-/* Counts — large number to the right, tiny label under */
+/* Counts - large number to the right, tiny label under */
 .deviceCounts {
   display: inline-flex !important;
   flex-direction: column !important;
@@ -2999,14 +2999,14 @@
   display: none !important;
 }
 
-/* ── Expanded body — indented, full-width, no chrome ─────────── */
+/* ── Expanded body - indented, full-width, no chrome ─────────── */
 .deviceBody {
   border-top: none !important;
   background: transparent !important;
   padding: 0 0 24px 44px !important;
 }
 
-/* ── Filter — text-only tabs with underline active ───────────── */
+/* ── Filter - text-only tabs with underline active ───────────── */
 .portFilter {
   display: flex !important;
   gap: 22px !important;
@@ -3051,7 +3051,7 @@
   font-weight: 700 !important;
 }
 
-/* ── Port list — clean indented list, hairline dividers only ─ */
+/* ── Port list - clean indented list, hairline dividers only ─ */
 .portTable, .portTable4, .portTable5 {
   display: block !important;
   padding: 0 !important;
@@ -3114,7 +3114,7 @@
   text-transform: none !important;
 }
 
-/* ── State indicator — coloured dot + lowercase word, NO pill ─ */
+/* ── State indicator - coloured dot + lowercase word, NO pill ─ */
 .portState,
 :global([data-theme='light']) .portState {
   display: inline-flex !important;
@@ -3151,7 +3151,7 @@
   flex-shrink: 0 !important;
 }
 
-/* ── MAC chip — bare text, no pill ───────────────────────────── */
+/* ── MAC chip - bare text, no pill ───────────────────────────── */
 .macChip,
 :global([data-theme='light']) .macChip {
   font-family: var(--mono, ui-monospace, monospace) !important;
@@ -3175,7 +3175,7 @@
   opacity: 1 !important;
 }
 
-/* End-of-row pair (state pill + MAC) — vertical stack, right-aligned */
+/* End-of-row pair (state pill + MAC) - vertical stack, right-aligned */
 .portRowEnd {
   display: flex !important;
   flex-direction: column !important;
@@ -3185,14 +3185,14 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   FINAL REDESIGN — card-based layout from the new mockup.
+   FINAL REDESIGN - card-based layout from the new mockup.
    Wipes the editorial counter list. Cards return as white surfaces with
    hairline borders. Active card gets a thick black border + 4px left
    accent strip. Ports lead with an Ethernet glyph and end with a clean
    up/down arrow icon (no state pill).
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ── Section head — small uppercase label, no horizontal rule ─ */
+/* ── Section head - small uppercase label, no horizontal rule ─ */
 .section {
   display: flex !important;
   flex-direction: column !important;
@@ -3256,7 +3256,7 @@
   opacity: 1 !important;
 }
 
-/* ── Device list — card spacing ───────────────────────────────── */
+/* ── Device list - card spacing ───────────────────────────────── */
 .deviceList {
   counter-reset: none !important;
   display: flex !important;
@@ -3267,7 +3267,7 @@
   border: none !important;
 }
 
-/* ── Device card — WHITE surface, HAIRLINE border, real container ── */
+/* ── Device card - WHITE surface, HAIRLINE border, real container ── */
 .deviceCard,
 :global([data-theme='light']) .deviceCard {
   counter-increment: none !important;
@@ -3290,7 +3290,7 @@
   display: none !important;
 }
 
-/* ── Active / expanded card — 2px black border + 4px left strip ── */
+/* ── Active / expanded card - 2px black border + 4px left strip ── */
 .deviceCardOpen,
 :global([data-theme='light']) .deviceCardOpen {
   position: relative !important;
@@ -3315,7 +3315,7 @@
   opacity: 1 !important;
 }
 
-/* ── Card header — proper 2-row grid so title and sub stack ──── */
+/* ── Card header - proper 2-row grid so title and sub stack ──── */
 .deviceHead {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) auto !important;
@@ -3360,7 +3360,7 @@
 }
 .deviceClass { display: none !important; }
 
-/* Sub row — model + IP stacked under the title */
+/* Sub row - model + IP stacked under the title */
 .deviceSub {
   grid-area: sub !important;
   display: flex !important;
@@ -3409,7 +3409,7 @@
   text-transform: none !important;
 }
 
-/* ── LIVE pill — small, surface-container-high background ───── */
+/* ── LIVE pill - small, surface-container-high background ───── */
 .deviceCounts,
 :global([data-theme='light']) .deviceCounts {
   display: inline-flex !important;
@@ -3464,7 +3464,7 @@
 
 .chev { display: none !important; }
 
-/* ── Expanded body — divider line above port list ────────────── */
+/* ── Expanded body - divider line above port list ────────────── */
 .deviceBody,
 :global([data-theme='light']) .deviceBody {
   border-top: 1px solid var(--md-outline-variant, #E0E0E0) !important;
@@ -3473,7 +3473,7 @@
   margin-top: 12px !important;
 }
 
-/* ── Filter row inside expanded card — text-only label header ── */
+/* ── Filter row inside expanded card - text-only label header ── */
 .portFilter,
 :global([data-theme='light']) .portFilter {
   display: flex !important;
@@ -3517,7 +3517,7 @@
   font-weight: 700 !important;
 }
 
-/* ── Port list — clean rows with leading ethernet icon ───────── */
+/* ── Port list - clean rows with leading ethernet icon ───────── */
 .portTable, .portTable4, .portTable5,
 :global([data-theme='light']) .portTable {
   display: flex !important;
@@ -3617,7 +3617,7 @@
 .portArrowUp { color: #16a34a !important; }
 .portArrowDown { color: #dc2626 !important; opacity: 0.85 !important; }
 
-/* Hide the old state-pill scaffolding (dot + word + glow) — the arrow
+/* Hide the old state-pill scaffolding (dot + word + glow) - the arrow
    replaces them now. */
 .portState,
 :global([data-theme='light']) .portState,
@@ -3630,7 +3630,7 @@
   display: none !important;
 }
 
-/* MAC chip — compact, optional ─────────────────────────────── */
+/* MAC chip - compact, optional ─────────────────────────────── */
 .macChip,
 :global([data-theme='light']) .macChip {
   flex-shrink: 0 !important;
@@ -3654,7 +3654,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   VLAN grouping — ports inside each switch detail are now grouped under
+   VLAN grouping - ports inside each switch detail are now grouped under
    a small "VLAN N" header so the user reads them by VLAN, not as a flat
    list with a repeated VLAN label on every row.
    ══════════════════════════════════════════════════════════════════════ */
@@ -3694,7 +3694,7 @@
   font-variant-numeric: tabular-nums !important;
 }
 
-/* ── Row reshape — 4-column grid: icon · port mono · desc · arrow ── */
+/* ── Row reshape - 4-column grid: icon · port mono · desc · arrow ── */
 .portRow,
 :global([data-theme='light']) .portRow {
   display: grid !important;
@@ -3717,7 +3717,7 @@
   background: var(--md-surface-container-low, #f4f4f4) !important;
 }
 
-/* Reset old portName container — we now place the columns directly */
+/* Reset old portName container - we now place the columns directly */
 .portName {
   display: contents !important;
 }
@@ -3725,7 +3725,7 @@
   display: none !important;
 }
 
-/* Port name (mono) — fixed minimum column width so they ALL align */
+/* Port name (mono) - fixed minimum column width so they ALL align */
 .portMono {
   font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace) !important;
   font-size: 13px !important;
@@ -3736,7 +3736,7 @@
   white-space: nowrap !important;
 }
 
-/* Description — truncates with ellipsis if long */
+/* Description - truncates with ellipsis if long */
 .portDesc {
   font-family: var(--font, inherit) !important;
   font-size: 13px !important;
@@ -3749,7 +3749,7 @@
   min-width: 0 !important;
 }
 
-/* Empty spacer for the MAC column when this row has no MAC chip — keeps
+/* Empty spacer for the MAC column when this row has no MAC chip - keeps
    the up/down arrow column aligned across rows that DO and DON'T have a
    chip. */
 .macSpacer {
@@ -3758,7 +3758,7 @@
   height: 1px !important;
 }
 
-/* ── Summary dashboard — white, subtle black accents, compact ───────── */
+/* ── Summary dashboard - white, subtle black accents, compact ───────── */
 .netSummary {
   display: grid;
   grid-template-columns: 1fr;
@@ -3839,7 +3839,7 @@
 .utilUp   { color: #1c1c1c; font-weight: 700; }
 .utilConn { color: #1c1c1c; font-weight: 700; }
 
-/* ── Port faceplate grid — monochrome ───────────────────────────────── */
+/* ── Port faceplate grid - monochrome ───────────────────────────────── */
 .faceplate {
   padding: 11px 14px 8px;
   border-bottom: 1px solid rgba(0,0,0,0.06);
@@ -4013,7 +4013,7 @@
 .mBody { padding: 12px 16px 6px; }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   NETWORK VIEW — clean minimal redesign (nv*)
+   NETWORK VIEW - clean minimal redesign (nv*)
    ═══════════════════════════════════════════════════════════════════════ */
 .nvSection { margin: 2px 0 0; }
 .nvHead {
@@ -4073,7 +4073,7 @@
 
 @media (max-width: 600px) { .nvBar { display: none; } }
 
-/* Monochrome health pill — drop the green */
+/* Monochrome health pill - drop the green */
 .healthPill,
 :global([data-theme='light']) .healthPill {
   border: 1px solid rgba(0,0,0,0.12) !important;
@@ -4089,7 +4089,7 @@
 .healthOk .healthDot  { background: #1c1c1c !important; }
 .healthBad .healthDot { background: rgba(0,0,0,0.3) !important; }
 
-/* ═══ Option C — airy rows, zero lines (final) ═══════════════════════ */
+/* ═══ Option C - airy rows, zero lines (final) ═══════════════════════ */
 .nvList {
   background: transparent !important;
   border: none !important;
@@ -4121,7 +4121,7 @@
 
 .nvChev { font-size: 1rem; color: rgba(0,0,0,0.28); }
 
-/* expanded ports — no top line, indented under the name, subtle inset */
+/* expanded ports - no top line, indented under the name, subtle inset */
 .nvPorts {
   border-top: none !important;
   padding: 2px 16px 14px 67px !important;
@@ -4162,7 +4162,7 @@
 .nportUp { color: #1c1c1c; }
 .nportDown { color: rgba(0,0,0,0.28); }
 
-/* filter tabs — airy, no boxes */
+/* filter tabs - airy, no boxes */
 .portFilter { gap: 4px !important; margin: 2px 0 8px !important; }
 .filterBtn {
   background: transparent !important; border: none !important;
@@ -4178,10 +4178,10 @@
    The page renders inside DesktopShell, which already supplies the left
    sidebar and a top crumb bar carrying the "Network view" title + back
    affordance. This page's own header therefore duplicates the back button
-   and title/subtitle — hide those, but KEEP the live HealthPill (a real
+   and title/subtitle - hide those, but KEEP the live HealthPill (a real
    status indicator) right-aligned. Also let the content use the screen
    width instead of sitting in a phone-width column.
-   Scoped to ≥768px only — mobile (<768px) is unchanged.
+   Scoped to ≥768px only - mobile (<768px) is unchanged.
    ══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
   .header {

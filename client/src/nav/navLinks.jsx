@@ -4,7 +4,7 @@
  * The sidebar (DesktopShell) and the phone's bottom bar used to each keep
  * their own hardcoded list. They drifted: the sidebar grew to eight
  * role-gated destinations while the bottom bar stayed at three constants,
- * so Lab and Marketplace became unreachable by tapping on a phone — the
+ * so Lab and Marketplace became unreachable by tapping on a phone - the
  * routes worked, nothing linked to them.
  *
  * Both navigations now read this list, so a destination added here shows up
@@ -64,76 +64,72 @@ export const SwitchTestIcon = () => (
 export const InboxIcon = () => (
   <svg {...s}><path d="M3 12h5l2 3h4l2-3h5"/><path d="M3 12V6a2 2 0 012-2h14a2 2 0 012 2v6"/><path d="M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6"/></svg>
 );
+export const SetupIcon = () => (
+  <svg {...s}><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6l1 1 2-2"/><path d="M4 12l1 1 2-2"/><path d="M4 18l1 1 2-2"/></svg>
+);
 export const MoreIcon = () => (
   <svg {...s}><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>
 );
 
 /* ── the destinations ──────────────────────────────────────────────────
-   `inBar` marks the four that get a permanent slot in the phone's bottom
-   bar; an item may also set `barLabel` for a shorter name there than the
-   sidebar uses. Everything else lives behind More on a phone and in the
-   sidebar on a tablet or desktop — same list, same order, same role gating. */
+   Grouped, in the order a person meets them: the rack work first, then the
+   organisation, then the platform (owner only), then help, then the account.
+   `group` keys into NAV_GROUPS; the sidebar and the phone's Menu both draw
+   headings from it. `hint` is the one-line description shown under the name
+   in the sidebar and the Menu. `inBar` marks the four that get a permanent
+   slot in the phone's bottom bar; `barLabel` is a shorter name for that slot. */
+export const NAV_GROUPS = [
+  { key: 'work',     title: 'Rack work' },
+  { key: 'org',      title: 'Organization' },
+  { key: 'platform', title: 'Platform' },
+  { key: 'help',     title: 'Help' },
+  { key: 'account',  title: 'Account' },
+];
+
 export function usePrimaryNav() {
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
   const isAdmin = isOwner || user?.role === 'org_admin';
 
   return [
-    // No Home. The app opens on the work — Scan is the first destination.
-    { to: '/scan',           label: 'Scan',         icon: <ScanIcon />,        end: false, inBar: true },
-    // The admin's inbox: drift checks a technician has sent for a decision.
-    // Admins only, and in the bottom bar so it is the first place an admin
-    // looks — a workflow nobody is told about is a workflow nobody uses.
-    ...(isAdmin ? [{ to: '/approvals', label: 'Approvals', icon: <InboxIcon />, end: true,
-      inBar: true, barLabel: 'Inbox',
-      hint: 'Drift checks waiting on your decision' }] : []),
-    // In the phone's bottom bar as well as the sidebar. It used to be behind
-    // "More", and testers reported not knowing the mode existed at all —
-    // the scan page deliberately has no two-rack card (one home for the entry),
-    // so a hidden menu item was the ONLY way in. `barLabel` keeps the bar
-    // legible: "TWO RACKS" is too wide for a fifth 10px slot on a 320px phone,
-    // where "2 RACKS" fits.
-    // Every scan this account has made, with its report — the place to go
-    // back to a rack you are not standing in front of.
-    { to: '/history',        label: 'History',      icon: <HistoryIcon />,     end: false,
-      hint: 'Past scans and their reports' },
-    { to: '/multi-rack/new', label: 'Two racks',    icon: <TwoRackIcon />,     end: false,
+    // ── Rack work: the app opens on the work, so Scan is first.
+    { group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false,
+      inBar: true, barLabel: 'Scan',
+      hint: 'Photograph a rack' },
+    { group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
       inBar: true, barLabel: '2 Racks',
-      hint: 'Scan two racks together' },
-    // Organization Console — manage organizations, members and sites. Owner
-    // and org-admin only. This used to be reachable ONLY from the Profile
-    // page, so on a tablet it was missing from the sidebar entirely and on a
-    // phone it was missing from the More menu. Putting it in the shared list
-    // makes it show in both, from one definition.
-    ...(isAdmin ? [{ to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,
-      hint: 'Organizations, members and sites' }] : []),
-    // Operations Console (live ops + server logs) — owner-only.
-    ...(isOwner ? [{ to: '/dashboard', label: 'Console', icon: <DashboardIcon />, end: false,
-      hint: 'Live operations and server logs' }] : []),
-    // EVE-NG lab switches — owner-only while the Cisco path is shaken out.
-    ...(isOwner ? [{ to: '/lab', label: 'Lab', icon: <LabIcon />, end: false,
-      hint: 'Live switches in the test lab' }] : []),
-    // Ground Truth is no longer a standalone destination — it's now a per-scan
-    // step reached from a rack's results after analyse (/ground-truth/:rackId),
-    // scoped to that one upload. See the rack context nav in DesktopShell.
-    // Data Sources (ServiceNow / NetBox / Orion …) and Marketplace are
-    // organization-admin features.
-    ...(isAdmin ? [{ to: '/connections', label: 'Data Sources', icon: <DataSourcesIcon />, end: false,
-      hint: 'Connect ServiceNow, NetBox and others' }] : []),
-    ...(isAdmin ? [{ to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false,
+      hint: 'Two racks as one job' },
+    { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false,
+      hint: 'Past scans and reports' },
+    // The admin's inbox: drift checks a technician has sent for a decision.
+    ...(isAdmin ? [{ group: 'work', to: '/approvals', label: 'Approvals', icon: <InboxIcon />, end: true,
+      inBar: true, barLabel: 'Inbox',
+      hint: 'Drift checks to decide' }] : []),
+
+    // ── Organization: owners and organisation admins.
+    ...(isAdmin ? [{ group: 'org', to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,
+      hint: 'Sites, members, invites' }] : []),
+    // Organization settings (datacentres, approvers, rules) is reached from the
+    // Profile page and the organisation console, not from the rail.
+    ...(isAdmin ? [{ group: 'org', to: '/connections', label: 'Data sources', icon: <DataSourcesIcon />, end: false,
+      hint: 'NetBox and ServiceNow' }] : []),
+    ...(isAdmin ? [{ group: 'org', to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false,
       hint: 'Buy and sell hardware' }] : []),
-    // Network is not a destination: it is the step of a rack's chain that comes
-    // after the scan (/results/:rackId/network). It lived here as "Switch test"
-    // for the builds that proved a phone can read a switch; that is proven.
-    { to: '/help',           label: 'Ask DOT',      icon: <HelpIcon />,        end: false,
-      hint: 'Answers from verified documentation' },
-    // Contact support — reachable directly (not only via DOT's hand-off).
-    // Available to everyone; shows in the sidebar and the phone's Menu.
-    { to: '/contact',        label: 'Contact',      icon: <ContactIcon />,     end: false,
-      hint: 'Email the RackTrack support team' },
-    // Profile is NOT in the bar: the drawer already ends with it, next to Sign
-    // out, which is where people look for their own account. Three slots and
-    // Menu is what fits a phone without the labels shrinking.
-    { to: '/profile',        label: 'Profile',      icon: <ProfileIcon />,     end: false },
+
+    // ── Platform: the owner's tools.
+    ...(isOwner ? [{ group: 'platform', to: '/dashboard', label: 'Console', icon: <DashboardIcon />, end: false,
+      hint: 'Live operations and logs' }] : []),
+    ...(isOwner ? [{ group: 'platform', to: '/lab', label: 'Lab', icon: <LabIcon />, end: false,
+      hint: 'Switches in the test lab' }] : []),
+
+    // ── Help
+    { group: 'help', to: '/help', label: 'Ask DOT', icon: <HelpIcon />, end: false,
+      hint: 'Answers from the docs' },
+    { group: 'help', to: '/contact', label: 'Contact support', icon: <ContactIcon />, end: false,
+      hint: 'Email the team' },
+
+    // ── Account. Not in the phone bar: the Menu ends with it, next to Sign out.
+    { group: 'account', to: '/profile', label: 'Profile', icon: <ProfileIcon />, end: false,
+      hint: 'Account and sign-in' },
   ];
 }

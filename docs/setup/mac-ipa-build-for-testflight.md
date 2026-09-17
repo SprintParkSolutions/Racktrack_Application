@@ -7,7 +7,7 @@ The server lives on the **Windows box** and is reached at
 `make-ipa.sh` only writes that URL into the JS bundle as a string. Once the IPA is
 on a tester's phone, every API call goes to Windows.
 
-Written: 14 Jul 2026 · companion to `WINDOWS-SERVER-SETUP.md`
+Written: 14 Jul 2026 · companion to `windows-gpu-server-setup.md`
 
 ---
 

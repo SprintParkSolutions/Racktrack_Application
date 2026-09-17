@@ -1,0 +1,610 @@
+<title>RackTrack NetBox Plan</title>
+<style>
+  :root{
+    --ink:#15181d; --ink2:#3d444f; --ink3:#6b7280;
+    --line:#e3e6ea; --bg:#f4f5f7; --card:#ffffff;
+    --blue:#1f57c3; --blue-bg:#eef3fc;
+    --red:#b3261e; --red-bg:#fdeeed;
+    --green:#1c6b45; --green-bg:#e9f5ee;
+    --amber:#8a5a00; --amber-bg:#fdf3e2;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.65 ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{width:100%; padding:0 clamp(16px,3vw,48px) 80px}
+  header{
+    background:var(--card); border-bottom:1px solid var(--line);
+    padding:clamp(28px,4vw,52px) clamp(16px,3vw,48px);
+    margin-bottom:32px;
+  }
+  header h1{margin:0 0 8px; font-size:clamp(26px,3.4vw,40px); letter-spacing:-.02em}
+  header p{margin:0; color:var(--ink3); font-size:clamp(14px,1.4vw,17px)}
+  .tagline{margin-top:18px!important; color:var(--ink2)!important; font-style:italic; font-size:16px!important}
+
+  h2{
+    font-size:clamp(19px,2.1vw,26px); letter-spacing:-.01em; margin:44px 0 14px;
+    padding-bottom:10px; border-bottom:2px solid var(--ink); display:flex; gap:12px; align-items:baseline;
+  }
+  h2 .n{color:var(--blue); font-variant-numeric:tabular-nums; font-size:.8em}
+  h3{font-size:17px; margin:26px 0 8px; color:var(--ink)}
+  p{margin:0 0 14px; max-width:78ch}
+  ul,ol{margin:0 0 14px; padding-left:22px; max-width:78ch}
+  li{margin-bottom:7px}
+  strong{font-weight:650}
+  code{background:#eef0f3; padding:1px 6px; border-radius:4px; font-size:.88em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px;
+        padding:clamp(18px,2.2vw,28px); margin-bottom:16px}
+  .grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); margin-bottom:16px}
+  .grid-3{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); margin-bottom:16px}
+
+  .box{border-radius:12px; padding:clamp(18px,2.2vw,26px); margin:0 0 18px; border:1px solid}
+  .box h3{margin-top:0}
+  .box p:last-child,.box ul:last-child{margin-bottom:0}
+  .alert{background:var(--red-bg); border-color:#f0c4c0}
+  .alert h3{color:var(--red)}
+  .good{background:var(--green-bg); border-color:#bfdfcd}
+  .good h3{color:var(--green)}
+  .note{background:var(--blue-bg); border-color:#c5d5f2}
+  .note h3{color:var(--blue)}
+  .warn{background:var(--amber-bg); border-color:#eed9ac}
+  .warn h3{color:var(--amber)}
+
+  .quote{border-left:4px solid var(--blue); background:var(--card); padding:16px 22px;
+         margin:0 0 18px; color:var(--ink2); font-style:italic; border-radius:0 8px 8px 0}
+  .big{font-size:clamp(17px,2vw,21px); line-height:1.5; font-style:normal; font-weight:550; color:var(--ink)}
+
+  .tw{overflow-x:auto; margin-bottom:18px; border:1px solid var(--line); border-radius:12px; background:var(--card)}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px}
+  th,td{text-align:left; padding:11px 16px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{background:#fafbfc; font-weight:650; font-size:13px; text-transform:uppercase;
+     letter-spacing:.04em; color:var(--ink3); white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:12px;
+        font-weight:650; white-space:nowrap}
+  .p-yes{background:var(--green-bg); color:var(--green)}
+  .p-no{background:var(--red-bg); color:var(--red)}
+  .p-part{background:var(--amber-bg); color:var(--amber)}
+
+  .steps{counter-reset:s; list-style:none; padding:0; max-width:none}
+  .steps>li{counter-increment:s; position:relative; padding:18px 20px 18px 62px;
+            background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:12px}
+  .steps>li::before{
+    content:counter(s); position:absolute; left:18px; top:18px;
+    width:28px; height:28px; border-radius:50%; background:var(--ink); color:#fff;
+    display:grid; place-items:center; font-size:14px; font-weight:700}
+  .steps h3{margin:0 0 6px}
+  .steps p:last-child{margin-bottom:0}
+  .when{float:right; font-size:12px; font-weight:650; color:var(--blue);
+        background:var(--blue-bg); padding:3px 10px; border-radius:99px}
+
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:6px 16px; font-size:15px; margin:0}
+  .kv dt{font-weight:650; white-space:nowrap}
+  .kv dd{margin:0; color:var(--ink2)}
+  .foot{margin-top:56px; padding-top:20px; border-top:1px solid var(--line);
+        color:var(--ink3); font-size:13px}
+  @media print{body{background:#fff} .card,.box,.tw{break-inside:avoid}}
+</style>
+
+<header>
+  <h1>RackTrack &rarr; NetBox: the plan</h1>
+  <p>Internal working document &middot; 27 August 2026 &middot; not for the customer</p>
+  <p class="tagline">Telemetry knows <em>what</em> is connected. The camera knows <em>where</em> it is plugged in.<br>
+  Neither is complete. Together they are.</p>
+</header>
+
+<div class="wrap">
+
+<h2><span class="n">01</span> Read this first</h2>
+
+<div class="box alert">
+  <h3>The cable data RackTrack produces today is not real</h3>
+  <p>Every scan writes a file called <code>topology.json</code> full of cable connections. Next to it
+  sits <code>cmdb_synthesis.json</code>, and that file says plainly that the data was generated:
+  the model numbers, the serial numbers, the IP addresses, and <strong>all 83 cable
+  connections</strong> were invented to make the demo look finished. They were never read off a rack.</p>
+  <p>Meanwhile, on a real photo, the part that reads text off equipment comes back with
+  <code>"ocr_failed"</code> and no make, no model.</p>
+</div>
+
+<p><strong>Why this matters more than anything else here.</strong> The one thing the Slovak customer
+says they care most about is using the camera plus the network to work out and <em>verify</em> which
+cable goes into which port. That is exactly the part that is currently made up.</p>
+
+<p>If you show them <code>topology.json</code>, it will look perfect. Then they will test it on their
+own rack, the cables won't match, and you lose the deal <em>and</em> the reference. Universities talk
+to each other. Don't do it.</p>
+
+<div class="box good">
+  <h3>The good news, in the same breath</h3>
+  <p>The other half is genuinely real and genuinely hard. RackTrack really does find racks in a photo,
+  work out which shelf (U position) each box sits on, spot individual ports, tell which ports have
+  cables in them, and identify cable colours. And it really does log into live switches and read their
+  neighbour tables.</p>
+  <p><strong>What's missing is the join between the two.</strong> That join is the product. That's what
+  this plan builds.</p>
+</div>
+
+<h2><span class="n">02</span> What the customer actually asked for</h2>
+
+<p>Strip out the jargon and it's six questions.</p>
+
+<div class="grid">
+  <div class="card">
+    <h3>1. Do you plug into NetBox already?</h3>
+    <p>They already record their network in NetBox and don't want a second system to maintain. The real
+    question is: <em>does RackTrack feed NetBox, or compete with it?</em></p>
+    <p><strong>Answer: it feeds it.</strong> Never position RackTrack as a NetBox replacement — you'd
+    lose immediately.</p>
+  </div>
+  <div class="card">
+    <h3>2. How do I get data out?</h3>
+    <p>They're checking they won't be locked in. API, JSON, CSV. Easy to answer well.</p>
+  </div>
+  <div class="card">
+    <h3>3. Can you produce these exact things?</h3>
+    <p>Their list — sites, racks, devices, ports, cables — isn't random. Those are <strong>the actual
+    table names inside NetBox</strong>. They've read the manual. This is a technical buyer; treat them
+    as one.</p>
+  </div>
+  <div class="card">
+    <h3>4. Can a cable come out with <em>both</em> ends?</h3>
+    <p>The sharpest question in the letter. A cable with one end isn't a cable, it's a note. They're
+    checking whether you have real connection data or just an inventory list with photos.</p>
+  </div>
+  <div class="card">
+    <h3>5. What does it cost?</h3>
+    <p>20&ndash;100 racks, several buildings. They're sizing a budget for a tender.</p>
+  </div>
+  <div class="card">
+    <h3>6. Will you scan one of our real racks?</h3>
+    <p>This is the actual decision point. Everything else is preamble.</p>
+  </div>
+</div>
+
+<div class="quote big">
+  "The key capability we are particularly interested in is the combination of computer vision with
+  LLDP/CDP/network telemetry to determine and verify physical cable-to-port relationships."
+</div>
+
+<p>They've understood the value better than most prospects. They know a camera alone can't reliably
+follow a cable through a tangle at the back of a rack, and they know the network alone can't see patch
+panels or which shelf anything sits on. They want both, fused. That instinct is right, and it's exactly
+the right thing to build.</p>
+
+<h2><span class="n">03</span> Your network admin is right</h2>
+
+<p>He said he can only give you three switches. <strong>He's correct, and it isn't him being awkward
+— it's physics.</strong></p>
+
+<div class="grid">
+  <div class="card">
+    <h3>A <em>managed</em> switch is a small computer</h3>
+    <p>It has its own address, you can log into it, you can ask it questions, and it introduces itself
+    to its neighbours.</p>
+  </div>
+  <div class="card">
+    <h3>An <em>unmanaged</em> switch is a piece of wire with sockets</h3>
+    <p>No address, no login, no software. You can't ask it anything, because there's nothing in there
+    to ask. It's a plastic box that copies electrical signals between ports.</p>
+  </div>
+</div>
+
+<div class="tw"><table>
+<tr><th>Switch</th><th>Ports</th><th>Type</th><th>Can it be handed over?</th></tr>
+<tr><td>D-Link DGS-1024C</td><td>24</td><td>Unmanaged</td><td><span class="pill p-no">No — impossible</span></td></tr>
+<tr><td>D-Link DGS-1016D</td><td>16</td><td>Unmanaged</td><td><span class="pill p-no">No — impossible</span></td></tr>
+<tr><td>D-Link DGS-1210-52</td><td>52</td><td>Managed</td><td><span class="pill p-yes">Yes</span></td></tr>
+<tr><td>TP-Link TL-SG2428P #1</td><td>24</td><td>Managed</td><td><span class="pill p-yes">Yes</span></td></tr>
+<tr><td>TP-Link TL-SG2428P #2</td><td>24</td><td>Managed</td><td><span class="pill p-yes">Yes</span></td></tr>
+</table></div>
+
+<p>Three managed. <strong>Exactly the three he offered.</strong> Asking him for the login to a
+DGS-1024C is like asking for the password to an extension cord. Tell him he was right — it'll do the
+relationship good.</p>
+
+<div class="box warn">
+  <h3>Urgent: "2 D-Link and 1 uplink" needs clearing up today</h3>
+  <p><strong>"Uplink" isn't a type of switch.</strong> It's the <em>port</em> that carries traffic up
+  to the next switch — port 24 on yours, the blue cable. Every switch has one.</p>
+  <p>So I can't tell which boxes are actually in your target rack. That matters enormously:
+  <strong>if the two D-Links in that rack are the unmanaged ones, you have only one manageable switch
+  there — and switches learn about each other by talking to a neighbour.</strong> One switch talking
+  to nobody produces nothing to verify. The demo would be dead before it starts.</p>
+  <p><strong>Go photograph the front of every box and confirm the model numbers.</strong> Quick test:
+  no console socket, no management button, and it never shows up in the firewall's device list = it's
+  unmanaged.</p>
+</div>
+
+<h3>But unmanaged doesn't mean invisible</h3>
+<p>You can't log into a dumb switch, but you're not blind to what's behind it:</p>
+<ol>
+  <li><strong>The managed switch above it gives it away.</strong> Its uplink port will show
+  <em>many</em> device addresses on one single port. A normal desk port shows one. Fifteen on one port
+  means "there's a dumb switch down there with about fifteen things plugged into it."</li>
+  <li><strong>The firewall knows every device</strong> — name, address and hardware ID — including
+  everything behind the dumb switches.</li>
+  <li><strong>So you know what exists. You just don't know which socket each thing is in.</strong></li>
+</ol>
+<p>And <em>that</em> — which physical socket, on a switch that can't be asked — is precisely what a
+camera sees and the network can't.</p>
+
+<h2><span class="n">04</span> Should you replace the unmanaged switches?</h2>
+
+<p><strong>Yes, eventually — but it doesn't unblock this project, and it quietly removes your cheapest
+demo.</strong></p>
+
+<div class="grid">
+  <div class="card">
+    <h3>What you'd gain</h3>
+    <ul>
+      <li>You'd know which socket every desk PC is in — about 38 devices you currently can't place</li>
+      <li>You could split the network into proper zones everywhere (right now anything behind a dumb
+      switch is stuck in one zone)</li>
+      <li>All five switches would introduce themselves to each other, giving a complete verified map</li>
+      <li>Change detection would cover every port instead of about 60%</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>What you'd quietly lose</h3>
+    <p>Those two dumb switches are your <strong>live proof that the network alone isn't enough</strong>.
+    Make all five managed and a sceptic fairly asks:</p>
+    <p><em>"If every switch is managed, why do I need a camera? Free tools already tell me which device
+    is on which port."</em></p>
+    <p>You need a better answer than the dumb switches — and luckily there is one.</p>
+  </div>
+</div>
+
+<div class="box good">
+  <h3>The better answer, which was always stronger: patch panels</h3>
+  <p>A patch panel is <strong>passive</strong>. No electronics, no brain, no address — not because
+  it's cheap, but because there's nothing in it to power. <strong>You cannot make a patch panel
+  manageable at any price.</strong></p>
+  <p>Switches introduce themselves straight through it as if it weren't there. The switch sees whatever
+  is at the far end; it has no idea a panel sits in the middle, or which panel socket the cable lands
+  on. <strong>No network tool will ever see a patch panel. A camera sees it instantly.</strong></p>
+  <p>And look at the customer's list — they mention patch panels <strong>twice</strong>, as separate
+  requirements. Universities have thousands of them.</p>
+  <p><strong>Dumb switches are a gap money closes. Patch panels are a gap that never closes.</strong>
+  Build the story on patch panels and replacing the switches costs you nothing.</p>
+</div>
+
+<h3>Other things only a camera will ever see</h3>
+<div class="grid-3">
+  <div class="card"><p>Which shelf, which rack, which room — <strong>no switch knows where it physically is</strong></p></div>
+  <div class="card"><p>Asset stickers — only an eye or a camera reads a printed label</p></div>
+  <div class="card"><p>Kit that's switched off, broken, or racked but not yet plugged in</p></div>
+  <div class="card"><p>Blanking plates, cable managers, rails, plain power strips</p></div>
+  <div class="card"><p>Equipment that doesn't announce itself — most servers and printers</p></div>
+  <div class="card"><p><strong>What's actually there vs what the config claims</strong> — spotting the difference needs both, by definition</p></div>
+</div>
+
+<h3>If you do buy: practical notes</h3>
+<ul>
+  <li><strong>You don't need powered ports (PoE).</strong> Both dumb switches serve desks and laptops;
+  the phones and access points are on the TP-Links. Non-powered managed switches are much cheaper —
+  don't let anyone spec PoE by reflex.</li>
+  <li><strong>38 desks to cover</strong> — so a 24-port plus a 16- or 24-port.</li>
+  <li><strong>Keep two boxes, not one big one.</strong> Cheaper to consolidate, but your own network
+  document lists switch redundancy as its top improvement, and one box doubles the damage when it fails.</li>
+  <li><strong>Timing is the real recommendation: don't wait for this.</strong> Three managed switches
+  is enough to build and prove everything. Buying and installing would push the customer reply out by
+  weeks, and that reply should go this week.</li>
+</ul>
+
+<div class="box note">
+  <h3>Turn the swap into your best demo</h3>
+  <p>Scan the rack <strong>before</strong> the swap. Replace the switches. Scan again.</p>
+  <p>RackTrack already watches for exactly this kind of change, so swapping a switch produces a
+  "something changed" record <strong>automatically, with no new code</strong>. You get a real
+  before-and-after showing the product spotting a physical change on its own — which turns a boring
+  purchase into the single best thing you can show a customer.</p>
+</div>
+
+<h2><span class="n">05</span> What NetBox is, and why we must not fight it</h2>
+
+<p>NetBox is a free, open database for recording a network: the buildings, the racks, the boxes in the
+racks, the ports on the boxes, and the cables between the ports. It's the industry default, and it's
+very widely used in universities — which is why this customer has one.</p>
+
+<div class="box note">
+  <h3>The key point</h3>
+  <p><strong>NetBox doesn't go and find anything.</strong> It's a filing cabinet. Somebody has to fill
+  it in, and today that somebody is a person with a clipboard walking the rack.</p>
+  <p><strong>That is the entire business case for RackTrack, in one sentence:</strong> NetBox is the
+  filing cabinet; RackTrack is the thing that fills it in without the clipboard.</p>
+</div>
+
+<h3>How a patch panel is recorded — they asked specifically</h3>
+<p>In NetBox a patch panel has a back side and a front side, and each front socket points at a back
+socket. Then you record two ordinary cables:</p>
+<ul>
+  <li>Cable 1: <strong>switch port 12</strong> &rarr; <strong>panel front socket 7</strong></li>
+  <li>Cable 2: <strong>panel back socket 7</strong> &rarr; <strong>the wall socket at desk 402</strong></li>
+</ul>
+<p><strong>NetBox then works out the whole journey itself</strong> and can tell you the switch port
+reaches desk 402 — even though no single cable says so. Showing that trace running <em>through</em> a
+panel is a strong demo moment: it proves you understood their system rather than dumping rows into it.</p>
+
+<h3>Being honest about confidence, inside their own tool</h3>
+<p>NetBox already lets a cable be marked either <strong>connected</strong> (it's really there) or
+<strong>planned</strong> (it's proposed). So:</p>
+<div class="tw"><table>
+<tr><th>How we know</th><th>Recorded as</th></tr>
+<tr><td>Both switches confirm each other</td><td><span class="pill p-yes">connected</span> — proven</td></tr>
+<tr><td>Only the camera saw it</td><td><span class="pill p-part">planned</span> — proposed, please review</td></tr>
+<tr><td>Camera and network <em>disagree</em></td><td><span class="pill p-no">not exported</span> — goes to a review list</td></tr>
+</table></div>
+<p>Their engineers can then filter for "planned" and review exactly the ones we weren't sure about.
+This turns "our camera isn't perfect yet" from a weakness into a feature. <strong>Engineers trust
+tools that show their working. They don't trust tools that are always confident.</strong></p>
+<p>And that last row is the most valuable of the three. A disagreement usually means someone moved a
+cable and didn't update the paperwork — <em>which is the exact problem they're buying this to solve.</em></p>
+
+<h2><span class="n">06</span> The office rack: what to do</h2>
+
+<p>Your instinct was right — configure it properly first, then scan. A half-configured rack gives a
+messy scan, and you'll waste weeks unable to tell whether a mismatch is a software bug or a cabling
+mistake.</p>
+
+<h3>For the network admin</h3>
+<div class="tw"><table>
+<tr><th>Do this</th><th>Why</th></tr>
+<tr><td>Fixed address on each of the 3 managed switches</td><td>So RackTrack can always reach them</td></tr>
+<tr><td><strong>Name each switch to match its physical sticker</strong></td><td>This is the key that links the photo to the live data. Sticker and name must agree</td></tr>
+<tr><td>Read-only monitoring access (SNMP v3)</td><td>The main way we ask a device about itself</td></tr>
+<tr><td><strong>Turn on neighbour announcements (LLDP) on every port</strong></td><td><strong>The single most important line in this table.</strong> Without it there are no verified cables and no demo</td></tr>
+<tr><td>Turn it on for the phones too</td><td>Your 20 desk phones then announce themselves — 20 free verified connections</td></tr>
+<tr><td>Same clock source everywhere</td><td>So "port 12 went down at 14:02" means the same thing on every device</td></tr>
+<tr><td>Write a description on every patched port</td><td>Costs an afternoon; every port then documents itself, and it double-checks what the camera reads</td></tr>
+<tr><td>Save the configuration</td><td>Otherwise it's all gone at the next power cut</td></tr>
+</table></div>
+
+<h3>For you, before any camera comes out</h3>
+<p>This is the difference between a scan that works and one that doesn't.</p>
+<ul>
+  <li><strong>Label every box on the front</strong> — printed, same text as the switch's name</li>
+  <li><strong>Label both ends of every cable</strong></li>
+  <li><strong>Label every patch panel socket</strong> clearly enough to photograph — that's the only
+  way to identify sockets on a panel that can't be asked anything</li>
+  <li><strong>Give everything an asset sticker</strong> (SP-0001, SP-0002&hellip;)</li>
+  <li><strong>Tidy the cables.</strong> A neat back can be photographed; a bird's nest cannot, by any
+  software, ever</li>
+  <li><strong>Stick a position marker</strong> at a known shelf so the software has a fixed reference —
+  a big accuracy win for a 20p sticker</li>
+  <li><strong>Light it.</strong> Most text-reading failures are actually lighting failures</li>
+</ul>
+
+<div class="box warn">
+  <h3>The most valuable hour in the whole project</h3>
+  <p>Before the first scan, walk the rack and fill in a spreadsheet <strong>by hand</strong>: every
+  shelf, box, model, serial, socket and cable.</p>
+  <p>This is your <strong>answer key</strong>. Without it you can't tell whether a scan is right —
+  you're guessing. With it, every accuracy figure you quote the customer is defensible. Don't skip it
+  because it's boring.</p>
+</div>
+
+<h2><span class="n">07</span> Demo 1: deliberately small, completely real</h2>
+
+<p>One rack. One setup. Real data only. Narrow and true beats broad and fabricated.</p>
+
+<div class="box alert">
+  <h3>The rule: nothing invented</h3>
+  <p>If a value has no source, <strong>the field stays empty</strong>. An empty field is a fact — "this
+  patch panel has no serial number you can look up". A made-up one is a liability.</p>
+</div>
+
+<div class="box good">
+  <h3>But typing something in by hand is <em>not</em> inventing it</h3>
+  <p><strong>Invented</strong> = software made up a plausible value nobody ever saw.<br>
+  <strong>By hand</strong> = a person looked at the thing and typed what was there.</p>
+  <p>One is a lie; the other is data entry. Demo 1 <em>needs</em> some hand-typing, because a patch
+  panel is passive and there's nothing to ask — and patch panels are the whole reason this beats a
+  network-only tool.</p>
+  <p>The rule isn't "everything must be automatic". The rule is <strong>every value must have a named
+  source</strong>. If you can say where it came from, it belongs.</p>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3>In</h3>
+    <p>Site &middot; rack &middot; manufacturer &middot; model &middot; the boxes and which shelf
+    they're on &middot; serial numbers for the 3 managed switches &middot; their ports &middot; patch
+    panel sockets &middot; cables with both ends.</p>
+  </div>
+  <div class="card">
+    <h3>Out (for now)</h3>
+    <p>Asset stickers &middot; power strips and UPS &middot; network zones and IP addresses &middot;
+    cable lengths &middot; anything involving a second rack.</p>
+  </div>
+</div>
+
+<h3>Where each thing comes from — the honesty test</h3>
+<div class="tw"><table>
+<tr><th>Thing</th><th>Comes from</th><th>If not available</th></tr>
+<tr><td>Site and rack name</td><td>You</td><td>&mdash; you name your own rack</td></tr>
+<tr><td>Which shelf each box is on</td><td><strong>Camera</strong></td><td>Flag for review — never guess</td></tr>
+<tr><td>Model &amp; serial — the 3 managed switches</td><td><strong>Ask the switch. It knows.</strong></td><td>Type it by hand</td></tr>
+<tr><td>Model — patch panels, dumb switches</td><td>You</td><td>&mdash;</td></tr>
+<tr><td>Serial — patch panels</td><td>&mdash;</td><td><strong>Leave empty. They genuinely don't have one</strong></td></tr>
+<tr><td>Port lists on managed switches</td><td>Ask the switch</td><td>&mdash;</td></tr>
+<tr><td><strong>Cables between switches</strong></td><td><strong>The switches confirm each other</strong></td><td>Not created</td></tr>
+<tr><td>Cables through a patch panel</td><td>You</td><td>Not created</td></tr>
+<tr><td>Cable colour</td><td>Camera</td><td>Leave empty</td></tr>
+</table></div>
+
+<div class="box note">
+  <h3>The money shot</h3>
+  <p>Demo 1 produces two visibly different kinds of cable in NetBox: switch-to-switch marked
+  <strong>connected</strong> (proven from both ends), and patch panel runs marked
+  <strong>planned</strong> (asserted, not proven).</p>
+  <p>That contrast, shown in the customer's own tool using the customer's own field, <em>is</em> the
+  demo. It proves the product knows the difference between what it verified and what it was told —
+  and it sets up the next stage in one sentence: <em>"the planned ones are what the camera automates
+  next."</em></p>
+</div>
+
+<h3>How we'll know it worked</h3>
+<div class="tw"><table>
+<tr><th>Check</th><th>Target</th></tr>
+<tr><td>Every box on the right shelf, checked against your handwritten key</td><td>100%</td></tr>
+<tr><td>Model and serial for the 3 managed switches</td><td>100%</td></tr>
+<tr><td>Switch-to-switch cables, both ends, no errors</td><td>Every one</td></tr>
+<tr><td>Invented values anywhere in NetBox</td><td><strong>Zero</strong></td></tr>
+<tr><td>Run the whole thing twice &rarr; no duplicates</td><td>Must pass</td></tr>
+</table></div>
+<p>That last one is worth as much as the rest combined. A tool that duplicates everything on the second
+run isn't deployable — and it's the most common way these integrations fail in practice.</p>
+
+<h2><span class="n">08</span> Building it separately, so nothing breaks</h2>
+
+<p><strong>Decision: build this as a separate project. Don't touch the shipping app.</strong></p>
+
+<p>The current RackTrack has testers on it and runs the live demo site. A new data model, a new
+collector and a new exporter is exactly the kind of work that breaks things sideways. Keeping it out
+of the shipping code costs almost nothing and removes all that risk.</p>
+
+<div class="grid">
+  <div class="card">
+    <h3>The principle</h3>
+    <p><strong>The new build reads the old one's results. It never changes it.</strong></p>
+    <p>Don't rewrite the camera side — it took months, it works, and two copies means maintaining two
+    copies. The new project calls it.</p>
+    <p>It also solves the made-up-data problem without any risky surgery: rather than ripping the
+    invented cables out of the live app, <strong>the new build simply never reads them.</strong></p>
+  </div>
+  <div class="card">
+    <h3>Set up so far</h3>
+    <dl class="kv">
+      <dt>Location</dt><dd><code>/Volumes/Racktrack/racktrack_v2</code>, alongside the main project</dd>
+      <dt>Data model</dt><dd>Shaped to match NetBox exactly, so exporting is nearly mechanical</dd>
+      <dt>Confidence</dt><dd>Built in from the start — every fact records how it was learned</dd>
+      <dt>Reader</dt><dd>Reads old scans read-only, and <strong>automatically quarantines every field
+      the old app admits it invented</strong></dd>
+    </dl>
+  </div>
+</div>
+
+<h3>Today's honest starting line, measured on a real scan</h3>
+<div class="tw"><table>
+<tr><th>Measure</th><th>Now</th><th>Meaning</th></tr>
+<tr><td>Boxes found</td><td>17</td><td></td></tr>
+<tr><td>Correctly identified as a type of thing</td><td>47%</td><td>Half come back "don't know"</td></tr>
+<tr><td>With a model name</td><td>6%</td><td>Needs the switch-asking route</td></tr>
+<tr><td>Individual ports spotted</td><td>191</td><td><strong>This genuinely works well</strong></td></tr>
+<tr><td>Serial numbers</td><td>0</td><td>Not extracted at all yet</td></tr>
+<tr><td>Asset stickers</td><td>0</td><td>Not extracted at all yet</td></tr>
+<tr><td>Real cables</td><td>0</td><td>The only cable data today is invented</td></tr>
+</table></div>
+<p>That's the real starting line. Every number is now a target we can move and <em>measure</em> — which
+is what will make the accuracy claims to the customer defensible instead of hopeful.</p>
+
+<div class="box good">
+  <h3>The most encouraging finding in the whole review</h3>
+  <p>You've already built this exact kind of integration once, end to end, for a different system
+  (ServiceNow). The credential slot for NetBox is <em>already there</em> in the app. You're not
+  starting from zero — you're pointing a working pattern at a second target.</p>
+</div>
+
+<h2><span class="n">09</span> What happens when</h2>
+
+<ol class="steps">
+  <li><span class="when">Today</span><h3>Confirm what's actually in the rack</h3>
+    <p>Photograph every front panel, write down the model numbers. This decides whether your demo rack
+    can prove anything at all.</p></li>
+  <li><span class="when">Today</span><h3>Tell the admin he was right</h3>
+    <p>Then hand him the configuration list — the neighbour-announcement line is the one that matters.</p></li>
+  <li><span class="when">This week</span><h3>Reply to the customer</h3>
+    <p>Split it honestly into "works today", "being built now", and "what we'd prove on your rack".
+    Ask which NetBox version they run, and whether they can give us a test one.</p></li>
+  <li><span class="when">This week</span><h3>One-hour test: ask the D-Link about itself</h3>
+    <p>If it reports its own model and serial, that removes weeks of work from the plan. Genuinely worth
+    doing before anything else.</p></li>
+  <li><span class="when">Weeks 1&ndash;2</span><h3>Get the rack configured, labelled and tidied</h3>
+    <p>Then build the handwritten answer key.</p></li>
+  <li><span class="when">Weeks 2&ndash;4</span><h3>Pull real data off the live switches</h3>
+    <p>Real neighbour tables, real serial numbers. No invention.</p></li>
+  <li><span class="when">Weeks 4&ndash;8</span><h3>Join the camera and the network together</h3>
+    <p>The reconciler — matching what was photographed to what was found, with a confidence score on
+    every cable and a review list for disagreements. <strong>This is the actual product.</strong></p></li>
+  <li><span class="when">Weeks 7&ndash;10</span><h3>Write it into NetBox</h3>
+    <p>Correct order, no duplicates on re-run, preview-before-writing, and never delete anything
+    automatically.</p></li>
+  <li><span class="when">Weeks 9&ndash;12</span><h3>Record the demo</h3>
+    <p>The exact chain they asked for, on real hardware. That video sells to every prospect after this one.</p></li>
+</ol>
+
+<h2><span class="n">10</span> What to tell the customer now</h2>
+
+<p>Reply this week — four weeks of silence loses deals. But reply honestly, in three tiers.</p>
+
+<div class="grid-3">
+  <div class="card">
+    <h3 style="color:var(--green)">Works today</h3>
+    <ul>
+      <li>Phone/video rack scanning</li>
+      <li>Finding racks, shelves and equipment</li>
+      <li>Spotting ports, which are in use, and cable colours</li>
+      <li>Live network discovery from real switches</li>
+      <li>A shipping integration with another major system, proving the pattern</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="color:var(--blue)">Being built now</h3>
+    <ul>
+      <li>The NetBox connector itself</li>
+      <li>Serial number and asset sticker capture</li>
+      <li>Camera + network cross-checking, with a confidence score per cable</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="color:var(--amber)">What we'd prove on your rack</h3>
+    <ul>
+      <li>The full chain end to end</li>
+      <li>Accuracy measured against <em>your</em> documentation, published honestly</li>
+    </ul>
+  </div>
+</div>
+
+<div class="box warn">
+  <h3>Two things to be careful about</h3>
+  <p><strong>1. Where the data lives.</strong> An EU university, infrastructure records, photographs of
+  a data centre. They <em>will</em> ask where it's processed and stored. Have the answer ready, and
+  have a "runs on your own servers" option ready. Improvising this on a call can kill the deal.</p>
+  <p><strong>2. Don't demo the invented cables.</strong> If you need something visual for the first
+  call, show the parts that are real — finding racks and shelves, spotting ports in use, and live data
+  from your own switches. Those are genuinely impressive and nothing there blows up under scrutiny.</p>
+</div>
+
+<h3>On price</h3>
+<p>Charge <strong>per rack, per year, in bands</strong>, with a named academic discount. Per rack is
+what they already count in, it scales with their value, and it's easy to defend in a tender. Their
+20&ndash;100 racks sits in the top band, but keep the entry band affordable — universities almost
+always start with one building and expand after a good first year.</p>
+<p>Charge separately for on-site setup, extra integrations, running it on their own servers (likely
+needed here), and training. For the trial: <strong>a fixed fee, credited in full against year one.</strong>
+Free trials get treated as free; a credited fee gets treated as a commitment by both sides.</p>
+
+<h2><span class="n">11</span> What I still need from you</h2>
+
+<div class="grid">
+  <div class="card"><h3>Which boxes are actually in the target rack?</h3>
+    <p>Your network document describes five switches across the office; you described a rack with three
+    switches, a router, a firewall and patch panels. Same rack, or a separate one?</p></div>
+  <div class="card"><h3>Is the router a separate box?</h3>
+    <p>Your document has the Sophos firewall doing both jobs. If there's a separate router, what is it?</p></div>
+  <div class="card"><h3>Which NetBox version does the university run?</h3>
+    <p>The way cables are recorded changed in NetBox 3.3. Older versions need a different approach.</p></div>
+  <div class="card"><h3>Can they give us a test NetBox?</h3>
+    <p>Worth asking early — it removes all the risk from the trial, and it's an easy yes for them.</p></div>
+</div>
+
+<p class="foot">Internal working document. Kept outside version control (<code>_local/</code>).
+Not for the customer.</p>
+
+</div>

@@ -1,11 +1,11 @@
-/* Lab page — owner-only EVE-NG switch view. Purpose-built layout (was
+/* Lab page - owner-only EVE-NG switch view. Purpose-built layout (was
    borrowing PortHistoryPage's classes + a pile of inline styles, which is
    what produced the crushed hero and the "192.168.1.VENDOR" identity
    collisions). Same Material token palette as the rest of the app so it
    themes automatically: white surfaces, hairline outlines, mono identifiers.
 
    CORE RULE OF THIS PAGE: no value is ever clipped. Every field wraps with
-   overflow-wrap:anywhere instead of truncating — a 32-char IOL image name,
+   overflow-wrap:anywhere instead of truncating - a 32-char IOL image name,
    a MAC, a full IP all render complete. Tables scroll horizontally in their
    own wrapper; the page body never scrolls sideways. */
 
@@ -307,14 +307,14 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   iPad / desktop — master–detail console
+   iPad / desktop - master - detail console
    ──────────────────────────────────────────────────────────────────────
    On a phone the page is a vertical stack: health summary → switch cards →
    detail. On a wide screen that wastes the width and buries the detail under a
    long scroll. Inside the shell (≥768px) we restructure into two panes:
 
      ┌─────────────┬──────────────────────────────────────┐
-     │ health card │  selected switch — identity, tabs,   │
+     │ health card │  selected switch - identity, tabs,   │
      │ switch list │  port faceplate, tables …            │
      │ (sticky)    │  (fills the right, scrolls)          │
      └─────────────┴──────────────────────────────────────┘
@@ -339,7 +339,7 @@
     align-items: start;
   }
 
-  /* Health summary — a card at the top of the rail, not a one-liner. The "·"
+  /* Health summary - a card at the top of the rail, not a one-liner. The "·"
      separator only made sense inline, so it's dropped and the tallies stack. */
   .fleetBar {
     grid-area: fleet;
@@ -355,7 +355,7 @@
   .fleetSep { display: none; }
   .fleetStat { justify-content: flex-start; }
 
-  /* Switch list — a vertical stack of the fleet cards that stays in view
+  /* Switch list - a vertical stack of the fleet cards that stays in view
      (sticky) while the long detail scrolls beside it. */
   .deviceGrid {
     grid-area: list;
@@ -368,7 +368,7 @@
   .deviceCard:hover { transform: none; }   /* no lift inside a tight list */
   .dName { font-size: 14px; }
 
-  /* Detail — one clean card filling the right pane. */
+  /* Detail - one clean card filling the right pane. */
   .detail {
     grid-area: detail; align-self: start;
     border-radius: 16px;

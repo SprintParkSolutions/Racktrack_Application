@@ -14,16 +14,17 @@ import { useIsDesktop } from '../hooks/useIsDesktop';
 import { useSmartBack } from '../hooks/useSmartBack';
 import Icon from '../components/Icon';
 import { getItem, setItem } from '../utils/safeStorage';
+import { useAuth } from '../AuthContext.jsx';
 
 // three.js is no longer reachable from this page at all. MiniRack3D was the
 // decoration on the analysing overlay and is gone; TopologyScene3D was declared
-// here but never rendered — the VR view lives on the topology page. Both lazy
+// here but never rendered - the VR view lives on the topology page. Both lazy
 // imports have been removed rather than left as unused chunk boundaries.
 
 // ── First-scan guidance ──────────────────────────────────────
 //
 // The same five lines that used to sit permanently under the Analyze button.
-// Printed on every visit they were wallpaper — a block of advice the user had
+// Printed on every visit they were wallpaper - a block of advice the user had
 // already read and could no longer see, taking a screenful on the one page
 // where the content should be the photograph. Shown once, on the first scan
 // this device ever starts, they are instructions; after that the user knows.
@@ -32,6 +33,8 @@ import { getItem, setItem } from '../utils/safeStorage';
 // person has done it before, and someone handed a second phone genuinely has
 // not. "Show again" in the sheet clears it, which is the only route back.
 const FIRST_SCAN_KEY = 'racktrack.scan.tipsSeen';
+// The space (hall, room, floor) the technician picked, remembered per Site.
+const SPACE_KEY_PREFIX = 'racktrack.scan.space.';
 
 const SCAN_TIPS = [
   'Full rack in frame - keep the top and bottom visible',
@@ -66,7 +69,7 @@ function FirstScanSheet({ onClose }) {
 // ── Preview Card ─────────────────────────────────────────────
 function PreviewCard({ file, onClear }) {
   // Blob URL lifecycle must live inside useEffect so it survives StrictMode's
-  // intentional double-mount — creating in useMemo + revoking in cleanup revokes
+  // intentional double-mount - creating in useMemo + revoking in cleanup revokes
   // the URL before the <img> gets a chance to use it on the second mount.
   const [url, setUrl] = useState('');
   useEffect(() => {
@@ -98,7 +101,7 @@ function PreviewCard({ file, onClear }) {
 function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
   // The parent needs to be able to open the picker too: the "Upload" tab is
   // labelled and iconed like an action, so tapping it must do something. It
-  // only ever called setTab, and Upload is the default tab — so on the screen
+  // only ever called setTab, and Upload is the default tab - so on the screen
   // testers actually saw, tapping Upload did nothing at all.
   const localRef = useRef(null);
   const inputRef = externalRef || localRef;
@@ -117,7 +120,7 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
   // Images only on the image tab. It used to append `video/*` here as well, which
   // did two unhelpful things: it duplicated the VIDEO mode sitting right beside it,
   // and it made the accept list mixed enough that Android's picker fell back to its
-  // generic chooser — the one that offers a sound recorder. See mediaAccept.js.
+  // generic chooser - the one that offers a sound recorder. See mediaAccept.js.
   const accept = isVideo ? VIDEO_ACCEPT : IMAGE_ACCEPT;
   const title = isVideo ? 'Drop rack video here' : 'Drop rack image here';
   // The server accepts every photo format (it sniffs the bytes and converts to
@@ -125,7 +128,7 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
   // list of four as the complete set of what was allowed.
   const sub = isVideo ? 'tap to browse · MP4, MOV, WEBM' : 'tap to browse · any photo format';
   // Format pills shown only in the desktop reference layout (hidden on mobile
-  // via CSS — see .fmtPills). Mobile keeps the inline `sub` string above.
+  // via CSS - see .fmtPills). Mobile keeps the inline `sub` string above.
   const formats = isVideo ? ['MP4', 'MOV', 'WEBM'] : ['JPG', 'PNG', 'HEIC', 'WebP', 'and more'];
 
   return (
@@ -143,7 +146,7 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
         <span className={`${styles.zc} ${styles.zcBL}`}/>
         <span className={`${styles.zc} ${styles.zcBR}`}/>
 
-        {/* Centered viewfinder icon — no box, just a faded mark */}
+        {/* Centered viewfinder icon - no box, just a faded mark */}
         <div className={styles.iconRing}>
           <div className={styles.iconWrap}>
             <Icon name={isVideo ? 'videocam' : 'filter_center_focus'} style={{ fontSize: 32, color: 'inherit' }} />
@@ -155,7 +158,7 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
           <p className={styles.dropSub}>{sub}</p>
         </div>
 
-        {/* Desktop reference extras — rendered always but hidden on mobile via
+        {/* Desktop reference extras - rendered always but hidden on mobile via
             CSS (base rules set display:none; .scanContentDesktop reveals them).
             The mobile layout above is untouched. */}
         <p className={styles.dropSubAlt}>or <span className={styles.browseLink}>tap to browse</span></p>
@@ -164,7 +167,7 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
         </div>
         <span className={styles.readyCaption} aria-hidden="true">READY · NO FILE SELECTED</span>
       </div>
-      {/* Visually hidden (NOT display:none) — Safari blocks .click() on a
+      {/* Visually hidden (NOT display:none) - Safari blocks .click() on a
           display:none file input, so the Upload button wouldn't open the picker. */}
       <input ref={inputRef} type="file"
         accept={accept}
@@ -184,7 +187,7 @@ function MultiUploadZone({ files, onChange }) {
   const inputRef = useRef(null);
   const [urls, setUrls] = useState([]);
 
-  // Blob URLs for thumbnails — lifecycle scoped to the file list so we
+  // Blob URLs for thumbnails - lifecycle scoped to the file list so we
   // don't leak object URLs when the user reorders / removes images.
   useEffect(() => {
     const next = files.map(f => URL.createObjectURL(f));
@@ -216,7 +219,7 @@ function MultiUploadZone({ files, onChange }) {
     onChange(next);
   };
 
-  // Position label is just the slot number — the server auto-arranges
+  // Position label is just the slot number - the server auto-arranges
   // top→bottom by detecting overlaps, so the upload order doesn't matter.
   // We still surface up/down/remove so the user can manually override if
   // they want, but the default flow is "drop them in, hit Analyze".
@@ -347,7 +350,7 @@ function CameraCapture({ onCapture, onCancel }) {
   const tracksRef        = useRef(new Map());
   const nextTrackIdRef   = useRef(1);
   const TRACK_IOU_MIN     = 0.2;
-  const TRACK_TTL_FRAMES  = 1;   // single missed cycle (~400ms) drops the box — kills ghost-pan lingering
+  const TRACK_TTL_FRAMES  = 1;   // single missed cycle (~400ms) drops the box - kills ghost-pan lingering
   const NMS_IOU           = 0.25; // tighter NMS so panning duplicates collapse onto the just-observed track
   const BBOX_EMA_ALPHA    = 0.6;  // when re-observing a track: 60% new + 40% old → reduces per-frame jitter
   const MIN_CONF          = 0.45; // drop low-confidence detections before they enter the tracker
@@ -365,7 +368,7 @@ function CameraCapture({ onCapture, onCancel }) {
         audio: false,
       });
       // If the user navigated away while the permission dialog was open the
-      // <video> element is gone — stop the tracks immediately or the camera
+      // <video> element is gone - stop the tracks immediately or the camera
       // hardware stays live until tab close.
       if (!videoRef.current) {
         stream.getTracks().forEach(t => t.stop());
@@ -448,7 +451,7 @@ function CameraCapture({ onCapture, onCancel }) {
     const vW = video.videoWidth, vH = video.videoHeight;
     // The preview uses object-fit:cover, which crops the camera frame to the
     // element's shape. Capture ONLY that visible region so the saved photo is
-    // exactly what the user framed — otherwise the still includes the edges
+    // exactly what the user framed - otherwise the still includes the edges
     // that were cropped out on screen ("it shows more than I saw").
     const rect = video.getBoundingClientRect();
     const dW = rect.width || vW, dH = rect.height || vH;
@@ -645,8 +648,7 @@ function CameraCapture({ onCapture, onCancel }) {
           if (t.misses > TRACK_TTL_FRAMES) tracks.delete(id);
         }
 
-        // NMS: two tracks should never claim the same image region —
-        // happens after a strong camera move when an old (still-alive)
+        // NMS: two tracks should never claim the same image region - // happens after a strong camera move when an old (still-alive)
         // track's last bbox sits where a new track just spawned. Prefer
         // the just-observed one (misses == 0) and drop the stale.
         const alive = Array.from(tracks.values())
@@ -681,7 +683,7 @@ function CameraCapture({ onCapture, onCancel }) {
           }));
         if (!cancelled) setLiveDevices(positioned);
       } catch (e) {
-        // Keep the loop alive — single-frame failures (network blips,
+        // Keep the loop alive - single-frame failures (network blips,
         // 429s) are normal during a long viewfinder session.
         console.warn('live detect failed:', e?.message || e);
       } finally {
@@ -738,7 +740,7 @@ function CameraCapture({ onCapture, onCancel }) {
     return `${m}:${r}`;
   };
 
-  // Portal to <body> so camWrapFull (position:fixed) is truly fullscreen — a
+  // Portal to <body> so camWrapFull (position:fixed) is truly fullscreen - a
   // transformed ancestor in the scan page otherwise traps the fixed layer and
   // the camera renders as a small letterboxed box.
   return createPortal(
@@ -748,7 +750,7 @@ function CameraCapture({ onCapture, onCancel }) {
       <canvas ref={canvasRef} style={{display:'none'}} />
       <canvas ref={sampleRef} style={{display:'none'}} />
 
-      {/* Live detection labels — positioned absolutely on top of the
+      {/* Live detection labels - positioned absolutely on top of the
           video. Hidden during the photo flash so they don't leak into
           the captured still (they wouldn't anyway since canvas pulls
           from the <video> element directly, but it looks cleaner). */}
@@ -779,7 +781,7 @@ function CameraCapture({ onCapture, onCancel }) {
       )}
 
       <div className={styles.hud}>
-        {/* Four corner brackets — the conventional scan-viewfinder guide. This
+        {/* Four corner brackets - the conventional scan-viewfinder guide. This
             was a full dashed rack-shaped rectangle, which testers read as an
             unexplained black box sitting over the picture rather than as a
             framing aid. The brackets carry the same state the box did: they go
@@ -796,7 +798,7 @@ function CameraCapture({ onCapture, onCancel }) {
 
         {/* Top badge only while recording. The idle "RACK SCAN" pill sat
             directly under the Dynamic Island and read as a second black
-            notch cutting into the viewfinder, so it's gone — the mode is
+            notch cutting into the viewfinder, so it's gone - the mode is
             already obvious from the Photo/Video toggle below. */}
         {recording && (
           <div className={styles.hudTop}>
@@ -900,7 +902,7 @@ function boxIoU(a, b) {
 // Was a spinning 3D rack under a glow, over a rotating list of pipeline stages
 // ("Detecting rack boundaries…", "Mapping ports and cables…"). Two problems
 // with that, both reported: the 3D object with its shadow and bloom was the
-// least app-like thing on any screen, and the stage list was theatre — the
+// least app-like thing on any screen, and the stage list was theatre - the
 // timings came from a fixed 400ms ticker, not from the server, so it narrated
 // progress it did not actually know about.
 //
@@ -934,13 +936,13 @@ export default function ScanPage() {
   const setTourSuspended = tour?.setSuspended;
   const uploadInputRef = useRef(null);
   // Which mode the camera was opened FROM. A photo taken while Tall rack
-  // (multi) is selected has to join that set — it used to be treated as a
+  // (multi) is selected has to join that set - it used to be treated as a
   // single-image scan, so the first shot was analysed on its own and there was
   // no way to capture the remaining racks.
   const [cameraReturnTab, setCameraReturnTab] = useState('upload');
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  // Surface tokens for the incident picker — opaque white panel in light
+  // Surface tokens for the incident picker - opaque white panel in light
   // theme, dark navy in dark theme. Hover/divider use black-on-light vs
   // white-on-dark so they're visible against either page background.
   const pickerPanelBg   = isLight ? '#ffffff' : '#161616';
@@ -956,7 +958,7 @@ export default function ScanPage() {
   const [progress, setProgress] = useState(0);
   const [step,     setStep]     = useState('');
   const [error,    setError]    = useState(null);
-  const [qualityChoice, setQualityChoice] = useState(null);  // {error, kind} — shows Retake/Proceed
+  const [qualityChoice, setQualityChoice] = useState(null);  // {error, kind} - shows Retake/Proceed
   // First visit to this screen on this device: show the capture guidance once.
   // Read lazily so the storage hit happens on mount rather than every render.
   const [showFirstScan, setShowFirstScan] = useState(() => !getItem(FIRST_SCAN_KEY));
@@ -965,10 +967,43 @@ export default function ScanPage() {
     setItem(FIRST_SCAN_KEY, '1');
   }, []);
 
+  // Which space this scan belongs to (organisation setup). The list comes
+  // from the caller's own Site; an owner or org admin without a Site of
+  // their own has no spaces to pick from, so the picker does not appear.
+  // Remembered per Site so a technician in the same hall does not re-pick
+  // every time. Never blocks a scan: with nothing picked, nothing is sent.
+  const { user: authUser } = useAuth();
+  const spaceTenantId = authUser?.tenant_id || null;
+  const [spaces, setSpaces] = useState([]);
+  const [spaceId, setSpaceId] = useState(() => (spaceTenantId ? (getItem(SPACE_KEY_PREFIX + spaceTenantId) || '') : ''));
+  useEffect(() => {
+    if (!spaceTenantId) { setSpaces([]); return undefined; }
+    let cancelled = false;
+    authFetch(apiUrl(`/api/setup/${spaceTenantId}`))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        const flat = [];
+        const walk = (list, depth) => {
+          for (const sp of list || []) { flat.push({ id: sp.id, name: sp.name, depth }); walk(sp.children, depth + 1); }
+        };
+        walk(d.spaces, 0);
+        setSpaces(flat);
+        // A remembered space that no longer exists is dropped rather than sent.
+        setSpaceId((cur) => (cur && !flat.some((sp) => String(sp.id) === String(cur)) ? '' : cur));
+      })
+      .catch(() => { /* no picker - scanning is never blocked on it */ });
+    return () => { cancelled = true; };
+  }, [spaceTenantId]);
+  const chooseSpace = (id) => {
+    setSpaceId(id);
+    if (spaceTenantId) setItem(SPACE_KEY_PREFIX + spaceTenantId, id);
+  };
+
 
   // Starting a new scan clears the previous rack context, so the sidebar's
   // rack tabs (Overview / Ports / Topology / Network / Switches / Drift) stop
-  // pointing at — and showing — the last scan. They reappear pointing at THIS
+  // pointing at - and showing - the last scan. They reappear pointing at THIS
   // scan once it finishes and produces a rackId.
   useEffect(() => {
     try { window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: null })); } catch (_) {}
@@ -993,7 +1028,7 @@ export default function ScanPage() {
   // The tour's spotlight and card sat on top of it, covering the progress bar
   // the user had just started and pointing at a result that does not exist yet.
   // Suspending rather than stopping means the walkthrough picks up on the same
-  // step the moment the scan finishes — which is when its next instruction
+  // step the moment the scan finishes - which is when its next instruction
   // actually makes sense.
   useEffect(() => {
     if (!setTourSuspended) return undefined;
@@ -1003,13 +1038,13 @@ export default function ScanPage() {
     // otherwise leave the tour suspended for the rest of the session.
     return () => setTourSuspended(false);
   }, [loading, verifying, setTourSuspended]);
-  const [verifyReject, setVerifyReject] = useState(null);     // 409 payload — detected / expected diff
+  const [verifyReject, setVerifyReject] = useState(null);     // 409 payload - detected / expected diff
 
   const STEPS = ['Preprocessing image…','Detecting rack boundaries…','Identifying components…','Mapping ports and cables…','Locating incident target…'];
 
   // On mount, pull the list of active tickets from servicenow_inbox via
   // our Node API. Also re-fetch whenever the user switches their active
-  // ServiceNow connection — ConnectionsContext dispatches the event AFTER
+  // ServiceNow connection - ConnectionsContext dispatches the event AFTER
   // the inbox poll completes, so by the time we hear it the cache is fresh.
   // We also surface the source instance + polled-at timestamp so the user
   // can confirm which account's data they're looking at.
@@ -1027,7 +1062,7 @@ export default function ScanPage() {
           instance: data.source_instance || null,
           polled_at: data.polled_at || null,
         });
-      } catch { /* no ticket backend available — fall back to manual flow */ }
+      } catch { /* no ticket backend available - fall back to manual flow */ }
     };
     fetchTickets();
     const onActivated = () => fetchTickets();
@@ -1052,7 +1087,7 @@ export default function ScanPage() {
         if (!res.ok) return;
         const data = await res.json().catch(() => null);
         if (!cancelled && data?.ok) setExpectedRack(data);
-      } catch { /* no CMDB rack record — skip identity check, fall through */ }
+      } catch { /* no CMDB rack record - skip identity check, fall through */ }
     })();
     return () => { cancelled = true; };
   }, [ticket?.incident_number]);
@@ -1111,7 +1146,7 @@ export default function ScanPage() {
     setLoading(true); setProgress(0); setStep(STEPS[0]);
     // Kick the network-switch SSH probe in parallel with the CV pipeline so
     // the Logical tab on the Available Ports page is ready by the time the
-    // user gets there. Fire-and-forget — it can't fail the scan.
+    // user gets there. Fire-and-forget - it can't fail the scan.
     let si = 0;
     const ticker = setInterval(() => {
       setProgress(p => Math.min(p + 9, 88));
@@ -1119,7 +1154,7 @@ export default function ScanPage() {
       setStep(STEPS[si]);
     }, 300);
     try {
-      // Detect video uploads — if the user shot/picked a video clip, route
+      // Detect video uploads - if the user shot/picked a video clip, route
       // to the multi-rack pipeline. The server splits the video into one
       // best-frame per detected rack, runs the existing analyze on each,
       // and returns a group with N member rackIds.
@@ -1127,8 +1162,8 @@ export default function ScanPage() {
       const ticketActive = !!ticket && ticket.target && ticket.target.device && ticket.target.port != null;
       // A rack video now goes through /api/analyze, whose normalizeImage
       // extracts the single best frame and analyzes it like a photo. The old
-      // multi-rack path (/api/analyze-video) required a tenant — so owner
-      // accounts got a 401 and video "didn't work" — and was overkill for the
+      // multi-rack path (/api/analyze-video) required a tenant - so owner
+      // accounts got a 401 and video "didn't work" - and was overkill for the
       // common one-rack video. (Multi-rack pan can return as an explicit mode.)
       const useMultiRack = false;
 
@@ -1149,6 +1184,10 @@ export default function ScanPage() {
       const endpoint = useMultiRack
         ? '/api/analyze-video'
         : (useTicketMode ? '/api/analyze-for-ticket' : '/api/analyze');
+      // Bind the scan to the space picked above. /api/analyze checks that the
+      // space belongs to the caller's Site and records the rack in it. With
+      // nothing picked the field is absent and the request is unchanged.
+      if (endpoint === '/api/analyze' && spaceId) body.append('spaceId', String(spaceId));
 
       // Remember this scan so it can be reclaimed if iOS suspends the app
       // mid-analysis (the request below dies, but the scan finishes on the
@@ -1158,16 +1197,15 @@ export default function ScanPage() {
       setPendingScan(clientJobId, useMultiRack ? 'video' : 'image');
 
       // One retry on a network-level failure. iOS surfaces a dropped upload as
-      // "Load Failed", which is what testers were seeing intermittently — a
+      // "Load Failed", which is what testers were seeing intermittently - a
       // rack photo is several megabytes over a phone connection and a single
       // blip kills the request. Retrying is safe here: rack ids are content
       // hashes, so if the first attempt actually reached the server the retry
       // hits the cache and returns the same scan rather than making a second.
       // Give up eventually.
       //
-      // This request had no timeout, so when the server stopped answering —
-      // its pipeline worker times out internally at 120s, and a restarted
-      // container abandons in-flight work outright — the app sat on
+      // This request had no timeout, so when the server stopped answering - // its pipeline worker times out internally at 120s, and a restarted
+      // container abandons in-flight work outright - the app sat on
       // "Analyzing rack…" indefinitely. Testers reported watching it spin for
       // five minutes and longer, with no way to tell whether anything was
       // still happening. Anything past the server's own ceiling is not slow,
@@ -1223,7 +1261,7 @@ export default function ScanPage() {
       clearInterval(ticker);
       setProgress(100); setStep(useTicketMode ? 'Port located!' : 'Target located!');
 
-      // Multi-rack response — { groupId, racks:[...] }. Land the user on
+      // Multi-rack response - { groupId, racks:[...] }. Land the user on
       // the SAME /results overview a single-rack scan would show, just
       // for the FIRST rack. RackTabs at the top lets them switch between
       // members; per-rack sub-pages (Ports / Topology / Switches / etc.)
@@ -1240,7 +1278,7 @@ export default function ScanPage() {
         }
         // Fetch the first rack's full scan payload so /results renders
         // identically to a fresh single-rack scan (devices, units, port
-        // counts, hero image — everything the overview/Ports tab needs).
+        // counts, hero image - everything the overview/Ports tab needs).
         let firstResult = null;
         try {
           const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(first.rackId)}`));
@@ -1251,15 +1289,14 @@ export default function ScanPage() {
             navigate(`/results/${encodeURIComponent(first.rackId)}`,
               { state: { result: firstResult } });
           } else {
-            // Fetch failed — let ResultsPage cold-fetch via useParams.
+            // Fetch failed - let ResultsPage cold-fetch via useParams.
             navigate(`/results/${encodeURIComponent(first.rackId)}`);
           }
         }, 600);
         return;
       }
 
-      // Kick off every per-rack prefetch the moment analyze succeeds —
-      // OCR, topology, CMDB, specs, firmware, SFP. By the time the user
+      // Kick off every per-rack prefetch the moment analyze succeeds - // OCR, topology, CMDB, specs, firmware, SFP. By the time the user
       // clicks through to the Switches / Topology / Ports tabs, the data
       // is already in memory and the cards render instantly instead of
       // showing a per-tab loading spinner.
@@ -1279,7 +1316,7 @@ export default function ScanPage() {
   // Posts N images to /api/stitch, which stitches them server-side and
   // then runs the same analyze pipeline that /api/analyze does. Response
   // shape matches /api/analyze, so downstream navigation/prefetch is
-  // identical — we just route through the stitch endpoint and surface
+  // identical - we just route through the stitch endpoint and surface
   // any "uncertain seam" warnings to the user.
   const analyzeMulti = async ({ override = false } = {}) => {
     if (!multiFiles || multiFiles.length < 2) return;
@@ -1290,7 +1327,7 @@ export default function ScanPage() {
     //
     // Multi used to skip this entirely and post straight to /api/stitch, so a
     // low-resolution photo that single-image mode accepts with a "Proceed
-    // anyway" came back from the server as a stitch failure instead — the same
+    // anyway" came back from the server as a stitch failure instead - the same
     // picture, accepted one way and refused the other, with no way through.
     // Checking here restores the choice AND saves uploading a set that was
     // never going to stitch.
@@ -1350,7 +1387,7 @@ export default function ScanPage() {
       clearInterval(ticker);
       setProgress(100); setStep('Rack analyzed!');
 
-      // Warn (non-blocking) if any seam was uncertain — server still
+      // Warn (non-blocking) if any seam was uncertain - server still
       // produced a usable panorama by butting the images flush.
       const uncertain = Array.isArray(data?.stitch?.uncertain) ? data.stitch.uncertain : [];
       if (uncertain.length > 0) {
@@ -1369,7 +1406,7 @@ export default function ScanPage() {
   const handleRetake = () => {
     // Single: drop the photo, since there is exactly one and it is the problem.
     // Multi: keep the set. The warning names which photo is at fault, and the
-    // user needs the list in front of them to swap that one out — clearing all
+    // user needs the list in front of them to swap that one out - clearing all
     // eight would make them start the whole set again to fix one picture.
     if (tab !== 'multi') setFile(null);
     setQualityChoice(null);
@@ -1410,7 +1447,7 @@ export default function ScanPage() {
         </svg>
       </div>
 
-      {/* Header — soft back chip + centered white pill title. Mobile only:
+      {/* Header - soft back chip + centered white pill title. Mobile only:
           on desktop/iPad the DesktopShell already draws the page header
           (the "New scan" crumb), so rendering this too gave two stacked
           headers. Hide it inside the shell. */}
@@ -1422,7 +1459,7 @@ export default function ScanPage() {
           {/* data-tour-bypass punches a click-through hole in the tour's dim
               layer over this button, so Back stays reachable mid-walkthrough
               instead of trapping the user until they finish it. */}
-          {/* No back control. Scan is where the app opens — there is nothing
+          {/* No back control. Scan is where the app opens - there is nothing
               behind it, and an arrow that goes nowhere is worse than none. */}
           <div style={{ width: 38 }} aria-hidden="true" />
           <span className={styles.headerTitle}>Scan your Rack</span>
@@ -1434,7 +1471,7 @@ export default function ScanPage() {
         <div className={styles.scanIntro}>
         </div>
 
-        {/* Desktop-only eyebrow label (mobile: not rendered — isDesktop is
+        {/* Desktop-only eyebrow label (mobile: not rendered - isDesktop is
             false below 1024px, so the mobile layout is unchanged). */}
         {isDesktop && <div className={`${styles.eyebrow} ${styles.eyebrowCapture}`}>Capture method</div>}
         {/* Primary tabs */}
@@ -1447,8 +1484,7 @@ export default function ScanPage() {
               key={t.id}
               className={`${styles.tab} ${(t.id === 'upload' ? tab !== 'camera' : tab === 'camera') ? styles.tabOn : ''}`}
               onClick={() => {
-                // Already on an upload mode? Then this is the Upload ACTION —
-                // open the picker rather than silently resetting the form.
+                // Already on an upload mode? Then this is the Upload ACTION - // open the picker rather than silently resetting the form.
                 if (t.id === 'upload' && tab !== 'camera') {
                   uploadInputRef.current?.click();
                   return;
@@ -1495,7 +1531,25 @@ export default function ScanPage() {
         )}
 
 
-        {/* Media box — also the guided tour's "add a photo" anchor. It wraps
+        {/* Space picker - organisation setup. Shown only when the caller's
+            Site has spaces; a scan is never blocked on it. */}
+        {spaces.length > 0 && (
+          <div className={styles.spaceBlock}>
+            <label htmlFor="scan-space" className={styles.spaceLabel}>Space</label>
+            <select id="scan-space" className={styles.spaceSelect} value={spaceId}
+              onChange={(e) => chooseSpace(e.target.value)}>
+              <option value="">Not chosen</option>
+              {spaces.map((sp) => (
+                <option key={sp.id} value={String(sp.id)}>{'\u00a0\u00a0'.repeat(sp.depth) + sp.name}</option>
+              ))}
+            </select>
+            <span className={styles.spaceHelp}>
+              The hall or room you are standing in. The scan is matched against that space&rsquo;s racks.
+            </span>
+          </div>
+        )}
+
+        {/* Media box - also the guided tour's "add a photo" anchor. It wraps
             whichever picker is showing (upload / video / tall-rack / camera),
             so the spotlight lands on the right thing in every mode instead of
             following one particular tab's markup. */}
@@ -1529,11 +1583,11 @@ export default function ScanPage() {
             It used to also appear here as a card, which put the same entry in
             two places on the scan screen; removed to keep a single home for it. */}
 
-        {/* Selected-incident description — compact single line so the user
+        {/* Selected-incident description - compact single line so the user
             sees what they picked without pushing the page off-screen. */}
         {ticket && (() => {
           const raw = ticket.short_description || '';
-          const headline = raw.split(/\s+[-–-]\s+/)[0].trim() || raw;
+          const headline = raw.split(/\s+[- - -]\s+/)[0].trim() || raw;
           return (
             <h2 className={styles.ticketHeadline} style={{
               margin:'0',
@@ -1553,7 +1607,7 @@ export default function ScanPage() {
           );
         })()}
 
-        {/* Incident picker — custom dropdown (native <select> options ignore
+        {/* Incident picker - custom dropdown (native <select> options ignore
             app styling, so we roll our own). Selecting an incident makes
             Analyze jump straight to that device+port. */}
         {tickets.length > 0 && (
@@ -1575,7 +1629,7 @@ export default function ScanPage() {
             </span>
 
 
-            {/* Trigger button — shows the selected ticket as a chip */}
+            {/* Trigger button - shows the selected ticket as a chip */}
             <button
               ref={incidentTriggerRef}
               type="button"
@@ -1628,7 +1682,7 @@ export default function ScanPage() {
               </svg>
             </button>
 
-            {/* Custom dropdown menu — fully styled, no OS interference */}
+            {/* Custom dropdown menu - fully styled, no OS interference */}
             {incidentMenuOpen && (
               <>
                 <div
@@ -1656,7 +1710,7 @@ export default function ScanPage() {
                   overscrollBehavior:'contain',
                   padding:4,
                 }}>
-                  {/* Manual scan option — explicit opt-out of ticket mode */}
+                  {/* Manual scan option - explicit opt-out of ticket mode */}
                   <button
                     type="button"
                     onClick={() => { setTicket(null); setIncidentMenuOpen(false); }}
@@ -1711,7 +1765,7 @@ export default function ScanPage() {
                         {/* Wraps rather than running off the edge. On a phone
                             the incident id, device:port and priority do not fit
                             on one line, and without flexWrap the id itself was
-                            being clipped — testers could not tell the incidents
+                            being clipped - testers could not tell the incidents
                             apart well enough to pick one. */}
                         <span style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600,flexWrap:'wrap',minWidth:0}}>
                           {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><polyline points="20 6 9 17 4 12"/></svg>}
@@ -1766,7 +1820,7 @@ export default function ScanPage() {
           </div>
         )}
 
-        {/* CTA — dispatches to single-image analyze() or tall-rack analyzeMulti() */}
+        {/* CTA - dispatches to single-image analyze() or tall-rack analyzeMulti() */}
         {!qualityChoice && (() => {
           const isMulti  = tab === 'multi';
           const canSubmit = isMulti
@@ -1801,7 +1855,7 @@ export default function ScanPage() {
           );
         })()}
         {/* The tips that used to live here are now the one-time sheet at the
-            top of this file — see FirstScanSheet. */}
+            top of this file - see FirstScanSheet. */}
 
         {/* Spacer so the last button isn't flush against the fixed bottom nav */}
         <div className={styles.scanSpacer} style={{height:'calc(env(safe-area-inset-bottom, 0px) + 72px)'}} aria-hidden="true" />
@@ -1815,7 +1869,7 @@ export default function ScanPage() {
       {loading && <AnalyzingOverlay progress={progress} step={step}/>}
       {verifying && <AnalyzingOverlay progress={50} step="Verifying rack identity…"/>}
 
-      {/* Rejection modal — fired when the uploaded image's OCR labels don't
+      {/* Rejection modal - fired when the uploaded image's OCR labels don't
           match the ticket's expected rack. Shows detected vs expected and
           asks the tech to upload the correct rack. The "no labels detected"
           path falls through silently (server's soft mode accepts and the
@@ -1832,7 +1886,7 @@ export default function ScanPage() {
 }
 
 // ── Verification modals ─────────────────────────────────────────
-// Both modals share the same dark/overlay style — kept inline so they're
+// Both modals share the same dark/overlay style - kept inline so they're
 // trivially co-located with the verification logic in this page.
 
 function VerifyRejectModal({ payload, onRetake, onClose }) {

@@ -1,4 +1,4 @@
-/* Scan history — the full archive as a gallery.
+/* Scan history - the full archive as a gallery.
  *
  * Pure white and subtle black, nothing else: every value here is true
  * greyscale, surfaces are #ffffff, and separation comes from black thinned to
@@ -6,7 +6,7 @@
  * page is a scan's own photograph.
  *
  * A tile is one scan: its picture, its rack ID, its date. The metric columns
- * (devices / units / ports) are deliberately gone — counts belong on the
+ * (devices / units / ports) are deliberately gone - counts belong on the
  * scan's own page, not repeated across a wall of thumbnails.
  *
  * Grouped by day; the tiles carry the date and ID together, so nothing is lost
@@ -91,11 +91,11 @@
 .newScanBtn:hover { transform: translateY(-1px); box-shadow: var(--shadow-card-hover, var(--lift)); }
 .newScanBtn:active { transform: translateY(0); }
 
-/* ── Content rail — full device width, no centred column ─────────── */
+/* ── Content rail - full device width, no centred column ─────────── */
 .main {
   flex: 1;
   /* `.page-full` is a fixed-height, clipped box below 1180px, so the column
-     itself has to be the scroller — without min-height:0 + overflow-y the
+     itself has to be the scroller - without min-height:0 + overflow-y the
      gallery would stop at the fold and the pager would sit under the bottom
      nav, unreachable. Same trap Profile documents. */
   min-height: 0;
@@ -103,7 +103,7 @@
   -webkit-overflow-scrolling: touch;
   width: 100%;
   /* The container already reserves the bottom nav's height, so this is just
-     breathing room under the pager — not clearance. */
+     breathing room under the pager - not clearance. */
   padding: 22px 20px 40px;
   display: flex;
   flex-direction: column;
@@ -119,9 +119,9 @@
   overflow: hidden;
 }
 
-/* ── Totals — spread the panel's full width, hairline-divided ─────── */
+/* ── Totals - spread the panel's full width, hairline-divided ─────── */
 .stats {
-  /* Four across even on a phone — a 2×2 block pushed the first scan most of a
+  /* Four across even on a phone - a 2×2 block pushed the first scan most of a
      screen down, and this page exists to show scans. */
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -147,7 +147,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* "just now" / "3w ago" is a word, not a figure — one step down so it sits on
+/* "just now" / "3w ago" is a word, not a figure - one step down so it sits on
    the same optical weight as the numerals beside it. */
 .statValueWord { font-size: clamp(13px, 3.7vw, 20px); letter-spacing: -0.02em; }
 .statLabel {
@@ -161,7 +161,7 @@
 
 /* ── Toolbar: search, chips and sort on one white surface ────────── */
 .controls {
-  /* Search on its own line, then chips and sort side by side — three stacked
+  /* Search on its own line, then chips and sort side by side - three stacked
      rows made the toolbar taller than the first row of scans. */
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -275,7 +275,7 @@
   gap: 10px;
   min-width: 0;
 }
-/* The select says "Newest first" on its face — the label is a desktop luxury. */
+/* The select says "Newest first" on its face - the label is a desktop luxury. */
 .sortLabel {
   display: none;
   font-family: var(--font);
@@ -335,7 +335,7 @@
   gap: 10px;
   padding: 0 2px;
 }
-/* A small black square, not a bullet — the day marker down the left edge. */
+/* A small black square, not a bullet - the day marker down the left edge. */
 .groupDot {
   width: 5px;
   height: 5px;
@@ -353,7 +353,7 @@
   margin: 0;
   flex: 0 0 auto;
 }
-/* The rule fills whatever the label and count leave — an editorial dateline. */
+/* The rule fills whatever the label and count leave - an editorial dateline. */
 .groupRule {
   flex: 1 1 auto;
   height: 1px;
@@ -408,7 +408,7 @@
 }
 
 /* The picture. 4:3 keeps a portrait rack photo and a wide one on the same
-   grid line — the crop is centred, so the rack stays in frame either way. */
+   grid line - the crop is centred, so the rack stays in frame either way. */
 .frame {
   position: relative;
   aspect-ratio: 4 / 3;
@@ -445,7 +445,7 @@
 }
 .tile:hover .framePlaceholder { transform: scale(1.06); color: #9a9a9a; }
 
-/* Sits on the picture, not under it — a flag, not a field. */
+/* Sits on the picture, not under it - a flag, not a field. */
 .warnChip {
   position: absolute;
   left: 8px;
@@ -525,7 +525,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Loading skeleton — the gallery's own shape ──────────────────── */
+/* ── Loading skeleton - the gallery's own shape ──────────────────── */
 .skeletonTile {
   border-radius: 16px;
   background: #ffffff;
@@ -697,7 +697,7 @@
 
 /* ══ Tablet / desktop ════════════════════════════════════════════ */
 @media (min-width: 768px) {
-  /* The shell draws one header for every page — Profile hides its own here
+  /* The shell draws one header for every page - Profile hides its own here
      too, so History does the same and there is only ever one. */
   .topbar { display: none; }
 
@@ -719,7 +719,7 @@
   .statValue { font-size: 34px; }
   .statValueWord { font-size: 23px; }
 
-  /* Search, chips and sort on one line — the toolbar stops being a stack. */
+  /* Search, chips and sort on one line - the toolbar stops being a stack. */
   .controls {
     display: flex;
     flex-direction: row;
@@ -756,7 +756,7 @@
   }
 }
 
-/* Motion is decoration here — the gallery is equally usable without it. */
+/* Motion is decoration here - the gallery is equally usable without it. */
 @media (prefers-reduced-motion: reduce) {
   .tile { animation: none; transition: none; }
   .tile:hover { transform: none; }

@@ -8,8 +8,7 @@ const TourContext = createContext(null);
 
 // Shown once per ACCOUNT: answering the "New to RackTrack?" prompt either way
 // (taking the tour, or declining it) is remembered, so it never interrupts a
-// returning user again. Storage that throws — blocked site data, full quota —
-// degrades to "ask again next load" rather than breaking the app, which is
+// returning user again. Storage that throws - blocked site data, full quota - // degrades to "ask again next load" rather than breaking the app, which is
 // what safeStorage guarantees.
 //
 // The flag used to be one unsuffixed device-wide key, which meant the first
@@ -17,7 +16,7 @@ const TourContext = createContext(null);
 // after them: signing out and signing in with a brand-new account showed no
 // tour at all, because nothing about the key or the sign-out path was tied to
 // who was asked. Suffixing with the user id is what makes "once per account"
-// true. Signed-out callers keep the bare key — TourGate holds the prompt back
+// true. Signed-out callers keep the bare key - TourGate holds the prompt back
 // until sign-in anyway, so that branch only exists to keep this total.
 const ASKED_PREFIX = 'racktrack:tour-asked';
 
@@ -36,13 +35,13 @@ export function TourProvider({ children }) {
   // from inside it. Analysing a rack is the case that matters: the tour's
   // spotlight and card sat on top of the analysing overlay, hiding the progress
   // bar the user had just triggered, and the tour's own next step is about the
-  // result — which does not exist yet. Suspended, not stopped: the walkthrough
+  // result - which does not exist yet. Suspended, not stopped: the walkthrough
   // resumes on the same step the moment the scan finishes.
   const [suspended, setSuspended] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
   // This provider lives above the router outlet and never unmounts, so the
-  // lazy initialiser above runs exactly once for the lifetime of the app — a
+  // lazy initialiser above runs exactly once for the lifetime of the app - a
   // sign-out / sign-in inside that one session has to re-read storage under
   // the new account's key. Adjusting during render rather than in an effect
   // keeps the intro from flashing for a frame with the previous account's
@@ -79,21 +78,21 @@ export function TourProvider({ children }) {
 
   // Browser/hardware back (and the Android back button, which also drives
   // history via navigate(-1) in AndroidBackHandler) fires a native
-  // `popstate` event — stopping the tour here catches all of those in one
+  // `popstate` event - stopping the tour here catches all of those in one
   // place, on top of the explicit in-page "Back" buttons calling stopTour()
   // themselves before they navigate.
   // Marks the document while the walkthrough is running so the app's own
   // navigation can be held shut (see index.css).
   //
   // The dim layer only confines the user while a step has a control to point
-  // at. Between steps — during an analysis, or while the image-quality prompt
-  // is up — there is no spotlight and therefore no dim, and the sidebar and
+  // at. Between steps - during an analysis, or while the image-quality prompt
+  // is up - there is no spotlight and therefore no dim, and the sidebar and
   // bottom nav stayed live: it was possible to wander off to Data Sources
   // mid-pipeline and leave the tour asking for a control on a page you had
   // left. The point of the walkthrough is to hold you on the pipeline from
   // end to end, so navigation is shut for its duration.
   //
-  // Back is deliberately exempt — it carries data-tour-bypass and ends the
+  // Back is deliberately exempt - it carries data-tour-bypass and ends the
   // tour, so there is always a way out.
   useEffect(() => {
     const root = document.documentElement;
@@ -129,8 +128,8 @@ export function TourProvider({ children }) {
     advance,
     setSuspended,
     suspended,
-    // `active` stays true while suspended — the tour has not ended, it is out
-    // of the way — but nothing renders, because currentStep is null and the
+    // `active` stays true while suspended - the tour has not ended, it is out
+    // of the way - but nothing renders, because currentStep is null and the
     // overlay keys off that.
     active,
     stepIndex,

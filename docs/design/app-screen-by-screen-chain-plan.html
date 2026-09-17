@@ -1,0 +1,295 @@
+<!-- Published copy of the claude.ai artifact "The App, Screen By Screen" | https://claude.ai/code/artifact/d82ff4a1-5155-4fa3-a5c8-e06a4cd07b6c | artifact last updated 2026-09-03 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>The App, Screen By Screen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --paper:#ffffff; --paper-cool:#f4f6f9; --ink:#0c1420; --ink-soft:#33404f;
+    --muted:#5c6878; --line:#dce2ea; --line-firm:#b9c4d1;
+    --blue:#1b5fd9; --blue-deep:#0e3c8c; --blue-wash:#eef3fd;
+    --stop:#c0392b; --call:#b26a00; --call-wash:#fdf5e8; --go:#0f7b4f;
+    --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+    --body:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  body { background:var(--paper); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  * { box-sizing:border-box; }
+
+  .wrap { padding:0 clamp(1.25rem,4vw,4rem); }
+  .band { padding:3rem clamp(1.25rem,4vw,4rem); border-bottom:1px solid var(--line); }
+  .band:last-of-type { border-bottom:0; }
+
+  h1,h2,h3 { font-family:var(--display); text-wrap:balance; margin:0; }
+  h1 { font-size:clamp(2rem,5vw,3.2rem); font-weight:700; letter-spacing:-.025em; line-height:1.05; }
+  h2 { font-size:clamp(1.3rem,2.4vw,1.75rem); font-weight:600; letter-spacing:-.018em; margin-bottom:1.1rem; }
+  h3 { font-size:1rem; font-weight:600; margin:0; }
+  p { margin:0 0 .9rem; max-width:62ch; }
+  .lede { font-size:1.1rem; color:var(--ink-soft); max-width:56ch; }
+
+  .top { padding:clamp(2.25rem,6vw,4rem) clamp(1.25rem,4vw,4rem) 2.25rem; border-bottom:2px solid var(--ink); background:linear-gradient(180deg,var(--blue-wash) 0%,rgba(238,243,253,0) 70%),var(--paper); }
+  .top .kicker { font-family:var(--mono); font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--blue); margin:0 0 .9rem; }
+  .top p.lede { margin-top:1rem; }
+
+  .summary { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1.5rem; }
+  .chip { font-family:var(--mono); font-size:.72rem; letter-spacing:.04em; padding:.35rem .7rem; border:1px solid var(--line-firm); background:var(--paper); }
+  .chip b { font-weight:500; }
+  .chip.new { border-color:var(--blue); color:var(--blue-deep); background:var(--blue-wash); }
+  .chip.chg { border-color:#e7d3ae; color:#7a4a00; background:var(--call-wash); }
+
+  /* Chain */
+  .chain { display:grid; grid-template-columns:repeat(auto-fit,minmax(11rem,1fr)); gap:1px; background:var(--line); border:1px solid var(--line-firm); }
+  .st { background:var(--paper); padding:1.1rem 1rem; display:flex; flex-direction:column; gap:.35rem; }
+  .st .num { font-family:var(--mono); font-size:.68rem; letter-spacing:.1em; color:var(--muted); }
+  .st p { margin:0; font-size:.86rem; color:var(--ink-soft); }
+  .st .badge { margin-top:auto; padding-top:.6rem; font-family:var(--mono); font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; }
+  .st.have .num { color:var(--go); }
+  .st.have .badge { color:var(--go); }
+  .st.new { background:var(--blue-wash); }
+  .st.new .num, .st.new .badge { color:var(--blue); }
+  .st.new h3 { color:var(--blue-deep); }
+  .st.chg { background:var(--call-wash); }
+  .st.chg .num, .st.chg .badge { color:var(--call); }
+
+  /* Menu columns */
+  .cols { display:grid; grid-template-columns:repeat(auto-fit,minmax(13rem,1fr)); gap:1.75rem; }
+  .col h3 { font-family:var(--mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--blue); margin-bottom:.5rem; padding-bottom:.4rem; border-bottom:1px solid var(--line-firm); }
+  .col ul { list-style:none; margin:0; padding:0; }
+  .col li { padding:.28rem 0; font-size:.92rem; display:flex; align-items:center; gap:.5rem; }
+  .col li .d { width:.4rem; height:.4rem; border-radius:50%; background:var(--line-firm); flex:none; }
+  .col li .t { margin-left:auto; font-family:var(--mono); font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .col li.chg .d { background:var(--call); } .col li.chg .t { color:var(--call); }
+  .col li.gone { color:var(--muted); text-decoration:line-through; text-decoration-color:var(--stop); }
+  .col li.gone .d { background:var(--stop); } .col li.gone .t { color:var(--stop); }
+
+  /* Change list */
+  .changes { display:flex; flex-direction:column; gap:0; border:1px solid var(--line-firm); }
+  .ch { display:grid; grid-template-columns:5.5rem minmax(0,1fr); gap:0 1rem; padding:1rem 1.1rem; border-bottom:1px solid var(--line); }
+  .ch:last-child { border-bottom:0; }
+  .ch .lab { font-family:var(--mono); font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; padding-top:.2rem; }
+  .ch.a .lab { color:var(--blue); } .ch.b .lab { color:var(--call); } .ch.c .lab { color:var(--stop); }
+  .ch p { margin:.2rem 0 0; font-size:.9rem; color:var(--ink-soft); }
+  @media (max-width:600px) { .ch { grid-template-columns:minmax(0,1fr); } .ch .lab { padding-top:0; margin-bottom:.2rem; } }
+
+  .phonebar { display:flex; border:1px solid var(--line-firm); background:var(--paper); max-width:24rem; }
+  .slot { flex:1; padding:.6rem .2rem; text-align:center; font-size:.62rem; border-right:1px solid var(--line); font-family:var(--mono); }
+  .slot:last-child { border-right:0; }
+  .slot.more { color:var(--muted); background:var(--paper-cool); }
+  .slot.hot { color:var(--blue); font-weight:500; background:var(--blue-wash); }
+  .slot.tick { color:var(--go); }
+  .cap { margin-top:.5rem; font-size:.84rem; color:var(--muted); }
+
+  .footnote { padding:1.75rem clamp(1.25rem,4vw,4rem) 2.5rem; font-size:.83rem; color:var(--muted); border-top:1px solid var(--line); }
+  a { color:var(--blue-deep); }
+  a:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+  @media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; } }
+</style>
+
+<header class="top">
+  <p class="kicker">UI plan</p>
+  <h1>The app, screen by screen</h1>
+  <p class="lede">
+    A rack becomes one job with six steps. Everything else in the app stays exactly
+    where it is.
+  </p>
+  <div class="summary">
+    <span class="chip new"><b>3</b> new screens</span>
+    <span class="chip chg"><b>2</b> screens change</span>
+    <span class="chip"><b>1</b> goes away</span>
+    <span class="chip"><b>Everything else</b> untouched</span>
+  </div>
+</header>
+
+<section class="band">
+  <h2>A rack is now a chain</h2>
+  <p>
+    Today a rack is a row of tabs — go anywhere, any order. That stops working once
+    the job has an order: you can't review disagreements before reading the switches,
+    and you can't export before someone has settled them.
+  </p>
+  <p>
+    So the rack shows six steps instead. A finished step has a tick. The one you're on
+    is highlighted. A step that can't work yet is locked <b>and says why</b>.
+  </p>
+
+  <div class="chain">
+    <div class="st have">
+      <span class="num">Step 1</span>
+      <h3>Scan</h3>
+      <p>Photograph the rack.</p>
+      <span class="badge">Have it</span>
+    </div>
+    <div class="st have">
+      <span class="num">Step 2</span>
+      <h3>Physical</h3>
+      <p>What the camera saw — devices and where they sit.</p>
+      <span class="badge">Have it</span>
+    </div>
+    <div class="st chg">
+      <span class="num">Step 3</span>
+      <h3>Ports</h3>
+      <p>Ask the switches about themselves. Same screen, new source.</p>
+      <span class="badge">Changes</span>
+    </div>
+    <div class="st new">
+      <span class="num">Step 4</span>
+      <h3>Compare</h3>
+      <p>The rack against what NetBox and ServiceNow already hold.</p>
+      <span class="badge">New</span>
+    </div>
+    <div class="st new">
+      <span class="num">Step 5</span>
+      <h3>Review</h3>
+      <p>A person settles anything that disagrees.</p>
+      <span class="badge">New</span>
+    </div>
+    <div class="st new">
+      <span class="num">Step 6</span>
+      <h3>Export</h3>
+      <p>Preview, then send to NetBox, ServiceNow, or both.</p>
+      <span class="badge">New</span>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <h2>Everything else stays in the menu</h2>
+  <p>
+    Nothing here moves. The only shift is that three rack screens which aren't part of
+    the job — things you look at rather than complete — sit in the menu beside the
+    chain instead of competing with it.
+  </p>
+
+  <div class="cols">
+    <div class="col">
+      <h3>This rack</h3>
+      <ul>
+        <li><span class="d"></span>Topology<span class="t">from tabs</span></li>
+        <li><span class="d"></span>Switches<span class="t">from tabs</span></li>
+        <li><span class="d"></span>Drift<span class="t">from tabs</span></li>
+        <li class="gone"><span class="d"></span>Network<span class="t">goes</span></li>
+        <li><span class="d"></span>Ground Truth</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Scanning</h3>
+      <ul>
+        <li><span class="d"></span>Home</li>
+        <li><span class="d"></span>Scan</li>
+        <li><span class="d"></span>Two racks</li>
+        <li><span class="d"></span>History</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Setup</h3>
+      <ul>
+        <li class="chg"><span class="d"></span>Data Sources<span class="t">gains NetBox</span></li>
+        <li><span class="d"></span>Organizations</li>
+        <li><span class="d"></span>Console</li>
+        <li><span class="d"></span>Lab</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>The rest</h3>
+      <ul>
+        <li><span class="d"></span>Marketplace</li>
+        <li><span class="d"></span>Ask DOT</li>
+        <li><span class="d"></span>Contact</li>
+        <li><span class="d"></span>Profile</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <h2>The five changes, in full</h2>
+
+  <div class="changes">
+    <div class="ch a">
+      <span class="lab">New</span>
+      <div>
+        <h3>Compare</h3>
+        <p>You're filling rack data into NetBox by hand anyway. This puts the two side by side and names every difference: in the rack but not the record, in the record but not the rack, or there in both and different.</p>
+      </div>
+    </div>
+    <div class="ch a">
+      <span class="lab">New</span>
+      <div>
+        <h3>Review</h3>
+        <p>Nothing is written until a person has looked at each disagreement and chosen. No value goes in without a source behind it.</p>
+      </div>
+    </div>
+    <div class="ch a">
+      <span class="lab">New</span>
+      <div>
+        <h3>Export</h3>
+        <p>Today a scan quietly opens a ServiceNow ticket in the background. This makes it a thing you do and can see — preview what will change first, then send it, to either system or both.</p>
+      </div>
+    </div>
+    <div class="ch b">
+      <span class="lab">Changes</span>
+      <div>
+        <h3>Ports</h3>
+        <p>Same screen, same place. Instead of logging into switches over SSH from the server, the phone asks them over SNMP — which is what finally lets it work from inside your customer's network.</p>
+      </div>
+    </div>
+    <div class="ch b">
+      <span class="lab">Changes</span>
+      <div>
+        <h3>Data Sources</h3>
+        <p>It already lists NetBox with nothing behind it. Now it works, and it's where a NetBox login is entered once for the whole organisation — so nobody is asked for a password while standing at a rack.</p>
+      </div>
+    </div>
+    <div class="ch c">
+      <span class="lab">Goes</span>
+      <div>
+        <h3>The Network tab</h3>
+        <p>The old Netdisco view, hidden behind More on a phone. Its name now clashes with step 3, and step 3 does the job better.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <h2>On a phone</h2>
+  <p>
+    The bar holds four things. Today they're four equal tabs, and whatever doesn't fit
+    hides behind More — which is where Network and Drift live, and testers reported
+    not knowing they existed.
+  </p>
+  <p>
+    A chain fixes that, because it knows which step you're on. The bar follows the
+    work: finished steps stay visible as ticks, the next one is always one tap away.
+  </p>
+
+  <div class="phonebar">
+    <div class="slot tick">✓ Physical</div>
+    <div class="slot tick">✓ Ports</div>
+    <div class="slot hot">Compare</div>
+    <div class="slot">Review</div>
+    <div class="slot more">More</div>
+  </div>
+  <p class="cap">Export moves into the bar the moment Review is done.</p>
+</section>
+
+<section class="band">
+  <h2>Where to start</h2>
+  <p>
+    <b>Turn the rack tabs into the chain first, using only the three screens you
+    already have</b> — Scan, Physical, Ports. No new code, nothing new to learn, and
+    an afternoon to undo if it doesn't feel right. It puts the pattern in front of
+    real testers before a single new screen is built.
+  </p>
+  <p>Then, in order: Ports moves to SNMP, Data Sources gets NetBox, and Compare, Review and Export arrive one at a time.</p>
+</section>
+
+<footer class="footnote">
+  <p>
+    Screen names taken from the app as it is today, 3 September 2026. Nothing has been
+    changed — this is a plan.
+  </p>
+</footer>
+
+</body></html>

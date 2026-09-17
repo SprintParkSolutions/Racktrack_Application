@@ -9,9 +9,9 @@ Nothing here is vendor-specific. Every OID below is a standard MIB, so one code
 path covers any managed switch. Unmanaged switches and patch panels answer none
 of it, and those stay the camera's job permanently.
 
-The reader is [`client/src/utils/snmpClient.js`](../client/src/utils/snmpClient.js).
+The reader is [`client/src/utils/snmpClient.js`](../../client/src/utils/snmpClient.js).
 The server has its own copy of the same conversation in
-[`server/lib/netbox/collect.js`](../server/lib/netbox/collect.js), used when a
+[`server/lib/netbox/collect.js`](../../server/lib/netbox/collect.js), used when a
 browser asks the server to read a switch it cannot reach itself.
 
 ---

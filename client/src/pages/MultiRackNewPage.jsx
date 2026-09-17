@@ -23,8 +23,7 @@ async function analyzeImage(file) {
 
 function ImageSlot({ index, file, onPick, disabled }) {
   // Two inputs, not one. The single `accept="image/*"` input opened the gallery
-  // on Android, so testers reported there was no way to photograph the racks —
-  // the feature looked upload-only. `capture="environment"` opens the rear
+  // on Android, so testers reported there was no way to photograph the racks - // the feature looked upload-only. `capture="environment"` opens the rear
   // camera directly; the plain input keeps the gallery available for people
   // who already have the photos.
   const inputRef = useRef(null);
@@ -85,15 +84,15 @@ export default function MultiRackNewPage() {
   const videoInputRef = useRef(null);
 
   // Two-rack uploads ran no quality check at all. A single-rack upload goes
-  // through validateMedia() in ScanPage before analysis — blur, size, and the
-  // unsupported-type guard — so a photo too soft to read was caught there and
+  // through validateMedia() in ScanPage before analysis - blur, size, and the
+  // unsupported-type guard - so a photo too soft to read was caught there and
   // waved straight through here. Same check, same wording, on both paths now.
   //
   // It runs when the photo is PICKED rather than at build time, because two
   // images are chosen before anything is submitted: telling someone the first
   // photo was blurry while they are choosing the second is far more useful than
   // failing the whole pair at the end. A retryable verdict is reported the same
-  // way as a hard one here — this page has one error line and no override
+  // way as a hard one here - this page has one error line and no override
   // affordance, and inventing a "use it anyway" path for two-rack that
   // single-rack gates differently is not something to slip in silently.
   const setImage = useCallback(async (i, f) => {
@@ -118,7 +117,7 @@ export default function MultiRackNewPage() {
       setStep('Analyzing rack 2…');
       const id2 = await analyzeImage(images[1]);
       if (id1 === id2) {
-        throw new Error('Both photos resolved to the same rack — use two different racks.');
+        throw new Error('Both photos resolved to the same rack - use two different racks.');
       }
       setStep('Linking the two racks…');
       const gRes = await authFetch(apiUrl('/api/rack-groups'), {
@@ -131,7 +130,7 @@ export default function MultiRackNewPage() {
       setStep('Opening results…');
       // Land on the Overview of the first rack WITH the ?group signal so it
       // renders both racks side by side. (Without the signal, a rack always
-      // shows as a single report — see useGroupView.)
+      // shows as a single report - see useGroupView.)
       navigate(`/results/${encodeURIComponent(id1)}?group=${encodeURIComponent(gJson.groupId)}`, { replace: true });
     } catch (err) {
       setError(err.kind === 'not_a_rack'
@@ -152,7 +151,7 @@ export default function MultiRackNewPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.groupId) throw new Error(data.error || 'Could not process the video.');
       if ((data.count || 0) < 2) {
-        throw new Error(`Only ${data.count || 0} rack detected — pan across both racks so each is clearly visible.`);
+        throw new Error(`Only ${data.count || 0} rack detected - pan across both racks so each is clearly visible.`);
       }
       setStep('Opening results…');
       const firstRack = data.racks?.[0]?.rackId;

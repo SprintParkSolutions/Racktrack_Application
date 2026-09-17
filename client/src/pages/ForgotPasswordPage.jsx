@@ -7,10 +7,10 @@ import { CodeGrid, PW_RULES, STRENGTH_COLORS } from '../components/PasswordField
 import { safeRedirect } from '../utils/safeRedirect.js';
 
 // Four-step password reset:
-//   1. 'email'  — enter address, server emails a 6-digit code (1 min TTL).
-//   2. 'code'   — enter the code; server *verifies* without consuming it.
-//   3. 'choice' — "Code verified. Want to change your password?" Yes/No.
-//   4. 'reset'  — collect new password and consume the reset row.
+//   1. 'email' - enter address, server emails a 6-digit code (1 min TTL).
+//   2. 'code' - enter the code; server *verifies* without consuming it.
+//   3. 'choice' - "Code verified. Want to change your password?" Yes/No.
+//   4. 'reset' - collect new password and consume the reset row.
 // The code stays valid through steps 2→3→4 (single password_resets row,
 // not deleted until the final reset). If the user picks "No" we send them
 // back to /login without resetting anything.
@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
       await forgotPassword(email.trim());
       setStep('code');
       // We always show the same message regardless of whether the email is
-      // registered — the server doesn't leak that distinction either.
+      // registered - the server doesn't leak that distinction either.
       setInfo('If an account exists for that email, a 6-digit code is on its way.');
     } catch (err) { setError(err.message); }
   };
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
     } catch (err) { setError(err.message); }
   };
 
-  // "No, keep current password" — the OTP already proved identity, so issue
+  // "No, keep current password" - the OTP already proved identity, so issue
   // a token without touching the password. The server consumes the reset row.
   const skipAndLogin = async () => {
     setError(null);
@@ -145,7 +145,7 @@ export default function ForgotPasswordPage() {
               <span>Send reset code</span>
             </button>
           </form>
-          {/* No "Remembered it? Sign in" row here — the top bar already
+          {/* No "Remembered it? Sign in" row here - the top bar already
               carries exactly that link, word for word. */}
         </>
       )}

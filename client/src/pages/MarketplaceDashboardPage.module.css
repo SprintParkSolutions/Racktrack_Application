@@ -5,7 +5,7 @@
    structures: the stat-tile grid and the recent-listings list.
 
    CORE RULE OF THIS PAGE: a group of tiles is one object, not four
-   floating cards — they share edges, so the numbers line up in real
+   floating cards - they share edges, so the numbers line up in real
    columns. Every figure is tabular-nums, which is what actually makes a
    column of counts and a column of currency read as a table rather than
    as scattered text. */
@@ -32,7 +32,7 @@
 
 /* Separators are drawn by each tile's own top and left hairline, pulled
    back over the container edge by the negative margin and clipped away
-   by overflow — NOT by the 1px-gap-over-a-dark-background trick. That
+   by overflow - NOT by the 1px-gap-over-a-dark-background trick. That
    trick paints any cell the items don't reach, and these groups hold
    four tiles against a column count that changes with the viewport, so
    a half-filled last row would show as a solid grey block. */
@@ -88,7 +88,7 @@
 }
 .recentRow:last-child { border-bottom: 0; }
 
-/* The glyph is an orienting mark, not an illustration — it sits well
+/* The glyph is an orienting mark, not an illustration - it sits well
    back so the title stays the only thing with weight in the row. */
 .recentIcon { color: var(--mkt-ink, #121212); opacity: 0.3; flex-shrink: 0; }
 

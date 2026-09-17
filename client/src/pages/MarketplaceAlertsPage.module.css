@@ -1,4 +1,4 @@
-/* Marketplace alerts — saved-search matches and the searches themselves.
+/* Marketplace alerts - saved-search matches and the searches themselves.
 
    Buttons, fields, pills, cards, banners and empty states come from
    marketplace-theme.css. This file only holds the two row layouts, the
@@ -8,7 +8,7 @@
    An unread match sits on the raised surface with a single ink dot in
    the gutter; a read one is plain white. That keeps the whole list
    legible in one scan and leaves the coloured pill dots meaning what
-   they mean everywhere else in the section — status, not novelty. */
+   they mean everywhere else in the section - status, not novelty. */
 
 .srOnly {
   position: absolute; width: 1px; height: 1px;
@@ -21,7 +21,7 @@
   padding: 72px 0;
 }
 
-/* Count beside a section title — a plain number, not a badge; the shell
+/* Count beside a section title - a plain number, not a badge; the shell
    nav already carries the badge for this page. */
 .unreadCount {
   margin-left: 8px;
@@ -48,7 +48,7 @@
 .alertUnread { background: var(--mkt-raised, #ffffff); }
 
 /* The gutter is reserved on every row so a read and an unread row keep
-   the same text alignment — only the dot appears and disappears. */
+   the same text alignment - only the dot appears and disappears. */
 .alertDot { display: flex; justify-content: center; padding-top: 5px; }
 .alertDotMark {
   width: 7px; height: 7px; border-radius: 50%;
@@ -94,7 +94,7 @@
 .searchConfirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .confirmText { font-size: 12px; font-weight: 600; color: var(--mkt-ink, #121212); }
 
-/* Square icon button — the glyph needs no side padding, so the base
+/* Square icon button - the glyph needs no side padding, so the base
    .mkt-btn box is narrowed rather than restyled. */
 .iconBtn { width: 28px; padding: 0; flex-shrink: 0; }
 

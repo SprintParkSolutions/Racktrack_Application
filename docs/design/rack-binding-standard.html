@@ -1,0 +1,659 @@
+<!-- Published copy of the claude.ai artifact "Rack Binding Standard" | https://claude.ai/code/artifact/2bc68d9c-a12e-4bcc-a648-5013342b2184 | artifact last updated 2026-09-08 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Rack Binding Standard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --paper:#ffffff; --ink:#14181b; --body:#2f3733; --muted:#5c6560; --quiet:#8e9893;
+    --rule:#e4e8e6; --rule-firm:#c7cfcb;
+    --good:#0b6a44; --good-bg:#eef5f1;
+    --absent:#9d4a3f; --absent-bg:#f9f1f0;
+    --mid:#8a6d1f; --mid-bg:#f8f4e8;
+    --serif:"Newsreader",Georgia,"Times New Roman",serif;
+    --sans:"Source Sans 3","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono","SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--body);
+       font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .pad{padding:0 clamp(20px,4.5vw,72px)}
+
+  header{padding-top:52px;padding-bottom:26px;border-bottom:3px double var(--ink)}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.14em;
+           text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,5vw,52px);line-height:1.06;
+     letter-spacing:-.015em;color:var(--ink);margin:0 0 14px;max-width:16ch;text-wrap:balance}
+  .lede{font-family:var(--serif);font-size:clamp(18px,2vw,21px);line-height:1.5;color:var(--muted);
+        margin:0;max-width:66ch}
+  .byline{margin:20px 0 0;font-family:var(--mono);font-size:11.5px;color:var(--quiet);
+          display:flex;flex-wrap:wrap;gap:4px 26px}
+
+  .thesis{margin:32px 0 0;padding:24px 28px;background:var(--good-bg);border-left:3px solid var(--good)}
+  .thesis p{margin:0;font-family:var(--serif);font-size:clamp(19px,2.2vw,23px);line-height:1.45;
+            color:var(--ink);max-width:70ch}
+
+  .spread{padding-top:48px;display:grid;grid-template-columns:1fr;gap:34px 64px}
+  @media(min-width:900px){.spread{grid-template-columns:1fr 1fr}}
+  .col-p{border-top:3px solid var(--absent);padding-top:16px}
+  .col-s{border-top:3px solid var(--good);padding-top:16px}
+  .sp-tag{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.13em;
+          text-transform:uppercase;margin:0 0 8px}
+  .col-p .sp-tag{color:var(--absent)}
+  .col-s .sp-tag{color:var(--good)}
+  .spread h2{font-family:var(--serif);font-weight:600;font-size:clamp(25px,3vw,32px);line-height:1.14;
+             letter-spacing:-.01em;color:var(--ink);margin:0 0 12px}
+  .spread > div > p{margin:0 0 12px;max-width:56ch}
+  .pts{list-style:none;margin:16px 0 0;padding:0}
+  .pts li{display:grid;grid-template-columns:26px 1fr;gap:0 10px;padding:12px 0;
+          border-top:1px solid var(--rule);font-size:15.5px;line-height:1.5}
+  .pts li span{font-family:var(--mono);font-size:12px;font-weight:600;padding-top:3px;
+               font-variant-numeric:tabular-nums}
+  .col-p .pts li span{color:var(--absent)}
+  .col-s .pts li span{color:var(--good)}
+  .bridge{margin:30px 0 10px;padding-top:18px;border-top:1px solid var(--rule);
+          font-size:16px;color:var(--muted);max-width:80ch}
+
+  section{padding-top:80px}
+  .s-head{display:flex;align-items:flex-start;gap:16px;padding-bottom:9px;border-bottom:2px solid var(--ink)}
+  .s-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--good);
+         letter-spacing:.06em;flex:none;padding-top:11px}
+  .s-head h2{font-family:var(--serif);font-weight:600;font-size:clamp(23px,2.8vw,30px);
+             line-height:1.14;color:var(--ink);margin:0;text-wrap:balance}
+  .s-intro{margin:16px 0 4px;max-width:74ch;color:var(--muted)}
+
+  /* tiers */
+  .tiers{display:grid;grid-template-columns:1fr;gap:0;margin-top:22px}
+  @media(min-width:1000px){.tiers{grid-template-columns:1fr 1fr 1fr;column-gap:44px}}
+  .tier{padding:18px 0 20px;border-top:3px solid}
+  .tier.a{border-color:var(--good)} .tier.b{border-color:var(--mid)} .tier.c{border-color:var(--absent)}
+  .t-tag{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.12em;
+         text-transform:uppercase;margin:0 0 7px}
+  .tier.a .t-tag{color:var(--good)} .tier.b .t-tag{color:var(--mid)} .tier.c .t-tag{color:var(--absent)}
+  .tier h3{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);margin:0 0 8px;line-height:1.2}
+  .tier p{margin:0 0 9px;font-size:15.5px;line-height:1.5}
+  .t-claim{margin-top:12px;padding-top:11px;border-top:1px dotted var(--rule-firm);
+           font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;color:var(--muted)}
+
+  /* clauses */
+  .clause{display:grid;grid-template-columns:56px minmax(0,1fr);gap:0 12px;
+          padding:16px 0;border-top:1px solid var(--rule);align-items:start}
+  @media(min-width:1080px){.clause{grid-template-columns:56px minmax(0,62ch) minmax(190px,1fr);gap:0 40px}}
+  .cl-num{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--quiet);
+          padding-top:3px;font-variant-numeric:tabular-nums}
+  .cl-body p{margin:0 0 8px;color:var(--ink)}
+  .cl-body p:last-child{margin-bottom:0}
+  .cl-body ol{margin:8px 0 0;padding-left:20px}
+  .cl-body li{margin-bottom:4px;color:var(--ink)}
+  .cl-note{grid-column:2;margin:9px 0 0;font-size:14.5px;line-height:1.5;color:var(--quiet);
+           padding-left:12px;border-left:2px solid var(--rule)}
+  @media(min-width:1080px){.cl-note{grid-column:3;margin:2px 0 0;padding-left:14px}}
+  .m{font-family:var(--mono);font-size:.84em;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+  .m.must{color:var(--good)} .m.no{color:var(--absent)} .m.should{color:var(--muted)}
+  code{font-family:var(--mono);font-size:.86em;background:#f2f5f3;padding:1px 5px;border-radius:2px}
+
+  .terms{display:grid;grid-template-columns:1fr;gap:0;margin-top:4px}
+  @media(min-width:900px){.terms{grid-template-columns:1fr 1fr;column-gap:56px}}
+  .term{padding:15px 0;border-top:1px solid var(--rule)}
+  .term dt{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:3px}
+  .term dd{margin:0;font-size:15.5px;line-height:1.5}
+
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:20px}
+  table{border-collapse:collapse;width:100%;min-width:680px;font-size:15.5px}
+  thead th{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+           color:var(--muted);text-align:left;padding:0 22px 9px 0;border-bottom:1px solid var(--rule-firm);white-space:nowrap}
+  tbody th{text-align:left;font-size:15.5px;font-weight:700;color:var(--ink);
+           padding:13px 22px 13px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+  tbody td{padding:13px 22px 13px 0;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.45}
+  td.rank{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--good);white-space:nowrap;
+          font-variant-numeric:tabular-nums}
+  td.yes{color:var(--good);font-weight:600;white-space:nowrap}
+  td.qual{color:var(--absent);white-space:nowrap}
+  td.oid{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap}
+  td.ck{white-space:nowrap;font-size:14px}
+  .ck-y{color:var(--good);font-weight:600}
+  .ck-n{color:var(--quiet)}
+  .mono td{font-family:var(--mono);font-size:13px;white-space:nowrap}
+  .v-good{color:var(--good);font-weight:500}
+  .v-none{color:var(--absent)}
+  .v-none::before{content:"— "}
+  .v-dup{color:var(--absent);font-weight:500}
+  .ex-cap{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:20px;padding-bottom:9px;
+          border-bottom:1px solid var(--rule-firm)}
+  .ex-num{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.12em;
+          text-transform:uppercase;color:var(--good)}
+  .ex-title{font-size:15px;font-weight:600;color:var(--ink)}
+  .ex-note{font-size:14px;color:var(--quiet)}
+  .ex-cap + .scroll{margin-top:0}
+
+  .ask{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px}
+  @media(min-width:1000px){.ask{grid-template-columns:1fr 1fr;column-gap:56px}}
+  .ask-item{padding:17px 0;border-top:1px solid var(--rule)}
+  .ask-item h3{font-size:16.5px;font-weight:700;color:var(--ink);margin:0 0 4px}
+  .ask-item p{margin:0;font-size:15.5px;line-height:1.5}
+
+  .build{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px}
+  @media(min-width:1000px){.build{grid-template-columns:1fr 1fr 1fr;column-gap:48px}}
+  .step{padding:20px 0;border-top:2px solid var(--ink)}
+  .step h3{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--ink);margin:0 0 7px;line-height:1.2}
+  .step p{margin:0 0 8px;font-size:15.5px;line-height:1.5}
+  .step .ref{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.03em}
+
+  footer{margin-top:52px;padding-top:20px;padding-bottom:70px;border-top:1px solid var(--rule);
+         color:var(--quiet);font-size:14px}
+  footer p{margin:0 0 8px;max-width:82ch}
+</style>
+
+<header class="pad">
+  <p class="eyebrow">RackTrack · Standard · Draft 2</p>
+  <h1>Rack binding standard</h1>
+  <p class="lede">The rules for deciding which device on the network is which box in a rack photograph, written for an estate of thousands rather than for the three switches on our own wall.</p>
+  <p class="byline">
+    <span>8 September 2026</span>
+    <span>Draft for review</span>
+    <span>Supersedes draft 1</span>
+  </p>
+</header>
+
+<div class="pad">
+  <div class="thesis">
+    <p>The physical layer and the logical layer are maintained by different people at different times, and neither is authoritative about the other. The binding between them is the thing nobody owns. This standard makes that binding a record in its own right — dated, sourced, rated for confidence, and allowed to be absent.</p>
+  </div>
+
+  <div class="spread">
+    <div class="col-p">
+      <p class="sp-tag">The problem</p>
+      <h2>The binding between the two layers is the part nobody maintains</h2>
+      <p>Whoever racks the hardware owns the physical layer. Whoever configures it owns the logical layer. Both records are kept honestly, and both drift, because no single person is accountable for the line between them.</p>
+      <p>A photograph is a fresh observation of one layer. A scan is a fresh observation of the other. The join is inferred at the moment we need it, from whatever the hardware happens to publish — and what it publishes varies enormously from one estate to the next.</p>
+      <ul class="pts">
+        <li><span>01</span><div>We treat position as a property of a device, so a device belongs to whichever rack somebody typed it into. Moves, swaps and renumbering all silently invalidate it.</div></li>
+        <li><span>02</span><div>We infer the join from shape — port counts and sizes. In a room of identical top-of-rack switches, shape distinguishes nothing.</div></li>
+        <li><span>03</span><div>Every result is presented with the same certainty, so a customer cannot tell which rows of a report to act on and which to check.</div></li>
+        <li><span>04</span><div>The matcher considers the whole estate. At five hundred devices that is not a matching problem any more; it is a filtering problem we have not solved.</div></li>
+      </ul>
+    </div>
+
+    <div class="col-s">
+      <p class="sp-tag">The solution</p>
+      <h2>Make the binding a first-class record, and rate what it rests on</h2>
+      <p>Identity comes from the hardware and never from configuration. Position becomes a separate observation with a source, a date and a confidence, which can be created, contradicted and retired without touching the device.</p>
+      <p>Then match what the estate can actually support. A well-run estate needs almost no inference; a poorly-run one gets a smaller, honest answer rather than a confident wrong one.</p>
+      <ul class="pts">
+        <li><span>01</span><div>Identity is what the factory set — chassis address, or a serial from the hardware inventory. Never a name, never a management address.</div></li>
+        <li><span>02</span><div>Every binding records which of eight sources produced it, and carries one of four confidence levels.</div></li>
+        <li><span>03</span><div>Narrow before matching: the system of record, then memory, then the topology graph, then physical constraints. Never the full estate.</div></li>
+        <li><span>04</span><div>Grade the estate itself. Tell the customer what their instrumentation can support, and what it would take to do better.</div></li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="bridge">Draft 1 of this standard was written from measurements of three low-cost switches in our own office, which publish almost nothing. That is the floor of the range, not the middle of it. Enterprise hardware publishes a full physical inventory, a real hostname and a complete neighbour table, and a standard designed only for the floor throws all of that away. This draft is graded instead.</p>
+</div>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">1</span><h2>Scope</h2></div>
+  <p class="s-intro">This standard covers how RackTrack establishes the identity of a device, and how it binds that identity to a physical position in a rack. It applies to every scan, every report shown to a user, and every write into an external system of record.</p>
+  <p class="s-intro">It is written for estates from a single comms cupboard to a multi-site campus of thousands of devices, and for hardware ranging from unmanaged desk switches to modular chassis. Where behaviour depends on what the hardware publishes, section 3 governs.</p>
+  <p class="s-intro"><span class="m must">MUST</span>, <span class="m no">MUST NOT</span> and <span class="m should">SHOULD</span> carry their usual meaning in a specification.</p>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">2</span><h2>Terms</h2></div>
+  <dl class="terms">
+    <div class="term"><dt>Box</dt><dd>One physical object visible in a rack photograph, occupying one or more shelves.</dd></div>
+    <div class="term"><dt>Shelf</dt><dd>A numbered mounting position in a rack, counted from the bottom. Written U1, U2 and so on.</dd></div>
+    <div class="term"><dt>Device</dt><dd>One manageable network element, identified under section 4.</dd></div>
+    <div class="term"><dt>Chassis address</dt><dd>The hardware address a device publishes as its own identifier. Set at manufacture, not changed by configuration.</dd></div>
+    <div class="term"><dt>Site</dt><dd>The boundary inside which management addresses are unique. Usually one building.</dd></div>
+    <div class="term"><dt>System of record</dt><dd>The external database the customer treats as authoritative for what is racked where. Usually NetBox or another DCIM.</dd></div>
+    <div class="term"><dt>Binding</dt><dd>A dated, sourced statement that a device occupies a shelf range in a rack, carrying a confidence.</dd></div>
+    <div class="term"><dt>Physical inventory</dt><dd>The tree of components a device publishes about itself: chassis, modules, ports, and how they contain one another.</dd></div>
+  </dl>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">3</span><h2>Grade the estate before matching anything</h2></div>
+  <p class="s-intro">Everything this standard permits depends on what the hardware in front of us publishes. That varies by an order of magnitude between a campus of enterprise switches and a cupboard of desk switches, and the product must know which it is looking at before it claims anything.</p>
+
+  <div class="tiers">
+    <div class="tier a">
+      <p class="t-tag">Tier A · Modelled</p>
+      <h3>The estate is in a system of record</h3>
+      <p>A DCIM holds the rack, the shelf, the face and usually the serial for every device. Enterprise data centres and any customer with a change process are here.</p>
+      <p>The photograph is not used to guess. It is used to <em>verify</em>, and to report where reality and the record have parted company.</p>
+      <p class="t-claim">Matching is a check, not a search</p>
+    </div>
+    <div class="tier b">
+      <p class="t-tag">Tier B · Instrumented</p>
+      <h3>The hardware publishes a full inventory</h3>
+      <p>Cisco, Juniper, Arista, HPE and similar publish a serial per component, a containment tree, a real hostname and a complete neighbour table.</p>
+      <p>Identity is exact without a system of record. Position comes from stack order, the neighbour graph and the photograph together.</p>
+      <p class="t-claim">Identity certain, position inferred well</p>
+    </div>
+    <div class="tier c">
+      <p class="t-tag">Tier C · Bare</p>
+      <h3>The hardware publishes almost nothing</h3>
+      <p>No inventory, no serial, no usable name, no location. Our own office rack is here, and so is most small-business gear.</p>
+      <p>Identity still works, from the chassis address alone. Position must be learned once from a person and then remembered.</p>
+      <p class="t-claim">Learned once, never guessed</p>
+    </div>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">3.1</div>
+    <div class="cl-body"><p>Every scan <span class="m must">MUST</span> determine the tier of each device before binding it, from what that device actually answered, and not from an assumption about the customer.</p></div>
+    <aside class="cl-note">One rack routinely holds all three tiers: a chassis at the top, access switches in the middle, and something nobody remembers buying at the bottom.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">3.2</div>
+    <div class="cl-body"><p>Tier <span class="m must">MUST</span> be recorded per device, not per estate, and reported alongside the scan.</p></div>
+    <aside class="cl-note">It is the single most useful thing we can tell a customer about their own instrumentation.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">3.3</div>
+    <div class="cl-body"><p>A device <span class="m no">MUST NOT</span> be denied a stronger source because other devices in the rack are at a weaker tier.</p></div>
+    <aside class="cl-note">Grading down to the weakest device in the rack is the mistake draft 1 made across the whole product.</aside>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">4</span><h2>Identity</h2></div>
+  <p class="s-intro">What makes a device that device and no other. The ladder below is ordered, and the first rung available is the one used.</p>
+
+  <div class="clause">
+    <div class="cl-num">4.1</div>
+    <div class="cl-body">
+      <p>A device's identity <span class="m must">MUST</span> be its site paired with the first of these that the hardware provides:</p>
+      <ol>
+        <li>the chassis serial number from its physical inventory;</li>
+        <li>the serial published in the manufacturer's own private tree;</li>
+        <li>the chassis address it publishes over LLDP;</li>
+        <li>the bridge address it publishes as a switch;</li>
+        <li>the hardware address of its management interface;</li>
+        <li>its management address, marked provisional.</li>
+      </ol>
+    </div>
+    <aside class="cl-note">Rungs 1 and 2 are exact and printed on the box, so they can also be read from a photograph. Rungs 3 to 5 are exact but invisible. Rung 6 is not an identity and is marked as such.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">4.2</div>
+    <div class="cl-body"><p>An identity, once established, <span class="m must">MUST</span> be stable across a rename, a renumber, a configuration reset and a move between racks.</p></div>
+    <aside class="cl-note">This is the test for whether something is an identity at all. Every rung above passes it; nothing in the configuration does.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">4.3</div>
+    <div class="cl-body"><p>A management address <span class="m no">MUST NOT</span> be treated as an identity, except provisionally under 4.1 rung 6, and a provisional identity <span class="m no">MUST NOT</span> be written into a system of record.</p></div>
+    <aside class="cl-note">The same private address answers in every building of a campus. An address is a way to reach something, not a name for it.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">4.4</div>
+    <div class="cl-body"><p>A name the device publishes <span class="m no">MUST NOT</span> be used as an identity, at any tier, including where it looks like a good one.</p></div>
+    <aside class="cl-note">A disciplined Tier A estate has excellent hostnames — and they are still configuration, still copied, and still changed without anyone telling us.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">4.5</div>
+    <div class="cl-body"><p>A published name <span class="m must">MUST</span> be treated as absent where it equals the device's model string, or where it occurs on more than one device within the site.</p></div>
+    <aside class="cl-note">Both our TP-Links answer with their model number. In a large estate, copied configurations produce the same effect at scale.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">4.6</div>
+    <div class="cl-body"><p>Model <span class="m must">MUST</span> be taken from the device's published object identifier or its inventory, and <span class="m no">MUST NOT</span> be parsed out of its description string where either is available.</p></div>
+    <aside class="cl-note">Description strings are free text and vary by firmware release. The object identifier is exact and stable.</aside>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">5</span><h2>What counts as one device</h2></div>
+  <p class="s-intro">The two layers do not agree on what a device is. On instrumented hardware the containment tree settles it, and that tree also carries physical order — which is a genuine bridge between the layers, not an inference.</p>
+
+  <div class="clause">
+    <div class="cl-num">5.1</div>
+    <div class="cl-body"><p>Where a device publishes a physical inventory, that inventory <span class="m must">MUST</span> decide what is a device, what is a component, and what contains what.</p></div>
+    <aside class="cl-note">It replaces every heuristic we would otherwise write for stacks and chassis, and it is a standard, not a vendor extension.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">5.2</div>
+    <div class="cl-body"><p>A stack <span class="m must">MUST</span> be recorded as one device per member. Where the inventory gives each member's position within the stack, that order <span class="m must">MUST</span> be aligned to the vertical order of the corresponding boxes in the photograph.</p></div>
+    <aside class="cl-note">This is the strongest bridge we have below a system of record: stack order is physical order, published by the hardware itself.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">5.3</div>
+    <div class="cl-body"><p>A modular chassis <span class="m must">MUST</span> be one device over its full shelf range, with cards as components. Card slot order <span class="m should">SHOULD</span> be aligned to the visible slot layout of the box.</p></div>
+    <aside class="cl-note">A chassis with forty-eight-port cards otherwise reports hundreds of ports against a single shelf and defeats every shape-based check.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">5.4</div>
+    <div class="cl-body"><p>A device occupying more than one shelf <span class="m must">MUST</span> record its whole range and its lowest shelf. Shelves within an occupied range <span class="m no">MUST NOT</span> be reported as free.</p></div>
+    <aside class="cl-note">Free-space reporting is one of the things a customer will actually act on, so getting it wrong has a cost beyond the scan.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">5.5</div>
+    <div class="cl-body"><p>Two devices the network presents as one logical unit <span class="m must">MUST</span> be recorded as two devices, each with its own identity and its own binding.</p></div>
+    <aside class="cl-note">They are two things to service, two things to fail, and frequently two different racks.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">5.6</div>
+    <div class="cl-body"><p>The count of boxes and the count of devices are independent. Equal counts <span class="m no">MUST NOT</span> be treated as evidence of a one-to-one pairing, and port count <span class="m no">MUST NOT</span> be read from a box whose ports do not face the camera.</p></div>
+    <aside class="cl-note">A rack of stacked access switches has far more boxes than devices. A rack of chassis has far fewer.</aside>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">6</span><h2>Evidence, ranked</h2></div>
+  <p class="s-intro">Every binding rests on exactly one of these eight sources. There is no ninth, and a binding with no source is not a binding.</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th scope="col">Rank</th><th scope="col">Source</th><th scope="col">Where it comes from</th><th scope="col">Tier</th><th scope="col">Shown as</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="rank">1</td><th scope="row">Confirmed</th><td>A person on site placed this device at this shelf.</td><td class="ck">Any</td><td class="yes">A fact</td></tr>
+        <tr><td class="rank">2</td><th scope="row">Reported</th><td>The hardware states its own rack and shelf through a management interface.</td><td class="ck">A, B</td><td class="yes">A fact</td></tr>
+        <tr><td class="rank">3</td><th scope="row">Modelled</th><td>The system of record says this device is in this rack, at this shelf.</td><td class="ck">A</td><td class="yes">A fact</td></tr>
+        <tr><td class="rank">4</td><th scope="row">Remembered</th><td>This identity was bound here before by rank 1, 2 or 3, and nothing has contradicted it.</td><td class="ck">Any</td><td class="qual">Qualified</td></tr>
+        <tr><td class="rank">5</td><th scope="row">Read</th><td>A serial or asset tag was read off the box in the photograph and matches an identity.</td><td class="ck">A, B</td><td class="qual">Qualified</td></tr>
+        <tr><td class="rank">6</td><th scope="row">Ordered</th><td>Stack or slot position from the physical inventory, aligned to the visual order of boxes.</td><td class="ck">B</td><td class="qual">Qualified</td></tr>
+        <tr><td class="rank">7</td><th scope="row">Adjacent</th><td>A direct neighbour, or a stack peer, of a device already bound in this rack.</td><td class="ck">A, B</td><td class="qual">Qualified</td></tr>
+        <tr><td class="rank">8</td><th scope="row">Inferred</th><td>Port count, size or model agreement, and nothing else.</td><td class="ck">Any</td><td class="qual">Qualified</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">6.1</div>
+    <div class="cl-body"><p>Every binding <span class="m must">MUST</span> record its source, the date it was observed, and the identity it binds.</p></div>
+    <aside class="cl-note">Without a date, a binding cannot be aged out, and a stale one is indistinguishable from a fresh one.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">6.2</div>
+    <div class="cl-body"><p>A binding <span class="m no">MUST NOT</span> be made on rank 8 alone where more than one device fits the box.</p></div>
+    <aside class="cl-note">Two identical switches one above the other are separated by nothing a camera can see, in any estate at any tier.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">6.3</div>
+    <div class="cl-body"><p>Where two sources disagree, the higher rank wins, the lower is retained, and the disagreement <span class="m must">MUST</span> be reported as a finding in its own right.</p></div>
+    <aside class="cl-note">In a Tier A estate this is the most valuable output of the whole product: the list of places the system of record has drifted from the room.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">6.4</div>
+    <div class="cl-body"><p>Where the customer operates a system of record as authoritative, rank 3 <span class="m should">SHOULD</span> be promoted above rank 2 by configuration, and the promotion <span class="m must">MUST</span> be visible in the report.</p></div>
+    <aside class="cl-note">Which of the two is trusted is the customer's governance decision, not ours. But they should be able to see which one they chose.</aside>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">7</span><h2>Confidence, and saying nothing</h2></div>
+  <p class="s-intro">What we are entitled to claim, given what the evidence supports.</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th scope="col">Confidence</th><th scope="col">Requires</th><th scope="col">How it is presented</th><th scope="col">May be written back</th>
+      </tr></thead>
+      <tbody>
+        <tr><th scope="row">Confirmed</th><td>Rank 1, 2 or 3</td><td>Stated plainly, with no qualifier.</td><td class="ck ck-y">Yes</td></tr>
+        <tr><th scope="row">Probable</th><td>Rank 4, 5, 6 or 7</td><td>Stated with its reason attached, and easy to correct in one tap.</td><td class="ck ck-y">Yes, marked</td></tr>
+        <tr><th scope="row">Possible</th><td>Rank 8, exactly one candidate</td><td>Put as a question the engineer answers, never as an answer.</td><td class="ck ck-n">No</td></tr>
+        <tr><th scope="row">Unidentified</th><td>Everything else</td><td>Left blank, and listed as unidentified with the reason.</td><td class="ck ck-n">No</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">7.1</div>
+    <div class="cl-body"><p>Every binding <span class="m must">MUST</span> carry exactly one of those four levels, and the level <span class="m must">MUST</span> be visible wherever the binding is shown.</p></div>
+    <aside class="cl-note">A report where everything looks equally certain is a report a customer cannot act on selectively, which means they act on none of it.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">7.2</div>
+    <div class="cl-body"><p>Only confirmed and probable bindings <span class="m must">MUST</span> be eligible to write into a system of record, and probable ones <span class="m must">MUST</span> be marked as such at the destination.</p></div>
+    <aside class="cl-note">Writing a guess into the customer's DCIM converts our uncertainty into their fact, permanently and invisibly.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">7.3</div>
+    <div class="cl-body"><p>A box with no binding <span class="m must">MUST</span> appear as unidentified, and a device bound to no box in this rack <span class="m must">MUST</span> appear as not in this rack. Neither is a failure of the scan.</p></div>
+    <aside class="cl-note">Most racks hold patch panels, power strips and unmanaged switches that will never answer anything at all.</aside>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">8</span><h2>Narrowing at estate scale</h2></div>
+  <p class="s-intro">Twenty boxes against five hundred devices is not a matching problem. It is a filtering problem, and the filters below are ordered by how much they cut and how much they can be trusted.</p>
+
+  <div class="clause">
+    <div class="cl-num">8.1</div>
+    <div class="cl-body">
+      <p>The candidate set for a rack <span class="m must">MUST</span> be built in this order, stopping as soon as it is small enough to match:</p>
+      <ol>
+        <li>devices the system of record places in this rack;</li>
+        <li>identities previously bound to this rack;</li>
+        <li>stack peers of any device already bound here;</li>
+        <li>direct neighbours of any device already bound here;</li>
+        <li>devices whose uplinks terminate on a device already bound here;</li>
+        <li>devices drawing power from a manageable strip in this rack.</li>
+      </ol>
+    </div>
+    <aside class="cl-note">Filters 3 to 6 come from the logical layer but describe physical constraints. A stack cable is under three metres, so stack peers are in the same rack or the one beside it.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">8.2</div>
+    <div class="cl-body"><p>The site's full device list <span class="m no">MUST NOT</span> be used as a candidate set, at any tier or any estate size.</p></div>
+    <aside class="cl-note">It is what we do today, and it is why the match degrades as the customer grows.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">8.3</div>
+    <div class="cl-body"><p>The size of the candidate set <span class="m must">MUST</span> be recorded and reported. Where narrowing leaves a set too large to match honestly, the correct output is unidentified plus a statement of why.</p></div>
+    <aside class="cl-note">Telling a customer their estate is not modelled well enough to place a rack is a real, actionable answer. Guessing is not.</aside>
+  </div>
+
+  <div class="clause">
+    <div class="cl-num">8.4</div>
+    <div class="cl-body"><p>Narrowing <span class="m must">MUST</span> begin from any device already bound at rank 1, 2 or 3, and one such device in a rack <span class="m should">SHOULD</span> be enough to resolve most of the rest through 8.1 filters 3 to 5.</p></div>
+    <aside class="cl-note">Racks are cabled internally. One certain anchor turns the rest of the rack from a search into a short walk of the topology.</aside>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">9</span><h2>Labels and printed text</h2></div>
+
+  <div class="clause">
+    <div class="cl-num">9.1</div>
+    <div class="cl-body"><p>Text read from a photograph is evidence about a position, not about an identity, unless it contains a serial or an asset tag that matches one.</p></div>
+    <aside class="cl-note">A rail label describes the slot; an asset tag describes the device. Only one of them travels with the hardware.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">9.2</div>
+    <div class="cl-body"><p>The shelf part of a label <span class="m must">MUST</span> have known confusable characters repaired before use, so that <code>UIS</code> reads as <code>U15</code>.</p></div>
+    <aside class="cl-note">Built and tested, with the cases that must be left alone — USB, UPS — covered.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">9.3</div>
+    <div class="cl-body"><p>A label naming no known device <span class="m must">MUST</span> be kept verbatim and shown as unknown. It <span class="m no">MUST NOT</span> be matched to the nearest similar name.</p></div>
+    <aside class="cl-note">Near-miss matching on names is how one device quietly becomes another in a customer's record.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">9.4</div>
+    <div class="cl-body"><p>Where a label disagrees with the identity from section 4, section 4 wins and the label <span class="m must">MUST</span> be reported as stale.</p></div>
+    <aside class="cl-note">Hardware is replaced far more often than stickers are reprinted. The stale-label list is worth money to a customer on its own.</aside>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">10</span><h2>Change over time</h2></div>
+  <p class="s-intro">A binding is an observation with a date, so the difference between two scans is defined rather than inferred.</p>
+
+  <div class="clause">
+    <div class="cl-num">10.1</div>
+    <div class="cl-body"><p>Positions <span class="m must">MUST</span> be observed fresh in each scan. A position from an earlier scan <span class="m no">MUST NOT</span> be presented as current, though it <span class="m must">MUST</span> be retained as a rank 4 source.</p></div>
+    <aside class="cl-note">One tidy-up shifts every device up a shelf, and the network shows no change whatsoever.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">10.2</div>
+    <div class="cl-body"><p>Same identity, new position: the device moved. Update the binding, retire the old one with its date, and create no second device.</p></div>
+    <aside class="cl-note">Possible only because identity is hardware, not the rack it was first entered into.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">10.3</div>
+    <div class="cl-body"><p>New identity, same position and management address: the hardware was replaced, and this <span class="m must">MUST</span> be reported as a replacement rather than absorbed silently.</p></div>
+    <aside class="cl-note">A name-based match gets this wrong without ever saying anything, in every estate at every tier.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">10.4</div>
+    <div class="cl-body"><p>Known identity, new management address: the address changed. Update it and keep the device, its bindings and its history.</p></div>
+    <aside class="cl-note">A renumbering project should not lose a single device from the record, and today it would lose all of them.</aside>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">11</span><h2>Presence and reachability</h2></div>
+
+  <div class="clause">
+    <div class="cl-num">11.1</div>
+    <div class="cl-body"><p>Presence in a rack and reachability on the network <span class="m must">MUST</span> be recorded separately and never inferred from one another.</p></div>
+    <aside class="cl-note">The one rule that keeps sections 6 and 7 honest.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">11.2</div>
+    <div class="cl-body"><p>A device <span class="m no">MUST NOT</span> be bound to a rack on the strength of answering. Answering proves it exists, not where it is.</p></div>
+    <aside class="cl-note">A healthy switch in another building answers exactly as well as the one in front of you.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">11.3</div>
+    <div class="cl-body"><p>A box with no reachable device <span class="m must">MUST</span> be recorded as present and unreachable, with the reason distinguished where possible: no management configured, wrong credentials, blocked by policy, or no power.</p></div>
+    <aside class="cl-note">Four different problems with four different owners. Reporting them as one missing device helps none of them.</aside>
+  </div>
+  <div class="clause">
+    <div class="cl-num">11.4</div>
+    <div class="cl-body"><p>Where the phone cannot reach a management network, the server <span class="m should">SHOULD</span> attempt it, and the box <span class="m must">MUST</span> be marked pending rather than absent until one of them has tried.</p></div>
+    <aside class="cl-note">Management networks are routinely unreachable from the wireless network an engineer's phone is on. That is good practice, not a fault.</aside>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">12</span><h2>What a well-run estate provides</h2></div>
+  <p class="s-intro">Four things a customer can do that move them up a tier and make almost all of the above unnecessary. RackTrack <span class="m should">SHOULD</span> measure each one and report where the estate stands, because that report is useful whether or not they ever act on it.</p>
+  <div class="ask">
+    <div class="ask-item"><h3>Model the racks in a system of record</h3><p>Rack, shelf and face for every device. This alone moves an estate to Tier A and turns every scan from a search into a verification.</p></div>
+    <div class="ask-item"><h3>Enable neighbour discovery everywhere</h3><p>It is the entire basis of section 8. Without it a rack is a set of unrelated devices; with it, one anchor resolves the rest.</p></div>
+    <div class="ask-item"><h3>Fill in the location and asset fields</h3><p>They are writable and almost always empty. A device that carries its own rack and shelf is a rank 2 source and needs no inference at all.</p></div>
+    <div class="ask-item"><h3>Give every device a unique hostname</h3><p>We will not use it as an identity, and we should not. But it makes every report readable by the people who have to act on it.</p></div>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">13</span><h2>Conformance</h2></div>
+  <p class="s-intro">A scan conforms when all six hold. Each is checkable and a test can assert every one.</p>
+  <div class="clause"><div class="cl-num">13.1</div><div class="cl-body"><p>Every binding carries a source from section 6, a confidence from section 7, an observation date and an identity from section 4.</p></div></div>
+  <div class="clause"><div class="cl-num">13.2</div><div class="cl-body"><p>No binding anywhere rests on a published name, and no stored identity is a management address that is not marked provisional.</p></div></div>
+  <div class="clause"><div class="cl-num">13.3</div><div class="cl-body"><p>No box is bound on rank 8 evidence where more than one device fitted.</p></div></div>
+  <div class="clause"><div class="cl-num">13.4</div><div class="cl-body"><p>Nothing below probable confidence was written into a system of record, and everything probable that was written is marked at the destination.</p></div></div>
+  <div class="clause"><div class="cl-num">13.5</div><div class="cl-body"><p>Every box without a binding appears as unidentified with a reason, and every device without a box appears as not in this rack.</p></div></div>
+  <div class="clause"><div class="cl-num">13.6</div><div class="cl-body"><p>The candidate set was narrowed under section 8, and its size is recorded in the scan.</p></div></div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">14</span><h2>What it takes to get there</h2></div>
+  <p class="s-intro">Nothing above describes the product today. Three changes, in this order; the first is a precondition for both of the others.</p>
+  <div class="build">
+    <div class="step">
+      <h3>Make identity a hardware fact</h3>
+      <p>Today a switch belongs to the rack somebody typed it into. It becomes a device with an identity from section 4, which racks and bindings refer to.</p>
+      <p>Sections 4, 10 and most of 13 rest on this alone.</p>
+      <p class="ref">Sections 4, 10 · start here</p>
+    </div>
+    <div class="step">
+      <h3>Make the binding a record</h3>
+      <p>Source, confidence, date, identity. The matcher already computes a score; it does not say what produced it, and the report shows every row alike.</p>
+      <p>This is what lets a Tier A customer see where their DCIM has drifted.</p>
+      <p class="ref">Sections 6, 7 · matcher and report</p>
+    </div>
+    <div class="step">
+      <h3>Narrow before matching</h3>
+      <p>System of record, then memory, then the topology graph, then power. Report the candidate count and refuse to guess when it stays large.</p>
+      <p>Until this exists, nothing here survives an estate of five hundred devices.</p>
+      <p class="ref">Section 8 · scale</p>
+    </div>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">A</span><h2>Appendix A: the floor of the range</h2></div>
+  <p class="s-intro">These are the three switches on our own wall. They are Tier C, and this table is what Tier C looks like — not what a customer estate looks like. Draft 1 of this standard mistook one for the other.</p>
+
+  <div class="ex-cap">
+    <span class="ex-num">Measured</span>
+    <span class="ex-title">Identity fields read over SNMP, 8 September 2026</span>
+    <span class="ex-note">Three switches, one rack, our office</span>
+  </div>
+  <div class="scroll">
+    <table class="mono">
+      <thead><tr>
+        <th scope="col">Field</th><th scope="col">D-Link · .100</th><th scope="col">TP-Link · .11</th><th scope="col">TP-Link · .12</th>
+      </tr></thead>
+      <tbody>
+        <tr><th scope="row">The name it calls itself</th><td class="v-none">empty</td><td class="v-dup">SG2428P</td><td class="v-dup">SG2428P</td></tr>
+        <tr><th scope="row">Its location</th><td class="v-none">empty</td><td class="v-none">empty</td><td class="v-none">empty</td></tr>
+        <tr><th scope="row">Its port descriptions</th><td class="v-none">empty</td><td class="v-none">empty</td><td class="v-none">empty</td></tr>
+        <tr><th scope="row">Physical inventory</th><td class="v-none">not available</td><td class="v-none">not available</td><td class="v-none">not available</td></tr>
+        <tr><th scope="row">Serial, maker's own tree</th><td class="v-none">none published</td><td class="v-good">222B0K4000121</td><td class="v-good">222B0K4000217</td></tr>
+        <tr><th scope="row">Chassis address</th><td class="v-good">C8:78:7D:3D:E5:30</td><td class="v-good">30:DE:4B:23:70:AC</td><td class="v-good">30:DE:4B:23:71:0C</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="s-intro">Even here, identity works: rung 2 of the ladder for the TP-Links, rung 3 for the D-Link. What Tier C loses is not identity but position, which is why 6.4 and section 8 matter more at this tier than anywhere else.</p>
+</section>
+
+<section class="pad">
+  <div class="s-head"><span class="s-num">B</span><h2>Appendix B: where each source is read from</h2></div>
+  <p class="s-intro">The implementation surface behind sections 4 to 8. The right-hand column is honest about what we have actually seen work: our office rack is the only hardware measured so far, so everything above Tier C is standards-based and must be verified against real equipment before it is relied on.</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th scope="col">What we need</th><th scope="col">Where it comes from</th><th scope="col">Identifier</th><th scope="col">Confirmed here</th>
+      </tr></thead>
+      <tbody>
+        <tr><th scope="row">Chassis serial</th><td>Physical inventory, chassis entry</td><td class="oid">1.3.6.1.2.1.47.1.1.1.1.11</td><td class="ck ck-n">Absent on our gear</td></tr>
+        <tr><th scope="row">Containment tree</th><td>Physical inventory, parent of each entry</td><td class="oid">…47.1.1.1.1.4</td><td class="ck ck-n">Absent on our gear</td></tr>
+        <tr><th scope="row">Stack and slot order</th><td>Physical inventory, position within parent</td><td class="oid">…47.1.1.1.1.6</td><td class="ck ck-n">Absent on our gear</td></tr>
+        <tr><th scope="row">Asset tag (writable)</th><td>Physical inventory, asset field</td><td class="oid">…47.1.1.1.1.15</td><td class="ck ck-n">Absent on our gear</td></tr>
+        <tr><th scope="row">Chassis address</th><td>LLDP, local chassis identifier</td><td class="oid">1.0.8802.1.1.2.1.3.2</td><td class="ck ck-y">Yes, all three</td></tr>
+        <tr><th scope="row">Neighbours</th><td>LLDP remote table, with management addresses</td><td class="oid">1.0.8802.1.1.2.1.4</td><td class="ck ck-y">Yes</td></tr>
+        <tr><th scope="row">Neighbours, Cisco estates</th><td>Vendor discovery cache, adds platform</td><td class="oid">1.3.6.1.4.1.9.9.23</td><td class="ck ck-n">No Cisco here</td></tr>
+        <tr><th scope="row">Bridge address</th><td>Bridge base address</td><td class="oid">1.3.6.1.2.1.17.1.1</td><td class="ck ck-y">Yes</td></tr>
+        <tr><th scope="row">Exact model</th><td>System object identifier</td><td class="oid">1.3.6.1.2.1.1.2</td><td class="ck ck-y">Yes</td></tr>
+        <tr><th scope="row">Serial, TP-Link</th><td>Vendor private tree</td><td class="oid">1.3.6.1.4.1.11863</td><td class="ck ck-y">Yes, both</td></tr>
+        <tr><th scope="row">Rack and shelf, servers</th><td>Redfish chassis location</td><td class="oid">/redfish/v1/Chassis</td><td class="ck ck-n">Not tested</td></tr>
+        <tr><th scope="row">Rack and shelf, modelled</th><td>System of record, device by rack</td><td class="oid">/api/dcim/devices</td><td class="ck ck-y">In use today</td></tr>
+        <tr><th scope="row">Outlet occupancy</th><td>Manageable power strip, per-outlet draw</td><td class="oid">vendor</td><td class="ck ck-n">Not tested</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer class="pad">
+  <p>Draft 2, for review. It supersedes draft 1, which was written from Appendix A alone and graded the whole product to the weakest hardware we happened to own. The measurements in Appendix A are real and unchanged; the identifiers in Appendix B are from published standards and have been verified only where the right-hand column says so.</p>
+  <p>The only clause the product satisfies today is 9.2. Source in the repository at docs/design/rack-binding-standard.md, with the situations behind each clause written out in full at docs/design/finding-a-racks-switches.md.</p>
+</footer>
+
+</body></html>

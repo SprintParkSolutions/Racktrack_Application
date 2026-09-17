@@ -1,0 +1,321 @@
+<!-- Published copy of the claude.ai artifact "RackTrack ↔ NetBox" | https://claude.ai/code/artifact/3c359f77-f8ba-4d5e-b076-2329751a757e | artifact last updated 2026-08-26 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack ↔ NetBox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --ground:#ffffff;
+    --surface:#F4F6F7;
+    --surface-2:#EAEEF0;
+    --line:#D6DEE2;
+    --line-soft:#E7ECEF;
+    --ink:#10171C;
+    --ink-2:#3C4A54;
+    --muted:#69767F;
+    --accent:#0D5563;
+    --accent-soft:#E2EEF1;
+    --ok:#1B6E44;      --ok-soft:#E6F2EB;
+    --partial:#96590F; --partial-soft:#F9F0E2;
+    --gap:#93303A;     --gap-soft:#F9EAEB;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --display:"Archivo","IBM Plex Sans",-apple-system,sans-serif;
+    --pad:clamp(16px,3vw,40px);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--ground);color:var(--ink);
+    font-family:var(--sans);font-size:15px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-0.015em}
+  p{margin:0}
+  .eyebrow{
+    font-family:var(--mono);font-size:10.5px;font-weight:500;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  }
+
+  /* ── Head ─────────────────────────────────────────── */
+  .head{
+    background:var(--accent);color:#fff;
+    padding:clamp(18px,2.6vw,30px) var(--pad);
+    display:flex;flex-wrap:wrap;gap:14px 40px;align-items:flex-end;justify-content:space-between;
+  }
+  .head .eyebrow{color:#9CC3CC;margin-bottom:6px}
+  .head h1{font-size:clamp(22px,3vw,34px);line-height:1.05;font-weight:700}
+  .head .bottomline{
+    font-size:14px;color:#CFE3E7;max-width:60ch;
+    border-left:2px solid rgba(255,255,255,.3);padding-left:14px;
+  }
+  .head .bottomline b{color:#fff;font-weight:600}
+
+  main{padding:clamp(20px,2.6vw,32px) var(--pad) 48px;display:grid;gap:clamp(24px,3vw,34px)}
+  section{display:grid;gap:12px}
+  .shead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+  .shead h2{font-size:clamp(16px,1.7vw,20px);font-weight:700}
+  .shead span{font-size:13px;color:var(--muted)}
+
+  /* ── Verdict cards ────────────────────────────────── */
+  .cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(272px,1fr))}
+  .card{
+    border:1px solid var(--line);border-radius:5px;padding:13px 15px;
+    display:grid;gap:7px;align-content:start;border-top:3px solid var(--v,var(--line));
+  }
+  .card .qline{display:flex;gap:9px;align-items:baseline}
+  .card .n{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none}
+  .card h3{font-size:14.5px;font-weight:600;line-height:1.3}
+  .card .verdict{
+    font-family:var(--display);font-size:19px;font-weight:700;letter-spacing:-0.02em;
+    color:var(--v);line-height:1;
+  }
+  .card p{font-size:13.5px;color:var(--ink-2);line-height:1.5}
+  .card.yes{--v:var(--ok)}
+  .card.no{--v:var(--gap)}
+  .card.part{--v:var(--partial)}
+  .card.info{--v:var(--accent)}
+
+  /* ── Table ────────────────────────────────────────── */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:5px}
+  table{border-collapse:collapse;width:100%;min-width:600px;font-size:13.5px}
+  th,td{text-align:left;padding:8px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  thead th{
+    background:var(--surface);font-family:var(--mono);font-weight:500;
+    font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+    border-bottom:1px solid var(--line);
+  }
+  tbody tr:last-child td{border-bottom:0}
+  td.what{font-weight:600;color:var(--ink);white-space:nowrap;width:1%}
+  td.st{width:1%}
+  td.why{color:var(--ink-2)}
+  .tag{
+    font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.07em;
+    text-transform:uppercase;padding:2px 7px;border-radius:3px;white-space:nowrap;
+  }
+  .tag.ok{color:var(--ok);background:var(--ok-soft)}
+  .tag.part{color:var(--partial);background:var(--partial-soft)}
+  .tag.no{color:var(--gap);background:var(--gap-soft)}
+
+  /* ── Tiles ────────────────────────────────────────── */
+  .tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+  .tile{
+    border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+    display:grid;gap:6px;align-content:start;border-left:3px solid var(--t,var(--line));
+  }
+  .tile .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--t);font-weight:500}
+  .tile h3{font-size:14px;font-weight:600}
+  .tile p{font-size:13px;color:var(--muted);line-height:1.45}
+  .tile.see{--t:var(--ok)}
+  .tile.guess{--t:var(--partial)}
+  .tile.proof{--t:var(--accent)}
+
+  .rule{
+    background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;
+    padding:11px 15px;font-size:14px;color:#0B3F4A;
+  }
+  .rule b{font-weight:600;color:var(--accent)}
+
+  /* ── Steps ────────────────────────────────────────── */
+  .steps{display:grid;gap:9px;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));counter-reset:s}
+  .stp{border:1px solid var(--line);border-radius:5px;padding:11px 13px;display:grid;gap:5px;align-content:start}
+  .stp::before{
+    counter-increment:s;content:"Day " counter(s);
+    font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);
+  }
+  .stp h3{font-size:13.5px;font-weight:600}
+  .stp p{font-size:12.5px;color:var(--ink-2);line-height:1.45}
+
+  .need{
+    border:1px dashed var(--line);border-radius:5px;padding:11px 15px;
+    font-size:13.5px;color:var(--ink-2);background:var(--surface);
+  }
+  .need b{color:var(--ink);font-weight:600}
+
+  /* ── Internal ─────────────────────────────────────── */
+  .internal{
+    border:1px dashed var(--gap);border-radius:5px;background:var(--gap-soft);
+    padding:14px 16px;display:grid;gap:10px;
+  }
+  .internal .eyebrow{color:var(--gap)}
+  .internal h2{font-size:15px;font-weight:700;color:#4C242A}
+  .internal ul{margin:0;padding-left:18px;display:grid;gap:5px;font-size:13px;color:#4C242A}
+  .internal li::marker{color:var(--gap)}
+  .internal b{font-weight:600}
+  code{font-family:var(--mono);font-size:.87em;background:rgba(0,0,0,.05);padding:1px 4px;border-radius:3px}
+
+  footer{border-top:1px solid var(--line);padding-top:12px;color:var(--muted);font-size:12px}
+</style>
+
+<header class="head">
+  <div>
+    <p class="eyebrow">For a university network, Slovakia · 26 Aug 2026</p>
+    <h1>RackTrack → NetBox: what we can and cannot do</h1>
+  </div>
+  <p class="bottomline">
+    <b>We do not connect to NetBox today.</b> What works is the harder half — a phone scan that reads
+    the rack, plus live data from the switches. Getting it into NetBox is a translator we would build.
+  </p>
+</header>
+
+<main>
+
+  <!-- ── Seven answers ──────────────────────────────── -->
+  <section>
+    <div class="shead">
+      <h2>Your seven questions</h2>
+      <span>Short answer first, detail underneath.</span>
+    </div>
+    <div class="cards">
+
+      <article class="card no">
+        <div class="qline"><span class="n">01</span><h3>Do you connect to NetBox?</h3></div>
+        <p class="verdict">No</p>
+        <p>We can store NetBox credentials, and we built a test copy of NetBox to develop against. Nothing we ship writes to a real one. We have done this same job for ServiceNow.</p>
+      </article>
+
+      <article class="card yes">
+        <div class="qline"><span class="n">02</span><h3>How does the data get out?</h3></div>
+        <p class="verdict">API + files</p>
+        <p>A web API with logins and an audit trail. Every scan downloads as JSON, CSV, HTML or PDF. We cannot notify your system automatically — it has to ask us.</p>
+      </article>
+
+      <article class="card part">
+        <div class="qline"><span class="n">03</span><h3>What can you give us?</h3></div>
+        <p class="verdict">Six of nine</p>
+        <p>Racks, devices, ports, cables, models and serials — yes. Sites and asset tags do not exist in our system at all. Full table below.</p>
+      </article>
+
+      <article class="card part">
+        <div class="qline"><span class="n">04</span><h3>Cables with both ends?</h3></div>
+        <p class="verdict">Format yes, proof no</p>
+        <p>Both ends are already in the file, in the shape NetBox wants. But part of the pairing is a guess. Only the switch itself can confirm a cable.</p>
+      </article>
+
+      <article class="card info">
+        <div class="qline"><span class="n">05</span><h3>What does it cost?</h3></div>
+        <p class="verdict">To confirm</p>
+        <p>No figure here yet. It runs on your own hardware, and separating your data centres is built in. Price moves on how many people scan and how many switches we watch — not rack count.</p>
+      </article>
+
+      <article class="card yes">
+        <div class="qline"><span class="n">06</span><h3>Scan one real rack?</h3></div>
+        <p class="verdict">Yes</p>
+        <p>The right next step. One rack shows us your labels, your lighting, and the number that decides everything: how many cables we can confirm rather than guess.</p>
+      </article>
+
+      <article class="card part">
+        <div class="qline"><span class="n">07</span><h3>Camera plus network data?</h3></div>
+        <p class="verdict">Both halves work</p>
+        <p>Vision and live switch readings both run today. But equipment announces itself in two languages and we speak only one — Cisco uses the other by default. Joining the halves is the trial's job.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ── Capability table ───────────────────────────── -->
+  <section>
+    <div class="shead">
+      <h2>What we can hand over</h2>
+      <span>One line each. No roadmap promises.</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col">What NetBox wants</th><th scope="col">Can we</th><th scope="col">Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="what">Sites</td><td class="st"><span class="tag no">No</span></td><td class="why">You tell us. No camera can know which building a rack is in.</td></tr>
+          <tr><td class="what">Racks</td><td class="st"><span class="tag ok">Yes</span></td><td class="why">The rack, its height, and a full top-to-bottom slot map. Several racks in one photo are split automatically.</td></tr>
+          <tr><td class="what">Devices</td><td class="st"><span class="tag ok">Yes</span></td><td class="why">What sits in each slot and what kind of thing it is. We do not invent names — naming stays your system's job.</td></tr>
+          <tr><td class="what">Makes &amp; models</td><td class="st"><span class="tag part">Partly</span></td><td class="why">Read off the front and scored for confidence. If the photo is poor we return blank rather than a guess; a technician can correct it.</td></tr>
+          <tr><td class="what">Ports</td><td class="st"><span class="tag ok">Yes</span></td><td class="why">Every port, what type it is, and whether a cable is in it.</td></tr>
+          <tr><td class="what">Patch panel ports</td><td class="st"><span class="tag part">Partly</span></td><td class="why">We find the ports. Which front port joins which rear port inside the panel, a photo cannot show.</td></tr>
+          <tr><td class="what">Cables</td><td class="st"><span class="tag part">Partly</span></td><td class="why">Both ends are in the file. How much of it is known versus worked out is the next section.</td></tr>
+          <tr><td class="what">Serial numbers</td><td class="st"><span class="tag part">Partly</span></td><td class="why">Only by logging into the device and asking it. Never read off a photo — a wrong serial is worse than none.</td></tr>
+          <tr><td class="what">Asset tags</td><td class="st"><span class="tag no">No</span></td><td class="why">Does not exist in our system today. Reading them off stickers is realistic, but it is work we have not done.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Cables ─────────────────────────────────────── -->
+  <section>
+    <div class="shead">
+      <h2>Why cables are the hard part</h2>
+      <span>What we know about any cable comes from three places. They are not equally reliable.</span>
+    </div>
+    <div class="tiles">
+      <article class="tile see">
+        <p class="lbl">1 · Seen</p>
+        <h3>The port is occupied</h3>
+        <p>The photo shows a cable in the port, its colour and its connector. Measured, with a confidence score.</p>
+      </article>
+      <article class="tile guess">
+        <p class="lbl">2 · Guessed</p>
+        <h3>Where the cable goes</h3>
+        <p>We cannot see this — the cable vanishes into a bundle. So we assume cables hang straight down and pair each port with what sits below it.</p>
+      </article>
+      <article class="tile proof">
+        <p class="lbl">3 · Confirmed</p>
+        <h3>The switch names its neighbour</h3>
+        <p>Ask a switch what is on the other end of its own cable and it answers. The only one of the three that proves anything.</p>
+      </article>
+    </div>
+    <p class="rule">
+      <b>Our rule for a trial:</b> create cables in NetBox from the third kind only. The first two go in
+      as suggestions for a person to check — never as silent writes. A tool that quietly invents cabling
+      is worse than no tool, because the mistake outlives the visit.
+    </p>
+    <p class="rule" style="background:var(--partial-soft);border-left-color:var(--partial);color:#4A3A20">
+      <b style="color:var(--partial)">Two limits worth knowing:</b> we speak LLDP but not CDP, and Cisco
+      uses CDP unless someone switches LLDP on — so on your kit we may ask and hear nothing. And patch
+      panels and most servers cannot answer at all, which is exactly where the camera earns its place.
+    </p>
+  </section>
+
+  <!-- ── Trial ──────────────────────────────────────── -->
+  <section>
+    <div class="shead">
+      <h2>The trial we propose</h2>
+      <span>One real rack, five working days, photograph to NetBox entry.</span>
+    </div>
+    <div class="steps">
+      <article class="stp"><h3>You take the photos</h3><p>Your technician, not ours. If your own staff cannot get a usable photo in your own lighting, we need to know on day one.</p></article>
+      <article class="stp"><h3>Check us against the truth</h3><p>We hand back the slot map, devices, models and ports. You mark what is wrong. Out comes a real accuracy figure for your kit.</p></article>
+      <article class="stp"><h3>Ask the switches</h3><p>Read-only login. Identity, serials, port state, neighbours. This gives the number that decides the project.</p></article>
+      <article class="stp"><h3>Review the mapping</h3><p>Our export beside the NetBox entries it would create. Looked at together before anything is written.</p></article>
+      <article class="stp"><h3>Write to a test NetBox</h3><p>A throwaway instance, never your live one. Confirmed cables created, guessed ones tagged for review.</p></article>
+    </div>
+    <p class="need">
+      <b>What we would need from you:</b> one representative rack · a read-only login for its switches ·
+      whether LLDP is switched on for your Cisco kit · a test NetBox with an access token · one person
+      who actually knows what is in that rack.
+    </p>
+  </section>
+
+  <!-- ── Internal ───────────────────────────────────── -->
+  <section class="internal">
+    <p class="eyebrow">Internal — not for the customer</p>
+    <h2>Backing for each claim, and two things to settle</h2>
+    <ul>
+      <li><b>No NetBox writer</b> — NetBox exists only as a credential type and as a simulator serving <code>/api/dcim/*</code>. Real credential consumers resolve <code>servicenow</code> only.</li>
+      <li><b>Pairing is inferred</b> — <code>derive_wiring()</code> matches switch-to-panel by smallest horizontal gap, falls back to ordered pairing; core uplinks are synthesised.</li>
+      <li><b>Demo data is flagged</b> — <code>synthetic: true</code> sits on device records in generated <code>topology.json</code>, including model strings and IPs. Any import must filter it out.</li>
+      <li><b>LLDP real, CDP absent</b> — per-vendor recipes run the LLDP commands and diff neighbours into drift events. No CDP parser exists anywhere in the tree.</li>
+      <li><b>Serials via SSH</b> — captured from <code>show version</code>; OCR deliberately excludes long tokens as serials and MACs.</li>
+      <li><b>No asset tag, no webhooks</b> — neither appears in any schema, export or route.</li>
+      <li><b>1 · Pricing is a genuine blank.</b> Nothing in the repo states a model. Owner has to fill it before this is sent.</li>
+      <li><b>2 · Name the CDP gap.</b> A Slovak university is likely Cisco-heavy; hiding it would surface on day one of a pilot.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Describes what is built and running as of 26 August 2026. Anything marked <em>Partly</em> or
+    <em>No</em> is work to be scoped, not a feature we have.
+  </footer>
+
+</main>
+
+</body></html>

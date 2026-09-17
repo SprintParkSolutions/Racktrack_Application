@@ -149,14 +149,14 @@ describe('dispatch', () => {
     // server accepts every photo format now, so the message must say so.
     const r = await validateMedia(file('rack.pdf', 'application/pdf'));
     expect(r.error).toBe('Unsupported file type. Upload a rack photo. Any photo format works (JPG, PNG, HEIC, WebP and more).');
-    expect(r.error).not.toMatch(/—/);
+    expect(r.error).not.toMatch(/ - /);
   });
 
   test('an audio file is rejected in those words', async () => {
     // Android's generic file chooser used to sit behind these upload buttons
     // and offered a sound recorder next to the camera. The accept lists no
     // longer let it appear, but a recording can still be picked out of the
-    // file manager — and "unsupported file type" does not tell that user what
+    // file manager - and "unsupported file type" does not tell that user what
     // they actually did.
     for (const f of [file('memo.m4a', 'audio/mp4'), file('rack.mp3', 'audio/mpeg')]) {
       const r = await validateMedia(f);
@@ -169,7 +169,7 @@ describe('dispatch', () => {
   test('a file with no MIME type at all is deferred to the server', async () => {
     // An Android content:// pick frequently arrives with an empty `type` and a
     // name carrying no extension. That is a photograph the gallery just handed
-    // us, not a bad file — the server reads the bytes and answers 400 if it
+    // us, not a bad file - the server reads the bytes and answers 400 if it
     // really isn't an image.
     const r = await validateMedia(file('image', ''));
     expect(r.ok).toBe(true);
@@ -301,7 +301,7 @@ describe('images', () => {
     // in the WebView under Android memory pressure, and failing closed rejected
     // perfectly good rack photos with a "take a clearer photo" error that no
     // retry could clear. The server normalizes and re-validates every upload
-    // (detect-gate + quality checks), so deferring loses no coverage — the HEIC
+    // (detect-gate + quality checks), so deferring loses no coverage - the HEIC
     // and video paths already defer here for the same reason.
     nextImage = null;
     const r = await validateMedia(file('rack.jpg', 'image/jpeg'));

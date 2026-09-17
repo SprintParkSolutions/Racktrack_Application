@@ -18,5 +18,8 @@ the document says so.
 | SPRTMS-1638 | Drift and port history | [07-drift-and-port-history.md](07-drift-and-port-history.md) |
 | SPRTMS-1639 | The app's screens on a phone | [08-mobile-screens.md](08-mobile-screens.md) |
 | SPRTMS-1640 | Sign-in and the front of the app | [09-sign-in.md](09-sign-in.md) |
+| SPRTMS-1666 | Portal: first-run onboarding container and Organization settings | [10-portal-first-run-setup.md](10-portal-first-run-setup.md) |
+| SPRTMS-1667 | Rack Book: enter one rack in NetBox's own fields and export it | [11-rack-book.md](11-rack-book.md) |
+| SPRTMS-1676 | Application: Organization settings, the first-run container, and the space picker on Scan | [12-application-setup.md](12-application-setup.md) |
 
 The tickets live in Jira project SPRTMS and carry the same wording in their comments.

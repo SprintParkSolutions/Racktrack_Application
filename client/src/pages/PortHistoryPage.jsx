@@ -4,7 +4,7 @@ import { useSmartBack } from '../hooks/useSmartBack';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './PortHistoryPage.module.css';
 
-// "Continuous polling & port drift" view — the client side of
+// "Continuous polling & port drift" view - the client side of
 // /api/ports/*. Auto-targets the single monitored switch (host /
 // credentials live server-side and are intentionally not exposed).
 // The interface-detail panel mirrors the Arista CloudVision layout:
@@ -12,7 +12,7 @@ import styles from './PortHistoryPage.module.css';
 // Interface Configuration + Maintenance State + change log.
 
 /** The number written above the socket: the last run of digits in its name.
- *  Was `p.port.replace('Gi1/0/', '')`, which is one vendor's spelling — the
+ *  Was `p.port.replace('Gi1/0/', '')`, which is one vendor's spelling - the
  *  D-Link calls its ports Slot0/1..52, so nothing was stripped and every tile
  *  read "ot0/" with the number clipped off the end. */
 const portNum = (name) => {
@@ -34,7 +34,7 @@ const WINDOW_OPTIONS = [
 const OFFSET_KEYS = ['1h', '3h', '12h', '1d', '1w'];
 
 // Bars rendered in the Interface Status timeline. Mirrors the four
-// rows in the Arista screenshot — we just substitute Flow Control for
+// rows in the Arista screenshot - we just substitute Flow Control for
 // "Auto Negotiation Status" since TP-Link surfaces the former, not the
 // latter. Each bar has a colour function so transitions are obvious at
 // a glance.
@@ -58,7 +58,7 @@ const TIMELINE_BARS = [
     colorOf: (v) => v === 'up'   ? '#22c55e'
                   : v === 'down' ? '#ef4444'
                   : '#d5d5d5',
-    // Render label as Up / Down — the colour itself signals state
+    // Render label as Up / Down - the colour itself signals state
     formatValue: (v) => v ? v.toUpperCase() : '-',
   },
   {
@@ -69,7 +69,7 @@ const TIMELINE_BARS = [
   {
     label: 'LLDP Neighbor',        field: 'lldp_system',
     // Hash the neighbor name to a stable colour so identity is obvious
-    // at a glance — different segments → different colours → cable was
+    // at a glance - different segments → different colours → cable was
     // re-routed to a different switch / host.
     colorOf: (v) => v ? hashColor(v) : '#1c1c1c',
     formatValue: (v) => v || 'none',
@@ -176,9 +176,9 @@ function describeEvent(e) {
     if (from && !to) return `neighbour gone: ${from}`;
     return `neighbour ${from} → ${to}`;
   }
-  if (f === 'lldp_port') return `neighbour port ${from || '—'} → ${to || '—'}`;
+  if (f === 'lldp_port') return `neighbour port ${from || ' - '} → ${to || ' - '}`;
   if (f === 'descr') return `renamed “${from || ''}” → “${to || ''}”`;
-  return `${f}: ${from ?? '—'} → ${to ?? '—'}`;
+  return `${f}: ${from ?? ' - '} → ${to ?? ' - '}`;
 }
 
 function agoShort(iso) {
@@ -221,7 +221,7 @@ function dedupedOffsets(offsets) {
     label: e.firstKey === e.lastKey ? e.firstKey : `${e.firstKey}+`,
   }));
 }
-// Time-axis tick formatter — short HH:MM for windows ≤ 1d, otherwise
+// Time-axis tick formatter - short HH:MM for windows ≤ 1d, otherwise
 // includes the date so day-boundary transitions read correctly.
 function fmtTick(ms, windowSec) {
   const d = new Date(ms);
@@ -256,8 +256,8 @@ function buildSegments(initial, snapshots, field, windowStartMs, windowEndMs) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Routable page wrapper — used by /port-history.
-// Embeddable content — used by the ResultsPage "Drift" tab.
+// Routable page wrapper - used by /port-history.
+// Embeddable content - used by the ResultsPage "Drift" tab.
 // ─────────────────────────────────────────────────────────────────────
 export function PortHistoryContent({ rackId = null }) {
   return <PortHistoryInner rackId={rackId} embedded />;
@@ -294,7 +294,7 @@ function PortHistoryInner({ embedded, rackId = null }) {
   const [events, setEvents] = useState([]);
   const [showAllEvents, setShowAllEvents] = useState(false);
 
-  // The change log for the chosen switch — what this page is for. Refreshed
+  // The change log for the chosen switch - what this page is for. Refreshed
   // on the same cadence as the overview so a port going down shows up here
   // as soon as it shows up there.
   useEffect(() => {
@@ -316,7 +316,7 @@ function PortHistoryInner({ embedded, rackId = null }) {
   // Which switches this view is about.
   //
   // Inside a rack: the switches filed for THAT rack on the Network step, each
-  // resolved to its Drift row by address — the Drift table withholds hosts
+  // resolved to its Drift row by address - the Drift table withholds hosts
   // from its list on purpose, so the join runs through the by-host route that
   // exists for exactly this. Three switches added on Network are three
   // switches here; the page used to show only whichever device happened to
@@ -496,7 +496,7 @@ function PortHistoryInner({ embedded, rackId = null }) {
         </section>
       )}
 
-      {/* ── What changed — the point of the page ── */}
+      {/* ── What changed - the point of the page ── */}
       {selectedId && (
         <section className={styles.band}>
           <div className={styles.bandHead}>
@@ -526,7 +526,7 @@ function PortHistoryInner({ embedded, rackId = null }) {
         </section>
       )}
 
-      {/* ── Per-port detail — rendered as a bottom sheet so the page
+      {/* ── Per-port detail - rendered as a bottom sheet so the page
           stops being one long vertical column. Tap a tile to slide in
           the detail; close button (or backdrop) dismisses it. ─────── */}
       {selectedId && selectedPort && (
@@ -542,7 +542,7 @@ function PortHistoryInner({ embedded, rackId = null }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Per-port detail — Arista CloudVision-style layout:
+// Per-port detail - Arista CloudVision-style layout:
 //   Header (port + close)
 //   Interface Details
 //   Interface Status  (stacked-bar timeline + window selector)
@@ -555,7 +555,7 @@ function InterfaceDetail({ deviceId, device, port, onClose }) {
   const [history, setHistory]   = useState(null);
   const [timeline, setTimeline] = useState(null);
   const [windowKey, setWindowKey] = useState('1h');
-  // Inner section selector — splits Specs / Timeline / History so the
+  // Inner section selector - splits Specs / Timeline / History so the
   // panel renders one block at a time instead of one tall scroll.
   const [detailTab, setDetailTab] = useState('specs');
   const windowSec = useMemo(
@@ -579,7 +579,7 @@ function InterfaceDetail({ deviceId, device, port, onClose }) {
     return () => { cancelled = true; clearInterval(id); };
   }, [deviceId, port]);
 
-  // Poll the timeline data — rebuilds when the window selector changes
+  // Poll the timeline data - rebuilds when the window selector changes
   useEffect(() => {
     let cancelled = false;
     const tick = async () => {
@@ -731,7 +731,7 @@ function KV({ label, value, cls = '', mono = false }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// StackedTimeline — four horizontal bars (one per tracked field) with
+// StackedTimeline - four horizontal bars (one per tracked field) with
 // transition segments coloured by value, plus a tick axis. Reproduces
 // the Interface Status panel from the Arista CV screenshot.
 // ─────────────────────────────────────────────────────────────────────

@@ -13,7 +13,7 @@
 # useless on Linux and get reinstalled from the CPU wheel index in the image
 # anyway), and server.zip is another 106 MB.
 #
-# Models/ is excluded here and sent separately — see docs/setup/DEMO-VPS-SETUP.md.
+# Models/ is excluded here and sent separately — see docs/setup/demo-vps-setup.md.
 # Keep this list in step with .dockerignore when that changes.
 
 # Virtualenvs — platform-specific binaries, rebuilt inside the image

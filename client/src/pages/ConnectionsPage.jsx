@@ -64,7 +64,7 @@ export default function ConnectionsPage() {
     };
   }, [openMenuFor]);
 
-  // Reset secret fields whenever the chosen type changes — different
+  // Reset secret fields whenever the chosen type changes - different
   // backends require different fields, so we don't want stale values.
   useEffect(() => {
     setSecret(emptySecretFor(type));

@@ -44,7 +44,7 @@ function fmtDate(ts) {
 }
 
 // Rack imagery and device crops are auth-gated, and an <img> tag can't send a
-// Bearer token — so fetch the bytes with authFetch and hand the tag an object
+// Bearer token - so fetch the bytes with authFetch and hand the tag an object
 // URL. Revokes on unmount / src change so we never leak blobs.
 function AuthImg({ src, alt = '', className, fallback = null }) {
   const [url, setUrl] = useState(null);
@@ -466,7 +466,7 @@ function Browse() {
 
 // Ground Truth is now a PER-SCAN step, reached only after a scan is analysed
 // (/ground-truth/:rackId, linked from the rack context). It verifies the model's
-// detections for THAT one upload — not a global worklist across every scan. The
+// detections for THAT one upload - not a global worklist across every scan. The
 // server already exposes /api/ground-truth/scan/:rackId, which BrowseDetail uses.
 export default function GroundTruthPage() {
   const { rackId } = useParams();

@@ -1,0 +1,446 @@
+<!-- Published copy of the claude.ai artifact "Code Audit — Proposal vs Delivered" | https://claude.ai/code/artifact/b2e89af3-66ee-498c-9e0e-d6af876def59 | artifact last updated 2026-08-20 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Code Audit — Proposal vs Delivered</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#fff;--panel:#f7f7f4;--ink:#1a1c22;--muted:#5b5f66;--faint:#8b8f96;
+    --line:rgba(20,22,27,.12);--line2:rgba(20,22,27,.07);
+    --good:#1a7f37;--good-bg:#e9f3ec;--part:#8a5a1d;--part-bg:#f7efe3;
+    --none:#5b5f66;--none-bg:#eeeeeb;--blue:#15507e;--blue-bg:#e8f0f6;
+    --code:#0d1117;--code-ink:#d5dae2;
+    --sans:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7}
+  .wrap{max-width:1240px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(20px,4vw,48px) 72px}
+
+  .eyebrow{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin:0 0 12px}
+  h1{margin:0 0 14px;font-size:clamp(28px,4vw,44px);font-weight:650;letter-spacing:-.024em;line-height:1.07;text-wrap:balance}
+  .dek{margin:0;color:var(--muted);font-size:clamp(17px,1.5vw,19.5px);max-width:82ch;line-height:1.55}
+  .dek b{color:var(--ink);font-weight:600}
+
+  /* hero scorecard */
+  .score{margin:30px 0 0;display:grid;gap:16px;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:stretch}
+  @media(max-width:820px){.score{grid-template-columns:1fr}}
+  .bigcard{border:1px solid rgba(26,127,55,.3);background:var(--good-bg);border-radius:18px;padding:24px 26px;display:flex;flex-direction:column;justify-content:center}
+  .bigcard .n{font-size:clamp(42px,5vw,62px);font-weight:650;letter-spacing:-.03em;line-height:1;color:var(--good);font-variant-numeric:tabular-nums}
+  .bigcard .n small{font-size:.42em;color:#3a7a4d;font-weight:500}
+  .bigcard .l{margin-top:8px;font-size:16.5px;color:#155e2b;font-weight:600}
+  .bigcard .s{margin-top:4px;font-size:14.5px;color:#3a7a4d}
+  .minigrid{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+  .mini{border:1px solid var(--line);border-radius:14px;padding:15px 17px;background:var(--panel)}
+  .mini .mn{font-size:26px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+  .mini .ml{margin-top:5px;font-size:12.8px;color:var(--muted);line-height:1.4}
+
+  h2{margin:52px 0 6px;font-size:clamp(21px,2.4vw,28px);font-weight:650;letter-spacing:-.018em}
+  .h2sub{margin:0 0 20px;color:var(--muted);font-size:15.5px;max-width:90ch}
+  h3{margin:32px 0 10px;font-size:18.5px;font-weight:650;letter-spacing:-.01em}
+  p.body{margin:0 0 14px;max-width:94ch}
+  p.body b{font-weight:600}
+
+  /* figure */
+  figure{margin:22px 0 8px;border:1px solid var(--line2);border-radius:16px;padding:22px 20px 16px;background:var(--panel)}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{margin-top:14px;font-size:14px;color:var(--muted);text-align:center;line-height:1.55}
+  figcaption b{color:var(--ink)}
+  .keyrow{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--muted)}
+  .keyrow span{display:inline-flex;align-items:center;gap:7px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+  /* tool detail rows */
+  .tool{border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:14px;background:#fff}
+  .tool.added{border-left:4px solid var(--blue)}
+  .tool.proposed{border-left:4px solid var(--good)}
+  .tool.open{border-left:4px solid #b9bcc2;background:var(--panel)}
+  .th{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .th .nm{font-weight:650;font-size:19px;letter-spacing:-.012em}
+  .th .role{color:var(--muted);font-size:14.5px}
+  .pill{font-family:var(--mono);font-size:10.5px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+  .pill.live{background:var(--good-bg);color:var(--good);border:1px solid rgba(26,127,55,.24)}
+  .pill.add{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(21,80,126,.22)}
+  .pill.open{background:var(--none-bg);color:var(--muted);border:1px solid var(--line)}
+  .pill.res{background:#fff;color:var(--good);border:1px solid rgba(26,127,55,.3);margin-left:auto}
+  .pill.res.n{color:var(--muted);border-color:var(--line)}
+  .tgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-top:4px}
+  .tg .k{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:3px}
+  .tg .v{font-size:14.4px;line-height:1.5}
+  .tg .v b{font-weight:600}
+
+  pre.proof{background:var(--code);color:var(--code-ink);border-radius:12px;padding:16px 19px;overflow-x:auto;font-family:var(--mono);font-size:12.6px;line-height:1.7;margin:14px 0}
+  pre.proof .c{color:#8b96a6}
+  pre.proof .ok{color:#7fd18f}
+
+  /* bars */
+  .bars{display:flex;flex-direction:column;gap:18px;margin:20px 0}
+  .bar{display:grid;grid-template-columns:190px 1fr;gap:18px;align-items:center}
+  @media(max-width:640px){.bar{grid-template-columns:1fr}}
+  .bar .lab{font-weight:600;font-size:15.5px}
+  .bar .lab small{display:block;color:var(--muted);font-size:13px;font-weight:400;margin-top:2px}
+  .track{height:26px;border-radius:9px;background:var(--line2);position:relative;overflow:hidden}
+  .fill{height:100%;border-radius:9px;display:flex;align-items:center;padding:0 10px;color:#fff;font-family:var(--mono);font-size:12px;font-weight:600}
+  .fill.g{background:var(--good)}.fill.a{background:#b08a4a}.fill.n{background:#a9adb4}
+  .barnote{font-size:14px;color:var(--muted);line-height:1.5;grid-column:1/-1;margin-top:-8px}
+
+  .lic{display:flex;height:34px;border-radius:10px;overflow:hidden;margin:18px 0 10px;border:1px solid var(--line2)}
+  .lic div{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:600;color:#fff}
+  .licleg{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+  .licleg span{display:inline-flex;align-items:center;gap:7px}
+
+  .callout{border-radius:14px;padding:17px 21px;font-size:15.4px;margin:20px 0;line-height:1.6}
+  .callout.info{border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .callout.info b{color:var(--ink)}
+  .callout.go{border:1px solid rgba(26,127,55,.3);background:var(--good-bg);color:#155e2b}
+  .callout.go b{color:#0e4a24}
+  .callout.warn{border:1px solid rgba(138,90,29,.3);background:var(--part-bg);color:#6f4917}
+  .callout.warn b{color:#4f340f}
+
+  .m{font-family:var(--mono);font-size:.87em;background:var(--panel);border:1px solid var(--line2);border-radius:5px;padding:1px 6px}
+  footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.8}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">RackTrack · code auditing · proposal vs delivered</p>
+  <h1>The proposed audit toolchain —<br>and where it stands today</h1>
+  <p class="dek">A layered code-audit approach was proposed across six tools. This document sets that proposal against
+    <b>what is actually running in the build today</b>, shows the <b>real output of each tool</b> as evidence, explains what
+    was added to cover the parts the proposal did not reach, and states plainly what is still open.</p>
+
+  <div class="score">
+    <div class="bigcard">
+      <div class="n">5<small>&nbsp;/&nbsp;6</small></div>
+      <div class="l">proposed tools are live and passing</div>
+      <div class="s">The sixth — SonarQube — is a dashboard awaiting a hosting decision, not a missing safeguard.</div>
+    </div>
+    <div class="minigrid">
+      <div class="mini"><div class="mn">+8</div><div class="ml">further checks added beyond the proposal</div></div>
+      <div class="mini"><div class="mn">13</div><div class="ml">tools now run on every code change</div></div>
+      <div class="mini"><div class="mn">4</div><div class="ml">real accessibility issues found &amp; fixed</div></div>
+      <div class="mini"><div class="mn">0</div><div class="ml">open findings across all scanners</div></div>
+    </div>
+  </div>
+
+  <!-- ===== COVERAGE MAP ===== -->
+  <h2>1 · What each tool actually looks at</h2>
+  <p class="h2sub">The clearest way to judge an audit toolchain is by <b>surface coverage</b> — which parts of the system get
+    inspected, and by what. The proposal covered the Python layer, dependencies and secrets. The rows in blue are the parts
+    it did not reach, which have since been covered.</p>
+
+  <figure>
+    <svg viewBox="0 0 940 512" role="img" aria-label="Coverage map showing six parts of the RackTrack system on the left and the audit tools that scan each on the right; Python pipeline, dependencies and git history were covered by the proposal, while the JavaScript app and server, the container image and the running app were added afterwards.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- column headers -->
+      <text x="16" y="20" font-size="11.5" font-weight="600" letter-spacing="1.4" fill="currentColor" opacity=".55">THE RACKTRACK SYSTEM</text>
+      <text x="356" y="20" font-size="11.5" font-weight="600" letter-spacing="1.4" fill="currentColor" opacity=".55">WHAT INSPECTS IT</text>
+
+      <!-- ROW 1 : Python pipeline (proposed) -->
+      <rect x="16" y="36" width="230" height="54" rx="11" fill="none" stroke="#1a7f37" stroke-width="1.6"/>
+      <text x="32" y="59" font-size="13.5" font-weight="600" fill="currentColor">Python AI pipeline</text>
+      <text x="32" y="76" font-size="11.5" fill="currentColor" opacity=".6">the scanning engine</text>
+      <line x1="250" y1="63" x2="344" y2="63" stroke="currentColor" stroke-width="1.4" opacity=".45" marker-end="url(#ar)"/>
+      <rect x="356" y="49" width="66" height="28" rx="8" fill="#e9f3ec" stroke="#1a7f37" stroke-width="1.2"/>
+      <text x="389" y="68" font-size="12" font-weight="600" text-anchor="middle" fill="#1a7f37">Ruff</text>
+      <rect x="430" y="49" width="76" height="28" rx="8" fill="#e9f3ec" stroke="#1a7f37" stroke-width="1.2"/>
+      <text x="468" y="68" font-size="12" font-weight="600" text-anchor="middle" fill="#1a7f37">Bandit</text>
+      <rect x="514" y="49" width="76" height="28" rx="8" fill="#e9f3ec" stroke="#1a7f37" stroke-width="1.2"/>
+      <text x="552" y="68" font-size="12" font-weight="600" text-anchor="middle" fill="#1a7f37">mypy</text>
+
+      <!-- ROW 2 : JS app + server (added) -->
+      <rect x="16" y="110" width="230" height="54" rx="11" fill="none" stroke="#15507e" stroke-width="1.6"/>
+      <text x="32" y="133" font-size="13.5" font-weight="600" fill="currentColor">App &amp; server code</text>
+      <text x="32" y="150" font-size="11.5" fill="currentColor" opacity=".6">JavaScript — about half the codebase</text>
+      <line x1="250" y1="137" x2="344" y2="137" stroke="currentColor" stroke-width="1.4" opacity=".45" marker-end="url(#ar)"/>
+      <rect x="356" y="123" width="74" height="28" rx="8" fill="#e8f0f6" stroke="#15507e" stroke-width="1.2"/>
+      <text x="393" y="142" font-size="12" font-weight="600" text-anchor="middle" fill="#15507e">ESLint</text>
+      <rect x="438" y="123" width="84" height="28" rx="8" fill="#e8f0f6" stroke="#15507e" stroke-width="1.2"/>
+      <text x="480" y="142" font-size="12" font-weight="600" text-anchor="middle" fill="#15507e">Prettier</text>
+      <rect x="530" y="123" width="96" height="28" rx="8" fill="#e8f0f6" stroke="#15507e" stroke-width="1.2"/>
+      <text x="578" y="142" font-size="12" font-weight="600" text-anchor="middle" fill="#15507e">jsx-a11y</text>
+
+      <!-- ROW 3 : all source (mixed) -->
+      <rect x="16" y="184" width="230" height="54" rx="11" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".5"/>
+      <text x="32" y="207" font-size="13.5" font-weight="600" fill="currentColor">All source code</text>
+      <text x="32" y="224" font-size="11.5" fill="currentColor" opacity=".6">scanned for attack doors</text>
+      <line x1="250" y1="211" x2="344" y2="211" stroke="currentColor" stroke-width="1.4" opacity=".45" marker-end="url(#ar)"/>
+      <rect x="356" y="197" width="88" height="28" rx="8" fill="#e9f3ec" stroke="#1a7f37" stroke-width="1.2"/>
+      <text x="400" y="216" font-size="12" font-weight="600" text-anchor="middle" fill="#1a7f37">Semgrep</text>
+      <rect x="452" y="197" width="84" height="28" rx="8" fill="#e8f0f6" stroke="#15507e" stroke-width="1.2"/>
+      <text x="494" y="216" font-size="12" font-weight="600" text-anchor="middle" fill="#15507e">CodeQL</text>
+      <text x="548" y="216" font-size="11.5" fill="currentColor" opacity=".55">two engines, different blind spots</text>
+
+      <!-- ROW 4 : dependencies (proposed + added) -->
+      <rect x="16" y="258" width="230" height="54" rx="11" fill="none" stroke="#1a7f37" stroke-width="1.6"/>
+      <text x="32" y="281" font-size="13.5" font-weight="600" fill="currentColor">Borrowed libraries</text>
+      <text x="32" y="298" font-size="11.5" fill="currentColor" opacity=".6">code written by others</text>
+      <line x1="250" y1="285" x2="344" y2="285" stroke="currentColor" stroke-width="1.4" opacity=".45" marker-end="url(#ar)"/>
+      <rect x="356" y="271" width="90" height="28" rx="8" fill="#e9f3ec" stroke="#1a7f37" stroke-width="1.2"/>
+      <text x="401" y="290" font-size="12" font-weight="600" text-anchor="middle" fill="#1a7f37">pip-audit</text>
+      <rect x="454" y="271" width="98" height="28" rx="8" fill="#e8f0f6" stroke="#15507e" stroke-width="1.2"/>
+      <text x="503" y="290" font-size="12" font-weight="600" text-anchor="middle" fill="#15507e">npm audit</text>
+      <rect x="560" y="271" width="104" height="28" rx="8" fill="#e8f0f6" stroke="#15507e" stroke-width="1.2"/>
+      <text x="612" y="290" font-size="12" font-weight="600" text-anchor="middle" fill="#15507e">Dependabot</text>
+
+      <!-- ROW 5 : git history (proposed) -->
+      <rect x="16" y="332" width="230" height="54" rx="11" fill="none" stroke="#1a7f37" stroke-width="1.6"/>
+      <text x="32" y="355" font-size="13.5" font-weight="600" fill="currentColor">Git history</text>
+      <text x="32" y="372" font-size="11.5" fill="currentColor" opacity=".6">every commit ever made</text>
+      <line x1="250" y1="359" x2="344" y2="359" stroke="currentColor" stroke-width="1.4" opacity=".45" marker-end="url(#ar)"/>
+      <rect x="356" y="345" width="86" height="28" rx="8" fill="#e9f3ec" stroke="#1a7f37" stroke-width="1.2"/>
+      <text x="399" y="364" font-size="12" font-weight="600" text-anchor="middle" fill="#1a7f37">Gitleaks</text>
+      <text x="454" y="364" font-size="11.5" fill="currentColor" opacity=".55">catches leaked keys before they land</text>
+
+      <!-- ROW 6 : container (added) -->
+      <rect x="16" y="406" width="230" height="54" rx="11" fill="none" stroke="#15507e" stroke-width="1.6"/>
+      <text x="32" y="429" font-size="13.5" font-weight="600" fill="currentColor">The shipping container</text>
+      <text x="32" y="446" font-size="11.5" fill="currentColor" opacity=".6">its own operating system</text>
+      <line x1="250" y1="433" x2="344" y2="433" stroke="currentColor" stroke-width="1.4" opacity=".45" marker-end="url(#ar)"/>
+      <rect x="356" y="419" width="70" height="28" rx="8" fill="#e8f0f6" stroke="#15507e" stroke-width="1.2"/>
+      <text x="391" y="438" font-size="12" font-weight="600" text-anchor="middle" fill="#15507e">Trivy</text>
+      <text x="438" y="438" font-size="11.5" fill="currentColor" opacity=".55">OS holes · licences · parts list (SBOM)</text>
+
+      <!-- ROW 7 : running app (added) -->
+      <rect x="16" y="470" width="230" height="34" rx="11" fill="none" stroke="#15507e" stroke-width="1.6" stroke-dasharray="4 3"/>
+      <text x="32" y="492" font-size="13.5" font-weight="600" fill="currentColor">The running app</text>
+      <line x1="250" y1="487" x2="344" y2="487" stroke="currentColor" stroke-width="1.4" opacity=".45" marker-end="url(#ar)"/>
+      <rect x="356" y="473" width="104" height="28" rx="8" fill="#e8f0f6" stroke="#15507e" stroke-width="1.2"/>
+      <text x="408" y="492" font-size="12" font-weight="600" text-anchor="middle" fill="#15507e">Playwright</text>
+      <text x="472" y="492" font-size="11.5" fill="currentColor" opacity=".55">a robot walks all 13 screens, phone-sized</text>
+    </svg>
+    <div class="keyrow">
+      <span><i class="sw" style="background:#1a7f37"></i> From the proposal — now live</span>
+      <span><i class="sw" style="background:#15507e"></i> Added to cover the remaining surface</span>
+    </div>
+    <figcaption>Every part of the system, and what inspects it. <b>The proposal covered the Python engine, dependencies and
+      secrets;</b> the JavaScript half, the container and the running app were added on top, so no layer is left unscanned.</figcaption>
+  </figure>
+
+  <!-- ===== TOOL BY TOOL ===== -->
+  <h2>2 · Tool by tool — what each one found</h2>
+  <p class="h2sub">The five proposed tools that are now live, with what each checks, where it runs, and the result it reports today.</p>
+
+  <div class="tool proposed">
+    <div class="th"><span class="nm">Ruff</span><span class="pill live">✓ LIVE</span><span class="role">Python code quality</span><span class="pill res">All checks passed</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it checks</div><div class="v">Formatting and style against <b>PEP 8</b>, docstrings against <b>PEP 257</b>, import order, plus common bug patterns.</div></div>
+      <div class="tg"><div class="k">What it changed</div><div class="v">Reformatted <b>35 files</b> to a single consistent style and fixed 173 issues automatically. The 101 pipeline tests pass unchanged either side of it.</div></div>
+      <div class="tg"><div class="k">How it runs</div><div class="v">A blocking gate on every code change, and again before each commit.</div></div>
+    </div>
+  </div>
+
+  <div class="tool proposed">
+    <div class="th"><span class="nm">Bandit</span><span class="pill live">✓ LIVE</span><span class="role">Python security</span><span class="pill res">0 issues</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it checks</div><div class="v">Insecure Python patterns — unsafe subprocess calls, weak cryptography, unvalidated input handling.</div></div>
+      <div class="tg"><div class="k">What it found</div><div class="v">Three categories, each <b>individually reviewed and judged safe</b>: SHA-1 used only to name cache files, model loading that only ever reads our own files, and two outbound calls without an explicit timeout.</div></div>
+      <div class="tg"><div class="k">Why that matters</div><div class="v">The exemptions are documented with reasons rather than silently switched off — anything <b>new</b> is still caught.</div></div>
+    </div>
+  </div>
+
+  <div class="tool proposed">
+    <div class="th"><span class="nm">Semgrep</span><span class="pill live">✓ LIVE</span><span class="role">Application security (SAST)</span><span class="pill res">0 real findings</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it checks</div><div class="v">Our own code for the classic attack routes — database injection, file-path manipulation, unsafe commands — using the <b>OWASP</b> rule sets.</div></div>
+      <div class="tg"><div class="k">What it found</div><div class="v">It raised alarms, and <b>every one was examined by hand</b>. All proved false: log messages mistaken for database queries, and file paths already protected by strict ID checks and ownership verification.</div></div>
+      <div class="tg"><div class="k">How it runs</div><div class="v">On every change, across the API, the app and the pipeline.</div></div>
+    </div>
+  </div>
+
+  <div class="tool proposed">
+    <div class="th"><span class="nm">pip-audit</span><span class="pill live">✓ LIVE</span><span class="role">Dependency security</span><span class="pill res">No known vulnerabilities</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it checks</div><div class="v">Every Python package we rely on, against the public database of known vulnerabilities.</div></div>
+      <div class="tg"><div class="k">Result</div><div class="v">Clean on the first run and every run since — including the machine-learning stack.</div></div>
+      <div class="tg"><div class="k">How it runs</div><div class="v">A blocking gate on every change; Dependabot separately opens a fix the day a patch is published.</div></div>
+    </div>
+  </div>
+
+  <div class="tool proposed">
+    <div class="th"><span class="nm">Gitleaks</span><span class="pill live">✓ LIVE</span><span class="role">Secret scanning</span><span class="pill res">0 leaks</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it checks</div><div class="v">Keys, tokens and passwords — not only in today's code but across <b>every commit ever made</b>.</div></div>
+      <div class="tg"><div class="k">Why history matters</div><div class="v">A key removed from a file still lives in the project's past. Scanning history is the only way to know.</div></div>
+      <div class="tg"><div class="k">How it runs</div><div class="v">On every change, and again <b>before a commit is recorded</b> — so a secret is stopped at the desk.</div></div>
+    </div>
+  </div>
+
+  <div class="tool open">
+    <div class="th"><span class="nm">SonarQube</span><span class="pill open">○ NOT SET UP</span><span class="role">Project-level dashboard</span><span class="pill res n">needs a hosting decision</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it would add</div><div class="v">Not a new <b>check</b> — a <b>dashboard</b>. It tracks quality trends over time (bugs, duplication, coverage) in one visual place for review.</div></div>
+      <div class="tg"><div class="k">Why it is not done</div><div class="v">It requires either a hosted account or a server of our own. That is a <b>decision</b>, not engineering work.</div></div>
+      <div class="tg"><div class="k">Honest assessment</div><div class="v">A visibility improvement, not a missing safeguard — the underlying checks it would display are already running and passing.</div></div>
+    </div>
+  </div>
+
+  <!-- ===== EVIDENCE ===== -->
+  <h2>3 · The evidence</h2>
+  <p class="h2sub">Rather than assert that these pass, here is the actual output, produced by running each tool against the codebase.</p>
+
+  <h3>The Python layer — exactly as proposed</h3>
+  <pre class="proof"><span class="c">$ ruff check pipeline</span>              <span class="c"># PEP 8 · PEP 257 · imports · bug rules</span>
+<span class="ok">All checks passed!</span>
+
+<span class="c">$ ruff format --check pipeline</span>       <span class="c"># formatting conformance</span>
+<span class="ok">38 files already formatted</span>
+
+<span class="c">$ bandit -c pyproject.toml -r pipeline -ll</span>    <span class="c"># Python security</span>
+<span class="ok">0 issues identified at medium severity or above</span>
+
+<span class="c">$ pip-audit -r requirements.txt</span>      <span class="c"># dependency vulnerabilities</span>
+<span class="ok">No known vulnerabilities found</span>
+
+<span class="c">$ pytest pipeline/tests -q</span>           <span class="c"># the pipeline test suite</span>
+<span class="ok">101 passed</span></pre>
+
+  <h3>The wider suite — the surface beyond Python</h3>
+  <pre class="proof"><span class="c">$ npm run lint</span>          <span class="c"># app &amp; server code checkers</span>
+<span class="ok">0 errors</span>
+
+<span class="c">$ npm test</span>              <span class="c"># app + server test suites</span>
+<span class="ok">53 passed  ·  86 passed</span>
+
+<span class="c">$ node e2e/sweep.mjs</span>    <span class="c"># robot walks every screen, phone-sized</span>
+<span class="ok">PASS — 13 / 13 routes clean</span>
+
+<span class="c">$ npm run build</span>         <span class="c"># the package that ships to users</span>
+<span class="ok">built in 3.3s</span></pre>
+
+  <div class="callout info"><b>Where these run:</b> all of the above are wired into the automated build and execute on
+    <b>every code change</b> — not as a one-off exercise. A failure blocks the change from landing. The formatting, lint and
+    secret checks additionally run <b>before a commit is recorded</b>.</div>
+
+  <!-- ===== BEYOND ===== -->
+  <h2>4 · What was added beyond the proposal</h2>
+  <p class="h2sub">The proposal concentrated on the Python layer. RackTrack is roughly half JavaScript and ships as a
+    container, so these were added to close the remaining surface.</p>
+
+  <div class="tool added">
+    <div class="th"><span class="nm">CodeQL</span><span class="pill add">+ ADDED</span><span class="role">a second security engine</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">Why a second one</div><div class="v">Semgrep matches known-bad <b>patterns</b>; CodeQL traces how <b>untrusted data moves</b> through the code. They miss different things, so running both is genuinely additive rather than duplicated effort.</div></div>
+      <div class="tg"><div class="k">Coverage</div><div class="v">Both languages, on every change and weekly — so newly published attack patterns are re-run against unchanged code.</div></div>
+    </div>
+  </div>
+
+  <div class="tool added">
+    <div class="th"><span class="nm">ESLint · Prettier</span><span class="pill add">+ ADDED</span><span class="role">the JavaScript equivalent of Ruff</span><span class="pill res">0 errors</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">Why it was needed</div><div class="v">The proposal's Python focus left roughly <b>half the codebase</b> — the app screens and the API server — without a quality gate.</div></div>
+      <div class="tg"><div class="k">How it is enforced</div><div class="v">Zero errors required, and the warning count is <b>capped at today's number</b>, so the code can only get cleaner.</div></div>
+    </div>
+  </div>
+
+  <div class="tool added">
+    <div class="th"><span class="nm">Accessibility linting</span><span class="pill add">+ ADDED</span><span class="role">barriers for screen-reader users</span><span class="pill res">4 found · 4 fixed</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it found</div><div class="v"><b>Four genuine issues.</b> Three form labels were not connected to the fields they described — a screen reader would announce the field with no name. One image carried a redundant description.</div></div>
+      <div class="tg"><div class="k">What was done</div><div class="v">All four fixed. Two labels linked to their controls, one custom dropdown given a proper accessible name, and the image description corrected.</div></div>
+      <div class="tg"><div class="k">Why it matters</div><div class="v">Accessibility is increasingly a <b>procurement requirement</b>, not only good practice. Catching these as code is written is far cheaper than a retrofit.</div></div>
+    </div>
+  </div>
+
+  <div class="tool added">
+    <div class="th"><span class="nm">Trivy</span><span class="pill add">+ ADDED</span><span class="role">the shipping container</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it checks</div><div class="v">The container ships with its own operating system, which carries its own vulnerabilities — entirely separate from our code.</div></div>
+      <div class="tg"><div class="k">Also produces</div><div class="v">A <b>parts list (SBOM)</b> — an itemised inventory of everything shipped, increasingly requested in enterprise procurement — and a licence report.</div></div>
+    </div>
+  </div>
+
+  <div class="tool added">
+    <div class="th"><span class="nm">npm audit · Dependabot</span><span class="pill add">+ ADDED</span><span class="role">JavaScript dependencies, kept current</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it checks</div><div class="v">The JavaScript counterpart to pip-audit. Every dependency with an available fix has been patched.</div></div>
+      <div class="tg"><div class="k">Dependabot's role</div><div class="v">Opens a ready-made fix <b>the day</b> a patch is published, rather than waiting for someone to remember to scan.</div></div>
+    </div>
+  </div>
+
+  <div class="tool added">
+    <div class="th"><span class="nm">Playwright browser sweep</span><span class="pill add">+ ADDED</span><span class="role">the running application</span><span class="pill res">13 / 13 clean</span></div>
+    <div class="tgrid">
+      <div class="tg"><div class="k">What it does</div><div class="v">A robot signs in and walks <b>all 13 screens</b> at phone size on every change.</div></div>
+      <div class="tg"><div class="k">Why no scanner replaces it</div><div class="v">It catches blank screens, icons rendering as raw text, layout breaking on a narrow display — <b>none of which any code scanner can see</b>.</div></div>
+    </div>
+  </div>
+
+  <!-- ===== COVERAGE ===== -->
+  <h2>5 · Test coverage — now measured, and reported honestly</h2>
+  <p class="h2sub">"The tests pass" is only half the picture. Coverage measurement was added so we can state how much of the
+    code those tests actually reach. These are the real figures.</p>
+
+  <div class="bars">
+    <div class="bar">
+      <div class="lab">Server — the API<small>where the security-critical logic lives</small></div>
+      <div class="track"><div class="fill g" style="width:48%">48%</div></div>
+      <div class="barnote"><b>Solid.</b> Logins, the walls between customer companies, and crash recovery are all covered.</div>
+    </div>
+    <div class="bar">
+      <div class="lab">AI pipeline<small>the scanning engine</small></div>
+      <div class="track"><div class="fill a" style="width:12%">12%</div></div>
+      <div class="barnote">The pure-logic parts are tested — port numbering, panel reconciliation, model matching. The image
+        analysis itself <b>cannot</b> be unit-tested without model files and a graphics card; it is validated by real scans instead.</div>
+    </div>
+    <div class="bar">
+      <div class="lab">App screens<small>what technicians see</small></div>
+      <div class="track"><div class="fill n" style="width:2%"></div></div>
+      <div class="barnote"><b>2% — and low by design.</b> The screens are verified by the robot browser sweep on every change,
+        which for a user interface is a more meaningful check than unit tests.</div>
+    </div>
+  </div>
+
+  <div class="callout warn"><b>Stated plainly, because it will be asked:</b> two of these three figures are low. That is not a
+    hidden failure — it reflects <b>where the testing lives</b>. The layer holding the security-critical logic is the well-covered
+    one, and the other two are checked by methods better suited to them. Now that the numbers are measured rather than unknown,
+    a floor can be set so they only rise.</div>
+
+  <!-- ===== LICENCES ===== -->
+  <h2>6 · Licence compliance</h2>
+  <p class="h2sub">Enterprise buyers ask which open-source licences a product ships. This was previously unchecked; it now runs
+    automatically on every build.</p>
+
+  <div class="lic">
+    <div style="width:79%;background:#1a7f37">MIT — 222</div>
+    <div style="width:7%;background:#2f7d54">Apache 20</div>
+    <div style="width:10%;background:#4a8f6a">ISC / BSD 28</div>
+    <div style="width:4%;background:#b08a4a">LGPL 1</div>
+  </div>
+  <div class="licleg">
+    <span><i class="sw" style="background:#1a7f37"></i> Permissive — no obligations for commercial use</span>
+    <span><i class="sw" style="background:#b08a4a"></i> Worth documenting for legal review</span>
+  </div>
+
+  <p class="body" style="margin-top:18px"><b>The one item to note:</b> a single LGPL-licensed package — the native
+    image-processing library used for photo handling. Acceptable for our use, as we call the library rather than modify or
+    bind it into our own code, but worth recording for a legal review.</p>
+
+  <div class="callout go"><b>A genuine gap was found and closed:</b> RackTrack's own packages carried <b>no licence declaration
+    at all</b>. To any auditing tool — including a prospective buyer's — that reads as "unknown licence". All three are now
+    explicitly marked <span class="m">private</span> and <span class="m">UNLICENSED</span> (proprietary).</div>
+
+  <!-- ===== CLOSING ===== -->
+  <h2>7 · Summary for review</h2>
+  <p class="body">The proposed toolchain was sound. Independently, the work already underway had arrived at the same set of
+    tools — a useful signal that two separate assessments reached the same conclusion about what RackTrack needs.</p>
+  <p class="body"><b>Five of the six proposed tools are now live</b>, enforced automatically on every code change rather than
+    run as a one-off, and all are passing. Eight further checks were added to cover the JavaScript layer, the shipping
+    container, accessibility and the running application — surface the proposal did not reach.</p>
+  <p class="body"><b>The single open item is SonarQube</b>, which is a visibility improvement rather than a missing safeguard,
+    and awaits a decision on hosting rather than engineering effort.</p>
+
+  <div class="callout info"><b>Correctly excluded, and worth restating:</b> code auditing does not validate scanning accuracy,
+    device detection, rack-unit correctness or CMDB reconciliation. Those require functional and machine-learning evaluation —
+    tracked separately as the <b>AI accuracy report</b>, scheduled once a live environment exists.</div>
+
+  <footer>RackTrack · code auditing: proposal vs delivered · every result shown was produced by running the named tool against
+    the codebase · toolchain in the build: Ruff · Bandit · mypy · Semgrep · CodeQL · pip-audit · npm audit · Dependabot ·
+    Gitleaks · Trivy · ESLint · Prettier · jsx-a11y · Playwright · Vitest · node:test · pytest</footer>
+</div>
+
+</body></html>

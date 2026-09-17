@@ -9,7 +9,7 @@ import styles from './PlacePicker.module.css';
  * The camera found rectangles on a photo and gave them names it made up
  * ("Switch U11"); the switch knows exactly what it is and has no idea where it
  * sits. Joining the two is a human judgement, and it used to be asked as a
- * native <select> of invented names — the one control on the screen that could
+ * native <select> of invented names - the one control on the screen that could
  * not show the thing it was naming.
  *
  * So: a line that states the current answer, and a sheet that offers two ways
@@ -98,7 +98,7 @@ export default function PlacePicker({
                                 U{d.position}
                               </text>
                             )}
-                            <title>{label(d)}{other ? ` — already ${other}` : ''}</title>
+                            <title>{label(d)}{other ? ` - already ${other}` : ''}</title>
                           </g>
                         );
                       })}

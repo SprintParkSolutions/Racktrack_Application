@@ -1,10 +1,10 @@
-/* Review — the camera's layout meets what the switches said about themselves,
+/* Review - the camera's layout meets what the switches said about themselves,
    and a person confirms which is which. Ported from RackTrack for NetBox into
    V1's shell: the header band, the inner scroll region and the shared tokens
    from index.css. Full device width, like every other page. */
 
 /* The global .page-full (index.css) pins a page at height:100vh with
-   overflow:hidden on phones — the app scrolls an inner region, not the page.
+   overflow:hidden on phones - the app scrolls an inner region, not the page.
    Same shape as SwitchTestPage: the page fills its box, .scroll does the
    scrolling. Anything past one screen is reachable. */
 .page {
@@ -304,7 +304,7 @@
   position: absolute; inset: 0;
   background: rgba(10, 14, 20, 0.55);
   /* No `both`. A fill mode of `both` holds the FROM state whenever the
-     animation does not actually run — reduced motion, a paused clock — and
+     animation does not actually run - reduced motion, a paused clock - and
      the from state here is invisible. The resting appearance is the rule. */
   opacity: 1;
   animation: pickIn .16s ease-out;
@@ -367,14 +367,14 @@
 .canvas g { pointer-events: auto; }
 
 /* `all` rather than the default, so a rect painted with no visible fill is
-   still a target. The whole box is the hit area — you point at the switch,
+   still a target. The whole box is the hit area - you point at the switch,
    not at a 2px outline of it. */
 .pickable { cursor: pointer; pointer-events: all; }
 .unpickable { cursor: default; pointer-events: none; }
 
 /* Nothing is drawn at rest where there is a pointer to hover with. Fifteen
    outlines over a rack is a wireframe of a rack, not a photograph of one.
-   The box appears under the cursor — which is also the only box you can
+   The box appears under the cursor - which is also the only box you can
    click, so the highlight and the target are the same thing. */
 .pickBox {
   fill: rgba(47, 134, 214, 0);

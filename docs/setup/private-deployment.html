@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RackTrack Private Deployment</title>
+<!-- Local copy of the published artifact https://claude.ai/code/artifact/541736f6-fe05-43cf-b2de-fdfa8136a50d
+     Written 8 September 2026. Open directly in a browser; the fonts load from Google Fonts when online
+     and fall back to system fonts when not. -->
+<style>body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #f3f7fc; --panel: #ffffff;
+    --ink: #10203c; --ink-2: #3b4d6b; --ink-3: #6b7c99;
+    --line: #d6e2f0; --line-2: #b9cbe2;
+    --accent: #1a56db; --accent-ink: #123c9c; --accent-wash: #e8effc;
+    --good: #1a7f4b; --good-wash: #e5f4ec;
+    --warn: #b45309; --warn-wash: #fbf0e0;
+    --crit: #b91c1c; --crit-wash: #fbe7e7;
+    --sans: "Geist", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "Geist Mono", "SF Mono", Menlo, Consolas, monospace;
+    --r: 3px; --pad: clamp(16px, 3vw, 44px);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3 { text-wrap: balance; line-height: 1.15; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(26px, 3vw, 38px); font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: clamp(19px, 1.9vw, 24px); }
+  h3 { font-size: 16.5px; }
+  p { margin: 0; } p + p { margin-top: 10px; }
+  code { font-family: var(--mono); font-size: 0.92em; background: var(--accent-wash); color: var(--accent-ink); padding: 1px 5px; border-radius: var(--r); }
+  pre { margin: 0; font-family: var(--mono); font-size: 13px; line-height: 1.5; background: var(--ink); color: #e8eefb; padding: 12px 14px; border-radius: var(--r); overflow-x: auto; white-space: pre; }
+  pre .c { color: #8fa3c7; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .muted { color: var(--ink-2); } .small { font-size: 13.5px; }
+  ul, ol { margin: 0; padding-left: 20px; } li + li { margin-top: 6px; }
+
+  .doc-head { background: var(--panel); border-bottom: 1px solid var(--line); padding: 28px var(--pad) 0; }
+  .doc-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 40px; align-items: end; padding-bottom: 18px; border-bottom: 2px solid var(--ink); }
+  .doc-title .sub { color: var(--ink-2); margin-top: 8px; font-size: 16px; }
+  .doc-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 24px; margin: 0; font-size: 13.5px; }
+  .doc-meta dt { font-size: 11.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .doc-meta dd { margin: 2px 0 0; }
+
+  .tabs { display: flex; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; padding: 12px 16px 11px; font: inherit; font-size: 14.5px; font-weight: 500; color: var(--ink-2); cursor: pointer; white-space: nowrap; display: flex; gap: 8px; align-items: baseline; }
+  .tab .n { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--accent-ink); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab[aria-selected="true"] .n { color: var(--accent-ink); }
+  .panel { padding: 26px var(--pad) 40px; }
+  .panel > * + * { margin-top: 28px; }
+  .panel[hidden] { display: none; }
+
+  .sec { display: grid; gap: 12px; }
+  .sec-h { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .sec-h .num { font-family: var(--mono); font-size: 13px; color: var(--ink-3); min-width: 30px; }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 40px; align-items: start; }
+  .lead { border: 1px solid var(--line-2); border-left: 4px solid var(--accent); background: var(--accent-wash); border-radius: var(--r); padding: 14px 18px; }
+  .note { border: 1px solid var(--line-2); border-left: 4px solid var(--warn); background: var(--warn-wash); border-radius: var(--r); padding: 14px 18px; }
+  .firm { border: 1px solid var(--line-2); border-left: 4px solid var(--ink); background: var(--panel); border-radius: var(--r); padding: 14px 18px; }
+  .prose > * + * { margin-top: 10px; }
+
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; background: var(--paper); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.k { font-weight: 600; }
+
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 600; letter-spacing: 0.03em; padding: 2px 8px; border-radius: var(--r); white-space: nowrap; border: 1px solid transparent; vertical-align: middle; }
+  .chip.req { background: var(--accent-wash); color: var(--accent-ink); border-color: #c5d5f5; }
+  .chip.opt { background: var(--panel); color: var(--ink-2); border-color: var(--line-2); }
+  .chip.ok { background: var(--good-wash); color: var(--good); border-color: #bfe3cf; }
+  .chip.warn { background: var(--warn-wash); color: var(--warn); border-color: #efd3ab; }
+  .chip.crit { background: var(--crit-wash); color: var(--crit); border-color: #f0c0c0; }
+
+  details.proof { border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); font-size: 13px; }
+  details.proof summary { cursor: pointer; padding: 8px 12px; color: var(--accent-ink); font-weight: 600; list-style: none; display: flex; gap: 8px; align-items: center; }
+  details.proof summary::-webkit-details-marker { display: none; }
+  details.proof summary::before { content: "+"; font-family: var(--mono); width: 14px; color: var(--ink-3); }
+  details.proof[open] summary::before { content: "–"; }
+  details.proof .pf { border-top: 1px solid var(--line); padding: 10px 12px 12px; display: grid; gap: 8px; }
+  details.proof .pf pre { font-size: 12px; }
+  .src { font-family: var(--mono); font-size: 12px; color: var(--ink-2); line-height: 1.55; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 12px; }
+  .card { border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 13px 15px; display: grid; gap: 6px; align-content: start; }
+  .card h3 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .card p { font-size: 13.5px; color: var(--ink-2); }
+  .card .sol { font-size: 13.5px; color: var(--ink); border-top: 1px solid var(--line); padding-top: 6px; margin-top: 2px; }
+  .card .sol b { color: var(--accent-ink); }
+
+  .steps { display: grid; gap: 12px; }
+  .step { display: grid; grid-template-columns: 52px minmax(0, 1fr); border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+  .step .n { font-family: var(--mono); font-size: 18px; color: var(--accent-ink); padding: 13px 0 0 14px; border-right: 1px solid var(--line); }
+  .step .body { padding: 13px 16px 15px 14px; display: grid; gap: 9px; }
+  .step .chk { font-size: 13.5px; color: var(--good); }
+  .step .chk::before { content: "Check: "; font-weight: 600; }
+
+  footer { padding: 18px var(--pad) 28px; color: var(--ink-3); font-size: 13px; border-top: 1px solid var(--line); }
+
+  @media (max-width: 900px) {
+    .two { grid-template-columns: minmax(0, 1fr); }
+    .doc-title { grid-template-columns: minmax(0, 1fr); }
+    .step { grid-template-columns: 42px minmax(0, 1fr); }
+    .step .n { font-size: 16px; padding-left: 11px; }
+    body { font-size: 15px; }
+  }
+  @media print {
+    .tabs { display: none; }
+    .panel[hidden] { display: block; }
+    .panel { break-before: page; }
+    .panel:first-of-type { break-before: auto; }
+    details.proof { display: none; }
+    pre { white-space: pre-wrap; }
+  }
+</style>
+
+<header class="doc-head">
+  <div class="doc-title">
+    <div>
+      <div class="eyebrow">Deployment requirements and runbook</div>
+      <h1 style="margin-top:6px">RackTrack Private Deployment</h1>
+      <p class="sub">Where RackTrack runs today, what ships in the package, what a customer-owned installation must have, what has to change, how to do it step by step, and how we keep track of every installation afterwards.</p>
+      <p class="sub small">Every statement is either <span class="chip ok">Verified</span> with the evidence under "Read more", or marked <span class="chip warn">Estimate</span> or <span class="chip opt">Recommendation</span>. Nothing else is claimed.</p>
+    </div>
+    <dl class="doc-meta">
+      <div><dt>Version</dt><dd>0.7 · for owner review</dd></div>
+      <div><dt>Date</dt><dd>8 September 2026</dd></div>
+      <div><dt>Verified against</dt><dd>Repo at commit 8d3f111 and the live box 82.29.164.213</dd></div>
+      <div><dt>Prepared for</dt><dd>RackTrack owner and deployment team</dd></div>
+    </dl>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Document sections">
+    <button class="tab" role="tab" id="tab-sum" aria-controls="panel-sum" aria-selected="true"><span class="n">0</span>Summary</button>
+    <button class="tab" role="tab" id="tab-state" aria-controls="panel-state" aria-selected="false" tabindex="-1"><span class="n">1</span>Current state</button>
+    <button class="tab" role="tab" id="tab-pkg" aria-controls="panel-pkg" aria-selected="false" tabindex="-1"><span class="n">2</span>Current package</button>
+    <button class="tab" role="tab" id="tab-need" aria-controls="panel-need" aria-selected="false" tabindex="-1"><span class="n">3</span>Requirements</button>
+    <button class="tab" role="tab" id="tab-change" aria-controls="panel-change" aria-selected="false" tabindex="-1"><span class="n">4</span>What must change</button>
+    <button class="tab" role="tab" id="tab-how" aria-controls="panel-how" aria-selected="false" tabindex="-1"><span class="n">5</span>How to do it</button>
+    <button class="tab" role="tab" id="tab-track" aria-controls="panel-track" aria-selected="false" tabindex="-1"><span class="n">6</span>How we track</button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════ 0 · SUMMARY ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-sum" aria-labelledby="tab-sum">
+  <div class="lead">
+    <p><b>Private deployment means: the same RackTrack that runs on our demo server, installed on a server the customer owns, with their hostname, their mail, their NetBox, and phone apps rebuilt to point at it.</b> No product feature has to be rewritten. Everything below is verified; the proofs are in tabs 1 to 6.</p>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Today</h3>
+      <p>One deployment exists: the public demo at demo.racktrack.ai, on a small rented server with 2 cores and 7.8 GB. Nothing runs on customer hardware. It has no backups and no version stamp.</p>
+    </div>
+    <div class="card">
+      <h3>What ships</h3>
+      <p>One Docker image (7 GB) with the web app, API and detection workers. Plus the model weights (483 MB), the NetBox stack beside it, and iOS and Android apps at build 61.</p>
+    </div>
+    <div class="card">
+      <h3>The customer must provide</h3>
+      <p>1. A Linux server with Docker (4 cores, 16 GB minimum; no GPU needed).<br>2. A hostname with an HTTPS certificate the phones trust.<br>3. An SMTP mail relay.<br>4. Technician Wi-Fi that reaches the switches on UDP 161.<br>5. One administrator to do the DNS, certificate, mail and firewall.</p>
+    </div>
+    <div class="card">
+      <h3>We must bring</h3>
+      <p>The image, the model weights, the OCR weights, fresh secrets, a compose file and Caddyfile for that customer, the phone builds, and the owner login.</p>
+    </div>
+    <div class="card">
+      <h3>What must change</h3>
+      <p>Per customer: configuration only (hostname, mail, timezone, worker count, app address). In the repo, about two days: a private compose template, OCR weights and the PDF browser baked into the image, a build stamp, a sign-up disable switch, and a hand-over bundle script.</p>
+    </div>
+    <div class="card">
+      <h3>How long <span class="chip warn">Estimate</span></h3>
+      <p>Three working days for the first install: server and app, then NetBox and mail proof, then phone builds and hand-over. Faster after the repo work is done.</p>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="firm">
+      <h3>Our firm positions</h3>
+      <ul style="margin-top:8px">
+        <li>Certificate: a public DNS name with a DNS-challenge certificate, or the customer's own CA. Nothing else for a rollout.</li>
+        <li>Mail: the customer's SMTP relay. Our Microsoft identity never sends for a customer.</li>
+        <li>Accounts: invitation only. We seed the owner once; the owner invites everyone else.</li>
+        <li>One server per customer. No GPU.</li>
+        <li>Works without internet, except vendor spec and firmware lookups, cloud language models, social sign-in, and Slack or Teams sharing.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Not possible today</h3>
+      <p style="margin-top:8px">The phone doing everything alone, with no server. The phone uploads the photo and the server's workers run the models. That would be a new product effort.</p>
+      <h3 style="margin-top:14px">Found while checking</h3>
+      <p style="margin-top:8px">Firmware check cannot work in any container, OCR weights download during the first scan, the demo has no backup job, and a leftover sign-up endpoint accepts only Gmail. Each has a fix in tab 4.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 1 · CURRENT STATE ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-state" aria-labelledby="tab-state" hidden>
+  <div class="lead">
+    <p><b>RackTrack has exactly one deployment: the public demo at demo.racktrack.ai.</b> It runs on a small rented server (a VPS) at Hostinger with two processor cores and no graphics card. It is updated by hand from the Mac. It runs the complete product inside Docker containers, which matters because a private deployment is a move of these same containers onto a customer's hardware, not a new build of the product. No customer hardware runs RackTrack today, and no customer has their own separate data.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">1.1</span><h2>The server it runs on</h2><span class="chip ok">Verified</span></div>
+    <div class="tbl"><table><tbody>
+      <tr><td class="k">Host</td><td>Hostinger KVM 2 plan, IP 82.29.164.213, hostname srv1596954.hstgr.cloud. Other projects have directories on the same box, but only RackTrack's and NetBox's containers are running.</td></tr>
+      <tr><td class="k">Resources</td><td>2 virtual CPUs. 7.8 GB of memory, of which 4.2 GB is in use. 96 GB of disk, of which 52 GB is used. No GPU. Up for 143 days without a reboot.</td></tr>
+      <tr><td class="k">Public addresses</td><td>demo.racktrack.ai (the app and its API), portal.racktrack.ai (the owner and manager portal), demo.racktrack.ai/netbox (NetBox). All three answered on 8 September.</td></tr>
+      <tr><td class="k">Code on the box</td><td>/opt/racktrack-demo. It is a copy sent by rsync, without the .git history. Because of that, the running app cannot say which commit it is: /api/version reports "unknown".</td></tr>
+      <tr><td class="k">How it is updated</td><td>Someone runs rsync from the Mac, then on the box runs <code>docker compose -f docker-compose.demo.yml up -d --build</code>. There is no automatic deployment and no git on the box. The 7 GB image is rebuilt on the same two cores that serve live scans, so the demo is slow during a rebuild.</td></tr>
+    </tbody></table></div>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf">
+      <div class="src">Commands run over SSH on 82.29.164.213, 8 September 2026:</div>
+<pre>$ nproc                → 2
+$ free -h              → Mem: 7.8Gi total, 4.2Gi used, 3.6Gi available
+$ df -h /              → /dev/sda1 96G, 52G used, 45G free
+$ nvidia-smi -L        → no GPU
+$ uptime               → up 143 days, 20:07, load average 0.03
+$ curl -sI https://demo.racktrack.ai/healthz   → HTTP/2 200
+$ curl -sI https://portal.racktrack.ai         → HTTP/2 200
+$ docker exec racktrack-demo … GET /api/version → {"commit":"unknown","startedAt":"2026-09-07T13:35:10.008Z"}</pre>
+      <div class="src">deploy/demo-rsync-excludes.txt line 29 excludes <code>.git</code>. docs/setup/DEMO-VPS-SETUP.md, section "Updating": "The demo does not auto-deploy, and there is no git pull on the box — it has no GitHub credentials."</div>
+    </div></details>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">1.2</span><h2>What is running on it</h2><span class="chip ok">Verified</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Container</th><th>Image</th><th>What it does</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="k">racktrack-caddy</td><td>caddy:2-alpine</td><td>Handles HTTPS and forwards traffic to the app. Obtains and renews the Let's Encrypt certificate by itself. The only container with ports open to the internet: 80 and 443.</td><td><span class="chip ok">Up</span></td></tr>
+        <tr><td class="k">racktrack-demo</td><td>racktrack:demo, 7.15 GB</td><td>The product: web app, API, one computer-vision worker, OCR, PDF rendering, report senders, the SQLite database.</td><td><span class="chip ok">Healthy</span></td></tr>
+        <tr><td class="k">netbox</td><td>netboxcommunity/netbox:v4.6-5.0.2</td><td>The DCIM system that RackTrack exports racks into. It has no port on the host; the app reaches it inside Docker as netbox:8080.</td><td><span class="chip warn">Up, but its health check fails</span></td></tr>
+        <tr><td class="k">netbox-worker</td><td>same</td><td>NetBox background jobs</td><td><span class="chip ok">Healthy</span></td></tr>
+        <tr><td class="k">postgres</td><td>postgres:18-alpine</td><td>NetBox's database</td><td><span class="chip ok">Healthy</span></td></tr>
+        <tr><td class="k">redis, redis-cache</td><td>valkey/valkey:9.1-alpine</td><td>NetBox's queue and cache</td><td><span class="chip ok">Healthy</span></td></tr>
+      </tbody>
+    </table></div>
+    <p class="small muted">Not running on the box: Netdisco (the Discovery view is fed by seeded demo data instead), Ollama (no local language model), and the older racktrack:latest instance that used to serve port 8095.</p>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf">
+      <div class="src">$ docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}"</div>
+<pre>racktrack-caddy                 caddy:2-alpine                      0.0.0.0:80->80, 0.0.0.0:443->443   Up 5 hours
+racktrack-demo                  racktrack:demo                      3001/tcp                           Up 21 hours (healthy)
+netbox-docker-netbox-worker-1   netboxcommunity/netbox:v4.6-5.0.2                                      Up 22 hours (healthy)
+netbox                          netboxcommunity/netbox:v4.6-5.0.2                                      Up 22 hours (unhealthy)
+netbox-docker-postgres-1        postgres:18-alpine                  5432/tcp                           Up 23 hours (healthy)
+netbox-docker-redis-1           valkey/valkey:9.1-alpine            6379/tcp                           Up 23 hours (healthy)
+netbox-docker-redis-cache-1     valkey/valkey:9.1-alpine            6379/tcp                           Up 23 hours (healthy)
+
+$ docker images | grep racktrack   → racktrack:demo 7.15GB · racktrack:latest 4.99GB (image present, no container running)
+$ docker inspect netbox … Health.Log[-1].ExitCode → 1</pre>
+    </div></details>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">1.3</span><h2>How it is set up, in plain terms</h2><span class="chip ok">Verified</span></div>
+    <div class="two">
+      <div class="prose">
+        <p><b>Where the data is.</b> Accounts, sites, organisations, the audit trail and the record of NetBox exports are in SQLite files under server/data. Rack photos, the detection overlays, device maps, HTML reports and PDFs are files under outputs/. Both directories are mounted from the host into the container, so a rebuild of the image does not lose them. The model weights (Models/) and the mail identity (token/) are mounted read-only.</p>
+        <p><b>How mail is sent.</b> The server tries Microsoft Graph first, sending as racktrackteam@sprintpark.com using a refresh token stored in the mounted token/ directory. If Graph is not configured it falls back to an SMTP server, and then to a second fallback SMTP server. On the demo only Graph is configured; there are no SMTP settings.</p>
+        <p><b>How people get accounts.</b> There is no public sign-up page. The app's /signup route redirects to the login page, which tells visitors who to write to. People get in with a login an administrator issued, or through an invite link of the form /invite/&lt;code&gt;. The server still has a sign-up endpoint left over from the public-testing period, and that endpoint only accepts @gmail.com addresses. Continue with Google is configured in the demo's environment file.</p>
+        <p><b>How the phone apps find the server.</b> The address https://demo.racktrack.ai is compiled into the iOS and Android apps at build time. The project files for both platforms are at build 61, committed on 7 September.</p>
+        <p><b>How switches are read.</b> The phone talks to the switches directly over SNMP, on UDP port 161, using version 2c or version 3 at the noAuthNoPriv level. Authentication and encryption for version 3 are not implemented yet, so credentials cross the Wi-Fi in clear text. The server does not talk to switches at all.</p>
+        <p><b>Ask DOT.</b> The support assistant answers word for word from its verified knowledge base. It can also phrase answers with a language model, in this order: OpenRouter, Groq, Gemini, then a local Ollama. None of those is configured on the demo, so it runs in verbatim mode.</p>
+        <p><b>Demo-only switches that are on.</b> RACKTRACK_DEMO_DATA makes the Network view answer from an invented four-device network, and the server logs a warning at every start while it is on. LIVE_SWITCH_OFF_NETWORK makes the live-switch pages say plainly that the VPS cannot reach a switch. Only one computer-vision worker runs, because two workers next to NetBox ran the box out of memory during a scan.</p>
+      </div>
+      <details class="proof"><summary>Read more: proof</summary><div class="pf">
+        <div class="src">docker-compose.demo.yml, volumes:</div>
+<pre>- ./Models:/app/Models:ro
+- ./active_learning_Cache/data:/app/active_learning_Cache/data
+- ./outputs:/app/outputs
+- ./server/data:/app/server/data
+- ./token:/app/token:ro
+environment: RACKTRACK_WORKERS=1  (comment: "two of them alongside NetBox pushed the 7.8 GB VPS into OOM kills mid-scan")</pre>
+        <div class="src">Mail order, server/auth.js: line 523 checks <code>graphMail.isConfigured()</code>; line 567 <code>graphMail.sendGraphMail(…)</code>; lines 500-501 build the SMTP transporters with prefixes <code>SMTP_</code> (primary) and <code>SMTP_FALLBACK_</code> (fallback); lines 470-476 describe the failover. server/lib/graphMail.js:271 posts to graph.microsoft.com/v1.0/users/…/sendMail.</div>
+        <div class="src">Accounts, client/src/App.jsx:391-398: "No self-signup. RackTrack is given out by an administrator, so the only ways in are a login you were issued and an invite link (/invite/:code)"; <code>&lt;Route path="/signup" element={&lt;Navigate to="/login" replace /&gt;} /&gt;</code>. server/auth.js:456 <code>GMAIL_RE = /@gmail\.com$/i</code>; lines 1075-1078 in <code>POST /api/auth/signup</code>: "Account creation is limited to Gmail addresses … Please use a @gmail.com email address to create an account." server/auth.js:2148 <code>GET /api/invites/:code</code> and :2162 <code>POST /api/invites/:code/accept</code> create the user from the invite's own email, with no Gmail rule.</div>
+        <div class="src">/opt/racktrack-demo/server/.env on the box, key names only: OAUTH_REDIRECT_BASE GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET JWT_SECRET RACKTRACK_DEMO_DATA AUDIT_ADMINS LIVE_SWITCH_OFF_NETWORK LIVE_SWITCH_NOTE NETBOX_URL NETBOX_TOKEN NETBOX_PUBLIC_URL. No SMTP_*, no OPENROUTER, GROQ or GEMINI keys.</div>
+        <div class="src">Phones: BACKEND_URL file = https://demo.racktrack.ai. client/ios/App/App.xcodeproj/project.pbxproj:359 <code>CURRENT_PROJECT_VERSION = 61</code>; client/android/app/build.gradle:23 <code>versionCode 61</code>; commit c8ef798 "Build 61", 7 Sep 2026. Whether build 61 is the one on TestFlight was not checked.</div>
+        <div class="src">SNMP, client/src/utils/snmpClient.js:10 "v3 a user name, at the noAuthNoPriv level — no password check"; :250 <code>this.level = … || 'noAuthNoPriv'</code>; :251-254 any other level throws "Authentication and encryption (authNoPriv, authPriv) come in the next …".</div>
+        <div class="src">Ask DOT, server/lib/dot/src/llm.js:6 "1. OPENROUTER_API_KEY 2. GROQ_API_KEY 3. GEMINI_API_KEY 4. local Ollama"; :36 <code>OLLAMA_URL = … || 'http://127.0.0.1:11434'</code>; :37 default model llama3.2:3b. Demo flags: server/app.js:11227-11228 logs "RACKTRACK_DEMO_DATA is ON"; :7470 reads LIVE_SWITCH_OFF_NETWORK.</div>
+      </div></details>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">1.4</span><h2>Gaps found while checking, and the fix for each</h2><span class="chip ok">Gaps verified</span> <span class="chip opt">Fixes are recommendations</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Gap</th><th>Why it matters</th><th>Solution</th></tr></thead>
+      <tbody>
+        <tr><td class="k">No backups</td><td>Nothing copies server/data, outputs or the NetBox database anywhere. A disk failure loses every account and every scan. The only scheduled jobs are Docker clean-ups and system tasks.</td><td>A nightly cron job that archives the directories listed in step 10 of tab 5 to a second location, and a monthly restore test.</td></tr>
+        <tr><td class="k">Firmware check cannot work in any container</td><td>The firmware lookup needs a Playwright browser. The Dockerfile never installs one, so the Firmware tab shows its error state on the demo and would on any private box.</td><td>Add <code>playwright install chromium</code> (and firefox for Lenovo) to the Dockerfile, or hide the tab until it is fixed.</td></tr>
+        <tr><td class="k">OCR weights are fetched during the first scan</td><td>EasyOCR downloads 94 MB into the container the first time a scan runs. On a customer network without internet, or with a strict proxy, the first scan fails, quietly.</td><td>Download the two files at image build time so they are inside the image.</td></tr>
+        <tr><td class="k">NetBox's health check fails while it serves</td><td>"Unhealthy" means nothing today. During a real incident nobody can trust it.</td><td>Correct the health-check command in the NetBox override so green means reachable.</td></tr>
+        <tr><td class="k">No version stamp</td><td>The app cannot say which commit it runs. Only the container start time tells you a deploy landed.</td><td>Write the git commit and a build number into the image at build time; /api/version then reports them.</td></tr>
+        <tr><td class="k">Sign-up endpoint accepts only Gmail</td><td>Harmless on the demo because the page is hidden, but a customer with company or university email must never see it.</td><td>Use invites for private deployments (already supported for any email domain), and disable the public sign-up endpoint on private boxes.</td></tr>
+      </tbody>
+    </table></div>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf">
+<pre>$ crontab -l; ls /etc/cron.d
+docker-builder-prune  docker-image-prune  e2scrub_all  monarx-update  sysstat        (no backup job)
+
+$ grep -ci playwright Dockerfile      → 0
+  requirements.txt, firmware section: "After installing these, run ONCE on the box that serves
+  firmware lookups: playwright install chromium firefox … There is NO fallback engine"
+  firmware_lookup/browser_login.py:135: "pip install playwright && playwright install chromium"
+
+$ docker exec racktrack-demo ls -la /home/app/.EasyOCR/model
+  83152330  Sep 7 20:21  craft_mlt_25k.pth
+  15143997  Sep 7 20:21  english_g2.pth        (the container itself started at 13:35 UTC that day)
+  pipeline/device_db.py:101  easyocr.Reader(["en"], gpu=False, …)   also ocr_labels.py:68, side_labels.py:189
+
+$ docker inspect netbox … Health.Log[-1] → ExitCode 1
+$ GET /api/version → {"commit":"unknown", …}
+server/auth.js:456, 1075-1078  (Gmail rule, quoted in 1.3)</pre>
+    </div></details>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 2 · CURRENT PACKAGE ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-pkg" aria-labelledby="tab-pkg" hidden>
+  <div class="lead">
+    <p><b>The package is one Docker image, five directories mounted from the host, three configuration files, a NetBox stack beside it, a static portal, and two phone apps.</b> This tab lists exactly what ships to the demo box today, so that the same list can be handed to a customer's IT team.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">2.1</span><h2>The image, racktrack:demo</h2><span class="chip ok">Verified</span> <span class="muted small">7.15 GB on disk</span></div>
+    <p>One image holds the whole product. It is built from the repo's Dockerfile in two stages: the first compiles the React client into static files, the second assembles the runtime.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Layer</th><th>What is inside</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Runtime</td><td>Python 3.11 (slim Debian base), Node 20 copied from the official image, CPU-only PyTorch and torchvision, OpenCV, Ultralytics YOLO, EasyOCR, RapidOCR with ONNX Runtime, the Playwright library (but no browser), and the system libraries Chromium needs.</td></tr>
+        <tr><td class="k">Server</td><td>server/ (Express API, authentication, SQLite via better-sqlite3, report rendering), config.json.</td></tr>
+        <tr><td class="k">Pipeline and helpers</td><td>pipeline/ (detection, OCR, quality gate, workers), servicenow/ (topology generation and the CMDB bridge), Agent/ (the specification scraper), firmware_lookup/, Switch_Vendors_Websites.xlsx (the vendor list the specification lookup reads).</td></tr>
+        <tr><td class="k">Client</td><td>The built web bundle at client/dist, served by the server itself. The same bundle is what the phone apps wrap.</td></tr>
+        <tr><td class="k">PDF engine</td><td>Puppeteer's Chromium, downloaded during the build into /app/.cache/puppeteer.</td></tr>
+        <tr><td class="k">User</td><td>The process runs as user id 10001, not root. Any host directory the app writes to must be owned by that user id.</td></tr>
+      </tbody>
+    </table></div>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf">
+      <div class="src">Dockerfile</div>
+<pre>40:  FROM python:3.11-slim AS runtime
+45:  COPY --from=node:20-slim /usr/local/bin/node /usr/local/bin/node
+112: --extra-index-url https://download.pytorch.org/whl/cpu \
+124: ENV PUPPETEER_CACHE_DIR=/app/.cache/puppeteer
+     COPY server/ pipeline/ config.json servicenow/ Switch_Vendors_Websites.xlsx Agent/ firmware_lookup/
+160: COPY --from=client-build /build/client/dist ./client/dist
+185: RUN groupadd -r app && useradd -r -g app -u 10001 -m -d /home/app app
+188: USER app</pre>
+      <div class="src">requirements.txt lists torch, torchvision, ultralytics, easyocr, rapidocr, onnxruntime, playwright. $ docker exec racktrack-demo ls /app/.cache/puppeteer → chrome, chrome-headless-shell. $ docker images → racktrack:demo 7.15GB.</div>
+    </div></details>
+  </div>
+
+  <div class="two">
+    <div class="sec">
+      <div class="sec-h"><span class="num">2.2</span><h2>Mounted from the host</h2><span class="chip ok">Verified</span></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Directory</th><th>Size</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Models/</td><td class="num">483 MB</td><td>Six weight files: master_best.pt 208 MB, port_count.pt 99 MB, devices_seg.pt 52 MB, ports_9.pt 50 MB, pdu_ports_v1_det_best.pt 50 MB, rack_classifier.pth 8.7 MB. Not in git; copied separately.</td></tr>
+          <tr><td class="k">outputs/</td><td class="num">563 MB</td><td>Per-rack photos, overlays, device maps, HTML and PDF reports. Grows with every scan.</td></tr>
+          <tr><td class="k">server/data</td><td class="num">47 MB</td><td>auth.db, logs.db, jwt.secret, scan-jobs.json, netbox/ export records.</td></tr>
+          <tr><td class="k">active_learning_Cache/data</td><td class="num">small</td><td>Correction memory used to improve detections.</td></tr>
+          <tr><td class="k">token/</td><td class="num">small</td><td>Microsoft Graph tenant and client ids, plus the support mailbox's refresh token.</td></tr>
+        </tbody>
+      </table></div>
+      <details class="proof"><summary>Read more: proof</summary><div class="pf">
+<pre>$ du -sh Models outputs server/data active_learning_Cache        (on the Mac checkout)
+483M Models · 563M outputs · 47M server/data · 8.0K active_learning_Cache
+$ find Models -type f -name "*.pt*" -exec du -h {} +
+208M master_best.pt  99M port_count.pt  52M devices_seg.pt  50M ports_9.pt
+50M pdu_ports_v1_det_best.pt  8.7M rack_classifier.pth</pre>
+        <div class="src">docker-compose.demo.yml comment: "Model weights — git-ignored, ~483 MB, rsync'd to the host separately." docs/architecture/overview-developers.md §6 lists auth.db, logs.db and jwt.secret under server/data.</div>
+      </div></details>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><span class="num">2.3</span><h2>Configuration, side stacks and apps</h2><span class="chip ok">Verified</span></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Item</th><th>Where it is</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Compose file</td><td>docker-compose.demo.yml, services racktrack and caddy. The app is not published on any host port; only Caddy can reach it.</td></tr>
+          <tr><td class="k">Proxy config</td><td>deploy/caddy/Caddyfile: the demo site, the /netbox path, the portal site, a 350 MB upload limit matching the server's 340 MB limit.</td></tr>
+          <tr><td class="k">Secrets</td><td>server/.env with 11 keys on the demo. Never copied into the image.</td></tr>
+          <tr><td class="k">NetBox</td><td>/opt/netbox-docker with an override file that fixes the container name, publishes no ports and joins the app's Docker network.</td></tr>
+          <tr><td class="k">Portal</td><td>A static bundle at /opt/racktrack-demo/portal-dist, built from /Volumes/Racktrack/racktrack_portal, served by Caddy.</td></tr>
+          <tr><td class="k">Phone apps</td><td>App id com.racktrack.app, iOS and Android, build 61, compiled to the demo hostname.</td></tr>
+          <tr><td class="k">In the repo but not shipped</td><td>netdisco-docker/ (168 MB, not running), support-bot/ (standalone by design), deploy/legacy-windows and deploy/lab-tunnel (the SSH era, not needed now).</td></tr>
+        </tbody>
+      </table></div>
+      <details class="proof"><summary>Read more: proof</summary><div class="pf">
+        <div class="src">/opt/netbox-docker/docker-compose.override.yml on the box:</div>
+<pre>services:
+  netbox:
+    container_name: netbox
+    networks: [default, racktrack]
+networks:
+  racktrack:
+    external: true
+    name: racktrack-demo_default</pre>
+        <div class="src">Caddyfile: <code>request_body { max_size 350MB }</code>, <code>handle /netbox* { … reverse_proxy netbox:8080 }</code>, <code>reverse_proxy racktrack:3001</code>, a portal.racktrack.ai block with <code>root * /srv/portal</code>. server/app.js:794 <code>limits: { fileSize: 340 * 1024 * 1024 }</code>. docker-compose.demo.yml uses <code>expose: "3001"</code>, not <code>ports</code>. client/capacitor.config.json appId com.racktrack.app. support-bot/README.md: "Standalone — deliberately not wired into the app."</div>
+      </div></details>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">2.4</span><h2>What a build needs from the internet</h2><span class="chip ok">Verified</span></div>
+    <p>Running the product needs no internet for its core features (tab 3, section 3.7). Building the image does. Whoever builds must be able to reach:</p>
+    <ul>
+      <li><b>Docker Hub</b> for the python:3.11-slim, node:20-slim and caddy:2-alpine base images.</li>
+      <li><b>Debian's package mirror</b> for the system libraries. On our office LAN the gateway blocks deb.debian.org, so a local build must pass <code>--build-arg APT_MIRROR_HOST=debian.osuosl.org</code>.</li>
+      <li><b>PyPI and the PyTorch CPU wheel index</b> for the Python dependencies.</li>
+      <li><b>The npm registry</b> for Node dependencies, during which Puppeteer downloads Chromium.</li>
+    </ul>
+    <p>Solution for a customer that cannot allow any of this: we build the image on our side, save it to a file with <code>docker save</code>, and hand it over with the weights. The customer only runs <code>docker load</code>.</p>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">Dockerfile: FROM python:3.11-slim; COPY --from=node:20-slim; ARG APT_MIRROR_HOST with the comment "The office LAN's gateway blackholes deb.debian.org"; <code>pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt</code>; <code>cd server && npm ci --omit=dev</code> with the note that "Puppeteer downloads its own Chromium during npm ci".</div></div></details>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 3 · REQUIREMENTS ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-need" aria-labelledby="tab-need" hidden>
+  <div class="lead">
+    <p><b>These are our requirements. They are not negotiable, because each one is tied to how the product works.</b> Five things the customer must provide, six things we must bring, and three things decided per customer. The core product works without internet. Only lookups against vendor websites, cloud language models, social sign-in, and Slack or Teams sharing need it.</p>
+  </div>
+
+  <div class="note">
+    <p><b>Two meanings of "on device", settled.</b> This document covers a private deployment on a server the customer owns and controls. If "on device" is meant as the phone doing everything alone with no server, that is <span class="chip crit">Not possible today</span> and would be a new product effort: the phone uploads the photo, and Python workers on the server run the detection models. The models are PyTorch files totalling 483 MB with no mobile version.</p>
+    <details class="proof" style="margin-top:10px"><summary>Read more: proof</summary><div class="pf">
+<pre>server/app.js:3806  app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), …)
+server/app.js:1011  pythonArgs: ['-u', '-m', 'pipeline.worker']      (the CV workers are Python processes on the server)
+Models/             six PyTorch weight files, 483 MB                   (no CoreML, TFLite or ONNX mobile export exists)
+docs/architecture/overview-developers.md §7: "Capture & send — ScanPage.jsx posts the photo to POST /api/analyze"</pre>
+    </div></details>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">3.1</span><h2>What the customer must provide</h2><span class="chip req">Firm</span></div>
+    <div class="cards">
+      <div class="card"><h3>1. A Linux server with Docker</h3><p>A physical server or a virtual machine on their network, or a private VPS they rent. Sized by section 3.6. Ubuntu LTS is what we recommend and what the demo runbook was written for. No GPU: the image is CPU-only and cannot use one.</p>
+        <div class="sol"><b>If they cannot host a server:</b> we rent a private VPS in their name, which is exactly the demo set-up with their own hostname and data.</div>
+        <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">Dockerfile:112 installs torch from the CPU wheel index; pipeline/runner.py:258 <code>load_cable_model(…, device="cpu")</code>. docs/setup/DEMO-VPS-SETUP.md installs Docker with <code>curl -fsSL https://get.docker.com | sh</code>.</div></div></details>
+      </div>
+      <div class="card"><h3>2. A hostname the phones can resolve, with HTTPS</h3><p>The phone apps have the server address compiled in, and iOS refuses plain HTTP. So there must be a DNS name that resolves on the office Wi-Fi, and a certificate the phones trust. Section 3.4 gives the three ways to get that certificate.</p>
+        <div class="sol"><b>Our position:</b> a public DNS name (for example racktrack.customer.com) pointing at the internal address, with a Let's Encrypt certificate obtained through the DNS challenge. No inbound internet is needed for that.</div>
+        <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">client/src/utils/api.js:3-6 "In the APK build, we set VITE_API_BASE=https://&lt;public-host&gt; so the WebView can reach the real backend". client/.env.production.example: "it MUST be https:// (iOS ATS / Android cleartext policy block plain http)".</div></div></details>
+      </div>
+      <div class="card"><h3>3. A mail relay</h3><p>The server sends sign-up verification codes, password-reset codes and invitations by email. It supports any SMTP server, with a second SMTP server as automatic fallback. Without any transport it accepts the request, answers success, and sends nothing, so users wait for a code that never comes.</p>
+        <div class="sol"><b>Our position:</b> the customer's own SMTP relay (host, port 587 or 465, a user and password, a from-address). We do not send on a customer's behalf from our Microsoft identity.</div>
+        <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">server/auth.js:470-476 "PRIMARY SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_FROM · FALLBACK SMTP_FALLBACK_HOST …", nodemailer, port 465 = SSL, 587 = STARTTLS. deploy/demo.env.example: "the server accepts a forgot-password request, answers 200 … and sends NOTHING."</div></div></details>
+      </div>
+      <div class="card"><h3>4. Phone Wi-Fi that reaches the switch management network</h3><p>Reading a switch's ports, PoE and neighbours is done by the phone itself over SNMP, UDP port 161. The phones must be on a Wi-Fi network that can route to the switches' management addresses. The server needs no route to the switches.</p>
+        <div class="sol"><b>Our position:</b> a technician Wi-Fi with a firewall rule allowing UDP 161 to the management VLAN, and an SNMP v2c read-only community or a v3 user. Because v3 authentication is not implemented yet, the management VLAN must be one the customer already treats as trusted.</div>
+        <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">client/src/utils/snmpClient.js is part of the phone bundle (lines 10, 250-254, 342). deploy/demo.env.example explains the demo's LIVE_SWITCH_OFF_NETWORK flag with "a VPS cannot route to anyone's private LAN".</div></div></details>
+      </div>
+      <div class="card"><h3>5. One administrator on their side</h3><p>Someone who can add DNS records, issue or approve the certificate, create the mail account, open the firewall rule, and receive the owner login. Every step in tab 5 that touches their network goes through this person.</p>
+        <div class="sol"><b>Our position:</b> named before the install date, with the DNS, certificate and mail items done before we arrive.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">3.2</span><h2>What we must bring</h2><span class="chip req">Firm</span></div>
+    <div class="cards">
+      <div class="card"><h3>The image or the code</h3><p>Either the repo copied by rsync and built on their box (needs internet at build time), or a pre-built image saved to a file (needs nothing). The hand-over bundle in tab 4 makes the second option routine.</p></div>
+      <div class="card"><h3>Models/, 483 MB</h3><p>Not in git. Copied once, mounted read-only. Without it no scan runs.</p></div>
+      <div class="card"><h3>The OCR weights, 94 MB</h3><p>Today they download inside the container during the first scan. Until they are baked into the image, we must either run one scan while the box has internet or copy the two files into the container's home directory.</p></div>
+      <div class="card"><h3>Fresh secrets</h3><p>A new JWT_SECRET for every deployment (never the demo's). The server generates server/.env.key on its first start; that file encrypts stored connection profiles, including NetBox tokens, and must be backed up.</p>
+        <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">deploy/demo.env.example: "Generate a FRESH one … openssl rand -hex 32 … Do not reuse production's — a token minted on the demo would then be valid against the Windows box too." server/lib/connection_profiles.js:34-45 (".env.key or SSH_CREDS_KEY env var. One key, one rotation"), :134 "generated new encryption key at .env.key".</div></div></details>
+      </div>
+      <div class="card"><h3>Configuration for that customer</h3><p>A compose file, a Caddyfile site block and a server/.env with the demo flags removed, the hostname, the timezone, the worker count and the mail settings filled in. Tab 4 lists each change.</p></div>
+      <div class="card"><h3>Phone builds and the owner login</h3><p>An iOS and an Android build compiled with the customer's hostname, and the owner credentials printed by the seed script, handed over once and then changed by the owner.</p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">3.3</span><h2>Network paths</h2><span class="chip ok">Verified</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>From → to</th><th>Port</th><th>Direction</th><th>Needed for</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Phones and laptops → Caddy</td><td class="num">443/tcp</td><td>Inbound to the server</td><td>Everything. Add 80/tcp only if the certificate uses the HTTP challenge, which a private box cannot.</td></tr>
+        <tr><td class="k">Phones → switches</td><td class="num">161/udp</td><td>Technician Wi-Fi to management VLAN</td><td>The Network step, Drift, adopting switches. SNMP v2c or v3 noAuthNoPriv.</td></tr>
+        <tr><td class="k">Netdisco → switches</td><td class="num">161/udp</td><td>Server to management VLAN</td><td>The Discovery view only. Optional.</td></tr>
+        <tr><td class="k">App → NetBox</td><td class="num">8080/tcp</td><td>Inside Docker</td><td>Export. No host port is published.</td></tr>
+        <tr><td class="k">App → mail relay</td><td class="num">587 or 465/tcp</td><td>Outbound</td><td>Verification, reset and invite emails.</td></tr>
+        <tr><td class="k">App → internet</td><td class="num">443/tcp</td><td>Outbound, optional</td><td>Vendor spec and firmware lookups, cloud language models, Slack and Microsoft sharing, social sign-in.</td></tr>
+        <tr><td class="k">Us → server</td><td class="num">22/tcp</td><td>Inbound, restricted to our addresses or via their VPN</td><td>Installation and updates.</td></tr>
+      </tbody>
+    </table></div>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">Caddyfile header: "That needs BOTH :80 and :443 reachable from the internet — :80 carries the ACME HTTP-01 challenge". docker-compose.demo.yml: only Caddy has <code>ports</code>; the app uses <code>expose</code>. NetBox override: no host ports, reached as netbox:8080. Netdisco discovers by SNMP per netdisco-docker/README.md. Mail ports from server/auth.js:477-478.</div></div></details>
+  </div>
+
+  <div class="two">
+    <div class="sec">
+      <div class="sec-h"><span class="num">3.4</span><h2>The certificate: three ways, one recommendation</h2></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Route</th><th>How it works</th><th>Pros</th><th>Cons</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Public name, DNS challenge <span class="chip req">Recommended</span></td><td>The customer owns a domain. A record like racktrack.customer.com points at the server's internal address. Caddy proves ownership by writing a DNS record, not by being reachable, and Let's Encrypt issues the certificate.</td><td>Phones trust it with no setup. Renews itself.</td><td>Needs a Caddy build with the customer's DNS provider module, and an API token for that DNS. Needs outbound internet from the server for renewals.</td></tr>
+          <tr><td class="k">Customer's own certificate authority</td><td>Their IT issues a certificate for an internal name. Their device management already installs their root certificate on every phone.</td><td>No internet needed. Nothing new for their phones.</td><td>Only works where such a CA and device management exist. Renewal is on them.</td></tr>
+          <tr><td class="k">Caddy's built-in CA</td><td>Caddy signs its own certificate. Each phone installs Caddy's root certificate once, by hand.</td><td>Works anywhere in minutes.</td><td>Manual step on every phone. Fine for a pilot with a handful of phones, not for a rollout.</td></tr>
+        </tbody>
+      </table></div>
+      <details class="proof"><summary>Read more: what is verified here</summary><div class="pf"><div class="src">Verified: the demo uses Caddy with automatic Let's Encrypt over the HTTP challenge (Caddyfile, DEMO-VPS-SETUP.md section 1). The DNS-challenge route and the two-file route are standard Caddy features documented by Caddy; they have not been tried by us on a RackTrack box yet, so the first private install should budget a half day for it.</div></div></details>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><span class="num">3.5</span><h2>Mail: what the server can do</h2><span class="chip ok">Verified</span></div>
+      <div class="prose">
+        <p>The server tries, in order: Microsoft Graph (if MS_CLIENT_ID and MS_TENANT_ID are set and a token exists), then the primary SMTP server, then the fallback SMTP server. A send that errors on one moves to the next, so no single provider can block sign-in codes.</p>
+        <p><b>For a private deployment we set only SMTP.</b> Graph stays unset, so our Microsoft identity is never involved. If the customer has two relays, the second goes in the SMTP_FALLBACK_* settings.</p>
+        <p><b>Test it before hand-over:</b> request a password reset for the owner account and confirm the code arrives. That is the only test that proves the whole chain.</p>
+      </div>
+      <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">server/auth.js:523 <code>if (graphMail.isConfigured …) return true</code>; :567 <code>graphMail.sendGraphMail({…})</code>; :500-501 <code>buildTransporter('SMTP_', 'primary'), buildTransporter('SMTP_FALLBACK_', 'fallback')</code>; :470-473 "the primary is tried first and, if the send errors …, we automatically retry through the fallback".</div></div></details>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="sec">
+      <div class="sec-h"><span class="num">3.6</span><h2>Server size</h2><span class="chip warn">Estimate</span></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Profile</th><th>Cores</th><th>RAM</th><th>Disk</th><th>CV workers</th><th>Fits</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Pilot, one site</td><td class="num">4</td><td class="num">16 GB</td><td class="num">100 GB SSD</td><td class="num">1–2</td><td>Up to about ten technicians, NetBox, Netdisco.</td></tr>
+          <tr><td class="k">Recommended</td><td class="num">8</td><td class="num">32 GB</td><td class="num">250 GB NVMe</td><td class="num">3</td><td>Several sites, about fifty technicians, NetBox, Netdisco, Ask DOT with a local model.</td></tr>
+          <tr><td class="k">Heavy use</td><td class="num">16</td><td class="num">64 GB</td><td class="num">500 GB NVMe</td><td class="num">6+</td><td>Many scans at the same time.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="small">The rule behind the table: <b>one worker for every 4 GB of free memory, and never more workers than cores.</b> Each worker holds all the models and the OCR reader in memory, 3 to 4 GB. Reserve 2 GB for NetBox, 1 GB for Netdisco, and 4 GB for a local language model. Disk: keep 20 GB free for image rebuilds and budget 50 GB for outputs on a busy site.</p>
+      <details class="proof"><summary>Read more: what the estimate rests on</summary><div class="pf"><div class="src">Verified inputs: docker-compose.demo.yml "Each worker holds every model plus the OCR reader (3-4 GB resident); two of them alongside NetBox pushed the 7.8 GB VPS into OOM kills mid-scan" and "it should not exceed the core count — inference is CPU-bound". docker-compose.yml "one worker per ~3 GB of free RAM". docs/setup/DEMO-VPS-SETUP.md "a 14-device rack costs ~1.4 s of inference; allow 2–4× for a KVM vCPU and a scan lands around 3–8 s" (from the docs; not re-measured today). The three profiles are our sizing from those numbers, not tested configurations.</div></div></details>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><span class="num">3.7</span><h2>What works without internet</h2><span class="chip ok">Verified in code</span></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Feature</th><th>Offline</th><th>Solution where needed</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Scan, results, corrections, topology, reports, PDF</td><td><span class="chip ok">Works</span></td><td>OCR weights must be present (section 3.2).</td></tr>
+          <tr><td class="k">NetBox export, Discovery via Netdisco</td><td><span class="chip ok">Works</span></td><td>Both run beside the app.</td></tr>
+          <tr><td class="k">Ask DOT, verbatim answers</td><td><span class="chip ok">Works</span></td><td>Nothing to do.</td></tr>
+          <tr><td class="k">Ask DOT, phrased answers and semantic search</td><td><span class="chip warn">Needs a model</span></td><td>Run Ollama on the box with llama3.2:3b and nomic-embed-text, and set OLLAMA_URL. The code path exists; we have not run it on a box yet.</td></tr>
+          <tr><td class="k">Sign-up codes, password reset, invites by email</td><td><span class="chip warn">Needs mail</span></td><td>The customer's SMTP relay (3.5).</td></tr>
+          <tr><td class="k">Specification lookup, firmware check</td><td><span class="chip crit">Needs internet</span></td><td>An outbound allow-list of the vendor domains, or hide the two tabs.</td></tr>
+          <tr><td class="k">Share to Slack, Teams, Outlook</td><td><span class="chip crit">Needs internet</span></td><td>None. Users download the PDF and share it themselves.</td></tr>
+          <tr><td class="k">Continue with Google, Apple, Facebook</td><td><span class="chip crit">Needs internet</span></td><td>Leave the keys blank; the buttons never render and password sign-in is unaffected.</td></tr>
+          <tr><td class="k">Marketplace partners, Stripe</td><td><span class="chip crit">Needs internet</span></td><td>Env-gated; they degrade quietly.</td></tr>
+          <tr><td class="k">ServiceNow CMDB</td><td><span class="chip warn">Depends</span></td><td>Usually a cloud instance, so it needs a route to it.</td></tr>
+        </tbody>
+      </table></div>
+      <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">The scan path makes no outbound call once the OCR weights are cached (tab 1, 1.4). llm.js:6 and :36 for the DOT chain and the Ollama option; semantic.js:55-58 selects Ollama embeddings by default with model nomic-embed-text. Sharing code calls slack.com/api and graph.microsoft.com. server/lib/oauthProviders.js uses accounts.google.com, appleid.apple.com, facebook.com; deploy/demo.env.example: "Leave these blank and the buttons simply never render". requirements.txt: firmware "Reads each vendor's own real site"; Dockerfile comment: "/api/specs spawns Agent/Agent_scrap/cli.py". docs/architecture/overview-developers.md §9: integrations are "env-gated and fail-soft".</div></div></details>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">3.8</span><h2>If the customer requires no internet at all</h2><span class="chip opt">Path exists, adds work</span></div>
+    <div class="prose">
+      <p>An air-gapped installation is possible with four changes to the normal path: we build the image on our side and deliver it as a file; the OCR weights are baked into the image first; the certificate comes from the customer's CA; and the five internet-only features in 3.7 are hidden for good. Updates are delivered the same way, as a new image file. Budget an extra day for the first one.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 4 · WHAT MUST CHANGE ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-change" aria-labelledby="tab-change" hidden>
+  <div class="lead">
+    <p><b>Per deployment, only configuration changes. In the repo, seven small pieces of work.</b> No product feature has to be rewritten to run privately. The one product-level item is accounts: private customers get in by invitation, which already works for any email domain.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">4.1</span><h2>Per deployment: configuration only</h2><span class="chip ok">Verified</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>File</th><th>Change</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td class="k">deploy/caddy/Caddyfile</td><td>A site block for the customer's hostname with the chosen certificate route. Remove the /netbox and portal blocks unless those are part of the deal.</td><td>Caddy only serves hostnames that have a block. The upload limit line stays: the server accepts uploads to 340 MB.</td></tr>
+        <tr><td class="k">docker-compose.private.yml</td><td>Image name; <code>CORS_ALLOWED_ORIGINS</code> = https://the-hostname exactly; <code>TZ</code> and <code>REPORT_TZ</code> = the customer's zone; <code>RACKTRACK_WORKERS</code> by the memory rule. Keep <code>expose</code>, not <code>ports</code>, on the app.</td><td>A wrong origin makes every API call fail from the browser. Reports print times in the container's zone, which is UTC when unset.</td></tr>
+        <tr><td class="k">server/.env</td><td>New JWT_SECRET; SMTP_* filled in; RACKTRACK_DEMO_DATA, LIVE_SWITCH_OFF_NETWORK and LIVE_SWITCH_NOTE removed; NODE_ENV stays production (set by compose); no inline comments after values.</td><td>Demo flags invent network data. A reused secret makes a token from one box valid on another. NODE_ENV=production also turns on secure cookies automatically.</td></tr>
+        <tr><td class="k">client/.env.production</td><td><code>VITE_API_BASE=https://the-hostname</code>, then rebuild iOS and Android.</td><td>The address is compiled into the apps.</td></tr>
+        <tr><td class="k">Host directories</td><td>outputs, server/data, active_learning_Cache, server/uploads owned by user id 10001.</td><td>The image runs as that user. Otherwise the database is read-only and the server dies at start.</td></tr>
+        <tr><td class="k">NetBox override</td><td>Container name, no host ports, network name = the new compose project's network, BASE_PATH and CSRF_TRUSTED_ORIGINS for the new hostname.</td><td>The app reaches NetBox by container name inside Docker.</td></tr>
+      </tbody>
+    </table></div>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">server/app.js:334 reads CORS_ALLOWED_ORIGINS; :969 RACKTRACK_WORKERS; :794 the 340 MB upload limit; :7470 LIVE_SWITCH_OFF_NETWORK; :11227 the RACKTRACK_DEMO_DATA warning. server/auth.js:69-71: COOKIE_SECURE follows NODE_ENV === 'production' unless set explicitly. docker-compose.demo.yml comments on TZ and REPORT_TZ ("every report read 5h30m behind") and on NODE_ENV ("a trailing # … makes it !== production"). docs/setup/DEMO-VPS-SETUP.md: "attempt to write a readonly database … chown -R 10001:10001". deploy/demo.env.example on JWT_SECRET: "Do not reuse production's".</div></div></details>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">4.2</span><h2>Accounts on a private box</h2><span class="chip ok">Verified</span></div>
+    <div class="two">
+      <div class="prose">
+        <p><b>How it works today.</b> The app has no public sign-up page; /signup sends people to the login page. Accounts are created in two ways: the seed script creates the owner, one organisation admin and a batch of member invite codes, and administrators create invite links from the console. Accepting an invite creates the account from the invited email address, whatever its domain.</p>
+        <p><b>What is left over.</b> The server still answers POST /api/auth/signup, and that endpoint only accepts @gmail.com addresses. It is unreachable from the app's screens but reachable by anyone who calls the API directly.</p>
+        <p><b>Our position for private deployments:</b> invitation only. The owner and the organisation admin come from the seed script; everyone else gets an invite link from the admin. Set AUDIT_ADMINS to the owner's username so the organisation-wide audit view works.</p>
+        <p><b>Solution for the leftover endpoint:</b> add a setting that disables POST /api/auth/signup entirely, on by default for private builds. Until that exists, it is a low risk: the endpoint still requires email verification and creates a member in a fresh organisation, not access to the customer's data.</p>
+      </div>
+      <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">client/src/App.jsx:391-398 (quoted in tab 1). server/auth.js:456 GMAIL_RE; :1069 <code>app.post('/api/auth/signup', …)</code>; :1075-1078 the Gmail check; :452-455 comment "Public self-signup is limited to Gmail addresses. … password resets, invites and existing staff/owner accounts … still validate against the general pattern"; :2148 <code>GET /api/invites/:code</code>; :2162 <code>POST /api/invites/:code/accept</code> inserts the user with <code>inv.email</code>. server/scripts/seed-racktrack.js prints "Owner → username … password …", "Org Admin → …", and "member invite codes (path = /invite/&lt;code&gt;)"; its header says it is DESTRUCTIVE and wipes users, tenants, orgs, racks and invites. server/app.js:3320-3323 reads AUDIT_ADMINS as a comma-separated list. Whether the signup endpoint's created user lands in a fresh organisation: server/auth.js:1069-1100 requires a company name and rejects blank ones to avoid "the shared default tenant"; the exact tenant placement was not traced further.</div></div></details>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">4.3</span><h2>In the repo, before the first customer install</h2><span class="chip ok">Gaps verified</span> <span class="chip warn">Effort is an estimate</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Work item</th><th>Gap today</th><th>Solution</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td class="k">docker-compose.private.yml and deploy/private.env.example</td><td>Only the local and the demo compose files exist. The only env template is the demo's, with the demo flags in it.</td><td>A private compose file with hostname, timezone and worker count as the only edits, and an env template with the demo flags absent and SMTP lines present.</td><td class="num">½ day</td></tr>
+        <tr><td class="k">Caddyfile per deployment</td><td>The one Caddyfile hard-codes demo.racktrack.ai and portal.racktrack.ai.</td><td>A template with the hostname and the certificate route as placeholders.</td><td class="num">1 hour</td></tr>
+        <tr><td class="k">OCR weights in the image</td><td>Downloaded inside the container during the first scan.</td><td>Download the two files in the Dockerfile and point EasyOCR at that directory.</td><td class="num">1 hour</td></tr>
+        <tr><td class="k">Playwright browser in the image</td><td>Zero mentions of playwright in the Dockerfile. Firmware check is dead in every container.</td><td>Add <code>playwright install chromium</code> to the Dockerfile. Adds a few hundred MB.</td><td class="num">1 hour</td></tr>
+        <tr><td class="k">Build stamp</td><td>/api/version returns commit "unknown" because .git is not shipped.</td><td>Pass the git commit and a build number as build arguments; the server reads them from the environment.</td><td class="num">1 hour</td></tr>
+        <tr><td class="k">Hand-over bundle script</td><td>Nothing under deploy/ produces a self-contained install. Every deploy needs the Mac and rsync.</td><td>A script that builds, saves the image, and packs it with Models/, the compose file, the Caddyfile template, the env template and a README.</td><td class="num">½ day</td></tr>
+        <tr><td class="k">Sign-up endpoint switch</td><td>POST /api/auth/signup is always on and Gmail-only.</td><td>A setting to disable it, on by default in the private env template.</td><td class="num">1 hour</td></tr>
+        <tr><td class="k">docs/setup/PRIVATE-DEPLOYMENT.md</td><td>docs/setup has the demo VPS, Mac IPA, social login and Windows guides only.</td><td>This document's tab 5, corrected after the first real install.</td><td class="num">after first install</td></tr>
+      </tbody>
+    </table></div>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf">
+<pre>$ ls *.yml            → docker-compose.demo.yml  docker-compose.yml
+$ ls deploy           → caddy  demo-rsync-excludes.txt  demo.env.example  lab-tunnel  legacy-windows  share-with-team.sh
+$ ls docs/setup       → DEMO-VPS-SETUP.md  MAC-IPA-SETUP.md  SOCIAL-LOGIN-SETUP.md  WINDOWS-SERVER-SETUP.md
+$ grep -ci playwright Dockerfile → 0
+$ grep -n "^\.git$" deploy/demo-rsync-excludes.txt → 29:.git
+server/app.js:559  app.get('/api/version', …)   → {"commit":"unknown"} on the demo</pre>
+    </div></details>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">4.4</span><h2>Security points to settle on every private box</h2></div>
+    <div class="cards">
+      <div class="card"><h3>SNMP credentials in clear <span class="chip ok">Verified</span></h3><p>The phone speaks SNMP v2c and v3 noAuthNoPriv only, so the community string or user name crosses the Wi-Fi unencrypted.</p><div class="sol"><b>Solution:</b> read-only SNMP credentials on a management VLAN the customer already trusts. Implementing v3 authPriv on the phone is the product fix; the code already reserves the place for it.</div></div>
+      <div class="card"><h3>Secrets never in the image <span class="chip ok">Verified</span></h3><p>All secrets come from server/.env and the mounted directories at run time. The image can be handed to a customer without leaking anything.</p><div class="sol"><b>Keep it that way:</b> the hand-over bundle carries an env template, never a filled-in env file.</div></div>
+      <div class="card"><h3>Non-root, rate-limited, secure cookies <span class="chip ok">Verified</span></h3><p>The process runs as user id 10001. Credential endpoints and uploads are rate-limited. Session cookies are HTTP-only, and marked secure automatically in production.</p><div class="sol"><b>Nothing to change.</b> Keep NODE_ENV=production exactly.</div>
+        <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">Dockerfile:185-188. server/app.js:3305 throttles /api/auth/login, signup, forgot-password, reset-password, login-with-code; RATE_LIMIT_UPLOADS_PER_MIN and RATE_LIMIT_DETECT_* are read in app.js. server/auth.js:94 <code>httpOnly: true, secure: COOKIE_SECURE, sameSite: COOKIE_SAMESITE</code>; :69-71 default follows NODE_ENV.</div></div></details>
+      </div>
+      <div class="card"><h3>Who can see the audit trail <span class="chip ok">Verified</span></h3><p>Organisation-wide audit views are limited to owners and the usernames in AUDIT_ADMINS.</p><div class="sol"><b>Set AUDIT_ADMINS</b> to the customer's owner username at install.</div></div>
+      <div class="card"><h3>SSH access for us <span class="chip opt">Recommendation</span></h3><p>Updates need a shell on the box.</p><div class="sol"><b>Solution:</b> a dedicated key-based account for us, restricted to our addresses or reachable only over the customer's VPN, with sudo limited to Docker.</div></div>
+      <div class="card"><h3>Public sign-up endpoint <span class="chip ok">Verified</span></h3><p>Reachable by direct API call, Gmail-only, verification required.</p><div class="sol"><b>Solution:</b> the disable switch in 4.3.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 5 · HOW TO DO IT ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-how" aria-labelledby="tab-how" hidden>
+  <div class="lead">
+    <p><b>Ten steps, in order, each with a check that proves it worked.</b> Steps 1, 3 to 7 and 10 mirror the demo runbook, which has been carried out for real on the VPS. Step 2's certificate route and step 9's app distribution are the parts that differ per customer. <span class="chip warn">Estimate</span> three working days for a first install: host and app on day one, NetBox and mail proof on day two, phone builds and hand-over on day three. Later installs are faster once the repo work in tab 4 is done.</p>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div class="body">
+      <h3>Prepare the host</h3>
+      <p>Install Ubuntu LTS and Docker. Open only SSH and 443 in the firewall. Create the directories the app writes to and give them to user id 10001, because the container runs as that user.</p>
+<pre>curl -fsSL https://get.docker.com | sh
+ufw allow OpenSSH &amp;&amp; ufw allow 443/tcp &amp;&amp; ufw --force enable
+mkdir -p /opt/racktrack/{outputs,server/data,active_learning_Cache/data,server/uploads}
+chown -R 10001:10001 /opt/racktrack/{outputs,server/data,active_learning_Cache,server/uploads}</pre>
+      <p class="chk"><code>docker --version</code> answers, and <code>ufw status</code> shows 22 and 443 only.</p>
+    </div></div>
+    <div class="step"><div class="n">2</div><div class="body">
+      <h3>Hostname and certificate</h3>
+      <p>The customer's administrator adds the DNS name pointing at the server. Then pick the certificate route from tab 3, section 3.4, and write it into the Caddyfile site block. For a customer CA, the two files go beside the Caddyfile and are mounted into the Caddy container.</p>
+<pre>racktrack.customer.com {
+    tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem   <span class="c"># customer CA only; omit for automatic</span>
+    encode zstd gzip
+    request_body { max_size 350MB }
+    reverse_proxy racktrack:3001
+}</pre>
+      <p class="chk">a phone on the office Wi-Fi resolves the name: <code>nslookup racktrack.customer.com</code> from a laptop on the same Wi-Fi returns the server's address.</p>
+    </div></div>
+    <div class="step"><div class="n">3</div><div class="body">
+      <h3>Copy the code and the weights</h3>
+      <p>The repo is private and the box has no GitHub access, so the code goes up by rsync with the same exclude list the demo uses, and Models/ goes up once on its own.</p>
+<pre>rsync -avz --exclude-from=deploy/demo-rsync-excludes.txt ./ admin@HOST:/opt/racktrack/
+rsync -avz Models/ admin@HOST:/opt/racktrack/Models/</pre>
+      <p class="small muted">Hand-over without our Mac: build once, <code>docker save racktrack:private | gzip &gt; racktrack.tar.gz</code>, and deliver the file with Models/, the compose file and the Caddyfile. The customer runs <code>docker load</code>.</p>
+      <p class="chk"><code>ls /opt/racktrack/Models</code> shows six files, 483 MB in total.</p>
+    </div></div>
+    <div class="step"><div class="n">4</div><div class="body">
+      <h3>Write server/.env</h3>
+      <p>Start from deploy/demo.env.example. Delete RACKTRACK_DEMO_DATA, LIVE_SWITCH_OFF_NETWORK and LIVE_SWITCH_NOTE. Generate a fresh secret. Fill in the customer's SMTP. Do not put comments after values; the loader takes everything after the equals sign.</p>
+<pre>JWT_SECRET=&lt;output of: openssl rand -hex 32&gt;
+SMTP_HOST=smtp.customer.com
+SMTP_PORT=587
+SMTP_USER=racktrack@customer.com
+SMTP_PASS=…
+SMTP_FROM=RackTrack &lt;racktrack@customer.com&gt;
+AUDIT_ADMINS=&lt;owner username, set after step 8&gt;</pre>
+      <p class="chk">the file has no RACKTRACK_DEMO_DATA line and no line contains a "#" after its value.</p>
+    </div></div>
+    <div class="step"><div class="n">5</div><div class="body">
+      <h3>Compose file, validate, start</h3>
+      <p>Copy docker-compose.demo.yml to docker-compose.private.yml. Change the image name, CORS_ALLOWED_ORIGINS, TZ, REPORT_TZ and RACKTRACK_WORKERS. Validate the Caddyfile before starting; Caddy refuses to boot on a typo and takes the whole site down rather than one setting.</p>
+<pre>docker run --rm -v "$PWD/deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+docker compose -f docker-compose.private.yml up -d --build
+docker compose -f docker-compose.private.yml logs -f racktrack     <span class="c"># wait for "worker N ready"</span></pre>
+      <p class="chk"><code>curl -I https://racktrack.customer.com/healthz</code> returns 200 and the browser shows no certificate warning.</p>
+    </div></div>
+    <div class="step"><div class="n">6</div><div class="body">
+      <h3>NetBox beside it</h3>
+      <p>Clone netbox-docker on the box. Reuse the demo's override file with the network name changed to the new compose project's network. Set BASE_PATH and CSRF_TRUSTED_ORIGINS for the new hostname if NetBox is to be browsed under /netbox. Start it, create the superuser, and create an API token.</p>
+      <p class="chk"><code>docker exec racktrack curl -s http://netbox:8080/api/status/</code> returns JSON from inside the app container.</p>
+    </div></div>
+    <div class="step"><div class="n">7</div><div class="body">
+      <h3>Seed the first accounts</h3>
+      <p>Run the seed script once, on the empty database only, because it wipes users, organisations, racks and invites. Copy the printed owner and admin passwords immediately; they are shown once. It also writes member invite links to server/data/racktrack-invites.json.</p>
+<pre>docker compose -f docker-compose.private.yml exec racktrack node server/scripts/seed-racktrack.js
+docker compose -f docker-compose.private.yml restart racktrack</pre>
+      <p class="chk">the owner can sign in at the hostname on a laptop, and the password can be changed from the profile page.</p>
+    </div></div>
+    <div class="step"><div class="n">8</div><div class="body">
+      <h3>Connect NetBox and prove the product</h3>
+      <p>Signed in as the owner, add the NetBox URL and token under Data Sources for the customer's organisation. Then prove five things before anyone else touches it: one real rack scan end to end, one PDF download, one password reset code arriving by email, one export landing in NetBox, and one switch read from a phone on the office Wi-Fi.</p>
+      <p class="chk">all five succeed. If the scan hangs, check memory with <code>docker stats</code> and lower RACKTRACK_WORKERS.</p>
+    </div></div>
+    <div class="step"><div class="n">9</div><div class="body">
+      <h3>Build and distribute the phone apps</h3>
+      <p>On the Mac, set the hostname in client/.env.production, build the bundle, sync it into the native projects, then archive the iOS app in Xcode and the Android app in Android Studio. Distribute by TestFlight, an ad-hoc build for named devices, or the customer's device management. The web app needs nothing extra; it is served by Caddy at the hostname.</p>
+<pre>echo "VITE_API_BASE=https://racktrack.customer.com" &gt; client/.env.production
+cd client &amp;&amp; npm run build &amp;&amp; npx cap sync</pre>
+      <p class="chk">a phone signs in through the app and completes a scan.</p>
+    </div></div>
+    <div class="step"><div class="n">10</div><div class="body">
+      <h3>Backups, updates and hand-over</h3>
+      <p><b>Backups, nightly:</b> server/data, outputs/, server/uploads, server/.env, server/.env.key, and a pg_dump of NetBox's Postgres. <b>Once:</b> Models/ and the Caddy data volume (certificates). <b>Updates:</b> rsync then <code>up -d --build</code>; a plain restart keeps serving the old client bundle. <b>Rollback:</b> tag each image with its build stamp and start the previous tag. <b>Hand-over:</b> the owner login, the deployment register entry (tab 6), and the list of what needs internet.</p>
+      <p class="chk">a restore of last night's backup on a scratch machine brings the app up with the same accounts and scans.</p>
+    </div></div>
+  </div>
+  <details class="proof"><summary>Read more: where these steps come from</summary><div class="pf"><div class="src">docs/setup/DEMO-VPS-SETUP.md sections 2 to 5 and "Updating": Docker install, ufw, rsync with the exclude list, .env from the template ("no inline comments"), caddy validate, compose up --build, "Expect … worker N ready", seed-racktrack.js then restart, chown 10001, "--build is not optional". /opt/netbox-docker/docker-compose.override.yml on the box for step 6. server/scripts/seed-racktrack.js header and output lines for step 7. server/routes/netbox/netbox.js:48-52 for Data Sources in step 8. client/src/utils/api.js and docs/setup/MAC-IPA-SETUP.md for step 9. The checks are ours.</div></div></details>
+</section>
+
+<!-- ═══════════════════════════ 6 · HOW WE TRACK ═══════════════════════════ -->
+<section class="panel" role="tabpanel" id="panel-track" aria-labelledby="tab-track" hidden>
+  <div class="lead">
+    <p><b>The server already exposes health, version, metrics, logs and an audit trail. What is missing is a version stamp that survives rsync, a backup job, an outside uptime check, and one register that says which build runs where.</b> With those four, every private installation can be answered about from one place.</p>
+  </div>
+
+  <div class="two">
+    <div class="sec">
+      <div class="sec-h"><span class="num">6.1</span><h2>What the server gives us today</h2><span class="chip ok">Verified</span></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Signal</th><th>Where</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Is it up</td><td class="num">GET /healthz</td><td>Also the Docker health check every 30 seconds. No token needed.</td></tr>
+          <tr><td class="k">Is the API up</td><td class="num">GET /api/health</td><td>Answers {status: ok, version: 3.0.0}. No token needed.</td></tr>
+          <tr><td class="k">Which build</td><td class="num">GET /api/version</td><td>Returns the commit and the start time. The commit is "unknown" on rsync deploys until the build stamp exists.</td></tr>
+          <tr><td class="k">Numbers over time</td><td class="num">GET /metrics</td><td>Prometheus format: requests, scan timings, worker state.</td></tr>
+          <tr><td class="k">What happened</td><td>Logs to stdout and a SQLite mirror in server/data/logs.db</td><td><code>docker compose logs</code>, or the Operations console inside the app. Retention is configurable.</td></tr>
+          <tr><td class="k">Who did what</td><td>audit_log table in logs.db</td><td>Append-only, per organisation: user, action, target, result, time, address.</td></tr>
+          <tr><td class="k">Who connected</td><td>Caddy /data/access.log</td><td>Rolls at 10 MB, keeps 5 files.</td></tr>
+          <tr><td class="k">Which app build</td><td>CURRENT_PROJECT_VERSION and versionCode</td><td>Both 61 in the project files, commit c8ef798.</td></tr>
+        </tbody>
+      </table></div>
+      <details class="proof"><summary>Read more: proof</summary><div class="pf">
+<pre>server/app.js:544   app.get('/healthz', o11y.healthHandler);
+server/app.js:545   app.get('/metrics', o11y.metricsHandler);
+server/app.js:559   app.get('/api/version', …)
+server/app.js:3294  app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '3.0.0', service: 'RackTrack API' }))
+server/lib/log-store.js:31  DB_PATH = process.env.LOG_DB_PATH || path.join(DATA_DIR, 'logs.db');  LOG_RETENTION_DAYS, LOG_MAX_ROWS read in app.js
+server/audit.js     append-only, tenant-scoped (docs/architecture/overview-developers.md §6: "ts, user_id, action, target_type, target_id, status, ip, payload")
+Caddyfile           log { output file /data/access.log { roll_size 10MB roll_keep 5 } }
+docker-compose.demo.yml  healthcheck: GET /healthz, interval 30s</pre>
+      </div></details>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><span class="num">6.2</span><h2>What we add</h2><span class="chip opt">Recommendation</span></div>
+      <ul>
+        <li><b>A build stamp.</b> The git commit and a build number written into the image at build time, so /api/version stops saying "unknown". Then one curl per installation tells us what it runs.</li>
+        <li><b>A deployment register.</b> One table kept in the repo docs, updated at every install and every update. The template is in 6.3.</li>
+        <li><b>A backup job on every box.</b> Nightly, the directories in step 10, copied to a second location the customer names. A restore test each month.</li>
+        <li><b>An outside uptime check.</b> A monitor that fetches /healthz on every hostname every few minutes and alerts the team by email.</li>
+        <li><b>A fixed NetBox health check</b>, so "unhealthy" means something when we are called about an incident.</li>
+        <li><b>A customer-facing status line.</b> The version stamp and the last backup time shown on the Operations page, so the customer's administrator can see both without asking us.</li>
+      </ul>
+      <details class="proof"><summary>Read more: why</summary><div class="pf"><div class="src">The gaps are verified in tab 1, section 1.4: commit unknown, no cron backup, NetBox health failing. The additions are recommendations and have not been built.</div></div></details>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">6.3</span><h2>Deployment register</h2><span class="chip opt">Template</span></div>
+    <p>One row per installation. The first row is the demo, filled from this document. Everything else is filled at install time.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Customer</th><th>Hostname</th><th>Shape</th><th>Image build</th><th>App build</th><th>NetBox</th><th>Mail</th><th>Installed</th><th>Last update</th><th>Backup</th><th>Contact</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Demo</td><td>demo.racktrack.ai</td><td>Public VPS</td><td>unknown (started 7 Sep 13:35 UTC)</td><td class="num">61</td><td>v4.6, beside app</td><td>Microsoft Graph</td><td>2026</td><td class="num">7 Sep 2026</td><td>none</td><td>RackTrack team</td></tr>
+        <tr><td class="k">Customer A</td><td>racktrack.customer.com</td><td>On-prem</td><td>…</td><td>…</td><td>…</td><td>SMTP</td><td>…</td><td>…</td><td>…</td><td>…</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span class="num">6.4</span><h2>Updating a private installation</h2><span class="chip opt">Procedure</span></div>
+    <div class="prose">
+      <p><b>Before:</b> back up server/data and note the current image tag. <b>Ship:</b> rsync the code (or copy the new image file), then <code>docker compose -f docker-compose.private.yml up -d --build</code>. The client bundle is compiled inside the image, so a plain restart shows the old app. <b>After:</b> <code>curl /api/version</code> shows the new build stamp; run one scan; update the register. <b>Rollback:</b> <code>docker compose … up -d</code> with the previous image tag; the database schema is created and migrated on start and does not need a manual step.</p>
+    </div>
+    <details class="proof"><summary>Read more: proof</summary><div class="pf"><div class="src">docs/setup/DEMO-VPS-SETUP.md "Updating": "--build is not optional: the client is compiled inside the image, so a plain restart serves the previous bundle". docs/setup/DEMO-VPS-SETUP.md section 5: "The container's first boot creates the schema (server/auth.js runs the CREATE TABLEs on require)". Rollback by image tag is standard Docker practice and has not been rehearsed on a RackTrack box.</div></div></details>
+  </div>
+</section>
+
+<footer>Sources: Dockerfile, docker-compose.yml, docker-compose.demo.yml, deploy/caddy/Caddyfile, deploy/demo.env.example, deploy/demo-rsync-excludes.txt, docs/setup/DEMO-VPS-SETUP.md, docs/setup/MAC-IPA-SETUP.md, docs/architecture/overview-developers.md, server/app.js, server/auth.js, server/audit.js, server/lib/log-store.js, server/lib/graphMail.js, server/lib/connection_profiles.js, server/lib/dot/src/llm.js, server/lib/dot/src/semantic.js, server/routes/netbox/netbox.js, server/scripts/seed-racktrack.js, client/src/App.jsx, client/src/utils/api.js, client/src/utils/snmpClient.js, client/.env.production.example, requirements.txt, and commands run over SSH on 82.29.164.213. All read on 8 September 2026.</footer>
+
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('[role="tabpanel"]'));
+  function select(id, focus) {
+    tabs.forEach(function (t) {
+      var on = t.id === id;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      if (on && focus) t.focus();
+    });
+    panels.forEach(function (p) { p.hidden = p.getAttribute('aria-labelledby') !== id; });
+    try { localStorage.setItem('rt-private-tab', id); } catch (e) {}
+    try { history.replaceState(null, '', '#' + id.replace('tab-', '')); } catch (e) {}
+    try { window.scrollTo({ top: 0 }); } catch (e) {}
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(t.id, false); });
+    t.addEventListener('keydown', function (e) {
+      var j = i;
+      if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') j = 0;
+      else if (e.key === 'End') j = tabs.length - 1;
+      else return;
+      e.preventDefault();
+      select(tabs[j].id, true);
+    });
+  });
+  // The Summary tab is the front page: it opens by default. A link with a
+  // hash (#how, #track) opens that tab directly.
+  var h = (location.hash || '').replace('#', '');
+  if (h && document.getElementById('tab-' + h)) select('tab-' + h, false);
+})();
+</script>
+
+</body>
+</html>

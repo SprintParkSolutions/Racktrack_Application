@@ -1,10 +1,10 @@
-/* Report — the rack and its network on one page.
+/* Report - the rack and its network on one page.
 
    Laid out like the Network page it follows: bands across the full width of
    the screen, parted by hairlines, with the heading of each band in small
    caps above it. The earlier version was a stack of rounded cards, each with
    its own border and shadow, holding a row of bordered tiles whose labels
-   broke across lines — four frames deep before any fact. Nothing floats here. */
+   broke across lines - four frames deep before any fact. Nothing floats here. */
 
 .page {
   position: relative;
@@ -57,7 +57,7 @@
   border-bottom: 1px solid var(--border, rgba(0,0,0,.09));
 }
 
-/* How full the rack's ports are — a proportion, so it is drawn as one. */
+/* How full the rack's ports are - a proportion, so it is drawn as one. */
 .ports { display: flex; flex-direction: column; gap: 7px; }
 .portsHead { display: flex; align-items: baseline; gap: 10px; }
 .portsHead span {

@@ -131,6 +131,10 @@ RUN cd server && npm ci --omit=dev
 # /app/server, PROJECT_ROOT resolves to /app (the repo root) as the app expects.
 COPY server/    ./server/
 COPY pipeline/  ./pipeline/
+# switch_ocr is the make/model reader the pipeline imports (pipeline.ocr_devices,
+# pipeline.ocr_closeup) and the vendor catalogue the setup API serves. It was
+# never copied, so on every deployed build those imports failed (11 Sep 2026).
+COPY switch_ocr/ ./switch_ocr/
 COPY config.json ./config.json
 # Topology generation. /api/topology/:rackId spawns
 # servicenow/topology_generate.py (which imports synth.py beside it) whenever a

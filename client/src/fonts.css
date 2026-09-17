@@ -1,4 +1,4 @@
-/* Self-hosted Manrope (latin) — bundled for the RackTrack wordmark. */
+/* Self-hosted Manrope (latin) - bundled for the RackTrack wordmark. */
 @font-face {
   font-family: 'Manrope';
   font-style: normal;
@@ -19,8 +19,7 @@
 /* Self-hosted Geist / Geist Mono. Icons are inline SVG (components/Icon.jsx).
    These were three render-blocking <link>s to fonts.googleapis.com in
    index.html. On a captive portal, a datacenter network that blocks the font
-   host, or offline, the browser held first paint until the request timed out —
-   a blank white screen indistinguishable from a crash, and in the Capacitor
+   host, or offline, the browser held first paint until the request timed out - a blank white screen indistinguishable from a crash, and in the Capacitor
    wrapper (origin capacitor://localhost) it made an external host a hard
    dependency of app startup. Latin subsets only. */
 @font-face {

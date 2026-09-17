@@ -4,8 +4,8 @@ import styles from './Splash.module.css';
 /**
  * The first thing the app shows: the mark, the name, and nothing else.
  *
- * It covers the screen while the app boots — restoring a session, loading the
- * first route — and then leaves. The timing is deliberate: long enough to read
+ * It covers the screen while the app boots - restoring a session, loading the
+ * first route - and then leaves. The timing is deliberate: long enough to read
  * as a considered opening rather than a flash, short enough that nobody waits
  * for it. It is also honest about what it is: it does not pretend to load
  * anything, so it never sits there after the app is ready.

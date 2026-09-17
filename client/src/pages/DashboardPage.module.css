@@ -3,8 +3,8 @@
   margin: 0 auto;
   /* This page is a flex item of #root, and `margin: 0 auto` gives it auto
      cross-axis margins, which suppress the normal stretch-to-fill. It then
-     shrink-to-fits its content's preferred width — 551px, driven by the
-     subtitle's max-width:60ch — inside a 320px phone. #root clips the
+     shrink-to-fits its content's preferred width - 551px, driven by the
+     subtitle's max-width:60ch - inside a 320px phone. #root clips the
      overflow rather than scrolling it, so the right-hand stat column and
      half the subtitle were simply invisible. width:100% restores the fill. */
   width: 100%;
@@ -106,7 +106,7 @@
 /* ── Stat cards ─────────────────────────────────────────── */
 .stats {
   display: grid;
-  /* Eight numbers in two rows on a phone and one on a desktop — not eight
+  /* Eight numbers in two rows on a phone and one on a desktop - not eight
      cards in four rows. auto-fit at 140px gave two per row on a 390px screen. */
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;

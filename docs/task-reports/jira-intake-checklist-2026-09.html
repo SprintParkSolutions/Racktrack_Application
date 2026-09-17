@@ -1,0 +1,544 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Jira Intake" | https://claude.ai/code/artifact/8a9266d8-61cb-4808-afc8-b1ba0140c3b3 | artifact last updated 2026-09-08 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>RackTrack Jira Intake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#f4f6f5;
+    --surface:#ffffff;
+    --ink:#14181a;
+    --muted:#55605c;
+    --faint:#8b9591;
+    --line:#dfe5e2;
+    --line-soft:#ecf0ee;
+    --accent:#0e7a4c;
+    --accent-soft:rgba(14,122,76,.075);
+    --amber:#8a5a00;
+    --amber-soft:rgba(138,90,0,.09);
+    --off:#a3ada9;
+    --sans:'IBM Plex Sans',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans',ui-sans-serif,system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-size:15px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .top{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+  .topInner{display:flex;flex-wrap:wrap;align-items:center;gap:16px 20px;padding:14px clamp(16px,3vw,40px)}
+  .brand{display:flex;flex-direction:column;gap:3px;margin-right:auto;min-width:0}
+  h1{font-family:var(--cond);font-weight:700;font-size:23px;letter-spacing:-.01em;margin:0;line-height:1.1;text-wrap:balance}
+  .meta{font-family:var(--mono);font-size:11px;letter-spacing:.02em;color:var(--muted);font-variant-numeric:tabular-nums}
+  .tally{display:flex;gap:22px;align-items:baseline;padding:6px 18px;border-radius:3px;background:var(--accent-soft)}
+  .tallyN{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+  .tallyL{font-family:var(--cond);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);display:block}
+  .acts{display:flex;gap:8px;flex-wrap:wrap}
+  button{font-family:var(--sans);cursor:pointer}
+  .btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:3px;padding:9px 14px;font-size:13px;font-weight:500;transition:border-color .14s,background .14s}
+  .btn:hover{border-color:var(--muted)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btnMain{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .btnMain:hover{background:#0b6440;border-color:#0b6440}
+
+  .howto{padding:10px clamp(16px,3vw,40px) 12px;border-bottom:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:6px 22px}
+  .howto b{color:var(--ink);font-weight:600}
+
+  .area{padding:26px clamp(16px,3vw,40px) 4px}
+  .areaHead{display:flex;align-items:baseline;gap:14px;padding-bottom:10px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+  .areaName{font-family:var(--cond);font-weight:600;font-size:15px;text-transform:uppercase;letter-spacing:.12em;margin:0}
+  .areaCount{font-family:var(--mono);font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+  .grid{display:grid;gap:16px;grid-template-columns:1fr;padding-bottom:14px;align-items:start}
+  @media(min-width:1040px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1640px){.grid{grid-template-columns:repeat(3,1fr)}}
+
+  .tk{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:3px;padding:16px 18px 14px;display:flex;flex-direction:column;gap:12px;transition:border-color .16s,opacity .16s}
+  .tk[data-on="0"]{border-left-color:var(--off);opacity:.55}
+  .tkWide{grid-column:1/-1}
+  .tkHead{display:flex;align-items:flex-start;gap:11px}
+  .tkId{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--accent);letter-spacing:.03em;padding-top:3px;white-space:nowrap}
+  .tk[data-on="0"] .tkId{color:var(--off)}
+  .tkTitle{font-family:var(--cond);font-weight:600;font-size:18.5px;line-height:1.22;margin:0;flex:1;text-wrap:balance}
+  .kind{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line);border-radius:2px;padding:2px 6px;margin-top:3px;white-space:nowrap}
+
+  .blk{display:flex;flex-direction:column;gap:4px}
+  .blkL{font-family:var(--cond);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.11em;color:var(--faint)}
+  .blk p{margin:0;font-size:14px;line-height:1.55}
+  .lines{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+  .lines li{font-size:14px;line-height:1.5;padding-left:14px;position:relative}
+  .lines li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:1.5px;background:var(--faint)}
+  .blkSaid p{color:var(--muted);font-size:13.5px}
+
+  .applied{display:flex;gap:8px;align-items:flex-start;background:var(--amber-soft);border-left:2px solid var(--amber);padding:7px 10px;border-radius:0 3px 3px 0}
+  .appliedL{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--amber);white-space:nowrap;padding-top:2px}
+  .applied span:last-child{font-size:13px;color:var(--ink);line-height:1.45}
+
+  .subs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+  .sub{display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-top:1px solid var(--line-soft);font-size:13.5px;line-height:1.45}
+  .sub:first-child{border-top:0}
+  .sub[data-on="0"] .subT{color:var(--off);text-decoration:line-through}
+  .subT{flex:1}
+  .subN{font-family:var(--mono);font-size:11px;color:var(--faint);padding-top:2px}
+
+  .child{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:3px;padding:12px 14px;display:flex;flex-direction:column;gap:9px;background:var(--paper)}
+  .child[data-on="0"]{opacity:.55}
+  .childHead{display:flex;align-items:flex-start;gap:9px}
+  .childTitle{font-family:var(--cond);font-weight:600;font-size:15.5px;margin:0;flex:1;line-height:1.25}
+  .children{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:1040px){.children{grid-template-columns:repeat(3,1fr)}}
+
+  input[type=checkbox]{appearance:none;-webkit-appearance:none;width:17px;height:17px;flex:none;margin:0;border:1.5px solid var(--line);border-radius:3px;background:var(--surface);display:grid;place-content:center;cursor:pointer;transition:border-color .12s,background .12s}
+  input[type=checkbox]:hover{border-color:var(--accent)}
+  input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+  input[type=checkbox]:checked::after{content:"";width:9px;height:5px;margin-top:-2px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg)}
+  input[type=checkbox]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .tkHead input[type=checkbox]{width:19px;height:19px;margin-top:2px}
+  .sub input[type=checkbox]{width:15px;height:15px;margin-top:2px}
+  .sub input[type=checkbox]:checked::after{width:8px;height:4px}
+
+  .note{display:flex;flex-direction:column;gap:5px}
+  textarea{font-family:var(--sans);font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:8px 10px;resize:vertical;min-height:38px;width:100%}
+  .child textarea{background:var(--surface)}
+  textarea:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+  textarea[data-filled="1"]{border-color:var(--amber);background:var(--amber-soft)}
+
+  .foot{padding:22px clamp(16px,3vw,40px) 60px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;border-top:1px solid var(--line);margin-top:16px;background:var(--surface)}
+  .foot p{margin:0;color:var(--muted);font-size:13.5px;max-width:66ch}
+  .saved{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-left:auto}
+  .out{width:100%;font-family:var(--mono);font-size:12px;line-height:1.5;min-height:130px;white-space:pre}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="topInner">
+    <div class="brand">
+      <h1>RackTrack Jira Intake</h1>
+      <span class="meta">SPRTMS · assignee Aasritha · reporter Mandar · 3–7 September 2026</span>
+    </div>
+    <div class="tally">
+      <div><span class="tallyN" id="nTasks">0/0</span><span class="tallyL">Tasks</span></div>
+      <div><span class="tallyN" id="nSubs">0/0</span><span class="tallyL">Subtasks</span></div>
+      <div><span class="tallyN" id="nIssues">0</span><span class="tallyL">Issues</span></div>
+    </div>
+    <div class="acts">
+      <button class="btn" id="all">Select all</button>
+      <button class="btn" id="none">Clear all</button>
+      <button class="btn btnMain" id="copy">Copy for Claude</button>
+    </div>
+  </div>
+</header>
+
+<div class="howto">
+  <span><b>Your review is applied.</b> Amber lines show what changed and why.</span>
+  <span><b>Description is the requirement only.</b> What we thought and what we did sits in the comment.</span>
+  <span>Last pass, then <b>Copy for Claude</b>.</span>
+</div>
+
+<main id="main"></main>
+
+<footer class="foot">
+  <p>Descriptions read as instructions, comments carry the delivery in a human voice. Five tasks you skipped are not here: NetBox for every account, the router rule, the keyboard fix, any photo format, and the demo scan worker.</p>
+  <span class="saved" id="saved">not saved yet</span>
+  <textarea class="out" id="out" readonly aria-label="Your decisions, ready to paste"></textarea>
+</footer>
+
+<script>
+const AREAS = [
+  { name:'Live switches', tasks:[
+    { id:'RT-01', title:'Read the switches from the phone',
+      applied:'Dropped the Stop button subtask, as you asked.',
+      desc:[
+        'Read a live switch from the phone itself over SNMP, without going through the server.',
+        'Support SNMP v2c and SNMP v3 without authentication.',
+        'Return the switch’s identity within a second, and fill in the rest of the read as the answers arrive.',
+        'Do not ask for credentials the read does not need.'
+      ],
+      said:'The old path asked the server to SSH into the switch, so the switch had to be reachable from the data centre and the credentials had to live there. The phone is already on the rack’s network, so it talks to the switch directly now. Identity comes back in about twenty milliseconds and a full read of a fifty-two port switch in under a second, and the screen fills in as the answers arrive instead of sitting blank.',
+      subs:['Read SNMP from the phone on iOS and Android','Support SNMP v2c and v3 with no password','Show results as they arrive, identity first'] },
+
+    { id:'RT-02', title:'Read everything a switch will tell us',
+      applied:'Dropped the documentation subtask. Description is now the requirement only — the reasoning moved into the comment.',
+      desc:[
+        'Collect everything the switch publishes in a single read: every port with its state, speed and duplex; the VLANs; the neighbours it can see; the MAC forwarding table and the ARP entries; and the serial number, hardware revision and firmware version from the manufacturer’s own MIB.',
+        'Show only what the switch actually answered.',
+        'Where a value is missing, say it was not returned. Do not leave a blank and do not fill in a guess.'
+      ],
+      said:'We were using a fraction of what these switches publish. It reads the forwarding tables and ARP now, so a port can name the device behind it instead of only saying it is in use. Where a switch does not answer something, the screen says exactly that. I also wrote down every value we ask for and why, so nobody has to work it out from the code later.',
+      subs:['Every port with its state, speed, duplex and what is plugged in','Neighbours, the MAC forwarding table and the ARP entries','Serial, hardware revision and firmware from the maker’s own MIB'] },
+
+    { id:'RT-03', title:'The Network page, one card per switch',
+      applied:'Four subtasks folded into two.',
+      desc:[
+        'Show each switch on the Network page as its own numbered card carrying its name, model, address and how many ports are up.',
+        'Draw the faceplate to the width of the screen in two rows of numbered ports.',
+        'Put a switch’s actions behind a menu on its own card, and allow it to be edited where it sits.',
+        'Keep the full detail behind Read more.',
+        'Leave every field empty when a switch is added.'
+      ],
+      said:'This screen had grown into a wall of text. It is one card per switch now: the name, the model, the ports that are up and the numbered faceplate, with everything else under Read more. Adding a switch no longer pre-fills anything, because a guessed address that half works is worse than an empty field.',
+      subs:['A numbered card per switch, faceplate in two rows, detail behind Read more','Actions and editing on the card itself, and nothing pre-filled when adding'] }
+  ]},
+
+  { name:'Report and export', tasks:[
+    { id:'RT-05', title:'The report as a summary',
+      applied:null,
+      desc:[
+        'Open the report with the rack’s figures: ports in use, devices, switches read, addresses seen.',
+        'Then list each device with the facts held for it.',
+        'Print only fields that have a value.',
+        'Give every list that has been trimmed a control that shows all of it.'
+      ],
+      said:'The report used to print every field whether or not we had a value, so half of it read “not stated”. It shows what we know now and stays quiet about the rest, and the figures at the top are the ones people actually ask for.',
+      subs:['Lead with the rack’s figures, then go device by device','Print only the fields that have a value','A View all control on every trimmed list'] },
+
+    { id:'RT-07', title:'Export a rack into NetBox',
+      applied:'First two subtasks combined, so three in total.',
+      desc:[
+        'Let an owner send a scanned rack into NetBox from the report.',
+        'Compare the rack against NetBox before anything is written, and start that comparison in the background when the report opens, so the export is ready the moment it is asked for.',
+        'List every object that would be created, changed or left alone, by name.',
+        'Confirm a completed write on screen and link to the rack in NetBox.',
+        'Make a second run safe: update what already exists rather than duplicating it, and never delete.'
+      ],
+      said:'Preview used to take five seconds after you pressed it, which read as broken. The report compares while you are reading it now, so Export opens with “37 new, 241 unchanged” already on screen. Pushing ends with a green confirmation and a link straight into NetBox, so you can see the rack that was just written.',
+      subs:['Compare in the background when the report opens, so the export is ready when asked for','List every object by name and what would happen to it','Confirm the write on screen and link into NetBox'] }
+  ]},
+
+  { name:'What we know about a device', tasks:[
+    { id:'RT-10', title:'Make, model and firmware',
+      applied:'Five subtasks cut to two. The label repair and the SFP advisor moved into the requirement.',
+      desc:[
+        'Treat a make and model typed by a person as the truth over anything read from a photograph, and carry those values into the report and the NetBox export.',
+        'Repair unit numbers the camera misreads, where a letter has been read for a digit.',
+        'Return the real latest firmware for TP-Link and D-Link from the manufacturers’ own published lists, matched to the hardware revision the switch reports.',
+        'Always say something true about firmware: the verified version, the sign-in wall, or the page to check. Never a dead end.',
+        'Show the ports and the cables for a vendor and model in the SFP advisor.'
+      ],
+      said:'Two things were wrong. Someone typing TP-Link TL-SG2428P was being overruled by a blurry photograph, and the firmware tab said it could not check for every switch we own. Firmware now comes from the makers’ own published lists, matched to the hardware revision the switch reports, so a TL-SG2428P on 5.20.27 is told it is current instead of being sent away to a download page. Labels read correctly again too — U15 was coming back as UIS.',
+      subs:['A typed make and model outranks the camera, and reaches the report and the export','Real latest firmware from TP-Link’s and D-Link’s own lists, matched to the hardware revision'] },
+
+    { id:'RT-11', title:'Drift and port history',
+      applied:'Written out in more detail, as you asked: four subtasks and a fuller requirement.',
+      desc:[
+        'Show every switch in the rack on the Drift screen, not only the one read last, and poll them so their state is current.',
+        'For each switch, lay its ports out as they sit on the device and show the state of each.',
+        'List what has changed since the previous read in plain words — a port going up or down, a speed or duplex change, a neighbour appearing or disappearing, a VLAN change — each with how long ago it happened.',
+        'Keep a history for each port, so a port can be opened and its own record read.',
+        'Say when the switch was last read, and let it be read again from the screen.'
+      ],
+      said:'Drift was showing one switch, paused, while three were being read on the Network page. It follows the rack now. The change list reads like a person wrote it — “Slot0/9 went down, 5m”, “Slot0/3 1 Gbps to 100 Mbps, 3h”, “Slot0/49 neighbour appeared: AP-Floor2, 26h” — and each port keeps its own record, so you can open one and see what it has been doing rather than only what it is doing now.',
+      subs:['Every switch in the rack on the screen, polled, laid out in bands','Each switch’s ports with their state, and a port opens its own history','A change list in plain words with how long ago, covering up and down, speed, duplex, neighbours and VLANs','Say when it was last read, and read it again from the screen'] }
+  ]},
+
+  { name:'The app', tasks:[
+    { id:'RT-UI', title:'Rework the app’s screens for a phone', wide:true,
+      applied:'New parent, as you asked. Placing a switch, the report’s actions, and the five steps are subtasks of it, each carrying its own requirement and comment instead of subtasks of its own.',
+      desc:[
+        'Reshape the screens a person uses on a phone so each one does its job in the order the work happens.',
+        'Cover placing a switch in the rack, the actions on a finished report, and the way a rack and the app itself are navigated.',
+        'Every screen must fit the device it is on. Nothing important may be reachable only by scrolling a list that does not look scrollable.'
+      ],
+      said:'These three came out of the same complaint from different directions: the screen was doing the work in an order nobody walks, and the last thing you needed was off the bottom of it. Each subtask below is one of those screens.',
+      children:[
+        { id:'RT-UI-1', title:'Put each switch where it physically sits',
+          desc:[
+            'Let a switch read over the network be matched to the device in the rack photograph, either by choosing from a list of the rack’s devices or by tapping the unit on the photo.',
+            'Take the match without asking where only one device can fit.',
+            'Save the placement so it survives a reload, including a deliberate “not in this rack”.',
+            'Say in words where each switch went.'
+          ],
+          said:'A switch read over the network and a device in the photo used to be two unrelated things; they are one now. Where there is only one possible match the app just takes it, and the save reports back in plain words: Sw1 went to U15, Sw2 to U14.' },
+        { id:'RT-UI-2', title:'Download, Export and Share on the report',
+          desc:[
+            'Put Download, Export and Share at the top of the report, each opening its own choices underneath.',
+            'Download as CSV, JSON or PDF. Export to NetBox. Share by Teams, by email, or as a link that opens without an account.',
+            'Remove the separate export screen and reach it from the report instead.'
+          ],
+          said:'These were at the bottom of a long report and split across a second screen. They are the first thing you see now, each with a small menu. Share asks who it is going to and puts a single Send button under the field.' },
+        { id:'RT-UI-3', title:'Five steps for a rack, and a menu that fits',
+          desc:[
+            'Give a rack five steps in the order a person walks them: Overview, Network, Topology, Switches, Report, with Drift behind More.',
+            'Fit the side menu to the height of the screen so no entry needs scrolling.',
+            'Put History under Support.',
+            'Show the person’s name and role beside their avatar.'
+          ],
+          said:'The menu had grown past the height of a phone, so the last entries could only be reached by scrolling a list that did not look scrollable. The rows spread across whatever height the screen has now, and the tab order follows the job rather than the order the screens were built in.' }
+      ] },
+
+    { id:'RT-15', title:'Sign-in and the front of the app',
+      applied:'Kept as a main task with no subtasks — everything is in the requirement.',
+      desc:[
+        'Rebuild sign-in as a logo, the product name, two fields and a button.',
+        'Size it from the box it sits in rather than from the browser window, so the button is on screen on every phone.',
+        'Set the line under the name to “Physical Infrastructure Intelligence for Data Centers”.',
+        'Replace the raised, soft-shadowed styling with a flat treatment, and let the page use the full width of the device.'
+      ],
+      said:'Sign-in was being sized from the browser window, so on some phones the button sat below the fold; it is sized from its own box now. The tagline is the new one, and the soft raised styling has gone in favour of something flatter that matches the rest of the app.',
+      subs:[] }
+  ]}
+];
+
+const KEY = 'rt-jira-intake-v2';
+const state = {};
+const walk = (fn) => AREAS.forEach(a => a.tasks.forEach(t => {
+  fn(t, a);
+  (t.children || []).forEach(c => fn(c, a, t));
+}));
+walk((t) => { state[t.id] = { on:true, subs:(t.subs || []).map(() => true), note:'' }; });
+
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw) {
+    const saved = JSON.parse(raw);
+    for (const id in state) if (saved[id]) {
+      state[id].on = !!saved[id].on;
+      state[id].note = String(saved[id].note || '');
+      if (Array.isArray(saved[id].subs)) {
+        state[id].subs = state[id].subs.map((v,i) => saved[id].subs[i] === undefined ? v : !!saved[id].subs[i]);
+      }
+    }
+  }
+} catch (e) { /* private window */ }
+
+const el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+};
+const lines = (label, arr) => {
+  const b = el('div','blk');
+  b.append(el('span','blkL',label));
+  const ul = el('ul','lines');
+  arr.forEach(x => ul.append(el('li',null,x)));
+  b.append(ul);
+  return b;
+};
+const para = (label, text, cls) => {
+  const b = el('div', cls ? 'blk ' + cls : 'blk');
+  b.append(el('span','blkL',label), el('p',null,text));
+  return b;
+};
+const noteField = (id) => {
+  const n = el('div','note');
+  n.append(el('span','blkL','Notes'));
+  const ta = el('textarea');
+  ta.rows = 2;
+  ta.placeholder = 'Leave empty to take it as written';
+  ta.value = state[id].note;
+  ta.dataset.filled = state[id].note.trim() ? '1' : '0';
+  ta.addEventListener('input', () => {
+    state[id].note = ta.value;
+    ta.dataset.filled = ta.value.trim() ? '1' : '0';
+    refresh();
+  });
+  n.append(ta);
+  return n;
+};
+
+const main = document.getElementById('main');
+
+AREAS.forEach((area) => {
+  const sec = el('section','area');
+  const head = el('div','areaHead');
+  head.append(el('h2','areaName',area.name));
+  const cnt = el('span','areaCount');
+  head.append(cnt);
+  sec.append(head);
+  area._count = cnt;
+
+  const grid = el('div','grid');
+  area.tasks.forEach((t) => {
+    const card = el('article', t.wide ? 'tk tkWide' : 'tk');
+    card.id = 't-' + t.id;
+    card.dataset.on = state[t.id].on ? '1' : '0';
+
+    const h = el('div','tkHead');
+    const cb = el('input');
+    cb.type = 'checkbox'; cb.id = 'c-' + t.id; cb.checked = state[t.id].on;
+    cb.setAttribute('aria-label','Create ' + t.title);
+    cb.addEventListener('change', () => {
+      state[t.id].on = cb.checked;
+      card.dataset.on = cb.checked ? '1' : '0';
+      refresh();
+    });
+    h.append(cb, el('span','tkId',t.id), el('h3','tkTitle',t.title), el('span','kind','Task'));
+    card.append(h);
+
+    if (t.applied) {
+      const ap = el('div','applied');
+      ap.append(el('span','appliedL','Your note'), el('span',null,t.applied));
+      card.append(ap);
+    }
+
+    card.append(lines('What to do', t.desc));
+    card.append(para('Comment, in my words', t.said, 'blkSaid'));
+
+    if (t.subs && t.subs.length) {
+      const sl = el('div','blk');
+      sl.append(el('span','blkL','Subtasks · ' + t.subs.length));
+      const ul = el('ul','subs');
+      t.subs.forEach((text,i) => {
+        const li = el('li','sub');
+        li.dataset.on = state[t.id].subs[i] ? '1' : '0';
+        const sc = el('input');
+        sc.type = 'checkbox'; sc.checked = state[t.id].subs[i];
+        sc.setAttribute('aria-label', text);
+        sc.addEventListener('change', () => {
+          state[t.id].subs[i] = sc.checked;
+          li.dataset.on = sc.checked ? '1' : '0';
+          refresh();
+        });
+        li.append(sc, el('span','subN', String(i + 1)), el('span','subT',text));
+        ul.append(li);
+      });
+      sl.append(ul);
+      card.append(sl);
+    }
+
+    if (t.children) {
+      const cl = el('div','blk');
+      cl.append(el('span','blkL','Subtasks · ' + t.children.length + ', each with its own requirement'));
+      const wrap = el('div','children');
+      t.children.forEach((c) => {
+        const kid = el('div','child');
+        kid.id = 't-' + c.id;
+        kid.dataset.on = state[c.id].on ? '1' : '0';
+        const kh = el('div','childHead');
+        const kcb = el('input');
+        kcb.type = 'checkbox'; kcb.id = 'c-' + c.id; kcb.checked = state[c.id].on;
+        kcb.setAttribute('aria-label','Create ' + c.title);
+        kcb.addEventListener('change', () => {
+          state[c.id].on = kcb.checked;
+          kid.dataset.on = kcb.checked ? '1' : '0';
+          refresh();
+        });
+        kh.append(kcb, el('h4','childTitle',c.title), el('span','kind','Sub'));
+        kid.append(kh, lines('What to do', c.desc), para('Comment, in my words', c.said, 'blkSaid'), noteField(c.id));
+        wrap.append(kid);
+      });
+      cl.append(wrap);
+      card.append(cl);
+    }
+
+    card.append(noteField(t.id));
+    grid.append(card);
+  });
+  sec.append(grid);
+  main.append(sec);
+});
+
+const nTasks = document.getElementById('nTasks');
+const nSubs = document.getElementById('nSubs');
+const nIssues = document.getElementById('nIssues');
+const savedL = document.getElementById('saved');
+const out = document.getElementById('out');
+
+let db = null, saveTimer = null;
+
+function text() {
+  const o = ['RackTrack → Jira (SPRTMS). Final pass:',''];
+  AREAS.forEach(a => a.tasks.forEach(t => {
+    const st = state[t.id];
+    if (!st.on) { o.push(t.id + '  SKIP  ' + t.title); return; }
+    o.push(t.id + '  CREATE  ' + t.title);
+    const dropped = (t.subs || []).filter((_,i) => !st.subs[i]);
+    if (dropped.length) o.push('        drop subtask: ' + dropped.join(' | '));
+    if (st.note.trim()) o.push('        note: ' + st.note.trim().replace(/\s+/g,' '));
+    (t.children || []).forEach(c => {
+      const cs = state[c.id];
+      o.push('        ' + (cs.on ? 'sub  ' : 'SKIP ') + c.title);
+      if (cs.note.trim()) o.push('             note: ' + cs.note.trim().replace(/\s+/g,' '));
+    });
+  }));
+  return o.join('\n');
+}
+
+function refresh() {
+  let tasksOn = 0, tasksAll = 0, subsOn = 0, subsAll = 0;
+  AREAS.forEach(a => {
+    let aOn = 0;
+    a.tasks.forEach(t => {
+      tasksAll++;
+      if (state[t.id].on) { aOn++; tasksOn++; }
+      (t.subs || []).forEach((_,i) => { subsAll++; if (state[t.id].on && state[t.id].subs[i]) subsOn++; });
+      (t.children || []).forEach(c => { subsAll++; if (state[t.id].on && state[c.id].on) subsOn++; });
+    });
+    if (a._count) a._count.textContent = aOn + '/' + a.tasks.length;
+  });
+  nTasks.textContent = tasksOn + '/' + tasksAll;
+  nSubs.textContent = subsOn + '/' + subsAll;
+  nIssues.textContent = String(tasksOn + subsOn);
+  out.value = text();
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 900);
+}
+
+async function save() {
+  if (!db) return;
+  try {
+    await db.doc('intake/decisions').set({ state: JSON.parse(JSON.stringify(state)), summary: text() });
+    const t = new Date();
+    savedL.textContent = 'saved ' + String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+  } catch (e) { savedL.textContent = 'kept on this device'; }
+}
+
+function setAll(v) {
+  walk((t) => {
+    state[t.id].on = v;
+    const c = document.getElementById('c-' + t.id);
+    const n = document.getElementById('t-' + t.id);
+    if (c) c.checked = v;
+    if (n) n.dataset.on = v ? '1' : '0';
+  });
+  refresh();
+}
+document.getElementById('all').addEventListener('click', () => setAll(true));
+document.getElementById('none').addEventListener('click', () => setAll(false));
+
+document.getElementById('copy').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  try {
+    await navigator.clipboard.writeText(text());
+    btn.textContent = 'Copied — paste it in chat';
+  } catch (err) {
+    out.select();
+    btn.textContent = 'Select the box below and copy';
+  }
+  setTimeout(() => { btn.textContent = 'Copy for Claude'; }, 2600);
+});
+
+refresh();
+
+(async () => {
+  try {
+    db = await claude.use('db');
+    if (!db) { savedL.textContent = 'kept on this device'; return; }
+    const snap = await db.doc('intake/decisions').get();
+    if (snap && snap.exists) {
+      const saved = (snap.data() || {}).state;
+      if (saved && !localStorage.getItem(KEY)) {
+        for (const id in state) if (saved[id]) {
+          state[id].on = !!saved[id].on;
+          state[id].note = String(saved[id].note || '');
+          if (Array.isArray(saved[id].subs)) state[id].subs = saved[id].subs.map(Boolean);
+          const c = document.getElementById('c-' + id);
+          const n = document.getElementById('t-' + id);
+          if (c) c.checked = state[id].on;
+          if (n) n.dataset.on = state[id].on ? '1' : '0';
+        }
+        refresh();
+      }
+    }
+    savedL.textContent = 'saved as you go';
+  } catch (e) { savedL.textContent = 'kept on this device'; }
+})();
+</script>
+
+</body></html>

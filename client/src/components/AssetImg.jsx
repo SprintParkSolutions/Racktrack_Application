@@ -5,8 +5,7 @@ import { apiUrl, ensureFreshAssetToken, assetTokenGeneration } from '../utils/ap
  *
  * Those paths are authorised by a short-lived token in the query string,
  * because an <img> cannot send an Authorization header. When that token
- * expires the server answers 404 and the browser shows a broken image —
- * silently, with the rest of the page working normally, because every other
+ * expires the server answers 404 and the browser shows a broken image - * silently, with the rest of the page working normally, because every other
  * request carries a Bearer header and is unaffected. Testers reported it as
  * "the scanned rack images are not displayed".
  *

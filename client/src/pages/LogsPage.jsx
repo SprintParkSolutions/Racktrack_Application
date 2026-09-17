@@ -117,7 +117,7 @@ function LogDetail({ id }) {
   );
 }
 
-// Embeddable logs view — the shared console (DashboardPage) owns the outer
+// Embeddable logs view - the shared console (DashboardPage) owns the outer
 // page chrome, the title, and the Live / Refresh controls, and drives this
 // via the `live` and `refreshTick` props. Level filtering and search stay
 // here because they are logs-specific.

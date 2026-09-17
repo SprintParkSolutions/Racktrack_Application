@@ -1,14 +1,14 @@
-/* Login — one screen, one job.
+/* Login - one screen, one job.
    Logo, name, two fields, one button, two soft circles behind.
 
    It lives inside #root, which on a desktop is a 540px centred column (the
    app's phone-in-the-middle layout) and on a phone is the screen. So every
    size here is relative to THAT box, never to the viewport: the first version
    used 18vw side padding, which on a 2000px screen was 360px a side inside a
-   540px column — the page collapsed to one word wide and vertical centring
+   540px column - the page collapsed to one word wide and vertical centring
    pushed the logo off the top. #root scrolls; this page never clips. */
 
-/* One flat surface. No card, no tinted circles, nothing with an edge — the
+/* One flat surface. No card, no tinted circles, nothing with an edge - the
    first version drew a white panel on a slightly different ground and the
    seam read as a box floating in the middle of the screen. The page paints
    the whole viewport itself so there is no seam to see. */
@@ -25,7 +25,7 @@
 :global([data-theme='dark']) .page { background: var(--bg, #0c1420); color: var(--text, #fff); }
 
 /* Top-anchored, not centred: a short screen scrolls, it never crops.
-   Explicitly transparent — a global `main` rule paints a surface colour, and
+   Explicitly transparent - a global `main` rule paints a surface colour, and
    against the page's white that seam is exactly the box that read as a card
    floating in the middle of the screen. */
 .stack {

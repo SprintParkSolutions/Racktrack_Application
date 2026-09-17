@@ -79,7 +79,7 @@ export default function ProfilePage() {
   }, []);
 
   // The "copied" flag has to be cleared on a timer, and that timer has to be
-  // cancelled on unmount — otherwise navigating away mid-countdown sets state
+  // cancelled on unmount - otherwise navigating away mid-countdown sets state
   // on a page that no longer exists.
   useEffect(() => {
     if (!copied) return undefined;
@@ -99,7 +99,7 @@ export default function ProfilePage() {
   };
 
   // Sign out everywhere. The endpoint bumps token_version and revokes every
-  // refresh row, which invalidates THIS session too — so the only correct
+  // refresh row, which invalidates THIS session too - so the only correct
   // follow-up is to drop the local session and land on the sign-in page.
   // Treating a failure as success would leave someone believing a stolen
   // laptop had been locked out when it had not.
@@ -124,7 +124,7 @@ export default function ProfilePage() {
     try {
       await navigator.clipboard.writeText(user.email);
       setCopied(true);
-    } catch { /* clipboard blocked — the address is on screen to select */ }
+    } catch { /* clipboard blocked - the address is on screen to select */ }
   };
 
   const openScan = async (rackId) => {
@@ -150,7 +150,7 @@ export default function ProfilePage() {
     <div className={`page page-full ${styles.profile}`}>
       <header className={styles.topbar}>
         {/* Grouped with the title so the header stays left-aligned whether or
-            not the back button renders — it only appears when you arrived
+            not the back button renders - it only appears when you arrived
             from somewhere, since tapping Profile in the nav has nowhere to
             go back to. */}
         <div className={styles.topbarLeft}>
@@ -239,6 +239,18 @@ export default function ProfilePage() {
                   </span>
                   <Icon name="chevron_right" className={styles.rowChevron} />
                 </button>
+                <button
+                  type="button"
+                  className={styles.row}
+                  onClick={() => navigate('/setup')}
+                >
+                  <span className={styles.rowIcon}><Icon name="apartment" /></span>
+                  <span className={styles.rowMain}>
+                    <span className={styles.rowTitle}>Organization settings</span>
+                    <span className={styles.rowMeta}>Datacentres, spaces, approvers and rules</span>
+                  </span>
+                  <Icon name="chevron_right" className={styles.rowChevron} />
+                </button>
               </section>
             )}
 
@@ -288,7 +300,7 @@ export default function ProfilePage() {
                 </ul>
               )}
 
-              {/* Beyond five, the archive is its own page — expanding the list in
+              {/* Beyond five, the archive is its own page - expanding the list in
                   place turned Profile into an endless scroll with no way to find a
                   particular rack. /history is searchable, filtered and paged. */}
               {!scansLoading && scans.length > 5 && (

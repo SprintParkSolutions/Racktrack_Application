@@ -1,4 +1,4 @@
-// Preset profile avatars — professional gradient "monograms" (the user's
+// Preset profile avatars - professional gradient "monograms" (the user's
 // initial on a tasteful gradient). Bundled, so they work offline with no
 // upload. A user is auto-assigned one from their initial and can change it.
 //
@@ -8,7 +8,7 @@
 // Monochrome by design: the app is white / white-shades with subtle black
 // accents and carries no colour accent, so the avatars are a graphite ramp
 // rather than a rainbow. The array is still index-addressed (users.avatar
-// stores the INDEX), so the length and order must not change — only the
+// stores the INDEX), so the length and order must not change - only the
 // values were re-toned.
 export const AVATARS = [
   { from: '#3f3f3f', to: '#171717' },  // 0 graphite

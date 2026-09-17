@@ -6,7 +6,7 @@ import {
 // Admin-only panel to configure the ORGANIZATION's external access (CMDB/ITSM
 // databases, live network sources, etc.). The admin enters credentials ONCE for
 // the whole org; the server stores them AES-256-GCM encrypted and NEVER returns
-// the plaintext — not even here. So the list shows only which integrations are
+// the plaintext - not even here. So the list shows only which integrations are
 // configured, never the secret. Editing = re-entering to replace.
 
 const TYPE_KEYS = Object.keys(TYPE_INFO);
@@ -19,7 +19,7 @@ function emptySecretFor(type) {
 
 export default function OrgConnectionsPanel() {
   // The credential fields are driven by TYPE_INFO, so the label/field pairing
-  // has to be generated too — a shared prefix keeps the ids unique per mount.
+  // has to be generated too - a shared prefix keeps the ids unique per mount.
   const uid = useId();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading]   = useState(true);

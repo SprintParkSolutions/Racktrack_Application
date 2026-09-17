@@ -6,7 +6,7 @@
  *   native  com.racktrack.app://auth/callback#token=…&user=…
  *
  * Everything rides in the URL FRAGMENT rather than the query string, because a
- * fragment is stripped by the browser before the request goes out — so the
+ * fragment is stripped by the browser before the request goes out - so the
  * token never lands in an access log, a proxy, or a Referer header.
  *
  * Two callers need to read it and they arrive very differently: the web build
@@ -28,7 +28,7 @@ function decodeUser(b64) {
 /**
  * @param {string} hashOrUrl  a location.hash ("#token=…"), or a whole deep-link URL
  * @returns {{ok: true, token, user} | {ok: false, code, message} | null}
- *          null means "this isn't a social callback" — the caller should ignore it.
+ *          null means "this isn't a social callback" - the caller should ignore it.
  */
 export function parseAuthFragment(hashOrUrl) {
   if (!hashOrUrl) return null;

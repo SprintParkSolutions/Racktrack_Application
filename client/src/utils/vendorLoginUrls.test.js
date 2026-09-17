@@ -5,7 +5,7 @@
 // substring step is the one that decides between two plausible answers. A
 // change that made "allied" win over "alliedtelesis", or that let the generic
 // fallback fire before a curated portal, would send technicians to the wrong
-// vendor's login page — a failure nobody reports as a bug, they just give up.
+// vendor's login page - a failure nobody reports as a bug, they just give up.
 
 import { describe, test, expect } from 'vitest';
 import { findVendorLogin, VENDOR_LOGIN, VENDOR_ALIAS } from './vendorLoginUrls';

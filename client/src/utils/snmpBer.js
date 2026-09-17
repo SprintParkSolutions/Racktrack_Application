@@ -4,8 +4,8 @@
 // written against the RFCs rather than pulled from npm and has been proven
 // against three real switches. The only change is the container: that one runs
 // on Node and uses Buffer, this one runs in a WebView and uses plain byte
-// arrays. Everything else — the tag table, the length rules, the OID packing,
-// the decision to render an unprintable OCTET STRING as hex — is the same, on
+// arrays. Everything else - the tag table, the length rules, the OID packing,
+// the decision to render an unprintable OCTET STRING as hex - is the same, on
 // purpose. Two implementations that drift are worse than one that is copied.
 //
 // Nothing here knows about sockets. It turns a request into bytes and bytes
@@ -106,7 +106,7 @@ function pushArc(out, arc) {
 /**
  * The first two arcs are folded into ONE subidentifier (arc0 × 40 + arc1),
  * which is then base-128 encoded like every other one (X.690 §8.19.4). That
- * fold is the piece of BER that looks wrong until you know the rule — and it
+ * fold is the piece of BER that looks wrong until you know the rule - and it
  * is also where the server's codec cuts a corner, writing the folded value as
  * a single raw byte. Fine for every OID that starts 1.3 or 1.0, which is all
  * of SNMP; wrong for a first pair that folds past 255. Done properly here.

@@ -2,7 +2,7 @@
 //
 // The wire shapes of v2c and v3 requests are asserted byte by byte where the
 // RFCs fix them, and replies are synthesised with the same primitives so the
-// parser is tested against messages an agent would actually send — including
+// parser is tested against messages an agent would actually send - including
 // the REPORT that answers a v3 discovery, the one exchange nothing else on the
 // phone can do for us.
 

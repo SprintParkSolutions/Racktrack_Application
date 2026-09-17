@@ -1,0 +1,463 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Site Audit" | https://claude.ai/code/artifact/74af5767-0c28-440d-a8cd-d5a64b2915f3 | artifact last updated 2026-09-08 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>RackTrack Site Audit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#f6f7f4; --paper-2:#eceeea; --ink:#16212b; --ink-2:#4a5866; --ink-3:#7b8794;
+  --rule:#d7dbd6; --accent:#1f5f8b; --accent-soft:#dfe9f0;
+  --crit:#a8372c; --crit-bg:#f6e4e1; --high:#b4671c; --high-bg:#f7e9d8; --med:#8a7a1e; --med-bg:#f3efd6; --low:#3f6b52; --low-bg:#e1ecE4; --good:#2f6b4f; --good-bg:#e0eee6;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace;
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#151a1e; --paper-2:#1d2429; --ink:#e9ecee; --ink-2:#b4bcc4; --ink-3:#7f8a94;
+    --rule:#2c353d; --accent:#7fb3d9; --accent-soft:#1f3140;
+    --crit:#ef8b80; --crit-bg:#3a201d; --high:#e6a75e; --high-bg:#3a2a18; --med:#d9c95a; --med-bg:#33301a; --low:#8fc7a5; --low-bg:#1d3226; --good:#8fc7a5; --good-bg:#1d3226;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#151a1e; --paper-2:#1d2429; --ink:#e9ecee; --ink-2:#b4bcc4; --ink-3:#7f8a94;
+  --rule:#2c353d; --accent:#7fb3d9; --accent-soft:#1f3140;
+  --crit:#ef8b80; --crit-bg:#3a201d; --high:#e6a75e; --high-bg:#3a2a18; --med:#d9c95a; --med-bg:#33301a; --low:#8fc7a5; --low-bg:#1d3226; --good:#8fc7a5; --good-bg:#1d3226;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.55}
+a{color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 24px 96px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:56px}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:24px}.toc{position:static!important}}
+.toc{position:sticky;top:24px;align-self:start;font-size:14px}
+.toc p{margin:0 0 8px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.toc ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--rule)}
+.toc li a{display:block;padding:5px 0 5px 14px;color:var(--ink-2);text-decoration:none;border-left:2px solid transparent;margin-left:-1px}
+.toc li a:hover,.toc li a:focus-visible{color:var(--accent);border-left-color:var(--accent)}
+main{max-width:760px;min-width:0}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:46px;letter-spacing:-.01em}
+h2{font-size:30px;margin-top:72px;padding-top:24px;border-top:1px solid var(--rule)}
+h3{font-size:21px;margin-top:36px}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 14px}
+.lede{font-size:20px;color:var(--ink-2);margin:18px 0 0;max-width:62ch}
+p{margin:14px 0;max-width:68ch}
+ul,ol{max-width:68ch;padding-left:22px}li{margin:6px 0}
+code{font-family:var(--mono);font-size:.86em;background:var(--paper-2);padding:1px 5px;border-radius:3px;word-break:break-word}
+.meta{display:flex;flex-wrap:wrap;gap:8px 24px;margin:22px 0 0;font-size:14px;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:600}
+.score{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:32px 0 8px}
+@media (max-width:560px){.score{grid-template-columns:repeat(2,1fr)}}
+.score div{padding:14px 16px;border-radius:6px;background:var(--paper-2)}
+.score span{display:block;font-family:var(--serif);font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+.score small{display:block;margin-top:6px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.score .c span{color:var(--crit)}.score .h span{color:var(--high)}.score .m span{color:var(--med)}.score .l span{color:var(--low)}
+.finding{margin:26px 0;padding:0 0 0 18px;border-left:3px solid var(--rule)}
+.finding.crit{border-color:var(--crit)}.finding.high{border-color:var(--high)}.finding.med{border-color:var(--med)}.finding.low{border-color:var(--low)}
+.finding h4{margin:0;font-size:18px;font-weight:600;font-family:var(--sans);display:flex;flex-wrap:wrap;gap:10px;align-items:baseline}
+.pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.crit{background:var(--crit-bg);color:var(--crit)}.pill.high{background:var(--high-bg);color:var(--high)}.pill.med{background:var(--med-bg);color:var(--med)}.pill.low{background:var(--low-bg);color:var(--low)}.pill.good{background:var(--good-bg);color:var(--good)}
+.finding p{margin:8px 0}
+.finding .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-right:6px}
+.good-list li::marker{color:var(--good)}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:16px 0}
+.tbl{overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.top10 li{margin:10px 0}
+.top10 b{font-weight:600}
+blockquote{margin:10px 0;padding:8px 14px;border-left:2px solid var(--accent);color:var(--ink-2);font-style:italic;max-width:66ch}
+.note{background:var(--accent-soft);border-radius:6px;padding:14px 18px;margin:18px 0;font-size:15.5px}
+.note p{margin:6px 0}
+.pagehead{margin-top:30px}
+.pagehead h3{margin-top:0}
+.pagehead .url{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);margin:2px 0 8px;word-break:break-all}
+hr{border:0;border-top:1px solid var(--rule);margin:40px 0}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Sections">
+  <p>Contents</p>
+  <ol>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#good">What is working well</a></li>
+    <li><a href="#top10">Fix these first</a></li>
+    <li><a href="#security">Security and privacy</a></li>
+    <li><a href="#speed">Speed and page weight</a></li>
+    <li><a href="#bugs">Bugs and odd behaviour</a></li>
+    <li><a href="#a11y">Accessibility</a></li>
+    <li><a href="#design">Typography, colour, UI</a></li>
+    <li><a href="#mobile">Mobile</a></li>
+    <li><a href="#seo">SEO and web standards</a></li>
+    <li><a href="#copy">Copy and content</a></li>
+    <li><a href="#guide">Knowledgebase page</a></li>
+    <li><a href="#pages">Page by page</a></li>
+    <li><a href="#method">How this was checked</a></li>
+  </ol>
+</nav>
+
+<main>
+<p class="kicker">Website audit · racktrack.ai · 8 September 2026</p>
+<h1>RackTrack Site Audit</h1>
+<p class="lede">Every page on racktrack.ai, read and tested for security, speed, bugs, accessibility, typography, colour, layout, mobile behaviour, search visibility and the words themselves. Written in plain English so anyone on the team can act on it.</p>
+<div class="meta">
+  <span><b>24</b> pages crawled</span><span><b>143</b> assets checked</span><span><b>48</b> page views tested (desktop + mobile)</span><span><b>~18,500</b> words of copy read</span>
+</div>
+
+<h2 id="summary" style="margin-top:56px">Summary</h2>
+<p>The site looks good and the story it tells is clear. The problems are mostly under the surface: how the site is served, how heavy it is, and a handful of decisions in the code that work against visitors. None of them are hard to fix, and most are a day or two of work each. The counts below are grouped findings, not individual occurrences (a contrast problem that repeats on every page counts once, and the "smaller items" groups each hold several points).</p>
+<div class="score">
+  <div class="c"><span>8</span><small>Critical</small></div>
+  <div class="h"><span>21</span><small>High</small></div>
+  <div class="m"><span>23</span><small>Medium</small></div>
+  <div class="l"><span>6</span><small>Low groups</small></div>
+</div>
+<p style="font-size:14.5px;color:var(--ink-3)">Critical = loses leads, exposes the company, or breaks the site for a group of people. High = clearly hurts trust, speed or usability. Medium = worth fixing in the next pass. Low = polish.</p>
+
+<h2 id="good">What is working well</h2>
+<p>Worth saying first, because a lot of care has gone in:</p>
+<ul class="good-list">
+  <li>The visual identity is consistent across the marketing pages: one blue accent, one navy, one type family, a monospace used deliberately for labels and figures. It reads as one product.</li>
+  <li>The homepage scroll story on desktop is well built. It respects <code>prefers-reduced-motion</code>, the poster frames are already in the markup, and the phone-to-rack animation explains the product faster than text would.</li>
+  <li>Good accessibility foundations: a "Skip to content" link, proper <code>&lt;main&gt;</code>, <code>&lt;nav&gt;</code> and <code>&lt;footer&gt;</code> landmarks, visible keyboard focus in the nav, dropdowns that open on keyboard focus, and Escape closes the video modal.</li>
+  <li>Every page has a unique title and a meta description, headings are in order (one H1 per page), and <code>lang="en"</code> is set everywhere except the Knowledgebase.</li>
+  <li>Email is well protected: SPF is set with <code>-all</code> and DMARC is on with <code>p=quarantine</code>. That is better than most sites this size.</li>
+  <li>External links use <code>rel="noopener"</code>; no broken internal links or missing assets were found; no mixed-content warnings.</li>
+  <li>The Trust and Security page is honest about SOC 2 being "In progress" rather than implying certification.</li>
+  <li>The contact form validates inline with <code>aria-invalid</code> and a live status region, which is more than most mailto forms do.</li>
+</ul>
+
+<h2 id="top10">Fix these first</h2>
+<p>If only ten things get done, these are the ten. Each is explained in detail further down.</p>
+<ol class="top10">
+  <li><b>Force HTTPS and add security headers.</b> <code>http://racktrack.ai</code> currently loads over plain HTTP with no redirect, and there is no HSTS, Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Referrer-Policy or Permissions-Policy on any page. One <code>.htaccess</code> block fixes all of it.</li>
+  <li><b>Replace the mailto contact form with a real submission.</b> Today the "Request Platform Brief" button just opens the visitor's email app. Anyone on a work laptop without a mail client, or on a phone with webmail, gets nothing. Leads are being lost silently.</li>
+  <li><b>Remove the "refresh sends you home" script.</b> <code>js/refresh-home.js</code> runs on every page and redirects a browser reload on any page back to the homepage. Someone refreshing the pricing FAQ or an article lands on the home page and loses their place.</li>
+  <li><b>Add a privacy policy, cookie policy and terms, and honour the cookie choice.</b> The banner says "we use cookies for analytics", "Cookie settings" points to a page with no cookie text, and the GoDaddy tracking script loads whether the visitor accepts or declines. The form collects name, email and phone with no privacy notice.</li>
+  <li><b>Cut the page weight.</b> The homepage video is 59 MB; a full desktop scroll of the homepage downloads about 610 animation frames (roughly 31 MB); About Us and Why RackTrack are 9.5 MB each on a phone; the Knowledgebase is a single 8.4 MB HTML file. Resize, compress, add <code>srcset</code>, and stream the video.</li>
+  <li><b>Move the cookie banner out of the way.</b> It sits fixed over the navigation on desktop and over the page heading on mobile, on every page, until dismissed.</li>
+  <li><b>Fix the contact form validation.</b> It rejects "José", any name with an accent or non-Latin letters, and any phone number that is not exactly 10 digits, so UK, German and Australian numbers fail even though those country codes are offered.</li>
+  <li><b>Give the Knowledgebase a viewport tag, <code>lang</code>, alt text, and a way back.</b> On phones it renders as a zoomed-out desktop page. It also has literal "####" Markdown headings on screen and passages written for RackTrack staff rather than customers.</li>
+  <li><b>Source or soften the numbers.</b> "40-60% truth decay", "Why every enterprise CMDB is 40% wrong" (the article never gives the figure), "99.2% Truth fidelity" and "34% Manual operations reduced" have no source. Without JavaScript the About page literally reads "0% Truth fidelity".</li>
+  <li><b>Pick one call to action.</b> There are nine different labels for the same request (Get a demo, Request platform brief, Request Platform Brief, Request a platform brief, Request a Security Brief, Request a demo, See it in action, Contact RackTrack, Engage the platform team). Visitors cannot tell whether a "platform brief" is a PDF, a call or a demo.</li>
+</ol>
+
+<h2 id="security">Security and privacy</h2>
+
+<div class="finding crit"><h4><span class="pill crit">Critical</span>HTTP is not redirected to HTTPS</h4>
+<p><span class="lbl">Seen</span><code>http://racktrack.ai/</code> and <code>http://www.racktrack.ai/</code> both return the full page with status 200 over plain HTTP. No redirect, no HSTS header.</p>
+<p><span class="lbl">Why it matters</span>Anyone who types the address or follows an old link gets an unencrypted page that can be altered in transit (for example on hotel or airport Wi-Fi). Search engines also treat the HTTP and HTTPS versions as separate sites.</p>
+<p><span class="lbl">We could</span>Add a 301 redirect from HTTP to HTTPS in <code>.htaccess</code>, then send <code>Strict-Transport-Security: max-age=31536000; includeSubDomains</code>. Once it has been stable for a while, consider HSTS preload.</p></div>
+
+<div class="finding crit"><h4><span class="pill crit">Critical</span>No security headers on any page</h4>
+<p><span class="lbl">Seen</span>Responses carry only <code>server: Apache</code>, <code>cache-control</code> and <code>content-type</code>. Missing: <code>Content-Security-Policy</code>, <code>X-Frame-Options</code> (or CSP <code>frame-ancestors</code>), <code>X-Content-Type-Options: nosniff</code>, <code>Referrer-Policy</code>, <code>Permissions-Policy</code>. The same is true of <code>portal.racktrack.ai</code> (served by Caddy), which is the login page linked from "Sign In".</p>
+<p><span class="lbl">Why it matters</span>Without frame protection the site (and the portal login) can be embedded in someone else's page for clickjacking. Without a CSP, any injected script runs freely. Security-minded buyers run exactly these checks (Mozilla Observatory, securityheaders.com) before a procurement call, and the Trust and Security page invites that scrutiny.</p>
+<p><span class="lbl">We could</span>Start with: <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: strict-origin-when-cross-origin</code>, <code>Permissions-Policy: camera=(), microphone=(), geolocation=()</code>, then a CSP that allows self, <code>cdn.jsdelivr.net</code>, <code>fonts.googleapis.com</code>, <code>fonts.gstatic.com</code> and the GoDaddy script (or drop that script, see below). Also hide the <code>Server</code> version with <code>ServerTokens Prod</code>. The portal deserves the same set plus <code>Cache-Control: no-store</code> on authenticated responses.</p></div>
+
+<div class="finding crit"><h4><span class="pill crit">Critical</span>No privacy policy, cookie policy or terms anywhere on the site</h4>
+<p><span class="lbl">Seen</span>Not one page mentions privacy, GDPR, DPDP, or terms. The footer has no legal links. The contact form collects full name, email and a mandatory mobile number with no notice of how the data is used. The cookie banner links "Cookie settings" and "Trust &amp; Security" to <code>pages/trust-security.html</code>, which contains no cookie or privacy text at all.</p>
+<p><span class="lbl">Why it matters</span>RackTrack operates from India and the US and offers UK and German country codes on the form, so GDPR/UK GDPR and India's DPDP Act both apply to that form. A missing privacy notice is also one of the first things an enterprise security questionnaire asks about.</p>
+<p><span class="lbl">We could</span>Publish a Privacy Policy, Cookie Policy and Terms page, link them from the footer and from under the form's submit button ("By submitting you agree to our Privacy Policy"), and make the "Cookie settings" link go to a real settings panel or the Cookie Policy.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Cookie consent is not honoured</h4>
+<p><span class="lbl">Seen</span>The banner says "We use cookies for website analytics" and offers Decline. But the only tracker on the site, GoDaddy's <code>tccl.min.js</code> (injected by the host after <code>&lt;/html&gt;</code> with the comment "Monitoring performance to make your website faster. If you want to opt-out, please contact web hosting support"), loads on every page before the banner appears and regardless of the choice. Declining only writes <code>rt-cookie-choice=declined</code> to localStorage and changes nothing else.</p>
+<p><span class="lbl">We could</span>Either turn the GoDaddy monitoring off in cPanel (it is not analytics you use) and simplify the banner, or gate any real analytics behind the Accept choice. A banner that offers a choice it does not act on is worse than no banner.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Contact form has no backend, so leads can be lost</h4>
+<p><span class="lbl">Seen</span><code>js/contact.js</code> builds a <code>mailto:info@racktrack.ai?subject=...&amp;body=...</code> link and sets <code>window.location</code> to it. Nothing is sent to a server. The success message says "Your email app is ready with the request details" even when no mail app opened.</p>
+<p><span class="lbl">Why it matters</span>On a locked-down corporate laptop, a phone using Gmail in the browser, or any machine without a default mail client, the click does nothing visible. The visitor thinks they submitted; you never hear from them. There is also no record on your side of who asked, which makes the "Within 1 business day" promise impossible to track.</p>
+<p><span class="lbl">We could</span>Post the form to a small endpoint (a serverless function, Formspree-style service, or your portal backend), store the lead, send a confirmation email, and show a real "Thanks, we'll reply within one business day" state. Add a honeypot field or Turnstile for spam.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Third-party script loaded without version pinning or integrity check</h4>
+<p><span class="lbl">Seen</span>GSAP and ScrollTrigger load from <code>https://cdn.jsdelivr.net/npm/gsap@3/dist/...</code>. "gsap@3" is a floating version, and there is no <code>integrity</code> attribute.</p>
+<p><span class="lbl">We could</span>Pin to an exact version (for example <code>gsap@3.12.5</code>) and add Subresource Integrity hashes, or self-host the two files next to your other JS (they are 73 KB and 42 KB).</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Developer notes shipped to visitors</h4>
+<p><span class="lbl">Seen</span><code>js/about-us.js</code> opens with a comment referring to an internal file: "same proven-safe pattern as trust-security.js ... see AGENTS.md for why". <code>js/homepage.js</code> and <code>js/refresh-home.js</code> carry long design-rationale comments. The stylesheet query strings read like commit messages (<code>?v=why-racktrack-29-deck-copy-mobile-fix-sticky-glass-nav-no-deck-steps-hero-gap-inter-navsm2-btngap</code>).</p>
+<p><span class="lbl">We could</span>Minify the JS and CSS for production (which strips comments) and use a short hash for cache busting.</p></div>
+
+<div class="finding low"><h4><span class="pill low">Low</span>Small hygiene items</h4>
+<ul>
+  <li>No <code>/.well-known/security.txt</code>, so researchers have no published way to report a vulnerability. Cheap to add and it looks good to security teams.</li>
+  <li>No CAA DNS record, so any certificate authority could issue a certificate for the domain. Add one naming your CA.</li>
+  <li>The plain-text email address on every page and in the form's mailto will be harvested for spam. Fine if you accept that; otherwise obfuscate or rely on the form.</li>
+  <li>TLS could not be inspected from this environment (outbound traffic is re-encrypted by a proxy here), so run <a href="https://www.ssllabs.com/ssltest/">SSL Labs</a> once. Aim for an A and TLS 1.2 minimum.</li>
+</ul></div>
+
+<h2 id="speed">Speed and page weight</h2>
+<p>This is the biggest practical problem on the site. The design relies on very large images and frame-by-frame animation, and nothing has been resized or compressed for the web. Measured transfer sizes:</p>
+<div class="tbl"><table>
+<tr><th>Page</th><th>Transferred on a phone</th><th>Main cause</th></tr>
+<tr><td>Why RackTrack</td><td class="n">9.7 MB</td><td>Five JPEGs of 0.9-3.3 MB shown at 347 px wide</td></tr>
+<tr><td>About Us</td><td class="n">9.5 MB</td><td>Three JPEGs of 2.7-3.1 MB</td></tr>
+<tr><td>Trust &amp; Security</td><td class="n">6.8 MB</td><td>Three JPEGs of 2.4-3.4 MB</td></tr>
+<tr><td>Knowledgebase</td><td class="n">8.4 MB (the HTML itself)</td><td>37 screenshots embedded as base64 text, 5.9 MB of them</td></tr>
+<tr><td>Homepage (desktop, full scroll)</td><td class="n">~31 MB</td><td>240 hero frames + 370 story frames, 44-70 KB each</td></tr>
+<tr><td>Homepage video</td><td class="n">59.5 MB</td><td>One MP4, downloaded in full on "Watch video"</td></tr>
+<tr><td>Homepage (phone)</td><td class="n">3.7 MB</td><td>Better, because the frame animation is switched off under 980 px</td></tr>
+</table></div>
+
+<div class="finding crit"><h4><span class="pill crit">Critical</span>Images are 4-9x larger than they need to be</h4>
+<p><span class="lbl">Seen</span>Examples: <code>trust-security/hero-facility-aisle.jpeg</code> 3.44 MB at 2816x1536, displayed at 1240 px wide; <code>why-racktrack/why-step-scan-app.jpg</code> 3.29 MB, displayed at 347 px wide; <code>homepage/rack-exploded.jpeg</code> 2.58 MB, displayed at 301 px wide. No image on the site uses <code>srcset</code> or <code>sizes</code>, so phones download the same files as a 4K monitor.</p>
+<p><span class="lbl">We could</span>Export every photo at 1x and 2x of its largest display size, as WebP or AVIF (a 1240 px WebP of that aisle photo would be ~150 KB, not 3.4 MB), and add <code>srcset</code> plus <code>width</code>/<code>height</code> attributes so the layout does not jump while loading. Expected result: most pages drop from 6-10 MB to under 1 MB.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>The 59 MB video</h4>
+<p><span class="lbl">Seen</span><code>assets/homepage/RACKTRACK.mp4</code> is 59.5 MB. <code>preload="none"</code> is set (good), but the moment someone clicks "Watch video" the browser starts pulling the whole file from a shared Apache host, so on a normal connection it stalls.</p>
+<p><span class="lbl">We could</span>Re-encode to H.264 at 1080p around 4-6 Mbps (typically 8-15 MB for a 2-minute clip), add a <code>poster</code> image, or host it on Vimeo/YouTube/Mux for adaptive streaming.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Hero images set to lazy-load, so the first screen paints blank</h4>
+<p><span class="lbl">Seen</span>The About Us hero image and the two figure images on Trust and Security use <code>loading="lazy"</code> even though they are at or near the top of the page. In testing, About Us showed an empty white box where the hero photo belongs for several seconds.</p>
+<p><span class="lbl">We could</span>Remove <code>loading="lazy"</code> from anything above the fold and add <code>fetchpriority="high"</code> to the one true hero image per page. Keep lazy loading for everything below.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Caching is working against you</h4>
+<p><span class="lbl">Seen</span><code>styles.css</code> (208 KB, 49 KB gzipped) is sent with <code>cache-control: no-cache, must-revalidate</code>, and every page references it with a different <code>?v=</code> string (12 different ones across the site), so the browser downloads it again on almost every page. JavaScript files and all the animation <code>.webp</code> frames have no <code>cache-control</code> at all, so the browser guesses. HTML is <code>max-age=0</code>.</p>
+<p><span class="lbl">We could</span>Use one cache-busting hash for the stylesheet across all pages; serve CSS, JS, fonts and images with <code>Cache-Control: public, max-age=31536000, immutable</code> (the font files already do this correctly); and keep HTML short-lived.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Fonts declared but not used</h4>
+<p><span class="lbl">Seen</span>The stylesheet declares five Satoshi weights, Geist and Geist Mono, and Inter. The site actually renders in Inter and Geist Mono. Satoshi is only used inside the small "rack reader" widget on Solutions, and Geist (sans) is not used anywhere. The Knowledgebase loads yet another pair, IBM Plex Sans and Mono, from Google Fonts.</p>
+<p><span class="lbl">We could</span>Delete the unused <code>@font-face</code> blocks, switch the rack reader to Inter, and move the Knowledgebase onto the site's fonts. Fewer families also makes the site look more coherent.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>One 208 KB stylesheet for every page</h4>
+<p>All 24 pages load the same 208 KB CSS file, which contains page-specific rules for every page. Splitting the shared base from per-page styles, or at least minifying (comments alone are a large share of it), would cut it by more than half.</p></div>
+
+<h2 id="bugs">Bugs and odd behaviour</h2>
+
+<div class="finding crit"><h4><span class="pill crit">Critical</span>Pressing Refresh on any page sends the visitor to the homepage</h4>
+<p><span class="lbl">Seen</span><code>js/refresh-home.js</code> is loaded in the <code>&lt;head&gt;</code> of all 24 pages. If the navigation type is "reload", it calls <code>location.replace(home)</code>. Its own comment says: "Pressing the browser's reload button on ANY page sends the visitor to index.html instead of re-rendering the page they were on."</p>
+<p><span class="lbl">Why it matters</span>Refresh is one of the most basic things a person does in a browser: after a flaky connection, after changing a setting, or to retry a form. Being thrown to the homepage from the middle of an article, a use-case page or the contact form reads as a broken site. It also breaks "reload to see the latest" for anyone you send a link to, and confuses analytics (every reload counts as a homepage view).</p>
+<p><span class="lbl">We could</span>Delete the script. The comment in <code>homepage.js</code> explains the original motivation (refreshing mid-way through the pinned homepage animation left people at a strange scroll offset with the header hidden). That is already solved in <code>homepage.js</code> by <code>history.scrollRestoration = "manual"</code> plus a scroll to top, and it only needed to apply to the homepage.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Cookie banner covers the navigation and headings</h4>
+<p><span class="lbl">Seen</span>The banner is <code>position: fixed</code>, 480 px wide, centred at the top of the viewport with <code>z-index: 700</code>. On desktop it sits directly over the nav links (Why RackTrack, Solutions, Use Cases, Resources and part of Trust &amp; Security are hidden behind it). On a 390 px phone it takes the top 200 px, covering the header and the H1 on every page until dismissed. The Trust and Security H1 reads "En...le by architecture" behind it.</p>
+<p><span class="lbl">We could</span>Anchor it to the bottom of the viewport (bottom-left on desktop, full-width bottom on mobile), or make it a slim bottom bar. Keep it under the header's stacking context so navigation stays clickable.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Contact form validation rejects real people</h4>
+<p><span class="lbl">Seen</span>Name must match <code>/^[A-Za-z][A-Za-z\s'.-]*$/</code>, so "José Núñez", "Zoë", "Søren", "Müller" and any name in Devanagari, Telugu, Arabic or Chinese returns "Enter a valid name." Phone must match <code>/^\d{10}$/</code>, so a UK mobile typed as 07911 123456 (11 digits), a German number, or an Australian number in the form people actually write them fails with "Enter exactly 10 digits." Only five country codes are offered. Mobile number is mandatory even though email is also mandatory.</p>
+<p><span class="lbl">We could</span>Accept any non-empty name; accept 6-15 digits after stripping spaces, dashes and a leading zero; offer a full country list or a free-text field; make the phone optional. Every rejected submission is a lost conversation.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>"0% Truth fidelity" is the real text on About Us</h4>
+<p><span class="lbl">Seen</span>The two big stats on About Us are written in the HTML as <code>0%</code> and animated up to 99.2% and 34% by JavaScript when scrolled into view. Search engines, screen readers, reader modes, link previews and anyone with JavaScript blocked see "0% Truth fidelity" and "0% Manual operations reduced". In the full-page capture the counters had not fired either.</p>
+<p><span class="lbl">We could</span>Put the final numbers in the HTML and animate from them (or count up from 0 only after replacing the text). Better still, see the note under Copy about sourcing these figures.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Resources page hides five of nine articles</h4>
+<p><span class="lbl">Seen</span>The library says "4 articles shown" and the filter offers All / Operations / Infrastructure / Compliance. Five published articles (DCIM vs Physical Reality, From Audit to Autonomy, Physical Layer, The Hidden Cost of Wrong Rack Inventory, the Topology Debt piece) are reachable only from "related articles" links, and they are tagged Strategy, Finance and Security, categories that do not exist in the filter. The featured card is also repeated word for word as the first item in the list below it.</p>
+<p><span class="lbl">We could</span>List all nine, align the categories, and drop the duplicate.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Video modal does not take keyboard focus</h4>
+<p>Clicking "Watch video" opens the dialog but focus stays on the button behind it. A keyboard or screen-reader user has to tab through the whole page to reach the player and the Close button. Escape does close it, which is good. Move focus to the Close button on open and return it to the trigger on close, and trap Tab inside the dialog while open.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>The header disappears for most of the homepage</h4>
+<p>The sticky header is hidden while a section is pinned (the code comment confirms this), which is nearly all of the ~18,000 px desktop homepage. There is no way to reach Contact or Sign In from the middle of the story without scrolling to one end. A slim persistent header, or a floating "Get a demo" button, would keep the exit visible.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Solutions page: large empty gap under the hero, and a carousel that keyboard users cannot reach</h4>
+<p>On a 1440 px screen there is roughly 150 px of blank space between "See how it works" and "Three steps. No mystery" (the hero has a fixed height). Further down, "Six surfaces. One verified record" shows three and a half cards with the fourth cut off; the strip is a horizontal scroll region that is not focusable, so keyboard users cannot see cards 4-6 (flagged by axe as <em>scrollable-region-focusable</em>). Two of the page's headings are also invisible without JavaScript (opacity 0 until revealed).</p></div>
+
+<div class="finding low"><h4><span class="pill low">Low</span>Smaller items</h4>
+<ul>
+  <li>The Facebook footer link is a <code>/share/18depF5xzA/</code> short link that redirects to a "people" URL with tracking parameters. Link to the page's canonical URL instead.</li>
+  <li>The Instagram link lands on a login wall for anyone not signed in to Instagram, which is Instagram's behaviour, but worth knowing before featuring it.</li>
+  <li>Both the desktop story section and its mobile stand-in are in the DOM at the same time with identical <code>aria-label</code>s ("RackTrack continuous rack story"); screen readers announce two landmarks with the same name. Add <code>hidden</code> to whichever is not in use, or give them different names.</li>
+  <li>The 404 page is the bare text "404 Not Found" in Apache's default style, with no navigation back to the site.</li>
+  <li>The favicon is <code>assets/logo.jpg</code>, a JPEG. There is no <code>apple-touch-icon</code>, no SVG icon and no web manifest, so bookmarks and home-screen icons look rough.</li>
+</ul></div>
+
+<h2 id="a11y">Accessibility</h2>
+<p>An automated axe scan was run on all 24 pages at desktop and mobile widths, then checked by hand. Foundations are good (see above). These are the gaps.</p>
+
+<div class="finding high"><h4><span class="pill high">High</span>Low-contrast text on every page</h4>
+<p><span class="lbl">Seen</span>The footer line "© 2026 RackTrack Inc. · Physical Infrastructure Intelligence for Data Centers · Patent Pending" is 11.5 px monospace at 65% opacity on a near-white ground, roughly 3:1 against the 4.5:1 minimum. Flagged on all 48 page views. Also below the line: the status chips on Trust and Security ("Verified" in light green, "In progress" in amber, 11 px), the section index labels on Trust and Security, the Knowledgebase left-rail labels, and the greyed related-article text on Resources before it animates in.</p>
+<p><span class="lbl">We could</span>Raise the footer text to 13 px at full opacity in the body colour, and darken the status chip colours (a green like <code>#1f6b46</code> passes; <code>#43b883</code> does not).</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Hidden checkboxes drive the menus and are exposed to assistive tech</h4>
+<p><span class="lbl">Seen</span>The mobile menu and the two dropdowns are built on <code>&lt;input type="checkbox"&gt;</code> elements with no label text (axe: "Form elements must have labels", critical, on 23 pages). Keyboard focus lands on these invisible checkboxes when tabbing through the header, so a screen reader announces "checkbox, not checked" with no name. On the Knowledgebase the checkbox is <code>aria-hidden="true"</code> yet still focusable.</p>
+<p><span class="lbl">We could</span>Use a <code>&lt;button aria-expanded aria-controls&gt;</code> for the menu toggle and dropdowns (a few lines of JS), or at minimum add <code>tabindex="-1"</code> to the checkboxes and give the labels visible names.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Knowledgebase has no <code>lang</code>, no page description, and 21 images without alt text</h4>
+<p>Screen readers will guess the language; 21 of 37 screenshots have no <code>alt</code> attribute at all, so the only description is the caption where one exists. The page also has <code>id</code>s that start with a digit (<code>#1-create-an-organization</code>), which breaks CSS selectors and some in-page linking, and duplicated landmark roles without names.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Very small text</h4>
+<p>Text below 12 px appears throughout: 7.5 px and 9 px labels in the Solutions "rack reader" and schematic ("Identified", "U42-38"), 9-10 px chips on the homepage cards ("RACK VIDEO", "CAPTURE"), 11 px uppercase eyebrow labels on every page, 11 px form labels on Contact, 11 px "← ALL ARTICLES" links. Uppercase monospace at 11 px is particularly hard to read. Consider 12 px as the floor and 13 px for anything a person needs to read rather than glance at.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Small click and tap targets</h4>
+<p>Desktop nav links are 17 px tall (the clickable area is just the text). On mobile: footer links 17-22 px tall, social icons 18x18 px, the logo link 24x24 px, phone and email links 17 px. The recommended minimum is 24x24 px (WCAG 2.2) and 44x44 px for touch. Add vertical padding to the links rather than changing the type size.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Decorative alt on images that carry meaning</h4>
+<p>All 15 images on the homepage, and one or two on most other pages, use <code>alt=""</code>. That is right for the animation frames and background posters, but the three "evidence" cards (Phone sweep, Rack facts, Evidence record) and the four story cards convey product steps and deserve a short description. The article and use-case pages do this well already.</p></div>
+
+<div class="finding low"><h4><span class="pill low">Low</span>Other accessibility notes</h4>
+<ul>
+  <li>On the six use-case pages the logo link has no accessible name at mobile width (the "RackTrack" text is hidden and the anchor has no <code>aria-label</code>, unlike the homepage).</li>
+  <li>The Contact "Mobile Number" <code>&lt;label&gt;</code> wraps both the country-code <code>&lt;select&gt;</code> and the number input, so the label is ambiguous. Give each its own label.</li>
+  <li>The Why RackTrack before/after slider exposes a bare "↔" character to screen readers.</li>
+  <li>The Knowledgebase body text is fully justified, which creates uneven word gaps and is harder to read for people with dyslexia. Left-align it.</li>
+</ul></div>
+
+<h2 id="design">Typography, colour and UI</h2>
+<p>The system: Inter for everything, Geist Mono for labels, figures and the footer line; navy <code>#0b1a2e</code>-range ink, a saturated blue accent for buttons and links, cool off-white backgrounds. It is coherent and appropriate for the audience. Suggestions:</p>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Three type systems across one domain</h4>
+<p>Marketing pages use Inter + Geist Mono; the Solutions rack reader uses Satoshi; the Knowledgebase uses IBM Plex Sans + Mono with its own colours, nav, layout and no site header or footer. Clicking "Knowledgebase" in the main menu feels like leaving the site, and there is no link back. Bring the guide onto the site's header, footer and fonts (or at least add a "← racktrack.ai" link and the same colours).</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Heading punctuation and casing are inconsistent</h4>
+<p>Two-line headings end the first line with a full stop and the second without ("Captured facts. Ready to verify", "Six surfaces. One verified record"). About Us and Contact put full stops on every heading ("Why we built RackTrack.", "Engage the platform team."); the other pages don't. The same shared component reads "Read the theory. Then run it on your rack." on five articles and without the final stop on four. The homepage H1 is Title Case ("Turn Physical Racks Into Verified Infrastructure Data"); every other H1 is sentence case. Pick one rule (sentence case, no terminal full stop on headings) and apply it everywhere.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Monospace is doing too much</h4>
+<p>Geist Mono is used for eyebrow labels, stat numbers, chips, figure captions, status badges, the footer legal line and the contact details. Used sparingly it signals "data"; used this widely, at 10-11.5 px uppercase, it becomes the hardest-to-read text on the page. Keep it for figures and the schematic; set labels, captions and the footer in Inter.</p></div>
+
+<div class="finding low"><h4><span class="pill low">Low</span>Layout notes</h4>
+<ul>
+  <li>Solutions hero: ~150 px of empty space below the CTA on desktop (fixed hero height).</li>
+  <li>About Us "story" timeline: the three beats are staggered left / left / right with large empty areas between them; "The team" and "The build" sit far to the right with nothing on the left. A simple two-column timeline would read more calmly.</li>
+  <li>Use Cases: five of six role cards had empty image areas until the lazy images arrived; with 1200x800 JPEGs behind them, on a slow connection the grid is mostly blank boxes. Smaller images fix this.</li>
+  <li>The sticky "glass" header lets headings show through behind the nav text on scroll (visible on Resources: "Browse the RackTrack" behind the menu). A slightly more opaque header background would keep the nav crisp.</li>
+  <li>The homepage story text is set over bright photographic frames with a light scrim; mid-transition the headings blur and overlap ("Structured, not guessed" over the previous heading). Increasing the scrim or fading the outgoing text faster would help.</li>
+  <li>Buttons: "Get a demo" (pill), "See how it works →" (pill with arrow), "Request Platform Brief →", "Read the article →" all differ slightly in padding and arrow use. One primary and one secondary style would tidy this.</li>
+</ul></div>
+
+<h2 id="mobile">Mobile</h2>
+<div class="finding crit"><h4><span class="pill crit">Critical</span>Knowledgebase renders as a shrunken desktop page on phones</h4>
+<p>There is no <code>&lt;meta name="viewport"&gt;</code>, so a phone lays the page out at 980 px and zooms out: three-column layout, unreadable 5-6 px text, pinch-to-zoom required for everything. This is the one page a customer opens on their phone in a data hall. Add the viewport tag and a single-column layout below ~900 px.</p></div>
+<div class="finding high"><h4><span class="pill high">High</span>Form fields trigger auto-zoom on iPhone</h4>
+<p>Inputs and selects on Contact are 13.3-14 px. iOS Safari zooms the page in whenever a field under 16 px gets focus, and does not zoom back out. Set inputs to 16 px on touch devices.</p></div>
+<div class="finding high"><h4><span class="pill high">High</span>Cookie banner blocks the top of every page on phones</h4>
+<p>Covered above: the banner takes the top 200 px of an 844 px screen, hiding the header, menu button and the H1 until dismissed.</p></div>
+<div class="finding med"><h4><span class="pill med">Medium</span>Same multi-megabyte images on mobile</h4>
+<p>Why RackTrack 9.7 MB and About Us 9.5 MB on a phone. On a typical 4G connection in a data centre car park that is 10-20 seconds before the pictures appear.</p></div>
+<div class="finding med"><h4><span class="pill med">Medium</span>Open mobile menu is translucent</h4>
+<p>The page heading shows through behind the menu items ("Engage the..." ghosting behind "Why RackTrack" on Contact). An opaque menu background would make it easier to read.</p></div>
+<div class="finding low"><h4><span class="pill low">Low</span>Good mobile decisions worth keeping</h4>
+<p>Switching the homepage from the frame animation to a static four-card grid under 980 px is the right call and saves ~27 MB. No horizontal overflow was found on any page at 390 px. The menu toggle is 40x40 px and body scroll locks while it is open.</p></div>
+
+<h2 id="seo">SEO and web standards</h2>
+<div class="finding high"><h4><span class="pill high">High</span>Duplicate URLs with no canonical</h4>
+<p><code>https://racktrack.ai/</code>, <code>https://racktrack.ai/index.html</code>, <code>https://www.racktrack.ai/</code>, <code>http://racktrack.ai/</code> and <code>http://www.racktrack.ai/</code> all serve the same page with status 200, and no page has a <code>&lt;link rel="canonical"&gt;</code>. Search engines split ranking signals across all of them. Redirect www and HTTP to the bare HTTPS host, redirect <code>/index.html</code> to <code>/</code>, and add a canonical tag to every page.</p></div>
+<div class="finding high"><h4><span class="pill high">High</span>No sitemap, no robots.txt, no social preview tags, no structured data</h4>
+<p><code>/sitemap.xml</code> and <code>/robots.txt</code> return 404. No page has Open Graph or Twitter Card tags, so links shared on LinkedIn (your main channel) show no image and a truncated title. There is no JSON-LD for Organization, Article or FAQ (the contact page has 12 FAQs that would qualify for rich results).</p>
+<p>Add a sitemap listing the 23 real pages, a robots.txt pointing to it, <code>og:title / og:description / og:image / og:url</code> and <code>twitter:card</code> on every page, and Organization + Article schema.</p></div>
+<div class="finding med"><h4><span class="pill med">Medium</span>Titles and slugs</h4>
+<ul>
+  <li>Four article titles are 92-101 characters and get cut off in search results, e.g. "The Hidden Cost of Unreconciled Infrastructure: A Framework for Quantifying Topology Debt | RackTrack". Aim for under 60.</li>
+  <li>Two article URLs do not match their titles: <code>article-what-it-costs-when-nobody-checks-the-rack.html</code> is titled "The Hidden Cost of Unreconciled Infrastructure..." and <code>article-from-audits-to-always-on-records.html</code> is titled "From Audit to Autonomy...". Either title is fine; make them agree.</li>
+  <li>The Knowledgebase has no meta description and the title is just "RackTrack Guide".</li>
+  <li>Articles have no publish date or author, which search engines and readers both use to judge freshness and credibility.</li>
+</ul></div>
+<div class="finding med"><h4><span class="pill med">Medium</span>HTML validity</h4>
+<p>A validator reports 749 issues across the pages. Most are cosmetic (self-closing void tags, lowercase doctype, single-quoted attributes in the injected GoDaddy script). The ones worth fixing: <code>autocomplete</code> on checkboxes (invalid, 70 times); the GoDaddy <code>&lt;script&gt;</code> placed after <code>&lt;/body&gt;</code> outside the document (every page); <code>&lt;figcaption&gt;</code> used inside a <code>&lt;div&gt;</code> instead of a <code>&lt;figure&gt;</code> (all 9 articles); a <code>&lt;div&gt;</code> inside a <code>&lt;label&gt;</code> and one label for two controls (Contact); <code>id</code>s beginning with digits (Knowledgebase, 33 times); buttons without <code>type</code> (8).</p></div>
+
+<h2 id="copy">Copy and content</h2>
+<p>All ~9,000 words on the marketing pages were read line by line. The writing is confident and mostly clean; there are no outright spelling errors. The issues are consistency, claims, and repetition.</p>
+
+<div class="finding crit"><h4><span class="pill crit">Critical</span>Statistics with no source</h4>
+<ul>
+  <li>Homepage: "40-60% truth decay", "3-6 weeks audit exposure", "20-40 min response latency" sit in a stat panel with no verb, no definition and no source. Resources and seven related-article blocks headline "Why every enterprise CMDB is 40% wrong" - and the article itself never states or supports the 40% figure; the number appears only in the title. Homepage says 40-60%, Resources says 40%.</li>
+  <li>About Us: "99.2% Truth fidelity" and "34% Manual operations reduced" with no method, sample or customer.</li>
+  <li>Contact FAQ says a baseline assessment takes "about twenty minutes for a single rack or row"; Use Cases and M&amp;A pages say "Days later you have inventory..."; About says "Minutes".</li>
+</ul>
+<p><span class="lbl">We could</span>Cite a source (Gartner and Forrester both publish CMDB accuracy figures), footnote internal numbers with how they were measured, or reword to claims you can stand behind ("most enterprise CMDBs drift from the rack").</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Nine labels for one action</h4>
+<p>"Get a demo" (home), "See it in action" (Why), "Request platform brief" (Why, all six use cases), "Request a platform brief" (Solutions, Use Cases, Resources, all articles), "Request Platform Brief" (Contact, three times), "Request a Security Brief" (Trust), "Request a demo" and "See the platform" (About), "Contact RackTrack" (Trust), and the Contact H1 "Engage the platform team." The Contact page itself calls it a "demo" four times and a "platform brief" three times. Choose one primary label ("Book a demo" is the clearest) and keep "brief" only for actual documents.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Absolute claims that are easy to disprove</h4>
+<p>"Every cable, mapped", "Checked against every system", "A complete inventory of every physical device", "finds every rack in the footage", "Raw footage never leaves your control" (next to a "Multi-Tenant Cloud · Shared" deployment option), "no special hardware, no downtime", "Every observation keeps its source frame". A phone sweep sees the front of a rack; rear cabling, blanked faces and cable managers are not visible. Add "visible" or "in scope" where it is true, and reconcile "never leaves your control" with the shared-cloud option.</p></div>
+
+<div class="finding high"><h4><span class="pill high">High</span>Compliance and patent wording</h4>
+<ul>
+  <li>Trust and Security lists three separate "Patent Pending" cards (Visual Rack Intelligence, Cable-to-Port Mapping &amp; Validation, Infrastructure Reconciliation Methods) that all cite the same "US Application 19/219,347", while the intro says "pending patent filings" (plural) and About says "a pending US utility patent application" (singular). One application shown as three cards overstates it. "The foundation of a multi-year technical moat" is investor language on a customer page.</li>
+  <li>The SOC 2 article says "SOC 2 Type II requires continuous evidence of asset control" - SOC 2 has no criterion by that name. The compliance use case says HIPAA, PCI-DSS and ISO 27001 "require organizations to prove that assets... are properly managed", which is a stretch for HIPAA. Write "PCI DSS" not "PCI-DSS", "on-premises" not "on-premise".</li>
+  <li>Status badges "Verified", "Active", "Enabled" beside "SOC 2 Type II - In progress" imply third-party attestation. Say "self-assessed" or drop the badge styling.</li>
+  <li>"Sovereign / Air-Gapped Deployment. For classified or restricted facilities" - "classified" implies FedRAMP/IL accreditation not claimed anywhere. Use "restricted".</li>
+</ul></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>The product is described three different ways</h4>
+<p>Homepage and Solutions: a live "guided sweep" that classifies devices as it passes. Why RackTrack: record a video, then upload it. Use-case pages: "rack images or video", "photographs the rack". The Knowledgebase: one photo, 2-8 stills, or a 1-120 second video. Likewise the capability names differ per page: Perceive / Cognize / Connect / Reconcile / Scale on the homepage, PERCEIVE / COGNIZE / CONNECT / TWIN / RECONCILE / AUDIT on Solutions, Capture / Validate / Reconcile / Operationalize on About. Settle on one capture story and one framework.</p></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Grammar and phrasing to tidy</h4>
+<ul>
+  <li>Homepage: "Hardware and rack position separate from the scan." (reads as an adjective); "A guided sweep separates chassis, ports, labels, and rack-unit position from the physical rack" (sounds like removing them); "Visible port usage, cable paths, and link indicators map against the physical rack evidence"; "Each additional rack confirms the same way"; "Capacity, connectivity, ..., and incidents, all traceable to one rack." (fragment).</li>
+  <li>Free port article: "avoid avoidable deployment delays". Compliance use case: "actual rack reality". Leaders use case: comma splice in "...report back, a process that could take weeks."</li>
+  <li>Headings that start with "They" before the subject is introduced ("They verify physical port state before they promise capacity").</li>
+  <li>Pull quotes placed directly beside the sentence they repeat, on seven of nine articles, so the reader sees the same line twice in a row.</li>
+  <li>Mixed UK and US spelling: "programmes", "realised", "labelled" alongside "recognized", "organization", "data centers". Pick US throughout.</li>
+  <li>Contact: "Call our contact team for demos, support, and meeting schedules" and "We respond quickly to demos" - people respond to enquiries. "Locations: IN &amp; USA" mixes formats.</li>
+  <li>"Cognize" (homepage, Solutions) is a word most readers will stop on. "Truth decay", "firmware currency", "intelligence surface", "Bring the pressure you own", "posture line", "Tenant-resident processing" and "evidence-grade" are internal vocabulary.</li>
+</ul></div>
+
+<div class="finding med"><h4><span class="pill med">Medium</span>Templated and duplicated content</h4>
+<ul>
+  <li>All nine articles follow one identical skeleton (caption, intro, three bullets, three H2s of one paragraph each, one pull quote, three related links, the same closing CTA), ~250-400 words each, and five open with "This article explains/outlines/looks at...". They read as generated and give search engines little to rank. Two pairs overlap heavily: the two "Hidden Cost of..." pieces (the one promising "A Framework for Quantifying Topology Debt" contains no framework), and "What Network-Verified Means" vs "Physical Layer".</li>
+  <li>The six use-case pages reuse near-identical sentences and device lists, and the same closing block. The word "defensible" appears 11 times across the site, "fewer surprises" four times, "source of truth" seven times.</li>
+  <li>The homepage story block (Perceive / Connect / Reconcile / Scale) exists twice in the HTML.</li>
+</ul></div>
+
+<div class="finding low"><h4><span class="pill low">Low</span>Small consistency items</h4>
+<ul>
+  <li>"Sign In" in the site header vs "Sign in" in the Knowledgebase.</li>
+  <li>Phone number "878 2448" without a hyphen is a non-standard US format; the validator also flags the spaces as breakable. Use <code>878-2448</code>.</li>
+  <li>"M&amp;A &amp; Migration Teams" reads awkwardly; "M&amp;A and Migration Teams".</li>
+  <li>"24 + 4 ports" (spaced plus); "48 port" should be "48-port"; curly and straight apostrophes are mixed.</li>
+  <li>"Video" appears as the visible title of the video dialog. Give it the real title of the clip.</li>
+</ul></div>
+
+<h2 id="guide">The Knowledgebase page</h2>
+<p><code>pages/racktrack-guide.html</code> is a 9,250-word product guide with 37 screenshots. It is genuinely useful content and clearly written by someone who knows the product, but it was pasted onto the website rather than published to it.</p>
+<div class="finding crit"><h4><span class="pill crit">Critical</span>Text written for RackTrack staff is visible to customers</h4>
+<p>"Approve a new organization" is addressed to the platform owner (you), not the customer: <em>"Nobody emails you about a pending signup. You only find out by opening this console and looking, so make a habit of checking it - a new customer could be sitting on the waiting screen right now."</em> Elsewhere: "the platform owner (the person who manages RackTrack)", a raw internal route "<code>/demo/topology</code> - A demonstration. The racks, devices and IPs on that page are invented", and a mention of an "owner-only training" screen that is not in the table. A prospect reading this learns that sign-ups are approved by hand with no alerting. Move the operator content to an internal doc.</p></div>
+<div class="finding high"><h4><span class="pill high">High</span>Unrendered Markdown and broken cross-references</h4>
+<p>Four sub-headings in Troubleshooting appear literally as "#### Getting in", "#### Scanning", "#### The live switch screens", "#### Data that looks wrong". The prose refers to "task 1", "task 2", "task 5", "task 28" but no task numbers are shown anywhere on the page, and "(see task 28)" points to the wrong section (28 is "Ask DOT"; CMDB connection is 30). Three left-rail labels differ from the headings they link to.</p></div>
+<div class="finding high"><h4><span class="pill high">High</span>No introduction, no way back, no site chrome</h4>
+<p>The page opens with the homepage hero copy repeated verbatim, then jumps straight into "Create an organization". It never says what RackTrack runs on (it is a browser app, on phone, tablet or desktop - the reader has to infer this from "refresh the page" and "this browser only"), who the guide is for, or how "one phone sweep" maps to the Single / MULTI / VIDEO / Two Racks modes. There is no site header, no footer, no link back to racktrack.ai, and the body scrolls inside its own container so the browser's page scroll and "find in page" behave oddly.</p></div>
+<div class="finding high"><h4><span class="pill high">High</span>The guide contradicts the marketing site</h4>
+<ul>
+  <li>Marketing: reconciles against CMDB, DCIM, CDP, LLDP and ARP. Guide: only LLDP (via Netdisco) and a CMDB list; CDP, ARP and DCIM never appear; NetBox (a DCIM) is filed under "CMDB".</li>
+  <li>Marketing: "audit evidence" is a core output. Guide: no evidence export or audit trail is described; only Report / Download / Share via Teams or Outlook.</li>
+  <li>Marketing: "Drift" means records diverging from reality. Guide: Drift is a port-state change log that "today works with TP-Link switches" and needs server-side setup. That limitation deserves to be stated up front, not buried in one sentence.</li>
+  <li>Why RackTrack says "You don't need to learn a new system to use RackTrack"; the guide has 40 topics including "The app rejected your photo" and "Stuck on Waiting for approval".</li>
+  <li>The guide says "Three tabs sit along the bottom of every screen at all times" and later that the SCAN tab "does not exist on a large screen"; the app's own hint "tap the shutter below" contradicts "There is no separate round shutter button anywhere on the screen".</li>
+</ul></div>
+<div class="finding med"><h4><span class="pill med">Medium</span>Terminology drift inside the guide</h4>
+<p>Roles are never defined and shift between "administrator", "platform owner", "owners and organization admins", "Site Manager", "Member". The admin area is "the Organizations console", "the console", "this console" and "the admin console". "Uplink" is defined three different ways. Port states differ per screen (Connected/Empty/Unknown vs Up/Uplink/Free vs Live/Up/Down, plus a "Reserved" that appears once). The same UI string is quoted as "Couldn't confirm", "We couldn't confirm the latest version." and "Couldn't confirm the latest version". "Tap" and "Click" alternate. UK and US spelling mix ("colour" in a cell under a "Color" header; "datacenter" once vs "data center" everywhere else on the site).</p></div>
+<div class="finding med"><h4><span class="pill med">Medium</span>Claims to have Trust/Security sign off</h4>
+<p>"DOT is never allowed to make something up"; "RackTrack reads the real latest version from the vendor's own site and never invents one"; corrections are "fed back into training so the model steadily gets better" (a data-use commitment that should match the Trust page and contracts); known-vulnerability counts "checked against the NIST National Vulnerability Database" with no caveat about version matching; "Most switches allow one session at a time" (generally untrue); "Choosing from the list guarantees the name exactly matches". Also: an in-product Marketplace for selling surplus gear where "a buyer contacts you through your username", and an SFP Advisor with "the price, and a link to buy" and a "★ TOP PICK" - compliance buyers will ask about both.</p></div>
+
+<h2 id="pages">Page by page</h2>
+<p>Everything above applies site-wide unless noted. These are the page-specific extras.</p>
+
+<div class="pagehead"><h3>Home</h3><p class="url">/ (also served at /index.html and www.)</p>
+<ul><li>Best-looking page on the site on desktop. On a full scroll it loads ~610 frames; header hidden for most of it; cookie banner over the nav.</li><li>Stat panel "40-60% / 3-6 weeks / 20-40 min" has no context or source.</li><li>Story block duplicated in the DOM; 15 images with empty alt; "Video" as dialog title; video is 59 MB.</li></ul></div>
+
+<div class="pagehead"><h3>Why RackTrack</h3><p class="url">/pages/why-racktrack.html</p>
+<ul><li>9.7 MB on mobile: <code>why-step-scan-app.jpg</code> 3.29 MB and <code>why-step-compare-diagram.jpg</code> 1.91 MB shown at 347 px.</li><li>Describes "record the video, then upload" while the homepage describes a live sweep.</li><li>Two near-identical headings on one page: "Know exactly what's really in your racks" and "Know what is really in your infrastructure".</li><li>Slider handle exposes "↔" as text.</li></ul></div>
+
+<div class="pagehead"><h3>Solutions</h3><p class="url">/pages/solutions.html</p>
+<ul><li>Empty band under the hero; 7.5-9 px text in the schematic and rack reader; carousel shows 3.5 cards and is not keyboard reachable; two headings hidden without JS; Satoshi font used only here.</li><li>"Identified" vs "Verified" vs "Registered" states in the rack reader are never explained.</li></ul></div>
+
+<div class="pagehead"><h3>Use Cases and the six role pages</h3><p class="url">/pages/use-cases.html, /pages/use-case-*.html</p>
+<ul><li>Hero chips "Leaders / Network / Security..." float over a dark photo at 11 px monospace.</li><li>Six pages share a template with near-identical sentences; the Security page puts full stops on headings the other five don't.</li><li>Logo link has no accessible name on mobile on these six pages.</li><li>"Days later you have inventory" conflicts with "twenty minutes" on Contact.</li></ul></div>
+
+<div class="pagehead"><h3>Resources and articles</h3><p class="url">/pages/resources.html, /pages/article-*.html</p>
+<ul><li>4 of 9 articles listed; categories mismatch; featured card duplicated; grey "reveal" text before scroll.</li><li>Articles: no dates or authors; titles up to 101 characters; two slugs do not match titles; pull quotes repeat adjacent sentences; <code>&lt;figcaption&gt;</code> outside <code>&lt;figure&gt;</code>; the "40% wrong" article never gives the 40%.</li></ul></div>
+
+<div class="pagehead"><h3>Trust and Security</h3><p class="url">/pages/trust-security.html</p>
+<ul><li>6.8 MB; two figures blank until lazy images arrive; status chips at 11 px in low-contrast green/amber; three patent cards for one application; "multi-year technical moat"; "classified" facilities; no cookie or privacy text despite being the cookie banner's target.</li><li>"Rack video is processed inside your tenant" needs qualifying for the "Multi-Tenant Cloud · Shared" option on the same page.</li></ul></div>
+
+<div class="pagehead"><h3>Contact</h3><p class="url">/pages/contact.html</p>
+<ul><li>mailto form; name and phone regexes reject real people; mobile mandatory; five country codes; 13-14 px inputs zoom on iOS; no privacy notice; H1 "Engage the platform team." vs button "Request Platform Brief" vs FAQ "demo".</li><li>The FAQ has 12 questions that would suit FAQ structured data.</li><li>"Response time: Within 1 business day" cannot be measured with a mailto form.</li></ul></div>
+
+<div class="pagehead"><h3>About Us</h3><p class="url">/pages/about-us.html</p>
+<ul><li>9.5 MB; hero image lazy-loaded and blank at first paint; "0%" stat fallback; "4+ Startup programmes" unnamed; "Locations: IN &amp; USA"; staggered timeline with large gaps; dev comment referencing AGENTS.md in its script; "Not an audit tool" while Solutions lists an "Audit" surface.</li></ul></div>
+
+<div class="pagehead"><h3>Knowledgebase</h3><p class="url">/pages/racktrack-guide.html</p>
+<ul><li>See the dedicated section above. Also: 8.4 MB HTML, no viewport, no lang, no description, no site header/footer, justified text, 21 images without alt, ids starting with digits, IBM Plex fonts from Google.</li></ul></div>
+
+<div class="pagehead"><h3>Sign In (portal.racktrack.ai)</h3><p class="url">https://portal.racktrack.ai</p>
+<ul><li>Out of scope for design, but it is the login page linked from every header and it has no security headers (no CSP, no frame protection, no HSTS). Worth the same header set as the main site, plus <code>Cache-Control: no-store</code> on logged-in responses.</li></ul></div>
+
+<h2 id="method">How this was checked</h2>
+<p>A crawler followed every internal link from the homepage and found 24 unique pages (25 URLs including <code>/index.html</code>), 143 assets and 6 external links; all assets were HEAD-checked for status and size. HTTP headers, redirects, DNS (SPF, DMARC, MX, CAA), common exposed paths and the 404 behaviour were checked with curl. Every page was loaded in headless Chromium at 1440x900 and 390x844, with an axe-core accessibility scan, console and network error capture, computed font and size inspection, tap-target measurement, and full-page screenshots; key interactions (cookie banner, dropdowns, mobile menu, video modal, contact form validation, keyboard focus, no-JavaScript rendering) were tested by hand. HTML was run through html-validate. All visible text was extracted and read in full.</p>
+<p>Two things could not be checked from this environment: the live TLS certificate and cipher configuration (outbound connections here are re-encrypted by a proxy), and real-network Lighthouse timings. SSL Labs and PageSpeed Insights will cover both in a couple of minutes each; the byte counts above are exact and are what will drive the PageSpeed score.</p>
+<div class="note"><p><b>Suggested order of work.</b> Week 1: HTTPS redirect and headers, remove refresh-home.js, move the cookie banner, fix the form validation, publish privacy/cookie/terms pages. Week 2: image pipeline (resize, WebP, srcset), video re-encode, caching rules, above-the-fold lazy-load fix. Week 3: Knowledgebase (viewport, lang, alt, intro, remove staff-only text, "####" headings), Resources listing, canonical/OG/sitemap. Then the copy pass: one CTA, one capture story, sourced numbers, heading style.</p></div>
+</main>
+</div>
+
+</body></html>

@@ -91,7 +91,7 @@
   border: 1px solid #e6e6e6;
   border-radius: 7px;
   padding: 11px 12px;
-  /* The stack is wide and must never widen the page — scroll it instead. */
+  /* The stack is wide and must never widen the page - scroll it instead. */
   overflow-x: auto;
   white-space: pre;
   color: #474747;

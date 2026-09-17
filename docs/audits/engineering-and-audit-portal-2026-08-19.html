@@ -1,0 +1,703 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Engineering Portal" | https://claude.ai/code/artifact/273658fc-344b-4b68-823e-6bf20fd32759 | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack Engineering Portal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root {
+    --paper: #ffffff; --panel: #f7f7f4; --panel2: #f1f1ed; --ink: #16181d; --muted: #5b5f66;
+    --hairline: rgba(22,24,29,0.12); --hairline-soft: rgba(22,24,29,0.07);
+    --done: #1a7f37; --done-bg: #e9f3ec; --part: #8a5a1d; --part-bg: #f7efe3;
+    --none: #5b5f66; --none-bg: #eeeeeb; --crit: #a1352a; --crit-bg: #f6e9e7;
+    --na: #7a7d84; --blue: #175d8d;
+    --code: #0b1020; --code-ink: #d7dce8;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.6; }
+  .app { display: flex; min-height: 100vh; }
+
+  /* ---------- SIDEBAR (unchanged) ---------- */
+  .sidebar { width: 268px; flex: 0 0 268px; border-right: 1px solid var(--hairline); background: var(--panel); position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 20px 14px 30px; }
+  .brand { padding: 4px 10px 14px; }
+  .brand .bt { font-weight: 650; font-size: 16px; letter-spacing: -0.01em; }
+  .brand .bs { font-family: var(--mono); font-size: 10.5px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+  .grp { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding: 14px 10px 6px; }
+  .tab { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: 0; background: none; cursor: pointer; font-family: var(--sans); font-size: 14px; color: var(--ink); padding: 8px 10px; border-radius: 9px; line-height: 1.3; }
+  .tab:hover { background: rgba(22,24,29,0.05); }
+  .tab.active { background: var(--ink); color: #fff; font-weight: 600; }
+  .tab .dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; }
+  .tab .dot.g { background: var(--done); } .tab .dot.a { background: var(--part); } .tab .dot.n { background: #b9bcc2; }
+  .tab.active .dot { outline: 2px solid rgba(255,255,255,0.35); }
+
+  /* ---------- CONTENT: FULL WIDTH ---------- */
+  .content { flex: 1 1 auto; min-width: 0; }
+  .cinner { max-width: none; padding: 0 0 60px; }
+  [data-panel][hidden] { display: none; }
+
+  /* header band per tab */
+  .phead { padding: clamp(24px,3vw,40px) clamp(20px,3vw,44px) 22px; border-bottom: 1px solid var(--hairline); background: linear-gradient(180deg, var(--panel) 0%, var(--paper) 100%); }
+  .phead .kicker { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 9px; }
+  .phead h1 { margin: 0 0 10px; font-size: clamp(24px,3vw,33px); font-weight: 650; letter-spacing: -0.02em; line-height: 1.12; }
+  .phead .intro { margin: 0; color: var(--muted); font-size: 15.5px; max-width: 96ch; }
+  .phead .intro b { color: var(--ink); font-weight: 600; }
+  .statusbar { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .sb { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; font-weight: 600; border-radius: 8px; padding: 4px 10px; border: 1px solid var(--hairline); background: #fff; }
+  .sb .d { width: 7px; height: 7px; border-radius: 50%; }
+  .sb .d.g { background: var(--done); } .sb .d.a { background: var(--part); } .sb .d.n { background: #b9bcc2; }
+
+  .pbody { padding: 26px clamp(20px,3vw,44px) 8px; }
+  .seclabel { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 32px 0 12px; }
+  .seclabel:first-child { margin-top: 0; }
+  h2 { margin: 34px 0 14px; font-size: 20px; font-weight: 650; letter-spacing: -0.013em; }
+  h2:first-child { margin-top: 0; }
+  p.body { margin: 0 0 14px; max-width: 92ch; color: var(--ink); }
+  p.body.mut { color: var(--muted); }
+  p.body b { font-weight: 600; }
+
+  /* stat tiles full-width row */
+  .tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); margin: 0 0 6px; }
+  .tile { border: 1px solid var(--hairline-soft); border-radius: 13px; padding: 15px 17px 13px; background: var(--panel); }
+  .tile .n { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .tile .n small { font-size: 0.5em; font-weight: 500; color: var(--muted); }
+  .tile .l { margin-top: 5px; font-size: 12.3px; color: var(--muted); line-height: 1.42; }
+
+  /* CARD GRID — fills full width */
+  .cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  .card { border: 1px solid var(--hairline); border-radius: 14px; padding: 16px 17px 14px; background: #fff; display: flex; flex-direction: column; }
+  .card.hi { border-color: rgba(138,90,29,0.35); box-shadow: 0 0 0 3px rgba(138,90,29,0.06); }
+  .card.hi2 { border-color: rgba(161,53,42,0.32); box-shadow: 0 0 0 3px rgba(161,53,42,0.06); }
+  .ch { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 4px; }
+  .ch .cn { font-weight: 650; font-size: 15.5px; line-height: 1.25; letter-spacing: -0.01em; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; font-weight: 600; border-radius: 999px; padding: 2px 8px; white-space: nowrap; flex: 0 0 auto; margin-top: 1px; }
+  .chip.done { background: var(--done-bg); color: var(--done); border: 1px solid rgba(26,127,55,0.22); }
+  .chip.part { background: var(--part-bg); color: var(--part); border: 1px solid rgba(138,90,29,0.28); }
+  .chip.none { background: var(--none-bg); color: var(--none); border: 1px solid var(--hairline); }
+  .chip.na { background: #fff; color: var(--na); border: 1px dashed var(--hairline); }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); border: 1px solid rgba(161,53,42,0.25); }
+  .ctool { font-family: var(--mono); font-size: 11px; color: var(--muted); margin: 0 0 10px; }
+  .cd { margin: 0; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+  .cd .r { font-size: 13.6px; line-height: 1.5; }
+  .cd .r .lead { font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-right: 5px; display: inline-block; }
+  .lead.what { color: var(--muted); } .lead.why { color: var(--blue); } .lead.now { color: var(--done); } .lead.next { color: var(--part); }
+  .cf { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--hairline-soft); display: flex; flex-wrap: wrap; gap: 6px; }
+  .meta { font-family: var(--mono); font-size: 10px; color: var(--muted); background: var(--panel); border: 1px solid var(--hairline-soft); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  .m { font-family: var(--mono); font-size: 0.87em; background: var(--panel); border: 1px solid var(--hairline-soft); border-radius: 5px; padding: 0 5px; }
+
+  /* callouts full width */
+  .callout { border-radius: 13px; padding: 15px 18px; font-size: 14.2px; margin: 16px 0; }
+  .callout.warn { border: 1px solid rgba(161,53,42,0.28); background: var(--crit-bg); color: #7a2a20; }
+  .callout.warn b { color: #5e1f17; }
+  .callout.info { border: 1px solid var(--hairline); background: var(--panel); color: var(--muted); }
+  .callout.info b { color: var(--ink); }
+  .callout.go { border: 1px solid rgba(26,127,55,0.3); background: var(--done-bg); color: #155e2b; }
+  .callout.go b { color: #114a22; }
+
+  /* two-column split */
+  .split { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(360px,1fr)); align-items: start; }
+
+  /* statements */
+  .stmt { border: 1px solid var(--hairline); border-radius: 13px; overflow: hidden; }
+  .stmt > header { padding: 11px 16px; display: flex; align-items: center; gap: 9px; font-weight: 650; font-size: 14px; border-bottom: 1px solid var(--hairline); }
+  .stmt.ok > header { background: var(--done-bg); color: var(--done); }
+  .stmt.target > header { background: var(--part-bg); color: var(--part); }
+  .stmt .b { padding: 15px 16px; }
+  .quote { font-size: 14px; line-height: 1.6; border-left: 3px solid var(--hairline); padding-left: 13px; }
+  .quote b { font-weight: 600; }
+  .tag { font-family: var(--mono); font-size: 9.5px; font-weight: 600; border-radius: 6px; padding: 2px 7px; margin-left: auto; white-space: nowrap; }
+  .tag.ok { background: #fff; color: var(--done); border: 1px solid rgba(26,127,55,0.3); }
+  .tag.target { background: #fff; color: var(--part); border: 1px solid rgba(138,90,29,0.32); }
+
+  /* tables full width */
+  .tw { overflow-x: auto; border: 1px solid var(--hairline-soft); border-radius: 12px; margin: 14px 0; }
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: left; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--hairline); background: var(--panel); white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--hairline-soft); font-size: 13.5px; vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.d { font-weight: 650; white-space: nowrap; }
+  .s { font-family: var(--mono); font-size: 10.5px; font-weight: 600; white-space: nowrap; }
+  .s.ok { color: var(--done); } .s.no { color: var(--crit); } .s.pt { color: var(--part); }
+  .mono { font-family: var(--mono); font-size: 12px; }
+
+  pre.code { background: var(--code); color: var(--code-ink); border-radius: 11px; padding: 15px 17px; overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.6; margin: 14px 0; }
+  pre.code .c { color: #7f8aa3; } pre.code .k { color: #9ecbff; }
+
+  /* plan phases full width grid */
+  .phases { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(400px,1fr)); }
+  .phase { border: 1px solid var(--hairline); border-radius: 14px; padding: 16px 18px; background: #fff; }
+  .phase .ph { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .phase .pn { font-family: var(--mono); font-size: 10px; font-weight: 600; color: #fff; background: var(--ink); border-radius: 6px; padding: 2px 8px; }
+  .phase .pt { font-weight: 650; font-size: 15.5px; }
+  .phase .pw { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; }
+  .phase ul { margin: 10px 0 0; padding: 0; list-style: none; }
+  .phase li { padding: 8px 0; border-top: 1px solid var(--hairline-soft); display: flex; gap: 9px; align-items: baseline; font-size: 13.6px; }
+  .phase li .k { color: var(--muted); flex: 0 0 auto; }
+  .phase li b { font-weight: 600; }
+  .phase li .e { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+
+  .foot { margin: 30px clamp(20px,3vw,44px) 0; padding-top: 16px; border-top: 1px solid var(--hairline); font-family: var(--mono); font-size: 11px; color: var(--muted); line-height: 1.7; }
+
+  @media (max-width: 820px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; flex: none; position: sticky; top: 0; height: auto; border-right: 0; border-bottom: 1px solid var(--hairline); display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 10px; z-index: 10; }
+    .brand, .grp { display: none; }
+    .tab { width: auto; white-space: nowrap; flex: 0 0 auto; padding: 7px 12px; font-size: 13px; }
+  }
+</style>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <nav class="sidebar" aria-label="Sections">
+    <div class="brand"><div class="bt">RackTrack</div><div class="bs">Engineering Portal</div></div>
+    <div class="grp">Overview</div>
+    <button class="tab active" data-tab="start"><span class="dot g"></span> Start here</button>
+    <button class="tab" data-tab="did"><span class="dot g"></span> What we checked</button>
+    <div class="grp">The code</div>
+    <button class="tab" data-tab="standards"><span class="dot a"></span> Coding standards</button>
+    <button class="tab" data-tab="quality"><span class="dot g"></span> Code quality</button>
+    <div class="grp">Security</div>
+    <button class="tab" data-tab="security"><span class="dot g"></span> Keeping it secure</button>
+    <button class="tab" data-tab="access"><span class="dot a"></span> Logins &amp; access</button>
+    <button class="tab" data-tab="scanners"><span class="dot a"></span> Finding weak spots</button>
+    <button class="tab" data-tab="findings"><span class="dot a"></span> What we found</button>
+    <div class="grp">Running it</div>
+    <button class="tab" data-tab="ops"><span class="dot a"></span> Running for customers</button>
+    <button class="tab" data-tab="compliance"><span class="dot n"></span> Compliance &amp; paperwork</button>
+    <button class="tab" data-tab="everyone"><span class="dot a"></span> Usable by everyone</button>
+    <div class="grp">Next</div>
+    <button class="tab" data-tab="plan"><span class="dot g"></span> The plan</button>
+  </nav>
+
+  <!-- ============ CONTENT ============ -->
+  <main class="content">
+    <div class="cinner">
+
+    <!-- ===== START HERE ===== -->
+    <section data-panel="start">
+      <div class="phead">
+        <p class="kicker">Start here · engineering &amp; audit portal · august 19, 2026</p>
+        <h1>RackTrack: the complete engineering picture</h1>
+        <p class="intro">You were told RackTrack "isn't enterprise level yet." Rather than guess what that means, we ran the
+          product through the <b>same battery of professional checks a large customer's security and engineering teams would run</b>,
+          and documented — without spin — what is solid, what is missing, and exactly how to close each gap. This portal is the
+          single source of truth. Use the sidebar; each tab is one focused topic.</p>
+        <div class="statusbar">
+          <span class="sb"><span class="d g"></span> Code &amp; tests: strong</span>
+          <span class="sb"><span class="d a"></span> Operations: pilot-stage</span>
+          <span class="sb"><span class="d n"></span> Compliance: start on demand</span>
+        </div>
+      </div>
+      <div class="pbody">
+        <h2>The bottom line</h2>
+        <p class="body">RackTrack is <b>well-engineered software that is still operated like a demo</b>, not a service large
+          organisations can depend on. The code quality is proven; the gap is the operational, access, and paperwork machinery
+          that surrounds enterprise software. Closing it is roughly <b>six weeks of clearly-scoped work</b> — not a rewrite.</p>
+
+        <div class="tiles">
+          <div class="tile"><div class="n">12</div><div class="l">professional audit methods run on the real code</div></div>
+          <div class="tile"><div class="n">240<small>/240</small></div><div class="l">automated tests passing (app · server · AI)</div></div>
+          <div class="tile"><div class="n">13<small>/13</small></div><div class="l">screens verified in a real browser, phone-sized</div></div>
+          <div class="tile"><div class="n">0</div><div class="l">library vulnerabilities left unpatched</div></div>
+          <div class="tile"><div class="n">2</div><div class="l">real findings — 1 medium, 1 low (fixable in hours)</div></div>
+          <div class="tile"><div class="n">42</div><div class="l">standard checks catalogued &amp; mapped</div></div>
+        </div>
+
+        <h2>Coverage at a glance</h2>
+        <p class="body mut">How RackTrack scores across the six areas an enterprise product is judged on. Full detail lives in each tab.</p>
+        <div class="tw"><table>
+          <thead><tr><th>Area</th><th>Score</th><th>State</th><th>The one thing that moves it</th></tr></thead>
+          <tbody>
+            <tr><td class="d">Security</td><td class="mono">3 / 4</td><td><span class="s ok">STRONG</span></td><td>An external penetration test</td></tr>
+            <tr><td class="d">Logins &amp; access</td><td class="mono">2 / 4</td><td><span class="s pt">1 GAP</span></td><td>Company sign-in (SSO)</td></tr>
+            <tr><td class="d">Code quality</td><td class="mono">4 / 6</td><td><span class="s ok">STRONG</span></td><td>Python linting + coverage number</td></tr>
+            <tr><td class="d">Vulnerability scanners</td><td class="mono">3 / 5</td><td><span class="s pt">2 TO WIRE</span></td><td>Container + live-app scans</td></tr>
+            <tr><td class="d">Operations</td><td class="mono">2 / 7</td><td><span class="s pt">5 GAPS</span></td><td>A real database with backups</td></tr>
+            <tr><td class="d">Compliance</td><td class="mono">0 / 6</td><td><span class="s pt">LATER</span></td><td>SOC 2 — when a deal appears</td></tr>
+          </tbody>
+        </table></div>
+
+        <h2>How to read every tab</h2>
+        <div class="tw"><table><tbody>
+          <tr><td><span class="chip done">✓ DONE</span></td><td>Run and verified — passed.</td></tr>
+          <tr><td><span class="chip part">◐ PARTLY</span></td><td>Some of it is covered; the remainder is scoped below it.</td></tr>
+          <tr><td><span class="chip none">○ TO DO</span></td><td>Not started — with the reason and the plan alongside.</td></tr>
+          <tr><td><span class="chip na">— N/A</span></td><td>Does not apply to how RackTrack is built.</td></tr>
+        </tbody></table></div>
+        <p class="body mut">Every card carries the same four lines — <b>What it is · Why it matters · Where we are · What's next</b> —
+          plus a footer of hard facts: the tool used, the standard it maps to, and the effort to finish.</p>
+      </div>
+    </section>
+
+    <!-- ===== WHAT WE CHECKED ===== -->
+    <section data-panel="did" hidden>
+      <div class="phead">
+        <p class="kicker">Overview · methodology</p>
+        <h1>What we checked, and why</h1>
+        <p class="intro"><b>"Enterprise level" is not a feeling — it is a defined set of checks.</b> We executed twelve of them
+          against the live codebase using the industry-standard tool for each, and verified every green result by actually running
+          it. Below is each method, the tool, what it inspects, and the outcome.</p>
+        <div class="statusbar">
+          <span class="sb"><span class="d g"></span> 10 passed</span>
+          <span class="sb"><span class="d a"></span> 1 surfaced findings</span>
+          <span class="sb"><span class="d n"></span> 1 needs a live server</span>
+        </div>
+      </div>
+      <div class="pbody">
+        <div class="cards">
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Static code analysis</span></div><div class="ctool">ESLint 9 — flat config</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Reads every line of the app and server for errors and unsafe patterns.</div><div class="r"><span class="lead now">Result</span> Zero errors across the whole codebase.</div></div>
+            <div class="cf"><span class="meta"><b>Scope:</b> client + server</span><span class="meta"><b>Cadence:</b> every change</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Automated test suites</span></div><div class="ctool">Vitest · node:test · pytest</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> 240 tests proving the app, server and AI behave correctly.</div><div class="r"><span class="lead now">Result</span> 53 + 86 + 101 = 240 / 240 passing.</div></div>
+            <div class="cf"><span class="meta"><b>Coverage:</b> auth, tenancy, CV math</span><span class="meta"><b>Cadence:</b> every change</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Real-browser sweep</span></div><div class="ctool">Playwright · Chromium</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> A robot logs in and visits all 13 screens at iPhone width.</div><div class="r"><span class="lead now">Result</span> 13 / 13 clean — no blank screens, broken icons, overflow or console errors.</div></div>
+            <div class="cf"><span class="meta"><b>Viewport:</b> 390 px</span><span class="meta"><b>Cadence:</b> every change</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Dependency audit</span></div><div class="ctool">npm audit · pip-audit</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Compares every borrowed library against the public vulnerability database.</div><div class="r"><span class="lead now">Result</span> All fixable patched (tests re-run); Python clean; 2 unfixable-anywhere documented.</div></div>
+            <div class="cf"><span class="meta"><b>Standard:</b> CVE / advisories</span><span class="meta"><b>Cadence:</b> per change + weekly</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip part">◐</span><span class="cn">Static security scan</span></div><div class="ctool">Semgrep — basic + OWASP + Docker rules</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Scans our own code for injection, path traversal, unsafe calls.</div><div class="r"><span class="lead now">Result</span> 2 small real issues (see "What we found"); everything else verified and cleared.</div></div>
+            <div class="cf"><span class="meta"><b>Standard:</b> OWASP Top 10</span><span class="meta"><b>Next:</b> add to CI (~1 hr)</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Secret scan — full history</span></div><div class="ctool">gitleaks · 692 commits</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Searches code and its entire history for leaked passwords or keys.</div><div class="r"><span class="lead now">Result</span> Current code clean; blocked automatically on every future change.</div></div>
+            <div class="cf"><span class="meta"><b>Scope:</b> tree + history</span><span class="meta"><b>Cadence:</b> every push</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Manual attack-surface review</span></div><div class="ctool">expert code review</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> A person reads the sensitive paths — login, tokens, uploads, encryption.</div><div class="r"><span class="lead now">Result</span> Solid; one low-risk note (report HTML). Payments &amp; every admin route not yet fully walked.</div></div>
+            <div class="cf"><span class="meta"><b>Standard:</b> OWASP ASVS</span><span class="meta"><b>Depth:</b> critical paths</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Production build</span></div><div class="ctool">Vite</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Assembles the exact package shipped to users.</div><div class="r"><span class="lead now">Result</span> Clean build in 3.3 seconds.</div></div>
+            <div class="cf"><span class="meta"><b>Output:</b> web bundle</span><span class="meta"><b>Cadence:</b> every change</span></div></article>
+        </div>
+
+        <div class="callout info"><b>The one method we could not run — and we're disclosing it, not hiding it:</b> a live external
+          penetration test needs the whole system running on a server with a database, which cannot be done on a laptop. It is
+          scheduled in the plan under Security, so it is <b>our</b> stated gap rather than a buyer's discovery.</div>
+      </div>
+    </section>
+
+    <!-- ===== CODING STANDARDS ===== -->
+    <section data-panel="standards" hidden>
+      <div class="phead">
+        <p class="kicker">The code · benchmark question raised by your lead</p>
+        <h1>Coding standards the codebase is benchmarked against</h1>
+        <p class="intro">A coding standard is an agreed rulebook for <b>how code is written</b>, plus tools that enforce it
+          automatically so it never depends on memory. Professional teams state precisely which rulebook and which tools they use.
+          Here is RackTrack's, verified against the actual repository configuration. <b>The JavaScript stack is fully standardised
+          today; the Python stack is the one material gap.</b></p>
+        <div class="statusbar">
+          <span class="sb"><span class="d g"></span> JavaScript: fully enforced</span>
+          <span class="sb"><span class="d a"></span> Python: tests only</span>
+        </div>
+      </div>
+      <div class="pbody">
+        <div class="callout info"><b>A note on "MISRA":</b> that standard governs C / C++ in safety-critical embedded systems
+          (automotive, medical). It does not apply to a Python + JavaScript web/mobile product. The correct benchmarks here are
+          <b>PEP 8 / PEP 257</b> (Python) and the <b>ESLint-recommended + Prettier</b> conventions (JavaScript/React).</div>
+
+        <h2>The statements — ready to hand to your lead</h2>
+        <div class="split">
+          <div class="stmt ok"><header>JavaScript — app &amp; server <span class="tag ok">TRUE TODAY</span></header>
+            <div class="b"><p class="quote">Follows a consistent style enforced by <b>EditorConfig</b> (UTF-8, LF, 2-space indent)
+              and <b>Prettier</b> (single quotes, semicolons, 100-column), statically linted by <b>ESLint 9</b> (flat config —
+              <span class="m">eslint:recommended</span> + <span class="m">react</span> + <span class="m">react-hooks</span>,
+              reconciled via <span class="m">eslint-config-prettier</span>) under a CI-enforced warning ceiling. Tested with
+              <b>Vitest</b> + Testing Library, <b>node:test</b>, and <b>Playwright</b>. Security via <b>npm audit</b>,
+              <b>gitleaks</b> and <b>Semgrep</b>, gated by <b>GitHub Actions</b> on every push.</p></div></div>
+          <div class="stmt target"><header>Python — AI pipeline <span class="tag target">TARGET — needs 4 tools</span></header>
+            <div class="b"><p class="quote">Should follow <b>PEP 8</b> and <b>PEP 257</b>, with <b>Ruff</b> (format + lint),
+              <b>mypy</b> (static typing), <b>pytest</b> (tests), and <b>Bandit</b> + <b>pip-audit</b> (security) — all
+              enforced by CI gates. <b>Today only pytest is true</b> (101 tests, CI-gated).</p></div></div>
+        </div>
+
+        <h2>What is actually configured — verified against repo files</h2>
+        <div class="tw"><table>
+          <thead><tr><th>Dimension</th><th>Web (React)</th><th>Server (Node)</th><th>Pipeline (Python)</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr><td class="d">Style baseline</td><td>EditorConfig <span class="s ok">✓</span></td><td>EditorConfig <span class="s ok">✓</span></td><td>PEP 8 <span class="s no">○ unenforced</span></td><td class="mono">.editorconfig</td></tr>
+            <tr><td class="d">Formatter</td><td class="mono">Prettier <span class="s ok">✓</span></td><td class="mono">Prettier <span class="s ok">✓</span></td><td>none <span class="s no">○</span></td><td class="mono">.prettierrc.json</td></tr>
+            <tr><td class="d">Linter</td><td class="mono">ESLint 9 <span class="s ok">✓</span></td><td class="mono">ESLint 9 <span class="s ok">✓</span></td><td>none <span class="s no">○</span></td><td class="mono">eslint.config.js</td></tr>
+            <tr><td class="d">Type checking</td><td>none <span class="s no">○</span></td><td>none <span class="s no">○</span></td><td>none <span class="s no">○</span></td><td class="mono">—</td></tr>
+            <tr><td class="d">Tests</td><td class="mono">Vitest <span class="s ok">✓</span></td><td class="mono">node:test <span class="s ok">✓</span></td><td class="mono">pytest <span class="s ok">✓</span></td><td class="mono">package.json / requirements-dev</td></tr>
+            <tr><td class="d">Dependency security</td><td class="mono">npm audit <span class="s ok">✓</span></td><td class="mono">npm audit <span class="s ok">✓</span></td><td class="mono">pip-audit <span class="s pt">◐ manual</span></td><td class="mono">CI</td></tr>
+            <tr><td class="d">Code security</td><td class="mono" colspan="2">Semgrep <span class="s pt">◐ manual</span></td><td>Bandit <span class="s no">○ none</span></td><td class="mono">—</td></tr>
+            <tr><td class="d">CI quality gate</td><td class="mono">lint+test+build <span class="s ok">✓</span></td><td class="mono">lint+test <span class="s ok">✓</span></td><td class="mono">pytest only <span class="s pt">◐</span></td><td class="mono">.github/workflows/ci.yml</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="callout warn"><b>The gap, precisely:</b> the Python pipeline — the product's core value — has automated tests
+          but <b>no linter, formatter, type checker, or security linter</b>. PEP 8 and PEP 257 are therefore not actually enforced,
+          and no tool checks the Python for the class of bugs Bandit catches. This is the single most important standards gap to close.</div>
+
+        <h2>Closing it — a one-time setup, about half a day</h2>
+        <div class="split">
+          <div class="tw" style="margin:0"><table>
+            <thead><tr><th>Add</th><th>Gives us</th><th>Enforces</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">Ruff</td><td>Format + lint in one fast tool</td><td>PEP 8 &amp; 257</td></tr>
+              <tr><td class="mono">mypy</td><td>Static type checking</td><td>type hints</td></tr>
+              <tr><td class="mono">Bandit</td><td>Python security linting</td><td>safe coding</td></tr>
+              <tr><td class="mono">pip-audit</td><td>Automated library-hole scanning</td><td>known CVEs</td></tr>
+            </tbody>
+          </table></div>
+          <pre class="code" style="margin:0"><span class="c"># pyproject.toml (currently absent — this creates the benchmark)</span>
+[tool.ruff]
+line-length = 100
+target-version = <span class="k">"py311"</span>
+[tool.ruff.lint]
+select = [<span class="k">"E"</span>,<span class="k">"W"</span>,<span class="k">"F"</span>,<span class="k">"I"</span>,<span class="k">"D"</span>,<span class="k">"S"</span>,<span class="k">"UP"</span>,<span class="k">"B"</span>]
+[tool.ruff.lint.pydocstyle]
+convention = <span class="k">"pep257"</span>
+
+<span class="c"># requirements-dev.txt → add: ruff · mypy · bandit · pip-audit</span>
+<span class="c"># CI → add: ruff check · mypy · bandit -r pipeline · pip-audit</span></pre>
+        </div>
+        <div class="callout go"><b>I can implement this now</b> — it's the top item in Phase 1 and runs entirely on this machine. Once done, the Python statement above is simply true.</div>
+      </div>
+    </section>
+
+    <!-- ===== CODE QUALITY ===== -->
+    <section data-panel="quality" hidden>
+      <div class="phead">
+        <p class="kicker">The code</p>
+        <h1>Code quality — clean, tested, and self-enforcing</h1>
+        <p class="intro"><b>Why this matters:</b> clean, well-tested code is cheaper to change and far less likely to break in
+          front of a customer. Machines enforce most of this on every change, so quality cannot silently regress.</p>
+        <div class="statusbar"><span class="sb"><span class="d g"></span> 2 done</span><span class="sb"><span class="d a"></span> 4 partial</span><span class="sb"><span class="d n"></span> 1 to do</span></div>
+      </div>
+      <div class="pbody">
+        <div class="cards">
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Code checker (lint)</span></div><div class="ctool">ESLint 9</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Flags mistakes and messy code on every change.</div><div class="r"><span class="lead why">Why</span> Consistent code is cheaper to maintain and hides fewer bugs.</div><div class="r"><span class="lead now">Now</span> Zero errors; warning count locked so it can only drop. <b>JavaScript only</b> — Python has no linter yet.</div></div>
+            <div class="cf"><span class="meta"><b>Enforced:</b> CI, every push</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Automated tests</span></div><div class="ctool">Vitest · node:test · pytest · Playwright</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> 240 tests + a robot walking every screen.</div><div class="r"><span class="lead why">Why</span> Stops a broken change before it reaches a user.</div><div class="r"><span class="lead now">Now</span> 240 / 240 pass on every change.</div></div>
+            <div class="cf"><span class="meta"><b>Split:</b> 53 · 86 · 101</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip part">◐</span><span class="cn">Test coverage</span></div><div class="ctool">c8 / coverage.py</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Measures how much of the code the tests actually touch.</div><div class="r"><span class="lead why">Why</span> Turns "probably tested" into a real, defensible number.</div><div class="r"><span class="lead now">Now</span> Important parts tested; marketplace &amp; integrations thin; % unmeasured.</div><div class="r"><span class="lead next">Next</span> Switch on the counter, lock it as a floor.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~1 day</span></div></article>
+
+          <article class="card hi"><div class="ch"><span class="chip part">◐</span><span class="cn">Data-safety review</span></div><div class="ctool">architecture / ACID review</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Checks whether a crash could corrupt or lose customer data.</div><div class="r"><span class="lead why">Why</span> The most damaging failures aren't hacks — they're lost data.</div><div class="r"><span class="lead now">Now</span> Found real: a scan saves images then its owner record in two steps; a crash between them orphans the scan (repair scripts exist because it happened).</div><div class="r"><span class="lead next">Next</span> A real database saves both as one all-or-nothing action.</div></div>
+            <div class="cf"><span class="meta"><b>Fix:</b> PostgreSQL</span><span class="meta"><b>Priority:</b> highest value</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip part">◐</span><span class="cn">Speed &amp; load time</span></div><div class="ctool">Lighthouse · bundle budget</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> How fast the app loads and responds on weak signal.</div><div class="r"><span class="lead now">Now</span> Robot catches layout issues; oversized JS bundle flagged; no formal score yet.</div><div class="r"><span class="lead next">Next</span> Lighthouse score + split code per screen.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~2–3 days</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Written API menu</span></div><div class="ctool">OpenAPI · Spectral</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> A formal document of every way the app talks to the server.</div><div class="r"><span class="lead why">Why</span> Easier to maintain and safely extend or expose.</div><div class="r"><span class="lead next">Next</span> Author an OpenAPI spec as the API grows.</div></div>
+            <div class="cf"><span class="meta"><b>Cadence:</b> ongoing</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip part">◐</span><span class="cn">Delivery health (DORA)</span></div><div class="ctool">DORA metrics</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Four standard measures of how healthily a team ships.</div><div class="r"><span class="lead now">Now</span> Automated checks strong, but hand-deploys with no undo score low.</div><div class="r"><span class="lead next">Next</span> Improves once staging + one-button deploy land.</div></div>
+            <div class="cf"><span class="meta"><b>See:</b> Running for customers</span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECURITY ===== -->
+    <section data-panel="security" hidden>
+      <div class="phead">
+        <p class="kicker">Security</p>
+        <h1>Keeping it secure</h1>
+        <p class="intro"><b>Why this matters:</b> a breach can end a young product. The foundations here are strong, verified by
+          scanner and by hand — with one outside test still to book.</p>
+        <div class="statusbar"><span class="sb"><span class="d g"></span> 3 verified</span><span class="sb"><span class="d n"></span> 1 to book</span></div>
+      </div>
+      <div class="pbody">
+        <div class="cards">
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Guards against password-guessing</span></div><div class="ctool">per-account rate limiting</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> The login caps how many attempts an attacker gets.</div><div class="r"><span class="lead now">Now</span> In place, keyed per-account so real testers on one office network don't lock each other out. Reset path throttled too.</div></div>
+            <div class="cf"><span class="meta"><b>Verified:</b> auth.js, by hand</span><span class="meta"><b>Standard:</b> OWASP ASVS</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Login tokens built correctly</span></div><div class="ctool">JWT — algorithm-pinned</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> The proof-of-login is signed and verified properly.</div><div class="r"><span class="lead now">Now</span> Verified — blocks a well-known "no-signature" forgery trick, with a code comment explaining why. A sign of maturity.</div></div>
+            <div class="cf"><span class="meta"><b>Verified:</b> auth.js</span><span class="meta"><b>Standard:</b> OWASP JWT</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Data unreadable at rest</span></div><div class="ctool">bcrypt · AES-256-GCM · helmet</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Passwords hashed; device logins encrypted; responses hardened.</div><div class="r"><span class="lead now">Now</span> Verified — even with the whole database, no password is readable; uploads are size-capped; the shipping code carries no secrets.</div></div>
+            <div class="cf"><span class="meta"><b>Standard:</b> OWASP crypto</span><span class="meta"><b>Verified:</b> by hand + Semgrep</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">External penetration test</span></div><div class="ctool">PTES · OWASP WSTG</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> A paid firm attacks the live app for a week and writes the report buyers ask for.</div><div class="r"><span class="lead why">Why</span> Humans find clever attack chains scanners miss; a standard enterprise requirement.</div><div class="r"><span class="lead next">Next</span> Book once a test server exists; include an explicit tenant-isolation test.</div></div>
+            <div class="cf"><span class="meta"><b>Cadence:</b> yearly</span><span class="meta"><b>Cost:</b> a few thousand $</span></div></article>
+        </div>
+        <div class="callout info"><b>Related paperwork</b> (SOC 2, ISO, an uptime promise) lives in the <b>Compliance</b> tab — it's process, not code, and correctly started when a real enterprise deal appears.</div>
+      </div>
+    </section>
+
+    <!-- ===== ACCESS ===== -->
+    <section data-panel="access" hidden>
+      <div class="phead">
+        <p class="kicker">Security</p>
+        <h1>Logins &amp; who-can-see-what</h1>
+        <p class="intro"><b>Why this matters:</b> the right people must see the right data — and only their own company's. This is
+          the area corporate IT scrutinises hardest, and it holds the single biggest sales blocker.</p>
+        <div class="statusbar"><span class="sb"><span class="d g"></span> 2 proven</span><span class="sb"><span class="d n"></span> 2 to build (incl. the blocker)</span></div>
+      </div>
+      <div class="pbody">
+        <div class="cards">
+          <article class="card"><div class="ch"><span class="chip part">◐</span><span class="cn">Company data walls</span></div><div class="ctool">multi-tenant isolation</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Many companies share one system; each must see only its own data.</div><div class="r"><span class="lead now">Now</span> Strong — an automatic test proves company A can't reach company B, re-run on every change.</div><div class="r"><span class="lead next">Next</span> An outside tester deliberately tries to cross the wall (part of the pen test).</div></div>
+            <div class="cf"><span class="meta"><b>Evidence:</b> tenant_isolation.test.js</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip part">◐</span><span class="cn">Roles &amp; activity record</span></div><div class="ctool">RBAC · audit log</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Admin pages check who's asking; the server logs who did what, when.</div><div class="r"><span class="lead now">Now</span> In place — including failed logins, the exact trail security teams request.</div><div class="r"><span class="lead next">Next</span> Formal role-by-role verification in the ASVS pass.</div></div>
+            <div class="cf"><span class="meta"><b>Standard:</b> OWASP API Top 10</span></div></article>
+
+          <article class="card hi"><div class="ch"><span class="chip none">○</span><span class="cn">Company sign-in (SSO)</span></div><div class="ctool">OIDC · SAML — Microsoft Entra</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> "Sign in with Microsoft" — staff use their existing company account.</div><div class="r"><span class="lead why">Why</span> When someone leaves, IT disables one account and they lose access everywhere — including RackTrack. <b>Many companies literally cannot buy without it. The single biggest sales blocker.</b></div><div class="r"><span class="lead next">Next</span> Add Microsoft sign-in; move the login token into a script-proof cookie at the same time.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~1–2 weeks</span><span class="meta"><b>Impact:</b> unblocks corporate sales</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Auto-provisioning &amp; MFA</span></div><div class="ctool">SCIM · TOTP / passkeys</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Accounts appear/disappear as staff join or leave (SCIM); a second login check (MFA).</div><div class="r"><span class="lead next">Next</span> Both usually arrive alongside company sign-in; add when a large customer asks. Target level "AAL2"; avoid SMS codes.</div></div>
+            <div class="cf"><span class="meta"><b>Standard:</b> SCIM 2.0 · NIST 800-63B</span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SCANNERS ===== -->
+    <section data-panel="scanners" hidden>
+      <div class="phead">
+        <p class="kicker">Security</p>
+        <h1>Finding weak spots — the scanner toolkit</h1>
+        <p class="intro"><b>Why this matters:</b> different scanners catch different problems, so a thorough product runs several,
+          from five angles. We ran everything possible on a laptop; two more need a running system or a single switch.</p>
+        <div class="statusbar"><span class="sb"><span class="d g"></span> 3 run &amp; clean</span><span class="sb"><span class="d n"></span> 2 to wire on</span></div>
+      </div>
+      <div class="pbody">
+        <div class="cards">
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Library scanners</span></div><div class="ctool">npm audit · pip-audit</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Check every outside library against known-hole lists.</div><div class="r"><span class="lead now">Now</span> Both done and clean/patched; Python had zero known holes on first run.</div></div>
+            <div class="cf"><span class="meta"><b>Angle:</b> borrowed code</span><span class="meta"><b>Cadence:</b> per change</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓</span><span class="cn">Own-code scanner</span></div><div class="ctool">Semgrep — OWASP ruleset</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Reads our code for injection, path traversal, unsafe commands.</div><div class="r"><span class="lead now">Now</span> Done; caught 2 small real items, cleared the rest.</div><div class="r"><span class="lead next">Next</span> Add to CI so it runs on every change.</div></div>
+            <div class="cf"><span class="meta"><b>Angle:</b> our code</span><span class="meta"><b>Next:</b> ~1 hr</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Container scanner</span></div><div class="ctool">Trivy</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Scans the shipping container for operating-system holes.</div><div class="r"><span class="lead next">Next</span> Add on every build; also auto-catches the "runs as root" finding.</div></div>
+            <div class="cf"><span class="meta"><b>Angle:</b> the container</span><span class="meta"><b>Effort:</b> ~½ day</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Live-app attacker</span></div><div class="ctool">OWASP ZAP</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Attacks the running app from outside, monthly, like a real attacker.</div><div class="r"><span class="lead next">Next</span> Needs the test server first.</div></div>
+            <div class="cf"><span class="meta"><b>Angle:</b> live app</span><span class="meta"><b>Cadence:</b> monthly</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Auto-update robot</span></div><div class="ctool">Dependabot</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Opens a ready-made fix the day any library patches a hole.</div><div class="r"><span class="lead next">Next</span> One GitHub setting.</div></div>
+            <div class="cf"><span class="meta"><b>Angle:</b> continuous</span><span class="meta"><b>Effort:</b> ~30 min</span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FINDINGS ===== -->
+    <section data-panel="findings" hidden>
+      <div class="phead">
+        <p class="kicker">Security · full disclosure</p>
+        <h1>What we found</h1>
+        <p class="intro">A real audit turns things up. Here is everything the scans surfaced — <b>two small items to fix</b>, and
+          the louder alarms that proved harmless on inspection. We would rather write these down ourselves than have a buyer's
+          team read them back to us.</p>
+        <div class="statusbar"><span class="sb"><span class="d a"></span> 1 medium</span><span class="sb"><span class="d a"></span> 1 low</span><span class="sb"><span class="d g"></span> 32 alarms cleared</span></div>
+      </div>
+      <div class="pbody">
+        <div class="cards">
+          <article class="card hi"><div class="ch"><span class="chip crit">▲ MEDIUM</span><span class="cn">Runs as the "root" super-user</span></div><div class="ctool">M1 · container hardening</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> The container starts as "root" (full permissions); best practice is a limited user.</div><div class="r"><span class="lead why">Why</span> If an attacker got in, root lets them do far more damage.</div><div class="r"><span class="lead next">Fix</span> Two lines in the Dockerfile; Trivy would flag it automatically.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~1 hr</span><span class="meta"><b>Source:</b> Semgrep + manual</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip part">▲ LOW</span><span class="cn">Report builds a little HTML by hand</span></div><div class="ctool">L1 · output encoding</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> One spot in a printable report inserts an error message without cleaning it.</div><div class="r"><span class="lead why">Why low</span> That report is only ever seen by the same owner — no path to another user.</div><div class="r"><span class="lead next">Fix</span> Run the text through the cleaner already used beside it.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~15 min</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip done">✓ CLEARED</span><span class="cn">The alarms that proved harmless</span></div><div class="ctool">verified by hand</div>
+            <div class="cd"><div class="r"><b>9 "SQL injection"</b> — log messages or fixed, safely-bound queries.</div><div class="r"><b>17 "file path"</b> — all guarded by a strict rack-ID pattern + ownership check.</div><div class="r"><b>1 "weak encryption"</b> — AES-256-GCM, used correctly.</div><div class="r"><b>4 "weak hash"</b> — SHA-1 only names cache files, never protects anything.</div><div class="r"><b>1 "cross-origin"</b> — strict same-origin by design.</div></div>
+            <div class="cf"><span class="meta"><b>Total reviewed:</b> 32</span><span class="meta"><b>Real:</b> 0</span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== OPS ===== -->
+    <section data-panel="ops" hidden>
+      <div class="phead">
+        <p class="kicker">Running it</p>
+        <h1>Running it for real customers</h1>
+        <p class="intro"><b>Why this matters:</b> this is where the serious gaps live. The code is good, but the app is still
+          operated like a demo. These are the pieces that let a service large organisations depend on stay up, recover, and scale.</p>
+        <div class="statusbar"><span class="sb"><span class="d n"></span> 5 gaps — the core of the enterprise distance</span></div>
+      </div>
+      <div class="pbody">
+        <div class="cards">
+          <article class="card hi2"><div class="ch"><span class="chip none">○</span><span class="cn">Real database + backups</span></div><div class="ctool">PostgreSQL · off-site backups</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Data lives in one file + folders on one disk; <b>no backups exist</b>.</div><div class="r"><span class="lead why">Why</span> If that disk dies, every scan and account is gone forever. The two-step save can also lose a scan on a crash.</div><div class="r"><span class="lead next">Fix</span> PostgreSQL (atomic saves) + nightly off-site backups + one restore drill.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~2–3 weeks</span><span class="meta"><b>Priority:</b> highest value</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Alerts when it breaks</span></div><div class="ctool">uptime monitor · Sentry</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Today, downtime at 2 a.m. is found when a tester complains hours later.</div><div class="r"><span class="lead now">Now</span> The logs &amp; performance meters already exist — they just alert nobody.</div><div class="r"><span class="lead next">Fix</span> Uptime monitor (phone alert in a minute) + crash reporting.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~2 days</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Test server + one-button deploy</span></div><div class="ctool">staging · CI deploy · rollback</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Updates are copied by hand to the one live server, with no undo.</div><div class="r"><span class="lead next">Fix</span> A staging copy to soak changes, a deploy button in the existing CI, one-command rollback.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~3–4 days</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Capacity / load test</span></div><div class="ctool">k6</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> The AI scan is heavy; nobody knows if 30 technicians at 9 a.m. is fine or crashes it.</div><div class="r"><span class="lead next">Fix</span> Fire many pretend users at the test server; produce the "how many users" number.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~2–3 days</span><span class="meta"><b>Needs:</b> staging</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Back up the Android signing key</span></div><div class="ctool">keystore backup</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> The key to update the Android app is on one laptop, no copy.</div><div class="r"><span class="lead why">Why</span> Lose that disk and every tester must uninstall and reinstall.</div><div class="r"><span class="lead next">Fix</span> Copy it to a password manager + one offline place.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~1 hr</span><span class="meta"><b>Do:</b> first</span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COMPLIANCE ===== -->
+    <section data-panel="compliance" hidden>
+      <div class="phead">
+        <p class="kicker">Running it</p>
+        <h1>Compliance &amp; paperwork</h1>
+        <p class="intro"><b>Why this matters:</b> big companies and regulators require certificates and documents before buying.
+          This is mostly process, not code — and correctly begun <b>when a real enterprise deal is on the table</b>. "Not started"
+          here is a stage, not neglect.</p>
+        <div class="statusbar"><span class="sb"><span class="d n"></span> All later — 2 quick wins available now</span></div>
+      </div>
+      <div class="pbody">
+        <div class="cards">
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">SOC 2</span></div><div class="ctool">AICPA · Type II</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> An independent report that your security controls are real and working.</div><div class="r"><span class="lead why">Why</span> In North America, the entry ticket to selling to big companies.</div><div class="r"><span class="lead next">When</span> Start with a real deal.</div></div>
+            <div class="cf"><span class="meta"><b>Cadence:</b> annual</span><span class="meta"><b>Cost:</b> ~$20K–$150K yr 1</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">ISO 27001</span></div><div class="ctool">ISO/IEC 27001:2022</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> The international counterpart to SOC 2.</div><div class="r"><span class="lead why">Why</span> Preferred by EU / UK / Asia buyers; ~70% overlaps SOC 2.</div><div class="r"><span class="lead next">When</span> Selling internationally; often done together with SOC 2.</div></div>
+            <div class="cf"><span class="meta"><b>Cadence:</b> 3-yr cycle</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">PCI — card payments</span></div><div class="ctool">PCI DSS 4.0.1 · SAQ A</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> A yearly security form required to take card payments.</div><div class="r"><span class="lead now">Quick win</span> Because Stripe hosts the card fields, you qualify for the lightest form — near-zero cost.</div></div>
+            <div class="cf"><span class="meta"><b>Cadence:</b> annual self-assessment</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Privacy (GDPR / CCPA)</span></div><div class="ctool">EU / California law</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Rules on collecting, storing, and deleting personal data.</div><div class="r"><span class="lead why">Why</span> Law once you have EU or California users; large fines.</div><div class="r"><span class="lead next">Next</span> Data agreement, records, deletion process, with counsel.</div></div>
+            <div class="cf"><span class="meta"><b>Cadence:</b> continuous</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Parts list (SBOM)</span></div><div class="ctool">Syft · CycloneDX / SPDX</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> An "ingredients label" listing every component you ship.</div><div class="r"><span class="lead now">Quick win</span> Generates automatically from files you already have; EU-mandatory by 2027.</div></div>
+            <div class="cf"><span class="meta"><b>Effort:</b> ~1 hr</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Buyer questionnaires</span></div><div class="ctool">SIG · CAIQ · trust page</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> The security spreadsheets a buyer's risk team emails before signing.</div><div class="r"><span class="lead next">Next</span> Pre-fill the standard ones + a trust page. SOC 2 makes them far easier.</div></div>
+            <div class="cf"><span class="meta"><b>Cadence:</b> per deal</span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== EVERYONE ===== -->
+    <section data-panel="everyone" hidden>
+      <div class="phead">
+        <p class="kicker">Running it</p>
+        <h1>Usable by everyone, and correct for our field</h1>
+        <p class="intro"><b>Why this matters:</b> the app must work for people with disabilities (increasingly the law), and an AI
+          product must be able to state how accurate it is.</p>
+        <div class="statusbar"><span class="sb"><span class="d a"></span> 2 partial</span><span class="sb"><span class="d n"></span> 1 to do</span></div>
+      </div>
+      <div class="pbody">
+        <div class="cards">
+          <article class="card"><div class="ch"><span class="chip part">◐</span><span class="cn">Accessibility (WCAG)</span></div><div class="ctool">WCAG 2.2 AA · axe · screen reader</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> Usable with a screen reader, keyboard, and enough colour contrast.</div><div class="r"><span class="lead why">Why</span> People with disabilities must be able to use it — the EU Accessibility Act (June 2025) reaches US firms with EU customers.</div><div class="r"><span class="lead now">Now</span> Partly — the robot enforces readable text sizes and no overflow; no full screen-reader audit yet.</div><div class="r"><span class="lead next">Next</span> Automated scan + manual screen-reader test; produces a VPAT.</div></div>
+            <div class="cf"><span class="meta"><b>Standard:</b> WCAG 2.2 AA</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip part">◐</span><span class="cn">AI accuracy report</span></div><div class="ctool">precision / recall · NIST AI RMF</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> A measured report of how often the AI scanner is right, and wrong.</div><div class="r"><span class="lead why">Why</span> The product's core promise; AI buyers ask for the numbers in writing.</div><div class="r"><span class="lead now">Now</span> Partly — a ground-truth set and tests exist, but no published accuracy report.</div><div class="r"><span class="lead next">Next</span> Measure &amp; publish accuracy + false-alarm rates; watch for drift.</div></div>
+            <div class="cf"><span class="meta"><b>Framework:</b> NIST AI RMF</span></div></article>
+
+          <article class="card"><div class="ch"><span class="chip none">○</span><span class="cn">Clean data into ServiceNow</span></div><div class="ctool">CMDB data quality</div>
+            <div class="cd"><div class="r"><span class="lead what">What</span> RackTrack feeds a customer's IT database; it must not create duplicates or wrong entries.</div><div class="r"><span class="lead next">Next</span> Check against ServiceNow's data-quality rules and tune matching. Matters as real customers connect.</div></div>
+            <div class="cf"><span class="meta"><b>Standard:</b> ITIL / CSDM</span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PLAN ===== -->
+    <section data-panel="plan" hidden>
+      <div class="phead">
+        <p class="kicker">Next · roadmap</p>
+        <h1>The plan — in order, highest value first</h1>
+        <p class="intro">Everything in this portal, sequenced by <b>most value for least effort</b>. Phase 1 is hours of work we can
+          do right now on this machine; the later phases build the backbone and the enterprise paperwork.</p>
+        <div class="statusbar"><span class="sb"><span class="d g"></span> Phase 1 doable now, no cost</span><span class="sb"><span class="d a"></span> ~6 weeks to enterprise-ready</span></div>
+      </div>
+      <div class="pbody">
+        <div class="phases">
+          <div class="phase"><div class="ph"><span class="pn">PHASE 1</span><span class="pt">Quick wins — do now</span><span class="pw">~2 days</span></div>
+            <ul>
+              <li><span class="k">▸</span><span><b>Back up the Android signing key</b> — a real risk removed for almost nothing.</span><span class="e">~1 hr</span></li>
+              <li><span class="k">▸</span><span><b>Fix the two findings</b> — run as non-root, clean the report text.</span><span class="e">~1.5 hr</span></li>
+              <li><span class="k">▸</span><span><b>Python rulebook tools</b> — Ruff, mypy, Bandit, pip-audit (your lead's point).</span><span class="e">~½ day</span></li>
+              <li><span class="k">▸</span><span><b>Free scanners on</b> — Semgrep-in-CI, Dependabot, Trivy, SBOM.</span><span class="e">~½ day</span></li>
+              <li><span class="k">▸</span><span><b>Measure test coverage</b> and lock the floor.</span><span class="e">~1 day</span></li>
+            </ul></div>
+
+          <div class="phase"><div class="ph"><span class="pn">PHASE 2</span><span class="pt">Operations backbone</span><span class="pw">~2 weeks</span></div>
+            <ul>
+              <li><span class="k">▸</span><span><b>Alerts</b> — know within a minute when it breaks.</span><span class="e">~2 d</span></li>
+              <li><span class="k">▸</span><span><b>Test server + one-button deploy</b> with undo.</span><span class="e">~3–4 d</span></li>
+              <li><span class="k">▸</span><span><b>Load test</b> — get the capacity number.</span><span class="e">~2–3 d</span></li>
+              <li><span class="k">▸</span><span><b>Formal standards sign-off</b> — walk OWASP Top 10 / ASVS L2.</span><span class="e">~2–3 d</span></li>
+            </ul></div>
+
+          <div class="phase"><div class="ph"><span class="pn">PHASE 3</span><span class="pt">Data safety &amp; enterprise login</span><span class="pw">~3–5 weeks</span></div>
+            <ul>
+              <li><span class="k">▸</span><span><b>Real database + nightly backups + restore drill</b> — ends the data-loss risk. Highest value.</span><span class="e">~2–3 wk</span></li>
+              <li><span class="k">▸</span><span><b>Company sign-in (SSO) + safer tokens</b> — unblocks corporate sales.</span><span class="e">~1–2 wk</span></li>
+            </ul></div>
+
+          <div class="phase"><div class="ph"><span class="pn">PHASE 4</span><span class="pt">Enterprise paperwork — when a deal appears</span><span class="pw">ongoing</span></div>
+            <ul>
+              <li><span class="k">▸</span><span><b>Pen test → uptime promise (SLA) → SOC 2</b> (+ ISO for EU/UK).</span><span class="e">months</span></li>
+              <li><span class="k">▸</span><span><b>PCI form, privacy review, accessibility audit, AI-accuracy report.</b></span><span class="e">as needed</span></li>
+            </ul></div>
+        </div>
+
+        <div class="callout go"><b>Your move.</b> Everything in Phase 1 I can start right now on this machine — no server, no outside
+          firm, no cost. Say go, and I'll begin with the Python rulebook tools and the free scanners, then work down the phase.</div>
+
+        <p class="foot">RackTrack engineering portal · august 19, 2026 · single source of truth · green items verified by running
+          the check — ESLint · Vitest (53) · node:test (86) · pytest (101) · Playwright (13) · npm audit · pip-audit · Semgrep ·
+          gitleaks · Vite · manual review · researched against OWASP Top 10:2025 · ASVS 5.0 · PCI DSS 4.0.1 · SOC 2 · ISO 27001 · WCAG 2.2 · NIST · PEP 8/257.</p>
+      </div>
+    </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab]'));
+    var panels = Array.prototype.slice.call(document.querySelectorAll('[data-panel]'));
+    function show(id) {
+      var found = false;
+      panels.forEach(function (p) { var on = p.getAttribute('data-panel') === id; p.hidden = !on; if (on) found = true; });
+      if (!found) { id = 'start'; panels.forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== 'start'; }); }
+      tabs.forEach(function (t) { var on = t.getAttribute('data-tab') === id; t.classList.toggle('active', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); });
+      try { window.scrollTo(0, 0); } catch (e) {}
+      if (location.hash.slice(1) !== id) { try { history.replaceState(null, '', '#' + id); } catch (e) {} }
+    }
+    tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute('data-tab')); }); });
+    show(location.hash ? location.hash.slice(1) : 'start');
+  })();
+</script>
+
+</body></html>

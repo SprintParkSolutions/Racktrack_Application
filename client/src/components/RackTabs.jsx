@@ -3,7 +3,7 @@ import styles from './RackTabs.module.css';
 import { useGroupView } from '../hooks/useGroupView';
 
 /**
- * RackTabs — the rack switcher for a two-rack scan on mobile. Shows a clean
+ * RackTabs - the rack switcher for a two-rack scan on mobile. Shows a clean
  * "Rack 1 | Rack 2" pill toggle (matching the toggle used on Ports / Switches /
  * Network / Drift) plus a small jump to the combined 3D view. Renders nothing
  * for standalone scans, or when the ?group signal isn't present.
@@ -14,8 +14,8 @@ export default function RackTabs({ rackId }) {
   const { data, loading, isGroup, members, groupParam } = useGroupView(rackId);
 
   // Only render for an actual two-rack scan the user is viewing AS a group
-  // (the ?group signal is present). A single-rack scan — even of a photo that
-  // was once part of a group — never shows the rack strip.
+  // (the ?group signal is present). A single-rack scan - even of a photo that
+  // was once part of a group - never shows the rack strip.
   if (loading || !isGroup) return null;
   // Preserve the sub-page suffix + the ?group signal when switching racks.
   //   /results/:rackId             → no suffix (overview)

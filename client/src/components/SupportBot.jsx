@@ -1,11 +1,11 @@
-// RackTrack Assist — in-app help, backed by /api/support.
+// RackTrack Assist - in-app help, backed by /api/support.
 //
 // The server answers only from a verified knowledge base and declines rather
 // than guessing, so this component's job is to stay out of the way: show the
 // short answer, make a decline look visibly different from an answer, keep the
 // full detail one tap away, and always offer a route to a person.
 //
-// Renders nothing when the server reports the assistant unavailable — a help
+// Renders nothing when the server reports the assistant unavailable - a help
 // button that cannot help is worse than no button.
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -80,7 +80,7 @@ export default function SupportBot() {
       if (!res.ok) {
         // Read the body before deciding what to say: on a 429 the server sends
         // the real limit and how long to wait. This used to hardcode "give it
-        // a few seconds", which was simply wrong — the wait can be minutes.
+        // a few seconds", which was simply wrong - the wait can be minutes.
         let err = null;
         try { err = await res.json(); } catch { /* non-JSON error body */ }
         setMessages((prev) => [...prev, {

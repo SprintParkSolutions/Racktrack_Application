@@ -1,0 +1,421 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Enterprise Roadmap" | https://claude.ai/code/artifact/8ce156ef-eab4-4285-87ff-8bc1b8db4aaa | artifact last updated 2026-08-20 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack Enterprise Roadmap</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --paper:#fff;--panel:#f7f7f4;--ink:#1a1c22;--muted:#5b5f66;
+    --hairline:rgba(22,24,29,.12);--hairline-soft:rgba(22,24,29,.07);
+    --done:#1a7f37;--done-bg:#e9f3ec;--part:#8a5a1d;--part-bg:#f7efe3;
+    --none:#5b5f66;--none-bg:#eeeeeb;--crit:#a1352a;--crit-bg:#f6e9e7;--na:#7a7d84;
+    --blue:#175d8d;--aws:#c25e0d;--azure:#1f6feb;--purple:#6b3fa0;
+    --code:#0b1020;--code-ink:#d7dce8;
+    --sans:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.68}
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:272px;flex:0 0 272px;border-right:1px solid var(--hairline);background:var(--panel);position:sticky;top:0;height:100vh;overflow-y:auto;padding:20px 14px 30px}
+  .brand{padding:4px 10px 12px}.brand .bt{font-weight:650;font-size:16px;letter-spacing:-.01em}.brand .bs{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+  .grp{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:14px 10px 6px}
+  .tab{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:none;cursor:pointer;font-family:var(--sans);font-size:13.6px;color:var(--ink);padding:8px 10px;border-radius:9px;line-height:1.3}
+  .tab:hover{background:rgba(22,24,29,.05)}.tab.active{background:var(--ink);color:#fff;font-weight:600}
+  .tab .num{font-family:var(--mono);font-size:11px;color:var(--muted);flex:0 0 auto;width:14px}.tab.active .num{color:rgba(255,255,255,.7)}
+  .tab .dot{flex:0 0 auto;width:7px;height:7px;border-radius:50%}
+  .tab .dot.g{background:var(--done)}.tab .dot.a{background:var(--part)}.tab .dot.n{background:#b9bcc2}
+  .content{flex:1 1 auto;min-width:0}.cinner{max-width:none;padding:0 0 64px}
+  [data-panel][hidden]{display:none}
+  .phead{padding:clamp(26px,3vw,44px) clamp(22px,3.2vw,52px) 26px;border-bottom:1px solid var(--hairline);background:linear-gradient(180deg,var(--panel),var(--paper))}
+  .phead .kicker{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 9px}
+  .phead h1{margin:0 0 12px;font-size:clamp(25px,3vw,36px);font-weight:650;letter-spacing:-.02em;line-height:1.1}
+  .phead .intro{margin:0;color:var(--muted);font-size:16.5px;max-width:104ch;line-height:1.6}.phead .intro b{color:var(--ink);font-weight:600}
+  .statusbar{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .sb{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:8px;padding:4px 10px;border:1px solid var(--hairline);background:#fff}
+  .sb .d{width:7px;height:7px;border-radius:50%}.sb .d.g{background:var(--done)}.sb .d.a{background:var(--part)}.sb .d.n{background:#b9bcc2}
+  .pbody{padding:28px clamp(22px,3.2vw,52px) 8px}
+  h2{margin:34px 0 4px;font-size:22px;font-weight:650;letter-spacing:-.015em}h2:first-child{margin-top:0}
+  .h2sub{margin:0 0 16px;color:var(--muted);font-size:15px;max-width:96ch}
+  p.body{margin:0 0 14px;max-width:100ch}p.body.mut{color:var(--muted)}p.body b{font-weight:600}
+  .banner{border-radius:14px;padding:16px 20px;margin:0 0 8px;font-size:15px;line-height:1.55;border:1px solid rgba(26,127,55,.3);background:var(--done-bg);color:#155e2b}
+  .banner b{color:#0e4a24}
+  .tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:18px 0 6px}
+  .tile{border:1px solid var(--hairline-soft);border-radius:13px;padding:15px 17px 13px;background:var(--panel)}
+  .tile .n{font-size:24px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.tile .n small{font-size:.5em;color:var(--muted);font-weight:500}
+  .tile .l{margin-top:5px;font-size:12.2px;color:var(--muted);line-height:1.42}
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));align-items:start}
+  .ex{border:1px solid var(--hairline);border-radius:16px;padding:20px 22px;background:#fff}
+  .ex.done{border-color:rgba(26,127,55,.32);box-shadow:0 0 0 3px rgba(26,127,55,.05)}
+  .ex.key{border-color:rgba(138,90,29,.32);box-shadow:0 0 0 3px rgba(138,90,29,.05)}
+  .ex.pri{border-color:rgba(161,53,42,.3);box-shadow:0 0 0 3px rgba(161,53,42,.05)}
+  .ex .top{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .chip.done{background:var(--done-bg);color:var(--done);border:1px solid rgba(26,127,55,.22)}
+  .chip.part{background:var(--part-bg);color:var(--part);border:1px solid rgba(138,90,29,.28)}
+  .chip.none{background:var(--none-bg);color:var(--muted);border:1px solid var(--hairline)}
+  .ex h3{margin:0;font-size:18px;font-weight:650;letter-spacing:-.01em;line-height:1.25}
+  .b{margin:11px 0 0;font-size:14.4px;line-height:1.6}
+  .b .l{font-weight:650}
+  .b.why .l{color:var(--blue)}.b.now .l{color:var(--done)}.b.next .l{color:var(--part)}.b.what .l{color:var(--muted)}
+  .m{font-family:var(--mono);font-size:.86em;background:var(--panel);border:1px solid var(--hairline-soft);border-radius:5px;padding:0 5px}
+  .tw{overflow-x:auto;border:1px solid var(--hairline-soft);border-radius:12px;margin:14px 0}
+  table{border-collapse:collapse;width:100%;min-width:640px}
+  th{text-align:left;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--hairline);background:var(--panel);white-space:nowrap}
+  td{padding:10px 14px;border-bottom:1px solid var(--hairline-soft);font-size:13.6px;vertical-align:top}tr:last-child td{border-bottom:0}
+  td.d{font-weight:650;white-space:nowrap}
+  .s{font-family:var(--mono);font-size:10.5px;font-weight:600;white-space:nowrap}.s.ok{color:var(--done)}.s.no{color:var(--crit)}.s.pt{color:var(--part)}
+  .mono{font-family:var(--mono);font-size:12px}
+  .callout{border-radius:13px;padding:15px 18px;font-size:14.2px;margin:16px 0}
+  .callout.info{border:1px solid var(--hairline);background:var(--panel);color:var(--muted)}.callout.info b{color:var(--ink)}
+  .callout.warn{border:1px solid rgba(161,53,42,.28);background:var(--crit-bg);color:#7a2a20}.callout.warn b{color:#5e1f17}
+  .callout.go{border:1px solid rgba(26,127,55,.3);background:var(--done-bg);color:#155e2b}.callout.go b{color:#114a22}
+  .step{border:1px solid var(--hairline);border-radius:14px;padding:16px 18px;margin-bottom:12px;background:#fff}
+  .step.done{border-color:rgba(26,127,55,.35);background:linear-gradient(90deg,rgba(26,127,55,.05),#fff 40%)}
+  .step .ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px}
+  .step .pn{font-family:var(--mono);font-size:10px;font-weight:600;color:#fff;background:var(--ink);border-radius:6px;padding:2px 8px}
+  .step.done .pn{background:var(--done)}
+  .step .pt{font-weight:650;font-size:16px}.step .pw{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+  .step .pd{color:var(--muted);font-size:13.6px;margin:4px 0 0}.step .pd b{color:var(--ink)}
+  .foot{margin:30px clamp(22px,3.2vw,52px) 0;padding-top:16px;border-top:1px solid var(--hairline);font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.7}
+  @media (max-width:880px){.app{flex-direction:column}.sidebar{width:100%;flex:none;position:sticky;top:0;height:auto;border-right:0;border-bottom:1px solid var(--hairline);display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:10px;z-index:10}.brand,.grp{display:none}.tab{width:auto;white-space:nowrap;flex:0 0 auto;padding:7px 12px;font-size:13px}.tab .num{display:none}.grid{grid-template-columns:1fr}}
+</style>
+
+<div class="app">
+  <nav class="sidebar" aria-label="Sections">
+    <div class="brand"><div class="bt">RackTrack</div><div class="bs">Enterprise Roadmap</div></div>
+    <div class="grp">Overview</div>
+    <button class="tab active" data-tab="start"><span class="num">0</span><span class="dot g"></span> Where we are</button>
+    <div class="grp">Done</div>
+    <button class="tab" data-tab="done"><span class="num">1</span><span class="dot g"></span> Quick fixes — completed</button>
+    <button class="tab" data-tab="audits"><span class="num">2</span><span class="dot g"></span> Audits &amp; standards</button>
+    <div class="grp">Next</div>
+    <button class="tab" data-tab="fixes"><span class="num">3</span><span class="dot a"></span> What's left to build</button>
+    <button class="tab" data-tab="cloud"><span class="num">4</span><span class="dot n"></span> Cloud (AWS / Azure)</button>
+    <button class="tab" data-tab="certs"><span class="num">5</span><span class="dot n"></span> Certifications &amp; policies</button>
+    <div class="grp">Plan</div>
+    <button class="tab" data-tab="plan"><span class="num">★</span><span class="dot g"></span> The plan</button>
+  </nav>
+
+  <main class="content"><div class="cinner">
+
+  <!-- 0 WHERE WE ARE -->
+  <section data-panel="start">
+    <div class="phead">
+      <p class="kicker">Overview · single source of truth · updated</p>
+      <h1>Where RackTrack stands now</h1>
+      <p class="intro">A short, honest picture: what's done, what's left, and how it finishes. <b>The first batch of
+        work — the quick fixes — is now complete and verified.</b> From here, the path to enterprise-ready is a small
+        number of clearly-scoped steps. Use the sidebar; each tab is one topic.</p>
+      <div class="statusbar">
+        <span class="sb"><span class="d g"></span> Code, audits &amp; standards: strong</span>
+        <span class="sb"><span class="d g"></span> Quick fixes: done</span>
+        <span class="sb"><span class="d a"></span> Operations &amp; cloud: next</span>
+      </div>
+    </div>
+    <div class="pbody">
+      <div class="banner"><b>Just completed:</b> both security findings fixed · the Python AI code now held to proper coding
+        standards (Ruff / mypy / Bandit) · <b>11 automatic checks</b> wired into the build, including a second security
+        engine (CodeQL), container and licence scanning, and accessibility linting — which found and fixed 4 real issues ·
+        test coverage now measured across all three parts · checks now also run before code is committed. All tests still
+        pass. Details on the next tab.</div>
+
+      <div class="tiles">
+        <div class="tile"><div class="n">240<small>/240</small></div><div class="l">automated tests passing</div></div>
+        <div class="tile"><div class="n">0</div><div class="l">open security findings</div></div>
+        <div class="tile"><div class="n">11</div><div class="l">automatic checks now in the build</div></div>
+        <div class="tile"><div class="n">3</div><div class="l">big items left: database, monitoring, sign-in</div></div>
+      </div>
+
+      <h2>The picture in one table</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Area</th><th>Where we stand</th><th>The one move that matters</th></tr></thead>
+        <tbody>
+          <tr><td class="d">Code quality &amp; audits</td><td><span class="s ok">DONE — verified</span></td><td>Keep the checks running automatically</td></tr>
+          <tr><td class="d">Coding standards (Python)</td><td><span class="s ok">DONE — now enforced</span></td><td>Tighten the rules over time</td></tr>
+          <tr><td class="d">The 2 findings</td><td><span class="s ok">DONE — both fixed</span></td><td>—</td></tr>
+          <tr><td class="d">Real database + backups</td><td><span class="s no">NEXT — biggest gap</span></td><td>Move to a managed database</td></tr>
+          <tr><td class="d">Monitoring &amp; staging</td><td><span class="s pt">NEXT</span></td><td>Alerts + a safe deploy button</td></tr>
+          <tr><td class="d">Company sign-in (SSO)</td><td><span class="s pt">NEXT</span></td><td>Unblocks corporate sales</td></tr>
+          <tr><td class="d">Cloud (AWS / Azure)</td><td><span class="s no">TO DECIDE</span></td><td>Pick one — leaning AWS (AI-first)</td></tr>
+          <tr><td class="d">Certificates &amp; policies</td><td><span class="s no">LATER</span></td><td>Start when a real deal appears</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout info"><b>The rule that ties it together:</b> these are a <b>chain</b>. We build the protections
+        (fixes → cloud), which lets us gather proof, which lets us write honest policies, which lets us pass certificates.
+        The <b>Plan</b> tab lays out that exact order — and we've already finished the first link.</div>
+    </div>
+  </section>
+
+  <!-- 1 QUICK FIXES DONE -->
+  <section data-panel="done" hidden>
+    <div class="phead">
+      <p class="kicker">Done · the quick fixes</p>
+      <h1>What we just completed</h1>
+      <p class="intro">This is the first batch — done on our own machines, at no cost, and verified. It closes the two
+        findings, answers the Python coding-standards question, and switches on the automatic scanners.</p>
+      <div class="statusbar"><span class="sb"><span class="d g"></span> all verified &amp; passing</span></div>
+    </div>
+    <div class="pbody">
+      <div class="grid">
+        <div class="ex done"><div class="top"><span class="chip done">✓ FIXED</span></div><h3>Finding M1 — runs as a limited user now</h3>
+          <div class="b what"><span class="l">What it was</span> The app ran as the all-powerful "root" user inside its container.</div>
+          <div class="b now"><span class="l">Done</span> The container now runs as a limited <span class="m">app</span> user, so a break-in can do far less damage. <span class="m">(Dockerfile)</span></div>
+        </div>
+        <div class="ex done"><div class="top"><span class="chip done">✓ FIXED</span></div><h3>Finding L1 — report text is now cleaned</h3>
+          <div class="b what"><span class="l">What it was</span> One printable report inserted an error message without cleaning it first.</div>
+          <div class="b now"><span class="l">Done</span> The text now passes through the same escaper used everywhere else. <span class="m">(server/app.js)</span></div>
+        </div>
+        <div class="ex done"><div class="top"><span class="chip done">✓ DONE</span></div><h3>Python coding standards — now enforced</h3>
+          <div class="b what"><span class="l">The question your lead raised</span> The Python AI code had tests but no linter, formatter, type-checker or security scanner — so PEP 8 / PEP 257 weren't enforced.</div>
+          <div class="b now"><span class="l">Done</span> Added <b>Ruff</b> (formatting + linting to PEP 8/257), <b>mypy</b> (type checking) and <b>Bandit</b> (security) via a new <span class="m">pyproject.toml</span>. Auto-formatted 35 files; all checks pass; all 101 pipeline tests still pass.</div>
+          <div class="b next"><span class="l">Note</span> The rule set starts pragmatic and tightens over time — same approach as the JavaScript side.</div>
+        </div>
+        <div class="ex done"><div class="top"><span class="chip done">✓ DONE</span></div><h3>Automatic scanners — switched on</h3>
+          <div class="b what"><span class="l">What we added to the build</span> On every change, the build now runs: <b>Semgrep</b> and <b>CodeQL</b> (two different engines scanning our code for security holes), <b>Trivy</b> (scans the container, checks licences, makes a parts list / SBOM), <b>Bandit</b> &amp; <b>pip-audit</b> (Python security), and <b>Dependabot</b> opens fix pull requests automatically.</div>
+          <div class="b now"><span class="l">Done</span> Wired into the build, all passing.</div>
+        </div>
+        <div class="ex done"><div class="top"><span class="chip done">✓ DONE</span></div><h3>Accessibility checks — and 4 real fixes</h3>
+          <div class="b what"><span class="l">What we added</span> An accessibility linter that flags problems as the code is written — missing image descriptions, form labels not connected to their fields, and similar barriers for screen-reader users.</div>
+          <div class="b now"><span class="l">Done</span> It found <b>4 genuine issues</b> and all four are fixed: three form labels are now properly connected to their controls, and one image description corrected.</div>
+        </div>
+        <div class="ex done"><div class="top"><span class="chip done">✓ DONE</span></div><h3>Coverage measured &amp; licences checked</h3>
+          <div class="b what"><span class="l">Coverage</span> We can now say how much of the code the tests exercise, per part — see the numbers on the <b>Audits &amp; standards</b> tab.</div>
+          <div class="b now"><span class="l">Licences</span> Every borrowed library's licence is now checked automatically. Result: all permissive (MIT / Apache / BSD) with one common image library under LGPL, which is fine for how we use it. We also declared our own code <b>proprietary</b>, which was previously left blank.</div>
+        </div>
+        <div class="ex done"><div class="top"><span class="chip done">✓ DONE</span></div><h3>Checks now run before code is committed</h3>
+          <div class="b what"><span class="l">What it is</span> A pre-commit hook: the moment a developer commits, it scans just their changed files for secrets, lint errors and formatting.</div>
+          <div class="b now"><span class="l">Why it matters</span> Problems get caught at the desk in seconds, instead of failing a build minutes later.</div>
+        </div>
+        <div class="ex"><div class="top"><span class="chip part">◐ YOUR HANDS</span></div><h3>Back up the Android signing key</h3>
+          <div class="b what"><span class="l">What it is</span> The key that lets us publish Android updates lives on one laptop with no copy.</div>
+          <div class="b next"><span class="l">To do</span> Copy it to a password manager + one offline place. A one-hour manual task — it's the only Step-1 item we can't do from the code.</div>
+        </div>
+      </div>
+      <div class="callout info"><b>Not committed yet:</b> all of the above is in the working copy of the code, ready to review — nothing has been pushed. Say the word to commit it.</div>
+    </div>
+  </section>
+
+  <!-- 2 AUDITS -->
+  <section data-panel="audits" hidden>
+    <div class="phead">
+      <p class="kicker">Done · the checks behind it</p>
+      <h1>Audits &amp; standards</h1>
+      <p class="intro">The audits we ran, the tools, and the results — plus the standards the code now follows. Everything
+        green here was proven by running the check.</p>
+      <div class="statusbar"><span class="sb"><span class="d g"></span> all green</span></div>
+    </div>
+    <div class="pbody">
+      <h2>What we ran, and what came back</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Check</th><th>Tool</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td class="d">Code checker (JS)</td><td class="mono">ESLint</td><td><span class="s ok">0 errors</span></td></tr>
+          <tr><td class="d">Code checker (Python)</td><td class="mono">Ruff — PEP 8/257</td><td><span class="s ok">clean (new)</span></td></tr>
+          <tr><td class="d">Automated tests</td><td class="mono">Vitest · node:test · pytest</td><td><span class="s ok">240 / 240</span></td></tr>
+          <tr><td class="d">Real-browser sweep</td><td class="mono">Playwright</td><td><span class="s ok">13 / 13 screens</span></td></tr>
+          <tr><td class="d">Library scan (JS + Python)</td><td class="mono">npm audit · pip-audit</td><td><span class="s ok">clean / patched</span></td></tr>
+          <tr><td class="d">Our-code security scan</td><td class="mono">Semgrep</td><td><span class="s ok">0 real holes</span></td></tr>
+          <tr><td class="d">Python security scan</td><td class="mono">Bandit</td><td><span class="s ok">clean (new)</span></td></tr>
+          <tr><td class="d">Secret scan (full history)</td><td class="mono">gitleaks</td><td><span class="s ok">0 leaks</span></td></tr>
+          <tr><td class="d">Container scan</td><td class="mono">Trivy</td><td><span class="s ok">wired into build</span></td></tr>
+          <tr><td class="d">Deep security analysis</td><td class="mono">CodeQL</td><td><span class="s ok">wired into build</span></td></tr>
+          <tr><td class="d">Accessibility (in code)</td><td class="mono">eslint jsx-a11y</td><td><span class="s ok">4 issues found &amp; fixed</span></td></tr>
+          <tr><td class="d">Licence compliance</td><td class="mono">Trivy licence scan</td><td><span class="s ok">all permissive</span></td></tr>
+          <tr><td class="d">Manual expert review</td><td class="mono">by hand</td><td><span class="s ok">solid</span></td></tr>
+          <tr><td class="d">Production build</td><td class="mono">Vite</td><td><span class="s ok">clean, 3.3 s</span></td></tr>
+        </tbody>
+      </table></div>
+
+      <h2>Test coverage — now measured</h2>
+      <p class="h2sub">"All tests pass" is only half the story; this is how much of the code those tests actually exercise. These numbers are new, and they're honest.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Part</th><th>Coverage</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="d">Server (the API)</td><td class="mono">~48%</td><td>Solid — the critical paths (logins, company data walls, recovery) are covered.</td></tr>
+          <tr><td class="d">AI pipeline</td><td class="mono">~12%</td><td>The pure-logic parts are tested. The image-analysis itself can't be unit-tested without model files and a GPU — it's checked by real scans instead.</td></tr>
+          <tr><td class="d">App screens</td><td class="mono">~2%</td><td>Low by design: the screens are covered by the <b>robot browser sweep</b> (all 13, every change) rather than unit tests.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout info"><b>How to read this honestly:</b> the low percentages aren't hidden failures — they reflect
+        <b>where</b> the testing lives. The API, which holds the security-critical logic, is well covered. The screens are
+        covered by a different (and for a UI, more meaningful) method. Now that it's measured, we can set a floor so it only rises.</div>
+
+      <h2>Coding standards the code follows</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Rulebook / tool</th><th>App &amp; server (JS)</th><th>AI engine (Python)</th></tr></thead>
+        <tbody>
+          <tr><td class="d">Auto-formatting</td><td class="mono">Prettier <span class="s ok">✓</span></td><td class="mono">Ruff <span class="s ok">✓ (new)</span></td></tr>
+          <tr><td class="d">Linter (PEP 8 / style)</td><td class="mono">ESLint <span class="s ok">✓</span></td><td class="mono">Ruff <span class="s ok">✓ (new)</span></td></tr>
+          <tr><td class="d">Type checking</td><td>none <span class="s pt">◐</span></td><td class="mono">mypy <span class="s ok">✓ (new)</span></td></tr>
+          <tr><td class="d">Security linter</td><td class="mono">Semgrep <span class="s ok">✓</span></td><td class="mono">Bandit <span class="s ok">✓ (new)</span></td></tr>
+          <tr><td class="d">Enforced by the build</td><td class="mono">yes <span class="s ok">✓</span></td><td class="mono">yes <span class="s ok">✓ (new)</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout go"><b>The gap your lead flagged is closed.</b> The Python AI engine is now benchmarked against
+        PEP 8 and PEP 257, with a security scanner and type checking, all enforced automatically — the same bar as the
+        JavaScript side.</div>
+
+      <h2>Audits still to come (need a live server or outside help)</h2>
+      <p class="body mut">These can only happen once the app is on a real server (see the cloud tab): an outside
+        <b>penetration test</b>, a live-app scan, a <b>load test</b>, a full accessibility audit, and a published
+        <b>AI-accuracy report</b>. They're scheduled into the plan.</p>
+    </div>
+  </section>
+
+  <!-- 3 WHAT'S LEFT -->
+  <section data-panel="fixes" hidden>
+    <div class="phead">
+      <p class="kicker">Next · what's left to build</p>
+      <h1>What still needs building</h1>
+      <p class="intro">With the quick fixes done, three real things stand between RackTrack and enterprise-ready — and
+        most of them arrive together as part of the cloud move.</p>
+      <div class="statusbar"><span class="sb"><span class="d n"></span> the operational backbone</span></div>
+    </div>
+    <div class="pbody">
+      <div class="grid">
+        <div class="ex pri"><div class="top"><span class="chip none">○ BIGGEST</span></div><h3>A real database, with backups</h3>
+          <div class="b what"><span class="l">Today</span> Data lives in one file + folders on one disk, with <b>no backups</b>. A crash mid-save can orphan a scan; a dead disk loses everything.</div>
+          <div class="b why"><span class="l">Why it's #1</span> It's the scariest risk we have, and it's the thing certificates specifically check for.</div>
+          <div class="b next"><span class="l">Fix</span> A managed <b>PostgreSQL</b> database (atomic saves) + automatic nightly backups + one tested restore. Comes with the cloud move.</div>
+        </div>
+        <div class="ex key"><div class="top"><span class="chip none">○ SALES BLOCKER</span></div><h3>Company sign-in (SSO)</h3>
+          <div class="b what"><span class="l">What it is</span> Letting staff sign in through their organisation's own login system.</div>
+          <div class="b why"><span class="l">Why it matters</span> Many companies can't buy software without it. <b>Note:</b> since our users are datacenter technicians on company accounts (not Microsoft/Google), this is standard SSO to whatever system the customer uses — not tied to one provider.</div>
+          <div class="b next"><span class="l">Fix</span> Add standard SSO + move the login token into a safer cookie.</div>
+        </div>
+        <div class="ex"><div class="top"><span class="chip none">○</span><span class="chip none">○</span></div><h3>Alerts + a test server</h3>
+          <div class="b what"><span class="l">Today</span> If it breaks at 2am, a tester tells us hours later. Updates are copied by hand with no undo.</div>
+          <div class="b next"><span class="l">Fix</span> An uptime monitor + crash reports (alerts to a phone), plus a staging server and one-button deploys with rollback. Both come with the cloud move.</div>
+        </div>
+        <div class="ex"><div class="top"><span class="chip part">◐ IMPROVING</span></div><h3>Test coverage &amp; capacity</h3>
+          <div class="b now"><span class="l">Now</span> Coverage is measured (server ~48%, pipeline ~12%, screens ~2% — the screens are covered by the browser sweep instead). Still unknown: how many users the AI scan handles at once.</div>
+          <div class="b next"><span class="l">Fix</span> Set a coverage floor so it only rises, and run a load test against the new test server.</div>
+        </div>
+        <div class="ex"><div class="top"><span class="chip none">○ OPTIONAL</span></div><h3>A quality dashboard (SonarQube)</h3>
+          <div class="b what"><span class="l">What it is</span> Not a new check — a <b>dashboard</b> that tracks quality over time (bugs, duplication, coverage trends) in one visual place.</div>
+          <div class="b next"><span class="l">Needs a decision</span> It requires either a hosted account or a server of our own. Worth adding for visibility once we choose.</div>
+        </div>
+      </div>
+      <div class="callout info"><b>The efficient part:</b> the database, backups, monitoring and staging aren't four
+        separate projects — they're <b>delivered together by moving to the cloud</b>. That's the next tab.</div>
+    </div>
+  </section>
+
+  <!-- 4 CLOUD -->
+  <section data-panel="cloud" hidden>
+    <div class="phead">
+      <p class="kicker">Next · the cloud move</p>
+      <h1>Moving to the cloud — AWS or Azure</h1>
+      <p class="intro">Moving off our single server onto a proper cloud <b>is</b> how we deliver the database, backups,
+        monitoring, scaling and safe deploys. Both AWS and Azure do the job well; the choice comes down to one factor.</p>
+      <div class="statusbar"><span class="sb"><span class="d n"></span> decision needed</span><span class="sb"><span class="d g"></span> leaning AWS</span></div>
+    </div>
+    <div class="pbody">
+      <h2>What each part becomes</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Today</th><th>AWS</th><th>Azure</th></tr></thead>
+        <tbody>
+          <tr><td class="d">The API server</td><td class="mono">ECS Fargate</td><td class="mono">Container Apps</td></tr>
+          <tr><td class="d">Account database</td><td class="mono">RDS PostgreSQL</td><td class="mono">Azure DB for PostgreSQL</td></tr>
+          <tr><td class="d">Scan photos</td><td class="mono">Amazon S3</td><td class="mono">Blob Storage</td></tr>
+          <tr><td class="d">The AI pipeline (GPU)</td><td class="mono">SageMaker / GPU ECS</td><td class="mono">Azure ML</td></tr>
+          <tr><td class="d">Monitoring &amp; alerts</td><td class="mono">CloudWatch</td><td class="mono">Azure Monitor</td></tr>
+          <tr><td class="d">Company sign-in</td><td class="mono">Cognito</td><td class="mono">Microsoft Entra ID</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout info"><b>The one real difference:</b> almost everything is equivalent. The exception is <b>heavy
+        AI (GPU) work</b>, where AWS leads on choice and cost — and that's our biggest, most expensive workload.</div>
+      <h2>The recommendation</h2>
+      <p class="body"><b>Lean AWS.</b> RackTrack is an AI-first product, and AWS is strongest for the GPU/AI work. The usual
+        reason to pick Azure — native "Sign in with Microsoft" — <b>doesn't apply to us</b>, because our users are datacenter
+        technicians on company-issued accounts, not Microsoft users. Azure stays a valid choice mainly if our own dev team is
+        already deep in the Microsoft world. <b>A dedicated AWS-vs-Azure pitch deck covers this in full for the decision meeting.</b></p>
+      <div class="callout info"><b>How the move happens:</b> in stages, nothing goes down — foundation, then the app, then
+        the data (the big win), then the AI, then monitoring &amp; hardening. Rough running cost: ~$150–1,200/month depending
+        on size, with the GPU as the swing factor.</div>
+    </div>
+  </section>
+
+  <!-- 5 CERTS -->
+  <section data-panel="certs" hidden>
+    <div class="phead">
+      <p class="kicker">Later · governance</p>
+      <h1>Certifications &amp; policies</h1>
+      <p class="intro">The certificates and written rules big customers ask for. Mostly process, not code — and correctly
+        begun <b>when a real enterprise deal is on the table</b>. Nothing here is started yet, and that's normal for our stage.</p>
+      <div class="statusbar"><span class="sb"><span class="d n"></span> start on demand</span></div>
+    </div>
+    <div class="pbody">
+      <div class="callout warn"><b>The rule to remember:</b> you can only certify a protection you've actually built. Several
+        certificates need the database + backups (next tab) to exist first. <b>Build first, certify second.</b></div>
+      <div class="grid">
+        <div class="ex"><div class="top"><span class="chip none">○ PRIMARY</span></div><h3>ISO 27001 — security certificate</h3>
+          <div class="b why"><span class="l">Why</span> The main international proof that our security is real. The headline trust signal for enterprise buyers.</div>
+          <div class="b next"><span class="l">Cost / time</span> A months-long program, roughly $30–100K all-in.</div></div>
+        <div class="ex"><div class="top"><span class="chip none">○ PRIMARY</span></div><h3>ISO 42001 — responsible-AI certificate</h3>
+          <div class="b why"><span class="l">Why</span> A newer standard for governing AI — and a real differentiator, since we're an AI product.</div></div>
+        <div class="ex"><div class="top"><span class="chip none">○ CUSTOMER-DRIVEN</span></div><h3>SOC 2</h3>
+          <div class="b why"><span class="l">Why</span> The report US enterprise buyers ask for first. Weight it higher if we chase the US market.</div></div>
+        <div class="ex"><div class="top"><span class="chip none">○</span></div><h3>The 8 core policies</h3>
+          <div class="b why"><span class="l">Why</span> The written rules (security, access, privacy, incidents, backups…) customers and auditors expect. Policy #5 (secure development) is already largely earned by our audit work; policy #8 (backups) waits for the cloud move.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLAN -->
+  <section data-panel="plan" hidden>
+    <div class="phead">
+      <p class="kicker">The plan · in order</p>
+      <h1>What it takes to finish</h1>
+      <p class="intro">Everything in one order, because the steps depend on each other. <b>Step 1 is done.</b> The rest builds
+        on it — protections first, then proof, then policies, then certificates.</p>
+      <div class="statusbar"><span class="sb"><span class="d g"></span> Step 1 complete</span><span class="sb"><span class="d a"></span> Step 2 is the next decision</span></div>
+    </div>
+    <div class="pbody">
+      <div class="step done"><div class="ph"><span class="pn">STEP 1 · DONE</span><span class="pt">Quick wins</span></div>
+        <p class="pd"><b>Complete.</b> Fixed both findings, added Python coding-standards tooling, wired 11 automatic checks
+        into the build (including CodeQL, container &amp; licence scanning, and accessibility linting — which found and fixed
+        4 real issues), measured test coverage, and added pre-commit checks. Only the manual signing-key backup remains on our side.</p></div>
+      <div class="step"><div class="ph"><span class="pn">STEP 2</span><span class="pt">Pick a cloud &amp; move the core</span><span class="pw">next decision</span></div>
+        <p class="pd">Choose <b>AWS or Azure</b> (leaning AWS — AI-first), then move the app and the data. Delivers the <b>real database, automatic backups and resilience</b> — the scariest risk gone.</p></div>
+      <div class="step"><div class="ph"><span class="pn">STEP 3</span><span class="pt">Monitoring &amp; enterprise login</span></div>
+        <p class="pd">Alerts, a staging server with safe deploys, a load test, and <b>company sign-in (SSO)</b>. At the end of this step, RackTrack is genuinely enterprise-grade.</p></div>
+      <div class="step"><div class="ph"><span class="pn">STEP 4</span><span class="pt">Finish the outside audits</span></div>
+        <p class="pd">Now possible on a live server: a <b>penetration test</b>, the full security checklist, a live-app scan, accessibility, and the AI-accuracy report.</p></div>
+      <div class="step"><div class="ph"><span class="pn">STEP 5</span><span class="pt">Write the policies</span></div>
+        <p class="pd">The 8 core policies — now truthful, because the protections exist — plus the security, AI and privacy document packs.</p></div>
+      <div class="step"><div class="ph"><span class="pn">STEP 6</span><span class="pt">Earn the certificates</span><span class="pw">when a deal justifies it</span></div>
+        <p class="pd">Gap assessment → <b>ISO 27001</b> + <b>ISO 42001</b>; add <b>SOC 2</b> for US buyers.</p></div>
+
+      <div class="callout go"><b>Where we are:</b> Step 1 is behind us. The single next decision is <b>which cloud</b> — that
+        unlocks Steps 2 and 3, and with them the database, backups, monitoring and company sign-in that make RackTrack
+        enterprise-grade.</div>
+
+      <p class="foot">RackTrack enterprise roadmap · updated after completing the quick fixes · green items verified by
+        running the check — ESLint · Ruff · Vitest · node:test · pytest · Playwright · Semgrep · Bandit · gitleaks ·
+        npm audit · pip-audit · Trivy · Vite · researched against OWASP · ASVS · PCI DSS · SOC 2 · ISO 27001 · ISO 42001 · WCAG · PEP 8/257.</p>
+    </div>
+  </section>
+
+  </div></main>
+</div>
+
+<script>
+  (function(){
+    var tabs=[].slice.call(document.querySelectorAll('[data-tab]'));
+    var panels=[].slice.call(document.querySelectorAll('[data-panel]'));
+    function show(id){
+      var found=false;
+      panels.forEach(function(p){var on=p.getAttribute('data-panel')===id;p.hidden=!on;if(on)found=true;});
+      if(!found){id='start';panels.forEach(function(p){p.hidden=p.getAttribute('data-panel')!=='start';});}
+      tabs.forEach(function(t){var on=t.getAttribute('data-tab')===id;t.classList.toggle('active',on);t.setAttribute('aria-selected',on?'true':'false');});
+      try{window.scrollTo(0,0);}catch(e){}
+      if(location.hash.slice(1)!==id){try{history.replaceState(null,'','#'+id);}catch(e){}}
+    }
+    tabs.forEach(function(t){t.addEventListener('click',function(){show(t.getAttribute('data-tab'));});});
+    show(location.hash?location.hash.slice(1):'start');
+  })();
+</script>
+
+</body></html>

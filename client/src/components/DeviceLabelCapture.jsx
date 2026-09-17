@@ -5,14 +5,14 @@ import { IMAGE_ACCEPT } from '../utils/mediaAccept';
 // Close-up capture for one device's model label.
 //
 // The rack scan reads every device from a single photo, which means each one
-// gets only its slice of the frame — and a model string that was perfectly
+// gets only its slice of the frame - and a model string that was perfectly
 // legible in person arrives at the OCR engine 20px tall. That is why
 // "Vendor not detected" is usually a resolution problem, not a legibility
 // one, and why the fix is another photo rather than a better parser.
 //
 // So: point the camera at the one device, fill the frame with its label, and
 // the same engine reads real pixels instead of interpolated ones. Whatever
-// comes back is a suggestion the user confirms — this screen never commits a
+// comes back is a suggestion the user confirms - this screen never commits a
 // value on its own.
 
 const GUIDE = { x: 0.06, y: 0.30, w: 0.88, h: 0.34 };  // fractions of the frame
@@ -38,7 +38,7 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
       setError(null);
       // Ask for more pixels than the rack scan does. Everything about this
       // screen exists to put real detail on a small piece of text, so the
-      // resolution request is the feature — it degrades to whatever the
+      // resolution request is the feature - it degrades to whatever the
       // camera actually supports.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -98,7 +98,7 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
   // ── Blur advisory ─────────────────────────────────────────────
   // Motion blur is what kills a hand-held close-up, and unlike framing the
   // user gets no feedback on it from the viewfinder. Measure Laplacian
-  // variance inside the guide box and say so. Advisory only — a blurry photo
+  // variance inside the guide box and say so. Advisory only - a blurry photo
   // that still reads is better than a shutter the user can't press.
   useEffect(() => {
     if (!ready || phase !== 'camera') return;
@@ -371,8 +371,7 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
       </div>
 
       {/* No `capture` attribute on purpose. With it, mobile browsers jump
-          straight back to the camera and the photo library is unreachable —
-          which would make this button a duplicate of the shutter instead of
+          straight back to the camera and the photo library is unreachable - which would make this button a duplicate of the shutter instead of
           the upload path. The HEIC hints matter on iOS, where a library photo
           arrives in that format; the server re-encodes it before OCR. */}
       <input ref={fileRef} type="file"

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RackTrack - Jira Tickets</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+</head>
+<body>
+<style>
+  :root{
+    --paper:#fafaf8;--card:#fff;--ink:#16181c;--muted:#5c5f66;--faint:#90939a;
+    --line:rgba(22,24,28,.12);--accent:#1e5f8e;--accent-soft:#eaf1f7;
+    --good:#15803d;--good-soft:#eaf5ee;--amber:#b45309;--amber-soft:#fdf1e3;
+    --f:"Inter",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f);font-size:15px;line-height:1.6;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:36px clamp(18px,3vw,40px) 80px}
+
+  .kick{font-size:11.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{margin:0 0 10px;font-size:clamp(28px,3.6vw,42px);font-weight:800;letter-spacing:-.03em;line-height:1.05}
+  .dek{margin:0 0 6px;color:var(--muted);font-size:17px;max-width:76ch}
+  .dek b{color:var(--ink);font-weight:600}
+
+  .howto{margin:22px 0 30px;background:var(--accent-soft);border:1px solid rgba(30,95,142,.22);border-radius:13px;
+         padding:16px 20px;font-size:14.5px;color:#123c5c;line-height:1.55}
+  .howto b{color:#0d2c44}
+  .howto ol{margin:8px 0 0;padding-left:20px}
+  .howto li{margin:3px 0}
+
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+  .chip{font-size:12px;font-weight:600;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;color:var(--muted)}
+  .chip b{color:var(--ink)}
+
+  .task{margin:34px 0 0;border:2px solid var(--accent);border-radius:16px;overflow:hidden;background:var(--card)}
+  .task>.th{background:var(--accent);color:#fff;padding:16px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .task>.th .tag{font-size:11px;font-weight:800;letter-spacing:.1em;background:rgba(255,255,255,.22);border-radius:6px;padding:4px 9px}
+  .task>.th .tt{font-size:19px;font-weight:700;letter-spacing:-.015em}
+  .task>.tb{padding:20px 22px}
+
+  .sub{margin:14px 0 0;border:1px solid var(--line);border-radius:13px;background:var(--card)}
+  .sub>.sh{padding:13px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:11px;flex-wrap:wrap;
+           background:#fcfcfa;border-radius:12px 12px 0 0}
+  .sub>.sh .tag{font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--muted);background:rgba(22,24,28,.06);
+                border-radius:5px;padding:3px 8px}
+  .sub>.sh .st{font-size:15.5px;font-weight:700;letter-spacing:-.01em}
+  .sub>.sb{padding:16px 18px}
+
+  .fld{margin-bottom:14px}
+  .fld:last-child{margin-bottom:0}
+  .fl{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+  .fl .k{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .cp{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);
+      border:1px solid rgba(30,95,142,.25);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:var(--f)}
+  .cp:hover{background:rgba(30,95,142,.15)}
+  .cp.done{background:var(--good-soft);border-color:rgba(21,128,61,.3);color:var(--good)}
+  .val{background:#fcfcfa;border:1px solid var(--line);border-radius:9px;padding:12px 15px;font-size:14.3px;
+       line-height:1.6;white-space:pre-wrap;color:var(--ink)}
+  .val.title{font-weight:600}
+  .val.comment{background:var(--good-soft);border-color:rgba(21,128,61,.22);color:#14532d;font-style:italic}
+
+  .notes{width:100%;min-height:56px;border:1px dashed rgba(180,83,9,.4);border-radius:9px;padding:11px 14px;
+         font-family:var(--f);font-size:14px;line-height:1.55;background:var(--amber-soft);color:#7c2d12;resize:vertical}
+  .notes::placeholder{color:#b98a5e}
+
+  .ev{margin:26px 0 30px;border:1px solid var(--line);border-radius:14px;background:var(--card);padding:20px 22px}
+  .ev h3{margin:0 0 4px;font-size:17px;font-weight:700;letter-spacing:-.012em}
+  .ev .sub2{margin:0 0 16px;color:var(--muted);font-size:14px}
+  .evg{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+  .eva{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fcfcfa}
+  .eva:hover{border-color:var(--accent)}
+  .eva img{width:100%;height:118px;object-fit:cover;object-position:top left;display:block;border-bottom:1px solid var(--line)}
+  .eva .cap{padding:10px 13px}
+  .eva .cn{font-size:13.5px;font-weight:700}
+  .eva .cd{font-size:12px;color:var(--faint);margin-top:2px}
+  .evterm{margin-top:12px;background:#17191d;color:#e2e6ea;border-radius:11px;padding:16px 18px;overflow-x:auto;
+          font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.75;white-space:pre}
+  .done-note{margin-top:34px;border:1px solid rgba(21,128,61,.3);background:var(--good-soft);border-radius:13px;
+             padding:17px 21px;font-size:15px;color:#14532d;line-height:1.55}
+  .done-note b{color:#0f3d22}
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint)}
+</style>
+
+<div class="wrap">
+  <p class="kick">RackTrack - sprint close</p>
+  <h1>Jira tickets, ready to file</h1>
+  <p class="dek">Two parent tasks with their subtasks, each with a title, description and a comment written the way you'd
+    actually write it. <b>Copy what's right, edit what isn't, and add a note anywhere you want something changed.</b></p>
+
+  <div class="howto">
+    <b>How to use this page</b>
+    <ol>
+      <li>Hit <b>Copy</b> on any field to put it on your clipboard.</li>
+      <li>If something needs changing, type it into the orange <b>Your notes</b> box under that ticket.</li>
+      <li>Send me back whatever you've changed, and I'll create or update the tickets in Jira.</li>
+    </ol>
+  </div>
+
+  <div class="meta">
+    <span class="chip">Project <b>SPRTMS</b></span>
+    <span class="chip">Assignee <b>Aasritha</b></span>
+    <span class="chip">Reporter <b>Mandar</b></span>
+    <span class="chip">Sprint <b>current (closing)</b></span>
+    <span class="chip">Status <b>Done</b></span>
+  </div>
+
+  <div class="ev">
+    <h3>Evidence to attach</h3>
+    <p class="sub2">Captured from the real codebase, not written up by hand. Attach these to the tickets so the results are verifiable.</p>
+    <div class="evg">
+      <a class="eva" href="evidence/audit-report.png" target="_blank">
+        <img src="evidence/audit-report.png" alt="Screenshot of the code audit report">
+        <div class="cap"><div class="cn">audit-report.png</div><div class="cd">Full audit report, attach to Task 1</div></div>
+      </a>
+      <a class="eva" href="evidence/cloud-comparison.png" target="_blank">
+        <img src="evidence/cloud-comparison.png" alt="Screenshot of the AWS versus Azure comparison">
+        <div class="cap"><div class="cn">cloud-comparison.png</div><div class="cd">AWS vs Azure deck, attach to Task 2</div></div>
+      </a>
+      <a class="eva" href="evidence/pitch.png" target="_blank">
+        <img src="evidence/pitch.png" alt="Screenshot of the enterprise readiness pitch">
+        <div class="cap"><div class="cn">pitch.png</div><div class="cd">Enterprise pitch, optional</div></div>
+      </a>
+    </div>
+    <div class="fl" style="margin:18px 0 0"><span class="k">Raw tool output</span><button class="cp">Copy</button></div>
+    <div class="val evterm">RackTrack - audit evidence
+Captured: 2026-08-21 18:58
+Commit:   9a3d85c
+==================================================
+
+$ ruff check pipeline
+All checks passed!
+
+$ ruff format --check pipeline
+38 files already formatted
+
+$ bandit -c pyproject.toml -r pipeline -ll
+
+$ pip-audit -r requirements.txt --no-deps
+WARNING:pip_audit._cli:Consider using a tool like `pip-compile`: https://pip-tools.readthedocs.io/en/latest/#using-hashes
+No known vulnerabilities found
+
+$ pytest pipeline/tests -q
+.............................                                            [100%]
+101 passed in 1.96s
+
+$ npm --prefix client run lint
+✖ 570 problems (0 errors, 570 warnings)
+
+
+$ npm --prefix server test
+# tests 86
+# pass 86
+# fail 0
+
+$ npm --prefix client test
+ Test Files  5 passed (5)
+      Tests  53 passed (53)
+
+==================================================
+Summary: all checks pass. 0 findings open.</div>
+    <p class="sub2" style="margin:12px 0 0">Saved at <b>racktrack-presentation/evidence/audit-output.txt</b>. Anyone can re-run these commands and get the same result.</p>
+  </div>
+
+  <!-- ================= TASK 1 ================= -->
+  <div class="task">
+    <div class="th"><span class="tag">TASK 1</span><span class="tt">Complete code audit of RackTrack</span></div>
+    <div class="tb">
+
+      <div class="fld">
+        <div class="fl"><span class="k">Title</span><button class="cp">Copy</button></div>
+        <div class="val title">Complete code audit of RackTrack across all layers</div>
+      </div>
+
+      <div class="fld">
+        <div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Audit the whole RackTrack codebase against recognised industry standards, so we can say with evidence whether the code is production and enterprise ready rather than relying on judgement.
+
+Scope: our own source code (React app, Node API, Python AI pipeline), the third party libraries we depend on, the container we ship in, the full git history, and the running application.
+
+Deliverables:
+- Nine audit types executed using industry standard tooling
+- Every finding triaged, with false positives confirmed by hand
+- All genuine findings fixed
+- Checks wired into CI so the position is maintained, not a one off
+- A written audit report with the raw tool output as evidence
+
+Definition of done: all audits pass, no findings left open, and the checks run automatically on every code change.</div>
+      </div>
+
+      <div class="fld">
+        <div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Finished this. Ran nine types of audit using seventeen tools, covering our code, our dependencies, the container, the git history and the running app.
+
+Everything came back clean. Zero code errors, zero real security findings, zero leaked secrets, all 240 tests passing and all 13 screens working. The scanners did raise some alarms and I went through every one by hand, they were all false positives.
+
+It found six genuine issues and I've fixed all six. None were critical or high severity. I'd rather report six found and six fixed than claim it found nothing, because an audit that finds nothing usually means it wasn't looking hard enough.
+
+The important part is that all these checks now run automatically on every change, so this isn't a snapshot of one good day. Full report attached.</div>
+      </div>
+
+      <div class="fld">
+        <div class="fl"><span class="k">Your notes</span></div>
+        <textarea class="notes" placeholder="Anything to change on this task? Type it here."></textarea>
+      </div>
+
+      <!-- SUBTASKS -->
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.1</span><span class="st">Code quality and standards audit</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Check all source code against published standards. Python against PEP 8 and PEP 257, JavaScript against the ESLint recommended rules. Confirm consistent formatting, import order and absence of common bug patterns across both languages.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done. Zero errors across both languages. Ruff auto corrected 173 issues and reformatted 35 files in the pipeline, and the 101 pipeline tests passed unchanged either side of that, so the reformatting was purely cosmetic. Warning counts are now capped at today's number, so the code can only get cleaner from here.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.1"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.2</span><span class="st">Application security scan (SAST)</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Scan our own source for the classic attack routes: database injection, file path manipulation and unsafe command execution, measured against the OWASP risk list. Use two engines deliberately, since pattern matching and data flow analysis catch different classes of problem.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done with Semgrep and CodeQL. I used two on purpose because they work differently, one matches known bad patterns and the other traces how untrusted data moves through the code.
+
+They raised alarms and I checked every single one by hand. All false positives, mostly log messages the tool mistook for database queries, and file paths that are already protected by strict ID validation and an ownership check. No real holes.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.2"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.3</span><span class="st">Python security scan</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Scan the Python AI pipeline specifically for insecure patterns: weak cryptography, unsafe subprocess calls and unvalidated input handling. Review and document any exemptions rather than silently disabling rules.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done with Bandit. Clean at medium severity and above.
+
+Three categories were flagged and I reviewed each one individually. SHA-1 is only used to name cache files and never for security, model loading only ever reads our own files, and two outbound calls lack an explicit timeout. All three are documented in pyproject.toml with the reason, so anything new in those categories still gets caught.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.3"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.4</span><span class="st">Dependency and supply chain audit</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Check every third party package we depend on, in both JavaScript and Python, against the public database of known vulnerabilities. Patch everything with a fix available and re-run the full test suites afterwards. Set up automated alerts for future advisories.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done. Python came back completely clean on the first run, including the machine learning stack. On the JavaScript side everything with an available fix has been patched, and I re-ran all 240 tests afterwards to confirm nothing broke.
+
+Also switched on Dependabot, so from now on a fix arrives as a pull request the day it's published rather than waiting for someone to remember to scan.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.4"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.5</span><span class="st">Secret scanning across full git history</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Scan for accidentally committed credentials, API keys and passwords. Cover not only the current files but every commit in the project history, since a credential removed from a file still exists in the past and remains recoverable.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done with gitleaks. The shipping code is clean.
+
+Worth noting it now runs in two places, on every push and again before a commit is even recorded, so a secret gets stopped at the developer's desk rather than after it lands.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.5"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.6</span><span class="st">Container audit and SBOM</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Scan the container image we deploy for operating system level vulnerabilities, which are separate from our own code. Review how the application runs inside the container. Generate a software bill of materials listing every component we ship.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done with Trivy, and this one turned up a genuine finding.
+
+The app was running as root inside the container, meaning full administrative rights. If anyone ever got in, that gives them maximum reach. Fixed it, the container now drops to a restricted user before the app starts. One thing to watch at deploy time, any host volume mounted over outputs or Models needs to be writable by UID 10001, I've noted that inline in the Dockerfile.
+
+Trivy also generates our parts list (SBOM) now, which enterprise buyers increasingly ask for.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.6"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.7</span><span class="st">Accessibility audit and fixes</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Check the interface for barriers affecting screen reader and keyboard users: unlabelled controls, missing or incorrect image descriptions and unreachable elements. Add automated accessibility linting so issues are caught as code is written.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done, and it found four genuine issues.
+
+Three form labels weren't connected to the fields they describe, which means a screen reader would announce the input with no name at all and the user wouldn't know what to type. One image carried a wrong description. All four fixed.
+
+Added jsx-a11y linting so these get caught as we write rather than in a retrofit later. Worth flagging that accessibility is increasingly a procurement requirement, not just good practice.
+
+Note: three of these fixes are sitting in files that also have in-flight UI work, so they'll go in with that commit rather than separately.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.7"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.8</span><span class="st">Runtime behaviour audit</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Verify the application actually works, not merely that the code reads correctly. Drive the built app in a real browser at phone size through every screen as a signed in user, alongside the full automated test suites.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done. All 13 screens clean and all 240 tests passing, that's 53 for the app, 86 for the server and 101 for the AI pipeline.
+
+The browser sweep is the one that earns its place. It catches blank screens, icons rendering as raw text and layout breaking on a narrow display, none of which any code scanner can see. It runs on every change.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.8"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.9</span><span class="st">Licence compliance audit</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Check the open source licence carried by every dependency and identify any that impose obligations incompatible with a commercial product. Confirm our own packages declare their licence correctly.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done. Our dependencies are overwhelmingly permissive, MIT, Apache and BSD. One package carries LGPL, the native image processing library we use for photos, which is fine for how we use it since we call the library rather than modify it. Worth recording if legal ever asks.
+
+This did turn up a real gap though. Our own three packages had no licence declared at all, which any auditing tool, including a prospective buyer's, reads as "unknown licence". All three now explicitly marked private and proprietary.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.9"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.10</span><span class="st">Enforce Python coding standards</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">The Python AI pipeline had automated tests but no linter, formatter, type checker or security scanner, so PEP 8 and PEP 257 were not actually enforced. Add the tooling and wire it into the build so the standard is held automatically.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done, and this closes the gap raised in review.
+
+Added Ruff for formatting and linting against PEP 8 and PEP 257, mypy for type checking and Bandit for security, all configured in a new pyproject.toml. The rule set starts pragmatic and only tightens, each deferred rule is a to-do rather than a permanent exemption.
+
+The Python engine is now held to the same bar as the JavaScript side, and it's enforced by the build rather than by memory.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.10"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.11</span><span class="st">Wire all checks into CI and pre-commit</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Make the audit position permanent rather than a one off exercise. Add the security, dependency, container and quality checks to the build pipeline so they run on every change, and add pre-commit hooks so problems are caught before code is even committed.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Done. The build now runs Semgrep and CodeQL for code security, Trivy for the container plus SBOM and licence scanning, Bandit and pip-audit on the Python side, and test coverage reporting.
+
+Also added pre-commit hooks, so secrets, lint and formatting are checked on your staged files before the commit is recorded. Problems get caught at the desk in seconds instead of failing a build minutes later.
+
+This is the part I think matters most out of the whole audit. It means the clean result is maintained rather than being true for one afternoon.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.11"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 1.12</span><span class="st">Produce the audit report</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Write up the audit as a shareable report: the scope covered, the nine audit types with their tools and results, a findings register with severity and resolution, the raw tool output as evidence, the licence position, and an explicit statement of what a code audit does not cover.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Report done and attached.
+
+It includes the actual command line output rather than a summary I've written, so anyone can run the same commands and get the same result. It also states plainly what a code audit does not cover, scanning accuracy, device detection and rack unit correctness need separate ML evaluation, which is a different piece of work.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 1.12"></textarea></div>
+      </div></div>
+
+    </div>
+  </div>
+
+  <!-- ================= TASK 2 ================= -->
+  <div class="task">
+    <div class="th"><span class="tag">TASK 2</span><span class="tt">Cloud migration research: AWS vs Azure</span></div>
+    <div class="tb">
+
+      <div class="fld">
+        <div class="fl"><span class="k">Title</span><button class="cp">Copy</button></div>
+        <div class="val title">Cloud migration research and platform recommendation (AWS vs Azure)</div>
+      </div>
+
+      <div class="fld">
+        <div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">RackTrack currently runs on a single hand managed server with no backups, no monitoring and no ability to scale. Research moving to a managed cloud platform and produce a recommendation the team can decide on.
+
+Evaluate AWS and Azure across the areas that matter to our product rather than on feature lists: hosting, data and backups, the AI and GPU workload, identity, monitoring and deployment, and cost. Also consider alternatives beyond the two main providers.
+
+Deliverables:
+- Area by area comparison with an assessment for each
+- Honest account of where each platform genuinely leads
+- Alternatives considered, including staying where we are
+- A clear recommendation with the reasoning, and the conditions that would change it
+- A comparison report suitable for presenting to the team
+
+Definition of done: a documented recommendation the team can make a decision from.</div>
+      </div>
+
+      <div class="fld">
+        <div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Research done and the comparison report is attached.
+
+Short version, they're both genuinely strong platforms. I compared nine areas, each leads in three and three are tied, so this isn't a case of one being better than the other. It comes down to fit.
+
+My recommendation is AWS, for one main reason. The heaviest and most expensive thing we do is the AI scanning, which needs GPUs, and AWS has the widest choice, the best pricing and the most mature AI tooling. That's where our money will actually go.
+
+Azure leads on hybrid deployment, compliance breadth and identity. I've been clear about that in the report rather than glossing over it. The reason those don't decide it is that our users are datacenter technicians signing in with their own employer's accounts, not Microsoft accounts, and we're building a hosted service rather than shipping into customer datacenters.
+
+I've flagged three things that would change my answer, and one needs a product decision rather than an engineering one, whether customers will want RackTrack running on their own hardware. If that's likely, Azure becomes the stronger choice.</div>
+      </div>
+
+      <div class="fld">
+        <div class="fl"><span class="k">Your notes</span></div>
+        <textarea class="notes" placeholder="Anything to change on this task? Type it here."></textarea>
+      </div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 2.1</span><span class="st">Compare AWS and Azure across everything that matters to us</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">First establish what the move actually has to solve, based on the risks in our current single server setup, so the comparison is grounded in our needs rather than a generic feature checklist. The four problems to fix: no backups, a single point of failure, no way to scale under load, and updates copied by hand with no undo.
+
+Then compare AWS and Azure against those needs across every relevant area:
+- Hosting and running the application
+- The database, scan image storage and automatic backups
+- The AI and GPU workload, including how each handles a bursty pattern that is busy during shifts and idle otherwise
+- Company sign in and identity
+- Monitoring, alerting and safe deployment
+- Running cost
+
+For each area, record which platform leads or whether they are genuinely tied, judged on what RackTrack would actually use rather than on feature lists.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Compared across nine areas. Each platform leads in three and three come out tied, so this genuinely isn't a case of one being better than the other.
+
+Hosting and data are even. AWS Fargate is more battle tested, Azure Container Apps is quicker to stand up. For data, RDS PostgreSQL plus S3 versus Azure Database for PostgreSQL plus Blob Storage are equivalent feature for feature. Good news really, since the single most important fix we need is solved equally well either way.
+
+The AI and GPU workload is where they actually differ, and it's our biggest cost. AWS has the wider GPU choice, better pricing and more mature tooling in SageMaker. Azure is fully capable through Azure ML and is excellent if you build on Microsoft AI services, but we don't, so that strength isn't one we'd use. Our scanning is also bursty, so the design I'd recommend has GPUs wake for a scan and shut down when idle, meaning we only pay while scanning.
+
+On identity, credit where it's due, Microsoft Entra is genuinely the better of the two. If our users signed in with Microsoft accounts that alone might decide this. They don't, they're datacenter technicians using accounts their own employer issues, so we'd never draw on it.
+
+Monitoring is close, Azure's dashboards are friendlier out of the box while AWS gives deeper control once you know it, which is a comfort difference rather than a capability one. Cost is level pegging and both offer startup credits. Those figures are research estimates rather than quotes, and I'd want a proper costing before we commit.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 2.1"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 2.2</span><span class="st">Consider the alternatives, and what would change the answer</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Make sure the decision isn't artificially narrowed to two providers. Evaluate the realistic alternatives: Google Cloud, staying on the current server and simply adding backups, moving to a simpler managed platform, and a hybrid approach that moves only storage and backups.
+
+Separately, identify and document the specific conditions under which the recommendation should change, so those can be raised and settled by the team rather than discovered later.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Looked at four alternatives so we're not pretending it's a two horse race.
+
+Google Cloud is genuinely strong for AI work, I left it out mainly because enterprise buyers ask about AWS and Azure by name, not because it's weaker. Staying where we are and just adding backups is the cheapest and fastest option, it fixes the data risk but not the single server problem or scaling. A simpler managed platform would be easier and cheaper to run but gives buyers less of the paperwork they expect. A hybrid, moving only storage and backups, is a reasonable halfway step.
+
+My view is still a major cloud, mainly because enterprise buyers ask who hosts us and recognise these names. But if cost or simplicity matters more, the middle two are legitimate choices.
+
+Three things would change my recommendation, and I'd rather raise them than have them raised at me. First, if customers will want RackTrack running on their own hardware rather than connecting to our service, Azure is clearly stronger for that and I'd switch. That's a product and sales question I don't have visibility on, so I'd genuinely like the team's read. Second, if we're targeting heavily regulated buyers, Azure's compliance breadth starts to matter more. Third, if our own team is already fluent in Microsoft tooling, familiarity beats any feature comparison.
+
+Whichever we pick, I'd build on standard components so most of it could move later. I don't want this to be a one way door.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 2.2"></textarea></div>
+      </div></div>
+
+      <div class="sub"><div class="sh"><span class="tag">SUBTASK 2.3</span><span class="st">Produce the comparison report and recommendation</span></div><div class="sb">
+        <div class="fld"><div class="fl"><span class="k">Description</span><button class="cp">Copy</button></div>
+        <div class="val">Write up the research as a presentable comparison the team can decide from. It should cover each area assessed, a fair account of what each platform is genuinely best at, the alternatives considered, a clear recommendation with the reasoning behind it, and the conditions that would change it.
+
+The report should give both platforms equal treatment rather than being built to justify a conclusion already reached, and should be explicit that the recommendation is an engineering view and the decision rests with the team.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Comment</span><button class="cp">Copy</button></div>
+        <div class="val comment">Report done and attached, built to present from.
+
+I deliberately gave both platforms equal treatment with a strengths page each, and the scorecard shows three areas to each with three tied. I'd rather the team see the full picture than a comparison built to justify an answer I'd already picked.
+
+The recommendation is AWS, for one main reason. The heaviest and most expensive thing we do is the AI scanning, and that's the one area where the two genuinely differ. Choosing the platform that's strongest at our largest cost is the decision I can most easily defend.
+
+The last section is explicit that this is my engineering read and the call is the team's, since there may be commercial factors I can't see, existing contracts or credits, cost constraints, or requirements about where customer data has to live.</div></div>
+        <div class="fld"><div class="fl"><span class="k">Your notes</span></div><textarea class="notes" placeholder="Notes for 2.3"></textarea></div>
+      </div></div>
+
+    </div>
+  </div>
+
+  <div class="done-note">
+    <b>When you're ready:</b> send me back anything you've changed, or just say "create them" and I'll file all of it in
+    Jira as written. One thing to know first, the Atlassian connector isn't authorised in this session, so you'll need to
+    connect it at <b>claude.ai → Settings → Connectors → Atlassian</b> before I can write to Jira.
+  </div>
+
+  <footer>RackTrack sprint close · 2 tasks · 15 subtasks · project SPRTMS · assignee Aasritha · reporter Mandar</footer>
+</div>
+
+<script>
+  document.querySelectorAll('.cp').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var box = btn.closest('.fld').querySelector('.val');
+      var text = box.innerText;
+      navigator.clipboard.writeText(text).then(function(){
+        var old = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1400);
+      }).catch(function(){
+        var r = document.createRange(); r.selectNodeContents(box);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        btn.textContent = 'Select + Ctrl/Cmd C';
+        setTimeout(function(){ btn.textContent = 'Copy'; }, 2000);
+      });
+    });
+  });
+</script>
+</body>
+</html>

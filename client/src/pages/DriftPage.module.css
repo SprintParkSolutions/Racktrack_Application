@@ -1,4 +1,4 @@
-/* Drift check — the technician's screen. No write button anywhere. */
+/* Drift check - the technician's screen. No write button anywhere. */
 
 .page { min-height: 100%; padding: 0 0 40px; background: var(--bg, #fff); color: var(--text, #1c1c1c); }
 
@@ -65,7 +65,7 @@
 .primary:disabled { background: #c9d0cc; cursor: default; }
 .footNote { margin: 9px 0 0; font-size: 12.5px; color: #949d98; text-align: center; }
 
-/* optional rack name — set it here, edit it any time */
+/* optional rack name - set it here, edit it any time */
 .nameRow { padding: 14px 16px 4px; }
 .nameLabel {
   display: block; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.06em;

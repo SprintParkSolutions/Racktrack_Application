@@ -14,13 +14,13 @@ function readStored() {
 // Write the session to storage NOW, not on the next effect tick.
 //
 // authFetch reads rt_authToken synchronously out of localStorage, but the
-// persist effect below only runs after render — and React runs child effects
+// persist effect below only runs after render - and React runs child effects
 // before parent ones. So the instant a sign-in succeeded, protected pages
 // mounted and fired their first requests before the token had been written.
 // Those went out with no Authorization header and came back 401; on native
 // there is no refresh cookie to recover with, so authFetch declared the
 // session expired and bounced the user straight back to the login screen.
-// Signing in again did the same thing — the endless loop testers hit.
+// Signing in again did the same thing - the endless loop testers hit.
 //
 // The effect still runs and is still the single place that clears storage and
 // mints the asset token; this only closes the window before it.
@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
   //
   // These writes are unguarded no longer: a storage-blocked browser threw here
   // the instant a sign-in succeeded, and with the throw landing inside an
-  // effect the whole app unmounted — the user watched login work and then got
+  // effect the whole app unmounted - the user watched login work and then got
   // a white screen. Failing to persist just means they sign in again next
   // launch, which is a far better outcome than losing the app.
   useEffect(() => {
@@ -90,7 +90,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // No `if (!token) return` guard: on web the credential is an httpOnly
     // cookie this code cannot see, so asking the server is the only way to
-    // learn whether a session exists — which is also what makes the
+    // learn whether a session exists - which is also what makes the
     // accept-invite reload and the social-callback redirect resolve.
     let cancelled = false;
     authFetch(apiUrl('/api/auth/me'))
@@ -104,7 +104,7 @@ export function AuthProvider({ children }) {
       })
       .then(data => { if (!cancelled && data?.user) setState(prev => ({ ...prev, user: data.user })); })
       .catch(() => {
-        // Network error — keep the cached session. The user can still use
+        // Network error - keep the cached session. The user can still use
         // offline features; auth will revalidate next time the server is
         // reachable.
       });
@@ -128,7 +128,7 @@ export function AuthProvider({ children }) {
       const data = await callApi('/api/auth/login', { body });
       persistSessionNow(data.token, data.user);
       setState({ token: data.token, user: data.user });
-      // Fresh session — drop any "last rack" left in memory from a previous
+      // Fresh session - drop any "last rack" left in memory from a previous
       // login so the Overview / rack nav doesn't open a stale past scan. The
       // rack section reappears once the user runs a new scan.
       try { window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: null })); } catch (_) {}
@@ -136,8 +136,7 @@ export function AuthProvider({ children }) {
     } finally { setLoading(false); }
   }, []);
 
-  // Adopt a session that was minted somewhere other than a fetch from here —
-  // specifically the social sign-in redirect, where the server hands back a
+  // Adopt a session that was minted somewhere other than a fetch from here - // specifically the social sign-in redirect, where the server hands back a
   // finished token in the URL fragment (see utils/socialSession.js). Everything
   // downstream of setState is identical to a password login: the persist effect
   // above writes storage and mints the asset token, so this cannot drift from
@@ -210,7 +209,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Signing out now tells the SERVER, which denies this token's jti. Previously
-  // it only dropped the token from storage — anyone who had already copied it
+  // it only dropped the token from storage - anyone who had already copied it
   // kept a working session for the rest of its 30 days, so "sign out" on a
   // shared or lost device protected nothing.
   //
@@ -223,7 +222,7 @@ export function AuthProvider({ children }) {
     setState({ token: null, user: null });
     try { window.dispatchEvent(new CustomEvent('rt:rack-id-changed', { detail: null })); } catch (_) {}
     // Fires unconditionally. It used to be gated on holding a token, which on
-    // web is now always null — so signing out would have cleared the tab and
+    // web is now always null - so signing out would have cleared the tab and
     // left the refresh cookie alive on the server, meaning the session was
     // never actually revoked. The cookie is what the server needs, and
     // credentials:'include' is what sends it.
@@ -232,7 +231,7 @@ export function AuthProvider({ children }) {
       credentials: 'include',
       headers: current ? { Authorization: `Bearer ${current}` } : undefined,
       keepalive: true,   // survives the navigation that usually follows
-    }).catch(() => { /* best effort — local session is already gone */ });
+    }).catch(() => { /* best effort - local session is already gone */ });
   }, [token]);
 
   // Re-fetch the current user from the server and update state. Used by the
@@ -246,7 +245,7 @@ export function AuthProvider({ children }) {
       const data = await r.json();
       if (data?.user) { setState(prev => ({ ...prev, user: data.user })); return data.user; }
       return null;
-    } catch { return null; }   // network error — keep current session
+    } catch { return null; }   // network error - keep current session
   }, []);
 
   return (

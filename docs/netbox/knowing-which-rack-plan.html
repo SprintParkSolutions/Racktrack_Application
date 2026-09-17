@@ -1,0 +1,136 @@
+<!-- https://claude.ai/artifact/6AyGK8W4AeYWYqJqikY24Q -->
+<title>Knowing Which Rack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --paper:#fbfcfb; --ink:#161a17; --body:#39423c; --muted:#66706a; --quiet:#98a19b;
+    --rule:#e6ebe7; --rule2:#cfd6d0; --card:#fff;
+    --found:#0b6a44; --found-bg:#eaf4ee; --small:#1f6feb; --small-bg:#eaf1fd;
+    --big:#8a6d1f; --big-bg:#f7f1e2; --safe:#5a6560; --safe-bg:#eef1ef;
+    --serif:"Newsreader",Georgia,serif; --sans:"Source Sans 3",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--body);font-family:var(--sans);font-size:16.5px;line-height:1.58;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px}
+
+  header{padding:48px 0 22px;border-bottom:1px solid var(--rule)}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--found);margin:0 0 12px}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(33px,6vw,48px);line-height:1.04;letter-spacing:-.015em;color:var(--ink);margin:0 0 12px}
+  .lede{font-family:var(--serif);font-size:clamp(17px,2.4vw,20px);line-height:1.45;color:var(--muted);margin:0;max-width:56ch}
+  .meta{margin:18px 0 0;display:flex;flex-wrap:wrap;gap:5px 22px;font-family:var(--mono);font-size:11px;color:var(--quiet)}
+
+  .problem{margin:26px 0 0;padding:18px 20px;border-radius:10px;background:var(--found-bg);border-left:3px solid var(--found)}
+  .problem h2{font-family:var(--serif);font-weight:600;font-size:20px;color:var(--ink);margin:0 0 7px}
+  .problem p{margin:0;font-size:16px;color:var(--body);max-width:64ch}
+
+  .items{margin:30px 0 0}
+  .sectlabel{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--quiet);margin:0 0 4px}
+  .item{padding:22px 0;border-bottom:1px solid var(--rule)}
+  .item-head{display:flex;align-items:center;gap:12px}
+  .num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--mono);font-size:14px;font-weight:600;display:grid;place-items:center}
+  .item h3{font-family:var(--serif);font-weight:600;font-size:clamp(20px,3.2vw,24px);color:var(--ink);margin:0;letter-spacing:-.01em}
+  .tag{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .tag.found{background:var(--found-bg);color:var(--found)}
+  .tag.small{background:var(--small-bg);color:var(--small)}
+  .tag.big{background:var(--big-bg);color:var(--big)}
+  .tag.safe{background:var(--safe-bg);color:var(--safe)}
+  .lines{margin:11px 0 0;padding-left:42px}
+  .lines p{margin:0 0 6px;font-size:16px;max-width:62ch}
+  .lines .b{font-weight:700;color:var(--ink)}
+  .lines .k{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--quiet);margin-right:6px}
+
+  .start{margin:34px 0 0;padding:20px;border:1px solid var(--rule2);border-radius:10px;background:var(--card)}
+  .start h2{font-family:var(--serif);font-weight:600;font-size:22px;color:var(--ink);margin:0 0 12px}
+  .order{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px}
+  .chip{font-family:var(--mono);font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;background:var(--found-bg);color:var(--found);white-space:nowrap}
+  .chip.n2{background:var(--safe-bg);color:var(--safe)} .chip.n3{background:var(--small-bg);color:var(--small)} .chip.n4{background:var(--big-bg);color:var(--big)}
+  .order .arr{color:var(--quiet);font-size:13px}
+  .start p{margin:0;font-size:16px;color:var(--body);max-width:64ch}
+
+  footer{padding:24px 0 60px;color:var(--muted);font-size:13.5px}
+  footer p{margin:0;max-width:70ch} footer b{color:var(--ink);font-weight:600}
+  @media(max-width:520px){ .tag{display:none} .lines{padding-left:0} }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">RackTrack &middot; build plan</p>
+    <h1>Knowing Which Rack</h1>
+    <p class="lede">Four fixes so the app can tell which real rack a photo is, and trust what is inside it, before anything reaches the record.</p>
+    <div class="meta"><span>15 September 2026</span><span>from the Match and Reconcile plan</span><span>nothing built yet</span></div>
+  </header>
+
+  <div class="problem">
+    <h2>The problem, in one breath</h2>
+    <p>When a technician photographs a rack, the app makes up a code from the photo. It never links that photo to the real rack the company already has on record, so it cannot tell that this is the rack in the comms room, row 3. Two things go wrong: the app often cannot find the right person in charge of the rack, and it can save the same rack twice by mistake. These four fixes close that gap.</p>
+  </div>
+
+  <div class="items">
+    <p class="sectlabel">The four fixes</p>
+
+    <section class="item">
+      <div class="item-head">
+        <span class="num">1</span>
+        <h3>Recognise the rack</h3>
+        <span class="tag found">Foundation &middot; start here</span>
+      </div>
+      <div class="lines">
+        <p><span class="k">Build</span>Teach the app that a photo is a rack the company already knows, using the rack's location, its name, and its labels. When it cannot be sure, it asks a person rather than guessing.</p>
+        <p><span class="k">Why</span>This fixes the wrong-contact problem and the saved-twice problem, and everything below depends on the app knowing which rack it is looking at.</p>
+      </div>
+    </section>
+
+    <section class="item">
+      <div class="item-head">
+        <span class="num">2</span>
+        <h3>Read the labels</h3>
+        <span class="tag small">Smaller</span>
+      </div>
+      <div class="lines">
+        <p><span class="k">Build</span>Read the labels and barcodes people stick on racks and gear, and use them to name things. A label is always checked against what the live network actually shows, because labels go out of date.</p>
+        <p><span class="k">Why</span>A readable label or barcode is the fastest, most certain way to name a rack or a device.</p>
+      </div>
+    </section>
+
+    <section class="item">
+      <div class="item-head">
+        <span class="num">3</span>
+        <h3>Sort out the devices inside</h3>
+        <span class="tag big">Biggest</span>
+      </div>
+      <div class="lines">
+        <p><span class="k">Build</span>Line each device in the photo up with the device the record expects at that shelf. Then a device that moved up a slot is told apart from one removed and one added. Only the sure ones are saved; anything unclear goes to a person to confirm.</p>
+        <p><span class="k">Why</span>This is what makes the inside of the rack trustworthy, not just the rack itself.</p>
+      </div>
+    </section>
+
+    <section class="item">
+      <div class="item-head">
+        <span class="num">4</span>
+        <h3>A safety test</h3>
+        <span class="tag safe">Protects the rest</span>
+      </div>
+      <div class="lines">
+        <p><span class="k">Build</span>A test that runs the whole thing by itself, from photo to compare to save to checking it saved correctly, so a future change cannot quietly break it.</p>
+        <p><span class="k">Why</span>It is cheap to build and it guards the other three from silent mistakes.</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="start">
+    <h2>Where to start</h2>
+    <div class="order">
+      <span class="chip">1 &middot; Recognise the rack</span><span class="arr">&rarr;</span>
+      <span class="chip n2">4 &middot; Safety test</span><span class="arr">&rarr;</span>
+      <span class="chip n3">2 &middot; Read the labels</span><span class="arr">&rarr;</span>
+      <span class="chip n4">3 &middot; Devices inside</span>
+    </div>
+    <p>Recognising the rack comes first, because nothing else works until the app knows which rack it is looking at, and it also finishes the contact fix from the work we just shipped. The safety test comes next, so the riskier changes cannot break the save unnoticed. Then the labels, and last the devices inside, which is the largest piece.</p>
+  </div>
+
+  <footer>
+    <p>Based on the <b>Match and Reconcile</b> plan. Nothing here is built yet; this document is for deciding what to build first, and in what order.</p>
+    <p style="margin-top:6px">Companion: <a href="https://claude.ai/artifact/43cMa7YaDsPgENG2GREcjn" style="color:#0b6a44;text-decoration:none;font-weight:600">Knowing Which Device</a>, the next step, telling which network device is which box in the rack. See both together.</p>
+  </footer>
+</div>

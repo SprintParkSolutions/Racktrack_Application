@@ -1,10 +1,10 @@
 /**
- * Connection-profiles context — per-user saved credentials for external
+ * Connection-profiles context - per-user saved credentials for external
  * data sources (ServiceNow, NetBox, SolarWinds Orion, CA Spectrum,
  * generic SQL, generic REST).
  *
  * The active profile is the single source the server uses for that
- * user's session — switching profiles flips where ALL data comes from
+ * user's session - switching profiles flips where ALL data comes from
  * (no aggregation across sources, by design).
  *
  * The context auto-loads on mount when the user is authenticated and
@@ -31,7 +31,7 @@ export function ConnectionsProvider({ children }) {
   // The UI uses this to show a "pulling fresh data…" banner so the user
   // knows incidents / CMDB caches are updating in the background.
   const [refreshing, setRefreshing] = useState(false);
-  // Last refresh outcome — for surfacing failures the user would otherwise
+  // Last refresh outcome - for surfacing failures the user would otherwise
   // miss. Shape: { ok, instance, count, polled_at, error } or null.
   const [lastRefresh, setLastRefresh] = useState(null);
 
@@ -61,7 +61,7 @@ export function ConnectionsProvider({ children }) {
   // below can list it as a dependency.
   const active = useMemo(() => profiles.find(p => p.is_active) || null, [profiles]);
 
-  // Mutations — each refreshes state on success so the UI stays in sync.
+  // Mutations - each refreshes state on success so the UI stays in sync.
   const create = useCallback(async (payload) => {
     const profile = await api.createConnection(payload);
     await refresh();
@@ -81,7 +81,7 @@ export function ConnectionsProvider({ children }) {
   // this client-side cap is mostly belt-and-braces.
   const waitForRefresh = useCallback(async (profileForEvent) => {
     const start = Date.now();
-    const MAX_WAIT_MS = 360_000;   // 6 min — gives the server's 5-min cap room
+    const MAX_WAIT_MS = 360_000;   // 6 min - gives the server's 5-min cap room
     const dispatch = (refreshed, error) => {
       try {
         window.dispatchEvent(new CustomEvent('rt:connection-activated', {
@@ -105,7 +105,7 @@ export function ConnectionsProvider({ children }) {
             dispatch(false, s.error);
             return resolve();
           }
-        } catch (_) { /* transient network blip — try again next tick */ }
+        } catch (_) { /* transient network blip - try again next tick */ }
         if (Date.now() - start > MAX_WAIT_MS) {
           setLastRefresh({ ok: false, error: 'Stopped waiting after 6 minutes - check the server log for poll progress.' });
           setRefreshing(false);
@@ -148,7 +148,7 @@ export function ConnectionsProvider({ children }) {
     return profile;
   }, [refresh, waitForRefresh]);
 
-  // Manual "Refresh now" — same poll as activate, but the user-triggered
+  // Manual "Refresh now" - same poll as activate, but the user-triggered
   // version. Surfaces explicit error/success in lastRefresh so the
   // Connections screen can display the outcome.
   const refreshActiveSource = useCallback(async () => {

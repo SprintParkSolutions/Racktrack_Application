@@ -6,8 +6,7 @@
 //   - a new scan starts (ScanPage calls triggerBackgroundProbe)
 //   - the user clicks Retry (force: true)
 //
-// Independent of the LLDP "find the other end of this cable" feature —
-// different consumer, same encrypted credentials path on the server.
+// Independent of the LLDP "find the other end of this cable" feature - // different consumer, same encrypted credentials path on the server.
 import { apiUrl, authFetch } from './api';
 import { getItem, setItem, removeItem } from './safeStorage';
 
@@ -59,7 +58,7 @@ function parseInterfaceStatusTable(text) {
   // Strip null bytes and paging prompts that remain after --More-- auto-advance.
   // TP-Link emits: "Press any key to continue (Q to quit)\0<spaces><next line>".
   // Convert \0 to \n so the data after the prompt becomes its own row, then
-  // strip ONLY the prompt text (plus trailing tabs/spaces) — never eat to the
+  // strip ONLY the prompt text (plus trailing tabs/spaces) - never eat to the
   // next \n, or we lose the port row that sits on the same line as the prompt
   // (the "27 of 28" bug: Gi1/0/23 vanished because the server-side cleanup
   // missed an edge case and this regex devoured the row).
@@ -92,8 +91,7 @@ export { parseInterfaceStatusTable };
 
 // Translate raw ssh2 / network error strings into something a technician can
 // act on. The switch-side SSH stack surfaces terse messages ("Not connected")
-// that read as a bug when they're really "the switch dropped the session" —
-// which a Retry usually clears now that the server does a full reconnect.
+// that read as a bug when they're really "the switch dropped the session" - // which a Retry usually clears now that the server does a full reconnect.
 function friendlyProbeError(msg) {
   const m = (msg || '').toLowerCase();
   if (/closed by the switch|session closed/.test(m))
@@ -131,7 +129,7 @@ export async function triggerBackgroundProbe({ force = false } = {}) {
   setState({ status: 'running', error: null, startedAt: Date.now(), finishedAt: null });
 
   // Watchdog: the request itself has no built-in timeout, and the server
-  // serializes SSH per host — so a busy switch (or a live poller holding the
+  // serializes SSH per host - so a busy switch (or a live poller holding the
   // host lock) can leave this request open indefinitely, hanging the loader
   // forever. Abort after a hard ceiling so the UI always resolves to an
   // actionable error + Retry instead of spinning. Ceiling is set above the
@@ -147,10 +145,10 @@ export async function triggerBackgroundProbe({ force = false } = {}) {
     // IP self-heals with NO user action. The bench switch DHCP-flaps between
     // .14 and .33; if the last-used address is dead we automatically try the
     // server-remembered host and the configured default before giving up.
-    // NEVER the gateway — that's not the switch.
+    // NEVER the gateway - that's not the switch.
     //
     // This used to be the literal '192.168.1.33'. Baked into every build, that
-    // meant a deployment with no route to the office — the public demo — spent
+    // meant a deployment with no route to the office - the public demo - spent
     // its first probe dialling an address that could not exist there, and then
     // printed that private IP on screen as the switch's "Mgmt IP". Configure it
     // per deployment; unset simply drops the candidate.
@@ -162,9 +160,9 @@ export async function triggerBackgroundProbe({ force = false } = {}) {
       // last_host (this user has probed it before) → registered_host (an
       // operator registered it in monitored_devices, scoped to Sites this user
       // can see). Still NEVER `suggested`, which can fall through to the
-      // gateway, and never the gateway itself — a router is not a switch.
+      // gateway, and never the gateway itself - a router is not a switch.
       resolved = hj?.last_host || hj?.registered_host || null;
-    } catch (_) { /* ignore — fall through to defaults */ }
+    } catch (_) { /* ignore - fall through to defaults */ }
     const candidates = [...new Set([
       force ? null : state.host,   // host that worked earlier this session
       resolved,                    // server-remembered last_host
@@ -197,8 +195,8 @@ export async function triggerBackgroundProbe({ force = false } = {}) {
         setState({ status: 'ok', ports: parsed, host, finishedAt: Date.now() });
         return;
       } catch (err) {
-        if (err?.name === 'AbortError') throw err;   // watchdog fired — stop
-        lastErr = err;                               // dead host — try the next
+        if (err?.name === 'AbortError') throw err;   // watchdog fired - stop
+        lastErr = err;                               // dead host - try the next
       }
     }
     throw (lastErr || new Error('No network switch host configured.'));

@@ -8,7 +8,7 @@ import MoreSheet from './MoreSheet.jsx';
 import ScanTabBar from './ScanTabBar.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
-   BottomNav — the phone navigation: HOME / SCAN / MORE / PROFILE.
+   BottomNav - the phone navigation: HOME / SCAN / MORE / PROFILE.
 
    The three permanent slots come from the shared destination list in
    nav/navLinks.jsx, and MORE opens a sheet with everything else that list
@@ -20,8 +20,8 @@ import ScanTabBar from './ScanTabBar.jsx';
 /**
  * Inside a rack, the bar is the rack's own tabs.
  *
- * The results page renders that bar itself; its sub-pages — Network, Report,
- * Topology and the rest — are separate routes, and they used to fall through
+ * The results page renders that bar itself; its sub-pages - Network, Report,
+ * Topology and the rest - are separate routes, and they used to fall through
  * to the app's navigation instead. Tapping Network therefore swapped the whole
  * bottom bar underneath you, which is exactly the kind of thing that makes an
  * app feel like several apps. Same bar on every page of a rack.
@@ -107,7 +107,7 @@ export default function BottomNav() {
         <div className={styles.bar}>
           {/* Menu sits LAST, not in the middle. Wedged between Scan and
               Profile it read as a peer destination and pushed Profile out of
-              the corner people reach for. It is also "Menu", not "More" — the
+              the corner people reach for. It is also "Menu", not "More" - the
               rack results screen has its own More tab, and two different More
               buttons on adjacent screens is a naming collision. */}
           {barLinks.map(tab)}

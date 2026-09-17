@@ -7,7 +7,7 @@
    CORE RULE OF THIS PAGE: the three cards are interchangeable. They are
    the same width, the same object and the same ink; nothing but the
    status dot and the body sentence distinguishes eBay from Discord. That
-   is why the actions are pinned to the card foot — a connected Discord
+   is why the actions are pinned to the card foot - a connected Discord
    card carries two extra rows of detail, and without the pin its buttons
    would sit a centimetre above its neighbours'. */
 
@@ -37,7 +37,7 @@
   min-width: 0;
 }
 /* Held back from full ink: it identifies the card, it is not the point
-   of it — the platform name and the status pill are. */
+   of it - the platform name and the status pill are. */
 .glyph { color: var(--mkt-ink, #121212); opacity: 0.55; flex-shrink: 0; }
 
 .cardName {
@@ -54,7 +54,7 @@
 }
 
 /* Connected detail rows. A webhook URL is ~120 characters, so the value
-   wraps rather than truncating — a half-shown URL is worse than useless
+   wraps rather than truncating - a half-shown URL is worse than useless
    when it is the only way to tell which channel is wired up. */
 .cardFacts {
   display: flex; flex-direction: column;
@@ -63,7 +63,7 @@
   border-radius: var(--mkt-r-sm, 8px);
   background: var(--mkt-raised, #ffffff);
 }
-/* :global — .mkt-row__val is a theme class, so the module must be told
+/* :global - .mkt-row__val is a theme class, so the module must be told
    not to hash it, or this rule would target a name that never renders. */
 .cardFacts :global(.mkt-row__val) { font-size: 12px; overflow-wrap: anywhere; }
 

@@ -68,7 +68,7 @@ Where the standard place is empty and we have no private reading for that make, 
 ## Where it lives
 
 - The read: client/src/utils/snmpClient.js
-- The written record of every value we ask for: docs/snmp-what-we-ask.md
+- The written record of every value we ask for: docs/design/snmp-what-we-ask-a-switch.md
 
 ## What is not done
 

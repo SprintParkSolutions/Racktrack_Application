@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inside the Nine Audits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --paper:#fff; --panel:#f6f6f3; --panel2:#fafaf8;
+    --ink:#16181d; --ink2:#33373f; --muted:#5a5e66; --faint:#8d9198;
+    --rule:#d9dad6; --rule2:#ececea;
+    --blue:#15507e; --blue2:#1b6ba8; --blue-bg:#eaf1f7;
+    --good:#1a7f37; --good-bg:#e9f3ec;
+    --amber:#8a5a1d; --amber-bg:#f7efe3;
+    --red:#a1352a; --red-bg:#f7eae8;
+    --code:#12151b; --code-ink:#ced4de; --code-dim:#6f7885;
+    --code-cmd:#fff; --code-ok:#7ee787; --code-warn:#e3b341;
+    --sans:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    --serif:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:15.5px; line-height:1.6;
+    -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  }
+  ::selection{background:#cfe0ee}
+
+  /* ================= masthead ================= */
+  .mast{
+    border-bottom:2px solid var(--ink);
+    padding:11px clamp(14px,2vw,26px) 9px;
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 20px;
+    background:var(--paper); position:sticky; top:0; z-index:40;
+  }
+  .mast .wm{font-family:var(--serif); font-weight:600; font-size:17px; letter-spacing:-.01em}
+  .mast .wm i{font-style:normal; color:var(--blue)}
+  .mast .sub{font-size:12px; color:var(--faint); letter-spacing:.04em; text-transform:uppercase}
+  .mast .back{font-size:12px; color:var(--faint); text-decoration:none}
+  .mast .back:hover{color:var(--blue); text-decoration:underline}
+  .mast .facts{margin-left:auto; display:flex; flex-wrap:wrap; gap:0}
+  .mast .facts div{
+    font-family:var(--mono); font-size:11px; color:var(--muted); padding:1px 13px;
+    border-left:1px solid var(--rule); font-variant-numeric:tabular-nums; line-height:1.5;
+  }
+  .mast .facts div:first-child{border-left:0}
+  .mast .facts b{color:var(--ink); font-weight:600}
+
+  /* ================= full-bleed frame ================= */
+  .doc{display:grid; grid-template-columns:288px minmax(0,1fr); align-items:start}
+  @media (max-width:1080px){ .doc{grid-template-columns:1fr} }
+
+  /* ================= index rail ================= */
+  .rail{
+    min-width:0; background:var(--panel2); border-right:1px solid var(--rule);
+    position:sticky; top:46px; max-height:calc(100vh - 46px); overflow-y:auto;
+    padding:14px 0 40px;
+  }
+  .rail .gh{
+    font-size:10px; font-weight:600; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--faint); padding:14px 18px 6px; border-bottom:1px solid var(--rule2); margin-bottom:4px;
+  }
+  .rail .gh:first-child{padding-top:2px}
+  .tabs{display:flex; flex-direction:column; min-width:0}
+  .tab{
+    display:grid; grid-template-columns:34px minmax(0,1fr) auto; align-items:baseline; gap:0 8px;
+    width:100%; background:none; border:0; border-left:3px solid transparent;
+    padding:8px 14px 9px 11px; text-align:left; font-family:inherit; color:var(--ink);
+    cursor:pointer; line-height:1.3;
+  }
+  .tab:hover{background:var(--blue-bg)}
+  .tab:focus-visible{outline:2px solid var(--blue); outline-offset:-2px}
+  .tab[aria-selected="true"]{background:var(--blue-bg); border-left-color:var(--blue)}
+  .tab .ref{font-family:var(--mono); font-size:10.5px; color:var(--faint); font-weight:500}
+  .tab[aria-selected="true"] .ref{color:var(--blue)}
+  .tab .nm{font-size:14.5px; font-weight:500}
+  .tab[aria-selected="true"] .nm{font-weight:600}
+  .tab .why{
+    grid-column:2 / -1; font-size:11.5px; color:var(--muted); line-height:1.38;
+    margin-top:2px; display:block;
+  }
+  .tab .vd{
+    font-family:var(--mono); font-size:10px; font-weight:500; color:var(--good);
+    white-space:nowrap; letter-spacing:-.01em;
+  }
+  .tab .vd.f{color:var(--amber)}
+
+  @media (max-width:1080px){
+    .rail{
+      position:sticky; top:46px; max-height:none; border-right:0; border-bottom:1px solid var(--rule);
+      padding:8px 10px; display:flex; gap:5px; overflow-x:auto; overflow-y:hidden;
+      scrollbar-width:none; -webkit-overflow-scrolling:touch;
+    }
+    .rail::-webkit-scrollbar{display:none}
+    .rail .gh{display:none}
+    .tabs{display:contents}
+    .tab{
+      width:auto; flex:0 0 auto; display:flex; gap:7px; white-space:nowrap;
+      border:1px solid var(--rule); border-left-width:1px; border-radius:3px;
+      background:var(--paper); padding:6px 11px; font-size:13.5px;
+    }
+    .tab[aria-selected="true"]{background:var(--blue); border-color:var(--blue); color:#fff}
+    .tab[aria-selected="true"] .ref{color:rgba(255,255,255,.75)}
+    .tab .why,.tab .vd{display:none}
+  }
+
+  /* ================= content ================= */
+  .pane{min-width:0; padding:0 0 90px}
+  .panel[hidden]{display:none}
+
+  /* --- intent banner: the first thing you read on every tab --- */
+  .head{
+    border-bottom:1px solid var(--rule);
+    padding:clamp(20px,2.4vw,34px) clamp(16px,2.4vw,40px) 0;
+  }
+  .ref-line{
+    font-family:var(--mono); font-size:11px; color:var(--faint); letter-spacing:.06em;
+    text-transform:uppercase; margin:0 0 9px;
+  }
+  .ref-line b{color:var(--blue); font-weight:600}
+  h1{
+    margin:0 0 12px; font-family:var(--serif); font-weight:600;
+    font-size:clamp(27px,2.7vw,40px); letter-spacing:-.017em; line-height:1.1; text-wrap:balance;
+  }
+  .intent{
+    margin:0 0 clamp(18px,2vw,26px); font-size:clamp(16.5px,1.35vw,20px); line-height:1.45;
+    color:var(--ink2); max-width:96ch;
+  }
+  .intent b{color:var(--ink); font-weight:600}
+
+  /* three-cell "at a glance" strip */
+  .glance{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    border-top:1px solid var(--rule); border-left:1px solid var(--rule);
+    margin:0 0 -1px;
+  }
+  .glance > div{
+    border-right:1px solid var(--rule); border-bottom:1px solid var(--rule);
+    padding:12px 16px 13px; min-width:0;
+  }
+  .glance .lb{
+    font-size:9.5px; font-weight:600; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--faint); margin-bottom:5px;
+  }
+  .glance .vl{font-size:14.5px; line-height:1.42; color:var(--ink2)}
+  .glance .vl b{color:var(--ink); font-weight:600}
+  .glance .vl.ok{color:var(--good); font-weight:600}
+  .glance .vl.fx{color:var(--amber); font-weight:600}
+  .glance .vl.mono{font-family:var(--mono); font-size:13px; font-variant-numeric:tabular-nums}
+
+  /* --- two-column body: narrative | evidence --- */
+  .split{
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);
+    align-items:start;
+  }
+  .col{padding:clamp(20px,2.2vw,32px) clamp(16px,2.4vw,40px) 40px; min-width:0}
+  .full{padding:clamp(20px,2.2vw,32px) clamp(16px,2.4vw,40px) 34px; min-width:0; border-bottom:1px solid var(--rule)}
+  .full p{max-width:104ch}
+  .col.ev{border-left:1px solid var(--rule); background:var(--panel2)}
+  @media (max-width:1180px){
+    .split{grid-template-columns:1fr}
+    .col.ev{border-left:0; border-top:1px solid var(--rule)}
+  }
+
+  h2{
+    margin:30px 0 11px; font-family:var(--serif); font-size:20px; font-weight:600;
+    letter-spacing:-.011em; line-height:1.25;
+  }
+  h2:first-child{margin-top:0}
+  h3{
+    margin:24px 0 9px; font-size:10.5px; font-weight:600; letter-spacing:.15em;
+    text-transform:uppercase; color:var(--faint);
+    padding-bottom:6px; border-bottom:1px solid var(--rule);
+  }
+  h3:first-child{margin-top:0}
+  p{margin:0 0 12px}
+  p b{font-weight:600}
+  .col p{max-width:82ch}
+
+  ul{margin:0 0 14px; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px}
+  ul li{position:relative; padding-left:16px}
+  ul li::before{content:""; position:absolute; left:0; top:.68em; width:6px; height:1px; background:var(--blue)}
+  ol{margin:0 0 14px; padding-left:20px; display:flex; flex-direction:column; gap:8px}
+  code{font-family:var(--mono); font-size:.87em; background:var(--panel); border:1px solid var(--rule2); padding:.5px 4px; border-radius:2px}
+
+  /* terminal */
+  .term{
+    background:var(--code); color:var(--code-ink); font-family:var(--mono);
+    font-size:12.4px; line-height:1.66; border-radius:3px;
+    padding:14px 16px; margin:0 0 14px; overflow-x:auto; white-space:pre;
+  }
+  .term .c{color:var(--code-cmd); font-weight:500}
+  .term .c::before{content:"$ "; color:var(--code-dim); font-weight:400}
+  .term .o{color:var(--code-ok)}
+  .term .w{color:var(--code-warn)}
+  .term .d{color:var(--code-dim)}
+  .cap{
+    font-size:11.5px; color:var(--faint); margin:-8px 0 20px; line-height:1.45;
+    padding-left:1px;
+  }
+  .cap b{color:var(--muted); font-weight:600}
+
+  /* data table */
+  .tw{overflow-x:auto; margin:0 0 16px; border:1px solid var(--rule); border-radius:3px}
+  table{border-collapse:collapse; width:100%; font-size:13.5px}
+  table.wide{min-width:600px}
+  .col.ev table.wide{min-width:0}
+  .col.ev td.m{white-space:normal}
+  th{
+    text-align:left; font-size:9.5px; font-weight:600; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--faint); padding:9px 12px; background:var(--panel); border-bottom:1px solid var(--rule);
+    white-space:nowrap;
+  }
+  td{padding:9px 12px; border-bottom:1px solid var(--rule2); vertical-align:top; line-height:1.45}
+  tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:var(--panel2)}
+  td.m{font-family:var(--mono); font-size:12.2px; font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.n{font-family:var(--mono); font-size:12.5px; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.ok{color:var(--good); font-weight:500}
+  td.fx{color:var(--amber); font-weight:500}
+  td a{color:var(--blue); text-decoration:none; font-weight:600}
+  td a:hover{text-decoration:underline}
+  caption{caption-side:top; text-align:left; font-size:11.5px; color:var(--faint); padding:0 0 7px}
+
+  /* callout */
+  .box{border:1px solid var(--rule); border-top:2px solid var(--blue); background:var(--paper); padding:14px 16px; margin:0 0 16px}
+  .box.w{border-top-color:var(--amber)}
+  .box.r{border-top-color:var(--red)}
+  .box .lb{font-size:9.5px; font-weight:600; letter-spacing:.15em; text-transform:uppercase; color:var(--blue); margin-bottom:7px}
+  .box.w .lb{color:var(--amber)}
+  .box.r .lb{color:var(--red)}
+  .box p:last-child{margin-bottom:0}
+  .box p{font-size:14.5px}
+
+  /* finding */
+  .find{border:1px solid var(--rule); border-left:3px solid var(--amber); padding:13px 16px; margin:0 0 12px; background:var(--paper)}
+  .find .hd{display:flex; flex-wrap:wrap; align-items:baseline; gap:9px; margin-bottom:6px}
+  .find .id{font-family:var(--mono); font-size:11.5px; font-weight:600; color:var(--amber)}
+  .find .sv{font-size:9.5px; font-weight:600; letter-spacing:.11em; text-transform:uppercase; color:var(--faint)}
+  .find .st{margin-left:auto; font-size:11px; font-weight:600; color:var(--good); font-family:var(--mono)}
+  .find .tt{flex-basis:100%; font-weight:600; font-size:15.5px; line-height:1.35; margin-top:1px}
+  .find p{font-size:14.5px; margin:0 0 8px}
+  .find p:last-child{margin-bottom:0}
+  .find .fx{color:var(--good)}
+
+  /* footer nav */
+  .fnav{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    border-top:1px solid var(--rule); padding:14px clamp(16px,2.4vw,40px) 0; margin-top:6px;
+  }
+  .fnav button{
+    font-family:inherit; font-size:13.5px; font-weight:600; color:var(--blue);
+    background:none; border:1px solid var(--rule); border-radius:3px; padding:7px 14px; cursor:pointer;
+  }
+  .fnav button:hover{border-color:var(--blue); background:var(--blue-bg)}
+  .fnav button:disabled{visibility:hidden}
+  .fnav button:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+  .fnav .pos{font-family:var(--mono); font-size:11.5px; color:var(--faint)}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="wm">Rack<i>Track</i></div>
+  <div class="sub">Code audit - method &amp; results</div>
+  <a class="back" id="backlink" href="1-enterprise-pitch.html" hidden>&larr; Back to the pitch</a>
+  <div class="facts">
+    <div>commit <b>9a3d85c</b></div>
+    <div>run <b>24 Aug 2026</b></div>
+    <div><b>9</b> audits</div>
+    <div><b>17</b> tools</div>
+    <div><b>0</b> open</div>
+  </div>
+</header>
+
+<div class="doc">
+  <nav class="rail" aria-label="Audit index">
+    <div class="gh">The verdict</div>
+    <div class="tabs" role="tablist" aria-orientation="vertical" id="tlv">
+      <button class="tab" role="tab" id="t-standing" aria-controls="p-standing" aria-selected="true">
+        <span class="ref">-</span><span class="nm">How good is it right now?</span>
+        <span class="why">The honest state of the application today - strengths and gaps</span>
+      </button>
+    </div>
+
+    <div class="gh">Summary</div>
+    <div class="tabs" role="tablist" aria-orientation="vertical" id="tl0">
+      <button class="tab" role="tab" id="t-overview" aria-controls="p-overview" aria-selected="false">
+        <span class="ref">-</span><span class="nm">All nine at a glance</span>
+        <span class="why">What each audit is for, how it was done, and what it found</span>
+      </button>
+    </div>
+
+    <div class="gh">Quality &amp; standards</div>
+    <div class="tabs" role="tablist" aria-orientation="vertical">
+      <button class="tab" role="tab" id="t-quality" aria-controls="p-quality" aria-selected="false">
+        <span class="ref">A&#8209;01</span><span class="nm">Code quality</span><span class="vd">0 errors</span>
+        <span class="why">Is it written to a published standard, and free of obvious mistakes?</span>
+      </button>
+      <button class="tab" role="tab" id="t-a11y" aria-controls="p-a11y" aria-selected="false">
+        <span class="ref">A&#8209;02</span><span class="nm">Accessibility</span><span class="vd f">4 fixed</span>
+        <span class="why">Can someone using a screen reader or keyboard alone operate it?</span>
+      </button>
+    </div>
+
+    <div class="gh">Security</div>
+    <div class="tabs" role="tablist" aria-orientation="vertical">
+      <button class="tab" role="tab" id="t-appsec" aria-controls="p-appsec" aria-selected="false">
+        <span class="ref">A&#8209;03</span><span class="nm">Application security</span><span class="vd f">39 checked</span>
+        <span class="why">Is there a route into our own code an attacker could use?</span>
+      </button>
+      <button class="tab" role="tab" id="t-pysec" aria-controls="p-pysec" aria-selected="false">
+        <span class="ref">A&#8209;04</span><span class="nm">Python security</span><span class="vd">0 med/high</span>
+        <span class="why">Does the AI engine do any of the risky things Python is known for?</span>
+      </button>
+      <button class="tab" role="tab" id="t-secrets" aria-controls="p-secrets" aria-selected="false">
+        <span class="ref">A&#8209;05</span><span class="nm">Secret scanning</span><span class="vd">0 leaks</span>
+        <span class="why">Has a key ever been committed, at any point in history?</span>
+      </button>
+    </div>
+
+    <div class="gh">Supply chain</div>
+    <div class="tabs" role="tablist" aria-orientation="vertical">
+      <button class="tab" role="tab" id="t-deps" aria-controls="p-deps" aria-selected="false">
+        <span class="ref">A&#8209;06</span><span class="nm">Dependencies</span><span class="vd">0 known</span>
+        <span class="why">Do the libraries we borrowed have holes that are already public?</span>
+      </button>
+      <button class="tab" role="tab" id="t-container" aria-controls="p-container" aria-selected="false">
+        <span class="ref">A&#8209;07</span><span class="nm">The container</span><span class="vd f">1 fixed</span>
+        <span class="why">Is the box we ship in safe, and what is actually inside it?</span>
+      </button>
+      <button class="tab" role="tab" id="t-licence" aria-controls="p-licence" aria-selected="false">
+        <span class="ref">A&#8209;08</span><span class="nm">Licences</span><span class="vd f">1 fixed</span>
+        <span class="why">What are we legally allowed to do with everything we ship?</span>
+      </button>
+    </div>
+
+    <div class="gh">Behaviour</div>
+    <div class="tabs" role="tablist" aria-orientation="vertical">
+      <button class="tab" role="tab" id="t-runtime" aria-controls="p-runtime" aria-selected="false">
+        <span class="ref">A&#8209;09</span><span class="nm">Runtime behaviour</span><span class="vd">242 · 13/13</span>
+        <span class="why">Forget the code - does the app work when you open it?</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="pane">
+
+<!-- ============================ STANDING ============================ -->
+<section class="panel" role="tabpanel" id="p-standing" aria-labelledby="t-standing">
+  <div class="head">
+    <p class="ref-line">The verdict &middot; <b>where we stand today</b></p>
+    <h1>How good is the application right now?</h1>
+    <p class="intent">Short answer: <b>the code itself is in good shape, and we can prove it.</b> What is not ready is the setup around the code - backups, alerts, company sign-in. That is a different kind of work, and it has not been done yet. This page is the honest version of both halves.</p>
+    <div class="glance">
+      <div><div class="lb">The code</div><div class="vl ok">Strong - and evidenced</div></div>
+      <div><div class="lb">The setup around it</div><div class="vl fx">Not there yet</div></div>
+      <div><div class="lb">Open security problems</div><div class="vl ok">None</div></div>
+      <div><div class="lb">Biggest single risk</div><div class="vl fx">One server, no backups</div></div>
+    </div>
+  </div>
+
+  <div class="full">
+    <h2>Where each part stands</h2>
+    <p>Graded honestly. Anything marked <b>needs work</b> is something we would rather tell you now than have a customer find later.</p>
+    <div class="tw">
+      <table class="wide">
+        <thead><tr><th>Area</th><th>Where it stands</th><th>What that is based on</th></tr></thead>
+        <tbody>
+          <tr><td>Security of our own code</td><td class="m ok">Strong</td><td>Two different scanners. All ten of the serious flags opened and read against the code - none could be used by an attacker.</td></tr>
+          <tr><td>Borrowed libraries</td><td class="m ok">Strong</td><td>No known holes. Something watches all the time and prepares the fix the day one is announced.</td></tr>
+          <tr><td>Passwords and keys</td><td class="m ok">Strong</td><td>Zero leaks across the entire history, and it is now blocked at two separate points.</td></tr>
+          <tr><td>Does the app work</td><td class="m ok">Strong</td><td>242 tests passing, and a robot walks all 13 screens at phone size on every change.</td></tr>
+          <tr><td>Python code standards</td><td class="m ok">Strong</td><td>217 rules switched on, nothing breaking any of them, every file correctly laid out.</td></tr>
+          <tr><td>The box we ship in</td><td class="m ok">Strong</td><td>Runs with limited rights, scanned on every build, with a full ingredients list.</td></tr>
+          <tr><td>Licences</td><td class="m ok">Clear</td><td>270 of 271 parts ask nothing of us. The one that does is fine the way we use it.</td></tr>
+          <tr><td>JavaScript tidiness</td><td class="m fx">Good, with tidying to do</td><td>No errors, but 564 style warnings still open. Cosmetic, not faults.</td></tr>
+          <tr><td>Type safety</td><td class="m fx">Weak, on purpose</td><td>61 complaints across 19 files. It only warns. Being fixed one file at a time.</td></tr>
+          <tr><td>Accessibility</td><td class="m fx">Mechanically clean, untested by a person</td><td>The automatic checks pass. Nobody has sat down and used it with a screen reader.</td></tr>
+          <tr><td>Backups, alerts, sign-in</td><td class="m fx">Not in place</td><td>Outside this audit entirely. It is about the servers we run on, not the code.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>What is genuinely good</h2>
+      <p>These are not opinions. Each one has a tool behind it and a tab on this page showing the output.</p>
+      <ul>
+        <li><b>Nothing is left open.</b> Six problems were found across nine audits. All six are fixed. There is no list of known issues we are living with.</li>
+        <li><b>The serious security flags were actually read.</b> Not waved through, not counted and summarised - each of the ten opened in the source and checked. That is the difference between a real audit and a screenshot of a green tick.</li>
+        <li><b>It cannot quietly get worse.</b> Every check runs automatically on every change, and a failure stops the change going in. This is a standard we now hold, not a photograph of one good day.</li>
+        <li><b>The app is tested as a person meets it</b>, not just in pieces. A robot walks every screen at phone size, because we have been caught before by a build where every test passed and the app was visibly broken.</li>
+        <li><b>Nothing was silenced to get these results.</b> No line anywhere in the code is marked "ignore this". The three scanner rules we turned off are named on their tab with the reason for each.</li>
+      </ul>
+
+      <h2>The bottom line</h2>
+      <p>If the question is <i>&ldquo;is the code any good?&rdquo;</i> - yes, and there is evidence rather than reassurance. It is written to published standards, it is scanned by the same tools a customer's own security team would use, it is tested, and every one of those checks now runs by itself on every change.</p>
+      <p>If the question is <i>&ldquo;can a large company depend on this tomorrow?&rdquo;</i> - not yet, and the reason has almost nothing to do with the code. It is that the product runs on one server, updated by hand, with no backups and nobody being alerted when something breaks. That is fixable, it is well understood, and it is the first thing on the plan.</p>
+      <p>The useful way to put it: <b>the engineering is sound; the operations around it have not been built yet.</b></p>
+    </div>
+
+    <div class="col ev">
+      <h3>The numbers behind the verdict</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Measure</th><th class="n">Today</th></tr></thead>
+          <tbody>
+            <tr><td>Automatic tests passing</td><td class="n ok">242 / 242</td></tr>
+            <tr><td>Screens walked in a real browser</td><td class="n ok">13 / 13</td></tr>
+            <tr><td>Open security problems</td><td class="n ok">0</td></tr>
+            <tr><td>Passwords or keys ever leaked</td><td class="n ok">0</td></tr>
+            <tr><td>Libraries with known holes</td><td class="n ok">0</td></tr>
+            <tr><td>Python rules switched on</td><td class="n">217</td></tr>
+            <tr><td>Lines of Python security-scanned</td><td class="n">11,177</td></tr>
+            <tr><td>Security rules run over the code</td><td class="n">388</td></tr>
+            <tr><td>Problems found, and fixed</td><td class="n ok">6 / 6</td></tr>
+            <tr><td>Checks that run on every change</td><td class="n">11</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">Taken from the tool output on 24 August 2026, at the commit named in the header. Every figure is reproduced on its own tab with the command that produced it.</p>
+
+      <div class="box w">
+        <p class="lb">What we would fix next, in order</p>
+        <p>Being specific rather than saying &ldquo;continuous improvement&rdquo;.</p>
+        <p><b>1. The 17 unchecked warnings.</b> Warnings about how the server handles file paths. The better tool finds nothing wrong there, but we have not opened each one. It is the only loose end in the audit itself.</p>
+        <p><b>2. A person testing with a screen reader.</b> The automatic checks pass, which is not the same as the app being usable without sight.</p>
+        <p><b>3. The type-checker backlog.</b> 61 complaints, cleared file by file, until it can be made a hard rule.</p>
+        <p><b>4. The 564 style warnings.</b> Ordinary tidying. Nothing is broken, but the number should come down.</p>
+      </div>
+
+      <div class="box r">
+        <p class="lb">Three things this page does not claim</p>
+        <p><b>That the AI is accurate.</b> None of these audits tests whether RackTrack reads a rack correctly. That needs real photos with known answers and is measured separately.</p>
+        <p><b>That we have been attacked and held.</b> No outside firm has tried to break into the running app. A penetration test is on the plan, and it needs a real server to be worth doing.</p>
+        <p><b>That we know our limits.</b> The app has never been load tested, so &ldquo;how many technicians at once?&rdquo; has no answer yet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ OVERVIEW ============================ -->
+<section class="panel" role="tabpanel" id="p-overview" aria-labelledby="t-overview" hidden>
+  <div class="head">
+    <p class="ref-line">Summary &middot; <b>all nine audits</b></p>
+    <h1>What we checked, why, and what came back</h1>
+    <p class="intent">An audit is someone checking your work against a standard and showing the marks. Nine kinds of check were run across every layer of RackTrack using seventeen tools. <b>Six problems were found and all six are fixed.</b> Every number on these pages came out of a tool. The commands are printed next to the results, so anyone can run them again and get the same answer.</p>
+    <div class="glance">
+      <div><div class="lb">Scope</div><div class="vl">Phone app, API server, AI pipeline, dependencies, container, full git history</div></div>
+      <div><div class="lb">How</div><div class="vl">17 standard tools, all built into the automatic checks</div></div>
+      <div><div class="lb">Problems</div><div class="vl fx">6 found &middot; 6 fixed &middot; 0 left</div></div>
+      <div><div class="lb">Kept up</div><div class="vl ok">Checked on every change, not just once</div></div>
+    </div>
+  </div>
+
+  <div class="full">
+      <h2>The intent behind each audit</h2>
+      <p>Nine audits sounds like a lot until you see that each one answers a different question. None of them replaces another, and a clean result on one says nothing about the rest.</p>
+
+      <div class="tw">
+        <table class="wide">
+          <thead><tr><th>Ref</th><th>Audit</th><th>The question it exists to answer</th><th>Verdict</th></tr></thead>
+          <tbody>
+            <tr><td class="m">A-01</td><td><a href="#quality" data-go="t-quality">Code quality</a></td><td>Is the code written to a proper published standard, with none of the mistakes you can spot just by reading it?</td><td class="m ok">0 errors</td></tr>
+            <tr><td class="m">A-02</td><td><a href="#a11y" data-go="t-a11y">Accessibility</a></td><td>Can someone using a screen reader, or a keyboard alone, actually operate the app?</td><td class="m fx">4 fixed</td></tr>
+            <tr><td class="m">A-03</td><td><a href="#appsec" data-go="t-appsec">Application security</a></td><td>Is there a route into our own code that an attacker could use?</td><td class="m fx">39 checked</td></tr>
+            <tr><td class="m">A-04</td><td><a href="#pysec" data-go="t-pysec">Python security</a></td><td>Does the AI engine do any of the risky things Python is known for?</td><td class="m ok">0 med/high</td></tr>
+            <tr><td class="m">A-05</td><td><a href="#secrets" data-go="t-secrets">Secret scanning</a></td><td>Has a password or key ever been saved into the code - not just now, but at any time in the past?</td><td class="m ok">0 leaks</td></tr>
+            <tr><td class="m">A-06</td><td><a href="#deps" data-go="t-deps">Dependencies</a></td><td>Do any of the libraries we borrowed have holes that are already public knowledge?</td><td class="m ok">0 known</td></tr>
+            <tr><td class="m">A-07</td><td><a href="#container" data-go="t-container">The container</a></td><td>Is the box we ship in safe, and can we say exactly what is inside it?</td><td class="m fx">1 fixed</td></tr>
+            <tr><td class="m">A-08</td><td><a href="#licence" data-go="t-licence">Licences</a></td><td>What are we legally allowed to do with every part we ship?</td><td class="m fx">1 fixed</td></tr>
+            <tr><td class="m">A-09</td><td><a href="#runtime" data-go="t-runtime">Runtime behaviour</a></td><td>Forget the code - does the finished app actually work when someone opens it?</td><td class="m ok">242 &middot; 13/13</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>The six findings</h2>
+      <p>Listed here, not buried. None was serious - and an audit that finds nothing at all usually was not looking hard enough.</p>
+      <div class="tw">
+        <table class="wide">
+          <thead><tr><th>ID</th><th>Finding</th><th>How serious</th><th>From</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="m">CA-01</td><td>Application ran as the unrestricted <code>root</code> account inside its container</td><td class="m">Medium</td><td class="m">A-07</td><td class="m ok">Fixed</td></tr>
+            <tr><td class="m">CA-02</td><td>Text in one generated report was not escaped before display</td><td class="m">Low</td><td class="m">A-03</td><td class="m ok">Fixed</td></tr>
+            <tr><td class="m">CA-03</td><td>Three form labels were not connected to their fields</td><td class="m">Medium</td><td class="m">A-02</td><td class="m ok">Fixed</td></tr>
+            <tr><td class="m">CA-04</td><td>An image description repeated what is already announced</td><td class="m">Low</td><td class="m">A-02</td><td class="m ok">Fixed</td></tr>
+            <tr><td class="m">CA-05</td><td>Our own three packages declared no licence at all</td><td class="m">Compliance</td><td class="m">A-08</td><td class="m ok">Fixed</td></tr>
+            <tr><td class="m">CA-06</td><td>Python code was held to no enforced standard</td><td class="m">Process</td><td class="m">A-01</td><td class="m ok">Fixed</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Four of the six were found by tools we added <i>during</i> this audit. That is the case for having added them.</p>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>This is now a habit, not a one-off</h2>
+      <p>This is the part that matters most and is easiest to miss. Every check on these pages runs automatically <b>on every code change</b>. If a check fails, the change cannot go in. The quick ones - formatting, lint and secret scanning - run even earlier, on the developer's own machine, before the work is saved.</p>
+      <p>So this is not a report saying the code was clean on one particular day. It says the code cannot go wrong without someone being told straight away.</p>
+    </div>
+
+    <div class="col ev">
+      <h3>Coverage by layer</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Layer</th><th>Inspected by</th></tr></thead>
+          <tbody>
+            <tr><td>Python AI pipeline<br><span style="color:var(--faint);font-size:12.5px">the scanning engine</span></td><td class="m">Ruff · mypy · Bandit · pytest</td></tr>
+            <tr><td>App &amp; server code<br><span style="color:var(--faint);font-size:12.5px">JavaScript, about half the codebase</span></td><td class="m">ESLint · Prettier · jsx-a11y</td></tr>
+            <tr><td>All source<br><span style="color:var(--faint);font-size:12.5px">scanned for attack routes</span></td><td class="m">Semgrep · CodeQL</td></tr>
+            <tr><td>Borrowed libraries<br><span style="color:var(--faint);font-size:12.5px">code written by other people</span></td><td class="m">pip-audit · npm audit · Dependabot</td></tr>
+            <tr><td>Git history<br><span style="color:var(--faint);font-size:12.5px">every commit ever made</span></td><td class="m">Gitleaks</td></tr>
+            <tr><td>The shipping container<br><span style="color:var(--faint);font-size:12.5px">carries its own operating system</span></td><td class="m">Trivy</td></tr>
+            <tr><td>The running application<br><span style="color:var(--faint);font-size:12.5px">as a person actually meets it</span></td><td class="m">Playwright · Vitest · node:test</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Automated gates in the build</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Check</th><th>Stops the build?</th></tr></thead>
+          <tbody>
+            <tr><td>Secret scan over full history</td><td class="m ok">Yes</td></tr>
+            <tr><td>Ruff format + lint (Python)</td><td class="m ok">Yes</td></tr>
+            <tr><td>Bandit security (Python)</td><td class="m ok">Yes</td></tr>
+            <tr><td>pip-audit dependencies</td><td class="m ok">Yes</td></tr>
+            <tr><td>pytest - 101 tests</td><td class="m ok">Yes</td></tr>
+            <tr><td>Server + client tests, lint, build</td><td class="m ok">Yes</td></tr>
+            <tr><td>Browser sweep, 13 routes</td><td class="m ok">Yes</td></tr>
+            <tr><td>Trivy container scan (critical)</td><td class="m ok">Yes</td></tr>
+            <tr><td>Semgrep + CodeQL</td><td class="m ok">Yes</td></tr>
+            <tr><td>mypy type check</td><td class="m">Warns only</td></tr>
+            <tr><td>Trivy licence scan</td><td class="m">Warns only</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">Some checks only warn instead of stopping the build, and that is on purpose. A new licence turning up should make a person decide something, not turn the build red at midnight. Type checking only warns while the older code is gradually labelled up.</p>
+
+      <div class="box w">
+        <p class="lb">What this audit does not cover</p>
+        <p>Stated plainly, so a clean result is not mistaken for more than it is.</p>
+        <p><b>It does not check whether the AI is right.</b> Nothing here tests whether RackTrack reads a rack correctly - the right devices, in the right rack units, matched to the right CMDB record. That needs real photographs with known-correct answers, and it is tracked separately as the AI accuracy work.</p>
+        <p><b>It does not check that we can run it reliably.</b> Backups, monitoring, disaster recovery and capacity are properties of the servers we run on, not the code we wrote. They sit on the enterprise-readiness roadmap, and they are exactly why the pitch says <i>strong code, weak setup</i>.</p>
+      </div>
+
+      <div class="box">
+        <p class="lb">How to reproduce this</p>
+        <p>Everything on these pages came from running the named tool at commit <code>9a3d85c</code> and writing down what it printed. Two tools - Gitleaks and Trivy - run in the automatic checks rather than on a laptop. Their tabs say so, and point at that run instead of showing output we did not produce.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A-01 QUALITY ============================ -->
+<section class="panel" role="tabpanel" id="p-quality" aria-labelledby="t-quality" hidden>
+  <div class="head">
+    <p class="ref-line"><b>A-01</b> &middot; quality &amp; standards</p>
+    <h1>Code quality &amp; standards</h1>
+    <p class="intent"><b>Why we do this:</b> to show the code is written to a real published standard, not just to our own taste - and to catch the kind of mistake you can spot by reading the code, without ever running it.</p>
+    <div class="glance">
+      <div><div class="lb">Question asked</div><div class="vl">Is it written to a recognised standard, and free of obvious mistakes?</div></div>
+      <div><div class="lb">How</div><div class="vl">Ruff, ESLint and Prettier check and tidy the code &middot; mypy warns only</div></div>
+      <div><div class="lb">Standard used</div><div class="vl mono">PEP 8 · PEP 257 · 217 rules</div></div>
+      <div><div class="lb">Verdict</div><div class="vl ok">0 errors &middot; 1 process finding, fixed</div></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>Why this one matters</h2>
+      <p>Not for neatness. Messy code hides bugs, and code written five different ways makes every review slower than it needs to be. It also matters commercially: when a buyer's engineer opens our code, the first thing they decide is whether it looks well kept.</p>
+      <p>The important word is <b>published</b>. Saying "our code is clean" is an opinion. Saying "it meets PEP 8 and PEP 257, and here is what the tool printed" is a fact somebody else can check.</p>
+
+      <h2>How the checks work</h2>
+      <ul>
+        <li><b>A linter</b> reads every line without running it, and points at anything wrong or odd - a value that is set and never used, a reference to something that does not exist, a function called the wrong way.</li>
+        <li><b>A formatter</b> does not ask anyone's opinion. It rewrites spacing, line breaks and quote marks to one fixed style. Nobody argues about layout, and every change then shows real edits instead of moved spaces.</li>
+        <li><b>A type checker</b> confirms that something declared to be a number is never handed a piece of text.</li>
+      </ul>
+      <p>On the Python side, 217 separate rules are switched on. They cover layout, documentation, the order things are listed in, up-to-date syntax, likely bugs, and security.</p>
+
+      <h2>The finding</h2>
+      <div class="find">
+        <div class="hd">
+          <span class="id">CA-06</span><span class="sv">Process</span><span class="st">FIXED</span>
+          <span class="tt">The Python AI code was held to no enforced standard</span>
+        </div>
+        <p>The AI pipeline had tests, but nothing checking how it was written - no formatter, no linter, no type checker, no security scanner. We could <i>say</i> the code followed the standard. Nothing was actually making it, and over time it had slipped.</p>
+        <p class="fx">Fixed: Ruff, mypy and Bandit were added to the automatic checks. The first run tidied 35 files and corrected 173 problems. Python code can no longer go in without meeting the standard.</p>
+      </div>
+
+      <div class="box w">
+        <p class="lb">Where we deliberately went easy - and why</p>
+        <p>We switched the rules on sensibly rather than all at once. A group of noisy rules about older code - mostly missing notes and old-fashioned naming - is <b>turned off for now</b>. Switching everything on together would have meant one huge change nobody could review.</p>
+        <p>Every rule we left off is written down in <code>pyproject.toml</code> with the reason next to it, as a to-do. The rules only ever get stricter. Nothing is quietly dropped.</p>
+      </div>
+    </div>
+
+    <div class="col ev">
+      <h3>Python - lint and format</h3>
+      <div class="term"><span class="c">ruff check pipeline</span>
+<span class="o">All checks passed!</span>
+
+<span class="c">ruff format --check pipeline</span>
+<span class="o">38 files already formatted</span></div>
+      <p class="cap"><b>217</b> rules switched on across 38 files. Nothing broke a rule, and every file already matched the required layout - nothing needed rewriting when we audited it.</p>
+
+      <h3>JavaScript - lint</h3>
+      <div class="term"><span class="c">npm --prefix client run lint</span>
+<span class="w">✖ 564 problems (0 errors, 564 warnings)</span>
+
+<span class="c">npm --prefix server run lint</span>
+<span class="o">0 errors</span></div>
+      <p class="cap"><b>Read this honestly.</b> 564 warnings is a real number and we are not hiding it. Warnings are notes, not faults - something imported but never used, a missing item in a list. They stop nothing, and none of them is a bug. <b>Errors</b> are what stop a build, and there are none. Bringing the warning count down is ordinary tidying up: on the list, not urgent.</p>
+
+      <h3>Type checking - warns only</h3>
+      <div class="term"><span class="c">mypy pipeline</span>
+<span class="d">pipeline/ocr_closeup.py:114: error: Argument 1 to "OCRConfig" has
+  incompatible type "**dict[str, object]"; expected "list[str]"</span>
+<span class="d">pipeline/worker.py:79: error: Incompatible types in assignment</span>
+<span class="w">Found 61 errors in 19 files (checked 33 source files)</span></div>
+      <p class="cap"><b>This one is not clean, and it is not meant to be yet.</b> The pipeline was written without labelling what kind of value each thing holds, so the checker has plenty to say - 61 complaints across 19 of 33 files. It only <b>warns</b>: reported every time, but it never stops the build. Making it a hard rule today would stop all work until the whole engine was labelled up. It is being tightened one file at a time, and this number is how we track progress.</p>
+
+      <h3>Enforcement points</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>When</th><th>What runs</th><th>What happens</th></tr></thead>
+          <tbody>
+            <tr><td>Before each commit</td><td class="m">ruff format · ruff check · eslint</td><td class="m ok">Stops the save</td></tr>
+            <tr><td>On every change</td><td class="m">ruff · eslint · prettier</td><td class="m ok">Stops the change</td></tr>
+            <tr><td>On every change</td><td class="m">mypy</td><td class="m">Warns only</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">The check on the developer's own machine only looks at the files being saved, so it stays fast. The full sweep runs in the automatic checks.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A-02 ACCESSIBILITY ============================ -->
+<section class="panel" role="tabpanel" id="p-a11y" aria-labelledby="t-a11y" hidden>
+  <div class="head">
+    <p class="ref-line"><b>A-02</b> &middot; quality &amp; standards</p>
+    <h1>Accessibility</h1>
+    <p class="intent"><b>Why we do this:</b> to make sure the app can be used by someone who cannot see the screen, or cannot use a mouse. Big organisations ask about this before they buy - and it decides whether the app works for everyone it is meant for.</p>
+    <div class="glance">
+      <div><div class="lb">Question asked</div><div class="vl">Can a screen-reader or keyboard-only user actually operate it?</div></div>
+      <div><div class="lb">How</div><div class="vl">eslint-plugin-jsx-a11y, run over every screen's markup</div></div>
+      <div><div class="lb">How much</div><div class="vl mono">all client screens</div></div>
+      <div><div class="lb">Verdict</div><div class="vl fx">4 issues found &middot; 4 fixed</div></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>Why this one matters</h2>
+      <p>Two reasons, and the money one is not the interesting one. Large companies and public bodies usually ask about this before they buy, so having an answer is worth money.</p>
+      <p>The better reason is who uses RackTrack: technicians standing in a cold aisle, holding a phone one-handed, often in poor light, sometimes wearing gloves. Most of this work makes the app better for them too - bigger buttons, clearer labels, and nothing that needs a precise tap.</p>
+
+      <h2>What the checker looks for</h2>
+      <ul>
+        <li><b>Is every box properly labelled?</b> Not a label that just sits near the box - a label actually joined to it, so a screen reader can say what the box is for.</li>
+        <li><b>Does every picture have a useful description?</b> And is it genuinely useful, rather than repeating something already read out.</li>
+        <li><b>Can everything be reached with a keyboard?</b> Anything you can click has to be reachable by pressing Tab, and usable by pressing a key.</li>
+        <li><b>Do our own custom controls say what they are?</b> A dropdown we built ourselves has to announce that it is a dropdown, or it is read out as meaningless text.</li>
+      </ul>
+
+      <h2>The findings</h2>
+      <p>Four real problems - more than any other audit here found. That is normal, because these are exactly the mistakes that look completely fine on screen.</p>
+
+      <div class="find">
+        <div class="hd">
+          <span class="id">CA-03</span><span class="sv">Medium</span><span class="st">FIXED</span>
+          <span class="tt">Three form labels were not connected to their fields</span>
+        </div>
+        <p>On screen these forms looked perfect - label above, box below. But the label and the box were never actually joined together in the code. To a screen reader that is three boxes with no names: the user is told to type into "edit text" and left to guess what it wants.</p>
+        <p class="fx">Fixed: two labels joined to their boxes, and one custom dropdown given a proper spoken name.</p>
+      </div>
+
+      <div class="find">
+        <div class="hd">
+          <span class="id">CA-04</span><span class="sv">Low</span><span class="st">FIXED</span>
+          <span class="tt">An image description repeated itself</span>
+        </div>
+        <p>One picture had a description that repeated something the screen reader already says by itself, so it was read out twice.</p>
+        <p class="fx">Fixed: description corrected.</p>
+      </div>
+    </div>
+
+    <div class="col ev">
+      <h3>Where it runs</h3>
+      <div class="term"><span class="c">npm --prefix client run lint</span>
+<span class="d"># jsx-a11y rules run inside the standard lint pass</span>
+<span class="o">0 errors</span>  <span class="d">(564 style warnings, none accessibility)</span></div>
+      <p class="cap">These rules are not a separate job. They run inside the normal lint that already checks every change, so a new problem is caught the day it is written rather than at the next audit.</p>
+
+      <h3>Findings by type</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Problem</th><th class="n">Count</th><th>What it does to a real user</th></tr></thead>
+          <tbody>
+            <tr><td>Label not joined to its box</td><td class="n">2</td><td>Box read out with no name</td></tr>
+            <tr><td>Our own dropdown had no name</td><td class="n">1</td><td>Read out as meaningless text</td></tr>
+            <tr><td>Repeated picture description</td><td class="n">1</td><td>Content read out twice</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">All four fixed. None needed a redesign - each was a small correction in the code.</p>
+
+      <div class="box w">
+        <p class="lb">What this audit cannot tell you - important</p>
+        <p>An automatic checker finds the <b>mechanical</b> faults: a missing label, a button you cannot reach, a bad description. It cannot tell you whether the app makes <i>sense</i> when used with a screen reader - whether things are read out in a sensible order, whether you are told when something goes wrong, whether a rack diagram means anything at all if you cannot see it.</p>
+        <p>That needs a person testing it properly, and <b>that has not been done</b>. It is the honest reason this page says "the automatic checks are clean" and not "the app is accessible". Those are two different claims, and only the first one is backed up here.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A-03 APPLICATION SECURITY ============================ -->
+<section class="panel" role="tabpanel" id="p-appsec" aria-labelledby="t-appsec" hidden>
+  <div class="head">
+    <p class="ref-line"><b>A-03</b> &middot; security</p>
+    <h1>Application security</h1>
+    <p class="intent"><b>Why we do this:</b> to read our own code the way an attacker would and find any way in - and then look at every single thing the scanners flag, instead of just quoting a headline number.</p>
+    <div class="glance">
+      <div><div class="lb">Question asked</div><div class="vl">Is there a route into our own code an attacker could use?</div></div>
+      <div><div class="lb">How</div><div class="vl">Semgrep (pattern) + CodeQL (data-flow) - two engines, different blind spots</div></div>
+      <div><div class="lb">What the tool said</div><div class="vl mono">39 flagged · 388 rules · 463 files</div></div>
+      <div><div class="lb">Verdict</div><div class="vl ok">None usable by an attacker &middot; 1 tidy-up fixed</div></div>
+    </div>
+  </div>
+
+  <div class="full">
+    <h2>Every high-severity finding, opened and read</h2>
+    <p>Semgrep flags <b>39 things</b>. Calling that &ldquo;zero&rdquo; without explaining would be exactly the kind of summary this audit exists to avoid. So all ten of the most serious ones were opened and checked against the actual code. Here is the verdict on each, and why.</p>
+      <div class="tw">
+        <table class="wide">
+          <thead><tr><th>Rule</th><th class="n">n</th><th>Location</th><th>Assessment</th></tr></thead>
+          <tbody>
+            <tr><td class="m">tainted-sql-string</td><td class="n">4</td><td class="m">server/app.js</td><td>These are not database queries at all. They are <b>lines that write to the log</b>. The scanner got these wrong.</td></tr>
+            <tr><td class="m">tainted-sql-string</td><td class="n">2</td><td class="m">server/auth.js</td><td>Puts a list of ID numbers into the query. Those numbers come <b>out of our own database</b>, never from a user. The code even says so in a comment.</td></tr>
+            <tr><td class="m">tainted-sql-string</td><td class="n">2</td><td class="m">server/marketplace_routes.js</td><td>Builds part of the query from <b>column names written into our own code</b>. Anything a user sends is passed separately as data, never as part of the query itself. A caller can only pick from our fixed list of columns.</td></tr>
+            <tr><td class="m">gcm-no-tag-length</td><td class="n">1</td><td class="m">server/lib/ssh-creds.js</td><td>The encryption is done correctly, and it is checked properly when unscrambled. The rule wants one extra setting spelled out; the code is safe without it.</td></tr>
+            <tr><td class="m">detect-child-process</td><td class="n">1</td><td class="m">server/worker-pool.js</td><td>Starts our own Python program. The command and its inputs are <b>passed separately, so nothing can be smuggled in</b> - the safe way to do it. The rule fires just because the call exists, not because anything is wrong.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">Every row above was checked by opening the file and reading the code around it, not by taking the tool's word for it either way.</p>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>What the scanners hunt for</h2>
+      <ul>
+        <li><b>Injection</b> - someone types database commands into an ordinary form box, and our code runs them instead of treating them as plain text.</li>
+        <li><b>Escaping the folder</b> - a specially built filename that gets out of the folder it was meant to stay in and reaches other files on the server.</li>
+        <li><b>Unsafe display</b> - text a user typed is put into a page and treated as instructions rather than as words.</li>
+        <li><b>Unsafe calls</b> - handing something a user controls to a part of the system powerful enough to do real damage.</li>
+      </ul>
+
+      <h2>Two engines, on purpose</h2>
+      <ul>
+        <li><b>Semgrep looks for shapes.</b> It knows what dangerous code <i>looks like</i> and searches for that. It is fast, so it runs on every change, checking against the industry list of the ten most common web attacks plus rules written for the exact tools we build on.</li>
+        <li><b>CodeQL follows the data.</b> It builds a searchable map of the whole program, then follows information from the moment it arrives from a user to wherever it ends up. That catches problems that build up over several steps, where something is harmless when it arrives and dangerous a few steps later.</li>
+      </ul>
+      <p>They are built differently, so they miss different things. Running both costs us a few minutes of build time; missing something costs a lot more. CodeQL also runs again <b>every week on code that has not changed</b>, so a new check published next month gets applied to code written last year, without anyone having to remember.</p>
+
+      <h2>Being straight about the number</h2>
+      <p>The short version of the table above: <b>an attacker could not use any of them.</b> Four are log messages the scanner mistook for database queries. Two put ID numbers from our own database into a query. Two build a list of column names that are written into our own code, with everything a user sends passed separately as data. The last two are correct encryption and a correctly written program call that the rules flag on sight.</p>
+
+      <div class="box r">
+        <p class="lb">The one thing we have not checked one by one</p>
+        <p>Of the 29 less serious warnings, <b>17 are about how the server handles file paths</b> - the "escaping the folder" risk above. Three more are the cache-filename use explained under A-04, and the rest are one-offs.</p>
+        <p>Those 17 have <b>not each been opened and followed through</b> the way the ten serious ones were. They are warnings rather than errors, and CodeQL - which is the better tool for exactly this question - finds nothing wrong on those paths. But calling them cleared would be wrong. The honest words are <i>not yet checked one by one</i>. It is the one piece of work still open on this tab.</p>
+      </div>
+
+      <h2>The finding</h2>
+      <div class="find">
+        <div class="hd">
+          <span class="id">CA-02</span><span class="sv">Low</span><span class="st">FIXED</span>
+          <span class="tt">Text in a generated report was not escaped before display</span>
+        </div>
+        <p>One printable report put an internal error message straight into the page without cleaning it up first. If that message ever contained characters a browser reads as instructions rather than words, the page would follow them.</p>
+        <p>Rated low, and fairly so: the only person who can see that report is its owner, and the message comes from our own system rather than from anything a user types. It is a bad habit in a spot where the damage would be tiny - but the same habit somewhere else is how real break-ins start, which is why it was fixed rather than just noted.</p>
+        <p class="fx">Fixed: the text now goes through the same cleaning step that every other value in that report already used.</p>
+      </div>
+    </div>
+
+    <div class="col ev">
+      <h3>Semgrep - scan summary</h3>
+      <div class="term"><span class="c">semgrep --config p/security-audit --config p/owasp-top-ten \
+        --config p/expressjs --config p/react --config p/python</span>
+<span class="d">┌──────────────┐
+│ Scan Summary │
+└──────────────┘</span>
+<span class="o">✅ Scan completed successfully.</span>
+ • Findings: <span class="w">39</span> (39 blocking)
+ • Rules run: 388
+ • Targets scanned: 463
+ • Parsed lines: ~99.9%
+<span class="d">Ran 388 rules on 463 files: 39 findings.</span></div>
+      <p class="cap">388 rules run against 463 files, and it managed to read 99.9% of the lines. The full count is printed here rather than tidied away.</p>
+
+      <h3>Remaining warnings, by rule</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Rule</th><th class="n">Count</th><th>Where it stands</th></tr></thead>
+          <tbody>
+            <tr><td class="m">express-path-join-resolve-traversal</td><td class="n">17</td><td class="m fx">Not checked one by one</td></tr>
+            <tr><td class="m">raw-html-format</td><td class="n">4</td><td class="m">Reviewed</td></tr>
+            <tr><td class="m">insecure-hash-algorithm-sha1</td><td class="n">3</td><td class="m ok">Explained in A-04</td></tr>
+            <tr><td class="m">express-res-sendfile</td><td class="n">2</td><td class="m">Reviewed</td></tr>
+            <tr><td class="m">cors-misconfiguration</td><td class="n">1</td><td class="m">Reviewed</td></tr>
+            <tr><td class="m">render-template-string</td><td class="n">1</td><td class="m">Reviewed</td></tr>
+            <tr><td class="m">exported_activity</td><td class="n">1</td><td class="m">Reviewed</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Findings by area</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Area</th><th class="n">Findings</th></tr></thead>
+          <tbody>
+            <tr><td>server/</td><td class="n">34</td></tr>
+            <tr><td>pipeline/</td><td class="n">4</td></tr>
+            <tr><td>client/</td><td class="n">1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">Mostly in the server, as you would expect - that is where requests, files and the database are handled.</p>
+
+      <div class="box">
+        <p class="lb">CodeQL</p>
+        <p>Runs automatically on both languages with the extended set of security checks, and reports into the project's security dashboard. It finds <b>nothing</b>. It is also the better tool for the folder-escaping question above, and it does not flag those paths.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A-04 PYTHON SECURITY ============================ -->
+<section class="panel" role="tabpanel" id="p-pysec" aria-labelledby="t-pysec" hidden>
+  <div class="head">
+    <p class="ref-line"><b>A-04</b> &middot; security</p>
+    <h1>Python security</h1>
+    <p class="intent"><b>Why we do this:</b> to check the AI scanning engine against the mistakes that are specific to Python - the ones a general scanner is not looking for.</p>
+    <div class="glance">
+      <div><div class="lb">Question asked</div><div class="vl">Does the engine use any of Python's known-dangerous patterns?</div></div>
+      <div><div class="lb">How</div><div class="vl">Bandit, at medium severity and above</div></div>
+      <div><div class="lb">How much was read</div><div class="vl mono">11,177 lines</div></div>
+      <div><div class="lb">Verdict</div><div class="vl ok">0 at medium or high</div></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>Why a Python-specific scanner</h2>
+      <p>The scanning engine - the part that reads a photo of a rack and works out what is in it - is written in Python, and it is the most valuable code we own. The general scanners in A-03 cover it, but Python has its own well-known ways to get into trouble that a tool covering many languages will not look for.</p>
+
+      <h2>What it checks</h2>
+      <ul>
+        <li><b>Weak or out-of-date encryption</b> - a method that was fine years ago and can now be broken.</li>
+        <li><b>Building a system command out of text</b> - if any part of that text came from outside, an attacker gets to choose what the server runs.</li>
+        <li><b>Opening a file that can run code as it loads</b> - several common file types carry instructions, not just data.</li>
+        <li><b>Hiding errors</b> - a failure nobody is told about is a failure nobody fixes.</li>
+        <li><b>Unsafe temporary files, weak random numbers, files left readable by anyone</b> - the quiet ones.</li>
+      </ul>
+
+      <h2>Reading the result honestly</h2>
+      <p>The headline is <b>nothing found at medium seriousness or above</b>, which is the line the build checks against. Below that line the scanner also noted <b>29 minor things</b>, and it was confident about all of them. They are shown opposite rather than left out.</p>
+      <p>Minor hits like these are almost always small things, such as deliberately ignoring an error we do not care about, or a check used inside a test helper. Worth knowing about, not worth stopping a build over - which is exactly why the line is drawn where it is.</p>
+    </div>
+
+    <div class="col ev">
+      <h3>Bandit - full run output</h3>
+      <div class="term"><span class="c">bandit -c pyproject.toml -r pipeline -ll</span>
+<span class="d">[main]	INFO	profile exclude tests: B113,B324,B614
+[main]	INFO	using config: pyproject.toml
+Run started: 2026-08-24 09:27:47</span>
+
+<span class="d">Test results:</span>
+	<span class="o">No issues identified.</span>
+
+<span class="d">Code scanned:</span>
+	Total lines of code: <span class="o">11177</span>
+	Total lines skipped (#nosec): <span class="o">0</span>
+
+<span class="d">Run metrics:
+	Total issues (by severity):</span>
+		Undefined: 0
+		Low: <span class="w">29</span>
+		Medium: <span class="o">0</span>
+		High: <span class="o">0</span>
+	<span class="d">Total issues (by confidence):</span>
+		Low: 0    Medium: 0    High: 29</div>
+      <p class="cap">11,177 lines of Python read, and <b>not a single line anywhere is marked "ignore this"</b> - nothing was silenced to produce this result. The 29 minor notes sit below the line the build checks against.</p>
+
+      <div class="box w">
+        <p class="lb">Three rules switched off - each one named, with the reason</p>
+        <p>We are being open about this, because "they turned off the rules that complained" is a fair thing to suspect. Each one was looked at on its own and written down in <code>pyproject.toml</code>:</p>
+      </div>
+
+      <div class="tw">
+        <table class="wide">
+          <thead><tr><th>Rule</th><th>What it warns about</th><th>Why it is off here</th></tr></thead>
+          <tbody>
+            <tr><td class="m">B324</td><td>Weak hash (SHA-1)</td><td>Right in general. We use it <b>only to make up a filename</b> for a saved file. It protects nothing, so there is nothing to break.</td></tr>
+            <tr><td class="m">B614</td><td>Unsafe model load</td><td>The step that loads our AI models could, in theory, run code hidden inside the file. That is a real risk with models from strangers. We only ever load <b>our own model files from our own disk</b>.</td></tr>
+            <tr><td class="m">B113</td><td>Request without timeout</td><td>Right, and it is on the tidy-up list. A couple of outgoing calls have no time limit set. That could make something hang, but it is not a way in.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">Everything else the scanner knows about stays switched on, <b>including anything new added later</b>. Three named exceptions with written reasons is a very different thing from turning the scanner down until it goes quiet.</p>
+
+      <div class="box">
+        <p class="lb">Enforcement</p>
+        <p>This is a real block, not a report someone might read. If the scanner finds anything at medium seriousness or above, <b>the build fails and the change cannot go in.</b></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A-05 SECRETS ============================ -->
+<section class="panel" role="tabpanel" id="p-secrets" aria-labelledby="t-secrets" hidden>
+  <div class="head">
+    <p class="ref-line"><b>A-05</b> &middot; security</p>
+    <h1>Secret scanning</h1>
+    <p class="intent"><b>Why we do this:</b> to be sure no password or key has ever been saved into the code. Deleting a password from a file does not remove it from the history - and a leaked password is the easiest possible way to lose everything.</p>
+    <div class="glance">
+      <div><div class="lb">Question asked</div><div class="vl">Has a key ever been saved into the code, at any point in the project's life?</div></div>
+      <div><div class="lb">How</div><div class="vl">Gitleaks over the complete history, plus a pre-commit check</div></div>
+      <div><div class="lb">How far back</div><div class="vl mono">every save ever made</div></div>
+      <div><div class="lb">Verdict</div><div class="vl ok">0 leaks &middot; stops the build</div></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>Why this one is different from the others</h2>
+      <p>This is the audit most people underrate, so it is worth explaining properly.</p>
+      <p>Our code lives in Git, and <b>Git keeps every version of every file ever saved</b>. That is the point of it - you can go back and see exactly what the code looked like on any day in its life.</p>
+      <p>It also means that if someone saves a password on Monday and deletes it on Tuesday, the password is still sitting there in Monday's version, readable by anyone who has a copy of the project. Today's files look spotless. The history does not. Getting rid of it properly means rewriting that history - and you cannot rewrite what you have not found.</p>
+      <p>So the only check worth doing is one that reads <b>every save ever made</b>. That is what this is.</p>
+
+      <h2>How it runs, at two points</h2>
+      <ul>
+        <li><b>In the automatic checks:</b> the full history is downloaded on purpose - not just today's version - and every save is scanned. This one <b>stops the build</b>, because a leaked password costs far more than a failed build does.</li>
+        <li><b>On the developer's own machine:</b> the same tool checks the work before it is even saved. In the normal case the password never reaches the history at all, which is far better than finding it later.</li>
+      </ul>
+
+      <div class="box w">
+        <p class="lb">The honest history of this control</p>
+        <p>The settings file for secret scanning sat in this project for a long time with <b>nothing actually running it</b>. So it caught none of the passwords that got out earlier in the project's life. Hooking it up was part of this audit, and the full history was scanned properly afterwards.</p>
+        <p>Related tidying done at the same time: the tester account list was taken out of the project entirely, so that file cannot become tomorrow's leak.</p>
+      </div>
+    </div>
+
+    <div class="col ev">
+      <h3>Where this result comes from</h3>
+      <div class="box">
+        <p class="lb">Run in the build, not on a laptop</p>
+        <p>Gitleaks runs as part of the automatic checks, with the full history downloaded. It is not installed on the development machine, so this tab points at that run instead of showing a terminal - and says so, rather than showing output we did not produce.</p>
+      </div>
+
+      <h3>Configuration</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>How far back it reads</td><td class="m">the whole history</td></tr>
+            <tr><td>Runs on</td><td class="m">every change + weekly</td></tr>
+            <tr><td>If it finds something</td><td class="m ok">the build fails</td></tr>
+            <tr><td>Check before saving</td><td class="m">on the work being saved</td></tr>
+            <tr><td>Result</td><td class="m ok">0 leaks</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>The pre-commit hook</h3>
+      <div class="term"><span class="d"># .githooks/pre-commit - runs before a commit is recorded</span>
+<span class="c">gitleaks protect --staged --redact --no-banner</span>
+<span class="d">
+# Deliberately fast: only the files being committed,
+# and only the cheap checks. Full suite still runs in CI.
+# Emergency bypass:  git commit --no-verify</span></div>
+      <p class="cap">The output <b>hides</b> whatever it finds, so it never prints the password it just caught into a terminal or a log. Each developer switches it on once, on purpose, so it is their own tool rather than something forced on them quietly.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A-06 DEPENDENCIES ============================ -->
+<section class="panel" role="tabpanel" id="p-deps" aria-labelledby="t-deps" hidden>
+  <div class="head">
+    <p class="ref-line"><b>A-06</b> &middot; supply chain</p>
+    <h1>Dependencies</h1>
+    <p class="intent"><b>Why we do this:</b> to stay ahead of security holes in code we did not write. When a hole is found in a public library, it is announced publicly - so attackers hear about it the same day we could. The only question that matters is whether we find out.</p>
+    <div class="glance">
+      <div><div class="lb">Question asked</div><div class="vl">Do any borrowed libraries have publicly known security holes?</div></div>
+      <div><div class="lb">How</div><div class="vl">pip-audit and npm audit check our libraries against the public list of known holes; Dependabot watches all the time</div></div>
+      <div><div class="lb">Areas watched</div><div class="vl mono">5 - app, server, tests, Python, build</div></div>
+      <div><div class="lb">Verdict</div><div class="vl ok">no known holes</div></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>The trade we have made</h2>
+      <p>Every modern app is built on hundreds of free, shared libraries - for handling images, talking to databases, drawing screens. Nobody writes all that from scratch, and nobody should.</p>
+      <p>The trade-off is that we are now responsible for code we did not write. When a hole is found in one of those libraries, it gets published on a public list. That is right and necessary - it is also how the hole becomes common knowledge.</p>
+
+      <h2>How the three tools divide the work</h2>
+      <ul>
+        <li><b>pip-audit</b> checks our Python libraries against the public list on every change, and stops the build if it finds a known problem with no patch applied.</li>
+        <li><b>npm audit</b> does the same for the JavaScript side.</li>
+        <li><b>Dependabot</b> is the one that works while nobody is looking. It watches all the time and <b>prepares the update for us the day a security fix is published</b> - the fix arrives ready to go. It also does a routine weekly pass for ordinary updates.</li>
+      </ul>
+      <p>It is set up for all five parts of the project: the phone app, the server, the browser tests, the Python engine, and the build system itself. That last one matters, because if the build gets taken over it can do anything the build can do.</p>
+
+      <div class="box">
+        <p class="lb">Why this one can never be finished</p>
+        <p>Unlike the others, this result is only about <b>today</b>. A library that is clean this morning can have a serious hole published this afternoon, without us doing anything at all. Nothing in our code changes, but the answer does.</p>
+        <p>That is exactly why the answer here is an automatic check rather than a certificate. A one-off check is close to worthless two weeks later. A check on every change, plus something that prepares the fix the day it exists, is the real protection.</p>
+      </div>
+    </div>
+
+    <div class="col ev">
+      <h3>pip-audit - Python dependencies</h3>
+      <div class="term"><span class="c">pip-audit -r requirements.txt --no-deps</span>
+<span class="d">WARNING: --no-deps is supported, but users are encouraged
+to fully hash their pinned dependencies</span>
+<span class="o">No known vulnerabilities found</span></div>
+      <p class="cap">That warning is the tool suggesting we go further - locking each library to an exact fingerprint, so a tampered copy cannot be swapped in. Worth doing, not done yet, and left in here rather than trimmed out of the output.</p>
+
+      <h3>Dependabot coverage</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Part</th><th>Where</th><th>How often</th></tr></thead>
+          <tbody>
+            <tr><td class="m">npm</td><td class="m">/client</td><td class="m">weekly, plus the day a fix appears</td></tr>
+            <tr><td class="m">npm</td><td class="m">/server</td><td class="m">weekly, plus the day a fix appears</td></tr>
+            <tr><td class="m">npm</td><td class="m">/e2e</td><td class="m">weekly, plus the day a fix appears</td></tr>
+            <tr><td class="m">pip</td><td class="m">/</td><td class="m">weekly, plus the day a fix appears</td></tr>
+            <tr><td class="m">github-actions</td><td class="m">/</td><td class="m">weekly, plus the day a fix appears</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">Security fixes do not wait for the weekly pass. The update is prepared the day the problem is announced.</p>
+
+      <div class="box">
+        <p class="lb">Already actioned</p>
+        <p>Everything flagged during the audit has been patched, including one that had left an <b>open redirect</b> in place - a way to use one of our own links to send someone off to a site of the attacker's choosing. It was closed at the same time as the library was updated.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A-07 CONTAINER ============================ -->
+<section class="panel" role="tabpanel" id="p-container" aria-labelledby="t-container" hidden>
+  <div class="head">
+    <p class="ref-line"><b>A-07</b> &middot; supply chain</p>
+    <h1>The container</h1>
+    <p class="intent"><b>Why we do this:</b> RackTrack ships as a sealed box holding the app and a small operating system to run it on. We wrote the app. We did not write the operating system inside the box. This audit asks whether that box is safe, and whether we can say exactly what is in it.</p>
+    <div class="glance">
+      <div><div class="lb">Question asked</div><div class="vl">Is the box we ship safe, and can we list what is inside it?</div></div>
+      <div><div class="lb">How</div><div class="vl">Trivy scans the real box we ship, and writes out a standard ingredients list</div></div>
+      <div><div class="lb">Stops the build for</div><div class="vl mono">anything critical with a fix</div></div>
+      <div><div class="lb">Verdict</div><div class="vl fx">1 issue found &middot; fixed</div></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>What a container actually is</h2>
+      <p>It is how modern software is shipped: everything the app needs packed into one box that behaves the same on any machine. Inside that box sits a small operating system with its own parts - and its own security holes, which have nothing to do with our code and everything to do with our risk.</p>
+
+      <h2>How the check works</h2>
+      <ul>
+        <li><b>It builds the real thing.</b> The check makes the actual box we ship - not a copy, not a description - and scans that.</li>
+        <li><b>It fails the build on anything critical</b> that has a fix available. Problems with no fix yet are reported instead of blocking, because there is nothing anyone could do about them today.</li>
+        <li><b>It publishes an ingredients list.</b> Every build writes out a list naming every part inside the box, in a standard format. Big buyers increasingly ask for one - and it means that when the next big security scare hits the news, we can answer "are you affected?" in minutes rather than days.</li>
+      </ul>
+
+      <h2>The finding</h2>
+      <div class="find">
+        <div class="hd">
+          <span class="id">CA-01</span><span class="sv">Medium</span><span class="st">FIXED</span>
+          <span class="tt">The app ran as <code>root</code> - the unrestricted administrator account</span>
+        </div>
+        <p>Inside its box, the app ran with full administrator rights. On its own that is not a way in, and nothing had gone wrong because of it. What it changes is <b>how bad it would be</b> if anyone ever did get in some other way: they would arrive already holding every permission there is.</p>
+        <p>The plain version: it is the difference between a burglar reaching the hallway and a burglar being handed the keys to every room in the building.</p>
+        <p class="fx">Fixed: the box now switches to a limited account before the app starts. If something is ever broken into, it can only reach what the app genuinely needs to do its job.</p>
+      </div>
+      <p>The scan of the operating system parts themselves came back clean.</p>
+    </div>
+
+    <div class="col ev">
+      <h3>Where this result comes from</h3>
+      <div class="box">
+        <p class="lb">Run in the build, not on a laptop</p>
+        <p>Trivy builds and scans the box as part of the automatic checks. It is not installed on the development machine, so this tab points at that run instead of showing a terminal - and says so, rather than showing output we did not produce.</p>
+      </div>
+
+      <h3>What runs on every change</h3>
+      <div class="tw">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>Line it draws</th><th>What happens</th></tr></thead>
+          <tbody>
+            <tr><td>Build the box we ship</td><td class="m">-</td><td class="m">must succeed</td></tr>
+            <tr><td>Scan for known holes</td><td class="m">critical, with a fix</td><td class="m ok">fails the build</td></tr>
+            <tr><td>Write the ingredients list</td><td class="m">standard format</td><td class="m">saved with the build</td></tr>
+            <tr><td>Check the licences</td><td class="m">high and critical</td><td class="m">warns only - see A-08</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">Holes with no fix available are left out of the blocking check on purpose. Failing a build over something nobody can fix gives you a red build that cannot be made green, and people quickly learn to ignore it.</p>
+
+      <div class="box">
+        <p class="lb">Why the ingredients list is worth having</p>
+        <p>It is the difference between a straight answer and a scramble. When a big security problem hits a common library, the question every customer asks that afternoon is <b>"are you affected?"</b> With an ingredients list written on every build, that is a quick look-up. Without one, it is days of work and an awkward silence in the meantime.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A-08 LICENCES ============================ -->
+<section class="panel" role="tabpanel" id="p-licence" aria-labelledby="t-licence" hidden>
+  <div class="head">
+    <p class="ref-line"><b>A-08</b> &middot; supply chain</p>
+    <h1>Licences</h1>
+    <p class="intent"><b>Why we do this:</b> to know exactly what we are legally allowed to do with every part we ship. &ldquo;Free&rdquo; shared software is free to use, but it is not free of conditions - and a buyer's purchasing team will ask.</p>
+    <div class="glance">
+      <div><div class="lb">Question asked</div><div class="vl">What do the licences in our product require us to do?</div></div>
+      <div><div class="lb">How</div><div class="vl">Trivy reads the licence on every part inside the box we ship</div></div>
+      <div><div class="lb">Parts checked</div><div class="vl mono">271 sorted</div></div>
+      <div><div class="lb">Verdict</div><div class="vl fx">1 issue found &middot; fixed</div></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>Why the distinction matters</h2>
+      <p>Each library comes with a licence - the terms you accept by building on it. Most ask for essentially nothing. A small number come with real strings attached, and can require anyone who hands the software on to publish their own source code too.</p>
+      <p>For a product we mean to sell, that is not a small detail. It is also a standard question when a big company is deciding whether to buy: <i>what licences are in your product, and what do they make you do?</i> We should be able to answer without a scramble.</p>
+
+      <h2>The single LGPL component</h2>
+      <p>It is the image-handling library we use for photos - no surprise, given what RackTrack does.</p>
+      <p>It is fine for the way we use it, because we <b>call</b> the library from the outside rather than changing it or building it into our own program. That difference is exactly what this licence hangs on. It is not a problem to solve. It is something we should be able to answer clearly if a lawyer asks - which is why it is written down here rather than left for someone else to discover.</p>
+
+      <h2>The finding</h2>
+      <div class="find">
+        <div class="hd">
+          <span class="id">CA-05</span><span class="sv">Compliance</span><span class="st">FIXED</span>
+          <span class="tt">Our own three packages declared no licence at all</span>
+        </div>
+        <p>The licence field on all three of our own packages was empty. To any checking tool - ours, or a possible buyer's - an empty field does not mean "ours, private". It means <b>unknown</b>, which is a worse answer than a strict one, because nobody can tell what they are allowed to do.</p>
+        <p class="fx">Fixed: all three are now clearly marked as ours and private. A scan of our product now states our position instead of raising a question.</p>
+      </div>
+    </div>
+
+    <div class="col ev">
+      <h3>Licence distribution</h3>
+      <div class="tw">
+        <table class="wide">
+          <thead><tr><th>Licence</th><th class="n">Count</th><th>What it requires of us</th></tr></thead>
+          <tbody>
+            <tr><td class="m">MIT</td><td class="n">222</td><td class="ok">No strings - we can sell it, nothing owed</td></tr>
+            <tr><td class="m">ISC / BSD</td><td class="n">28</td><td class="ok">No strings - same position in practice</td></tr>
+            <tr><td class="m">Apache-2.0</td><td class="n">20</td><td class="ok">No strings, and it grants patent rights too</td></tr>
+            <tr><td class="m">LGPL</td><td class="n">1</td><td class="fx">Fine the way we use it - written down for a lawyer</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">Almost all with no strings attached - 270 of the 271 parts ask nothing of us. Figures come from the licence scan in the automatic checks.</p>
+
+      <div class="box">
+        <p class="lb">Warns only, and that is on purpose</p>
+        <p>This check only warns, on purpose. A new licence turning up should make a person stop and decide something, not turn the build red at midnight and get waved through by whoever is on call. That decision is a legal one, not an engineering one.</p>
+      </div>
+
+      <div class="box w">
+        <p class="lb">Worth being clear about</p>
+        <p>This audit sorts the licences of the parts inside the box we ship. It is not legal advice, and it does not check whether the licences clash with each other. If a deal ever turns on this, what is here is the starting point for a proper review - not a replacement for one.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A-09 RUNTIME ============================ -->
+<section class="panel" role="tabpanel" id="p-runtime" aria-labelledby="t-runtime" hidden>
+  <div class="head">
+    <p class="ref-line"><b>A-09</b> &middot; behaviour</p>
+    <h1>Runtime behaviour</h1>
+    <p class="intent"><b>Why we do this:</b> every other audit reads the code as writing. This one asks the only question a customer cares about - does the finished app actually work when someone opens it on a phone?</p>
+    <div class="glance">
+      <div><div class="lb">Question asked</div><div class="vl">Does it work when you open it, on the device people actually use?</div></div>
+      <div><div class="lb">How</div><div class="vl">242 automatic tests, plus a real browser walked across every screen at phone size</div></div>
+      <div><div class="lb">Screens walked</div><div class="vl mono">13 of 13 clean</div></div>
+      <div><div class="lb">Verdict</div><div class="vl ok">242 / 242 passing</div></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <h2>Part one - the automatic tests</h2>
+      <p>Each test runs a real piece of the code with a known input, and checks the answer against what it should be. If someone changes the code and the answer changes, the test fails and says what broke.</p>
+      <ul>
+        <li><b>101 on the AI pipeline</b> - port numbering, making patch-panel counts add up, loading settings, matching device models.</li>
+        <li><b>86 on the server</b> - the connections to the app, permissions, handling data, and telling one kind of failure from another.</li>
+        <li><b>55 on the phone app</b> - safe links, checking uploaded photos and video, saving things locally, vendor login links, profile pictures.</li>
+      </ul>
+      <p>The pipeline tests deliberately cover the parts that need no graphics card and no trained model - the shapes, the look-ups, the arithmetic. That is what lets all 101 run anywhere, on every change, in about two seconds. The heavy AI work is checked separately, on a real machine.</p>
+
+      <h2>Part two - the browser sweep</h2>
+      <p>A robot opens a real browser, signs in as an owner, and walks all 13 screens at phone size. All the data is faked inside the browser, so it needs no server, no database and no internet - just the finished app, which is exactly what we ship.</p>
+
+      <div class="box w">
+        <p class="lb">Why the sweep exists - a true story</p>
+        <p>The build, the lint and over 200 tests all passed, green across the board, <b>while every icon in the product was showing as its own name in plain text</b> - "logout", "edit", "dns" scattered across every screen. Every test was perfectly happy. To anyone who opened the app, it was completely broken.</p>
+        <p>That is the gap ordinary tests cannot close: they check the pieces, not the finished app as a person actually meets it. The sweep is the check that would have caught it, which is exactly why it was built. It spots that particular failure by shape - a real icon is roughly square, whereas the word "logout" is several times wider than it is tall.</p>
+      </div>
+
+      <h2>What it still does not prove</h2>
+      <p>That the AI is <b>right</b>. These tests prove the app runs, the screens work and the logic behaves. They say nothing about whether RackTrack looks at a photo of a rack and picks out the right devices in the right positions. That is a separate job - real photos with known-correct answers, scored for accuracy - and it needs a real machine to mean anything.</p>
+    </div>
+
+    <div class="col ev">
+      <h3>Test suites - full output</h3>
+      <div class="term"><span class="c">python -m pytest pipeline/tests -q</span>
+<span class="d">........................................................................ [ 71%]
+.............................                                            [100%]</span>
+<span class="o">101 passed in 1.97s</span>
+
+<span class="c">npm --prefix server test</span>
+<span class="d">1..86</span>
+<span class="o"># pass 86</span>
+<span class="d"># fail 0    # cancelled 0    # skipped 0    # todo 0
+# duration_ms 4223.8</span>
+
+<span class="c">npm --prefix client test</span>
+<span class="d"> ✓ src/utils/safeRedirect.test.js      (6 tests)
+ ✓ src/utils/avatars.test.js           (9 tests)
+ ✓ src/utils/safeStorage.test.js      (12 tests)
+ ✓ src/utils/vendorLoginUrls.test.js  (10 tests)
+ ✓ src/utils/validateMedia.test.js    (18 tests)</span>
+<span class="o"> Test Files  5 passed (5)
+      Tests  55 passed (55)</span>
+<span class="d">   Duration  495ms</span></div>
+      <p class="cap"><b>242 tests, none failed, none skipped.</b> Look at the times - about seven seconds for the whole lot. Speed matters: a slow set of tests is one people start skipping.</p>
+
+      <h3>The 13 screens walked</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Address</th><th>Screen</th></tr></thead>
+          <tbody>
+            <tr><td class="m">/</td><td>home</td></tr>
+            <tr><td class="m">/login</td><td>login</td></tr>
+            <tr><td class="m">/signup</td><td>signup</td></tr>
+            <tr><td class="m">/scan</td><td>scan</td></tr>
+            <tr><td class="m">/history</td><td>history</td></tr>
+            <tr><td class="m">/profile</td><td>profile</td></tr>
+            <tr><td class="m">/help</td><td>help</td></tr>
+            <tr><td class="m">/results/:id</td><td>results</td></tr>
+            <tr><td class="m">/results/:id/ports</td><td>ports</td></tr>
+            <tr><td class="m">/results/:id/topology</td><td>topology</td></tr>
+            <tr><td class="m">/org</td><td>org console</td></tr>
+            <tr><td class="m">/connections</td><td>connections</td></tr>
+            <tr><td class="m">/marketplace</td><td>marketplace</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>What fails the sweep</h3>
+      <div class="tw">
+        <table class="wide">
+          <thead><tr><th>What fails it</th><th>Why we check for it</th></tr></thead>
+          <tbody>
+            <tr><td>A blank screen or a crash</td><td>The app loaded but showed nothing - invisible to every ordinary test</td></tr>
+            <tr><td>An icon showing as plain text</td><td>Spotted by shape: an icon is roughly square, a word is not</td></tr>
+            <tr><td>Anything spilling off the side at 320px</td><td>The narrowest phone our testers actually carry</td></tr>
+            <tr><td>Any text box with type under 16px</td><td>Makes an iPhone zoom in when tapped, so the page jumps</td></tr>
+            <tr><td>Any error reported by the browser</td><td>Something broke quietly and nobody was told</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">It runs against the <b>finished</b> app rather than the development version, because the build itself is where this kind of failure creeps in.</p>
+
+      <div class="term"><span class="c">node e2e/sweep.mjs</span>
+<span class="d">Browser sweep - 13 routes against https://localhost:4173</span>
+<span class="o">PASS, 13 / 13 routes clean</span></div>
+    </div>
+  </div>
+</section>
+
+    <div class="fnav">
+      <button type="button" id="prev">&larr; Previous</button>
+      <span class="pos" id="pos"></span>
+      <button type="button" id="next">Next &rarr;</button>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var tabs   = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var panels = tabs.map(function (t) { return document.getElementById(t.getAttribute('aria-controls')); });
+  var prev = document.getElementById('prev');
+  var next = document.getElementById('next');
+  var pos  = document.getElementById('pos');
+
+  function slug(tab) { return tab.id.replace(/^t-/, ''); }
+
+  function show(i, focus, push) {
+    if (i < 0 || i >= tabs.length) return;
+    tabs.forEach(function (t, n) {
+      var on = n === i;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      panels[n].hidden = !on;
+    });
+    prev.disabled = i === 0;
+    next.disabled = i === tabs.length - 1;
+    var refEl = tabs[i].querySelector('.ref');
+    var ref = refEl ? refEl.textContent.trim() : '';
+    pos.textContent = (ref && !/^[-\u2014\u2011]$/.test(ref)) ? ref + ' of A-09' : '';
+    if (focus) tabs[i].focus();
+    if (window.matchMedia('(max-width:1080px)').matches) {
+      tabs[i].scrollIntoView({ inline: 'center', block: 'nearest' });
+    }
+    if (push && location.hash.slice(1) !== slug(tabs[i])) {
+      history.replaceState(null, '', '#' + slug(tabs[i]));
+    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function current() {
+    for (var i = 0; i < tabs.length; i++) {
+      if (tabs[i].getAttribute('aria-selected') === 'true') return i;
+    }
+    return 0;
+  }
+
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () { show(i, false, true); });
+    tab.addEventListener('keydown', function (e) {
+      var k = e.key, n = null;
+      if (k === 'ArrowDown' || k === 'ArrowRight') n = (i + 1) % tabs.length;
+      else if (k === 'ArrowUp' || k === 'ArrowLeft') n = (i - 1 + tabs.length) % tabs.length;
+      else if (k === 'Home') n = 0;
+      else if (k === 'End') n = tabs.length - 1;
+      if (n !== null) { e.preventDefault(); show(n, true, true); }
+    });
+  });
+
+  prev.addEventListener('click', function () { show(current() - 1, false, true); });
+  next.addEventListener('click', function () { show(current() + 1, false, true); });
+
+  document.querySelectorAll('[data-go]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var idx = tabs.indexOf(document.getElementById(a.getAttribute('data-go')));
+      if (idx > -1) show(idx, false, true);
+    });
+  });
+
+  var want = tabs.map(slug).indexOf(location.hash.slice(1));
+  show(want > -1 ? want : 0, false, false);
+
+  // The "back to the pitch" link only resolves inside the offline pack.
+  if (location.protocol === 'file:') {
+    document.getElementById('backlink').hidden = false;
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!-- Published copy of the claude.ai artifact "What's There And What's Next" | https://claude.ai/code/artifact/914dfb14-60c6-4aaa-a3da-35d42176b267 | artifact last updated 2026-09-03 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>What's There And What's Next</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --paper:#ffffff; --paper-cool:#f4f6f9; --ink:#0c1420; --ink-soft:#33404f;
+    --muted:#5c6878; --line:#dce2ea; --line-firm:#b9c4d1;
+    --blue:#1b5fd9; --blue-deep:#0e3c8c; --blue-wash:#eef3fd;
+    --stop:#c0392b; --stop-wash:#fdf1ef; --call:#b26a00;
+    --go:#0f7b4f; --go-wash:#eff7f2;
+    --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+    --body:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  body { background:var(--paper); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  * { box-sizing:border-box; }
+
+  .band { padding:3rem clamp(1.25rem,4vw,4rem); border-bottom:1px solid var(--line); }
+  .band:last-of-type { border-bottom:0; }
+
+  h1,h2,h3 { font-family:var(--display); text-wrap:balance; margin:0; }
+  h1 { font-size:clamp(2rem,5vw,3.2rem); font-weight:700; letter-spacing:-.025em; line-height:1.05; }
+  h2 { font-size:clamp(1.3rem,2.4vw,1.75rem); font-weight:600; letter-spacing:-.018em; margin-bottom:1.1rem; }
+  h3 { font-size:.98rem; font-weight:600; margin:0; }
+  p { margin:0 0 .9rem; max-width:62ch; }
+  .lede { font-size:1.1rem; color:var(--ink-soft); max-width:56ch; }
+
+  .top { padding:clamp(2.25rem,6vw,4rem) clamp(1.25rem,4vw,4rem) 2.25rem; border-bottom:2px solid var(--ink); background:linear-gradient(180deg,var(--blue-wash) 0%,rgba(238,243,253,0) 70%),var(--paper); }
+  .top .kicker { font-family:var(--mono); font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--blue); margin:0 0 .9rem; }
+  .top p.lede { margin-top:1rem; }
+
+  /* Two-column state */
+  .state { display:grid; grid-template-columns:repeat(auto-fit,minmax(19rem,1fr)); gap:1.75rem; }
+  .panel { border:1px solid var(--line-firm); }
+  .panel > header { padding:.75rem 1rem; border-bottom:1px solid var(--line-firm); font-family:var(--mono); font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; font-weight:500; display:flex; justify-content:space-between; gap:.5rem; }
+  .panel.ok > header { background:var(--go-wash); color:var(--go); }
+  .panel.no > header { background:var(--stop-wash); color:var(--stop); }
+  .panel > header span { color:var(--muted); }
+
+  .row { padding:.85rem 1rem; border-bottom:1px solid var(--line); }
+  .row:last-child { border-bottom:0; }
+  .row p { margin:.2rem 0 0; font-size:.87rem; color:var(--ink-soft); max-width:none; }
+
+  .proof { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.5rem; }
+  .pill { font-family:var(--mono); font-size:.66rem; letter-spacing:.03em; padding:.2rem .5rem; background:var(--paper-cool); border:1px solid var(--line); color:var(--ink-soft); }
+  .pill.g { background:var(--go-wash); border-color:#bfdfcd; color:var(--go); }
+
+  /* Steps */
+  .steps { border:1px solid var(--line-firm); }
+  .sp { display:grid; grid-template-columns:2.4rem minmax(0,1fr) 6rem; gap:0 1rem; padding:.95rem 1rem; border-bottom:1px solid var(--line); align-items:baseline; }
+  .sp:last-child { border-bottom:0; }
+  .sp .n { font-family:var(--mono); font-size:.9rem; color:var(--line-firm); font-weight:500; }
+  .sp p { margin:.15rem 0 0; font-size:.87rem; color:var(--muted); max-width:none; }
+  .sp .w { font-family:var(--mono); font-size:.63rem; letter-spacing:.08em; text-transform:uppercase; text-align:right; color:var(--muted); }
+  .sp.now { background:var(--blue-wash); }
+  .sp.now .n { color:var(--blue); }
+  .sp.now h3 { color:var(--blue-deep); }
+  .sp.now .w { color:var(--blue); }
+  .sp.key { background:#fffbf3; }
+  .sp.key .n { color:var(--call); }
+  .sp.key .w { color:var(--call); }
+  @media (max-width:620px) { .sp { grid-template-columns:2.2rem minmax(0,1fr); } .sp .w { grid-column:2; text-align:left; margin-top:.25rem; } }
+
+  /* Hop diagram */
+  .hop { display:grid; grid-template-columns:repeat(auto-fit,minmax(20rem,1fr)); gap:1.25rem; }
+  .hopbox { border:1px solid var(--line-firm); padding:1.15rem 1.2rem; }
+  .hopbox.bad { background:var(--stop-wash); border-color:#e8c4bd; }
+  .hopbox.good { background:var(--go-wash); border-color:#bfdfcd; }
+  .hoplabel { font-family:var(--mono); font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; display:block; margin-bottom:.9rem; }
+  .hopbox.bad .hoplabel { color:var(--stop); }
+  .hopbox.good .hoplabel { color:var(--go); }
+  .hoprow { display:flex; flex-wrap:wrap; align-items:stretch; gap:.5rem; margin-bottom:.9rem; }
+  .node { background:var(--paper); border:1px solid var(--line-firm); padding:.5rem .65rem; font-size:.82rem; font-weight:500; display:flex; flex-direction:column; gap:.15rem; flex:1 1 7rem; min-width:0; }
+  .node em { font-style:normal; font-family:var(--mono); font-size:.62rem; letter-spacing:.02em; color:var(--muted); font-weight:400; line-height:1.35; }
+  .arrow { display:flex; align-items:center; font-family:var(--mono); font-size:1rem; color:var(--line-firm); flex:none; }
+  .arrow.bad { color:var(--stop); font-weight:700; }
+  .arrow.good { color:var(--go); font-weight:700; }
+  .hopbox p { margin:0; font-size:.87rem; color:var(--ink-soft); max-width:none; }
+
+  .unknown { border:1px solid #e8c4bd; background:var(--stop-wash); padding:1.3rem 1.4rem; }
+  .unknown h3 { color:var(--stop); font-size:1.1rem; }
+  .unknown p { margin:.45rem 0 0; font-size:.93rem; color:var(--ink-soft); }
+
+  .footnote { padding:1.75rem clamp(1.25rem,4vw,4rem) 2.5rem; font-size:.83rem; color:var(--muted); border-top:1px solid var(--line); }
+  code { font-family:var(--mono); font-size:.87em; background:var(--paper-cool); border:1px solid var(--line); border-radius:3px; padding:.06em .3em; color:var(--blue-deep); }
+  a { color:var(--blue-deep); }
+  a:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+  @media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; } }
+</style>
+
+<header class="top">
+  <p class="kicker">Status and plan · 3 September 2026</p>
+  <h1>What's there and what's next</h1>
+  <p class="lede">
+    Most of this is already built. One thing is genuinely unknown, and it decides
+    the shape of everything else.
+  </p>
+</header>
+
+<section class="band">
+  <h2>What's there</h2>
+
+  <div class="state">
+    <div class="panel ok">
+      <header><span>Built and working</span></header>
+
+      <div class="row">
+        <h3>The shipping app</h3>
+        <p>Scanning, camera, results, topology, drift, ServiceNow tickets, marketplace, organisations. Testers on it, demo site running.</p>
+      </div>
+
+      <div class="row">
+        <h3>The SNMP engine</h3>
+        <p>Tested against your three real switches — not a simulator. Both SNMP versions work, including the encrypted one.</p>
+        <div class="proof">
+          <span class="pill g">52 ports · D-Link</span>
+          <span class="pill g">29 ports · TP-Link</span>
+          <span class="pill g">LLDP neighbours</span>
+          <span class="pill g">model DGS-1210-52</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <h3>NetBox export</h3>
+        <p>Previews before it writes, updates the same records instead of duplicating them, and has no delete function anywhere in it.</p>
+      </div>
+
+      <div class="row">
+        <h3>ServiceNow export</h3>
+        <p>Already written too, in the same system. Nothing to build — it just needs to come across.</p>
+      </div>
+
+      <div class="row">
+        <h3>Camera against switch</h3>
+        <p>Matches what the photo saw to what the switch said, and asks a person to confirm rather than guessing.</p>
+      </div>
+    </div>
+
+    <div class="panel no">
+      <header><span>Not there yet</span></header>
+
+      <div class="row">
+        <h3>Compare against NetBox</h3>
+        <p>Reading a rack back out of NetBox to check it against the scan. Neither app does this. You're building it in the NetBox app now.</p>
+      </div>
+
+      <div class="row">
+        <h3>SNMP from the phone</h3>
+        <p>Has never been done. Today the server does the connecting — from outside your customer's network, which is why probing a switch has never worked from site.</p>
+      </div>
+
+      <div class="row">
+        <h3>A login on the NetBox app</h3>
+        <p>Its screens have no sign-in at all. Fine on a laptop, not fine once it's part of the live app.</p>
+      </div>
+
+      <div class="row">
+        <h3>Its passwords in a safe place</h3>
+        <p>Real switch logins sit in a plain text file. That file has never been in version control, and it must not be the thing that puts them there.</p>
+      </div>
+
+      <div class="row">
+        <h3>Serial numbers from switches</h3>
+        <p>Make and model come back fine. Serial doesn't — these switches simply don't offer it. That field stays with the camera or a person typing it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <h2>The plan</h2>
+
+  <div class="steps">
+    <div class="sp now">
+      <span class="n">1</span>
+      <div><h3>Finish Compare</h3><p>Rack against what NetBox holds. No testers on that app, so nothing can break.</p></div>
+      <span class="w">in progress</span>
+    </div>
+    <div class="sp">
+      <span class="n">2</span>
+      <div><h3>Turn the rack tabs into a chain</h3><p>Using only the three screens you already have. No new code. An afternoon to undo.</p></div>
+      <span class="w">no risk</span>
+    </div>
+    <div class="sp key">
+      <span class="n">3</span>
+      <div><h3>Test SNMP from a phone</h3><p>One screen, simplest version. Can a handset read your D-Link while standing next to it? Needs a new app build.</p></div>
+      <span class="w">the unknown</span>
+    </div>
+    <div class="sp">
+      <span class="n">4</span>
+      <div><h3>Move the passwords, add the login</h3><p>Both gaps closed before any code moves across. Nothing visible to users.</p></div>
+      <span class="w">groundwork</span>
+    </div>
+    <div class="sp">
+      <span class="n">5</span>
+      <div><h3>Ports moves to SNMP</h3><p>Same screen, same place. The existing probe stays as the starting state so it never opens empty.</p></div>
+      <span class="w">visible</span>
+    </div>
+    <div class="sp">
+      <span class="n">6</span>
+      <div><h3>Compare, Review and Export arrive</h3><p>One at a time, each locked until the step before it has run.</p></div>
+      <span class="w">visible</span>
+    </div>
+    <div class="sp">
+      <span class="n">7</span>
+      <div><h3>Drift moves to SNMP, then SSH goes</h3><p>Run both side by side first and compare what they report. Last, because it's the only step that can't be undone.</p></div>
+      <span class="w">last</span>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <h2>Why the phone can't reach the switch yet</h2>
+  <p>
+    The phone <b>is</b> on the right network and it <b>can</b> reach the switch. The
+    problem is that it isn't the one doing the connecting.
+  </p>
+
+  <div class="hop">
+    <div class="hopbox bad">
+      <span class="hoplabel">Today · tapping "read this switch"</span>
+      <div class="hoprow">
+        <span class="node">Phone<em>on the office Wi-Fi</em></span>
+        <span class="arrow">→</span>
+        <span class="node">Our server<em>rented machine, on the internet</em></span>
+        <span class="arrow bad">✕</span>
+        <span class="node">The switch<em>10.10.1.33, inside the office</em></span>
+      </div>
+      <p>
+        The phone asks the server to do the job. The server sits outside the customer's
+        building and has no route to a private address inside it. It's like standing
+        next to your neighbour's door and phoning someone abroad to knock on it.
+      </p>
+    </div>
+
+    <div class="hopbox good">
+      <span class="hoplabel">What step 3 changes</span>
+      <div class="hoprow">
+        <span class="node">Phone<em>on the office Wi-Fi</em></span>
+        <span class="arrow good">→</span>
+        <span class="node">The switch<em>10.10.1.33, same network</em></span>
+        <span class="arrow">→</span>
+        <span class="node">Our server<em>stores what came back</em></span>
+      </div>
+      <p>
+        The phone talks to the switch directly, then sends the result up to be saved.
+        Nothing needs opening on the customer's firewall, and the credentials never
+        have to travel anywhere.
+      </p>
+    </div>
+  </div>
+
+  <p style="margin-top:1.25rem">
+    <b>Why isn't it already built this way?</b> The screens in RackTrack are web pages,
+    and a web page isn't allowed to open the kind of direct network connection SNMP
+    needs. The installed app can — but only with a small piece of native code added to
+    it, which means building and shipping a new version to testers. That's the whole of
+    step 3, and it's the one thing on this list nobody has proven yet.
+  </p>
+
+  <div class="unknown">
+    <h3>If it works, and if it doesn't</h3>
+    <p>
+      <b>If it works</b> — the product does exactly what you've been describing: someone
+      on their own Wi-Fi, standing at a rack, reading their switches through RackTrack.
+      It also fixes something that has never worked, rather than adding something new.
+    </p>
+    <p>
+      <b>If it doesn't</b> — the part that reads switches has to run on a machine inside
+      the customer's network instead. Still workable, but a different shape of product
+      and a different conversation with the customer.
+    </p>
+    <p>
+      One app build answers it. Steps 1 and 2 don't depend on the answer and can start now.
+    </p>
+  </div>
+</section>
+
+<footer class="footnote">
+  <p>
+    Status checked against both applications on 3 September 2026, including the stored
+    readings from three real switches. Nothing in either has been changed — this is a plan.
+  </p>
+</footer>
+
+</body></html>

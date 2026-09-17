@@ -2,7 +2,7 @@
 //
 // Ported from the server's snmp.test.js so the two codecs are held to the
 // same facts. Every expected byte here comes from X.690 / RFC 3416, not from
-// running the encoder and pasting what it produced — a test that does that
+// running the encoder and pasting what it produced - a test that does that
 // only proves the code agrees with itself.
 
 import {
@@ -37,7 +37,7 @@ describe('INTEGER', () => {
   test('minimal two\'s complement, including the sign-bit cases', () => {
     expect(hex(encodeInt(T.INTEGER, 0))).toBe('02 01 00');
     expect(hex(encodeInt(T.INTEGER, 127))).toBe('02 01 7f');
-    // 128 would set the high bit, which means negative — so a leading 0x00.
+    // 128 would set the high bit, which means negative - so a leading 0x00.
     expect(hex(encodeInt(T.INTEGER, 128))).toBe('02 02 00 80');
     expect(hex(encodeInt(T.INTEGER, 256))).toBe('02 02 01 00');
     expect(hex(encodeInt(T.INTEGER, -1))).toBe('02 01 ff');
@@ -71,7 +71,7 @@ describe('OBJECT IDENTIFIER', () => {
   test('first two arcs share a byte, later arcs are base-128', () => {
     // 1.3.6.1.2.1.1.1.0 = sysDescr
     expect(hex(encodeOid('1.3.6.1.2.1.1.1.0'))).toBe('06 08 2b 06 01 02 01 01 01 00');
-    // 1.3.6.1.4.1.11863 — TP-Link's enterprise: 11863 = 92*128 + 87 → dc 57
+    // 1.3.6.1.4.1.11863 - TP-Link's enterprise: 11863 = 92*128 + 87 → dc 57
     expect(hex(encodeOid('1.3.6.1.4.1.11863'))).toBe('06 07 2b 06 01 04 01 dc 57');
     // A leading dot is tolerated, as pasted OIDs often carry one.
     expect(hex(encodeOid('.1.3.6'))).toBe('06 02 2b 06');

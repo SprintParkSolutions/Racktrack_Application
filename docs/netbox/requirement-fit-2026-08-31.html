@@ -1,0 +1,234 @@
+<!-- Published copy of the claude.ai artifact "Requirement Fit" | https://claude.ai/code/artifact/1e52be5a-6822-42cb-ad31-6669ccdf7927 | artifact last updated 2026-08-31 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Requirement Fit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground: #f4f6f9; --surface: #ffffff; --surface-2: #eef1f6; --ink: #18202c;
+    --muted: #55606f; --faint: #8a94a3; --line: #e0e5ec; --line-strong: #ccd3dd;
+    --accent: #3a56d4; --accent-soft: #e7ebfb;
+    --ok: #1a8f52; --ok-soft: #e2f3e9; --warn: #b5760a; --warn-soft: #f8eed8;
+    --miss: #cf4436; --miss-soft: #fbe6e3;
+    --shadow: 0 1px 2px rgba(20,30,45,.05), 0 4px 16px rgba(20,30,45,.05);
+  }
+  :root:not([data-theme="light"]) { @media (prefers-color-scheme: dark) {
+    --ground: #0e131b; --surface: #161d28; --surface-2: #1d2632; --ink: #e7ecf3;
+    --muted: #a3aebc; --faint: #6b7688; --line: #263140; --line-strong: #33404f;
+    --accent: #7d92f0; --accent-soft: #21283e;
+    --ok: #4cc584; --ok-soft: #16281f; --warn: #e0a63c; --warn-soft: #2c2413;
+    --miss: #ef7368; --miss-soft: #2e1a18;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+  } }
+  :root[data-theme="dark"] {
+    --ground: #0e131b; --surface: #161d28; --surface-2: #1d2632; --ink: #e7ecf3;
+    --muted: #a3aebc; --faint: #6b7688; --line: #263140; --line-strong: #33404f;
+    --accent: #7d92f0; --accent-soft: #21283e;
+    --ok: #4cc584; --ok-soft: #16281f; --warn: #e0a63c; --warn-soft: #2c2413;
+    --miss: #ef7368; --miss-soft: #2e1a18;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 16.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 44px); }
+
+  h1, h2, h3 { font-family: "Archivo", system-ui, sans-serif; line-height: 1.15; text-wrap: balance; margin: 0; }
+  .eyebrow { font-family: "Archivo", sans-serif; font-size: 12.5px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600; }
+
+  header.hero { border-bottom: 1px solid var(--line); background: var(--surface); }
+  .hero-in { padding: clamp(30px, 6vw, 54px) 0 clamp(22px, 4vw, 34px); }
+  h1 { font-size: clamp(26px, 5vw, 42px); font-weight: 800; letter-spacing: -.02em; margin: 13px 0 12px; }
+  .lede { font-size: clamp(16px, 2vw, 19px); color: var(--muted); max-width: 64ch; }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  .key { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 26px; }
+  .keyc { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+    box-shadow: var(--shadow); display: flex; gap: 12px; align-items: flex-start; }
+  .dot { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    font-weight: 800; font-size: 14px; color: #fff; margin-top: 1px; font-family: "Archivo", sans-serif; }
+  .dot.g { background: var(--ok); } .dot.y { background: var(--warn); } .dot.r { background: var(--miss); }
+  .keyc .t { font-weight: 700; font-size: 14.5px; }
+  .keyc .d { color: var(--muted); font-size: 13px; line-height: 1.45; }
+
+  section { padding: clamp(32px, 5vw, 48px) 0; border-bottom: 1px solid var(--line); }
+  .h2row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .h2row .ic { width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft);
+    display: grid; place-items: center; font-size: 18px; flex: none; }
+  h2 { font-size: clamp(20px, 3vw, 26px); font-weight: 700; letter-spacing: -.015em; }
+  .sec-sub { color: var(--muted); max-width: 72ch; margin: 2px 0 22px; }
+
+  .tbl-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 660px; }
+  thead th { text-align: left; font-family: "Archivo", sans-serif; font-size: 12px; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 12px 18px;
+    background: var(--surface-2); border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+  tbody td { padding: 14px 18px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: var(--surface-2); }
+  td.thing { font-weight: 600; white-space: nowrap; }
+  td.plain { color: var(--muted); font-size: 15px; }
+  td.plain .eg { display: block; margin-top: 3px; color: var(--faint); font-size: 13px; }
+  th.st, td.st { width: 1%; white-space: nowrap; }
+
+  .tag { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+  .tag::before { content: ""; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .t-ok { color: var(--ok); } .t-ok::before { background: var(--ok); }
+  .t-half { color: var(--warn); } .t-half::before { background: var(--warn); }
+  .t-no { color: var(--miss); } .t-no::before { background: var(--miss); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    box-shadow: var(--shadow); border-left: 4px solid var(--edge, var(--accent)); }
+  .card.g { --edge: var(--ok); } .card.y { --edge: var(--warn); } .card.r { --edge: var(--miss); }
+  .card h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 6px; }
+  .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  .fix { display: flex; gap: 15px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .fix:last-child { border-bottom: 0; }
+  .fix .num { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 20px; color: #fff;
+    background: var(--accent); width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; flex: none; }
+  .fix .body h3 { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .fix .body p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .fix .body .do { color: var(--ink); margin-top: 3px; }
+  .fix .body .do b { color: var(--accent); }
+
+  .note { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius: 12px; padding: 16px 18px; margin-top: 20px; }
+  .note b { color: var(--ink); }
+  footer { padding: 26px 0 44px; color: var(--faint); font-size: 13px; }
+</style>
+
+<header class="hero">
+  <div class="wrap hero-in">
+    <span class="eyebrow">RackTrack · What we can do for the customer</span>
+    <h1>What the customer asked for, in plain terms.</h1>
+    <p class="lede">
+      A university wants to point a phone at a rack, get a full record of what is inside, and send it
+      into their system. This shows, simply, <b>what already works</b>, <b>what half works</b>, and
+      <b>what is not there yet</b> — each with a real example so it is concrete.
+    </p>
+    <div class="key">
+      <div class="keyc"><span class="dot g">✓</span><div><div class="t">Works now</div><div class="d">Ready to show today.</div></div></div>
+      <div class="keyc"><span class="dot y">~</span><div><div class="t">Half there</div><div class="d">Works in some cases, not all.</div></div></div>
+      <div class="keyc"><span class="dot r">✗</span><div><div class="t">Not yet</div><div class="d">Still to be built.</div></div></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="h2row"><span class="ic">📷</span><h2>What the photo should capture</h2></div>
+    <p class="sec-sub">The things they want the tool to pick up from a rack.</p>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>The thing</th><th class="st">Where we are</th><th>In plain words</th></tr></thead>
+        <tbody>
+          <tr><td class="thing">Each device and its slot</td><td class="st"><span class="tag t-ok">Works now</span></td>
+            <td class="plain">We show every device and which shelf it sits on.<span class="eg">Example: "Switch at U16, D-Link at U10."</span></td></tr>
+          <tr><td class="thing">Kinds of device</td><td class="st"><span class="tag t-ok">Works now</span></td>
+            <td class="plain">The tool tells a switch from a server, a power unit, a firewall, a patch panel, just by looking.<span class="eg">Example: it labelled the box at U17 a firewall on its own.</span></td></tr>
+          <tr><td class="thing">Ports on each device</td><td class="st"><span class="tag t-ok">Works now</span></td>
+            <td class="plain">It counts and places the sockets on the front.<span class="eg">Example: 24 network ports plus 4 fibre slots on the TP-Link.</span></td></tr>
+          <tr><td class="thing">Patch panels</td><td class="st"><span class="tag t-ok">Works now</span></td>
+            <td class="plain">The rows of cable sockets are picked up too.<span class="eg">Example: it found four panels this rack, 168 sockets.</span></td></tr>
+          <tr><td class="thing">Brand</td><td class="st"><span class="tag t-ok">Works now</span></td>
+            <td class="plain">The device tells us its brand over the network, and the camera reads the logo too.<span class="eg">Example: the three managed switches now show D-Link and TP-Link on their own.</span></td></tr>
+          <tr><td class="thing">Serial number</td><td class="st"><span class="tag t-half">Half there</span></td>
+            <td class="plain">Only when the device shares it, or from a close-up of the sticker.<span class="eg">Example: not on the sticker photo yet, so still blank here.</span></td></tr>
+          <tr><td class="thing">Which cable goes where</td><td class="st"><span class="tag t-half">Half there</span></td>
+            <td class="plain">We see the cable; we are sure of both ends only when the switches confirm it.<span class="eg">Example: six links are fully confirmed so far.</span></td></tr>
+          <tr><td class="thing">Full map of connections</td><td class="st"><span class="tag t-half">Half there</span></td>
+            <td class="plain">Same reason: partial until the switches fill in the rest.<span class="eg">Example: desktop-to-port is known; switch-to-switch uplinks are not all proven.</span></td></tr>
+          <tr><td class="thing">Model number</td><td class="st"><span class="tag t-ok">Now works</span></td>
+            <td class="plain">Just added: we read the model from what the switch tells us over the network, no photo needed.<span class="eg">Example: the three managed switches now show DGS-1210-52, TL-SG2428P. Re-read them once to see it.</span></td></tr>
+          <tr><td class="thing">Asset stickers</td><td class="st"><span class="tag t-no">Not yet</span></td>
+            <td class="plain">Your own ID labels are not read yet.<span class="eg">Example: if a device has an "SP-00123" sticker, we do not capture it today.</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="h2row"><span class="ic">🗄️</span><h2>Sending it into their system</h2></div>
+    <p class="sec-sub">Their record-keeping system is called NetBox. This is how well we feed it.</p>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>The thing</th><th class="st">Where we are</th><th>In plain words</th></tr></thead>
+        <tbody>
+          <tr><td class="thing">Hand over the data</td><td class="st"><span class="tag t-ok">Works now</span></td>
+            <td class="plain">We can pass the results as a file or straight into their system, several ways.<span class="eg">Example: file download, or a direct push into NetBox.</span></td></tr>
+          <tr><td class="thing">Racks, devices, ports</td><td class="st"><span class="tag t-ok">Works now</span></td>
+            <td class="plain">All of these appear correctly on their side.<span class="eg">Example: run twice and it updates, never duplicates.</span></td></tr>
+          <tr><td class="thing">Try it on one real rack</td><td class="st"><span class="tag t-ok">Works now</span></td>
+            <td class="plain">We can run a full demo on a real rack, start to finish.<span class="eg">Example: the scanned rack is ready to show end to end.</span></td></tr>
+          <tr><td class="thing">One-click plug-in</td><td class="st"><span class="tag t-half">Half there</span></td>
+            <td class="plain">It sends into their system fine, but it is not yet a polished, installable plug-in.<span class="eg">Example: works via a set-up step, not a one-click install.</span></td></tr>
+          <tr><td class="thing">Cable and patch-panel wiring</td><td class="st"><span class="tag t-half">Half there</span></td>
+            <td class="plain">Cables cross over; the neat panel wiring records need finishing.<span class="eg">Example: front-to-back panel pairing is the last piece.</span></td></tr>
+          <tr><td class="thing">Price for 20 to 100 racks</td><td class="st"><span class="tag t-no">Not yet</span></td>
+            <td class="plain">No price set. A business decision, not a tool feature.<span class="eg">Example: needs a per-rack or per-site figure before we reply.</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="h2row"><span class="ic">🔌</span><h2>The one thing they care about most</h2></div>
+    <p class="sec-sub">They most want this: use the photo plus the switches to work out, and double-check, which cable plugs into which port.</p>
+    <div class="cards">
+      <div class="card g"><h3>Photo + switch, cross-checked</h3>
+        <p>The photo finds the cables; the switches name what is on the other end. We line the two up. This works.</p></div>
+      <div class="card y"><h3>Proving both ends</h3>
+        <p>A cable is fully proven only when both devices confirm it. Simple, unmanaged gear cannot, so those rest on the photo alone.</p></div>
+      <div class="card r"><h3>Cisco's version</h3>
+        <p>They mentioned a Cisco-only way (CDP). We do not support that yet. It only matters if they have Cisco gear.</p></div>
+      <div class="card r"><h3>Video vs photo</h3>
+        <p>They pictured a video sweep. We work from a single photo. Fine for a demo, but not the video they described.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="border-bottom:0;">
+  <div class="wrap">
+    <div class="h2row"><span class="ic">🛠️</span><h2>What to fix first</h2></div>
+    <p class="sec-sub">In order. The first two give the most for the least effort.</p>
+
+    <div class="fix"><span class="num">1</span><div class="body">
+      <h3>Prove both ends of each cable</h3>
+      <p>This is their favourite feature, and it is only half working.</p>
+      <p class="do"><b>Do:</b> ask their network team to switch on the setting that makes each switch announce its neighbours. Then both ends of a cable confirm each other.</p>
+    </div></div>
+    <div class="fix"><span class="num">2</span><div class="body">
+      <h3>Finish the wiring records in NetBox</h3>
+      <p>Decides whether the handover is actually useful to them.</p>
+      <p class="do"><b>Do:</b> complete the part of the export that writes cable and patch-panel wiring properly.</p>
+    </div></div>
+    <div class="fix"><span class="num">3</span><div class="body">
+      <h3>Read the asset stickers</h3>
+      <p>On their wish list, lower priority.</p>
+      <p class="do"><b>Do:</b> read the ID label from a close-up photo, or take a simple list from them.</p>
+    </div></div>
+
+    <div class="note">
+      <b>The honest summary:</b> almost everything they asked for already works, and the model number is
+      now solved over the network. We can demo a real rack end to end. The three things to be upfront
+      about are proving both ends of a cable, finishing the wiring records, and asset stickers.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">RackTrack · measured against the university's request · based on a real scanned rack.</div>
+</footer>
+
+</body></html>

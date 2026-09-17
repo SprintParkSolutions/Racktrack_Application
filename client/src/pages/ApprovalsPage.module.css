@@ -1,4 +1,4 @@
-/* Approvals — the admin's screen. Phone first: this is used standing up. */
+/* Approvals - the admin's screen. Phone first: this is used standing up. */
 
 .page {
   min-height: 100%;
@@ -152,7 +152,7 @@
 .drift p, .done p { margin: 0 0 8px; font-size: 14.5px; line-height: 1.5; }
 .driftFp { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #949d98; }
 
-/* the ticket sheet — top-anchored so the keyboard never covers the button */
+/* the ticket sheet - top-anchored so the keyboard never covers the button */
 .sheetWrap {
   position: fixed; inset: 0; z-index: 60;
   background: rgba(20, 24, 27, 0.4);

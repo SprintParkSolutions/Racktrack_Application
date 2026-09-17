@@ -16,7 +16,7 @@ const FOCUSABLE = [
 // and restoring document.body.style.overflow PER instance is only correct if
 // dialogs close in strict last-in-first-out order: two overlapping modals that
 // close out of order would restore in the wrong order and leave the page
-// permanently unscrollable. The counter fixes that — only the last unlock, when
+// permanently unscrollable. The counter fixes that - only the last unlock, when
 // the count returns to zero, restores the value captured at the first lock.
 let scrollLockCount = 0;
 let scrollLockSaved = '';
@@ -43,7 +43,7 @@ function unlockBodyScroll() {
  *
  * `onClose` is deliberately held in a ref and NOT an effect dependency:
  * callers pass an inline arrow, so depending on it would re-run the effect on
- * every render and yank focus back to the first control mid-typing — the bug
+ * every render and yank focus back to the first control mid-typing - the bug
  * MoreSheet used to have.
  */
 export default function useModalA11y(onClose, { active = true } = {}) {
@@ -67,7 +67,7 @@ export default function useModalA11y(onClose, { active = true } = {}) {
 
     const restoreTo = restoreRef.current;
 
-    // Focus the first real control — unless an autoFocus field inside already
+    // Focus the first real control - unless an autoFocus field inside already
     // took focus, in which case respect the author's choice. Falls back to the
     // dialog itself so a screen reader announces it rather than the page.
     if (!root.contains(document.activeElement)) {
@@ -83,7 +83,7 @@ export default function useModalA11y(onClose, { active = true } = {}) {
       // would let one Escape fire both handlers and close both at once.
       if (e.key === 'Escape') { e.stopImmediatePropagation(); onCloseRef.current?.(); return; }
       if (e.key !== 'Tab') return;
-      // getClientRects rather than offsetParent — the latter reports null for
+      // getClientRects rather than offsetParent - the latter reports null for
       // position:fixed elements, which would drop them from the trap.
       const items = Array.from(root.querySelectorAll(FOCUSABLE))
         .filter(el => el.getClientRects().length > 0 || el === document.activeElement);
@@ -91,7 +91,7 @@ export default function useModalA11y(onClose, { active = true } = {}) {
       const firstEl = items[0];
       const lastEl  = items[items.length - 1];
       // The "outside" cases also catch focus that has escaped to the browser
-      // chrome or a stale element — wrap it back in either way.
+      // chrome or a stale element - wrap it back in either way.
       const outside = !root.contains(document.activeElement);
       if (e.shiftKey && (outside || document.activeElement === firstEl)) {
         e.preventDefault(); lastEl.focus();

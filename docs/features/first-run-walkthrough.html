@@ -1,0 +1,217 @@
+<!-- Published copy of the claude.ai artifact "RackTrack First Run" | https://claude.ai/artifact/13FzKj4Lb333BfBMudeoim | artifact last updated 2026-09-15 | saved 2026-09-15 | images in first-run-walkthrough/img/ -->
+<title>RackTrack First Run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--ground:#fff;--surface:#f6f7fa;--hair:#e3e7ee;--ink:#14181f;--ink-2:#4b5563;--ink-3:#79838f;--ok:#2b7350;--ok-bg:#ecf5f0;--admin:#a8710f;--frame:#1b1f26;
+--display:'Newsreader',Georgia,serif;--sans:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.shell{padding:0 clamp(20px,4vw,64px);padding-block:56px 96px}
+.brand{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 18px}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(2.2rem,4.4vw,3.4rem);line-height:1.02;letter-spacing:-.02em;margin:0 0 14px;max-width:16ch;text-wrap:balance}
+.stand{font-size:1.08rem;color:var(--ink-2);max-width:62ch;margin:0}
+.runs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0;border:1px solid var(--hair);border-radius:12px;overflow:hidden;background:var(--surface);margin:32px 0 8px}
+.runs div{padding:18px 20px;border-right:1px solid var(--hair)}
+.runs div:last-child{border-right:0}
+@media (max-width:760px){.runs div{border-right:0;border-bottom:1px solid var(--hair)}.runs div:last-child{border-bottom:0}}
+.runs h4{font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px;font-weight:500}
+.runs p{margin:0;font-size:.95rem;color:var(--ink-2);line-height:1.5}
+.runs b{font-family:var(--mono);font-size:.82rem;color:var(--ink)}
+.pass{display:inline-block;margin-top:8px;font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ok);background:var(--ok-bg);border-radius:99px;padding:3px 10px}
+section{margin:64px 0 0}
+.sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:1.5px solid var(--ink);padding-bottom:12px;margin-bottom:8px;flex-wrap:wrap}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(1.5rem,2.4vw,2rem);letter-spacing:-.015em;margin:0}
+.who{font-family:var(--mono);font-size:.78rem;color:var(--admin)}
+.lede{color:var(--ink-2);max-width:66ch;margin:0 0 26px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:28px 24px}
+figure{margin:0}
+figcaption{display:flex;flex-direction:column;gap:2px}
+figcaption b{font-weight:600;font-size:.98rem}
+figcaption span{font-size:.9rem;color:var(--ink-2);line-height:1.5}
+.ph figcaption{margin-top:12px}
+.phone{border:6px solid var(--frame);border-radius:30px;background:var(--frame);overflow:hidden;aspect-ratio:390/844;max-width:100%}
+.phone img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;border-radius:24px}
+.stack{display:flex;flex-direction:column;gap:40px}
+.br figcaption{margin-bottom:12px}
+.browser{border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--surface);box-shadow:0 1px 2px rgba(20,24,31,.05)}
+.bar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--hair);background:#eef1f5}
+.bar i{width:9px;height:9px;border-radius:50%;background:#cfd5de;display:block}
+.bar em{font-style:normal;font-family:var(--mono);font-size:.7rem;color:var(--ink-3);margin-left:10px;background:var(--ground);border:1px solid var(--hair);border-radius:6px;padding:2px 10px}
+.browser img{display:block;width:100%;height:auto}
+.note{margin:40px 0 0;border-left:3px solid var(--ok);background:var(--surface);border-radius:0 10px 10px 0;padding:18px 24px;max-width:78ch}
+.note p{margin:0 0 .6em;font-size:.98rem;color:var(--ink-2)}
+.note p:last-child{margin:0}
+.creds{width:100%;border-collapse:collapse;margin-top:14px;font-size:.95rem}
+.creds th{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:0 18px 8px 0;border-bottom:1.5px solid var(--ink);font-weight:500}
+.creds td{padding:9px 18px 9px 0;border-top:1px solid var(--hair);vertical-align:top;color:var(--ink-2)}
+.creds code{font-family:var(--mono);font-size:.82rem;color:var(--ink)}
+.tscroll{overflow-x:auto}
+
+.intro{display:grid;grid-template-columns:1fr;gap:18px 40px;margin:36px 0 0}
+@media (min-width:900px){.intro{grid-template-columns:1fr 1fr}}
+.intro h3{font-family:var(--display);font-weight:500;font-size:1.3rem;margin:0 0 6px;letter-spacing:-.01em}
+.intro p{margin:0 0 .7em;color:var(--ink-2);max-width:60ch}
+.intro p:last-child{margin:0}
+.marks{display:grid;grid-template-columns:1fr;gap:12px;margin:18px 0 0}
+@media (min-width:760px){.marks{grid-template-columns:repeat(3,1fr)}}
+.marks div{border:1px solid var(--hair);border-radius:10px;padding:14px 16px;background:var(--ground)}
+.marks b{display:block;font-weight:600;margin-bottom:4px}
+.marks span{font-size:.92rem;color:var(--ink-2);line-height:1.5}
+.star{color:#b42318;font-weight:700}
+.steps{width:100%;border-collapse:collapse;margin-top:18px;font-size:.95rem}
+.steps th{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:0 16px 8px 0;border-bottom:1.5px solid var(--ink);font-weight:500}
+.steps td{padding:10px 16px 10px 0;border-top:1px solid var(--hair);vertical-align:top;color:var(--ink-2);line-height:1.5}
+.steps td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
+.steps .must{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#b42318;white-space:nowrap}
+.steps .opt{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.gloss{display:grid;grid-template-columns:1fr;gap:6px 32px;margin-top:16px}
+@media (min-width:760px){.gloss{grid-template-columns:1fr 1fr}}
+.gloss div{padding:8px 0;border-top:1px solid var(--hair);font-size:.94rem;color:var(--ink-2);line-height:1.5}
+.gloss b{color:var(--ink);font-weight:600}
+figcaption span{font-size:.92rem}
+.how{list-style:none;margin:18px 0 0;padding:0;border-top:1.5px solid var(--ink)}
+.how li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;padding:12px 0;border-bottom:1px solid var(--hair);color:var(--ink-2);line-height:1.5}
+.how li b{font-family:var(--mono);font-size:.76rem;color:var(--ink-3);padding-top:.2em}
+</style>
+<div class="shell">
+<p class="brand">RackTrack &middot; live demo &middot; 15 September 2026</p>
+<h1>How a new organization is set up</h1>
+<p class="stand">This page shows the RackTrack setup as it really runs on the live servers, step by step, with screenshots from the phone app, the desktop browser and the portal. It explains what the setup is, who sees it, what each step asks and why, and what happens after the last step.</p>
+
+<div class="intro">
+<div>
+<h3>What the setup is</h3>
+<p>When the RackTrack owner creates an organization, they also create its admin account. The first time that admin signs in, on the phone app or on the portal, a card opens over the screen and asks for the facts RackTrack needs before the first rack photo: which buildings hold the racks, which halls are inside them, how many racks each hall holds, who approves changes, and the rules.</p>
+<p>The card shows one step at a time. There are ten steps. Five of them must be completed; five can be skipped and filled in later. The only buttons are Back and Next, and Finish on the last step. Every field is saved the moment the admin leaves it, so the admin can stop half way and come back.</p>
+</div>
+<div>
+<h3>Who sees it and when</h3>
+<p>Only the organization admin sees the setup. It opens on its own until the five needed steps are done, then never again unless the admin opens it on purpose. The RackTrack owner is never sent into it.</p>
+<p>Technicians never see it. The admin finishes the setup first and invites people afterwards, so a technician who signs in goes straight to Scan.</p>
+<p>After Finish, everything lives under Organization settings: in the app under Profile, in the portal under Organization. Each section can be edited there on its own, and "Walk through again" opens the card again from step one.</p>
+</div>
+</div>
+
+<div class="marks">
+<div><b><span class="star">*</span> A red star after a label</b><span>This field must be filled. Next does not work while a starred field on the step is empty; the empty fields are pointed out under the field and in one line at the top of the step.</span></div>
+<div><b>No mark</b><span>This field is optional. It can be left empty and filled in later under Organization settings.</span></div>
+<div><b>"* Required" line</b><span>Shown once under the step title, only on steps that have starred fields. Steps with no star at all (Systems, Vendors, Naming, Rules, Review) do not show it.</span></div>
+</div>
+
+<section>
+<div class="sec-head"><h2>The ten steps</h2></div>
+<p class="lede">What each step asks, and why RackTrack needs it.</p>
+<div class="tscroll"><table class="steps">
+<thead><tr><th>Step</th><th>What is asked</th><th>Why</th><th></th></tr></thead>
+<tbody>
+<tr><td>1. Organization</td><td>Short code, country, time zone, primary contact name and email. Industry, website, phone and logo are optional.</td><td>The code goes on labels, reports and the app sign-in. Every timestamp is shown in the organization's time zone. The primary contact is the person RackTrack writes to about the account.</td><td class="must">needed</td></tr>
+<tr><td>2. Datacentres</td><td>Each building: name, address line 1, city, country and time zone. Facility code, provider, region, postcode, opening hours, access notes and coordinates are optional.</td><td>A datacentre is one building with one set of people. The address tells technicians where to go; the coordinates let the phone suggest the building before walking in.</td><td class="must">needed</td></tr>
+<tr><td>3. Spaces and racks</td><td>The halls, rooms or floors inside each building, with a kind and a rack count. Floor, room, row and facility ID are optional.</td><td>A scan starts by choosing a space, so it only compares the photo with that space's racks. The rack count tells a full space from one not scanned yet.</td><td class="must">needed</td></tr>
+<tr><td>4. People</td><td>One approver per datacentre, picked from the members or entered by email. More contacts are optional.</td><td>Every change to the record carries one name. Every ticket reaches a person.</td><td class="must">needed</td></tr>
+<tr><td>5. Systems</td><td>Which system of record (NetBox, ServiceNow or both), which ticketing tool, which notifications.</td><td>Tells RackTrack where the official inventory lives and where tickets go. The connection itself is made under Data sources.</td><td class="opt">optional</td></tr>
+<tr><td>6. Vendors</td><td>The device makers in use, with models and support contacts if known.</td><td>The print on a device is read against a short list instead of the whole catalogue, which is faster and more accurate.</td><td class="opt">optional</td></tr>
+<tr><td>7. Naming</td><td>Patterns for rack, device and port labels, checked live against an example. Cable colours and rack orientation.</td><td>A known label shape helps RackTrack read labels correctly and settle a doubtful read.</td><td class="opt">optional</td></tr>
+<tr><td>8. Switch access</td><td>Management IP ranges, the site Wi-Fi name and read-only SNMP details.</td><td>With it, a scan can read serial numbers, port states and neighbours from the switch. Without it, a scan works from the photo only.</td><td class="opt">optional</td></tr>
+<tr><td>9. Rules</td><td>The four rules RackTrack already follows, shown once: approve before write, never delete, where tickets go, how long photos are kept.</td><td>Showing them once makes them a choice, not a hidden default. They can be changed later.</td><td class="must">accept</td></tr>
+<tr><td>10. Review</td><td>What is still needed, what is not filled yet, and one row per step with an Edit link.</td><td>The admin sees everything in one place before pressing Finish.</td><td class="opt">finish</td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<div class="sec-head"><h2>What happens behind the screen</h2></div>
+<ol class="how">
+<li><b>01</b><span>Each field is written to the server as soon as the admin leaves it. The grey "Saved" at the top of the card confirms the last write. Nothing is guessed on the admin's behalf: the time zone and short code are only proposed, and the country is always chosen by a person.</span></li>
+<li><b>02</b><span>The server keeps a setup state per organization. As long as a needed item is missing, the state says the setup is not done, and the card opens for the admin on the phone app and on the portal alike. The moment the last needed item is saved, the state changes and the card stops opening.</span></li>
+<li><b>03</b><span>Finish asks the server once more whether anything is still missing. If something is, the card names it. If not, the card closes: the app goes to Scan, the portal stays on the page that was open.</span></li>
+<li><b>04</b><span>A technician's sign-in never checks this state. They land on Scan whatever the state of the setup, because the admin sets up before inviting anyone.</span></li>
+<li><b>05</b><span>Passwords for switch access are stored encrypted and are never sent back to the screen. The screen only shows that a password is held.</span></li>
+</ol>
+</section>
+
+<section>
+<div class="sec-head"><h2>Phone app, step by step</h2><span class="who">verify.app &middot; a fresh organization, 390 px wide</span></div>
+<p class="lede">The card fills the phone screen. The title and the two buttons stay fixed; the fields scroll between them.</p>
+<div class="grid">
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-01-login.jpg" alt="Sign in" loading="lazy"></div><figcaption><b>Sign in</b><span>The admin signs in with the username and password the RackTrack owner gave them. Nothing else is asked before the setup. The phone app and the website use the same account.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-02-step01-organization.jpg" alt="Step 1, Organization" loading="lazy"></div><figcaption><b>Step 1, Organization</b><span>The setup opens by itself because this organization has not been set up yet. The name is already filled in. The short code was proposed from the name; the admin can change it. The time zone was taken from the phone. The country still has to be chosen. Every field with a red star must be filled before Next works.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-03-step01-filled.jpg" alt="Step 1, filled" loading="lazy"></div><figcaption><b>Step 1, filled</b><span>Country set to India. A primary contact name and email typed. Each field is saved the moment the admin leaves it, so nothing is lost if the phone locks. The small grey &quot;Saved&quot; at the top says the last save went through.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-05-step02-datacentre-filled.jpg" alt="Step 2, Datacentres" loading="lazy"></div><figcaption><b>Step 2, Datacentres</b><span>A datacentre is one building that holds racks. The admin typed the name Nagpur DC1 and pressed Enter, then filled the building record: facility code NAG-1 (the code the building itself uses), address, city, postcode and country. Address line 1, city and country carry a star. Region and postcode do not.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-06-step03-spaces.jpg" alt="Step 3, Spaces and racks" loading="lazy"></div><figcaption><b>Step 3, Spaces and racks</b><span>A space is a hall, room or floor inside the datacentre. The admin added Hall 1 with 12 racks and Hall 2 with 8. The rack count is needed so a scan can tell a full hall from one that has not been scanned yet. Rack names are not asked here; they come from the scans or an import later.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-07-step04-people.jpg" alt="Step 4, People" loading="lazy"></div><figcaption><b>Step 4, People</b><span>One approver per datacentre. This is the person who says yes or no when a scan wants to change the record. The admin picked themselves from the list of members. More contacts can be added, but they are optional.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-08-step05-systems.jpg" alt="Step 5, Systems" loading="lazy"></div><figcaption><b>Step 5, Systems</b><span>Optional, so no star. The admin chose NetBox as the system of record. This tells RackTrack where the official inventory lives. The connection itself is made later under Data sources.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-09-step06-vendors.jpg" alt="Step 6, Vendors" loading="lazy"></div><figcaption><b>Step 6, Vendors</b><span>Optional. Cisco was added from the vendor list. When RackTrack reads the print on a device, it checks against these vendors first, which makes the read faster and more accurate.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-10-step07-conventions.jpg" alt="Step 7, Naming" loading="lazy"></div><figcaption><b>Step 7, Naming</b><span>Optional. The rack pattern RK-## was typed and checked live against the example RK-07. A pattern helps RackTrack read rack labels correctly, because it knows what shape a label should have.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-11-step08-switches.jpg" alt="Step 8, Switch access" loading="lazy"></div><figcaption><b>Step 8, Switch access</b><span>Optional. Read-only SNMP access to the switches. Left empty here, so the admin pressed Next. Without it, a scan works from the photo only.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-12-step09-rules.jpg" alt="Step 9, Rules" loading="lazy"></div><figcaption><b>Step 9, Rules</b><span>The four rules RackTrack already follows, shown once so the admin knows them: approve before write, never delete, where tickets go, how long photos are kept.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-13-step09-rules-accepted.jpg" alt="Step 9, accepted" loading="lazy"></div><figcaption><b>Step 9, accepted</b><span>One tap on Accept. The word &quot;Accepted&quot; appears and Next opens. The rules can be changed later under Organization settings.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-14-step10-review.jpg" alt="Step 10, Review" loading="lazy"></div><figcaption><b>Step 10, Review</b><span>The last step. The line &quot;All needed items are done.&quot; means every starred item is in. Below it, the optional sections still empty are listed with a way back. Then one row per step with an Edit link.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-15-after-finish-scan.jpg" alt="After Finish" loading="lazy"></div><figcaption><b>After Finish</b><span>Finish closes the setup and opens Scan. The usual tips for a first scan appear. From now on, every technician the admin invites lands straight on Scan.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-16-settings.jpg" alt="Organization settings" loading="lazy"></div><figcaption><b>Organization settings</b><span>The same ten sections, editable one by one. This page is reached from Profile. &quot;Walk through again&quot; reopens the step-by-step container.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/app-phone-17-profile.jpg" alt="Profile" loading="lazy"></div><figcaption><b>Profile</b><span>Under Administration on the profile page, the entry &quot;Organization settings&quot; is where an admin goes back to any of this later.</span></figcaption></figure>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><h2>Desktop browser</h2><span class="who">verify.app2 &middot; a fresh organization, 1280 px wide</span></div>
+<p class="lede">The same setup on a wide screen. The card sits in the middle and the app behind it is dimmed.</p>
+<div class="stack">
+<figure class="br"><figcaption><b>Step 1, Organization</b><span>The same setup on a laptop or desktop browser. It is a card in the middle of the screen; the app behind it is dimmed. Nothing else is different.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/setup</em></div><img src="first-run-walkthrough/img/app-desktop-02-step01-organization.jpg" alt="Step 1, Organization" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Step 2, Datacentres</b><span>Indore DC1 with its building record. Short fields sit two to a row on a wide screen.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/setup</em></div><img src="first-run-walkthrough/img/app-desktop-05-step02-datacentre-filled.jpg" alt="Step 2, Datacentres" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Step 3, Spaces and racks</b><span>Hall 1 and Hall 2, 20 racks between them. Each space shows its kind and its rack count.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/setup</em></div><img src="first-run-walkthrough/img/app-desktop-06-step03-spaces.jpg" alt="Step 3, Spaces and racks" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Step 10, Review</b><span>Every needed item is done, so the only button left is Finish.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/setup</em></div><img src="first-run-walkthrough/img/app-desktop-14-step10-review.jpg" alt="Step 10, Review" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Organization settings</b><span>After Finish. On the left, the list of sections with a dot for each one that is done. On the right, the same fields, editable in place.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/setup</em></div><img src="first-run-walkthrough/img/app-desktop-16-settings.jpg" alt="Organization settings" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Profile</b><span>Where Organization settings is reached afterwards.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/setup</em></div><img src="first-run-walkthrough/img/app-desktop-17-profile.jpg" alt="Profile" loading="lazy"></div></figure>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><h2>Portal</h2><span class="who">verify.portal &middot; a fresh organization, 1440 px wide</span></div>
+<p class="lede">The portal is the website for managers and admins. It reads the same setup state, so the same card opens there.</p>
+<div class="stack">
+<figure class="br"><figcaption><b>Step 1, Organization</b><span>The portal is the website for managers. It reads the same setup state as the phone app, so the same card opens over the Overview page on first sign-in.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai</em></div><img src="first-run-walkthrough/img/portal-laptop-02-step01-organization.jpg" alt="Step 1, Organization" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Step 2, Datacentres</b><span>Pune DC1: address, city, postcode, country, facility code PUN-1 and opening hours. The opening hours and access notes are for the technicians who will visit the building.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai</em></div><img src="first-run-walkthrough/img/portal-laptop-05-step02-datacentre-filled.jpg" alt="Step 2, Datacentres" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Step 3, Spaces and racks</b><span>Hall 1 on floor 1 with facility ID H1 and 12 racks, and Hall 2 with 8 racks. Floor, room and row are optional and help when a building is large.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai</em></div><img src="first-run-walkthrough/img/portal-laptop-06-step03-spaces.jpg" alt="Step 3, Spaces and racks" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Step 4, People</b><span>The approver was entered by email. It shows as a small chip once accepted.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai</em></div><img src="first-run-walkthrough/img/portal-laptop-07-step04-people.jpg" alt="Step 4, People" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Step 10, Review</b><span>&quot;All needed items are done.&quot; Then the optional sections not filled yet, each with a &quot;Go there&quot; link. Then the summary rows.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai</em></div><img src="first-run-walkthrough/img/portal-laptop-11-step10-review.jpg" alt="Step 10, Review" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>After Finish</b><span>The card closes and the Overview page is simply there. No redirect, no waiting page.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai</em></div><img src="first-run-walkthrough/img/portal-laptop-12-after-finish.jpg" alt="After Finish" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Organization &gt; Settings</b><span>The same sections, editable in place. &quot;Open the setup&quot; reopens the card from the first step.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai</em></div><img src="first-run-walkthrough/img/portal-laptop-13-settings.jpg" alt="Organization &gt; Settings" loading="lazy"></div></figure>
+</div>
+<div class="grid" style="margin-top:28px">
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/portal-phone-02-step01-organization.jpg" alt="Portal on a phone" loading="lazy"></div><figcaption><b>Portal on a phone</b><span>On a phone the card fills the screen. The title and the buttons stay fixed; the fields scroll between them.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/portal-phone-05-step02-datacentre-filled.jpg" alt="Datacentres on a phone" loading="lazy"></div><figcaption><b>Datacentres on a phone</b><span>Kochi DC1. One field per row.</span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="first-run-walkthrough/img/portal-phone-11-step10-review.jpg" alt="Review on a phone" loading="lazy"></div><figcaption><b>Review on a phone</b><span>The two lists, then Finish.</span></figcaption></figure>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><h2>Words used on the screens</h2></div>
+<div class="gloss">
+<div><b>Organization</b>: the customer company. It has one admin and one or more datacentres.</div>
+<div><b>Short code</b>: 2 to 16 capital letters, digits or hyphens, used on labels, reports and the app sign-in.</div>
+<div><b>Datacentre</b>: one building that holds racks, with its own address, approver and people. Called a Site elsewhere in the portal.</div>
+<div><b>Facility code</b>: the code the building itself uses, for example in NetBox or a CMDB.</div>
+<div><b>Space</b>: a hall, room, floor, row or cage inside a datacentre.</div>
+<div><b>Rack count</b>: how many racks a space holds. Names are not needed here.</div>
+<div><b>Approver</b>: the person who accepts or rejects a change a scan wants to make to the record.</div>
+<div><b>Primary contact</b>: the person RackTrack writes to about the account.</div>
+<div><b>System of record</b>: where the official inventory lives, such as NetBox or ServiceNow.</div>
+<div><b>Naming pattern</b>: the shape of a label, for example RK-## for racks. # stands for a digit.</div>
+<div><b>SNMP</b>: a read-only way for RackTrack to ask a switch about its ports and serial number.</div>
+<div><b>Rules</b>: approve before write, never delete, where a ticket goes, how long photos are kept, rack height and counting direction.</div>
+</div>
+</section>
+
+<div class="note">
+<p><strong>Try it yourself.</strong> Two organizations were left untouched so the first run can be seen live. Sign in, and the card opens on step 1. Press Next through the steps; Back returns. On the last step press Finish. The password is the same for all: the demo password (kept out of the repository; ask the owner)</p>
+<div class="tscroll"><table class="creds">
+<thead><tr><th>Where</th><th>Username</th><th>State</th></tr></thead>
+<tbody>
+<tr><td>Phone app or demo.racktrack.ai</td><td><code>harbour.admin</code></td><td>Untouched unless you have used it, the card opens on step 1</td></tr>
+<tr><td>portal.racktrack.ai</td><td><code>riverside.admin</code></td><td>Untouched, the card opens on step 1</td></tr>
+<tr><td>demo.racktrack.ai</td><td><code>meridian.admin</code></td><td>Finished earlier, opens on Organization settings</td></tr>
+<tr><td>portal.racktrack.ai</td><td><code>lakeside.admin</code></td><td>Finished earlier, opens on Organization > Settings</td></tr>
+</tbody></table></div>
+<p style="margin-top:12px">The four organizations in the screenshots (verify.app, verify.app2, verify.portal, verify.portal2) were removed afterwards from the owner console.</p>
+</div>
+</div>

@@ -1,0 +1,679 @@
+<!-- Published copy of the claude.ai artifact "EVE-NG and the Office LAN" | https://claude.ai/code/artifact/bd7fd01a-2943-4baf-a8f9-55031c3a1aa7 | artifact last updated 2026-08-20 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>EVE-NG and the Office LAN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;600;800&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root{
+    --ground:#F1F4F5;
+    --surface:#FFFFFF;
+    --surface-sunk:#E9EEF0;
+    --ink:#12181B;
+    --ink-soft:#4E5C63;
+    --ink-faint:#7C8990;
+    --rule:#D7E0E3;
+    --rule-strong:#B9C6CB;
+    --accent:#0B5D6B;
+    --accent-wash:#E2EFF1;
+    --true:#1C6B44;
+    --true-wash:#E4F0E9;
+    --false:#9E3626;
+    --false-wash:#F6E7E4;
+    --open:#8A5B0F;
+    --open-wash:#F7EEDD;
+
+    --display:"Chivo","Helvetica Neue",Arial,sans-serif;
+    --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+    --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:17px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{padding:0 clamp(18px,4vw,64px) 96px;}
+
+  /* ---------- masthead ---------- */
+
+  .masthead{
+    padding:clamp(40px,6vw,76px) 0 clamp(28px,3vw,40px);
+    border-bottom:2px solid var(--ink);
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:500;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 18px;
+  }
+  h1{
+    font-family:var(--display);
+    font-weight:800;
+    font-size:clamp(38px,6.2vw,76px);
+    line-height:1.02;
+    letter-spacing:-.02em;
+    margin:0 0 22px;
+    text-wrap:balance;
+    max-width:22ch;
+  }
+  .standfirst{
+    font-size:clamp(18px,1.7vw,22px);
+    line-height:1.5;
+    color:var(--ink-soft);
+    margin:0;
+    max-width:64ch;
+  }
+  .standfirst strong{color:var(--ink);font-weight:600;}
+
+  .meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 40px;
+    margin-top:34px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--ink-faint);
+  }
+  .meta b{
+    display:block;
+    font-weight:500;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    font-size:10.5px;
+    color:var(--rule-strong);
+    margin-bottom:3px;
+  }
+  .meta span{color:var(--ink-soft);}
+
+  /* ---------- verdict strip ---------- */
+
+  .verdicts{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:1px;
+    background:var(--rule);
+    border-bottom:1px solid var(--rule);
+  }
+  .verdict{
+    background:var(--surface);
+    padding:30px clamp(20px,2.4vw,34px) 32px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .verdict .tag{
+    font-family:var(--mono);
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    padding:4px 9px;
+    border-radius:2px;
+    align-self:flex-start;
+  }
+  .tag--false{background:var(--false-wash);color:var(--false);}
+  .tag--true{background:var(--true-wash);color:var(--true);}
+  .tag--open{background:var(--open-wash);color:var(--open);}
+  .verdict h3{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:19px;
+    line-height:1.28;
+    margin:0;
+    letter-spacing:-.01em;
+  }
+  .verdict p{margin:0;font-size:15.5px;line-height:1.55;color:var(--ink-soft);}
+
+  /* ---------- sections ---------- */
+
+  section{
+    padding-top:clamp(44px,5vw,72px);
+    border-top:1px solid var(--rule);
+  }
+  section:first-of-type{border-top:none;}
+
+  .sec-head{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:6px;
+    margin-bottom:26px;
+  }
+  .sec-num{
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:500;
+    letter-spacing:.16em;
+    color:var(--accent);
+  }
+  h2{
+    font-family:var(--display);
+    font-weight:800;
+    font-size:clamp(25px,2.9vw,36px);
+    line-height:1.14;
+    letter-spacing:-.018em;
+    margin:0;
+    text-wrap:balance;
+  }
+  h3.sub{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:18px;
+    letter-spacing:-.005em;
+    margin:34px 0 12px;
+  }
+
+  p{margin:0 0 18px;max-width:74ch;}
+  .lead{font-size:19px;color:var(--ink-soft);}
+  em.q{font-style:italic;color:var(--ink);}
+
+  code{
+    font-family:var(--mono);
+    font-size:.87em;
+    background:var(--surface-sunk);
+    padding:1.5px 5px;
+    border-radius:2px;
+    color:var(--accent);
+  }
+
+  .cols{
+    display:grid;
+    grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+    gap:clamp(24px,3.2vw,56px);
+    align-items:start;
+  }
+  @media (max-width:900px){ .cols{grid-template-columns:minmax(0,1fr);} }
+
+  /* ---------- timeline ---------- */
+
+  .tl{list-style:none;margin:0;padding:0;}
+  .tl li{
+    display:grid;
+    grid-template-columns:158px 14px minmax(0,1fr);
+    gap:0 18px;
+    padding-bottom:26px;
+    position:relative;
+  }
+  .tl .when{
+    font-family:var(--mono);
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--ink-faint);
+    padding-top:3px;
+    font-variant-numeric:tabular-nums;
+  }
+  .tl .dot{
+    position:relative;
+  }
+  .tl .dot::before{
+    content:"";
+    position:absolute;
+    left:3px;top:8px;
+    width:9px;height:9px;
+    border-radius:50%;
+    background:var(--rule-strong);
+    outline:3px solid var(--ground);
+  }
+  .tl li.mark .dot::before{background:var(--false);}
+  .tl li:not(:last-child) .dot::after{
+    content:"";
+    position:absolute;
+    left:7px;top:19px;bottom:-26px;
+    width:1px;
+    background:var(--rule);
+  }
+  .tl .what{padding-top:0;}
+  .tl .what b{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:16.5px;
+    display:block;
+    margin-bottom:3px;
+  }
+  .tl .what span{font-size:15.5px;color:var(--ink-soft);display:block;max-width:70ch;}
+  .tl .who{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-top:6px;
+    display:inline-block;
+  }
+  .tl .who.claude{color:var(--false);}
+  @media (max-width:720px){
+    .tl li{grid-template-columns:14px minmax(0,1fr);}
+    .tl .when{grid-column:2;padding-top:0;margin-bottom:4px;}
+    .tl .dot{grid-row:1 / span 2;}
+  }
+
+  /* ---------- tables ---------- */
+
+  .tablewrap{overflow-x:auto;margin:0 0 22px;border:1px solid var(--rule);background:var(--surface);}
+  table{border-collapse:collapse;width:100%;min-width:520px;}
+  th,td{
+    text-align:left;
+    padding:13px 16px;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+    font-size:15px;
+  }
+  th{
+    font-family:var(--mono);
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:.13em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    background:var(--surface-sunk);
+    white-space:nowrap;
+  }
+  td.num,td.mono{font-family:var(--mono);font-size:13.5px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  td strong{font-weight:600;}
+  .yes{color:var(--true);font-weight:600;}
+  .no{color:var(--false);font-weight:600;}
+
+  /* ---------- callouts ---------- */
+
+  .box{
+    background:var(--surface);
+    border:1px solid var(--rule);
+    border-left:3px solid var(--accent);
+    padding:22px 24px;
+    margin:0 0 22px;
+  }
+  .box--own{border-left-color:var(--false);}
+  .box--clean{border-left-color:var(--true);}
+  .box h4{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:16px;
+    margin:0 0 9px;
+    letter-spacing:-.005em;
+  }
+  .box p{margin:0 0 12px;font-size:16px;}
+  .box p:last-child{margin-bottom:0;}
+
+  pre{
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:1.62;
+    background:var(--ink);
+    color:#DCE6E8;
+    padding:18px 20px;
+    overflow-x:auto;
+    margin:0 0 22px;
+    border-radius:2px;
+  }
+  pre .c{color:#7FA9AF;}
+  pre .hl{color:#F0C674;}
+
+  /* ---------- mechanism cards ---------- */
+
+  .mechs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:22px;}
+  .mech{background:var(--surface);padding:22px 24px;}
+  .mech .rank{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    display:block;
+    margin-bottom:8px;
+  }
+  .mech h4{font-family:var(--display);font-weight:600;font-size:17px;margin:0 0 8px;}
+  .mech p{font-size:15px;margin:0 0 10px;color:var(--ink-soft);}
+  .mech p:last-child{margin-bottom:0;}
+  .mech .sym{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--ink);
+    background:var(--surface-sunk);
+    padding:8px 10px;
+    display:block;
+  }
+
+  /* ---------- checklist ---------- */
+
+  ol.checks{counter-reset:c;list-style:none;margin:0;padding:0;}
+  ol.checks li{
+    counter-increment:c;
+    display:grid;
+    grid-template-columns:34px minmax(0,1fr);
+    gap:0 14px;
+    padding:18px 0;
+    border-bottom:1px solid var(--rule);
+  }
+  ol.checks li::before{
+    content:counter(c);
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:600;
+    color:var(--accent);
+    background:var(--accent-wash);
+    width:26px;height:26px;
+    display:grid;place-items:center;
+    border-radius:50%;
+    margin-top:2px;
+  }
+  ol.checks b{font-family:var(--display);font-weight:600;font-size:16.5px;display:block;margin-bottom:4px;}
+  ol.checks p{margin:0 0 8px;font-size:15.5px;color:var(--ink-soft);}
+  ol.checks pre{margin:8px 0 0;}
+
+  ul.plain{margin:0 0 20px;padding-left:20px;}
+  ul.plain li{margin-bottom:9px;max-width:72ch;}
+
+  footer{
+    margin-top:clamp(48px,5vw,72px);
+    padding-top:26px;
+    border-top:2px solid var(--ink);
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--ink-faint);
+    line-height:1.75;
+  }
+  footer a{color:var(--accent);}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Evidence report · RackTrack lab</p>
+    <h1>EVE-NG and the Office LAN</h1>
+    <p class="standfirst">The claim is that the EVE-NG setup — all of it, not just 11 August — disturbed the office network, and that RackTrack's development work caused it. <strong>One part of that is true and worth taking seriously:</strong> on 16 July three virtual switches were deliberately bridged onto <code>192.168.1.0/24</code>. Everything else the claim implies is contradicted by the logs.</p>
+    <div class="meta">
+      <div><b>Compiled</b><span>20 August 2026</span></div>
+      <div><b>Period covered</b><span>16 July – 20 August 2026</span></div>
+      <div><b>Evidence</b><span>server log DB, EVE-NG API, session records</span></div>
+      <div><b>All timestamps</b><span>UTC — add 5:30 for IST</span></div>
+    </div>
+  </header>
+
+  <div class="verdicts">
+    <div class="verdict">
+      <span class="tag tag--true">Established</span>
+      <h3>The lab was put on your real LAN, on purpose</h3>
+      <p>16 July, 13:55 UTC. A <code>pnet0</code> cloud was added to the lab and three switch nodes were attached to it. That was the requested outcome — the app cannot read a switch it cannot reach.</p>
+    </div>
+    <div class="verdict">
+      <span class="tag tag--false">Contradicted</span>
+      <h3>RackTrack never connected to the TP-Link</h3>
+      <p>103 SSH attempts to <code>192.168.1.33</code> across all dates, <strong>zero</strong> completed sessions. 102 handshake timeouts, one <code>ENETUNREACH</code>. On 11 August it made no attempt at all.</p>
+    </div>
+    <div class="verdict">
+      <span class="tag tag--open">Untested</span>
+      <h3>Whether the lab caused what your admin saw</h3>
+      <p>Answerable only from the switch side, and only against a specific symptom with a timestamp. Section 5 is the test list; nothing so far has been specific enough to test.</p>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>What was actually changed on your network</h2></div>
+    <div class="cols">
+      <div>
+        <p class="lead">One change in this entire body of work touches the physical office network. It is worth stating without hedging, because it is the honest centre of the question.</p>
+        <p>On <strong>16 July at 13:55 UTC</strong>, a network object named <code>Cloud0-Mgmt</code> was created in the EVE-NG lab <code>test.unl</code> as <code>net9</code>, with <code>type: pnet0</code>. In EVE-NG, <code>pnet0</code> is the bridge to the host's physical NIC. Two minutes later, <code>Ethernet0/3</code> on all three switch nodes was attached to it.</p>
+        <p>Before that change the lab was islanded. The API had shown the existing <em class="q">"Net"</em> cloud as <code>type: bridge</code> — a private, isolated bridge — so nothing in the lab could reach <code>192.168.1.0/24</code> and nothing on the LAN could reach the lab. After it, three virtual switches sat on your office segment with static addresses.</p>
+        <p>That was the point. It was tracked on your own build list as <em class="q">"Lab switches put on the real network so the app can reach them."</em> It was not incidental, and it was not hidden.</p>
+      </div>
+      <div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Object</th><th>Value</th></tr></thead>
+            <tbody>
+              <tr><td>Lab network</td><td class="mono">net9 · Cloud0-Mgmt · pnet0</td></tr>
+              <tr><td>Attached ports</td><td class="mono">e0/3 × 3 nodes</td></tr>
+              <tr><td>Mgmt VLAN</td><td class="mono">99 (name MGMT)</td></tr>
+              <tr><td>L2SW2</td><td class="mono">192.168.1.60</td></tr>
+              <tr><td>L2SW1</td><td class="mono">192.168.1.61</td></tr>
+              <tr><td>CoreSW</td><td class="mono">192.168.1.62</td></tr>
+              <tr><td>Sw1 (added 21 Jul)</td><td class="mono">192.168.1.63</td></tr>
+              <tr><td>STP mode</td><td class="mono">pvst (IOL default)</td></tr>
+              <tr><td>VTP</td><td class="mono">transparent</td></tr>
+              <tr><td>Gateway</td><td class="mono">192.168.1.1</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="box box--own">
+          <h4>The one honest concession</h4>
+          <p>Three Layer-2 devices were introduced onto a segment your admin is responsible for, without their sign-off in the room. Whatever the logs go on to say, that fact stands on its own and they are right to ask about it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>The full timeline, and who did each step</h2></div>
+    <p class="lead">The EVE-NG box, its physical connection and the original topology were yours before any of this. Sravan built the lab; the integration work is what is recorded below.</p>
+    <ul class="tl">
+      <li>
+        <span class="when">16 Jul · 13:41</span><span class="dot"></span>
+        <span class="what"><b>Lab confirmed islanded</b><span>EVE-NG API reports the existing "Net" cloud as <code>type: bridge</code> — a private bridge. Nothing in the lab could reach the LAN, by construction.</span><span class="who">finding</span></span>
+      </li>
+      <li class="mark">
+        <span class="when">16 Jul · 13:55</span><span class="dot"></span>
+        <span class="what"><b>Cloud0-Mgmt created (pnet0)</b><span>Added as <code>net9</code> via the EVE-NG API. This is the change that touches the physical LAN.</span><span class="who claude">done by Claude</span></span>
+      </li>
+      <li class="mark">
+        <span class="when">16 Jul · 13:56</span><span class="dot"></span>
+        <span class="what"><b>e0/3 attached on all three switches</b><span>Confirmed <code>count: 3</code>. Nodes restarted at 14:07 so EVE-NG would map the new interface; wiring verified intact afterwards.</span><span class="who claude">done by Claude</span></span>
+      </li>
+      <li>
+        <span class="when">16 Jul · 14:11</span><span class="dot"></span>
+        <span class="what"><b>Loop risk flagged, unprompted</b><span>Recorded at the time: <em class="q">"Wiring e0/3 on all three blank switches to Cloud0 creates a potential bridging loop into your real LAN… let me verify your network isn't storming."</em></span><span class="who claude">done by Claude</span></span>
+      </li>
+      <li>
+        <span class="when">16 Jul · 14:13</span><span class="dot"></span>
+        <span class="what"><b>Checked for a storm — none found</b><span>EVE-NG API answered in 0.07 s; gateway <code>192.168.1.1</code> at 0% loss; <code>192.168.1.33</code> returned its SSH banner normally.</span><span class="who claude">done by Claude</span></span>
+      </li>
+      <li>
+        <span class="when">16 Jul · 14:13</span><span class="dot"></span>
+        <span class="what"><b>Management VLAN 99 chosen deliberately</b><span>Rather than VLAN 1. Putting e0/3 in VLAN 1 would have bridged Cloud0 → L2-Sw1 → L3-Switch → Cloud0 and risked a broadcast storm. VLAN 99 exists only on e0/3 and the SVI.</span><span class="who claude">done by Claude</span></span>
+      </li>
+      <li>
+        <span class="when">17 Jul · 08:15</span><span class="dot"></span>
+        <span class="what"><b>Console work — by you, at the switch</b><span>The pushed startup-configs had not loaded. <code>Ethernet0/3</code> showed <code>up</code>, but no <code>Vlan99</code> and no IP existed. The addresses were typed in by hand at the EVE-NG console.</span><span class="who">done by you</span></span>
+      </li>
+      <li>
+        <span class="when">17 Jul · 08:24</span><span class="dot"></span>
+        <span class="what"><b>Bridging proven — by a CDP message</b><span><code>%CDP-4-NATIVE_VLAN_MISMATCH … Ethernet0/3 (99), with L2SW2 Ethernet0/3 (1)</code>. L2SW1 could see L2SW2 through the physical segment. This is the moment the lab was demonstrably on your LAN.</span><span class="who">finding</span></span>
+      </li>
+      <li>
+        <span class="when">17 Jul · 10:32</span><span class="dot"></span>
+        <span class="what"><b>Startup-configs disarmed</b><span>Set <code>config=0</code> on nodes 2, 3 and 8 so no pushed config could ever overwrite what you had typed and saved.</span><span class="who claude">done by Claude</span></span>
+      </li>
+      <li class="mark">
+        <span class="when">19 Jul</span><span class="dot"></span>
+        <span class="what"><b>Node stop / wipe / start on the lab switches</b><span>Nodes were booting bare. The per-node config flag was flipped to 1 and node 2 was stopped, wiped and restarted as a test. Telnet was temporarily enabled on the VTY lines for debugging and removed in the same pass. These are lab-node changes — none of them touched the EVE-NG host's own networking.</span><span class="who claude">done by Claude</span></span>
+      </li>
+      <li>
+        <span class="when">21 Jul · 09:52</span><span class="dot"></span>
+        <span class="what"><b>A fourth node wired to the bridge</b><span><code>Sw1</code> (node 1), previously isolated, attached to <code>net9</code> and given <code>192.168.1.63</code>.</span><span class="who claude">done by Claude</span></span>
+      </li>
+      <li>
+        <span class="when">21 Jul · 12:18</span><span class="dot"></span>
+        <span class="what"><b>You take the EVE-NG host directly</b><span>Your own SSH session to <code>root@192.168.1.49</code>. From here the lab has two sets of hands on it.</span><span class="who">done by you</span></span>
+      </li>
+      <li>
+        <span class="when">11 Aug · 08:19</span><span class="dot"></span>
+        <span class="what"><b>Everything unreachable</b><span>A five-host probe returned <code>timeout</code> on <code>.33</code>, <code>.60</code>, <code>.61</code>, <code>.62</code> and <code>.63</code>. The same day you noted the lab was being rebuilt into a bigger one.</span><span class="who">finding</span></span>
+      </li>
+      <li>
+        <span class="when">13 Aug</span><span class="dot"></span>
+        <span class="what"><b>Full log audit of the app</b><span>103 attempts to the TP-Link across all dates, zero sessions. 498 attempts across four switches, zero sessions. Nothing on 11 August.</span><span class="who">finding</span></span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>What a bridged lab can plausibly do — and what it can't</h2></div>
+    <p class="lead">Taking the claim seriously means naming the mechanisms that are real rather than dismissing it. Four are worth your admin's time. They are ordered by how likely they are to produce a complaint.</p>
+
+    <div class="mechs">
+      <div class="mech">
+        <span class="rank">Most likely</span>
+        <h4>BPDUs from two foreign bridges</h4>
+        <p>The two L2 nodes run <code>spanning-tree mode pvst</code> and send BPDUs out <code>e0/3</code> onto your segment. If the office switch port feeding the EVE-NG host has BPDU guard enabled, that port err-disables the moment the lab boots.</p>
+        <span class="sym">symptom: EVE-NG host drops off the network, port shows err-disabled</span>
+      </div>
+      <div class="mech">
+        <span class="rank">Likely if STP is active</span>
+        <h4>Topology-change churn on every node boot</h4>
+        <p>IOL config is volatile and these nodes were restarted often. Each boot is a link-up event and an STP recalculation on a segment shared with your production switch, and TCNs flush MAC tables — brief unicast flooding each time.</p>
+        <span class="sym">symptom: intermittent slowness, "flapping", MAC table churn</span>
+      </div>
+      <div class="mech">
+        <span class="rank">Possible</span>
+        <h4>Four static addresses, no reservation</h4>
+        <p><code>.60</code>–<code>.63</code> were assigned by hand on <code>192.168.1.0/24</code>. If your DHCP scope covers that range, an address conflict with a leased client is possible and would surface as a duplicate-IP complaint, not a switch fault.</p>
+        <span class="sym">symptom: duplicate IP warnings, one host intermittently unreachable</span>
+      </div>
+      <div class="mech">
+        <span class="rank">Possible</span>
+        <h4>Unexpected MACs and CDP neighbours</h4>
+        <p>IOL nodes use <code>aabb.cc00.*</code> MAC addresses. Three or four of them appear and vanish on one access port. On a switch with port security or a MAC limit, that is a violation; on a monitored network it is at minimum an alert.</p>
+        <span class="sym">symptom: port-security violation, unknown neighbours in discovery</span>
+      </div>
+    </div>
+
+    <h3 class="sub">The loop, specifically — because it is the first thing an admin will ask</h3>
+    <p>The three lab switches are cross-connected internally, so a second path back to the shared segment would form a loop. It does not, and this is checkable in the committed script: <code>server/scripts/configure-lab.js</code> makes <code>Ethernet0/2</code> — the internal uplink — an <strong>access port in VLAN 10 or VLAN 20</strong>, not a trunk. VLAN 99 is never carried between the switches. Their only VLAN 99 path is the office segment itself, which means one path, which means no loop. CoreSW is a Layer-3 image: its <code>e0/3</code> is a routed interface, so it does not bridge or send BPDUs at all.</p>
+    <p>That leaves the two Layer-2 switches as the only devices in the lab that put spanning-tree traffic on your LAN.</p>
+
+    <h3 class="sub">What is ruled out by the logs, not by argument</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Claim</th><th>Evidence</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>RackTrack connected to the office TP-Link</td><td>103 SSH attempts recorded to <code>.33</code>, every one failed — 102 handshake timeouts, 1 <code>ENETUNREACH</code></td><td class="no">Never once</td></tr>
+          <tr><td>RackTrack sent a config command to a switch</td><td>Every command in the app begins with a read verb; non-owners are held to <code>isAllowedConsoleCommand()</code>, pinned by <code>console_allowlist.test.js</code></td><td class="no">Not possible</td></tr>
+          <tr><td>The EVE-NG host's networking was reconfigured</td><td>Only EVE-NG lab API calls were made — create network, attach interface, push config, start/stop/wipe node. No <code>iptables</code>, no bridge edits, no <code>systemctl</code></td><td class="no">Untouched</td></tr>
+          <tr><td>A VPN tunnel exposed the office LAN</td><td><code>wireguard</code> and <code>tunnel</code> appear zero times in the server logs; both configs are still <code>.example</code> templates</td><td class="no">Never brought up</td></tr>
+          <tr><td>SNMP discovery scanned the network</td><td>Netdisco never got past its own database — every sync failed at <code>localhost:5432</code>. Zero SNMP packets sent</td><td class="no">Zero packets</td></tr>
+          <tr><td>Something happened on 11 August</td><td>Zero connection attempts that day; <code>.33</code> had been removed from the device list at 15:12</td><td class="no">No activity</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>What was checked at the time</h2></div>
+    <div class="cols">
+      <div>
+        <p>The storm question was not raised for the first time by your admin. It was raised sixteen minutes after the wiring went in, by the person doing the wiring, and it was measured rather than assumed.</p>
+        <div class="box box--clean">
+          <h4>16 July, 14:13 UTC — measured, not asserted</h4>
+          <p>EVE-NG API responded in <strong>0.07 s</strong>. The gateway at <code>192.168.1.1</code> showed <strong>0% packet loss</strong> over five pings. <code>192.168.1.33</code> returned its SSH banner normally.</p>
+          <p>A storming LAN does not produce those three numbers. Whatever else is true, the network was healthy immediately after the change.</p>
+        </div>
+        <p>Two caveats, so this is not read as more than it is. It is a single point-in-time check on 16 July, not continuous monitoring — it says nothing about the weeks that followed. And it was taken from a Mac reaching the LAN over VPN, which is a worse vantage point than the switch itself.</p>
+      </div>
+      <div>
+        <p>One detail that belongs in the record: <code>.33</code> showed ICMP loss in that same check, and it was attributed at the time to rate-limiting from an earlier port sweep — a scan run from this side. Its SSH banner came back normally, so the switch was healthy, but the sweep did put load on it.</p>
+        <p>No network complaint was raised to me at any point between 16 July, when the lab went onto the LAN, and 13 August, when your admin's concern first came up. That is a weak signal rather than proof — a problem nobody mentions is still a problem — but a storm or a loop is not usually something a network goes four weeks without noticing.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>How to settle it, from the switch side</h2></div>
+    <p class="lead">Every check below is falsifiable and takes minutes. Run them on the office switch that feeds the EVE-NG host — the answers are on that box, not in the application.</p>
+
+    <ol class="checks">
+      <li>
+        <div>
+          <b>Look for the fingerprint in the switch log</b>
+          <p>If the lab did this, it left a record. Search around <strong>16 July 13:55 UTC</strong> (19:25 IST) — the wiring — and around every subsequent lab node boot.</p>
+          <pre><span class="c">! on the office switch</span>
+show logging | include SPANTREE|BPDU|err-disable|MACFLAP|PORTSEC</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <b>Check who the root bridge is, and who is claiming it</b>
+          <p>If an IOL node ever won a root election, the bridge ID gives it away — the lab nodes use <code>aabb.cc00.*</code> addresses.</p>
+          <pre>show spanning-tree
+show spanning-tree detail | include ieee|occurred|from</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <b>Look for the lab's MAC addresses on the port</b>
+          <p>Three or four <code>aabb.cc00.*</code> entries on the EVE-NG host's port is the lab. None means nothing from the lab ever reached this switch.</p>
+          <pre>show mac address-table | include aabb.cc
+show interfaces status err-disabled</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <b>Rule the address range in or out</b>
+          <p>Confirm whether <code>192.168.1.60</code>–<code>.63</code> fall inside the DHCP scope. If they do, a conflict is a real candidate and has nothing to do with spanning tree.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <b>The decisive test — remove the lab and watch</b>
+          <p>Shut the EVE-NG host's access port, or stop the lab nodes, and leave it that way for a working day. If the symptom continues, the lab is not the cause and the investigation moves elsewhere. If it stops, you have your answer and the fix is section 6.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="box">
+      <h4>What is needed back from your admin</h4>
+      <p>Nothing above can be aimed without one thing: <strong>what the symptom actually is, and when it happened.</strong> Ports flapping, a switch rebooting, slowness, a management session dropping, a monitoring alert — each points at a different mechanism, and several of them have nothing to do with this lab at all.</p>
+      <p>"There is an issue" cannot be tested. A symptom with a timestamp can be, in an afternoon.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2>What to do regardless of the outcome</h2></div>
+    <p class="lead">Some of this is worth doing even if the lab is cleared, because the current arrangement relies on spanning tree behaving well between equipment that was never introduced to it.</p>
+    <ul class="plain">
+      <li><strong>Give the lab its own VLAN on the office switch.</strong> Put the EVE-NG host's port in a dedicated VLAN with the management addresses inside it. The lab keeps working, and its spanning tree stops being your production spanning tree.</li>
+      <li><strong>Turn off spanning tree on the lab's management ports</strong> — <code>no spanning-tree vlan 99</code> on the two L2 nodes — so they stop offering BPDUs to a network that did not ask for them.</li>
+      <li><strong>Reserve <code>192.168.1.60</code>–<code>.63</code> in DHCP</strong>, or move the lab's management addresses out of the leased range entirely.</li>
+      <li><strong>Let the admin set the boundary.</strong> They own the segment; the lab is a guest on it. A five-minute agreement on which port, which VLAN and which addresses removes this entire category of dispute for good.</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">07</span><h2>The conclusion, in plain words</h2></div>
+    <div class="cols">
+      <div>
+        <p class="lead">The application never touched your switch. That is settled by the server's own logs: 103 attempts, zero connections, ever — and nothing at all on 11 August.</p>
+        <p>The lab is a different question, and the honest answer is different too. On 16 July three virtual switches were deliberately bridged onto your office LAN, because that was the only way the product could read a real switch. Two of them speak spanning tree, and they have been speaking it to your network ever since. The risk was identified at the time, mitigated with a separate management VLAN, and measured — the network was clean sixteen minutes later and no one reported a problem for the next four weeks.</p>
+        <p>So: not proven, not impossible, and testable in an afternoon. Section 5 is how.</p>
+      </div>
+      <div>
+        <div class="box box--own">
+          <h4>The part that is fair</h4>
+          <p>Your admin is right that equipment appeared on their segment without their sign-off. That is worth conceding directly and fixing with section 6, whatever the logs eventually say about the symptom.</p>
+        </div>
+        <div class="box box--clean">
+          <h4>The part that is not</h4>
+          <p>"Caused by the app" does not survive contact with the log database. Every claim in section 3's table is checkable on your own machine in one query.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Sources: <code>server/data/logs.db</code> (every SSH attempt the poller made) · EVE-NG API on <code>192.168.1.49</code> (lab topology, node state, network types) · <code>server/scripts/configure-lab.js</code> and <code>deploy/lab-tunnel/</code> in the repository · session records, 16 July – 20 August 2026.<br>
+    Companion report — the 11 August question in isolation: <a href="https://claude.ai/code/artifact/78a2e686-0084-40ac-9140-92d9f1836325">Aug 11 Switch Investigation</a>.
+  </footer>
+
+</div>
+
+</body></html>

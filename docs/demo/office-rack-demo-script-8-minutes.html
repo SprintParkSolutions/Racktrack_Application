@@ -1,0 +1,111 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Demo Script" | https://claude.ai/code/artifact/8a5dfb28-f2c4-4293-be38-56897919500d | artifact last updated 2026-09-07 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>RackTrack Demo Script</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#ffffff; --ink:#111418; --muted:#5c6878; --rule:#e3e6ea; --soft:#f4f6f8;
+    --up:#0f7b4f; --note:#b26a00;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  html{color-scheme:light}
+  body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans);-webkit-text-size-adjust:100%}
+  .page{padding:28px clamp(16px,4vw,48px) 56px}
+  header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+  h1{margin:0;font-size:26px;font-weight:600;letter-spacing:-.02em;text-wrap:balance}
+  .lede{margin:0;color:var(--muted)}
+  .lede b{color:var(--ink);font-weight:600}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin-top:22px}
+  .step{border:1px solid var(--rule);border-radius:12px;padding:16px 18px 14px;display:flex;flex-direction:column;gap:8px;background:var(--paper)}
+  .step h2{margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+  .n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:var(--ink);color:#fff;font:600 12px/1 var(--sans);flex:none}
+  .row{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:baseline}
+  .k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-top:3px}
+  .v{margin:0}
+  .v.from{color:var(--ink)}
+  code{font:13px var(--mono);background:var(--soft);padding:1px 5px;border-radius:5px}
+  .tag{color:var(--up);font-weight:600}
+  h3{margin:30px 0 10px;font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+  th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  td:first-child{font-weight:600;white-space:nowrap}
+  .qa{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px 24px;margin:0;padding:0;list-style:none}
+  .qa li{padding:10px 12px;border-left:3px solid var(--note);background:var(--soft);border-radius:0 8px 8px 0}
+  .qa b{display:block;margin-bottom:2px}
+  @media (max-width:420px){.row{grid-template-columns:1fr;gap:2px}}
+</style>
+<div class="page">
+  <header>
+    <h1>RackTrack demo script</h1>
+    <p class="lede">Sign in as <b>owner</b> on the phone, stand at the office rack. Six steps, about eight minutes. Every screen shows where a fact came from; nothing is guessed.</p>
+  </header>
+
+  <section class="steps">
+    <article class="step">
+      <h2><span class="n">1</span>Scan the rack</h2>
+      <div class="row"><span class="k">Do</span><p class="v">Scan, then photograph the rack front.</p></div>
+      <div class="row"><span class="k">You see</span><p class="v">Every device boxed with its U position, and the labels read off the front (<code>SP-RI-U15-SW04</code>).</p></div>
+      <div class="row"><span class="k">From</span><p class="v from">The camera. Our own trained model finds devices and units; OCR reads the labels. Fewer than ten ports means a router; the rest are switches, patch panels, servers.</p></div>
+    </article>
+
+    <article class="step">
+      <h2><span class="n">2</span>Read the switches <span class="tag">Network</span></h2>
+      <div class="row"><span class="k">Do</span><p class="v">The three switches are already listed (D-Link core at <code>.100</code>, two TP-Links at <code>.11</code> and <code>.12</code>). Tap Read.</p></div>
+      <div class="row"><span class="k">You see</span><p class="v">Each switch as a numbered card: make, model, serial, uptime, and every port in two rows, green where something is plugged in. Tap a port for its speed, the device on it and its addresses.</p></div>
+      <div class="row"><span class="k">From</span><p class="v from">The switch itself, asked over SNMP by the phone on the rack's own network. Each switch is placed in the rack by matching its port count to the box the camera found; the place can be changed.</p></div>
+    </article>
+
+    <article class="step">
+      <h2><span class="n">3</span>What each switch is <span class="tag">Switches</span></h2>
+      <div class="row"><span class="k">Do</span><p class="v">Pick a switch.</p></div>
+      <div class="row"><span class="k">You see</span><p class="v">Firmware version and build, serial, address, ports; the specifications; the firmware check; SFP advice for its ports.</p></div>
+      <div class="row"><span class="k">From</span><p class="v from">Identity and firmware from the switch's own MIB. Latest firmware from the maker's download list: TP-Link's Omada support site, D-Link's official firmware mirror. Behind a sign-in, the app says so and links the page. A make or model you type wins everywhere.</p></div>
+    </article>
+
+    <article class="step">
+      <h2><span class="n">4</span>The report <span class="tag">More · Report</span></h2>
+      <div class="row"><span class="k">You see</span><p class="v">One document for the rack: ports in use of the total, devices, switches read, cables, addresses, then every device top-down with its ports.</p></div>
+      <div class="row"><span class="k">From</span><p class="v from">The camera and the switches joined. Download as CSV, JSON or PDF. Share to Teams or email, sent from the RackTrack mailbox with the PDF attached, or as a link that works for five minutes without an account.</p></div>
+    </article>
+
+    <article class="step">
+      <h2><span class="n">5</span>Export to NetBox</h2>
+      <div class="row"><span class="k">Do</span><p class="v">Report, Export, NetBox, Preview, then Write.</p></div>
+      <div class="row"><span class="k">You see</span><p class="v">What will be created, updated and left alone; then the rack, devices, interfaces and cables appear in NetBox.</p></div>
+      <div class="row"><span class="k">From</span><p class="v from">The same report. NetBox is provided for every account (Data Sources shows <code>RackTrack NetBox · in use</code>). An organisation can add its own with URL, username and password, and that one is used instead.</p></div>
+    </article>
+
+    <article class="step">
+      <h2><span class="n">6</span>Drift <span class="tag">More · Drift</span></h2>
+      <div class="row"><span class="k">You see</span><p class="v">What changed on each switch since the last read: ports that came up or went down, new devices, addresses that moved.</p></div>
+      <div class="row"><span class="k">From</span><p class="v from">The readings the phone filed, compared over time.</p></div>
+    </article>
+  </section>
+
+  <h3>Where the data comes from</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Source</th><th>What it gives us</th></tr></thead>
+      <tbody>
+        <tr><td>Camera photo</td><td>devices, U positions, labels, port counts</td></tr>
+        <tr><td>The switch, over SNMP</td><td>ports up and down, speeds, addresses seen, neighbours, serial, firmware, uptime</td></tr>
+        <tr><td>Maker's download site</td><td>latest firmware version</td></tr>
+        <tr><td>You</td><td>names, places in the rack, corrections</td></tr>
+        <tr><td>NetBox</td><td>where the rack is written</td></tr>
+        <tr><td>Teams / Outlook</td><td>how the report is sent</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>If asked</h3>
+  <ul class="qa">
+    <li><b>Passwords on the switch?</b> Read-only SNMP, a community or a v3 user, entered once per rack.</li>
+    <li><b>Is anything made up?</b> No. Where a fact is not read, the app says it is not read.</li>
+    <li><b>Does the phone need the internet?</b> Only for the firmware check, sharing and NetBox. Reading the switches works on the rack's network alone.</li>
+  </ul>
+</div>
+
+</body></html>

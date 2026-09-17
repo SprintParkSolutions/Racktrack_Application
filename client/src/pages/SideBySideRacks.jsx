@@ -11,7 +11,7 @@ import styles from './SideBySideRacks.module.css';
 
 // Rack TOGGLE: for a multi-rack group, show ONE rack's content at a time with a
 // pill toggle to switch between racks. Rendering one at a time keeps live-probe
-// pages (Ports) correct — no two simultaneous probes. Standalone rack → the
+// pages (Ports) correct - no two simultaneous probes. Standalone rack → the
 // normal single page.
 export function RackToggle({ Single, render }) {
   const { rackId } = useParams();

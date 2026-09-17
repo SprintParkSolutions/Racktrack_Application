@@ -7,7 +7,7 @@ import styles from './NetdiscoPage.module.css';
 // Netdisco proxy (ECONNREFUSED, JSONDecodeError, tracebacks, generic HTTP
 // numbers, etc.) so we can hide it behind the friendly offline banner
 // instead of dumping it into the UI. Same idea as the CMDB page filter.
-// Patch panels are passive — they don't show up as LLDP/CDP neighbours in
+// Patch panels are passive - they don't show up as LLDP/CDP neighbours in
 // real network discovery (no MAC, no agent). When our rack-derived data
 // surfaces one as a "neighbour", it's misleading because the user expects
 // network-layer adjacency, not physical cabling. Treat these as "no
@@ -42,14 +42,13 @@ function looksLikeNetdiscoNoise(msg) {
 /**
  * Netdisco view scoped to a RackTrack scan.
  *
- * The page is a single scrollable list of cards — one per scan device —
- * that show live data joined from Netdisco. Each card is collapsible and
+ * The page is a single scrollable list of cards - one per scan device - * that show live data joined from Netdisco. Each card is collapsible and
  * reveals the device's full port table with up/down state, VLAN, LLDP/CDP
  * neighbours and the count of MACs learned per port. A "Sync to Netdisco"
  * button at the top force-pushes the scan into Netdisco's DB.
  *
  * Below the device cards is a free-form MAC lookup that hits the whole
- * Netdisco database, not just this rack — useful for "where did this MAC
+ * Netdisco database, not just this rack - useful for "where did this MAC
  * end up?" questions while looking at the rack.
  */
 // ── Embeddable content (used as a tab in ResultsPage) ────────
@@ -111,7 +110,7 @@ function NetdiscoInner({ rackId, embedded }) {
       try { data = text ? JSON.parse(text) : null; } catch { /* not JSON */ }
       if (!r.ok || !data) {
         // Suppress raw protocol-level chatter (ECONNREFUSED, traceback,
-        // JSONDecodeError, etc.) — the on-screen "backend is unreachable"
+        // JSONDecodeError, etc.) - the on-screen "backend is unreachable"
         // banner already says what the user needs to know.
         const msg = data?.error || '';
         setMatchError(looksLikeNetdiscoNoise(msg) ? null : (msg || null));
@@ -120,7 +119,7 @@ function NetdiscoInner({ rackId, embedded }) {
         setMatch(data);
       }
     } catch (err) {
-      // Network failure (proxy down, etc.) — render the friendly offline
+      // Network failure (proxy down, etc.) - render the friendly offline
       // state rather than the raw "Failed to fetch" exception text.
       setMatchError(null);
       setMatch({ netdisco_reachable: false });
@@ -221,7 +220,7 @@ function NetdiscoInner({ rackId, embedded }) {
             </div>
           )}
 
-          {/* Reachable, done loading, but nothing to show — say so instead of
+          {/* Reachable, done loading, but nothing to show - say so instead of
               rendering a blank panel. Covers both "no matches at all" and
               "everything found was a patch panel (filtered out above)". */}
           {match && match.netdisco_reachable !== false && !matchLoading && !matchError &&
@@ -345,8 +344,7 @@ function PortTable({ ports, onMacClick }) {
   const downCount = ports.filter(p => !isUp(p.up)).length;
   const liveCount = ports.filter(p => p.neighbor || p.active_mac_count > 0 || isUp(p.up)).length;
 
-  // Only show the MACs column when at least one port has node data —
-  // otherwise it's a sea of dashes that adds noise.
+  // Only show the MACs column when at least one port has node data - // otherwise it's a sea of dashes that adds noise.
   const anyMacs = ports.some(p => p.active_mac_count > 0);
 
   return (

@@ -1,0 +1,1003 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Server Capability Assessment" | https://claude.ai/code/artifact/ed4e6c06-f215-47bb-b21f-dc0712ac3f78 | artifact last updated 2026-09-03 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>RackTrack Server Capability Assessment</title>
+<meta name="description" content="Thirteen capability claims against the RackTrack server, each verified in source and on the live API, with severity, effort and a remediation plan." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;450;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root {
+    color-scheme: light;
+
+    --ink:       #14181f;
+    --ink-2:     #3d4756;
+    --ink-3:     #626d7e;
+    --ink-4:     #8b95a3;
+    --paper:     #ffffff;
+    --panel:     #f6f7f9;
+    --rule:      #d8dce3;
+    --rule-soft: #e7eaef;
+    --rule-hair: #eef0f4;
+
+    --accent:      #0f5f58;
+    --accent-ink:  #0b4a45;
+    --accent-wash: #e9f1ef;
+
+    --sev-1:      #a8332c;   /* blocks a customer promise */
+    --sev-1-wash: #fbeceb;
+    --sev-2:      #9a6a08;   /* limits a role */
+    --sev-2-wash: #fbf3e2;
+    --sev-3:      #3d4756;   /* quality of life */
+    --sev-3-wash: #eef0f4;
+    --ok:         #1c6b4a;
+    --ok-wash:    #e6f1ec;
+
+    --serif: 'Source Serif 4', Georgia, serif;
+    --sans:  'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono:  'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --measure: 74ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ink: #e9edf3; --ink-2: #b5bfcc; --ink-3: #8d99a8; --ink-4: #67717f;
+      --paper: #0e1319; --panel: #151b23; --rule: #28303a; --rule-soft: #1f262f; --rule-hair: #1a2029;
+      --accent: #63b3a8; --accent-ink: #8ecec3; --accent-wash: #14262a;
+      --sev-1: #e08e87; --sev-1-wash: #2c1a1a;
+      --sev-2: #d7ab63; --sev-2-wash: #2a2317;
+      --sev-3: #a8b3c1; --sev-3-wash: #1d232b;
+      --ok: #6fc39c; --ok-wash: #142520;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ink: #e9edf3; --ink-2: #b5bfcc; --ink-3: #8d99a8; --ink-4: #67717f;
+    --paper: #0e1319; --panel: #151b23; --rule: #28303a; --rule-soft: #1f262f; --rule-hair: #1a2029;
+    --accent: #63b3a8; --accent-ink: #8ecec3; --accent-wash: #14262a;
+    --sev-1: #e08e87; --sev-1-wash: #2c1a1a;
+    --sev-2: #d7ab63; --sev-2-wash: #2a2317;
+    --sev-3: #a8b3c1; --sev-3-wash: #1d232b;
+    --ok: #6fc39c; --ok-wash: #142520;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 15px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1080px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 56px) 88px; }
+
+  /* ── Cover ───────────────────────────────────────────────────── */
+  .cover { padding: clamp(40px, 6vw, 64px) 0 0; }
+  .org-line {
+    display: flex; align-items: baseline; gap: 10px; padding-bottom: 14px;
+    border-bottom: 3px solid var(--ink); margin-bottom: 26px;
+  }
+  .org-line b { font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+  .org-line span { font-size: 13px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 4.4vw, 44px);
+    line-height: 1.12; letter-spacing: -0.016em; margin: 0 0 12px; max-width: 20ch; text-wrap: balance;
+  }
+  .subtitle { font-family: var(--serif); font-size: clamp(16px, 1.9vw, 19px); color: var(--ink-2); max-width: var(--measure); margin: 0 0 34px; }
+
+  .control { border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+  .control dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin: 0; }
+  .control div { padding: 12px 16px; border-left: 1px solid var(--rule-hair); border-top: 1px solid var(--rule-hair); }
+  .control div:first-child { border-left: 0; }
+  .control dt { font-size: 10.5px; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-4); margin-bottom: 3px; }
+  .control dd { margin: 0; font-size: 14px; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  /* ── Sections ────────────────────────────────────────────────── */
+  section { margin-top: clamp(40px, 5vw, 60px); }
+  .h2 { display: flex; align-items: baseline; gap: 12px; padding-bottom: 9px; border-bottom: 1px solid var(--ink); margin-bottom: 20px; }
+  .h2 .num { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  .h2 h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(20px, 2.3vw, 25px); letter-spacing: -0.01em; margin: 0; }
+  p { max-width: var(--measure); }
+  .lede { color: var(--ink-2); margin: 0 0 22px; }
+
+  /* ── Tables ──────────────────────────────────────────────────── */
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 700px; }
+  thead th {
+    text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-3); padding: 11px 14px; background: var(--panel);
+    border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  tbody td { padding: 11px 14px; border-bottom: 1px solid var(--rule-hair); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.id { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); white-space: nowrap; }
+  td.title a { color: var(--ink); text-decoration: none; font-weight: 500; border-bottom: 1px solid var(--rule); }
+  td.title a:hover { border-bottom-color: var(--accent); color: var(--accent-ink); }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.q { color: var(--ink-2); }
+
+  .sev { display: inline-block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; white-space: nowrap; }
+  .sev.s1 { background: var(--sev-1-wash); color: var(--sev-1); }
+  .sev.s2 { background: var(--sev-2-wash); color: var(--sev-2); }
+  .sev.s3 { background: var(--sev-3-wash); color: var(--sev-3); }
+  .sev.ok { background: var(--ok-wash); color: var(--ok); }
+
+  .eff { font-family: var(--mono); font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+
+  /* ── Findings ────────────────────────────────────────────────── */
+  .finding { margin-top: 34px; border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+  .f-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 13px 18px; background: var(--panel); border-bottom: 1px solid var(--rule); }
+  .f-head .fid { font-family: var(--mono); font-size: 12.5px; color: var(--accent); font-weight: 500; }
+  .f-head h3 { font-family: var(--serif); font-weight: 600; font-size: 18.5px; letter-spacing: -0.008em; margin: 0; flex: 1 1 320px; line-height: 1.3; }
+  .f-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .f-body { padding: 18px; }
+  .f-statement { font-family: var(--serif); font-size: 16.5px; line-height: 1.55; margin: 0 0 18px; max-width: var(--measure); }
+
+  .f-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0; border-top: 1px solid var(--rule-hair); }
+  .f-grid > div { padding: 15px 0 0; }
+  .f-grid > div + div { padding-left: 22px; border-left: 1px solid var(--rule-hair); }
+  .f-grid h4, .f-block h4 {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase;
+    color: var(--ink-4); margin: 0 0 7px;
+  }
+  .f-grid p { font-size: 14px; line-height: 1.55; color: var(--ink-2); margin: 0; max-width: none; }
+  .f-grid ul { margin: 0; padding-left: 16px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+  .f-grid li + li { margin-top: 4px; }
+
+  .f-block { margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--rule-hair); }
+  .f-block p { font-size: 14px; line-height: 1.6; color: var(--ink-2); margin: 0; }
+  .refs { list-style: none; margin: 0; padding: 0; }
+  .refs li { font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: var(--ink-3); padding-left: 16px; text-indent: -16px; }
+  .refs li b { font-weight: 500; color: var(--accent-ink); }
+  code { font-family: var(--mono); font-size: 0.92em; color: var(--ink); background: var(--accent-wash); padding: 1px 4px; border-radius: 2px; }
+
+  /* ── Plan ────────────────────────────────────────────────────── */
+  .stage { display: grid; grid-template-columns: 128px 1fr; gap: 0 22px; padding: 16px 0; border-bottom: 1px solid var(--rule-hair); }
+  .stage:last-child { border-bottom: 0; }
+  .stage-l b { display: block; font-size: 13px; font-weight: 600; }
+  .stage-l span { font-family: var(--mono); font-size: 12px; color: var(--ink-4); }
+  .stage-r .ids { font-family: var(--mono); font-size: 12.5px; color: var(--accent-ink); margin-bottom: 5px; }
+  .stage-r p { font-size: 14px; color: var(--ink-2); margin: 0; }
+
+  .note { border-left: 2px solid var(--accent); padding: 3px 0 3px 16px; margin: 18px 0 0; }
+  .note p { font-size: 14px; color: var(--ink-2); margin: 0; }
+
+  footer.doc { margin-top: 58px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--ink-3); }
+  footer.doc p { max-width: 84ch; margin: 0 0 7px; }
+  a { color: var(--accent-ink); }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @media (max-width: 620px) {
+    .f-grid > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--rule-hair); }
+    .stage { grid-template-columns: 1fr; gap: 6px; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="cover">
+    <div class="org-line">
+      <b>RackTrack</b><span>Engineering &middot; Capability assessment</span>
+    </div>
+    <h1>Server capability gaps</h1>
+    <p class="subtitle">
+      Thirteen claims about what the RackTrack server cannot do, each checked in the source and probed
+      against the live API before being written down. Ten are confirmed, two were right in substance but
+      wrong in detail, and one was refuted and struck.
+    </p>
+    <div class="control">
+      <dl>
+        <div><dt>Document</dt><dd>RT-CAP-2026-09</dd></div>
+        <div><dt>Version</dt><dd>1.0</dd></div>
+        <div><dt>Date</dt><dd>3 September 2026</dd></div>
+        <div><dt>System</dt><dd>RackTrack server</dd></div>
+        <div><dt>Environment</dt><dd>demo.racktrack.ai</dd></div>
+        <div><dt>Classification</dt><dd>Internal</dd></div>
+        <div><dt>Claims tested</dt><dd>13</dd></div>
+        <div><dt>Confirmed</dt><dd>12 of 13</dd></div>
+      </dl>
+    </div>
+  </header>
+
+  <section>
+    <div class="h2"><span class="num">1</span><h2>Summary</h2></div>
+    <p class="lede">
+      Severity is judged by what a customer cannot be given, not by how hard the fix is. Effort is read
+      from the amount of schema and code each change touches. Nothing in this table is an estimate from a
+      planning session; every line is traced to a file and a line number in section 3.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Finding</th><th>Status</th><th>Severity</th><th>Effort</th><th>Consequence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="id">SRV-01</td>
+            <td class="title"><a href="#f01">No organization scope on the audit log</a></td>
+            <td><span class="sev s1">Confirmed</span></td>
+            <td><span class="sev s1">Blocking</span></td>
+            <td class="eff">S</td>
+            <td class="q">A manager cannot audit their own team</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-02</td>
+            <td class="title"><a href="#f02">Site manager cannot list their own people</a></td>
+            <td><span class="sev s1">Confirmed</span></td>
+            <td><span class="sev s1">Blocking</span></td>
+            <td class="eff">S</td>
+            <td class="q">A site manager cannot run their site</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-03</td>
+            <td class="title"><a href="#f03">Invites cannot be listed or revoked</a></td>
+            <td><span class="sev s1">Confirmed</span></td>
+            <td><span class="sev s2">Limiting</span></td>
+            <td class="eff">S</td>
+            <td class="q">An invite cannot be resent or cancelled</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-04</td>
+            <td class="title"><a href="#f04">Multi-rack captures scoped by site, not role</a></td>
+            <td><span class="sev s1">Confirmed</span></td>
+            <td><span class="sev s2">Limiting</span></td>
+            <td class="eff">S</td>
+            <td class="q">The two-rack feature 404s for supervisors</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-05</td>
+            <td class="title"><a href="#f05">Org admin cannot be granted through the API</a></td>
+            <td><span class="sev s1">Confirmed</span></td>
+            <td><span class="sev s1">Blocking</span></td>
+            <td class="eff">S</td>
+            <td class="q">A second manager cannot be appointed</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-06</td>
+            <td class="title"><a href="#f06">A rack has no name, row or height</a></td>
+            <td><span class="sev s1">Confirmed</span></td>
+            <td><span class="sev s1">Blocking</span></td>
+            <td class="eff">M</td>
+            <td class="q">No floor plan, no cabinet history</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-07</td>
+            <td class="title"><a href="#f07">No device inventory across racks</a></td>
+            <td><span class="sev s2">Partly built</span></td>
+            <td><span class="sev s1">Blocking</span></td>
+            <td class="eff">M</td>
+            <td class="q">No asset list, no search by model</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-08</td>
+            <td class="title"><a href="#f08">A site can be created but never changed</a></td>
+            <td><span class="sev s1">Confirmed</span></td>
+            <td><span class="sev s2">Limiting</span></td>
+            <td class="eff">M</td>
+            <td class="q">A mistyped site name is permanent</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-09</td>
+            <td class="title"><a href="#f09">Nothing raises an infrastructure alert</a></td>
+            <td><span class="sev s2">Partly built</span></td>
+            <td><span class="sev s1">Blocking</span></td>
+            <td class="eff">L</td>
+            <td class="q">An overnight outage leaves no trace</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-10</td>
+            <td class="title"><a href="#f10">Reports stop at one rack</a></td>
+            <td><span class="sev s2">Partly built</span></td>
+            <td><span class="sev s2">Limiting</span></td>
+            <td class="eff">L</td>
+            <td class="q">No fleet inventory export</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-11</td>
+            <td class="title"><a href="#f11">Security policy is server-wide</a></td>
+            <td><span class="sev s1">Confirmed</span></td>
+            <td><span class="sev s2">Limiting</span></td>
+            <td class="eff">L</td>
+            <td class="q">No enterprise sign-on, no per-tenant rules</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-12</td>
+            <td class="title"><a href="#f12">A skipped poll is not distinguishable</a></td>
+            <td><span class="sev s2">Partly built</span></td>
+            <td><span class="sev s3">Quality</span></td>
+            <td class="eff">S</td>
+            <td class="q">Nobody can see why a switch is silent</td>
+          </tr>
+          <tr>
+            <td class="id">SRV-13</td>
+            <td class="title"><a href="#f13">Cross-tenant access to a scan</a></td>
+            <td><span class="sev ok">Refuted</span></td>
+            <td><span class="sev ok">None</span></td>
+            <td class="eff">&mdash;</td>
+            <td class="q">Already enforced. No work required</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p>
+        <b>Effort key.</b> S is under a day. M is a few days, usually because a table is added and existing
+        rows must be reconciled. L is a week or more, and should be split before it is scheduled.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="h2"><span class="num">2</span><h2>Remediation plan</h2></div>
+    <p class="lede">
+      Ordered by what it unblocks per day of work. The four small items in stage one carry no schema
+      migration between them and each closes a hole a customer meets in their first week.
+    </p>
+    <div class="stage">
+      <div class="stage-l"><b>Stage 1</b><span>4 items &middot; ~3 days</span></div>
+      <div class="stage-r">
+        <div class="ids">SRV-01, SRV-02, SRV-03, SRV-04</div>
+        <p>
+          Role and scope corrections. No migrations. Each is a handler or a scope change in a file that
+          already contains the pattern to copy. Together they make the manager and site manager roles
+          usable as sold.
+        </p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="stage-l"><b>Stage 2</b><span>2 items &middot; ~1 week</span></div>
+      <div class="stage-r">
+        <div class="ids">SRV-05, SRV-07, and SRV-12 alongside</div>
+        <p>
+          Appointing a manager, and the device index. The index is the one gap that changes what the
+          product can claim, and its read side reuses a cross-rack walk that is already written. The poller
+          status field is an hour of work and should ride along.
+        </p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="stage-l"><b>Stage 3</b><span>3 items &middot; ~2 weeks</span></div>
+      <div class="stage-r">
+        <div class="ids">SRV-06, SRV-08, SRV-09</div>
+        <p>
+          Durable schema decisions. Rack placement and alerting each need a policy answer before code:
+          what a rescan inherits from the cabinet it replaced, and what is worth waking somebody for.
+          Site rename is small and belongs in the same pass as placement.
+        </p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="stage-l"><b>Stage 4</b><span>When sold</span></div>
+      <div class="stage-r">
+        <div class="ids">SRV-10 scheduling, SRV-11 single sign-on</div>
+        <p>
+          Neither blocks a customer today. Both are large, and both are better specified against a signed
+          requirement than against a guess.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="h2"><span class="num">3</span><h2>Findings</h2></div>
+
+    <article class="finding" id="f01">
+      <div class="f-head">
+        <span class="fid">SRV-01</span>
+        <h3>No organization scope on the audit log</h3>
+        <span class="f-meta"><span class="sev s1">Blocking</span><span class="eff">Effort S</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          The audit log offers three scopes: your own events, one site, or everything. There is nothing in
+          between, and the two wider scopes are unlocked by a username listed in an environment variable
+          rather than by the role on the account.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p><code>GET /api/audit</code> accepts <code>scope=self</code>, <code>tenant</code> or
+            <code>all</code>. The second and third check <code>AUDIT_ADMINS</code>, a comma-separated list
+            of usernames. A caller not on it is dropped one level silently, with no error.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>An org admin on the shared default site sees two unrelated customers' users and none of their own sixteen technicians</li>
+              <li>No per-organization activity view is possible</li>
+              <li>An owner not on the list is downgraded to their own events</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/app.js:3191</b> the gate is <code>AUDIT_ADMINS.includes(req.user.username)</code>, with no reference to role</li>
+            <li><b>server/app.js:3205</b> only <code>userId</code> and <code>tenantId</code> reach the query; there is no organization branch</li>
+            <li><b>server/audit.js:221</b> <code>query()</code> accepts those two filters only, with no join to tenants or users</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            Add a fourth scope, <code>org</code>, and gate the ladder on role: owner may request everything,
+            org admin is capped at their organization, everyone else remains on self. Audit rows already
+            carry <code>tenant_id</code>, so the organization filter is a join to <code>tenants</code>. No
+            migration.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f02">
+      <div class="f-head">
+        <span class="fid">SRV-02</span>
+        <h3>A site manager cannot list their own people</h3>
+        <span class="f-meta"><span class="sev s1">Blocking</span><span class="eff">Effort S</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          A site manager may create a technician, deactivate one, reset a password and remove an account,
+          all correctly scoped to their own site. They cannot see who is on it, so every write they are
+          permitted is addressable only by an id they have no way to look up.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>Three write routes admit a site manager and authorise against their own site. The single
+            listing route, <code>GET /api/orgs/:orgId/members</code>, is restricted to owner and org admin
+            and answers a site manager with 403.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>A site manager cannot find anyone an org admin added</li>
+              <li>They cannot deactivate a leaver they did not create themselves</li>
+              <li>No site-scoped people view is possible in any client</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/auth.js:1957</b> the route is <code>requireRole('owner', 'org_admin')</code></li>
+            <li><b>Live probe</b> as a site manager on site 14: <code>GET /api/orgs/13/members</code> returned 403</li>
+            <li><b>server/*.js</b> the only two <code>:siteId</code> routes in the server are both POST</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            Add <code>GET /api/sites/:siteId/members</code> beside the existing POST, guarded by the
+            <code>canManageSite</code> helper already in the file, running the same query with
+            <code>WHERE u.tenant_id = ?</code>. No migration.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f03">
+      <div class="f-head">
+        <span class="fid">SRV-03</span>
+        <h3>Invites cannot be listed or revoked</h3>
+        <span class="f-meta"><span class="sev s2">Limiting</span><span class="eff">Effort S</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          An invite link is returned exactly once, in the response that creates it. After that the invite is
+          invisible: nobody can see who has one outstanding, resend a link that never arrived, or cancel one
+          sent to the wrong address.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>Three routes: create for a site, read a single invite by its code, and accept. The
+            <code>invites</code> table already stores email, role, site, sender, creation time, expiry and
+            acceptance time.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>No pending-invites view in any client</li>
+              <li>A lost link cannot be resent, only replaced</li>
+              <li>An invite sent in error cannot be cancelled</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/auth.js:2123</b> creates the invite and returns the code once, at line 2144</li>
+            <li><b>server/auth.js:2148</b> reads one invite by code; there is no collection form</li>
+            <li><b>server/auth.js:392</b> the table already carries every column a listing needs</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>Two handlers beside the existing block: a list for a site and a delete for a code. No migration.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f04">
+      <div class="f-head">
+        <span class="fid">SRV-04</span>
+        <h3>Multi-rack captures are scoped by site, not by role</h3>
+        <span class="f-meta"><span class="sev s2">Limiting</span><span class="eff">Effort S</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          Every rack-group route compares the group's site id to the caller's own and never consults their
+          role, so a supervisor is shown the groups of whichever customer shares the legacy default site and
+          receives a 404 on their own organization's two-rack scans.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>Five read routes, each guarded by one hand-written equality on <code>tenant_id</code>. The
+            scan list beside them already scopes correctly by role using the shared tenant helpers.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>The two-rack feature fails for the people who supervise it</li>
+              <li>The combined report 404s for the same user whose rack list shows the member racks</li>
+              <li>Groups from another organization appear in the list</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/app.js:5419</b> <code>if (group.tenant_id !== req.user.tenant_id) return 404</code>, no role or membership test</li>
+            <li><b>server/app.js:5460</b> the list passes one tenant id into <code>WHERE g.tenant_id = ?</code></li>
+            <li><b>server/lib/rack_groups.js:45</b> the query has no scope parameter</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            Replace the equality with the scope helper the scan list already uses: a set of site ids for an
+            org admin, unrestricted for the owner. Both columns exist. No migration.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f05">
+      <div class="f-head">
+        <span class="fid">SRV-05</span>
+        <h3>Org admin cannot be granted through the API</h3>
+        <span class="f-meta"><span class="sev s1">Blocking</span><span class="eff">Effort S</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          Role changes are capped at site manager and member for every caller, including the platform owner.
+          An organization therefore has exactly the one org admin created with it, and a second manager can
+          only be appointed by creating another organization.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p><code>POST /api/orgs</code> creates an organization together with its first org admin.
+            <code>PATCH /api/orgs/:orgId/members/:memberId</code> accepts a role but validates it against a
+            two-value list.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>A deputy manager cannot be appointed</li>
+              <li>Handover when a manager leaves has no supported path</li>
+              <li>A manager account created for a customer has to be made at organization-creation time or not at all</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/auth.js</b> member PATCH: <code>if (!['site_manager','member'].includes(role)) return 400 'Role must be member or site_manager'</code></li>
+            <li><b>Live probe</b> as platform owner, promoting a site manager to org admin: 400 with that same message</li>
+            <li>The handler does distinguish an owner caller elsewhere, so the ceiling is the validation list, not the permission model</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            Admit <code>org_admin</code> to the accepted list when the caller is an owner, and keep the
+            existing rule that an org admin may not edit another org admin. One line of validation, plus a
+            test. No migration.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f06">
+      <div class="f-head">
+        <span class="fid">SRV-06</span>
+        <h3>A rack has no name, row or height</h3>
+        <span class="f-meta"><span class="sev s1">Blocking</span><span class="eff">Effort M</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          A rack is the content hash of the photograph that produced it. There is nowhere to record what the
+          cabinet is called, which row it stands in, or how many units tall it is, so two scans of one
+          cabinet are unrelated rows in a list ordered only by time.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>Four rack tables, all of them ownership: which site claimed the rack and when. The scan
+            result describes the inside of the rack in detail, including per-device unit positions, while
+            the rack itself has no identity beyond its hash.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>No floor plan or spatial view</li>
+              <li>No cabinet name on a report</li>
+              <li>No sorting or filtering by site, row or position</li>
+              <li>254 unrelated rows on the live server where there are far fewer cabinets</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>auth.db</b> holds 22 tables; none is a placement or cabinet table</li>
+            <li><b>server/auth.js:276</b> the rack record is <code>(tenant_id, rack_id, created_by, created_at)</code></li>
+            <li><b>server/app.js:864</b> the rack id is derived from the image bytes, so a rescan produces a new id</li>
+            <li><b>server/demo_topology.js:10</b> already names a future <code>rack_placement</code> table as the intended fix</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            A <code>rack_placement</code> table keyed on site and rack, holding name, building, floor, row,
+            position and height, with a helper module modelled on the existing tenant scoping. The second
+            half is the real work: because the id follows the photograph, a durable cabinet identity is
+            needed so a rescan inherits the placement of the cabinet it replaced.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f07">
+      <div class="f-head">
+        <span class="fid">SRV-07</span>
+        <h3>No device inventory across racks</h3>
+        <span class="f-meta"><span class="sev s1">Blocking</span><span class="sev s2">Partly built</span><span class="eff">Effort M</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          Devices are files, not rows. Every device lives inside its own rack's result on disk and there is
+          no devices table, so a question as ordinary as how many switches the estate holds means fetching
+          every rack result into the client and adding them up.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>More than the claim allowed for. <code>GET /api/ground-truth/queue</code> already walks every
+            rack a caller may see and returns devices across all of them, with correct role scoping. It is
+            owner-only, hides reviewed devices and caps at 500 rows, so it cannot serve as an inventory, but
+            the cross-rack walk does not need writing from scratch.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>No asset list across the estate</li>
+              <li>No search by make, model, firmware or serial</li>
+              <li>No counts by vendor or class per organization or site</li>
+              <li>Measured cost of the client-side alternative: about 4 MB and roughly a minute</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/app.js:6528</b> the scan list returns per-rack totals only, never device rows</li>
+            <li><b>server/app.js:7084</b> the only route returning device identity serves exactly one rack, from a file</li>
+            <li><b>server/app.js:6708</b> the ground-truth queue already carries role-correct rack scoping</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            Begin with the read side, reusing the existing walk: a paged <code>GET /api/devices</code> with
+            filters. That alone unblocks the client. A devices table written at scan time is the durable
+            answer and can follow, since it indexes data the pipeline already produces.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f08">
+      <div class="f-head">
+        <span class="fid">SRV-08</span>
+        <h3>A site can be created but never changed or removed</h3>
+        <span class="f-meta"><span class="sev s2">Limiting</span><span class="eff">Effort M</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          There is no route to rename a site, move it between organizations, or delete it. A site created
+          with a typo carries it permanently, and the only way to remove one is to delete its entire
+          organization along with every member, invite and rack claim.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>Two site routes: list and create. Organizations by contrast have a full lifecycle, with
+            rename, status, approve, reject and delete.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>A mistyped site name is permanent</li>
+              <li>A closed location cannot be retired</li>
+              <li>A site cannot follow a reorganization</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/auth.js:1932, 1944</b> are the only two org-scoped site routes; neither is PATCH or DELETE</li>
+            <li><b>server/*.js</b> searching for <code>:siteId</code> returns exactly two hits, both POST</li>
+            <li>Sign-in matches a site by slug or name, so a rename must leave the slug alone</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            Rename is one route and one update. Delete is what makes this medium: eight tables carry a site
+            id and a policy is needed for a site that still holds members and scans. A move must also
+            re-point its members' organization.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f09">
+      <div class="f-head">
+        <span class="fid">SRV-09</span>
+        <h3>Nothing raises an infrastructure alert</h3>
+        <span class="f-meta"><span class="sev s1">Blocking</span><span class="sev s2">Partly built</span><span class="eff">Effort L</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          No one is told when anything breaks. A switch that stops answering backs off quietly and, once it
+          recovers, leaves no record that it ever failed, so an overnight outage is invisible by morning.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>Two pieces, both real and both pointed elsewhere. A rules engine with named thresholds and
+            severity levels runs at report time for a single rack and persists nothing. A complete alert
+            table with raise, deduplicate, read and dismiss already exists for the marketplace. Neither ever
+            sees a switch or a scan.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>No notification, by mail or in the product</li>
+              <li>No unread count for infrastructure</li>
+              <li>A failure that self-heals leaves no evidence</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>auth.db</b> the only table with alert in its name belongs to the marketplace</li>
+            <li><b>server/lib/report_insights.js:31</b> five named thresholds producing critical, warning and clear verdicts, then discarded</li>
+            <li><b>server/lib/port_poller.js:227</b> a failing switch enters backoff without recording an event</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            An <code>alerts</code> table copying the raise-and-deduplicate shape the marketplace already
+            uses, fed from the three places that already know something is wrong: the poller, the scan
+            pipeline and the report rules. Delivery by mail is a separate decision and should not hold up
+            the record.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f10">
+      <div class="f-head">
+        <span class="fid">SRV-10</span>
+        <h3>Reports stop at one rack</h3>
+        <span class="f-meta"><span class="sev s2">Limiting</span><span class="sev s2">Partly built</span><span class="eff">Effort L</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          Four report routes exist and every one is a single rack or a single capture. Nothing aggregates
+          across a site or an organization, and there is no scheduler anywhere in the server.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>One renderer with five outputs selected by a format parameter: a summary, a self-contained
+            web page, a PDF, JSON including the device list, and a CSV covering ports and feedback but not
+            devices. The claim that there is no device export was wrong for JSON.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>No estate-wide or site-wide report</li>
+              <li>No device inventory export to a spreadsheet</li>
+              <li>No weekly digest or scheduled delivery</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/app.js:5689, 6833, 6843, 6910</b> are the only four report routes; all single-rack or single-group</li>
+            <li>No scheduler exists: searching for schedule, cron or digest across the server returns nothing</li>
+            <li><b>Live probe</b> every plausible organization or site-wide report URL returned 404 as the platform owner</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            Three separable pieces, smallest first. Add a devices section to the existing CSV, a change to
+            one function. Then an organization-wide report, which depends on SRV-07. A scheduler is the
+            largest part and is genuinely new ground.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f11">
+      <div class="f-head">
+        <span class="fid">SRV-11</span>
+        <h3>Security policy is server-wide</h3>
+        <span class="f-meta"><span class="sev s2">Limiting</span><span class="eff">Effort L</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          Password rules, session lifetimes and the sign-on provider list are constants shared by every
+          organization. There is no API token facility and no webhooks. The organizations table holds an id,
+          a slug, a name, a creator, a timestamp and a status.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>One organization-level control that does work: an owner can switch a whole organization off,
+            and every request from its users is refused until it is switched back on.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>No customer can be told their own security rules apply</li>
+              <li>No enterprise sign-on onboarding</li>
+              <li>No integration can authenticate as the organization rather than a person</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/auth.js:460</b> password validation is a fixed ladder taking one argument, so no organization can reach it</li>
+            <li><b>server/auth.js:61</b> session lifetimes are two environment variables, server-wide</li>
+            <li><b>auth.db</b> has no policy, token or webhook table</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            An <code>org_policies</code> table keyed on the organization, threaded through the six places
+            that validate a password and the two that mint a session, with separate tables for tokens and
+            webhooks. Split this: password and session policy is useful on its own, and single sign-on is a
+            project.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f12">
+      <div class="f-head">
+        <span class="fid">SRV-12</span>
+        <h3>A skipped poll is not distinguishable from a silent one</h3>
+        <span class="f-meta"><span class="sev s3">Quality</span><span class="sev s2">Partly built</span><span class="eff">Effort S</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          The poller stamps a poll time on switches it never contacted, 900 times on the live server. It
+          does not report them as healthy, because every screen derives health from the separate
+          last-seen clock, but nothing records <em>why</em> a switch is silent, so no client can say that
+          credentials are missing rather than that the device is down.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>Two clocks, correctly kept apart: one for when the poller reached the row, one for when a
+            poll actually returned data. Missing credentials and a missing vendor recipe both stamp the
+            first and leave the second, which is the right behaviour, silently.</p>
+          </div>
+          <div>
+            <h4>Observed impact</h4>
+            <ul>
+              <li>Four switches on the live server read as silent with no reason given</li>
+              <li>An operator cannot tell a configuration problem from an outage</li>
+              <li>A poll that connects but parses nothing is still recorded as a success</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/lib/port_poller.js:200</b> missing credentials: stamp the poll time and return</li>
+            <li><b>server/lib/port_poller.js:184</b> missing vendor recipe takes the identical shape</li>
+            <li><b>server/lib/port_history_db.js:242</b> the stamp updates one column and touches neither last-seen nor the failure count</li>
+          </ul>
+        </div>
+        <div class="f-block">
+          <h4>Remediation</h4>
+          <p>
+            Add a <code>last_attempt_status</code> column to the monitored device row, written on every
+            path: read, no credentials, no recipe, read nothing, failed. The column list already applies
+            itself through a lazy migration, so there is no migration step. One hour of work that turns four
+            unexplained rows into four actionable ones.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding" id="f13">
+      <div class="f-head">
+        <span class="fid">SRV-13</span>
+        <h3>Cross-tenant access to a scan</h3>
+        <span class="f-meta"><span class="sev ok">Refuted</span><span class="eff">No work</span></span>
+      </div>
+      <div class="f-body">
+        <p class="f-statement">
+          The concern was that a signed-in user who knows a rack id could read another organization's scan.
+          They cannot. A single guard is registered once against the rack id parameter and therefore runs
+          before every route that takes one, including the scan, the merged result and the rack images.
+        </p>
+        <div class="f-grid">
+          <div>
+            <h4>What exists</h4>
+            <p>The owner sees every rack, an org admin sees racks held by their sites, and everyone else is
+            answered with 404 rather than 403, so the guard does not confirm that the rack exists.</p>
+          </div>
+          <div>
+            <h4>Residual action</h4>
+            <ul>
+              <li>Add a regression test asserting a 404 for a member on another site's rack, so a future refactor cannot quietly remove the guard</li>
+            </ul>
+          </div>
+        </div>
+        <div class="f-block">
+          <h4>References</h4>
+          <ul class="refs">
+            <li><b>server/app.js:302</b> the guard is registered globally against the rack id parameter</li>
+            <li><b>server/app.js:7066, 7084</b> both routes in the claim carry that parameter, so the guard fires before either handler</li>
+            <li><b>server/lib/rack_access.js:48</b> the policy: owner unrestricted, org admin by site set, otherwise the racks that user claimed</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <footer class="doc">
+    <h4 style="font-size:10.5px;font-weight:600;letter-spacing:0.11em;text-transform:uppercase;color:var(--ink-4);margin:0 0 8px;">Method</h4>
+    <p>
+      Each claim was given to an independent reviewer with three instructions: quote a file and a line for
+      every statement, probe the live server read-only to confirm the behaviour, and return one of three
+      verdicts rather than agreeing with the claim. A statement without a line reference was not accepted.
+    </p>
+    <p>
+      Probes used the tester organization on demo.racktrack.ai and were read-only apart from the sign-in
+      required to obtain a session. Effort is read from the amount of schema and code each change touches,
+      not from a planning session. The process refuted one claim outright and corrected the detail of three
+      more, in each case because machinery reported as missing already exists elsewhere in the codebase.
+    </p>
+  </footer>
+
+</div>
+
+</body></html>

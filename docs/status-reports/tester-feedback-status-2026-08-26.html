@@ -1,0 +1,334 @@
+<!-- Published copy of the claude.ai artifact "Tester Feedback Status" | https://claude.ai/code/artifact/1f0ce084-68b3-44f0-b58a-9625be203147 | artifact last updated 2026-08-26 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Tester Feedback Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --paper:#fff; --panel:#f6f6f3; --panel2:#fafaf8;
+    --ink:#16181d; --ink2:#33373f; --muted:#5a5e66; --faint:#8d9198;
+    --rule:#d9dad6; --rule2:#ececea;
+    --blue:#15507e; --blue-bg:#eaf1f7;
+    --good:#1a7f37; --good-bg:#e9f3ec;
+    --amber:#8a5a1d; --amber-bg:#f7efe3;
+    --grey:#5a5e66; --grey-bg:#eeeeeb;
+    --sans:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    --serif:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:15.5px; line-height:1.58;
+    -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  }
+
+  .mast{
+    border-bottom:2px solid var(--ink);
+    padding:11px clamp(14px,2vw,26px) 9px;
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 20px;
+  }
+  .mast .wm{font-family:var(--serif); font-weight:600; font-size:17px; letter-spacing:-.01em}
+  .mast .wm i{font-style:normal; color:var(--blue)}
+  .mast .sub{font-size:12px; color:var(--faint); letter-spacing:.04em; text-transform:uppercase}
+  .mast .facts{margin-left:auto; display:flex; flex-wrap:wrap}
+  .mast .facts div{
+    font-family:var(--mono); font-size:11px; color:var(--muted); padding:1px 12px;
+    border-left:1px solid var(--rule); font-variant-numeric:tabular-nums; line-height:1.5;
+  }
+  .mast .facts div:first-child{border-left:0}
+  .mast .facts b{color:var(--ink); font-weight:600}
+
+  .intro{
+    border-bottom:1px solid var(--rule);
+    padding:clamp(18px,2vw,28px) clamp(16px,2.4vw,40px) clamp(15px,1.7vw,22px);
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);
+    gap:8px clamp(24px,3vw,54px); align-items:end;
+  }
+  @media (max-width:900px){ .intro{grid-template-columns:1fr; align-items:start} }
+  .eyebrow{margin:0 0 7px; font-family:var(--mono); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--blue)}
+  h1{margin:0; font-family:var(--serif); font-weight:600; font-size:clamp(26px,2.7vw,40px); letter-spacing:-.02em; line-height:1.06}
+  .dek{margin:0; font-size:clamp(14.5px,1.05vw,16.5px); color:var(--muted); line-height:1.5}
+  .dek b{color:var(--ink); font-weight:600}
+
+  .glance{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    border-bottom:1px solid var(--rule);
+  }
+  .glance > div{padding:9px clamp(16px,2.4vw,40px) 11px; border-left:1px solid var(--rule2); min-width:0}
+  .glance > div:first-child{border-left:0}
+  .glance .lb{font-size:9.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:3px}
+  .glance .vl{font-family:var(--mono); font-size:17px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+  .glance .vl.ok{color:var(--good)} .glance .vl.am{color:var(--amber)} .glance .vl.gy{color:var(--grey)}
+  .glance .vl small{font-family:var(--sans); font-size:12.5px; color:var(--faint); font-weight:400}
+
+  .sec{padding:clamp(16px,1.9vw,26px) clamp(16px,2.4vw,40px) clamp(20px,2.2vw,30px)}
+  .sec + .sec{border-top:1px solid var(--rule)}
+  .sechd{display:flex; flex-wrap:wrap; align-items:baseline; gap:5px 14px; margin-bottom:12px}
+  h2{margin:0; font-family:var(--serif); font-size:21px; font-weight:600; letter-spacing:-.012em}
+  .count{
+    font-family:var(--mono); font-size:11px; font-weight:600; padding:2px 9px; border-radius:3px;
+    background:var(--good-bg); color:var(--good);
+  }
+  .count.am{background:var(--amber-bg); color:var(--amber)}
+  .count.gy{background:var(--grey-bg); color:var(--grey)}
+  .note{margin:0; font-size:13.5px; color:var(--muted); flex-basis:100%}
+
+  .tw{overflow-x:auto; border:1px solid var(--rule); border-radius:3px}
+  table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:720px}
+  th{
+    text-align:left; font-size:9.5px; font-weight:600; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--faint); padding:9px 13px; background:var(--panel); border-bottom:1px solid var(--rule);
+    white-space:nowrap;
+  }
+  td{padding:11px 13px; border-bottom:1px solid var(--rule2); vertical-align:top; line-height:1.45}
+  tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:var(--panel2)}
+  td.n{font-family:var(--mono); font-size:12px; color:var(--faint); white-space:nowrap; font-variant-numeric:tabular-nums}
+  td.issue{font-weight:600; min-width:180px}
+  td.st{white-space:nowrap; font-family:var(--mono); font-size:11.5px; font-weight:600}
+  td.st.ok{color:var(--good)} td.st.am{color:var(--amber)} td.st.gy{color:var(--grey)}
+  td b{font-weight:600}
+  code{font-family:var(--mono); font-size:.87em; background:var(--panel); border:1px solid var(--rule2); padding:.5px 4px; border-radius:2px}
+</style>
+
+<header class="mast">
+  <div class="wm">Rack<i>Track</i></div>
+  <div class="sub">Tester feedback &middot; status</div>
+  <div class="facts">
+    <div>build <b>26 Aug 2026</b></div>
+    <div><b>23</b> reported</div>
+    <div><b>8</b> fixed</div>
+    <div><b>4</b> answered</div>
+    <div><b>11</b> open</div>
+  </div>
+</header>
+
+<div class="intro">
+  <div>
+    <p class="eyebrow">Response to testers</p>
+    <h1>What we fixed, and what we still need from you</h1>
+  </div>
+  <p class="dek">Every item you raised is listed here, including the ones we have not fixed yet and the ones we decided not to change. <b>Nothing has been quietly dropped.</b> Where we need more detail to reproduce a problem, the question is written next to it.</p>
+</div>
+
+<div class="glance">
+  <div><div class="lb">Fixed in this build</div><div class="vl ok">8</div></div>
+  <div><div class="lb">Answered, no change</div><div class="vl gy">4</div></div>
+  <div><div class="lb">Still open</div><div class="vl am">11</div></div>
+  <div><div class="lb">Needs a detail from you</div><div class="vl am">6</div></div>
+  <div><div class="lb">Quietly dropped</div><div class="vl ok">0</div></div>
+</div>
+
+<!-- ============ FIXED ============ -->
+<div class="sec">
+  <div class="sechd">
+    <h2>Fixed in this build</h2><span class="count">8</span>
+    <p class="note">Please re-test these. Each line says what was actually wrong, not just that it was changed.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>#</th><th>What you reported</th><th>What was wrong</th><th>What we changed</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="n">1</td>
+          <td class="issue">Analysing screen: the percentage does not show</td>
+          <td>Bigger than it looked. The analysing screen kept a black background from the old dark design, while everything drawn on it had already moved to the new light design. The title, the step text, the progress bar <b>and</b> the percentage were all dark text on a dark background - invisible, not missing.</td>
+          <td>The background is now light, so the whole panel reads properly. The 3D rack animation was invisible for the same reason and is back too.</td>
+          <td class="st ok">FIXED</td>
+        </tr>
+        <tr>
+          <td class="n">2</td>
+          <td class="issue">Guide bot: after "pick a device" nothing tells you to tap it in the rack</td>
+          <td>The guide jumped straight from the device dropdown to "find the port". Nothing ever asked you to look at the photo, so the step was missing rather than unclear.</td>
+          <td>Added a step: <b>"Now find it in the photo."</b> It moves on when you tap anywhere on the rack image, so you do not have to hit the device exactly.</td>
+          <td class="st ok">FIXED</td>
+        </tr>
+        <tr>
+          <td class="n">3</td>
+          <td class="issue">Guide bot: after the port number it should jump to the port part of the report</td>
+          <td>The report opened at the top, with the port detail further down and no sign it was there.</td>
+          <td>When you have just found a port, the report now opens <b>at the port section</b>. It still opens at the top when no port has been found.</td>
+          <td class="st ok">FIXED</td>
+        </tr>
+        <tr>
+          <td class="n">4</td>
+          <td class="issue">Downloading the report does not work on the phone app<br><span style="font-weight:400;color:var(--faint)">(also reported as: a message appears instead of the PDF)</span></td>
+          <td>Two separate faults, either of which alone would break it. <b>One:</b> the download used a command from a different app framework, which the phone app has no handler for - so the tap genuinely did nothing at all. <b>Two:</b> the PDF was sent marked "display this" rather than "save this", so even when it did open, the phone showed it instead of saving it.</td>
+          <td>The download now uses the phone app's own browser handler, and the file is sent marked as a download.</td>
+          <td class="st ok">FIXED</td>
+        </tr>
+        <tr>
+          <td class="n">5</td>
+          <td class="issue">Topology: Switches, Patch Panels and Servers counts are wrong</td>
+          <td>The scan labels devices <code>"Switch"</code> and <code>"Patch Panel"</code>, but the topology screen was checking for <code>"switch"</code> and <code>"patch_panel"</code>. Those never match, so the counts read zero no matter what was found. The same fault also gave every device the wrong icon and the wrong position in the diagram.</td>
+          <td>All 20 places that compared these labels now ignore capitals and spacing. Expect the topology diagram to look noticeably different, not just the counts.</td>
+          <td class="st ok">FIXED</td>
+        </tr>
+        <tr>
+          <td class="n">6</td>
+          <td class="issue">Report: remove the "Models read" section and review the Switches and Routers card</td>
+          <td>Both were summary tiles at the top of the report.</td>
+          <td>Both tiles removed. The report header now shows <b>Devices</b> and <b>Ports in use</b> only. Every device's make and model is still listed in full further down - nothing was lost.</td>
+          <td class="st ok">FIXED</td>
+        </tr>
+        <tr>
+          <td class="n">7</td>
+          <td class="issue">Report: the Back/Close button is hard to see</td>
+          <td>It was a dark button on a nearly black bar with a faint outline, and it turned light when you hovered, which made it look like a different control.</td>
+          <td>It is now the one light control on that bar, larger, rounded, and it carries the word <b>Close</b> next to the X.</td>
+          <td class="st ok">FIXED</td>
+        </tr>
+        <tr>
+          <td class="n">8</td>
+          <td class="issue">Keep the bot in the black and white theme</td>
+          <td>The guide bot was a flat drawing that did not match the rest of the app.</td>
+          <td>Replaced with the new 3D robot, converted to black and white to match the app. It is also <b>71% smaller</b> than the file we were given (3.2 MB down to 0.9 MB) and only loads when you open the guide, so it does not slow the app down.</td>
+          <td class="st ok">FIXED</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ ANSWERED ============ -->
+<div class="sec">
+  <div class="sechd">
+    <h2>Answered - no change being made</h2><span class="count gy">4</span>
+    <p class="note">These are not being fixed, and here is the honest reason for each.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>#</th><th>What you reported</th><th>The answer</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="n">9</td>
+          <td class="issue">Report sharing: there is no Slack</td>
+          <td><b>Slack was removed on purpose.</b> The decision was to keep Microsoft Teams and Outlook and drop Slack, so its absence is correct rather than a fault. <span style="color:var(--amber)">Teams sharing is a separate open item - see #17.</span></td>
+          <td class="st gy">BY DESIGN</td>
+        </tr>
+        <tr>
+          <td class="n">10</td>
+          <td class="issue">JPEG format missing in the two-rack setup</td>
+          <td><b>JPEG is accepted.</b> We checked the upload directly: it explicitly allows JPEG in three forms, plus PNG, WEBP and HEIC. Two likely explanations - either the <b>video</b> slot was used by mistake (that one only takes video, correctly), or the photo was refused by the image-quality check and the wording read like a format error. <b>Please tell us the exact message you saw</b> and we will chase whichever it was.</td>
+          <td class="st gy">NOT A FAULT</td>
+        </tr>
+        <tr>
+          <td class="n">11</td>
+          <td class="issue">Why is there no VR and AR?</td>
+          <td><b>Because it has not been built.</b> There is no VR or AR feature in the app and none is hidden or broken - nothing is missing that was supposed to be there. The 3D rack and topology views are ordinary on-screen 3D, not headset features. If VR or AR is wanted, it is new work to be scheduled, not a bug.</td>
+          <td class="st gy">NOT BUILT</td>
+        </tr>
+        <tr>
+          <td class="n">12</td>
+          <td class="issue">Devices detected does not match the device count in the report</td>
+          <td>Confirmed, and it is a difference in what each number means. The <b>screen</b> counts only devices you can select and inspect - switches, patch panels, routers, gateways, firewalls and PDUs. The <b>report</b> counts all equipment in the rack, which also includes servers, UPS units, power units, storage and anything unidentified. Both are correct for their own purpose. <b>A decision was taken to leave this as it is for now.</b></td>
+          <td class="st gy">LEFT AS IS</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ OPEN ============ -->
+<div class="sec">
+  <div class="sechd">
+    <h2>Still open</h2><span class="count am">11</span>
+    <p class="note">Not fixed yet. Where a question is written in bold, that answer is what unblocks the work - it is the fastest way to help.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>#</th><th>What you reported</th><th>Where it stands</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="n">13</td>
+          <td class="issue">Two different images show when the app opens</td>
+          <td>Not reproduced yet. This sounds like the splash screen and the home background being different pictures, so you see one replaced by the other. <b>Which two images, and does it happen every time or only on a cold start?</b></td>
+          <td class="st am">NEEDS DETAIL</td>
+        </tr>
+        <tr>
+          <td class="n">14</td>
+          <td class="issue">The camera view on the home page is not good</td>
+          <td>Understood as a design complaint rather than a fault. <b>What specifically is wrong - is it too dark, the wrong crop, the wrong photo, or does it not belong on that screen at all?</b> Any of those is a quick change once we know which.</td>
+          <td class="st am">NEEDS DETAIL</td>
+        </tr>
+        <tr>
+          <td class="n">15</td>
+          <td class="issue">What does "queryable" mean on the home page?</td>
+          <td><b>Fair point - the word is jargon and it is our fault, not yours.</b> It was meant to say that once you photograph a rack, you can search and ask questions about what is in it instead of reading a spreadsheet. It appears on four versions of the home page and we are replacing it with plain wording.</td>
+          <td class="st am">COPY FIX QUEUED</td>
+        </tr>
+        <tr>
+          <td class="n">16</td>
+          <td class="issue">The bot symbol on the home page is not visible and does not look good</td>
+          <td>Confirmed. On a phone the button shrinks to a small circle with just an icon and no label, sitting over a photograph, so it disappears into the picture. Being changed. <b>One thing to settle first:</b> this item asks to move it to the top corner, while an earlier decision put it in the bottom corner on mobile. We need one answer before moving it.</td>
+          <td class="st am">NEEDS A DECISION</td>
+        </tr>
+        <tr>
+          <td class="n">17</td>
+          <td class="issue">Report sharing through Microsoft Teams is not working</td>
+          <td>Not yet reproduced. Sharing needs a live server, so it cannot be tested on a development machine. <b>Does it fail with an error message, or does it appear to send and never arrive?</b> Those are two different faults.</td>
+          <td class="st am">NEEDS DETAIL</td>
+        </tr>
+        <tr>
+          <td class="n">18</td>
+          <td class="issue">The bot does not reply to "hi" or "hello", and answers are not accurate</td>
+          <td>Two separate things. The greeting problem is real and fixable - the assistant is built to answer questions about racks and has no handling for small talk. Answer accuracy is a larger piece of work and depends on what it was asked. <b>Please send a few exact questions and the replies you got.</b></td>
+          <td class="st am">OPEN</td>
+        </tr>
+        <tr>
+          <td class="n">19</td>
+          <td class="issue">Ports are not being identified correctly</td>
+          <td>Open, and the most important item on this list. It needs real photographs with the correct answers known, so it can be measured rather than guessed at. <b>Please send the rack photos where the port was wrong, and what the right answer should have been.</b></td>
+          <td class="st am">NEEDS EXAMPLES</td>
+        </tr>
+        <tr>
+          <td class="n">20</td>
+          <td class="issue">The Ports page is not working</td>
+          <td>Not reproduced yet. <b>What happens - a blank page, an error, or does it load but show nothing?</b> And which rack were you looking at?</td>
+          <td class="st am">NEEDS DETAIL</td>
+        </tr>
+        <tr>
+          <td class="n">21</td>
+          <td class="issue">Low-resolution rack images are refused in the two-rack setup</td>
+          <td>Likely working as intended but explaining itself badly. There is a minimum image quality, because a low-resolution photo cannot be read reliably and a wrong answer is worse than a refusal. The problem is that the refusal does not say <i>how</i> low is too low. We plan to state the requirement clearly instead of just rejecting.</td>
+          <td class="st am">OPEN</td>
+        </tr>
+        <tr>
+          <td class="n">22</td>
+          <td class="issue">Back buttons across the app should be easier to see</td>
+          <td>Accepted. The report's Close button is already done (#7); the rest of the app's back buttons are next, so they all look the same and are easy to find.</td>
+          <td class="st am">QUEUED</td>
+        </tr>
+        <tr>
+          <td class="n">23</td>
+          <td class="issue">"Type it in" on the Switches page is hard to notice</td>
+          <td>Accepted. It is currently styled like ordinary text rather than something you can act on. It will be made to look like a control.</td>
+          <td class="st am">QUEUED</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sechd"><h2>The six things that would help most</h2></div>
+  <p style="margin:0 0 10px;max-width:100ch">If you only have time for a few replies, these are the ones that unblock real work:</p>
+  <div class="tw">
+    <table style="min-width:520px">
+      <thead><tr><th>#</th><th>What we need</th></tr></thead>
+      <tbody>
+        <tr><td class="n">19</td><td><b>Rack photos where the port was identified wrongly</b>, with the correct port. Nothing else on this list matters as much.</td></tr>
+        <tr><td class="n">20</td><td>What the Ports page actually does when it fails - blank, error, or empty.</td></tr>
+        <tr><td class="n">17</td><td>Whether Teams sharing errors, or silently never arrives.</td></tr>
+        <tr><td class="n">10</td><td>The exact message shown when a JPEG was refused in the two-rack upload.</td></tr>
+        <tr><td class="n">18</td><td>A few real questions you asked the bot, and the replies.</td></tr>
+        <tr><td class="n">16</td><td>Top corner or bottom corner for the bot button - one answer.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body></html>

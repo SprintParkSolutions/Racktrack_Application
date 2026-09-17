@@ -10,7 +10,7 @@ import styles from './DriftPage.module.css';
  *
  * The person standing at the rack is not the person who changes the record, so
  * this screen deliberately has no write button and never says "export". It
- * answers one question — does the rack match what NetBox says — and then hands
+ * answers one question - does the rack match what NetBox says - and then hands
  * the answer to an admin.
  *
  * After it is sent, this page becomes the technician's window on what happened
@@ -40,7 +40,7 @@ function diffLines(diff) {
   }));
 }
 
-const show = (v) => (v === null || v === undefined || v === '' ? '—' : String(v));
+const show = (v) => (v === null || v === undefined || v === '' ? ' - ' : String(v));
 
 export default function DriftPage() {
   const { rackId } = useParams();
@@ -250,9 +250,9 @@ export default function DriftPage() {
               {sent && (
                 <p className={styles.state}>
                   {STATE_WORD[item.decision] || item.decision}
-                  {item.ticket?.assignee && item.decision === 'ticketed' && ` — ${item.ticket.assignee}`}
+                  {item.ticket?.assignee && item.decision === 'ticketed' && ` - ${item.ticket.assignee}`}
                   {ext?.number && ` · ${ext.number}${ext.state ? ` (${ext.state})` : ''}`}
-                  {item.note && ` — “${item.note}”`}
+                  {item.note && ` - “${item.note}”`}
                 </p>
               )}
               {item.ticket?.finding && (

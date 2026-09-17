@@ -3,8 +3,8 @@
 // The bug these exist for: an unguarded localStorage call inside a React
 // effect white-screened the entire product on any browser with site data
 // blocked, and again on any device whose origin quota was full. Both failure
-// modes are invisible in normal development — localStorage works fine on a
-// developer's machine — so nothing but a test that *makes* storage throw can
+// modes are invisible in normal development - localStorage works fine on a
+// developer's machine - so nothing but a test that *makes* storage throw can
 // keep the guard honest.
 
 import { describe, test, expect, afterEach } from 'vitest';
@@ -18,7 +18,7 @@ function install(fake, which = 'localStorage') {
   Object.defineProperty(window, which, { value: fake, configurable: true, writable: true });
 }
 
-/** Storage that throws on every operation — "Block All Cookies" in Safari. */
+/** Storage that throws on every operation - "Block All Cookies" in Safari. */
 function blockedStorage() {
   const err = new DOMException('The operation is insecure.', 'SecurityError');
   return {
@@ -154,14 +154,14 @@ describe('setJSON under a full quota', () => {
 
     expect(setJSON('hist', ['aaaa', 'bbbb', 'cccc'])).toBe(false);
     // This used to delete the key on ANY failure, including a quota exhausted
-    // by unrelated keys — so one failed write destroyed a perfectly good
+    // by unrelated keys - so one failed write destroyed a perfectly good
     // stored history. Stale data beats data loss the user never asked for.
     expect(store.data.get('hist')).toBe('["earlier","scans"]');
   });
 
   test('an unserialisable value is reported, not thrown', () => {
     // JSON.stringify sat outside the guard, so the one promise this module
-    // makes — never throw — was untrue of its main entry point.
+    // makes - never throw - was untrue of its main entry point.
     const store = quotaStorage(1000);
     install(store);
     const circular = { name: 'loop' };

@@ -1,13 +1,13 @@
-/* Network — the switches on this rack, read by the phone over SNMP.
+/* Network - the switches on this rack, read by the phone over SNMP.
 
    Laid out as bands across the full width of the screen, parted by hairlines
    and marked down the left edge by how each reading went. The earlier version
    put four bordered tiles above cards that each held four more bordered tiles
    around a green panel: boxes inside boxes inside boxes. Nothing here floats
-   and nothing nests — the reading IS the row. */
+   and nothing nests - the reading IS the row. */
 
 /* The global .page-full (index.css) pins a page at height:100vh with
-   overflow:hidden on phones — the app scrolls an inner region, not the page. */
+   overflow:hidden on phones - the app scrolls an inner region, not the page. */
 .page {
   position: relative;
   display: flex; flex-direction: column;
@@ -126,7 +126,7 @@
    Every port on the switch in two rows, fitted to the width of the screen
    however many there are: --cols is set on the element to half the port count,
    so 52 ports make 26 columns and 10 ports make 5. Nothing scrolls sideways
-   and nothing is off the edge — the whole front of the box is one glance.
+   and nothing is off the edge - the whole front of the box is one glance.
    Too narrow for a number at 52 ports, so the numbers moved to the line
    underneath, where tapping a port puts everything about it. */
 .plate {
@@ -152,7 +152,7 @@
   background: #ffffff;
   border: 1px solid var(--border, rgba(0,0,0,.14));
   /* The number a switch prints above the socket. At 52 ports a column is
-     about 11px wide, so this is small on purpose — it is a label to confirm
+     about 11px wide, so this is small on purpose - it is a label to confirm
      what you are pointing at, and tapping puts the whole line underneath. */
   font-family: var(--font);
   font-size: 8px; font-weight: 700; letter-spacing: -.04em;
@@ -320,7 +320,7 @@
 .secondary { background: transparent; border: 1px solid var(--border, rgba(0,0,0,.22)); color: var(--text); }
 .primary:disabled, .secondary:disabled { opacity: .5; cursor: default; }
 
-/* Full width, hairline under it — a row like the switches above it. */
+/* Full width, hairline under it - a row like the switches above it. */
 .addMore {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   width: 100%; min-height: 56px;

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════
-   DesktopShell — full-viewport landscape chrome for ≥1024px renders.
+   DesktopShell - full-viewport landscape chrome for ≥1024px renders.
    Portalled to <body> so it escapes #root's max-width:540px / overflow:hidden.
 
    Layout:  [ Left sidebar (240px) ][ Main content (rest of viewport) ]
@@ -22,7 +22,7 @@
   overflow: hidden;
 }
 :global([data-theme='light']) .shell {
-  /* The ground, not white — the raised sidebar/topbar need something to
+  /* The ground, not white - the raised sidebar/topbar need something to
      sit on or the soft-UI depth has nothing to read against. */
   background: var(--ground);
   color: #000000;
@@ -69,7 +69,7 @@
   flex-shrink: 0;
 }
 
-/* ── Section header — small caps title with a subtle line ── */
+/* ── Section header - small caps title with a subtle line ── */
 .navSection {
   display: flex; align-items: center; gap: 8px;
   font-size: 0.62rem;
@@ -136,8 +136,8 @@
   color: #000000;
 }
 /* The current page is marked, not blacked out. A full-black row in a white
-   sidebar reads as a slab dropped over the item — the same complaint testers
-   made about selected buttons elsewhere — and it made the icon and label
+   sidebar reads as a slab dropped over the item - the same complaint testers
+   made about selected buttons elsewhere - and it made the icon and label
    harder to read, not easier. A lit ground, ink text at bold and a marker on
    the rail say "you are here" without covering anything.
 
@@ -252,7 +252,7 @@
 }
 :global([data-theme='light']) .crumbSub { color: #474747; }
 
-/* Right-hand actions slot — pages portal their controls here (List an item,
+/* Right-hand actions slot - pages portal their controls here (List an item,
    Live/Refresh, org actions). Pushed to the far right; the title stays hard
    left next to the back button on every page. */
 .headerActions {
@@ -264,7 +264,7 @@
 }
 .headerActions:empty { display: none; }
 
-/* Content canvas — pages render full-width below the topbar. Scrolling
+/* Content canvas - pages render full-width below the topbar. Scrolling
    lives here (rather than on .main) so the topbar stays sticky and only
    the page itself moves under the user's wheel/trackpad. */
 .fluid {
@@ -289,3 +289,35 @@
 .chainDone .chainMark { background: #0f7b4f; border-color: #0f7b4f; color: #fff; opacity: 1; }
 .chainLocked { opacity: .5; cursor: default; }
 .chainLocked .chainMark { border-style: dashed; }
+
+/* ── Profile at the foot, beside Sign out ── */
+.navLinkFoot { width: 100%; box-sizing: border-box; margin-bottom: 6px; }
+
+/* ── Rail refinement, 15 Sep 2026: air, hierarchy, one emphasised row ──
+   Later in the file on purpose: these override the values above. */
+.sidebar { padding: 26px 14px 14px; }
+.brand { padding: 2px 12px 30px; font-weight: 700; }
+.navSection {
+  margin: 26px 0 8px; padding: 0 12px;
+  font-size: 0.6rem; font-weight: 600; letter-spacing: 0.18em;
+}
+.navSection::after { display: none; }
+/* every heading is the first child of its group box, so the old
+   :first-child rule zeroed all of them; only the first group sits flush */
+.navSection:first-child { margin-top: 26px; }
+.sidebar > div:nth-of-type(1) .navSection { margin-top: 0; }
+:global([data-theme='light']) .navSection { color: #8a8a8a; }
+.navLinks { gap: 2px; }
+.navLink {
+  padding: 9px 12px; border-radius: 9px;
+  font-size: 0.9rem; font-weight: 500;
+}
+.navLink svg { width: 18px; height: 18px; opacity: 0.5; }
+:global([data-theme='light']) .navLink { color: #3a3a3a; }
+:global([data-theme='light']) .navLink:hover { background: rgba(0, 0, 0, 0.045); color: #121212; }
+:global([data-theme='light']) .navLink.active { background: rgba(18, 18, 18, 0.07); font-weight: 600; }
+:global([data-theme='light']) .navLink.active::before { left: 2px; top: 10px; bottom: 10px; width: 2px; }
+.sidebarBottom { padding: 12px 4px 2px; gap: 6px; }
+.navLinkFoot { width: auto; flex: 1; margin-bottom: 0; min-width: 0; }
+.signOut { padding: 8px; border-radius: 9px; }
+.signOut svg { width: 18px; height: 18px; }

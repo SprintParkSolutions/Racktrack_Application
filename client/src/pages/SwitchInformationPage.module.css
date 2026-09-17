@@ -1,8 +1,8 @@
 /* Desktop / tablet layout overrides for the Switch Information page.
    NOTE: this page's base styles live in the shared SpecificationsPage.module.css
    (imported as `styles`). These page-scoped classes are layered on top via a
-   second import (`desk`) so the shared module — and the Specifications page that
-   also uses it — is left completely untouched.
+   second import (`desk`) so the shared module - and the Specifications page that
+   also uses it - is left completely untouched.
 
    At >=768px the page renders inside DesktopShell (sidebar + a top crumb header
    that already provides the title / back button / theme toggle), so:
@@ -21,7 +21,7 @@
   .main {
     /* The page root is a flex child of DesktopShell's .fluid (a column
        flexbox). `margin: 0 auto` on a flex item makes BOTH cross-axis
-       (horizontal) margins auto, which — per the flexbox spec — disables
+       (horizontal) margins auto, which - per the flexbox spec - disables
        the default `align-self: stretch`. The item then shrink-wraps to its
        content's intrinsic width (~470px) and the auto margins center it,
        producing the "narrow column floating in empty space" bug. Giving it
@@ -45,7 +45,7 @@
    every context it's reused in: the standalone full-width page goes
    master-detail, while the embedded "Switches" tab inside a narrow
    ResultsPage column (and mobile) falls back to the stacked layout
-   automatically — purely on the width actually available to it.
+   automatically - purely on the width actually available to it.
 
    Light-theme tokens are hardcoded here (this surface is light-only);
    no dark variant. */
@@ -54,7 +54,7 @@
   container-type: inline-size;
 }
 
-/* Rail — the strip of detected switches. Default (phone / any narrow
+/* Rail - the strip of detected switches. Default (phone / any narrow
    container): a horizontal, edge-to-edge scroll strip, exactly as before. */
 .rail {
   display: grid;
@@ -71,7 +71,7 @@
 
 /* ── Rail arrows ─────────────────────────────────────────────────────────
    The rail hides its scrollbar, so on a phone a rack with four switches looked
-   identical to one with two — the extra cards sat off the right edge with
+   identical to one with two - the extra cards sat off the right edge with
    nothing to indicate they were there. An arrow at each end, lit only when
    there is something in that direction, is the smallest honest signal.
 
@@ -111,7 +111,7 @@
   .railArrow { display: none; }
 }
 
-/* Detail — wraps the selected SwitchCard. Plain block by default so the
+/* Detail - wraps the selected SwitchCard. Plain block by default so the
    card fills the width on phone exactly as it did before. */
 .detail { min-width: 0; }
 

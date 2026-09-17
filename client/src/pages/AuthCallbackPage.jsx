@@ -9,7 +9,7 @@ import { parseAuthFragment } from '../utils/socialSession';
  * Landing point for the web social sign-in redirect
  * (https://<app>/auth/callback#token=…&user=…).
  *
- * Native never reaches this route — a deep link arrives on an app that is
+ * Native never reaches this route - a deep link arrives on an app that is
  * already running, so App.jsx handles it directly. Both paths share
  * parseAuthFragment and adoptSession, so they cannot drift apart.
  *

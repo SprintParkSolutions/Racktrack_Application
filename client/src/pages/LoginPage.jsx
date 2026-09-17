@@ -10,14 +10,14 @@ import { safeRedirect } from '../utils/safeRedirect.js';
 // The previous screen carried an optional organisation field, social sign-in,
 // and two paragraphs on how teams are joined. All of it was true and none of
 // it was what a person opening the app wants to read. The organisation field
-// is gone from view — login() falls back to the global username lookup when it
+// is gone from view - login() falls back to the global username lookup when it
 // is blank, which is what almost everyone needs; the rare same-name-in-two-orgs
 // case still has the invite link. Everything else is one line at the bottom.
 
 export default function LoginPage() {
   // Opt this screen out of the app's depth system.
   //
-  // index.css carves every input into a soft grey well — the app's own look,
+  // index.css carves every input into a soft grey well - the app's own look,
   // and wrong here: sign-in is a photograph, a white column and hairlines.
   // The exception already exists in index.css, keyed on this class; it was
   // AuthLayout that used to set it, and this page no longer goes through
@@ -49,7 +49,7 @@ export default function LoginPage() {
     }
     try {
       await login(username.trim(), password, '');
-      // Everyone lands on Scan — there is no Home. A deep link that bounced
+      // Everyone lands on Scan - there is no Home. A deep link that bounced
       // here is still honoured.
       navigate(from, { replace: true });
     } catch (err) {

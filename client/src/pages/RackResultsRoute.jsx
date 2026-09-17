@@ -9,7 +9,7 @@ import styles from './SideBySideRacks.module.css';
 //   Desktop + group → the full ResultsPage (photo + device boxes + picker) for
 //                     BOTH racks, side by side.
 //   Mobile / standalone → the normal single ResultsPage, which already carries
-//                     a rack-switcher (RackTabs) to toggle between racks — side
+//                     a rack-switcher (RackTabs) to toggle between racks - side
 //                     by side is too cramped on a phone.
 export default function RackResultsRoute() {
   const { rackId } = useParams();

@@ -40,7 +40,7 @@ servicenow.py                 ← ServiceNow REST client
 racktrack.py                  ← RackTrack client (mock + live modes)
 reconciler.py                 ← correlation logic
 main.py                       ← CLI entry point
-cmdb_seed.md                  ← exact CMDB values to type into SN UI
+servicenow-cmdb-seed-data.md                  ← exact CMDB values to type into SN UI
 mock_scans/RK-DC1RACK4/
     device_unit_map.json      ← sample RackTrack scan to test against
 ```
@@ -148,7 +148,7 @@ Now `u_racktrack_id` is a real column on every rack CI.
 
 ## 1:00 — Populate CMDB
 
-**See `cmdb_seed.md` for the exact values to type.** It has field-by-field data for:
+**See `servicenow-cmdb-seed-data.md` for the exact values to type.** It has field-by-field data for:
 - 1 rack (RACK-04, with `u_racktrack_id = RK-DC1RACK4`)
 - 2 switches (SW-CORE-01, SW-ACC-01)
 - 5 servers (WEB-01, WEB-02, DB-01, APP-01, APP-02)

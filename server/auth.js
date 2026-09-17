@@ -1595,7 +1595,20 @@ function registerRoutes(app) {
 
   // ── Whoami ─────────────────────────────────────────────────
   app.get('/api/auth/me', requireAuth, (req, res) => {
-    res.json({ ok: true, user: publicUser(req.user) });
+    const user = publicUser(req.user);
+    // The setup gate, inside `user` because that is the only part of this
+    // response the client keeps (AuthContext stores data.user). Same two
+    // fields as GET /api/setup/state: an admin whose organisation has a Site
+    // still lacking the mandatory three gets needsSetup; a member or site
+    // manager whose Site is not yet set up gets blocked. Required lazily and
+    // never fatal — a fault in setup must not take sign-in down with it.
+    try {
+      user.setup = require('./lib/estate').setupSummary(req.user);
+    } catch (err) {
+      logger.warn({ event: 'auth.setup_summary_failed', userId: req.user.id, err: err.message },
+        'could not compute the setup summary');
+    }
+    res.json({ ok: true, user });
   });
 
   // ── Refresh (browser sessions) ─────────────────────────────
@@ -1939,14 +1952,36 @@ function registerRoutes(app) {
       const tenantIds = db.prepare('SELECT id FROM tenants WHERE organization_id = ?').all(orgId).map(r => r.id);
       const userIds   = db.prepare('SELECT id FROM users WHERE organization_id = ?').all(orgId).map(r => r.id);
       const has = (t) => !!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`).get(t);
+      // The setup tables (spaces, known racks, rules, profile sections) and
+      // the approver on the Site reference tenants and users, and foreign
+      // keys are ON: clear them first, on this same connection, or the Site
+      // and member deletes below fail with "FOREIGN KEY constraint failed"
+      // and the whole transaction rolls back (nothing removed, 15 Sep 2026).
+      // The tables exist only once setup has been used, hence the guards.
+      const hasCol = (t, c) => has(t) && db.prepare(`PRAGMA table_info(${t})`).all().some((r) => r.name === c);
       for (const tid of tenantIds) {
         if (has('rack_owners')) db.prepare('DELETE FROM rack_owners WHERE tenant_id = ?').run(tid);
         if (has('rack_groups')) db.prepare('DELETE FROM rack_groups WHERE tenant_id = ?').run(tid);
         try { db.prepare('UPDATE audit_log SET tenant_id = NULL WHERE tenant_id = ?').run(tid); } catch (_) {}
+        // Site-owned rows: setup data, signups still waiting for that Site.
+        for (const table of ['racks_known', 'spaces', 'tenant_rules', 'tenant_profile', 'pending_signups']) {
+          if (hasCol(table, 'tenant_id')) db.prepare(`DELETE FROM ${table} WHERE tenant_id = ?`).run(tid);
+        }
       }
+      if (hasCol('tenants', 'approver_user_id')) db.prepare('UPDATE tenants SET approver_user_id = NULL, rules_accepted_by = NULL WHERE organization_id = ?').run(orgId);
+      if (hasCol('organizations', 'profile_updated_by')) db.prepare('UPDATE organizations SET profile_updated_by = NULL WHERE id = ?').run(orgId);
+      if (hasCol('connection_profiles', 'organization_id')) db.prepare('DELETE FROM connection_profiles WHERE organization_id = ?').run(orgId);
       for (const uid of userIds) {
-        try { db.prepare('UPDATE rack_owners SET created_by = NULL WHERE created_by = ?').run(uid); } catch (_) {}
-        try { db.prepare('UPDATE invites SET invited_by = NULL WHERE invited_by = ?').run(uid); } catch (_) {}
+        // Rows that only exist for the member go with them; a "who did it"
+        // column on something that outlives them is cleared instead.
+        for (const table of ['refresh_tokens', 'social_identities', 'connection_profiles']) {
+          if (hasCol(table, 'user_id')) db.prepare(`DELETE FROM ${table} WHERE user_id = ?`).run(uid);
+        }
+        for (const [table, col] of [['rack_owners', 'created_by'], ['rack_groups', 'created_by'], ['invites', 'invited_by'],
+          ['organizations', 'created_by'], ['spaces', 'created_by'], ['racks_known', 'created_by'], ['tenant_rules', 'created_by'],
+          ['tenant_profile', 'created_by'], ['tenant_profile', 'updated_by'], ['tenants', 'approver_user_id'], ['tenants', 'rules_accepted_by']]) {
+          if (hasCol(table, col)) db.prepare(`UPDATE ${table} SET ${col} = NULL WHERE ${col} = ?`).run(uid);
+        }
       }
       const invites = db.prepare('DELETE FROM invites WHERE organization_id = ?').run(orgId).changes;
       const members = db.prepare('DELETE FROM users WHERE organization_id = ?').run(orgId).changes;

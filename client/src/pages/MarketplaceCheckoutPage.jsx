@@ -7,7 +7,7 @@ import MarketplaceShell from '../components/marketplace/MarketplaceShell.jsx';
 import CategoryIcon from '../components/marketplace/CategoryIcon.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
-   MarketplaceCheckoutPage — buy a listing.
+   MarketplaceCheckoutPage - buy a listing.
 
    This is the only screen in the section where a user parts with money,
    so it is deliberately the calmest one: no colour, no emoji, one

@@ -10,14 +10,14 @@ import { HeaderActions } from '../ShellHeader.jsx';
 /* Shared chrome for every /marketplace/* route.
 
    Before this existed, each of the seven marketplace pages drew its own
-   header and there were no links between them at all — Orders, Alerts,
+   header and there were no links between them at all - Orders, Alerts,
    Dashboard and Partner accounts were reachable only by typing the URL.
    The section now has one sticky header and one nav, so the pages read
    as a single product rather than seven unrelated screens.
 
    Browse and My listings are the same route (/marketplace) separated by
    ?tab=mine, so they live in this nav too. That keeps the section to a
-   single level of navigation — the old page stacked its own Browse /
+   single level of navigation - the old page stacked its own Browse /
    My-listings pill row underneath, which is what made the top of the
    page feel like chrome piled on chrome. */
 
@@ -36,7 +36,7 @@ function useUnreadCounts(isAuthed) {
     if (!isAuthed) { setCounts({ orders: 0, alerts: 0 }); return; }
     let cancelled = false;
     (async () => {
-      // Badges are decoration — a failure here must never surface as an
+      // Badges are decoration - a failure here must never surface as an
       // error on a page that otherwise loaded fine, so both reads are
       // swallowed and simply leave the count at zero.
       const read = async (path) => {
@@ -63,7 +63,7 @@ export default function MarketplaceShell({
   subtitle,
   action,          // omit for the default "List an item"; pass null to suppress
   // A path, or a handler for pages where back means "close the thing I
-  // have open" rather than "leave" — Orders needs to step out of an open
+  // have open" rather than "leave" - Orders needs to step out of an open
   // order before it steps out of the page.
   backTo = null,   // null => go back where you came from (see below)
   children,
@@ -89,7 +89,7 @@ export default function MarketplaceShell({
   const resolvedAction = action === undefined ? defaultAction : action;
 
   // The tab strip scrolls horizontally on a phone, and the current section can
-  // start life off-screen — open Orders from a link and the strip still shows
+  // start life off-screen - open Orders from a link and the strip still shows
   // Browse / My listings, with nothing marked. Pull the active tab into view
   // whenever it changes, so "which section am I in?" is always answerable
   // without scrolling first.
@@ -99,12 +99,12 @@ export default function MarketplaceShell({
     const el = activeTabRef.current;
     if (!el || !navRef.current) return;
     // `nearest` scrolls only if it is actually out of view, and only the strip
-    // — `center` would also drag the whole page on a short screen.
+    // - `center` would also drag the whole page on a short screen.
     el.scrollIntoView({ inline: 'nearest', block: 'nearest' });
   }, [location.pathname, location.search]);
 
   // Browse and My listings share a pathname, so NavLink's own matching
-  // can't tell them apart — the tab decides.
+  // can't tell them apart - the tab decides.
   const onRoot   = location.pathname === '/marketplace';
   const mineTab  = params.get('tab') === 'mine';
   const isActive = (item) => {
@@ -121,7 +121,7 @@ export default function MarketplaceShell({
             className={styles.backBtn}
             // Back should return you to whatever you were looking at. This
             // used to be a hardcoded '/', which dropped people on the welcome
-            // screen — every other destination came back to where they were.
+            // screen - every other destination came back to where they were.
             onClick={() => {
               if (typeof backTo === 'function') return backTo();
               if (backTo) return navigate(backTo);
@@ -148,7 +148,7 @@ export default function MarketplaceShell({
 
         {/* The scroller is wrapped so the fade at its right edge can be painted
             on the wrapper. Inside an `overflow-x: auto` element a fade would
-            scroll away with the content — which is why there was no sign at
+            scroll away with the content - which is why there was no sign at
             all that there was more to the right of Alerts. */}
         <div className={styles.navWrap}>
         <nav className={styles.nav} aria-label="Marketplace sections" ref={navRef}>
@@ -163,7 +163,7 @@ export default function MarketplaceShell({
                 // replace, not push: switching sections (For sale → Alerts →
                 // Orders …) used to stack a history entry each time, so the
                 // back button walked through every section you'd visited and
-                // never left marketplace — it "looped in". Replacing keeps a
+                // never left marketplace - it "looped in". Replacing keeps a
                 // single marketplace entry, so back returns to wherever you
                 // entered marketplace from (Scan/Home).
                 replace

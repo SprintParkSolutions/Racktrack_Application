@@ -1,5 +1,5 @@
-/* One bold accent used only for tour chrome — never the app's own black/
-   white/gray palette — so a highlight always reads unmistakably as "the
+/* One bold accent used only for tour chrome - never the app's own black/
+   white/gray palette - so a highlight always reads unmistakably as "the
    guide," not as part of the underlying page. */
 .overlayRoot {
   --tour-accent: #121417;
@@ -14,21 +14,19 @@
   position: fixed;
   background: rgba(10, 10, 12, 0.62);
   /* Auto: these four strips tile the viewport minus the spotlighted rect, and
-     capturing events is what actually holds the user on the current step —
-     the entire point of the walkthrough. Without it they can wander off
+     capturing events is what actually holds the user on the current step - the entire point of the walkthrough. Without it they can wander off
      mid-pipeline.
      This did briefly cost a click. The rect was re-measured on a timer, so on
      a page still settling (the results view while its rack photo loads) the
      hole lagged behind the control and the first tap hit dim instead. That is
-     fixed where it belongs — the geometry is now refreshed every frame while
-     the tour is up (see TourOverlay.jsx) — rather than by giving up on
+     fixed where it belongs - the geometry is now refreshed every frame while
+     the tour is up (see TourOverlay.jsx) - rather than by giving up on
      confinement. */
   pointer-events: auto;
   transition: all 0.15s ease;
 }
 
-/* Punches a real click-through hole over the page's own Back button —
-   rendered after the .dim strips (same stacking context, later in the DOM),
+/* Punches a real click-through hole over the page's own Back button - rendered after the .dim strips (same stacking context, later in the DOM),
    so it wins the hit-test at that spot regardless of z-index math. */
 .bypassHole {
   position: fixed;
@@ -48,7 +46,7 @@
   box-shadow: 0 0 0 3px var(--tour-accent-soft), 0 4px 16px rgba(0, 0, 0, 0.18);
 }
 
-/* Radar-style ping — a second ring that grows and fades on a loop, the
+/* Radar-style ping - a second ring that grows and fades on a loop, the
    classic "something is happening here" cue instead of a static box. */
 .ringPing {
   position: fixed;
@@ -73,7 +71,7 @@
 
 
 
-/* Tail — a small diamond in the card's own colours, pointing at the control
+/* Tail - a small diamond in the card's own colours, pointing at the control
    being spotlighted, so the card reads as belonging to that control rather
    than as a disconnected panel. (It used to point at the mascot instead; with
    the character gone, pointing at the thing being explained is the whole
@@ -112,8 +110,7 @@
   border-top: 3px solid var(--tour-accent);
   border-radius: 14px;
   padding: 14px 16px 16px;
-  /* Two-layer shadow — a tight contact shadow plus a soft ambient one —
-     reads as "floating card" instead of the flatter single heavy shadow. */
+  /* Two-layer shadow - a tight contact shadow plus a soft ambient one - reads as "floating card" instead of the flatter single heavy shadow. */
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10), 0 14px 32px rgba(0, 0, 0, 0.18);
   animation: rt-tour-bubble-in 0.2s cubic-bezier(0.2, 0.6, 0.3, 1);
 }
@@ -123,7 +120,7 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* NOTE: no "Step 3 of 7" counter here, deliberately — it was tried and taken
+/* NOTE: no "Step 3 of 7" counter here, deliberately - it was tried and taken
    out. Don't add one back without asking. */
 .bubbleTitle {
   margin: 0 0 6px;
@@ -172,7 +169,7 @@
   outline-offset: 2px;
 }
 
-/* Primary of the two — advancing is the expected path, so it gets the
+/* Primary of the two - advancing is the expected path, so it gets the
    card's own accent instead of reading like a throwaway link. */
 .skipStepBtn {
   background: var(--tour-accent, #121417);
@@ -184,7 +181,7 @@
   opacity: 0.88;
 }
 
-/* Quieter of the two — bailing on the whole tour is a bigger decision,
+/* Quieter of the two - bailing on the whole tour is a bigger decision,
    so it stays a plain outline button rather than competing for attention. */
 .skipTourBtn {
   background: transparent;

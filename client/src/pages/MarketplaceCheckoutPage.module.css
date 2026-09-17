@@ -1,11 +1,11 @@
-/* MarketplaceCheckoutPage — the buy screen.
+/* MarketplaceCheckoutPage - the buy screen.
 
    Chrome comes from MarketplaceShell; buttons, fields, cards, banners
    and the mkt-row receipt lines come from marketplace-theme.css. This
    file positions three blocks and nothing else.
 
-   CORE LAYOUT RULE OF THIS PAGE: the page is three blocks — item,
-   shipping, money — and their reading order changes with the viewport,
+   CORE LAYOUT RULE OF THIS PAGE: the page is three blocks - item,
+   shipping, money - and their reading order changes with the viewport,
    not their content. On a phone they stack in the order a buyer thinks
    in: what am I buying → where does it go → what does it cost, pay. From
    880px the shipping form takes the wide left column and item + money
@@ -50,7 +50,7 @@
 }
 
 /* Quantity is part of the order, not of the address form, so it lives
-   with the item — changing it updates the breakdown two blocks down. */
+   with the item - changing it updates the breakdown two blocks down. */
 .qty {
   padding-top: 12px;
   border-top: 1px solid var(--mkt-line, #e0e0e0);
@@ -71,7 +71,7 @@
 .totals { display: flex; flex-direction: column; gap: 14px; }
 
 /* Every figure is compared against the one below it, so the whole
-   receipt is set in tabular numerals — the mkt-row primitive is generic
+   receipt is set in tabular numerals - the mkt-row primitive is generic
    and does not assume its values are money. */
 .rows { font-variant-numeric: tabular-nums; }
 

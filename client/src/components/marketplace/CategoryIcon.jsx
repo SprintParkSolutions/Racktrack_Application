@@ -11,7 +11,7 @@
    `other` glyph is the fallback for anything unmapped. */
 
 const paths = {
-  // Patch cable — a lead with a connector at each end.
+  // Patch cable - a lead with a connector at each end.
   cable: (
     <>
       <path d="M5 9V6.5A2.5 2.5 0 0 1 7.5 4h0A2.5 2.5 0 0 1 10 6.5V9" />
@@ -21,7 +21,7 @@ const paths = {
       <path d="M6 13v3a3 3 0 0 0 3 3h3" />
     </>
   ),
-  // Switch — chassis with port row.
+  // Switch - chassis with port row.
   switch: (
     <>
       <rect x="2.5" y="7" width="19" height="10" rx="1.5" />
@@ -29,7 +29,7 @@ const paths = {
       <circle cx="18.5" cy="11.5" r="1" />
     </>
   ),
-  // Router — chassis with radiating links.
+  // Router - chassis with radiating links.
   router: (
     <>
       <rect x="2.5" y="13" width="19" height="7" rx="1.5" />
@@ -38,7 +38,7 @@ const paths = {
       <path d="M12 10V4M12 4 9 7M12 4l3 3" />
     </>
   ),
-  // Rack — cabinet with mounted units.
+  // Rack - cabinet with mounted units.
   rack: (
     <>
       <rect x="4" y="2.5" width="16" height="19" rx="1.5" />
@@ -46,7 +46,7 @@ const paths = {
       <path d="M7 5.5h2M7 10.75h2M7 16.25h2" />
     </>
   ),
-  // Optic / SFP — transceiver body with fibre pigtail.
+  // Optic / SFP - transceiver body with fibre pigtail.
   optic: (
     <>
       <rect x="2.5" y="8.5" width="11" height="7" rx="1.5" />
@@ -55,7 +55,7 @@ const paths = {
       <circle cx="21" cy="19.5" r="1.5" />
     </>
   ),
-  // Server — stacked chassis.
+  // Server - stacked chassis.
   server: (
     <>
       <rect x="3" y="3.5" width="18" height="7" rx="1.5" />
@@ -65,7 +65,7 @@ const paths = {
       <circle cx="17.5" cy="17" r="1" />
     </>
   ),
-  // PDU — power strip with outlets.
+  // PDU - power strip with outlets.
   pdu: (
     <>
       <rect x="2.5" y="9" width="19" height="6" rx="1.5" />
@@ -75,14 +75,14 @@ const paths = {
       <path d="M21.5 12H23" />
     </>
   ),
-  // Firewall — shield over brickwork.
+  // Firewall - shield over brickwork.
   firewall: (
     <>
       <path d="M12 2.5 4.5 5.5v6c0 4.5 3.2 8.4 7.5 10 4.3-1.6 7.5-5.5 7.5-10v-6Z" />
       <path d="M4.5 9.5h15M12 5.5v4M8 9.5v4M16 9.5v4M4.5 13.5h15" />
     </>
   ),
-  // Patch panel — port field.
+  // Patch panel - port field.
   patch_panel: (
     <>
       <rect x="2.5" y="6.5" width="19" height="11" rx="1.5" />
@@ -90,7 +90,7 @@ const paths = {
       <path d="M6 14v0.01M9 14v0.01M12 14v0.01M15 14v0.01M18 14v0.01" />
     </>
   ),
-  // Other — sealed carton.
+  // Other - sealed carton.
   other: (
     <>
       <path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5Z" />

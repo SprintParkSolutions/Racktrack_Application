@@ -1,4 +1,4 @@
-/* MarketplaceNewPage — create-a-listing form.
+/* MarketplaceNewPage - create-a-listing form.
 
    The header, back button and section nav come from MarketplaceShell;
    every button, input, card, banner and pill is a mkt- primitive from
@@ -10,7 +10,7 @@
    every section. A field claims 3 columns (half), 2 (a third, for the
    price / currency / quantity trio) or 6 (full). Six is the smallest
    number divisible by both 2 and 3, so halves and thirds line up on the
-   same gutters instead of needing a separate grid per row — which is
+   same gutters instead of needing a separate grid per row - which is
    what the old .row2 / .row3 pair did, and why the price row never
    aligned with the vendor row above it. Under 560px every field takes
    the full width and the grid collapses to a single column. */
@@ -50,7 +50,7 @@
 
 /* ── Photo ───────────────────────────────────────────────────────────
    The native file input is driven by the dropzone and the Replace
-   button, so it is hidden — but kept in flow-free layout rather than
+   button, so it is hidden - but kept in flow-free layout rather than
    display:none-d inline, which is what the old markup did. */
 .fileInput {
   position: absolute; width: 1px; height: 1px;
@@ -72,7 +72,7 @@
 .photoDrop:hover { border-color: var(--mkt-ink, #121212); background: var(--mkt-raised, #ffffff); }
 .photoDrop:focus-visible { outline: 2px solid var(--mkt-ink, #121212); outline-offset: 2px; }
 
-/* Sits well back, like the card placeholders on the browse grid — a
+/* Sits well back, like the card placeholders on the browse grid - a
    dropzone that shouts is a dropzone that competes with the fields. */
 .photoIcon { color: var(--mkt-ink, #121212); opacity: 0.28; }
 .photoMain { font-size: 13.5px; font-weight: 600; }

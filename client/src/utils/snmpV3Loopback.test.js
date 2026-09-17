@@ -3,13 +3,13 @@
 // The unit tests check bytes. This checks the conversation: the phone's
 // session sends a discovery, the agent answers with a REPORT carrying its
 // engine id, the session stores it and asks again, the agent answers. Then
-// the two things that go wrong in the field — a user the agent does not know,
-// and a clock that has drifted out of the time window — and the walk's stop
+// the two things that go wrong in the field - a user the agent does not know,
+// and a clock that has drifted out of the time window - and the walk's stop
 // condition on a live GETBULK.
 //
 // The native plugin is replaced with a Node datagram socket doing exactly what
 // SnmpUdp.java and SnmpUdp.swift do: one packet out, one back, or a timeout.
-// So everything above the socket — the code that actually ships — runs as-is.
+// So everything above the socket - the code that actually ships - runs as-is.
 //
 // The agent decodes what it is sent rather than replaying canned buffers, so a
 // change that breaks the encoder fails here instead of passing by accident.
@@ -19,7 +19,7 @@ import dgram from 'node:dgram';
 
 vi.mock('@capacitor/core', () => ({
   // The socket below IS the native side, so the client must believe it is on a
-  // device — otherwise the web guard refuses before a packet is ever sent.
+  // device - otherwise the web guard refuses before a packet is ever sent.
   Capacitor: { isNativePlatform: () => true },
   registerPlugin: () => ({
     query: ({ host, port, timeoutMs, data }) => new Promise((resolve, reject) => {

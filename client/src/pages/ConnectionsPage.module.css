@@ -1,4 +1,4 @@
-/* Connections — per-user saved database credentials.
+/* Connections - per-user saved database credentials.
    Utility settings screen: simple header band, list of cards, add button,
    modal form. Uses the index.css theme tokens so it looks right in both
    light + dark theme. */
@@ -122,7 +122,7 @@
 .empty p { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--text, #0c1420); }
 .emptySub { font-weight: 400 !important; font-size: 13.5px !important; color: var(--muted, #5c6878) !important; }
 
-/* ── Add — a row like the ones above it ── */
+/* ── Add - a row like the ones above it ── */
 .addMore {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   width: 100%; min-height: 56px;
@@ -296,7 +296,7 @@
    Mobile (<768px) is untouched. */
 @media (min-width: 768px) {
   /* The shell crumb is now the header on desktop (Connections is no longer
-     self-headed), and back/theme both live in the sidebar — so hide the page's
+     self-headed), and back/theme both live in the sidebar - so hide the page's
      own header and let the one shared crumb do the job. */
   .header { display: none; }
   .page {

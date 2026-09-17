@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════
-   ScanTabBar — fixed bottom nav for the Results page. White surface,
+   ScanTabBar - fixed bottom nav for the Results page. White surface,
    hairline top border, 5 inline slots (Overview / Switches / Ports /
    Topology / More). Active tab gets a circular black icon and a tiny
    dot under the label, matching the BottomNav aesthetic.
@@ -14,7 +14,7 @@
   max-width: 540px;
   z-index: 200;
   padding-bottom: env(safe-area-inset-bottom);
-  /* The bar inside this is white, but this wrapper was transparent — so the
+  /* The bar inside this is white, but this wrapper was transparent - so the
      safe-area strip below it, over the home indicator, showed the page
      scrolling underneath. Paint it, and take taps in that strip too, so a
      finger resting near the bottom edge does not reach content behind it. */
@@ -35,7 +35,7 @@
   pointer-events: auto;
 }
 
-/* ── Tab — icon block + label + (active) dot ── */
+/* ── Tab - icon block + label + (active) dot ── */
 .tab {
   flex: 1 0 0;
   min-width: 0;
@@ -51,7 +51,7 @@
   gap: 2px;
   background: transparent;
   border: none;
-  /* 4.61:1 on the white bar. Was #6b6b6b — 1.92:1, far under the 4.5:1
+  /* 4.61:1 on the white bar. Was #6b6b6b - 1.92:1, far under the 4.5:1
      minimum, matching the BottomNav fix. */
   color: #757575;
   font-family: var(--font);
@@ -59,7 +59,7 @@
 }
 .tab:hover { color: var(--md-primary); }
 
-/* ── Icon container — neutral by default, circular black when active ── */
+/* ── Icon container - neutral by default, circular black when active ── */
 .tabIcon {
   position: relative;
   display: flex;
@@ -102,7 +102,7 @@
 }
 .tabActive::after { opacity: 1; }
 
-/* ── Badge — tiny pill at the top-right of the icon ── */
+/* ── Badge - tiny pill at the top-right of the icon ── */
 .tabBadge {
   position: absolute;
   top: 2px;
@@ -122,7 +122,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   "More" sheet — floats above the More tab when open.
+   "More" sheet - floats above the More tab when open.
    ══════════════════════════════════════════════════════════════════════ */
 
 .moreWrap {
