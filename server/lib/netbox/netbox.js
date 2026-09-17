@@ -117,8 +117,11 @@ class NetBox {
   async preloadByUid(endpoint, params = {}) {
     if (!this._uidCache) this._uidCache = new Map();
     let rows;
+    // null means the preload failed, so nothing is known; 0 means NetBox
+    // answered and there is genuinely nothing there. Callers that skip work
+    // on an empty answer must not skip it on a failure.
     try { rows = await this.paginate(endpoint, params); }
-    catch { return 0; }
+    catch { return null; }
     const byUid = this._uidCache.get(endpoint) || new Map();
     for (const r of rows) {
       const uid = (r.custom_fields || {})[UID_FIELD];

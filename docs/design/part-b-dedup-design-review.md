@@ -74,7 +74,8 @@ and has no NetBox client; the scan's owning tenant is already on disk as
 
 ## The revised design
 
-1. **A server-minted, globally unique key.** `rack:t<tenantId>:<racks_known.id>`.
+1. **A server-minted, globally unique key.** `t<tenantId>:<racks_known.id>`, standing
+   where the photo hash stood, so a rack reads `rack:t7:5` and a device `dev:t7:5:u10`.
    The row id is unique across tenants; nothing the admin types becomes a key.
 2. **Key only on explicit identification.** Use the stable key when the resolver's
    source is `name` or `set-up-directly`. The single-rack-in-space rule keeps

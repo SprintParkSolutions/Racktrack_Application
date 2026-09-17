@@ -355,6 +355,13 @@ router.post('/:planId/decide', async (req, res) => {
       error: 'send the whole-rack decision on its own, not mixed with single items',
     });
   }
+  // The scope form is the same request in another shape, so it refuses a
+  // mixed body the same way.
+  if (!star && body.scope === 'rack' && Array.isArray(decisions) && decisions.length) {
+    return res.status(400).json({
+      error: 'send the whole-rack decision on its own, not mixed with single items',
+    });
+  }
   const rackAsk = star || (body.scope === 'rack'
     ? { decision: 'ticketed', assignee: body.assignee, note: body.note } : null);
   const wholeRack = Boolean(rackAsk);
@@ -367,7 +374,10 @@ router.post('/:planId/decide', async (req, res) => {
     if (!rackAsk.assignee) {
       return res.status(400).json({ error: 'a ticket has to be assigned to somebody' });
     }
-    const waiting = plan.items.filter((i) => i.decidable && i.decision === 'pending');
+    // A rebind only re-labels a record NetBox already has, so there is nothing
+    // to check at the rack; a whole-rack ask leaves rebinds for approve or reject.
+    const waiting = plan.items.filter(
+      (i) => i.decidable && i.decision === 'pending' && i.action !== 'rebind');
     if (!waiting.length) {
       return res.status(409).json({ error: 'nothing on this plan is waiting to be assigned' });
     }

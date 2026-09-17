@@ -164,7 +164,7 @@ describe('a decision on the device is a decision on its ports', () => {
 describe('the whole rack in one move', () => {
   /** What the decide route does for { uid: '*' }: every pending top-level item. */
   const wholeRack = (plan, assignee, note) => plan.items
-    .filter((i) => i.decidable && i.decision === 'pending')
+    .filter((i) => i.decidable && i.decision === 'pending' && i.action !== 'rebind')
     .map((i) => ({ uid: i.uid, decision: 'ticketed', assignee, note }));
 
   it('assigns every pending device, and only those, to one person', () => {
@@ -211,6 +211,29 @@ describe('the whole rack in one move', () => {
     assert.equal(plans.summarise(after.items).openTickets, 2, 'two device tickets in RackTrack');
     assert.ok(plans.excludedUids(after).has(DEV) && plans.excludedUids(after).has(DEV2),
       'nothing is written while it is with somebody');
+  });
+
+  it('leaves a rebind for approve or reject, as the route does', () => {
+    // A rebind only re-labels a record NetBox already has: there is nothing to
+    // check at the rack, so a whole-rack ask must step over it, not refuse it.
+    const REB = 'dev:RK-NEW:u12';
+    const p = plans.create({ scanId: 10, rackId: 'RK-NEW', by: 'ravi', report: report([
+      { type: 'Device', uid: DEV, name: 'SW-16', action: 'create' },
+      { type: 'Device', uid: REB, name: 'SW-12', action: 'rebind', netboxId: 7,
+        fromUid: 'dev:RK-OLD:u12', diff: { racktrack_uid: { from: 'dev:RK-OLD:u12', to: REB } } },
+    ]) });
+    const decisions = wholeRack(p, 'sam', 'please check the whole rack');
+    assert.deepEqual(decisions.map((d) => d.uid), [DEV], 'the rebind is not asked about at the rack');
+
+    const out = plans.decide(p.id, decisions, { by: 'meera' });
+    assert.equal(out.refused.length, 0, 'left out, not refused');
+    const items = byUid(plans.get(p.id));
+    assert.equal(items[DEV].decision, 'ticketed');
+    assert.equal(items[REB].decision, 'pending', 'the rebind still waits for approve or reject');
+
+    const ok = plans.decide(p.id, [{ uid: REB, decision: 'approved' }], { by: 'meera' });
+    assert.equal(ok.applied.length, 1);
+    assert.equal(byUid(plans.get(p.id))[REB].decision, 'approved', 'and approving it works');
   });
 });
 
