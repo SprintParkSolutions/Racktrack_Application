@@ -22,6 +22,7 @@ import styles from './DriftPage.module.css';
 const WORD = {
   create: 'Not in NetBox',
   update: 'Different in NetBox',
+  rebind: "In NetBox under this rack's old id",
 };
 
 const STATE_WORD = {
@@ -58,7 +59,7 @@ export default function DriftPage() {
   const items = plan?.items || [];
   const changed = useMemo(() => items.filter((i) => i.decidable), [items]);
   const auto = useMemo(
-    () => items.filter((i) => i.supporting && (i.action === 'create' || i.action === 'update')),
+    () => items.filter((i) => i.supporting && ['create', 'update', 'rebind'].includes(i.action)),
     [items],
   );
 

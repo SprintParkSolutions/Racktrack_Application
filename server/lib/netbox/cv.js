@@ -313,14 +313,24 @@ function extractPorts(d) {
  * device to a different U and it reads as an orphan plus a create, which is a
  * change a human should look at. Once SNMP lands, the serial from ENTITY-MIB
  * becomes the key and a moved device becomes a simple update.
+ *
+ * `rackKey` is the customer's rack this scan was recognised as, minted by the
+ * server (rack:t<tenant>:<row>) and passed only when the identification was
+ * explicit. Every rack-scoped uid is then built on it where the photo hash
+ * used to be, so two photos of one rack become one set of NetBox objects.
+ * Without it the uids are exactly what they always were. When the key differs
+ * from the hash, `aliasOf` keeps the hash-based rack uid so the planner can
+ * find objects written before the key existed and rebind them.
  */
-function toSnapshot(map, { rackId, siteName, rackName, uHeight = null, scannedAt = '' }) {
-  const snap = emptySnapshot(`rack:${rackId}`, scannedAt);
+function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight = null, scannedAt = '' }) {
+  const key = rackKey || rackId;
+  const aliasOf = rackKey && rackKey !== rackId ? `rack:${rackId}` : null;
+  const snap = emptySnapshot(`rack:${key}`, scannedAt, aliasOf);
 
   const siteUid = `site:${slug(siteName)}`;
   snap.sites.push(Site(observed(siteUid, Evidence.MANUAL), { name: siteName, slug: slug(siteName) }));
 
-  const rackUid = `rack:${rackId}`;
+  const rackUid = `rack:${key}`;
   snap.racks.push(Rack(observed(rackUid, Evidence.MANUAL, { image: map.image || '' }),
     { name: rackName || rackId, siteUid, uHeight }));
 
@@ -364,7 +374,7 @@ function toSnapshot(map, { rackId, siteName, rackName, uHeight = null, scannedAt
     const clash = units.find((u) => takenU.has(u));
     if (pos !== null && clash !== undefined) {
       snap.conflicts.push(Conflict({
-        subjectUid: `dev:${rackId}:${slug(label)}`, field: 'position',
+        subjectUid: `dev:${key}:${slug(label)}`, field: 'position',
         cvSays: `U${pos}`,
         note: `CV placed both "${takenU.get(clash)}" and "${label}" at U${clash}. `
             + 'One U holds one device per face. Exported unplaced pending review.',
@@ -406,7 +416,7 @@ function toSnapshot(map, { rackId, siteName, rackName, uHeight = null, scannedAt
       snap.deviceRoles.push(DeviceRole(observed(uid, Evidence.CV_ONLY), { name: cls, slug: slug(cls) }));
     }
 
-    let devUid = pos !== null ? `dev:${rackId}:u${pos}` : `dev:${rackId}:${slug(label)}`;
+    let devUid = pos !== null ? `dev:${key}:u${pos}` : `dev:${key}:${slug(label)}`;
     if (usedUids.has(devUid)) devUid = `${devUid}:${slug(label)}`;
     usedUids.add(devUid);
 

@@ -71,6 +71,14 @@ function snapshotOf(req, res) {
   return { scan, snap, reconciled: Boolean(scan.payload.reconciled) };
 }
 
+/**
+ * The tenant a plan belongs to: the scan's own, stored with it when the rack
+ * was recognised, so the key its uids were built on and the rack its contact
+ * is looked up for come from one tenant. The caller's tenant only for a scan
+ * that predates that (an owner or an org admin may sit in a different one).
+ */
+const tenantOf = (scan, req) => scan.payload?.tenantId ?? req.user?.tenant_id ?? null;
+
 /** Can we reach NetBox, and are we authenticated? */
 router.get('/health', async (req, res) => {
   const t = target(req);
@@ -113,7 +121,7 @@ router.post('/:id/preview', async (req, res) => {
     const filed = plans.create({
       scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
       report, by: (req.user && (req.user.username || req.user.email)) || null,
-      orgId: req.user?.organization_id ?? null, tenantId: req.user?.tenant_id ?? null,
+      orgId: req.user?.organization_id ?? null, tenantId: tenantOf(got.scan, req),
     });
     res.json({
       ...report,
@@ -187,7 +195,7 @@ router.post('/:id/export', async (req, res) => {
       const replan = plans.create({
         scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
         report: fresh, by,
-        orgId: req.user?.organization_id ?? null, tenantId: req.user?.tenant_id ?? null,
+        orgId: req.user?.organization_id ?? null, tenantId: tenantOf(got.scan, req),
       });
       store.recordStage(got.scan.id, 'export', 'failed', 'NetBox changed since approval');
       return res.status(409).json({

@@ -28,7 +28,11 @@ import styles from './ApprovalsPage.module.css';
  *   undecided, carrying what the person found, and the admin decides again.
  */
 
-const ACTION_WORD = { create: 'Add to NetBox', update: 'Change in NetBox' };
+const ACTION_WORD = {
+  create: 'Add to NetBox',
+  update: 'Change in NetBox',
+  rebind: "Rebind to this rack's record",
+};
 
 const DECISION_LABEL = {
   pending: 'Waiting on you',
@@ -69,7 +73,7 @@ export default function ApprovalsPage() {
   const items = plan?.items || [];
   const decidable = useMemo(() => items.filter((i) => i.decidable), [items]);
   const supporting = useMemo(
-    () => items.filter((i) => i.supporting && (i.action === 'create' || i.action === 'update')),
+    () => items.filter((i) => i.supporting && ['create', 'update', 'rebind'].includes(i.action)),
     [items],
   );
   // A device's ports, by the device uid. They follow the device's decision.
