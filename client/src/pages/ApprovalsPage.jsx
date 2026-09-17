@@ -9,8 +9,13 @@ import styles from './ApprovalsPage.module.css';
  * Approvals: the admin's screen.
  *
  * Everything a scan would change is listed here, and nothing reaches NetBox
- * until somebody says so item by item. Three ways out of every row - approve
- * it, reject it with a reason, or hand it to whoever looks after the rack.
+ * until somebody says so, one device at a time. A device's ports follow it:
+ * they are listed under it, never asked about on their own.
+ *
+ * The admin assigns before they decide (docs/design/drift-approval-workflow.md).
+ * A pending row has one action - hand it to whoever looks after the rack, or
+ * hand the whole rack over in one move. Approve and Reject appear only once
+ * that person has resolved the ticket and the finding is back.
  *
  * Two things on this screen are load-bearing and easy to miss.
  *
@@ -59,6 +64,7 @@ export default function ApprovalsPage() {
   const [ticketFor, setTicketFor] = useState(null);
   const [question, setQuestion] = useState('');
   const [assignee, setAssignee] = useState('');
+  const [openPorts, setOpenPorts] = useState(() => new Set());
 
   const items = plan?.items || [];
   const decidable = useMemo(() => items.filter((i) => i.decidable), [items]);
@@ -66,8 +72,24 @@ export default function ApprovalsPage() {
     () => items.filter((i) => i.supporting && (i.action === 'create' || i.action === 'update')),
     [items],
   );
+  // A device's ports, by the device uid. They follow the device's decision.
+  const portsOf = useMemo(() => {
+    const m = new Map();
+    for (const i of items) {
+      if (!i.following || !i.parentUid) continue;
+      if (!m.has(i.parentUid)) m.set(i.parentUid, []);
+      m.get(i.parentUid).push(i);
+    }
+    return m;
+  }, [items]);
   const pending = decidable.filter((i) => i.decision === 'pending');
   const settled = pending.length === 0;
+
+  const togglePorts = (uid) => setOpenPorts((s) => {
+    const n = new Set(s);
+    if (n.has(uid)) n.delete(uid); else n.add(uid);
+    return n;
+  });
 
   /** Adopt the rack, compare it, and file the result as a plan. */
   const load = useCallback(async () => {
@@ -153,6 +175,9 @@ export default function ApprovalsPage() {
     setAssignee(people?.spoc?.name || '');
     setQuestion('');
   };
+  // The whole rack in one move: the server turns '*' into every item still
+  // waiting, raises one incident for the rack and sends one email.
+  const WHOLE_RACK = { uid: '*', type: 'Rack', name: rackId, wholeRack: true };
 
   const spoc = people?.spoc;
   const roster = useMemo(() => {
@@ -190,6 +215,18 @@ export default function ApprovalsPage() {
           <span className={styles.pill}>{plan.summary?.ticketed ?? 0} with somebody</span>
           <span className={styles.pill}>{plan.summary?.rejected ?? 0} rejected</span>
           <span className={styles.pillQuiet}>{supporting.length} applied automatically</span>
+        </div>
+      )}
+
+      {plan && pending.length > 1 && plan.status !== 'applied' && (
+        <div className={styles.rackAsk}>
+          <button type="button" className={styles.rackAskBtn} disabled={!!busy}
+                  onClick={() => openTicketDialog(WHOLE_RACK)}>
+            Ask about the whole rack
+          </button>
+          <p className={styles.rackAskNote}>
+            Hands all {pending.length} waiting items to one person, as one ticket.
+          </p>
         </div>
       )}
 
@@ -245,6 +282,9 @@ export default function ApprovalsPage() {
         {decidable.map((item) => {
           const lines = diffLines(item.diff);
           const ext = item.ticket?.external;
+          const ports = portsOf.get(item.uid) || [];
+          const cameBack = item.ticket && item.ticket.status === 'resolved';
+          const canAct = plan.status !== 'applied' && item.decision === 'pending';
           return (
             <li key={item.uid} className={`${styles.item} ${styles[item.decision] || ''}`}>
               <div className={styles.itemTop}>
@@ -253,6 +293,26 @@ export default function ApprovalsPage() {
                 <span className={styles.action}>{ACTION_WORD[item.action] || item.action}</span>
                 <span className={styles.state}>{DECISION_LABEL[item.decision] || item.decision}</span>
               </div>
+
+              {ports.length > 0 && (
+                <div className={styles.follow}>
+                  <button type="button" className={styles.followBtn}
+                          aria-expanded={openPorts.has(item.uid)}
+                          onClick={() => togglePorts(item.uid)}>
+                    {openPorts.has(item.uid) ? 'Hide' : 'Show'} - {ports.length} port{ports.length === 1 ? '' : 's'} follow this device
+                  </button>
+                  {openPorts.has(item.uid) && (
+                    <ul className={styles.ports}>
+                      {ports.map((p) => (
+                        <li key={p.uid} className={styles.port}>
+                          <span className={styles.portName}>{p.name}</span>
+                          <span className={styles.portWhat}>{ACTION_WORD[p.action] || p.action}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               {lines.length > 0 && (
                 <ul className={styles.diff}>
@@ -270,7 +330,8 @@ export default function ApprovalsPage() {
               {item.ticket && (
                 <div className={styles.ticket}>
                   <span className={styles.ticketTag}>
-                    {item.ticket.status === 'resolved' ? 'Came back' : 'With'} {item.ticket.assignee}
+                    {item.ticket.status === 'resolved' ? 'Came back from' : 'With'} {item.ticket.assignee}
+                    {item.ticket.scope === 'rack' ? ' - whole rack' : ''}
                   </span>
                   {item.ticket.question && <p className={styles.q}>{item.ticket.question}</p>}
                   {item.ticket.finding && (
@@ -284,23 +345,34 @@ export default function ApprovalsPage() {
                   )}
                   {ext?.error && <p className={styles.snErr}>ServiceNow: {ext.error}</p>}
                   {ext?.system === 'none' && <p className={styles.snErr}>{ext.why}</p>}
+                  {item.ticket.status === 'open' && (
+                    <p className={styles.q}>Waiting on them to check the rack and report back.</p>
+                  )}
                   {item.ticket.status === 'resolved' && (
                     <p className={styles.q}>
-                      A resolved ticket is not an approval. Decide again below.
+                      A resolved ticket is not an approval. Decide now, with their finding in hand.
                     </p>
                   )}
                 </div>
               )}
 
-              {item.decision !== 'approved' && plan.status !== 'applied' && (
+              {canAct && !cameBack && (
+                // The admin does not judge the rack from a desk. The first and
+                // only move on a waiting item is to hand it to somebody.
+                <div className={styles.actions}>
+                  <button type="button" className={styles.ticketBtn}
+                          disabled={!!busy} onClick={() => openTicketDialog(item)}>
+                    Ask somebody
+                  </button>
+                </div>
+              )}
+              {canAct && cameBack && (
+                // It has come back from the person who looked. Now the admin
+                // decides, or asks again.
                 <div className={styles.actions}>
                   <button type="button" className={styles.approve}
                           disabled={!!busy} onClick={() => decide(item.uid, 'approved')}>
                     Approve
-                  </button>
-                  <button type="button" className={styles.ticketBtn}
-                          disabled={!!busy} onClick={() => openTicketDialog(item)}>
-                    Ask somebody
                   </button>
                   <button type="button" className={styles.reject}
                           disabled={!!busy}
@@ -309,6 +381,10 @@ export default function ApprovalsPage() {
                             if (note !== null) decide(item.uid, 'rejected', { note });
                           }}>
                     Reject
+                  </button>
+                  <button type="button" className={styles.ticketBtn}
+                          disabled={!!busy} onClick={() => openTicketDialog(item)}>
+                    Ask again
                   </button>
                 </div>
               )}
@@ -338,8 +414,14 @@ export default function ApprovalsPage() {
       {ticketFor && (
         <div className={styles.sheetWrap} role="dialog" aria-label="Ask somebody to check">
           <div className={styles.sheet}>
-            <h2 className={styles.sheetTitle}>Ask somebody to check</h2>
-            <p className={styles.sheetSub}>{ticketFor.type} “{ticketFor.name}”</p>
+            <h2 className={styles.sheetTitle}>
+              {ticketFor.wholeRack ? 'Ask about the whole rack' : 'Ask somebody to check'}
+            </h2>
+            <p className={styles.sheetSub}>
+              {ticketFor.wholeRack
+                ? `Rack ${rackId} - all ${pending.length} items still waiting, as one ticket`
+                : <>{ticketFor.type} “{ticketFor.name}”</>}
+            </p>
 
             <label className={styles.label} htmlFor="assignee">Who</label>
             <select id="assignee" className={styles.select} value={assignee}
@@ -355,7 +437,7 @@ export default function ApprovalsPage() {
 
             <label className={styles.label} htmlFor="question">What do you want them to check?</label>
             <textarea id="question" className={styles.textarea} value={question}
-                      placeholder="Is it really at U15?"
+                      placeholder={ticketFor.wholeRack ? 'Please check everything in this rack.' : 'Is it really at U15?'}
                       onChange={(e) => setQuestion(e.target.value)} />
 
             <p className={styles.sheetNote}>

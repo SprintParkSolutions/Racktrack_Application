@@ -192,6 +192,8 @@ router.get('/tickets/all', (req, res) => {
     if (!plan) continue;
     for (const it of plan.items) {
       if (!it.ticket) continue;
+      // An interface shares its device's ticket; the device row is the ticket.
+      if (it.ticket.sharedWith) continue;
       if (status && it.ticket.status !== status) continue;
       const ext = it.ticket.external || {};
       rows.push({
@@ -224,7 +226,7 @@ router.get('/:planId/tickets', (req, res) => {
   const plan = plans.get(req.params.planId);
   if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
   const rows = plan.items
-    .filter((i) => i.ticket)
+    .filter((i) => i.ticket && !i.ticket.sharedWith)
     .filter((i) => !req.query.assignee || i.ticket.assignee === req.query.assignee)
     .filter((i) => !req.query.status || i.ticket.status === req.query.status)
     .map((i) => ({ ...i.ticket, uid: i.uid, type: i.type, name: i.name,
@@ -232,11 +234,106 @@ router.get('/:planId/tickets', (req, res) => {
   res.json({ planId: plan.id, tickets: rows });
 });
 
+/** What an incident description says an item is. */
+const whatDiffers = (item) => (item.action === 'create'
+  ? 'found in the rack, not in NetBox' : 'does not match NetBox');
+
+/** "Device "Sw1" - found in the rack, not in NetBox (48 ports follow it)" */
+function itemLine(plan, item) {
+  const ports = plans.childrenOf(plan, item.uid).length;
+  return `${item.type} "${item.name}" - ${whatDiffers(item)}`
+    + (ports ? ` (${ports} port${ports === 1 ? '' : 's'} follow it)` : '');
+}
+
+/**
+ * The one item a whole-rack incident is about: the rack itself, with the
+ * things that differ listed in its description. Shaped as a plan item so
+ * tickets.raise() takes it as it is - its uid gives the correlation id
+ * racktrack:<rackId>:rack, its name gives the short description.
+ */
+function rackItem(plan, targets, rackName) {
+  return {
+    uid: 'rack', type: 'Rack', action: 'check',
+    name: `${rackName} - ${targets.length} item${targets.length === 1 ? '' : 's'}`,
+    reason: `\n${targets.map((i) => `  ${itemLine(plan, i)}`).join('\n')}`,
+  };
+}
+
+/** tickets.raise()'s answer as the external record kept on the ticket. */
+const externalOf = (r) => (r.ok
+  ? { system: 'servicenow', number: r.number, sysId: r.sysId, url: r.url,
+      state: r.state, reused: r.reused, reopened: r.reopened,
+      raisedAt: new Date().toISOString() }
+  : { system: 'servicenow', error: `ServiceNow replied ${r.status || 'nothing'}`,
+      detail: typeof r.error === 'string' ? r.error.slice(0, 200) : r.error });
+
+const NO_SERVICENOW = { system: 'none',
+  why: 'No ServiceNow is configured, so this ticket lives only in RackTrack.' };
+
+/** Put the external record on a device's ticket and on every port that follows it. */
+function stampExternal(plan, item, external) {
+  item.ticket.external = external;
+  for (const child of plans.childrenOf(plan, item.uid)) {
+    if (child.ticket) child.ticket.external = external;
+  }
+}
+
+/**
+ * One email to one person about everything just assigned to them. The email
+ * is a courtesy on top of the ServiceNow incident, not the record - a failure
+ * here never blocks the decision. Sent to their own address, read from NetBox.
+ */
+function notifyAssignee(plan, { person, items, incidents, rackName, siteName, by, question, wholeRack }) {
+  const where = [rackName, siteName].filter(Boolean).join(', ');
+  const n = items.length;
+  const subject = wholeRack
+    ? `RackTrack: please check rack ${rackName} (${n} item${n === 1 ? '' : 's'})`
+    : n === 1
+      ? `RackTrack: please check ${items[0].type} "${items[0].name}" in ${rackName}`
+      : `RackTrack: please check ${n} items in ${rackName}`;
+  const incLines = incidents.flatMap((ext) => [
+    ext.number ? `ServiceNow incident: ${ext.number}` : null,
+    ext.url || null,
+  ]).filter(Boolean);
+  const text = [
+    `Hello ${person.name},`,
+    '',
+    `A rack scan of ${where} found ${n === 1 ? 'something' : `${n} things`} that `
+      + `${n === 1 ? 'does' : 'do'} not match NetBox, and ${by || 'an admin'} has asked you `
+      + `to check ${n === 1 ? 'it' : 'them'} at the rack.`,
+    '',
+    ...items.map((i) => `  ${itemLine(plan, i)}`),
+    question ? `\nThey ask: ${question}` : '',
+    incLines.length ? `\n${incLines.join('\n')}` : '',
+    '',
+    'Nothing has been written to NetBox. Please check the rack and resolve the '
+      + `incident${incidents.length === 1 ? '' : 's'} with what you find; it then comes back for approval.`,
+    '',
+    '- RackTrack',
+  ].filter((l) => l !== undefined).join('\n');
+
+  return sendNotice({ to: person.email, subject, text }).then((ok) => {
+    for (const item of items) {
+      if (ok) item.ticket.emailedAt = new Date().toISOString();
+      else item.ticket.emailNote = 'no mail transport configured';
+    }
+    plans.save(plan);
+  }).catch(() => {});
+}
+
 /**
  * The admin decides. Three ways per item, and nothing is all-or-nothing.
  *
  *   { decisions: [ { uid, decision: 'approved'|'rejected'|'ticketed',
  *                    note, assignee } ] }
+ *
+ * A device's interfaces follow it (plans.toItem), so a decision names the
+ * device and ONE ServiceNow incident is raised per device, not per port.
+ *
+ * The whole rack at once: { decisions: [ { uid: '*', decision: 'ticketed',
+ * assignee, note } ] } or { scope: 'rack', assignee, note } assigns every
+ * item still waiting to that person and raises ONE incident for the rack.
+ * Only assigning works rack-wide; approve and reject stay per device.
  */
 router.post('/:planId/decide', async (req, res) => {
   if (!isAdmin(req)) {
@@ -244,9 +341,33 @@ router.post('/:planId/decide', async (req, res) => {
       error: 'Only an admin decides what gets written. Ask yours to review this plan.',
     });
   }
-  if (!mine(req, plans.get(req.params.planId))) return res.status(404).json({ error: 'no such plan' });
-  const { decisions } = req.body || {};
-  if (!Array.isArray(decisions) || !decisions.length) {
+  let plan = plans.get(req.params.planId);
+  if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
+  const body = req.body || {};
+  let decisions = Array.isArray(body.decisions) ? body.decisions : [];
+
+  const star = decisions.find((d) => d && d.uid === '*');
+  const rackAsk = star || (body.scope === 'rack'
+    ? { decision: 'ticketed', assignee: body.assignee, note: body.note } : null);
+  const wholeRack = Boolean(rackAsk);
+  if (wholeRack) {
+    if (rackAsk.decision !== 'ticketed') {
+      return res.status(400).json({
+        error: 'The whole rack can only be assigned to somebody. Approve or reject each device on its own.',
+      });
+    }
+    if (!rackAsk.assignee) {
+      return res.status(400).json({ error: 'a ticket has to be assigned to somebody' });
+    }
+    const waiting = plan.items.filter((i) => i.decidable && i.decision === 'pending');
+    if (!waiting.length) {
+      return res.status(409).json({ error: 'nothing on this plan is waiting to be assigned' });
+    }
+    decisions = waiting.map((i) => ({
+      uid: i.uid, decision: 'ticketed', assignee: rackAsk.assignee, note: rackAsk.note,
+    }));
+  }
+  if (!decisions.length) {
     return res.status(400).json({ error: 'send { decisions: [ { uid, decision } ] }' });
   }
   const by = who(req);
@@ -259,7 +380,7 @@ router.post('/:planId/decide', async (req, res) => {
   const sn = serviceNowFor(req);
   const raised = [];
   const ticketed = out.applied.filter((d) => d.decision === 'ticketed');
-  let plan = plans.get(req.params.planId);
+  plan = plans.get(req.params.planId);
   if (ticketed.length) {
     const scan = plan.scanId ? store.getScan(plan.scanId) : null;
     const fallbackName = (scan && (scan.rackName || scan.rackId)) || plan.rackId;
@@ -282,73 +403,80 @@ router.post('/:planId/decide', async (req, res) => {
       roster = [people && people.spoc, ...((people && people.others) || []), ...all].filter(Boolean);
     }
     const spocPerson = (people && people.spoc) || null;
+    const siteName = people?.site?.name || null;
 
-    for (const d of ticketed) {
-      const item = plan.items.find((i) => i.uid === d.uid);
-      if (!item || !item.ticket) continue;
-
-      // Who it actually goes to. NetBox names the single point of contact and
-      // that is the default the admin was shown; but the admin may assign to
-      // someone else, and when NetBox names no SPOC at all the admin has picked
-      // the person by hand. The chosen name is already on the ticket — resolve
-      // it to a full contact so the incident and the email reach that person,
-      // not whoever NetBox happens to call the SPOC.
+    // Who it actually goes to. NetBox names the single point of contact and
+    // that is the default the admin was shown; but the admin may assign to
+    // someone else, and when NetBox names no SPOC at all the admin has picked
+    // the person by hand. The chosen name is already on the ticket - resolve
+    // it to a full contact so the incident and the email reach that person,
+    // not whoever NetBox happens to call the SPOC.
+    const personFor = (item) => {
       const chosen = item.ticket.assignee || (spocPerson && spocPerson.name) || null;
       const person = (chosen && roster.find((p) => p.name === chosen)) || spocPerson || null;
       item.ticket.spoc = spocPerson;
       if (person && !item.ticket.assignee) item.ticket.assignee = person.name;
+      return person;
+    };
 
-      if (!sn) {
-        item.ticket.external = { system: 'none',
-          why: 'No ServiceNow is configured, so this ticket lives only in RackTrack.' };
-        continue;
-      }
-      const r = await tickets.raise(sn, {
-        item, rackId: plan.rackId, rackName, siteName: people?.site?.name || null,
-        spoc: person, question: item.ticket.question, planId: plan.id,
-      });
-      item.ticket.external = r.ok
-        ? { system: 'servicenow', number: r.number, sysId: r.sysId, url: r.url,
-            state: r.state, reused: r.reused, reopened: r.reopened,
-            raisedAt: new Date().toISOString() }
-        : { system: 'servicenow', error: `ServiceNow replied ${r.status || 'nothing'}`,
-            detail: typeof r.error === 'string' ? r.error.slice(0, 200) : r.error };
-      raised.push({ uid: d.uid, ...item.ticket.external });
+    // The top-level items just assigned. decide() only accepts a device (or
+    // another top-level item), so the ports are reached through childrenOf.
+    const targets = ticketed
+      .map((d) => plan.items.find((i) => i.uid === d.uid))
+      .filter((i) => i && i.ticket);
 
-      // Tell the person it went to. The email is a courtesy on top of the
-      // ServiceNow incident, not the record — a failure here never blocks the
-      // decision. Sent to the SPOC's own address, read from NetBox.
-      if (person && person.email) {
-        const where = [rackName, people?.site?.name].filter(Boolean).join(', ');
-        const inc = item.ticket.external && item.ticket.external.number;
-        sendNotice({
-          to: person.email,
-          subject: `RackTrack: please check ${item.type} "${item.name}" in ${rackName}`,
-          text: [
-            `Hello ${person.name},`,
-            '',
-            `A rack scan of ${where} found something that does not match NetBox, and `
-              + `${by || 'an admin'} has asked you to check it at the rack.`,
-            '',
-            `  ${item.type} "${item.name}" — ${item.action === 'create'
-              ? 'found in the rack, not in NetBox' : 'does not match NetBox'}`,
-            item.ticket.question ? `\nThey ask: ${item.ticket.question}` : '',
-            inc ? `\nServiceNow incident: ${inc}` : '',
-            item.ticket.external && item.ticket.external.url ? item.ticket.external.url : '',
-            '',
-            'Nothing has been written to NetBox. Please check the rack and resolve the '
-              + 'incident with what you find; it then comes back for approval.',
-            '',
-            '— RackTrack',
-          ].filter((l) => l !== undefined).join('\n'),
-        }).then((ok) => {
-          if (ok) item.ticket.emailedAt = new Date().toISOString();
-          else item.ticket.emailNote = 'no mail transport configured';
-          plans.save(plan);
-        }).catch(() => {});
-      } else if (person) {
+    // One email per person, whatever they were handed: person name -> notice.
+    const notices = new Map();
+    const noteFor = (person, item, external) => {
+      if (!person) return;
+      if (!person.email) {
         item.ticket.emailNote = `no email in NetBox for ${person.name}, so no notice was sent`;
+        return;
       }
+      const n = notices.get(person.name) || { person, items: [], incidents: [] };
+      n.items.push(item);
+      if (external && external.system === 'servicenow' && !n.incidents.includes(external)) {
+        n.incidents.push(external);
+      }
+      notices.set(person.name, n);
+    };
+
+    if (wholeRack) {
+      // One incident for the rack, its external record on every item and port.
+      for (const item of targets) item.ticket.scope = 'rack';
+      const person = targets.length ? personFor(targets[0]) : null;
+      for (const item of targets.slice(1)) personFor(item);
+      const external = sn
+        ? externalOf(await tickets.raise(sn, {
+          item: rackItem(plan, targets, rackName), rackId: plan.rackId, rackName, siteName,
+          spoc: person, question: rackAsk.note || null, planId: plan.id,
+        }))
+        : NO_SERVICENOW;
+      for (const item of targets) stampExternal(plan, item, external);
+      raised.push({ uid: 'rack', scope: 'rack', items: targets.length, ...external });
+      for (const item of targets) noteFor(person, item, external);
+    } else {
+      // One incident per device; its ports carry the same external record.
+      for (const item of targets) {
+        const person = personFor(item);
+        const external = sn
+          ? externalOf(await tickets.raise(sn, {
+            item, rackId: plan.rackId, rackName, siteName,
+            spoc: person, question: item.ticket.question, planId: plan.id,
+          }))
+          : NO_SERVICENOW;
+        stampExternal(plan, item, external);
+        raised.push({ uid: item.uid, ports: plans.childrenOf(plan, item.uid).length, ...external });
+        noteFor(person, item, external);
+      }
+    }
+
+    for (const n of notices.values()) {
+      notifyAssignee(plan, {
+        ...n, rackName, siteName, by, wholeRack,
+        question: wholeRack ? (rackAsk.note || null)
+          : (n.items.length === 1 ? n.items[0].ticket.question : null),
+      });
     }
     plans.save(plan);
     plan = plans.get(req.params.planId);
@@ -359,6 +487,7 @@ router.post('/:planId/decide', async (req, res) => {
     applied: out.applied,
     refused: out.refused,
     raised,
+    wholeRack,
     serviceNowConfigured: Boolean(sn),
     summary: plans.summarise(plan.items),
     settled: plans.isSettled(plan),
