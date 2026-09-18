@@ -14,6 +14,27 @@
  */
 const UID_FIELD = 'racktrack_uid';
 
+/**
+ * The filter a preload uses to sweep one rack's objects: NetBox's contains
+ * form, `cf_racktrack_uid__ic=<text>`, which answers with every uid holding
+ * that text, ignoring case. The exact form and the starts-with form are not
+ * recorded as coverage: neither promises anything about a uid it did not name.
+ */
+const CONTAINS_FILTER = `cf_${UID_FIELD}__ic`;
+
+const containsNeedle = (params) => {
+  const v = (params || {})[CONTAINS_FILTER];
+  return typeof v === 'string' && v ? v.toLowerCase() : null;
+};
+
+/** Whether a preload of this endpoint already asked NetBox about this uid. */
+const isCovered = (needles, uid) => {
+  if (!needles || !needles.size) return false;
+  const u = String(uid ?? '').toLowerCase();
+  for (const n of needles) if (u.includes(n)) return true;
+  return false;
+};
+
 class NetBoxError extends Error {
   constructor(status, detail, path = '') {
     super(`NetBox HTTP ${status} on ${path}: ${JSON.stringify(detail)}`);
@@ -131,11 +152,31 @@ class NetBox {
       byUid.set(uid, byUid.has(uid) ? 'ambiguous' : r);
     }
     this._uidCache.set(endpoint, byUid);
+    // Remember what this preload actually covered. A contains filter asked
+    // NetBox for every uid holding that text, so a uid holding it that did not
+    // come back is genuinely absent and findByUid can say so without asking
+    // again. That is the whole saving on a rack NetBox has never seen: every
+    // object misses the cache, and without this each miss costs a round trip.
+    // Only the contains form is recorded, because only it makes the promise:
+    // an exact filter says nothing about any uid but the one it named.
+    const needle = containsNeedle(params);
+    if (needle) {
+      if (!this._uidCovered) this._uidCovered = new Map();
+      const covered = this._uidCovered.get(endpoint) || new Set();
+      covered.add(needle);
+      this._uidCovered.set(endpoint, covered);
+    }
     return rows.length;
   }
 
-  async findByUid(endpoint, uid) {
-    const cached = this._uidCache?.get(endpoint);
+  /**
+   * `fresh` asks NetBox itself and ignores everything remembered. Use it
+   * wherever the answer decides a write: a preload is a snapshot of a moment,
+   * and between that moment and a patch another writer may have minted the
+   * uid. Reading is free to be fast; writing is not.
+   */
+  async findByUid(endpoint, uid, { fresh = false } = {}) {
+    const cached = fresh ? null : this._uidCache?.get(endpoint);
     if (cached && cached.has(uid)) {
       const hit = cached.get(uid);
       if (hit === 'ambiguous') {
@@ -145,8 +186,10 @@ class NetBox {
       return hit;
     }
     // A preload that ran and did not see this uid has answered "not there"
-    // for everything it covered; only endpoints never preloaded go to NetBox.
-    if (cached && this._uidPreloadedAll?.has(endpoint)) return null;
+    // for everything it covered. A uid outside what it covered, such as a
+    // manufacturer every rack shares, was never asked about and still goes to
+    // NetBox one at a time.
+    if (!fresh && isCovered(this._uidCovered?.get(endpoint), uid)) return null;
     const res = await this.get(endpoint, { [`cf_${UID_FIELD}`]: uid });
     const hits = (res.results || []).filter((h) => (h.custom_fields || {})[UID_FIELD] === uid);
     if (hits.length > 1) {

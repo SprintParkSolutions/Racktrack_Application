@@ -197,7 +197,10 @@ async function walk(snapshot, client, apply, report) {
 
       let existing;
       try {
-        existing = await client.findByUid(spec.endpoint, obj.uid);
+        // Previewing may answer from the preload; writing asks NetBox itself,
+        // so a create is decided on what is there now, not on what was there
+        // when the preload ran.
+        existing = await client.findByUid(spec.endpoint, obj.uid, { fresh: apply });
       } catch (err) {
         failed.add(obj.uid);
         report.changes.push({
@@ -221,7 +224,7 @@ async function walk(snapshot, client, apply, report) {
         const staleUid = alias ? aliasUid(obj.uid, alias.key, alias.hash) : null;
         if (staleUid && underHash.get(spec.endpoint) !== 0) {
           let twin = null;
-          try { twin = await client.findByUid(spec.endpoint, staleUid); } catch { twin = null; }
+          try { twin = await client.findByUid(spec.endpoint, staleUid, { fresh: apply }); } catch { twin = null; }
           if (twin) {
             report.warnings.push(
               `${spec.label} "${name}" (${obj.uid}) also has a record under its previous id `
@@ -266,7 +269,7 @@ async function walk(snapshot, client, apply, report) {
       let previous = null;
       if (oldUid) {
         try {
-          previous = await client.findByUid(spec.endpoint, oldUid);
+          previous = await client.findByUid(spec.endpoint, oldUid, { fresh: apply });
         } catch (err) {
           failed.add(obj.uid);
           report.changes.push({
@@ -284,7 +287,7 @@ async function walk(snapshot, client, apply, report) {
           // objects with one uid is the failure the uid exists to prevent.
           let taken;
           try {
-            taken = await client.findByUid(spec.endpoint, obj.uid);
+            taken = await client.findByUid(spec.endpoint, obj.uid, { fresh: true });
           } catch (err) {
             failed.add(obj.uid);
             report.changes.push({
