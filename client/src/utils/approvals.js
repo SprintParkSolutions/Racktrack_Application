@@ -107,7 +107,7 @@ async function openUrl(url) {
     return;
   }
   try {
-    await InAppSite.open({ url, title: 'RackTrack Approvals', closeOn: ['/', '/login'] });
+    await InAppSite.open({ url, title: 'RackTrack Changes', closeOn: ['/', '/login'] });
     return;
   } catch { /* no such view in this build - fall back to the browser */ }
   await Browser.open({ url, presentationStyle: 'fullscreen', toolbarColor: '#ffffff' });

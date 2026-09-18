@@ -107,9 +107,9 @@ export function usePrimaryNav() {
     // Approvals is its own application on its own address, so this
     // entry carries `href` instead of `to`: the bar, the Menu and the sidebar
     // draw it as a link that leaves the app (components/ExternalLink.jsx).
-    ...(isAdmin ? [{ group: 'work', href: APPROVALS_URL, label: 'Approvals', icon: <InboxIcon />,
+    ...(isAdmin ? [{ group: 'work', href: APPROVALS_URL, label: 'Changes', icon: <InboxIcon />,
       inBar: true,
-      hint: 'Opens RackTrack Approvals' }] : []),
+      hint: 'Opens RackTrack Changes' }] : []),
 
     // ── Organization: owners and organisation admins.
     ...(isAdmin ? [{ group: 'org', to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,

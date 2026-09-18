@@ -44,10 +44,10 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 describe('<ApprovalsMovedPage>', () => {
   test('says approvals has moved and offers exactly one way on', () => {
     render(<ApprovalsMovedPage />);
-    expect(screen.getByRole('heading', { name: 'Approvals has moved' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'This has moved to RackTrack Changes' })).toBeTruthy();
     const links = screen.getAllByRole('link');
     expect(links).toHaveLength(1);
-    expect(links[0].textContent.trim()).toBe('Open Approvals');
+    expect(links[0].textContent.trim()).toBe('Open Changes');
     expect(links[0].getAttribute('href')).toBe(URL);
     expect(links[0].getAttribute('target')).toBe('_blank');
     expect(screen.queryAllByRole('button')).toHaveLength(0);
@@ -55,7 +55,7 @@ describe('<ApprovalsMovedPage>', () => {
 
   test('web build: the hand-over is fetched and its address opens in a tab', async () => {
     render(<ApprovalsMovedPage />);
-    fireEvent.click(screen.getByRole('link', { name: 'Open Approvals' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Open Changes' }));
     await settle();
     expect(fetched.calls).toHaveLength(1);
     expect(fetched.calls[0].url).toBe('/api/auth/handoff');
@@ -68,14 +68,14 @@ describe('<ApprovalsMovedPage>', () => {
   test('native build: the hand-over address opens in our own web view, no browser', async () => {
     native.current = true;
     render(<ApprovalsMovedPage />);
-    fireEvent.click(screen.getByRole('link', { name: 'Open Approvals' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Open Changes' }));
     await settle();
     expect(fetched.calls[0].body).toEqual({ to: URL });
     // Our view: the page's name, a Close button, and no address anywhere. The
     // paths that close it are the ones that mean "take me back to RackTrack".
     expect(site.open).toHaveBeenCalledWith({
       url: '/api/auth/handoff/KEY',
-      title: 'RackTrack Approvals',
+      title: 'RackTrack Changes',
       closeOn: ['/', '/login'],
     });
     expect(open).not.toHaveBeenCalled();
@@ -85,7 +85,7 @@ describe('<ApprovalsMovedPage>', () => {
     native.current = true;
     site.fails.current = true;
     render(<ApprovalsMovedPage />);
-    fireEvent.click(screen.getByRole('link', { name: 'Open Approvals' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Open Changes' }));
     await settle();
     expect(open).toHaveBeenCalledWith({
       url: '/api/auth/handoff/KEY',
