@@ -27,6 +27,7 @@ const {
 } = require('./model');
 const switches = require('./switches');
 const identity = require('./identity');
+const fingerprint = require('./fingerprint');
 const bindings = require('./bindings');
 
 const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -79,6 +80,13 @@ function cameraDevices(snapshot) {
       // picture as a way of choosing rather than only a list of names.
       box: Array.isArray(d.provenance?.box) ? d.provenance.box : null,
       portCount: (snapshot.interfaces || []).filter((i) => i.deviceUid === d.uid).length,
+      // Every socket the camera saw on this box, with whether it holds a cable.
+      // Read here and nowhere later: reconcile() replaces a matched device's
+      // interfaces with the switch's own, so after that the camera's side of
+      // the comparison no longer exists in the snapshot.
+      sockets: fingerprint.socketsOf({
+        interfaces: (snapshot.interfaces || []).filter((i) => i.deviceUid === d.uid),
+      }),
       model: type?.model || '',
       // The make OCR read off the faceplate, carried on the device's type.
       make: mfrName(type?.manufacturerUid),
@@ -570,7 +578,10 @@ function suggest(snapshot, sws, opts = {}) {
       if (score < FLOOR) continue;
       const advice = sizeAdvice(dev.units, dev.cvClass);
       if (advice && !seenNote.has(dev.uid)) { seenNote.add(dev.uid); addNote(f.id, `${dev.name}: ${advice}`); }
-      candidates.push({ devUid: dev.uid, name: dev.name, score, why, shape, position: dev.position });
+      candidates.push({ devUid: dev.uid, name: dev.name, score, why, shape, position: dev.position,
+        // Carried so the cable comparison can run on a tie without going
+        // back to the snapshot, which by then may no longer hold them.
+        sockets: dev.sockets || [] });
     }
     candidates.sort((a, b) => b.score - a.score || String(a.devUid).localeCompare(String(b.devUid)));
 
@@ -605,20 +616,42 @@ function suggest(snapshot, sws, opts = {}) {
       ? tied.filter((c) => c.position != null && Number(c.position) === memory.position)
       : [];
 
-    if (tied.length > 1 && remembered.length !== 1) {
+    // The cables, rung 6. Everything above has tied: same model, same make,
+    // same port count, and no confirmation to remember. Two switches of one
+    // model rarely carry the same pattern of cables, and the camera saw which
+    // sockets on each box hold one. This is the only rung that can separate
+    // two identical unlabelled switches, and it is why it exists.
+    //
+    // It settles WHICH box. It does not raise how sure we are: the evidence is
+    // still inference from behaviour, so the box is proposed and a person still
+    // confirms before anything of the switch's is written onto it.
+    const byCable = tied.length > 1 && remembered.length !== 1
+      ? fingerprint.rankBoxes(sw.reading, tied.map((c) => ({ uid: c.devUid, name: c.name, sockets: c.sockets })))
+      : null;
+    const cabled = byCable && byCable.settled
+      ? tied.find((c) => c.devUid === byCable.best.uid)
+      : null;
+
+    if (tied.length > 1 && remembered.length !== 1 && !cabled) {
       const names = tied.map((c) => c.name).join(' and ');
       reasons[f.id] = blank(
         `${names} cannot be told apart from what this switch published. A serial number, `
         + 'a chassis address or somebody at the rack confirming which box it is would settle it',
-        { candidateCount: candidates.length, margin, notes: notes.get(f.id) || [] },
+        {
+          candidateCount: candidates.length,
+          margin,
+          notes: [...(notes.get(f.id) || []), ...(byCable ? [byCable.why] : [])],
+        },
       );
       continue;
     }
 
-    const pick = remembered.length === 1 ? remembered[0] : top;
+    const pick = cabled || (remembered.length === 1 ? remembered[0] : top);
     // Rank 8, and the count that matters to standard 6.2 is how many boxes this
     // evidence could not tell apart - which the tie test has just made one.
-    const ev = [identity.evidence('inferred', pick.why, { candidateCount: tied.length })];
+    const ev = [identity.evidence('inferred',
+      cabled ? `${pick.why}, and ${byCable.why}` : pick.why,
+      { candidateCount: cabled ? 1 : tied.length })];
     if (memory && pick.position != null && Number(pick.position) === memory.position) {
       ev.push(identity.evidence('remembered',
         `this switch was confirmed at U${memory.position} on ${String(memory.at || '').slice(0, 10)}`,
@@ -629,12 +662,16 @@ function suggest(snapshot, sws, opts = {}) {
       reason: {
         deviceUid: pick.devUid,
         confidence: identity.confidenceOf(ev),
-        why: candidates.length === 1
-          ? `${pick.why}, and it is the only box it could be`
-          : pick.why,
+        // When the cables settled it, say so: it is the whole reason this box
+        // was chosen over another that agreed on everything else.
+        why: cabled
+          ? `${pick.why}, and ${byCable.why}`
+          : (candidates.length === 1
+            ? `${pick.why}, and it is the only box it could be`
+            : pick.why),
         evidence: ev,
-        candidateCount: candidates.length,
-        margin,
+        candidateCount: cabled ? 1 : candidates.length,
+        margin: cabled ? byCable.margin : margin,
         fromBinding: false,
         fresh: false,
         notes: notes.get(f.id) || [],

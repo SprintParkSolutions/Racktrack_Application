@@ -249,6 +249,43 @@ function rank(sockets, candidates) {
 }
 
 /**
+ * The same comparison the other way round: one switch against several boxes.
+ *
+ * rank() asks "which of these switches is this box". This asks "which of these
+ * boxes is this switch", which is the question the matcher actually has when
+ * two candidates have tied on everything else. The rules, the floor and the
+ * margin are identical; only the direction differs.
+ */
+function rankBoxes(reading, boxes) {
+  const ports = physicalPorts(reading);
+  const scored = (boxes || []).map((b) => ({
+    uid: b.uid,
+    name: b.name,
+    result: compare(b.sockets || [], ports),
+  }));
+  scored.sort((a, b) => (b.result.score - a.result.score)
+    || String(a.uid).localeCompare(String(b.uid)));
+
+  const best = scored[0] || null;
+  const runnerUp = scored[1] || null;
+  const margin = best && runnerUp ? best.result.score - runnerUp.result.score : (best ? best.result.score : 0);
+  const weak = best && best.result.alignment === 'count';
+  const settled = Boolean(best)
+    && best.result.score >= FLOOR
+    && (!runnerUp || margin >= MARGIN * best.result.score)
+    && !weak;
+
+  let why;
+  if (!best) why = 'no box to compare the cables against';
+  else if (weak) why = 'the camera and the switch count a different number of sockets, so the cables cannot be compared one by one';
+  else if (settled) why = `the cables match: ${best.result.why}`;
+  else if (best.result.score < FLOOR) why = 'no box in the photograph has the cables this switch reports';
+  else why = `${best.name} and ${runnerUp.name} carry the same pattern of cables, so the cables cannot tell them apart either`;
+
+  return { settled, best: settled ? best : null, margin, scored, why };
+}
+
+/**
  * What a settled fingerprint is worth. The plan puts the cable pattern under
  * "Probable": it picked a clear winner from behaviour, which is strong, but it
  * is not the switch naming itself and not a person. Only a serial, a code, a
@@ -257,6 +294,6 @@ function rank(sockets, candidates) {
 const CONFIDENCE = 'probable';
 
 module.exports = {
-  physicalPorts, socketsOf, compare, rank, isSocket,
+  physicalPorts, socketsOf, compare, rank, rankBoxes, isSocket,
   UPLINK_WEIGHT, MISS_PENALTY, MARGIN, FLOOR, CONFIDENCE,
 };
