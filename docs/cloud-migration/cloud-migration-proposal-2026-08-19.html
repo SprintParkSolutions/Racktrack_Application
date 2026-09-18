@@ -1,0 +1,223 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Cloud Migration Proposal" | https://claude.ai/code/artifact/d8cefa53-8461-41d7-a503-ddcae63a12eb | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack Cloud Migration Proposal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#F6F8F9; --panel:#FFFFFF; --ink:#16232D; --steel:#54646F; --faint:#7E909B;
+    --line:#DCE4E9; --line-soft:#E8EEF1;
+    --accent:#0B5E75; --accent-soft:#E3EEF2; --accent-deep:#083E4E;
+    --ok:#1E7A3C; --ok-soft:#E4F1E8; --warn:#95640A; --warn-soft:#F6EEDD; --crit:#B3261E; --crit-soft:#F8E7E5;
+    --azure:#2563A8; --azure-soft:#E5EEF8; --aws:#B0621B; --aws-soft:#F8EEE2;
+    --display:'Saira',ui-sans-serif,system-ui,sans-serif;
+    --body:'IBM Plex Sans',ui-sans-serif,system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.6;margin:0;
+    padding:0 0 56px}
+  ::selection{background:var(--accent-soft)}
+  .wrap{padding:0 clamp(16px,3.5vw,48px)}
+  header.masthead{background:var(--panel);border-bottom:1px solid var(--line);padding:30px clamp(16px,3.5vw,48px) 24px}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.4vw,40px);line-height:1.08;margin:6px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+  .lede{color:var(--steel);max-width:82ch}
+  .lede strong{color:var(--ink)}
+
+  h2{font-family:var(--display);font-weight:700;font-size:22px;margin:38px 0 10px;letter-spacing:-.005em;text-wrap:balance}
+  h2 .sn{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:8px}
+  h3{font-family:var(--display);font-weight:600;font-size:17px;margin:22px 0 8px}
+  p{margin:8px 0;max-width:92ch}
+  ul,ol{margin:8px 0;padding-left:22px;max-width:92ch}
+  li{margin:5px 0}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.88em;background:var(--line-soft);border-radius:4px;padding:1px 5px;white-space:nowrap}
+  .note{color:var(--steel);font-size:14px}
+
+  .chip{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    border-radius:999px;padding:2px 9px;vertical-align:1px}
+  .chip.ok{background:var(--ok-soft);color:var(--ok)}
+  .chip.warn{background:var(--warn-soft);color:var(--warn)}
+  .chip.crit{background:var(--crit-soft);color:var(--crit)}
+  .chip.acc{background:var(--accent-soft);color:var(--accent)}
+  .chip.az{background:var(--azure-soft);color:var(--azure)}
+  .chip.aw{background:var(--aws-soft);color:var(--aws)}
+  .chip.tie{background:var(--line-soft);color:var(--steel)}
+
+  .execbox{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:0 12px 12px 0;
+    padding:18px 22px;margin:22px 0;max-width:110ch}
+  .execbox h3{margin-top:0}
+  .execbox p{margin:6px 0}
+
+  .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);
+    text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--line-soft);white-space:nowrap}
+  td{padding:9px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start;margin:12px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h3{margin-top:0}
+  .card.az{border-top:4px solid var(--azure)}
+  .card.aw{border-top:4px solid var(--aws)}
+  .card ul{padding-left:18px;font-size:14px}
+
+  .callout{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;max-width:104ch}
+  .callout.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .callout p{margin:4px 0}
+
+  footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);margin-top:48px;padding:16px clamp(16px,3.5vw,48px);background:var(--panel)}
+  footer a{color:var(--steel)}
+</style>
+
+<header class="masthead">
+  <div class="eyebrow">Proposal · prepared for management review · 19 Aug 2026</div>
+  <h1>RackTrack Cloud Migration Proposal</h1>
+  <p class="lede">Response to the directive to move RackTrack fully to the cloud. This proposal follows the industry-standard
+  migration framework, assesses our application's compatibility honestly, compares <strong>Microsoft Azure</strong> and
+  <strong>Amazon Web Services</strong> on standards — compliance, reliability, data residency, ecosystem fit — and ends with a
+  recommendation, a phased plan with go/no-go gates, a risk register, and the specific approvals requested.</p>
+</header>
+
+<div class="wrap">
+
+<div class="execbox">
+  <h3>Executive summary</h3>
+  <p><strong>Recommendation: migrate to AWS (Mumbai region) in three standard phases — Rehost → Replatform → Refactor — reaching full cloud-native operation within one quarter of engineering time.</strong> Azure is a close and credible second, preferred only if our Microsoft-partnership strategy or startup credits outweigh AWS's advantages in region depth and migration maturity. Both providers exceed every compliance and reliability standard we require; the decision is about fit, not capability.</p>
+  <p>Our application is <strong>already containerized and already runs in a cloud VPS today</strong> — this is not a rescue project but a maturity upgrade: from one hand-managed server to a standards-compliant architecture with automated backups, secret management, high availability, and room to grow from 100 to 10,000 users without re-planning.</p>
+  <p><strong>Asks:</strong> provider sign-off (pending credit-program outcomes), a monthly budget envelope of $170 → $1,400 as users grow 100 → 10,000, and a protected 3–6 week engineering window for the Replatform phase.</p>
+</div>
+
+<h2><span class="sn">1</span>The standard we will follow</h2>
+<p>Cloud migrations are classified by the industry-standard <strong>"7R" framework</strong> (used by both
+<a href="https://aws.amazon.com/cloud-migration/">AWS's</a> and
+<a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/">Microsoft's Cloud Adoption Frameworks</a>).
+Of the seven strategies — Rehost, Replatform, Refactor, Repurchase, Relocate, Retain, Retire — three apply to us, in sequence:</p>
+<div class="tablewrap"><table>
+  <tr><th>Phase</th><th>7R strategy</th><th>What it means for RackTrack</th><th>Duration</th></tr>
+  <tr><td>A</td><td><strong>Rehost</strong> ("lift and shift")</td><td>Move our existing Docker deployment onto a properly sized cloud VM, unchanged. Add the operational standards we currently lack: automated tested backups, secrets in a managed vault, monitoring with alerts, infrastructure as code.</td><td class="num">~2 weeks</td></tr>
+  <tr><td>B</td><td><strong>Replatform</strong></td><td>Swap self-managed components for managed cloud services: our file database → managed PostgreSQL, local file storage → object storage, in-memory job handling → a proper queue. This aligns the app with the <a href="https://12factor.net/">12-factor application standard</a> and removes every single point of failure.</td><td class="num">3–6 weeks eng.</td></tr>
+  <tr><td>C</td><td><strong>Refactor</strong> (targeted)</td><td>Run multiple stateless application replicas behind a load balancer, add GPU-accelerated inference, CDN delivery, and multi-zone database availability. Triggered by usage metrics, not dates.</td><td class="num">2–4 weeks, later</td></tr>
+</table></div>
+<p>Each phase will be reviewed against the provider's <strong>Well-Architected Framework</strong> — the five/six-pillar standard
+(security, reliability, performance, cost optimization, operational excellence) both vendors publish and audit against. Both offer a
+free Well-Architected review with their solution architects; we will take it at the end of Phase B.</p>
+
+<h2><span class="sn">2</span>Application compatibility assessment</h2>
+<p>An honest read of our codebase against cloud standards. The green list is why this migration is low-risk; the amber and red lists are the actual work.</p>
+<div class="tablewrap"><table>
+  <tr><th>Status</th><th>Component</th><th>Assessment</th></tr>
+  <tr><td><span class="chip ok">ready</span></td><td>Application packaging</td><td>Fully containerized (Docker/OCI standard), single image, already deployed to a cloud VPS today. Moves to any provider unchanged.</td></tr>
+  <tr><td><span class="chip ok">ready</span></td><td>Runtimes &amp; AI stack</td><td>Node 20, Python 3.11, PyTorch CPU — all standard linux/amd64; runs on every cloud VM family. No GPU dependency: scans complete in 3–8 s on ordinary vCPUs (measured).</td></tr>
+  <tr><td><span class="chip ok">ready</span></td><td>Web + mobile clients</td><td>Standard SPA served by the API; native apps need only a one-time rebuild against the final production domain.</td></tr>
+  <tr><td><span class="chip ok">ready</span></td><td>Observability hooks</td><td>Health endpoint and Prometheus metrics already exist — plug directly into cloud monitoring.</td></tr>
+  <tr><td><span class="chip warn">phase B</span></td><td>Database</td><td>SQLite (file-based) — perfect for one server, incompatible with multi-server standards. Migrates to managed PostgreSQL in Phase B.</td></tr>
+  <tr><td><span class="chip warn">phase B</span></td><td>File storage</td><td>Scan images (~8 MB/scan) accumulate on local disk with no retention policy. Moves to object storage with lifecycle rules in Phase B.</td></tr>
+  <tr><td><span class="chip warn">phase B</span></td><td>Job handling</td><td>Background work (OCR, reports) is in-memory and uncapped — the current throughput ceiling. Moves behind a standard job queue in Phase B.</td></tr>
+  <tr><td><span class="chip crit">phase A — immediate</span></td><td>Secrets &amp; credentials</td><td>Some credentials currently live in the repository/files — below standard on any infrastructure, cloud or not. Rotated into a managed vault in week one.</td></tr>
+  <tr><td><span class="chip crit">phase A — immediate</span></td><td>Backup &amp; recovery</td><td>No automated, tested backup of the user database today. Automated snapshots + restore drills from week one.</td></tr>
+  <tr><td><span class="chip crit">phase A — immediate</span></td><td>Model artifact management</td><td>AI model files are moved by hand and exist in one place. Versioned in object storage with checksums from week one.</td></tr>
+</table></div>
+
+<h2><span class="sn">3</span>Azure vs AWS on standards</h2>
+<p><strong>On compliance and trust, they are equals.</strong> Both hold ISO/IEC 27001, 27017 and 27018, SOC 1/2/3, PCI DSS and CSA STAR
+attestations; both operate MeitY-empanelled India regions suitable for the DPDP Act 2023 (India's data-protection law) with data
+residency in-country — AWS in Mumbai (+ Hyderabad), Azure in Central India (Pune) (+ South India). No compliance standard we face
+distinguishes them. The differences are in fit:</p>
+
+<div class="tablewrap"><table>
+  <tr><th>Standard / dimension</th><th>Azure</th><th>AWS</th><th>Assessment</th></tr>
+  <tr><td>Certifications (ISO, SOC, PCI, CSA)</td><td>Full portfolio</td><td>Full portfolio</td><td><span class="chip tie">equal</span></td></tr>
+  <tr><td>India data residency (DPDP 2023)</td><td>Central India, MeitY-empanelled</td><td>Mumbai, MeitY-empanelled</td><td><span class="chip tie">equal</span></td></tr>
+  <tr><td>Compute SLA (financially backed)</td><td>99.9% single VM → 99.99% zones</td><td>99.5% single instance → 99.99% multi-AZ</td><td><span class="chip tie">equal at target architecture</span></td></tr>
+  <tr><td>Managed database SLA</td><td>99.99% zone-redundant PostgreSQL</td><td>99.95% Multi-AZ RDS (99.99% cluster)</td><td><span class="chip tie">both exceed our need</span></td></tr>
+  <tr><td>Well-Architected / adoption frameworks</td><td>Azure WAF + CAF, free reviews</td><td>AWS WAF + CAF, free reviews</td><td><span class="chip tie">equal</span></td></tr>
+  <tr><td>All required services in the India region (incl. GPU)</td><td>GPU stock/quota in Central India is limited — may split architecture across regions</td><td>Full catalog incl. GPUs in Mumbai</td><td><span class="chip aw">AWS</span></td></tr>
+  <tr><td>Fit with our Microsoft integrations (Teams, Outlook, Graph mail, Entra)</td><td>First-party: managed identity removes stored secrets for these — a genuine security-standard improvement</td><td>Works fine via standard OAuth, secrets held in a vault</td><td><span class="chip az">Azure</span></td></tr>
+  <tr><td>Migration-path maturity for our exact stack (VM → managed DB/storage/queue → containers)</td><td>Well documented</td><td>The most-documented journey in the industry; largest talent pool</td><td><span class="chip aw">AWS</span></td></tr>
+  <tr><td>Enterprise customer perception</td><td>Strong with Microsoft-365-centric enterprises (our buyer profile)</td><td>Universally accepted</td><td><span class="chip az">Azure</span> slight</td></tr>
+  <tr><td>Startup credit programs</td><td>Founders Hub — accessible, up to $150k</td><td>Activate — smaller unless partnered</td><td><span class="chip az">Azure</span></td></tr>
+  <tr><td>Avoiding lock-in (portability standard)</td><td colspan="2">Equal — and largely in our control: we will use only portable building blocks (containers, PostgreSQL, S3-compatible storage APIs, Redis), so the application can move between clouds in weeks, not months</td><td><span class="chip tie">equal by design</span></td></tr>
+</table></div>
+
+<div class="grid2">
+  <div class="card az"><h3>Azure — pros &amp; cons</h3>
+    <ul>
+      <li><span class="chip ok">pro</span> Native fit with our existing Microsoft integrations; managed identity eliminates a whole class of stored credentials.</li>
+      <li><span class="chip ok">pro</span> Sales alignment: our target customers run Microsoft 365 + ServiceNow; "deployable in your Azure tenant" is a door-opener.</li>
+      <li><span class="chip ok">pro</span> Most accessible startup credits — can materially fund year one.</li>
+      <li><span class="chip ok">pro</span> Container Apps offers the smoothest path for our Phase-C application replicas.</li>
+      <li><span class="chip warn">con</span> GPU capacity and default-zero quotas in Central India — our AI acceleration may have to live in a second region.</li>
+      <li><span class="chip warn">con</span> Its managed-container storage (SMB file shares) is incompatible with our current database until Phase B completes — VM-only until then.</li>
+      <li><span class="chip warn">con</span> Fewer reference implementations of our exact migration; smaller hiring pool locally.</li>
+    </ul></div>
+  <div class="card aw"><h3>AWS — pros &amp; cons</h3>
+    <ul>
+      <li><span class="chip ok">pro</span> Mumbai region has every service we need — GPUs included — keeping data, users, and compute in one Indian region (residency + latency + simplicity).</li>
+      <li><span class="chip ok">pro</span> The most mature ecosystem for our exact roadmap: managed PostgreSQL, object storage, queues, container orchestration are its flagship services.</li>
+      <li><span class="chip ok">pro</span> Deepest documentation, community answers, and hiring pool — lowest operational risk for a small team.</li>
+      <li><span class="chip ok">pro</span> Best economics for AI compute when we need it (widest GPU choice, deepest spot market).</li>
+      <li><span class="chip warn">con</span> No native Microsoft integration — our Graph/Teams connections keep using stored OAuth secrets (managed properly in a vault).</li>
+      <li><span class="chip warn">con</span> Meaningful startup credits usually require an accelerator relationship.</li>
+      <li><span class="chip warn">con</span> Sharper configuration edges (load-balancer timeouts, private-network costs) demand discipline — mitigated by infrastructure-as-code and the free Well-Architected review.</li>
+    </ul></div>
+</div>
+
+<h2><span class="sn">4</span>Recommendation</h2>
+<div class="callout">
+  <p><strong>Primary: AWS, Mumbai region.</strong> On standards both providers qualify fully; AWS wins on the two dimensions that carry
+  operational risk for a team our size — everything we need in one Indian region, and the most-proven path for exactly this migration.
+  <strong>Condition:</strong> we apply to both credit programs first (one week, no cost). If Microsoft's program awards $25k+, the balance
+  tips to Azure for year one — the architecture is identical on both by design, so this is a commercial decision, not a technical rework.</p>
+  <p>Either way we protect portability as a standing standard: containers, PostgreSQL, S3-compatible storage, Redis — no proprietary
+  service in the application's critical path. That keeps future negotiating leverage and makes the choice reversible.</p>
+</div>
+
+<h2><span class="sn">5</span>Migration plan with gates</h2>
+<div class="tablewrap"><table>
+  <tr><th>Stage</th><th>Work</th><th>Exit gate (go/no-go)</th></tr>
+  <tr><td>Week 0</td><td>Credit applications to both programs · lock permanent production domain · file GPU quota requests (free, slow — done early by standard practice)</td><td>Provider decision signed off</td></tr>
+  <tr><td>Weeks 1–2 · <strong>Rehost</strong></td><td>Production VM + hardened deployment: secrets to vault, automated backups, all AI model files versioned in object storage, monitoring + alerting live</td><td>Full restore drill passes; end-to-end scan verified on cloud; old server kept warm as rollback</td></tr>
+  <tr><td>Weeks 3–4 · <strong>Stabilize</strong></td><td>Infrastructure as code (Terraform) · CI/CD pipeline · staging environment · load test to establish measured capacity</td><td>A deployment is one reviewed merge; capacity number documented</td></tr>
+  <tr><td>Weeks 5–10 · <strong>Replatform</strong></td><td>Managed PostgreSQL migration · object storage for images · job queue for heavy work · feature freeze during cutover window; rehearsed rollback</td><td>Two app replicas serve production traffic; one is killed mid-scan with zero data loss</td></tr>
+  <tr><td>Metric-triggered · <strong>Refactor</strong></td><td>GPU inference node · third replica · multi-zone database · CDN · public app-store releases</td><td>SLOs hold: 99.9% availability, scan result &lt; 10 s (p95), device names &lt; 60 s</td></tr>
+</table></div>
+
+<h2><span class="sn">6</span>Risk register</h2>
+<div class="tablewrap"><table>
+  <tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr>
+  <tr><td>Data loss during migration</td><td>Low</td><td>Severe</td><td>Automated backups before any change; dual-run old + new; rehearsed rollback; restore drills are a gate, not a promise</td></tr>
+  <tr><td>Replatform overruns the 3–6 week window</td><td>Medium</td><td>Medium</td><td>Feature freeze during the window; scope fixed in advance (DB, storage, queue — nothing else); weekly demo checkpoints</td></tr>
+  <tr><td>Cost overrun / surprise bills</td><td>Medium</td><td>Medium</td><td>Budget alerts at 50/80/100%; savings plans only after 60 days of measured usage; egress routed through CDN; monthly cost review</td></tr>
+  <tr><td>GPU quota/capacity delays</td><td>Medium</td><td>Low (CPU serves fine meanwhile)</td><td>Quota requests filed week 0; CPU capacity plan is the default, GPU is an optimization</td></tr>
+  <tr><td>Mobile apps pointing at a dead address</td><td>Low</td><td>High</td><td>Permanent domain decided before anything ships; apps rebuilt once against it; old address redirected during transition</td></tr>
+  <tr><td>Team unfamiliarity with the chosen cloud</td><td>Medium</td><td>Medium</td><td>Managed services over self-managed everywhere; infrastructure as code from week 3; provider's free architecture review after Phase B</td></tr>
+  <tr><td>Vendor lock-in</td><td>Low by design</td><td>Low</td><td>Portable building blocks only (containers, PostgreSQL, S3 API, Redis); documented exit path</td></tr>
+  <tr><td>Compliance / data residency</td><td>Low</td><td>High</td><td>India region only; provider certifications inherited; access logging and encrypted secrets from Phase A</td></tr>
+</table></div>
+
+<h2><span class="sn">7</span>Approvals requested</h2>
+<ol>
+  <li><strong>Provider:</strong> AWS Mumbai as primary, subject to the credit-program outcomes (decision point: end of Week 0).</li>
+  <li><strong>Budget envelope:</strong> ~$170/month at launch, scaling with users to ~$1,400/month at 10,000 users; plus a one-time ~$100–200 for migration-window duplication.</li>
+  <li><strong>Roadmap protection:</strong> a 3–6 week Replatform window (Weeks 5–10) with a feature freeze during cutover.</li>
+  <li><strong>Domain:</strong> confirmation of the permanent production API domain before mobile builds.</li>
+  <li><strong>Support plan:</strong> provider business-tier support (~$100/month) from Phase B onward — standard practice once production SLOs exist.</li>
+</ol>
+
+<p class="note">Technical backing for every figure in this proposal: the
+<a href="https://claude.ai/code/artifact/616a4042-7881-4be1-81b2-c594b42d21eb">RackTrack Cloud Dossier</a> (application analysis) and
+<a href="https://claude.ai/code/artifact/4794ade5-ca9c-464e-81d0-e5f02b9eac87">Azure vs AWS for RackTrack</a> (provider deep dive, including
+a plain-language tab). Compliance portfolios: <a href="https://aws.amazon.com/compliance/programs/">AWS compliance programs</a> ·
+<a href="https://learn.microsoft.com/en-us/compliance/regulatory/offering-home">Microsoft compliance offerings</a>.</p>
+
+</div>
+
+<footer>
+  Prepared 19 Aug 2026 from a full analysis of the RackTrack codebase and current provider documentation and list pricing.
+  All durations are engineering estimates; all gates are testable conditions, not dates.
+</footer>
+
+</body></html>

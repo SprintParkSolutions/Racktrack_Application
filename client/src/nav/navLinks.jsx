@@ -11,6 +11,7 @@
  * everywhere or nowhere. Add new destinations HERE, not in a component.
  */
 import { useAuth } from '../AuthContext.jsx';
+import { APPROVALS_URL } from '../utils/approvals.js';
 
 /* ── icons ─────────────────────────────────────────────────────────────
    Stroked 24px outlines, sized by the consuming stylesheet. */
@@ -77,7 +78,9 @@ export const MoreIcon = () => (
    `group` keys into NAV_GROUPS; the sidebar and the phone's Menu both draw
    headings from it. `hint` is the one-line description shown under the name
    in the sidebar and the Menu. `inBar` marks the four that get a permanent
-   slot in the phone's bottom bar; `barLabel` is a shorter name for that slot. */
+   slot in the phone's bottom bar; `barLabel` is a shorter name for that slot.
+   A destination has either `to` (a page in this app) or `href` (somewhere
+   outside it, opened in a new tab or the system browser). */
 export const NAV_GROUPS = [
   { key: 'work',     title: 'Rack work' },
   { key: 'org',      title: 'Organization' },
@@ -101,10 +104,12 @@ export function usePrimaryNav() {
       hint: 'Two racks as one job' },
     { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false,
       hint: 'Past scans and reports' },
-    // The admin's inbox: drift checks a technician has sent for a decision.
-    ...(isAdmin ? [{ group: 'work', to: '/approvals', label: 'Approvals', icon: <InboxIcon />, end: true,
-      inBar: true, barLabel: 'Inbox',
-      hint: 'Drift checks to decide' }] : []),
+    // Approvals is its own application on its own address, so this
+    // entry carries `href` instead of `to`: the bar, the Menu and the sidebar
+    // draw it as a link that leaves the app (components/ExternalLink.jsx).
+    ...(isAdmin ? [{ group: 'work', href: APPROVALS_URL, label: 'Approvals', icon: <InboxIcon />,
+      inBar: true,
+      hint: 'Opens RackTrack Approvals' }] : []),
 
     // ── Organization: owners and organisation admins.
     ...(isAdmin ? [{ group: 'org', to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,

@@ -1,0 +1,21 @@
+/* Approvals has moved - one message and one way on. Full width, no card. */
+
+.page {
+  min-height: 100%;
+  padding: calc(env(safe-area-inset-top, 0px) + 24px) 16px 40px;
+  background: var(--bg, #fff);
+  color: var(--text, #1c1c1c);
+}
+.title { margin: 0 0 8px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.text { margin: 0 0 18px; font-size: 14.5px; line-height: 1.5; color: var(--muted, #5f6864); }
+.primary {
+  display: block; width: 100%; box-sizing: border-box; padding: 15px;
+  border: none; border-radius: 10px; background: #0b6a44; color: #fff;
+  font-size: 16px; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer;
+}
+.primary:hover { background: #095a3a; text-decoration: none; }
+
+@media (min-width: 900px) {
+  .page { padding: 28px 32px 40px; }
+  .primary { display: inline-block; width: auto; padding: 12px 22px; }
+}

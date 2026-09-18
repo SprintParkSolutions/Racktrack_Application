@@ -1,0 +1,125 @@
+<!-- Published copy of the claude.ai artifact "The RackTrack Cloud Pitch" | https://claude.ai/code/artifact/53ed7e75-afd1-4bb9-a563-137e2585a674 | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>The RackTrack Cloud Pitch</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#F6F8F9; --panel:#FFFFFF; --ink:#16232D; --steel:#54646F;
+    --line:#DCE4E9; --accent:#0B5E75; --accent-soft:#E3EEF2;
+    --ok:#1E7A3C; --ok-soft:#E4F1E8;
+    --display:'Saira',ui-sans-serif,system-ui,sans-serif;
+    --body:'IBM Plex Sans',ui-sans-serif,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65;margin:0;padding:0 0 64px}
+  .head{background:var(--panel);border-bottom:1px solid var(--line);padding:34px clamp(16px,4vw,56px) 26px}
+  .eyebrow{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+  h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,4vw,44px);line-height:1.05;margin:6px 0 8px;letter-spacing:-.01em}
+  .head p{color:var(--steel);margin:0;max-width:60ch}
+
+  .slides{padding:0 clamp(16px,4vw,56px)}
+  .slide{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px clamp(18px,3vw,36px);margin:22px 0;max-width:1100px}
+  .slide .n{font-family:var(--display);font-weight:700;font-size:14px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase}
+  .slide h2{font-family:var(--display);font-weight:800;font-size:clamp(22px,2.6vw,30px);margin:4px 0 10px;line-height:1.15;text-wrap:balance}
+  .slide p{margin:6px 0;max-width:68ch}
+  .slide p strong{color:var(--ink)}
+  .big{font-size:clamp(18px,2vw,21px)}
+  .say{border-left:4px solid var(--ok);background:var(--ok-soft);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin-top:16px;max-width:74ch}
+  .say .tag{font-family:var(--display);font-weight:700;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ok)}
+  .say p{margin:4px 0 0;font-size:16.5px}
+
+  .three{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
+  .step{background:var(--ground);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .step b{font-family:var(--display);font-size:17px;display:block;margin-bottom:4px}
+  .step span{color:var(--steel);font-size:15px}
+
+  .script{background:var(--panel);border:2px solid var(--accent);border-radius:16px;padding:26px clamp(18px,3vw,36px);margin:30px 0;max-width:1100px}
+  .script h2{font-family:var(--display);font-weight:800;font-size:24px;margin:0 0 12px}
+  .script p{font-size:18px;max-width:75ch;margin:10px 0}
+  .foot{color:var(--steel);font-size:13.5px;padding:8px clamp(16px,4vw,56px);max-width:1100px}
+  .foot a{color:var(--accent)}
+</style>
+
+<div class="head">
+  <div class="eyebrow">2-minute presentation · one idea per slide</div>
+  <h1>The RackTrack Cloud Pitch</h1>
+  <p>Scroll through the six slides. Under each one, the green box is literally what you say out loud.</p>
+</div>
+
+<div class="slides">
+
+<div class="slide">
+  <div class="n">Slide 1 · Where we are</div>
+  <h2>Everything runs on one small server</h2>
+  <p class="big">Website, AI, user accounts, photos — all on a single rented machine. If it fails, everything stops. It's fine for a demo, not for real customers.</p>
+  <div class="say"><div class="tag">You say</div>
+  <p>"Today the whole app runs on one small server. It works, but one machine is one point of failure — that's what we're fixing."</p></div>
+</div>
+
+<div class="slide">
+  <div class="n">Slide 2 · The good news</div>
+  <h2>Our app is already cloud-ready</h2>
+  <p class="big">The app is packed in a standard container (Docker) and already runs on a rented cloud machine today. Moving it is not a rebuild — it's a proper upgrade of where and how it runs.</p>
+  <div class="say"><div class="tag">You say</div>
+  <p>"Good news: I checked the whole codebase. The app is already packaged the standard way clouds expect, so this is a move, not a rewrite."</p></div>
+</div>
+
+<div class="slide">
+  <div class="n">Slide 3 · Azure or AWS</div>
+  <h2>Both are safe. AWS fits us better.</h2>
+  <p class="big"><strong>Both pass every standard</strong> — same security certificates, both have proper datacenters in India for our users' data.</p>
+  <p class="big"><strong>AWS:</strong> its Mumbai datacenter has everything we need in one place, and this exact kind of move is best-documented on AWS.</p>
+  <p class="big"><strong>Azure:</strong> connects naturally with the Microsoft tools our app already uses (Teams, Outlook) — and Microsoft offers startup credits that could make year one free.</p>
+  <div class="say"><div class="tag">You say</div>
+  <p>"On standards, Azure and AWS are equal — same certifications, both with datacenters in India. I recommend AWS Mumbai because everything we need is in one place there. But first I'll apply to both free-credit programs — if Microsoft gives us big credits, we take Azure. Same plan either way."</p></div>
+</div>
+
+<div class="slide">
+  <div class="n">Slide 4 · The plan</div>
+  <h2>Three steps, smallest risk first</h2>
+  <div class="three">
+    <div class="step"><b>1 · Move</b><span>Copy the app as-is to a proper cloud server. Add automatic backups and secure passwords.<br><strong>2 weeks.</strong></span></div>
+    <div class="step"><b>2 · Upgrade the insides</b><span>Professional database, photo storage, and a queue for heavy jobs — so the app can run on many machines.<br><strong>About a month of focused work.</strong></span></div>
+    <div class="step"><b>3 · Grow</b><span>Run 2–3 copies of the app plus an AI chip — only when user numbers demand it.<br><strong>Later, triggered by usage.</strong></span></div>
+  </div>
+  <div class="say"><div class="tag">You say</div>
+  <p>"Three steps. Step one, move it as-is — two weeks. Step two, upgrade the internals so it can run on many machines — about a month, and I need a feature freeze during it. Step three, add capacity as users grow."</p></div>
+</div>
+
+<div class="slide">
+  <div class="n">Slide 5 · The cost</div>
+  <h2>Starts small, grows slower than users</h2>
+  <p class="big">About <strong>$170/month</strong> at launch → about <strong>$1,400/month</strong> at 10,000 users.</p>
+  <p class="big">Users grow <strong>100×</strong>, cost grows only <strong>8×</strong>.</p>
+  <div class="say"><div class="tag">You say</div>
+  <p>"Cost starts around 170 dollars a month and reaches about 1,400 at ten thousand users — users grow a hundred times, cost only eight times."</p></div>
+</div>
+
+<div class="slide">
+  <div class="n">Slide 6 · The ask</div>
+  <h2>I need three approvals</h2>
+  <p class="big">1. <strong>Provider choice</strong> — confirmed one week from now, after the free-credit answers.</p>
+  <p class="big">2. <strong>Budget</strong> — the $170 → $1,400/month envelope.</p>
+  <p class="big">3. <strong>One protected month</strong> — for step two, with a feature freeze.</p>
+  <div class="say"><div class="tag">You say</div>
+  <p>"From you I need three things: the provider decision next week once credits are answered, the budget envelope, and one protected month for step two. Then we're fully, properly in the cloud."</p></div>
+</div>
+
+<div class="script">
+  <h2>The whole pitch in five sentences</h2>
+  <p>"Our app already runs in a container on a cloud server, so this is a move, not a rewrite.</p>
+  <p>Azure and AWS both pass every standard — I recommend AWS Mumbai, unless Microsoft's startup credits make Azure free for year one.</p>
+  <p>The plan is three steps: move as-is in two weeks, upgrade the internals in one focused month, then scale when users demand it.</p>
+  <p>Cost starts at about $170 a month and reaches $1,400 at ten thousand users.</p>
+  <p>I need the provider decision next week, that budget envelope, and one protected month."</p>
+</div>
+
+<p class="foot">If anyone asks for details: the full standards comparison is in the
+<a href="https://claude.ai/code/artifact/d8cefa53-8461-41d7-a503-ddcae63a12eb">migration proposal</a>, and the deep technical
+analysis is in the <a href="https://claude.ai/code/artifact/616a4042-7881-4be1-81b2-c594b42d21eb">cloud dossier</a> and the
+<a href="https://claude.ai/code/artifact/4794ade5-ca9c-464e-81d0-e5f02b9eac87">Azure vs AWS deep dive</a> (see its "Plain English" tab).</p>
+
+</div>
+
+</body></html>

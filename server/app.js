@@ -675,6 +675,34 @@ try {
     'NetBox routers not loaded');
 }
 
+// RackTrack Approvals - the drift-to-record workflow, one organisation at a
+// time. The phone app keeps calling /api/nb/*; this is the desk half: triage,
+// assign, resolve, decide, approve and write, read by the Approvals
+// sub-application in a browser.
+//
+// Mounted behind requireAuth only. Every route on the router names its own
+// roles from routes/netbox/gates (approver, auditor, readers beside the
+// technician and admin the /api/nb routes use), because a bare 403 from the
+// mount cannot say WHY it refused, and a member has routes of their own here.
+//
+// Two things happen once at mount:
+//   - the JSON plans written before plans moved into SQLite are imported, once
+//     and idempotently, so no drift check raised in the field is lost;
+//   - the ServiceNow poller starts, so an incident resolved over there comes
+//     back here without an admin having to open the plan.
+try {
+  app.use('/api/approvals', auth.requireAuth, require('./routes/approvals'));
+  const imported = require('./lib/approvals/migrate').run();
+  const poller = require('./lib/approvals/poller').start();
+  logger.info({ event: 'router.loaded', router: 'approvals', prefix: '/api/approvals',
+    imported: imported.imported, skipped: imported.skipped, polling: Boolean(poller),
+    optional: require('./routes/approvals').mountedRouters },
+  'Approvals router loaded');
+} catch (err) {
+  logger.warn({ event: 'router.load_failed', router: 'approvals', err: err.message },
+    'Approvals router not loaded');
+}
+
 // Organisation setup — the estate tree behind the minimal setup: what a
 // datacentre (a Site) contains, who approves writes for it, which rules it
 // accepted, and whether it is set up enough to scan. Read and written from
@@ -10015,46 +10043,80 @@ const SIDE_LABELS_TIMEOUT_MS = 3 * 60_000;
 // the scan produced (device_unit_map, labels-front, side_labels, ocr_devices).
 // Cached as outputs/<rackId>/physical_layer.json; pass ?refresh=1 to rebuild.
 const PHYSICAL_LAYER_TIMEOUT_MS = 60_000;
-app.get('/api/scan/:rackId/physical-layer', (req, res) => {
-  const { rackId } = req.params;
-  if (!/^RK-[A-Z0-9]+$/i.test(rackId)) {
-    return res.status(400).json({ ok: false, error: 'bad rack id' });
+// The report as { status, body }: the cached file, or a fresh build. One
+// function for both callers, this route and the rack identity route below, and
+// one build per rack at a time: a second caller waits for the python already
+// running instead of starting its own.
+const _physicalLayerBuilds = new Map();
+function physicalLayerReport(rackId, { refresh = false } = {}) {
+  if (!/^RK-[A-Z0-9]+$/i.test(String(rackId))) {
+    return Promise.resolve({ status: 400, body: { ok: false, error: 'bad rack id' } });
   }
   const rackDir = path.join(outputsDir, rackId);
   const outPath = path.join(rackDir, 'physical_layer.json');
   if (!fs.existsSync(rackDir)) {
-    return res.status(404).json({ ok: false, error: `rack ${rackId} not found` });
+    return Promise.resolve({ status: 404, body: { ok: false, error: `rack ${rackId} not found` } });
   }
-  const serve = () => {
+  const read = () => {
     try {
-      return res.json(JSON.parse(fs.readFileSync(outPath, 'utf8')));
+      return { status: 200, body: JSON.parse(fs.readFileSync(outPath, 'utf8')) };
     } catch (e) {
-      return res.status(500).json({ ok: false, error: `physical layer unreadable: ${e.message}` });
+      return { status: 500, body: { ok: false, error: `physical layer unreadable: ${e.message}` } };
     }
   };
-  if (!req.query.refresh && fs.existsSync(outPath)) return serve();
-  const child = spawnChild(pythonCmd,
-    ['-u', '-m', 'pipeline.physical_layer', rackId],
-    { cwd: PROJECT_ROOT,
-      env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' } });
-  let stderr = '', settled = false;
-  const send = (status, body) => { if (settled) return; settled = true; res.status(status).json(body); };
-  const killer = setTimeout(() => {
-    try { child.kill('SIGKILL'); } catch (_) {}
-    send(504, { ok: false, error: 'physical layer timed out', rackId });
-  }, PHYSICAL_LAYER_TIMEOUT_MS);
-  child.stderr.on('data', c => { stderr += c.toString(); });
-  child.on('error', err => { clearTimeout(killer); send(500, { ok: false, error: `spawn failed: ${err.message}` }); });
-  child.on('close', (code) => {
-    clearTimeout(killer);
-    if (settled) return;
-    if (code !== 0 || !fs.existsSync(outPath)) {
-      return send(500, { ok: false, error: stderr.slice(-400) || `exit ${code}`, rackId });
-    }
-    settled = true;
-    serve();
-  });
+  if (!refresh && fs.existsSync(outPath)) return Promise.resolve(read());
+  if (_physicalLayerBuilds.has(rackId)) return _physicalLayerBuilds.get(rackId);
+  const build = new Promise((resolve) => {
+    const child = spawnChild(pythonCmd,
+      ['-u', '-m', 'pipeline.physical_layer', rackId],
+      { cwd: PROJECT_ROOT,
+        env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' } });
+    let stderr = '', settled = false;
+    const send = (status, body) => { if (settled) return; settled = true; resolve({ status, body }); };
+    const killer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch (_) {}
+      send(504, { ok: false, error: 'physical layer timed out', rackId });
+    }, PHYSICAL_LAYER_TIMEOUT_MS);
+    child.stderr.on('data', c => { stderr += c.toString(); });
+    child.on('error', err => { clearTimeout(killer); send(500, { ok: false, error: `spawn failed: ${err.message}` }); });
+    child.on('close', (code) => {
+      clearTimeout(killer);
+      if (settled) return;
+      if (code !== 0 || !fs.existsSync(outPath)) {
+        return send(500, { ok: false, error: stderr.slice(-400) || `exit ${code}`, rackId });
+      }
+      const r = read();
+      send(r.status, r.body);
+    });
+  }).finally(() => { _physicalLayerBuilds.delete(rackId); });
+  _physicalLayerBuilds.set(rackId, build);
+  return build;
+}
+app.get('/api/scan/:rackId/physical-layer', async (req, res) => {
+  const r = await physicalLayerReport(req.params.rackId, { refresh: !!req.query.refresh });
+  res.status(r.status).json(r.body);
 });
+
+// Rack identity: which of the customer's racks a scan is, with the evidence.
+//   GET  /api/scan/:rackId/identity
+//   POST /api/scan/:rackId/identity/confirm
+// The router declares the full paths and puts requireAuth on each route itself.
+// It is not mounted on the /api/scan prefix behind requireAuth, because that
+// prefix also serves routes a report link reads with no session. It is handed
+// the audit log and the one physical layer builder above, so python is never
+// started twice for one rack.
+try {
+  app.use(require('./routes/rack_identity')({
+    requireAuth: auth.requireAuth,
+    audit,
+    physicalLayer: physicalLayerReport,
+  }));
+  logger.info({ event: 'router.loaded', router: 'rack_identity', prefix: '/api/scan/:rackId/identity' },
+    'rack identity router loaded');
+} catch (err) {
+  logger.warn({ event: 'router.load_failed', router: 'rack_identity', err: err.message },
+    'rack identity router not loaded');
+}
 
 app.post('/api/scan/:rackId/side-labels', (req, res) => {
   const { rackId } = req.params;
@@ -10303,6 +10365,9 @@ module.exports._internals = {
   // Same reasoning for the console allowlist: the test must exercise the
   // function the route calls, not a reimplementation of it.
   isAllowedConsoleCommand, consoleCommandTemplates,
+  // The one builder of the physical layer report, shared by its own route and
+  // the rack identity route: the test checks the real one shares a build.
+  physicalLayerReport,
 };
 
 // ── User feedback on port identification ──────────────────────

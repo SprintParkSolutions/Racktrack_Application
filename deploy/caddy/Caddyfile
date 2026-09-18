@@ -30,6 +30,23 @@ demo.racktrack.ai {
 		reverse_proxy netbox:8080
 	}
 
+	# RackTrack Approvals: the drift ticketing and approval workflow. Its own
+	# bundle in /srv/approvals (bind-mounted from ./approvals-dist), built with
+	# base /approvals/, served as another page of this site. Same origin, so it
+	# uses the same API and the same session as the application; no second
+	# sign-in and no second domain, and the application stays uncluttered.
+	redir /approvals /approvals/ 308
+	handle_path /approvals/* {
+		# handle_path strips the prefix, so a request for
+		# /approvals/assets/x.js reads /srv/approvals/assets/x.js and a deep
+		# path such as /approvals/drifts/12 falls back to the bundle's own
+		# index.html. The bundle is built with base /approvals/, so the links
+		# it writes come back through this same handler.
+		root * /srv/approvals
+		try_files {path} /index.html
+		file_server
+	}
+
 	reverse_proxy racktrack:3001
 
 	log {

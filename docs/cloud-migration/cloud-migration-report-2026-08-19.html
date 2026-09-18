@@ -1,0 +1,328 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Cloud Migration Report" | https://claude.ai/code/artifact/7570a3cf-a0ba-4cdf-9edc-86905a50cf08 | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack Cloud Migration Report</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#F6F8F9; --panel:#FFFFFF; --ink:#16232D; --steel:#54646F; --faint:#7E909B;
+    --line:#DCE4E9; --line-soft:#E8EEF1;
+    --accent:#0B5E75; --accent-soft:#E3EEF2; --accent-deep:#083E4E;
+    --ok:#1E7A3C; --ok-soft:#E4F1E8; --warn:#95640A; --warn-soft:#F6EEDD; --crit:#B3261E; --crit-soft:#F8E7E5;
+    --azure:#2563A8; --azure-soft:#E5EEF8; --aws:#B0621B; --aws-soft:#F8EEE2;
+    --display:'Saira',ui-sans-serif,system-ui,sans-serif;
+    --body:'IBM Plex Sans',ui-sans-serif,system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65;margin:0;padding:0 0 64px}
+  .wrap{padding:0 clamp(16px,3.5vw,52px)}
+  header.masthead{background:var(--panel);border-bottom:1px solid var(--line);padding:34px clamp(16px,3.5vw,52px) 26px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,3.6vw,42px);line-height:1.08;margin:6px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+  .lede{color:var(--steel);max-width:84ch}
+  .lede strong{color:var(--ink)}
+  nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  nav.toc a{font-family:var(--display);font-weight:600;font-size:13.5px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:4px 13px;text-decoration:none}
+  nav.toc a:hover{background:#D2E3EA}
+
+  h2{font-family:var(--display);font-weight:700;font-size:24px;margin:44px 0 10px;letter-spacing:-.005em;text-wrap:balance}
+  h2 .sn{color:var(--accent);margin-right:10px;font-variant-numeric:tabular-nums}
+  h3{font-family:var(--display);font-weight:600;font-size:17.5px;margin:24px 0 8px}
+  p{margin:8px 0;max-width:94ch}
+  ul,ol{margin:8px 0;padding-left:22px;max-width:94ch}
+  li{margin:5px 0}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.88em;background:var(--line-soft);border-radius:4px;padding:1px 5px;white-space:nowrap}
+  .note{color:var(--steel);font-size:14px}
+
+  .chip{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 9px;vertical-align:1px}
+  .chip.ok{background:var(--ok-soft);color:var(--ok)}
+  .chip.warn{background:var(--warn-soft);color:var(--warn)}
+  .chip.crit{background:var(--crit-soft);color:var(--crit)}
+  .chip.acc{background:var(--accent-soft);color:var(--accent)}
+  .chip.az{background:var(--azure-soft);color:var(--azure)}
+  .chip.aw{background:var(--aws-soft);color:var(--aws)}
+  .chip.tie{background:var(--line-soft);color:var(--steel)}
+
+  .execbox{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:0 12px 12px 0;padding:18px 22px;margin:22px 0;max-width:112ch}
+  .execbox h3{margin-top:0}
+  .execbox p{margin:6px 0}
+
+  .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14.5px}
+  th{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--line-soft);white-space:nowrap}
+  td{padding:9px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start;margin:12px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h3{margin-top:0}
+  .card.az{border-top:4px solid var(--azure)}
+  .card.aw{border-top:4px solid var(--aws)}
+  .card ul{padding-left:18px;font-size:14.5px}
+
+  .callout{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;max-width:106ch}
+  .callout.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .callout.crit{border-left-color:var(--crit);background:var(--crit-soft)}
+  .callout p{margin:4px 0}
+
+  .statband{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .stat .v{font-family:var(--display);font-weight:700;font-size:23px;line-height:1.1;font-variant-numeric:tabular-nums}
+  .stat .k{color:var(--steel);font-size:12.5px;margin-top:2px}
+  .stat.acc .v{color:var(--accent)} .stat.warn .v{color:var(--warn)}
+
+  footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);margin-top:52px;padding:16px clamp(16px,3.5vw,52px);background:var(--panel)}
+  footer a{color:var(--steel)}
+  @media (prefers-reduced-motion:no-preference){ html{scroll-behavior:smooth} }
+</style>
+
+<header class="masthead">
+  <div class="eyebrow">Official report · prepared for management &amp; team · 19 August 2026</div>
+  <h1>RackTrack Cloud Migration Report</h1>
+  <p class="lede">The complete written record behind the presentation deck: what we run today, what the code audit found, the standards this
+  migration follows, the Azure/AWS comparison, the recommendation, the phased plan with its work breakdown, costs, the security review,
+  and every risk with its mitigation. <strong>Every figure in this report was measured or read from our own codebase and deployment, or taken
+  from provider list prices on the date above.</strong> Nothing is estimated without being labeled as an estimate.</p>
+  <nav class="toc" aria-label="Contents">
+    <a href="#s1">1 Summary</a><a href="#s2">2 Today</a><a href="#s3">3 Readiness</a><a href="#s4">4 Standards</a>
+    <a href="#s5">5 Azure vs AWS</a><a href="#s6">6 Recommendation</a><a href="#s7">7 Plan</a><a href="#s8">8 Capacity</a>
+    <a href="#s9">9 Costs</a><a href="#s10">10 Security</a><a href="#s11">11 Risks</a><a href="#s12">12 Approvals</a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+<h2 id="s1"><span class="sn">1</span>Executive summary</h2>
+<div class="execbox">
+  <p><strong>Recommendation: migrate fully to AWS (Mumbai region) in three standard phases — Rehost (2 weeks) → Replatform (one focused month) → Refactor (usage-triggered).</strong> Azure is a close second, preferred only if Microsoft's startup credit program materially funds year one; the architecture is identical on both by design, so that decision is commercial, not technical.</p>
+  <p>The application is <strong>already containerized and already runs on a cloud server</strong>. This migration is a maturity upgrade — automated backups, managed secrets, a professional database, no single point of failure — not a rescue or a rewrite. Costs start near <strong>$170/month</strong> and reach about <strong>$1,400/month at 10,000 users</strong>; per-user cost falls 13× as we grow.</p>
+  <p>Approvals requested: the provider decision (next week, after credit answers), the budget envelope, and one protected engineering month for the Replatform phase.</p>
+</div>
+
+<h2 id="s2"><span class="sn">2</span>Where we are today — and how we know</h2>
+<p>RackTrack currently runs, in its entirety, on one rented 2-CPU / 8&nbsp;GB cloud server (<code>demo.racktrack.ai</code>): the website and mobile
+app backend, the AI scanning pipeline, the user database, and every scan photo. Updates are copied over by hand. There are no automatic
+backups. It serves demos and testers reliably — and it is one machine away from losing everything, which is the problem this migration solves.</p>
+<p><strong>How we know:</strong> in August 2026 a full audit of the codebase was completed — every API route was counted (239 registered, ~203 live in
+production), every AI model file was opened and its architecture verified, the server's deployment files and its own measured performance logs
+were read, and disk usage was measured directly. A separate three-part security review of the code was run as part of this report (section 10).
+The detailed technical evidence lives in the <a href="https://claude.ai/code/artifact/616a4042-7881-4be1-81b2-c594b42d21eb">Cloud Dossier</a>,
+with file-level citations.</p>
+<div class="statband">
+  <div class="stat acc"><div class="v">3–8 s</div><div class="k">per rack scan on normal CPUs (our deployment's measurement)</div></div>
+  <div class="stat"><div class="v">~203</div><div class="k">live API endpoints (counted)</div></div>
+  <div class="stat"><div class="v">6 + OCR</div><div class="k">AI models per scan (verified by opening the files)</div></div>
+  <div class="stat"><div class="v">~2.5 GB</div><div class="k">memory per AI worker (from our own deploy docs)</div></div>
+  <div class="stat"><div class="v">~8 MB</div><div class="k">stored per scan (measured across 24 real scans)</div></div>
+  <div class="stat warn"><div class="v">0</div><div class="k">automatic backups today</div></div>
+</div>
+
+<h2 id="s3"><span class="sn">3</span>Application readiness</h2>
+<p>An honest compatibility assessment against cloud standards — the green rows are why this is low-risk; the amber and red rows are the actual work, and every one of them is already scheduled into a phase.</p>
+<div class="tablewrap"><table>
+  <tr><th>Status</th><th>Component</th><th>Assessment</th></tr>
+  <tr><td><span class="chip ok">ready</span></td><td>Application packaging</td><td>Standard Docker container; runs on any cloud unchanged. Already deployed to a cloud VPS today.</td></tr>
+  <tr><td><span class="chip ok">ready</span></td><td>AI pipeline</td><td>Six models (device/port/PDU detection, cable and photo-quality classification) plus two text-reading stacks — all run on normal CPUs; a rack scans in 3–8 seconds. No GPU required to launch.</td></tr>
+  <tr><td><span class="chip ok">ready</span></td><td>Web + mobile clients</td><td>Standard web app served by the API; Android/iOS apps need one rebuild against the final production domain.</td></tr>
+  <tr><td><span class="chip ok">ready</span></td><td>Monitoring hooks</td><td>Health endpoint and metrics feed already exist in the code — they plug straight into cloud monitoring.</td></tr>
+  <tr><td><span class="chip warn">Phase B</span></td><td>Database</td><td>File-based (SQLite) — perfect on one server, incompatible with running multiple servers. Moves to managed PostgreSQL.</td></tr>
+  <tr><td><span class="chip warn">Phase B</span></td><td>Photo storage</td><td>~8 MB per scan accumulates on local disk with no cleanup. Moves to object storage with automatic lifecycle rules.</td></tr>
+  <tr><td><span class="chip warn">Phase B</span></td><td>Heavy background jobs</td><td>Label-reading (OCR) takes 1–2 minutes per scan with no limit on how many run at once — the real throughput ceiling. Moves behind a job queue; capped immediately in Phase A.</td></tr>
+  <tr><td><span class="chip crit">Phase A</span></td><td>Secrets</td><td>Some credentials live in files in the repository. Rotated into a managed vault in week one.</td></tr>
+  <tr><td><span class="chip crit">Phase A</span></td><td>Backups</td><td>None automated today. Automated snapshots plus a tested restore drill are a week-one gate.</td></tr>
+  <tr><td><span class="chip crit">Phase A</span></td><td>AI model files</td><td>Moved by hand, one copy, one required file exists only on the server. Versioned in object storage with checksums verified at startup.</td></tr>
+</table></div>
+
+<h2 id="s4"><span class="sn">4</span>The standards this migration follows</h2>
+<ul>
+  <li><strong>Migration framework:</strong> the industry-standard "7R" model published by both <a href="https://aws.amazon.com/cloud-migration/">AWS</a> and <a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/">Microsoft</a>. We use three of its strategies in sequence: <strong>Rehost</strong> (move as-is), <strong>Replatform</strong> (swap self-managed parts for managed services), <strong>Refactor</strong> (multiple app copies + AI acceleration).</li>
+  <li><strong>Architecture standard:</strong> each phase is reviewed against the provider's <strong>Well-Architected Framework</strong> (security, reliability, performance, cost, operations). Both vendors offer this review free with their own engineers; we take it after Phase B.</li>
+  <li><strong>Application standard:</strong> Phase B brings the app to the <a href="https://12factor.net/">12-factor</a> shape — config in the environment, state in backing services, processes disposable — which is what makes multiple copies possible.</li>
+  <li><strong>Compliance:</strong> both providers hold ISO/IEC 27001, 27017, 27018, SOC 1/2/3, PCI DSS and CSA STAR attestations, and operate MeitY-empanelled datacenters in India — our users' data stays in-country, aligned with the DPDP Act 2023. The application's own DPDP duties (privacy policy, consent, deletion path) are flagged as product tasks in section 11.</li>
+  <li><strong>Portability:</strong> a standing rule of this plan — only portable building blocks (containers, PostgreSQL, S3-compatible storage, Redis) in the application's critical path, so changing clouds remains a weeks-scale move and vendor lock-in never becomes leverage against us.</li>
+</ul>
+
+<h2 id="s5"><span class="sn">5</span>Azure vs AWS</h2>
+<p><strong>On trust and compliance they are equals.</strong> The decision is about fit, and four differences matter for us:</p>
+<div class="tablewrap"><table>
+  <tr><th>Dimension</th><th>Assessment</th><th>Advantage</th></tr>
+  <tr><td>Security certifications, India data residency, reliability SLAs</td><td>Identical portfolios; both reach 99.99% availability at our target architecture</td><td><span class="chip tie">equal</span></td></tr>
+  <tr><td>Everything in one Indian region</td><td>AWS Mumbai carries the full catalog including AI hardware; Azure Central India has limited GPU stock, which could split our architecture across regions</td><td><span class="chip aw">AWS</span></td></tr>
+  <tr><td>Migration-path maturity</td><td>The exact journey we need (VM → managed DB/storage/queue → container replicas) is AWS's most-documented path, with the largest talent pool</td><td><span class="chip aw">AWS</span></td></tr>
+  <tr><td>Microsoft ecosystem fit</td><td>Our app already sends mail and reports via Microsoft services (Teams, Outlook). On Azure those connections use managed identities — removing a class of stored secrets — and our Microsoft-365-centric buyers recognize the story</td><td><span class="chip az">Azure</span></td></tr>
+  <tr><td>Startup credits</td><td>Microsoft's Founders Hub is self-serve and can reach $150k; AWS Activate at meaningful size usually needs an accelerator affiliation</td><td><span class="chip az">Azure</span></td></tr>
+</table></div>
+<div class="grid2">
+  <div class="card aw"><h3>AWS — pros / cons</h3><ul>
+    <li><span class="chip ok">pro</span> Full catalog in Mumbai (residency + latency + one region)</li>
+    <li><span class="chip ok">pro</span> Most proven path, deepest documentation and hiring pool</li>
+    <li><span class="chip ok">pro</span> Best AI-hardware economics (widest choice, deepest spot market); CDN with a permanently free first terabyte</li>
+    <li><span class="chip warn">con</span> Microsoft integrations keep using stored OAuth secrets (managed in a vault)</li>
+    <li><span class="chip warn">con</span> Meaningful credits need an accelerator relationship</li>
+    <li><span class="chip warn">con</span> Sharp configuration edges (load-balancer timeouts, private-network fees) — mitigated by infrastructure-as-code</li>
+  </ul></div>
+  <div class="card az"><h3>Azure — pros / cons</h3><ul>
+    <li><span class="chip ok">pro</span> First-party fit with our Teams/Outlook/Graph integrations; managed identity removes stored credentials</li>
+    <li><span class="chip ok">pro</span> Enterprise sales alignment with M365 + ServiceNow buyers</li>
+    <li><span class="chip ok">pro</span> Most accessible startup credits — can fund year one</li>
+    <li><span class="chip warn">con</span> GPU stock/quota friction in Central India</li>
+    <li><span class="chip warn">con</span> Managed-container storage is incompatible with our current database until Phase B (VM-only until then)</li>
+    <li><span class="chip warn">con</span> Fewer reference implementations of this exact migration</li>
+  </ul></div>
+</div>
+
+<h2 id="s6"><span class="sn">6</span>Recommendation</h2>
+<div class="callout">
+  <p><strong>Primary: AWS, Mumbai region — subject to one condition executed first.</strong> This week we apply to both credit programs (free, fast).
+  If Microsoft awards $25,000+ in credits, year one runs on Azure Central India instead — the plan is identical on both clouds by design, so
+  this is a commercial decision, not a technical rework. On merits, AWS wins the two dimensions that carry operational risk for a team our
+  size: everything in one Indian region, and the most-proven migration path.</p>
+</div>
+
+<h2 id="s7"><span class="sn">7</span>The plan — phases, gates, and the work breakdown</h2>
+<div class="tablewrap"><table>
+  <tr><th>Stage</th><th>Work</th><th>Exit gate (go/no-go — testable, not a date)</th></tr>
+  <tr><td>Week 0</td><td>Credit applications · lock the permanent API domain · file GPU quota requests (free; approval takes days)</td><td>Provider decision signed off</td></tr>
+  <tr><td>Weeks 1–2 · <strong>Rehost</strong></td><td>Production server (8 vCPU / 32 GB) + hardening: secrets to vault, automated backups, model files versioned in object storage, monitoring + alerts, background OCR capped</td><td>A restore drill actually restores; an end-to-end scan verified on the new box; old server kept as rollback</td></tr>
+  <tr><td>Weeks 3–4 · <strong>Stabilize</strong></td><td>Infrastructure as code · CI/CD pipeline · staging environment · formal load test (parameters below)</td><td>A deploy is one reviewed merge; measured capacity documented</td></tr>
+  <tr><td>Weeks 5–10 · <strong>Replatform</strong></td><td>The work breakdown below, under feature freeze during cutover, with a rehearsed rollback</td><td>Two app replicas serve production; one is killed mid-scan with zero data loss</td></tr>
+  <tr><td>Usage-triggered · <strong>Refactor</strong></td><td>GPU node + faster OCR · third replica · multi-zone database · CDN · app-store production releases</td><td>SLOs hold: 99.9% availability, scan &lt; 10 s (p95), device names &lt; 60 s</td></tr>
+</table></div>
+
+<h3>Phase B, ticket by ticket (scoped from the code, not guessed)</h3>
+<div class="tablewrap"><table>
+  <tr><th>#</th><th>Workstream</th><th>Scope</th><th>Estimate</th></tr>
+  <tr><td class="num">B1</td><td>Database layer</td><td>Replace the synchronous file database with managed PostgreSQL; the change ripples through every data-access module (identity, orgs, marketplace, port history, logs, credentials)</td><td class="num">1.5–2 wk</td></tr>
+  <tr><td class="num">B2</td><td>Schema + data migration</td><td>25+ tables; migration script, dual-run window, rehearsed rollback</td><td class="num">3–5 d</td></tr>
+  <tr><td class="num">B3</td><td>Queues + shared state</td><td>Rate limits and job tracking move to Redis; scans, OCR, PDFs and shares become queued jobs; background pollers get a single-runner lock</td><td class="num">1 wk</td></tr>
+  <tr><td class="num">B4</td><td>Object storage</td><td>Scan photos, marketplace images, feedback images and model files move to cloud storage with lifecycle rules; images served by signed links</td><td class="num">1–1.5 wk</td></tr>
+  <tr><td class="num">B5</td><td>Config &amp; secrets</td><td>Environment files replaced by the managed secret store; model checksums verified at startup</td><td class="num">2–3 d</td></tr>
+  <tr><td class="num">B6</td><td>Cutover</td><td>Staging rehearsal → feature freeze → dual-run → rollback drill → DNS switch</td><td class="num">1 wk</td></tr>
+</table></div>
+<p class="note">Total: 5–7 weeks for one engineer; 3–6 with two in parallel (B3/B4 are independent of B1). This table can go into Jira as-is.</p>
+
+<h2 id="s8"><span class="sn">8</span>Capacity — what the numbers say about 100 → 10,000 users</h2>
+<p>Assumptions stated so anyone can re-run the math: field-ops usage means 5–10% of registered users active in the peak hour, each running 2–6 scans/hour.</p>
+<div class="tablewrap"><table>
+  <tr><th>Registered users</th><th>Peak-hour scans</th><th>What carries it</th></tr>
+  <tr><td class="num">100</td><td class="num">10–60</td><td>One 8-CPU / 32 GB server (Phase A shape) — measured scan cost says this is comfortable</td></tr>
+  <tr><td class="num">1,000</td><td class="num">100–600</td><td>The ceiling of one box — Phase B must be complete before this point</td></tr>
+  <tr><td class="num">10,000</td><td class="num">1,000–6,000</td><td>2–3 app replicas + one GPU inference node (a single mid-range GPU clears 7,000+ scans/hour)</td></tr>
+</table></div>
+<p><strong>The honest bottleneck</strong> is not the AI scan (3–8 s) but the background label-reading: 1–2 CPU-minutes per scan, currently unlimited in
+parallel. Capping it is a one-day Phase A task; moving it to a queue (Phase B) and later to GPU (Phase C) turns the app's slowest moment —
+device names appearing minutes after a scan — into seconds.</p>
+<p><strong>Load-test gate (Phase A, on the real server):</strong> ramp 1→10 virtual users over 10 minutes, then a 20-minute soak, every request a distinct
+test image (identical images hit the result cache and measure nothing — a detail from how the app hashes photos). Pass: 95th-percentile scan
+under 10 s, zero out-of-memory kills, no server errors, OCR backlog drained within 15 minutes. Capacity is measured before users arrive, not assumed.</p>
+
+<h2 id="s9"><span class="sn">9</span>Costs</h2>
+<div class="tablewrap"><table>
+  <tr><th>Milestone</th><th>Monthly (with committed-use discounts)</th><th>Roughly in rupees</th><th>Per user-month</th></tr>
+  <tr><td>100 users · Phase A</td><td class="num">$150–170</td><td class="num">~₹13,000–15,000</td><td class="num">~$1.60</td></tr>
+  <tr><td>1,000 users · Phase B</td><td class="num">~$420</td><td class="num">~₹37,000</td><td class="num">~$0.42</td></tr>
+  <tr><td>10,000 users · Phase C</td><td class="num">$1,000–1,400</td><td class="num">~₹90,000–1,25,000</td><td class="num">~$0.12</td></tr>
+</table></div>
+<ul>
+  <li>Figures are provider list prices (August 2026) applied to our measured resource needs (memory per worker, seconds per scan, megabytes per photo). Sources are linked in the footer; India-region prices run ~5–10% above the US list rates used.</li>
+  <li>One-time costs: ~$100–200 of infrastructure duplication during the Phase B cutover window; provider business-tier support (~$100/month) recommended from Phase B.</li>
+  <li>AI model retraining runs as rented GPU hours: <strong>$1–3 per training run</strong> — never a 24/7 GPU bill.</li>
+  <li>Startup credits, if awarded, cover much of year one. Excluded: app-store developer accounts, optional LLM keys for the support bot (its default mode costs $0).</li>
+</ul>
+
+<h2 id="s10"><span class="sn">10</span>Security review</h2>
+<p>As part of preparing for the migration, an independent three-part review of the code was run: authentication &amp; tenant isolation, input handling &amp; injection, and secrets &amp; deployment hardening. This is the right time — <strong>every finding below was caught before the move, not after a breach</strong>, and each is scheduled into a phase with an owner.</p>
+<div class="callout">
+  <p><strong>The good news is the foundation.</strong> The application's core security design is genuinely strong for a pre-launch product and was verified sound: encryption of stored switch credentials (AES-256-GCM, correct key handling), password hashing (bcrypt cost 12 with auto-upgrade), login-token handling (algorithm-pinned, revocable, hashed refresh tokens), social-login CSRF protection, database queries (fully parameterized — no SQL-injection paths found), and report generation (all user text properly escaped — no cross-site-scripting paths found). The risk is not the design; it is a specific set of gaps, most of them small fixes.</p>
+</div>
+<div class="statband">
+  <div class="stat warn"><div class="v">4</div><div class="k">critical — pre-launch blockers</div></div>
+  <div class="stat warn"><div class="v">8</div><div class="k">high — fix during Phase A/B</div></div>
+  <div class="stat"><div class="v">~15</div><div class="k">medium / hardening</div></div>
+  <div class="stat acc"><div class="v">40+</div><div class="k">controls verified sound</div></div>
+</div>
+
+<h3>Critical — must be fixed before opening to customers</h3>
+<div class="tablewrap"><table>
+  <tr><th>#</th><th>Finding</th><th>Fix</th></tr>
+  <tr><td><span class="chip crit">C1</span></td><td><strong>Cross-tenant data exposure.</strong> A rack-grouping endpoint accepts scan IDs in the request body and skips the ownership check, so any signed-in user can pull another customer's full scan report — devices, ports, images.</td><td>One ownership check added to the loop (small code change).</td></tr>
+  <tr><td><span class="chip crit">C2</span></td><td><strong>Unauthenticated file write.</strong> A label-OCR endpoint has no login requirement and no ID validation — an anonymous caller can overwrite another tenant's data, and a crafted ID can write outside the intended folder.</td><td>Add login requirement + ID format validation (small code change).</td></tr>
+  <tr><td><span class="chip crit">C3</span></td><td><strong>Switch command injection.</strong> On four switch-console endpoints the interface name from the request is written straight into a live switch shell — line breaks in it run as extra switch commands, letting a member reconfigure production network gear (without even needing the switch password).</td><td>Validate the interface name against the format the code already defines elsewhere.</td></tr>
+  <tr><td><span class="chip crit">C4</span></td><td><strong>Secret leakage.</strong> An Apple signing key and some credential files reached pushed git history, and the Docker build packages the user database, the login-signing key, and a plaintext tester list into the image. (Fixable, and the app has no hardcoded secrets in its source — a clean result.)</td><td>Rotate the exposed keys, fix the Docker ignore list (one line), purge the git history. Order matters — see below.</td></tr>
+</table></div>
+
+<h3>High — fix during Phase A hardening</h3>
+<div class="tablewrap"><table>
+  <tr><th>Finding</th><th>Fix</th></tr>
+  <tr><td><strong>Admin checks fail open.</strong> Two admin-only actions (delete scan folders, launch retraining) grant access to <em>every</em> user when an optional environment setting is unset — which it is on a fresh deploy.</td><td>Invert the check to require the owner role (three lines).</td></tr>
+  <tr><td><strong>Marketplace OAuth linking is forgeable.</strong> The eBay/Amazon account-linking flow trusts a user ID passed in the URL, so an attacker can link their partner account to any user. (The social-login flow does this correctly — copy that pattern.)</td><td>Use a random single-use token, as the social-login code already does.</td></tr>
+  <tr><td><strong>Five compute endpoints have no login requirement</strong> (live viewfinder, image stitch, label OCR, two ticket-scan routes) — anonymous callers can run the AI pipeline and create orphaned records.</td><td>Add the login requirement their sibling endpoints already use.</td></tr>
+  <tr><td><strong>Server-side request forgery.</strong> Connection profiles and a Discord webhook accept an arbitrary destination address. After migration the server sits next to cloud internal services and a metadata endpoint — this becomes a way to reach them. This one is <em>more</em> important in the cloud than on the current box.</td><td>Restrict destinations to allowed hosts; block internal/metadata addresses.</td></tr>
+  <tr><td><strong>Rate limiting collapses behind the proxy.</strong> Because the app doesn't trust the proxy header, every anonymous request looks like it comes from one address, so all anonymous traffic shares a single rate-limit bucket — easy to exhaust.</td><td>Enable "trust proxy" (one line).</td></tr>
+  <tr><td><strong>Image-access tokens survive logout</strong> for up to 12 hours and can't be revoked — a signed-out or removed user keeps image access.</td><td>Add a version/user stamp to the token and check it.</td></tr>
+  <tr><td><strong>Secondary git remotes still carry</strong> the login-signing key and ServiceNow credentials in history.</td><td>Rotate and purge across all remotes in one pass.</td></tr>
+  <tr><td><strong>A config file is world-readable</strong> on disk, and the code only sets safe permissions on first creation.</td><td>Set correct permissions and enforce them on every write.</td></tr>
+</table></div>
+
+<h3>Medium &amp; hardening (Phase A/B backlog)</h3>
+<p>Around fifteen defence-in-depth items, none a launch blocker on their own: the container runs as root (add a non-root user); no Content-Security-Policy on the web app (enable one); an end-of-life file-upload library (upgrade to v2); capability tokens travelling in URLs and landing in logs (move to headers, redact URLs); Netdisco inventory visible across tenants (scope it); the dependency-confusion install shape flagged in our own code comments (pin the package index); base images on floating tags (pin by digest); CSV export formula injection (neutralize leading `=`/`+`/`-`/`@`); and a handful of input-validation and rate-limit gaps. All are catalogued with file locations and one-line fixes in the working audit notes.</p>
+
+<h3>Remediation order (from the reviews)</h3>
+<ol>
+  <li><strong>Revoke</strong> the exposed live keys (Apple, ngrok, Microsoft OAuth tokens) — revocation is instant and defuses the leaks immediately.</li>
+  <li><strong>Rotate</strong> the signing key, mail/Netdisco/ServiceNow credentials, and any switch passwords.</li>
+  <li><strong>Fix the Docker ignore list</strong> (C4) — a one-line change that stops the image leak — and the four small code fixes (C1, C2, C3, fail-open admin).</li>
+  <li><strong>Purge git history</strong> across all remotes in one coordinated pass; verify the automated secret-scanner in CI actually runs.</li>
+  <li>Then the hardening backlog, folded into Phase A and B.</li>
+</ol>
+<p class="note">Items 1–3 are the pre-launch blockers and are all fast. This review is exactly why a standards-led migration is worth doing deliberately rather than in a rush — the findings are ordinary for a product at this stage, and catching them now is the process working as intended.</p>
+
+<h2 id="s11"><span class="sn">11</span>Risk register &amp; adjacent items</h2>
+<div class="tablewrap"><table>
+  <tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr>
+  <tr><td>Data loss during migration</td><td>Low</td><td>Severe</td><td>Backups before any change; dual-run of old + new; restore drills are phase gates, not promises</td></tr>
+  <tr><td>Security weakness reaching production</td><td>Medium</td><td>High</td><td>The section-10 review ran before the move; every finding is scheduled into Phase A/B with an owner</td></tr>
+  <tr><td>Phase B overruns its window</td><td>Medium</td><td>Medium</td><td>Scope fixed in advance (section 7 tickets); feature freeze; weekly checkpoints</td></tr>
+  <tr><td>Cost overrun</td><td>Medium</td><td>Medium</td><td>Budget alarms at 50/80/100%; discounts locked only after 60 days of measured usage; downloads served via CDN</td></tr>
+  <tr><td>GPU quota/capacity delays</td><td>Medium</td><td>Low</td><td>CPU serving is the default plan; GPU is an optimization, quota requested in week 0</td></tr>
+  <tr><td>Mobile apps pointing at a dead address</td><td>Low</td><td>High</td><td>Permanent domain decided before anything ships; apps rebuilt once against it</td></tr>
+  <tr><td>Team unfamiliarity with the cloud stack</td><td>Medium</td><td>Medium</td><td>Managed services over self-managed everywhere; infrastructure as code; the vendor's free architecture review after Phase B</td></tr>
+  <tr><td>Vendor lock-in</td><td>Low (by design)</td><td>Low</td><td>Portable building blocks only; documented exit path</td></tr>
+</table></div>
+<h3>Adjacent items — closed so nothing surprises us later</h3>
+<div class="tablewrap"><table>
+  <tr><th>Topic</th><th>Position</th></tr>
+  <tr><td>Payments / PCI DSS</td><td>Stripe handles card data; it never touches our servers — lightest PCI self-assessment scope (SAQ-A). Only the webhook secret needs protecting.</td></tr>
+  <tr><td>Email deliverability</td><td>At production scale, verification mails move to a transactional service with SPF/DKIM/DMARC on the domain — or codes land in spam. Small task, scheduled Phase A/B.</td></tr>
+  <tr><td>DPDP Act (application side)</td><td>Region residency is inherited from the provider, but the app owes a privacy policy, signup consent, and a data-deletion path — product roadmap items, flagged now.</td></tr>
+  <tr><td>App-store production releases</td><td>Current channels are tester-only. Play Store / App Store production listings need 2–4 weeks of lead (reviews, privacy forms) — start before public launch, after the domain is final.</td></tr>
+  <tr><td>Live network discovery (Netdisco)</td><td>Must run inside a customer's own network to see their devices — deliberately not part of our cloud; our cloud runs demo mode. Already how the code is built.</td></tr>
+  <tr><td>ARM-based instances</td><td>10–20% cheaper but untested with our AI stack — we stay on standard x86 until a validation pass; noted, not risked.</td></tr>
+</table></div>
+
+<h2 id="s12"><span class="sn">12</span>Approvals requested</h2>
+<ol>
+  <li><strong>Provider:</strong> AWS Mumbai as primary, confirmed at the end of week 0 once both credit programs answer.</li>
+  <li><strong>Budget envelope:</strong> $170/month at launch scaling to ~$1,400/month at 10,000 users, plus the one-time cutover duplication (~$100–200) and business-tier support (~$100/month) from Phase B.</li>
+  <li><strong>Roadmap protection:</strong> the Phase B window (weeks 5–10) with a feature freeze during cutover.</li>
+  <li><strong>Domain:</strong> confirmation of the permanent production API domain before mobile builds.</li>
+</ol>
+
+<p class="note">Companion documents: the <a href="https://claude.ai/code/artifact/593377bb-d28a-42d8-be3d-bd572ffc02fd">presentation deck</a> (this report, in 10 slides) ·
+<a href="https://claude.ai/code/artifact/616a4042-7881-4be1-81b2-c594b42d21eb">Cloud Dossier</a> (file-level technical evidence) ·
+<a href="https://claude.ai/code/artifact/4794ade5-ca9c-464e-81d0-e5f02b9eac87">Azure vs AWS deep dive</a> (provider detail, incl. a plain-language tab) ·
+<a href="https://claude.ai/code/artifact/d8cefa53-8461-41d7-a503-ddcae63a12eb">one-page proposal</a>.</p>
+
+</div>
+
+<footer>
+  Prepared 19 August 2026. Application facts: direct audit of the RackTrack repository and its deployment configuration. Prices:
+  <a href="https://instances.vantage.sh/aws/ec2/r7i.xlarge">EC2</a> · <a href="https://instances.vantage.sh/aws/rds/db.t4g.medium">RDS</a> ·
+  <a href="https://instances.vantage.sh/azure/vm/d8as-v5">Azure VMs</a> · <a href="https://aws.amazon.com/lightsail/pricing">Lightsail</a> ·
+  <a href="https://egresscost.com/">egress</a> · <a href="https://www.thundercompute.com/blog/azure-gpu-instances">Azure GPU</a>.
+  Compliance: <a href="https://aws.amazon.com/compliance/programs/">AWS programs</a> · <a href="https://learn.microsoft.com/en-us/compliance/regulatory/offering-home">Microsoft offerings</a>.
+</footer>
+
+</body></html>

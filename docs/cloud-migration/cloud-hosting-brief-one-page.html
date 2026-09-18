@@ -1,0 +1,127 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Cloud Brief" | https://claude.ai/code/artifact/62b55fdd-8a74-4c6a-b9f2-4e2392772cab | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack Cloud Brief</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#F6F8F9; --panel:#FFFFFF; --ink:#16232D; --steel:#54646F; --faint:#7E909B;
+    --line:#DCE4E9; --line-soft:#E8EEF1;
+    --accent:#0B5E75; --accent-soft:#E3EEF2;
+    --ok:#1E7A3C; --ok-soft:#E4F1E8; --warn:#95640A; --warn-soft:#F6EEDD; --crit:#B3261E; --crit-soft:#F8E7E5;
+    --display:'Saira',ui-sans-serif,system-ui,sans-serif;
+    --body:'IBM Plex Sans',ui-sans-serif,system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.6;margin:0;
+    padding:28px clamp(16px,3.5vw,48px) 56px}
+  ::selection{background:var(--accent-soft)}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.4vw,40px);line-height:1.08;margin:6px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+  h2{font-family:var(--display);font-weight:700;font-size:20px;margin:30px 0 10px;text-wrap:balance}
+  p{margin:8px 0;max-width:90ch}
+  code{font-family:var(--mono);font-size:.88em;background:var(--line-soft);border-radius:4px;padding:1px 5px;white-space:nowrap}
+  a{color:var(--accent)}
+  .lede{color:var(--steel);max-width:80ch}
+  .lede strong{color:var(--ink)}
+
+  .verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:18px 0}
+  .verdict .v{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;border-top:4px solid var(--ok)}
+  .verdict .v.warn{border-top-color:var(--warn)}
+  .verdict .v h3{font-family:var(--display);font-weight:700;font-size:16.5px;margin:0 0 4px}
+  .verdict .v p{font-size:14px;color:var(--steel);margin:0}
+  .verdict .v p strong{color:var(--ink)}
+
+  .statband{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin:14px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+  .stat .n{font-family:var(--display);font-weight:700;font-size:23px;line-height:1.1;font-variant-numeric:tabular-nums}
+  .stat .k{color:var(--steel);font-size:12.5px;margin-top:2px}
+  .stat.acc .n{color:var(--accent)} .stat.warn .n{color:var(--warn)}
+
+  .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);
+    text-align:left;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--line-soft);white-space:nowrap}
+  td{padding:9px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  ul{margin:8px 0;padding-left:22px;max-width:90ch}
+  li{margin:5px 0}
+
+  .gaps{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin:12px 0;padding:0;list-style:none;max-width:none}
+  .gaps li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:14px;margin:0}
+  .gaps li b{display:block;font-family:var(--display);font-weight:700;font-size:14.5px;margin-bottom:2px}
+  .gaps li.crit{border-left:4px solid var(--crit)} .gaps li.warn{border-left:4px solid var(--warn)}
+
+  .cta{display:inline-block;background:var(--accent);color:#fff;font-family:var(--display);font-weight:700;font-size:15px;
+    border-radius:10px;padding:11px 20px;text-decoration:none;margin-top:8px}
+  .cta:hover{background:#083E4E}
+  .foot{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);margin-top:40px;padding-top:12px}
+</style>
+
+<div class="eyebrow">Hosting brief · 19 Aug 2026</div>
+<h1>RackTrack Cloud Brief</h1>
+<p class="lede">What it takes to run RackTrack in the cloud, on one page. You'd be hosting <strong>one Docker image</strong> —
+React app, Express API (~203 endpoints), SQLite, and Python workers holding six CV models resident — behind Caddy for TLS.
+The demo at <code>demo.racktrack.ai</code> already runs this exact shape on a 2-vCPU/8&nbsp;GB VPS; going to the cloud "for real" means a bigger box and a short hardening list, not a rewrite.</p>
+
+<div class="verdict">
+  <div class="v"><h3>No GPU needed</h3><p>The container is CPU-only by design: <strong>3–8&nbsp;s per rack scan</strong> on ordinary vCPUs.
+    A GPU only pays off for heavy scan volume or model retraining — and retraining is better rented by the hour (<strong>$1–3 per run</strong>).</p></div>
+  <div class="v"><h3>One box hosts everything</h3><p>Rule from the repo itself: one inference worker per ~3&nbsp;GB RAM, never more workers than cores.
+    An <strong>8&nbsp;vCPU / 16–32&nbsp;GB server (~€20–60/mo)</strong> carries ~25–75 active users with zero code changes.</p></div>
+  <div class="v warn"><h3>Real scale needs surgery</h3><p>SQLite, in-memory rate limits, local disk and background pollers all assume
+    <strong>a single process</strong>. Past ~100 users: Postgres + Redis + object storage + a job queue, then replicas.</p></div>
+</div>
+
+<div class="statband">
+  <div class="stat acc"><div class="n">3–8 s</div><div class="k">per scan, CPU-only</div></div>
+  <div class="stat"><div class="n">~2.5 GB</div><div class="k">RAM per worker</div></div>
+  <div class="stat"><div class="n">~435 MB</div><div class="k">model weights (6 models)</div></div>
+  <div class="stat"><div class="n">~203</div><div class="k">API endpoints</div></div>
+  <div class="stat"><div class="n">~8 MB</div><div class="k">disk per scan, never deleted</div></div>
+  <div class="stat"><div class="n">340 MB</div><div class="k">upload cap (image/video)</div></div>
+  <div class="stat warn"><div class="n">1–2 min</div><div class="k">background OCR per scan</div></div>
+  <div class="stat warn"><div class="n">1</div><div class="k">replica max, as written</div></div>
+</div>
+
+<h2>Capacity at a glance</h2>
+<div class="tablewrap"><table>
+  <tr><th>Dimension</th><th>Number</th><th>Note</th></tr>
+  <tr><td>Models per scan</td><td class="num">6 + 2 OCR stacks</td><td>YOLOv8m device/port/PDU detectors, cable + occlusion classifiers; OCR runs after the response</td></tr>
+  <tr><td>Concurrent scans</td><td class="num">= worker count</td><td>1 scan per worker; extra requests queue in memory</td></tr>
+  <tr><td>Realistic throughput</td><td class="num">150–400 scans/h</td><td>8-core box; OCR — not inference — is the ceiling</td></tr>
+  <tr><td>Storage growth</td><td class="num">~8 GB / 1,000 scans</td><td>85–95% is four full-res PNGs; a JPEG switch cuts it ~10×</td></tr>
+  <tr><td>Database</td><td class="num">SQLite</td><td>users, orgs, marketplace, logs — fine to hundreds of users, then Postgres</td></tr>
+  <tr><td>Mobile apps</td><td class="num">2 (Android + iOS)</td><td>API URL is baked at build — pick the permanent domain before wide release</td></tr>
+</table></div>
+
+<h2>The plan for 100–10,000 users</h2>
+<p class="lede">Assuming field-ops usage (5–10% of users active in the peak hour, 2–6 scans each), the growth path is three phases —
+and the heavy engineering sits in the middle one, best done <em>before</em> the users arrive:</p>
+<div class="tablewrap"><table>
+  <tr><th>Phase</th><th>Carries</th><th>Infra</th><th>Monthly</th><th>Work involved</th></tr>
+  <tr><td>A — bigger box</td><td class="num">100–300 users</td><td>8 vCPU / 32 GB, OCR capped, volumes + backups fixed</td><td class="num">$40–80</td><td>days — config and hardening only</td></tr>
+  <tr><td>B — the platform migration</td><td class="num">300–1,500</td><td>API box + inference box, Postgres + Redis, object storage, job queue</td><td class="num">$200–400</td><td><strong>3–6 weeks</strong> — SQLite→Postgres, queues, storage; the one big project</td></tr>
+  <tr><td>C — replicas + GPU</td><td class="num">1,500–10,000</td><td>2–3 stateless API replicas + LB, one GPU inference node, OCR on GPU, CDN</td><td class="num">$800–2,000</td><td>2–4 weeks — mostly infra; OCR GPU unpin is code</td></tr>
+</table></div>
+<p class="lede">The GPU verdict flips inside this range: past ~1,000–2,000 scans/hour (≈3,000–5,000 users), one rented GPU node beats
+3–4 CPU boxes on price and is the only real cure for the 1–2 minute OCR lag. At the top of the range, storage runs
+0.4–1.6&nbsp;TB/month of scan artifacts unless the PNG→JPEG fix lands first, and the apps need real Play Store / App Store releases
+pointed at a permanent <code>api.</code> domain.</p>
+
+<h2>Fix before real customers</h2>
+<ul class="gaps">
+  <li class="crit"><b>Database not on a volume</b>The base compose leaves <code>auth.db</code> + JWT secret in the container layer — one rebuild without the mount erases every account. One compose edit + nightly backups.</li>
+  <li class="crit"><b>Secrets in the repo</b>A plaintext ngrok token, tester passwords, and Microsoft token caches live in the tree. Purge and rotate before any shared host.</li>
+  <li class="crit"><b>A model file exists only on the server</b><code>port_count.pt</code> is missing from the checkout; a fresh deploy fails mid-scan. Version all six weights in object storage.</li>
+  <li class="warn"><b>OCR has no limits</b>Each background OCR grabs every core for 1–2 min, uncapped — the throughput ceiling and the burst-crash risk. Cap it at 1–2 concurrent.</li>
+  <li class="warn"><b>Disk grows forever</b>No retention on scan outputs; PNGs dominate. JPEG the stage images and add a cleanup policy.</li>
+</ul>
+
+<p><a class="cta" href="https://claude.ai/code/artifact/616a4042-7881-4be1-81b2-c594b42d21eb">Open the full dossier — 9 tabs of detail →</a></p>
+
+<p class="foot">Every figure read from the RackTrack repository (code, compose files, deploy docs) on 19 Aug 2026; GPU/VPS prices are current on-demand list rates.
+The companion dossier covers architecture, all endpoint groups, model internals, cloud provider trade-offs, and the ordered migration checklist.</p>
+
+</body></html>

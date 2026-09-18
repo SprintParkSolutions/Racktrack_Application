@@ -28,6 +28,9 @@
 .waiting h2, .done h2 { margin: 0 0 5px; font-size: 17px; font-weight: 700; }
 .waiting p, .done p { margin: 0 0 6px; font-size: 14.5px; line-height: 1.5; }
 .spoc { color: var(--muted, #5f6864); }
+/* the one way out: the same check in RackTrack Approvals */
+.track { display: inline-block; margin-top: 4px; font-size: 14.5px; font-weight: 700;
+         color: #0b6a44; text-decoration: underline; text-underline-offset: 3px; }
 
 .list { list-style: none; margin: 10px 0 0; padding: 0; }
 .item { padding: 14px 16px; border-top: 1px solid var(--border, #e6eae8); }
@@ -89,3 +92,11 @@
 .goesToMail { display: block; margin-top: 2px; font-size: 13px; color: var(--muted, #5f6864);
               font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
 .goesToNote { margin: 6px 0 0; font-size: 12.5px; color: #66706a; line-height: 1.45; }
+
+/* No record system connected yet. Not a failure, a thing to set up: an admin
+   gets the way there, a technician gets the person to ask. */
+.needsSource { margin: 16px; padding: 16px; border-radius: 8px; border: 1px solid #e3e7ee; background: #fff; }
+.needsSource h2 { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+.needsSource p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted, #5f6864); }
+.connect { margin-top: 12px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 6px;
+  background: #111827; color: #fff; font-size: 14px; font-weight: 600; }

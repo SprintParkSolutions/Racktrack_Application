@@ -1,0 +1,283 @@
+<!-- Published copy of the claude.ai artifact "RackTrack on AWS" | https://claude.ai/code/artifact/c9c62e2c-2881-4d0b-867c-1566c33ec522 | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack on AWS</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root {
+    --paper: #ffffff; --panel: #f7f7f4; --ink: #16181d; --muted: #5b5f66;
+    --hairline: rgba(22,24,29,0.12); --hairline-soft: rgba(22,24,29,0.07);
+    --aws: #d97516; --aws-bg: #fbefe0;
+    --good: #1a7f37; --good-bg: #e9f3ec; --part: #8a5a1d; --part-bg: #f7efe3;
+    --blue: #175d8d; --crit: #a1352a;
+    --code: #0b1020; --code-ink: #d7dce8;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15.5px; line-height: 1.6; }
+
+  .nav { position: sticky; top: 0; z-index: 40; background: rgba(255,255,255,0.93); backdrop-filter: blur(8px); border-bottom: 1px solid var(--hairline); }
+  .nav .in { max-width: 1120px; margin: 0 auto; padding: 10px clamp(16px,3vw,40px); display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; }
+  .nav .bd { font-weight: 650; font-size: 14px; margin-right: 4px; }
+  .nav a { font-family: var(--mono); font-size: 11.5px; font-weight: 500; color: var(--muted); text-decoration: none; padding: 4px 2px; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .nav a:hover { color: var(--ink); border-bottom-color: var(--aws); }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 clamp(16px,3vw,40px) 70px; }
+  section { scroll-margin-top: 58px; margin-top: 54px; }
+
+  .kicker { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--aws); margin: 0 0 10px; }
+  h1 { margin: 0 0 12px; font-size: clamp(28px,4.5vw,44px); font-weight: 650; letter-spacing: -0.022em; line-height: 1.08; text-wrap: balance; }
+  .sub { margin: 0; color: var(--muted); font-size: 17px; max-width: 74ch; }
+  .sub b { color: var(--ink); font-weight: 600; }
+  .seclabel { font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  h2 { margin: 0 0 6px; font-size: clamp(21px,2.8vw,27px); font-weight: 650; letter-spacing: -0.017em; text-wrap: balance; }
+  h3 { margin: 24px 0 10px; font-size: 17px; font-weight: 650; }
+  .lede { margin: 4px 0 18px; color: var(--muted); font-size: 15px; max-width: 88ch; }
+  p.body { margin: 0 0 13px; max-width: 90ch; }
+  p.body b { font-weight: 600; }
+
+  .hero { padding-top: clamp(30px,5vw,52px); }
+  .callout { border-radius: 13px; padding: 16px 20px; font-size: 14.5px; margin: 18px 0; }
+  .callout.aws { border: 1px solid rgba(217,117,22,0.32); background: var(--aws-bg); color: #7a4410; }
+  .callout.aws b { color: #573008; }
+  .callout.info { border: 1px solid var(--hairline); background: var(--panel); color: var(--muted); }
+  .callout.info b { color: var(--ink); }
+  .callout.go { border: 1px solid rgba(26,127,55,0.3); background: var(--good-bg); color: #155e2b; }
+  .callout.go b { color: #114a22; }
+
+  .tw { overflow-x: auto; border: 1px solid var(--hairline-soft); border-radius: 13px; margin: 16px 0; }
+  table { border-collapse: collapse; width: 100%; min-width: 720px; }
+  th { text-align: left; font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); padding: 11px 14px; border-bottom: 1px solid var(--hairline); background: var(--panel); white-space: nowrap; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--hairline-soft); font-size: 13.8px; vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td b { font-weight: 600; }
+  td .sub2 { display: block; color: var(--muted); font-size: 12.4px; margin-top: 2px; }
+  .svc { font-family: var(--mono); font-size: 12.5px; color: var(--aws); font-weight: 600; }
+  .fix { font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: var(--good); white-space: nowrap; }
+
+  .tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); margin: 22px 0; }
+  .tile { border: 1px solid var(--hairline-soft); border-radius: 13px; padding: 15px 17px 13px; background: var(--panel); }
+  .tile .n { font-size: 25px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .tile .n small { font-size: 0.5em; color: var(--muted); font-weight: 500; }
+  .tile .l { margin-top: 5px; font-size: 12.2px; color: var(--muted); line-height: 1.42; }
+
+  /* option cards */
+  .opts { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); }
+  .opt { border: 1px solid var(--hairline); border-radius: 14px; padding: 16px 17px; }
+  .opt.rec { border-color: rgba(26,127,55,0.4); box-shadow: 0 0 0 3px rgba(26,127,55,0.07); }
+  .opt .ot { font-weight: 650; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .rectag { font-family: var(--mono); font-size: 9.5px; font-weight: 600; color: var(--good); background: var(--good-bg); border: 1px solid rgba(26,127,55,0.25); border-radius: 6px; padding: 2px 7px; }
+  .opt .osvc { font-family: var(--mono); font-size: 11.5px; color: var(--aws); margin: 4px 0 9px; }
+  .opt p { margin: 0; font-size: 13.4px; color: var(--muted); line-height: 1.5; }
+  .opt .pm { margin-top: 9px; font-family: var(--mono); font-size: 11px; }
+  .opt .pm .up { color: var(--good); } .opt .pm .dn { color: var(--crit); }
+
+  /* phases */
+  .phase { border: 1px solid var(--hairline); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+  .phase .ph { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 3px; }
+  .phase .pn { font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: #fff; background: var(--aws); border-radius: 6px; padding: 2px 8px; }
+  .phase .pt { font-weight: 650; font-size: 16px; }
+  .phase .pw { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; }
+  .phase .pd { color: var(--muted); font-size: 13.4px; margin: 4px 0 0; }
+  .phase ul { margin: 10px 0 0; padding: 0; list-style: none; }
+  .phase li { padding: 7px 0; border-top: 1px solid var(--hairline-soft); display: flex; gap: 9px; align-items: baseline; font-size: 13.6px; }
+  .phase li .k { color: var(--aws); flex: 0 0 auto; font-family: var(--mono); font-size: 12px; }
+  .phase li b { font-weight: 600; }
+  .m { font-family: var(--mono); font-size: 0.87em; background: var(--panel); border: 1px solid var(--hairline-soft); border-radius: 5px; padding: 0 5px; }
+  .svcx { font-family: var(--mono); font-size: 0.87em; color: var(--aws); font-weight: 600; }
+
+  footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--hairline); font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.8; }
+</style>
+
+<div class="nav"><div class="in">
+  <span class="bd">RackTrack → AWS</span>
+  <a href="#why">Why</a><a href="#map">Service map</a><a href="#ai">The AI pipeline</a><a href="#roadmap">Roadmap</a><a href="#cost">Cost</a><a href="#honest">Trade-offs</a>
+</div></div>
+
+<div class="wrap">
+
+  <section id="why" class="hero">
+    <p class="kicker">Cloud migration plan · august 2026</p>
+    <h1>Moving RackTrack to AWS</h1>
+    <p class="sub">A plan to move RackTrack off its single hand-managed server and onto Amazon Web Services.
+      The key insight: <b>this migration is not a separate project — it is how you deliver the "operations" and
+      "data safety" gaps from the audit, done properly.</b> The database, backups, monitoring, staging, safe deploys
+      and scaling we flagged as missing are exactly what a real cloud setup provides.</p>
+
+    <div class="tiles">
+      <div class="tile"><div class="n">1 → many</div><div class="l">one fragile server becomes a resilient, multi-zone setup</div></div>
+      <div class="tile"><div class="n">0 → daily</div><div class="l">no backups today → automatic backups you can restore</div></div>
+      <div class="tile"><div class="n">by hand → 1-click</div><div class="l">manual file-copy deploys → automatic, with rollback</div></div>
+      <div class="tile"><div class="n">~6–10 wk</div><div class="l">realistic migration effort, phased so nothing breaks</div></div>
+    </div>
+
+    <div class="callout aws"><b>What "complete cloud on AWS" buys you:</b> the app stops depending on one machine, data
+      is stored safely and backed up automatically, it scales up when many technicians scan at once, you get alerted the
+      moment anything breaks, and — importantly — it lays the groundwork for the <b>SOC 2 / ISO certificates</b> enterprise
+      buyers ask for, because AWS provides the compliance building blocks.</div>
+  </section>
+
+  <!-- SERVICE MAP -->
+  <section id="map">
+    <p class="seclabel">Part 1 · the translation</p>
+    <h2>What each piece becomes on AWS</h2>
+    <p class="lede">Every part of RackTrack today maps to a managed AWS service that removes a specific weakness. The
+      right-hand column shows exactly which audit gap each move closes.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Today</th><th>The problem</th><th>On AWS</th><th>Closes gap</th></tr></thead>
+      <tbody>
+        <tr><td><b>The API server</b><span class="sub2">Node/Express on one VPS</span></td><td>Single point of failure; if it dies, RackTrack is down.</td><td><span class="svc">ECS Fargate</span> behind an <span class="svc">Application Load Balancer</span>, across 2 zones<span class="sub2">containers that heal &amp; scale themselves</span></td><td class="fix">✓ no SPOF</td></tr>
+        <tr><td><b>Account data</b><span class="sub2">SQLite file on disk</span></td><td>No safety, no backups; two-step saves can lose data on a crash.</td><td><span class="svc">RDS for PostgreSQL</span> (Multi-AZ)<span class="sub2">real database, automatic failover</span></td><td class="fix">✓ data safety</td></tr>
+        <tr><td><b>Scan images</b><span class="sub2">folders on the server disk</span></td><td>Lost forever if the disk dies; can't scale.</td><td><span class="svc">Amazon S3</span> (versioned + lifecycle rules)<span class="sub2">durable object storage, 11-nines</span></td><td class="fix">✓ backups</td></tr>
+        <tr><td><b>The AI pipeline</b><span class="sub2">Python + PyTorch, GPU-heavy</span></td><td>Ties up the one server; no way to scale a burst of scans.</td><td>Queue + GPU workers — see <a href="#ai" style="color:var(--aws)">Part 2</a><span class="sub2"><span class="svc">SQS</span> + <span class="svc">SageMaker</span> / GPU <span class="svc">ECS</span></span></td><td class="fix">✓ scale</td></tr>
+        <tr><td><b>The web app</b><span class="sub2">React, served by the VPS</span></td><td>Slower, and load on the same server.</td><td><span class="svc">S3</span> + <span class="svc">CloudFront</span> (global CDN)<span class="sub2">fast static hosting worldwide</span></td><td class="fix">✓ speed</td></tr>
+        <tr><td><b>Deploys</b><span class="sub2">rsync by hand, no undo</span></td><td>No test environment; a bad deploy stays live.</td><td><span class="svc">CodePipeline</span> + <span class="svc">CodeBuild</span> + <span class="svc">ECR</span>, blue/green via <span class="svc">CodeDeploy</span><span class="sub2">automatic deploy with one-click rollback</span></td><td class="fix">✓ safe deploy</td></tr>
+        <tr><td><b>Monitoring</b><span class="sub2">none — testers report outages</span></td><td>Nobody knows when it breaks.</td><td><span class="svc">CloudWatch</span> logs/metrics/alarms + <span class="svc">SNS</span> alerts<span class="sub2">phone alert within a minute</span></td><td class="fix">✓ alerts</td></tr>
+        <tr><td><b>Secrets</b><span class="sub2">.env files on disk</span></td><td>Keys sit in plain files.</td><td><span class="svc">Secrets Manager</span> / <span class="svc">SSM Parameter Store</span><span class="sub2">encrypted, rotated, access-controlled</span></td><td class="fix">✓ security</td></tr>
+        <tr><td><b>Logins</b><span class="sub2">custom JWT, token in browser storage</span></td><td>No company sign-in; token is script-readable.</td><td><span class="svc">Amazon Cognito</span><span class="sub2">gives SSO / Microsoft login + secure sessions</span></td><td class="fix">✓ SSO path</td></tr>
+        <tr><td><b>DNS &amp; TLS</b><span class="sub2">manual</span></td><td>Hand-managed certificates.</td><td><span class="svc">Route 53</span> + <span class="svc">ACM</span> (free auto-renewed TLS) + <span class="svc">WAF</span><span class="sub2">managed DNS, certs, and a firewall</span></td><td class="fix">✓ hardening</td></tr>
+        <tr><td><b>Email</b><span class="sub2">SMTP / Microsoft Graph</span></td><td>—</td><td><span class="svc">Amazon SES</span> (or keep Graph)<span class="sub2">reliable transactional email</span></td><td class="fix">—</td></tr>
+        <tr><td><b>Stripe payments</b></td><td>Already fine.</td><td>Unchanged — stays with Stripe.</td><td class="fix">—</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout info"><b>One rule from day one:</b> define all of this as <b>Infrastructure-as-Code</b>
+      (<span class="svc">Terraform</span> or AWS <span class="svc">CDK</span>) rather than clicking in the console. It makes
+      the whole setup repeatable, reviewable, and — bonus — closes the "infrastructure scan" item from the audit and speeds up SOC 2.</div>
+  </section>
+
+  <!-- THE AI PIPELINE -->
+  <section id="ai">
+    <p class="seclabel">Part 2 · the one genuinely AWS-specific decision</p>
+    <h2>Where the AI computer-vision runs</h2>
+    <p class="lede">The AI scan (PyTorch + YOLO) is the heaviest, most expensive thing RackTrack does, and it wants a
+      GPU. It is also <b>bursty</b> — busy when technicians scan, idle otherwise. That combination drives the single
+      most important cost decision in the whole migration. Three options:</p>
+    <div class="opts">
+      <div class="opt rec"><div class="ot">Async queue + auto-scaling workers <span class="rectag">RECOMMENDED</span></div>
+        <div class="osvc">SQS → SageMaker Async / GPU ECS · scale-to-zero</div>
+        <p>A scan drops a job on a queue; GPU workers spin up to process it and <b>shut down when idle</b>. You pay for
+          GPU only while actually scanning — ideal for bursty use. Best cost-to-capability fit for RackTrack.</p>
+        <div class="pm"><span class="up">+ cheapest for bursty load, scales to zero</span><br><span class="dn">− scans are processed a moment after upload, not instantly</span></div>
+      </div>
+      <div class="opt"><div class="ot">Always-on GPU endpoint</div>
+        <div class="osvc">SageMaker real-time / g4dn ECS</div>
+        <p>A GPU server always running, ready to answer instantly. Simplest mental model and lowest latency, but you pay
+          for the GPU 24/7 even when nobody is scanning.</p>
+        <div class="pm"><span class="up">+ instant results, simple</span><br><span class="dn">− expensive (GPU billed around the clock)</span></div>
+      </div>
+      <div class="opt"><div class="ot">CPU-only, no GPU</div>
+        <div class="osvc">Fargate CPU workers</div>
+        <p>Run inference on ordinary CPU. Cheapest to run and simplest, but each scan is much slower. Fine to <em>start</em>
+          with while volumes are tiny; revisit once scan volume grows.</p>
+        <div class="pm"><span class="up">+ cheapest, simplest to launch</span><br><span class="dn">− slow per scan; won't hold up at volume</span></div>
+      </div>
+    </div>
+    <div class="callout aws"><b>Recommendation:</b> start <b>CPU-only</b> if scan volume is still small (cheapest, fastest to
+      launch), and design the queue so you can swap in <b>GPU auto-scaling workers</b> later without rearchitecting. The
+      async-queue shape is the right foundation either way — it also stops a burst of scans from ever taking the app down.</div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section id="roadmap">
+    <p class="seclabel">Part 3 · the migration, phased so nothing breaks</p>
+    <h2>The roadmap</h2>
+    <p class="lede">Move in stages, each shippable on its own, lowest-risk first. The app keeps running throughout — you
+      switch pieces over one at a time, not in a big-bang cutover.</p>
+
+    <div class="phase"><div class="ph"><span class="pn">STAGE A</span><span class="pt">Foundation</span><span class="pw">~1 week</span></div>
+      <p class="pd">Set up the AWS account safely before moving anything.</p>
+      <ul>
+        <li><span class="k">▸</span><span>AWS account structure, <span class="svcx">IAM</span> roles, billing alarms, and a private network (<span class="svcx">VPC</span> across 2 zones).</span></li>
+        <li><span class="k">▸</span><span>Pick <b>Terraform</b> or <b>CDK</b> and define everything as code from the start.</span></li>
+        <li><span class="k">▸</span><span>Container registry (<span class="svcx">ECR</span>) and <span class="svcx">Secrets Manager</span> for keys.</span></li>
+      </ul></div>
+
+    <div class="phase"><div class="ph"><span class="pn">STAGE B</span><span class="pt">Move the stateless parts</span><span class="pw">~1–2 weeks</span></div>
+      <p class="pd">Lift the pieces that hold no data — lowest risk, immediate resilience win.</p>
+      <ul>
+        <li><span class="k">▸</span><span>API server → <span class="svcx">ECS Fargate</span> behind a load balancer.</span></li>
+        <li><span class="k">▸</span><span>Web app → <span class="svcx">S3</span> + <span class="svcx">CloudFront</span>; DNS &amp; TLS via <span class="svcx">Route 53</span> + <span class="svcx">ACM</span>.</span></li>
+        <li><span class="k">▸</span><span>Run it side-by-side with the old server; cut traffic over only when green.</span></li>
+      </ul></div>
+
+    <div class="phase"><div class="ph"><span class="pn">STAGE C</span><span class="pt">Move the data — the big safety win</span><span class="pw">~2–3 weeks</span></div>
+      <p class="pd">This is the highest-value stage: it ends the "no backups / a crash can lose data" risk for good.</p>
+      <ul>
+        <li><span class="k">▸</span><span>Migrate <span class="svcx">SQLite</span> → <span class="svcx">RDS PostgreSQL</span>; rewrite the scan save so images + owner commit as <b>one atomic action</b>.</span></li>
+        <li><span class="k">▸</span><span>Move scan folders → <span class="svcx">S3</span> (versioned).</span></li>
+        <li><span class="k">▸</span><span>Turn on automatic backups + point-in-time restore, and <b>do one practice restore</b>.</span></li>
+      </ul></div>
+
+    <div class="phase"><div class="ph"><span class="pn">STAGE D</span><span class="pt">The AI pipeline</span><span class="pw">~1–2 weeks</span></div>
+      <p class="pd">Move computer-vision to the queue-based design from Part 2.</p>
+      <ul>
+        <li><span class="k">▸</span><span>Scans post a job to <span class="svcx">SQS</span>; workers process and write results back.</span></li>
+        <li><span class="k">▸</span><span>Start CPU-only or GPU auto-scaling per the volume decision.</span></li>
+      </ul></div>
+
+    <div class="phase"><div class="ph"><span class="pn">STAGE E</span><span class="pt">Pipeline, monitoring &amp; staging</span><span class="pw">~1 week</span></div>
+      <p class="pd">The automation and eyes-on that make it operable — this is Phase 2 of the enterprise plan.</p>
+      <ul>
+        <li><span class="k">▸</span><span>Automatic deploys (<span class="svcx">CodePipeline</span>) with one-click rollback + a <b>staging environment</b>.</span></li>
+        <li><span class="k">▸</span><span><span class="svcx">CloudWatch</span> dashboards, alarms → phone alerts; error tracking.</span></li>
+      </ul></div>
+
+    <div class="phase"><div class="ph"><span class="pn">STAGE F</span><span class="pt">Harden &amp; optimise</span><span class="pw">~1–2 weeks</span></div>
+      <p class="pd">Security, cost control, and the enterprise-login groundwork.</p>
+      <ul>
+        <li><span class="k">▸</span><span><span class="svcx">WAF</span> firewall, <span class="svcx">Cognito</span> for company sign-in (SSO), container image scanning.</span></li>
+        <li><span class="k">▸</span><span>Right-size compute, set budgets/alerts, and (later) an EU region for data-residency customers.</span></li>
+      </ul></div>
+  </section>
+
+  <!-- COST -->
+  <section id="cost">
+    <p class="seclabel">Part 4 · what it costs</p>
+    <h2>Rough monthly cost — honest ranges</h2>
+    <p class="lede">Real numbers depend on traffic and especially on the GPU decision, but here's an honest order-of-magnitude
+      so there are no surprises. These are running costs; the migration effort itself is engineering time.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Setup</th><th>What it includes</th><th>Rough monthly</th></tr></thead>
+      <tbody>
+        <tr><td><b>Lean start</b><span class="sub2">pilot / few testers</span></td><td>Small Fargate API, small RDS, S3 + CloudFront, CPU inference, CloudWatch</td><td class="svc">~$150–400</td></tr>
+        <tr><td><b>Production, no GPU</b><span class="sub2">real customers, CPU AI</span></td><td>Multi-AZ RDS, redundant API, staging, WAF, backups, monitoring</td><td class="svc">~$500–1,200</td></tr>
+        <tr><td><b>Production + GPU on demand</b><span class="sub2">busy scanning</span></td><td>Above, plus GPU workers that scale to zero when idle</td><td class="svc">~$900–2,500+</td></tr>
+        <tr><td><b>Always-on GPU</b><span class="sub2">instant scans, 24/7 GPU</span></td><td>Above, but the GPU never sleeps</td><td class="svc">~$1,500–4,000+</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout info"><b>Cost-control notes:</b> the GPU is the swing factor — keep it scale-to-zero. AWS credits for
+      startups (via Activate) can cover much of the first year. Set billing alarms in Stage A so cost never surprises you.</div>
+  </section>
+
+  <!-- HONEST -->
+  <section id="honest">
+    <p class="seclabel">Part 5 · the honest trade-offs</p>
+    <h2>What to weigh before committing</h2>
+    <p class="body"><b>AWS is powerful but not free or simple.</b> It adds real monthly cost, and it adds complexity — it
+      genuinely needs someone comfortable with AWS, or a deliberately simple subset, or you trade "one server to babysit"
+      for "twenty services to understand." Go in with eyes open.</p>
+    <p class="body"><b>You don't have to use everything at once.</b> The single biggest wins — a real database, backups,
+      and getting off one fragile machine — come from just <span class="svcx">RDS</span> + <span class="svcx">S3</span> +
+      <span class="svcx">ECS/Fargate</span>. A lean start (or even the simpler <span class="svcx">App Runner</span> instead
+      of full ECS) captures 80% of the value for a fraction of the complexity. Add <span class="svcx">Cognito</span>, WAF,
+      GPU auto-scaling and the rest as real need appears.</p>
+    <p class="body"><b>This is the operations plan, cloud-native.</b> Stages C and E here <em>are</em> Phases 2 and 3 of the
+      enterprise roadmap (database + backups, monitoring, staging, safe deploys, SSO). So this isn't extra work on top —
+      it's the same work, done on infrastructure that scales and that auditors already trust.</p>
+    <p class="body"><b>It makes later compliance easier, not automatic.</b> AWS gives you the building blocks and its own
+      certifications to inherit from, which shortens your SOC 2 / ISO path — but the certificate is still your program to run.</p>
+
+    <div class="callout go"><b>My recommendation:</b> do <b>Phase 1 of the enterprise plan first</b> (the quick wins,
+      tomorrow's work), then run this AWS migration as <b>Stages A–C</b> to get the database, backups and resilience —
+      that's the ~4-week core that removes the scariest risks. Treat GPU, SSO, and the rest as follow-ons. When you're
+      ready, I can turn any stage here into a concrete task list — the Terraform to write, the files to change, in order.</div>
+  </section>
+
+  <footer>RackTrack → AWS migration plan · august 2026 · maps the current single-VPS setup (Node API · SQLite + disk ·
+    Python/PyTorch CV · Stripe) to managed AWS services · aligns with the enterprise-readiness roadmap (Phases 2–3) ·
+    cost ranges are order-of-magnitude estimates, not quotes.</footer>
+</div>
+
+</body></html>

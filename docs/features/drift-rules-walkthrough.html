@@ -1,0 +1,98 @@
+<!-- Published copy of the claude.ai artifact "Drift Approval Rules, Enforced" | https://claude.ai/artifact/LDrRnxTRbQSh13k1p2WXFt | artifact last updated 2026-09-17 | saved 2026-09-17 | images in drift-rules-walkthrough/img/ -->
+<title>Drift Approval Rules, Enforced</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--ground:#fff;--surface:#f6f7fa;--hair:#e3e7ee;--ink:#14181f;--ink-2:#4b5563;--ink-3:#79838f;--ok:#2b7350;--ok-bg:#ecf5f0;--admin:#a8710f;--frame:#1b1f26;--db:#3a51a0;--db-bg:#eef1fa;
+--display:'Newsreader',Georgia,serif;--sans:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.shell{padding:0 clamp(20px,4vw,64px);padding-block:56px 96px}
+.brand{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 18px}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(2.2rem,4.4vw,3.4rem);line-height:1.02;letter-spacing:-.02em;margin:0 0 14px;max-width:16ch;text-wrap:balance}
+.stand{font-size:1.08rem;color:var(--ink-2);max-width:64ch;margin:0}
+.notice{margin:26px 0 0;border-left:3px solid var(--db);background:var(--db-bg);border-radius:0 10px 10px 0;padding:14px 20px;max-width:80ch;color:var(--ink-2)}
+.notice b{color:var(--ink)}
+section{margin:64px 0 0}
+.sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:1.5px solid var(--ink);padding-bottom:12px;margin-bottom:10px;flex-wrap:wrap}
+.sec-no{font-family:var(--mono);font-size:.76rem;color:var(--ink-3)}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(1.5rem,2.4vw,2rem);letter-spacing:-.015em;margin:0}
+.lede{color:var(--ink-2);max-width:68ch;margin:0 0 20px}
+.rules{list-style:none;margin:16px 0 0;padding:0;border-top:1.5px solid var(--ink)}
+.rules li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;padding:14px 0;border-bottom:1px solid var(--hair)}
+.rules li b{font-family:var(--mono);font-size:.76rem;color:var(--ink-3);padding-top:.3em}
+.rules h4{font-family:var(--display);font-weight:500;font-size:1.15rem;margin:0 0 4px}
+.rules p{margin:0 0 4px;color:var(--ink-2);max-width:74ch}
+.rules .was{font-size:.9rem;color:var(--ink-3)}
+.stack{display:flex;flex-direction:column;gap:40px;margin-top:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:28px 24px;margin-top:16px}
+figure{margin:0}
+figcaption{display:flex;flex-direction:column;gap:2px}
+figcaption b{font-weight:600;font-size:.98rem}
+figcaption span{font-size:.92rem;color:var(--ink-2);line-height:1.5}
+.ph figcaption{margin-top:12px}
+.phone{border:6px solid var(--frame);border-radius:30px;background:var(--frame);overflow:hidden;aspect-ratio:390/844;max-width:100%}
+.phone img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;border-radius:24px}
+.br figcaption{margin-bottom:12px}
+.browser{border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--surface);box-shadow:0 1px 2px rgba(20,24,31,.05)}
+.bar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--hair);background:#eef1f5}
+.bar i{width:9px;height:9px;border-radius:50%;background:#cfd5de;display:block}
+.bar em{font-style:normal;font-family:var(--mono);font-size:.7rem;color:var(--ink-3);margin-left:10px;background:var(--ground);border:1px solid var(--hair);border-radius:6px;padding:2px 10px}
+.browser img{display:block;width:100%;height:auto}
+.tscroll{overflow-x:auto;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:.94rem}
+th{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:0 14px 8px 0;border-bottom:1.5px solid var(--ink);font-weight:500}
+td{padding:9px 14px 9px 0;border-top:1px solid var(--hair);vertical-align:top;color:var(--ink-2);line-height:1.5}
+td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
+.pass{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ok);background:var(--ok-bg);border-radius:6px;padding:3px 9px;white-space:nowrap}
+.closing{margin-top:64px;padding-top:24px;border-top:1px solid var(--hair);color:var(--ink-2);max-width:74ch}
+code{font-family:var(--mono);font-size:.82rem;color:var(--ink);background:var(--surface);border:1px solid var(--hair);border-radius:4px;padding:1px 6px}
+</style>
+<div class="shell">
+<p class="brand">RackTrack &middot; live on demo and portal &middot; 17 September 2026</p>
+<h1>The drift approval rules, now enforced</h1>
+<p class="stand">Phase 0.5 of the plan against the manager's specification: the code now keeps the six rules we froze on 11 September, on the server and in every screen. This page shows what changed and how it looks. The rest of the specification waits for the discussion with the manager.</p>
+<div class="notice"><b>Nothing new was invented.</b> Every change below makes the product do what the frozen workflow already said. Ticket SPRTMS-1684.</div>
+
+<section>
+<div class="sec-head"><span class="sec-no">01</span><h2>The eight changes</h2></div>
+<ol class="rules">
+<li><b>01</b><div><h4>Assign before decide</h4><p>The server refuses an approve or reject on any item whose ticket is not resolved. The portal hid the buttons; the phone app did not; the API never checked. Now all three agree.</p><p class=was>Refused with &quot;assign first&quot; in the response and beside the item on screen.</p></div></li><li><b>02</b><div><h4>A failed write is not a success</h4><p>When NetBox refuses any object, the plan becomes &quot;write failed&quot; instead of &quot;applied&quot;. The failed objects are named, the admin who ran it gets an email, and &quot;Try the write again&quot; retries under the same fingerprint check.</p><p class=was>Before: the plan showed as applied and nobody was told.</p></div></li><li><b>03</b><div><h4>Every step in the audit log</h4><p>Submit, assign, ticket raised, resolve, decide and write each write a row to the audit table with who, when and what.</p><p class=was>Before: none of them did; the only history was inside the plan file.</p></div></li><li><b>04</b><div><h4>Technicians can run the check</h4><p>A member can adopt a scan, compare it with NetBox, read their own plans and contacts, and send to the admin. Decide, write, resolve and the ticket list answer 403.</p><p class=was>Before: every drift route needed a site manager, so a technician could not run the check at all.</p></div></li><li><b>05</b><div><h4>Own checks only</h4><p>The plan list takes mine=1 and forces it for members; My checks shows the caller&#x27;s own work.</p><p class=was>Before: it listed the whole organization.</p></div></li><li><b>06</b><div><h4>The ticket list is gated on the server</h4><p>GET /api/nb/plans/tickets/all is admin-only on the server, not only hidden in the portal menu.</p></div></li><li><b>07</b><div><h4>The assignee is a person, not a name</h4><p>The ticket stores the NetBox contact id and email beside the name. A name matching no contact, or more than one, is refused.</p><p class=was>Before: two people with the same name would collide.</p></div></li><li><b>08</b><div><h4>Two dead controls now work</h4><p>&quot;Assign the whole rack&quot; raises one incident per pending item. &quot;Ports follow this device&quot; shows the real ports under their device and hides when there are none.</p><p class=was>Before: both were drawn but the server ignored them.</p></div></li>
+</ol>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">02</span><h2>How it looks in the portal</h2></div>
+<p class="lede">Driven headless against a stub of the server contract, at laptop width. The values are test data; the behaviour is the built code.</p>
+<div class="stack">
+<figure class="br"><figcaption><b>The approvals inbox</b><span>Submitted plans wait here. A plan whose write failed is marked in red and opens like any other.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai/approvals</em></div><img src="drift-rules-walkthrough/img/01-inbox-1440.jpg" alt="The approvals inbox" loading="lazy"></div></figure><figure class="br"><figcaption><b>A plan, ports folded under their device</b><span>The device row carries &quot;3 ports follow this device&quot;. The ports are shown under it, not as separate decisions.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai/approvals</em></div><img src="drift-rules-walkthrough/img/02-plan-1440.jpg" alt="A plan, ports folded under their device" loading="lazy"></div></figure><figure class="br"><figcaption><b>Approve before assign, refused</b><span>The admin pressed Approve on an item nobody was assigned to. The server answered &quot;assign first&quot; and the message sits beside the item. Approve is gone until the ticket is resolved.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai/approvals</em></div><img src="drift-rules-walkthrough/img/03-refused-beside-item-1440.jpg" alt="Approve before assign, refused" loading="lazy"></div></figure><figure class="br"><figcaption><b>Assign the whole rack</b><span>One dialog for every pending item: the NetBox contact by default, or another person.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai/approvals</em></div><img src="drift-rules-walkthrough/img/04-rack-assign-modal-1440.jpg" alt="Assign the whole rack" loading="lazy"></div></figure><figure class="br"><figcaption><b>After the whole-rack assign</b><span>One ServiceNow incident per item, one email to the assignee. The toast names the incidents.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai/approvals</em></div><img src="drift-rules-walkthrough/img/05-after-rack-assign-1440.jpg" alt="After the whole-rack assign" loading="lazy"></div></figure><figure class="br"><figcaption><b>A write that failed</b><span>NetBox refused one object. The plan says &quot;Write failed&quot;, names the object and the reason, and offers &quot;Try the write again&quot;. Nothing else changed.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai/approvals</em></div><img src="drift-rules-walkthrough/img/06-write-failed-1440.jpg" alt="A write that failed" loading="lazy"></div></figure><figure class="br"><figcaption><b>After the retry</b><span>The retried write went through under the same fingerprint check; the plan is applied.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai/approvals</em></div><img src="drift-rules-walkthrough/img/07-after-retry-1440.jpg" alt="After the retry" loading="lazy"></div></figure><figure class="br"><figcaption><b>Incidents, drift tab</b><span>Every drift ticket with the assignee and their email, the ticket state, and whether the record was written.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai/approvals</em></div><img src="drift-rules-walkthrough/img/08-incidents-drift-1440.jpg" alt="Incidents, drift tab" loading="lazy"></div></figure><figure class="br"><figcaption><b>My checks</b><span>The technician sees only their own checks, read-only, including a write that failed.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>portal.racktrack.ai/approvals</em></div><img src="drift-rules-walkthrough/img/09-my-checks-write-failed-1440.jpg" alt="My checks" loading="lazy"></div></figure>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">03</span><h2>The same at phone width</h2></div>
+<div class="grid">
+<figure class="ph"><div class="phone"><img src="drift-rules-walkthrough/img/01-inbox-390.jpg" alt="The approvals inbox" loading="lazy"></div><figcaption><b>The approvals inbox</b><span>Submitted plans wait here. A plan whose write failed is marked in red and opens like any other.</span></figcaption></figure><figure class="ph"><div class="phone"><img src="drift-rules-walkthrough/img/02-plan-390.jpg" alt="A plan, ports folded under their device" loading="lazy"></div><figcaption><b>A plan, ports folded under their device</b><span>The device row carries &quot;3 ports follow this device&quot;. The ports are shown under it, not as separate decisions.</span></figcaption></figure><figure class="ph"><div class="phone"><img src="drift-rules-walkthrough/img/03-refused-beside-item-390.jpg" alt="Approve before assign, refused" loading="lazy"></div><figcaption><b>Approve before assign, refused</b><span>The admin pressed Approve on an item nobody was assigned to. The server answered &quot;assign first&quot; and the message sits beside the item. Approve is gone until the ticket is resolved.</span></figcaption></figure><figure class="ph"><div class="phone"><img src="drift-rules-walkthrough/img/04-rack-assign-modal-390.jpg" alt="Assign the whole rack" loading="lazy"></div><figcaption><b>Assign the whole rack</b><span>One dialog for every pending item: the NetBox contact by default, or another person.</span></figcaption></figure><figure class="ph"><div class="phone"><img src="drift-rules-walkthrough/img/05-after-rack-assign-390.jpg" alt="After the whole-rack assign" loading="lazy"></div><figcaption><b>After the whole-rack assign</b><span>One ServiceNow incident per item, one email to the assignee. The toast names the incidents.</span></figcaption></figure><figure class="ph"><div class="phone"><img src="drift-rules-walkthrough/img/06-write-failed-390.jpg" alt="A write that failed" loading="lazy"></div><figcaption><b>A write that failed</b><span>NetBox refused one object. The plan says &quot;Write failed&quot;, names the object and the reason, and offers &quot;Try the write again&quot;. Nothing else changed.</span></figcaption></figure><figure class="ph"><div class="phone"><img src="drift-rules-walkthrough/img/07-after-retry-390.jpg" alt="After the retry" loading="lazy"></div><figcaption><b>After the retry</b><span>The retried write went through under the same fingerprint check; the plan is applied.</span></figcaption></figure><figure class="ph"><div class="phone"><img src="drift-rules-walkthrough/img/08-incidents-drift-390.jpg" alt="Incidents, drift tab" loading="lazy"></div><figcaption><b>Incidents, drift tab</b><span>Every drift ticket with the assignee and their email, the ticket state, and whether the record was written.</span></figcaption></figure><figure class="ph"><div class="phone"><img src="drift-rules-walkthrough/img/09-my-checks-write-failed-390.jpg" alt="My checks" loading="lazy"></div><figcaption><b>My checks</b><span>The technician sees only their own checks, read-only, including a write that failed.</span></figcaption></figure>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">04</span><h2>Evidence</h2></div>
+<div class="tscroll"><table>
+<thead><tr><th>Check</th><th>Result</th><th></th></tr></thead>
+<tbody>
+<tr><td>Server suite</td><td>285 tests, 259 pass, 0 fail, 26 skipped. New rules test boots the app and checks each rule over HTTP, including a member getting 200 on the six allowed routes and 403 on decide, export and the ticket list.</td><td><span class="pass">pass</span></td></tr>
+<tr><td>Phone app</td><td>145 tests pass, 1 skipped; nine new tests on the approvals page, the inbox and the technician's drift page; build clean.</td><td><span class="pass">pass</span></td></tr>
+<tr><td>Portal</td><td>Lint 0 errors, build clean, driven at 1440 px and 390 px with no console or page errors.</td><td><span class="pass">pass</span></td></tr>
+<tr><td>Live, owner</td><td>demo.racktrack.ai: the plan list with mine=1, the ticket list and the write failed filter answer 200.</td><td><span class="pass">pass</span></td></tr>
+<tr><td>Live, technician</td><td>A new member meridian.tech in Hyderabad DC1: the plan list answers 200 with only their own plans; the ticket list, decide and export answer 403 with a plain message; adopt is allowed.</td><td><span class="pass">pass</span></td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">05</span><h2>What still waits for the manager</h2></div>
+<p class="lede">From the plan: moving plans from files into tables, the full status model and reason codes, the verification re-scan before approval, the approval bound to the payload with snapshots, SLA clocks and escalation, notifications beyond the two emails we send now, exceptions and duplicates, dashboards and reports, and the new roles. The plan and the decisions are at the link in the ticket.</p>
+</section>
+
+<div class="closing"><p>Nothing is committed yet; say the word. To try it: sign in on portal.racktrack.ai as an admin and press Approve on an unassigned item, or sign in on demo.racktrack.ai as <code>meridian.tech</code> to see what a technician can and cannot do.</p></div>
+</div>

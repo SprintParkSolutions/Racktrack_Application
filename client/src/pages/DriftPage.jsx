@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { BackIcon } from '../components/BackButton.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import { useSmartBack } from '../hooks/useSmartBack';
+import ExternalLink from '../components/ExternalLink.jsx';
+import { driftCheckUrl } from '../utils/approvals.js';
 import styles from './DriftPage.module.css';
 
 /**
@@ -17,6 +19,9 @@ import styles from './DriftPage.module.css';
  * next: which items an admin approved, which went out as tickets, which came
  * back, and whether the record was updated in the end. Somebody who walks a
  * rack deserves to know whether their work landed.
+ *
+ * The admin's side is not in this app. It is RackTrack Approvals, on the
+ * own address, and once a check is sent this page links to that check there.
  */
 
 const WORD = {
@@ -51,10 +56,23 @@ export default function DriftPage() {
   const [spoc, setSpoc] = useState(null);
   const [busy, setBusy] = useState('Checking this rack against NetBox');
   const [error, setError] = useState('');
+  const [needsSource, setNeedsSource] = useState(false);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
   const [name, setName] = useState('');   // the person's name for this rack
   const [nameSaved, setNameSaved] = useState('');
+
+  const navigate = useNavigate();
+  // Who may connect a record system: the owner and an organization admin. A
+  // technician is told who to ask instead. The role is read from the stored
+  // session rather than the auth context, so this page keeps working wherever
+  // it is mounted, and an unreadable store simply means "not an admin".
+  const canConnect = useMemo(() => {
+    try {
+      const role = JSON.parse(localStorage.getItem('rt_authUser') || '{}')?.role;
+      return role === 'owner' || role === 'org_admin';
+    } catch { return false; }
+  }, []);
 
   const items = plan?.items || [];
   const changed = useMemo(() => items.filter((i) => i.decidable), [items]);
@@ -66,6 +84,7 @@ export default function DriftPage() {
   const load = useCallback(async () => {
     setBusy('Checking this rack against NetBox');
     setError('');
+    setNeedsSource(false);
     try {
       const a = await authFetch(apiUrl(`/api/nb/scans/adopt/${encodeURIComponent(rackId)}`),
         { method: 'POST' });
@@ -74,7 +93,16 @@ export default function DriftPage() {
 
       const p = await authFetch(apiUrl(`/api/nb/netbox/${adopted.id}/preview`), { method: 'POST' });
       const report = await p.json();
-      if (!p.ok) throw new Error(report.error || 'Could not reach NetBox');
+      if (!p.ok) {
+        // No record system connected yet. That is not a failure of the check,
+        // it is a thing somebody has to set up, so say who and offer the way
+        // there rather than a red line the technician can do nothing about.
+        if (report.hint || /no netbox connection/i.test(String(report.error || ''))) {
+          setNeedsSource(true);
+          return;
+        }
+        throw new Error(report.error || 'Could not reach NetBox');
+      }
 
       const full = await authFetch(apiUrl(`/api/nb/plans/${report.planId}`));
       const body = await full.json();
@@ -130,6 +158,12 @@ export default function DriftPage() {
   }
 
   const applied = plan?.status === 'applied';
+  // The same check, in RackTrack Approvals. Offered only once it has been sent.
+  const track = plan ? (
+    <ExternalLink className={styles.track} href={driftCheckUrl(plan.id)}>
+      Track this check
+    </ExternalLink>
+  ) : null;
 
   return (
     <div className={styles.page}>
@@ -159,6 +193,28 @@ export default function DriftPage() {
       </div>
 
       {busy && <p className={styles.busy}>{busy}…</p>}
+
+      {needsSource && !busy && (
+        <div className={styles.needsSource}>
+          <h2>No record to check against yet</h2>
+          {canConnect ? (
+            <>
+              <p>
+                Connect NetBox or ServiceNow under Data sources, then run this check again.
+              </p>
+              <button type="button" className={styles.connect} onClick={() => navigate('/connections')}>
+                Go to Data sources
+              </button>
+            </>
+          ) : (
+            <p>
+              Ask your administrator to add NetBox or ServiceNow under Data sources.
+              The check works as soon as one is connected.
+            </p>
+          )}
+        </div>
+      )}
+
       {error && <p className={styles.error} role="alert">{error}</p>}
 
       {plan && !busy && (
@@ -205,6 +261,7 @@ export default function DriftPage() {
         <div className={styles.done}>
           <h2>The record has been updated</h2>
           <p>An admin approved this and wrote it to NetBox. Nothing more is needed from you.</p>
+          {track}
         </div>
       )}
 
@@ -221,6 +278,7 @@ export default function DriftPage() {
               {spoc.email ? ` (${spoc.email})` : ''}.
             </p>
           )}
+          {track}
         </div>
       )}
 

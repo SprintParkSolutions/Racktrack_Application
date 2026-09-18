@@ -1,0 +1,1690 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Cloud Migration" | https://claude.ai/code/artifact/2bd5e4a8-18b5-4fca-856a-9dc49745cb4f | artifact last updated 2026-08-26 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack Cloud Migration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root{
+    --paper:#F5F7F6; --surface:#FFFFFF; --surface-2:#FAFCFB;
+    --ink:#131917; --muted:#57635F; --faint:#87928E;
+    --rule:#DBE2DF; --rule-strong:#BFCAC6;
+    --accent:#0B5F6B; --accent-soft:#E3EFF1;
+    --pass:#2A6B3D; --pass-soft:#E7F1EA;
+    --warn:#8A5A00; --warn-soft:#F7EFDD;
+    --fail:#A3301D; --fail-soft:#F8E6E2;
+    --aws:#9A5410; --aws-soft:#FAF0E4;
+    --azure:#1B579E; --azure-soft:#E8F0FA;
+    --display:"Archivo",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --pad:clamp(16px,2.4vw,44px);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);
+    font-size:clamp(15.5px,1.02vw,17px);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{padding:0 var(--pad)}
+
+  h1,h2,h3,h4,.eyebrow,.chip,.stat .v,.k,th,.tab,.phase-k,.pill{font-family:var(--display)}
+  h1{font-size:clamp(30px,3.9vw,54px);line-height:1.04;letter-spacing:-.032em;font-weight:700;margin:0 0 16px;text-wrap:balance;max-width:22ch}
+  h2{font-size:clamp(22px,2.2vw,32px);line-height:1.12;letter-spacing:-.022em;font-weight:700;margin:0 0 8px;text-wrap:balance}
+  h3{font-size:clamp(17.5px,1.45vw,22px);line-height:1.22;letter-spacing:-.015em;font-weight:600;margin:0 0 10px;text-wrap:balance}
+  h4{font-size:clamp(15.5px,1.18vw,17.5px);line-height:1.32;font-weight:600;margin:0 0 8px}
+  p{margin:0 0 14px;max-width:none}
+  p:last-child{margin-bottom:0}
+  a{color:var(--accent)}
+  strong{font-weight:600}
+  ul,ol{margin:0 0 14px;padding-left:1.2em;max-width:none}
+  li{margin-bottom:7px}
+  li::marker{color:var(--faint)}
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+  .lead{font-size:clamp(16.5px,1.3vw,21px);line-height:1.5;max-width:none;margin:0 0 18px}
+  .sub{font-size:clamp(15px,1.08vw,17.5px);color:var(--muted);max-width:none;margin:0 0 14px}
+
+  /* ── tabs ───────────────────────────────────────────── */
+  header.top{padding:clamp(30px,3.6vw,54px) var(--pad) 0}
+  .tabbar{
+    position:sticky;top:0;z-index:30;background:rgba(245,247,246,.95);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--rule-strong);
+    padding:0 var(--pad);display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin;
+  }
+  .tab{
+    appearance:none;border:0;background:none;cursor:pointer;white-space:nowrap;
+    font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--muted);
+    padding:14px 15px 12px;border-bottom:2px solid transparent;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab .num{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-right:6px}
+  .tab[aria-selected="true"] .num{color:var(--accent)}
+  [role="tabpanel"]{padding:clamp(30px,3.6vw,56px) 0 clamp(50px,6vw,90px)}
+  [role="tabpanel"][hidden]{display:none}
+
+  /* ── blocks ─────────────────────────────────────────── */
+  .stats{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin:26px 0}
+  .stat{background:var(--surface);padding:16px 18px}
+  .stat .v{font-size:clamp(21px,2.2vw,30px);font-weight:700;letter-spacing:-.028em;line-height:1;font-variant-numeric:tabular-nums}
+  .stat .k{display:block;margin-top:7px;font-size:10.5px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+  .stat.good .v{color:var(--pass)} .stat.warn .v{color:var(--warn)} .stat.bad .v{color:var(--fail)}
+
+  .chip{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;padding:4px 9px;border-radius:2px;white-space:nowrap}
+  .chip.pass{color:var(--pass);background:var(--pass-soft);border:1px solid #C2DBCB}
+  .chip.warn{color:var(--warn);background:var(--warn-soft);border:1px solid #E4D2AA}
+  .chip.fail{color:var(--fail);background:var(--fail-soft);border:1px solid #EBC4BB}
+
+  pre{font-family:var(--mono);font-size:12.4px;line-height:1.68;background:var(--surface);
+    border:1px solid var(--rule);border-radius:2px;padding:14px 16px;overflow-x:auto;
+    margin:0 0 14px;color:#2A3634}
+  pre .c{color:#7C8783}
+  code{font-family:var(--mono);font-size:.87em;background:var(--accent-soft);padding:1.5px 5px;border-radius:2px;color:#0A4B55}
+  .cap{font-family:var(--display);font-size:10.5px;font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--faint);margin:0 0 7px}
+
+  .tw{overflow-x:auto;border:1px solid var(--rule);background:var(--surface);margin:0 0 16px}
+  table{border-collapse:collapse;width:100%;min-width:600px;font-size:14.6px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+  th{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--faint);background:var(--surface-2);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.6px;white-space:nowrap}
+  td.src{font-family:var(--mono);font-size:12.1px;color:var(--muted)}
+  td.r{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.8px;white-space:nowrap}
+
+  .note{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);
+    padding:15px 18px;border-radius:2px;margin:0 0 16px}
+  .note.warn{border-left-color:var(--warn)}
+  .note.fail{border-left-color:var(--fail)}
+  .note.good{border-left-color:var(--pass)}
+  .note p{font-size:.95em}
+
+  .card{border:1px solid var(--rule-strong);background:var(--surface);border-radius:2px;
+    padding:clamp(18px,2.2vw,30px);margin-bottom:18px}
+  .phase-k{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--accent)}
+  .card.aws{border-top:3px solid var(--aws)} .card.aws .phase-k{color:var(--aws)}
+  .card.azure{border-top:3px solid var(--azure)} .card.azure .phase-k{color:var(--azure)}
+
+  .cols{display:grid;gap:clamp(16px,2vw,34px);grid-template-columns:repeat(auto-fit,minmax(400px,1fr))}
+  /* Prose laid out in columns so full-bleed pages stay readable. */
+  .prose2{display:grid;gap:clamp(16px,2vw,40px);grid-template-columns:repeat(auto-fit,minmax(420px,1fr));align-items:start}
+  .prose2>*{margin:0}
+  .cols3{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-bottom:16px}
+  .cols3>div{background:var(--surface);padding:18px 20px}
+
+  /* numbered steps */
+  ol.steps{counter-reset:s;list-style:none;margin:20px 0 0;padding:0;max-width:none}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 26px 44px;
+    border-left:1px solid var(--rule);margin-left:12px;max-width:none}
+  ol.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+  ol.steps>li::before{content:counter(s);position:absolute;left:-12px;top:-2px;width:25px;height:25px;
+    display:flex;align-items:center;justify-content:center;background:var(--accent);
+    color:#fff;font-family:var(--display);font-size:11.5px;font-weight:700;border-radius:2px}
+  .aws-steps>li::before{background:var(--aws)}
+  .azure-steps>li::before{background:var(--azure)}
+  ol.steps>li>h4{margin-top:0}
+
+  .qa{margin:0 0 14px}
+  .qa .q{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+  .qa.check .q{color:var(--pass)}
+  .qa.trap .q{color:var(--fail)}
+  .qa p{margin:0}
+
+  dl.gloss{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:1px;
+    background:var(--rule);border:1px solid var(--rule);margin:0}
+  dl.gloss dt{background:var(--surface);padding:13px 15px;font-family:var(--display);
+    font-weight:600;font-size:14.5px}
+  dl.gloss dd{background:var(--surface);padding:13px 15px;margin:0;font-size:14.8px;color:var(--muted)}
+  dl.gloss{grid-template-columns:minmax(150px,240px) 1fr}
+  dl.gloss dd strong{color:var(--ink)}
+  @media(max-width:640px){
+    dl.gloss{grid-template-columns:1fr}
+    dl.gloss dt{padding-bottom:0;border:0}
+  }
+
+  /* ── action points ────────────────────────────────────────── */
+  .actions{border:1px solid var(--accent);border-top:3px solid var(--accent);
+    background:var(--surface);border-radius:2px;padding:clamp(16px,1.9vw,26px);margin:18px 0}
+  .actions>.cap{color:var(--accent);font-size:11px;margin-bottom:12px}
+  ol.ap{counter-reset:a;list-style:none;margin:0;padding:0;display:grid;gap:10px;
+    grid-template-columns:repeat(auto-fit,minmax(400px,1fr))}
+  ol.ap>li{counter-increment:a;position:relative;padding:11px 14px 11px 42px;
+    background:var(--surface-2);border:1px solid var(--rule);border-radius:2px}
+  ol.ap>li::before{content:"AP" counter(a);position:absolute;left:10px;top:11px;
+    font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent)}
+  ol.ap>li b{display:block;font-family:var(--display);font-weight:600;font-size:15px;margin-bottom:3px}
+  ol.ap>li span{font-size:14px;color:var(--muted)}
+  .meta{margin-top:7px;display:flex;flex-wrap:wrap;gap:6px}
+  .pill{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.03em;
+    padding:3px 7px;border-radius:2px;background:var(--accent-soft);color:#0A4B55;white-space:nowrap}
+  .pill.done{background:var(--pass-soft);color:var(--pass)}
+  .pill.block{background:var(--warn-soft);color:var(--warn)}
+  .pill.urgent{background:var(--fail-soft);color:var(--fail)}
+
+  /* ── built / status board ─────────────────────────────────── */
+  .board{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule)}
+  .board .row{display:grid;grid-template-columns:minmax(200px,1.3fr) 110px minmax(260px,2fr) minmax(180px,1fr);
+    gap:1px;background:var(--rule)}
+  .board .row>div{background:var(--surface);padding:13px 15px}
+  .board .row.hd>div{background:var(--surface-2);font-family:var(--display);font-size:10.5px;
+    font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .board .nm{font-family:var(--display);font-weight:600;font-size:15px}
+  .board .ev{font-size:14px;color:var(--muted)}
+  .board .nx{font-size:13.5px;color:var(--muted);font-family:var(--mono)}
+  @media(max-width:820px){
+    .board .row{grid-template-columns:1fr 1fr}
+    .board .row.hd{display:none}
+  }
+
+  footer{border-top:1px solid var(--rule-strong);padding:24px 0 44px;
+    font-family:var(--mono);font-size:11.8px;color:var(--faint)}
+  ::selection{background:var(--accent-soft)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<header class="top">
+  <p class="eyebrow">Migration plan · AWS and Azure · 26 August 2026</p>
+  <h1>Getting RackTrack out of one server</h1>
+  <p class="lead">
+    Written to be read by anyone, not just an engineer. Every claim comes from
+    <a href="https://claude.ai/code/artifact/44f9f633-f31c-4da6-9116-0b4d9820fa75">a test I actually ran</a>
+    against your real code, not from a brochure.
+  </p>
+</header>
+
+<div class="tabbar" role="tablist" aria-label="Migration plan sections">
+  <button class="tab" role="tab" id="t-start"  aria-controls="p-start"  aria-selected="true"><span class="num">01</span>Start here</button>
+  <button class="tab" role="tab" id="t-now"    aria-controls="p-now"    aria-selected="false"><span class="num">02</span>What you have</button>
+  <button class="tab" role="tab" id="t-block"  aria-controls="p-block"  aria-selected="false"><span class="num">03</span>The one big blocker</button>
+  <button class="tab" role="tab" id="t-built"  aria-controls="p-built"  aria-selected="false"><span class="num">04</span>Already built</button>
+  <button class="tab" role="tab" id="t-ap"     aria-controls="p-ap"     aria-selected="false"><span class="num">05</span>Action points</button>
+  <button class="tab" role="tab" id="t-first"  aria-controls="p-first"  aria-selected="false"><span class="num">06</span>Do this first</button>
+  <button class="tab" role="tab" id="t-aws"    aria-controls="p-aws"    aria-selected="false"><span class="num">07</span>AWS, step by step</button>
+  <button class="tab" role="tab" id="t-azure"  aria-controls="p-azure"  aria-selected="false"><span class="num">08</span>Azure, step by step</button>
+  <button class="tab" role="tab" id="t-code"   aria-controls="p-code"   aria-selected="false"><span class="num">09</span>The code work</button>
+  <button class="tab" role="tab" id="t-golive" aria-controls="p-golive" aria-selected="false"><span class="num">10</span>Go-live day</button>
+  <button class="tab" role="tab" id="t-money"  aria-controls="p-money"  aria-selected="false"><span class="num">11</span>Money &amp; decision</button>
+</div>
+
+<div class="wrap">
+
+<!-- ══════════════ 01 START HERE ══════════════ -->
+<div role="tabpanel" id="p-start" aria-labelledby="t-start">
+
+  <h2>The whole thing in one page</h2>
+  <p class="sub">If you read nothing else, read this tab.</p>
+
+<div class="prose2">
+  <h3 style="margin-top:26px">What "moving to the cloud" actually means here</h3>
+  <p>
+    Right now RackTrack lives on <strong>one rented computer</strong> in a data centre — the
+    Hostinger box behind <code>demo.racktrack.ai</code>. Everything is on that one machine: the
+    app, the customer accounts, every rack photo, every scan result. You update it by copying
+    files to it from this Mac by hand.
+  </p>
+  <p>
+    "Moving to the cloud" means renting that computer from Amazon or Microsoft instead — but
+    that alone changes nothing. The real prize is what those companies let you do
+    <em>afterwards</em>: take automatic backups, rebuild the whole thing from scratch in an
+    hour if it burns down, and eventually run <strong>several copies of the app at once</strong>
+    so it does not fall over when twenty technicians scan at the same time.
+  </p>
+
+  <h3 style="margin-top:30px">The honest answer to "is it possible?"</h3>
+  <p>
+    <strong>Yes — and I already proved the first part works.</strong> I took your actual app,
+    packed it into a sealed box the way a cloud platform requires, and ran it with nothing at
+    all coming from your Mac. It started in ten seconds and worked perfectly. I then deleted
+    the whole thing and rebuilt it — and every account and scan was still there.
+  </p>
+  <p>
+    <strong>But only as one copy.</strong> When I ran two copies side by side the way a cloud
+    platform normally would, half of every user's requests failed — while both copies cheerfully
+    reported that they were healthy. That is not a bug I introduced; it is what your app does
+    today, and fixing it is a real engineering project.
+  </p>
+
+  <div class="stats">
+    <div class="stat good"><div class="v">Works</div><span class="k">One copy in the cloud</span></div>
+    <div class="stat bad"><div class="v">50% fail</div><span class="k">Two copies, as-is</span></div>
+    <div class="stat warn"><div class="v">2–3 months</div><span class="k">To fix that properly</span></div>
+    <div class="stat"><div class="v">1 afternoon</div><span class="k">To fix backups today</span></div>
+  </div>
+
+</div>
+  <h3 style="margin-top:30px">Three projects, not one</h3>
+  <p>
+    The single most common way these migrations go wrong is treating this as one big job.
+    It is three, and they deliver value in this order.
+  </p>
+
+  <div class="cols3">
+    <div>
+      <span class="chip pass">A few days</span>
+      <h4 style="margin-top:12px">Step 0 — Tidy up</h4>
+      <p style="font-size:.94em;margin:0">
+        Housekeeping that has to happen whichever company you pick. Includes one
+        security problem you should fix this week regardless.
+      </p>
+    </div>
+    <div>
+      <span class="chip warn">1–2 weeks</span>
+      <h4 style="margin-top:12px">Step 1 — Make it safe</h4>
+      <p style="font-size:.94em;margin:0">
+        Automatic backups, and the ability to rebuild the server from written
+        instructions instead of memory. Fixes the "one dead disk and we lose
+        everything" problem. Does <em>not</em> make it faster or handle more users.
+      </p>
+    </div>
+    <div>
+      <span class="chip fail">2–3 months</span>
+      <h4 style="margin-top:12px">Step 2 — Make it scale</h4>
+      <p style="font-size:.94em;margin:0">
+        Rewriting how the app stores things so several copies can run at once.
+        This is the one that buys real reliability and burst capacity — and the
+        one that takes real developer time.
+      </p>
+    </div>
+  </div>
+
+  <div class="note good" style="margin-top:22px">
+    <p class="cap">If you do one thing this week</p>
+    <p>
+      Put a small tool called <strong>Litestream</strong> on the server you already have. It
+      copies every change in your database off the machine within seconds, to cheap cloud
+      storage. It needs <strong>no code changes</strong>, takes an afternoon, costs a few dollars
+      a month, and it removes the risk that one hardware failure erases every customer account
+      and scan you have. It does not depend on any other decision in this document.
+    </p>
+  </div>
+
+  <div class="actions">
+    <p class="cap">Action points from this tab</p>
+    <ol class="ap">
+      <li><b>AP1–AP4 · This week, no account needed</b><span>Fix the image, rotate the key, turn on continuous backups, practise a restore.</span>
+        <div class="meta"><span class="pill urgent">start now</span></div></li>
+      <li><b>AP5 · Choose AWS or Azure</b><span>The only decision that blocks progress. Everything else is ready for either.</span>
+        <div class="meta"><span class="pill block">yours to call</span></div></li>
+    </ol>
+  </div>
+
+  <h3 style="margin-top:32px">Words you will keep seeing</h3>
+  <p class="sub">Plain definitions, so nothing below is a guess.</p>
+  <dl class="gloss">
+    <dt>Server / instance / VM</dt>
+    <dd>A computer you rent by the hour. "VM" (virtual machine) just means it is a slice of a bigger physical machine. <strong>You have one today.</strong></dd>
+
+    <dt>Container / image</dt>
+    <dd>A sealed box holding your app plus everything it needs to run — correct Python version, libraries, the lot. The <strong>image</strong> is the sealed box; a <strong>container</strong> is one running copy of it. You already build these.</dd>
+
+    <dt>Replica</dt>
+    <dd>One running copy of your app. Today you run one. "Scaling out" means running several and sharing the work between them.</dd>
+
+    <dt>Load balancer</dt>
+    <dd>A receptionist sitting in front of your replicas, handing each visitor to whichever copy is free.</dd>
+
+    <dt>Database</dt>
+    <dd>Where accounts, racks and scan records are stored. Yours is <strong>SQLite</strong> — a single file on the server's disk, like a spreadsheet. The cloud alternative is <strong>PostgreSQL</strong>, a separate database <em>server</em> that many app copies can all talk to at once.</dd>
+
+    <dt>Object storage<br>(S3 / Blob)</dt>
+    <dd>Cheap, effectively unlimited file storage that is not attached to any one computer. Where your rack photos should eventually live.</dd>
+
+    <dt>Snapshot</dt>
+    <dd>A photograph of a disk, taken automatically each night, that you can restore from.</dd>
+
+    <dt>Infrastructure as code<br>(Terraform / Bicep)</dt>
+    <dd>Instead of clicking buttons on a website to build servers, you write down what you want in a file. Then rebuilding is running one command, not remembering forty steps.</dd>
+
+    <dt>Redis</dt>
+    <dd>A shared scratchpad that every copy of your app can read and write instantly. Needed once you have more than one copy.</dd>
+
+    <dt>Queue</dt>
+    <dd>A shared to-do list. A technician's upload drops a job on it; whichever scanning machine is free picks the job up. Stops uploads timing out during a rush.</dd>
+  </dl>
+</div>
+
+<!-- ══════════════ 02 WHAT YOU HAVE ══════════════ -->
+<div role="tabpanel" id="p-now" aria-labelledby="t-now" hidden>
+
+  <h2>What you have already, and what is missing</h2>
+  <p class="sub">
+    Every line below was checked against your actual code today — not assumed.
+    The short version: you are much further along than most people at this stage,
+    but in one specific area, and the gaps are in two others.
+  </p>
+
+  <div class="stats">
+    <div class="stat good"><div class="v">~80%</div><span class="k">App is cloud-ready</span></div>
+    <div class="stat warn"><div class="v">~25%</div><span class="k">Operations are ready</span></div>
+    <div class="stat bad"><div class="v">~10%</div><span class="k">Ready for multiple copies</span></div>
+  </div>
+
+  <h3 style="margin-top:28px">Area 1 — Is the app itself cloud-ready? <span class="chip pass" style="vertical-align:middle">Mostly yes</span></h3>
+  <p>
+    This is the part most teams underestimate and get wrong. You have essentially done it,
+    probably without framing it that way. A cloud platform needs to be able to start your app,
+    ask it if it is healthy, read its logs, and stop it politely. Yours does all of that.
+  </p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>What the cloud needs</th><th style="width:100px">You have it?</th><th>In plain terms</th></tr></thead>
+      <tbody>
+        <tr><td>App packed in a sealed box</td><td><span class="chip pass">Yes</span></td><td>Your <code>Dockerfile</code> builds one, and it runs as a restricted user rather than as administrator — which is the safe way.</td></tr>
+        <tr><td>A way to ask "are you alive?"</td><td><span class="chip pass">Yes</span></td><td><code>/healthz</code>. The platform pings this and restarts the app if it stops answering.</td></tr>
+        <tr><td>Performance numbers it can read</td><td><span class="chip pass">Yes</span></td><td><code>/metrics</code>. Nothing is currently collecting them, but the app already publishes them.</td></tr>
+        <tr><td>Machine-readable logs</td><td><span class="chip pass">Yes</span></td><td>Logs come out as structured data, with passwords and tokens automatically hidden.</td></tr>
+        <tr><td>Shuts down politely when asked</td><td><span class="chip pass">Yes</span></td><td>When told to stop, it finishes work in progress and closes switch connections cleanly instead of dying mid-scan.</td></tr>
+        <tr><td>Settings come from outside the app</td><td><span class="chip pass">Yes</span></td><td>180 settings are already read from the environment rather than hard-coded — so the same box works in test and in production.</td></tr>
+        <tr><td>Automated safety checks on every change</td><td><span class="chip pass">Yes</span></td><td>You already run leaked-secret scanning, vulnerability scanning, an ingredients list of every library, and two separate code security scanners. This is genuinely better than most companies your size.</td></tr>
+        <tr><td>Runs with nothing from your Mac</td><td><span class="chip pass">Proven</span></td><td>I tested exactly this. Started in 10 seconds, worked, and survived being deleted and rebuilt.</td></tr>
+        <tr><td>Keeps secrets out of the sealed box</td><td><span class="chip fail">No</span></td><td><strong>This one is broken.</strong> Every box built on this Mac contains your live user database and password-signing key. See "Do this first".</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:34px">Area 2 — Are your operations ready? <span class="chip fail" style="vertical-align:middle">Barely started</span></h3>
+  <p>
+    This is the gap that is actually dangerous <em>today</em>, before any talk of scaling.
+  </p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>What is needed</th><th style="width:100px">Status</th><th>What happens today</th></tr></thead>
+      <tbody>
+        <tr><td>Automatic backups</td><td><span class="chip fail">None</span></td><td><strong>If that one disk fails, every account and every scan is gone permanently.</strong> There is no copy anywhere else.</td></tr>
+        <tr><td>Written-down infrastructure</td><td><span class="chip fail">None</span></td><td>The server was set up by hand following a document. Rebuilding it means a person re-reading that document and hoping nothing was missed.</td></tr>
+        <tr><td>Automatic deployment</td><td><span class="chip fail">None</span></td><td>You copy files from this Mac and rebuild on the server manually. Easy to get wrong, and impossible to know afterwards exactly what shipped.</td></tr>
+        <tr><td>A test environment</td><td><span class="chip fail">None</span></td><td>Changes go straight onto the machine customers use. There is nowhere safe to try something first.</td></tr>
+        <tr><td>Alerts when it breaks</td><td><span class="chip fail">None</span></td><td>Nobody is told when the site goes down. You find out when someone complains.</td></tr>
+        <tr><td>Managed secrets</td><td><span class="chip warn">Partial</span></td><td>Passwords sit in a file on the server. It works, but they cannot be rotated or audited, and anyone with server access sees them all.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:34px">Area 3 — Can you run more than one copy? <span class="chip fail" style="vertical-align:middle">Not yet</span></h3>
+  <p>
+    Five things stop it. All five are fixable; none is a quick fix. Sizes below are counted
+    from your code, so you can judge the effort rather than trust an estimate.
+  </p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Blocker</th><th style="width:150px">How big</th><th>Why it stops you</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Database is a file on the disk</strong></td>
+          <td class="n">316 places<br>25 files · 3 databases</td>
+          <td>Each copy of the app would read its own separate file, so they would disagree about who exists. This is the big one.</td>
+        </tr>
+        <tr>
+          <td><strong>Scan photos on the local disk</strong></td>
+          <td class="n">234 file operations<br>55 references</td>
+          <td>A photo saved by copy A simply does not exist for copy B. Users would see images appear and vanish depending on which copy answered.</td>
+        </tr>
+        <tr>
+          <td><strong>Switch polling runs on every copy</strong></td>
+          <td class="n">every startup, hourly</td>
+          <td>Each copy logs into every customer switch on its own timer. Two copies means two sessions per switch, forever — a real problem for your customers' equipment, not just for you.</td>
+        </tr>
+        <tr>
+          <td><strong>Upload limits counted per copy</strong></td>
+          <td class="n">measured 2× over the limit</td>
+          <td>You set a limit of 20 uploads a minute; with two copies I measured 40 getting through. The limit silently multiplies by the number of copies.</td>
+        </tr>
+        <tr>
+          <td><strong>"Already working on it" flags are private</strong></td>
+          <td class="n">8 places</td>
+          <td>Each copy tracks separately what it is busy with, so two copies can run the same expensive photo analysis twice.</td>
+        </tr>
+        <tr>
+          <td><strong>The sealed box is 6.45 GB</strong></td>
+          <td class="n">huge</td>
+          <td>Every new copy must download all of it before it can start. That makes scaling up during a rush slow, exactly when you need it fast.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════ 03 THE BLOCKER ══════════════ -->
+<div role="tabpanel" id="p-block" aria-labelledby="t-block" hidden>
+
+  <h2>The one thing that shapes every decision</h2>
+  <p class="sub">
+    This is worth understanding properly, because it is the reason the plan looks the way it
+    does — and the reason a plausible-sounding shortcut would quietly destroy your data.
+  </p>
+
+  <h3 style="margin-top:24px">The obvious shortcut, and why it fails</h3>
+  <p>
+    The tempting idea is: <em>"Put the app on one of those modern cloud container services, and
+    put the database file on a shared network drive so every copy can reach it."</em> Both Amazon
+    and Microsoft sell exactly such a network drive — Amazon calls it EFS, Microsoft calls it
+    Azure Files. On paper it solves everything.
+  </p>
+  <p>
+    <strong>It does not work, and it fails in the worst possible way — silently.</strong>
+  </p>
+
+<div class="prose2">
+  <h3 style="margin-top:26px">Why, in plain terms</h3>
+  <p>
+    Your database (SQLite) is fast partly because of a trick. When several programs use the same
+    database file at once, they coordinate by leaving tiny notes for each other in the computer's
+    <em>memory</em> — not in the file. Think of a shared kitchen with a small whiteboard on the
+    wall: before anyone touches the fridge, they check the whiteboard.
+  </p>
+  <p>
+    That whiteboard only exists inside one physical computer. <strong>A network drive has no
+    whiteboard.</strong> Two machines using the same database file across a network cannot see
+    each other's notes, so they both think they are alone, both write at once, and the file ends
+    up corrupted. There is no error message. It simply becomes wrong.
+  </p>
+  <p>
+    All three of your databases use this mode. I confirmed it — every one opens with
+    <code>journal_mode = WAL</code>, which is the setting that turns the whiteboard on.
+  </p>
+
+</div>
+  <div class="note fail">
+    <p class="cap">The practical rule</p>
+    <p>
+      Never put a SQLite database on EFS, Azure Files, or any network drive. If someone proposes
+      running RackTrack on Fargate or Container Apps with a file share, <strong>that proposal
+      corrupts your customer data</strong>. It will appear to work for weeks first.
+    </p>
+  </div>
+
+  <h3 style="margin-top:28px">One honest caveat about my testing</h3>
+  <p>
+    In my two-copy test, the shared storage was a local disk, where the whiteboard <em>does</em>
+    work — so that test passed. It passed for a reason that would not hold on a real cloud
+    network drive. I am telling you this because it is the one claim in this whole plan that is
+    <strong>reasoned rather than measured</strong>, and it is also the most consequential.
+    Before trusting any shared-storage design, prove it on the real thing.
+  </p>
+
+  <div class="actions">
+    <p class="cap">Action point from this tab</p>
+    <ol class="ap">
+      <li><b>AP10 · Test SQLite on real network storage</b><span>One afternoon on a trial account. This is the only claim in the plan I could not measure, and it decides the whole storage design. Do it before committing.</span>
+        <div class="meta"><span class="pill block">needs an account</span><span class="pill">1 afternoon</span></div></li>
+    </ol>
+  </div>
+
+  <h3 style="margin-top:28px">What follows from this</h3>
+  <ul>
+    <li><strong>Step 1 is a plain rented computer with an ordinary attached disk</strong> on both AWS and Azure. Not a fancy container platform. The disk is a normal disk, so the whiteboard works, so the database is safe.</li>
+    <li><strong>The modern container platforms only become available in Step 2</strong> — after the database has been moved to PostgreSQL, which is designed for many machines talking to it at once.</li>
+    <li><strong>Photos are different.</strong> Ordinary files on a network drive are fine; it is only the database that has this problem. That is why the plan can move photos separately and later.</li>
+  </ul>
+
+  <div class="note good" style="margin-top:18px">
+    <p>
+      <strong>The good news.</strong> You can get automatic, near-instant backups of a SQLite
+      database <em>without solving any of this</em>, using Litestream. It watches the database
+      and streams every change to cloud storage within seconds. No code changes, no architecture
+      change, works on the server you have today. See "Do this first".
+    </p>
+  </div>
+</div>
+
+
+<!-- ══════════════ 04 ALREADY BUILT ══════════════ -->
+<div role="tabpanel" id="p-built" aria-labelledby="t-built" hidden>
+
+  <h2>Already built and proven — waiting only on an account</h2>
+  <p class="sub">
+    Everything below exists, on your Mac, right now. None of it required an AWS or Azure
+    account. The point of this tab is that when you do open one, the work is not
+    <em>starting</em> — it is <em>connecting</em>.
+  </p>
+
+  <div class="stats">
+    <div class="stat good"><div class="v">7 of 9</div><span class="k">Preparatory items done</span></div>
+    <div class="stat good"><div class="v">1,000+</div><span class="k">Lines of infrastructure written</span></div>
+    <div class="stat good"><div class="v">68%</div><span class="k">Image size removed</span></div>
+    <div class="stat warn"><div class="v">1 thing</div><span class="k">Genuinely needs an account</span></div>
+  </div>
+
+  <h3 style="margin-top:30px">The status board</h3>
+  <div class="board" style="overflow-x:auto">
+    <div class="row hd"><div>Item</div><div>State</div><div>Evidence it works</div><div>What is still needed</div></div>
+
+    <div class="row">
+      <div class="nm">Runs with nothing from your Mac</div>
+      <div><span class="chip pass">Proven</span></div>
+      <div class="ev">Weights baked into the image, no host mounts. Booted in 10s, CV worker ready, survived the container being destroyed and recreated.</div>
+      <div class="nx">nothing</div>
+    </div>
+
+    <div class="row">
+      <div class="nm">Continuous database backup</div>
+      <div><span class="chip pass">Proven</span></div>
+      <div class="ev">Litestream streaming a copy of your <strong>real</strong> auth.db to S3-compatible storage. I deleted the database entirely, restored it, and got back all 37 users including 3 written seconds earlier. Integrity check: ok.</div>
+      <div class="nx">an S3 bucket<br>or Blob container</div>
+    </div>
+
+    <div class="row">
+      <div class="nm">Secrets removed from the image</div>
+      <div><span class="chip pass">Proven</span></div>
+      <div class="ev">Built with the proposed exclusion. <code>/app/server/data</code> now contains only <code>mock/</code>, <code>oui-vendors.json</code> and <code>support-kb.json</code> — no auth.db, no jwt.secret, no backups, no logs.</div>
+      <div class="nx">apply 4 lines<br>to your repo</div>
+    </div>
+
+    <div class="row">
+      <div class="nm">Image split, web tier slimmed</div>
+      <div><span class="chip pass">Proven</span></div>
+      <div class="ev">A web-only image built and running: <strong>6.45 GB → 2.06 GB</strong>, boots in 2s instead of 10s, PDF engine still present. Uses the app's existing <code>RACKTRACK_SKIP_WORKER_POOL</code> seam.</div>
+      <div class="nx">a queue, so the AI<br>routes publish jobs</div>
+    </div>
+
+    <div class="row">
+      <div class="nm">AWS infrastructure as code</div>
+      <div><span class="chip pass">Written</span></div>
+      <div class="ev">373 lines of Terraform: VPC, Graviton instance, separate data disk, nightly snapshot policy, S3 buckets, Secrets Manager, IAM, health check and two alarms. <code>terraform validate</code> → <strong>Success</strong>.</div>
+      <div class="nx">credentials, then<br><code>terraform apply</code></div>
+    </div>
+
+    <div class="row">
+      <div class="nm">Azure infrastructure as code</div>
+      <div><span class="chip pass">Written</span></div>
+      <div class="ev">336 lines of Terraform: resource group, VNet, ARM VM, managed data disk, Recovery Services vault with an India-time backup policy, ACR, Key Vault, storage, managed identity, alerting. <code>terraform validate</code> → <strong>Success</strong>.</div>
+      <div class="nx">a subscription, then<br><code>terraform apply</code></div>
+    </div>
+
+    <div class="row">
+      <div class="nm">Automated deployment</div>
+      <div><span class="chip pass">Written</span></div>
+      <div class="ev">GitHub Actions workflows for both clouds. Passwordless sign-in (OIDC / workload identity), build, push, roll the server, then <strong>verify /healthz actually returns 200</strong> before declaring success. Both parse as valid YAML.</div>
+      <div class="nx">account IDs as<br>repository variables</div>
+    </div>
+
+    <div class="row">
+      <div class="nm">First-boot server setup</div>
+      <div><span class="chip pass">Written</span></div>
+      <div class="ev">Bootstrap scripts for both clouds: mount the data disk without ever reformatting it, install Docker and Litestream, pull secrets into memory-only storage, start replication. Both pass shellcheck clean.</div>
+      <div class="nx">a machine to run on</div>
+    </div>
+
+    <div class="row">
+      <div class="nm">SQLite on real network storage</div>
+      <div><span class="chip fail">Untested</span></div>
+      <div class="ev">The one claim in this plan that is reasoned rather than measured. My two-copy test used a local disk, where it works — on EFS or Azure Files it should not.</div>
+      <div class="nx">an account, to test<br>against real EFS</div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:34px">What genuinely cannot be done without an account</h3>
+  <div class="prose2">
+    <div>
+      <p>Honestly, very little — and it is worth being precise about which parts:</p>
+      <ul>
+        <li><strong>Creating the actual resources.</strong> <code>terraform apply</code> needs credentials. Everything up to that point — writing, validating, formatting — is done.</li>
+        <li><strong>Real cost figures.</strong> The estimates are from published rates. Your actual bill depends on your usage and any discounts you negotiate.</li>
+        <li><strong>Testing SQLite on real network storage.</strong> The one open technical question. Worth one afternoon on a trial account before committing to a storage design.</li>
+        <li><strong>Managed-service behaviour under load.</strong> How fast RDS fails over, how quickly Container Apps scales — you can only measure these on the real thing.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="note good">
+        <p class="cap">The showcase point</p>
+        <p>
+          If someone asks "how far can we get before committing money?", the answer is:
+          <strong>all the preparation, and proof that the two riskiest assumptions hold.</strong>
+        </p>
+        <p style="margin-top:10px">
+          The riskiest assumption was that the app can run with no host filesystem. It can — proven.
+          The second was that backups can be made continuous without touching the code. They can —
+          proven by deleting a real database and getting every row back.
+        </p>
+        <p style="margin-top:10px">
+          What remains after opening an account is roughly a day of connecting things, not weeks
+          of building them.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:30px">Where the files are</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>File</th><th>What it is</th><th>Checked how</th></tr></thead>
+      <tbody>
+        <tr><td class="src">terraform/aws/</td><td>Complete AWS Phase 1 infrastructure, 373 lines</td><td><code>terraform validate</code> → Success</td></tr>
+        <tr><td class="src">terraform/azure/</td><td>Complete Azure Phase 1 infrastructure, 336 lines</td><td><code>terraform validate</code> → Success</td></tr>
+        <tr><td class="src">workflows/deploy-aws.yml</td><td>Build → push → deploy → verify healthy</td><td>YAML parsed, 7 steps</td></tr>
+        <tr><td class="src">workflows/deploy-azure.yml</td><td>Same, for Azure</td><td>YAML parsed, 7 steps</td></tr>
+        <tr><td class="src">bootstrap/cloud-init-aws.sh</td><td>Turns a bare machine into the RackTrack host</td><td>shellcheck clean</td></tr>
+        <tr><td class="src">bootstrap/cloud-init-azure.sh</td><td>Same, for Azure</td><td>shellcheck clean</td></tr>
+        <tr><td class="src">Dockerfile.web-slim</td><td>The 2.06 GB web tier</td><td>Built and running, healthy in 2s</td></tr>
+        <tr><td class="src">Dockerfile.web.dockerignore</td><td>The secrets fix, applied and verified</td><td>Image contains no database</td></tr>
+        <tr><td class="src">backup-demo/litestream.yml</td><td>The whole backup configuration</td><td>Destroy-and-restore proven</td></tr>
+        <tr><td class="src">teardown.sh</td><td>Removes every trace from your Mac</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════ 05 ACTION POINTS ══════════════ -->
+<div role="tabpanel" id="p-ap" aria-labelledby="t-ap" hidden>
+
+  <h2>Action points</h2>
+  <p class="sub">
+    Every decision and task in this plan, in the order they should happen. Each says who it is
+    blocked by, so you can see what is waiting on you and what is waiting on a developer.
+  </p>
+
+  <div class="actions">
+    <p class="cap">This week — nothing here needs a cloud account</p>
+    <ol class="ap">
+      <li>
+        <b>Apply the secrets fix to .dockerignore</b>
+        <span>Four lines. Your images currently carry 33 real password hashes and the live token-signing key. I have already built an image with the fix and confirmed it removes them.</span>
+        <div class="meta"><span class="pill urgent">urgent</span><span class="pill">1 hour</span><span class="pill">you or a dev</span><span class="pill done">fix proven</span></div>
+      </li>
+      <li>
+        <b>Rotate the token-signing key</b>
+        <span>It has been inside every image built on this Mac. Changing it signs everyone out once — that is the correct price.</span>
+        <div class="meta"><span class="pill urgent">urgent</span><span class="pill">30 min</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Put Litestream on the Hostinger box</b>
+        <span>The highest-value item in the whole plan. Continuous database backup with no code changes. Needs only somewhere to put the copies — any S3-compatible bucket, a few dollars a month.</span>
+        <div class="meta"><span class="pill urgent">do not wait</span><span class="pill">1 afternoon</span><span class="pill">a dev</span><span class="pill done">proven end to end</span></div>
+      </li>
+      <li>
+        <b>Practise restoring from that backup</b>
+        <span>Restore into a scratch folder and count the users. Until you have done this once, you have files you hope are backups.</span>
+        <div class="meta"><span class="pill">30 min</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Decide: AWS or Azure</b>
+        <span>The only genuinely commercial decision here. My recommendation is AWS on cost and tooling maturity; the argument for Azure is that you already sell into Microsoft estates. Everything else is ready for either.</span>
+        <div class="meta"><span class="pill block">blocks everything after</span><span class="pill">yours to call</span></div>
+      </li>
+      <li>
+        <b>Open the account and pick the region</b>
+        <span>Mumbai on AWS, or Central India on Azure. Turn on two-factor authentication and set a billing alert before anything else.</span>
+        <div class="meta"><span class="pill block">needs AP5</span><span class="pill">1 hour</span><span class="pill">you</span></div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="actions">
+    <p class="cap">Weeks 1–2 — Step 1, make it safe (needs the account)</p>
+    <ol class="ap" start="7">
+      <li>
+        <b>Run terraform apply</b>
+        <span>The infrastructure is written and validates clean for both clouds. This step is supplying credentials and running one command, then fixing whatever the real API objects to.</span>
+        <div class="meta"><span class="pill block">needs AP6</span><span class="pill">1–2 days</span><span class="pill done">code written</span></div>
+      </li>
+      <li>
+        <b>Boot the server with the bootstrap script</b>
+        <span>Mounts the data disk, installs Docker and Litestream, pulls secrets into memory-only storage. Written and lint-clean for both clouds.</span>
+        <div class="meta"><span class="pill">half a day</span><span class="pill done">script written</span></div>
+      </li>
+      <li>
+        <b>Wire up the deploy pipeline</b>
+        <span>Add the workflow file and set five repository variables. Retires the manual copy step from your Mac for good.</span>
+        <div class="meta"><span class="pill">half a day</span><span class="pill done">workflow written</span></div>
+      </li>
+      <li>
+        <b>Test SQLite on real network storage</b>
+        <span>The one open technical question in this plan. Answer it before committing to any shared-storage design.</span>
+        <div class="meta"><span class="pill block">needs an account</span><span class="pill">1 afternoon</span></div>
+      </li>
+      <li>
+        <b>Delete the machine on purpose and rebuild it</b>
+        <span>The real test of whether Step 1 is finished. If you cannot rebuild from code plus a snapshot inside an hour, it is not done yet.</span>
+        <div class="meta"><span class="pill">1 afternoon</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Switch the domain over, keep Hostinger for two weeks</b>
+        <span>Rolling back is just pointing the domain back — but only while the old machine still exists.</span>
+        <div class="meta"><span class="pill">1 evening</span></div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="actions">
+    <p class="cap">Months 1–3 — Step 2, make it scale (developer work, cloud-independent)</p>
+    <ol class="ap" start="13">
+      <li>
+        <b>Gather the 316 database queries behind named functions</b>
+        <span>Still on the current database. Nothing changes behaviourally, and it can be reviewed in small pieces.</span>
+        <div class="meta"><span class="pill">2–3 weeks</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Make those functions wait for answers</b>
+        <span>Still on the current database, deliberately — so any breakage is definitely this change and not the new database.</span>
+        <div class="meta"><span class="pill">2–3 weeks</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Swap in PostgreSQL and migrate the data</b>
+        <span>Now a contained change. Watch case-insensitive email matching, which sign-in depends on.</span>
+        <div class="meta"><span class="pill">2 weeks</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Move scan photos to cloud storage</b>
+        <span>Can run in parallel with the database work. Keep the existing folder naming so it is a copy, not a reorganisation.</span>
+        <div class="meta"><span class="pill">2–3 weeks</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Make switch polling run in exactly one place</b>
+        <span>Otherwise every copy of the app logs into every customer switch hourly. Add the flag, run it as a scheduled job, add a lock.</span>
+        <div class="meta"><span class="pill">1 week</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Share the upload limits and busy flags</b>
+        <span>Measured at 2× the configured limit with two copies. Move to Redis, or push limiting into the load balancer.</span>
+        <div class="meta"><span class="pill">2–3 days</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Add the job queue between uploads and analysis</b>
+        <span>This is what actually fixes rush handling. Adding more copies alone does not.</span>
+        <div class="meta"><span class="pill">1–2 weeks</span><span class="pill">a dev</span></div>
+      </li>
+      <li>
+        <b>Go from one copy to two — and watch</b>
+        <span>Only after a full clean day on one. The shared-state bugs appear the moment there is a second copy.</span>
+        <div class="meta"><span class="pill">1 day</span></div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="note warn">
+    <p>
+      <strong>The dependency that matters:</strong> AP5 (choosing a cloud) blocks everything in
+      Step 1, but blocks <em>nothing</em> in Step 2. All the developer work — AP13 through AP19,
+      which is the bulk of the effort — is identical on both clouds and can start immediately.
+      If a developer is free now, start them on AP13 today regardless of which provider you pick.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════ 06 DO THIS FIRST ══════════════ -->
+<div role="tabpanel" id="p-first" aria-labelledby="t-first" hidden>
+
+  <h2>Do this first — before choosing a cloud</h2>
+  <p class="sub">
+    Four jobs. None of them depends on whether you pick Amazon or Microsoft. Two to four days
+    of work in total, and the first one is urgent.
+  </p>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:8px">
+      <span class="phase-k">Job 1</span><h3 style="margin:0">Stop shipping your customer database inside the app</h3>
+      <span class="chip fail">Urgent</span>
+    </div>
+
+    <div class="qa">
+      <p class="q">What is wrong</p>
+      <p>
+        When your app is packed into its sealed box, one instruction copies the whole
+        <code>server/</code> folder in. That folder contains <code>server/data</code> — which is
+        your <strong>live database</strong>. So every box built on this Mac contains
+        <strong>42 MB of real data</strong>: 33 user accounts with their scrambled passwords,
+        four older database backups going back to July, 12 MB of activity logs, and the secret
+        key used to sign login tokens. I verified that key is <em>byte-for-byte identical</em> to
+        your real one.
+      </p>
+    </div>
+
+    <div class="qa">
+      <p class="q">Why it has not bitten you yet</p>
+      <p>
+        The server is updated by copying files, and that copy step already excludes
+        <code>server/data</code>. So the box built <em>on the server</em> is clean, and a folder
+        mounted at runtime hides the copy anyway. The exclusion was written for the file-copy
+        step and never mirrored into the sealed-box settings.
+      </p>
+    </div>
+
+    <div class="qa trap">
+      <p class="q">Why moving to the cloud makes it dangerous</p>
+      <p>
+        Cloud deployment works differently: you build the box <strong>on this Mac</strong> and
+        upload it to a shared registry. Anyone who can download that box gets your users'
+        password hashes and a key that lets them forge valid logins for any account.
+      </p>
+    </div>
+
+    <div class="qa check">
+      <p class="q">The fix — about an hour</p>
+      <p>Add these lines to <code>.dockerignore</code>:</p>
+    </div>
+<pre>server/data
+!server/data/mock
+!server/data/support-kb.json
+!server/data/oui-vendors.json</pre>
+    <p>
+      The three exceptions matter. Those files <em>are</em> meant to be included — the mock
+      connector data, the support assistant's knowledge base, and the network-card manufacturer
+      lookup table. A blanket exclusion would break all three features.
+    </p>
+    <p class="cap" style="margin-top:14px">Check it worked</p>
+<pre>docker build -t racktrack:test .
+docker run --rm racktrack:test ls /app/server/data
+<span class="c"># You should see exactly three entries and no .db files.</span></pre>
+    <p style="margin-top:12px">
+      <strong>Then change the signing key.</strong> It has been inside every box built here, so
+      treat it as exposed. Changing it logs everyone out once — that is the correct price, and
+      it is far cheaper than the alternative.
+    </p>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:8px">
+      <span class="phase-k">Job 2</span><h3 style="margin:0">Turn on continuous backups — today, on the server you already have</h3>
+      <span class="chip pass">Highest value</span>
+    </div>
+    <p>
+      This is the single best return on effort in the entire document, and it does not require
+      moving anything. <strong>Litestream</strong> is a small program that sits beside your
+      database, notices every change, and copies it to cloud storage within seconds.
+    </p>
+    <ul>
+      <li><strong>No code changes.</strong> Your app does not know it exists.</li>
+      <li><strong>Recovery to any moment</strong>, not just to last night.</li>
+      <li>A few dollars a month for storage.</li>
+      <li>Works on Hostinger right now, and carries over unchanged to AWS or Azure later.</li>
+    </ul>
+    <p class="cap" style="margin-top:14px">The whole configuration</p>
+<pre><span class="c"># /etc/litestream.yml</span>
+dbs:
+  - path: /opt/racktrack-demo/server/data/auth.db
+    replicas: [{ type: s3, bucket: racktrack-db-backup, path: auth.db }]
+  - path: /opt/racktrack-demo/server/data/racktrack.db
+    replicas: [{ type: s3, bucket: racktrack-db-backup, path: racktrack.db }]
+  - path: /opt/racktrack-demo/server/data/logs.db
+    replicas: [{ type: s3, bucket: racktrack-db-backup, path: logs.db }]</pre>
+    <p class="cap">Restoring is one command</p>
+<pre>litestream restore -o auth.db s3://racktrack-db-backup/auth.db</pre>
+    <div class="note warn" style="margin-top:14px">
+      <p>
+        <strong>Practise the restore before you need it.</strong> A backup nobody has ever
+        restored is not a backup — it is a hope. Restore into a scratch folder, open the file,
+        count the users. Half an hour, once.
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:8px">
+      <span class="phase-k">Job 3</span><h3 style="margin:0">Split the sealed box in two</h3>
+      <span class="chip warn">Recommended</span>
+    </div>
+    <p>
+      Your box is <strong>6.45 GB</strong>. Almost all of that is the photo-analysis machinery —
+      the AI libraries and the 403 MB of trained models. The part that serves web pages needs
+      none of it.
+    </p>
+    <ul>
+      <li><strong>Web box</strong> — roughly 400–600 MB. Starts fast, can be copied many times cheaply.</li>
+      <li><strong>Analysis box</strong> — stays large, but you only need a few and only while scans are running.</li>
+    </ul>
+    <p>
+      Why it matters: today, adding capacity for a rush means downloading 6.45 GB before the new
+      copy can serve a single page. After the split it is well under a gigabyte. This also sets
+      up the queue design in Step 2, so if you skip it now, do it first thing then.
+    </p>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:8px">
+      <span class="phase-k">Job 4</span><h3 style="margin:0">Write down your settings, and pick a region</h3>
+    </div>
+    <p>
+      Your app reads <strong>180 settings</strong> from its environment. Most are development
+      noise; about 30 genuinely matter in production. Before anything moves, list them with three
+      columns: <em>name, where the value comes from, is it secret</em>. These are the ones that
+      cause silent, confusing failures if wrong:
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Setting</th><th>What goes wrong if it is not right</th></tr></thead>
+        <tbody>
+          <tr><td class="src">JWT_SECRET</td><td>If unset, each copy of the app invents its own key and rejects logins issued by the others. Users get randomly signed out.</td></tr>
+          <tr><td class="src">NODE_ENV</td><td>Must be exactly <code>production</code>. Your settings reader does not strip comments, so writing <code>production # live</code> silently leaves development mode on — which shows internal error details to the public.</td></tr>
+          <tr><td class="src">CORS_ALLOWED_ORIGINS</td><td>Note the exact name. If it does not match your website address precisely, every action in the browser fails while the server looks perfectly fine.</td></tr>
+          <tr><td class="src">TZ and REPORT_TZ</td><td>If unset, every scan report prints times 5 hours 30 minutes behind your technicians.</td></tr>
+          <tr><td class="src">RACKTRACK_WORKERS</td><td>Too many and the app runs out of memory mid-scan. Rule of thumb: one per 3 GB of free memory, never more than the processor count.</td></tr>
+          <tr><td class="src">COOKIE_SECURE / SAMESITE / DOMAIN</td><td>Get these wrong and browser login fails end to end while the mobile app keeps working — a genuinely confusing failure.</td></tr>
+          <tr><td class="src">SMTP_*, MS_*, STRIPE_*</td><td>Real secrets. Into the cloud's secret store, never into the box or a settings file.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap" style="margin-top:12px">Region</p>
+    <p>
+      Your team works in Indian time and your technicians upload large photos from the field, so
+      distance genuinely affects how long an upload takes. Choose
+      <strong>AWS Mumbai (<code>ap-south-1</code>)</strong> or
+      <strong>Azure Central India</strong>. Both have everything this plan needs. Do not default
+      to a US region because a tutorial did.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════ 05 AWS ══════════════ -->
+<div role="tabpanel" id="p-aws" aria-labelledby="t-aws" hidden>
+
+  <h2><span style="color:var(--aws)">Amazon Web Services</span> — the full path</h2>
+  <p class="sub">
+    Step 1 in detail first, then Step 2. Every step says what you are doing, why, and how to
+    tell it worked.
+  </p>
+
+  <div class="card aws">
+    <span class="phase-k">AWS · STEP 1</span>
+    <h3 style="margin:6px 0 6px">Make it safe: one rented computer, done properly</h3>
+    <p>
+      One machine running the same setup you have now — but with automatic nightly disk
+      photographs, continuous database copying, no way to log in with a stolen password, and
+      the whole thing written down so it can be rebuilt from scratch.
+    </p>
+
+    <ol class="steps aws-steps">
+      <li>
+        <h4>Open the account and lock the front door</h4>
+        <p>
+          Create the AWS account. Then <strong>immediately</strong> stop using the account you
+          signed up with — that "root" account can do anything, including delete everything and
+          run up unlimited bills. Create a normal user for yourself, turn on two-factor
+          authentication, and set a billing alert at a number that would worry you.
+        </p>
+<pre>export AWS_REGION=ap-south-1
+export ACCT=$(aws sts get-caller-identity --query Account --output text)
+echo $ACCT</pre>
+        <div class="qa check"><p class="q">Worked if</p><p>That prints a 12-digit number. If it errors, the command-line tool is not connected to your account yet.</p></div>
+      </li>
+
+      <li>
+        <h4>Create a private shelf for your sealed boxes, and upload one</h4>
+        <p>
+          A registry is a private shelf where your built app boxes live so servers can fetch
+          them. Build for <code>arm64</code> — a processor family Amazon calls Graviton that is
+          roughly 20% cheaper. I already proved your app builds and runs on it.
+        </p>
+<pre>aws ecr create-repository --repository-name racktrack \
+  --image-scanning-configuration scanOnPush=true
+
+aws ecr get-login-password | docker login --username AWS \
+  --password-stdin $ACCT.dkr.ecr.$AWS_REGION.amazonaws.com
+
+docker buildx build --platform linux/arm64 \
+  -t $ACCT.dkr.ecr.$AWS_REGION.amazonaws.com/racktrack:$(git rev-parse --short HEAD) \
+  -t $ACCT.dkr.ecr.$AWS_REGION.amazonaws.com/racktrack:latest --push .</pre>
+        <div class="qa trap"><p class="q">Common mistake</p><p>Tagging only as <code>latest</code>. Then you cannot tell which version is running, and you cannot go back to the one that worked. Always tag with the commit reference too, as above.</p></div>
+      </li>
+
+      <li>
+        <h4>Put your passwords somewhere proper</h4>
+        <p>
+          Secrets Manager is a locked drawer. The server is given permission to open the drawer
+          — it never holds a copy of the key. At startup it reads the values into memory only,
+          so nothing sensitive is ever written to the disk or into the sealed box.
+        </p>
+<pre>aws secretsmanager create-secret --name racktrack/prod \
+  --secret-string '{"JWT_SECRET":"...","SMTP_PASS":"...","STRIPE_SECRET_KEY":"..."}'</pre>
+      </li>
+
+      <li>
+        <h4>Launch the machine</h4>
+        <p>
+          Pick <strong><code>m7g.large</code></strong> — 2 processors, 8 GB memory. That is what
+          I tested and it ran comfortably with room to spare.
+        </p>
+        <div class="qa trap">
+          <p class="q">Do not pick a "t" type</p>
+          <p>
+            The cheaper <code>t4g</code> family gives you full speed only in short bursts, then
+            throttles. Photo analysis is a long, steady load, so it would run out of credit
+            mid-scan. The symptom is scans that are fast on Monday and mysteriously slow on
+            Friday — miserable to diagnose.
+          </p>
+        </div>
+        <p>Three settings that matter more than the machine choice:</p>
+        <ul>
+          <li><strong>Two disks, not one.</strong> A 30 GB system disk, and a separate 100 GB disk mounted at <code>/opt/racktrack/data</code> holding the database, scan photos and cache. Keeping data on its own disk is what makes the machine itself disposable — you can destroy and rebuild it without touching your data.</li>
+          <li><strong>No SSH, no password, no key.</strong> Turn off port 22 entirely and use Session Manager instead. Access is then controlled by your AWS login and every session is recorded. This removes the single most common way small companies get breached.</li>
+          <li><strong>Firewall: ports 80 and 443 only.</strong> Nothing else open to the internet.</li>
+        </ul>
+      </li>
+
+      <li>
+        <h4>Turn on nightly disk photographs</h4>
+        <p>
+          This is the backup fix. Data Lifecycle Manager takes a snapshot of the data disk every
+          night automatically and keeps 14 of them. Restoring means creating a new disk from a
+          snapshot — a few minutes.
+        </p>
+<pre>resource "aws_dlm_lifecycle_policy" "racktrack_data" {
+  description        = "Nightly snapshot of RackTrack data disk"
+  execution_role_arn = aws_iam_role.dlm.arn
+  policy_details {
+    resource_types = ["VOLUME"]
+    target_tags    = { Backup = "racktrack-data" }
+    schedule {
+      name        = "nightly"
+      create_rule { interval = 24  interval_unit = "HOURS"  times = ["20:30"] }
+      retain_rule { count = 14 }
+      copy_tags   = true
+    }
+  }
+}</pre>
+        <div class="qa trap">
+          <p class="q">The timezone trap</p>
+          <p>
+            AWS schedules in UTC only. <code>20:30</code> UTC is <strong>2:00 in the
+            morning India time</strong>, which is what you want. Writing <code>02:00</code>
+            would run the backup at 7:30am, during your working day.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <h4>Add Litestream for second-by-second database copies</h4>
+        <p>
+          Snapshots give you last night. Litestream gives you <em>this second</em>. Between them
+          you can recover from a disk failure with essentially no data loss, and from an
+          accidental deletion by rewinding to just before it. Configuration is in the "Do this
+          first" tab — if you already did it on Hostinger, it moves across unchanged.
+        </p>
+      </li>
+
+      <li>
+        <h4>Copy the scan photos to S3 hourly</h4>
+        <p>
+          <code>outputs/</code> is 132 MB today and grows with every scan. Until Step 2 moves it
+          properly, an hourly copy into a versioned S3 bucket gives you a second copy for a few
+          dollars.
+        </p>
+<pre>aws s3 sync /opt/racktrack/data/outputs s3://racktrack-outputs/ --delete-excluded</pre>
+      </li>
+
+      <li>
+        <h4>Keep your existing HTTPS setup and point the domain over</h4>
+        <p>
+          Reserve a fixed IP address, point <code>demo.racktrack.ai</code> at it, and keep the
+          Caddy container you already use for certificates. It works, it renews automatically,
+          and changing it now adds risk for no benefit. A load balancer would cost about $20 a
+          month and balance a grand total of one machine — add it in Step 2 when there is
+          something to balance.
+        </p>
+      </li>
+
+      <li>
+        <h4>Deploy from GitHub instead of from your Mac</h4>
+        <p>
+          Add a job to the automated checks you already run: build the box, upload it, then tell
+          the server to fetch and restart. Use GitHub's OIDC trust so no AWS password is ever
+          stored in GitHub.
+        </p>
+        <p>
+          This retires the manual copy step and, with it, the whole category of problem where the
+          server and the code repository quietly disagree about what is running.
+        </p>
+      </li>
+
+      <li>
+        <h4>Get told when it breaks</h4>
+        <p>Two alerts are enough to start, and they cover almost everything that actually happens:</p>
+        <ul>
+          <li>The machine itself has stopped responding.</li>
+          <li><code>/healthz</code> has not returned a healthy answer for three minutes.</li>
+        </ul>
+        <p>Send both to email and Slack. Install the CloudWatch agent so logs and memory usage are collected off the machine — otherwise they are lost exactly when you need them.</p>
+      </li>
+
+      <li>
+        <h4>Write all of it down as Terraform</h4>
+        <p>
+          Everything above expressed as files in a repository, applied automatically. The test of
+          whether this step is genuinely finished is not that the site is up.
+          <strong>It is that you can deliberately delete the entire machine and rebuild it, from
+          code plus a snapshot, in under an hour.</strong>
+        </p>
+        <p>Do that once, on purpose, on a quiet afternoon. Until you have, you do not know whether you have backups — you have files you hope are backups.</p>
+      </li>
+    </ol>
+  </div>
+
+  <div class="card aws">
+    <span class="phase-k">AWS · STEP 2</span>
+    <h3 style="margin:6px 0 6px">Make it scale: many copies, shared storage</h3>
+    <p>
+      Only possible after the code work (tab 07). The infrastructure below is the easy half —
+      perhaps two weeks once the code is ready.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>What for</th><th>Service</th><th>In plain terms</th></tr></thead>
+        <tbody>
+          <tr><td>Running the web app</td><td class="src">ECS Fargate</td><td>Runs 2–10 copies of the small web box, adding more automatically when traffic rises. You never manage a server again.</td></tr>
+          <tr><td>Running photo analysis</td><td class="src">ECS Fargate (separate)</td><td>Picks scan jobs off a queue. Grows when scans pile up, shrinks when they do not.</td></tr>
+          <tr><td>The database</td><td class="src">RDS PostgreSQL</td><td>A managed database server Amazon patches and backs up for you. Start small (<code>db.t4g.medium</code>), with a standby copy in another building.</td></tr>
+          <tr><td>Scan photos</td><td class="src">S3 + CloudFront</td><td>Photos move out of the app entirely. The browser fetches them directly using temporary private links, which is both faster and cheaper.</td></tr>
+          <tr><td>Shared scratchpad</td><td class="src">ElastiCache Redis</td><td>Where upload limits and "already working on it" flags live so all copies agree. The smallest size is plenty.</td></tr>
+          <tr><td>Switch polling</td><td class="src">EventBridge → one task</td><td>Runs on a schedule as exactly one job, instead of inside every copy.</td></tr>
+          <tr><td>The job queue</td><td class="src">SQS</td><td>The shared to-do list between uploads and analysis.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p>
+        <strong>Why the queue matters more than it sounds.</strong> Today, uploading a photo
+        holds the connection open while analysis runs. During a rush that ties up every copy at
+        once and uploads start timing out — precisely the "can't handle a rush" problem from your
+        own deck. With a queue the upload finishes instantly and analysis happens behind the
+        scenes. This is the change that actually fixes rush handling; simply adding more copies
+        does not.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 06 AZURE ══════════════ -->
+<div role="tabpanel" id="p-azure" aria-labelledby="t-azure" hidden>
+
+  <h2><span style="color:var(--azure)">Microsoft Azure</span> — the full path</h2>
+  <p class="sub">
+    Same two steps, same shape. The genuine differences are noted where they exist —
+    there are fewer than the marketing on either side suggests.
+  </p>
+
+  <div class="card azure">
+    <span class="phase-k">AZURE · STEP 1</span>
+    <h3 style="margin:6px 0 6px">Make it safe: one virtual machine, done properly</h3>
+
+    <ol class="steps azure-steps">
+      <li>
+        <h4>Create a resource group and lock down the account</h4>
+        <p>
+          A resource group is a labelled box holding everything for one environment. Its real
+          value: deleting the group deletes everything inside it, so cleaning up after an
+          experiment is one command with nothing left behind. Use one group per environment.
+        </p>
+        <p>Turn on two-factor authentication and set a spending alert before anything else.</p>
+<pre>az group create -n rg-racktrack-prod -l centralindia</pre>
+      </li>
+
+      <li>
+        <h4>Create the registry and upload the sealed box</h4>
+<pre>az acr create -g rg-racktrack-prod -n racktrackacr --sku Standard
+az acr login -n racktrackacr
+
+docker buildx build --platform linux/arm64 \
+  -t racktrackacr.azurecr.io/racktrack:$(git rev-parse --short HEAD) \
+  -t racktrackacr.azurecr.io/racktrack:latest --push .</pre>
+        <div class="qa check"><p class="q">Worked if</p><p><code>az acr repository list -n racktrackacr</code> shows <code>racktrack</code>.</p></div>
+      </li>
+
+      <li>
+        <h4>Put your passwords in Key Vault</h4>
+        <p>
+          Same idea as the AWS locked drawer. The machine is given an identity that Azure itself
+          vouches for, so it can open the drawer without ever holding a password.
+        </p>
+<pre>az keyvault create -g rg-racktrack-prod -n kv-racktrack-prod -l centralindia
+az keyvault secret set --vault-name kv-racktrack-prod -n JWT-SECRET --value '...'
+az keyvault secret set --vault-name kv-racktrack-prod -n SMTP-PASS  --value '...'</pre>
+        <div class="qa trap"><p class="q">Small gotcha</p><p>Key Vault names cannot contain underscores, so <code>JWT_SECRET</code> becomes <code>JWT-SECRET</code>. Your startup script has to translate the names back.</p></div>
+      </li>
+
+      <li>
+        <h4>Create the virtual machine</h4>
+        <p>
+          <strong><code>Standard_D2ps_v6</code></strong> — 2 processors, 8 GB memory, ARM. If you
+          would rather not deal with two processor types, <code>Standard_D2as_v5</code> is the
+          ordinary-processor equivalent at slightly higher cost.
+        </p>
+<pre>az vm create -g rg-racktrack-prod -n vm-racktrack \
+  --image Ubuntu2404 --size Standard_D2ps_v6 \
+  --assign-identity --generate-ssh-keys \
+  --public-ip-sku Standard --nsg-rule NONE
+
+<span class="c"># a separate 128 GB fast disk for everything that changes</span>
+az vm disk attach -g rg-racktrack-prod --vm-name vm-racktrack \
+  -n disk-racktrack-data --new --size-gb 128 --sku Premium_LRS</pre>
+        <div class="qa trap">
+          <p class="q">Do not pick a "B" size</p>
+          <p>Azure's <code>B</code> series is burstable, exactly like AWS's <code>t4g</code>, and fails the same way under sustained photo analysis.</p>
+        </div>
+        <p>
+          <code>--nsg-rule NONE</code> means no ports are opened by default — you then open only
+          80 and 443. Get shell access through <strong>Azure Bastion</strong> or
+          <code>az ssh</code> with your Microsoft login, so there is no key to lose and every
+          session is logged.
+        </p>
+      </li>
+
+      <li>
+        <h4>Turn on Azure Backup</h4>
+        <p>This is the backup fix on this side.</p>
+<pre>az backup vault create -g rg-racktrack-prod -n rsv-racktrack -l centralindia
+az backup protection enable-for-vm -g rg-racktrack-prod \
+  --vault-name rsv-racktrack --vm vm-racktrack --policy-name DefaultPolicy</pre>
+        <div class="qa check">
+          <p class="q">A genuine Azure advantage</p>
+          <p>
+            You can set the backup schedule directly in India Standard Time. AWS only schedules
+            in UTC, so you have to convert and it is easy to get wrong. Set 2:00am IST, keep 14
+            daily and 8 weekly.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <h4>Add Litestream, pointed at Blob Storage</h4>
+        <p>Identical in effect to the AWS version — same tool, same zero code changes, different destination.</p>
+<pre>dbs:
+  - path: /opt/racktrack/data/server/data/auth.db
+    replicas:
+      - type: abs
+        account-name: stracktrackbackup
+        bucket: litestream
+        path: auth.db</pre>
+      </li>
+
+      <li>
+        <h4>Domain, HTTPS, deployment and monitoring</h4>
+        <ul>
+          <li>Reserve a static IP, point <code>demo.racktrack.ai</code> at it, keep your existing Caddy container for certificates.</li>
+          <li>Deploy from GitHub using workload identity federation — Azure trusts GitHub directly, so no Azure password is stored in GitHub.</li>
+          <li>Install the Azure Monitor agent for logs. Add an availability test that fetches <code>/healthz</code> every few minutes from outside, and alerts if it fails.</li>
+        </ul>
+      </li>
+
+      <li>
+        <h4>Write it down as Bicep or Terraform</h4>
+        <p>
+          Bicep is Microsoft's own and reads more cleanly for Azure-only work. Terraform is worth
+          it if you might ever use both clouds. Either way, the finishing test is the same:
+          <strong>delete the machine on purpose and rebuild it from code plus a restore point,
+          within an hour.</strong>
+        </p>
+      </li>
+    </ol>
+  </div>
+
+  <div class="card azure">
+    <span class="phase-k">AZURE · STEP 2</span>
+    <h3 style="margin:6px 0 6px">Make it scale: Container Apps and a managed database</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>What for</th><th>Service</th><th>In plain terms</th></tr></thead>
+        <tbody>
+          <tr><td>Running the web app</td><td class="src">Container Apps</td><td>2–10 copies, scaled on how many people are using it. The web address and HTTPS certificate are built in — no separate load balancer to buy or configure.</td></tr>
+          <tr><td>Running photo analysis</td><td class="src">Container Apps (separate)</td><td>Scales on queue length, and <strong>all the way down to zero</strong> when nobody is scanning. Amazon cannot do this — real money saved overnight.</td></tr>
+          <tr><td>The database</td><td class="src">PostgreSQL Flexible Server</td><td>Managed PostgreSQL. Start at <code>Standard_B2ms</code>, add zone redundancy when downtime starts costing you.</td></tr>
+          <tr><td>Scan photos</td><td class="src">Blob Storage + Front Door</td><td>Same as S3. Temporary private links, served without going through the app.</td></tr>
+          <tr><td>Shared scratchpad</td><td class="src">Azure Cache for Redis</td><td>Smallest tier is fine to begin with.</td></tr>
+          <tr><td>Switch polling</td><td class="src">Container Apps Jobs</td><td>A scheduled job using the same box you already built. Genuinely tidier than the AWS equivalent.</td></tr>
+          <tr><td>The job queue</td><td class="src">Service Bus</td><td>The shared to-do list.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p>
+        <strong>Where Azure is genuinely better:</strong> built-in web address and certificates,
+        analysis that scales to zero overnight, and Container Apps Jobs being a natural fit for
+        the switch poller.
+        <strong>Where AWS is genuinely better:</strong> it costs noticeably less for anything
+        running around the clock, and when something breaks at 2am there is far more written
+        about ECS than about Container Apps.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 07 CODE WORK ══════════════ -->
+<div role="tabpanel" id="p-code" aria-labelledby="t-code" hidden>
+
+  <h2>The code work — identical on both clouds</h2>
+  <p class="sub">
+    This is what Step 2 really is, and why it is months rather than weeks. None of it depends on
+    which cloud you chose, so it can start before you decide.
+  </p>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:8px">
+      <span class="phase-k">2.1</span><h3 style="margin:0">Move the database to PostgreSQL</h3>
+      <span class="chip fail">4–8 weeks</span>
+    </div>
+    <p>
+      316 places in the code ask the database questions, spread over 25 files and three separate
+      databases. But the count is not what makes this hard.
+    </p>
+    <div class="qa">
+      <p class="q">The actual difficulty</p>
+      <p>
+        Your current database answers <strong>instantly</strong>, because it is a file on the
+        same machine — the code asks a question and the answer is simply there on the next line.
+        A real database server sits across a network, so every question becomes
+        <em>"go and ask, and carry on when the answer comes back."</em>
+      </p>
+      <p style="margin-top:10px">
+        That difference spreads. A function that waits must be called by a function that also
+        waits, and so on all the way up to the web request. So this is not find-and-replace:
+        it changes the shape of a large part of the codebase.
+      </p>
+    </div>
+    <p class="cap" style="margin-top:16px">The order that works</p>
+    <ol>
+      <li><strong>Gather the questions.</strong> Move all 316 scattered queries behind named functions like <code>users.findByEmail()</code>, still using the old database. Nothing changes behaviourally, and it can be reviewed in small pieces.</li>
+      <li><strong>Make those functions wait</strong> — while still using the old database underneath. This is where the ripple happens. Doing it against a database you already trust means any breakage is definitely your change, not the new database.</li>
+      <li><strong>Swap in PostgreSQL.</strong> Now a contained change behind a boundary you built in step 1.</li>
+      <li><strong>Move the data.</strong> Watch for the small incompatibilities: automatic ID numbering works differently; your login query relies on case-insensitive matching that PostgreSQL does not do by default (get this wrong and people cannot sign in with a capital letter in their email); date handling differs.</li>
+      <li><strong>Run both side by side for a week</strong>, writing to each and comparing, before trusting the new one.</li>
+    </ol>
+    <div class="note fail" style="margin-top:12px">
+      <p>
+        <strong>Do not merge steps 2 and 3.</strong> Changing the code shape and the database at
+        the same time means that when something breaks you cannot tell which caused it. That is
+        the version of this project that runs six months and gets quietly abandoned.
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:8px">
+      <span class="phase-k">2.2</span><h3 style="margin:0">Move scan photos to cloud storage</h3>
+      <span class="chip warn">2–3 weeks</span>
+    </div>
+    <p>
+      234 file operations, 55 references to the outputs folder, 45 places building a
+      <code>outputs/&lt;rack&gt;/</code> path, and one line serving every scan image straight off
+      the disk.
+    </p>
+    <ul>
+      <li>Build one small module with three operations — save a file, read a file, make a temporary link — with a cloud version and a local version for development.</li>
+      <li>Replace the line that serves images from disk with one that checks permission and then <strong>redirects the browser to a temporary private link</strong>. Users see no difference; the image bytes stop travelling through your app, which makes pages load faster and costs less.</li>
+      <li><strong>Keep the folder naming exactly as it is.</strong> It maps cleanly onto cloud storage names, so moving becomes a copy rather than a reorganisation. Reorganising during a migration is how files go missing.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:8px">
+      <span class="phase-k">2.3</span><h3 style="margin:0">Make switch polling run in exactly one place</h3>
+      <span class="chip pass">~1 week</span>
+    </div>
+    <p>
+      Today, every copy of the app starts its own hourly switch-polling loop with no coordination.
+      Two copies means <strong>two SSH sessions into every customer switch, every hour, forever</strong>
+      — and two sets of records written. That is a problem you would hear about from customers.
+    </p>
+    <ul>
+      <li>Add a switch so it only runs when explicitly told to. Web copies run without it.</li>
+      <li>Run it as a scheduled job — once per hour, one instance, using the same sealed box.</li>
+      <li>Add a database-level lock so that even if two ever start, only one proceeds.</li>
+    </ul>
+    <p>Do the same for the ticket poller and the orphaned-record cleanup, which have the same shape.</p>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:8px">
+      <span class="phase-k">2.4</span><h3 style="margin:0">Share the upload limits and the busy flags</h3>
+      <span class="chip pass">2–3 days</span>
+    </div>
+    <p>
+      I measured this directly: with a limit of 20 uploads a minute and two copies running,
+      <strong>40 got through</strong>. Each copy counts on its own. Your own code comments already
+      note this and say it needs a shared scratchpad if you ever scale out.
+    </p>
+    <ul>
+      <li>Move the counting into Redis so all copies share one tally — or push limiting up into the load balancer, which is cheaper and stops the traffic before it reaches your app at all.</li>
+      <li>Move the eight "already working on this" flags into Redis with expiry times, so two copies cannot start the same expensive analysis twice.</li>
+    </ul>
+  </div>
+
+  <div class="actions">
+    <p class="cap">Action points — the code work</p>
+    <ol class="ap">
+      <li><b>AP13–AP15 · Move to PostgreSQL</b><span>Gather the queries, make them wait, then swap the database. Never the last two together.</span><div class="meta"><span class="pill">6–8 weeks</span></div></li>
+      <li><b>AP16 · Move photos to cloud storage</b><span>Can run in parallel with the database work.</span><div class="meta"><span class="pill">2–3 weeks</span></div></li>
+      <li><b>AP17 · Singleton switch polling</b><span>Otherwise every copy polls every customer switch.</span><div class="meta"><span class="pill">1 week</span></div></li>
+      <li><b>AP18 · Shared limits and busy flags</b><span>Measured at 2× the configured limit today.</span><div class="meta"><span class="pill">2–3 days</span></div></li>
+      <li><b>AP19 · Job queue between upload and analysis</b><span>The change that actually fixes rush handling.</span><div class="meta"><span class="pill">1–2 weeks</span></div></li>
+    </ol>
+  </div>
+
+  <div class="note" style="margin-top:6px">
+    <p>
+      <strong>Rough total:</strong> two to three months for one experienced developer, or six to
+      eight weeks for two working in parallel — 2.1 is the long pole and 2.2 can run alongside it.
+      Add two weeks of testing before you would trust it with customer data.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════ 08 GO LIVE ══════════════ -->
+<div role="tabpanel" id="p-golive" aria-labelledby="t-golive" hidden>
+
+  <h2>Go-live day</h2>
+  <p class="sub">
+    The switchover itself. Same on both clouds. The rule throughout: never remove the old thing
+    until the new thing has proven itself.
+  </p>
+
+  <h3 style="margin-top:22px">Switching to the new server (end of Step 1)</h3>
+  <ol class="steps">
+    <li>
+      <h4>Run it in parallel for a week</h4>
+      <p>Build the new server completely and run it on a temporary address like <code>new.racktrack.ai</code>. Use it properly — real scans, real accounts, the mobile app. A week is enough for the differences to surface.</p>
+    </li>
+    <li>
+      <h4>Practise the restore before you need it</h4>
+      <p>
+        Deliberately wipe the data disk on the new server and bring it back from a snapshot plus
+        Litestream. Then count: are all the accounts there? All the scans? All the photos?
+      </p>
+      <div class="qa trap"><p class="q">Do not skip this</p><p>This is the step everyone skips and everyone regrets. Until you have restored once, you do not have backups.</p></div>
+    </li>
+    <li>
+      <h4>Lower the DNS switching time, a day ahead</h4>
+      <p>Set the TTL on <code>demo.racktrack.ai</code> to 60 seconds. This controls how long the internet caches the old address. Do it 24 hours before, or the switchover takes hours to take effect and rolling back takes just as long.</p>
+    </li>
+    <li>
+      <h4>Move the data, on a quiet evening</h4>
+      <p>Stop writes on the old server, take a final database checkpoint, copy the database and photos across, then <strong>verify counts on both sides match</strong> — number of users, number of racks, number of files. Do not proceed on a mismatch.</p>
+    </li>
+    <li>
+      <h4>Flip the address and watch</h4>
+      <p>Point the domain at the new server. Watch <code>/healthz</code> and the error rate for an hour. Sign in yourself, on the web and in the mobile app, and run one real scan end to end.</p>
+    </li>
+    <li>
+      <h4>Leave the old server alone for two weeks</h4>
+      <p>
+        Do not cancel Hostinger. Rolling back is just pointing the domain back — but only while
+        that machine still exists. Two weeks covers the problems that only show up on a monthly
+        cycle, like billing or scheduled reports.
+      </p>
+    </li>
+  </ol>
+
+  <h3 style="margin-top:34px">Switching the database and storage (end of Step 2)</h3>
+  <ol class="steps">
+    <li>
+      <h4>Write to both, read from the old one</h4>
+      <p>For a week, every change goes into both the old and new database while the app still reads from the old. A background check compares them and reports any disagreement. This finds the subtle differences with no risk to users.</p>
+    </li>
+    <li>
+      <h4>Copy the photos, then copy the difference again</h4>
+      <p>Bulk-copy everything to cloud storage in advance, then re-copy just what changed at switchover. The first pass takes hours; the second takes a minute.</p>
+    </li>
+    <li>
+      <h4>Move reads across in small groups, not all at once</h4>
+      <p>Start with sign-in — it is the most used, so problems appear within minutes rather than days. Then racks, then scans, then reports. Each behind a switch you can flip back instantly.</p>
+    </li>
+    <li>
+      <h4>Only then go from one copy to two</h4>
+      <p>
+        Run on one copy for a full clean day first. The shared-state bugs appear the moment there
+        is a second copy, and you want to be watching when they do — not discovering it overnight.
+      </p>
+    </li>
+    <li>
+      <h4>Keep the old database, replicated, for 30 days</h4>
+      <p>Cheap insurance against a problem that only appears at month-end.</p>
+    </li>
+  </ol>
+</div>
+
+<!-- ══════════════ 09 MONEY ══════════════ -->
+<div role="tabpanel" id="p-money" aria-labelledby="t-money" hidden>
+
+  <h2>What it costs, and which one to pick</h2>
+  <p class="sub">
+    Monthly figures below are indicative, at published mid-2026 rates for the India regions,
+    paying as you go. Use them to compare shapes, then confirm in each provider's calculator
+    before committing. Committing to a year up front cuts compute by 30–40%.
+  </p>
+
+  <div class="cols">
+    <div>
+      <h3 style="color:var(--aws)">AWS</h3>
+      <div class="tw">
+        <table style="min-width:0">
+          <thead><tr><th>Item</th><th style="text-align:right">Step 1</th><th style="text-align:right">Step 2</th></tr></thead>
+          <tbody>
+            <tr><td>Computers</td><td class="r">$60</td><td class="r">$170</td></tr>
+            <tr><td>Database</td><td class="r">included</td><td class="r">$50</td></tr>
+            <tr><td>Disks &amp; storage</td><td class="r">$12</td><td class="r">$15</td></tr>
+            <tr><td>Backups</td><td class="r">$7</td><td class="r">$12</td></tr>
+            <tr><td>Scratchpad &amp; queue</td><td class="r">—</td><td class="r">$15</td></tr>
+            <tr><td>Load balancer</td><td class="r">—</td><td class="r">$20</td></tr>
+            <tr><td>Registry &amp; traffic</td><td class="r">$8</td><td class="r">$15</td></tr>
+            <tr><td><strong>Total / month</strong></td><td class="r"><strong>≈ $87</strong></td><td class="r"><strong>≈ $297</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:var(--azure)">Azure</h3>
+      <div class="tw">
+        <table style="min-width:0">
+          <thead><tr><th>Item</th><th style="text-align:right">Step 1</th><th style="text-align:right">Step 2</th></tr></thead>
+          <tbody>
+            <tr><td>Computers</td><td class="r">$65</td><td class="r">$250</td></tr>
+            <tr><td>Database</td><td class="r">included</td><td class="r">$120</td></tr>
+            <tr><td>Disks &amp; storage</td><td class="r">$19</td><td class="r">$18</td></tr>
+            <tr><td>Backups</td><td class="r">$10</td><td class="r">$14</td></tr>
+            <tr><td>Scratchpad &amp; queue</td><td class="r">—</td><td class="r">$20</td></tr>
+            <tr><td>Load balancer</td><td class="r">—</td><td class="r">built in</td></tr>
+            <tr><td>Registry &amp; traffic</td><td class="r">$10</td><td class="r">$18</td></tr>
+            <tr><td><strong>Total / month</strong></td><td class="r"><strong>≈ $104</strong></td><td class="r"><strong>≈ $440</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="note warn" style="margin-top:18px">
+    <p>
+      <strong>Put that in perspective.</strong> Your Hostinger box is about $8–15 a month. Step 1
+      is therefore a <strong>six- to ten-fold increase in hosting spend</strong>, and what it buys
+      is not speed and not features — it is <em>recoverability, reproducibility, and being able to
+      sleep</em>. That is an obvious trade the moment a paying customer depends on you, and a poor
+      one before that. Be honest about which side of that line you are on today.
+    </p>
+  </div>
+
+  <p>
+    <strong>Why Azure comes out more expensive:</strong> its container service charges roughly
+    double AWS's for compute that runs around the clock (about $63 per processor per month
+    against $30), and its small managed-database tier is priced well above the AWS equivalent.
+    Azure claws some back if the photo-analysis tier genuinely sits idle overnight, because it
+    can scale to zero and AWS cannot.
+  </p>
+
+  <h3 style="margin-top:32px">Choosing</h3>
+  <div class="cols">
+    <div>
+      <h4 style="color:var(--aws)">Pick AWS if</h4>
+      <ul>
+        <li>Cost matters at this stage — it is cheaper at Step 1 and substantially cheaper at Step 2.</li>
+        <li>You want the largest pool of documentation and people who have hit your exact problem before.</li>
+        <li>Every tool this plan leans on — Litestream, ECS, RDS — is at its most well-trodden here.</li>
+      </ul>
+      <h4 style="color:var(--azure);margin-top:20px">Pick Azure if</h4>
+      <ul>
+        <li>You sell to enterprises already built on Microsoft. Your app already speaks Microsoft sign-in, Graph and Teams — that is a real signal about who your buyers are.</li>
+        <li>Microsoft-estate integration is part of the sales pitch, not an afterthought.</li>
+        <li>Scale-to-zero on photo analysis and the built-in scheduled jobs fit your bursty workload neatly.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="card" style="margin:0">
+        <h3>My recommendation</h3>
+        <p>
+          <strong>AWS, and start Step 1 now</strong> — on cost and on how well-trodden every tool
+          in this plan is there.
+        </p>
+        <p>
+          But the honest headline is that <strong>the choice of provider matters far less than
+          the order of the work</strong>. Either one fixes the same problems. Only one sequence
+          gets you there without a stalled rewrite.
+        </p>
+        <p>
+          The Microsoft integration already in your code is the one real argument for Azure, and
+          if selling into Microsoft estates is the strategy, it is not a small one. That is a
+          commercial judgement, not a technical one — which is why it is yours and not mine.
+        </p>
+
+        <p class="cap" style="margin-top:20px">This week, whatever you choose</p>
+        <ol>
+          <li><strong>Fix the sealed box.</strong> One hour, and it is a live exposure of real passwords.</li>
+          <li><strong>Put Litestream on the server you already have.</strong> An afternoon. This alone removes the risk of losing everything to one disk failure, and it does not depend on any decision here.</li>
+          <li><strong>Pick the provider and region, and open the account.</strong> Nothing else starts until this does.</li>
+        </ol>
+        <p style="margin-top:14px">
+          Item 2 is the one I would not wait on. Every day without it is a day where a single
+          hardware failure erases every account and every scan you have.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  RackTrack cloud migration plan · 26 August 2026 · grounded in a measured rehearsal against the real code
+  <br>Prices indicative, pay-as-you-go, India regions — confirm before committing
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var tabs   = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('[role="tabpanel"]'));
+
+  function select(tab, focus){
+    tabs.forEach(function(t){ t.setAttribute('aria-selected', String(t === tab)); });
+    panels.forEach(function(p){ p.hidden = (p.id !== tab.getAttribute('aria-controls')); });
+    if (focus) tab.focus();
+    try { history.replaceState(null, '', '#' + tab.id.slice(2)); } catch (e) {}
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  tabs.forEach(function(tab, i){
+    tab.setAttribute('tabindex', '0');
+    tab.addEventListener('click', function(){ select(tab, false); });
+    tab.addEventListener('keydown', function(e){
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (d) { e.preventDefault(); select(tabs[(i + d + tabs.length) % tabs.length], true); }
+      if (e.key === 'Home') { e.preventDefault(); select(tabs[0], true); }
+      if (e.key === 'End')  { e.preventDefault(); select(tabs[tabs.length - 1], true); }
+    });
+  });
+
+  var hash = (location.hash || '').replace('#','');
+  var initial = hash && document.getElementById('t-' + hash);
+  select(initial || tabs[0], false);
+})();
+</script>
+
+</body></html>

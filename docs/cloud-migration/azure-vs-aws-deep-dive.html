@@ -1,0 +1,464 @@
+<!-- Published copy of the claude.ai artifact "Azure vs AWS for RackTrack" | https://claude.ai/code/artifact/4794ade5-ca9c-464e-81d0-e5f02b9eac87 | artifact last updated 2026-08-19 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Azure vs AWS for RackTrack</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#F6F8F9; --panel:#FFFFFF; --ink:#16232D; --steel:#54646F; --faint:#7E909B;
+    --line:#DCE4E9; --line-soft:#E8EEF1;
+    --accent:#0B5E75; --accent-soft:#E3EEF2; --accent-deep:#083E4E;
+    --ok:#1E7A3C; --ok-soft:#E4F1E8; --warn:#95640A; --warn-soft:#F6EEDD; --crit:#B3261E; --crit-soft:#F8E7E5;
+    --azure:#2563A8; --azure-soft:#E5EEF8; --aws:#B0621B; --aws-soft:#F8EEE2;
+    --display:'Saira',ui-sans-serif,system-ui,sans-serif;
+    --body:'IBM Plex Sans',ui-sans-serif,system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.6;margin:0}
+  ::selection{background:var(--accent-soft)}
+  header.masthead{background:var(--panel);border-bottom:1px solid var(--line);padding:26px clamp(16px,3.5vw,48px) 0}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1.site{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.4vw,40px);line-height:1.08;margin:6px 0 4px;text-wrap:balance;letter-spacing:-.01em}
+  .masthead .sub{color:var(--steel);max-width:74ch;margin:0 0 14px}
+  .masthead .sub strong{color:var(--ink)}
+
+  nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin;position:sticky;top:0;z-index:50;
+    background:var(--panel);border-bottom:1px solid var(--line);padding:0 clamp(16px,3.5vw,48px)}
+  nav.tabs button{appearance:none;background:transparent;border:0;border-bottom:3px solid transparent;cursor:pointer;
+    font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.02em;color:var(--steel);
+    padding:12px 16px 10px;white-space:nowrap}
+  nav.tabs button:hover{color:var(--ink)}
+  nav.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+  nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px}
+
+  main{padding:26px clamp(16px,3.5vw,48px) 64px}
+  section.tabpanel{display:none}
+  section.tabpanel.active{display:block}
+
+  h2{font-family:var(--display);font-weight:700;font-size:22px;margin:34px 0 10px;letter-spacing:-.005em;text-wrap:balance}
+  h2:first-child{margin-top:0}
+  h3{font-family:var(--display);font-weight:600;font-size:17px;margin:24px 0 8px}
+  p{margin:8px 0;max-width:92ch}
+  ul,ol{margin:8px 0;padding-left:22px;max-width:92ch}
+  li{margin:4px 0}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.88em;background:var(--line-soft);border-radius:4px;padding:1px 5px;white-space:nowrap}
+  .note{color:var(--steel);font-size:14px}
+
+  .chip{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    border-radius:999px;padding:2px 9px;vertical-align:1px}
+  .chip.ok{background:var(--ok-soft);color:var(--ok)}
+  .chip.warn{background:var(--warn-soft);color:var(--warn)}
+  .chip.crit{background:var(--crit-soft);color:var(--crit)}
+  .chip.acc{background:var(--accent-soft);color:var(--accent)}
+  .chip.az{background:var(--azure-soft);color:var(--azure)}
+  .chip.aw{background:var(--aws-soft);color:var(--aws)}
+  .chip.tie{background:var(--line-soft);color:var(--steel)}
+
+  .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);
+    text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--line-soft);white-space:nowrap}
+  td{padding:9px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.mono{font-family:var(--mono);font-size:13px}
+
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h3{margin-top:0}
+
+  .callout{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;max-width:104ch}
+  .callout.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .callout.crit{border-left-color:var(--crit);background:var(--crit-soft)}
+  .callout p{margin:4px 0}
+
+  .phase{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:12px 0}
+  .phase .ph{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--accent)}
+  .phase h3{margin:4px 0 8px}
+  .phase.az{border-top:4px solid var(--azure)} .phase.az .ph{color:var(--azure)}
+  .phase.aw{border-top:4px solid var(--aws)} .phase.aw .ph{color:var(--aws)}
+
+  .scoregrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin:12px 0}
+  .score{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
+  .score b{display:block;font-family:var(--display);font-weight:700;font-size:14.5px;margin-bottom:3px}
+  .score p{margin:2px 0;color:var(--steel);font-size:13.5px}
+
+  footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);margin-top:48px;padding:16px clamp(16px,3.5vw,48px);background:var(--panel)}
+  footer a{color:var(--steel)}
+</style>
+
+<header class="masthead">
+  <div class="eyebrow">Hyperscaler deep dive · sized for 100–10,000 users · 19 Aug 2026</div>
+  <h1 class="site">Azure vs AWS for RackTrack</h1>
+  <p class="sub">Every realistic way to run RackTrack on each cloud — evaluated against what the app actually is: resident 2.5&nbsp;GB CV workers,
+    SQLite until the Postgres migration, 340&nbsp;MB uploads, an SSE stream, and 1–2 minute background OCR jobs. Prices are current on-demand list
+    rates (US regions; <strong>add ~5–10% for Mumbai / Central India</strong>). Companion to the
+    <a href="https://claude.ai/code/artifact/616a4042-7881-4be1-81b2-c594b42d21eb">Cloud Dossier</a>.</p>
+  <nav class="tabs" role="tablist" aria-label="Report sections">
+    <button role="tab" aria-selected="true" data-tab="azure">Azure</button>
+    <button role="tab" aria-selected="false" data-tab="aws">AWS</button>
+    <button role="tab" aria-selected="false" data-tab="compare">Comparison</button>
+    <button role="tab" aria-selected="false" data-tab="verdict">Recommendation</button>
+    <button role="tab" aria-selected="false" data-tab="plain">Plain English</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ============================ AZURE ============================ -->
+<section class="tabpanel active" id="tab-azure" role="tabpanel">
+  <h2>Why Azure is genuinely in the running for this app</h2>
+  <p>RackTrack is already half-married to Microsoft: report sharing goes through <strong>Teams and Outlook via Microsoft Graph</strong>, mail uses
+  MSAL app registrations that exist today in your Entra tenant, and the buyers you're courting (ServiceNow + M365 shops) live in that ecosystem.
+  Azure adds three concrete things on top: first-party Graph/Entra integration (managed identities instead of client secrets in env files),
+  an enterprise sales story ("runs in our Azure tenant" opens doors at M365-heavy datacenter operators), and
+  <strong>Microsoft for Startups Founders Hub credits</strong> — $1k–5k almost on signup, up to $150k with progression, which can cover year one entirely.</p>
+
+  <h2>Every Azure compute option, judged against RackTrack's constraints</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Option</th><th>Verdict</th><th>Why</th></tr>
+    <tr><td><strong>Azure VM</strong> (IaaS + your Docker Compose)</td><td><span class="chip ok">use now</span></td><td>The only option that runs the app unmodified. Local NVMe/Premium SSD keeps SQLite safe, workers get real RAM, Caddy keeps doing TLS. Everything else on this list needs the Postgres migration first.</td></tr>
+    <tr><td><strong>App Service</strong> (Linux containers)</td><td><span class="chip warn">after Postgres</span></td><td>Persistent storage is a mounted Azure Files SMB share — <strong>SQLite over SMB is a corruption lottery</strong>, so it's disqualified until the DB moves out. Post-migration a P2mv3 plan (16&nbsp;GB) can host the API, but the worker pool still wants a VM.</td></tr>
+    <tr><td><strong>Container Apps</strong> (managed containers, KEDA autoscale)</td><td><span class="chip warn">Phase C candidate</span></td><td>The nicest home for <em>stateless API replicas</em> once state lives in Postgres/Blob — scale rules, revisions, zero LB management. Same Azure Files problem for volumes today; inference workers fit poorly (resident models want stable, chunky instances).</td></tr>
+    <tr><td><strong>AKS</strong> (Kubernetes)</td><td><span class="chip warn">only at the top end</span></td><td>Full control, GPU node pools, but you inherit cluster ops. Justified near 10k users if you want one platform for API + workers + OCR fleet; overkill before that.</td></tr>
+    <tr><td><strong>Container Instances</strong></td><td><span class="chip acc">niche</span></td><td>Good for burst jobs (a retraining run, a batch OCR backfill), not for serving.</td></tr>
+    <tr><td><strong>Functions</strong></td><td><span class="chip crit">never for this</span></td><td>Resident 2.5&nbsp;GB models, 340&nbsp;MB uploads, multi-minute jobs — serverless functions fail all three.</td></tr>
+  </table></div>
+
+  <h2>The Azure blueprint, phase by phase</h2>
+  <div class="phase az"><div class="ph">Phase A · 100–300 users · days of work</div>
+    <h3>One VM, same compose files</h3>
+    <ul>
+      <li><strong>Compute:</strong> <code>Standard_D8as_v5</code> (8 vCPU / 32 GB) — ~$251/mo on-demand, <strong>~$172/mo on a 1-year savings plan</strong>. Region: Central India (Pune) for your users; South India as fallback.</li>
+      <li><strong>Disk:</strong> 256 GB Premium SSD (~$20/mo) — SQLite and <code>outputs/</code> stay local and fast.</li>
+      <li><strong>Unchanged:</strong> the demo's exact <code>docker-compose.demo.yml</code> + Caddy for TLS. Raise <code>RACKTRACK_WORKERS</code> to 5–6, cap OCR at 1–2 concurrent.</li>
+      <li><strong>Azure Backup</strong> nightly VM + a scripted <code>auth.db</code> dump to Blob (~$5/mo). <strong>Key Vault</strong> for JWT/SMTP/OAuth secrets from day one.</li>
+      <li>NSG open on 80/443/SSH only; Entra-based VM login instead of shared SSH keys.</li>
+    </ul></div>
+  <div class="phase az"><div class="ph">Phase B · before 1,000 users · the migration phase</div>
+    <h3>Managed state, two VMs, object storage</h3>
+    <ul>
+      <li><strong>Postgres:</strong> Azure Database for PostgreSQL Flexible Server — start <code>B2ms</code> (~$60/mo + storage), move to <code>D2ds_v5</code> (~$140/mo) as load grows. Zone-redundant HA doubles it — defer HA until Phase C.</li>
+      <li><strong>Redis:</strong> Azure Cache for Redis Basic C1 (~$41/mo) for rate limits, queues (BullMQ), job dedupe.</li>
+      <li><strong>Storage:</strong> Blob Storage Hot LRS (~$0.018/GB) for uploads + scan outputs; lifecycle rule to Cool at 90 days. Models live here too, versioned, pulled at boot.</li>
+      <li><strong>Compute:</strong> split — <code>D4as_v5</code> API VM (~$126 / $86 reserved) + <code>D8as_v5</code> inference VM. The queue between them replaces the in-process worker pool dispatch.</li>
+      <li><strong>Edge:</strong> Front Door Standard (~$35 base + egress) for CDN/WAF — or keep Caddy and add Blob-backed asset serving; <strong>skip Application Gateway</strong> (a ~$180+/mo cost trap this app doesn't need).</li>
+      <li><strong>Ops:</strong> Azure Monitor + Managed Grafana on the existing Prometheus <code>/metrics</code>; ACR Basic ($5) + GitHub Actions OIDC deploys; a staging slot of everything at B-series sizes (~$60/mo).</li>
+    </ul></div>
+  <div class="phase az"><div class="ph">Phase C · 1,500–10,000 users</div>
+    <h3>Replicas, GPU, HA</h3>
+    <ul>
+      <li><strong>API:</strong> 2–3 replicas on Container Apps (post-Postgres this is clean) or a VM Scale Set behind Front Door.</li>
+      <li><strong>GPU inference:</strong> <code>NC4as_T4_v3</code> (T4 16 GB) ~$0.53/hr ≈ $385/mo on-demand; <strong>spot ~$0.10–0.16/hr ≈ $75–120/mo</strong> with a CPU fallback pool for evictions. <code>NV6ads_A10_v5</code> (~$0.45/hr) is the step up. <span class="chip warn">caveat</span> GPU quota defaults to zero and <strong>Central India GPU stock is thin</strong> — request quota early; be ready to place GPU in South India or Southeast Asia (+~20–40&nbsp;ms).</li>
+      <li><strong>DB:</strong> flip Postgres to zone-redundant HA (×2 cost); PITR backups already included.</li>
+      <li><strong>OCR:</strong> unpin GPU in code, run OCR on the GPU node — the 1–2 min lag becomes seconds; else an autoscaled CPU OCR VM pool eating spot instances.</li>
+      <li><strong>Front Door WAF policy</strong>, DDoS network protection is included at the standard tier.</li>
+    </ul></div>
+
+  <h2>Azure monthly cost picture</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Phase</th><th>On-demand</th><th>1-yr reserved / savings</th><th>Notes</th></tr>
+    <tr><td>A — one VM</td><td class="num">~$290</td><td class="num">~$210</td><td>D8as_v5 + disk + backup + Key Vault + egress ~100 GB free</td></tr>
+    <tr><td>B — split + managed state</td><td class="num">~$650</td><td class="num">~$480</td><td>2 VMs + Postgres D2ds + Redis C1 + Blob + Front Door + staging</td></tr>
+    <tr><td>C — 10k users</td><td class="num">~$1,700–2,400</td><td class="num">~$1,200–1,700</td><td>3 API replicas + T4 GPU (spot cuts ~$300) + Postgres HA + storage/egress at TB scale</td></tr>
+  </table></div>
+
+  <h2>Azure gotchas specific to this codebase</h2>
+  <ul>
+    <li><strong>Azure Files ≠ SQLite.</strong> Any managed-container path mounts SMB shares; better-sqlite3 over SMB risks corruption and kills the event loop on latency. VM-only until Postgres.</li>
+    <li><strong>Application Gateway is the wrong LB here</strong> — expensive, and its default timeouts clash with the SSE stream and 120&nbsp;s scan requests. Front Door (raise origin response timeout to ≥240&nbsp;s) or plain Caddy.</li>
+    <li><strong>GPU quotas are zero by default</strong> on new subscriptions — the quota ticket takes days; file it the week you decide, not the week you need it.</li>
+    <li><strong>Egress:</strong> first 100 GB/mo free, then ~$0.087/GB. At 10k users serving multi-MB scan images, route downloads through Front Door/CDN pricing and lifecycle old artifacts aggressively.</li>
+    <li>Azure Cache for Redis Basic has no SLA — fine for rate limits and queues (the data is disposable), just don't put anything durable in it.</li>
+  </ul>
+</section>
+
+<!-- ============================ AWS ============================ -->
+<section class="tabpanel" id="tab-aws" role="tabpanel">
+  <h2>Why AWS fits this app</h2>
+  <p>Three practical reasons: <strong>Mumbai (ap-south-1) is a deep region</strong> — every instance family, GPU stock included, close to your users;
+  <strong>the cheapest credible GPU rung anywhere among hyperscalers</strong> (g4dn spot at ~$0.16/hr); and the most worn path for exactly this
+  migration — VPS-shaped EC2 today, ECS + RDS + S3 + CloudFront tomorrow, with the largest pool of docs, tooling, and people who've done it.
+  AWS Activate credits ($1k self-serve, up to $100k via accelerators/partners) are real but harder to reach than Microsoft's program.</p>
+
+  <h2>Every AWS compute option, judged against RackTrack's constraints</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Option</th><th>Verdict</th><th>Why</th></tr>
+    <tr><td><strong>Lightsail</strong> (VPS-style bundles)</td><td><span class="chip ok">cheapest start</span></td><td>32 GB / 8 vCPU at <strong>$164/mo including 6 TB transfer</strong> (or the new Mem-Opt 32 GB / 4 vCPU at $144). Runs the compose files unchanged. Limits: no GPU, coarse monitoring, migration to EC2 later is a snapshot-export.</td></tr>
+    <tr><td><strong>EC2</strong> (+ EBS gp3)</td><td><span class="chip ok">the workhorse</span></td><td><code>r7i.xlarge</code> (4 vCPU / 32 GB, ~$193/mo) is the RAM-heavy sweet spot for 5–6 workers; <code>m7i.2xlarge</code> (8/32, ~$294) when OCR needs the cores. Savings Plans take ~30% off; spot takes 60–70% off worker fleets.</td></tr>
+    <tr><td><strong>ECS on EC2</strong></td><td><span class="chip ok">Phase C</span></td><td>The natural replica manager for API containers and the OCR fleet — you keep instance-level control (and GPU AMIs) without Kubernetes.</td></tr>
+    <tr><td><strong>ECS Fargate</strong></td><td><span class="chip warn">API-only, after Postgres</span></td><td>Ephemeral storage disqualifies it today (SQLite, outputs). Post-migration it's a fine zero-maintenance home for stateless API tasks; workers stay on EC2 (Fargate has no GPUs and charges a premium for resident RAM).</td></tr>
+    <tr><td><strong>EKS</strong></td><td><span class="chip warn">only with a team</span></td><td>Adds $73/mo control plane + real ops load. Choose it near 10k users only if you'd rather run one platform than three services.</td></tr>
+    <tr><td><strong>App Runner / Elastic Beanstalk</strong></td><td><span class="chip crit">skip</span></td><td>App Runner is Cloud-Run-shaped (ephemeral, scale-to-zero — wrong for resident models); Beanstalk is EC2 with opinions you'll fight.</td></tr>
+    <tr><td><strong>Lambda + API Gateway</strong></td><td><span class="chip crit">never for this</span></td><td>API Gateway's 10 MB body cap alone kills 340 MB uploads; 15-min limit and cold model loads finish the job. Don't let any future refactor route uploads through API Gateway.</td></tr>
+  </table></div>
+
+  <h2>The AWS blueprint, phase by phase</h2>
+  <div class="phase aw"><div class="ph">Phase A · 100–300 users · days of work</div>
+    <h3>One box, two flavors</h3>
+    <ul>
+      <li><strong>Budget flavor:</strong> Lightsail 32 GB bundle — $164/mo flat, 6 TB transfer included, snapshots for backup. Fastest possible landing.</li>
+      <li><strong>Growth flavor (recommended):</strong> EC2 <code>r7i.xlarge</code> + 256 GB gp3 (~$21/mo) + Elastic IP, Route 53 for <code>api.racktrack.ai</code>, ACM certs if you later front with an ALB (Caddy does TLS until then). ~$215/mo on-demand, <strong>~$150 with a 1-yr Compute Savings Plan</strong> — and it upgrades in place forever.</li>
+      <li>Same compose files; workers 5–6; OCR capped; AWS Backup plan for EBS + nightly <code>auth.db</code> sync to S3; Secrets Manager (or SSM Parameter Store, free tier) replaces <code>.env</code> secrets.</li>
+    </ul></div>
+  <div class="phase aw"><div class="ph">Phase B · before 1,000 users · the migration phase</div>
+    <h3>Managed state, split compute</h3>
+    <ul>
+      <li><strong>Postgres:</strong> RDS <code>db.t4g.medium</code> — <strong>$47/mo</strong> single-AZ + ~$12 storage. Multi-AZ waits for Phase C (×2).</li>
+      <li><strong>Redis:</strong> ElastiCache <code>cache.t4g.micro</code> ($12/mo) → <code>small</code> ($24) — rate limits, BullMQ queues, dedupe.</li>
+      <li><strong>Storage:</strong> S3 ($0.023/GB) for uploads/outputs/models with lifecycle → Infrequent Access at 90 days, Glacier at 1 year — the "disk grows forever" problem becomes a $10 line item.</li>
+      <li><strong>CDN:</strong> CloudFront in front of the SPA + scan images — <strong>the first 1 TB/mo of egress is free forever</strong>, which at ~8 MB per scan view is a meaningful subsidy.</li>
+      <li><strong>Compute:</strong> <code>m7i.large</code> API node (~$74) + <code>r7i.xlarge</code> inference node; queue between them.</li>
+      <li><strong>Ops:</strong> ECR + GitHub Actions OIDC deploys; CloudWatch alarms on the existing <code>/metrics</code> (or Amazon Managed Grafana); a t3.medium staging copy (~$30).</li>
+    </ul></div>
+  <div class="phase aw"><div class="ph">Phase C · 1,500–10,000 users</div>
+    <h3>Replicas, GPU, HA</h3>
+    <ul>
+      <li><strong>API:</strong> ALB (~$25–40/mo — <strong>set idle timeout ≥300 s</strong> or the SSE console stream and long scans die) + 2–3 <code>m7i.large</code> in an ASG or ECS service.</li>
+      <li><strong>GPU inference:</strong> <code>g4dn.xlarge</code> (T4) $0.526/hr ≈ $385/mo on-demand, <strong>spot ~$0.16–0.21/hr ≈ $120–155/mo</strong>; <code>g6.xlarge</code> (L4) $0.805/hr ≈ $588 when you want headroom. One T4 clears the entire 10k-user YOLO load; run 1 on-demand + spot for burst. G-instance vCPU quota defaults to 0 — request it early.</li>
+      <li><strong>OCR:</strong> unpin GPU in code and co-locate on the GPU node, or an ECS spot fleet of CPU OCR workers scaled on queue depth.</li>
+      <li><strong>DB:</strong> RDS Multi-AZ (~$95–190 depending on size), automated PITR; WAF on ALB/CloudFront; AWS Budgets alerts at every phase.</li>
+    </ul></div>
+
+  <h2>AWS monthly cost picture</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Phase</th><th>On-demand</th><th>Savings plan / spot</th><th>Notes</th></tr>
+    <tr><td>A — Lightsail</td><td class="num">$164–180</td><td class="num">—</td><td>flat, transfer included</td></tr>
+    <tr><td>A — EC2</td><td class="num">~$240</td><td class="num">~$170</td><td>r7i.xlarge + EBS + backup + Route 53</td></tr>
+    <tr><td>B — split + managed state</td><td class="num">~$560</td><td class="num">~$420</td><td>2 nodes + RDS + ElastiCache + S3/CloudFront + staging</td></tr>
+    <tr><td>C — 10k users</td><td class="num">~$1,500–2,100</td><td class="num">~$1,000–1,400</td><td>ALB + 3 API nodes + T4 GPU (spot) + RDS Multi-AZ + storage/egress at TB scale</td></tr>
+  </table></div>
+
+  <h2>AWS gotchas specific to this codebase</h2>
+  <ul>
+    <li><strong>ALB idle timeout (default 60 s)</strong> silently kills the SSE switch-console stream and can cut off 120 s scan requests — raise it the day the ALB appears.</li>
+    <li><strong>Never route uploads through API Gateway</strong> (10 MB cap). ALB and CloudFront pass 340 MB bodies fine.</li>
+    <li><strong>The NAT Gateway tax:</strong> $32/mo + $0.045/GB processed. This app scrapes vendor firmware sites and calls Graph/ServiceNow constantly — keep egress-heavy instances in public subnets with strict security groups at small scale; add NAT only when compliance demands private subnets.</li>
+    <li><strong>Mumbai premium:</strong> ~5–10% over us-east-1 list; still the right call for India-based users (the viewfinder endpoint is latency-sensitive at 180 req/min).</li>
+    <li>gp3 EBS baseline (3,000 IOPS) is plenty for SQLite + outputs; don't pay for io2.</li>
+  </ul>
+</section>
+
+<!-- ============================ COMPARISON ============================ -->
+<section class="tabpanel" id="tab-compare" role="tabpanel">
+  <h2>Service-by-service map</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Need</th><th>Azure</th><th>AWS</th><th>Edge</th></tr>
+    <tr><td>Phase-A box (8 vCPU / 32 GB)</td><td>D8as_v5 · $251 / $172 reserved</td><td>r7i.xlarge (4/32) $193 / ~$135 · Lightsail 32 GB $164 flat</td><td><span class="chip aw">AWS</span> Lightsail's bundle + the 4-vCPU/32 GB shape matches the RAM-bound workload better</td></tr>
+    <tr><td>Managed Postgres (entry)</td><td>Flexible B2ms ~$60</td><td>RDS db.t4g.medium $47</td><td><span class="chip aw">AWS</span> slightly</td></tr>
+    <tr><td>Managed Redis (entry)</td><td>Basic C1 ~$41 (no SLA)</td><td>ElastiCache t4g.micro $12</td><td><span class="chip aw">AWS</span></td></tr>
+    <tr><td>Object storage</td><td>Blob Hot $0.018/GB + lifecycle</td><td>S3 $0.023/GB + lifecycle</td><td><span class="chip az">Azure</span> marginally on at-rest; wash overall</td></tr>
+    <tr><td>CDN / edge</td><td>Front Door Std $35 base + egress</td><td>CloudFront — <strong>1 TB/mo free forever</strong></td><td><span class="chip aw">AWS</span> clearly at this size</td></tr>
+    <tr><td>Entry GPU (T4-class)</td><td>NC4as_T4_v3 $0.53/hr · spot $0.10–0.16 · <strong>thin stock in Central India</strong></td><td>g4dn.xlarge $0.526/hr · spot $0.16–0.21 · in stock in Mumbai</td><td><span class="chip aw">AWS</span> on availability where you need it</td></tr>
+    <tr><td>Managed containers (post-Postgres API)</td><td>Container Apps — genuinely nice</td><td>ECS/Fargate — mature, more assembly</td><td><span class="chip az">Azure</span> on developer experience</td></tr>
+    <tr><td>Egress past free tier</td><td>100 GB free → $0.087/GB</td><td>100 GB free → $0.09/GB (CloudFront tiers cheaper)</td><td><span class="chip tie">tie</span></td></tr>
+    <tr><td>Secrets / identity</td><td>Key Vault + <strong>managed identity for Graph</strong> (no client secret at all)</td><td>Secrets Manager / SSM</td><td><span class="chip az">Azure</span> — direct win for this app's Graph mail</td></tr>
+    <tr><td>Monitoring on existing Prometheus</td><td>Monitor + Managed Grafana</td><td>CloudWatch + Managed Grafana</td><td><span class="chip tie">tie</span></td></tr>
+    <tr><td>Startup credits</td><td>Founders Hub: $1–5k on signup, to $150k</td><td>Activate: $1k self-serve, more via partners</td><td><span class="chip az">Azure</span> — materially easier to get real money</td></tr>
+    <tr><td>India region depth</td><td>Central India solid for CPU; GPU/quota friction</td><td>Mumbai: full catalog incl. GPU</td><td><span class="chip aw">AWS</span></td></tr>
+  </table></div>
+
+  <h2>Phase costs side by side</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Phase</th><th>Azure (reserved)</th><th>AWS (savings/spot)</th><th>Budget baseline*</th></tr>
+    <tr><td>A · 100–300 users</td><td class="num">~$210</td><td class="num">~$150–170</td><td class="num">~$45 (Hetzner 8/32 + backups)</td></tr>
+    <tr><td>B · to 1,500</td><td class="num">~$480</td><td class="num">~$420</td><td class="num">~$150–200</td></tr>
+    <tr><td>C · to 10,000</td><td class="num">~$1,200–1,700</td><td class="num">~$1,000–1,400</td><td class="num">~$500–800</td></tr>
+  </table></div>
+  <p class="note">*Included for honesty: a Hetzner-class setup runs the same architecture at a third of the price, at the cost of managed-service
+  convenience, compliance checkboxes, and startup credits. If neither credit program lands and budget rules, that's the rational fallback —
+  the phased plan is identical, only the logos change.</p>
+
+  <h2>The dimensions that actually decide it</h2>
+  <div class="scoregrid">
+    <div class="score"><b>Raw price <span class="chip aw">AWS</span></b><p>Lightsail entry, cheaper managed Redis/Postgres at small sizes, CloudFront's free TB, and the best spot-GPU market. Azure's reserved pricing closes most — not all — of the gap.</p></div>
+    <div class="score"><b>Your users' latency <span class="chip aw">AWS</span></b><p>Mumbai has everything in one region, GPUs included. Azure Central India is fine for CPU but may push your GPU to another region, splitting the architecture.</p></div>
+    <div class="score"><b>Microsoft integration <span class="chip az">Azure</span></b><p>Graph mail and Teams/Outlook shares get managed identities instead of secrets; Entra app registrations you already own sit next to the infra; M365-shop customers recognize the story.</p></div>
+    <div class="score"><b>Free money <span class="chip az">Azure</span></b><p>Founders Hub is self-serve and generous — realistic odds of running Phase A+B on credits for a year. AWS Activate at meaningful size usually needs an accelerator affiliation.</p></div>
+    <div class="score"><b>Migration path maturity <span class="chip aw">AWS</span></b><p>The exact path this app needs (EC2 → RDS/ElastiCache/S3/CloudFront → ECS+ALB) is AWS's most-documented journey; hiring and debugging help is easiest here.</p></div>
+    <div class="score"><b>Post-Postgres container DX <span class="chip az">Azure</span></b><p>Container Apps is the pleasant way to run 2–3 API replicas; ECS is more powerful but more assembly required.</p></div>
+  </div>
+
+  <h2>Non-differentiators (don't let them decide)</h2>
+  <ul>
+    <li><strong>Reliability:</strong> at this architecture (LB + replicas + Multi-AZ DB) both clouds deliver the same nines.</li>
+    <li><strong>Security services:</strong> WAF, DDoS shielding, secret stores, IAM — equivalent capability, different names.</li>
+    <li><strong>The app code:</strong> nothing in RackTrack is cloud-specific; the entire Phase B migration (Postgres, Redis, S3-compatible storage, queue) is portable across both — and back to a budget host. Keep it that way: use S3-compatible SDK paths and plain Postgres, no proprietary services in the hot path.</li>
+  </ul>
+</section>
+
+<!-- ============================ RECOMMENDATION ============================ -->
+<section class="tabpanel" id="tab-verdict" role="tabpanel">
+  <h2>The recommendation</h2>
+  <div class="callout">
+    <p><strong>Build on AWS Mumbai (ap-south-1). Sequence one thing first: apply to Microsoft for Startups Founders Hub and AWS Activate this week — and if Founders Hub lands $25k+ in credits, run year one on Azure Central India instead.</strong> The architecture below maps one-to-one across both clouds, so the credit outcome changes the logo, not the plan.</p>
+    <p>Why AWS on merits: your users are in India and Mumbai has the full catalog including in-stock T4 GPUs; the entry rungs are cheaper (Lightsail, $12 Redis, $47 Postgres, CloudFront's free terabyte); and the exact migration this app needs is the most-trodden path in cloud computing. Azure's genuine advantages — Graph managed identity, Container Apps, easier credits — are worth taking if they're paid for in credits, but they don't outweigh Mumbai's GPU availability and the price gap at list.</p>
+  </div>
+
+  <h2>The target architecture (what "best production" means here)</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Layer</th><th>Component</th><th>Why it's there</th></tr>
+    <tr><td>Edge</td><td>Route 53 → CloudFront (SPA, scan images, reports) + ALB (API, idle timeout 300 s) + WAF</td><td>Free-TB CDN, DDoS absorption, one stable <code>api.racktrack.ai</code> the mobile apps can trust forever</td></tr>
+    <tr><td>API</td><td>2–3 stateless containers (ECS) — Express, no local state</td><td>Deploys without downtime; a bad node is replaced, not debugged at 2 AM</td></tr>
+    <tr><td>Queue</td><td>BullMQ on ElastiCache — lanes for scans, OCR, PDFs, pollers</td><td>Backpressure instead of unbounded memory queues; exactly-one poller via locks; burst-proof</td></tr>
+    <tr><td>Inference</td><td>1 × g4dn (T4) steady + spot for burst; OCR unpinned to GPU</td><td>One T4 clears 10k users' YOLO load; OCR lag drops from minutes to seconds</td></tr>
+    <tr><td>State</td><td>RDS Postgres Multi-AZ · S3 with lifecycle (IA→Glacier) · Secrets Manager</td><td>Survives any single machine; storage growth becomes a rounding error; zero secrets in files</td></tr>
+    <tr><td>Ops</td><td>Terraform · GitHub Actions → ECR → ECS · staging env · Grafana on <code>/metrics</code> · AWS Budgets alerts</td><td>Every change reviewed, reproducible, observable, and cost-capped</td></tr>
+  </table></div>
+
+  <h2>The complete plan, in order</h2>
+  <div class="tablewrap"><table>
+    <tr><th>When</th><th>Do</th><th>Gate to pass before moving on</th></tr>
+    <tr><td>This week</td><td>Apply for both credit programs. Reserve the final domain plan (<code>api.racktrack.ai</code>). File GPU quota requests (they take days and cost nothing).</td><td>Credit answers in hand → cloud choice locked</td></tr>
+    <tr><td>Weeks 1–2</td><td><strong>Phase A live:</strong> one box (r7i.xlarge or Lightsail 32 GB), the dossier's hardening list — volumes fixed, secrets purged &amp; rotated into Secrets Manager/Key Vault, all six model files verified, nightly backups off-box, OCR capped at 2, stage PNGs → JPEG.</td><td>A restore test actually restores; a scan runs end-to-end on the new box</td></tr>
+    <tr><td>Weeks 3–4</td><td>Terraform the Phase-A setup; CI/CD (build → registry → deploy); staging environment; k6 load test to find the real scans/hour ceiling; Grafana dashboards + alerts (disk &gt;70%, RAM &gt;85%, queue depth, p95 scan time).</td><td>A deploy is one merged PR; you know your true capacity number</td></tr>
+    <tr><td>Months 2–4</td><td><strong>Phase B migration</strong> (the 3–6 week project): SQLite → Postgres, limits/dedupe → Redis, outputs/uploads/models → S3, scans/OCR/PDF → queues, pollers → locked singletons. Ship behind a maintenance window with a rehearsed rollback.</td><td>Two API replicas serve traffic with one killed mid-scan and nothing lost</td></tr>
+    <tr><td>On metrics, not dates</td><td><strong>Phase C:</strong> add the GPU node + unpin OCR when sustained scans/hour &gt; ~½ of measured ceiling; add API replica #3 and RDS Multi-AZ when p95 or error budgets say so; Play Store / App Store production releases pointed at the stable domain.</td><td>SLOs hold: 99.9% uptime, p95 scan &lt; 10 s, OCR results &lt; 60 s</td></tr>
+  </table></div>
+
+  <h2>Cost trajectory on the recommended path</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Milestone</th><th>Monthly (with savings plans/spot)</th><th>Per user-month at capacity</th></tr>
+    <tr><td>100 users · Phase A</td><td class="num">~$150–170</td><td class="num">~$1.60</td></tr>
+    <tr><td>1,000 users · Phase B</td><td class="num">~$420</td><td class="num">~$0.42</td></tr>
+    <tr><td>5,000 users · early Phase C</td><td class="num">~$800–1,000</td><td class="num">~$0.18</td></tr>
+    <tr><td>10,000 users · full Phase C</td><td class="num">~$1,000–1,400</td><td class="num">~$0.12</td></tr>
+  </table></div>
+  <p class="note">Infrastructure cost per user <em>falls 10×</em> as you grow — the expensive part is never the cloud bill, it's the Phase B
+  engineering window. Protect those 3–6 weeks in the roadmap and everything else is purchasable.</p>
+
+  <div class="callout warn">
+    <p><strong>The two failure modes to refuse:</strong> (1) skipping Phase B and stacking users on the single box until an OOM during a demo forces
+    the migration under fire; (2) jumping straight to Kubernetes + microservices at 300 users and spending the runway on platform instead of product.
+    The phased path exists precisely to dodge both.</p>
+  </div>
+</section>
+
+<!-- ============================ PLAIN ENGLISH ============================ -->
+<section class="tabpanel" id="tab-plain" role="tabpanel">
+  <h2>The whole thing, explained simply</h2>
+  <p>This tab says everything the other four tabs say, but in everyday language. Same facts, same numbers — just no jargon.</p>
+
+  <h3>What you have today</h3>
+  <p>Your whole app lives on <strong>one small rented computer</strong> (the demo server). That one computer does everything:
+  it shows the website, it runs the AI that reads rack photos, it keeps the list of users, and it stores every scanned photo.
+  It's like running a restaurant where one person is the waiter, the cook, the cashier, and the storeroom keeper.
+  It works fine because there are only a few customers.</p>
+
+  <h3>What "hosting in the cloud" means</h3>
+  <p>Instead of that one small computer, you rent computers from a big company — <strong>Amazon (AWS)</strong> or
+  <strong>Microsoft (Azure)</strong>. They own giant buildings full of computers, and you pay monthly rent for the slice you use.
+  The big advantage isn't just bigger computers — it's that they also rent you <em>ready-made helpers</em>: a professional
+  database service, a photo warehouse, automatic backups, security guards. You stop maintaining those things yourself.</p>
+
+  <h3>The five parts of your app (and what each one needs)</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Part</th><th>Plain description</th><th>What it needs</th></tr>
+    <tr><td>The website &amp; apps</td><td>What users see on their phone or laptop</td><td>Almost nothing — it's just files sent to the browser</td></tr>
+    <tr><td>The API ("the waiter")</td><td>Takes every request — login, upload a photo, show my results — and passes it to the right place</td><td>A modest computer; it's rarely the bottleneck</td></tr>
+    <tr><td>The AI workers ("the kitchen")</td><td>Look at a rack photo and find every device and port. Each worker handles <strong>one photo at a time</strong> and takes 3–8 seconds</td><td><strong>Lots of memory</strong> — each worker keeps ~2.5&nbsp;GB of AI models loaded. More simultaneous users = more workers = more memory</td></tr>
+    <tr><td>The label reader (OCR)</td><td>After the scan, it reads the small text on devices — names, models. Slow: <strong>1–2 minutes per photo</strong>, and greedy — it tries to use the whole computer</td><td>This is your real speed limit today. Either discipline it (make jobs queue up) or later give it a GPU, which makes it take seconds</td></tr>
+    <tr><td>The records &amp; photos</td><td>User accounts, organizations, scan history (the "filing cabinet"), plus every scanned image (~8&nbsp;MB per scan, <strong>never deleted</strong>)</td><td>Safe storage with backups. Right now some of it isn't even protected against a redeploy — that's fix #1</td></tr>
+  </table></div>
+
+  <h3>What's a GPU, and do you need one?</h3>
+  <p>A GPU is a special chip that does AI math very fast. Your app was deliberately built to work <em>without</em> one —
+  a normal computer does a scan in 3–8 seconds, which users find fine. You'll want a GPU later for two reasons:
+  when there are so many scans per hour that you'd otherwise need 3–4 extra normal computers (that happens around
+  3,000–5,000 users), and to make the label reader fast (minutes → seconds). Renting one GPU computer costs about
+  $120–400/month depending on how you buy it. For retraining your AI models, you rent a GPU <em>by the hour</em> —
+  a whole training run costs about the price of a coffee.</p>
+
+  <h3>The three phases of growth</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Phase</th><th>When</th><th>In plain words</th><th>Effort</th></tr>
+    <tr><td><strong>A — a bigger computer</strong></td><td>Now → ~300 users</td><td>Rent one strong computer, copy the app onto it exactly as it is, and fix the safety problems: make backups automatic, take passwords/keys out of the code, make sure nothing gets erased when you update. No code changes to the app itself.</td><td>Days</td></tr>
+    <tr><td><strong>B — the renovation</strong></td><td>Before ~1,000 users</td><td>The app currently assumes everything lives on one computer. This phase breaks that assumption: move the filing cabinet to a professional database service, move photos to a photo-warehouse service, and add a <em>ticketing system</em> so heavy jobs (scans, label-reading, PDFs) wait in line politely instead of trampling each other. This is real programming work.</td><td><strong>3–6 weeks</strong> — the one big project</td></tr>
+    <tr><td><strong>C — copies + GPU</strong></td><td>1,500 → 10,000 users</td><td>Run two or three copies of the app behind a "traffic director" that spreads users across them (if one copy dies, nobody notices), and add one GPU computer for the AI. Only possible after Phase B, because the copies must share the same database and warehouse.</td><td>2–4 weeks, mostly setup</td></tr>
+  </table></div>
+
+  <h3>Azure vs AWS, in one breath each</h3>
+  <p><strong>AWS (Amazon)</strong> is the biggest computer-renting company. Its Mumbai location has everything you need — including
+  GPUs — close to your users, its starter options are cheaper, and more people have walked this exact path, so answers to any
+  problem are a search away.</p>
+  <p><strong>Azure (Microsoft)</strong> rents essentially the same things. Its special appeal for you: your app already sends mail
+  and reports through Microsoft's services (Teams, Outlook), and those connections get simpler and safer inside Azure. Microsoft
+  also has a startup program that hands out free credits — sometimes enough to cover a whole year of rent.</p>
+  <p><strong>Our pick:</strong> AWS Mumbai — unless Microsoft gives you serious free credits, in which case take Azure for year one.
+  The plan is identical on both; only the shop names change.</p>
+
+  <h3>What it costs (rough monthly rent)</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Stage</th><th>Per month</th><th>Roughly in rupees</th></tr>
+    <tr><td>100 users (Phase A)</td><td class="num">$150–170</td><td class="num">~₹13,000–15,000</td></tr>
+    <tr><td>1,000 users (Phase B)</td><td class="num">~$420</td><td class="num">~₹37,000</td></tr>
+    <tr><td>10,000 users (Phase C)</td><td class="num">$1,000–1,400</td><td class="num">~₹90,000–1,25,000</td></tr>
+  </table></div>
+  <p>Notice the trick: rent grows about 8× while users grow 100×. The expensive part of scaling is never the rent —
+  it's protecting those 3–6 weeks of Phase-B programming time in your schedule.</p>
+
+  <h3>The two mistakes that sink apps like this</h3>
+  <ul>
+    <li><strong>Waiting too long:</strong> piling users onto the single computer until it runs out of memory during a customer demo,
+    and then doing the Phase-B renovation in a panic. Do it calmly, early.</li>
+    <li><strong>Jumping too far:</strong> building the fancy 10,000-user setup while you have 200 users — you'll spend months on
+    plumbing instead of the product. The phases exist so each month's work matches that month's real need.</li>
+  </ul>
+
+  <h3>What to actually do this week</h3>
+  <ol>
+    <li>Apply to <strong>both</strong> free-credit programs (Microsoft for Startups, AWS Activate). Free money decides the vendor.</li>
+    <li>Decide the permanent web address for the API (like <code>api.racktrack.ai</code>) — the phone apps have it baked in, so pick once, keep forever.</li>
+    <li>Ask AWS/Azure for GPU permission now (new accounts start at zero; approval takes days and costs nothing).</li>
+    <li>Fix the safety list: backups that actually restore, secrets out of the code, every data folder protected from redeploys, all six AI model files safely stored in two places.</li>
+  </ol>
+
+  <h3>Mini dictionary</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Word</th><th>Means</th></tr>
+    <tr><td>Server / VM / instance</td><td>A rented computer in their building</td></tr>
+    <tr><td>Docker / container</td><td>A packing box for your app so it runs identically on any computer</td></tr>
+    <tr><td>Database (Postgres)</td><td>A professional filing cabinet many computers can share safely</td></tr>
+    <tr><td>Object storage (S3 / Blob)</td><td>A bottomless photo warehouse — you pay per GB kept</td></tr>
+    <tr><td>Queue (Redis / BullMQ)</td><td>A ticketing system: heavy jobs wait in line instead of colliding</td></tr>
+    <tr><td>Load balancer</td><td>The traffic director that spreads users across app copies</td></tr>
+    <tr><td>CDN (CloudFront)</td><td>Copies of your website stored near users so pages load fast</td></tr>
+    <tr><td>Region</td><td>Which city your rented computers physically sit in (Mumbai for you)</td></tr>
+    <tr><td>Spot instance</td><td>A discounted computer (60–70% off) that the vendor may occasionally take back — great for background work</td></tr>
+    <tr><td>Egress</td><td>The fee for data leaving their building — the "delivery charge" on every image users download</td></tr>
+  </table></div>
+</section>
+
+</main>
+
+<footer>
+  Pricing gathered 19 Aug 2026 (US-region list; Mumbai/Central India ≈ +5–10%):
+  <a href="https://instances.vantage.sh/aws/ec2/m7i.2xlarge">EC2 m7i</a> ·
+  <a href="https://instances.vantage.sh/aws/ec2/g4dn.xlarge">g4dn</a> ·
+  <a href="https://instances.vantage.sh/aws/ec2/g6.xlarge">g6</a> ·
+  <a href="https://instances.vantage.sh/azure/vm/d8as-v5">Azure D8as_v5</a> ·
+  <a href="https://www.thundercompute.com/blog/azure-gpu-instances">Azure GPU guide</a> ·
+  <a href="https://instances.vantage.sh/aws/rds/db.t4g.medium">RDS</a> ·
+  <a href="https://instances.vantage.sh/aws/elasticache/cache.t4g.micro">ElastiCache</a> ·
+  <a href="https://aws.amazon.com/lightsail/pricing">Lightsail</a> ·
+  <a href="https://egresscost.com/">egress rates</a> ·
+  <a href="https://egresscost.com/aws/cloudfront-pricing/">CloudFront</a>.
+  App-side facts come from the RackTrack repository; see the <a href="https://claude.ai/code/artifact/616a4042-7881-4be1-81b2-c594b42d21eb">Cloud Dossier</a> for citations.
+</footer>
+
+<script>
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('section.tabpanel');
+  function show(id, push) {
+    tabs.forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === id)));
+    panels.forEach(p => p.classList.toggle('active', p.id === 'tab-' + id));
+    if (push) history.replaceState(null, '', '#' + id);
+    window.scrollTo({top: 0});
+  }
+  tabs.forEach(b => b.addEventListener('click', () => show(b.dataset.tab, true)));
+  const initial = location.hash.replace('#','');
+  if ([...tabs].some(b => b.dataset.tab === initial)) show(initial, false);
+</script>
+
+</body></html>

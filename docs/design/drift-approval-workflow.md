@@ -60,3 +60,17 @@ When the admin assigns (step 2), the person it is assigned to — the SPOC by
 default, or whoever the admin picked — is emailed, and a ServiceNow incident is
 raised for the rack. When the incident is resolved (step 3), the item
 returns to the admin's Approvals inbox and appears resolved in Drift tickets.
+
+## Enforced on the server, 17 September 2026
+
+The rules above were checked against the code on 17 September and eight gaps
+were closed (ticket SPRTMS-1684, report docs/task-reports/13-drift-rules-enforced.md):
+approve and reject are refused on the server until the item's ticket is
+resolved; a write with failures is "write failed", named, emailed and
+retryable; every transition writes an audit row; a technician can compare and
+submit and nothing more; My checks shows the caller's own plans; the ticket
+list is gated on the server; the assignee is stored by contact id and email;
+the whole-rack assign and the ports under a device work. The manager's wider
+specification (verification re-scan, status model, SLA, notifications,
+reports) is planned in docs/design/drift-approval-spec-plan.html and waits
+for the owner's discussion with the manager.

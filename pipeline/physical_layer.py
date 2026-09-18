@@ -195,7 +195,9 @@ def rack_identity(rack_id: str, front: dict | None, side: dict | None, rack_dir:
     # Front labels that read as a rack identifier (a sign on the door or the top).
     for l in (front or {}).get("labels", []) or []:
         raw = str(l.get("text", "")).strip()
-        for tok in raw.split():
+        # The whole reading first: a sign that says "RACK 2" is one identifier,
+        # and word by word it would leave "RACK" and lose the number.
+        for tok in ([raw] if " " in raw else []) + raw.split():
             t = _repair(tok)
             if _RACK_RE.match(t) and len(t) >= 3 and not _LABEL_RE.match(t):
                 cands.append(

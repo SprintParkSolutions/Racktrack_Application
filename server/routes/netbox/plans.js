@@ -72,13 +72,14 @@ function serviceNowFor(req) {
 }
 
 const who = (req) => (req.user && (req.user.username || req.user.email)) || null;
-const orgOf = (req) => req.user?.organization_id ?? null;
 const isAdmin = gates.isAdmin;
 // A plan the caller's organisation does not own is, to them, 404 - the same
 // answer they get for a plan that does not exist. No cross-org leak, no owner
-// bypass. A technician sees only the plans they raised themselves; an admin
-// sees every plan in the organisation.
-const mine = (req, plan) => plan && plans.canSee(plan.orgId ?? null, orgOf(req))
+// bypass; a plan raised by an account with no organisation belongs to that
+// account alone (plans.visibleTo, the one rule the list uses too). A
+// technician sees only the plans they raised themselves; an admin sees every
+// plan in the organisation.
+const mine = (req, plan) => plan && plans.visibleTo(plan, req.user)
   && (isAdmin(req) || plan.createdBy === who(req));
 
 /** A plan with the counts a screen shows, the write result included. */
@@ -101,7 +102,9 @@ router.get('/', gates.technician, (req, res) => {
       scanId: req.query.scanId ?? null,
       rackId: req.query.rackId ?? null,
       status: req.query.status ?? null,
-      orgId: orgOf(req),
+      // The same test the read applies, so nothing is listed that answers
+      // "no such plan" when it is opened.
+      seenBy: plans.seenBy(req.user),
       createdBy: onlyMine ? who(req) : null,
       limit: Math.min(Number(req.query.limit) || 50, 200),
     }),
@@ -208,7 +211,7 @@ router.get('/:planId', gates.technician, async (req, res) => {
 router.get('/tickets/all', gates.admin, (req, res) => {
   const status = req.query.status || null;
   const rows = [];
-  for (const idx of plans.list({ orgId: orgOf(req), limit: 200 })) {
+  for (const idx of plans.list({ seenBy: plans.seenBy(req.user), limit: 200 })) {
     const plan = plans.get(idx.id);
     if (!plan) continue;
     for (const it of plan.items) {

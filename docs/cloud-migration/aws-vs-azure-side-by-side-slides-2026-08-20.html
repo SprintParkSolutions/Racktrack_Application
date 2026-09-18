@@ -1,0 +1,402 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Cloud — AWS vs Azure" | https://claude.ai/code/artifact/c074159d-01e9-4993-8794-2fc128770400 | artifact last updated 2026-08-20 | saved 2026-09-09 -->
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RackTrack Cloud — AWS vs Azure</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --paper:#fbfbf9;--card:#fff;--ink:#14161b;--muted:#5b5f66;--faint:#8b8f96;
+    --line:rgba(20,22,27,.11);--line2:rgba(20,22,27,.07);
+    --accent:#15507e;
+    --aws:#c25e0d;--aws-bg:#fbefe0;--aws-line:rgba(194,94,13,.32);
+    --azure:#1f6feb;--azure-bg:#eaf1fe;--azure-line:rgba(31,111,235,.3);
+    --good:#1a7f37;--good-bg:#e9f3ec;--warn:#8a5a1d;--crit:#a1352a;
+    --sans:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-text-size-adjust:100%;overflow:hidden}
+  svg{display:block}
+
+  .prog{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:60;transition:width .35s ease}
+  .brandmark{position:fixed;top:20px;left:clamp(28px,3.5vw,56px);font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);z-index:50}
+  .hint{position:fixed;top:20px;right:clamp(28px,3.5vw,56px);font-size:11px;color:var(--faint);z-index:50}
+
+  .stage{position:relative;height:100vh;width:100%;display:flex;align-items:center;justify-content:center;padding:70px clamp(28px,3.6vw,64px) 92px}
+  .slide{display:none;width:100%;max-width:1700px;margin:0 auto;animation:fade .4s cubic-bezier(.2,.7,.3,1)}
+  .slide.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.slide.on{animation:none}}
+
+  .pane{display:grid;grid-template-columns:minmax(0,40%) minmax(0,60%);gap:clamp(36px,4.5vw,80px);align-items:center;width:100%}
+  .solo{width:100%;max-width:1200px}
+  @media (max-width:960px){.pane{grid-template-columns:1fr;gap:26px}}
+
+  .ey{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 20px}
+  .ey .tick{width:22px;height:2px;background:var(--accent);border-radius:2px}
+  h1{margin:0 0 20px;font-size:clamp(36px,4.4vw,68px);font-weight:650;letter-spacing:-.03em;line-height:1.02;text-wrap:balance}
+  h2{margin:0 0 16px;font-size:clamp(29px,3.3vw,52px);font-weight:650;letter-spacing:-.026em;line-height:1.05;text-wrap:balance}
+  .lead{margin:0;font-size:clamp(18px,1.5vw,25px);color:var(--muted);line-height:1.42;max-width:34ch}
+  .lead b{color:var(--ink);font-weight:600}
+  .say{margin:16px 0 0;font-size:clamp(17px,1.3vw,21px);color:var(--muted);line-height:1.5;max-width:48ch}
+  .say b{color:var(--ink);font-weight:600}
+  .note{margin-top:22px;font-size:clamp(15px,1.05vw,17px);color:var(--muted);max-width:60ch;line-height:1.5}
+  .note b{color:var(--ink)}
+
+  /* problem/win list */
+  .list{display:flex;flex-direction:column;gap:13px}
+  .li{display:flex;align-items:flex-start;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 19px;font-size:clamp(15px,1.2vw,19px);line-height:1.4}
+  .li .ic{flex:0 0 auto;width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--accent);background:#e8f0f6}
+  .li b{font-weight:600}
+
+  /* two contenders */
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:560px){.vs{grid-template-columns:1fr}}
+  .opt{border:1px solid var(--line);border-radius:18px;padding:22px 24px;background:var(--card)}
+  .opt.aws{border-color:var(--aws-line);box-shadow:0 0 0 3px rgba(194,94,13,.05)}
+  .opt.azure{border-color:var(--azure-line);box-shadow:0 0 0 3px rgba(31,111,235,.05)}
+  .opt .bn{display:flex;align-items:center;gap:10px;font-size:clamp(19px,1.5vw,25px);font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+  .opt.aws .bn{color:var(--aws)} .opt.azure .bn{color:var(--azure)}
+  .opt .bn .badge{width:12px;height:12px;border-radius:3px}
+  .opt.aws .badge{background:var(--aws)} .opt.azure .badge{background:var(--azure)}
+  .opt .tagline{font-size:clamp(14px,1vw,16px);color:var(--muted);margin-bottom:14px}
+  .opt .edge{font-size:clamp(14px,1.05vw,17px);line-height:1.5}
+  .opt .edge b{font-weight:650}
+  .opt .edge .h{display:block;font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+
+  /* map table */
+  .tw{overflow-x:auto;border:1px solid var(--line2);border-radius:14px;width:100%}
+  table{border-collapse:collapse;width:100%;min-width:640px}
+  th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card)}
+  th.aws{color:var(--aws)} th.azure{color:var(--azure)}
+  td{padding:12px 16px;border-bottom:1px solid var(--line2);font-size:clamp(13px,1vw,16px);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.d{font-weight:650;color:var(--ink);white-space:nowrap}
+  td.a{color:var(--aws);font-weight:600} td.z{color:var(--azure);font-weight:600}
+
+  /* stages */
+  .stages{display:flex;flex-direction:column;gap:11px}
+  .stg{display:flex;align-items:center;gap:16px;border:1px solid var(--line);border-radius:14px;padding:15px 19px;background:var(--card)}
+  .stg .sn{font-weight:700;color:#fff;background:var(--ink);border-radius:9px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:15px}
+  .stg .stt{font-size:clamp(15px,1.2vw,19px);font-weight:650}
+  .stg .sd{font-size:clamp(13px,.95vw,15px);color:var(--muted);margin-top:1px}
+  .stg .stx{min-width:0}
+  .stg.hi{border-color:var(--good);box-shadow:0 0 0 3px rgba(26,127,55,.06)}
+
+  /* cost table */
+  .cost{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:560px){.cost{grid-template-columns:1fr}}
+  .cc{border:1px solid var(--line);border-radius:16px;padding:20px 22px;background:var(--card)}
+  .cc.aws{border-color:var(--aws-line)} .cc.azure{border-color:var(--azure-line)}
+  .cc .bn{display:flex;align-items:center;gap:9px;font-size:clamp(17px,1.3vw,21px);font-weight:700;margin-bottom:12px}
+  .cc.aws .bn{color:var(--aws)} .cc.azure .bn{color:var(--azure)}
+  .cc .bn .badge{width:11px;height:11px;border-radius:3px}
+  .cc.aws .badge{background:var(--aws)} .cc.azure .badge{background:var(--azure)}
+  .cc .cr{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line2);font-size:clamp(13px,1vw,16px)}
+  .cc .cr:first-of-type{border-top:0}
+  .cc .cr .v{font-weight:650;white-space:nowrap}
+
+  /* decide */
+  .decide{display:flex;flex-direction:column;gap:12px}
+  .dec{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:15px 19px;background:var(--card)}
+  .dec .q{font-size:clamp(15px,1.15vw,18px)}
+  .dec .pick{font-weight:700;font-size:clamp(14px,1.05vw,17px);white-space:nowrap;border-radius:9px;padding:6px 13px}
+  .dec .pick.aws{color:var(--aws);background:var(--aws-bg);border:1px solid var(--aws-line)}
+  .dec .pick.azure{color:var(--azure);background:var(--azure-bg);border:1px solid var(--azure-line)}
+  .dec .pick.both{color:var(--muted);background:var(--card);border:1px solid var(--line)}
+
+  .rec{margin-top:24px;display:flex;align-items:flex-start;gap:14px;background:var(--aws-bg);border:1px solid var(--aws-line);border-radius:16px;padding:18px 22px;font-size:clamp(16px,1.3vw,21px);color:#573008;line-height:1.5}
+  .rec b{color:#3d2206;font-weight:700}
+  .rec .ic{flex:0 0 auto;color:var(--aws)}
+
+  .ask{margin-top:24px;display:flex;align-items:flex-start;gap:14px;background:var(--good-bg);border:1px solid rgba(26,127,55,.3);border-radius:16px;padding:18px 22px;font-size:clamp(16px,1.3vw,21px);color:#155e2b;line-height:1.5}
+  .ask b{color:#0e4a24;font-weight:700}
+  .ask .ic{flex:0 0 auto;color:var(--good)}
+
+  /* controls */
+  .bar{position:fixed;left:0;right:0;bottom:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(28px,3.6vw,56px);z-index:50;pointer-events:none}
+  .side{pointer-events:auto}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:11px;padding:10px 17px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn[disabled]{opacity:.35;cursor:default}
+  .count{font-size:12.5px;color:var(--muted);pointer-events:auto}
+  .dots{position:fixed;left:50%;bottom:74px;transform:translateX(-50%);display:flex;gap:7px;z-index:50;pointer-events:auto;flex-wrap:wrap;max-width:80vw;justify-content:center}
+  .pd{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;cursor:pointer;padding:0}
+  .pd.on{background:var(--accent);transform:scale(1.35)}
+</style>
+
+<div class="prog" id="prog"></div>
+<div class="brandmark">RackTrack · cloud migration · AWS vs Azure</div>
+<div class="hint">← → or click</div>
+
+<div class="stage" id="stage">
+
+  <!-- 1 TITLE -->
+  <section class="slide on"><div class="solo">
+    <p class="ey"><span class="tick"></span> Cloud migration plan · for review &amp; decision</p>
+    <h1>RackTrack in the cloud:<br>AWS vs Azure, side by side</h1>
+    <p class="lead" style="max-width:56ch">Today RackTrack runs on one server we manage by hand. This is the plan to move it to a proper cloud — <b>the same move on both AWS and Azure, compared like-for-like</b>, so we can pick a direction and start.</p>
+  </div></section>
+
+  <!-- 2 WHY -->
+  <section class="slide"><div class="pane">
+    <div class="a">
+      <p class="ey"><span class="tick"></span> 1 · Why move at all</p>
+      <h2>One server is<br>the weak point</h2>
+      <p class="say">Everything today depends on a single machine we update by hand. That's fine for a demo — it's a real risk for real customers.</p>
+    </div>
+    <div class="b"><div class="list">
+      <div class="li"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l6.4 11.4h-12.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6.4v3.1M8 11.2v.04" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span><b>No backups</b> — one dead hard drive erases every customer's data, permanently.</span></div>
+      <div class="li"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l6.4 11.4h-12.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6.4v3.1M8 11.2v.04" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span><b>One point of failure</b> — if that server goes down, the whole product is down.</span></div>
+      <div class="li"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l6.4 11.4h-12.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6.4v3.1M8 11.2v.04" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span><b>Can't handle a rush</b> — no way to scale up when many technicians scan at once.</span></div>
+      <div class="li"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l6.4 11.4h-12.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6.4v3.1M8 11.2v.04" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span><b>Updated by hand</b> — no test copy, no undo if a change breaks something.</span></div>
+    </div></div>
+  </div></section>
+
+  <!-- 3 WINS -->
+  <section class="slide"><div class="pane">
+    <div class="a">
+      <p class="ey"><span class="tick"></span> 2 · What the cloud gives us</p>
+      <h2>The same five wins,<br>either way</h2>
+      <p class="say">Whichever provider we pick, moving to the cloud delivers the exact gaps we need to close. This is why the move matters more than the brand.</p>
+    </div>
+    <div class="b"><div class="list">
+      <div class="li"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Automatic backups</b> we can actually restore.</span></div>
+      <div class="li"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>No single point of failure</b> — it runs across multiple machines that heal themselves.</span></div>
+      <div class="li"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Scales on demand</b> — quiet at night, more power during a busy morning.</span></div>
+      <div class="li"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Built-in monitoring &amp; alerts</b> — we know the moment anything breaks.</span></div>
+      <div class="li"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Safe, one-button deploys</b> with an undo — and a groundwork for the certificates later.</span></div>
+    </div></div>
+  </div></section>
+
+  <!-- 4 CONTENDERS -->
+  <section class="slide"><div class="solo">
+    <p class="ey"><span class="tick"></span> 3 · The two options</p>
+    <h2>Both are excellent. They differ in one thing that matters to us.</h2>
+    <div class="vs" style="margin-top:26px">
+      <div class="opt aws">
+        <div class="bn"><span class="badge"></span> AWS</div>
+        <div class="tagline">Amazon Web Services — the largest, most mature cloud.</div>
+        <div class="edge"><span class="h">Its edge for us</span> The widest, most cost-effective options for heavy AI (GPU) work, and the most mature machine-learning tooling. <b>RackTrack is an AI-first product — so this is exactly our biggest need.</b></div>
+      </div>
+      <div class="opt azure">
+        <div class="bn"><span class="badge"></span> Azure</div>
+        <div class="tagline">Microsoft's cloud — does everything AWS does.</div>
+        <div class="edge"><span class="h">Its edge for us</span> An equally capable all-rounder. Its usual advantage — native "Sign in with Microsoft" — <b>doesn't apply to us</b>, since our users are technicians on company accounts, not Microsoft users. Best pick mainly if our own team already lives in the Microsoft world.</div>
+      </div>
+    </div>
+  </div></section>
+
+  <!-- 5 MAP -->
+  <section class="slide"><div class="solo">
+    <p class="ey"><span class="tick"></span> 4 · Piece by piece</p>
+    <h2>What each part of RackTrack becomes</h2>
+    <div class="tw" style="margin-top:20px"><table>
+      <thead><tr><th>Today (one server)</th><th class="aws">On AWS</th><th class="azure">On Azure</th></tr></thead>
+      <tbody>
+        <tr><td class="d">The API server</td><td class="a">ECS Fargate</td><td class="z">Azure Container Apps</td></tr>
+        <tr><td class="d">Account database (SQLite)</td><td class="a">RDS PostgreSQL</td><td class="z">Azure DB for PostgreSQL</td></tr>
+        <tr><td class="d">Scan photos (disk folders)</td><td class="a">Amazon S3</td><td class="z">Azure Blob Storage</td></tr>
+        <tr><td class="d">The AI pipeline (GPU)</td><td class="a">SQS + SageMaker / GPU ECS</td><td class="z">Service Bus + Azure ML</td></tr>
+        <tr><td class="d">The web app</td><td class="a">S3 + CloudFront</td><td class="z">Static Web Apps + Front Door</td></tr>
+        <tr><td class="d">Deploys</td><td class="a">CodePipeline</td><td class="z">Azure DevOps</td></tr>
+        <tr><td class="d">Monitoring &amp; alerts</td><td class="a">CloudWatch</td><td class="z">Azure Monitor + App Insights</td></tr>
+        <tr><td class="d">Secrets / keys</td><td class="a">Secrets Manager</td><td class="z">Azure Key Vault</td></tr>
+        <tr><td class="d">Company login (SSO)</td><td class="a">Cognito</td><td class="z">Microsoft Entra ID</td></tr>
+        <tr><td class="d">Email</td><td class="a">SES</td><td class="z">Microsoft Graph / ACS</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note" style="margin-top:16px"><b>Read this row by row:</b> the capabilities are equivalent almost everywhere. Our users sign in with company-issued accounts (not Microsoft or Google), so login is a standard feature on both — not a deciding factor. The one place a real gap appears is <b>heavy AI/GPU work, where AWS leads</b> — and that's our biggest workload.</p>
+  </div></section>
+
+  <!-- 5a DEEP DIVE: COMPUTE -->
+  <section class="slide"><div class="pane">
+    <div class="a">
+      <p class="ey"><span class="tick"></span> Deep dive · running the app</p>
+      <h2>Where the app itself lives</h2>
+      <p class="say"><b>The plain difference:</b> both clouds run our app inside "containers" — self-contained packages that copy themselves when busy and restart themselves if one crashes. AWS calls its service <b>Fargate</b>; Azure calls its <b>Container Apps</b>. They do the same job.</p>
+      <p class="note"><b>Why it matters for us:</b> either one ends the "one server, and if it dies we're down" problem. This is <b>not</b> a deciding factor — it's a tie.</p>
+    </div>
+    <div class="b"><div class="vs">
+      <div class="opt aws"><div class="bn"><span class="badge"></span> AWS · Fargate</div><div class="edge"><span class="h">How it works</span> The most battle-tested option, with the biggest community and the most examples to copy. A few more moving parts to set up the first time.</div></div>
+      <div class="opt azure"><div class="bn"><span class="badge"></span> Azure · Container Apps</div><div class="edge"><span class="h">How it works</span> Newer and a little simpler to start, with "scale to zero" built in (it can idle down to nothing when unused). Slightly smaller community.</div></div>
+    </div></div>
+  </div></section>
+
+  <!-- 5b DEEP DIVE: DATA -->
+  <section class="slide"><div class="pane">
+    <div class="a">
+      <p class="ey"><span class="tick"></span> Deep dive · the data</p>
+      <h2>The database and the scan photos</h2>
+      <p class="say"><b>The plain difference:</b> there basically isn't one. Both give us a proper managed <b>PostgreSQL</b> database with automatic backups, and rock-solid storage for the scan images. Same capability, same safety.</p>
+      <p class="note"><b>Why it matters for us:</b> this is <b>the</b> fix — no more risk of losing everything. It's delivered equally well on either cloud, so it shouldn't drive the choice.</p>
+    </div>
+    <div class="b"><div class="vs">
+      <div class="opt aws"><div class="bn"><span class="badge"></span> AWS</div><div class="edge"><span class="h">How it works</span> <b>RDS for PostgreSQL</b> (the database, with backups &amp; failover) + <b>S3</b> for the scan photos — the most widely used storage on the internet.</div></div>
+      <div class="opt azure"><div class="bn"><span class="badge"></span> Azure</div><div class="edge"><span class="h">How it works</span> <b>Azure Database for PostgreSQL</b> + <b>Blob Storage</b> for the photos. Feature-for-feature equivalent to the AWS pair.</div></div>
+    </div></div>
+  </div></section>
+
+  <!-- 5c DEEP DIVE: OPS -->
+  <section class="slide"><div class="pane">
+    <div class="a">
+      <p class="ey"><span class="tick"></span> Deep dive · running it day to day</p>
+      <h2>Knowing when it breaks, and fixing it safely</h2>
+      <p class="say"><b>The plain difference:</b> both give us live dashboards, alerts to our phones, and a safe "one-button" way to ship updates with an undo. AWS pairs CloudWatch with CodePipeline; Azure pairs Azure Monitor with Azure DevOps.</p>
+      <p class="note"><b>Why it matters for us:</b> this is the "get told the moment it breaks, and never push a broken update" part. Again — equivalent on both.</p>
+    </div>
+    <div class="b"><div class="vs">
+      <div class="opt aws"><div class="bn"><span class="badge"></span> AWS</div><div class="edge"><span class="h">How it works</span> <b>CloudWatch</b> for dashboards &amp; alarms, <b>CodePipeline</b> for automatic deploys with rollback. Deep, mature, lots of knobs.</div></div>
+      <div class="opt azure"><div class="bn"><span class="badge"></span> Azure</div><div class="edge"><span class="h">How it works</span> <b>Azure Monitor + Application Insights</b> (nice, friendly dashboards) and <b>DevOps deploy slots</b> for instant, safe swap-and-rollback.</div></div>
+    </div></div>
+  </div></section>
+
+  <!-- 5d DEEP DIVE: LOCK-IN -->
+  <section class="slide"><div class="pane">
+    <div class="a">
+      <p class="ey"><span class="tick"></span> Deep dive · are we locked in?</p>
+      <h2>Can we change our mind later?</h2>
+      <p class="say"><b>The plain difference:</b> if we build on <b>open, standard pieces</b> — containers, PostgreSQL, a normal job queue — most of the app can move to the other cloud later without a rewrite. The lock-in risk is real but small, and the same on both.</p>
+      <p class="note"><b>Why it matters for us:</b> we shouldn't "marry" a cloud. The plan is to keep the design portable so this choice isn't a one-way door.</p>
+    </div>
+    <div class="b"><div class="vs">
+      <div class="opt aws"><div class="bn"><span class="badge"></span> AWS</div><div class="edge"><span class="h">The practical angle</span> The biggest ecosystem, the easiest to hire for and get help with, and the cheapest heavy-AI (GPU) power — which is our biggest workload.</div></div>
+      <div class="opt azure"><div class="bn"><span class="badge"></span> Azure</div><div class="edge"><span class="h">The practical angle</span> Tightest fit if <b>our own team</b> already works in the Microsoft world. Our users being non-Microsoft removes the usual Azure advantage.</div></div>
+    </div></div>
+  </div></section>
+
+  <!-- 6 GPU -->
+  <section class="slide"><div class="pane">
+    <div class="a">
+      <p class="ey"><span class="tick"></span> 5 · The one big cost decision</p>
+      <h2>Where the AI runs</h2>
+      <p class="say">The AI scan needs a powerful, expensive processor (a GPU), and it's <b>bursty</b> — busy when technicians scan, idle otherwise. How we handle that drives most of the monthly cost, on either cloud.</p>
+      <p class="note"><b>Our recommendation:</b> a "wake-up-when-needed" setup — the AI powers up to process a scan, then shuts down when idle, so we only pay while actually scanning. Start on ordinary processors if volume is small.</p>
+    </div>
+    <div class="b"><div class="vs">
+      <div class="opt aws">
+        <div class="bn"><span class="badge"></span> AWS</div>
+        <div class="edge"><span class="h">How it runs</span> SageMaker or GPU containers, fed by a job queue (SQS). Widest choice of GPU types and often the cheapest — AWS's strong suit.</div>
+      </div>
+      <div class="opt azure">
+        <div class="bn"><span class="badge"></span> Azure</div>
+        <div class="edge"><span class="h">How it runs</span> Azure ML or GPU Container Apps, fed by a queue (Service Bus). Fully capable; a slightly narrower GPU menu than AWS.</div>
+      </div>
+    </div></div>
+  </div></section>
+
+  <!-- 7 STAGES -->
+  <section class="slide"><div class="pane">
+    <div class="a">
+      <p class="ey"><span class="tick"></span> 6 · How we move</p>
+      <h2>In stages —<br>nothing goes down</h2>
+      <p class="say">The migration is the same shape on either cloud. We move one piece at a time, running old and new side by side, and only switch over when each piece is proven.</p>
+    </div>
+    <div class="b"><div class="stages">
+      <div class="stg"><span class="sn">A</span><div class="stx"><div class="stt">Foundation</div><div class="sd">Set up the account, network and safety controls; define it all as code.</div></div></div>
+      <div class="stg"><span class="sn">B</span><div class="stx"><div class="stt">Move the app &amp; website</div><div class="sd">Run beside the old server; switch traffic only when green.</div></div></div>
+      <div class="stg hi"><span class="sn">C</span><div class="stx"><div class="stt">Move the data — the big win</div><div class="sd">Managed database + automatic backups + a tested restore.</div></div></div>
+      <div class="stg"><span class="sn">D</span><div class="stx"><div class="stt">Move the AI</div><div class="sd">The wake-up-when-needed setup from the previous slide.</div></div></div>
+      <div class="stg"><span class="sn">E–F</span><div class="stx"><div class="stt">Monitoring &amp; hardening</div><div class="sd">Alerts, safe deploys, firewall, and company sign-in.</div></div></div>
+    </div></div>
+  </div></section>
+
+  <!-- 8 COST -->
+  <section class="slide"><div class="pane">
+    <div class="a">
+      <p class="ey"><span class="tick"></span> 7 · The cost, honestly</p>
+      <h2>Broadly the same<br>on both</h2>
+      <p class="say">Running costs are comparable — the <b>GPU is the swing factor</b>, not the provider. Both offer startup credits that can cover much of the first year.</p>
+      <p class="note">Ballpark monthly ranges, not quotes — they depend on real traffic and the AI setup.</p>
+    </div>
+    <div class="b"><div class="cost">
+      <div class="cc aws">
+        <div class="bn"><span class="badge"></span> AWS</div>
+        <div class="cr"><span>Lean pilot</span><span class="v">~$150–400</span></div>
+        <div class="cr"><span>Production, no GPU</span><span class="v">~$500–1,200</span></div>
+        <div class="cr"><span>With on-demand GPU</span><span class="v">~$900–2,500+</span></div>
+      </div>
+      <div class="cc azure">
+        <div class="bn"><span class="badge"></span> Azure</div>
+        <div class="cr"><span>Lean pilot</span><span class="v">~$150–400</span></div>
+        <div class="cr"><span>Production, no GPU</span><span class="v">~$500–1,200</span></div>
+        <div class="cr"><span>With on-demand GPU</span><span class="v">~$900–2,500+</span></div>
+      </div>
+    </div></div>
+  </div></section>
+
+  <!-- 9 DECIDE -->
+  <section class="slide"><div class="solo">
+    <p class="ey"><span class="tick"></span> 8 · How to choose</p>
+    <h2>A simple rule for the decision</h2>
+    <div class="decide" style="margin-top:24px">
+      <div class="dec"><div class="q">Our product is AI / computer-vision heavy (GPU) — which is exactly RackTrack</div><span class="pick aws">→ AWS</span></div>
+      <div class="dec"><div class="q">Our users sign in with company accounts, not Microsoft / Google</div><span class="pick both">→ identity is neutral</span></div>
+      <div class="dec"><div class="q">Our own dev team already knows one cloud well</div><span class="pick both">→ that one</span></div>
+      <div class="dec"><div class="q">Backups, monitoring, scaling, safe deploys</div><span class="pick both">→ both, equally</span></div>
+    </div>
+    <p class="note" style="margin-top:18px"><b>The honest truth:</b> the capability gap is small and mostly identical either way. The one factor that actually leans it is our <b>AI/GPU workload</b>, which favours AWS — the Microsoft-identity angle simply doesn't apply, because our users aren't Microsoft accounts.</p>
+  </div></section>
+
+  <!-- 9b SCORECARD: WHICH IS BEST -->
+  <section class="slide"><div class="solo">
+    <p class="ey"><span class="tick"></span> The verdict</p>
+    <h2>Which is better for us — and why</h2>
+    <p class="say" style="max-width:74ch">Scored on what actually matters to RackTrack. Most rows are a tie, because both clouds are genuinely excellent. The differences show up in only three places — and two of them point the same way.</p>
+    <div class="tw" style="margin-top:22px"><table>
+      <thead><tr><th>What matters to us</th><th class="aws">AWS</th><th class="azure">Azure</th><th>Winner &amp; why</th></tr></thead>
+      <tbody>
+        <tr><td class="d">Heavy AI / GPU work<span class="sub2">our biggest, priciest workload</span></td><td class="a">Widest GPU choice, best prices, most mature AI tooling</td><td class="z">Fully capable, narrower GPU menu</td><td><b style="color:var(--aws)">AWS</b> — this is the one big gap, and it's our core workload</td></tr>
+        <tr><td class="d">Backups &amp; database safety</td><td class="a">Managed PostgreSQL + auto backups</td><td class="z">Managed PostgreSQL + auto backups</td><td>Tie — both fix our biggest risk equally</td></tr>
+        <tr><td class="d">Staying up / no single failure</td><td class="a">Self-healing containers, multi-zone</td><td class="z">Self-healing containers, multi-zone</td><td>Tie</td></tr>
+        <tr><td class="d">Monitoring &amp; safe deploys</td><td class="a">CloudWatch + CodePipeline</td><td class="z">Azure Monitor + deploy slots</td><td>Tie — Azure's dashboards are a touch friendlier</td></tr>
+        <tr><td class="d">User sign-in<span class="sub2">our users are technicians on company accounts</span></td><td class="a">Standard SSO (Cognito)</td><td class="z">Standard SSO (Entra)</td><td>Tie — Azure's Microsoft-login edge <b>doesn't apply to us</b></td></tr>
+        <tr><td class="d">Cost to run</td><td class="a">~$150–2,500/mo</td><td class="z">~$150–2,500/mo</td><td>Tie — the GPU choice drives cost, not the brand</td></tr>
+        <tr><td class="d">Hiring &amp; getting help</td><td class="a">Largest community &amp; talent pool</td><td class="z">Large, strong in enterprise IT</td><td><b style="color:var(--aws)">AWS</b> — more examples, easier to hire for</td></tr>
+        <tr><td class="d">Fit with our own team</td><td class="a">—</td><td class="z">Better if we already live in Microsoft tooling</td><td><b style="color:var(--azure)">Azure</b> — the one row that can flip the decision</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note" style="margin-top:16px"><b>Reading the scorecard:</b> five ties, two rows to AWS, one to Azure. Since the AWS rows cover our <b>heaviest workload and our hiring</b>, and the Azure row depends on our own team's background, <b>AWS wins unless the team is already deeply Microsoft-based.</b></p>
+  </div></section>
+
+  <!-- 10 RECOMMENDATION -->
+  <section class="slide"><div class="solo">
+    <p class="ey"><span class="tick"></span> 9 · Our recommendation</p>
+    <h2>Lean AWS — we're an AI-first product</h2>
+    <p class="say" style="max-width:70ch;font-size:clamp(18px,1.4vw,23px)">For RackTrack specifically, <b>AWS is the more natural fit</b>. Our heaviest, most expensive workload is the AI computer-vision scanning — and AWS leads on GPU choice, GPU cost, and mature machine-learning tooling. The reason teams often lean Azure, native "Sign in with Microsoft," <b>doesn't apply to us</b>: our users are datacenter technicians on company-issued accounts, not Microsoft or Google users. Azure stays a fully valid alternative — mainly if our own team already lives in the Microsoft world.</p>
+    <div class="rec"><span class="ic"><svg width="22" height="22" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8l1.8 1.8L11 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Recommendation:</b> start on AWS, keep the design cloud-neutral so nothing locks us in. Either way, the winning move is to <b>decide and begin</b>.</span></div>
+  </div></section>
+
+  <!-- 11 ASK -->
+  <section class="slide"><div class="solo">
+    <p class="ey"><span class="tick"></span> 10 · What we need</p>
+    <h2>One decision, then we start</h2>
+    <p class="say" style="max-width:60ch;font-size:clamp(18px,1.4vw,23px)">The plan is ready and the same shape either way. All we need from this room is a direction — <b>AWS or Azure</b> — and the go-ahead to begin Stage A. The first stage is low-risk foundation work; the app keeps running throughout.</p>
+    <div class="ask"><span class="ic"><svg width="22" height="22" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>The ask:</b> pick a cloud, and approve starting the migration with Stage A (Foundation).</span></div>
+  </div></section>
+
+</div>
+
+<div class="bar">
+  <div class="side"><button class="btn" id="prev">← Back</button></div>
+  <div class="count" id="count">1 / 16</div>
+  <div class="side"><button class="btn" id="next">Next →</button></div>
+</div>
+<div class="dots" id="dots"></div>
+
+<script>
+  (function(){
+    var slides=[].slice.call(document.querySelectorAll('.slide'));
+    var i=0,n=slides.length;
+    var prev=document.getElementById('prev'),next=document.getElementById('next'),count=document.getElementById('count'),dots=document.getElementById('dots'),prog=document.getElementById('prog');
+    for(var d=0;d<n;d++){(function(k){var b=document.createElement('button');b.className='pd';b.setAttribute('aria-label','Slide '+(k+1));b.addEventListener('click',function(ev){ev.stopPropagation();go(k);});dots.appendChild(b);})(d);}
+    var pds=[].slice.call(dots.children);
+    function go(k){i=Math.max(0,Math.min(n-1,k));slides.forEach(function(s,x){s.classList.toggle('on',x===i);});pds.forEach(function(p,x){p.classList.toggle('on',x===i);});count.textContent=(i+1)+' / '+n;prev.disabled=i===0;next.disabled=i===n-1;prog.style.width=((i+1)/n*100)+'%';}
+    prev.addEventListener('click',function(e){e.stopPropagation();go(i-1);});
+    next.addEventListener('click',function(e){e.stopPropagation();go(i+1);});
+    document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(i+1);}else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(i-1);}else if(e.key==='Home'){go(0);}else if(e.key==='End'){go(n-1);}});
+    document.getElementById('stage').addEventListener('click',function(e){if(e.target.closest('.bar')||e.target.closest('.dots'))return;go(i+1);});
+    go(0);
+  })();
+</script>
+
+</body></html>

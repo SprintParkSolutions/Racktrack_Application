@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "node --test test/",
+    "test": "node --test --test-concurrency=1 test/",
     "test:coverage": "node --test --experimental-test-coverage test/",
     "lint": "eslint . --max-warnings=174",
     "format": "prettier --write \"**/*.js\""

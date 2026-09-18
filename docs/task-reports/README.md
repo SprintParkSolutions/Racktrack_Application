@@ -21,5 +21,6 @@ the document says so.
 | SPRTMS-1666 | Portal: first-run onboarding container and Organization settings | [10-portal-first-run-setup.md](10-portal-first-run-setup.md) |
 | SPRTMS-1667 | Rack Book: enter one rack in NetBox's own fields and export it | [11-rack-book.md](11-rack-book.md) |
 | SPRTMS-1676 | Application: Organization settings, the first-run container, and the space picker on Scan | [12-application-setup.md](12-application-setup.md) |
+| SPRTMS-1684 | Drift approval: enforce the frozen workflow rules on the server and in the screens | [13-drift-rules-enforced.md](13-drift-rules-enforced.md) |
 
 The tickets live in Jira project SPRTMS and carry the same wording in their comments.

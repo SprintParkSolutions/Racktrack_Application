@@ -61,21 +61,32 @@ const NOT_CONFIGURED = {
 
 const client = (req) => { const t = target(req); return new NetBox(t.url, t.token); };
 
-function snapshotOf(req, res) {
-  const scan = store.getScan(req.params.id);
-  if (!scan) { res.status(404).json({ error: 'no such scan' }); return null; }
+/**
+ * The snapshot one scan exports, with everything a person declared by hand
+ * applied to it. No request, no response: `{ scan, snap, reconciled }`, or
+ * `{ error, status }` saying why there is none.
+ *
+ * The Approvals "Compare again" reads it too, so it lives in one place rather
+ * than being written a second time slightly differently.
+ */
+function snapshotFor(scanId) {
+  const scan = store.getScan(scanId);
+  if (!scan) return { error: 'no such scan', status: 404 };
   // Prefer the reconciled snapshot once Review has produced one: it carries the
   // switch model/serial and the LLDP cabling merged onto the camera's layout.
   // Fall back to the raw camera snapshot when reconcile has not been run.
   const snap = (scan.payload && scan.payload.reconciled) || (scan.payload && scan.payload.snapshot);
-  if (!snap) {
-    res.status(409).json({ error: 'this scan has no detection result yet' });
-    return null;
-  }
+  if (!snap) return { error: 'this scan has no detection result yet', status: 409 };
   // Apply hand-declared unmanaged switches so their brand and model export too.
   unmanaged.applyTo(snap, scan.rackId);
   entered.applyTo(snap, scan.rackId);
   return { scan, snap, reconciled: Boolean(scan.payload.reconciled) };
+}
+
+function snapshotOf(req, res) {
+  const got = snapshotFor(req.params.id);
+  if (got.error) { res.status(got.status).json({ error: got.error }); return null; }
+  return got;
 }
 
 /**
@@ -85,6 +96,7 @@ function snapshotOf(req, res) {
  * that predates that (an owner or an org admin may sit in a different one).
  */
 const tenantOf = (scan, req) => scan.payload?.tenantId ?? req.user?.tenant_id ?? null;
+const tenantOfScan = (scan, user) => scan.payload?.tenantId ?? user?.tenant_id ?? null;
 
 /** Can we reach NetBox, and are we authenticated? */
 router.get('/health', gates.admin, async (req, res) => {
@@ -227,7 +239,7 @@ router.post('/:id/export', gates.admin, async (req, res) => {
   if (String(approvedPlan.scanId) !== String(got.scan.id)) {
     return res.status(409).json({ stage: 'export', error: 'that plan belongs to a different scan' });
   }
-  if (!plans.canSee(approvedPlan.orgId ?? null, req.user?.organization_id ?? null)) {
+  if (!plans.visibleTo(approvedPlan, req.user)) {
     return res.status(404).json({ stage: 'export', error: 'no such plan' });
   }
   if (!plans.isSettled(approvedPlan) && !force) {
@@ -369,3 +381,7 @@ const countLine = (counts) =>
   Object.entries(counts).sort().map(([k, v]) => `${k}=${v}`).join(' · ');
 
 module.exports = router;
+// Read by routes/approvals/plans.js for "Compare again", which runs the same
+// comparison from a rack id instead of a scan id.
+module.exports.snapshotFor = snapshotFor;
+module.exports.tenantOfScan = tenantOfScan;

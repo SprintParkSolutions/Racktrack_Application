@@ -6,6 +6,7 @@ import { useAuth } from '../AuthContext.jsx';
 import { usePrimaryNav, MoreIcon } from '../nav/navLinks.jsx';
 import MoreSheet from './MoreSheet.jsx';
 import ScanTabBar from './ScanTabBar.jsx';
+import ExternalLink from './ExternalLink.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
    BottomNav - the phone navigation: HOME / SCAN / MORE / PROFILE.
@@ -82,10 +83,25 @@ export default function BottomNav() {
   // Highlight MORE while the user is actually on one of the pages it holds,
   // so the bar never looks like nothing is selected.
   const onOverflowPage = overflow.some(
-    (l) => location.pathname === l.to || location.pathname.startsWith(l.to + '/'),
+    (l) => l.to && (location.pathname === l.to || location.pathname.startsWith(l.to + '/')),
   );
 
-  const tab = (l) => (
+  const tabBody = (l) => (
+    <>
+      <span className={styles.icon} aria-hidden="true">{l.icon}</span>
+      {/* barLabel lets a destination carry a shorter name in the bar than in
+          the sidebar, where there is room for the full one. */}
+      <span className={styles.label}>{(l.barLabel || l.label).toUpperCase()}</span>
+      <span className={styles.dot} aria-hidden="true" />
+    </>
+  );
+
+  // A destination outside the app (Approvals) is a link, never the active tab.
+  const tab = (l) => (l.href ? (
+    <ExternalLink key={l.href} href={l.href} className={styles.tab}>
+      {tabBody(l)}
+    </ExternalLink>
+  ) : (
     <NavLink
       key={l.to}
       to={l.to}
@@ -93,13 +109,9 @@ export default function BottomNav() {
       onClick={l.to === '/scan' ? handleScanClick : undefined}
       className={({ isActive }) => `${styles.tab} ${isActive && !moreOpen ? styles.active : ''}`}
     >
-      <span className={styles.icon} aria-hidden="true">{l.icon}</span>
-      {/* barLabel lets a destination carry a shorter name in the bar than in
-          the sidebar, where there is room for the full one. */}
-      <span className={styles.label}>{(l.barLabel || l.label).toUpperCase()}</span>
-      <span className={styles.dot} aria-hidden="true" />
+      {tabBody(l)}
     </NavLink>
-  );
+  ));
 
   return (
     <>

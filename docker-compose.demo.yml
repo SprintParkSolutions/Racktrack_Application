@@ -132,6 +132,9 @@ services:
       # block for portal.racktrack.ai. Without this mount a recreate of the
       # caddy container takes the portal down (11 Sep 2026).
       - ./portal-dist:/srv/portal:ro
+      # RackTrack Approvals, served at demo.racktrack.ai/approvals/. Same
+      # lesson as the portal: without this mount a recreate takes it down.
+      - ./approvals-dist:/srv/approvals:ro
       # Certificates and the ACME account key. Lose this volume and Caddy
       # re-issues on every restart, which will hit Let's Encrypt's rate limit
       # (5 certs per domain per week) and leave the demo without TLS for days.

@@ -1,0 +1,244 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Drift Approval Plan" | https://claude.ai/artifact/31gLYDK3ebBBpNS9ddX1Cp | artifact last updated 2026-09-17 | saved 2026-09-17 -->
+<title>RackTrack Drift Approval Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--ground:#fff;--surface:#f6f7fa;--hair:#e3e7ee;--ink:#14181f;--ink-2:#4b5563;--ink-3:#79838f;--ok:#2b7350;--ok-bg:#ecf5f0;--warn:#a8710f;--warn-bg:#fbf3e4;--risk:#a8443c;--risk-bg:#fbf0ef;--db:#3a51a0;--db-bg:#eef1fa;
+--display:'Newsreader',Georgia,serif;--sans:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.shell{padding:0 clamp(20px,4vw,64px);padding-block:56px 96px}
+.brand{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 18px}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(2.2rem,4.4vw,3.4rem);line-height:1.02;letter-spacing:-.02em;margin:0 0 14px;max-width:18ch;text-wrap:balance}
+.stand{font-size:1.08rem;color:var(--ink-2);max-width:64ch;margin:0}
+.notice{margin:26px 0 0;border-left:3px solid var(--db);background:var(--db-bg);border-radius:0 10px 10px 0;padding:14px 20px;max-width:80ch;color:var(--ink-2)}
+.notice b{color:var(--ink)}
+.glance{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));border:1px solid var(--hair);border-radius:12px;overflow:hidden;background:var(--surface);margin:32px 0 0}
+.glance div{padding:16px 18px;border-right:1px solid var(--hair)}
+.glance div:last-child{border-right:0}
+@media (max-width:760px){.glance div{border-right:0;border-bottom:1px solid var(--hair)}.glance div:last-child{border-bottom:0}}
+.glance h4{font-family:var(--mono);font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:0 0 6px;font-weight:500}
+.glance p{margin:0;font-size:.95rem;color:var(--ink-2);line-height:1.5}
+.glance b{font-family:var(--display);font-size:1.5rem;font-weight:500;color:var(--ink);display:block;line-height:1.1;margin-bottom:4px}
+section{margin:64px 0 0}
+.sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:1.5px solid var(--ink);padding-bottom:12px;margin-bottom:10px;flex-wrap:wrap}
+.sec-no{font-family:var(--mono);font-size:.76rem;color:var(--ink-3)}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(1.5rem,2.4vw,2rem);letter-spacing:-.015em;margin:0}
+h3{font-family:var(--display);font-weight:500;font-size:1.25rem;margin:28px 0 8px;letter-spacing:-.01em}
+.lede{color:var(--ink-2);max-width:68ch;margin:0 0 20px}
+p{max-width:72ch}
+ul.plain{margin:10px 0 0;padding-left:20px;color:var(--ink-2)}
+ul.plain li{margin:0 0 8px;max-width:72ch}
+ul.plain b{color:var(--ink);font-weight:600}
+.tscroll{overflow-x:auto;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:.94rem}
+th{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:0 14px 8px 0;border-bottom:1.5px solid var(--ink);font-weight:500;white-space:nowrap}
+td{padding:10px 14px 10px 0;border-top:1px solid var(--hair);vertical-align:top;color:var(--ink-2);line-height:1.5}
+td:first-child{font-weight:600;color:var(--ink)}
+table.wide{min-width:820px}
+.gap{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px;white-space:nowrap}
+.gap.none{color:var(--ok);background:var(--ok-bg)}
+.gap.small{color:var(--ok);background:var(--ok-bg)}
+.gap.medium{color:var(--warn);background:var(--warn-bg)}
+.gap.large{color:var(--risk);background:var(--risk-bg)}
+.gap.pass{color:var(--ok);background:var(--ok-bg)}
+.gap.partly{color:var(--warn);background:var(--warn-bg)}
+.gap.no{color:var(--risk);background:var(--risk-bg)}
+.phases{list-style:none;margin:20px 0 0;padding:0}
+.phases li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;padding:18px 0;border-top:1px solid var(--hair)}
+.phases li:last-child{border-bottom:1px solid var(--hair)}
+.phases > li > b{font-family:var(--mono);font-size:.76rem;color:var(--ink-3);padding-top:.3em;white-space:nowrap}
+.phases h4{font-family:var(--display);font-weight:500;font-size:1.2rem;margin:0 0 4px}
+.phases .meta{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px}
+.phases p{margin:0 0 6px;color:var(--ink-2);max-width:74ch}
+.phases ul{margin:4px 0 0;padding-left:20px;color:var(--ink-2)}
+.phases ul li{display:list-item;padding:2px 0;border:0;grid-template-columns:none;max-width:72ch}
+.two{display:grid;grid-template-columns:1fr;gap:18px 40px;margin-top:16px}
+@media (min-width:960px){.two{grid-template-columns:1fr 1fr}}
+.q{border:1px solid var(--hair);border-radius:10px;padding:14px 16px;background:var(--ground)}
+.q b{display:block;font-weight:600;margin-bottom:4px}
+.q span{font-size:.93rem;color:var(--ink-2);line-height:1.5}
+.qs{display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px}
+@media (min-width:760px){.qs{grid-template-columns:1fr 1fr}}
+.closing{margin-top:64px;padding-top:24px;border-top:1px solid var(--hair);color:var(--ink-2);max-width:74ch}
+code{font-family:var(--mono);font-size:.82rem;color:var(--ink);background:var(--surface);border:1px solid var(--hair);border-radius:4px;padding:1px 6px}
+</style>
+<div class="shell">
+<p class="brand">RackTrack &middot; planning note &middot; 17 September 2026</p>
+<h1>The drift approval specification, explained, and a plan to build it</h1>
+<p class="stand">Your manager sent a 17-page functional specification for a full drift ticketing and approval platform. This page says in plain words what it asks for, what RackTrack already does, what is missing, and how it could be built in stages. Phase 0.5, the fixes to our own frozen rules, was built on 17 September; everything else waits for the decisions in section 08.</p>
+<div class="notice"><b>Read this first.</b> The specification keeps the rules we froze on 11 September: the technician never decides, the admin assigns before deciding, a resolved ServiceNow ticket is not an approval, only an approval writes to NetBox, and nothing is written if NetBox moved. What it adds is everything around those rules: a verification re-scan before approval, a full status model, SLA clocks, escalation, notifications, reports, exceptions, an audit trail, and server-side permissions for every action.</div>
+
+<div class="glance">
+<div><h4>Spec asks for</h4><b>13</b><p>screens, 17 statuses, 8 roles, 19 tables, 20 acceptance criteria</p></div>
+<div><h4>We have today</h4><b>4</b><p>screens: Drift check in the app, Approvals, Incidents and My checks in the portal</p></div>
+<div><h4>Acceptance criteria met now</h4><b>4 of 20</b><p>fully; 7 partly; 9 not at all, after Phase 0.5 on 17 September</p></div>
+<div><h4>Plan</h4><b>5 phases</b><p>about 12 to 14 working weeks for one developer with me, after the decisions below</p></div>
+</div>
+
+<section>
+<div class="sec-head"><span class="sec-no">01</span><h2>What the specification asks for, in plain words</h2></div>
+<p class="lede">The document describes a product, not a feature. Its main ideas:</p>
+<ul class="plain">
+<li><b>Three separate records instead of one.</b> A <b>drift</b> is a difference between what NetBox says and what the technician saw. A <b>work ticket</b> is the job of fixing it, usually in ServiceNow. A <b>change approval</b> is the permission to write the corrected state into NetBox. Keeping them apart stops a fixed ticket being mistaken for permission to write.</li>
+<li><b>A longer path.</b> Scan, drift found, technician submits, admin triages, admin assigns the contact, ServiceNow ticket, contact investigates and resolves, <b>technician re-scans to verify the fix</b>, admin approves, system writes to NetBox, <b>post-write check</b>, complete. The two verification steps are new for us.</li>
+<li><b>Eight roles.</b> Technician, SPOC or resolver, admin or triage, change approver, auditor, management, super admin, system integration. Each with what they may and may not do, enforced on the server, not by hiding buttons.</li>
+<li><b>Thirteen screens.</b> Dashboard, My queue, scan detail, drift list, drift detail, create drift, admin triage, SPOC workbench, verification, approval, write execution, reports, administration.</li>
+<li><b>A status model with 17 states</b> from Draft to Completed, with rules on who may move a record from one state to the next, every move recorded with actor, time, old state, new state and reason. Status and disposition are separate: a record can be Completed and Accepted Drift, or Completed and False Positive.</li>
+<li><b>Fixed lists</b> for dispositions, reject reasons, pending reasons, reopen reasons, and exception fields.</li>
+<li><b>SLA clocks</b> per priority (P1 to P4) for acceptance, investigation, resolution and approval, with business calendars, pauses, warnings at 80 percent, breach at 100 percent, escalation at 120 percent.</li>
+<li><b>Integration rules.</b> ServiceNow tickets must be created once (no duplicates on retry), synchronised back, and never approve anything. NetBox writes must re-read the object first, write only the exact approved payload, keep before and after snapshots, and never mark a failed write as complete.</li>
+<li><b>Notifications</b> for thirteen events over in-app, email and Teams, with delivery history and no duplicates.</li>
+<li><b>Data model</b> of nineteen tables with foreign keys, append-only audit events and soft delete.</li>
+<li><b>Reports and dashboards</b> where every number can be clicked to see the records behind it.</li>
+<li><b>Twenty acceptance criteria</b> and a delivery plan of five phases in eight sprints.</li>
+</ul>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">02</span><h2>What RackTrack does today</h2></div>
+<p class="lede">Checked in the code on 17 September, not from memory.</p>
+<ul class="plain">
+<li><b>The five-step workflow exists and is frozen</b> in docs/design/drift-approval-workflow.md: check, assign, resolve, decide, write.</li>
+<li><b>App, Drift check.</b> The technician runs the compare from the report page, sees each difference as "NetBox says X, you saw Y", sees who the check will go to (the rack's contact from NetBox, or "the admin will choose"), can rename the rack and add a note, and sends it to the admin. They cannot approve, assign or write.</li>
+<li><b>Portal, Approvals.</b> The admin sees each submitted plan, assigns each item to the NetBox contact or another person, which raises a ServiceNow incident and emails the person. Approve and Reject appear only after the ticket is resolved. "Write the approved changes to NetBox" writes only approved items.</li>
+<li><b>Portal, Incidents, drift tab.</b> Every drift ticket with assignee, state and finding, read-only.</li>
+<li><b>Portal, My checks.</b> The technician's view of what became of each item.</li>
+<li><b>ServiceNow.</b> Incident creation is already idempotent: a correlation id per rack and item means a retry comments on the open incident or reopens a closed one instead of creating a second. State is read back from ServiceNow, but only when the admin opens the plan.</li>
+<li><b>NetBox write.</b> Before writing, the plan is compared again against live NetBox; if anything moved, nothing is written and a fresh plan comes back. Nothing is ever deleted. A round-trip test proves a second write changes nothing.</li>
+<li><b>Isolation.</b> Every plan belongs to one organization; no owner bypass.</li>
+<li><b>Tests.</b> Unit tests on plans, tickets, rack matching and the round trip.</li>
+</ul>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">03</span><h2>Side by side</h2></div>
+<p class="lede">Each area of the specification against what exists. "Gap" is my estimate of the work: none, small (days), medium (one to two weeks), large (two weeks or more).</p>
+<div class="tscroll"><table class="wide">
+<thead><tr><th>Area</th><th>The specification asks for</th><th>Today</th><th>Gap</th></tr></thead>
+<tbody>
+<tr><td>Separation of duties</td><td>Technician submits, SPOC fixes, admin approves, system writes; enforced on the server.</td><td>The rule is followed in the portal, but the server lets an admin approve an item that was never assigned, and the phone app&#x27;s approvals page offers Approve and Reject straight away.</td><td><span class="gap small">Small</span></td></tr>
+<tr><td>Three lifecycles</td><td>Drift, work ticket and change approval as separate records with their own states.</td><td>One plan with items; a ticket is a field on an item; approval is a decision on the item. Works, but the three are tangled in one record.</td><td><span class="gap medium">Medium</span></td></tr>
+<tr><td>Verification re-scan</td><td>After the fix, the technician re-scans; approval waits for a pass; a post-write check follows the write.</td><td>Nothing. A new scan creates a new plan; nothing links it to the old one or gates approval on it.</td><td><span class="gap large">Large</span></td></tr>
+<tr><td>Roles</td><td>Eight roles with server-side permissions and role-specific queues.</td><td>Four roles: owner, org admin, site manager, member. Members cannot run a drift check at all because the NetBox routes require site manager or above. No approver, auditor or management role.</td><td><span class="gap medium">Medium</span></td></tr>
+<tr><td>Status model</td><td>17 states, allowed transitions, every move recorded with actor, time, reason.</td><td>Plan: open, submitted, applied. Item: pending, approved, rejected, ticketed. Ticket: open, resolved, closed. Moves are recorded as counts in a per-plan events list.</td><td><span class="gap large">Large</span></td></tr>
+<tr><td>Fields</td><td>Identity, asset context, ownership, classification, recorded versus observed, workflow, SLA, resolution, approval, write-back, audit.</td><td>Identity, asset context, recorded versus observed, a free-text note, question and finding. No category, severity, priority, risk, root cause, reason codes, or approver.</td><td><span class="gap medium">Medium</span></td></tr>
+<tr><td>Reason codes and dispositions</td><td>Fixed lists for disposition, reject, pending, reopen; exception fields with owner and expiry.</td><td>Free text only. A rejected item simply comes back on the next scan.</td><td><span class="gap medium">Medium</span></td></tr>
+<tr><td>Approval bound to the payload</td><td>The approval is tied to the exact payload and version; a changed payload needs a new approval.</td><td>Close: the plan is fingerprinted at compare time and checked again before the write. Not stored as a signed approval record, and a site manager can decide but cannot write.</td><td><span class="gap small">Small</span></td></tr>
+<tr><td>NetBox write</td><td>Re-read before write, exact approved payload, before and after snapshots, failed write never completes, alert on failure.</td><td>Re-read and fingerprint check: yes. Exact approved items only: yes. Snapshots: no. A partial write with failures still marks the plan as applied and nobody is alerted.</td><td><span class="gap medium">Medium</span></td></tr>
+<tr><td>ServiceNow</td><td>Create once, store ids, sync state back with conflict handling, comment directionality, retry queue with dead letter.</td><td>Create once: yes, with reuse and reopen. Ids stored: yes. Sync back: only when the admin opens the plan; no timer, no webhook. No retry queue.</td><td><span class="gap medium">Medium</span></td></tr>
+<tr><td>Notifications</td><td>Thirteen events over in-app, email, Teams; templates; delivery history; no duplicates.</td><td>One email, on assign, to the person assigned. No in-app, no Teams, no history, no retry.</td><td><span class="gap large">Large</span></td></tr>
+<tr><td>Audit trail</td><td>Append-only audit events for every transition, separate from comments; not editable.</td><td>An audit table exists, but no drift action writes to it. The only history is the events list inside each plan file.</td><td><span class="gap medium">Medium</span></td></tr>
+<tr><td>SLA and escalation</td><td>Four clocks per priority, business calendars, pauses, 80 and 100 and 120 percent, backup approver.</td><td>Nothing.</td><td><span class="gap large">Large</span></td></tr>
+<tr><td>Exceptions and duplicates</td><td>Accepted drift and known exceptions with expiry; duplicate detection; parent and child drifts; maintenance windows; bulk assign.</td><td>Nothing. Two compares of the same rack make two plans. The portal shows &quot;ports follow this device&quot; and &quot;assign the whole rack&quot; but the server does not implement either.</td><td><span class="gap large">Large</span></td></tr>
+<tr><td>Comments</td><td>A thread per ticket with visibility rules.</td><td>Single note, question and finding strings.</td><td><span class="gap medium">Medium</span></td></tr>
+<tr><td>Screens</td><td>Thirteen.</td><td>Four, plus an approvals page and inbox in the phone app.</td><td><span class="gap large">Large</span></td></tr>
+<tr><td>Dashboards and reports</td><td>Clickable KPIs for backlog, SLA, quality, trends, resolver load, approvals, writes, exceptions; export.</td><td>None for drift. The portal overview does not read plans.</td><td><span class="gap large">Large</span></td></tr>
+<tr><td>Data model</td><td>Nineteen tables with foreign keys and constrained enums.</td><td>Plans are JSON files on disk, one per plan, with an index file. Users and audit are in the database.</td><td><span class="gap large">Large</span></td></tr>
+<tr><td>Security</td><td>Server-side permissions for every mutation, idempotency keys, optimistic locking, correlation ids in logs.</td><td>Org scoping is strict. Some rules live only in the UI. No version field on plans. Request ids exist in logs; no correlation across ServiceNow and NetBox calls.</td><td><span class="gap medium">Medium</span></td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">04</span><h2>What the code check found that should be fixed first</h2></div>
+<p class="lede">These are places where the code did not match the rules we already froze. All eight were fixed and deployed on 17 September 2026 as Phase 0.5 (ticket SPRTMS-1684; walkthrough in the ticket). They are kept here so the list stays honest about where we started.</p>
+<ul class="plain">
+<li><b>Approve without assign is possible.</b> The server accepts an approve or reject on an item that was never assigned. The portal hides the buttons until the ticket is resolved; the phone app does not. Rule 2 says assign first. Fix: refuse it on the server.</li>
+<li><b>A failed write looks complete.</b> If some objects fail during the NetBox write, the plan is still marked as applied and nobody is told. Fix: a "write failed" state and an alert.</li>
+<li><b>No audit entries.</b> Submit, assign, resolve, decide and write never reach the audit table. Fix: one audit row per transition.</li>
+<li><b>Technicians cannot run the check.</b> A member is refused by the NetBox routes; only site managers and above can compare. Fix: allow members to compare and submit, nothing more.</li>
+<li><b>Two dead controls in the portal.</b> "Assign the whole rack" and "ports follow this device" are shown but not implemented on the server. Fix: implement or remove.</li>
+<li><b>My checks shows everyone's plans</b>, not only the technician's own. Fix: filter by the caller.</li>
+<li><b>The assignee is stored as a name</b>, not as a contact id. Two people with the same name would collide. Fix: store the NetBox contact id and the email.</li>
+<li><b>The drift ticket list is not admin-only</b> on the server, only in the portal navigation. Fix: gate it.</li>
+</ul>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">05</span><h2>The twenty acceptance criteria, today</h2></div>
+<div class="tscroll"><table class="wide">
+<thead><tr><th>ID</th><th>Criterion, shortened</th><th>Today</th><th>State</th></tr></thead>
+<tbody>
+<tr><td>AC-01</td><td>Technician creates a drift with values and evidence; immutable id.</td><td>A plan has an id and the values; photo evidence is on the scan, not on the drift; no separate evidence record.</td><td><span class="gap partly">Partly</span></td></tr>
+<tr><td>AC-02</td><td>Technician cannot approve or write, in UI or API.</td><td>Members cannot reach the routes at all; site managers can decide but not write. Holds.</td><td><span class="gap pass">Pass</span></td></tr>
+<tr><td>AC-03</td><td>Admin triages, classifies, assigns; SPOC from NetBox by default.</td><td>Assign with the NetBox contact as default: yes. No triage step, no classification.</td><td><span class="gap partly">Partly</span></td></tr>
+<tr><td>AC-04</td><td>ServiceNow creation idempotent; number and sys_id stored.</td><td>Yes, with correlation id, reuse and reopen.</td><td><span class="gap pass">Pass</span></td></tr>
+<tr><td>AC-05</td><td>ServiceNow Resolved never auto-approves.</td><td>Yes. A resolved incident returns the item to the admin undecided.</td><td><span class="gap pass">Pass</span></td></tr>
+<tr><td>AC-06</td><td>Verification failure reopens and blocks approval and write.</td><td>No verification step exists.</td><td><span class="gap no">No</span></td></tr>
+<tr><td>AC-07</td><td>Rejection needs a reason code and comment; logged.</td><td>Free-text reason only; not in the audit table.</td><td><span class="gap partly">Partly</span></td></tr>
+<tr><td>AC-08</td><td>Approved payload bound to the approval; changed payload needs re-approval.</td><td>Fingerprint check before write does this in effect; no stored approval record with the hash.</td><td><span class="gap partly">Partly</span></td></tr>
+<tr><td>AC-09</td><td>NetBox write validates concurrency, records before and after snapshots and the API result.</td><td>Concurrency: yes. Snapshots: no. Result: counts only.</td><td><span class="gap partly">Partly</span></td></tr>
+<tr><td>AC-10</td><td>Write failure cannot become Completed; alert raised.</td><td>Since 17 September: a plan with failures is "write failed", the admin is emailed, and the write can be retried.</td><td><span class="gap pass">Pass</span></td></tr>
+<tr><td>AC-11</td><td>SLA clocks with calendars, pauses, warnings, breaches, escalation.</td><td>Nothing.</td><td><span class="gap no">No</span></td></tr>
+<tr><td>AC-12</td><td>Every transition records actor, time, old and new state, reason.</td><td>Since 17 September every transition writes an audit row with actor, time and payload; old and new state per item are not yet stored as fields.</td><td><span class="gap partly">Partly</span></td></tr>
+<tr><td>AC-13</td><td>Comments and audit history separate; audit not editable.</td><td>No comments; audit not written for drift.</td><td><span class="gap no">No</span></td></tr>
+<tr><td>AC-14</td><td>Dashboard counts match records and are clickable.</td><td>No dashboard.</td><td><span class="gap no">No</span></td></tr>
+<tr><td>AC-15</td><td>Accepted drift or known exception closes work without remediation, with owner and expiry.</td><td>Nothing.</td><td><span class="gap no">No</span></td></tr>
+<tr><td>AC-16</td><td>One audit can hold many drifts and related ServiceNow records.</td><td>One plan holds many items, each with its own incident. Holds in spirit; no parent and child.</td><td><span class="gap partly">Partly</span></td></tr>
+<tr><td>AC-17</td><td>Role-specific queues show only permitted actions.</td><td>Approvals and My checks exist; no SPOC, approver or auditor queue.</td><td><span class="gap no">No</span></td></tr>
+<tr><td>AC-18</td><td>Critical notifications deduplicated and logged.</td><td>One email type; no history.</td><td><span class="gap no">No</span></td></tr>
+<tr><td>AC-19</td><td>Reopen keeps history and counts reopens.</td><td>Only ServiceNow-side reopen; a written plan cannot be reopened.</td><td><span class="gap no">No</span></td></tr>
+<tr><td>AC-20</td><td>Integration errors carry correlation ids, retries and manual review.</td><td>Errors are stored on the item; no retry, no review queue.</td><td><span class="gap no">No</span></td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">06</span><h2>The plan</h2></div>
+<p class="lede">The specification's own five phases fit us well. I have adjusted them to what exists, and added a short phase zero and a half to fix the mismatches above before building on them. Weeks are my estimate for one developer working with me; they need to be confirmed once the decisions in section 08 are made.</p>
+<ol class="phases">
+<li><b>Phase 0</b><div><h4>Decisions and design</h4><p class="meta">1 week &middot; no code</p><p>Answer the questions in section 08. Agree the words: drift, work ticket, change approval, disposition. Agree the role mapping onto our four roles or add new ones. Write the status machine and the API contracts as one document. Design the database tables that replace the plan JSON files, and the migration for the plans that exist.</p><p>Exit: the design is approved and the ServiceNow and NetBox test instances are available.</p></div></li>
+<li><b>Phase 0.5</b><div><h4>Make today's code match the frozen rules</h4><p class="meta">done, 17 September 2026, ticket SPRTMS-1684</p><ul><li>Refuse approve or reject on the server for an item that was never assigned; take the early buttons off the phone app.</li><li>Write an audit row for submit, assign, ticket raised, resolve, decide and write.</li><li>A "write failed" outcome with an alert to the admin; a plan with failures is not "applied".</li><li>Let a member run the compare and submit; keep everything else above them.</li><li>Store the assignee as a contact id and email; filter My checks to the caller; gate the ticket list; implement or remove the two dead portal controls.</li></ul></div></li>
+<li><b>Phase 1</b><div><h4>Core workflow to the specification</h4><p class="meta">3 weeks</p><ul><li>Move plans from JSON files into database tables: audits, drifts, drift items, work tickets, approvals, comments, audit events.</li><li>The status model: Draft, Submitted, Triage, Assigned, Accepted, In progress, Pending, Resolved, Verification pending, Approval pending, Approved, Rejected, Write in progress, Written, Write failed, Completed, Reopened. Every transition guarded on the server and recorded.</li><li>Fields: category, severity, priority, risk, disposition, reason codes from fixed lists.</li><li>Roles: technician, SPOC, admin, approver, auditor; each route checks them. Queues per role: My queue, admin triage, SPOC workbench.</li><li>Comments as a thread with visibility.</li></ul><p>Exit: submit, triage, assign, resolve works end to end with a full history.</p></div></li>
+<li><b>Phase 2</b><div><h4>Verification and approval</h4><p class="meta">3 weeks</p><ul><li>Verification step: the technician re-scans the rack after the fix, the system compares the new scan with the proposed state, pass or fail, evidence attached, fail reopens.</li><li>Approval record bound to the payload hash and the plan version; a changed payload invalidates it. Second approver for high risk if the manager wants it.</li><li>Before and after NetBox snapshots, the API result per object, retry for a failed write, manual review state.</li><li>Post-write verification: compare again after the write and only then mark complete.</li></ul><p>Exit: no write is possible without a valid approval; verification gates pass.</p></div></li>
+<li><b>Phase 3</b><div><h4>SLA, notifications and reports</h4><p class="meta">3 weeks</p><ul><li>SLA clocks for acceptance, investigation, resolution and approval; priorities P1 to P4 with the defaults from the specification; business calendars and site time zones (we already store the time zone per datacentre); pause on pending states; warn at 80, breach at 100, escalate at 120.</li><li>Notifications for the thirteen events over in-app, email and Teams, with templates, preferences, delivery history and de-duplication. The email path exists; Teams needs the owner's tokens.</li><li>Dashboard and reports with clickable numbers; CSV export.</li></ul><p>Exit: an operations team can run the backlog and see breaches.</p></div></li>
+<li><b>Phase 4</b><div><h4>Exceptions and scale</h4><p class="meta">2 weeks</p><ul><li>Accepted drift and known exceptions with owner, scope, expiry and review date.</li><li>Duplicate detection when the same rack is compared again; parent and child drifts (a device and the ports that follow it); bulk assign; maintenance windows; reopen with a counter.</li></ul></div></li>
+<li><b>Phase 5</b><div><h4>Intelligence, later</h4><p class="meta">not estimated</p><p>Duplicate suggestions, SPOC recommendation, summaries, recurring drift insight, predicted SLA warnings. Advisory only; the rules do not change.</p></div></li>
+</ol>
+<h3>How it would go into Jira</h3>
+<p>One epic per phase. Inside each, tasks with two or three sub-tasks, four or five only for the heavy ones, following the rule we already use. No tasks for documents. Each task gets its report attached when it is done, as now.</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">07</span><h2>What stays exactly as it is</h2></div>
+<ul class="plain">
+<li><b>The six frozen rules.</b> The specification restates them; nothing in the plan weakens them.</li>
+<li><b>ServiceNow stays the work system.</b> RackTrack stays the system of record for evidence, verification and the write permission.</li>
+<li><b>Nothing is ever deleted in NetBox</b>, and nothing is written if NetBox moved.</li>
+<li><b>The technician's screen stays simple.</b> Compare, see who it goes to, send. The verification re-scan is the one addition on their side.</li>
+</ul>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">08</span><h2>Decisions your manager needs to make before Phase 1</h2></div>
+<p class="lede">The specification lists ten of these itself. I have put them in plain words and added four from the code check.</p>
+<div class="qs">
+<div class="q"><b>1. ServiceNow record type</b><span>Which drift categories create an Incident, a Task or a Change Request? Today everything is an Incident.</span></div>
+<div class="q"><b>2. What RackTrack may write in NetBox</b><span>Which objects and fields. Today: racks, devices, interfaces and their supporting records, never a delete.</span></div>
+<div class="q"><b>3. Second approver</b><span>Is there a risk level that needs two approvals? Who is the backup approver?</span></div>
+<div class="q"><b>4. SLA pauses</b><span>Which pending states stop which clock.</span></div>
+<div class="q"><b>5. Business calendars</b><span>Working hours and holidays per site. We already hold the time zone per datacentre.</span></div>
+<div class="q"><b>6. Evidence rules</b><span>Which evidence is mandatory for which drift category: photo, re-scan, ServiceNow note.</span></div>
+<div class="q"><b>7. Retention</b><span>How long photos, evidence and audit events are kept. The setup already asks for photo retention days.</span></div>
+<div class="q"><b>8. Notification channels</b><span>Which are mandatory: email, Teams, in-app, SMS or push. Teams needs the tokens still owed to me.</span></div>
+<div class="q"><b>9. Identity</b><span>Single sign-on provider and the source of truth for users. Today: RackTrack accounts plus social sign-in.</span></div>
+<div class="q"><b>10. Volume</b><span>Expected number of audits and drifts per day, and how many people at once.</span></div>
+<div class="q"><b>11. Roles (ours)</b><span>Map the eight roles onto our four, or add approver, auditor and management as new roles. My suggestion: add them as roles, keep owner as super admin.</span></div>
+<div class="q"><b>12. Phone approvals (ours)</b><span>May an admin approve from the phone app at all, or only from the portal? The specification puts approval at a desk.</span></div>
+<div class="q"><b>13. Storage move (ours)</b><span>Agree to move plans from JSON files into database tables in Phase 1, with a one-time migration of existing plans.</span></div>
+<div class="q"><b>14. Verification by whom (ours)</b><span>Must the re-scan be done by a different technician than the one who reported the drift?</span></div>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">09</span><h2>Risks</h2></div>
+<ul class="plain">
+<li><b>Size.</b> This is three to four months of work. The specification is written as a product; the phases let it ship in usable slices, starting with the fixes in Phase 0.5.</li>
+<li><b>ServiceNow sync.</b> Today we only read ServiceNow state when the admin opens a plan. A timer or a webhook is needed for SLA clocks to be truthful; the customer's ServiceNow admins must allow one.</li>
+<li><b>Teams notifications</b> depend on tokens we do not have yet.</li>
+<li><b>Verification re-scan</b> depends on rack identity being reliable, which is the next rung of the recognition work already planned.</li>
+<li><b>Defaults</b> for SLA times, priorities and escalation in the specification are marked as recommendations; they must be confirmed with operations before they are switched on.</li>
+</ul>
+</section>
+
+<div class="closing"><p>Phase 0.5 is done and live. Everything from Phase 1 on waits for your manager's answers to section 08.</p></div>
+</div>

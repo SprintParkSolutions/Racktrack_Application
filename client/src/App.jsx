@@ -55,9 +55,10 @@ const MarketplacePartnerAccountsPage = lazy(() => import('./pages/MarketplacePar
 // Marketplace: most sessions never reach them and they should not sit in
 // front of the login.
 const ReviewPage = lazy(() => import('./pages/ReviewPage.jsx'));
-const ApprovalsPage = lazy(() => import('./pages/ApprovalsPage.jsx'));
 const DriftPage = lazy(() => import('./pages/DriftPage.jsx'));
-const AdminInboxPage = lazy(() => import('./pages/AdminInboxPage.jsx'));
+// Approvals itself is a separate sub-application now; this is only the note
+// the old in-app paths land on.
+const ApprovalsMovedPage = lazy(() => import('./pages/ApprovalsMovedPage.jsx'));
 const ReportPage = lazy(() => import('./pages/ReportPage.jsx'));
 // Organization settings: admins only, opened at first run and from Profile.
 const SetupPage = lazy(() => import('./pages/SetupPage.jsx'));
@@ -508,14 +509,16 @@ export default function App() {
             <Route path="/results/:rackId/drift" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><DriftPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* The admin's inbox: drift checks waiting on a decision. */}
+            {/* Approvals moved out of the app into RackTrack Approvals, served by
+                its own address, approvals.racktrack.ai. The old in-app paths stay alive
+                for bookmarks and old emails: each one lands on a short page that
+                says so and links across. */}
             <Route path="/approvals" element={
-              <AdminRoute><ResponsiveLayout withBottomNav><AdminInboxPage /></ResponsiveLayout></AdminRoute>
+              <ProtectedRoute><ResponsiveLayout withBottomNav><ApprovalsMovedPage /></ResponsiveLayout></ProtectedRoute>
             } />
-            {/* Approvals - an admin decides what reaches NetBox, item by item. */}
-            <Route path="/results/:rackId/approvals" element={
-              <ProtectedRoute><ResponsiveLayout withBottomNav><ApprovalsPage /></ResponsiveLayout></ProtectedRoute>
-            } />
+            <Route path="/approvals/*" element={<Navigate to="/approvals" replace />} />
+            <Route path="/inbox" element={<Navigate to="/approvals" replace />} />
+            <Route path="/results/:rackId/approvals" element={<Navigate to="/approvals" replace />} />
             {/* Review is reachable but not a step. */}
             <Route path="/results/:rackId/review" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ReviewPage /></ResponsiveLayout></ProtectedRoute>

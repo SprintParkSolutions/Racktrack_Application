@@ -1873,7 +1873,7 @@ function registerRoutes(app) {
                   VALUES (?, ?, ?, 1, 'org_admin', ?)`)
         .run(emailN, adminUsername, hash, org.id);
       return org;
-    })();
+    }).immediate();
     audit.log({ req, user: req.user, action: 'org.create', status: 'ok', targetType: 'organization', targetId: out.id, payload: { name } });
     res.json({ ok: true, organization: out, admin: { username: adminUsername, email: emailN } });
   });
@@ -1983,13 +1983,22 @@ function registerRoutes(app) {
           if (hasCol(table, col)) db.prepare(`UPDATE ${table} SET ${col} = NULL WHERE ${col} = ?`).run(uid);
         }
       }
+      // The approval workflow's own rows: plans, their items, tickets,
+      // decisions, verifications, comments, events, clocks and notifications,
+      // plus the organisation's exceptions, change windows and settings. On
+      // the same handle and inside this transaction, so it is one removal.
+      let plans = 0;
+      try { plans = require('./lib/approvals/store').purgeOrg(orgId).plans; } catch (_) { /* nothing filed yet */ }
       const invites = db.prepare('DELETE FROM invites WHERE organization_id = ?').run(orgId).changes;
       const members = db.prepare('DELETE FROM users WHERE organization_id = ?').run(orgId).changes;
       const sites   = db.prepare('DELETE FROM tenants WHERE organization_id = ?').run(orgId).changes;
       db.prepare('DELETE FROM organizations WHERE id = ?').run(orgId);
-      return { members, sites, invites };
+      return { members, sites, invites, plans };
     });
-    const counts = run();
+    // IMMEDIATE: this reads before it writes, and SQLite answers "database is
+    // locked" at once when a deferred transaction tries to upgrade while
+    // another writer holds the lock, without waiting for the busy timeout.
+    const counts = run.immediate();
     audit.log({ req, user: req.user, action: 'org.remove', status: 'ok',
       targetType: 'organization', targetId: orgId,
       payload: { name: org.name, slug: org.slug, ...counts } });
@@ -2045,7 +2054,10 @@ function registerRoutes(app) {
       return res.status(403).json({ error: 'Your organization is awaiting owner approval.' });
     const { username, email, password, role } = req.body || {};
     // A site manager can only create plain members, not other managers.
-    let memberRole = ['site_manager', 'member'].includes(role) ? role : 'member';
+    // The roles an admin may hand out. approver and auditor came with the
+    // drift approval workflow: an approver decides but never resolves, an
+    // auditor only reads. org_admin and owner are not given out here.
+    let memberRole = ['site_manager', 'member', 'approver', 'auditor'].includes(role) ? role : 'member';
     if (req.user.role === 'site_manager') memberRole = 'member';
     if (!username || !email || !password) return res.status(400).json({ error: 'username, email and password are required' });
     if (!EMAIL_RE.test(String(email))) return res.status(400).json({ error: 'Invalid email' });
@@ -2110,7 +2122,7 @@ function registerRoutes(app) {
       sets.push('email = ?'); vals.push(e);
     }
     if (role !== undefined) {
-      if (!['site_manager', 'member'].includes(role)) return res.status(400).json({ error: 'Role must be member or site_manager' });
+      if (!['site_manager', 'member', 'approver', 'auditor'].includes(role)) return res.status(400).json({ error: 'Role must be member, site_manager, approver or auditor' });
       sets.push('role = ?'); vals.push(role);
     }
     if (siteId !== undefined && siteId !== null && siteId !== '') {
@@ -2178,7 +2190,7 @@ function registerRoutes(app) {
       db.prepare('UPDATE invites SET invited_by = NULL WHERE invited_by = ?').run(memberId);
       db.prepare('DELETE FROM users WHERE id = ?').run(memberId);
     });
-    try { tx(); }
+    try { tx.immediate(); }
     catch (e) { logger.error('member.remove failed:', e.message); return res.status(500).json({ error: 'Failed to remove member' }); }
     audit.log({ req, user: req.user, action: 'member.remove', status: 'ok', targetType: 'user', targetId: memberId, payload: { username: member.username } });
     res.json({ ok: true, removed: memberId });
@@ -2197,7 +2209,7 @@ function registerRoutes(app) {
       return res.status(403).json({ error: 'Your organization is awaiting owner approval.' });
     const { email, role } = req.body || {};
     if (!email || !EMAIL_RE.test(String(email))) return res.status(400).json({ error: 'A valid email is required' });
-    let inviteRole = ['site_manager', 'member'].includes(role) ? role : 'member';
+    let inviteRole = ['site_manager', 'member', 'approver', 'auditor'].includes(role) ? role : 'member';
     if (req.user.role === 'site_manager') inviteRole = 'member';  // managers invite members only
     const emailN = String(email).trim().toLowerCase();
     if (db.prepare('SELECT 1 FROM users WHERE email = ? COLLATE NOCASE').get(emailN))

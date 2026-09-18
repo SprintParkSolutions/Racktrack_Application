@@ -5,6 +5,7 @@ import styles from './DesktopShell.module.css';
 import ThemeToggle from './ThemeToggle.jsx';
 import { useAuth } from '../AuthContext';
 import { usePrimaryNav, NAV_GROUPS, GroundTruthIcon } from '../nav/navLinks.jsx';
+import ExternalLink from './ExternalLink.jsx';
 import { ShellHeaderContext } from './ShellHeader.jsx';
 
 // Persistent record of the last rack the user opened. Once an image has
@@ -108,6 +109,7 @@ const PAGE_TITLE = {
   '/profile':          { title: 'Profile',             sub: 'Account & history' },
   '/history':          { title: 'Scan history',        sub: 'Every rack you have scanned' },
   '/organizations':    { title: 'Organizations',       sub: 'Members, sites & approvals' },
+  '/approvals':        { title: 'Approvals',           sub: 'Moved to RackTrack Approvals' },
   '/setup':            { title: 'Organization settings', sub: 'Datacentres, spaces, approvers and rules' },
   '/connections':      { title: 'Connections',         sub: 'Active data sources' },
   '/results':          { title: 'Scan results',        sub: 'Devices & ports' },
@@ -266,11 +268,17 @@ export default function DesktopShell({ children }) {
               <div className={styles.navSection}>{g.title}</div>
               <ul className={styles.navLinks}>
                 {items.map(l => (
-                  <li key={l.to}>
-                    <NavLink end={l.end} to={l.to} title={l.hint || undefined}
-                      className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}>
-                      {l.icon}{l.label}
-                    </NavLink>
+                  <li key={l.to || l.href}>
+                    {l.href ? (
+                      <ExternalLink href={l.href} title={l.hint || undefined} className={styles.navLink}>
+                        {l.icon}{l.label}
+                      </ExternalLink>
+                    ) : (
+                      <NavLink end={l.end} to={l.to} title={l.hint || undefined}
+                        className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}>
+                        {l.icon}{l.label}
+                      </NavLink>
+                    )}
                   </li>
                 ))}
               </ul>

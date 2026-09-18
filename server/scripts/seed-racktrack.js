@@ -24,7 +24,13 @@ if (!fs.existsSync(DB_PATH)) {
 }
 
 // ── Credentials seeded (change here if you like) ──────────────────────────
-const OWNER = { username: 'owner', email: 'racktrackteam@sprintpark.com', password: 'Owner@12345' };
+// The owner's password is never kept in the repository. Pass it in:
+//   SEED_OWNER_PASSWORD='...' node scripts/seed-racktrack.js
+if (!process.env.SEED_OWNER_PASSWORD) {
+  console.error('Set SEED_OWNER_PASSWORD before running this seed script.');
+  process.exit(1);
+}
+const OWNER = { username: 'owner', email: 'racktrackteam@sprintpark.com', password: process.env.SEED_OWNER_PASSWORD };
 const ORG   = { name: 'RackTrack', slug: 'racktrack' };
 const ADMIN = { username: 'racktrack-admin', email: 'admin@racktrack.com', password: 'Admin@12345' };
 const SITE  = { name: 'RackTrack DC', slug: 'racktrack-dc' };

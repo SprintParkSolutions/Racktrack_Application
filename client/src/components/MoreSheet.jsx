@@ -4,6 +4,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import styles from './MoreSheet.module.css';
 import useModalA11y from '../hooks/useModalA11y.js';
 import { useAuth } from '../AuthContext.jsx';
+import ExternalLink from './ExternalLink.jsx';
 
 /**
  * The navigation drawer.
@@ -85,7 +86,21 @@ export default function MoreSheet({ links, onClose }) {
           {grouped.map((section) => (
             <nav key={section.key} className={styles.group} aria-label={section.title}>
               {section.title && <p className={styles.groupTitle}>{section.title}</p>}
-              {section.items.map((l) => (
+              {section.items.map((l) => (l.href ? (
+                <ExternalLink
+                  key={l.href}
+                  href={l.href}
+                  onClick={onClose}
+                  style={{ '--i': order++ }}
+                  className={styles.row}
+                >
+                  <span className={styles.icon} aria-hidden="true">{l.icon}</span>
+                  <span className={styles.text}>
+                    <span className={styles.label}>{l.label}</span>
+                    {l.hint && <span className={styles.hint}>{l.hint}</span>}
+                  </span>
+                </ExternalLink>
+              ) : (
                 <NavLink
                   key={l.to}
                   to={l.to}
@@ -100,7 +115,7 @@ export default function MoreSheet({ links, onClose }) {
                     {l.hint && <span className={styles.hint}>{l.hint}</span>}
                   </span>
                 </NavLink>
-              ))}
+              )))}
             </nav>
           ))}
         </div>
