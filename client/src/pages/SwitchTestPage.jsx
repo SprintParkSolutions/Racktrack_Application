@@ -398,25 +398,26 @@ export default function SwitchTestPage() {
       // 400" and every carefully worded message unreachable.
       const body = await r.json().catch(() => null);
       if (!r.ok) throw new Error((body && body.error) || `The server refused the save (HTTP ${r.status}).`);
-      // Say exactly what was saved, switch by switch, so a wrong place is seen here.
-      const devName = (uid) => {
-        const d = (places?.devices || []).find((x) => x.uid === uid);
-        return d ? `U${String(d.u ?? d.position ?? '').padStart(2, '0')}` : null;
-      };
-      const said = (places?.switches || []).map((s) => {
-        const where = match[s.id] ? (devName(match[s.id]) || 'placed') : 'not in this rack';
-        return `${s.label || s.name || s.host || s.id} → ${where}`;
-      });
+      // Name only what needs attention. This used to recite every switch and
+      // where it went, chained with arrows - "Saved: Core switch -> U15 - Sw01
+      // -> U12 - Sw02 -> not in this rack." - and then append the matcher's
+      // explanation of why a match could not be CONFIRMED, which named a serial
+      // number, a chassis address, a bridge address and a management MAC. None
+      // of that is an answer to "did my save work". The placements are on the
+      // screen directly above; repeating them back is the screen talking to
+      // itself, and the SNMP fields are a thing no operator can go and fix.
+      const unplaced = (places?.switches || [])
+        .filter((s) => !match[s.id])
+        .map((s) => s.label || s.name || s.host || s.id);
       // A row the server would not take is reported beside the ones it did, so a
       // partly accepted save never looks like a whole one.
       const refused = (body?.rejected || []).map((x) => x.error);
-      const note = body?.confirmNote ? [body.confirmNote] : [];
+      const saidUnplaced = unplaced.length
+        ? [`${unplaced.join(', ')} ${unplaced.length === 1 ? 'is' : 'are'} not in this rack.`]
+        : [];
       setMatchNote({
         ok: refused.length === 0,
-        text: [
-          said.length ? `Saved: ${said.join(' · ')}.` : 'Saved.',
-          ...note, ...refused,
-        ].join(' '),
+        text: ['Saved.', ...saidUnplaced, ...refused].join(' '),
       });
       loadPlaces();
       return true;
@@ -1020,6 +1021,7 @@ export default function SwitchTestPage() {
                   <PlacePicker
                     devices={places.devices}
                     image={places.image}
+                    rackLabel={places.rackName || rackId}
                     value={match[serverIdFor(sw, rackId)] ?? ''}
                     name={sw.label}
                     suggestion={(places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.autoMatch || null}
