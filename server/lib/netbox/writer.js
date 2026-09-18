@@ -103,6 +103,28 @@ function diff(payload, existing) {
  * is a whole dash-delimited token, so t7-5 never matches inside t7-51.
  */
 /**
+ * The patch body for an update: the fields that actually differ, and the uid.
+ *
+ * An update used to send the whole mapped payload. NetBox takes a PATCH field
+ * by field, so that rewrote every field this system maps, whether or not the
+ * admin had approved anything about it - and for a field no source stated,
+ * what it rewrote it to was empty. The record belongs to the customer, and an
+ * approval is for one difference, not for everything RackTrack happens to
+ * know how to write.
+ *
+ * custom_fields always travels, because it is how the object stays findable.
+ * A nested reference already resolved in the payload is sent as it stands.
+ */
+function onlyChanged(payload, changed) {
+  const body = {};
+  for (const k of Object.keys(changed)) {
+    if (k in payload) body[k] = payload[k];
+  }
+  if (payload.custom_fields !== undefined) body.custom_fields = payload.custom_fields;
+  return body;
+}
+
+/**
  * Did NetBox refuse because the object is already there under its own name?
  *
  * NetBox answers 400 with a field error whose wording varies by model and by
@@ -312,7 +334,15 @@ async function walk(snapshot, client, apply, report) {
         }
         if (apply) {
           try {
-            await client.patch(spec.endpoint, existing.id, payload);
+            // Only the fields that differ, never the whole mapped payload.
+            // Sending all of it rewrites every field this system maps on the
+            // customer's object, including blanking one it typed and we have
+            // never read: mapping.js sends serial: '' for a device whose
+            // serial no source stated, and diff() deliberately does not count
+            // NetBox-null against our empty string as a difference, so the
+            // admin approving one correction could not see the other field
+            // being cleared. Approve one thing, change one thing.
+            await client.patch(spec.endpoint, existing.id, onlyChanged(payload, changed));
           } catch (err) {
             failed.add(obj.uid);
             report.changes.push({

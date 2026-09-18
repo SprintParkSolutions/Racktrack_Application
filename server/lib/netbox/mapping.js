@@ -25,6 +25,23 @@ const s = (v) => (v === null || v === undefined ? '' : String(v));
  * the walk. It returns null when the target does not exist yet, which the
  * writer treats as "pending" — never as "null".
  */
+/**
+ * A value we actually have, or nothing at all.
+ *
+ * null, undefined and the empty string all mean the same thing here: no
+ * source stated this, so we have nothing to say about it. The field is then
+ * left out of the payload entirely rather than sent empty. Sending it empty
+ * proposes erasing whatever the customer typed, which is the opposite of rule
+ * 3: a value nobody stated is not ours to write, and it is not ours to clear
+ * on the way past either. JSON.stringify drops an undefined value, and diff()
+ * skips it, so an unknown field is invisible to both the comparison and the
+ * request.
+ *
+ * This is only for fields we fill in when we know them. A structural
+ * reference, where null genuinely means "not in a rack", is left alone.
+ */
+const known = (v) => (v === null || v === undefined || v === '' ? undefined : v);
+
 const SPECS = [
   {
     field: 'manufacturers', endpoint: '/api/dcim/manufacturers/',
@@ -74,7 +91,7 @@ const SPECS = [
       // applies its own default, where an explicit null is rejected.
       ...(Number.isInteger(o.uHeight) ? { u_height: o.uHeight } : {}),
       desc_units: o.descUnits,
-      description: s(o.description), comments: s(o.comments),
+      description: known(s(o.description)), comments: known(s(o.comments)),
     }),
   },
   {
@@ -86,8 +103,8 @@ const SPECS = [
       position: o.position,
       // NetBox rejects a face on an unracked device.
       face: o.position ? o.face : '',
-      serial: s(o.serial), asset_tag: o.assetTag || null,
-      platform: undefined, status: o.status, description: s(o.description),
+      serial: known(s(o.serial)), asset_tag: known(o.assetTag),
+      platform: undefined, status: o.status, description: known(s(o.description)),
     }),
   },
   {
@@ -95,8 +112,8 @@ const SPECS = [
     netboxType: 'dcim.interface', label: 'Interface',
     payload: (o, ref) => ({
       device: ref(o.deviceUid), name: o.name, type: o.type,
-      description: s(o.description), enabled: o.enabled,
-      mac_address: o.mac || null, label: s(o.label),
+      description: known(s(o.description)), enabled: o.enabled,
+      mac_address: known(o.mac), label: known(s(o.label)),
     }),
     naturalKey: (p) => (p.name && Number.isInteger(p.device)
       ? { name: p.name, device_id: p.device } : null),
