@@ -196,6 +196,10 @@ async function recogniseRack(req, { tenantId, rackId, fallbackName, siteName = n
     // written: their own rack id may, a name may not.
     recordMatch: {
       siteId: found.siteId ?? null,
+      // Why there is no site id, when there is none. The writer refuses every
+      // bind without one, and a refusal has to say what is missing rather than
+      // leave an admin guessing which of the two names is the one to fix.
+      siteWhy: found.siteWhy ?? null,
       rackNetboxId: found.netboxId ?? null,
       by: found.netboxBy ?? null,
       confidence: found.confidence ?? 'none',
@@ -484,10 +488,24 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
     // It is kept only while it is still about these boxes. A photograph that now
     // holds different boxes has made the earlier merge out of date, and serving a
     // stale merge is worse than asking for Review again.
+    //
+    // The answer a person gave about the customer's own records is stamped onto
+    // it as it is carried. Every compare and every write PREFERS the reconciled
+    // snapshot, and the answer lives on the snapshot, so a record bound after
+    // Review had already run reached nothing at all: the person bound a record,
+    // the screen said it was bound, and the plan that followed had never heard
+    // of it. The merge is the SNMP work, not the answer, so the answer is put
+    // back on top of it every time it is carried forward.
     if (heldPayload.reconciled && Array.isArray(heldPayload.reconciled.devices)) {
       const was = heldPayload.reconciled.devices.map((d) => d.uid).sort().join('|');
       const now = [...boxes].sort().join('|');
-      if (was === now) payload.reconciled = heldPayload.reconciled;
+      if (was === now) {
+        payload.reconciled = {
+          ...heldPayload.reconciled,
+          recordBinding: said.binding ?? null,
+          recordMatch: known.recordMatch ?? null,
+        };
+      }
     }
     if (heldPayload.changeNote) payload.changeNote = heldPayload.changeNote;
     store.setPayload(existing.id, payload);

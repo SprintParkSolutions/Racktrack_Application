@@ -546,3 +546,56 @@ test('a re-adopt keeps the reconciled snapshot the Review step produced', async 
   assert.equal(held.reconciled.devices[0].serial, serial, 'with the switch\'s own serial on it');
   assert.deepStrictEqual(held.matches, { 1: uid10 }, 'and the matching it was built from');
 });
+
+// ── 7d. a record bound after Review reaches the compare and the write ────────
+
+test('a record bound after Review is on the snapshot the compare and the write read', async (t) => {
+  await new Promise((r) => { server = app.listen(0, '127.0.0.1', () => { port = server.address().port; r(); }); });
+  t.after(() => new Promise((r) => server.close(r)));
+
+  const RACK_B = 'RK-BOUND0001';
+  OWNED.add(RACK_B);
+  const dir = path.join(OUTPUTS, RACK_B);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'device_unit_map.json'), JSON.stringify({
+    devices: [{ class_name: 'Switch', units: ['u10'], port_count: 24 }],
+  }));
+  fs.writeFileSync(path.join(dir, 'scan_meta.json'), JSON.stringify({ tenantId: 1 }));
+
+  fleet = [switchRecord(1, { label: 'sw-one', host: '10.10.1.11', serial: '222B0K4000121', ports: 24 })];
+
+  const first = await call('POST', `/scans/adopt/${RACK_B}`);
+  assert.equal(first.status, 201, first.raw);
+  const id = first.json.id;
+
+  // Review runs, and produces the merged snapshot every compare and every
+  // export prefers.
+  const view = await call('GET', `/scans/${id}/reconcile`);
+  const uid10 = view.json.devices.find((d) => d.position === 10).uid;
+  const saved = await call('POST', `/scans/${id}/reconcile`, { matches: { 1: uid10 } });
+  assert.equal(saved.status, 200, saved.raw);
+  assert.ok(store.getScan(id).payload.reconciled, 'Review produced the merged snapshot');
+  assert.equal(store.getScan(id).payload.reconciled.recordBinding ?? null, null,
+    'and nothing was bound when it ran');
+  const merged = JSON.stringify(store.getScan(id).payload.reconciled.devices);
+
+  // NOW a person says which rows of the customer's own record this rack and box
+  // are. The answer is stored, and the screen says it is bound - but preview,
+  // verify and write all prefer the reconciled snapshot, and the answer lived
+  // only on the other one, so it used to reach nothing at all.
+  const bound = await call('POST', `/scans/adopt/${RACK_B}?refresh=1`, {
+    recordBinding: { rackNetboxId: 7, deviceNetboxIds: { [uid10]: 51 }, why: 'read at the rack' },
+  });
+  assert.equal(bound.status, 200, bound.raw);
+  assert.equal(bound.json.recordBinding.rackNetboxId, 7, 'the answer was stored');
+
+  const after = store.getScan(id).payload;
+  assert.ok(after.reconciled, 'the Review work is still carried forward');
+  assert.equal(after.snapshot.recordBinding.rackNetboxId, 7);
+  assert.ok(after.reconciled.recordBinding,
+    'and the answer is on the snapshot the compare and the write actually read');
+  assert.equal(after.reconciled.recordBinding.rackNetboxId, 7);
+  assert.equal(after.reconciled.recordBinding.deviceNetboxIds[uid10], 51);
+  assert.equal(JSON.stringify(after.reconciled.devices), merged,
+    'and the merge itself is untouched: the answer is stamped on top of it, not instead of it');
+});

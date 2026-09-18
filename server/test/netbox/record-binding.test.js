@@ -38,7 +38,7 @@ const cv = require('../../lib/netbox/cv');
 const writer = require('../../lib/netbox/writer');
 const bindings = require('../../lib/netbox/bindings');
 const identity = require('../../lib/netbox/identity');
-const { NetBox, UID_FIELD } = require('../../lib/netbox/netbox');
+const { NetBox, UID_FIELD, BOUND_FIELD } = require('../../lib/netbox/netbox');
 
 test.after(() => { try { fs.rmSync(DATA_DIR, { recursive: true, force: true }); } catch { /* best effort */ } });
 
@@ -56,6 +56,12 @@ function customersNetBox() {
   nb.calls = calls;
   nb.rows = rows;
   nb.patches = (p) => calls.filter((c) => c.method === 'PATCH' && c.path.startsWith(p));
+  // The two fields RackTrack keeps its ids in. An instance it has written to
+  // before holds them, and a preview shows nothing as bound while the field
+  // that marks a record as the customer's own is not there.
+  rows('/api/extras/custom-fields/').push(
+    { id: 1, name: UID_FIELD, object_types: [], filter_logic: 'exact' },
+    { id: 2, name: BOUND_FIELD, object_types: [], filter_logic: 'exact' });
 
   nb.request = async (method, path, body = null, params = null) => {
     calls.push({ method, path, body, params });
@@ -116,13 +122,13 @@ const box = (cls, ports, units) => ({
 });
 
 /** A scan of that rack, keyed on the customer's rack row. */
-function snapshotFor({ recordBinding = null, serials = {} } = {}) {
+function snapshotFor({ recordBinding = null, recordMatch = null, serials = {} } = {}) {
   const snap = cv.toSnapshot({
     image: 'rack.jpg',
     devices: [box('Switch', 48, ['u10']), box('Switch', 24, ['u12'])],
   }, {
     rackId: 'RK-E909532A', rackKey: 't7:5', siteName: 'London DC', rackName: 'Rack 1',
-    uHeight: 42, scannedAt: '2026-09-18T00:00:00Z', recordBinding,
+    uHeight: 42, scannedAt: '2026-09-18T00:00:00Z', recordBinding, recordMatch,
   });
   for (const d of snap.devices) {
     const at = String(d.uid).split(':').pop();
@@ -138,11 +144,23 @@ const BINDING = {
   why: 'the admin picked this rack from the shortlist',
 };
 
+/**
+ * Where the scan is, in the customer's own record.
+ *
+ * Carried on every snapshot that binds anything, because a bind is refused
+ * without it: a record id names a row and says nothing about which building it
+ * is in, and no site means no check, which means no bind.
+ */
+const MATCH = {
+  siteId: 1, rackNetboxId: 7, by: 'facility-id', confidence: 'confirmed',
+  why: 'the customer\'s rack id DC1-R04 at this site',
+};
+
 // ── 1. the bind reaches the writer through the rebind that already existed ──
 
 test('a person\'s binding becomes a visible rebind row, not a create', async () => {
   const nb = customersRack(customersNetBox());
-  const planned = await writer.plan(snapshotFor({ recordBinding: BINDING }), nb);
+  const planned = await writer.plan(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
 
   const rackRow = planned.changes.find((c) => c.type === 'Rack');
   assert.equal(rackRow.action, 'rebind', 'the customer\'s rack is rebound, never created again');
@@ -165,7 +183,7 @@ test('a person\'s binding becomes a visible rebind row, not a create', async () 
 
 test('the write patches the custom field and nothing else on the bound records', async () => {
   const nb = customersRack(customersNetBox());
-  await writer.push(snapshotFor({ recordBinding: BINDING }), nb);
+  await writer.push(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
 
   for (const p of [...nb.patches('/api/dcim/racks/'), ...nb.patches('/api/dcim/devices/')]) {
     assert.deepEqual(Object.keys(p.body), ['custom_fields'],
@@ -179,8 +197,8 @@ test('the write patches the custom field and nothing else on the bound records',
 
 test('a second write after a bind changes nothing at all', async () => {
   const nb = customersRack(customersNetBox());
-  await writer.push(snapshotFor({ recordBinding: BINDING }), nb);
-  const again = await writer.push(snapshotFor({ recordBinding: BINDING }), nb);
+  await writer.push(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
+  const again = await writer.push(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
   assert.equal(again.counts.create || 0, 0, 'nothing is created the second time');
   assert.equal(again.counts.rebind || 0, 0, 'nothing is rebound the second time');
   assert.equal(again.counts.fail || 0, 0);
@@ -190,9 +208,9 @@ test('a second write after a bind changes nothing at all', async () => {
 
 test('what the customer calls their rack is reported, never overwritten', async () => {
   const nb = customersRack(customersNetBox());
-  await writer.push(snapshotFor({ recordBinding: BINDING }), nb);
+  await writer.push(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
   // Now the rack carries our uid, so the next plan compares field by field.
-  const again = await writer.plan(snapshotFor({ recordBinding: BINDING }), nb);
+  const again = await writer.plan(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
 
   const held = again.findings.find((f) => f.kind === 'bind-only' && f.type === 'Rack');
   assert.ok(held, 'the difference is reported');
@@ -209,7 +227,7 @@ test('what the customer calls their rack is reported, never overwritten', async 
 
 test('a binding naming a record that belongs to another RackTrack id is refused, and no twin appears', async () => {
   const nb = customersRack(customersNetBox(), { rackUid: 'rack:t9:77' });
-  const out = await writer.push(snapshotFor({ recordBinding: BINDING }), nb);
+  const out = await writer.push(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
 
   const rackRow = out.changes.find((c) => c.type === 'Rack');
   assert.equal(rackRow.action, 'skip');
@@ -222,7 +240,7 @@ test('a binding naming a record that belongs to another RackTrack id is refused,
 test('a binding naming a record that has gone is refused, not created around', async () => {
   const nb = customersRack(customersNetBox());
   const gone = { ...BINDING, rackNetboxId: 999 };
-  const out = await writer.plan(snapshotFor({ recordBinding: gone }), nb);
+  const out = await writer.plan(snapshotFor({ recordBinding: gone, recordMatch: MATCH }), nb);
   const rackRow = out.changes.find((c) => c.type === 'Rack');
   assert.equal(rackRow.action, 'skip');
   assert.match(rackRow.reason, /nothing at id 999/);
@@ -235,7 +253,9 @@ test('our own id on one record and a person naming another is said out loud, and
   nb.rows('/api/dcim/racks/').push({
     id: 8, name: 'Row 1 Rack 5', facility_id: 'DC1-R05', site: { id: 1 }, custom_fields: {},
   });
-  const out = await writer.push(snapshotFor({ recordBinding: { ...BINDING, rackNetboxId: 8 } }), nb);
+  const out = await writer.push(snapshotFor({
+    recordBinding: { ...BINDING, rackNetboxId: 8 }, recordMatch: MATCH,
+  }), nb);
 
   assert.ok(out.warnings.some((w) => /record 7/.test(w) && /record 8/.test(w)),
     'both records are named in the warning');
@@ -255,7 +275,7 @@ test('a device the customer wrote, still in the record and not in this scan, is 
     serial: 'PDU-001', status: { value: 'active' }, custom_fields: {},
   });
 
-  const out = await writer.plan(snapshotFor({ recordBinding: BINDING }), nb);
+  const out = await writer.plan(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
   assert.equal(out.orphans.length, 1, 'exactly the box this scan did not see');
   const [orphan] = out.orphans;
   assert.equal(orphan.netboxId, 53);
@@ -267,7 +287,7 @@ test('a device the customer wrote, still in the record and not in this scan, is 
 
 test('a device this plan is about to bind is not reported as gone from the rack', async () => {
   const nb = customersRack(customersNetBox());
-  const out = await writer.plan(snapshotFor({ recordBinding: BINDING }), nb);
+  const out = await writer.plan(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
   assert.deepEqual(out.orphans, [], 'the two bound boxes are seen, not missing');
 });
 
@@ -277,7 +297,7 @@ test('binding the rack alone makes the customer\'s own devices visible to the ch
   // the next slice starts from. Before this change both of these were invisible:
   // the check threw away every record that did not carry our own uid.
   const rackOnly = { ...BINDING, deviceNetboxIds: {} };
-  const out = await writer.plan(snapshotFor({ recordBinding: rackOnly }), nb);
+  const out = await writer.plan(snapshotFor({ recordBinding: rackOnly, recordMatch: MATCH }), nb);
   assert.deepEqual(out.orphans.map((o) => o.netboxId).sort(), [51, 52],
     'both of the customer\'s boxes are reported');
   assert.ok(out.orphans.every((o) => o.ours === false), 'and both are marked as theirs, not ours');
@@ -298,7 +318,7 @@ test('with no binding at all the rack itself is unknown, so there is nothing to 
 test('a bound box whose serial disagrees with the switch is one row, was X now Y, and is not bound', async () => {
   const nb = customersRack(customersNetBox());
   const snap = snapshotFor({
-    recordBinding: BINDING,
+    recordBinding: BINDING, recordMatch: MATCH,
     // The switch published a different serial from the one on the record.
     serials: { u10: 'FDO9999ZZZZ' },
   });
@@ -390,7 +410,7 @@ test('a person can take a record binding back, one box or the whole rack', () =>
 });
 
 test('the snapshot carries the binding, so a re-adopt and a re-detect keep it', () => {
-  const snap = snapshotFor({ recordBinding: BINDING });
+  const snap = snapshotFor({ recordBinding: BINDING, recordMatch: MATCH });
   assert.deepEqual(snap.recordBinding, BINDING);
   // A snapshot built without one carries null rather than a stale answer.
   assert.equal(snapshotFor().recordBinding, null);

@@ -73,11 +73,35 @@ test('a rack typed directly resolves to its NetBox name by facility id', async (
   estate.getRackByRackId = () => ({ id: 5, rack_id: 'RK-ABCD1234', name: 'A01', facility_id: 'F-A01', space_id: 3 });
   estate.listRacks = () => { throw new Error('should not look across the space'); };
   const nb = fakeNetBox([{ id: 99, name: 'Rack A01', facility_id: 'F-A01' }]);
-  const r = await rackMatch.resolveRack(nb, { tenantId: 7, rackId: 'RK-ABCD1234', fallbackName: 'RK-ABCD1234' });
+  const r = await rackMatch.resolveRack(nb, {
+    tenantId: 7, rackId: 'RK-ABCD1234', fallbackName: 'RK-ABCD1234', ...AT_SITE,
+  });
   assert.equal(r.name, 'Rack A01');
   assert.equal(r.netboxId, 99);
   assert.equal(r.confidence, 'confirmed');
   assert.equal(r.source, 'facility-id');
+  restore();
+});
+
+test('a rack id is never looked up with no site to look inside either', async () => {
+  // The same typed rack as above, and the same NetBox, with one thing missing:
+  // nobody has said which site this scan is at. A rack id is unique inside a
+  // site and nowhere else, and one NetBox holds every customer's estate, so a
+  // single answer across all of it is a coincidence rather than a proof. This
+  // used to come back as 'confirmed' by facility-id and bind.
+  estate.getRackByRackId = () => ({ id: 5, rack_id: 'RK-ABCD1234', name: 'A01', facility_id: 'F-A01', space_id: 3 });
+  estate.listRacks = () => { throw new Error('should not look across the space'); };
+  const nb = fakeNetBox([{ id: 99, name: 'Rack A01', facility_id: 'F-A01' }]);
+  const r = await rackMatch.resolveRack(nb, {
+    tenantId: 7, rackId: 'RK-ABCD1234', fallbackName: 'RK-ABCD1234',
+  });
+  assert.equal(r.netboxId, null, 'nothing is claimed with no site to claim it inside');
+  assert.equal(r.netboxBy, null);
+  assert.equal(r.confidence, 'known', 'the typed rack still names the scan');
+  assert.equal(r.name, 'A01');
+  assert.ok(!nb.calls.some((c) => c.path === '/api/dcim/racks/'),
+    'and the whole instance was never asked');
+  assert.match(r.netboxWhy, /site/);
   restore();
 });
 

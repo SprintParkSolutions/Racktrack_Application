@@ -438,7 +438,7 @@ test('e. ...even when NetBox confirms that rack by facility id', async () => {
   estate.getRackByRackId = () => learned;
   estate.listRacks = () => [learned, { id: 11, rack_id: 'typed-1', name: 'Comms Rack 1', facility_id: 'F-11' }];
   const r = await rackMatch.resolveRack(netboxWith([{ id: 42, name: 'Comms Rack 1', facility_id: 'F-11' }]), {
-    tenantId: 7, rackId: 'RK-HASH0001', fallbackName: 'RK-HASH0001',
+    tenantId: 7, rackId: 'RK-HASH0001', fallbackName: 'RK-HASH0001', siteName: SITE.name,
   });
   assert.equal(r.source, 'facility-id');
   assert.equal(r.confidence, 'confirmed');
@@ -471,7 +471,7 @@ test('e. a rack set up directly keys on its own row, with or without NetBox', as
   assert.equal(alone.rackKey, 't7:5');
 
   const confirmed = await rackMatch.resolveRack(netboxWith([{ id: 99, name: 'Rack A01', facility_id: 'F-A01' }]), {
-    tenantId: 7, rackId: 'RK-ABCD1234', fallbackName: 'RK-ABCD1234',
+    tenantId: 7, rackId: 'RK-ABCD1234', fallbackName: 'RK-ABCD1234', siteName: SITE.name,
   });
   assert.equal(confirmed.source, 'facility-id');
   assert.equal(confirmed.name, 'Rack A01');
@@ -496,7 +496,7 @@ test('e. a rack typed with only a facility id, not in NetBox, stays unresolved w
 
   // The same rack once NetBox knows it by facility id is keyed as usual.
   const found = await rackMatch.resolveRack(netboxWith([{ id: 42, name: 'Rack 77', facility_id: 'F-77' }]), {
-    tenantId: 7, rackId: 'RK-FAC00001', fallbackName: 'RK-FAC00001',
+    tenantId: 7, rackId: 'RK-FAC00001', fallbackName: 'RK-FAC00001', siteName: SITE.name,
   });
   assert.equal(found.confidence, 'confirmed');
   assert.equal(found.rackKey, 't7:5');

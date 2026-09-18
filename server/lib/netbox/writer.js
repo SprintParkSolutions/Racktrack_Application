@@ -307,6 +307,46 @@ function rackMatchOn(snapshot) {
 const scanSiteId = (snapshot) => asId(((snapshot || {}).recordMatch || {}).siteId);
 
 /**
+ * Why a rack bind cannot be checked, or null when it can be.
+ *
+ * The site is the outer scope every rack bind rests on, and it was the hole this
+ * whole round exists to close: find.byId only checks the site when it is given
+ * one, the site arrives as null for every scan whose site name is the tenant's
+ * own (or the literal "RackTrack"), and null read as "no check needed" bound a
+ * Frankfurt rack to a London scan.
+ *
+ * A rack id, a rack name and a person's tap all name a row and none of them says
+ * which building it is in. So where the scan has not been placed at a site in the
+ * customer's own record there is nothing to check a named rack against, and being
+ * unable to check is not permission to proceed. An absent scope is a refusal.
+ */
+function siteUnknown(snapshot) {
+  if (scanSiteId(snapshot) !== null) return null;
+  const m = (snapshot || {}).recordMatch;
+  const why = m && typeof m === 'object' ? String(m.siteWhy || '').trim() : '';
+  return 'this scan has not been placed at a site in the customer\'s own record'
+    + `${why ? ` (${why})` : ''}. The same rack id and the same rack name are used at more than one `
+    + 'site, so there is nothing to check the record against. Name the site in the customer\'s '
+    + 'record that this rack is at, then say which record this is again.';
+}
+
+/**
+ * Why a device bind cannot be checked, or null when it can be.
+ *
+ * A device is scoped by the rack it sits in, and that scope is only real once
+ * the rack itself has been resolved to a row in the customer's record. While the
+ * rack is still Pending - this same plan is creating it - the expectation handed
+ * to find.byId was null, so a record id with one digit transposed bound a box in
+ * another rack, at another site, and nothing looked.
+ */
+function rackUnknown(rackNetboxId) {
+  if (rackNetboxId !== null && rackNetboxId !== undefined && !isPending(rackNetboxId)) return null;
+  return 'the rack holding this box has not been found in the customer\'s record yet, so there is '
+    + 'nothing to check a box against: a record id on its own does not say which rack the box is '
+    + 'in. Say which record the rack is first, and this box after it.';
+}
+
+/**
  * What a record-bound object does NOT get patched on.
  *
  * A bind is bind-only. This is the fourth refutation of the first design of
@@ -531,6 +571,15 @@ async function proposeTarget(client, spec, obj, snapshot, { siteId, rackId, rack
                  + 'found by its name. A name finds the record and proves nothing about the rack, '
                  + 'so nothing is bound to it until a person says it is the one' };
     }
+    // The same refusal the person's own answer gets. A match the resolver made
+    // is still a rack id, and a rack id names a row at any site there is.
+    const noSite = siteUnknown(snapshot);
+    if (noSite || !Number.isInteger(siteId)) {
+      return { id: m.id, by: m.by, writable: false, row: null,
+               why: `the customer's record has a rack that ${m.why || 'looks like this one'}, but `
+                 + (noSite || 'the site this scan is at was not carried through to the plan, so the '
+                   + 'rack could not be checked against it') };
+    }
     const hit = await find.byId(client, spec.endpoint, m.id, {
       uid: obj.uid, expect: { siteId: siteId ?? null },
     });
@@ -674,12 +723,21 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
   // update, arrives under a uid the answer does not name, and the answer is
   // silently not applied. That is worth saying out loud rather than discovering
   // from a duplicate box in the customer's rack.
+  //
+  // An answer that cannot be applied also stops this plan CREATING boxes in the
+  // customer's rack. The box the answer is about is almost certainly one of the
+  // boxes in front of us, read at a different shelf - so a create here is a
+  // second row in NetBox for hardware the customer already has a record of, put
+  // there beside a warning saying so. A warning next to a duplicate is not a
+  // refusal, so nothing is created until a person says which box the record is.
+  const unapplied = [];
   const binding = bindingOn(snapshot);
   if (binding) {
     const here = new Set((snapshot.devices || []).map((d) => d.uid));
     const lost = Object.entries(binding.deviceNetboxIds && typeof binding.deviceNetboxIds === 'object'
       ? binding.deviceNetboxIds : {}).filter(([uid]) => !here.has(uid));
     for (const [uid, id] of lost) {
+      unapplied.push({ uid, id: asId(id) });
       report.warnings.push(
         `Somebody said record ${id} is the box ${uid}, and this scan has no box called ${uid} - `
         + 'the box has moved shelf, or it was read differently this time. That answer is not '
@@ -691,6 +749,16 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
       });
     }
   }
+  /** The sentence a held-back create reads, or null when creates may proceed. */
+  const createHeld = (spec, obj) => {
+    if (spec.field !== 'devices' || !unapplied.length) return null;
+    if (boundIdFor(snapshot, 'devices', obj.uid) !== null) return null;
+    const said = unapplied.map((u) => `record ${u.id} was named as the box ${u.uid}`).join(', and ');
+    return `${said}, and this scan has no box of that name. That record is probably this very box, `
+      + 'read at a different shelf, so making a new one here would give the customer two records '
+      + 'for one box. Nothing is created until somebody says which box that record is, or takes '
+      + 'the answer back.';
+  };
 
   if (rackKey && typeof client.preloadByUid === 'function') {
     const endpoints = [...new Set(orderedSpecs().map((s) => s.endpoint))];
@@ -889,6 +957,18 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
       // scan resolved to and a device has to be in the rack being scanned: those
       // two checks are what stop a one-digit typo binding a rack in another
       // building, or a box in another rack, at the top of the ladder.
+      //
+      // Both of those checks are only worth having when the scope they compare
+      // against exists, so an absent scope is a refusal rather than a skipped
+      // check: no site means no rack bind, and an unresolved rack means no
+      // device bind. scopeFor therefore never hands find.byId a null where the
+      // scope was required - noScope is consulted first and the bind never gets
+      // that far.
+      const noScope = () => {
+        if (spec.field === 'racks') return siteUnknown(snapshot);
+        if (spec.field === 'devices') return rackUnknown(rackNetboxId);
+        return null;
+      };
       const scopeFor = () => {
         if (spec.field === 'racks') {
           return { siteId: scanSiteId(snapshot), shown: shownFor(snapshot, 'racks', obj.uid) };
@@ -906,6 +986,18 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
       if (!previous) {
         const said = boundIdFor(snapshot, spec.field, obj.uid);
         if (said !== null) {
+          const blocked = noScope();
+          if (blocked) {
+            skipped.add(obj.uid);
+            report.changes.push({
+              type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+              reason: `somebody said this is record ${said}, but ${blocked} Nothing was written.`,
+            });
+            report.warnings.push(`Record ${said} was named as ${spec.label.toLowerCase()} `
+              + `"${name}", and ${blocked}`);
+            bump('skip');
+            continue;
+          }
           const hit = await find.byId(client, spec.endpoint, said, { uid: obj.uid, expect: scopeFor() });
           if (hit.none) {
             skipped.add(obj.uid);
@@ -1125,7 +1217,22 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
         continue;
       }
 
-      // Nothing in NetBox carries this uid — it is a create.
+      // Nothing in NetBox carries this uid - it is a create. Unless an answer
+      // about a box this scan does not have is still outstanding, in which case
+      // a create is how that box gets recorded twice.
+      const held = createHeld(spec, obj);
+      if (held) {
+        skipped.add(obj.uid);
+        report.changes.push({
+          type: spec.label, uid: obj.uid, name: String(name), action: 'skip', reason: held,
+        });
+        report.findings.push({
+          tier: 'medium', kind: 'create-held', type: spec.label, uid: obj.uid,
+          netboxId: unapplied[0] ? unapplied[0].id : null, why: held,
+        });
+        bump('skip');
+        continue;
+      }
       if (apply) {
         let created;
         try {
@@ -1317,7 +1424,45 @@ async function plan(snapshot, client, { ensureField = false } = {}) {
   } else {
     report.customField = 'present';
   }
-  return walk(snapshot, client, false, report);
+
+  // The field that marks a record as the customer's own, checked HERE as well as
+  // in push(). It used to be checked only on the way out, so a preview printed
+  // rebind rows an admin approved and the write then skipped every one of them,
+  // and the frozen rule is that the preview is what happens. A plan cannot know
+  // whether a field it cannot see could be created, and being unable to check is
+  // not permission to promise: an absent field means the binds are shown as
+  // held, not as done.
+  let boundField = true;
+  if (typeof client.customField === 'function') {
+    let have = null;
+    try {
+      have = await client.customField(BOUND_FIELD);
+    } catch (err) {
+      boundField = false;
+      report.boundField = 'UNKNOWN';
+      report.warnings.push(
+        `NetBox could not be asked whether the '${BOUND_FIELD}' field exists `
+        + `(${JSON.stringify(err.detail ?? err.message)}), so no record is shown as bound in this `
+        + 'preview: a bind that cannot be marked as the customer\'s own cannot be protected from '
+        + 'the next compare.');
+    }
+    if (boundField && !have) {
+      if (ensureField && typeof client.ensureBoundField === 'function') {
+        const bf = await client.ensureBoundField();
+        report.boundField = `${bf.action} (schema change made so this diff is accurate)`;
+      } else {
+        boundField = false;
+        report.boundField = 'ABSENT';
+        report.warnings.push(
+          `The '${BOUND_FIELD}' field does not exist in NetBox yet, so a record the customer owns `
+          + 'cannot be marked as theirs and nothing is shown here as bound to one. Export creates '
+          + 'the field; run this preview again after that and the binds appear.');
+      }
+    } else if (boundField && have) {
+      report.boundField = 'present';
+    }
+  }
+  return walk(snapshot, client, false, report, { boundField });
 }
 
 /** Write to NetBox. Idempotent: safe to run on the same scan repeatedly. */

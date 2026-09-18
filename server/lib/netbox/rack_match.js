@@ -85,41 +85,26 @@ async function findSite(client, siteName) {
  * is the customer's own key, then the name, two rows asked for every time and a
  * refusal that names both when two answer.
  *
- * With no site to scope by, only the customer's own rack id is asked about, and
- * only a single answer across the whole record counts. A NAME is never looked up
- * unscoped: "Rack 1" exists at every site there is, and taking the first row was
- * how a rack at another site got adopted and then moved.
+ * With no site, NOTHING is looked up - not the name, and not the customer's own
+ * rack id either. This used to fall back to an unscoped facility-id lookup
+ * across the whole NetBox instance and report a confident match from it, which
+ * is the very thing the design review before this work refuted: a rack id is
+ * unique inside a site and nowhere else, one instance holds every customer's
+ * estate, and a single answer across all of it is a coincidence, not a proof.
+ * An absent scope is a refusal, and the refusal names what would settle it.
  */
 async function findInNetBox(client, known, { siteId = null } = {}) {
   if (!client || !known) return { none: true, why: 'there is nothing to look this rack up by' };
   const site = siteId === null || siteId === undefined || siteId === '' ? null : Number(siteId);
-  if (Number.isFinite(site)) {
-    return find.findRack(client, {
-      siteId: site, facilityId: known.facility_id || null, name: known.name || null,
-    });
+  if (!Number.isFinite(site)) {
+    return { none: true, why: 'the site this rack is at was not found in the customer\'s record, so '
+      + 'there is nothing to look the rack up inside. The same rack id and the same rack name are '
+      + 'used at more than one site, so a rack found without a site proves nothing. Name the site '
+      + 'in the customer\'s record that this rack is at, then try again' };
   }
-  const facility = String(known.facility_id ?? '').trim();
-  if (!facility) {
-    return { none: true, why: 'a site is needed before a rack can be looked up by name, because the '
-      + 'same rack name is used at more than one site' };
-  }
-  try {
-    const r = await client.get('/api/dcim/racks/', { facility_id: facility, limit: 2 });
-    const rows = ((r && r.results) || []).filter(
-      (x) => String(x.facility_id ?? '').trim().toLowerCase() === facility.toLowerCase());
-    if (rows.length === 1) {
-      return { id: rows[0].id, row: rows[0], by: 'facility-id',
-               why: `one rack in the record carries the rack id ${facility}` };
-    }
-    if (rows.length > 1) {
-      return { ambiguous: rows.map((x) => ({ id: x.id, name: x.name ?? null })),
-               why: `${rows.length} racks in the record carry the rack id ${facility} and there is no `
-                 + 'site to tell them apart, so none of them is claimed' };
-    }
-    return { none: true, why: `no rack in the record carries the rack id ${facility}` };
-  } catch {
-    return { none: true, why: 'the record could not be asked about this rack' };
-  }
+  return find.findRack(client, {
+    siteId: site, facilityId: known.facility_id || null, name: known.name || null,
+  });
 }
 
 /**

@@ -58,6 +58,13 @@ function fakeNetBox() {
   const nb = new NetBox('http://fake.invalid', 'nbt_test');
   nb.calls = calls;
   nb.rows = rows;
+  // The two fields RackTrack keeps its ids in. An instance it has written to
+  // before holds them, and a preview will not show a record as bound unless the
+  // field that marks it as the customer's own is really there - which is its own
+  // test at the end of this file.
+  rows('/api/extras/custom-fields/').push(
+    { id: 1, name: UID_FIELD, object_types: [], filter_logic: 'exact' },
+    { id: 2, name: BOUND_FIELD, object_types: [], filter_logic: 'exact' });
   nb.patches = (p) => calls.filter((c) => c.method === 'PATCH' && c.path.startsWith(p));
   const idOf = (v) => (v && typeof v === 'object' ? v.id : v);
   const same = (a, b) => String(a ?? '').toLowerCase() === String(b ?? '').toLowerCase();
@@ -194,10 +201,10 @@ test('two plans that bind different records do not sign the same', async () => {
   });
 
   const toSeven = await writer.plan(snapshotFor({
-    recordBinding: { ...BINDING, deviceNetboxIds: {} },
+    recordBinding: { ...BINDING, deviceNetboxIds: {} }, recordMatch: MATCH,
   }), one);
   const toEight = await writer.plan(snapshotFor({
-    recordBinding: { ...BINDING, rackNetboxId: 8, deviceNetboxIds: {} },
+    recordBinding: { ...BINDING, rackNetboxId: 8, deviceNetboxIds: {} }, recordMatch: MATCH,
   }), two);
 
   assert.equal(toSeven.changes.find((c) => c.type === 'Rack').netboxId, 7);
@@ -211,7 +218,7 @@ test('two plans that bind different records do not sign the same', async () => {
 test('taking the answer back does not let the next compare rename the customer\'s rack', async () => {
   const nb = fakeNetBox();
   customersEstate(nb);
-  await writer.push(snapshotFor({ recordBinding: BINDING }), nb);
+  await writer.push(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
   const rack = nb.rows('/api/dcim/racks/').find((r) => r.id === 7);
   assert.equal(rack.custom_fields[UID_FIELD], 'rack:t7:5', 'the bind happened');
   assert.match(String(rack.custom_fields[BOUND_FIELD]), /sam@example.test/,
@@ -235,8 +242,8 @@ test('taking the answer back does not let the next compare rename the customer\'
 test('a bound box keeps the model and role the customer recorded', async () => {
   const nb = fakeNetBox();
   customersEstate(nb);
-  await writer.push(snapshotFor({ recordBinding: BINDING }), nb);
-  const again = await writer.plan(snapshotFor({ recordBinding: BINDING }), nb);
+  await writer.push(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
+  const again = await writer.plan(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
 
   const row = again.changes.find((c) => c.uid === 'dev:t7:5:u10');
   const proposed = Object.keys((row && row.diff) || {});
@@ -246,7 +253,7 @@ test('a bound box keeps the model and role the customer recorded', async () => {
   assert.ok(held, 'the difference is reported instead');
   assert.ok(held.fields.some((f) => f.field === 'device_type'));
 
-  await writer.push(snapshotFor({ recordBinding: BINDING }), nb);
+  await writer.push(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
   const device = nb.rows('/api/dcim/devices/').find((d) => d.id === 51);
   assert.equal(device.device_type.id, 900, 'and the record still says what it is');
   assert.equal(device.role.id, 910);
@@ -485,6 +492,137 @@ test('an answer about a box this scan does not have says so out loud', async () 
   assert.ok(out.warnings.some((w) => /this scan has no box called dev:t7:5:u10/.test(w)),
     'the answer that cannot be applied is named');
   assert.ok(out.findings.some((f) => f.kind === 'binding-not-applied' && f.netboxId === 51));
+
+  // And it is not duplicated beside the warning. The box the answer is about is
+  // almost certainly the box at U11 - the same hardware, read one unit off - so
+  // a create here gives the customer two records for one box, with a sentence
+  // above it saying so. A warning next to a duplicate is not a refusal.
+  const creates = out.changes.filter((c) => c.type === 'Device' && c.action === 'create');
+  assert.deepEqual(creates, [], 'nothing is created while that answer is outstanding');
+  const heldRow = out.changes.find((c) => c.uid === 'dev:t7:5:u11');
+  assert.equal(heldRow.action, 'skip');
+  assert.match(heldRow.reason, /two records for one box/);
+  assert.match(heldRow.reason, /says which box that record is/);
+  assert.ok(out.findings.some((f) => f.kind === 'create-held' && f.uid === 'dev:t7:5:u11'));
+});
+
+test('and the write makes no second record for it either', async () => {
+  const nb = fakeNetBox();
+  customersEstate(nb);
+  await writer.push(snapshotFor({
+    recordBinding: { ...BINDING, deviceNetboxIds: { 'dev:t7:5:u10': 51 } },
+    recordMatch: MATCH,
+    units: ['u11', 'u12'],
+  }), nb);
+
+  assert.equal(nb.rows('/api/dcim/devices/').length, 2,
+    'the customer still has the two boxes they had, and no twin of either');
+});
+
+// ── the scope a bind rests on, when the scope is not there ──────────────────
+//
+// The rule this whole round exists for: an absent scope means refuse, never
+// allow. A missing site id, a rack that does not exist yet, a field that cannot
+// be seen - each of them is a refusal with a sentence, not a bind.
+
+test('with no site in the customer\'s record, no rack is bound however it was named', async () => {
+  const nb = fakeNetBox();
+  customersEstate(nb);
+  nb.rows('/api/dcim/sites/').push({ id: 2, name: 'Frankfurt DC', slug: 'frankfurt-dc', custom_fields: {} });
+  nb.rows('/api/dcim/racks/').push({
+    id: 8, name: 'FRA Row 9 Rack 1', facility_id: 'DC2-R09', site: { id: 2 }, u_height: 45,
+    custom_fields: {},
+  });
+
+  // This is the ORDINARY case, not an exotic one: a scan's site name is the
+  // RackTrack tenant's own name, the customer's record has no site called that,
+  // and so no site id reaches the plan. The site check was skipped whenever it
+  // was null, and a Frankfurt rack was bound to a London scan.
+  const out = await writer.push(snapshotFor({
+    recordBinding: { ...BINDING, rackNetboxId: 8, deviceNetboxIds: {} },
+    recordMatch: {
+      siteId: null, siteWhy: 'the record has no site called RackTrack',
+      rackNetboxId: null, by: null, confidence: 'none', why: 'nothing recognised this rack',
+    },
+  }), nb);
+
+  const rack = out.changes.find((c) => c.type === 'Rack');
+  assert.equal(rack.action, 'skip', 'a bind with nothing to check it against is refused');
+  assert.match(rack.reason, /not been placed at a site in the customer's own record/);
+  assert.match(rack.reason, /no site called RackTrack/, 'and it names what is missing');
+  assert.match(rack.reason, /Name the site/, 'and what would settle it');
+  assert.equal(nb.rows('/api/dcim/racks/').find((r) => r.id === 8).custom_fields[UID_FIELD], undefined,
+    'the rack in the other building is untouched');
+  assert.equal(nb.rows('/api/dcim/racks/').length, 2, 'and no rack was created either');
+  assert.equal(nb.rows('/api/dcim/devices/').length, 2,
+    'and neither scanned box was planned into somebody else\'s rack');
+});
+
+test('a rack the record matched by rack id, with no site, is a question and never a bind', async () => {
+  const nb = fakeNetBox();
+  customersEstate(nb);
+
+  const out = await writer.plan(snapshotFor({
+    // The resolver answered by facility id, which is the customer's own key -
+    // but it answered across a whole NetBox with no site to look inside, and a
+    // rack id is unique inside a site and nowhere else.
+    recordMatch: { ...MATCH, siteId: null, siteWhy: 'the record has no site called RackTrack' },
+  }), nb);
+
+  const rack = out.changes.find((c) => c.type === 'Rack');
+  assert.notEqual(rack.action, 'rebind', 'nothing of the customer\'s is claimed on that answer');
+  const asked = out.findings.find((f) => f.kind === 'record-candidate' && f.type === 'Rack');
+  assert.ok(asked, 'it is put to a person instead');
+  assert.match(asked.why, /not been placed at a site in the customer's own record/);
+  assert.ok(!nb.patches('/api/dcim/racks/').length, 'and their rack is not touched');
+});
+
+test('a box is never bound while the rack holding it is unresolved', async () => {
+  const nb = fakeNetBox();
+  customersEstate(nb);
+
+  // Nobody has said which record the rack is and the record does not recognise
+  // it, so this plan is creating the rack. Record 51 is a box in the customer's
+  // rack 7, and one transposed digit in a tap looks exactly like a right answer.
+  const out = await writer.plan(snapshotFor({
+    recordBinding: {
+      rackNetboxId: null, deviceNetboxIds: { 'dev:t7:5:u10': 51 },
+      by: 'sam@example.test', at: '2026-09-18T09:00:00Z', why: 'typed at the rack',
+    },
+    recordMatch: {
+      siteId: 1, siteWhy: null, rackNetboxId: null, by: null, confidence: 'none',
+      why: 'nothing recognised this rack',
+    },
+  }), nb);
+
+  const row = out.changes.find((c) => c.uid === 'dev:t7:5:u10');
+  assert.equal(row.action, 'skip');
+  assert.match(row.reason, /rack holding this box has not been found in the customer's record/);
+  assert.match(row.reason, /Say which record the rack is first/);
+  assert.ok(!out.changes.some((c) => c.action === 'rebind' && c.netboxId === 51),
+    'their box is not claimed by a plan that cannot say which rack it is in');
+});
+
+test('a preview shows no bind while the field that protects one is not there', async () => {
+  const nb = fakeNetBox();
+  customersEstate(nb);
+  // The instance has the uid field and not the one that marks a record as the
+  // customer's own. push() has always held its binds back for this; plan() did
+  // not check at all, so the preview printed rebind rows the write then skipped
+  // - and the preview is what an admin approves.
+  const fields = nb.rows('/api/extras/custom-fields/');
+  fields.splice(fields.findIndex((f) => f.name === BOUND_FIELD), 1);
+
+  const out = await writer.plan(snapshotFor({ recordBinding: BINDING, recordMatch: MATCH }), nb);
+
+  assert.equal(out.boundField, 'ABSENT');
+  assert.ok(!out.changes.some((c) => c.action === 'rebind'),
+    'nothing is promised here that the write would refuse');
+  const rack = out.changes.find((c) => c.type === 'Rack');
+  assert.equal(rack.action, 'skip');
+  assert.match(rack.reason, /cannot be marked as the customer's own/);
+  assert.ok(out.warnings.some((w) => /Export creates the field/.test(w)),
+    'and the admin is told what to do about it');
 });
 
 // ── the record lookup itself ────────────────────────────────────────────────

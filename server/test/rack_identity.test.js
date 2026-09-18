@@ -158,8 +158,13 @@ test('record: a scan whose own row was typed is that rack, with the resolver\'s 
   assert.equal(r.decision, 'matched');
   assert.equal(r.confidence, 'confirmed');
   assert.equal(r.rule, 'record');
-  // The NetBox id is the one rack_match found, by facility id.
-  assert.deepEqual(r.rack, { source: 'known', id: row.id, name: 'A01', facilityId: 'F-A01', netboxId: 77 });
+  // The rack is the row that was typed, and that is settled here. What is NOT
+  // settled is which NetBox rack it is: identify() passes the resolver no site,
+  // and a rack id is unique inside a site and nowhere else, so a single answer
+  // across a whole NetBox is a coincidence rather than a proof. It used to come
+  // back as record 77 from an unscoped lookup. No site, no NetBox id - the same
+  // rule this file already applies to its own two NetBox rungs.
+  assert.deepEqual(r.rack, { source: 'known', id: row.id, name: 'A01', facilityId: 'F-A01' });
   assert.equal(r.rackKey, rackMatch.rackKeyFor(SITE_A, row.id));
   assert.equal(r.rackKey, `t${SITE_A}:${row.id}`);
   assert.equal(r.spaceId, space.id);
