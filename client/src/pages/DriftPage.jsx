@@ -37,6 +37,36 @@ const STATE_WORD = {
   ticketed: 'Someone is checking',
 };
 
+// How this rack was found, in the words of the thing that found it. The app
+// tries a code or label on the switches, then the rack's own record, then where
+// it stands, then the print on the rack, then what is inside it, and last of all
+// it asks a person. Whichever one answers, the person reads the answer, never
+// the step number.
+const FOUND_BY = {
+  record: 'Confirmed: this rack is tied to that record.',
+  label: 'Matched by the label read off the rack.',
+  'label-netbox': 'Matched by the label read off the rack, against NetBox.',
+  devices: 'Matched by the devices inside it.',
+  'only-rack': 'Matched to the only rack set up in this room.',
+};
+
+// And how sure that leaves it. A record is the strongest answer there is and the
+// sentence above already says so; anything read off a rack can be misread, and
+// the screen says that rather than letting a reading pass for a confirmation.
+const HOW_SURE = {
+  probable: 'Probable, not confirmed.',
+  possible: 'Possible only.',
+};
+
+// The same steps when they fall short of deciding. A suggestion is a question
+// for a person and is never worded as a match.
+const FITS_BY = {
+  label: 'The label read off the rack matches this one.',
+  'label-netbox': 'The label read off the rack matches this rack in NetBox.',
+  devices: 'Most of the devices read here sit in this rack.',
+  'only-rack': 'It is the only rack set up in this room.',
+};
+
 function diffLines(diff) {
   if (!diff) return [];
   return Object.entries(diff).map(([field, v]) => ({
@@ -56,6 +86,8 @@ export default function DriftPage() {
   const [spoc, setSpoc] = useState(null);
   const [matched, setMatched] = useState(null);
   const [recordRack, setRecordRack] = useState(null);
+  const [identity, setIdentity] = useState(null);
+  const [pickError, setPickError] = useState('');
   const [busy, setBusy] = useState('Checking this rack against NetBox');
   const [error, setError] = useState('');
   const [needsSource, setNeedsSource] = useState(false);
@@ -86,6 +118,7 @@ export default function DriftPage() {
   const load = useCallback(async () => {
     setBusy('Checking this rack against NetBox');
     setError('');
+    setPickError('');
     setNeedsSource(false);
     try {
       const a = await authFetch(apiUrl(`/api/nb/scans/adopt/${encodeURIComponent(rackId)}`),
@@ -124,6 +157,15 @@ export default function DriftPage() {
         setRecordRack(body.rack || null);
       }
 
+      // Which rack this is, and how that was worked out: the rack, the step that
+      // found it, and the short list of racks it could be when no step can
+      // decide. A failure here is not a failure of the check, so the line below
+      // falls back to what the comparison itself used.
+      try {
+        const who = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/identity`));
+        setIdentity(who.ok ? await who.json() : null);
+      } catch { setIdentity(null); }
+
       const nm = await authFetch(apiUrl(`/api/nb/scans/rack/${encodeURIComponent(rackId)}/name`));
       if (nm.ok) { const j = await nm.json(); setName(j.name || ''); setNameSaved(j.name || ''); }
     } catch (e) {
@@ -134,6 +176,64 @@ export default function DriftPage() {
   }, [rackId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Which rack this was compared against. Where the app has decided which rack
+  // this is, the comparison is built on that rack, so the line names it and says
+  // what found it. Where it has not, the line falls back to whatever the
+  // comparison itself resolved, and claims nothing beyond it.
+  const compared = matched && matched.confidence !== 'none' ? matched : null;
+  const decided = identity && identity.decision === 'matched' && identity.rack ? identity : null;
+  const foundBy = decided
+    ? [FOUND_BY[decided.rule] || 'Matched to a rack in the record.', HOW_SURE[decided.confidence]]
+      .filter(Boolean).join(' ')
+    : '';
+
+  // Nothing decided which rack this is, so a person still has to.
+  const unsettled = !!identity && identity.decision !== 'matched';
+
+  // What is still open, said plainly. Only ever shown when nothing was decided.
+  const stillOpen = useMemo(() => {
+    if (!unsettled) return '';
+    if (identity.decision === 'new') {
+      return 'This rack is not in the record yet. Everything here reads as new.';
+    }
+    if (identity.decision === 'ambiguous') {
+      return 'More than one rack fits what was read here. Nobody has confirmed which.';
+    }
+    if (identity.decision === 'suggested') {
+      return `${FITS_BY[identity.rule] || 'One rack fits what was read here.'} Nobody has confirmed it.`;
+    }
+    return 'Nothing read here says which rack this is.';
+  }, [identity, unsettled]);
+
+  // The racks a person may choose from: the ones the app narrowed it down to,
+  // never the whole site. Two or three, in the order they were ranked.
+  const shortlist = useMemo(() => {
+    if (!unsettled) return [];
+    return (identity.candidates || []).filter((c) => c && (c.name || c.facilityId)).slice(0, 3);
+  }, [identity, unsettled]);
+  // Not in the record at all: the rack is added rather than forced onto a bad
+  // match. Offered only with a name that was actually read off the rack.
+  const newName = unsettled && identity.decision === 'new' ? (identity.proposal?.name || '') : '';
+
+  /** A person says which rack this is. The check then runs again against it. */
+  async function pick(choice) {
+    setPickError('');
+    setBusy('Saving which rack this is');
+    try {
+      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/identity/confirm`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(choice),
+      });
+      const out = await r.json();
+      if (!r.ok) throw new Error(out.error || 'That rack could not be saved');
+      await load();
+    } catch (e) {
+      setPickError(e.message || String(e));
+      setBusy('');
+    }
+  }
 
   async function saveName() {
     const trimmed = name.trim();
@@ -228,27 +328,77 @@ export default function DriftPage() {
 
       {error && <p className={styles.error} role="alert">{error}</p>}
 
-      {/* Compared against WHAT. One line, on the screen that makes the claim.
-          A comparison a person cannot trace to a named record in the customer's
-          own database is an assertion, not a check. */}
+      {/* Compared against WHAT, and how that was worked out. One line, on the
+          screen that makes the claim. A comparison a person cannot trace to a
+          named record in the customer's own database is an assertion, not a
+          check - and a rack nobody has confirmed is never called a match. Where
+          it cannot be decided, the racks it could be are offered here and a
+          person chooses; that choice is what the next check compares against. */}
       {plan && !busy && (
         <div className={styles.against}>
           <span className={styles.againstLabel}>Compared against</span>
-          {matched && matched.confidence !== 'none' ? (
+          {decided ? (
             <>
               <strong className={styles.againstName}>
-                {matched.name || (recordRack && recordRack.name) || 'this rack'}
+                {decided.rack.name || decided.rack.facilityId
+                  || (compared && compared.name) || 'this rack'}
               </strong>
-              <span className={styles.againstWhy}>{matched.why}</span>
+              <span className={styles.againstWhy}>{foundBy}</span>
+            </>
+          ) : compared ? (
+            <>
+              <strong className={styles.againstName}>
+                {compared.name || (recordRack && recordRack.name) || 'this rack'}
+              </strong>
+              <span className={styles.againstWhy}>{compared.why}</span>
             </>
           ) : (
             <>
               <strong className={styles.againstName}>nothing yet</strong>
-              <span className={styles.againstWhy}>
-                This rack has not been set up in the record, so everything here reads as new.
-                Set it up to compare against what is already written down.
-              </span>
+              {/* Only where nothing has said which rack this is. Where something
+                  has, it says it once, below, and this does not say it twice. */}
+              {!stillOpen && (
+                <span className={styles.againstWhy}>
+                  This rack has not been set up in the record, so everything here reads as new.
+                  Set it up to compare against what is already written down.
+                </span>
+              )}
             </>
+          )}
+
+          {stillOpen && <span className={styles.againstOpen}>{stillOpen}</span>}
+
+          {!sent && (shortlist.length > 0 || newName) && (
+            <div className={styles.pick}>
+              <span className={styles.pickLabel}>Which rack is this?</span>
+              <div className={styles.pickRow}>
+                {shortlist.map((c) => (
+                  <button
+                    key={`${c.source}-${c.id}`}
+                    type="button"
+                    className={styles.pickBtn}
+                    disabled={!!busy}
+                    onClick={() => pick(c.source === 'netbox' ? { netboxRackId: c.id } : { knownRackId: c.id })}
+                  >
+                    {c.name || c.facilityId}
+                  </button>
+                ))}
+                {newName && (
+                  <button
+                    type="button"
+                    className={styles.pickBtn}
+                    disabled={!!busy}
+                    onClick={() => pick({ name: newName })}
+                  >
+                    Add {newName} to the record
+                  </button>
+                )}
+              </div>
+              <span className={styles.pickNote}>
+                The next check compares against the rack you choose.
+              </span>
+              {pickError && <p className={styles.pickError} role="alert">{pickError}</p>}
+            </div>
           )}
         </div>
       )}

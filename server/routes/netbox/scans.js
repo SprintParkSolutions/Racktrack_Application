@@ -160,14 +160,42 @@ router.put('/rack/:rackId/name', gates.admin, (req, res) => {
 });
 
 /**
+ * Which rack this is, asked of lib/rack_identity - the six steps that identify a
+ * rack, ending in a person. Asked with no NetBox client on purpose: the only two
+ * steps that state a rack and hand out a key are the record and a label that
+ * equals one rack in the space the scan was tied to, and both are answered from
+ * what we already hold. So this costs no NetBox traffic and cannot be made slow
+ * by a NetBox that is not answering. Everything else it can say is a suggestion,
+ * which never becomes a key without a person.
+ *
+ * Required at the point of use and behind a catch: the identity module is not
+ * this router's to depend on, and a scan it cannot answer for must leave the
+ * adopt working exactly as it did before.
+ */
+async function identifiedRack(rackId, tenantId) {
+  if (tenantId == null) return null;
+  try {
+    const answer = await require('../../lib/rack_identity').identify(rackId, { tenantId });
+    return answer && answer.decision === 'matched' && answer.rackKey && answer.rack ? answer : null;
+  } catch { return null; }
+}
+
+/**
  * Recognise the rack before its uids are minted.
  *
  * Preview and export read the snapshot exactly as it is stored, so the moment
  * it is built is the one moment the customer's rack can become the key its
- * NetBox uids are built on. The resolver (rack_match) hands out that key only
- * when the scan was identified explicitly; otherwise the uids stay on the
- * photo hash, as they always were. Nothing here can fail the caller: no
- * NetBox, an unreachable one or an unbound scan all mean "no key".
+ * NetBox uids are built on. Two things are asked, in this order:
+ *
+ *   1. the identity steps, which include a person's own confirmation. When they
+ *      state a rack, that rack is the rack, and its key is the key. A person who
+ *      answered "which rack is this" on the screen has to see that answer in the
+ *      comparison, or the answer was theatre.
+ *   2. the resolver (rack_match) otherwise, exactly as before.
+ *
+ * Neither states a rack it only suspects, so a scan nobody has identified keeps
+ * its uids on the photo hash, as it always did. Nothing here can fail the
+ * caller: no NetBox, an unreachable one or an unbound scan all mean "no key".
  */
 async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
   let client = null;
@@ -181,6 +209,24 @@ async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
     found = { name: fallbackName, rackKey: null, source: 'scan',
               why: `the rack could not be looked up: ${err.message}` };
   }
+
+  const identified = await identifiedRack(rackId, tenantId);
+  if (identified && identified.rackKey !== found.rackKey) {
+    // The steps named a rack and the resolver did not, or named another one. The
+    // steps win: they read the photo and they carry a person's confirmation,
+    // which is the last word on this question. The name stays the record's own.
+    found = {
+      ...found,
+      rackKey: identified.rackKey,
+      knownRackId: identified.rack.id ?? null,
+      source: identified.rule === 'record' ? 'identified' : `identified-${identified.rule}`,
+      name: identified.rack.name || identified.rack.facilityId || found.name,
+      why: identified.rule === 'record'
+        ? 'this scan is tied to that rack in the record'
+        : 'the label read off the rack names that rack in the record',
+    };
+  }
+
   return {
     rackKey: found.rackKey || null,
     rackKeySource: found.source || null,
@@ -196,7 +242,10 @@ async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
 // adopted rack is re-read under the new rules the next time it is opened.
 //   2 — a Switch with fewer than ten ports is a Router
 //   3 - uids keyed on the customer's rack (Part B Stage 1)
-const SNAPSHOT_RULES = 3;
+//   4 - the key may come from the identity steps, so a copy made before they
+//       were asked is keyed on the photo hash while the app says which rack it
+//       is. One re-adopt on the next open puts the two back in agreement.
+const SNAPSHOT_RULES = 4;
 
 router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   const { rackId } = req.params;
@@ -223,6 +272,16 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   // made from an old map. The version travels in the payload; older or
   // missing means adopt again.
   if (existing && (heldPayload.rulesVersion || 0) < SNAPSHOT_RULES) stale = true;
+  // A person has since said which rack this is, and the copy was keyed on
+  // something else: every uid in it names the wrong rack, so the compare that
+  // reads it would go on comparing against the wrong record. That answer is what
+  // the whole identity flow is for, so it makes the copy stale like any other
+  // change. One indexed read of the local database, and only for a rack that has
+  // been adopted before, so an open of a rack nobody has confirmed costs nothing.
+  if (existing && heldPayload.tenantId != null) {
+    const confirmedKey = rackMatch.confirmedKeyFor(heldPayload.tenantId, rackId);
+    if (confirmedKey && heldPayload.rackKey !== confirmedKey) stale = true;
+  }
   if (existing && !req.query.refresh && !stale) {
     return res.json({ id: existing.id, rackId, adopted: false, createdAt: existing.createdAt });
   }
@@ -1094,3 +1153,7 @@ router.post('/:id/reconcile', gates.admin, (req, res) => {
 });
 
 module.exports = router;
+// Which rack a scan's uids are keyed on, out on its own so a test can ask it
+// directly: it is the one step where a person's answer either reaches the
+// comparison or is lost, and that deserves proving without a photo and a NetBox.
+module.exports.recogniseRack = recogniseRack;
