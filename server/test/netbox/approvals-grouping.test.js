@@ -241,6 +241,29 @@ describe('the whole rack in one move', () => {
     assert.equal(ok.applied.length, 1);
     assert.equal(byUid(plans.get(p.id))[REB].decision, 'approved', 'and approving it works');
   });
+
+  it('a rebind is the one item decided without assigning first', () => {
+    // Assign-before-decide exists so nobody judges a rack from a desk. A rebind
+    // cannot be assigned and asks nothing about the rack; without an exemption
+    // the two rules together would leave it undecidable for ever.
+    const REB = 'dev:RK-NEW:u12';
+    const p = plans.create({ scanId: 11, rackId: 'RK-NEW', by: 'ravi', report: report([
+      { type: 'Device', uid: DEV, name: 'SW-16', action: 'create' },
+      { type: 'Device', uid: REB, name: 'SW-12', action: 'rebind', netboxId: 7,
+        fromUid: 'dev:RK-OLD:u12', diff: { racktrack_uid: { from: 'dev:RK-OLD:u12', to: REB } } },
+    ]) });
+
+    const early = plans.decide(p.id, [{ uid: DEV, decision: 'approved' }], { by: 'meera' });
+    assert.equal(early.applied.length, 0, 'a new device cannot be approved from a desk');
+    assert.equal(early.refused[0].why, 'assign first');
+
+    const ticket = plans.decide(p.id, [{ uid: REB, decision: 'ticketed', assignee: 'sam' }], { by: 'meera' });
+    assert.equal(ticket.applied.length, 0, 'a rebind cannot be sent to the rack');
+
+    const ok = plans.decide(p.id, [{ uid: REB, decision: 'rejected', note: 'wrong rack' }], { by: 'meera' });
+    assert.equal(ok.applied.length, 1, 'but it can be decided as it stands');
+    assert.equal(byUid(plans.get(p.id))[REB].decision, 'rejected');
+  });
 });
 
 describe('what cannot be sent to the rack, and what cannot be resolved on its own', () => {

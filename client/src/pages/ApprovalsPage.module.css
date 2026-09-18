@@ -200,3 +200,6 @@
 .sheetNote { margin: 12px 0 0; font-size: 13px; color: var(--muted, #5f6864); }
 .sheetActions { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
 .sheetActions .primary { width: auto; flex: 1; }
+
+/* Why a rebind skips the assign step. */
+.rebindNote { margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: var(--muted, #5f6864); }

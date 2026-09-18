@@ -387,6 +387,10 @@ export default function ApprovalsPage() {
           // then the one move is to assign, or assign again.
           const resolved = item.ticket?.status === 'resolved';
           const canAct = deciding && item.decision === 'pending';
+          // A rebind only re-labels a record NetBox already holds. It cannot be
+          // assigned (the server refuses: there is nothing to check at the
+          // rack), so it is the one item the admin approves or rejects as is.
+          const isRebind = item.action === 'rebind';
           const why = refused[item.uid];
           return (
             <li key={item.uid} className={`${styles.item} ${styles[item.decision] || ''}`} data-testid={`item-${item.uid}`}>
@@ -466,7 +470,12 @@ export default function ApprovalsPage() {
                 </div>
               )}
 
-              {canAct && !resolved && (
+              {canAct && isRebind && (
+                <p className={styles.rebindNote}>
+                  Already in NetBox under this rack&rsquo;s previous id. Approving only re-labels it, so there is nothing to check at the rack.
+                </p>
+              )}
+              {canAct && !resolved && !isRebind && (
                 // The admin does not judge the rack from a desk. The first and
                 // only move on a waiting item is to hand it to somebody; the
                 // server refuses anything else until the ticket is resolved.
@@ -477,9 +486,9 @@ export default function ApprovalsPage() {
                   </button>
                 </div>
               )}
-              {canAct && resolved && (
-                // It has come back from the person who looked. Now the admin
-                // decides, or assigns again.
+              {canAct && (resolved || isRebind) && (
+                // It has come back from the person who looked, or it is a rebind
+                // that nobody needs to look at. Now the admin decides.
                 <div className={styles.actions}>
                   <button type="button" className={styles.approve}
                           disabled={!!busy} onClick={() => decide(item.uid, 'approved')}>
@@ -493,10 +502,12 @@ export default function ApprovalsPage() {
                           }}>
                     Reject
                   </button>
-                  <button type="button" className={styles.ticketBtn}
-                          disabled={!!busy} onClick={() => openTicketDialog(item)}>
-                    Assign again
-                  </button>
+                  {!isRebind && (
+                    <button type="button" className={styles.ticketBtn}
+                            disabled={!!busy} onClick={() => openTicketDialog(item)}>
+                      Assign again
+                    </button>
+                  )}
                 </div>
               )}
               {why !== undefined && (
