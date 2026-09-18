@@ -8,6 +8,7 @@
 const netbox = require('./netbox');
 const rest = require('./rest');
 const servicenow = require('./servicenow');
+const { detect } = require('./detect');
 
 const ALL = [netbox, rest, servicenow];
 const byType = Object.fromEntries(ALL.map((c) => [c.type, c]));
@@ -17,4 +18,11 @@ const types = () => ALL.map((c) => ({ type: c.type, label: c.label, fields: c.fi
 
 const get = (type) => byType[type] || null;
 
-module.exports = { ALL, byType, types, get };
+/**
+ * Which of these an address is, worked out rather than asked for.
+ *
+ * The catalogue above says what we can talk to; this says which one somebody
+ * has. It needs no credentials, so it can run while the person is still typing
+ * the address, and its answer is a suggestion the sign-in then confirms.
+ */
+module.exports = { ALL, byType, types, get, detect };
