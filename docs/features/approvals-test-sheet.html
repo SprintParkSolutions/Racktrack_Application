@@ -46,287 +46,266 @@ ul.plain li{margin:0 0 8px;max-width:74ch}
 ul.plain b{color:var(--ink);font-weight:600}
 .closing{margin-top:56px;padding-top:22px;border-top:1px solid var(--hair);color:var(--ink-2);max-width:76ch}
 @media print{.tick input{-webkit-appearance:auto}.t{break-inside:avoid}}
-</style>
+.t-noshot .t-body{grid-template-columns:1fr}</style>
 <div class="shell">
 <p class="brand">RackTrack &middot; test sheet &middot; 18 September 2026</p>
 <h1>What to check, and what you should see</h1>
-<p class="stand">Thirty-eight things to try, in the order a real day would go. Each one says what to do, what should happen, and shows the screen it happens on. Tick them off as you go. If a screen does not match its picture, say the number.</p>
+<p class="stand">Thirty-seven checks in the order a real day goes. Each says what to do and what should happen, with the screen beside it. Every picture was taken on demo.racktrack.ai with these accounts and this data, so what you see should match. Tick them off; if a screen does not match its picture, quote the number.</p>
 
 <div class="creds"><table>
 <thead><tr><th>Where</th><th>Sign in as</th><th>Password</th><th>What they are</th></tr></thead>
 <tbody>
-<tr><td>demo.racktrack.ai</td><td><code>meridian.admin</code></td><td><code>Setup@2026!</code></td><td>Organization admin: triages, assigns, decides, writes</td></tr>
-<tr><td>demo.racktrack.ai</td><td><code>meridian.approver</code></td><td><code>Setup@2026!</code></td><td>Approver: approves and rejects, nothing else</td></tr>
-<tr><td>demo.racktrack.ai</td><td><code>meridian.tech</code></td><td><code>Setup@2026!</code></td><td>Technician: scans and sends, nothing else</td></tr>
-<tr><td>demo.racktrack.ai/approvals</td><td>the same accounts</td><td>the same</td><td>RackTrack Approvals, where the deciding happens</td></tr>
+<tr><td>demo.racktrack.ai</td><td><code>meridian.tech</code></td><td><code>Setup@2026!</code></td><td>Technician: scans a rack and sends the check, nothing more</td></tr>
+<tr><td>demo.racktrack.ai/approvals</td><td><code>meridian.admin</code></td><td><code>Setup@2026!</code></td><td>Organization admin: triages, assigns, decides, writes</td></tr>
+<tr><td>demo.racktrack.ai/approvals</td><td><code>meridian.approver</code></td><td><code>Setup@2026!</code></td><td>Approver: approves and rejects, nothing else</td></tr>
 </tbody></table></div>
 
-<div class="notice"><b>Two things before you start.</b> Do not use the <code>owner</code> account to test the workflow: a check belongs to an organization and the owner is in none, so it will look broken when it is behaving correctly. And if any page ever stops, reload it once; the app fetches itself again after an update lands while a page is open.</div>
+<div class="notice"><b>Two things before you start.</b> Do not test the workflow as the <code>owner</code> account: a check belongs to an organization and the owner is in none, so correct behaviour will look like a fault. And if a page ever stops, reload it once; the app fetches itself again when an update lands while a page is open.</div>
 
 <section>
-<div class="sec-head"><h2>On the phone, as a technician</h2><p>What the person at the rack can and cannot do.</p></div>
+<div class="sec-head"><h2>On the phone, as a technician</h2><p>What the person at the rack can do, and what they cannot.</p></div>
 <article class="t" id="A1">
-  <div class="t-head"><span class="tid">A1</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">A1</span><label class="tick"><input type="checkbox" id="cA1"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Sign in to the RackTrack app as a technician and open Scan.</p>
-      <p class="exp"><b>You should see.</b> The space you are standing in can be chosen before the photo. There is no Approvals entry for a technician.</p>
+      <p class="do"><b>Do this.</b> Sign in to the RackTrack app as meridian.tech and look at Scan.</p>
+      <p class="exp"><b>You should see.</b> The space you are standing in is chosen before the photo, so the scan is matched against that space&#x27;s racks. Look at the menu: a technician has no Approvals entry.</p>
     </div>
-    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/tech-01-scan.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/a1-technician-scan.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="A2">
-  <div class="t-head"><span class="tid">A2</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">A2</span><label class="tick"><input type="checkbox" id="cA2"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
       <p class="do"><b>Do this.</b> Open a scanned rack, then Report, then Drift vs NetBox.</p>
-      <p class="exp"><b>You should see.</b> It says how many things do not match and how many supporting records would be created on their own. It names who the check will go to, or says the admin will choose. One button: Send to the admin.</p>
+      <p class="exp"><b>You should see.</b> It says how many things do not match and how many supporting records would be created on their own, and who the check will go to. One button: Send to the admin.</p>
     </div>
-    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/tech-02-drift-check.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/a2-drift-check.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="A3">
-  <div class="t-head"><span class="tid">A3</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">A3</span><label class="tick"><input type="checkbox" id="cA3"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Scroll the list of differences.</p>
-      <p class="exp"><b>You should see.</b> One line per difference in plain words, for example &quot;Not in NetBox&quot;. Ports are not listed on their own; they belong to their device.</p>
+      <p class="do"><b>Do this.</b> Scroll the differences.</p>
+      <p class="exp"><b>You should see.</b> One line each, in the rack&#x27;s words: &quot;Not in NetBox&quot;. Ports are not listed separately; they belong to their device.</p>
     </div>
-    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/tech-03-drift-differences.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/a3-differences.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
-<article class="t" id="A4">
-  <div class="t-head"><span class="tid">A4</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+<article class="t t-noshot" id="A4">
+  <div class="t-head"><span class="tid">A4</span><label class="tick"><input type="checkbox" id="cA4"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Press Send to the admin.</p>
-      <p class="exp"><b>You should see.</b> It says it has gone, and a &quot;Track this check&quot; link appears. Nothing on this screen approves, assigns or writes.</p>
+      <p class="do"><b>Do this.</b> Press Send to the admin, then look for anything that decides.</p>
+      <p class="exp"><b>You should see.</b> A &quot;Track this check&quot; link appears. There is no approve, assign or write on this screen, and the server refuses them to a technician even if the address is typed by hand.</p>
     </div>
     
-  </div>
-</article>
-<article class="t" id="A5">
-  <div class="t-head"><span class="tid">A5</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
-  <div class="t-body">
-    <div class="t-words">
-      <p class="do"><b>Do this.</b> As a technician, look for anything that decides.</p>
-      <p class="exp"><b>You should see.</b> There is none. Approve, assign and write are not on this screen, and the server refuses them to a technician even if the address is typed by hand.</p>
-    </div>
-    
-  </div>
-</article>
-<article class="t" id="A6">
-  <div class="t-head"><span class="tid">A6</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
-  <div class="t-body">
-    <div class="t-words">
-      <p class="do"><b>Do this.</b> Sign in as a brand new organization admin.</p>
-      <p class="exp"><b>You should see.</b> The setup opens by itself, one step at a time, Back and Next only. A red star marks what must be filled. Nothing else is marked.</p>
-    </div>
-    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/app-phone-02-step01-organization.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 </section>
 
 <section>
-<div class="sec-head"><h2>In Approvals, the whole path</h2><p>From the check arriving to the record being written. This is the main test.</p></div>
+<div class="sec-head"><h2>In Approvals, the whole path</h2><p>A real check from arriving to written. This is the main test; do it in order.</p></div>
 <article class="t" id="B1">
-  <div class="t-head"><span class="tid">B1</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B1</span><label class="tick"><input type="checkbox" id="cB1"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Sign in as meridian.admin and open Approvals.</p>
-      <p class="exp"><b>You should see.</b> The dashboard opens. The checks are grouped by their clock: on track, at risk, breached, paused. Every number is clickable.</p>
+      <p class="do"><b>Do this.</b> Sign in as meridian.admin, open Approvals.</p>
+      <p class="exp"><b>You should see.</b> The dashboard groups the checks by their clock: on track, at risk, breached, paused. Every number is clickable and opens the list behind it.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/fixed-01-dashboard.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b1-dashboard.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B2">
-  <div class="t-head"><span class="tid">B2</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B2</span><label class="tick"><input type="checkbox" id="cB2"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Click one of the numbers.</p>
-      <p class="exp"><b>You should see.</b> The list opens already filtered to exactly those checks. The count on the tile and the number of rows agree.</p>
+      <p class="do"><b>Do this.</b> Open the check the technician sent.</p>
+      <p class="exp"><b>You should see.</b> The header carries the rack, the datacentre, the status and the risk. 294 differences were found on this rack and only 10 questions are asked, because 280 ports follow their device.</p>
     </div>
-    
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b3-check-arrived.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B3">
-  <div class="t-head"><span class="tid">B3</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B3</span><label class="tick"><input type="checkbox" id="cB3"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Open a check that a technician has sent.</p>
-      <p class="exp"><b>You should see.</b> The header shows the rack, the datacentre, the status, the priority and the risk. The differences are listed with what the record holds against what the scan saw. Ports are folded under their device, so a rack of nine switches asks nine questions, not hundreds.</p>
+      <p class="do"><b>Do this.</b> Look at what you are offered before triage.</p>
+      <p class="exp"><b>You should see.</b> Only Triage, Reject and Cancel. You cannot assign work before the drift has a category, a priority and a risk.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/end2end-02-the-check-as-it-arrived.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b4-refused-triage-first.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B4">
-  <div class="t-head"><span class="tid">B4</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B4</span><label class="tick"><input type="checkbox" id="cB4"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Try to Assign before you have triaged.</p>
-      <p class="exp"><b>You should see.</b> It is refused in plain words beside the action: triage the drift first. Not a red error, not a blank page.</p>
+      <p class="do"><b>Do this.</b> Press Triage.</p>
+      <p class="exp"><b>You should see.</b> A short form. The fields that must be filled carry a red star; nothing else is marked. One line at the top says &quot;* Required&quot;.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/desktop-06-guard-refusal-in-dialog.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b5a-triage-dialog.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B5">
-  <div class="t-head"><span class="tid">B5</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B5</span><label class="tick"><input type="checkbox" id="cB5"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Triage it: category, priority, risk, and a note.</p>
-      <p class="exp"><b>You should see.</b> The header takes the priority and risk you chose. The clocks start from here.</p>
+      <p class="do"><b>Do this.</b> Finish the triage.</p>
+      <p class="exp"><b>You should see.</b> The header takes the priority and risk you chose, and the clocks start from here.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/end2end-03-triaged.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b5-triaged.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B6">
-  <div class="t-head"><span class="tid">B6</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B6</span><label class="tick"><input type="checkbox" id="cB6"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Use Assign, and choose the whole rack.</p>
-      <p class="exp"><b>You should see.</b> One work ticket per device, not per port. The contact NetBox names for the rack is offered first. A ServiceNow incident is raised for each and the person is emailed.</p>
+      <p class="do"><b>Do this.</b> Press Assign.</p>
+      <p class="exp"><b>You should see.</b> You choose the whole rack or single items, then a person. A NetBox contact is offered first; a RackTrack user can be chosen instead. When NetBox names nobody it says so rather than guessing.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/end2end-04-assigned-to-the-contact.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b6a-assign-dialog.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B7">
-  <div class="t-head"><span class="tid">B7</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B7</span><label class="tick"><input type="checkbox" id="cB7"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Find an item marked as moved in NetBox, a rebind, and look at its buttons.</p>
-      <p class="exp"><b>You should see.</b> It offers Approve and Reject directly and never Assign. A rebind only re-labels a record NetBox already holds, so there is nothing to check at the rack.</p>
+      <p class="do"><b>Do this.</b> Assign the whole rack.</p>
+      <p class="exp"><b>You should see.</b> One work ticket per device, not per port. A ServiceNow incident is raised for each and the person is emailed.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/desktop-09b-rebind-approve-no-assign.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b6-assigned.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B8">
-  <div class="t-head"><span class="tid">B8</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B8</span><label class="tick"><input type="checkbox" id="cB8"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> On an ordinary item that has not been assigned, try Approve.</p>
-      <p class="exp"><b>You should see.</b> Refused beside that item: assign it to someone first. Approve and reject open once their ticket is resolved.</p>
+      <p class="do"><b>Do this.</b> While the work is out, look at the items.</p>
+      <p class="exp"><b>You should see.</b> An item whose ticket is still out offers Resolve and Set pending, and no Approve. Approve and Reject appear only once that person has come back. This is the rule the workflow rests on.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/desktop-20b-guard-refusal-beside-the-item.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b8-one-back-the-rest-out.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B9">
-  <div class="t-head"><span class="tid">B9</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B9</span><label class="tick"><input type="checkbox" id="cB9"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Accept a ticket, start it, then resolve it with a finding.</p>
-      <p class="exp"><b>You should see.</b> The finding is mandatory. The item comes back to the admin undecided, carrying what the person found. A resolved ticket is not an approval.</p>
+      <p class="do"><b>Do this.</b> Resolve a ticket.</p>
+      <p class="exp"><b>You should see.</b> A finding is required: what the person actually saw at the rack. It is not optional.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/end2end-06-resolved-with-a-finding.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b9a-resolve-dialog.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B10">
-  <div class="t-head"><span class="tid">B10</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B10</span><label class="tick"><input type="checkbox" id="cB10"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Try to approve before anything has been verified.</p>
-      <p class="exp"><b>You should see.</b> The plan will not move to approval until a verification is recorded: either a second scan compared with the plan, or an admin recording that it was checked in person, with a reason that is written into the history.</p>
+      <p class="do"><b>Do this.</b> Bring every ticket back.</p>
+      <p class="exp"><b>You should see.</b> Each item now reads Resolved and Undecided. A resolved ticket is not an approval; it comes back to the admin carrying the finding.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/desktop-15-verify-dialog.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b9-resolved-with-findings.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B11">
-  <div class="t-head"><span class="tid">B11</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B11</span><label class="tick"><input type="checkbox" id="cB11"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Decide each device.</p>
-      <p class="exp"><b>You should see.</b> Nine decisions for a rack with hundreds of differences. Each decision records who made it and when.</p>
+      <p class="do"><b>Do this.</b> Press Verify.</p>
+      <p class="exp"><b>You should see.</b> It asks for a newer scan of the same rack and compares it with the drift. Here it says no newer scan was found, so photograph the rack again or record that you checked in person.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/end2end-08-nine-decisions-made.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b10-verify-dialog.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B12">
-  <div class="t-head"><span class="tid">B12</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B12</span><label class="tick"><input type="checkbox" id="cB12"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Try to reject something without saying why.</p>
-      <p class="exp"><b>You should see.</b> Refused. A rejection needs a reason code from the list and a comment.</p>
+      <p class="do"><b>Do this.</b> Record that you checked in person instead.</p>
+      <p class="exp"><b>You should see.</b> A reason is required and it is written into the history. Nothing reaches approval without a verification of one kind or the other.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/desktop-08-reject-needs-reason-code.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b10b-verify-by-hand.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B13">
-  <div class="t-head"><span class="tid">B13</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B13</span><label class="tick"><input type="checkbox" id="cB13"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> As the same admin who resolved the tickets, try to approve.</p>
-      <p class="exp"><b>You should see.</b> Refused: you resolved a ticket on this plan, so somebody else has to make this decision. This is the rule the whole workflow rests on.</p>
+      <p class="do"><b>Do this.</b> Decide each device with the finding in hand.</p>
+      <p class="exp"><b>You should see.</b> Ten decisions for a rack with hundreds of differences. Each one records who decided and when.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/end2end-09-the-admin-cannot-approve-their-own-work.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b11-decided.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B14">
-  <div class="t-head"><span class="tid">B14</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B14</span><label class="tick"><input type="checkbox" id="cB14"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Sign in as meridian.approver and open the same check.</p>
-      <p class="exp"><b>You should see.</b> They can approve and reject. They cannot triage, assign or write. Their queue shows what is waiting for them.</p>
+      <p class="do"><b>Do this.</b> Try to reject without saying why.</p>
+      <p class="exp"><b>You should see.</b> Refused. A rejection needs a reason code from the list and a comment.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/end2end-11-approver-sees-the-check.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b12-reject-needs-a-reason.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
-<article class="t" id="B15">
-  <div class="t-head"><span class="tid">B15</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+<article class="t t-noshot" id="B15">
+  <div class="t-head"><span class="tid">B15</span><label class="tick"><input type="checkbox" id="cB15"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Approve it.</p>
-      <p class="exp"><b>You should see.</b> The approval is recorded against the hash of exactly what was approved and the version of the plan. Change the plan afterwards and the approval no longer counts.</p>
-    </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/end2end-12-approved.jpg" alt="" loading="lazy"></div></div>
-  </div>
-</article>
-<article class="t" id="B16">
-  <div class="t-head"><span class="tid">B16</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
-  <div class="t-body">
-    <div class="t-words">
-      <p class="do"><b>Do this.</b> On a check whose risk is critical, try to approve twice as the same person.</p>
-      <p class="exp"><b>You should see.</b> Refused. A critical risk needs a second approver, and it has to be a different person.</p>
-    </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/desktop-20-dual-approval-refused.jpg" alt="" loading="lazy"></div></div>
-  </div>
-</article>
-<article class="t" id="B17">
-  <div class="t-head"><span class="tid">B17</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
-  <div class="t-body">
-    <div class="t-words">
-      <p class="do"><b>Do this.</b> As the approver, try to write.</p>
-      <p class="exp"><b>You should see.</b> Refused: an admin approves and writes. The approver decides; they do not touch the record.</p>
+      <p class="do"><b>Do this.</b> As meridian.admin, who resolved the tickets, look for Approve.</p>
+      <p class="exp"><b>You should see.</b> There is none. The person who did the work cannot sign it off. If you call the server directly it answers: you resolved a ticket on this plan, so somebody else has to make this decision.</p>
     </div>
     
   </div>
 </article>
-<article class="t" id="B18">
-  <div class="t-head"><span class="tid">B18</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+<article class="t" id="B16">
+  <div class="t-head"><span class="tid">B16</span><label class="tick"><input type="checkbox" id="cB16"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> As the admin, write it to NetBox.</p>
-      <p class="exp"><b>You should see.</b> Only the approved items go. NetBox is compared once more first, so nothing is written if the record moved. The page follows the write while it runs.</p>
+      <p class="do"><b>Do this.</b> Sign in as meridian.approver and open My queue.</p>
+      <p class="exp"><b>You should see.</b> What is waiting for them, and nothing else. An approver approves and rejects; they cannot triage, assign or write.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/fixed-02-the-check-after-the-write.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b14-approver-queue.jpg" alt="" loading="lazy"></div></div>
+  </div>
+</article>
+<article class="t" id="B17">
+  <div class="t-head"><span class="tid">B17</span><label class="tick"><input type="checkbox" id="cB17"> <span>Checked</span></label></div>
+  <div class="t-body">
+    <div class="t-words">
+      <p class="do"><b>Do this.</b> Open the check and press Approve.</p>
+      <p class="exp"><b>You should see.</b> A comment for the record. The approval is stored against the hash of exactly what was approved and the version of the plan, so a later change makes it count for nothing.</p>
+    </div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b15a-approve-dialog.jpg" alt="" loading="lazy"></div></div>
+  </div>
+</article>
+<article class="t" id="B18">
+  <div class="t-head"><span class="tid">B18</span><label class="tick"><input type="checkbox" id="cB18"> <span>Checked</span></label></div>
+  <div class="t-body">
+    <div class="t-words">
+      <p class="do"><b>Do this.</b> As the approver, look for the write.</p>
+      <p class="exp"><b>You should see.</b> No move is open to them once they have approved. Calling the server directly answers: an admin approves and writes.</p>
+    </div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b17-approver-has-no-write.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B19">
-  <div class="t-head"><span class="tid">B19</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B19</span><label class="tick"><input type="checkbox" id="cB19"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Look at a write that did not finish.</p>
-      <p class="exp"><b>You should see.</b> It says &quot;write failed&quot; rather than pretending. Every object NetBox refused is named with its reason, beside what did go in. &quot;Try the write again&quot; writes only the rest, under the same approval.</p>
+      <p class="do"><b>Do this.</b> Back as meridian.admin, press Write to NetBox.</p>
+      <p class="exp"><b>You should see.</b> Only the approved items go, and NetBox is compared once more first, so nothing is written if the record moved. The page follows the write while it runs.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/fixed-03-what-the-write-could-not-do.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b18-written.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="B20">
-  <div class="t-head"><span class="tid">B20</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">B20</span><label class="tick"><input type="checkbox" id="cB20"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Open a rack that already has an unfinished check.</p>
-      <p class="exp"><b>You should see.</b> It links you to the open check instead of quietly making a second one. Comparing again is a button you press on purpose, never something that happens because a page opened.</p>
+      <p class="do"><b>Do this.</b> Look at a write that did not finish.</p>
+      <p class="exp"><b>You should see.</b> It says so rather than pretending. Every object NetBox refused is named with the reason in plain words, here two ports on one switch that the camera read with the same name. Try the write again writes only the rest, under the same approval.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/desktop-23c-open-drift-instead-of-comparing.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/b19-what-failed.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 </section>
@@ -334,129 +313,139 @@ ul.plain b{color:var(--ink);font-weight:600}
 <section>
 <div class="sec-head"><h2>The screens around it</h2><p>What an operations team uses day to day.</p></div>
 <article class="t" id="C1">
-  <div class="t-head"><span class="tid">C1</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">C1</span><label class="tick"><input type="checkbox" id="cC1"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Open Drifts and use the search and the filters.</p>
-      <p class="exp"><b>You should see.</b> Search by rack, check or person. Filter by status, datacentre, rack, priority, risk, assignee and clock. Sort by any column.</p>
+      <p class="do"><b>Do this.</b> Open Drifts.</p>
+      <p class="exp"><b>You should see.</b> Search by rack, check or person. Filter by status, datacentre, rack, priority, risk, assignee and clock.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/after-05-drifts-list.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/c1-drifts-list.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="C2">
-  <div class="t-head"><span class="tid">C2</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">C2</span><label class="tick"><input type="checkbox" id="cC2"> <span>Checked</span></label></div>
+  <div class="t-body">
+    <div class="t-words">
+      <p class="do"><b>Do this.</b> Open My queue.</p>
+      <p class="exp"><b>You should see.</b> The same checks arranged by what they are waiting for, and it differs by who you are signed in as.</p>
+    </div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/c8-queue.jpg" alt="" loading="lazy"></div></div>
+  </div>
+</article>
+<article class="t" id="C3">
+  <div class="t-head"><span class="tid">C3</span><label class="tick"><input type="checkbox" id="cC3"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
       <p class="do"><b>Do this.</b> Open Tickets.</p>
       <p class="exp"><b>You should see.</b> Every work ticket with the person it went to, their email, its state, the ServiceNow number and the finding.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/after-06-tickets.jpg" alt="" loading="lazy"></div></div>
-  </div>
-</article>
-<article class="t" id="C3">
-  <div class="t-head"><span class="tid">C3</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
-  <div class="t-body">
-    <div class="t-words">
-      <p class="do"><b>Do this.</b> Open Reports and click a number.</p>
-      <p class="exp"><b>You should see.</b> Eight reports: backlog, clocks, quality, trends, resolvers, approvals, writes, exceptions. Every number opens the records behind it, and each report has a CSV beside it.</p>
-    </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/after-07-reports.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/c2-tickets.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="C4">
-  <div class="t-head"><span class="tid">C4</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">C4</span><label class="tick"><input type="checkbox" id="cC4"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Add an exception for a difference you have decided to keep.</p>
-      <p class="exp"><b>You should see.</b> It needs an owner, a justification and an expiry. Matching items stop being raised until it expires or is revoked.</p>
+      <p class="do"><b>Do this.</b> Open Reports and click a number.</p>
+      <p class="exp"><b>You should see.</b> Eight reports: backlog, clocks, quality, trends, resolvers, approvals, writes, exceptions. Each has a CSV beside it and every number opens the records behind it.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/after-12-exceptions.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/c3-reports.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="C5">
-  <div class="t-head"><span class="tid">C5</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">C5</span><label class="tick"><input type="checkbox" id="cC5"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Open Notifications and the preferences.</p>
-      <p class="exp"><b>You should see.</b> The bell counts what is unread. A person can turn channels off, except the three that always go out: a failed write, a breached clock and an escalation.</p>
+      <p class="do"><b>Do this.</b> Open Exceptions and add one.</p>
+      <p class="exp"><b>You should see.</b> A difference somebody has decided to keep, with an owner, a justification and an expiry. Matching items stop being raised until it expires or is revoked.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/desktop-31-notification-preferences.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/c4-exceptions.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="C6">
-  <div class="t-head"><span class="tid">C6</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">C6</span><label class="tick"><input type="checkbox" id="cC6"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Open Settings as the organization admin.</p>
-      <p class="exp"><b>You should see.</b> The clock targets per priority, the working calendar, which risks need a second approver, and when things escalate. All of it is per organization, not fixed in the product.</p>
+      <p class="do"><b>Do this.</b> Open Notifications and then Preferences.</p>
+      <p class="exp"><b>You should see.</b> The bell counts what is unread. Channels can be turned off, except a failed write, a breached clock and an escalation, which always go out.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/after-10-settings.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/c5-notifications.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="C7">
-  <div class="t-head"><span class="tid">C7</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">C7</span><label class="tick"><input type="checkbox" id="cC7"> <span>Checked</span></label></div>
+  <div class="t-body">
+    <div class="t-words">
+      <p class="do"><b>Do this.</b> Open Settings.</p>
+      <p class="exp"><b>You should see.</b> The clock targets per priority, the working calendar, which risks need a second approver, and when things escalate. All per organization, none of it fixed in the product.</p>
+    </div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/c6-settings.jpg" alt="" loading="lazy"></div></div>
+  </div>
+</article>
+<article class="t" id="C8">
+  <div class="t-head"><span class="tid">C8</span><label class="tick"><input type="checkbox" id="cC8"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
       <p class="do"><b>Do this.</b> Open the audit view.</p>
-      <p class="exp"><b>You should see.</b> Every move across every check, with who did it and when, read only.</p>
+      <p class="exp"><b>You should see.</b> Every move across every check, with who did it and when, read only and searchable.</p>
     </div>
-    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/after-11-audit.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai</em></div><img src="approvals-test-sheet/img/c7-audit.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 </section>
 
 <section>
-<div class="sec-head"><h2>On a phone</h2><p>An admin approving from a corridor.</p></div>
+<div class="sec-head"><h2>On a phone</h2><p>An admin approving away from a desk.</p></div>
 <article class="t" id="D1">
-  <div class="t-head"><span class="tid">D1</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">D1</span><label class="tick"><input type="checkbox" id="cD1"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Open Approvals on a phone browser.</p>
-      <p class="exp"><b>You should see.</b> Everything works at phone width. Nothing runs off the edge; tables scroll inside themselves.</p>
+      <p class="do"><b>Do this.</b> Open Approvals on a phone.</p>
+      <p class="exp"><b>You should see.</b> The same dashboard in one column. Nothing runs off the edge.</p>
     </div>
-    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/phone-01-dashboard.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/d1-phone-dashboard.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 <article class="t" id="D2">
-  <div class="t-head"><span class="tid">D2</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+  <div class="t-head"><span class="tid">D2</span><label class="tick"><input type="checkbox" id="cD2"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
       <p class="do"><b>Do this.</b> Open a check on the phone.</p>
-      <p class="exp"><b>You should see.</b> The same information and the same buttons, in one column.</p>
+      <p class="exp"><b>You should see.</b> The same information and the same buttons as the desktop, stacked.</p>
     </div>
-    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/phone-02-the-check-after-the-write.jpg" alt="" loading="lazy"></div></div>
+    <div class="shot ph"><div class="phone"><img src="approvals-test-sheet/img/d2-phone-check.jpg" alt="" loading="lazy"></div></div>
   </div>
 </article>
 </section>
 
 <section>
-<div class="sec-head"><h2>Things that should be refused</h2><p>Try to break it. Each of these must say no.</p></div>
-<article class="t" id="E1">
-  <div class="t-head"><span class="tid">E1</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+<div class="sec-head"><h2>Things that must be refused</h2><p>Try to break it. Each of these should say no.</p></div>
+<article class="t t-noshot" id="E1">
+  <div class="t-head"><span class="tid">E1</span><label class="tick"><input type="checkbox" id="cE1"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
       <p class="do"><b>Do this.</b> Sign in as the owner account and open Approvals.</p>
-      <p class="exp"><b>You should see.</b> The owner sees only checks it raised itself, because a check belongs to an organization and the owner is in none. Do not use this account to demonstrate the workflow.</p>
+      <p class="exp"><b>You should see.</b> It shows only checks the owner raised itself, because a check belongs to an organization and the owner is in none. Do not use this account to test the workflow.</p>
     </div>
     
   </div>
 </article>
-<article class="t" id="E2">
-  <div class="t-head"><span class="tid">E2</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+<article class="t t-noshot" id="E2">
+  <div class="t-head"><span class="tid">E2</span><label class="tick"><input type="checkbox" id="cE2"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
-      <p class="do"><b>Do this.</b> Sign in as an admin of a different organization and try to open a check by its address.</p>
-      <p class="exp"><b>You should see.</b> Not found. A check belongs to one organization and nobody outside it can list or open it, including the platform owner.</p>
+      <p class="do"><b>Do this.</b> As an admin of one organization, open a check from another by its address.</p>
+      <p class="exp"><b>You should see.</b> Not found. Nobody outside the organization can list or open it, the platform owner included.</p>
     </div>
     
   </div>
 </article>
-<article class="t" id="E3">
-  <div class="t-head"><span class="tid">E3</span><label class="tick"><input type="checkbox"> <span>Checked</span></label></div>
+<article class="t t-noshot" id="E3">
+  <div class="t-head"><span class="tid">E3</span><label class="tick"><input type="checkbox" id="cE3"> <span>Checked</span></label></div>
   <div class="t-body">
     <div class="t-words">
       <p class="do"><b>Do this.</b> Leave a page open, have somebody deploy, then click something.</p>
-      <p class="exp"><b>You should see.</b> The page fetches itself once and carries on. If a real fault follows, it stops and shows the message with Reload the page beside Go to Home.</p>
+      <p class="exp"><b>You should see.</b> The page fetches itself once and carries on. If a real fault follows it stops and shows the message, with Reload the page beside Go to Home.</p>
     </div>
     
   </div>
@@ -464,14 +453,14 @@ ul.plain b{color:var(--ink);font-weight:600}
 </section>
 
 <section>
-<div class="sec-head"><h2>Known, and not a bug</h2><p>Say so if you see these; no need to write them up.</p></div>
+<div class="sec-head"><h2>Known, and not worth writing up</h2><p>Say so if you see these; they are understood.</p></div>
 <ul class="plain">
-<li><b>A write can end with a few refusals.</b> Some objects are already in NetBox under another key. They are named, and the retry writes the rest. On the office rack, two ports on one switch were photographed with the same name; that clears when the rack is photographed again.</li>
-<li><b>Alerts into Microsoft Teams are not built.</b> The tokens do not exist yet. In-app and email work.</li>
-<li><b>A big write takes a while.</b> A few hundred objects can take a minute. The page follows it and shows the result when it lands.</li>
-<li><b>The portal is a separate product</b> and has nothing to do with this. Nothing in the test sheet goes near it.</li>
+<li><b>A write can end with a few refusals.</b> Some objects are already in NetBox under another key and are claimed rather than failed. What remains on this rack is two ports on one switch that the camera read with the same name; that clears when the rack is photographed again.</li>
+<li><b>Alerts into Microsoft Teams are not built.</b> The tokens do not exist yet. In the application and by email both work.</li>
+<li><b>A large write takes a minute.</b> The page follows it and shows the result when it lands.</li>
+<li><b>The portal is a different product</b> and has nothing to do with this. Nothing here goes near it.</li>
 </ul>
 </section>
 
-<div class="closing"><p>The same workflow with every step in order, if you want the story rather than the checklist: the walkthrough page. Anything that does not match, give the number from this sheet and what you saw instead.</p></div>
+<div class="closing"><p>If something does not match, give the number from this sheet, what you did and what you saw instead. That is enough to find it.</p></div>
 </div>
