@@ -212,7 +212,45 @@ function aliasUid(uid, key, hash) {
   return swapped === s ? null : swapped;
 }
 
+/**
+ * One device holds one port of each name, in an old snapshot too.
+ *
+ * cv.toSnapshot now gives every port on a device its own name, but a snapshot
+ * is built when the photograph is analysed and frozen there: a compare made
+ * today against a scan taken last week still carries last week's names. A
+ * live write refused four interfaces for exactly this reason after the build
+ * fix had landed, because the rack had not been photographed since.
+ *
+ * So the same rule is applied where the snapshot is READ, not only where it is
+ * written. It is idempotent: a snapshot already correct is untouched, and
+ * nothing here is invented - the uid is what it always was, only the duplicate
+ * name is replaced by the port's own position, and each one is named in the
+ * report so the reading problem stays visible.
+ */
+function uniqueInterfaceNames(snapshot, report) {
+  const byDevice = new Map();
+  for (const i of snapshot.interfaces || []) {
+    if (!i || !i.deviceUid) continue;
+    const taken = byDevice.get(i.deviceUid) || new Map();
+    const name = String(i.name ?? '');
+    if (taken.has(name)) {
+      const place = String(i.uid || '').split(':').pop();
+      const replacement = place && !taken.has(place) ? place : `${name}-${taken.size + 1}`;
+      report.warnings.push(
+        `Two ports on ${i.deviceUid} were both read as "${name}"; the second is `
+        + `recorded as "${replacement}" so the device keeps one port per name. `
+        + 'Photograph the rack again to read the panel numbers properly.');
+      i.name = replacement;
+      taken.set(replacement, true);
+    } else {
+      taken.set(name, true);
+    }
+    byDevice.set(i.deviceUid, taken);
+  }
+}
+
 async function walk(snapshot, client, apply, report) {
+  uniqueInterfaceNames(snapshot, report);
   const resolved = new Map();   // our uid -> NetBox id (or Pending)
   const skipped = new Set();    // uids excluded, so dependents can say why
   const failed = new Set();

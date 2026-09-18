@@ -187,3 +187,22 @@ test('two ports the camera read as one number do not collide', () => {
   assert.ok(snap.conflicts.some((c) => c.field === 'name'),
     'and the two that read alike are reported rather than smoothed over');
 });
+
+test('an old snapshot with two ports of one name is repaired when it is read', async () => {
+  // A scan taken before the naming fix: the snapshot on disk carries the
+  // duplicate, and a compare made today re-reads NetBox but not the camera.
+  const nb = netbox();
+  const snap = snapshot();
+  snap.interfaces[1].name = snap.interfaces[0].name;   // as cv.js used to write it
+
+  const report = await writer.push(snap, nb);
+  assert.equal(report.counts.fail || 0, 0, 'the write no longer fails on it');
+
+  const names = nb.rows('/api/dcim/interfaces/').map((i) => i.name);
+  assert.equal(new Set(names).size, names.length,
+    `each interface reached NetBox with its own name, got ${names.join(', ')}`);
+  assert.ok(report.warnings.some((w) => /both read as/.test(w)),
+    'and the reading problem is named in the warnings, not hidden');
+  assert.ok(report.warnings.some((w) => /Photograph the rack again/.test(w)),
+    'with what to do about it');
+});
