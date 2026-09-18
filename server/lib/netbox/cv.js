@@ -328,15 +328,20 @@ function extractPorts(d) {
  * binding store, which is keyed on the rack rather than on the scan, and simply
  * carried onto the snapshot so it survives a re-adopt and a re-detect. Nothing
  * here decides it and nothing here changes it.
+ *
+ * `recordMatch` is the record's own answer to that question rather than a
+ * person's: the site and the rack the resolver recognised this scan as, with how
+ * it found them. Carried the same way, decided nowhere near here.
  */
 function toSnapshot(map, {
   rackId, rackKey = null, siteName, rackName, uHeight = null, scannedAt = '',
-  recordBinding = null,
+  recordBinding = null, recordMatch = null,
 }) {
   const key = rackKey || rackId;
   const aliasOf = rackKey && rackKey !== rackId ? `rack:${rackId}` : null;
   const bound = recordBinding && typeof recordBinding === 'object' ? recordBinding : null;
-  const snap = emptySnapshot(`rack:${key}`, scannedAt, aliasOf, bound);
+  const matched = recordMatch && typeof recordMatch === 'object' ? recordMatch : null;
+  const snap = emptySnapshot(`rack:${key}`, scannedAt, aliasOf, bound, matched);
 
   const siteUid = `site:${slug(siteName)}`;
   snap.sites.push(Site(observed(siteUid, Evidence.MANUAL), { name: siteName, slug: slug(siteName) }));

@@ -148,8 +148,12 @@ test('a person\'s binding becomes a visible rebind row, not a create', async () 
   assert.equal(rackRow.action, 'rebind', 'the customer\'s rack is rebound, never created again');
   assert.equal(rackRow.netboxId, 7, 'it names the record it will bind');
   assert.equal(rackRow.boundBy, 'record-binding');
-  assert.deepEqual(rackRow.diff, { [UID_FIELD]: { from: null, to: 'rack:t7:5' } },
-    'only the RackTrack id changes');
+  assert.deepEqual(rackRow.diff, {
+    [UID_FIELD]: { from: null, to: 'rack:t7:5' },
+    // The record being bound is inside the diff, because the diff is what an
+    // approval signs. See the fingerprint test in record-binding-guards.
+    recordId: { from: null, to: 7 },
+  }, 'only the RackTrack id changes, and the row says which record it lands on');
   assert.match(rackRow.reason, /name, its site/);
 
   const devices = planned.changes.filter((c) => c.type === 'Device');
@@ -194,7 +198,7 @@ test('what the customer calls their rack is reported, never overwritten', async 
   assert.ok(held, 'the difference is reported');
   const fields = held.fields.map((f) => f.field).sort();
   assert.ok(fields.includes('name'), 'the name is one of them');
-  assert.match(held.why, /only the RackTrack id is ever written/);
+  assert.match(held.why, /These fields are theirs and are reported, never written/);
 
   const rackRow = again.changes.find((c) => c.type === 'Rack');
   assert.equal(rackRow.action, 'noop', 'so there is nothing left to write on the rack');
@@ -291,7 +295,7 @@ test('with no binding at all the rack itself is unknown, so there is nothing to 
 
 // ── 6. Replaced: one row, was X now Y ──────────────────────────────────────
 
-test('a bound box whose serial disagrees with the switch is one row, was X now Y', async () => {
+test('a bound box whose serial disagrees with the switch is one row, was X now Y, and is not bound', async () => {
   const nb = customersRack(customersNetBox());
   const snap = snapshotFor({
     recordBinding: BINDING,
@@ -309,9 +313,21 @@ test('a bound box whose serial disagrees with the switch is one row, was X now Y
   assert.match(replaced[0].why, /was FDO2117A0X9 and is now FDO9999ZZZZ/);
   assert.ok(out.warnings.some((w) => /Replaced/.test(w)), 'and it reaches the plan the admin reads');
 
-  assert.equal(out.orphans.length, 0, 'the box is not reported as gone from the rack');
+  // The person's answer was about the box that WAS on that shelf. Two serials
+  // that disagree are evidence of two different boxes, so the answer is not
+  // re-applied to the box there now, and nothing is written on record 51.
+  const row = out.changes.find((c) => c.type === 'Device' && c.uid === 'dev:t7:5:u10');
+  assert.equal(row.action, 'skip', 'the bind waits for a person');
+  assert.match(row.reason, /not applied to this box/);
   assert.equal(out.changes.filter((c) => c.type === 'Device' && c.action === 'create').length, 0,
     'and it is not reported as a new box either');
+
+  // Record 51 is still in the rack, and the scan is looking straight at that
+  // shelf, so it is not "gone from the rack" either.
+  const seen = out.orphans.find((o) => o.netboxId === 51);
+  assert.ok(seen, 'the record is listed for a person to settle');
+  assert.equal(seen.seen, true);
+  assert.match(seen.recommendation, /It is not missing/);
 });
 
 test('the same serial spelled differently is not a replacement', async () => {

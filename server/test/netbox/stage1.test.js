@@ -369,12 +369,25 @@ afterEach(() => { estate.getRackByRackId = orig.get; estate.listRacks = orig.lis
 
 // A NetBox that answers /api/dcim/racks/ from a canned list, on the filters the
 // resolver uses (facility_id, then name).
+// The rack lookup is scoped by site now, so the stand-in answers the site
+// question too. A canned rack with no site of its own is taken to be at the site
+// the scan is at.
+const SITE = { id: 1, name: 'Site One' };
 const netboxWith = (racks) => ({
-  async get(path, params) {
-    let hit = null;
-    if (params.facility_id != null) hit = racks.find((r) => r.facility_id === params.facility_id);
-    else if (params.name != null) hit = racks.find((r) => r.name === params.name);
-    return { results: hit ? [hit] : [] };
+  async get(path, params = {}) {
+    const cap = (rows) => (params.limit === undefined ? rows : rows.slice(0, Number(params.limit)));
+    if (path === '/api/dcim/sites/') {
+      return { results: cap(params.name === SITE.name ? [SITE] : []) };
+    }
+    const at = (r) => (r.site && typeof r.site === 'object' ? r.site.id : r.site);
+    return {
+      results: cap(racks.filter((r) => {
+        if (params.site_id !== undefined && Number(at(r) ?? SITE.id) !== Number(params.site_id)) return false;
+        if (params.facility_id !== undefined && r.facility_id !== params.facility_id) return false;
+        if (params.name !== undefined && r.name !== params.name) return false;
+        return true;
+      })),
+    };
   },
 });
 
@@ -411,7 +424,7 @@ test('e. the only rack set up in a space names the rack but never the key', asyn
   estate.getRackByRackId = () => learned;
   estate.listRacks = () => [learned, { id: 11, rack_id: 'typed-1', name: 'Comms Rack 1', facility_id: null }];
   const r = await rackMatch.resolveRack(netboxWith([{ id: 42, name: 'Comms Rack 1', facility_id: null }]), {
-    tenantId: 7, rackId: 'RK-HASH0001', fallbackName: 'RK-HASH0001',
+    tenantId: 7, rackId: 'RK-HASH0001', fallbackName: 'RK-HASH0001', siteName: SITE.name,
   });
   assert.equal(r.name, 'Comms Rack 1', 'the contact side still resolves');
   assert.equal(r.confidence, 'confirmed');

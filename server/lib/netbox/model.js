@@ -86,8 +86,17 @@ const EXPORT_ORDER = Object.freeze([
  * customer filled in by hand, which carries no uid of ours to find it by. It is
  * carried, never invented: nothing in this file or in cv.js decides it.
  */
-function emptySnapshot(rackUid = '', scannedAt = '', aliasOf = null, recordBinding = null) {
-  const snap = { rackUid, scannedAt, aliasOf, recordBinding, conflicts: [] };
+/**
+ * `recordMatch` is the same question answered by the record rather than by a
+ * person: which site and which rack of the customer's own database this scan was
+ * recognised as, and by what - { siteId, rackNetboxId, by, confidence, why }.
+ * The planner uses it to propose a bind where nobody has answered, and only when
+ * `by` is a key the customer owns (their rack id). A rack found by name is
+ * carried too and is never bound on: a name finds the record and proves nothing.
+ */
+function emptySnapshot(rackUid = '', scannedAt = '', aliasOf = null, recordBinding = null,
+                       recordMatch = null) {
+  const snap = { rackUid, scannedAt, aliasOf, recordBinding, recordMatch, conflicts: [] };
   for (const key of EXPORT_ORDER) snap[key] = [];
   return snap;
 }

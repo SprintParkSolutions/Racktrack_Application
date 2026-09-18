@@ -15,6 +15,24 @@
 const UID_FIELD = 'racktrack_uid';
 
 /**
+ * The field that says "this record was the customer's before RackTrack touched
+ * it", written where the uid is written.
+ *
+ * A rack or a device RackTrack created is RackTrack's to keep correct. One a
+ * person bound to the customer's own row is not: its name, its site, its height
+ * and its model are the customer's, and only the RackTrack id is ever written on
+ * it. That protection used to be inferred from a JSON file beside the code, so
+ * losing the file, correcting the binding or taking it back let the writer rename
+ * and re-site the customer's rack on the next compare. The fact belongs on the
+ * record, next to the uid it protects, where nothing local can lose it.
+ *
+ * Only racks and devices carry it: they are the two types adopt() refuses to
+ * claim on a collision, and the only two a person binds by hand.
+ */
+const BOUND_FIELD = 'racktrack_bound';
+const BOUND_TYPES = Object.freeze(['dcim.rack', 'dcim.device']);
+
+/**
  * The filter a preload uses to sweep one rack's objects: NetBox's contains
  * form, `cf_racktrack_uid__ic=<text>`, which answers with every uid holding
  * that text, ignoring case. The exact form and the starts-with form are not
@@ -200,9 +218,44 @@ class NetBox {
     return hits[0] || null;
   }
 
-  async customField() {
-    const res = await this.get('/api/extras/custom-fields/', { name: UID_FIELD });
-    return (res.results || [])[0] || null;
+  async customField(name = UID_FIELD) {
+    const res = await this.get('/api/extras/custom-fields/', { name });
+    return (res.results || []).find((f) => f.name === name) || null;
+  }
+
+  /**
+   * Create or widen the racktrack_bound field on racks and devices.
+   *
+   * Separate from the uid field because it covers two types rather than sixteen,
+   * and because a push must be able to say out loud that it could not be made:
+   * without it a bind cannot be marked as a bind, and an unmarked bind is one
+   * the next compare will happily rename.
+   */
+  async ensureBoundField() {
+    const existing = await this.customField(BOUND_FIELD);
+    if (!existing) {
+      const created = await this.post('/api/extras/custom-fields/', {
+        object_types: [...BOUND_TYPES],
+        type: 'text',
+        name: BOUND_FIELD,
+        label: 'RackTrack bound record',
+        description: 'Set by RackTrack when a person bound this existing record to a scan. '
+                   + 'While it is set, RackTrack writes only its own id on this record and '
+                   + 'reports every other difference instead. Do not edit by hand.',
+        required: false,
+        filter_logic: 'exact',
+      });
+      return { action: 'created', field: created };
+    }
+    const have = new Set(existing.object_types || []);
+    const missing = BOUND_TYPES.filter((t) => !have.has(t));
+    if (missing.length) {
+      const widened = await this.patch('/api/extras/custom-fields/', existing.id, {
+        object_types: [...new Set([...have, ...BOUND_TYPES])].sort(),
+      });
+      return { action: 'widened', added: missing, field: widened };
+    }
+    return { action: 'present', field: existing };
   }
 
   /**
@@ -246,4 +299,4 @@ class NetBox {
   }
 }
 
-module.exports = { NetBox, NetBoxError, UID_FIELD };
+module.exports = { NetBox, NetBoxError, UID_FIELD, BOUND_FIELD, BOUND_TYPES };

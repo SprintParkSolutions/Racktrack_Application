@@ -306,9 +306,21 @@ function migrate(scope, legacyScopes = []) {
 // Nothing here writes to NetBox. It records what a person said; the writer
 // still plans a visible rebind row and an admin still approves it.
 
-/** A NetBox id, or null for anything that is not one. */
+/**
+ * A NetBox id, or null for anything that is not one.
+ *
+ * Strict on purpose, and the strictness is the guarantee. Number() alone turns
+ * true into 1 and [7] into 7, so a client sending a checkbox value, or a
+ * serialiser turning a flag into this field, minted a binding to whatever
+ * NetBox row 1 happens to be. A record id is a number or a string of digits and
+ * nothing else.
+ */
 const asNetboxId = (v) => {
-  const n = Number(v);
+  if (typeof v === 'number') return Number.isInteger(v) && v > 0 ? v : null;
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  if (!/^[0-9]+$/.test(s)) return null;
+  const n = Number(s);
   return Number.isInteger(n) && n > 0 ? n : null;
 };
 
@@ -319,6 +331,33 @@ function recordBinding(scope) {
 }
 
 /**
+ * What a person was reading when they named a row, kept so the answer can be
+ * refused later if the row stops being that row.
+ *
+ * Only the fields that identify it, and only the ones that were actually there.
+ * A NetBox restored from a backup renumbers ids while the remembered answer
+ * still names 51, so the id on its own is not enough to say "this is the row
+ * they were shown".
+ */
+function shownOf(raw) {
+  const o = raw && typeof raw === 'object' ? raw : null;
+  if (!o) return null;
+  const out = {};
+  const put = (key, value, max = 200) => { const s = str(value, max); if (s) out[key] = s; };
+  put('name', o.name);
+  put('facilityId', o.facilityId ?? o.facility_id);
+  put('serial', o.serial);
+  put('assetTag', o.assetTag ?? o.asset_tag);
+  const pos = asInt(o.position);
+  if (pos !== null) out.position = pos;
+  const rack = asNetboxId(o.rackId ?? o.rack_id ?? o.rack);
+  if (rack !== null) out.rackId = rack;
+  const site = asNetboxId(o.siteId ?? o.site_id ?? o.site);
+  if (site !== null) out.siteId = site;
+  return Object.keys(out).length ? out : null;
+}
+
+/**
  * Record which rows of the customer's own record this rack and its boxes are.
  *
  * Merges: a call naming only the rack leaves the boxes alone, and a call naming
@@ -326,35 +365,60 @@ function recordBinding(scope) {
  * removed, which is how a person takes an answer back.
  *
  * Refuses anything that is not a NetBox id, so a binding can never carry a
- * string, a zero or a negative number into the write path.
+ * string, a zero or a negative number into the write path. Refuses one record
+ * claimed by two boxes as well: the switch matcher has enforced "one box holds
+ * one switch" for years, and without the same rule here the preview promised two
+ * rebinds of one record and the write did the first and skipped the second, so
+ * which box got the record was decided by the order of a loop.
+ *
+ * `rackShown` and `deviceShown` are what the person was looking at when they
+ * answered, stored beside the id so the answer can refuse itself when the row
+ * no longer matches.
  */
 function bindRecord(scope, {
-  rackNetboxId, deviceNetboxIds = null, by = null, at = null, why = '',
+  rackNetboxId, deviceNetboxIds = null, rackShown = null, deviceShown = null,
+  by = null, at = null, why = '',
 } = {}) {
   const held = read(scope);
   const current = held.record && typeof held.record === 'object' ? held.record : {};
   const devices = { ...(current.deviceNetboxIds && typeof current.deviceNetboxIds === 'object'
     ? current.deviceNetboxIds : {}) };
+  const heldShown = current.shown && typeof current.shown === 'object' ? current.shown : {};
+  const shown = {
+    rack: heldShown.rack && typeof heldShown.rack === 'object' ? { ...heldShown.rack } : null,
+    devices: { ...(heldShown.devices && typeof heldShown.devices === 'object' ? heldShown.devices : {}) },
+  };
 
   const refused = [];
   if (deviceNetboxIds && typeof deviceNetboxIds === 'object') {
     for (const [uid, value] of Object.entries(deviceNetboxIds)) {
       const key = str(uid, 200);
       if (!key) continue;
-      if (value === null || value === undefined || value === '') { delete devices[key]; continue; }
+      if (value === null || value === undefined || value === '') {
+        delete devices[key];
+        delete shown.devices[key];
+        continue;
+      }
       const id = asNetboxId(value);
       if (id === null) { refused.push(key); continue; }
       devices[key] = id;
+      const said = shownOf((deviceShown && typeof deviceShown === 'object' ? deviceShown : {})[key]);
+      if (said) shown.devices[key] = said;
     }
   }
 
   let rack = current.rackNetboxId ?? null;
   if (rackNetboxId === null || rackNetboxId === '') {
     rack = null;
+    shown.rack = null;
   } else if (rackNetboxId !== undefined) {
     const id = asNetboxId(rackNetboxId);
     if (id === null) refused.push('the rack');
-    else rack = id;
+    else {
+      rack = id;
+      const said = shownOf(rackShown);
+      if (said) shown.rack = said;
+    }
   }
 
   if (refused.length) {
@@ -362,9 +426,22 @@ function bindRecord(scope, {
       + 'number the customer\'s own record gives the rack or the box.' };
   }
 
+  // One record is one box. Checked over the whole map, not only the rows this
+  // call named, so a second answer cannot quietly join a first one.
+  const byId = new Map();
+  for (const [uid, id] of Object.entries(devices)) {
+    const twin = byId.get(id);
+    if (twin) {
+      return { error: `Record ${id} is already the box ${twin}. One record is one box: say which `
+        + `of ${twin} and ${uid} it is, or take the first answer back.` };
+    }
+    byId.set(id, uid);
+  }
+
   const rec = {
     rackNetboxId: rack,
     deviceNetboxIds: devices,
+    shown,
     by: by === null || by === undefined ? (current.by ?? null) : str(by, 120),
     at: str(at, 40) || nowIso(),
     why: str(why, 500) || str(current.why, 500),
@@ -391,7 +468,13 @@ function forgetRecordBinding(scope, { deviceUid = null } = {}) {
   const devices = { ...(held.record.deviceNetboxIds || {}) };
   if (!(uid in devices)) return { error: 'Nothing in the record is bound to that box.' };
   delete devices[uid];
-  write(scope, { ...held, record: { ...held.record, deviceNetboxIds: devices } });
+  const heldShown = held.record.shown && typeof held.record.shown === 'object' ? held.record.shown : {};
+  const shown = {
+    rack: heldShown.rack ?? null,
+    devices: { ...(heldShown.devices && typeof heldShown.devices === 'object' ? heldShown.devices : {}) },
+  };
+  delete shown.devices[uid];
+  write(scope, { ...held, record: { ...held.record, deviceNetboxIds: devices, shown } });
   return { ok: true, forgot: uid };
 }
 
@@ -408,5 +491,5 @@ function forget(scope, deviceUid) {
 
 module.exports = {
   scopeOf, legacyScopesOf, fileFor, list, find, confirm, forget, migrate, DIR,
-  recordBinding, bindRecord, forgetRecordBinding,
+  recordBinding, bindRecord, forgetRecordBinding, asNetboxId, shownOf,
 };

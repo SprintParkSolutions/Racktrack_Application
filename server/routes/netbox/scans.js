@@ -17,6 +17,7 @@ const report = require('../../lib/netbox/report');
 const rackMatch = require('../../lib/netbox/rack_match');
 const identity = require('../../lib/netbox/identity');
 const bindings = require('../../lib/netbox/bindings');
+const find = require('../../lib/netbox/find');
 const { clientForUser } = require('../../lib/netbox/client_for');
 // RackTrack's own libraries: who may touch which rack, and where its scans live.
 const tenant = require('../../lib/tenant');
@@ -169,13 +170,13 @@ router.put('/rack/:rackId/name', gates.admin, (req, res) => {
  * photo hash, as they always were. Nothing here can fail the caller: no
  * NetBox, an unreachable one or an unbound scan all mean "no key".
  */
-async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
+async function recogniseRack(req, { tenantId, rackId, fallbackName, siteName = null }) {
   let client = null;
   try { client = clientForUser(req.user); } catch { client = null; }
   let found;
   try {
     found = await rackMatch.resolveRack(client, {
-      tenantId, rackId, scanName: rackNames.get(rackId) || null, fallbackName,
+      tenantId, rackId, scanName: rackNames.get(rackId) || null, fallbackName, siteName,
     });
   } catch (err) {
     found = { name: fallbackName, rackKey: null, source: 'scan',
@@ -189,6 +190,18 @@ async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
     // A keyed rack is named as the customer's record names it. The local alias
     // stands in only for a rack nobody has identified.
     rackName: found.rackKey ? String(found.name || fallbackName) : fallbackName,
+    // What the customer's own record says this scan is, carried onto the snapshot
+    // so the planner can propose a bind instead of planning a create against a
+    // rack the record already holds. `by` is what decides whether it may be
+    // written: their own rack id may, a name may not.
+    recordMatch: {
+      siteId: found.siteId ?? null,
+      rackNetboxId: found.netboxId ?? null,
+      by: found.netboxBy ?? null,
+      confidence: found.confidence ?? 'none',
+      why: found.netboxWhy || found.why || null,
+      candidates: found.candidates || null,
+    },
   };
 }
 
@@ -213,15 +226,82 @@ const SNAPSHOT_RULES = 4;
  * Nothing here writes to NetBox. The writer still plans a visible rebind row
  * and an admin still approves it.
  */
-function recordBindingFor({ tenantId, rackId, said = null, by = null }) {
+async function recordBindingFor(req, {
+  tenantId, rackId, said = null, by = null, rackKey = null, expect = null,
+}) {
   const scope = bindings.scopeOf({ tenantId, rackId });
+  // Answers held under an older spelling of the scope are carried forward here
+  // too, exactly as the switch confirmations are. A scan whose tenant was not on
+  // disk when it was first opened wrote to t0|<rackId>, and a person's answer
+  // must not become invisible - or, worse, lose the protection that goes with it
+  // - because the scope was spelled differently that day.
+  const legacy = bindings.legacyScopesOf({ tenantId, rackKey, rackId });
+  if (legacy.length) {
+    try { bindings.migrate(scope, legacy); }
+    catch (err) { logger?.warn?.('netbox.bindings.migrate', { scope, error: err.message }); }
+  }
+
   if (said && typeof said === 'object') {
+    // Checked against the record before it is stored, not only when it is used.
+    // The id arrives as a bare integer, so a transposed digit is the expected
+    // input: a rack at another site, a box in another rack or a row that has gone
+    // is refused here, with the row named, while the person is still looking at
+    // the screen they typed it on.
+    let client = null;
+    try { client = clientForUser(req.user); } catch { client = null; }
+    const want = expect && typeof expect === 'object' ? expect : {};
+    const rackShown = {};
+    const deviceShown = {};
+    let checked = true;
+
+    const look = async (endpoint, id, scopeFor) => {
+      const hit = await find.byId(client, endpoint, id, { expect: scopeFor });
+      if (hit.none) return { error: hit.why };
+      return { row: hit.row };
+    };
+    const shownFromRow = (row) => ({
+      name: row.name ?? null,
+      facilityId: row.facility_id ?? null,
+      serial: row.serial ?? null,
+      assetTag: row.asset_tag ?? null,
+      position: row.position ?? null,
+      rackId: row.rack && typeof row.rack === 'object' ? row.rack.id : row.rack ?? null,
+      siteId: row.site && typeof row.site === 'object' ? row.site.id : row.site ?? null,
+    });
+
+    const askedRack = bindings.asNetboxId(said.rackNetboxId);
+    if (client && askedRack !== null) {
+      const hit = await look(find.RACKS, askedRack, { siteId: want.siteId ?? null });
+      if (hit.error) {
+        return { error: `Record ${askedRack} cannot be this rack: ${hit.error}` };
+      }
+      Object.assign(rackShown, shownFromRow(hit.row));
+    } else if (askedRack !== null) {
+      checked = false;
+    }
+
+    const heldRack = (bindings.recordBinding(scope) || {}).rackNetboxId ?? null;
+    const boundRack = askedRack ?? bindings.asNetboxId(heldRack) ?? bindings.asNetboxId(want.rackNetboxId);
+    const asked = said.deviceNetboxIds && typeof said.deviceNetboxIds === 'object'
+      ? said.deviceNetboxIds : {};
+    for (const [uid, value] of Object.entries(asked)) {
+      const id = bindings.asNetboxId(value);
+      if (id === null) continue;   // bindRecord below refuses it with its own sentence
+      if (!client) { checked = false; continue; }
+      const hit = await look(find.DEVICES, id, { rackId: boundRack ?? null });
+      if (hit.error) return { error: `Record ${id} cannot be the box ${uid}: ${hit.error}` };
+      deviceShown[uid] = shownFromRow(hit.row);
+    }
+
     const out = bindings.bindRecord(scope, {
       rackNetboxId: said.rackNetboxId,
-      deviceNetboxIds: said.deviceNetboxIds || null,
+      deviceNetboxIds: asked && Object.keys(asked).length ? asked : null,
+      rackShown: Object.keys(rackShown).length ? rackShown : null,
+      deviceShown: Object.keys(deviceShown).length ? deviceShown : null,
       by: said.by ?? by ?? null,
       at: said.at ?? null,
-      why: said.why ?? '',
+      why: said.why ?? (checked ? '' : 'stored without being checked against the record, because '
+        + 'NetBox could not be reached'),
     });
     if (out.error) return { error: out.error };
   }
@@ -297,7 +377,7 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   // the uids are frozen here: preview and export read this snapshot as stored.
   const tenantId = meta.tenantId == null || meta.tenantId === '' ? null : Number(meta.tenantId);
   const known = await recogniseRack(req, {
-    tenantId: Number.isFinite(tenantId) ? tenantId : null, rackId, fallbackName: localName,
+    tenantId: Number.isFinite(tenantId) ? tenantId : null, rackId, fallbackName: localName, siteName,
   });
   // A rack that was recognised once does not become unrecognised because NetBox
   // was unreachable for the two seconds this adopt ran in. recogniseRack fails
@@ -344,9 +424,14 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   // A person may name the customer's own records in the same call that adopts
   // the rack. It is stored first, then read back, so the snapshot and the store
   // always say the same thing.
-  const said = recordBindingFor({
+  const said = await recordBindingFor(req, {
     tenantId: Number.isFinite(tenantId) ? tenantId : null, rackId,
     said: req.body && req.body.recordBinding, by: req.user?.email || req.user?.name || null,
+    rackKey: known.rackKey || heldPayload.rackKey || null,
+    expect: {
+      siteId: known.recordMatch.siteId,
+      rackNetboxId: known.recordMatch.rackNetboxId,
+    },
   });
   if (said.error) return res.status(400).json({ error: said.error });
 
@@ -354,7 +439,7 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   try {
     snapshot = cv.toSnapshot(map, {
       rackId, rackKey: known.rackKey, siteName, rackName, uHeight: cfg.U_HEIGHT, scannedAt,
-      recordBinding: said.binding,
+      recordBinding: said.binding, recordMatch: known.recordMatch,
     });
   } catch (err) {
     return res.status(500).json({ error: `The detection result could not be converted: ${err.message}` });
@@ -369,6 +454,7 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
     // plan reads the same tenant. A null key means the uids are on the hash.
     rackKey: known.rackKey, rackKeySource: known.rackKeySource, rackKeyWhy: known.rackKeyWhy,
     tenantId: known.tenantId,
+    recordMatch: known.recordMatch,
     adoptedFrom: rackId, adoptedAt: new Date().toISOString(), engineOutput: dir,
     rulesVersion: SNAPSHOT_RULES,
   };
@@ -387,6 +473,23 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
       if (uid === null || boxes.has(uid)) kept[swId] = uid ?? null;
     }
     if (Object.keys(kept).length) payload.matches = kept;
+    // The Review work is carried forward too, and this is not a nicety. Every one
+    // of the five screens after Review re-adopts on load, and a rules bump makes
+    // every already-adopted rack stale, so a re-adopt that rebuilt the payload as
+    // a fresh object silently threw away payload.reconciled - the SNMP-enriched
+    // snapshot that every compare and export prefers. The rack then exported
+    // camera-only data: no serials, no cables, and device types back to
+    // "Unidentified".
+    //
+    // It is kept only while it is still about these boxes. A photograph that now
+    // holds different boxes has made the earlier merge out of date, and serving a
+    // stale merge is worse than asking for Review again.
+    if (heldPayload.reconciled && Array.isArray(heldPayload.reconciled.devices)) {
+      const was = heldPayload.reconciled.devices.map((d) => d.uid).sort().join('|');
+      const now = [...boxes].sort().join('|');
+      if (was === now) payload.reconciled = heldPayload.reconciled;
+    }
+    if (heldPayload.changeNote) payload.changeNote = heldPayload.changeNote;
     store.setPayload(existing.id, payload);
     rec = existing;
   } else {
@@ -437,12 +540,13 @@ router.post('/', gates.admin, upload.single('image'), async (req, res) => {
   // A fresh capture has no scan meta on disk yet, so the caller's tenant is
   // the scan's tenant; it is stored with the scan and read from there after.
   const known = await recogniseRack(req, {
-    tenantId: req.user?.tenant_id ?? null, rackId, fallbackName: localName,
+    tenantId: req.user?.tenant_id ?? null, rackId, fallbackName: localName, siteName,
   });
   const rackName = known.rackName;
   const keyFields = {
     rackKey: known.rackKey, rackKeySource: known.rackKeySource,
     rackKeyWhy: known.rackKeyWhy, tenantId: known.tenantId,
+    recordMatch: known.recordMatch,
   };
 
   // Rack height is not asked for and not guessed. The camera cannot see it,
@@ -492,12 +596,15 @@ router.post('/', gates.admin, upload.single('image'), async (req, res) => {
 
   try {
     const { map, stderr } = await cv.runDetect(req.file.path, outputDir);
+    // A rack somebody already bound to the customer's own records stays bound
+    // when it is photographed again. The store is keyed on the rack, not on
+    // the photograph.
+    const held = await recordBindingFor(req, {
+      tenantId: known.tenantId, rackId, rackKey: known.rackKey,
+    });
     const snapshot = cv.toSnapshot(map, {
       rackId, rackKey: known.rackKey, siteName, rackName, uHeight, scannedAt: rec.createdAt,
-      // A rack somebody already bound to the customer's own records stays bound
-      // when it is photographed again. The store is keyed on the rack, not on
-      // the photograph.
-      recordBinding: recordBindingFor({ tenantId: known.tenantId, rackId }).binding,
+      recordBinding: held.binding, recordMatch: known.recordMatch,
     });
     store.setPayload(rec.id, { map, snapshot, siteName, rackName, uHeight, imageHash, ...keyFields });
     store.recordStage(rec.id, 'capture', 'ok', path.basename(req.file.path));
@@ -554,15 +661,21 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
     rackKeySource: scan.payload.rackKeySource ?? null,
     rackKeyWhy: scan.payload.rackKeyWhy ?? null,
     tenantId: scan.payload.tenantId ?? null,
+    recordMatch: scan.payload.recordMatch ?? null,
   };
   const outputDir = path.join(store.SCANS_DIR, `${scan.id}-cv`);
 
   // Read again rather than carried in the payload: a record binding outlives the
   // photograph, and the payload is rewritten whole below.
-  const said = recordBindingFor({
+  const said = await recordBindingFor(req, {
     tenantId: keyFields.tenantId, rackId: scan.rackId,
     said: req.body && req.body.recordBinding,
     by: req.user?.email || req.user?.name || null,
+    rackKey: keyFields.rackKey,
+    expect: {
+      siteId: (keyFields.recordMatch || {}).siteId ?? null,
+      rackNetboxId: (keyFields.recordMatch || {}).rackNetboxId ?? null,
+    },
   });
   if (said.error) return res.status(400).json({ error: said.error });
 
@@ -571,6 +684,7 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
     const snapshot = cv.toSnapshot(map, {
       rackId: scan.rackId, rackKey: keyFields.rackKey, siteName, rackName, uHeight,
       scannedAt: scan.createdAt, recordBinding: said.binding,
+      recordMatch: keyFields.recordMatch,
     });
     // The operator's note on what changed since the last scan, kept with the
     // scan so the rack's history reads as a record, not just a pile of scans.

@@ -40,11 +40,14 @@
  * `by` says which identifier did it: 'facility-id', 'serial', 'asset-tag',
  * 'rack-position' or 'name'. `rank` and `evidence` are minted through
  * identity.evidence so a rank this version cannot honestly produce cannot be
- * claimed here either. A record key - a facility id, a serial, an asset tag, a
- * rack and a shelf - is 'modelled' (rank 3): the system of record states it. A
- * NAME is 'inferred' (rank 8) with one candidate, which reads as 'possible' and
- * is never written, because standard 4.4 forbids a name as an identity: a name
- * finds the record, and proves nothing about the hardware in it.
+ * claimed here either. A record key that names the hardware - a facility id, a
+ * serial, an asset tag - is 'modelled' (rank 3): the system of record states it.
+ * A SHELF and a NAME are both 'inferred' (rank 8) with one candidate, which
+ * reads as 'possible' and is never written. The plan's own confidence table
+ * says so for the shelf ("only the shelf or the shape fits ... never written")
+ * and standard 4.4 says so for the name: a name finds the record and proves
+ * nothing about the hardware in it, and the box on a shelf today is not
+ * necessarily the box that was on it yesterday.
  *
  * Nothing here binds anything. A bind is evidence plus a person, and the person
  * half arrives separately.
@@ -61,8 +64,25 @@ const LIMIT = 2;
 
 const text = (v) => String(v ?? '').trim();
 
+/** A NetBox foreign key comes back as {id, ...} on a detail read and as an id on some filters. */
+const idOf = (v) => (v && typeof v === 'object' ? v.id : v);
+
+/** A finite number, or null. Anything that is not plainly a number is null. */
+const num = (v) => {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
 /** The uid an object carries, or ''. */
 const uidOn = (row) => String(((row || {}).custom_fields || {})[UID_FIELD] ?? '');
+
+/** The model string a NetBox row's device type states, normalised, or ''. */
+const modelOn = (row) => {
+  const t = (row || {}).device_type;
+  if (!t || typeof t !== 'object') return '';
+  return identity.normalise(t.model ?? t.display ?? '');
+};
 
 /** A short, readable handle for a row in a refusal sentence. */
 const label = (row) => {
@@ -101,7 +121,12 @@ const SOURCE_FOR = Object.freeze({
   'facility-id': 'modelled',
   serial: 'modelled',
   'asset-tag': 'modelled',
-  'rack-position': 'modelled',
+  // A shelf is provisional, not a statement about the hardware in it. The
+  // plan's confidence table puts "only the shelf fits" at 'possible', which is
+  // put to a person as a question and never written, so it is minted at rank 8
+  // here rather than as a record key. The record on U18 may be the box that was
+  // swapped out yesterday.
+  'rack-position': 'inferred',
   name: 'inferred',
 });
 
@@ -111,31 +136,60 @@ function found(row, by, why) {
   const evidence = source === 'inferred'
     ? identity.evidence('inferred', why, { candidateCount: 1 })
     : identity.evidence(source, why);
+  const confidence = identity.confidenceOf([evidence]);
   return {
     id: row.id,
     by,
     rank: evidence.rank,
     evidence,
-    confidence: identity.confidenceOf([evidence]),
+    confidence,
+    // Says out loud what the confidence already means: this answer is a
+    // question for a person, not something to write. A caller that binds on it
+    // has to ignore two fields, not miss one.
+    provisional: !identity.writable(confidence),
+    writable: identity.writable(confidence),
     row,
     why,
   };
 }
 
 /**
- * One page of rows from an endpoint, or null when NetBox would not answer.
+ * One page of rows from an endpoint, and what went wrong if nothing came back.
  *
- * null and [] are kept apart on purpose. [] means NetBox answered and there is
- * nothing there, which is a fact. null means we do not know, and a caller must
- * not read that as "nothing there" and go on to create a second copy.
+ * `{ rows: [] }` and `{ rows: null }` are kept apart on purpose. [] means NetBox
+ * answered and there is nothing there, which is a fact. null means we do not
+ * know, and a caller must not read that as "nothing there" and go on to create a
+ * second copy.
+ *
+ * The error travels with it. A revoked token, a 403 on the devices endpoint and
+ * a NetBox that is down all used to read as the same shrug, and the one action
+ * that fixes the first of them - renew the token under Data Sources - was never
+ * named to the person staring at the sentence.
  */
-async function ask(client, endpoint, params) {
+async function ask(client, endpoint, params, limit = LIMIT) {
   try {
-    const res = await client.get(endpoint, { ...params, limit: LIMIT });
-    return Array.isArray(res && res.results) ? res.results : [];
-  } catch {
-    return null;
+    const res = await client.get(endpoint, { ...params, limit });
+    return { rows: Array.isArray(res && res.results) ? res.results : [] };
+  } catch (err) {
+    return { rows: null, error: err || null };
   }
+}
+
+/** What NetBox said when it would not answer, in a sentence a person can act on. */
+function blockedBy(err) {
+  const status = Number((err || {}).status);
+  const detail = (err || {}).detail;
+  const said = detail === null || detail === undefined || detail === ''
+    ? String((err || {}).message || '').slice(0, 200)
+    : (typeof detail === 'string' ? detail : JSON.stringify(detail)).slice(0, 200);
+  if (status === 401 || status === 403) {
+    return `NetBox answered HTTP ${status}${said ? ` (${said})` : ''}. The token may have expired or `
+      + 'may not be allowed to read this. Renew it under Data Sources. Nothing is claimed.';
+  }
+  if (Number.isFinite(status) && status > 0) {
+    return `NetBox answered HTTP ${status}${said ? ` (${said})` : ''}, so nothing is claimed.`;
+  }
+  return `NetBox could not be reached${said ? ` (${said})` : ''}, so nothing is claimed.`;
 }
 
 /**
@@ -147,12 +201,25 @@ async function ask(client, endpoint, params) {
  * passed verification, so a loose filter's extra rows do not turn a clean
  * single answer into a refusal.
  */
-function judge(rows, { by, uid, asked, keep }) {
-  if (rows === null) {
-    return none(`the record could not be asked about ${asked} just now, so nothing is claimed about it`, true);
+function judge(res, { by, uid, asked, keep, refused = null }) {
+  const rows = res === null || res === undefined ? null : res.rows;
+  if (rows === null || rows === undefined) {
+    return none(`the record could not be asked about ${asked}. ${blockedBy((res || {}).error)}`, true);
   }
   const real = rows.filter(keep);
-  if (!real.length) return none(`nothing in the record has ${asked}`);
+  if (!real.length) {
+    // A row that answered the filter and was then thrown out is worth saying
+    // out loud: "nothing has this serial" is false when a row does hold it and
+    // was refused for a reason of ours.
+    if (typeof refused === 'function') {
+      const said = refused(rows);
+      // Blocked: a row DID answer this identifier and was refused for a reason
+      // of ours, so the ladder stops here rather than letting a weaker rung
+      // answer a question a stronger one has already spoken about.
+      if (said) return none(said, true);
+    }
+    return none(`nothing in the record has ${asked}`);
+  }
   if (real.length > 1) {
     return ambiguous(real,
       `${real.length} records have ${asked}: ${real.map(label).join(' and ')}. `
@@ -196,8 +263,8 @@ async function findRack(client, { siteId = null, facilityId = null, name = null,
 
   const facility = text(facilityId);
   if (facility) {
-    const rows = await ask(client, RACKS, { site_id: site, facility_id: facility });
-    const out = judge(rows, {
+    const res = await ask(client, RACKS, { site_id: site, facility_id: facility });
+    const out = judge(res, {
       by: 'facility-id', uid,
       asked: `rack id ${facility} at this site`,
       keep: (r) => text(r.facility_id).toLowerCase() === facility.toLowerCase(),
@@ -212,8 +279,8 @@ async function findRack(client, { siteId = null, facilityId = null, name = null,
   if (!want) {
     return none('this rack has no rack id and no name to look up, so nothing is claimed about it');
   }
-  const rows = await ask(client, RACKS, { site_id: site, name: want });
-  return judge(rows, {
+  const res = await ask(client, RACKS, { site_id: site, name: want });
+  return judge(res, {
     by: 'name', uid,
     asked: `the name ${want} at this site`,
     keep: (r) => text(r.name).toLowerCase() === want.toLowerCase(),
@@ -242,7 +309,7 @@ async function findRack(client, { siteId = null, facilityId = null, name = null,
  */
 async function findDevice(client, {
   rackId = null, position = null, serial = null, assetTag = null,
-  name = null, siteId = null, face = null, uid = null,
+  name = null, siteId = null, face = null, uid = null, models = [],
 } = {}) {
   if (!client) return none('there is no connection to the record, so nothing is claimed about this box');
   const site = siteId === null || siteId === undefined || siteId === '' ? null : Number(siteId);
@@ -251,26 +318,61 @@ async function findDevice(client, {
   const tried = [];
 
   // ── serial ────────────────────────────────────────────────────────────────
+  //
+  // A serial goes through the same gate identity.aliasesOf uses. A field holding
+  // the box's own model number is not a serial: two GS724Tv4 switches both
+  // reporting GS724Tv4 would otherwise be one device at the top of the ladder,
+  // and identity.js refuses exactly that. So a value equal to this box's model
+  // is never asked about, and a row whose serial is its own device type's model
+  // is never handed back.
   const wantSerial = identity.normalise(serial);
-  if (text(serial) && !identity.isJunkValue(serial)) {
+  const shapes = new Set((Array.isArray(models) ? models : [])
+    .map((m) => identity.normalise(m)).filter(Boolean));
+  const serialIsModel = Boolean(wantSerial) && shapes.has(wantSerial);
+  if (text(serial) && !identity.isJunkValue(serial) && !serialIsModel) {
     // The customer may have typed the serial with dashes or spaces where the
-    // switch published it bare, so both spellings are asked for. Whatever comes
-    // back is verified on the normalised form, which is the only comparison
-    // that means anything.
+    // switch published it bare, so both spellings are asked for, and then a
+    // separator-tolerant question as well: NetBox's serial filter is exact, so
+    // a record holding FDO-2117-A0X9 answers neither spelling of FDO2117A0X9
+    // and the strongest rung on the ladder was being defeated by a hyphen.
+    // Whatever comes back is verified on the normalised form, which is the only
+    // comparison that means anything.
     const spellings = [...new Set([text(serial), wantSerial].filter(Boolean))];
+    // The tolerant question is asked on the TAIL of the value, because that is
+    // the part a separator cannot be sitting in the middle of: a record holding
+    // FDO-2117-A0X9 contains a0x9, and neither spelling of FDO2117A0X9 finds it
+    // otherwise. Short, so it is a filter and not a sweep, and every row it
+    // brings back is still verified on the normalised form - so the worst this
+    // can do is bring back rows that are then thrown away.
+    const tail = wantSerial.length >= 4 ? wantSerial.slice(-4) : '';
     let rows = [];
+    let error = null;
+    const add = (page) => { for (const r of page) if (!rows.some((held) => held.id === r.id)) rows.push(r); };
     for (const spelling of spellings) {
       const page = await ask(client, DEVICES, { ...scope, serial: spelling });
-      if (page === null) { rows = null; break; }
-      for (const r of page) if (!rows.some((held) => held.id === r.id)) rows.push(r);
+      if (page.rows === null) { rows = null; error = page.error; break; }
+      add(page.rows);
     }
-    const out = judge(rows, {
+    if (rows !== null && tail) {
+      const page = await ask(client, DEVICES, { ...scope, serial__ic: tail }, 25);
+      if (page.rows !== null) add(page.rows);
+    }
+    const out = judge(rows === null ? { rows: null, error } : { rows }, {
       by: 'serial', uid,
       asked: `the serial number ${text(serial)}`,
-      keep: (r) => identity.normalise(r.serial) === wantSerial,
+      keep: (r) => identity.normalise(r.serial) === wantSerial && modelOn(r) !== wantSerial,
+      refused: (all) => {
+        const shaped = all.filter((r) => identity.normalise(r.serial) === wantSerial
+          && modelOn(r) === wantSerial);
+        if (!shaped.length) return null;
+        return `${shaped.map(label).join(' and ')} hold ${text(serial)} in the serial field, but that `
+          + 'is their own model number and not a serial, so nothing is claimed from it';
+      },
     });
     if (settled(out)) return out;
     tried.push('serial number');
+  } else if (serialIsModel) {
+    tried.push(`serial number (${text(serial)} is this box's model, not a serial)`);
   } else if (text(serial)) {
     tried.push(`serial number (${text(serial)} does not identify anything)`);
   }
@@ -278,8 +380,8 @@ async function findDevice(client, {
   // ── asset tag ─────────────────────────────────────────────────────────────
   const wantTag = identity.normalise(assetTag);
   if (text(assetTag) && !identity.isJunkValue(assetTag)) {
-    const rows = await ask(client, DEVICES, { ...scope, asset_tag: text(assetTag) });
-    const out = judge(rows, {
+    const res = await ask(client, DEVICES, { ...scope, asset_tag: text(assetTag) });
+    const out = judge(res, {
       by: 'asset-tag', uid,
       asked: `the asset tag ${text(assetTag)}`,
       keep: (r) => identity.normalise(r.asset_tag) === wantTag,
@@ -293,8 +395,8 @@ async function findDevice(client, {
   if (Number.isFinite(rack) && Number.isFinite(shelf)) {
     const params = { rack_id: rack, position: shelf };
     if (text(face)) params.face = text(face);
-    const rows = await ask(client, DEVICES, params);
-    const out = judge(rows, {
+    const res = await ask(client, DEVICES, params);
+    const out = judge(res, {
       by: 'rack-position', uid,
       asked: `shelf U${shelf} of this rack`,
       keep: (r) => Number(r.position) === shelf
@@ -317,8 +419,8 @@ async function findDevice(client, {
         + 'is not looked up across the whole record)');
     }
     for (const [params, where] of scopes) {
-      const rows = await ask(client, DEVICES, { ...params, name: want });
-      const out = judge(rows, {
+      const res = await ask(client, DEVICES, { ...params, name: want });
+      const out = judge(res, {
         by: 'name', uid,
         asked: `the name ${want} ${where}`,
         keep: (r) => text(r.name).toLowerCase() === want.toLowerCase(),
@@ -335,17 +437,67 @@ async function findDevice(client, {
 // ── an object a person already named ────────────────────────────────────────
 
 /**
+ * Which of the shown fields the live row no longer agrees with.
+ *
+ * A record binding is stored with the fields the person was reading when they
+ * answered. A NetBox restored from a backup, or re-imported, renumbers ids while
+ * the remembered answer still names 51 and 52, so the id alone is not the answer
+ * to "is this the row they were shown". Only fields present on both sides are
+ * compared, so an older binding that kept nothing is not refused for it.
+ */
+function disagreements(row, shown) {
+  const want = shown && typeof shown === 'object' ? shown : null;
+  if (!want) return [];
+  const out = [];
+  const say = (field, was, now) => out.push(`${field} was ${JSON.stringify(was)} and is now ${JSON.stringify(now)}`);
+  const sameText = (a, b) => text(a).toLowerCase() === text(b).toLowerCase();
+  if (text(want.name) && !sameText(want.name, row.name)) say('the name', text(want.name), text(row.name));
+  if (text(want.facilityId) && !sameText(want.facilityId, row.facility_id)) {
+    say('the rack id', text(want.facilityId), text(row.facility_id));
+  }
+  if (text(want.serial) && identity.normalise(want.serial) !== identity.normalise(row.serial)) {
+    say('the serial number', text(want.serial), text(row.serial));
+  }
+  if (text(want.assetTag) && identity.normalise(want.assetTag) !== identity.normalise(row.asset_tag)) {
+    say('the asset tag', text(want.assetTag), text(row.asset_tag));
+  }
+  if (num(want.position) !== null && num(want.position) !== num(row.position)) {
+    say('the shelf', num(want.position), num(row.position));
+  }
+  if (num(want.rackId) !== null && num(want.rackId) !== num(idOf(row.rack))) {
+    say('the rack it is in', num(want.rackId), num(idOf(row.rack)));
+  }
+  if (num(want.siteId) !== null && num(want.siteId) !== num(idOf(row.site))) {
+    say('the site', num(want.siteId), num(idOf(row.site)));
+  }
+  return out;
+}
+
+/**
  * The object at this NetBox id, when it is safe to treat it as ours to bind.
  *
  * This is the other half of the resolver: a person has already said which
- * record a box is, and the id travels with the scan. It is still checked, and
- * checked by the same rule as every lookup above: an object carrying somebody
- * else's racktrack_uid is never handed back.
+ * record a box is, and the id travels with the scan. A person's word is rank 1,
+ * the top of the ladder, and that is exactly why the id itself is checked
+ * hardest. It arrives as a bare integer, so a transposed digit is the expected
+ * input rather than an exotic one, and the file remembering it outlives the
+ * NetBox it names.
+ *
+ * Four refusals, and the first three are the ones a typo actually hits:
+ *
+ *   - `expect.siteId`: a rack has to be at the site this scan resolved to. A
+ *     rack in another building cannot be this rack.
+ *   - `expect.rackId`: a device has to sit in the rack being bound. A box in
+ *     another rack cannot be this box.
+ *   - `expect.shown`: the row still has to look like the row the person was
+ *     shown when they answered.
+ *   - the uid rule every lookup above follows: an object carrying somebody
+ *     else's racktrack_uid is never handed back.
  *
  * It asks NetBox itself every time and never anything remembered, because the
  * answer decides a write, and a preload is a snapshot of a moment.
  */
-async function byId(client, endpoint, netboxId, { uid = null } = {}) {
+async function byId(client, endpoint, netboxId, { uid = null, expect = null } = {}) {
   const id = netboxId === null || netboxId === undefined || netboxId === '' ? null : Number(netboxId);
   if (!Number.isFinite(id)) return none('no record id was given, so nothing is claimed');
   if (!client) return none('there is no connection to the record, so nothing is claimed');
@@ -354,8 +506,8 @@ async function byId(client, endpoint, netboxId, { uid = null } = {}) {
     const res = await client.get(endpoint, { id });
     const hits = (Array.isArray(res && res.results) ? res.results : []).filter((r) => Number(r.id) === id);
     row = hits[0] || null;
-  } catch {
-    return none(`the record could not be asked about id ${id} just now, so nothing is claimed`, true);
+  } catch (err) {
+    return none(`the record could not be asked about id ${id}. ${blockedBy(err)}`, true);
   }
   if (!row) return none(`the record holds nothing at id ${id} any more`, true);
   const carried = uidOn(row);
@@ -363,7 +515,31 @@ async function byId(client, endpoint, netboxId, { uid = null } = {}) {
     return none(`${label(row)} is already recorded as ${carried}, so it belongs to another `
       + 'RackTrack record and is not claimed here', true);
   }
+
+  const want = expect && typeof expect === 'object' ? expect : {};
+  const wantSite = num(want.siteId);
+  if (wantSite !== null) {
+    const at = num(idOf(row.site));
+    if (at !== wantSite) {
+      return none(`${label(row)} is at site ${at === null ? 'no site at all' : at} and this scan is of `
+        + `site ${wantSite}, so it cannot be this one. Check the record number.`, true);
+    }
+  }
+  const wantRack = num(want.rackId);
+  if (wantRack !== null) {
+    const at = num(idOf(row.rack));
+    if (at !== wantRack) {
+      return none(`${label(row)} is in rack ${at === null ? 'no rack at all' : at} and this scan is of `
+        + `rack ${wantRack}, so it cannot be a box in this rack. Check the record number.`, true);
+    }
+  }
+  const moved = disagreements(row, want.shown);
+  if (moved.length) {
+    return none(`${label(row)} is not the record that was named: ${moved.join(', ')}. `
+      + 'Say which record this is again before anything is written.', true);
+  }
+
   return found(row, 'record-binding', `a person named ${label(row)} as this object's record`);
 }
 
-module.exports = { findRack, findDevice, byId, RACKS, DEVICES };
+module.exports = { findRack, findDevice, byId, disagreements, RACKS, DEVICES };

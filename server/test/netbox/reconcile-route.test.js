@@ -506,3 +506,43 @@ test('a re-adopt of the same rack keeps the placements somebody made by hand', a
   assert.equal(after.json.matches['2'], uid12);
   assert.equal(after.json.suggested, false);
 });
+
+// ── 7c. the Review work survives a re-adopt too ─────────────────────────────
+
+test('a re-adopt keeps the reconciled snapshot the Review step produced', async (t) => {
+  await new Promise((r) => { server = app.listen(0, '127.0.0.1', () => { port = server.address().port; r(); }); });
+  t.after(() => new Promise((r) => server.close(r)));
+
+  const RACK_R = 'RK-REVIEW0001';
+  OWNED.add(RACK_R);
+  const dir = path.join(OUTPUTS, RACK_R);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'device_unit_map.json'), JSON.stringify({
+    devices: [{ class_name: 'Switch', units: ['u10'], port_count: 24 }],
+  }));
+  fs.writeFileSync(path.join(dir, 'scan_meta.json'), JSON.stringify({ tenantId: 1 }));
+
+  fleet = [switchRecord(1, { label: 'sw-one', host: '10.10.1.11', serial: '222B0K4000121', ports: 24 })];
+
+  const first = await call('POST', `/scans/adopt/${RACK_R}`);
+  assert.equal(first.status, 201, first.raw);
+  const id = first.json.id;
+
+  const view = await call('GET', `/scans/${id}/reconcile`);
+  const uid10 = view.json.devices.find((d) => d.position === 10).uid;
+  const saved = await call('POST', `/scans/${id}/reconcile`, { matches: { 1: uid10 } });
+  assert.equal(saved.status, 200, saved.raw);
+  assert.ok(store.getScan(id).payload.reconciled, 'Review produced the merged snapshot');
+  const serial = store.getScan(id).payload.reconciled.devices[0].serial;
+
+  // Every screen after Review re-adopts on load, and a rules bump makes every
+  // adopted rack stale. That used to throw the merge away, and the compare and
+  // the export both prefer it - so the rack exported camera-only data with no
+  // serials and no cables, and nothing said so.
+  const again = await call('POST', `/scans/adopt/${RACK_R}?refresh=1`);
+  assert.equal(again.status, 200, again.raw);
+  const held = store.getScan(id).payload;
+  assert.ok(held.reconciled, 'the merged snapshot is still there after the re-adopt');
+  assert.equal(held.reconciled.devices[0].serial, serial, 'with the switch\'s own serial on it');
+  assert.deepStrictEqual(held.matches, { 1: uid10 }, 'and the matching it was built from');
+});

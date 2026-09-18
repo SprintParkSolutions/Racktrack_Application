@@ -23,7 +23,7 @@
  */
 const { exportable, EXPORT_ORDER } = require('./model');
 const { orderedSpecs, objectTypes, withUid } = require('./mapping');
-const { UID_FIELD, NetBoxError } = require('./netbox');
+const { UID_FIELD, BOUND_FIELD, NetBoxError } = require('./netbox');
 const { slug } = require('./reconcile');
 const find = require('./find');
 const identity = require('./identity');
@@ -215,23 +215,41 @@ function aliasUid(uid, key, hash) {
 }
 
 /**
+ * A record id, or null for anything that is not one.
+ *
+ * The same strictness as bindings.asNetboxId, for the same reason: Number(true)
+ * is 1, and binding the customer's NetBox row 1 because a flag was serialised
+ * into this field is exactly the failure the guarantee is about.
+ */
+function asId(v) {
+  if (typeof v === 'number') return Number.isInteger(v) && v > 0 ? v : null;
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  if (!/^[0-9]+$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+const bindingOn = (snapshot) => (snapshot && snapshot.recordBinding
+  && typeof snapshot.recordBinding === 'object' ? snapshot.recordBinding : null);
+
+/**
  * The record id a person said this object is, or null.
  *
  * A snapshot may carry a record binding: the rows of the customer's own record
  * that a person, looking at the rack, said this rack and these boxes are. It is
  * the SECOND way the rebind below can find its target. The first, aliasUid,
  * only ever finds an object RackTrack itself wrote, under a uid RackTrack itself
- * minted - which is why a rack the customer filled in by hand was invisible.
+ * minted - which is why a rack the customer filled in by hand was invisible. The
+ * third is the resolver, which asks the customer's own record what this is.
  *
  * Only a rack and a device. Those are the two object types adopt() deliberately
  * refuses to claim on a collision, and this is how they are bound instead: by
  * evidence and a person, never by a name clash.
  */
 function boundIdFor(snapshot, field, uid) {
-  const b = snapshot && snapshot.recordBinding && typeof snapshot.recordBinding === 'object'
-    ? snapshot.recordBinding : null;
+  const b = bindingOn(snapshot);
   if (!b) return null;
-  const asId = (v) => { const n = Number(v); return Number.isInteger(n) && n > 0 ? n : null; };
   if (field === 'racks') return asId(b.rackNetboxId);
   if (field === 'devices') {
     const map = b.deviceNetboxIds && typeof b.deviceNetboxIds === 'object' ? b.deviceNetboxIds : {};
@@ -239,6 +257,54 @@ function boundIdFor(snapshot, field, uid) {
   }
   return null;
 }
+
+/**
+ * What the person was reading when they named that record, or null.
+ *
+ * Handed to find.byId, which refuses the binding when the row no longer matches
+ * it: a NetBox restored from a backup renumbers ids while the answer still names
+ * 51, and one transposed digit in a tap looks exactly like a correct answer.
+ */
+function shownFor(snapshot, field, uid) {
+  const b = bindingOn(snapshot);
+  const shown = b && b.shown && typeof b.shown === 'object' ? b.shown : null;
+  if (!shown) return null;
+  if (field === 'racks') return shown.rack && typeof shown.rack === 'object' ? shown.rack : null;
+  if (field === 'devices') {
+    const map = shown.devices && typeof shown.devices === 'object' ? shown.devices : {};
+    return map[uid] && typeof map[uid] === 'object' ? map[uid] : null;
+  }
+  return null;
+}
+
+/**
+ * The rack this scan resolved to in the customer's own record, when the resolver
+ * found it by a key that is allowed to be written.
+ *
+ * rack_match asks NetBox by the rack's facility id inside the scan's site and
+ * refuses a tie, so an answer here is the customer's own rack row. A rack found
+ * by NAME is carried too, and deliberately not used as a bind target: a name
+ * finds the record and proves nothing, so it becomes a question instead.
+ */
+function rackMatchOn(snapshot) {
+  const m = snapshot && snapshot.recordMatch && typeof snapshot.recordMatch === 'object'
+    ? snapshot.recordMatch : null;
+  if (!m) return null;
+  const id = asId(m.rackNetboxId);
+  if (id === null) return null;
+  return { id, by: String(m.by || ''), confidence: String(m.confidence || ''), why: String(m.why || '') };
+}
+
+/**
+ * The site in the CUSTOMER'S record that this scan was recognised at, or null.
+ *
+ * Not the site row RackTrack mints from the tenant's name, which is often a
+ * different row in the same NetBox: checking a bound rack against that one would
+ * refuse every correct answer. This is the site rack_match resolved by name
+ * before the rack was looked up, so it is an independent check on a rack id
+ * somebody typed: a rack at Frankfurt cannot be the rack in a London scan.
+ */
+const scanSiteId = (snapshot) => asId(((snapshot || {}).recordMatch || {}).siteId);
 
 /**
  * What a record-bound object does NOT get patched on.
@@ -250,19 +316,47 @@ function boundIdFor(snapshot, field, uid) {
  * notion of a bind-only object. There is now.
  *
  * These are the fields the customer owns and RackTrack did not read off the
- * hardware: what the thing is called, where it lives and how big it is. A
- * difference on one of them is REPORTED and never written. Everything else -
- * the serial the switch published, an asset tag, a status, a description - is
+ * hardware: what the thing is called, where it lives, how big it is and WHAT IT
+ * IS. A difference on one of them is REPORTED and never written. Everything else
+ * - the serial the switch published, an asset tag, a status, a description - is
  * left alone here and still reaches the admin as an ordinary change to approve,
  * because filling a gap in the record is the point of the whole system.
  *
- * It applies only to an object a person bound to the customer's own record.
+ * device_type and role are on the list, and they are the ones that were missed.
+ * cv.js mints a device type from the camera alone ("Unidentified Switch
+ * (48-port)" whenever OCR read no model), so a bound record holding the
+ * customer's real Catalyst 9300-48P was being re-parented onto a guess, shown to
+ * the admin as two opaque numbers with no model string in sight. Rule 3 of the
+ * six that never change: a guessed model is shown as probably and never written.
+ *
+ * It applies to an object a person bound to the customer's own record, and to
+ * any object NetBox says was bound that way before (the racktrack_bound field).
  * A rack RackTrack itself created is RackTrack's to keep correct.
  */
 const CUSTOMER_OWNED = Object.freeze({
   racks: ['name', 'site', 'location', 'u_height', 'desc_units'],
-  devices: ['name', 'site', 'rack', 'position', 'face'],
+  devices: ['name', 'site', 'rack', 'position', 'face', 'device_type', 'role', 'tenant'],
 });
+
+/**
+ * The hardware facts, which a contradiction holds back.
+ *
+ * Withheld only when the record and the scan disagree about which box this is
+ * (see replacement below). Until then they are the gap the scan exists to fill.
+ */
+const HARDWARE_FIELDS = Object.freeze(['serial', 'asset_tag', 'device_type', 'role']);
+
+/** Is this record marked, on the record itself, as one a person bound? */
+const boundOnRecord = (row) => Boolean(String(((row || {}).custom_fields || {})[BOUND_FIELD] ?? '').trim());
+
+/** What the mark on the record says: who bound it, or what matched it. */
+function markFor(why, snapshot, hit) {
+  if (why === 'record-match') return `matched by ${(hit && hit.by) || 'the record'}`.slice(0, 200);
+  const b = bindingOn(snapshot) || {};
+  const who = String(b.by || '').trim();
+  const at = String(b.at || '').trim();
+  return `bound by ${who || 'a person'}${at ? ` on ${at}` : ''}`.slice(0, 200);
+}
 
 /**
  * Hold back the fields a bound object's owner decides, and say so out loud.
@@ -277,8 +371,12 @@ function bindOnly(spec, obj, row, changed, report) {
   const said = held.map((k) => `${k} (${JSON.stringify(changed[k].from)} in the record, `
     + `${JSON.stringify(changed[k].to)} on this scan)`).join(', ');
   const named = String(row.name ?? '') || `record ${row.id}`;
-  const why = `"${named}" is the customer's own record, bound by a person, so only the RackTrack `
-    + `id is ever written on it. Reported and not written: ${said}.`;
+  // It used to say "only the RackTrack id is ever written on it", in a plan whose
+  // own rows went on to write a serial on that record. What is true is narrower
+  // and is what it now says: these fields are the customer's and are never
+  // written. A gap the scan can fill is still proposed, and still approved.
+  const why = `"${named}" is the customer's own record, bound by a person. These fields are `
+    + `theirs and are reported, never written: ${said}.`;
   report.findings.push({
     tier: 'medium', kind: 'bind-only', type: spec.label, uid: obj.uid,
     netboxId: row.id, name: String(row.name ?? ''),
@@ -305,25 +403,68 @@ function bindOnly(spec, obj, row, changed, report) {
  * FDO-2117-A0X9 and fdo2117a0x9 are not reported as a swap.
  */
 function replacement(spec, obj, row, report) {
-  if (spec.field !== 'devices') return;
+  if (spec.field !== 'devices') return null;
   const was = String((row || {}).serial ?? '').trim();
   const now = String((obj || {}).serial ?? '').trim();
-  if (!was || !now) return;
-  if (identity.normalise(was) === identity.normalise(now)) return;
-  const where = obj.position === null || obj.position === undefined
-    ? 'this rack' : `shelf U${obj.position}`;
+  if (!was || !now) return null;
+  if (identity.normalise(was) === identity.normalise(now)) return null;
   const named = String(row.name ?? '') || `record ${row.id}`;
-  const why = `Replaced: ${where} still holds the record "${named}", and the box in it is a `
-    + `different one. The serial was ${was} and is now ${now}.`;
-  report.findings.push({
-    tier: 'high', kind: 'replaced', type: spec.label, uid: obj.uid,
-    netboxId: row.id, name: String(row.name ?? ''), position: obj.position ?? null,
-    field: 'serial', was, now, why,
-  });
+  const here = obj.position === null || obj.position === undefined ? null : Number(obj.position);
+  const there = row.position === null || row.position === undefined ? null : Number(row.position);
+  // The plan's rule is narrower than "two serials differ": same shelf, same
+  // address, different hardware inside. The shelf half is checkable here, so a
+  // record on another shelf is reported as a disagreement rather than as a box
+  // somebody swapped out, and the high tier keeps its meaning.
+  const sameShelf = here !== null && there !== null && here === there;
+  const where = here === null ? 'this rack' : `shelf U${here}`;
+  const why = sameShelf
+    ? `Replaced: ${where} still holds the record "${named}", and the box in it is a different one. `
+      + `The serial was ${was} and is now ${now}.`
+    : `The serial on this box does not match the record "${named}"`
+      + `${there === null ? '' : `, which sits on U${there}`}. `
+      + `The record says ${was} and this box publishes ${now}, so they are not the same box.`;
+  const finding = {
+    tier: sameShelf ? 'high' : 'low', kind: sameShelf ? 'replaced' : 'serial-differs',
+    type: spec.label, uid: obj.uid,
+    netboxId: row.id, name: String(row.name ?? ''), position: here,
+    recordPosition: there, field: 'serial', was, now, why,
+  };
+  report.findings.push(finding);
   // Findings are new here and the stored plan has no column for them yet, so the
   // same sentence goes on the warnings the plan already carries. A person reads
   // it either way.
   report.warnings.push(why);
+  return finding;
+}
+
+/**
+ * A contradiction holds the hardware facts back, rather than writing them.
+ *
+ * Two serials that disagree are positive evidence of two different boxes
+ * (identity.sameDevice calls it refuted), and rule 4 says a conflict waits for a
+ * person. So the record keeps the serial, asset tag, model and role it has, the
+ * disagreement is reported, and nothing about what the hardware IS is written on
+ * a record this scan cannot prove it is looking at. Without this the plan carried
+ * the high finding "the box in it is a different one" AND an update row writing
+ * the new box's serial onto the old box's record, in one response.
+ */
+function holdBack(spec, obj, row, changed, report, finding) {
+  const held = HARDWARE_FIELDS.filter((k) => Object.prototype.hasOwnProperty.call(changed, k));
+  if (!held.length) return 0;
+  const named = String(row.name ?? '') || `record ${row.id}`;
+  const why = `The record "${named}" and this box do not agree on which box it is, so what the `
+    + `hardware is stays as the customer has it. Reported and not written: ${held.join(', ')}. `
+    + 'Say which record this box is, and it can be filled in then.';
+  report.findings.push({
+    tier: finding && finding.tier === 'high' ? 'high' : 'medium',
+    kind: 'held-back', type: spec.label, uid: obj.uid,
+    netboxId: row.id, name: String(row.name ?? ''),
+    fields: held.map((k) => ({ field: k, was: changed[k].from, now: changed[k].to })),
+    why,
+  });
+  report.warnings.push(why);
+  for (const k of held) delete changed[k];
+  return held.length;
 }
 
 /**
@@ -363,20 +504,151 @@ function uniqueInterfaceNames(snapshot, report) {
   }
 }
 
-async function walk(snapshot, client, apply, report) {
+/**
+ * Ask the customer's own record what this object is, where nothing of ours
+ * carries its uid and nobody has answered about it.
+ *
+ * This is the resolver being wired, which is the whole point of the slice: the
+ * only way anything found an object in NetBox was our own custom field, so a
+ * rack the customer filled in by hand was invisible and every box in it read as
+ * a create that NetBox then refused on an occupied shelf.
+ *
+ * What may bind and what may only be asked about is the standard's line, not a
+ * judgement made here. A rack's own facility id inside its own site, a serial, an
+ * asset tag: the system of record states these, they are rank 3, and they bind. A
+ * shelf and a name are rank 8, which reads as 'possible', and a possible binding
+ * is a question and never a write.
+ *
+ * Returns the resolver's answer, or null when there was nothing to ask.
+ */
+async function proposeTarget(client, spec, obj, snapshot, { siteId, rackId, rackWasFound }) {
+  if (spec.field === 'racks') {
+    const m = rackMatchOn(snapshot);
+    if (!m) return null;
+    if (m.by !== 'facility-id') {
+      return { id: m.id, by: m.by || 'name', writable: false, row: null,
+               why: `the customer's record has a rack that ${m.why || 'looks like this one'}, `
+                 + 'found by its name. A name finds the record and proves nothing about the rack, '
+                 + 'so nothing is bound to it until a person says it is the one' };
+    }
+    const hit = await find.byId(client, spec.endpoint, m.id, {
+      uid: obj.uid, expect: { siteId: siteId ?? null },
+    });
+    if (hit.none) {
+      return { id: m.id, by: m.by, writable: false, row: null, blocked: Boolean(hit.blocked),
+               why: `the rack this scan was recognised as is record ${m.id}, and ${hit.why}` };
+    }
+    // Re-minted honestly: the record stated this, a person did not. Rank 3, which
+    // is still writable, and it says where it came from.
+    const why = `the customer's own record holds this rack under its rack id (record ${hit.id}). ${m.why}`;
+    const evidence = identity.evidence('modelled', why);
+    return {
+      ...hit, by: m.by, evidence, rank: evidence.rank,
+      confidence: identity.confidenceOf([evidence]),
+      writable: identity.writable(identity.confidenceOf([evidence])), why,
+    };
+  }
+
+  if (spec.field !== 'devices') return null;
+  // Only inside a rack the record actually holds. A rack this plan just created
+  // holds nothing, so there is nothing to ask it about.
+  if (!Number.isInteger(rackId) || !rackWasFound) return null;
+
+  const type = (snapshot.deviceTypes || []).find((t) => t.uid === obj.deviceTypeUid) || null;
+  const hit = await find.findDevice(client, {
+    siteId: siteId ?? null, rackId, position: obj.position ?? null,
+    serial: obj.serial ?? null, assetTag: obj.assetTag ?? null,
+    name: obj.name ?? null, face: obj.face ?? null, uid: obj.uid,
+    // So a serial field holding the box's own model number is not taken for a
+    // serial, which is the same gate identity.aliasesOf applies.
+    models: [type ? type.model : null, obj.model ?? null].filter(Boolean),
+  });
+  if (hit.ambiguous) return hit;
+  if (hit.none) return hit.blocked ? hit : null;
+
+  // Found by a strong key, but in a different rack from the one being scanned.
+  // That is the plan's finding "a device turns up in a different rack from its
+  // record", and it is reported rather than bound: moving somebody's asset
+  // between racks is not a side effect of a photograph.
+  const at = (hit.row || {}).rack;
+  const inRack = at && typeof at === 'object' ? Number(at.id) : Number(at);
+  if (Number.isFinite(inRack) && inRack !== rackId) {
+    return { ...hit, writable: false,
+             why: `${hit.why}, and that record sits in rack ${inRack} rather than this one, so `
+               + 'nothing is bound to it here' };
+  }
+  return hit;
+}
+
+/**
+ * The record that might be this object, said out loud and bound to nothing.
+ *
+ * This is the shortlist the plan asks for: two or three candidates with the
+ * reason, put to a person. It is also where a lookup that could not be made ends
+ * up, so "the record could not be asked" reaches the admin instead of passing as
+ * a shrug nobody sees.
+ */
+function sayCandidate(spec, obj, hit, report) {
+  if (hit.ambiguous) {
+    const why = `More than one record could be this ${spec.label.toLowerCase()}: ${hit.why} `
+      + 'Nothing is bound until a person says which.';
+    report.findings.push({
+      tier: 'medium', kind: 'record-candidates', type: spec.label, uid: obj.uid,
+      candidates: hit.ambiguous, why,
+    });
+    report.warnings.push(why);
+    return;
+  }
+  if (hit.none) {
+    const why = `The customer's record could not be asked what this ${spec.label.toLowerCase()} is: ${hit.why}`;
+    report.warnings.push(why);
+    report.findings.push({
+      tier: 'medium', kind: 'record-not-asked', type: spec.label, uid: obj.uid, why,
+    });
+    return;
+  }
+  const why = `The customer's record may already hold this ${spec.label.toLowerCase()}: ${hit.why}. `
+    + 'That is not enough to write on it, so it is a question: confirm it is the same one, or say '
+    + 'it is a different one.';
+  report.findings.push({
+    tier: 'medium', kind: 'record-candidate', type: spec.label, uid: obj.uid,
+    netboxId: hit.id ?? null, by: hit.by ?? null, confidence: hit.confidence ?? null, why,
+  });
+  report.warnings.push(why);
+}
+
+async function walk(snapshot, client, apply, report, { boundField = true } = {}) {
   uniqueInterfaceNames(snapshot, report);
   const resolved = new Map();   // our uid -> NetBox id (or Pending)
   const skipped = new Set();    // uids excluded, so dependents can say why
   const failed = new Set();
   const counts = {};
   let rackNetboxId = null;
-  // Records a person bound this scan's objects to. Held so the orphan check
-  // below does not report a device as missing from the rack while this same
-  // plan is about to bind it: on a preview nothing has been patched yet, so the
-  // record still carries no uid of ours.
-  const boundNetboxIds = new Set();
+  // Was the rack found in the customer's record, rather than created by this very
+  // plan? A rack RackTrack just created holds nothing, so there is no point
+  // asking the record what is in it.
+  let rackWasFound = false;
+  // Records a person bound this scan's objects to, or that the resolver matched.
+  // Held so the orphan check below does not report a device as missing from the
+  // rack while this same plan is about to bind it: on a preview nothing has been
+  // patched yet, so the record still carries no uid of ours.
+  //
+  // Racks and devices are kept apart. They were one set, and NetBox numbers the
+  // two endpoints independently, so binding rack 7 silently hid device 7 - a
+  // decommissioned box that this check exists to report - from the orphan list.
+  const boundIds = { racks: new Set(), devices: new Set() };
+  // Which uid claimed which record in this one plan, per endpoint. Two boxes
+  // bound to one record is refused here as well as in the store, because the
+  // preview must be what happens: it used to promise two rebinds of one record
+  // and let the write arbitrate by loop order.
+  const claimed = new Map();
 
   const bump = (k) => { counts[k] = (counts[k] || 0) + 1; };
+  const keyOf = (spec, id) => `${spec.field}:${id}`;
+  const remember = (spec, id) => {
+    const set = boundIds[spec.field];
+    if (set) set.add(id);
+  };
 
   // Ask NetBox for this rack's objects once per type, up front, instead of
   // once per object inside the loop below. Every uid this snapshot writes
@@ -396,6 +668,30 @@ async function walk(snapshot, client, apply, report) {
   // preload. An endpoint that answered zero has nothing left under the old
   // uid, so the leftover-twin check below can skip it without a round trip.
   const underHash = new Map();
+
+  // A person's answer is stored against the box uid, and cv.js mints that uid
+  // from the shelf. So a box read one unit off, or re-detected after a model
+  // update, arrives under a uid the answer does not name, and the answer is
+  // silently not applied. That is worth saying out loud rather than discovering
+  // from a duplicate box in the customer's rack.
+  const binding = bindingOn(snapshot);
+  if (binding) {
+    const here = new Set((snapshot.devices || []).map((d) => d.uid));
+    const lost = Object.entries(binding.deviceNetboxIds && typeof binding.deviceNetboxIds === 'object'
+      ? binding.deviceNetboxIds : {}).filter(([uid]) => !here.has(uid));
+    for (const [uid, id] of lost) {
+      report.warnings.push(
+        `Somebody said record ${id} is the box ${uid}, and this scan has no box called ${uid} - `
+        + 'the box has moved shelf, or it was read differently this time. That answer is not '
+        + 'applied to any box here. Say which box record ' + `${id} is before anything is written.`);
+      report.findings.push({
+        tier: 'medium', kind: 'binding-not-applied', type: 'Device', uid,
+        netboxId: asId(id), why: `The answer naming record ${id} was given about the box ${uid}, `
+          + 'which this scan does not have.',
+      });
+    }
+  }
+
   if (rackKey && typeof client.preloadByUid === 'function') {
     const endpoints = [...new Set(orderedSpecs().map((s) => s.endpoint))];
     for (const ep of endpoints) {
@@ -462,31 +758,49 @@ async function walk(snapshot, client, apply, report) {
 
       if (existing) {
         const { changed, pending } = diff(payload, existing);
-        resolved.set(obj.uid, existing.id);
-        if (spec.field === 'racks') rackNetboxId = existing.id;
-        replacement(spec, obj, existing, report);
 
-        // Our uid already names one record and a person named another. Neither
-        // is touched and neither is guessed between: both are said out loud so
-        // somebody can settle it.
+        // Our uid already names one record and a person named another. Neither is
+        // touched and neither is guessed between: both are said out loud so
+        // somebody can settle it. It used to say "neither was changed" and then
+        // patch the one our uid is on - renaming the customer's rack, re-siting it
+        // and cutting its height - in the same response. A disagreement about
+        // WHICH record this is waits for a person (rule 4), so nothing is written
+        // on either of them and the objects under it wait too.
         const said = boundIdFor(snapshot, spec.field, obj.uid);
-        if (said !== null) {
-          if (said === existing.id) {
-            boundNetboxIds.add(said);
-            // A person bound this to the customer's own record, so the bind
-            // stays a bind: the fields the customer owns are reported, never
-            // patched.
-            bindOnly(spec, obj, existing, changed, report);
-          } else {
-            // The record a person named is NOT suppressed from the check below.
-            // It is a record in this rack that nothing in this scan matched, and
-            // hiding it would hide half of the contradiction.
-            report.warnings.push(
-              `${spec.label} "${name}" already carries ${obj.uid} on record ${existing.id}, `
-              + `and somebody named record ${said} as the same thing. Neither was changed; `
-              + 'a person has to say which one is right.');
-          }
+        if (said !== null && said !== existing.id) {
+          skipped.add(obj.uid);
+          const both = `${spec.label} "${name}" already carries ${obj.uid} on record ${existing.id}, `
+            + `and somebody named record ${said} as the same thing. Neither was changed; `
+            + 'a person has to say which one is right.';
+          report.warnings.push(both);
+          report.findings.push({
+            tier: 'high', kind: 'two-records', type: spec.label, uid: obj.uid,
+            netboxId: existing.id, named: said, why: both,
+          });
+          report.changes.push({
+            type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+            netboxId: existing.id, reason: both,
+          });
+          bump('skip');
+          continue;
         }
+
+        resolved.set(obj.uid, existing.id);
+        if (spec.field === 'racks') { rackNetboxId = existing.id; rackWasFound = true; }
+        const swap = replacement(spec, obj, existing, report);
+
+        // Bound by a person, either because the answer still says so or because
+        // the record itself is marked. The marker is what makes this durable: the
+        // answer lives in a file that can be corrected, taken back or lost, and
+        // the uid it wrote is permanent, so a bind whose only protection was the
+        // file let the next compare rename and re-site the customer's rack.
+        if (said !== null || boundOnRecord(existing)) {
+          if (said !== null) remember(spec, said);
+          bindOnly(spec, obj, existing, changed, report);
+        }
+        // The record and this box disagree about which box it is. What the
+        // hardware is stays as the customer has it until somebody settles it.
+        if (swap) holdBack(spec, obj, existing, changed, report, swap);
 
         // The keyed record is here. Is there ALSO one under the old hash uid?
         // Then a twin was left behind (a rebind that never ran, or a second
@@ -571,10 +885,28 @@ async function walk(snapshot, client, apply, report) {
       // What happens next is deliberately unchanged: the same rebind, the same
       // custom field and nothing else, the same re-check immediately before the
       // patch, and the same visible plan row an admin approves.
+      // The scope the target has to be inside. A rack has to be at the site this
+      // scan resolved to and a device has to be in the rack being scanned: those
+      // two checks are what stop a one-digit typo binding a rack in another
+      // building, or a box in another rack, at the top of the ladder.
+      const scopeFor = () => {
+        if (spec.field === 'racks') {
+          return { siteId: scanSiteId(snapshot), shown: shownFor(snapshot, 'racks', obj.uid) };
+        }
+        if (spec.field === 'devices') {
+          return {
+            rackId: rackNetboxId === null || isPending(rackNetboxId) ? null : rackNetboxId,
+            shown: shownFor(snapshot, 'devices', obj.uid),
+          };
+        }
+        return {};
+      };
+
+      let bindWhy = null;
       if (!previous) {
         const said = boundIdFor(snapshot, spec.field, obj.uid);
         if (said !== null) {
-          const hit = await find.byId(client, spec.endpoint, said, { uid: obj.uid });
+          const hit = await find.byId(client, spec.endpoint, said, { uid: obj.uid, expect: scopeFor() });
           if (hit.none) {
             skipped.add(obj.uid);
             report.changes.push({
@@ -586,11 +918,110 @@ async function walk(snapshot, client, apply, report) {
           }
           previous = hit.row;
           boundBy = hit;
-          boundNetboxIds.add(hit.id);
+          bindWhy = 'record-binding';
         }
       }
 
+      // Nobody has answered about this object, so ask the customer's own record
+      // what it is. This is the resolver slice 2 exists to wire: until it ran, a
+      // rack the customer typed in was invisible and every box in it read as a
+      // create that NetBox then refused on an occupied shelf.
+      //
+      // Only an answer the standard allows to be written binds: the rack's own
+      // facility id inside its site, a serial, an asset tag. A shelf and a name
+      // come back as 'possible', which is a question for a person and is
+      // reported as a candidate, never bound.
+      if (!previous) {
+        const hit = await proposeTarget(client, spec, obj, snapshot, {
+          siteId: scanSiteId(snapshot),
+          rackId: rackNetboxId === null || isPending(rackNetboxId) ? null : rackNetboxId,
+          rackWasFound,
+        });
+        if (hit) {
+          if (hit.id && hit.writable) {
+            previous = hit.row;
+            boundBy = hit;
+            bindWhy = 'record-match';
+          } else {
+            sayCandidate(spec, obj, hit, report);
+            // The record already has a box on this very shelf and nobody has
+            // said whether it is this one. Creating a second box there is a
+            // duplicate NetBox refuses on an occupied position, so the plan says
+            // so now rather than the write discovering it: "reported when the
+            // list is frozen, rather than found from an error at write time".
+            if (hit.id && hit.by === 'rack-position') {
+              skipped.add(obj.uid);
+              report.changes.push({
+                type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+                netboxId: hit.id,
+                reason: `${hit.why}. Nothing is written and no second box is made on that shelf `
+                  + 'until somebody says whether this is that record.',
+              });
+              bump('skip');
+              continue;
+            }
+          }
+        }
+      }
+
+      if (previous && boundBy && !boundField) {
+        // A bind that cannot be marked on the record cannot be protected from the
+        // next compare, and an unprotected bind is how the customer's rack gets
+        // renamed. So it waits rather than half-happening.
+        skipped.add(obj.uid);
+        const why = `${boundBy.why}, but this record cannot be marked as the customer's own in `
+          + `NetBox (the ${BOUND_FIELD} field is missing), so nothing was bound to it.`;
+        report.warnings.push(why);
+        report.changes.push({
+          type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+          netboxId: previous.id, reason: why,
+        });
+        bump('skip');
+        continue;
+      }
+
       if (previous) {
+        // Two boxes cannot be one record. Refused here, in the PREVIEW, because
+        // the preview is exactly what happens: it used to print both rebinds,
+        // an admin approved both, and the write did the first and skipped the
+        // second, so which box got the record was decided by loop order.
+        const alreadyClaimedBy = claimed.get(keyOf(spec, previous.id));
+        if (alreadyClaimedBy && alreadyClaimedBy !== obj.uid) {
+          skipped.add(obj.uid);
+          const why = `Record ${previous.id} is already this plan's answer for ${alreadyClaimedBy}, `
+            + `and ${obj.uid} names it too. One record is one ${spec.label.toLowerCase()}: say which `
+            + 'of the two it is. Neither was changed.';
+          report.warnings.push(why);
+          report.findings.push({
+            tier: 'high', kind: 'one-record-two-boxes', type: spec.label, uid: obj.uid,
+            netboxId: previous.id, other: alreadyClaimedBy, why,
+          });
+          report.changes.push({
+            type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+            netboxId: previous.id, reason: why,
+          });
+          bump('skip');
+          continue;
+        }
+
+        // The record says one box and this scan is looking at another: two
+        // serials that disagree are evidence of two different boxes, so the
+        // answer is not re-applied to whatever is on that shelf now. Nothing is
+        // bound and nothing is written.
+        const swap = boundBy ? replacement(spec, obj, previous, report) : null;
+        if (swap) {
+          skipped.add(obj.uid);
+          const why = `${swap.why} So the answer naming record ${previous.id} is not applied to this `
+            + 'box. Say which record this box is, and nothing is written until then.';
+          report.warnings.push(why);
+          report.changes.push({
+            type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+            netboxId: previous.id, reason: why,
+          });
+          bump('skip');
+          continue;
+        }
+
         if (apply) {
           // Look once more, right before the patch. The plan found the new uid
           // absent, but another writer may have minted it since, and two
@@ -617,10 +1048,12 @@ async function walk(snapshot, client, apply, report) {
             continue;
           }
           // The other half of the same re-check, for a target a person named
-          // rather than one we wrote ourselves: it must still be there and
-          // still free of anybody else's uid at the moment of the patch.
+          // rather than one we wrote ourselves: it must still be there, still
+          // free of anybody else's uid, still inside the scope, and still the row
+          // that was named, at the moment of the patch.
           if (boundBy) {
-            const again = await find.byId(client, spec.endpoint, previous.id, { uid: obj.uid });
+            const again = await find.byId(client, spec.endpoint, previous.id,
+              { uid: obj.uid, expect: scopeFor() });
             if (again.none) {
               failed.add(obj.uid);
               report.changes.push({
@@ -632,7 +1065,17 @@ async function walk(snapshot, client, apply, report) {
             }
           }
           try {
-            await client.patch(spec.endpoint, previous.id, { custom_fields: { [UID_FIELD]: obj.uid } });
+            // The uid, and - on a record that was the customer's before this -
+            // the mark that says so, written where the uid is written. Without
+            // the mark the protection lived in a file beside the code, and
+            // losing that file let the next compare rename and re-site their
+            // rack. With it, every later compare knows what this record is
+            // whatever any file says.
+            const mark = boundBy && boundField
+              ? { [BOUND_FIELD]: markFor(bindWhy, snapshot, boundBy) }
+              : {};
+            await client.patch(spec.endpoint, previous.id,
+              { custom_fields: { [UID_FIELD]: obj.uid, ...mark } });
           } catch (err) {
             failed.add(obj.uid);
             report.changes.push({
@@ -644,8 +1087,10 @@ async function walk(snapshot, client, apply, report) {
           }
         }
         resolved.set(obj.uid, previous.id);
-        if (spec.field === 'racks') rackNetboxId = previous.id;
-        replacement(spec, obj, previous, report);
+        claimed.set(keyOf(spec, previous.id), obj.uid);
+        if (spec.field === 'racks') { rackNetboxId = previous.id; rackWasFound = true; }
+        if (boundBy) remember(spec, previous.id);
+        if (!boundBy) replacement(spec, obj, previous, report);
         // What the record carried before. For our own rebind that is the uid we
         // wrote under the photo hash. For one a person bound, it is whatever the
         // customer's record carried, which is normally nothing at all - and
@@ -657,11 +1102,23 @@ async function walk(snapshot, client, apply, report) {
           type: spec.label, uid: obj.uid, fromUid: boundBy ? null : oldUid,
           name: String(name), action: 'rebind',
           netboxId: previous.id,
-          diff: { [UID_FIELD]: { from: wasUid, to: obj.uid } },
+          // The target is INSIDE the diff, and that is not cosmetic. An approval
+          // is a signature over uid, action and diff, and a bind's target is
+          // chosen rather than derived from the uid - so with the id outside the
+          // diff, a plan binding record 7 and a plan binding record 8 signed
+          // identically, and a re-answer between the approval and the write moved
+          // the uid onto a rack at another site that the admin never saw. Now the
+          // signature changes with the target and the write is refused instead.
+          diff: {
+            [UID_FIELD]: { from: wasUid, to: obj.uid },
+            ...(boundBy ? { recordId: { from: null, to: previous.id } } : {}),
+          },
           ...(boundBy ? {
-            boundBy: 'record-binding',
+            boundBy: bindWhy || 'record-binding',
+            evidence: boundBy.evidence ?? null,
+            confidence: boundBy.confidence ?? null,
             reason: `${boundBy.why}. Only the RackTrack id is written on it: its name, its site, `
-              + 'its height and its position are left exactly as the customer has them.',
+              + 'its height, its position and what it is are left exactly as the customer has them.',
           } : {}),
         });
         bump('rebind');
@@ -715,7 +1172,7 @@ async function walk(snapshot, client, apply, report) {
   }
 
   report.counts = counts;
-  report.orphans = await orphans(snapshot, client, rackNetboxId, report, alias, boundNetboxIds);
+  report.orphans = await orphans(snapshot, client, rackNetboxId, report, alias, boundIds.devices);
   return report;
 }
 
@@ -735,9 +1192,19 @@ async function walk(snapshot, client, apply, report) {
  * write path. It is still scoped to this one rack, so a device in another rack
  * is invisible to it.
  *
- * Two records are not orphans: one this scan carries under its own uid, and one
- * a person has bound this scan to. The second matters on a preview, where the
- * bind has not been written yet, so the record still carries nothing of ours.
+ * Three records are not "gone from the rack": one this scan carries under its own
+ * uid, one a person has bound this scan to (which matters on a preview, where the
+ * bind has not been written yet, so the record still carries nothing of ours),
+ * and one a box in this scan plainly answers for - by its serial, its asset tag
+ * or the shelf it is on. That third case is the one that made the widened check
+ * lie: with the rack bound and its boxes not, every box the scan was looking at
+ * was reported as missing from the shelf it was visible on, beside a create for
+ * the same shelf that a real NetBox refuses. Both statements were about the same
+ * box and one of them was false.
+ *
+ * So a record a box answers for comes back as "on the record, not yet bound",
+ * with the box that answers named, and "gone from the rack" keeps its meaning:
+ * the record says this box is here and the scan found that shelf empty.
  */
 async function orphans(snapshot, client, rackNetboxId, report, alias = null, bound = null) {
   if (rackNetboxId === null || isPending(rackNetboxId)) return [];
@@ -757,13 +1224,50 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null, bou
     if (old) seen.add(old);
   }
   const boundIds = bound instanceof Set ? bound : new Set();
+
+  // This scan's boxes, indexed by the three things a record can be recognised
+  // by. Nothing here binds anything: it only decides whether the scan can be
+  // said to have seen the box a record describes.
+  const bySerial = new Map();
+  const byTag = new Map();
+  const byShelf = new Map();
+  for (const d of snapshot.devices || []) {
+    const serial = identity.normalise(d.serial);
+    if (serial && !identity.isJunkValue(d.serial)) bySerial.set(serial, d);
+    const tag = identity.normalise(d.assetTag);
+    if (tag && !identity.isJunkValue(d.assetTag)) byTag.set(tag, d);
+    if (d.position !== null && d.position !== undefined) byShelf.set(Number(d.position), d);
+  }
+  const answersFor = (d) => {
+    const serial = identity.normalise(d.serial);
+    if (serial && bySerial.has(serial)) return { box: bySerial.get(serial), by: 'the same serial number' };
+    const tag = identity.normalise(d.asset_tag);
+    if (tag && byTag.has(tag)) return { box: byTag.get(tag), by: 'the same asset tag' };
+    const at = d.position === null || d.position === undefined ? null : Number(d.position);
+    if (at !== null && byShelf.has(at)) return { box: byShelf.get(at), by: `a box on shelf U${at}` };
+    return null;
+  };
+
   return present.flatMap((d) => {
     const uid = (d.custom_fields || {})[UID_FIELD] || null;
     if (uid && seen.has(uid)) return [];
     if (boundIds.has(d.id)) return [];
     const ours = Boolean(uid);
+    const answer = ours ? null : answersFor(d);
+    if (answer) {
+      return [{
+        netboxId: d.id, name: d.name, uid, ours: false, seen: true,
+        position: d.position ?? null, serial: d.serial || null,
+        status: (d.status || {}).value,
+        matchedBox: answer.box.uid, matchedBy: answer.by,
+        whose: 'the customer wrote this record and RackTrack has never touched it',
+        recommendation: `Review. The record puts "${d.name}" here and this scan saw ${answer.by} `
+          + `("${answer.box.name}") that nobody has said is this record. It is not missing. `
+          + 'Confirm it is this record, or say it is a different box. Nothing has been changed.',
+      }];
+    }
     return [{
-      netboxId: d.id, name: d.name, uid, ours,
+      netboxId: d.id, name: d.name, uid, ours, seen: false,
       position: d.position ?? null, serial: d.serial || null,
       status: (d.status || {}).value,
       whose: ours
@@ -781,7 +1285,7 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null, bou
 
 const newReport = (snapshot, dryRun, client) => ({
   rackUid: snapshot.rackUid, dryRun, netboxUrl: client.url,
-  customField: '', changes: [], orphans: [], counts: {}, warnings: [],
+  customField: '', boundField: '', changes: [], orphans: [], counts: {}, warnings: [],
   // Findings are what the record says that the rack contradicts, as opposed to
   // changes, which are what this plan would write. Today only the plan's high
   // finding "Replaced" lands here.
@@ -821,7 +1325,25 @@ async function push(snapshot, client) {
   const report = newReport(snapshot, false, client);
   const cf = await client.ensureCustomField(objectTypes());
   report.customField = cf.action;
-  return walk(snapshot, client, true, report);
+  // The field that marks a record as the customer's own. A bind that cannot be
+  // marked cannot be protected from the next compare, so if this cannot be made
+  // the binds are held back and the reason is said out loud rather than a rack
+  // being bound now and renamed later.
+  let boundField = true;
+  if (typeof client.ensureBoundField === 'function') {
+    try {
+      const bf = await client.ensureBoundField();
+      report.boundField = bf.action;
+    } catch (err) {
+      boundField = false;
+      report.boundField = 'ABSENT';
+      report.warnings.push(
+        `The '${BOUND_FIELD}' field could not be made in NetBox (${JSON.stringify(err.detail ?? err.message)}), `
+        + 'so a record the customer owns cannot be marked as theirs and nothing is bound to one in '
+        + 'this write. Everything else is unaffected.');
+    }
+  }
+  return walk(snapshot, client, true, report, { boundField });
 }
 
 module.exports = { plan, push, Pending, isPending, diff, current, aliasUid, EXPORT_ORDER, NetBoxError };
