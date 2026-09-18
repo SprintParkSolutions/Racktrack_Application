@@ -144,3 +144,46 @@ test('a second write of an unchanged rack still patches nothing at all', async (
   assert.equal(nb.calls.slice(before).filter((c) => c.method === 'PATCH').length, 0,
     'and not one PATCH was sent');
 });
+
+/**
+ * One device holds one port of each name.
+ *
+ * Measured on the live server on 18 September 2026: a real write refused four
+ * interfaces on one switch, all with "Interface with this Device and Name
+ * already exists". The four uids were distinct, so nothing on our side
+ * noticed; the names were 1, 2, 3 and 4 asked for twice, because the engine
+ * numbers a port from where it sits on the panel and read two rows the same
+ * way. The first of each pair went in and the second was refused.
+ *
+ * Claiming the existing one by device and name would hide a reading problem,
+ * so the second port is given its place in the list instead, and the
+ * disagreement is recorded for a person.
+ */
+test('two ports the camera read as one number do not collide', () => {
+  const cv = require('../../lib/netbox/cv');
+  // Two rows, one above the other, so these are four separate sockets and not
+  // one socket detected twice: extractPorts drops a genuine double detection.
+  const at = (x, y, index) => ({ box: [x, y, x + 14, y + 16], confidence: 0.9, index });
+  const snap = cv.toSnapshot({
+    image: 'rack.jpg',
+    devices: [{
+      class_name: 'Switch', port_count: 4, units: ['u8'],
+      box: [10, 10, 900, 60], center: [455, 35],
+      // Two rows, and the engine numbered both rows 1 and 2.
+      ports: [at(10, 20, 1), at(40, 20, 2), at(10, 60, 1), at(40, 60, 2)],
+      console_ports: [], sfp_ports: [], other_ports: [], connected_ports: [],
+      ocr_make: 'D-Link', ocr_model: 'DGS-1210',
+    }],
+  }, {
+    rackId: 'RK-DUPE0001', siteName: 'Test Site', rackName: 'Rack 1',
+    uHeight: 42, scannedAt: '2026-01-01T00:00:00Z',
+  });
+
+  const names = snap.interfaces.map((i) => i.name);
+  assert.equal(new Set(names).size, names.length,
+    `every port on the device has its own name, got ${names.join(', ')}`);
+  assert.ok(names.includes('1') && names.includes('2'),
+    'the numbers the camera actually read are kept where they are unique');
+  assert.ok(snap.conflicts.some((c) => c.field === 'name'),
+    'and the two that read alike are reported rather than smoothed over');
+});

@@ -440,13 +440,40 @@ function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight =
 
     // Interfaces come from the actual detected port boxes, de-duplicated, so
     // the device table and the overlay always show the same count.
+    //
+    // One device holds one port of each name. The engine numbers a port from
+    // where it sits on the panel, and two boxes it read in different rows can
+    // carry the same number: a live write refused four interfaces on one
+    // switch because our own plan asked for names 1 to 4 twice. The uid was
+    // unique each time, so nothing here noticed, and NetBox refused the
+    // second of each pair.
+    //
+    // The read number is kept while it is the only one of its name on this
+    // device, because it is what is printed on the panel. A repeat falls back
+    // to the port's place in the list, which is unique by construction, and
+    // the disagreement is recorded rather than smoothed over: two ports
+    // reading as one number is a detection problem for a person to look at.
+    const namedOnDevice = new Map();
     extractPorts(d).forEach((port, idx) => {
+      const read = port.index != null ? String(port.index) : null;
+      let portName = read || String(idx + 1);
+      if (namedOnDevice.has(portName)) {
+        const first = namedOnDevice.get(portName);
+        portName = String(idx + 1);
+        snap.conflicts.push(Conflict({
+          subjectUid: `if:${devUid}:${idx + 1}`, field: 'name',
+          cvSays: read,
+          note: `CV read two ports on "${label}" as number ${read}: the one at `
+              + `place ${first} and the one at place ${idx + 1}. One device holds one `
+              + `port of each name, so the second is recorded as ${portName} `
+              + 'pending review.',
+        }));
+      }
+      if (!namedOnDevice.has(portName)) namedOnDevice.set(portName, idx + 1);
       snap.interfaces.push(Interface(
         observed(`if:${devUid}:${idx + 1}`, Evidence.CV_ONLY,
           { category: port.category, status: port.status, synthesized: port.synthesized }),
-        { deviceUid: devUid,
-          name: port.index != null ? String(port.index) : String(idx + 1),
-          type: port.type }));
+        { deviceUid: devUid, name: portName, type: port.type }));
     });
   }
 
