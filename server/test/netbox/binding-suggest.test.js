@@ -249,7 +249,7 @@ test('a binding takes its box out of the running for every other switch', () => 
   const { matches, reasons } = ask(snap, [one, two]);
   assert.equal(matches[1], 'dev:a');
   assert.equal(matches[2], null);
-  assert.match(reasons[2].why, /no box in this rack looks like it/);
+  assert.match(reasons[2].why, /no box in this rack (looks like it|has the right number of sockets)/);
 });
 
 // ── 2. ties are blank ────────────────────────────────────────────────────────

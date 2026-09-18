@@ -93,14 +93,25 @@ test('a 52 port switch is not put in a 10 socket box, however the makers agree',
     'the box whose panel actually fits is chosen instead');
 });
 
-test('a box ruled out on its shape is named, so nobody wonders where it went', () => {
+test('a box struck off for its shape is not announced when a box WAS chosen', () => {
+  // Saying so per box put four paragraphs of arithmetic on a screen whose job
+  // is to show one switch and one box - and one paragraph named the very box
+  // the switch had been matched to.
   const out = run(
     [box(12, 10, 'D-Link'), box(8, 52, null)],
     [sw(1, 'Corr', 52, 'D-Link', null)],
   );
   const notes = (out.reasons[1] && out.reasons[1].notes) || [];
-  assert.ok(notes.some((n) => /Switch U12/.test(n) && /sockets/.test(n)),
-    `the ruled out box is named with a reason, got ${JSON.stringify(notes)}`);
+  assert.equal(notes.filter((n) => /sockets/.test(n)).length, 0,
+    `nothing about struck-off boxes when one was chosen, got ${JSON.stringify(notes)}`);
+});
+
+test('but when NOTHING was chosen it says the boxes were the wrong size', () => {
+  // The one place a person is actually asking why. One sentence, not one per box.
+  const out = run([box(10, 4, null), box(12, 6, null)], [sw(1, 'sw', 48, null, null)]);
+  assert.equal(out.matches[1], null);
+  assert.match(out.reasons[1].why, /right number of sockets/);
+  assert.match(out.reasons[1].why, /2 boxes have the wrong size/);
 });
 
 test('a box showing more sockets than the switch has is not that switch', () => {

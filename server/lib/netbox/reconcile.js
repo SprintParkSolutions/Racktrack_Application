@@ -179,11 +179,12 @@ function scorePair(sw, dev) {
   const tooMany = dev.portCount > Math.ceil(near.n * 1.15) + 1;
   const tooFew = dev.portCount > 0 && dev.portCount < Math.floor(near.n * 0.45);
   if (near.n > 0 && dev.portCount > 0 && (tooMany || tooFew)) {
+    const sockets = (n) => `${n} socket${n === 1 ? '' : 's'}`;
     return {
       score: -Infinity,
       why: tooMany
-        ? `this box shows ${dev.portCount} sockets and the switch has ${near.n}, so it is not this box`
-        : `this box shows ${dev.portCount} sockets against the switch's ${near.n}, too few even for a row the camera could not see`,
+        ? `${sockets(dev.portCount)}, more than this switch has`
+        : `${sockets(dev.portCount)}, too few for a ${near.n} port switch`,
       shape: 'ruled-out',
       ruledOut: true,
     };
@@ -598,14 +599,15 @@ function suggest(snapshot, sws, opts = {}) {
 
     const candidates = [];
     const seenNote = new Set();
+    const struckOff = [];
     for (const dev of free) {
       const { score, why, shape, ruledOut } = scorePair(f, dev);
-      // A box ruled out on its shape is named once, so a person looking for it
-      // knows it was considered and why, rather than wondering where it went.
-      if (ruledOut) {
-        if (!seenNote.has(dev.uid)) { seenNote.add(dev.uid); addNote(f.id, `${dev.name}: ${why}`); }
-        continue;
-      }
+      // A box struck off for its shape is remembered, not announced. Saying so
+      // per box put four paragraphs of arithmetic on a screen whose job is to
+      // show one switch and one box, and one of those paragraphs named the very
+      // box the switch was matched to. It is only worth a sentence when NOTHING
+      // was chosen, which is the case where a person is actually asking why.
+      if (ruledOut) { struckOff.push({ name: dev.name, why }); continue; }
       if (score < FLOOR) continue;
       const advice = sizeAdvice(dev.units, dev.cvClass);
       if (advice && !seenNote.has(dev.uid)) { seenNote.add(dev.uid); addNote(f.id, `${dev.name}: ${advice}`); }
@@ -622,11 +624,17 @@ function suggest(snapshot, sws, opts = {}) {
     }
 
     if (!candidates.length) {
-      reasons[f.id] = blank(
-        'no box in this rack looks like it. Pick the box by hand, or scan the rack again '
-        + 'so the ports can be counted',
-        { candidateCount: 0, notes: notes.get(f.id) || [] },
-      );
+      // The only place the struck-off boxes are worth a word: a person looking
+      // at "no box looks like it" is entitled to know the boxes WERE considered.
+      // One sentence, not one per box.
+      const why = struckOff.length
+        ? `no box in this rack has the right number of sockets for it. `
+          + `${struckOff.length === 1 ? struckOff[0].name : `${struckOff.length} boxes`} `
+          + `${struckOff.length === 1 ? 'has' : 'have'} the wrong size. `
+          + 'Pick the box by hand, or scan the rack again so the ports can be counted'
+        : 'no box in this rack looks like it. Pick the box by hand, or scan the rack again '
+          + 'so the ports can be counted';
+      reasons[f.id] = blank(why, { candidateCount: 0, notes: notes.get(f.id) || [] });
       continue;
     }
 
