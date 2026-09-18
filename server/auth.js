@@ -1619,6 +1619,51 @@ function registerRoutes(app) {
   //
   // Deliberately NOT behind requireAuth — the whole point is that it is reached
   // when the access token has already expired.
+  // ── Opening a web page from the phone app, already signed in ──────────
+  //
+  // The phone app holds a bearer token; a browser holds cookies. Tapping a
+  // link to a web page from inside the app therefore lands on the sign-in
+  // screen, which is nonsense for somebody who signed in a minute ago. This
+  // trades the app's own credential for a single-use key, and opening that
+  // key's address sets the browser's session and forwards to the page.
+  //
+  // The key is random, lives 60 seconds, is spent the first time it is used,
+  // and carries nothing but a user id, so a copied link is worth almost
+  // nothing and only once.
+  const handoffs = new Map();
+  const HANDOFF_TTL = 60 * 1000;
+  const sweepHandoffs = () => {
+    const now = Date.now();
+    for (const [k, v] of handoffs) if (v.expires <= now) handoffs.delete(k);
+  };
+
+  app.post('/api/auth/handoff', requireAuth, (req, res) => {
+    sweepHandoffs();
+    const to = String(req.body?.to || '/');
+    // Only ever forward inside this site: never to another host.
+    const next = to.startsWith('/') && !to.startsWith('//') ? to : '/';
+    const key = crypto.randomBytes(32).toString('base64url');
+    handoffs.set(key, { userId: req.user.id, next, expires: Date.now() + HANDOFF_TTL });
+    audit.log({ req, user: req.user, action: 'auth.handoff.create', status: 'ok', payload: { next } });
+    res.json({ ok: true, url: `/api/auth/handoff/${key}`, expiresInSeconds: HANDOFF_TTL / 1000 });
+  });
+
+  app.get('/api/auth/handoff/:key', (req, res) => {
+    sweepHandoffs();
+    const found = handoffs.get(req.params.key);
+    handoffs.delete(req.params.key);              // one use, whatever happens
+    if (!found || found.expires <= Date.now()) {
+      audit.log({ req, action: 'auth.handoff.use', status: 'fail', error: 'expired or unknown' });
+      return res.redirect('/login');
+    }
+    const user = db.prepare('SELECT * FROM users WHERE id = ? AND active = 1').get(found.userId);
+    if (!user) return res.redirect('/login');
+    const { accessJwt, refreshPlain } = issueTokenPair(user, req);
+    setAuthCookies(res, accessJwt, refreshPlain);
+    audit.log({ req, user, action: 'auth.handoff.use', status: 'ok', payload: { next: found.next } });
+    return res.redirect(found.next);
+  });
+
   app.post('/api/auth/refresh', (req, res) => {
     const presented = req.cookies?.rt_refresh;
     if (!presented) {
