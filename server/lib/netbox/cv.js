@@ -362,12 +362,28 @@ function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight =
     // sfp/console/other ports come back as arrays of detected ports, not counts.
     const sfps = Array.isArray(d.sfp_ports) ? d.sfp_ports.length : Number(d.sfp_ports || 0);
 
-    // A device name must be unique per site in NetBox. A placed device is named
-    // by its U, which is already unique; an unplaced one gets a running number
-    // so two "Unidentified" boxes cannot collide on write.
-    let label;
-    if (pos !== null) label = d.label || `${cls} U${pos}`;
-    else { unplacedN += 1; label = d.label ? `${d.label} (${unplacedN})` : `${cls} (unplaced ${unplacedN})`; }
+    // A device name must be unique per SITE in NetBox, and a U is only unique
+    // within a RACK. That is the whole bug: two racks in one site each have a
+    // U12, so "Switch U12" collided and NetBox refused the write with "Device
+    // name must be unique per site." It is not hypothetical - it is why three
+    // devices of plan 52 were never written, with RK-3CD81888 and RK-B4DE04B1
+    // both sitting in the site called Default.
+    //
+    // So a placed device carries the rack it is placed in. A name the camera
+    // actually read off the faceplate is left alone: it is the customer's own
+    // name for the box and a better one than anything built from a position.
+    // `base` is what the uid is built from and must not move: a placed device's
+    // uid is its position, an unplaced one's is this slug, and an object whose
+    // uid changes stops being the same object to NetBox. `label` is only the
+    // name, so the rack can be added there and nowhere else.
+    const rackLabel = rackName || rackId;
+    let base;
+    if (pos !== null) base = d.label || `${cls} U${pos}`;
+    else { unplacedN += 1; base = d.label ? `${d.label} (${unplacedN})` : `${cls} (unplaced ${unplacedN})`; }
+    // A name the camera read off the faceplate is left alone: it is the
+    // customer's own name for the box, and better than anything built from a
+    // position. Everything else carries the rack, which is what makes it unique.
+    const label = d.label ? base : `${base} ${rackLabel}`;
 
     // One U holds one device per face. If the engine's spans overlap it is a
     // detection artefact: the first keeps the slot, the second is exported
@@ -375,7 +391,7 @@ function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight =
     const clash = units.find((u) => takenU.has(u));
     if (pos !== null && clash !== undefined) {
       snap.conflicts.push(Conflict({
-        subjectUid: `dev:${key}:${slug(label)}`, field: 'position',
+        subjectUid: `dev:${key}:${slug(base)}`, field: 'position',
         cvSays: `U${pos}`,
         note: `CV placed both "${takenU.get(clash)}" and "${label}" at U${clash}. `
             + 'One U holds one device per face. Exported unplaced pending review.',
@@ -417,8 +433,8 @@ function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight =
       snap.deviceRoles.push(DeviceRole(observed(uid, Evidence.CV_ONLY), { name: cls, slug: slug(cls) }));
     }
 
-    let devUid = pos !== null ? `dev:${key}:u${pos}` : `dev:${key}:${slug(label)}`;
-    if (usedUids.has(devUid)) devUid = `${devUid}:${slug(label)}`;
+    let devUid = pos !== null ? `dev:${key}:u${pos}` : `dev:${key}:${slug(base)}`;
+    if (usedUids.has(devUid)) devUid = `${devUid}:${slug(base)}`;
     usedUids.add(devUid);
 
     snap.devices.push(Device(
