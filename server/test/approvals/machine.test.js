@@ -421,6 +421,36 @@ describe('what a screen may offer', () => {
     assert.equal(by.cancelled.why, null);
   });
 
+  it('offers the approval to whoever resolved the tickets, marked not ready and saying why', () => {
+    // Found on the demo: every ticket on the one plan waiting for approval had
+    // been resolved by the owner, so separation of duties barred them - which
+    // is right. The move was then left out of the list entirely, so the screen
+    // had nothing to draw and said only "No move is open to you on this
+    // drift.". That reads as the workflow having broken, when what it is doing
+    // is waiting for somebody else. The move is offered, and refused in words.
+    const resolved = [ticket({ status: 'resolved', resolvedById: ADMIN.id, resolvedBy: ADMIN.username })];
+    const offered = m.next(plan({ status: 'approval_pending' }), ADMIN,
+      ctx({ tickets: resolved, items: [item({ decision: 'approved' })] }));
+    const by = Object.fromEntries(offered.map((o) => [o.to, o]));
+    assert.ok(by.approved, 'the approval is still offered, not hidden');
+    assert.equal(by.approved.ready, false);
+    assert.match(by.approved.why, /somebody else has to make this decision/);
+    assert.equal(by.approved.blockedByRole, true);
+
+    // And the bar itself has not moved: the move is still refused.
+    const verdict = m.can(plan({ status: 'approval_pending' }), 'approved', ADMIN,
+      ctx({ tickets: resolved, items: [item({ decision: 'approved' })] }));
+    assert.equal(verdict.ok, false);
+    assert.equal(verdict.code, 'role');
+
+    // Somebody who resolved nothing is offered it ready.
+    const other = m.next(plan({ status: 'approval_pending' }), APPROVER,
+      ctx({ tickets: resolved, items: [item({ decision: 'approved' })] }));
+    const theirs = Object.fromEntries(other.map((o) => [o.to, o]));
+    assert.ok(theirs.approved, 'an approver who resolved nothing still sees it');
+    assert.notEqual(theirs.approved.blockedByRole, true);
+  });
+
   it('offers a technician nothing on somebody else\'s triage, and the server\'s moves to nobody', () => {
     assert.deepEqual(m.next(plan({ status: 'triage' }), SAM, ctx()), []);
     assert.deepEqual(m.next(plan({ status: 'submitted' }), ADMIN, ctx()), [],
