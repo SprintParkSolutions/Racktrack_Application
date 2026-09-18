@@ -1,0 +1,258 @@
+<!-- https://claude.ai/artifact/MiyVy5ZER7ULLYgKUptLdH -->
+<title>RackTrack Test Round</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --paper:#fbfcfb; --ink:#161a17; --body:#39423c; --muted:#66706a; --quiet:#98a19b;
+    --rule:#e6ebe7; --rule2:#cfd6d0; --card:#fff;
+    --tech:#1f6feb; --tech-bg:#eaf1fd;
+    --admin:#0b6a44; --admin-bg:#e8f3ee;
+    --assignee:#8a6d1f; --assignee-bg:#faf3e1;
+    --sys:#5a6560; --sys-bg:#eef1ef;
+    --no:#9d4a3f; --no-bg:#f7efed;
+    --serif:"Newsreader",Georgia,serif; --sans:"Source Sans 3",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--body);font-family:var(--sans);font-size:16.5px;line-height:1.58;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{text-wrap:balance}
+  .wrap{max-width:860px;margin:0 auto;padding-inline:20px;padding-block:44px 64px}
+
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--admin);margin:0 0 12px}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(32px,6vw,46px);line-height:1.05;letter-spacing:-.015em;color:var(--ink);margin:0 0 14px}
+  .lede{font-family:var(--serif);font-size:clamp(17px,2.4vw,20.5px);line-height:1.45;color:var(--muted);margin:0;max-width:58ch}
+  .meta{margin:18px 0 0;display:flex;flex-wrap:wrap;gap:5px 20px;font-family:var(--mono);font-size:11px;color:var(--quiet)}
+
+  h2{font-family:var(--serif);font-weight:600;font-size:clamp(23px,3.4vw,29px);color:var(--ink);margin:44px 0 10px;letter-spacing:-.01em}
+  h3{font-family:var(--serif);font-weight:600;font-size:19.5px;color:var(--ink);margin:0}
+  p{margin:0 0 12px;max-width:68ch}
+  .intro{color:var(--muted);font-size:17px}
+
+  .strip{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 6px;align-items:center}
+  .chip{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.04em;padding:6px 12px;border-radius:20px;white-space:nowrap}
+  .c-tech{background:var(--tech-bg);color:var(--tech)} .c-admin{background:var(--admin-bg);color:var(--admin)}
+  .c-assignee{background:var(--assignee-bg);color:var(--assignee)} .c-sys{background:var(--sys-bg);color:var(--sys)}
+  .arrow{color:var(--quiet);font-size:15px}
+
+  .box{border:1px solid var(--rule2);border-radius:11px;background:var(--card);padding:16px 18px;margin:16px 0 0}
+  .box p:last-child{margin:0}
+  .note{margin:18px 0 0;padding:15px 18px;border-radius:11px;background:var(--assignee-bg);border-left:3px solid var(--assignee)}
+  .note.bad{background:var(--no-bg);border-left-color:var(--no)}
+  .note.good{background:var(--admin-bg);border-left-color:var(--admin)}
+  .note p{margin:0;max-width:72ch} .note p+p{margin-top:8px}
+
+  .t{counter-reset:t;list-style:none;margin:18px 0 0;padding:0}
+  .t>li{counter-increment:t;position:relative;padding:22px 0 22px 48px;border-bottom:1px solid var(--rule)}
+  .t>li:last-child{border-bottom:0}
+  .t>li::before{content:counter(t);position:absolute;left:0;top:22px;width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--mono);font-size:14px;font-weight:600;display:grid;place-items:center}
+  .head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:8px}
+  .head .chip{margin-left:auto}
+  .look{margin:12px 0 0;padding:12px 15px;border-radius:9px;background:var(--admin-bg)}
+  .look b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--admin);margin-bottom:3px}
+  .look p{margin:0;font-size:15.5px;max-width:66ch}
+  .wrongly{margin:10px 0 0;padding:12px 15px;border-radius:9px;background:var(--no-bg)}
+  .wrongly b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--no);margin-bottom:3px}
+  .wrongly p{margin:0;font-size:15.5px;max-width:66ch}
+
+  .table{width:100%;overflow-x:auto;margin:16px 0 0;border:1px solid var(--rule2);border-radius:11px;background:var(--card)}
+  table{border-collapse:collapse;width:100%;min-width:560px;font-size:15.5px}
+  th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--rule);vertical-align:top}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--quiet);font-weight:600}
+  tr:last-child td{border-bottom:0}
+  td b{color:var(--ink)}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  ul.plain{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+  ul.plain li{position:relative;padding-left:20px;max-width:70ch}
+  ul.plain li::before{content:"";position:absolute;left:3px;top:11px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+  code{font-family:var(--mono);font-size:13.5px;background:var(--sys-bg);padding:2px 6px;border-radius:4px;color:var(--ink)}
+  footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--rule);color:var(--muted);font-size:13.5px}
+  footer p{max-width:74ch}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">RackTrack &middot; for the internal test team</p>
+  <h1>What is new, and what to test</h1>
+  <p class="lede">A test build for Android. This page says what changed, what to try, and what a correct answer looks like, so you can tell a fault from something we have not built yet.</p>
+  <div class="meta"><span>18 September 2026</span><span>Android 1.0 (61)</span><span>demo.racktrack.ai</span><span>Build cd925d6</span></div>
+
+  <h2>The short version</h2>
+  <p class="intro">This round is about one idea: <b>the app stops guessing.</b> Where it used to quietly pick an answer, it now either proves the answer or says it does not know. Everything below is a way of checking that.</p>
+
+  <div class="strip">
+    <span class="chip c-tech">Photograph the rack</span><span class="arrow">&rarr;</span>
+    <span class="chip c-sys">Compare with the record</span><span class="arrow">&rarr;</span>
+    <span class="chip c-admin">Admin hands it to someone</span><span class="arrow">&rarr;</span>
+    <span class="chip c-assignee">They go and look</span><span class="arrow">&rarr;</span>
+    <span class="chip c-admin">Admin approves</span><span class="arrow">&rarr;</span>
+    <span class="chip c-sys">Written down</span>
+  </div>
+
+  <div class="note"><p><b>Two places, not one.</b> The first two steps happen in the phone app. Everything an admin decides now happens in <b>RackTrack Approvals</b>, a separate page in the browser at <code>demo.racktrack.ai/approvals/</code>. The app opens it for you: there is an Approvals entry for admins, and a "Track this check" link right after you send one. Same sign-in, same data. If you are looking for the approvals screens inside the app, they are gone on purpose.</p></div>
+
+  <h2>Before you start</h2>
+  <div class="box">
+    <p><b>Install.</b> Build <b>1.0 (61)</b> has gone out through Firebase App Distribution, the same way as every earlier build, so you should have it already. It is signed with the same key, so it installs over the one you have. Android will warn you it is not from the Play Store; that is expected for an internal build.</p>
+    <p style="margin-top:10px"><b>Where it points.</b> This build talks to <code>demo.racktrack.ai</code>. It is our demo system, not a customer's. You cannot break anything a customer owns.</p>
+    <p style="margin-top:10px"><b>Take one account from the table below and keep it.</b> What you can do depends on your role, so two people sharing one account will confuse each other's results.</p>
+  </div>
+
+  <h2>Your accounts</h2>
+  <p class="intro">Eleven accounts, all in the same organisation, Sprintpark HQ, which has three racks and a live NetBox behind it. Sign in with the username, not an email address.</p>
+  <div class="table">
+    <table>
+      <thead><tr><th>Username</th><th>Password</th><th>Role</th><th>What this person can do</th></tr></thead>
+      <tbody>
+        <tr><td><b>qa.admin1</b></td><td class="num">Rack3170!</td><td>Admin</td><td rowspan="3">Everything: assign a difference to somebody, approve or reject it, write to the record, and confirm which box a switch is</td></tr>
+        <tr><td><b>qa.admin2</b></td><td class="num">Port3307!</td><td>Admin</td></tr>
+        <tr><td><b>qa.admin3</b></td><td class="num">Cable3444!</td><td>Admin</td></tr>
+        <tr><td><b>qa.tech1</b></td><td class="num">Shelf3581!</td><td>Technician</td><td rowspan="5">Scan a rack, compare it, send the check to an admin. Cannot approve, reject or write anything. That is the point, not a limitation</td></tr>
+        <tr><td><b>qa.tech2</b></td><td class="num">Panel3718!</td><td>Technician</td></tr>
+        <tr><td><b>qa.tech3</b></td><td class="num">Fibre3855!</td><td>Technician</td></tr>
+        <tr><td><b>qa.tech4</b></td><td class="num">Patch3992!</td><td>Technician</td></tr>
+        <tr><td><b>qa.tech5</b></td><td class="num">Switch4129!</td><td>Technician</td></tr>
+        <tr><td><b>qa.sitemanager</b></td><td class="num">Frame4266!</td><td>Site manager</td><td>The same as an admin, for one site only</td></tr>
+        <tr><td><b>qa.approver</b></td><td class="num">Unit4403!</td><td>Approver</td><td>Approve, reject and send back for rework. Nothing else. Cannot write to the record</td></tr>
+        <tr><td><b>qa.auditor</b></td><td class="num">Cage4540!</td><td>Auditor</td><td>Reads everything and writes nothing, not even a comment. Try to make it change something</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note"><p><b>These are demo accounts on a demo system.</b> They hold no customer data and they are not used anywhere else. Do not reuse these passwords for anything real, and do not put them in a customer-facing document.</p></div>
+  <div class="note"><p><b>One thing to know before you file a fault.</b> A check you started before today keeps its old shape. If something looks like the old behaviour, start a fresh drift check on that rack before reporting it.</p></div>
+
+  <h2>What changed, in plain words</h2>
+  <div class="table">
+    <table>
+      <thead><tr><th>What it used to do</th><th>What it does now</th></tr></thead>
+      <tbody>
+        <tr><td>A rack with 48 port switches asked you to decide <b class="num">191</b> separate things, one per port</td><td>It asks you to decide <b class="num">9</b> things, one per device. The ports sit under their switch and follow it</td></tr>
+        <tr><td>You could approve a change nobody had checked</td><td>The server refuses until somebody has actually been asked</td></tr>
+        <tr><td>Two identical switches were sorted out by whichever came first in a list</td><td>They are told apart by their cables, or the app says it cannot tell and what would settle it</td></tr>
+        <tr><td>A guess from the photo was shown as a fact on the report</td><td>A guess says it is a proposal until a person confirms it</td></tr>
+        <tr><td>Approving one correction quietly rewrote other fields on the same record</td><td>An approval changes exactly what you approved and nothing else</td></tr>
+        <tr><td>The first comparison of a big rack took minutes</td><td>It takes seconds. The same rack went from <b class="num">218</b> requests to <b class="num">21</b></td></tr>
+        <tr><td>A save failed if the record already had a maker or a role written down</td><td>The app recognises what is already there and uses it</td></tr>
+        <tr><td>Approving was two screens inside the app</td><td>Approving is its own page in the browser, RackTrack Approvals, opened from the app with the same sign-in</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>What to test</h2>
+  <p class="intro">Twelve things, in order. Each one says what to do, and what a correct answer looks like. If you see the "wrongly" line instead, that is worth reporting.</p>
+
+  <ol class="t">
+
+    <li>
+      <div class="head"><h3>Check your role does only what it should</h3><span class="chip c-sys">Everyone</span></div>
+      <p>Sign in with your own account and try something your role should not allow. A technician should find no way to approve anything. An auditor should find no way to change anything at all.</p>
+      <div class="look"><b>Right</b><p>The action is either not offered, or it is refused with a sentence saying who may do it. Both are correct answers.</p></div>
+      <div class="wrongly"><b>Report if</b><p>You can do something your role should not allow, or a refusal is a code rather than a sentence. <b>This is the most valuable thing on the list.</b></p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Photograph a rack</h3><span class="chip c-tech">Technician</span></div>
+      <p>Open the app, scan a rack, and wait for the picture to come back with boxes drawn around the devices.</p>
+      <div class="look"><b>Right</b><p>Each device has a box round it and a shelf number. A patch panel is a patch panel, a switch is a switch.</p></div>
+      <div class="wrongly"><b>Report if</b><p>A box is drawn round nothing, two boxes overlap on one shelf, or the shelf numbers do not follow the rack.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Run a drift check and look at who it goes to</h3><span class="chip c-tech">Technician</span></div>
+      <p>On that rack, run a drift check. <b>Before you send it</b>, look at the blue "Goes to" card.</p>
+      <div class="look"><b>Right</b><p>It names a person, their job title and their email, taken from the record. If the record names nobody, it says the admin will choose. Either answer is correct.</p></div>
+      <div class="wrongly"><b>Report if</b><p>It names nobody and does not explain why, or it names somebody who has nothing to do with that rack.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Send it, and check nothing was written</h3><span class="chip c-tech">Technician</span></div>
+      <p>Send the check to the admin. Then look at the record for that rack.</p>
+      <div class="look"><b>Right</b><p>The app says it was sent. <b>Nothing has changed in the record.</b> Sending is not writing.</p></div>
+      <div class="wrongly"><b>Report if</b><p>Anything at all appears in the record before an admin has approved it.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Count the decisions</h3><span class="chip c-admin">Admin, in Approvals</span></div>
+      <p>Press <b>Track this check</b> after sending, or open Approvals from the app. The browser opens RackTrack Approvals. Find your check and count how many things it asks you to decide.</p>
+      <div class="look"><b>Right</b><p>One per device, not one per port. A rack with nine devices and a hundred and seventy ports asks for <b>nine</b> decisions. The ports are listed underneath their switch and say they follow it.</p></div>
+      <div class="wrongly"><b>Report if</b><p>You are asked to decide hundreds of things on a fresh check, or a port can be decided on its own.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Try to approve something nobody has looked at</h3><span class="chip c-admin">Admin, in Approvals</span></div>
+      <p>Pick a difference and try to approve it straight away, without handing it to anybody.</p>
+      <div class="look"><b>Right</b><p>It is refused, and the reason is that it has to be assigned first. This refusal comes from the server, so it holds however you press it.</p></div>
+      <div class="wrongly"><b>Report if</b><p>It lets you approve, or the refusal is a number or a code rather than a sentence.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Hand the whole rack to one person</h3><span class="chip c-admin">Admin, in Approvals</span></div>
+      <p>Use the whole-rack action to hand everything still waiting to one person in one move.</p>
+      <div class="look"><b>Right</b><p>One action covers everything still waiting. A real ticket is raised and the person named gets it.</p></div>
+      <div class="wrongly"><b>Report if</b><p>It raises one ticket per port, or it silently skips things that were waiting.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Read a switch, and see which box the app thinks it is</h3><span class="chip c-admin">Admin, in the app</span></div>
+      <p>On a rack you can reach over the network, add a switch on the Network step and let it be read. Then open Review.</p>
+      <div class="look"><b>Right</b><p>Under each switch, one plain sentence saying why that box was chosen, and one word for how sure it is: Confirmed, Probably, Possibly or Not identified. Where two boxes cannot be told apart, it says so and says what would settle it. <b>It does not choose one.</b></p></div>
+      <div class="wrongly"><b>Report if</b><p>It picks a box without saying why, or says "Confirmed" about something nobody confirmed.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Confirm a box, and see what changes</h3><span class="chip c-admin">Admin, in the app</span></div>
+      <p>Pick the box a switch actually is, then press the confirm button for that one switch.</p>
+      <div class="look"><b>Right</b><p>Only after confirming does that switch's real model, serial number and ports attach to that box. Before that, the report says those details are a proposal. Confirming one switch does not confirm any other.</p></div>
+      <div class="wrongly"><b>Report if</b><p>Saving the list also confirms things, or confirming one switch changes the state of another.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Find your way to Approvals from the app</h3><span class="chip c-admin">Admin</span></div>
+      <p>From the app, open Approvals. Then go back and open an old bookmark or link that used to point at the approvals screen inside the app.</p>
+      <div class="look"><b>Right</b><p>Approvals opens in your normal browser, already signed in as the same person. An old in-app link lands on a short page saying Approvals has moved, with one button across. It is never a blank screen or a "page not found".</p></div>
+      <div class="wrongly"><b>Report if</b><p>It asks you to sign in again, opens a blank page, or an old link dead-ends.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>A rack with no record system behind it</h3><span class="chip c-tech">Technician</span></div>
+      <p>Run a drift check as somebody whose organisation has no NetBox or ServiceNow connected, if you have such an account.</p>
+      <div class="look"><b>Right</b><p>A plain panel saying there is no record to check against yet. An admin is offered a way to connect one; anybody else is told to ask their administrator. It is an explanation, not a red error.</p></div>
+      <div class="wrongly"><b>Report if</b><p>You get a red error, a spinner that never ends, or a message with a status code in it.</p></div>
+    </li>
+
+    <li>
+      <div class="head"><h3>Photograph the same rack again</h3><span class="chip c-tech">Technician</span></div>
+      <p>Take a second photo of a rack where you confirmed a switch, and let it be read again.</p>
+      <div class="look"><b>Right</b><p>The switch you confirmed still shows its box, and the wording says it was matched from an earlier check. You should not have to confirm it twice.</p></div>
+      <div class="wrongly"><b>Report if</b><p>Your confirmation is forgotten, or a box you said was wrong comes back.</p></div>
+    </li>
+
+  </ol>
+
+  <h2>Not faults</h2>
+  <p class="intro">These are deliberate. Please do not report them; if you disagree with one, say so as an opinion rather than a fault.</p>
+  <ul class="plain">
+    <li><b>A technician cannot confirm which box a switch is.</b> Only an admin can. The way somebody at the rack gets involved is that the admin assigns them the item and they get a ServiceNow ticket.</li>
+    <li><b>Two identical switches with identical cabling are not told apart.</b> The app says so instead of choosing. That is the correct answer, not a gap.</li>
+    <li><b>A device is never deleted.</b> Something in the record but not in the rack is reported, never removed.</li>
+    <li><b>A model the app only guessed is not written.</b> It is shown as "probably" and stays out of the record.</li>
+    <li><b>On some racks the camera can only see about half the sockets</b>, because the bottom row is hidden behind cables. Those sockets read as unknown, which is honest rather than wrong.</li>
+    <li><b>A rack the customer typed in by hand is not matched to yet.</b> Everything in it reads as new. That is the piece being built now.</li>
+  </ul>
+
+  <h2>How to report something</h2>
+  <div class="box">
+    <p>Four lines is enough:</p>
+    <ul class="plain" style="margin-top:10px">
+      <li><b>The rack</b> - its RK- code from the top of the screen.</li>
+      <li><b>What you did</b> - the step number above, if it was one of them.</li>
+      <li><b>What you expected, and what you got.</b> A screenshot beats a description.</li>
+      <li><b>Roughly when</b> - the time helps us find it in the logs.</li>
+    </ul>
+    <p style="margin-top:12px">If the app refuses something and the reason is a plain sentence, that is usually the app working. If the reason is a number, a code, or nothing at all, that is worth reporting even if the refusal itself was right.</p>
+  </div>
+
+  <div class="note good"><p><b>The one thing worth breaking.</b> Try to make the app state something it cannot prove. If you can get it to say a box is a certain switch when it has no good reason, or to write something you did not approve, that is the most useful fault you can find this round.</p></div>
+
+  <footer><p>Internal test build. It points at our demo system and holds no customer data. Every screen and every refusal in this document was checked on the running system before the build was made, not only in tests.</p></footer>
+</div>
