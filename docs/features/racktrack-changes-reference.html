@@ -117,33 +117,44 @@ li{margin:0 0 7px}
 </section>
 
 <section id="tabs">
-<div class="sec-head"><span class="n">02</span><h2>The twelve tabs</h2><p>What each one shows, who can see it, and what it calls.</p></div>
+<div class="sec-head"><span class="n">02</span><h2>The twelve tabs</h2><p>Each one in full: what it is for, what is on it, where the numbers come from, who is allowed to see it, and which table the information sits in.</p></div>
 
-<p>The navigation is built in <span class="m">src/components/shell/Layout.jsx</span> from a table called <span class="m">GROUPS</span>, in three groups: the work, Records, and You. A row with no <span class="m">show</span> predicate is for everybody signed in. Below 860&nbsp;px the rail becomes a drawer behind the three lines at the top left.</p>
+<p>The navigation is built in <span class="m">src/components/shell/Layout.jsx</span> from a table called <span class="m">GROUPS</span>, in three groups: the work at the top, then Records, then You. A row can carry a <span class="m">show</span> test; a row without one is for everybody who is signed in. Below 860&nbsp;px the rail folds into a drawer behind the three lines at the top left, and the top bar keeps only the menu, the name, the bell and your initials.</p>
+
+<p>Two things are true of every tab and are not repeated below. First, <b>you only ever see your own organisation's work</b>. Every list route and every drift route is filtered to the caller's organisation, and there is no owner bypass: another organisation's drift answers 404, exactly as one that does not exist would. Second, <b>no page decides anything for itself</b>. The server sends the rows and, where there are counts, the filters that belong beside each count. The screen draws what it is given.</p>
 
 <div class="tab">
 <div class="tab-words">
-<h3>1. Dashboard <span class="chip c-muted">everyone</span></h3>
-<p>Route <span class="m">/</span>. The landing page: three panels of counts and a table of breaches. Every number that is above zero is a link into the drift list with the filter already applied. Section 3 takes it apart.</p>
-<p>Calls <span class="m">GET /api/approvals/dashboard</span>. No count badge in the header. Empty states: "No SLA clocks are running." and "No trend yet."</p>
+<h3>1. Dashboard <span class="chip c-muted">everyone signed in</span></h3>
+<p>This is the page you land on, and it answers one question: where does the work stand right now. It counts drifts three different ways and puts the ones whose clocks have run out at the top, because those are the only ones that are actually late.</p>
+<p>The first card is <b>SLA</b>, five tiles sorted so breached comes first, then at risk, then on track, then paused, then met. Underneath, if anything has breached, a short table of those drifts with a See all beside it. Then <b>By status</b>, twenty-two tiles, one for every status a drift can be in. Then, side by side, <b>By priority</b> with four tiles and <b>Trend</b>, a small table of how many drifts were raised and completed on each of the last seven days.</p>
+<p>Every tile is a link. A tile with a count above zero opens the drift list with exactly the filters the server attached to that count, so the number you clicked and the list you land on can never disagree. The page does no arithmetic of its own at all.</p>
+<p>All of it arrives in a single call to <span class="m">GET /api/approvals/dashboard</span>. The server counts rows in <span class="m">approval_plans</span> for the status and priority tiles, and joins <span class="m">approval_sla</span> for the clock tiles. Nothing is precomputed and nothing is cached; the counts are as fresh as the request. If the dashboard answer does not carry the breaches or the trend, the page fetches them separately, the breaches as a five-row list and the trend from the trends report.</p>
+<p>Anybody with a part in the workflow can open it, because a count of your own organisation's drifts gives nothing away that the list would not. When no clock has started anywhere it says "No SLA clocks are running." and the trend, with no days to show, says "No trend yet."</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals</em></div><img src="racktrack-changes-reference/img/t-dashboard.jpg" alt="" loading="lazy"></div></div>
 </div>
 
 <div class="tab">
 <div class="tab-words">
-<h3>2. My queue <span class="chip c-muted">everyone</span></h3>
-<p>Route <span class="m">/queue</span>. The same drifts arranged by what they are waiting for, and it differs by who you are signed in as. The header count is the sum of the sections.</p>
-<p>Calls <span class="m">GET /api/approvals/queue</span>. Empty at page level: "Nothing is waiting on you". Empty per section: "Nothing here."</p>
+<h3>2. My queue <span class="chip c-muted">everyone signed in</span></h3>
+<p>The dashboard tells you how the organisation is doing. This tab tells you what is waiting on <b>you</b>, and nothing else. It is the same drifts, cut a different way: grouped into sections by what each one is waiting for, in the order the server chooses to send them.</p>
+<p>Three of those sections carry a button on every row, because they are the three things a person is usually queued for: <b>Verify</b>, <b>Approve</b> and <b>Triage</b>. Pressing one opens the drift with that action already asked for, so you land on the screen with the right dialog rather than hunting for the button. The number beside the page title is simply the sum of the sections, and each section shows its own count beside its heading.</p>
+<p>It comes from <span class="m">GET /api/approvals/queue</span>. The server works out the sections from two things together: the capabilities of whoever is asking, and the statuses of the drifts in their organisation. This is why two people looking at this tab at the same moment see completely different pages. An approver sees drifts waiting for a signature. A technician sees drifts waiting for a second scan. An admin sees the ones waiting to be triaged.</p>
+<p>The tab has no storage of its own. Every row is a plan out of <span class="m">approval_plans</span>; the grouping is worked out per request and thrown away. That is deliberate, because a queue that is stored goes stale the moment somebody else acts on a drift.</p>
+<p>Everyone can open it, since a queue that holds nothing is a perfectly good answer. When there are no sections at all it says "Nothing is waiting on you", and a section that has emptied out says "Nothing here."</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/queue</em></div><img src="racktrack-changes-reference/img/t-queue.jpg" alt="" loading="lazy"></div></div>
 </div>
 
 <div class="tab">
 <div class="tab-words">
-<h3>3. Drifts <span class="chip c-muted">everyone</span></h3>
-<p>Route <span class="m">/drifts</span>. The full list, nine columns: Drift, Rack, Datacentre, Status, Priority, Risk, Assignee, SLA, Updated. Search by rack, drift or person. Filter by status, datacentre, rack, priority, risk, assignee and clock.</p>
-<p>Calls <span class="m">GET /api/approvals/plans</span>. Empty: "No drift matches these filters." A row opens the drift.</p>
+<h3>3. Drifts <span class="chip c-muted">everyone signed in</span></h3>
+<p>The full list, and the page that everything else opens into. Click a dashboard tile, click a figure in a report, follow a link somebody sent you, and you arrive here with the filters already applied.</p>
+<p>Nine columns: the drift number, the rack with its id underneath, the datacentre, and then chips for status, priority and risk, followed by the assignee, the SLA and when it was last touched. Six of those columns sort. Priority, risk and status do not sort alphabetically; they sort by their place in the workflow, so the order reads P1, P2, P3, P4 rather than alphabetically, which would be useless.</p>
+<p>Above the table is a search box covering rack, drift number and person, which waits for you to stop typing rather than firing on every key, and nine filters behind a Filters button: status, datacentre, rack, priority, risk, assignee, SLA state and a From and To date. The number on the Filters button is how many are currently set, and Clear removes all of them.</p>
+<p><b>Every filter lives in the address bar</b>, and that is the whole design of this page. It means a tile, a report figure and a link you paste into a message all produce the identical list. It also means the page can carry a filter it has no control for: a key it does not recognise is kept, sent to the server exactly as it arrived, and shown as a small tag you can remove. Paging is by cursor, twenty-five rows at a time, and the page keeps a trail of the cursors it has seen so Previous works properly rather than re-running the query.</p>
+<p>The rows come from <span class="m">GET /api/approvals/plans</span>, which reads <span class="m">approval_plans</span>; the assignee names on each row are gathered from that drift's rows in <span class="m">approval_tickets</span>. Everyone signed in can open it, because it is scoped to their own organisation. With filters that match nothing it says "No drift matches these filters."</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/drifts</em></div><img src="racktrack-changes-reference/img/t-drifts.jpg" alt="" loading="lazy"></div></div>
 </div>
@@ -151,8 +162,11 @@ li{margin:0 0 7px}
 <div class="tab">
 <div class="tab-words">
 <h3>4. Tickets <span class="chip c-warn">triage, assign, approve, audit or admin</span></h3>
-<p>Route <span class="m">/tickets</span>. Every work ticket across every drift: who it went to, their email, its state, the ServiceNow record and the finding they reported. The header count is the rows after the client-side search.</p>
-<p>Calls <span class="m">GET /api/approvals/tickets</span>. Empty: "No ticket matches."</p>
+<p>A drift is a rack. A ticket is one job for one person. This tab is every ticket that has ever been raised, across every drift, which is what you want when the question is "who is holding what" rather than "how is that rack doing".</p>
+<p>Eight columns: the drift it belongs to, the rack, the item itself as a type and a name, who it went to with their email underneath, the state of the ticket here, the ServiceNow record with its number as a link and its state in ServiceNow underneath, the clock, and when it was raised. A row opens the drift the ticket belongs to.</p>
+<p>You can filter by ticket state and search across rack, item, person and ServiceNow number. The search is done in the browser over the two hundred rows the page loads, so it is instant but it does not reach past those rows. The count beside the title is the rows left after that search, not the total.</p>
+<p>It comes from <span class="m">GET /api/approvals/tickets</span> and the rows are <span class="m">approval_tickets</span>, which is unique on the pair of drift and item, so <b>one item can never carry two tickets</b>. The assignee is stored three ways over, as a NetBox contact id, a RackTrack user id and an email address, because the person at the rack may exist in one of those systems and not the others. The ServiceNow number, its state and any error live in the same row.</p>
+<p>A technician does not get this tab, and the reason is not secrecy. A technician does not hold a queue of other people's work; their own ticket reaches them by email and in the app. The tab is for the people who hand work out and the people who audit it. An empty result says "No ticket matches."</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/tickets</em></div><img src="racktrack-changes-reference/img/t-tickets.jpg" alt="" loading="lazy"></div></div>
 </div>
@@ -160,7 +174,10 @@ li{margin:0 0 7px}
 <div class="tab">
 <div class="tab-words">
 <h3>5. Verification queue <span class="chip c-warn">verify, triage or admin</span></h3>
-<p>Route <span class="m">/verification</span>. The same list component as Drifts, filtered to the drifts waiting for the second scan that proves the fix. Section 10 explains what a verification actually compares.</p>
+<p>Before anybody signs a drift off, somebody has to go back and prove the work was actually done. This tab is the list of drifts sitting at that point and waiting for a second scan of the rack.</p>
+<p>It is the same list component as Drifts, with the status filter fixed, so the columns, the search and the other filters all behave exactly as they do there. The status filter itself is hidden, because changing it would take you out of the queue you came for.</p>
+<p>The data is the same call and the same table, <span class="m">GET /api/approvals/plans</span> over <span class="m">approval_plans</span>, with the status preset. What a verification actually compares, and why one failure fails the whole thing, is section 10.</p>
+<p>The permission is the widest of any tab that is not open to everybody, because the capability it asks for is <span class="m">verify</span>, and every ordinary member has that. This is on purpose: the person who can walk back to the rack with a phone is usually the technician, not the admin. Requiring an admin to run verifications would mean an admin has to be standing in the datacentre.</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/verification</em></div><img src="racktrack-changes-reference/img/t-verification.jpg" alt="" loading="lazy"></div></div>
 </div>
@@ -168,7 +185,10 @@ li{margin:0 0 7px}
 <div class="tab">
 <div class="tab-words">
 <h3>6. Approval queue <span class="chip c-warn">approve, audit or admin</span></h3>
-<p>Route <span class="m">/approval</span>. Drifts waiting for a signature. An approver sees what is theirs to sign and nothing else; they cannot triage, assign or write.</p>
+<p>The drifts waiting for a signature, and the whole of an approver's job in one page. Again the same list component with the status fixed, reading the same call and the same table.</p>
+<p>The reason it is its own tab rather than a saved filter is that an approver has exactly one thing to do and should not have to find it. An approver cannot triage, cannot assign and cannot write; those buttons do not appear for them anywhere, and the server refuses them even if the address is typed by hand.</p>
+<p>Two rules bite hardest here and both are covered in section 8. The person who resolved a ticket on a drift is not offered the approve button at all, so a drift you worked on will appear in the list for your colleagues and not for you. And a drift with any item still undecided cannot be approved, so the queue holds things that look ready but are not quite.</p>
+<p>An auditor can see this queue too. They can see what is waiting and who it is waiting on, but they have no button on it.</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/approval</em></div><img src="racktrack-changes-reference/img/t-approval.jpg" alt="" loading="lazy"></div></div>
 </div>
@@ -176,26 +196,34 @@ li{margin:0 0 7px}
 <div class="tab">
 <div class="tab-words">
 <h3>7. Reports <span class="chip c-warn">admin, audit or triage</span></h3>
-<p>Route <span class="m">/reports/:name</span>. Eight flat tables behind eight tabs, each with a CSV beside it. Section 13 lists them. Navigation is by tab only; there is no search and no filter.</p>
-<p>Calls <span class="m">GET /api/approvals/reports/:name</span>, CSV at the same path with <span class="m">.csv</span>. Empty: "This report has no rows yet."</p>
+<p>Eight flat tables behind eight tabs, for the questions a manager asks rather than the ones an operator asks. Backlog, SLA, Quality, Trends, Resolvers, Approvals, Writes and Exceptions. Section 13 says what each one answers.</p>
+<p>Each report is a plain table with a CSV link beside the heading. No column sorts and no row is clickable, but <b>a number above zero that carries filters becomes a link</b> into the drift list, which is how you get from a figure in a report to the actual records behind it. Two of the eight, Approvals and Exceptions, return no filters, so those two have no way through.</p>
+<p>A report is fetched with <span class="m">GET /api/approvals/reports/:name</span> and downloaded from the same path with <span class="m">.csv</span> on the end. Every figure is <b>computed at the moment you ask</b>, by querying <span class="m">approval_plans</span>, <span class="m">approval_items</span>, <span class="m">approval_tickets</span>, <span class="m">approval_decisions</span> and <span class="m">approval_sla</span>. There is no reporting table, no nightly job and no cache, so a report can never be out of date and a slow report means a slow query rather than a stale one.</p>
+<p>The three roles that can read it are the ones who are answerable for the numbers: the admin who runs the organisation, the auditor who checks it, and the site manager who triages. A report with no rows yet says "This report has no rows yet."</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/reports</em></div><img src="racktrack-changes-reference/img/t-reports.jpg" alt="" loading="lazy"></div></div>
 </div>
 
 <div class="tab">
 <div class="tab-words">
-<h3>8. Exceptions <span class="chip c-warn">admin, audit, triage or approve</span></h3>
-<p>Route <span class="m">/exceptions</span>. Differences somebody has decided to keep. Reading is open to everyone in those roles on purpose: an exception only admins can see is a way of hiding drift. Adding and revoking need admin or triage.</p>
-<p>The header count is the number of <b>active</b> ones, not the total. Empty: "No exceptions."</p>
+<h3>8. Exceptions <span class="chip c-warn">read: admin, audit, triage or approve &nbsp;&middot;&nbsp; write: admin or triage</span></h3>
+<p>Not every difference between a rack and the record is a mistake. Some are deliberate and everybody involved knows about them. An exception writes that decision down so the same difference stops being raised as a question every time somebody photographs the rack.</p>
+<p>Eight columns: the item as a type and a name with the attribute underneath, where it applies as a datacentre with the rack underneath or the words "every rack", the kind, the state, the owner, when it expires or the word "never", the justification, and a Revoke button for those allowed to use it. There are no filters and no paging; the list loads whole, because an organisation with hundreds of exceptions has a different problem.</p>
+<p>The state is worked out on the page rather than stored, and the order of the test matters: revoked beats expired, expired beats not yet started, not yet started beats review due, and anything left is active. <b>The count beside the title is the active ones only</b>, not the total, which is the number you actually want to know.</p>
+<p>It comes from <span class="m">GET /api/approvals/exceptions</span> and lives in <span class="m">approval_exceptions</span>. In that table <b>an empty field means any</b>: no rack means every rack in the datacentre, no item type means any type, no attribute means the whole item. Revoking sets a timestamp; nothing is ever deleted.</p>
+<p>Reading is open to four roles on purpose, and the reasoning is written into the code: an exception that only admins can see is a way of hiding drift, which is the opposite of what it is for. Creating and revoking need an admin or a site manager. An empty list says "No exceptions."</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/exceptions</em></div><img src="racktrack-changes-reference/img/t-exceptions.jpg" alt="" loading="lazy"></div></div>
 </div>
 
 <div class="tab">
 <div class="tab-words">
-<h3>9. Maintenance windows <span class="chip c-warn">admin, audit, triage or approve</span></h3>
-<p>Route <span class="m">/windows</span>. Agreed change windows per datacentre. State is computed on the page: Upcoming, Open now, Over. A window changes nothing about who decides; its only effect is that it pauses every clock.</p>
-<p>Empty: "No maintenance windows."</p>
+<h3>9. Maintenance windows <span class="chip c-warn">read: admin, audit, triage or approve &nbsp;&middot;&nbsp; write: admin or triage</span></h3>
+<p>A window is a span of time in one datacentre when everybody has agreed that work is happening. It exists for one reason, and it is a fairness reason rather than a workflow one.</p>
+<p>Seven columns: the datacentre, the state, when it starts, when it ends, a note, who added it, and a Delete button for those allowed. The state is worked out on the page as you look at it: upcoming before it starts, open now while it is running, over once it has ended. A window is half open, so it includes its start instant and excludes its end instant.</p>
+<p>It comes from <span class="m">GET /api/approvals/windows</span> and lives in <span class="m">approval_windows</span>, where a window always belongs to exactly one datacentre. Unlike an exception, deleting a window really deletes the row; there is no revoked flag.</p>
+<p><b>A window changes nothing about the workflow.</b> It does not change who decides, what needs approving, or what gets written. Its only effect is on the clocks: while a window is open, every clock on every drift in that datacentre is paused, and when it closes they resume with their targets moved out by exactly what the pause cost. Nobody is late for a change everyone agreed to. Section 9 covers how that arithmetic works.</p>
+<p>An empty list says "No maintenance windows."</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/windows</em></div><img src="racktrack-changes-reference/img/t-windows.jpg" alt="" loading="lazy"></div></div>
 </div>
@@ -203,34 +231,47 @@ li{margin:0 0 7px}
 <div class="tab">
 <div class="tab-words">
 <h3>10. Audit <span class="chip c-warn">audit or admin</span></h3>
-<p>Route <span class="m">/audit</span>. Every move across every drift, with who did it and when. Read only, and the sub-heading says so. Columns: When, Drift, Rack, Action, Who, Status, Reason. Search is client side; Action, From and To are sent to the server as well.</p>
-<p>Calls <span class="m">GET /api/approvals/events</span>. If that answers 404 the page falls back to joining the events of the 25 most recent drifts and says so in a notice. Empty: "No events match."</p>
+<p>Every move on every drift, in one place, newest first. This is the page you open when somebody asks who did what and when, and it is the page that makes the rest of the product defensible.</p>
+<p>Seven columns: when it happened, which drift, which rack, what the action was, who did it, the status change written as one status to another, and the reason if there was one. A row opens the drift, so you can go from a line of history straight to the record.</p>
+<p>The search box works in the browser across the drift number, rack, action, reason and person. Three more controls go to the server as well as being applied here: an action, a From date and a To date. The list of actions in that dropdown is <b>built from the rows themselves</b> rather than a fixed list, so it only ever offers you actions that actually occurred.</p>
+<p>It asks <span class="m">GET /api/approvals/events</span>. That route is the one assumption in the whole front end, and the page is honest about it: if the route answers 404, it falls back to loading the twenty-five most recent drifts and joining their histories, and it prints a notice saying that is what you are looking at. The pager disappears in that mode, because it is no longer a real page through the data.</p>
+<p>The rows live in <span class="m">approval_events</span>, and that table is the reason this tab can be trusted. It is <b>append only, and the database enforces it</b>: a trigger raises an error on any update, and another raises on any delete while the drift still exists. There is no route that writes to it directly and no screen that can edit it. The sub-heading on the page says read only, and that is a statement about the table, not about the screen.</p>
+<p>Only an auditor or an admin can open it. With nothing matching it says "No events match."</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/audit</em></div><img src="racktrack-changes-reference/img/t-audit.jpg" alt="" loading="lazy"></div></div>
 </div>
 
 <div class="tab">
 <div class="tab-words">
-<h3>11. Notifications <span class="chip c-muted">everyone</span></h3>
-<p>Route <span class="m">/notifications</span>. Two tabs, Inbox and Preferences. The rail entry and the bell both carry the unread count; above 99 the bell shows 99+. Opening the inbox asks the server again, so Mark all read covers anything that arrived since the last poll.</p>
-<p>Empty: "No notifications". The preferences table always lists all fifteen events.</p>
+<h3>11. Notifications <span class="chip c-muted">everyone signed in</span></h3>
+<p>Two tabs on one page. <b>Inbox</b> is what has been sent to you. <b>Preferences</b> is what you want to be sent in future.</p>
+<p>Each notice in the inbox shows a dot if it is unread, its subject, how long ago it arrived, the body, and the name of the event that caused it. A notice about a drift carries an Open drift button, which marks it read on the way through. Mark all read appears only when something is unread, and it works through them one at a time. Opening this tab asks the server again rather than trusting the count the bell last polled, so Mark all read really does cover everything that has arrived.</p>
+<p>The preferences tab is a table of all fifteen events with three columns: in the app, email, and Teams. <b>Teams is always the word Off</b>, and it is not a control. There are no tokens for it, and the server refuses the channel outright rather than accepting a setting it cannot honour.</p>
+<p>The inbox comes from <span class="m">GET /api/approvals/notifications</span> and the settings from <span class="m">.../prefs</span>. Notices live in <span class="m">approval_notifications</span>, one row per person per channel per event, each carrying a unique key made of the event, the drift, <b>the version of the drift</b>, the person and the channel. That version is what stops the same thing being sent twice while still letting a drift that goes round the loop again tell people about it again.</p>
+<p>Everyone can open this tab, and everyone sees only their own. The bell in the top bar carries the same unread count and shows 99+ above ninety-nine. An empty inbox says "No notifications".</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/notifications</em></div><img src="racktrack-changes-reference/img/t-notifications.jpg" alt="" loading="lazy"></div></div>
 </div>
 
 <div class="tab">
 <div class="tab-words">
-<h3>12. Settings <span class="chip c-bad">admin only</span></h3>
-<p>Route <span class="m">/settings</span>. Five cards, each saved on its own key. A non-admin who reaches the route is told: "Settings are for the organization admin and the owner." Section 14 lists every field.</p>
+<h3>12. Settings <span class="chip c-bad">admin and owner only</span></h3>
+<p>Everything on this page is per organisation. None of it is fixed in the product, and two organisations on the same server can run completely different targets, calendars and approval rules.</p>
+<p>Five cards, each with its own Save button, because each writes a different key and a failure on one should not lose your work on the others. <b>SLA targets</b> is a grid of four priorities by four clocks, each cell a number and a unit, where the unit can be minutes, hours, business hours or business days. <b>Business calendar</b> sets the working days and the start and end of the day. <b>Dual approval</b> chooses which risk levels need two different people to sign. <b>Escalation</b> sets when a clock warns, breaches and escalates, as percentages of its own target. <b>Notification defaults</b> decides what a new person in the organisation receives.</p>
+<p>A red star marks the fields that must be filled and there is one line at the top saying what the star means. Nothing else is marked, because an optional field needs no label.</p>
+<p>Each card saves with <span class="m">PUT /api/approvals/settings/:key</span> and the values live in <span class="m">approval_settings</span>, one row per organisation per key. A key this page does not know about is left alone, and a value is written back in the same shape it was read in, so an older setting is never quietly reformatted.</p>
+<p>Only an owner or an organisation admin can open it. Somebody else who types the address is told plainly: "Settings are for the organization admin and the owner."</p>
+<p>Two of the five cards have real faults today, described in section 19. It is worth reading that before trusting what this page shows you.</p>
 </div>
 <div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/settings</em></div><img src="racktrack-changes-reference/img/t-settings.jpg" alt="" loading="lazy"></div></div>
 </div>
 
-<h4>On a phone</h4>
+<h4>And all of it on a phone</h4>
 <div class="tab">
 <div class="tab-words">
-<p>Below 720&nbsp;px the shared table component stops being a table. Each row becomes a card: the first cell heads it, and every other cell sits beside its column name. The drifts table is 977&nbsp;px wide, so on a 390&nbsp;px screen the old layout showed three columns and hid six behind a sideways drag. Above 720&nbsp;px nothing changed.</p>
-<p>The change is two pieces: <span class="m">data-label</span> on every cell plus a <span class="m">.cell</span> wrapper in <span class="m">src/components/ui/index.jsx</span>, and one media block at the end of <span class="m">src/styles/ui.css</span>.</p>
+<p>The lists above are data tables, and a data table is the one thing that does not survive a narrow screen. The drifts table is 977&nbsp;px wide. On a 390&nbsp;px phone that meant three columns were visible and six were not: status, priority, risk, assignee, SLA and updated all sat behind a sideways drag inside a scroller with no visible bar, which most people never find.</p>
+<p>Below 720&nbsp;px every row is now a card instead. The first cell heads the card, and each remaining cell sits on its own line beside the name of its column. Nothing is hidden, nothing is abbreviated, and the page never slides left and right. Above 720&nbsp;px the table is exactly as it was: the same header row, the same columns, the same sorting.</p>
+<p>It is two small changes in one place each, which is why every list got it at once. The shared table component in <span class="m">src/components/ui/index.jsx</span> now puts the column name on each cell and wraps the cell's contents, and one media block at the end of <span class="m">src/styles/ui.css</span> does the rest. No page was touched.</p>
 </div>
 <div class="shot ph"><div class="phone"><img src="racktrack-changes-reference/img/t-phone.jpg" alt="" loading="lazy"></div></div>
 </div>
