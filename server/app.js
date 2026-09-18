@@ -645,20 +645,27 @@ try {
   // PLATFORM owner — so nobody at a customer could scan a rack, let alone
   // export one, and the honest answer to "can our admin use this?" was no.
   //
-  // Three tiers now. An engineer standing at a rack scans it and compares it.
-  // An admin decides what gets written and writes it. Only the platform owner
-  // touches the credentials that reach a customer's NetBox.
-  // The write gate is not here but on the export route itself, so it can say
-  // WHY it refused — "an admin approves what gets written" is a useful answer;
-  // a bare 403 from middleware is not.
+  // Three tiers now. A technician (a member) standing at a rack adopts the
+  // scan, compares it to NetBox, reads their own plan and hands it to the
+  // admin - six routes, and nothing else. An admin assigns, decides and
+  // writes. Only the platform owner touches the credentials that reach a
+  // customer's NetBox.
+  //
+  // scans, plans and netbox are mounted behind requireAuth only, and every
+  // route on those three routers names its own roles with routes/netbox/gates
+  // - the member's six routes take gates.technician, the rest gates.admin. A
+  // gate on the route can say WHY it refused; a bare 403 from the mount
+  // cannot, and it would shut the technician out of the routes that are
+  // theirs. switches and unmanaged stay admin-only at the mount.
+  const nbAny   = auth.requireAuth;                                     // then a gate per route
   const nbField = auth.requireRole('owner', 'org_admin', 'site_manager');
   const nbOwner = auth.requireRole('owner');   // authenticates too — see requireRole
 
-  app.use('/api/nb/scans',      nbField, require('./routes/netbox/scans'));
+  app.use('/api/nb/scans',      nbAny,   require('./routes/netbox/scans'));
   app.use('/api/nb/switches',   nbField, require('./routes/netbox/switches'));
   app.use('/api/nb/unmanaged',  nbField, require('./routes/netbox/unmanaged'));
-  app.use('/api/nb/plans',      nbField, require('./routes/netbox/plans'));
-  app.use('/api/nb/netbox',     nbField, require('./routes/netbox/netbox'));
+  app.use('/api/nb/plans',      nbAny,   require('./routes/netbox/plans'));
+  app.use('/api/nb/netbox',     nbAny,   require('./routes/netbox/netbox'));
   // Connectors hold the NetBox token itself.
   app.use('/api/nb/connectors', nbOwner, require('./routes/netbox/connectors'));
   logger.info({ event: 'router.loaded', router: 'netbox', prefix: '/api/nb' },
