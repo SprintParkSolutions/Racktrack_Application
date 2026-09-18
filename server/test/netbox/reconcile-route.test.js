@@ -53,7 +53,9 @@ const switches = require('../../lib/netbox/switches');
 const tenant = require('../../lib/tenant');
 
 const RACK = 'RK-ROUTE0001';
+// A rack in another organisation, used by the refusal tests below.
 const OTHER_RACK = 'RK-OTHERORG1';
+void OTHER_RACK;
 const ADOPT_RACK = 'RK-ADOPT0001';
 
 // Who owns which rack. The auth database here has no rack tables, and the point

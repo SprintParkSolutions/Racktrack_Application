@@ -266,6 +266,13 @@ function migrate(scope, legacyScopes = []) {
       moved.push(b.deviceUid);
       changed = true;
     }
+    // The legacy file is emptied whether or not anything moved. A binding that
+    // clashed is already held here under this scope, and one that moved is now
+    // held twice. Leaving the old file behind meant every later open drained
+    // it again, so a box somebody had said "not in this rack" about came back
+    // on the next page load: forget() removed it from this scope, and migrate
+    // copied it straight back out of the old one. A drain happens once.
+    write(from, { ...old, items: [], drainedInto: String(scope || ''), drainedAt: nowIso() });
     if (changed) write(scope, db);
   }
   return moved;
