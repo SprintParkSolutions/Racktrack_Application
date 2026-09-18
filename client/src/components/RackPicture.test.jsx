@@ -27,14 +27,54 @@ describe('RackPicture', () => {
     const { container } = render(<RackPicture devices={devices} size={12} />);
     // Twelve shelves drawn, and the rack says how tall it is.
     expect(screen.getByText('12U rack')).toBeTruthy();
-    expect(container.querySelectorAll('[title$="is empty"]').length).toBe(10);
+    // A shelf with nothing on it says what is known - that no box was
+    // detected there - rather than calling the shelf free.
+    expect(container.querySelectorAll('[title^="No box detected at U"]').length).toBe(10);
+    expect(container.querySelectorAll('[title$="is empty"]').length).toBe(0);
     expect(screen.getByTitle('U12, Core switch, 24 ports')).toBeTruthy();
     expect(screen.getByTitle('U11, Patch panel, 24 ports')).toBeTruthy();
   });
 
-  test('a rack height nobody recorded still fits the boxes that were seen', () => {
+  test('a rack height nobody recorded is never stated as one', () => {
     render(<RackPicture devices={devices} size={null} />);
-    expect(screen.getByText('12U rack')).toBeTruthy();
+    expect(screen.getByText('Boxes the camera placed')).toBeTruthy();
+    expect(screen.getByText('Rack height not recorded')).toBeTruthy();
+    expect(screen.queryByText('12U rack')).toBe(null);
+    // The boxes that were seen are still drawn.
+    expect(screen.getByTitle('U12, Core switch, 24 ports')).toBeTruthy();
+  });
+
+  test('a rack taller than the picture says how much of it is drawn', () => {
+    render(<RackPicture devices={[{ uid: 'd9', name: 'Top box', position: 70, portCount: 8, cvClass: 'Switch' }]} size={80} />);
+    expect(screen.getByText('80U rack')).toBeTruthy();
+    expect(screen.getByText('U1 to U60 drawn here')).toBeTruthy();
+    // The box above the last shelf drawn is named rather than dropped.
+    expect(screen.getByText('Above U60, not drawn here')).toBeTruthy();
+    expect(screen.getByText(/Top box/)).toBeTruthy();
+  });
+
+  test('two boxes on one shelf are not filed as unplaced', () => {
+    render(<RackPicture
+      devices={[
+        { uid: 'a', name: 'First', position: 14, portCount: 24, cvClass: 'Switch' },
+        { uid: 'b', name: 'Second', position: 14, portCount: 24, cvClass: 'Switch' },
+      ]}
+      size={20}
+    />);
+    expect(screen.getByText('Two boxes share this shelf in the photo')).toBeTruthy();
+    expect(screen.queryByText('Seen in the photo but not on a shelf')).toBe(null);
+  });
+
+  test('a tall box whose span is part taken is listed once, not drawn twice', () => {
+    const { container } = render(<RackPicture
+      devices={[
+        { uid: 'a', name: 'Single', position: 15, portCount: 24, cvClass: 'Switch' },
+        { uid: 'b', name: 'Tall', units: [14, 15, 16], portCount: 24, cvClass: 'Server' },
+      ]}
+      size={20}
+    />);
+    expect(screen.getByText('Two boxes share this shelf in the photo')).toBeTruthy();
+    expect(container.querySelectorAll('[title^="U14, Tall"]').length).toBe(0);
   });
 
   test('one device can be lifted out of the rest', () => {

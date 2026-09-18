@@ -6,6 +6,7 @@ import PlacePicker from '../components/PlacePicker.jsx';
 import { getJSON, setJSON } from '../utils/safeStorage';
 import { apiUrl, authFetch } from '../utils/api';
 import { testLogin, readSwitch, toServerReading, canReadSwitches } from '../utils/snmpClient';
+import { settleAdvice, unclearMatch } from '../utils/matchEvidence';
 import styles from './SwitchTestPage.module.css';
 
 // Switch test - the phone talking to a switch directly, over SNMP.
@@ -97,6 +98,11 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' };
  * the record could not be made.
  */
 const serverIdFor = (sw, rackId) => (rackId && sw.serverIds ? sw.serverIds[rackId] : null) || null;
+
+/** What the server said about one switch's place, whichever shape it sent. */
+const reasonFor = (view, id) => (view && view.reasons && view.reasons[id])
+  || ((view && view.switches) || []).find((s) => String(s.id) === String(id))?.autoMatch
+  || null;
 
 async function ensureServerSwitchId(rackId, sw) {
   if (!rackId) return null;
@@ -345,9 +351,16 @@ export default function SwitchTestPage() {
       // this rack": falling back to the server's proposal for an empty stored
       // place made a saved "none" spring back to the suggestion the moment
       // Save finished, which read as Save not working.
+      //
+      // Except where the evidence cannot tell two boxes apart. A tie is not a
+      // match with a caveat, it is two matches, and one press of Save places
+      // would store the coin toss. Review leaves those empty; so does this.
       const start = {};
       for (const s of view.switches || []) {
-        start[s.id] = view.suggested ? (s.autoMatch?.deviceUid || '') : (s.matchedTo || '');
+        const unclear = unclearMatch(reasonFor(view, s.id));
+        start[s.id] = view.suggested
+          ? (unclear ? '' : (s.autoMatch?.deviceUid || ''))
+          : (s.matchedTo || '');
       }
       setMatch(start);
 
@@ -1040,12 +1053,20 @@ export default function SwitchTestPage() {
                   />
                   {/* Nothing has been stored for this rack yet, so what is
                       showing is the server's proposal. Say so where it shows,
-                      rather than letting it read as a place somebody chose. */}
-                  {places.suggested && match[serverIdFor(sw, rackId)] && (
-                    <p className={styles.proposal}>
-                      This place is a proposal from the photo. Press Save places to keep it.
-                    </p>
-                  )}
+                      rather than letting it read as a place somebody chose.
+                      Where the photo could not tell two boxes apart there is no
+                      proposal to keep, so it says what would settle it. */}
+                  {places.suggested && (match[serverIdFor(sw, rackId)]
+                    ? (
+                      <p className={styles.proposal}>
+                        This place is a proposal from the photo. Press Save places to keep it.
+                      </p>
+                    )
+                    : (
+                      <p className={styles.proposal}>
+                        {settleAdvice(reasonFor(places, serverIdFor(sw, rackId)), false)}
+                      </p>
+                    ))}
                 </>
               )}
 

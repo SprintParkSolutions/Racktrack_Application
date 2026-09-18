@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useSmartBack } from '../hooks/useSmartBack';
 import styles from './SpecificationsPage.module.css';
 import desk from './SwitchInformationPage.module.css';
@@ -153,55 +153,11 @@ function looksLikeBackendNoise(msg) {
   );
 }
 
-function SourceBadge({ sw }) {
-  const source = sw.discovery_source || '';
-  const conf = sw.ocr_conf != null ? Math.round(sw.ocr_conf * 100) : null;
-
-  let label, bg, color;
-  if (sw._fromSwitch && sw._switchProposal) {
-    // A switch was matched to this box by the machine alone, so what follows is
-    // a proposal and says so.
-    label = 'Proposal, not confirmed';
-    bg = '#ffffff';
-    color = '#b26a00';
-  } else if (sw._fromSwitch) {
-    // The box answering for itself. Nothing the camera can offer beats it.
-    label = 'From the switch';
-    bg = 'rgba(15,123,79,.10)';
-    color = '#0f7b4f';
-  } else if (sw._fromOcr) {
-    // From the rack photo - confidence shown when available.
-    label = conf != null ? `Photo ${conf}%` : 'From photo';
-    bg = '#ffffff';
-    color = '#717171';
-  } else if (source.startsWith('ocr')) {
-    label = conf != null ? `Photo ${conf}%` : 'From photo';
-    bg = '#ffffff';
-    color = '#717171';
-  } else if (source === 'override') {
-    label = 'Manual';
-    bg = '#ffffff';
-    color = '#717171';
-  } else if (source === 'synth') {
-    label = 'Synth';
-    bg = '#ffffff';
-    color = '#717171';
-  } else {
-    label = 'CMDB';
-    bg = '#ffffff';
-    color = '#717171';
-  }
-
-  return (
-    <span style={{
-      fontSize: '.6rem', fontWeight: 600, textTransform: 'uppercase',
-      letterSpacing: '.04em', padding: '2px 6px', borderRadius: 4,
-      background: bg, color, border: '1px solid #ececec',
-    }}>
-      {label}
-    </span>
-  );
-}
+/* The card's own labelling says where every value came from: the pill beside
+   the title, and the line under it for a match nobody has confirmed. A second
+   badge component sat here saying the same things in different words and was
+   rendered nowhere, so a later reader would have taken it for the live rule.
+   One piece of code decides what the badge says, and it is the card. */
 
 // Stable per-switch identifier for localStorage keys. Uses serial > mac >
 // position as the primary key - deliberately NOT manufacturer/model
@@ -1587,6 +1543,9 @@ function useSwitchData(rackId) {
   // stating its own model outranks OCR of a photograph of it, so where a
   // reading has been matched to a box in this rack, it wins.
   const [liveByU, setLiveByU] = useState(null);
+  // Whether this rack's places are still an unsaved proposal, so the note above
+  // the list can say why no switch is speaking for a card.
+  const [placesUnsaved, setPlacesUnsaved] = useState(false);
   const [scanLoaded, setScanLoaded] = useState(!!scanCachedDevs);
   const [attempt, setAttempt] = useState(0);   // bumped by recheck() to re-run the effects
 
@@ -1681,6 +1640,16 @@ function useSwitchData(rackId) {
         const v = await authFetch(apiUrl(`/api/nb/scans/${id}/reconcile`));
         if (!v.ok || cancelled) return;
         const view = await v.json();
+        // A place nobody has saved is a proposal from the photo. Filling these
+        // cards from it put a make, model, serial and firmware on a box under
+        // no caveat at all, so a guess read as the box's own word. The cards
+        // stay as the camera left them, and the note above says why.
+        if (view.suggested) {
+          const offered = (view.switches || [])
+            .some((s) => s.read && (s.matchedTo || s.autoMatch?.deviceUid));
+          if (!cancelled) { setLiveByU({}); setPlacesUnsaved(offered); }
+          return;
+        }
         const uOf = new Map((view.devices || []).map((d) => [d.uid, d.position]));
         const asksConfirm = serverReportsConfirmations(view);
         const byU = {};
@@ -1708,7 +1677,7 @@ function useSwitchData(rackId) {
             ports: Number(sw.ports) || 0,
           };
         }
-        if (!cancelled) setLiveByU(byU);
+        if (!cancelled) { setLiveByU(byU); setPlacesUnsaved(false); }
       } catch { /* the camera's view still stands on its own */ }
     })();
     return () => { cancelled = true; };
@@ -1797,7 +1766,7 @@ function useSwitchData(rackId) {
     || !(sw.model_number || loadOverride(rackId, sw, 'model'))
   )).length;
 
-  return { status, ocrStatus, recheck, switches, unidentified };
+  return { status, ocrStatus, recheck, switches, unidentified, placesUnsaved };
 }
 
 // The states where work is genuinely in flight. Carries a live indicator so
@@ -1886,7 +1855,31 @@ function LabelProgressNote({ ocrStatus, unidentified, onRetry }) {
   );
 }
 
-function SwitchInfoBody({ rackId, status, ocrStatus, switches, recheck, unidentified }) {
+/**
+ * Why no switch is speaking for these cards: the places for this rack have
+ * never been saved, so nothing has been matched to a box yet. One line, with
+ * the way to fix it, instead of cards that are silently short of a make and a
+ * model somebody has already read.
+ */
+function PlacesProposalNote({ rackId }) {
+  if (!rackId) return null;
+  return (
+    <div style={{
+      marginBottom: 14, padding: '10px 14px', borderRadius: 10,
+      background: '#ffffff', border: '1px dashed #e6e6e6',
+      fontSize: '.76rem', color: '#b26a00', lineHeight: 1.5,
+    }}>
+      The places for this rack are still a proposal, so what the switches said is not
+      on these cards yet.{' '}
+      <Link to={`/results/${rackId}/review`} style={{ color: '#121212', fontWeight: 700 }}>
+        Open Review
+      </Link>{' '}
+      and confirm which switch is which box.
+    </div>
+  );
+}
+
+function SwitchInfoBody({ rackId, status, ocrStatus, switches, recheck, unidentified, placesUnsaved }) {
   if (status === 'loading') {
     return <WorkingPanel
       title="Finding switches…"
@@ -1909,6 +1902,7 @@ function SwitchInfoBody({ rackId, status, ocrStatus, switches, recheck, unidenti
 
   return (
     <>
+      {placesUnsaved && <PlacesProposalNote rackId={rackId} />}
       <SwitchPicker switches={switches} rackId={rackId} />
       <LabelProgressNote ocrStatus={ocrStatus} unidentified={unidentified} onRetry={recheck} />
     </>

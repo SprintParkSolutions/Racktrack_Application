@@ -108,6 +108,13 @@ button.box { cursor: pointer; }
 }
 .dim { opacity: .34; }
 
+/* What a blank shelf means, said once under the picture so the column is not
+   read as a complete inventory of the rack. */
+.blankNote {
+  margin: 0;
+  font-size: 11.5px; line-height: 1.45; color: var(--muted);
+}
+
 /* Boxes the camera saw but could not put on a shelf. They are still real, so
    they are still offered; they just have nowhere to be drawn. */
 .loose { display: flex; flex-direction: column; gap: 6px; }

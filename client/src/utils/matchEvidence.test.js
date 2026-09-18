@@ -1,8 +1,8 @@
 import { describe, test, expect } from 'vitest';
 import {
   confidenceWord, confirmedLine, evidenceDetail, evidenceSentence,
-  matchConfirmation, matchIsTrusted, plainDashes, serverReportsConfirmations,
-  settleAdvice, unclearMatch, whenText,
+  matchConfirmation, matchIsTrusted, plainDashes, reasonDevice,
+  serverReportsConfirmations, settleAdvice, unclearMatch, whenText,
 } from './matchEvidence';
 
 const ev = (kind, rank, detail) => ({ kind, rank, detail });
@@ -63,6 +63,12 @@ describe('evidenceSentence', () => {
     expect(evidenceSentence({ evidence: [ev('quantum_flux', 1), ev('serial', 2)] }))
       .toBe('The serial number matches.');
   });
+
+  test('two of a kind say the clause once, not twice', () => {
+    expect(evidenceSentence({
+      evidence: [ev('mac', 1, 'aa:bb'), ev('mac', 2, 'cc:dd'), ev('ports', 9, '24')],
+    })).toBe('A hardware address on the box and the number of ports match.');
+  });
 });
 
 describe('evidenceDetail', () => {
@@ -79,10 +85,16 @@ describe('evidenceDetail', () => {
 
 describe('confidenceWord', () => {
   test('the four words the screen uses', () => {
-    expect(confidenceWord({ confidence: 'confirmed' }, true).word).toBe('Confirmed');
+    expect(confidenceWord({ confidence: 'confirmed' }, true).word).toBe('Almost certain');
     expect(confidenceWord({ confidence: 'probable' }, true).word).toBe('Probably');
     expect(confidenceWord({ confidence: 'possible' }, true).word).toBe('Possibly');
     expect(confidenceWord({ confidence: 'unidentified' }, false).word).toBe('Not identified');
+  });
+
+  test('the engine is never allowed the word reserved for a person', () => {
+    for (const c of ['confirmed', 'probable', 'possible', 'unidentified', 'high', 'low']) {
+      expect(confidenceWord({ confidence: c }, true).word).not.toMatch(/confirm/i);
+    }
   });
 
   test('an older server never reads as certain', () => {
@@ -117,6 +129,11 @@ describe('settleAdvice', () => {
     expect(settleAdvice({ confidence: 'confirmed', candidateCount: 3, margin: 40 }, true)).toBe('');
   });
 
+  test('several candidates with a clear winner is not a tie, whatever is chosen', () => {
+    expect(settleAdvice({ confidence: 'probable', candidateCount: 4, margin: 12 }, false))
+      .toBe('This switch has not been matched. Choose the box it is, or leave it as not in this rack.');
+  });
+
   test('an older server with no counts still gets a usable line', () => {
     expect(settleAdvice({ confidence: 'low' }, false))
       .toBe('This switch has not been matched. Choose the box it is, or leave it as not in this rack.');
@@ -133,6 +150,15 @@ describe('unclearMatch', () => {
     expect(unclearMatch({ confidence: 'probable', candidateCount: 2, margin: 15 })).toBe(false);
     expect(unclearMatch({ confidence: 'confirmed' })).toBe(false);
     expect(unclearMatch(null)).toBe(false);
+  });
+});
+
+describe('reasonDevice', () => {
+  test('names the box a proposal is about, or says nothing', () => {
+    expect(reasonDevice({ deviceUid: 'd1' })).toBe('d1');
+    expect(reasonDevice({ uid: 'd2' })).toBe('d2');
+    expect(reasonDevice({ why: 'same port count' })).toBe(null);
+    expect(reasonDevice(null)).toBe(null);
   });
 });
 

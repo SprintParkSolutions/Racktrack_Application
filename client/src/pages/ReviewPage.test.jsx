@@ -91,9 +91,21 @@ describe('ReviewPage', () => {
     await screen.findByText('Core A');
     const why = screen.getByText('The serial number and the number of ports match.');
     expect(why).toBeTruthy();
-    expect(screen.getByText('Confirmed')).toBeTruthy();
+    // How sure the engine is, in the engine's own right. "Confirmed" is the
+    // word for a person's act and never appears beside a Confirm button.
+    expect(screen.getByText('Almost certain')).toBeTruthy();
     expect(screen.getByText('The serial number: FOC1')).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/serial number matches.*rank/i);
+    expect(screen.queryByText('Confirmed')).toBe(null);
+  });
+
+  test('the evidence stops speaking for a box the operator moved away from', async () => {
+    draw();
+    await screen.findByText('Core A');
+    fireEvent.click(screen.getByRole('button', { name: 'U11, Switch, 24 ports' }));
+    expect(screen.getByText('You chose this box yourself. The photo had proposed U12.')).toBeTruthy();
+    expect(screen.queryByText('The serial number and the number of ports match.')).toBe(null);
+    expect(screen.queryByText('Almost certain')).toBe(null);
   });
 
   test('two boxes that look the same are left empty, with what would settle it', async () => {
@@ -134,6 +146,74 @@ describe('ReviewPage', () => {
 
     await screen.findByText(/Jane Patel confirmed this on /);
     expect(screen.getByRole('button', { name: 'Change' })).toBeTruthy();
+  });
+
+  test('confirming one switch does not store another switch it never looked at', async () => {
+    const v = baseView();
+    // Core B now has a clear proposal of its own, and nobody has touched it.
+    v.reasons[2] = {
+      deviceUid: 'd2', confidence: 'probable', candidateCount: 2, margin: 20, fromBinding: false,
+      evidence: [{ kind: 'ports', rank: 5, detail: '24' }], why: 'the port count matches',
+    };
+    v.matches = { 1: 'd1', 2: 'd2' };
+    v.switches[1].matchedTo = 'd2';
+    reply.view = v;
+    draw();
+    await screen.findByText('Core B');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Confirm' })[0]);
+    await waitFor(() => expect(posts().length).toBe(1));
+    expect(posts()[0].body).toEqual({ matches: { 1: 'd1', 2: null }, confirm: true, switchId: 1 });
+  });
+
+  test('a server that acknowledges nothing does not get to look confirmed', async () => {
+    draw();
+    await screen.findByText('Core A');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Confirm' })[0]);
+    await waitFor(() => expect(posts().length).toBe(1));
+    await screen.findByText(/The server did not record a confirmation for Core A/);
+    expect(screen.queryByText(/confirmed this on /)).toBe(null);
+    expect(screen.getByText('0 of 1 confirmed')).toBeTruthy();
+  });
+
+  test('moving a confirmed switch spends the confirmation', async () => {
+    reply.after = {
+      ...baseView(),
+      suggested: false,
+      switches: [
+        { ...baseView().switches[0], confirmed: true, confirmedAt: '2026-09-18T09:30:00Z', confirmedBy: 'Jane Patel' },
+        baseView().switches[1],
+      ],
+    };
+    draw();
+    await screen.findByText('Core A');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Confirm' })[0]);
+    await screen.findByText(/Jane Patel confirmed this on /);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Change' }));
+    fireEvent.click(screen.getByRole('button', { name: 'U11, Switch, 24 ports' }));
+    expect(screen.getByText('This box has changed since it was confirmed. Confirm it again.')).toBeTruthy();
+    expect(screen.queryByText(/Jane Patel confirmed this on /)).toBe(null);
+    expect(screen.getByText('0 of 1 confirmed')).toBeTruthy();
+  });
+
+  test('a confirmed switch cannot be moved by tapping the rack picture', async () => {
+    reply.after = {
+      ...baseView(),
+      suggested: false,
+      switches: [
+        { ...baseView().switches[0], confirmed: true, confirmedAt: '2026-09-18T09:30:00Z', confirmedBy: 'Jane Patel' },
+        baseView().switches[1],
+      ],
+    };
+    draw();
+    await screen.findByText('Core A');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Confirm' })[0]);
+    await screen.findByText(/Jane Patel confirmed this on /);
+
+    fireEvent.click(screen.getByRole('button', { name: 'U11, Switch, 24 ports' }));
+    expect(screen.getByText('Core A is confirmed. Press Change on it first.')).toBeTruthy();
+    const select = screen.getByLabelText('Is this box in the rack', { selector: '#rt-review-match-1' });
+    expect(select.value).toBe('d1');
   });
 
   test('a match from a previous check needs no confirming', async () => {

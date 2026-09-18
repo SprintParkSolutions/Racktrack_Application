@@ -8,7 +8,8 @@ import { apiUrl, authFetch } from '../utils/api';
 import { useSmartBack } from '../hooks/useSmartBack';
 import {
   confidenceWord, confirmedLine, evidenceDetail, evidenceSentence,
-  matchConfirmation, plainDashes, settleAdvice, unclearMatch,
+  matchConfirmation, plainDashes, reasonDevice, serverReportsConfirmations,
+  settleAdvice, unclearMatch,
 } from '../utils/matchEvidence';
 import styles from './ReviewPage.module.css';
 
@@ -108,16 +109,20 @@ export default function ReviewPage() {
   const [picking, setPicking] = useState(null); // the switch being matched from the photo
   const [matches, setMatches] = useState({});
   const [selected, setSelected] = useState(null); // the switch the picture is showing
-  const [changed, setChanged] = useState({});   // switches whose box moved since it loaded
+  const [edited, setEdited] = useState({});     // places chosen here and not saved yet
   const [unlocked, setUnlocked] = useState({}); // switches reopened with Change
-  const [confirmedHere, setConfirmedHere] = useState({}); // what this visit confirmed
+  // What this visit confirmed, and the box each confirmation was about, so a
+  // confirmation can be spent by moving the switch rather than by a flag that
+  // any reload can clear.
+  const [confirmedHere, setConfirmedHere] = useState({}); // { id: { uid, at, by } }
   const [confirming, setConfirming] = useState(null);
+  const [confirmNote, setConfirmNote] = useState(null); // the server did not record it
   const [result, setResult] = useState(null);   // summary from the last save
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [err, setErr] = useState(null);         // the review could not load
   const [saveErr, setSaveErr] = useState(null); // the matches could not be saved
-  const [pickNote, setPickNote] = useState(false); // tapped the rack with no switch chosen
+  const [pickNote, setPickNote] = useState(null); // why a tap on the rack did nothing
   const [attempt, setAttempt] = useState(0);    // "Try again" / "Check again"
 
   const reload = () => setAttempt((n) => n + 1);
@@ -129,20 +134,31 @@ export default function ReviewPage() {
    * proposal is shown too, except where the evidence cannot tell two boxes
    * apart: that one is left empty, because putting a coin-toss in the box and
    * waiting for someone to notice is how a guess becomes a record.
+   *
+   * `preserve` holds choices made on this screen that the server has not been
+   * told about. Reading the view again after confirming one switch must not
+   * throw away what somebody has chosen for the others, so those come back as
+   * they were, still unsaved, with the footer still saying so.
    */
-  const takeView = (body) => {
+  const takeView = (body, preserve = null) => {
     const start = { ...(body.matches || {}) };
     if (body.suggested) {
       for (const sw of body.switches || []) {
         if (unclearMatch(reasonFor(body, sw))) start[sw.id] = null;
       }
     }
+    let unsaved = Boolean(body.suggested);   // a fresh proposal is unsaved until saved
+    if (preserve) {
+      for (const [id, uid] of Object.entries(preserve)) {
+        const keep = uid || null;
+        if (keep !== ((body.matches || {})[id] || null)) unsaved = true;
+        start[id] = keep;
+      }
+    }
     setRecon(body);
     setMatches(start);
     setResult(body.summary || null);
-    setDirty(Boolean(body.suggested));   // a fresh proposal is unsaved until saved
-    setChanged({});
-    setUnlocked({});
+    setDirty(unsaved);
     setSelected((cur) => {
       const list = body.switches || [];
       if (cur !== null && list.some((s) => String(s.id) === String(cur))) return cur;
@@ -159,7 +175,8 @@ export default function ReviewPage() {
   useEffect(() => {
     let live = true;
     setErr(null); setSaveErr(null); setRecon(null); setScan(null); setScanId(null);
-    setConfirmedHere({});
+    setConfirmedHere({}); setEdited({}); setUnlocked({});
+    setConfirmNote(null); setPickNote(null);
     (async () => {
       const a = await nb(`/api/nb/scans/adopt/${encodeURIComponent(rackId)}`, { method: 'POST' });
       if (!live) return;
@@ -182,9 +199,9 @@ export default function ReviewPage() {
   }, [rackId, attempt]);
 
   /** Read the view again, after the server has been told something. */
-  const refresh = async (id) => {
+  const refresh = async (id, preserve = null) => {
     const r = await nb(`/api/nb/scans/${encodeURIComponent(id)}/reconcile`);
-    if (r.ok) takeView(r.body);
+    if (r.ok) takeView(r.body, preserve);
     return r;
   };
 
@@ -196,7 +213,7 @@ export default function ReviewPage() {
 
   /** Keep the list. This stores the choices and confirms nothing. */
   async function saveList() {
-    setSaving(true); setSaveErr(null);
+    setSaving(true); setSaveErr(null); setConfirmNote(null);
     const r = await nb(`/api/nb/scans/${encodeURIComponent(scanId)}/reconcile`,
       jsonBody('POST', { matches: cleanMatches() }));
     setSaving(false);
@@ -208,65 +225,138 @@ export default function ReviewPage() {
     const note = r.body?.confirmNote ? [r.body.confirmNote] : [];
     if (refused.length || note.length) setSaveErr([...note, ...refused].join(' '));
     setResult(r.body.summary || null);
+    setEdited({});
     setDirty(false);
   }
 
   /**
    * Confirm one switch. The only thing on this screen that confirms anything.
    *
-   * The whole list rides along so the server is confirming the matching that is
-   * actually on screen, and only the named switch is confirmed by it.
+   * What travels with it depends on what the server already holds. The POST
+   * replaces the stored matching, so a matching somebody saved goes back whole
+   * and nothing of theirs is lost. A view that is still a fresh proposal has
+   * nothing stored behind it, and there this button sends only the switch
+   * being confirmed and anything the person actually chose: pressing Confirm
+   * on one switch must not file the machine's guess for the other three.
+   *
+   * Afterwards the server is asked what it holds. A confirmation is only shown
+   * as one when the server acknowledged it or reports it back; a 200 from a
+   * server that ignored the request is not the same as a person's name on a
+   * match, and saying so here is the whole point of the screen.
    */
   async function confirmOne(sw) {
-    setConfirming(sw.id); setSaveErr(null);
+    setConfirming(sw.id); setSaveErr(null); setConfirmNote(null);
+    const chosen = matches[sw.id] || null;
+    const all = cleanMatches();
+    const send = {};
+    for (const id of Object.keys(all)) {
+      const mine = String(id) === String(sw.id);
+      send[id] = (!recon.suggested || mine || edited[id]) ? all[id] : null;
+    }
+
     const r = await nb(`/api/nb/scans/${encodeURIComponent(scanId)}/reconcile`,
-      jsonBody('POST', { matches: cleanMatches(), confirm: true, switchId: sw.id }));
+      jsonBody('POST', { matches: send, confirm: true, switchId: sw.id }));
     if (!r.ok) {
       setConfirming(null);
       setSaveErr(explain(r, 'Could not confirm this match'));
       return;
     }
-    // Remember it here as well. An older server stores the confirmation without
-    // reporting it back, and the person who just pressed the button should not
-    // have to wonder whether it took.
-    const said = r.body && (r.body.confirmation || r.body.confirmed);
-    const at = (said && typeof said === 'object' && (said.confirmedAt || said.at)) || new Date().toISOString();
-    const by = (said && typeof said === 'object' && (said.confirmedBy || said.by)) || 'You';
-    setConfirmedHere((m) => ({ ...m, [sw.id]: { at, by: typeof by === 'string' ? by : 'You' } }));
+
+    const said = r.body && (r.body.confirmation !== undefined ? r.body.confirmation : r.body.confirmed);
+    const ack = said === true || Boolean(said && typeof said === 'object');
+    if (ack) {
+      const at = (typeof said === 'object' && (said.confirmedAt || said.at)) || new Date().toISOString();
+      const who = (typeof said === 'object' && (said.confirmedBy || said.by)) || 'You';
+      setConfirmedHere((m) => ({
+        ...m, [sw.id]: { uid: chosen, at, by: typeof who === 'string' ? who : 'You' },
+      }));
+    }
     setResult((cur) => (r.body && r.body.summary) || cur);
-    setDirty(false);
-    await refresh(scanId);
+    setEdited((e) => { const n = { ...e }; delete n[sw.id]; return n; });
+
+    // Keep everybody else's choice on screen: this POST only spoke for one
+    // switch, so the rest are exactly as unsaved as they were.
+    const keep = {};
+    for (const id of Object.keys(all)) if (String(id) !== String(sw.id)) keep[id] = all[id];
+    const after = await refresh(scanId, keep);
     setConfirming(null);
+
+    const view = after.ok ? after.body : null;
+    const entry = view ? (view.switches || []).find((x) => String(x.id) === String(sw.id)) : null;
+    const stored = view ? matchConfirmation(view, entry || sw) : null;
+    if (stored && (stored.confirmed || stored.fromBinding)) return;
+
+    if (view && serverReportsConfirmations(view)) {
+      // This server does report confirmations and this switch is not among
+      // them, whatever the POST answered. Nothing here may claim otherwise.
+      setConfirmedHere((m) => { const n = { ...m }; delete n[sw.id]; return n; });
+      setConfirmNote(`The server did not record a confirmation for ${sw.label}. Its place is saved. Try Confirm again.`);
+    } else if (!ack) {
+      setConfirmNote(`${sw.label} is saved, but this server does not record who confirmed a match, so it stays a proposal.`);
+    }
   }
 
   // Shared by the dropdown, the photo and the rack picture, so all three write
   // the same value under the same rule.
   const setMatch = (id, uid) => {
+    // One switch per device. If this box was already assigned to another
+    // switch, release that one, so reassigning moves the match rather than
+    // pointing two switches at the same physical box.
+    const released = uid
+      ? Object.keys(matches).filter((o) => String(o) !== String(id) && matches[o] === uid)
+      : [];
     setMatches((m) => {
       const next = { ...m, [id]: uid };
-      // One switch per device. If this box was already assigned to another
-      // switch, release that one, so reassigning moves the match rather than
-      // pointing two switches at the same physical box.
-      if (uid) {
-        for (const other of Object.keys(next)) {
-          if (String(other) !== String(id) && next[other] === uid) next[other] = null;
-        }
+      for (const other of Object.keys(next)) {
+        if (uid && String(other) !== String(id) && next[other] === uid) next[other] = null;
       }
       return next;
     });
-    setChanged((c) => ({ ...c, [id]: true }));
+    setEdited((e) => {
+      const n = { ...e, [id]: true };
+      for (const other of released) n[other] = true;
+      return n;
+    });
     setSelected(id);
     setDirty(true);
-    setPickNote(false);
+    setPickNote(null);
+    setConfirmNote(null);
   };
 
-  /** Who confirmed this switch's match, taking this visit's own work as well. */
-  const confirmationFor = (sw) => {
-    const fromServer = matchConfirmation(recon, sw);
-    if (fromServer.confirmed) return fromServer;
+  /** The box the server holds for this switch, whatever shape it named it in. */
+  const storedMatch = (sw) => {
+    const fromMap = recon && recon.matches ? recon.matches[sw.id] : undefined;
+    const uid = fromMap === undefined ? (sw.matchedTo ?? null) : fromMap;
+    return uid === null || uid === undefined || uid === '' ? null : String(uid);
+  };
+
+  /**
+   * Where one switch stands: who confirmed its match, and whether that
+   * confirmation is about the box now chosen.
+   *
+   * A confirmation is about one box. Move the switch to another shelf and the
+   * confirmation is spent, whoever recorded it and whatever a reload did to
+   * the flags in between - which is the only way to stop a machine's placement
+   * ending up wearing a person's name.
+   */
+  const stateOf = (sw) => {
+    const now = matches[sw.id] || null;
     const here = confirmedHere[sw.id];
-    if (here) return { confirmed: true, fromBinding: fromServer.fromBinding, at: here.at, by: here.by };
-    return fromServer;
+    const server = matchConfirmation(recon, sw);
+    const serverFits = storedMatch(sw) === now;
+    const had = Boolean(here) || server.confirmed || server.fromBinding;
+
+    if (here && (here.uid || null) === now) {
+      return {
+        c: {
+          confirmed: true, fromBinding: server.fromBinding && serverFits,
+          at: here.at, by: here.by,
+        },
+        moved: false,
+      };
+    }
+    if (serverFits) return { c: server, moved: false };
+    return { c: { confirmed: false, fromBinding: false, at: '', by: '' }, moved: had };
   };
 
   const cameraConflicts = (scan && scan.conflicts) || [];
@@ -349,12 +439,30 @@ export default function ReviewPage() {
       ? `U${d.position} · ${d.name} (${d.portCount}p)`
       : `${d.name} (${d.portCount}p, unplaced)`);
 
+    // Where the picture's shelf label comes from, for a sentence that has to
+    // name the box a proposal was about.
+    const uLabel = (uid) => {
+      const d = recon.devices.find((x) => x.uid === uid);
+      if (!d) return '';
+      return d.position === null || d.position === undefined ? (d.name || '') : `U${d.position}`;
+    };
+
     const chosenSwitch = recon.switches.find((s) => String(s.id) === String(selected)) || null;
     const highlight = chosenSwitch ? (matches[chosenSwitch.id] || null) : null;
-    const confirmedCount = recon.switches.filter((s) => {
-      const c = confirmationFor(s);
+    const chosenState = chosenSwitch ? stateOf(chosenSwitch) : null;
+    const chosenSettled = Boolean(chosenSwitch && chosenState
+      && (chosenState.c.confirmed || chosenState.c.fromBinding) && !unlocked[chosenSwitch.id]);
+
+    // Only a switch that was read and has a box chosen can be confirmed, so
+    // only those are counted. Counting the rest gave a total nobody could ever
+    // reach and told the operator work remained that the screen offered no way
+    // to do.
+    const confirmable = recon.switches.filter((s) => s.read && matches[s.id]);
+    const confirmedCount = confirmable.filter((s) => {
+      const { c } = stateOf(s);
       return c.confirmed || c.fromBinding;
     }).length;
+    const pending = confirmable.length - confirmedCount;
 
     body = (
       <>
@@ -362,7 +470,8 @@ export default function ReviewPage() {
           <p>
             The photo shows <strong>where</strong> each box sits. Each switch you read
             says <strong>what</strong> it is. Choose which switch is which box, then
-            confirm each one. The report is built on what you confirm here.
+            confirm each one. Saving keeps your choices; the report shows them, and
+            marks anything you have not confirmed as a proposal.
           </p>
           <p>
             Nothing is invented: a value the switch did not state stays as the camera
@@ -377,7 +486,9 @@ export default function ReviewPage() {
             <div className={styles.paneHead}>
               <h2 className={styles.paneTitle}>Match each switch to its place</h2>
               <span className={styles.pill}>
-                {confirmedCount} of {recon.switches.length} confirmed
+                {confirmable.length === 0
+                  ? 'No box chosen yet'
+                  : `${confirmedCount} of ${confirmable.length} confirmed`}
               </span>
             </div>
 
@@ -391,20 +502,32 @@ export default function ReviewPage() {
                   size={(scan && scan.uHeight) || null}
                   highlight={highlight}
                   onPick={(uid) => {
-                    if (!chosenSwitch) { setPickNote(true); return; }
+                    // The same gate the dropdown and the Photo button keep. A
+                    // shelf is a full-width target on a phone, and one stray
+                    // tap used to move a confirmed switch with nothing said.
+                    if (!chosenSwitch) {
+                      setPickNote('Choose a switch on the right, then tap the shelf it sits on.');
+                      return;
+                    }
+                    if (!chosenSwitch.read) {
+                      setPickNote(`${chosenSwitch.label} has not been read yet. Read it in the Network step first.`);
+                      return;
+                    }
+                    if (chosenSettled) {
+                      setPickNote(`${chosenSwitch.label} is confirmed. Press Change on it first.`);
+                      return;
+                    }
                     setMatch(chosenSwitch.id, uid);
                   }}
                 />
                 <p className={styles.rackHint}>
-                  {chosenSwitch
-                    ? `Tap a shelf to say that is where ${chosenSwitch.label} sits.`
-                    : 'Choose a switch on the right, then tap the shelf it sits on.'}
+                  {!chosenSwitch
+                    ? 'Choose a switch on the right, then tap the shelf it sits on.'
+                    : chosenSettled
+                      ? `${chosenSwitch.label} is confirmed. Press Change on it to move it.`
+                      : `Tap a shelf to say that is where ${chosenSwitch.label} sits.`}
                 </p>
-                {pickNote && (
-                  <p className={styles.rackWarn}>
-                    Choose a switch first, then tap the shelf it sits on.
-                  </p>
-                )}
+                {pickNote && <p className={styles.rackWarn}>{pickNote}</p>}
               </div>
 
               <div className={styles.listSide}>
@@ -423,13 +546,20 @@ export default function ReviewPage() {
                     const selectId = `rt-review-match-${s.id}`;
                     const reason = reasonFor(recon, s);
                     const has = Boolean(matches[s.id]);
-                    const conf = confidenceWord(reason, has);
                     const advice = settleAdvice(reason, has);
                     const detail = evidenceDetail(reason);
-                    const c = confirmationFor(s);
-                    const moved = Boolean(changed[s.id]);
-                    const settled = (c.confirmed || c.fromBinding) && !moved && !unlocked[s.id];
+                    const { c, moved } = stateOf(s);
+                    const settled = (c.confirmed || c.fromBinding) && !unlocked[s.id];
                     const isSelected = String(s.id) === String(selected);
+                    // Which box the evidence below is about. Once somebody
+                    // chooses a different one, the sentence and the word beside
+                    // it describe a box nobody is looking at any more.
+                    const about = reasonDevice(reason) ?? storedMatch(s);
+                    const describes = has && (about === null || about === (matches[s.id] || null));
+                    // How sure the engine is about the box that is actually
+                    // chosen. With no box chosen, or a different one, the
+                    // engine has said nothing about it.
+                    const conf = confidenceWord(describes ? reason : null, has);
 
                     return (
                       <li
@@ -471,7 +601,34 @@ export default function ReviewPage() {
                         {/* Why this box, in words, and how sure it is in one of
                             four. The word carries the meaning; the colour and
                             the four bars only repeat it. */}
-                        {s.read && (
+                        {s.read && !has && (
+                          <div className={styles.whyBlock}>
+                            <span className={styles.k}>How sure this match is</span>
+                            <div className={styles.confRow}>
+                              <span className={`${styles.conf} ${styles[`conf_${conf.tone}`]}`}>
+                                <Meter tone={conf.tone} />
+                                {conf.word}
+                              </span>
+                            </div>
+                            {advice && (
+                              <p className={styles.advice}>
+                                <b>What would settle it</b>
+                                <span>{advice}</span>
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {s.read && has && !describes && (
+                          <div className={styles.whyBlock}>
+                            <p className={styles.settledLine}>
+                              You chose this box yourself
+                              {about && uLabel(about) ? `. The photo had proposed ${uLabel(about)}` : ''}.
+                            </p>
+                          </div>
+                        )}
+
+                        {s.read && has && describes && (
                           <div className={styles.whyBlock}>
                             <span className={styles.k}>How sure this match is</span>
                             <div className={styles.confRow}>
@@ -493,11 +650,6 @@ export default function ReviewPage() {
                               <p className={styles.advice}>
                                 <b>What would settle it</b>
                                 <span>{advice}</span>
-                              </p>
-                            )}
-                            {c.fromBinding && !c.confirmed && (
-                              <p className={styles.settledLine}>
-                                Matched from a previous check. It does not need confirming again.
                               </p>
                             )}
                           </div>
@@ -551,7 +703,7 @@ export default function ReviewPage() {
                                   <Icon name="check" />
                                   {c.confirmed
                                     ? confirmedLine(c)
-                                    : 'Matched from a previous check.'}
+                                    : 'Matched from a previous check. It does not need confirming again.'}
                                 </p>
                                 <button
                                   type="button"
@@ -564,11 +716,13 @@ export default function ReviewPage() {
                             ) : (
                               <>
                                 <p className={styles.confirmHint}>
-                                  {moved && (c.confirmed || c.fromBinding)
+                                  {moved
                                     ? 'This box has changed since it was confirmed. Confirm it again.'
-                                    : has
-                                      ? 'Nothing is treated as a fact until you confirm it.'
-                                      : 'Choose the box this switch is, then confirm it.'}
+                                    : (c.confirmed || c.fromBinding)
+                                      ? 'This match is confirmed. Choose another box to change it, or confirm it again.'
+                                      : has
+                                        ? 'Nothing is treated as a fact until you confirm it.'
+                                        : 'Choose the box this switch is, then confirm it.'}
                                 </p>
                                 <button
                                   type="button"
@@ -591,6 +745,13 @@ export default function ReviewPage() {
                   <div className={`${styles.note} ${styles.noteBad}`}>
                     <b>Not saved</b>
                     <span>{saveErr}</span>
+                  </div>
+                )}
+
+                {confirmNote && (
+                  <div className={`${styles.note} ${styles.noteWarn}`}>
+                    <b>Not confirmed</b>
+                    <span>{confirmNote}</span>
                   </div>
                 )}
               </div>
@@ -642,11 +803,13 @@ export default function ReviewPage() {
                         n={result.cablesProven ? `${result.cablesProven} proven both ends` : ''} />
                 </div>
 
-                {confirmedCount < recon.switches.length && (
+                {pending > 0 && (
                   <p className={styles.dimText}>
                     {confirmedCount === 0
                       ? 'No switch has been confirmed yet, so everything below is still a proposal.'
-                      : `${recon.switches.length - confirmedCount} of these matches are still proposals, waiting for someone to confirm them.`}
+                      : pending === 1
+                        ? 'One of these matches is still a proposal, waiting for someone to confirm it.'
+                        : `${pending} of these matches are still proposals, waiting for someone to confirm them.`}
                   </p>
                 )}
 

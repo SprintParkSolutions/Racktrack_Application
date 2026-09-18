@@ -72,16 +72,27 @@ function countWord(n) {
 
 const capitalise = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
-/** The evidence the server sent for one switch, cleaned up and put in order. */
+/**
+ * The evidence the server sent for one switch, cleaned up and put in order.
+ *
+ * One entry per kind. The rank orders entries of the same kind, so a switch
+ * with two hardware addresses arrives as two `mac` entries, and a sentence
+ * built from the list straight would say "a hardware address on the box, a
+ * hardware address on the box and the number of ports match". The best-ranked
+ * entry of each kind is the one kept.
+ */
 export function orderedEvidence(reason) {
   const list = Array.isArray(reason && reason.evidence) ? reason.evidence : [];
-  return list
-    .filter((e) => e && SUBJECT[String(e.kind || '').toLowerCase()])
-    .map((e) => ({
-      kind: String(e.kind).toLowerCase(),
-      rank: Number.isFinite(Number(e.rank)) ? Number(e.rank) : Number.MAX_SAFE_INTEGER,
-      detail: plainDashes(e.detail || '').trim(),
-    }))
+  const best = new Map();
+  for (const e of list) {
+    const kind = String((e && e.kind) || '').toLowerCase();
+    if (!SUBJECT[kind]) continue;
+    const rank = Number.isFinite(Number(e.rank)) ? Number(e.rank) : Number.MAX_SAFE_INTEGER;
+    const seen = best.get(kind);
+    if (seen && seen.rank <= rank) continue;
+    best.set(kind, { kind, rank, detail: plainDashes(e.detail || '').trim() });
+  }
+  return [...best.values()]
     .sort((a, b) => (STRENGTH.indexOf(a.kind) - STRENGTH.indexOf(b.kind)) || (a.rank - b.rank));
 }
 
@@ -133,12 +144,16 @@ export function evidenceDetail(reason) {
  * How sure the match is, as a word and a tone.
  *
  * `confirmed`, `probable`, `possible` and `unidentified` are the words the
- * server uses. An older server sends high, medium or low instead, and those
- * never read as Confirmed: only the new engine states certainty.
+ * scoring engine uses. "Confirmed" is not one of the words this file may put
+ * on screen: on these screens it means a person looked at the box and said
+ * yes, and printing it for a machine's own certainty makes the strongest word
+ * on the card the one word reserved for the person. The engine's top certainty
+ * reads as "Almost certain"; only `matchConfirmation` and `confirmedLine`
+ * below ever say confirmed.
  */
 export function confidenceWord(reason, hasMatch) {
   const c = String((reason && reason.confidence) || '').toLowerCase();
-  if (c === 'confirmed') return { word: 'Confirmed', tone: 'sure', mark: 'check' };
+  if (c === 'confirmed') return { word: 'Almost certain', tone: 'sure', mark: 'check' };
   if (c === 'probable' || c === 'high') return { word: 'Probably', tone: 'likely', mark: 'near' };
   if (c === 'possible' || c === 'medium' || c === 'low') return { word: 'Possibly', tone: 'maybe', mark: 'half' };
   if (c === 'unidentified') return { word: 'Not identified', tone: 'none', mark: 'query' };
@@ -162,7 +177,10 @@ export function settleAdvice(reason, hasMatch) {
   const unclear = c === 'unidentified' || !hasMatch || tie;
   if (!unclear) return '';
 
-  if (tie || (Number.isFinite(count) && count >= 2 && !hasMatch)) {
+  // Only a real tie gets the tie sentence. "Four boxes here look the same" is
+  // the opposite of what a margin of 12 says, and an unmatched switch with
+  // several candidates is the common way to reach this line.
+  if (tie) {
     return `${countWord(count)} boxes here look the same. Read the serial number off the label on one of them to tell them apart.`;
   }
   if (Number.isFinite(count) && count === 0) {
@@ -189,6 +207,20 @@ export function unclearMatch(reason) {
   const count = Number(reason.candidateCount ?? NaN);
   const margin = Number(reason.margin ?? NaN);
   return Number.isFinite(count) && count >= 2 && Number.isFinite(margin) && margin <= 0;
+}
+
+/**
+ * Which box a proposal is about, whatever shape the server named it in.
+ *
+ * The evidence and the confidence beside it describe one box. Once somebody
+ * chooses a different one, that evidence is about a box nobody is looking at
+ * any more, so every screen has to be able to ask which box it was for.
+ * Null means the server did not say.
+ */
+export function reasonDevice(reason) {
+  if (!reason || typeof reason !== 'object') return null;
+  const uid = reason.deviceUid ?? reason.uid ?? reason.device ?? null;
+  return uid === null || uid === undefined || uid === '' ? null : String(uid);
 }
 
 /** A date from the server, written the way a person writes one. Never throws. */

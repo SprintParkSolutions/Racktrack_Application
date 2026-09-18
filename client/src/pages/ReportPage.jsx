@@ -155,28 +155,44 @@ const proofText = (ev) => PROOF[ev] || String(ev || '').replace(/_/g, ' ');
  * switch is that box" on the Review screen; until they do, the make, model and
  * serial this report shows for that device rest on a machine's proposal, and
  * `proposalDevNames` holds the devices where that is the case so the page can
- * say so instead of printing the values as findings. A server that does not
- * report confirmations cannot be asked, and there the page reads as it always
- * did.
+ * say so instead of printing the values as findings.
+ *
+ * "Nobody confirmed it" and "this page cannot say" are two different things,
+ * and the second one is not a reason to print the first one's opposite. Where
+ * the Review view could not be loaded, or the server does not report
+ * confirmations at all, the row is tagged for what is actually known - the
+ * values came off a switch that was matched to this box - and `unsureDevNames`
+ * marks them so the page can say that once, plainly.
  */
 function derive(doc, view) {
   const devices = doc.devices || [];
   const camByName = new Map((view?.devices || []).map((d) => [d.name, d]));
   const uidToName = new Map((view?.devices || []).map((d) => [d.uid, d.name]));
-  const confirmed = Boolean(view) && !view.suggested;
+  const saved = Boolean(view) && !view.suggested;
+  const asks = serverReportsConfirmations(view);
 
   const swByDevName = new Map();
-  const proposalDevNames = new Set();
-  if (confirmed) {
-    const asks = serverReportsConfirmations(view);
+  const proposalDevNames = new Set();   // the server says nobody has confirmed it
+  const unsureDevNames = new Set();     // this server cannot say whether anybody did
+  if (saved) {
     for (const sw of view.switches || []) {
       if (!sw.read || !sw.matchedTo) continue;
       const name = uidToName.get(sw.matchedTo);
       if (!name) continue;
       swByDevName.set(name, sw);
-      if (asks && !matchIsTrusted(view, sw)) proposalDevNames.add(name);
+      if (!asks) unsureDevNames.add(name);
+      else if (!matchIsTrusted(view, sw)) proposalDevNames.add(name);
     }
   }
+
+  // The places for this rack have never been saved. Nothing a switch said is in
+  // this report, and the page says why rather than quietly being thin: nothing
+  // stores a proposal on somebody's behalf any more.
+  const placesUnsaved = Boolean(view) && Boolean(view.suggested)
+    && (view.switches || []).some((s) => s.read && (s.matchedTo || s.autoMatch?.deviceUid));
+  // No Review view at all: the second request failed. Every value that came off
+  // a switch is still here, and none of it can be shown as confirmed.
+  const viewMissing = !view;
 
   const filed = view?.switches || [];
   const read = filed.filter((s) => s.read);
@@ -198,7 +214,10 @@ function derive(doc, view) {
     }
   }
 
-  return { camByName, swByDevName, proposalDevNames, filed, read, up, heard };
+  return {
+    camByName, swByDevName, proposalDevNames, unsureDevNames,
+    placesUnsaved, viewMissing, filed, read, up, heard,
+  };
 }
 
 export default function ReportPage() {
@@ -300,6 +319,17 @@ export default function ReportPage() {
   const noReadings = Boolean(facts) && switchesRead === 0;
   const hasNetwork = Boolean(facts) && (cables.length > 0 || facts.heard.length > 0 || vlans.length > 0 || addresses.length > 0);
   const addrSwitch = addresses.filter((a) => a.kind === 'switch').length;
+  // Rows whose values came off a switch rather than the camera. Which caveat
+  // they carry depends on what is known about the match behind them.
+  const fromSwitch = devices.some((d) => String(d.source || '').startsWith('switch'));
+  const unsureAll = Boolean(facts) && facts.viewMissing && fromSwitch;
+  const anyUnsure = Boolean(facts) && (unsureAll || facts.unsureDevNames.size > 0);
+  const anyProposal = Boolean(facts) && facts.proposalDevNames.size > 0;
+  const toneFor = (name) => {
+    if (facts.proposalDevNames.has(name)) return 'proposal';
+    if (unsureAll || facts.unsureDevNames.has(name)) return 'unsure';
+    return 'switch';
+  };
 
   return (
     <div className={`page page-full ${styles.page}`}>
@@ -473,11 +503,32 @@ export default function ReportPage() {
                 <p className={styles.emptyLine}>The camera saw no devices in this rack.</p>
               )}
 
+              {/* Nothing was stored for this rack, so the switch readings are
+                  not in this report at all. Without this line the page simply
+                  looks thin, and a reader takes the camera's view for
+                  everything there is. */}
+              {facts.placesUnsaved && (
+                <p className={styles.proposalNote}>
+                  This rack's places are still a proposal, so nothing the switches said
+                  is in this report yet.{' '}
+                  <Link to={`/results/${rackId}/review`}>Open Review</Link> and confirm
+                  which switch is which box.
+                </p>
+              )}
+
               {facts.proposalDevNames.size > 0 && (
                 <p className={styles.proposalNote}>
                   {facts.proposalDevNames.size === 1
                     ? 'One device below takes its make, model or serial from a switch match nobody has confirmed yet. Open Review and confirm the match, or read that row as a proposal.'
                     : `${facts.proposalDevNames.size} devices below take their make, model or serial from a switch match nobody has confirmed yet. Open Review and confirm the matches, or read those rows as proposals.`}
+                </p>
+              )}
+
+              {anyUnsure && (
+                <p className={styles.proposalNote}>
+                  {facts.viewMissing
+                    ? 'The matching could not be loaded, so the values below that came from a switch cannot be shown as confirmed.'
+                    : 'Some values below come from a switch that was matched to a box in this rack. This server does not record who confirmed a match, so the match cannot be shown as confirmed.'}
                 </p>
               )}
 
@@ -490,7 +541,7 @@ export default function ReportPage() {
                       d={d}
                       cam={facts.camByName.get(d.name) || null}
                       sw={facts.swByDevName.get(d.name) || null}
-                      proposal={facts.proposalDevNames.has(d.name)}
+                      tone={toneFor(d.name)}
                       open={Boolean(open[key])}
                       onToggle={() => setOpen((o) => ({ ...o, [key]: !o[key] }))}
                     />
@@ -506,6 +557,17 @@ export default function ReportPage() {
                   <h2>Network</h2>
                   <span>from the switches</span>
                 </div>
+
+                {/* "Both ends agree" is proof about the cable, not about which
+                    box each end is. That part rests on the same match as the
+                    rows above, so the same caveat belongs here. */}
+                {(anyProposal || anyUnsure) && (
+                  <p className={styles.subLine}>
+                    {anyProposal
+                      ? 'Which box each end of these cables is comes from a switch match nobody has confirmed yet.'
+                      : 'Which box each end of these cables is comes from a switch match that cannot be shown as confirmed.'}
+                  </p>
+                )}
 
                 {cables.length > 0 && (
                   <div className={styles.sub}>
@@ -582,9 +644,15 @@ export default function ReportPage() {
 /**
  * One device: its U, what the camera saw, and - where a switch was matched to
  * it - what the switch said about itself. Ports fold out underneath.
+ *
+ * `tone` says how far the switch's word can be taken: 'switch' when a person
+ * confirmed the match, 'proposal' when the server says nobody has, and
+ * 'unsure' when nothing here can say either way.
  */
-function DeviceRow({ d, cam, sw, proposal = false, open, onToggle }) {
+function DeviceRow({ d, cam, sw, tone = 'switch', open, onToggle }) {
   const matched = String(d.source || '').startsWith('switch');
+  const proposal = tone === 'proposal';
+  const unsure = tone === 'unsure';
   const ports = d.ports || [];
   const inUse = ports.filter((p) => p.inUse).length;
   // The list opens on the ports that are doing something; "View all" is the
@@ -636,8 +704,8 @@ function DeviceRow({ d, cam, sw, proposal = false, open, onToggle }) {
         <div className={styles.rowTop}>
           <b className={styles.rowTitle}>{titleOf(d)}</b>
           {matched && (
-            <span className={proposal ? styles.tagProposal : styles.tag}>
-              {proposal ? 'proposal, not confirmed' : 'from the switch'}
+            <span className={proposal || unsure ? styles.tagProposal : styles.tag}>
+              {proposal ? 'proposal, not confirmed' : unsure ? 'from a matched switch' : 'from the switch'}
             </span>
           )}
         </div>
@@ -651,6 +719,12 @@ function DeviceRow({ d, cam, sw, proposal = false, open, onToggle }) {
         {matched && proposal && (
           <p className={styles.proposalLine}>
             A proposal, waiting for someone to confirm that this switch is this box.
+          </p>
+        )}
+        {matched && unsure && (
+          <p className={styles.proposalLine}>
+            Matched to a switch. There is no record of anyone confirming that this
+            switch is this box.
           </p>
         )}
 

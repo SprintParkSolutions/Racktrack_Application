@@ -92,10 +92,27 @@ describe('ReportPage', () => {
     expect(screen.queryByText('proposal, not confirmed')).toBe(null);
   });
 
-  test('an older server that cannot report confirmations reads as it always did', async () => {
+  test('a server that cannot report confirmations says so, rather than claiming one', async () => {
     reply.view = { ...view(), reasons: { 1: { deviceUid: 'd1', confidence: 'high', why: 'same port count' } } };
     draw();
-    await screen.findByText('from the switch');
+    await screen.findByText('from a matched switch');
+    expect(screen.queryByText('from the switch')).toBe(null);
     expect(screen.queryByText('proposal, not confirmed')).toBe(null);
+    expect(screen.getByText(/This server does not record who confirmed a match/)).toBeTruthy();
+  });
+
+  test('a matching nobody saved is named, not silently left out', async () => {
+    reply.view = { ...view(), suggested: true };
+    draw();
+    await screen.findByText(/This rack's places are still a proposal/);
+    expect(screen.getByRole('link', { name: 'Open Review' })).toBeTruthy();
+  });
+
+  test('a report with no matching at all cannot show a match as confirmed', async () => {
+    reply.view = null;   // the reconcile call came back empty
+    draw();
+    await screen.findByText('from a matched switch');
+    expect(screen.getByText(/The matching could not be loaded/)).toBeTruthy();
+    expect(screen.queryByText('from the switch')).toBe(null);
   });
 });

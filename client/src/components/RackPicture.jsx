@@ -16,9 +16,14 @@ import styles from './RackPicture.module.css';
  * kind of box it is, and the name and port count written in the shelf so the
  * colour is never the only thing carrying the meaning.
  *
+ * Nothing here states more than was recorded. A rack whose height nobody wrote
+ * down is drawn to the tallest box the camera saw and labelled as that, never
+ * as the height of the rack, and a shelf with no box detected says so rather
+ * than calling itself empty.
+ *
  * Props
  *   devices   the camera's devices: { uid, name, position, portCount, cvClass }
- *   size      how many shelves the rack has
+ *   size      how many shelves the rack has, or null when nobody recorded it
  *   highlight the uid to lift out of the rest, or null for none
  *   onPick    called with a uid when a shelf is chosen; omit for a flat picture
  */
@@ -73,45 +78,102 @@ export default function RackPicture({ devices, size, highlight = null, onPick = 
   // actually change rather than on every render.
   const list = useMemo(() => (Array.isArray(devices) ? devices : []), [devices]);
 
-  const { shelves, byUnit, unplaced } = useMemo(() => {
+  const {
+    shelves, byUnit, unplaced, shared, above, height,
+  } = useMemo(() => {
     const placed = new Map();     // shelf number -> { device, top }
-    const loose = [];
+    const loose = [];             // no shelf recorded at all
+    const doubled = [];           // its shelf already belongs to another box
     let tallest = 0;
 
     for (const d of list) {
       const units = unitsOf(d);
       if (units.length === 0) { loose.push(d); continue; }
+      // The whole span is checked before any of it is claimed. Taking the free
+      // shelves and then filing the box as unplaced as well drew one device in
+      // two places at once, and lit two things up when it was the highlighted
+      // one.
+      if (units.some((u) => placed.has(u))) { doubled.push(d); continue; }
       const top = Math.max(...units);
       for (const u of units) {
         tallest = Math.max(tallest, u);
-        // Two boxes claiming one shelf is the camera's business, not ours: the
-        // first one drawn keeps the shelf and the second is shown underneath as
-        // unplaced, so nothing is dropped and nothing is drawn twice.
-        if (placed.has(u)) { loose.push(d); break; }
         placed.set(u, { device: d, top: u === top });
       }
     }
 
     const asked = Number(size);
-    const count = Math.min(
-      MAX_SHELVES,
-      Math.max(1, Number.isFinite(asked) && asked > 0 ? asked : 0, tallest),
-    );
+    const known = Number.isFinite(asked) && asked > 0 ? Math.floor(asked) : null;
+    const count = Math.min(MAX_SHELVES, Math.max(1, known || 0, tallest));
+
+    // Above the last shelf this picture draws. A box up there used to land in
+    // no row and in no list, which is the one thing a picture of a rack must
+    // not do, so it is named underneath instead.
+    const cut = [];
+    for (const [u, at] of [...placed.entries()]) {
+      if (u > count) { placed.delete(u); cut.push(at.device); }
+    }
+    const drawn = new Set([...placed.values()].map((x) => x.device));
+    const overflow = cut.filter((d, i) => !drawn.has(d) && cut.indexOf(d) === i);
+
     const rows = [];
     for (let u = count; u >= 1; u -= 1) rows.push(u);
-    return { shelves: rows, byUnit: placed, unplaced: loose };
+    return {
+      shelves: rows, byUnit: placed, unplaced: loose,
+      shared: doubled, above: overflow, height: known,
+    };
   }, [list, size]);
 
   const dimOthers = Boolean(highlight);
   const used = new Set([...byUnit.values()].map((x) => x.device.uid));
+
+  // What the bar over the picture may state. A height nobody recorded is not a
+  // measurement of the rack, it is the tallest box the camera happened to see,
+  // and "12U rack" printed over a 42U rack tells a technician the rack ends
+  // where the picture does.
+  const bar = height === null
+    ? ['Boxes the camera placed', 'Rack height not recorded']
+    : height > shelves.length
+      ? [`${height}U rack`, `U1 to U${shelves.length} drawn here`]
+      : [`${height}U rack`, `U${shelves.length} at the top, U1 at the bottom`];
+
+  const group = (head, items) => (items.length > 0 ? (
+    <div className={styles.loose} key={head}>
+      <p className={styles.looseHead}>{head}</p>
+      <div className={styles.looseRow}>
+        {items.map((d, i) => {
+          const on = highlight && d.uid === highlight;
+          const cls = [
+            styles.chip,
+            styles[`cat_${categoryOf(d)}`],
+            on ? styles.on : '',
+            dimOthers && !on ? styles.dim : '',
+          ].join(' ');
+          const text = `${d.name || 'Device'}${d.portCount ? ` · ${d.portCount}p` : ''}`;
+          return onPick ? (
+            <button
+              key={d.uid || `${head}${i}`}
+              type="button"
+              className={cls}
+              aria-pressed={Boolean(on)}
+              onClick={() => onPick(d.uid)}
+            >
+              {text}
+            </button>
+          ) : (
+            <span key={d.uid || `${head}${i}`} className={cls}>{text}</span>
+          );
+        })}
+      </div>
+    </div>
+  ) : null);
 
   const shelfLabel = (d, u) => `U${u}, ${d.name || 'device'}${d.portCount ? `, ${d.portCount} ports` : ''}`;
 
   return (
     <div className={styles.wrap}>
       <div className={styles.bar}>
-        <b>{shelves.length}U rack</b>
-        <span>U{shelves.length} at the top, U1 at the bottom</span>
+        <b>{bar[0]}</b>
+        <span>{bar[1]}</span>
       </div>
 
       <div className={styles.frame}>
@@ -125,7 +187,10 @@ export default function RackPicture({ devices, size, highlight = null, onPick = 
           {shelves.map((u) => {
             const at = byUnit.get(u);
             if (!at) {
-              return <div key={u} className={styles.empty} title={`U${u} is empty`} />;
+              // The camera saying nothing about a shelf is not the shelf being
+              // free: a blank panel, a dark faceplate or a box out of frame all
+              // come back as silence. The title says what is known.
+              return <div key={u} className={styles.empty} title={`No box detected at U${u}`} />;
             }
             const d = at.device;
             const on = highlight && d.uid === highlight;
@@ -163,41 +228,17 @@ export default function RackPicture({ devices, size, highlight = null, onPick = 
         </div>
       </div>
 
-      {unplaced.length > 0 && (
-        <div className={styles.loose}>
-          <p className={styles.looseHead}>
-            Seen in the photo but not on a shelf
-          </p>
-          <div className={styles.looseRow}>
-            {unplaced.map((d, i) => {
-              const on = highlight && d.uid === highlight;
-              const cls = [
-                styles.chip,
-                styles[`cat_${categoryOf(d)}`],
-                on ? styles.on : '',
-                dimOthers && !on ? styles.dim : '',
-              ].join(' ');
-              const text = `${d.name || 'Device'}${d.portCount ? ` · ${d.portCount}p` : ''}`;
-              return onPick ? (
-                <button
-                  key={d.uid || `loose${i}`}
-                  type="button"
-                  className={cls}
-                  aria-pressed={Boolean(on)}
-                  onClick={() => onPick(d.uid)}
-                >
-                  {text}
-                </button>
-              ) : (
-                <span key={d.uid || `loose${i}`} className={cls}>{text}</span>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <p className={styles.blankNote}>
+        A blank shelf means no box was detected there, not that the shelf is free.
+      </p>
+
+      {group('Seen in the photo but not on a shelf', unplaced)}
+      {group('Two boxes share this shelf in the photo', shared)}
+      {group(`Above U${shelves.length}, not drawn here`, above)}
 
       <div className={styles.legend}>
-        {LEGEND.filter(([cat]) => list.some((d) => categoryOf(d) === cat && (used.has(d.uid) || unplaced.includes(d))))
+        {LEGEND.filter(([cat]) => list.some((d) => categoryOf(d) === cat
+          && (used.has(d.uid) || unplaced.includes(d) || shared.includes(d) || above.includes(d))))
           .map(([cat, text]) => (
             <span key={cat}>
               <i className={styles[`cat_${cat}`]} aria-hidden="true" />
