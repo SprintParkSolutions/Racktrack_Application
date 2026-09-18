@@ -413,7 +413,7 @@ function PortHistoryInner({ embedded, rackId = null }) {
         {!device ? (
           <p className={styles.muted}>
             {rackId && devices.length === 0 && !loadErr
-              ? 'No switch reading has reached the server for this rack yet. Read one on the Network step and it appears here.'
+              ? 'No reading yet. Read a switch on the Network screen.'
               : 'Waiting for the first reading…'}
           </p>
         ) : (() => {
@@ -766,8 +766,7 @@ function StackedTimeline({ timeline, windowSec }) {
 
       {noData ? (
         <div className={styles.timelineEmpty}>
-          No snapshots in this window yet - let the poller run for a few
-          cycles and the bars below will fill in.
+          Nothing recorded in this window yet.
         </div>
       ) : (
         <div className={styles.timelineStack}>

@@ -352,8 +352,10 @@ export default function TourOverlay() {
         <p className={styles.bubbleTitle}>{currentStep.title}</p>
         <p className={styles.bubbleBody}>{currentStep.body}</p>
         <div className={styles.bubbleActions}>
-          <button className={styles.skipTourBtn} onClick={stopAndBlur}>Skip tour</button>
-          <button className={styles.skipStepBtn} onClick={advance}>Skip this step</button>
+          {/* Two buttons both starting "Skip" read as the same control twice. Ending
+              the tour and skipping one step of it are different things. */}
+          <button className={styles.skipTourBtn} onClick={stopAndBlur}>End tour</button>
+          <button className={styles.skipStepBtn} onClick={advance}>Skip step</button>
         </div>
       </div>
     </div>,

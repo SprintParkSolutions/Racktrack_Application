@@ -83,7 +83,7 @@ export default function ExportSheet({ scanId, rackId, onClose }) {
         setRunErr({
           title: kind === 'preview' ? 'NetBox could not be read' : 'NetBox refused the write',
           text: errText(r.body.error),
-          hint: 'Nothing was deleted. Fix the cause and run it again; repeating is safe.',
+          hint: 'Nothing was deleted. Run it again when the cause is fixed.',
         });
       } else {
         setRunErr({ title: kind === 'preview' ? 'Preview did not run' : 'Push did not run', text: explain(r, 'Something went wrong.') });

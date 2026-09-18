@@ -85,7 +85,7 @@ router.get('/:id/report', gates.admin, (req, res) => {
   const scan = scanFor(req, res);
   if (!scan) return undefined;
   const doc = report.build(scan);
-  if (!doc) return res.status(409).json({ error: 'this scan has no detection result yet' });
+  if (!doc) return res.status(409).json({ error: 'This rack has not been scanned yet.' });
   res.json(doc);
 });
 
@@ -227,15 +227,15 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
     return res.json({ id: existing.id, rackId, adopted: false, createdAt: existing.createdAt });
   }
   if (!fs.existsSync(mapFile)) {
-    return res.status(409).json({
-      error: 'This rack has no detection result yet.',
-      hint: 'Scan it first — the Physical step has to run before anything after it can.',
-    });
+    return res.status(409).json({ error: 'This rack has not been scanned yet.' });
   }
 
   let map;
   try { map = JSON.parse(fs.readFileSync(mapFile, 'utf8')); }
-  catch (err) { return res.status(500).json({ error: `The detection result could not be read: ${err.message}` }); }
+  catch (err) {
+    logger?.warn?.('netbox.adopt.map_unreadable', { rackId, error: err.message });
+    return res.status(500).json({ error: 'This rack\'s scan could not be read. Scan it again.' });
+  }
 
   const image = ['original_image.jpg', 'original_image.jpeg', 'original_image.png']
     .map((f) => path.join(dir, f)).find((p) => fs.existsSync(p)) || null;
@@ -313,7 +313,8 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
       rackId, rackKey: known.rackKey, siteName, rackName, uHeight: cfg.U_HEIGHT, scannedAt,
     });
   } catch (err) {
-    return res.status(500).json({ error: `The detection result could not be converted: ${err.message}` });
+    logger?.warn?.('netbox.adopt.convert_failed', { rackId, error: err.message });
+    return res.status(500).json({ error: 'This rack\'s scan could not be read. Scan it again.' });
   }
   // `map` is kept alongside the snapshot, as the detect step keeps it: GET /:id
   // derives the detection boxes from payload.map, and without it the Review
@@ -366,12 +367,17 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
 router.post('/', gates.admin, upload.single('image'), async (req, res) => {
   const engine = cv.engineStatus();
   if (!engine.ready) {
+    // Which models or which interpreter are an operator's problem, not the
+    // technician's, so they go to the log and the screen gets the line that
+    // tells the person in front of the rack what to do about it.
+    logger?.warn?.('netbox.scan.engine_not_ready', {
+      pythonPresent: engine.pythonPresent, python: engine.python,
+      modelsPresent: engine.modelsPresent, modelsTotal: engine.modelsTotal,
+    });
     return res.status(503).json({
       stage: 'detect',
-      error: 'The CV engine is not ready.',
-      detail: engine.pythonPresent
-        ? `Models missing: ${engine.modelsPresent}/${engine.modelsTotal} present.`
-        : `No Python environment at ${engine.python}.`,
+      error: 'Scanning is not ready on this server.',
+      detail: 'Ask your administrator to finish setting up the scanning service.',
       engine,
     });
   }
@@ -380,8 +386,7 @@ router.post('/', gates.admin, upload.single('image'), async (req, res) => {
   const siteName = (req.body.siteName || cfg.SITE_NAME || '').trim();
   if (!siteName) {
     return res.status(400).json({
-      error: 'siteName is required. You name your own site: '
-           + 'send siteName with the upload, or set RT_SITE_NAME.',
+      error: 'This scan needs a site name. Add the site, then scan again.',
     });
   }
   const rackId = (req.body.rackId || `RK-${Date.now().toString(36).toUpperCase()}`).trim();
@@ -454,7 +459,9 @@ router.post('/', gates.admin, upload.single('image'), async (req, res) => {
     store.recordStage(rec.id, 'capture', 'ok', path.basename(req.file.path));
     store.recordStage(rec.id, 'detect', 'ok',
       `${snapshot.devices.length} devices · ${snapshot.interfaces.length} ports`
-      + (snapshot.conflicts.length ? ` · ${snapshot.conflicts.length} conflict(s)` : ''));
+      + (snapshot.conflicts.length
+        ? ` · ${snapshot.conflicts.length} conflict${snapshot.conflicts.length === 1 ? '' : 's'}`
+        : ''));
     res.json({ scanId: rec.id, rackId, summary: summarise(snapshot), warnings: tail(stderr) });
   } catch (err) {
     store.recordStage(rec.id, 'detect', 'failed', String(err.message).slice(0, 500));
@@ -483,12 +490,17 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
 
   const engine = cv.engineStatus();
   if (!engine.ready) {
+    // Which models or which interpreter are an operator's problem, not the
+    // technician's, so they go to the log and the screen gets the line that
+    // tells the person in front of the rack what to do about it.
+    logger?.warn?.('netbox.scan.engine_not_ready', {
+      pythonPresent: engine.pythonPresent, python: engine.python,
+      modelsPresent: engine.modelsPresent, modelsTotal: engine.modelsTotal,
+    });
     return res.status(503).json({
       stage: 'detect',
-      error: 'The CV engine is not ready.',
-      detail: engine.pythonPresent
-        ? `Models missing: ${engine.modelsPresent}/${engine.modelsTotal} present.`
-        : `No Python environment at ${engine.python}.`,
+      error: 'Scanning is not ready on this server.',
+      detail: 'Ask your administrator to finish setting up the scanning service.',
       engine,
     });
   }
@@ -607,9 +619,7 @@ router.get('/:id/annotated', gates.admin, (req, res) => {
   const order = [wanted, ...Object.values(ANNOTATED_VIEWS).filter((f) => f !== wanted)];
   const found = order.map((f) => path.join(dir, f)).find((f) => fs.existsSync(f));
   if (!found) {
-    return res.status(404).json({
-      error: 'no annotated image', detail: `nothing under ${dir}`,
-    });
+    return res.status(404).json({ error: 'no annotated image' });
   }
   res.sendFile(path.resolve(found));
 });
@@ -801,9 +811,8 @@ router.post('/:id/collect', gates.admin, async (req, res) => {
   if (targets.length === 0) {
     store.recordStage(scan.id, 'collect', 'blocked', 'no switches registered for this rack');
     return res.status(428).json({
-      error: 'No switches are registered for this rack.',
-      hint: 'Add the management address and login of each managed switch in the '
-          + 'rack on this screen, then collect.',
+      error: 'No switches have been added for this rack.',
+      hint: 'Add each managed switch on the Network screen, then read it.',
       rackId: scan.rackId,
     });
   }
@@ -908,20 +917,19 @@ function checkMatches(posted, base, sws, held = new Map()) {
   for (const [rawId, rawUid] of rows) {
     const id = String(rawId);
     if (!byId.has(id)) {
-      refuse(id, `Switch ${id} is not one of this rack's switches, so it cannot be placed in it.`);
+      refuse(id, 'That switch has not been added to this rack. Add it first.');
       continue;
     }
     const uid = rawUid === null || rawUid === undefined || rawUid === '' ? null : String(rawUid);
     if (uid === null) { clean[id] = null; continue; }
     const dev = devByUid.get(uid);
     if (!dev) {
-      refuse(id, `This scan has no box called ${uid}. Scan the rack again, then place the switch.`);
+      refuse(id, 'That box is not in this photo. Scan the rack again, then place the switch.');
       continue;
     }
     const cls = String(dev.provenance?.cvClass || '');
     if (reconcile.isPassive(cls)) {
-      refuse(id, `${dev.name} is a passive box (${cls}) with nothing to answer SNMP with, `
-        + 'so a managed switch cannot be it.');
+      refuse(id, `${dev.name} is a ${cls.toLowerCase()}, so no switch can be it. Pick another box.`);
       continue;
     }
     if (seen.has(uid)) {
@@ -931,8 +939,8 @@ function checkMatches(posted, base, sws, held = new Map()) {
     }
     const confirmedAs = held.get(id) || null;
     if (confirmedAs && confirmedAs.deviceUid !== uid) {
-      refuse(id, `${labelOf(id)} was confirmed at the rack as ${confirmedAs.name}. `
-        + 'Confirm it against the new box instead, so the two records cannot disagree.');
+      refuse(id, `${labelOf(id)} is confirmed as ${confirmedAs.name}. `
+        + 'Confirm it against the new box instead.');
       continue;
     }
     seen.set(uid, id);
@@ -1026,12 +1034,11 @@ router.post('/:id/reconcile', gates.admin, (req, res) => {
       : (ids.length === 1 ? ids[0] : null);
     if (!swId) {
       return res.status(400).json({
-        error: 'Confirm one switch at a time. Send switchId with confirm, so it is clear '
-             + 'which box the person actually read.',
+        error: 'Confirm one switch at a time.',
       });
     }
     if (!Object.prototype.hasOwnProperty.call(matches, swId)) {
-      return res.status(400).json({ error: `Switch ${swId} is not in this save, so there is nothing to confirm about it.` });
+      return res.status(400).json({ error: 'Place this switch first, then confirm it.' });
     }
     const sw = sws.find((s) => String(s.record.id) === swId);
     const aliases = sw.reading

@@ -153,15 +153,13 @@ function scorePair(sw, dev) {
   let ports;
   if (near.diff === 0) {
     score += 60; ports = '0';
-    why.push(near.member
-      ? `exact ${near.n} ports, one member of a stack of ${sw.members}`
-      : `exact ${near.n} ports`);
+    why.push(`exact ${near.n} ports`);
   } else if (near.diff <= tol) {
     score += 40 - near.diff * 2; ports = String(near.diff);
-    why.push(`ports ${dev.portCount} close to ${near.n}`);
+    why.push(`ports nearly match, ${dev.portCount} against ${near.n}`);
   } else {
     score -= 10; ports = 'far';
-    why.push(`ports ${dev.portCount} against ${near.n}`);
+    why.push(`ports do not match, ${dev.portCount} against ${near.n}`);
   }
 
   // Rung 5 of the ladder rules a candidate OUT on its shape, it does not merely
@@ -196,7 +194,21 @@ function scorePair(sw, dev) {
   // "one right answer and one near miss" into "cannot tell", and camera port
   // counts are approximate. Two candidates are tied when they were judged on the
   // SAME evidence, which is what "cannot be told apart" actually means.
-  return { score, why: why.join(', '), shape: `${model}|${make}|${ports}` };
+  //
+  // One clause reaches the screen: the strongest signal, not the whole tally.
+  // Three signals joined with commas read as the matcher showing its arithmetic,
+  // which is not what a person deciding between two boxes needs.
+  //
+  // `stack` is not a reason and is not part of that clause. It is a fact about the
+  // hardware - this box holds one unit of several - and the person may still have
+  // to place the rest, so it is carried out as its own line rather than lost with
+  // the tally that used to hold it.
+  return {
+    score,
+    why: why[0] || '',
+    shape: `${model}|${make}|${ports}`,
+    stack: near.member ? sw.members : 0,
+  };
 }
 
 /**
@@ -290,8 +302,7 @@ function sizeAdvice(boxUnits, cvClass) {
   const units = Number(boxUnits) > 0 ? Number(boxUnits) : 1;
   const range = RU_BY_CLASS.get(String(cvClass || '').trim().toLowerCase());
   if (!range || units <= range[1]) return null;
-  return `${String(cvClass).toLowerCase()} boxes are usually ${range[0]} to ${range[1]} `
-    + `rack units and this one takes up ${units}, so check it is one box and not two`;
+  return `it is ${units} rack units tall - check it is one box and not two`;
 }
 
 /**
@@ -365,17 +376,17 @@ function contradiction(was, now) {
   if (!was || !now) return null;
   const realModel = (m) => { const t = norm(m); return t.startsWith('unidentified') ? '' : t; };
   if (was.position != null && now.position != null && Number(was.position) !== Number(now.position)) {
-    return `it was confirmed at U${was.position} and that box is now at U${now.position}`;
+    return `the box moved from U${was.position} to U${now.position}`;
   }
   const wasSerial = norm(was.serial);
   const nowSerial = norm(now.serial);
   if (wasSerial && nowSerial && wasSerial !== nowSerial) {
-    return `the serial read off that box was ${was.serial} and is now ${now.serial}`;
+    return `that box now reads serial ${now.serial}, not ${was.serial}`;
   }
   const wasModel = realModel(was.model);
   const nowModel = realModel(now.model);
   if (wasModel && nowModel && wasModel !== nowModel) {
-    return `that box read as ${was.model} and now reads as ${now.model}`;
+    return `that box now reads as ${now.model}, not ${was.model}`;
   }
   return null;
 }
@@ -488,12 +499,10 @@ function suggest(snapshot, sws, opts = {}) {
     // goes missing without a word. Name it, and say what to re-read.
     if (hit.weak) {
       addNote(f.id, hit.refutedBy === 'serial'
-        ? `a box in this rack was confirmed for the switch at this address, but that `
-          + `confirmation holds a different serial number, so this looks like replacement `
-          + `hardware. Confirm the box again for the switch that is there now`
-        : `a box in this rack was confirmed for the switch at this address, under a `
-          + `hardware identity this reading did not publish. Read it again so it states its `
-          + `serial or chassis address, or confirm the box here`);
+        ? 'a different switch now answers at this address. Confirm the box for the one '
+          + 'that is there now'
+        : 'this reading gives no serial to match an earlier confirmation. Read it again, '
+          + 'or confirm the box here');
       continue;
     }
 
@@ -517,8 +526,7 @@ function suggest(snapshot, sws, opts = {}) {
       // the confirmation, and binding to it anyway would write one switch's facts
       // onto another switch's shelf.
       reasons[f.id] = blank(
-        `the box confirmed for this switch is not the box that is there now: ${clash}. `
-        + 'Confirm which box it is now, so nothing is written against the old answer',
+        `${clash}. Confirm the box again before anything is written`,
         { candidateCount: 0, notes: notes.get(f.id) || [] },
       );
       continue;
@@ -526,8 +534,8 @@ function suggest(snapshot, sws, opts = {}) {
 
     if (claimedBy.has(dev.uid)) {
       reasons[f.id] = blank(
-        `another switch record publishes the same hardware identity and is already `
-        + `confirmed as this box. Remove whichever of the two is a duplicate`,
+        'this switch is listed twice, and the other one is already confirmed as this box. '
+        + 'Remove the duplicate',
         { candidateCount: 0, notes: notes.get(f.id) || [] },
       );
       continue;
@@ -557,10 +565,9 @@ function suggest(snapshot, sws, opts = {}) {
         deviceUid: dev.uid,
         confidence: identity.confidenceOf(ev),
         why: fresh
-          ? `confirmed at the rack as ${dev.name}, matched on its ${hit.by}`
-          : `confirmed as ${dev.name} on ${String(hit.binding.at || '').slice(0, 10)}, matched on `
-            + `its ${hit.by}, and nothing in this photograph contradicts it. Confirm it again `
-            + `to write this switch's own facts onto the box`,
+          ? `confirmed at the rack as ${dev.name}`
+          : `confirmed as ${dev.name} on ${String(hit.binding.at || '').slice(0, 10)}. `
+            + "Confirm it again to write the switch's model, serial and ports onto the box",
         evidence: ev,
         candidateCount: 1,
         margin: null,
@@ -576,8 +583,8 @@ function suggest(snapshot, sws, opts = {}) {
     const f = facts.get(sw.record.id);
     if (proposals.has(f.id) || reasons[f.id]) continue;
     if (!f.read) {
-      reasons[f.id] = blank('this switch has not been read yet, so it has published '
-        + 'nothing to match a box on', { candidateCount: 0, notes: notes.get(f.id) || [] });
+      reasons[f.id] = blank('it has not been read yet. Read it, then place it',
+        { candidateCount: 0, notes: notes.get(f.id) || [] });
       continue;
     }
 
@@ -589,52 +596,50 @@ function suggest(snapshot, sws, opts = {}) {
     const free = devices.filter((d) => !claimedBy.has(d.uid));
     if (f.members > 1 && free.length < f.members) {
       reasons[f.id] = blank(
-        `it answers as a stack of ${f.members} separate units and this rack has only `
-        + `${free.length} box${free.length === 1 ? '' : 'es'} left that could hold one. `
-        + 'Scan the whole rack, or place the stack by hand',
+        `it is a stack of ${f.members} units and only ${free.length} `
+        + `box${free.length === 1 ? '' : 'es'} here could hold one. `
+        + 'Scan the whole rack, or place it by hand',
         { candidateCount: free.length, notes: notes.get(f.id) || [] },
       );
       continue;
     }
 
     const candidates = [];
-    const seenNote = new Set();
-    const struckOff = [];
     for (const dev of free) {
-      const { score, why, shape, ruledOut } = scorePair(f, dev);
-      // A box struck off for its shape is remembered, not announced. Saying so
-      // per box put four paragraphs of arithmetic on a screen whose job is to
-      // show one switch and one box, and one of those paragraphs named the very
-      // box the switch was matched to. It is only worth a sentence when NOTHING
-      // was chosen, which is the case where a person is actually asking why.
-      if (ruledOut) { struckOff.push({ name: dev.name, why }); continue; }
+      const { score, why, shape, stack, ruledOut } = scorePair(f, dev);
+      // A box struck off for its shape is not announced at all. Saying so per box
+      // put four paragraphs of arithmetic on a screen whose job is to show one
+      // switch and one box, and one of those paragraphs named the very box the
+      // switch had been matched to. Counting them instead only proved the matcher
+      // had been busy; what a person needs is the one line below.
+      if (ruledOut) continue;
       if (score < FLOOR) continue;
-      const advice = sizeAdvice(dev.units, dev.cvClass);
-      if (advice && !seenNote.has(dev.uid)) { seenNote.add(dev.uid); addNote(f.id, `${dev.name}: ${advice}`); }
-      candidates.push({ devUid: dev.uid, name: dev.name, score, why, shape, position: dev.position,
+      candidates.push({ devUid: dev.uid, name: dev.name, score, why, shape, stack,
+        position: dev.position,
         // Carried so the cable comparison can run on a tie without going
         // back to the snapshot, which by then may no longer hold them.
-        sockets: dev.sockets || [] });
+        sockets: dev.sockets || [],
+        // Held, not announced: only the box actually proposed is worth a note.
+        advice: sizeAdvice(dev.units, dev.cvClass) });
     }
     candidates.sort((a, b) => b.score - a.score || String(a.devUid).localeCompare(String(b.devUid)));
 
+    // One note, about the box a person is being shown - not one per box that was
+    // considered. Anything about the alternatives is the matcher's working.
+    if (candidates.length && candidates[0].stack > 1) {
+      addNote(f.id, `this box holds one unit of a stack of ${candidates[0].stack}`);
+    }
+    if (candidates.length && candidates[0].advice) addNote(f.id, candidates[0].advice);
+
     if (f.chassisRows > 1 && f.members === 1) {
-      addNote(f.id, `it lists ${f.chassisRows} chassis entries but gives them no separate serial `
-        + 'numbers, so it is read as one unit');
+      addNote(f.id, `it reports ${f.chassisRows} units but gives only one serial, `
+        + 'so it is placed as one box');
     }
 
     if (!candidates.length) {
-      // The only place the struck-off boxes are worth a word: a person looking
-      // at "no box looks like it" is entitled to know the boxes WERE considered.
-      // One sentence, not one per box.
-      const why = struckOff.length
-        ? `no box in this rack has the right number of sockets for it. `
-          + `${struckOff.length === 1 ? struckOff[0].name : `${struckOff.length} boxes`} `
-          + `${struckOff.length === 1 ? 'has' : 'have'} the wrong size. `
-          + 'Pick the box by hand, or scan the rack again so the ports can be counted'
-        : 'no box in this rack looks like it. Pick the box by hand, or scan the rack again '
-          + 'so the ports can be counted';
-      reasons[f.id] = blank(why, { candidateCount: 0, notes: notes.get(f.id) || [] });
+      reasons[f.id] = blank('no box in this photo has the right number of ports. '
+        + 'Pick the box by hand, or scan the rack again',
+        { candidateCount: 0, notes: notes.get(f.id) || [] });
       continue;
     }
 
@@ -674,8 +679,7 @@ function suggest(snapshot, sws, opts = {}) {
     if (tied.length > 1 && remembered.length !== 1 && !cabled) {
       const names = tied.map((c) => c.name).join(' and ');
       reasons[f.id] = blank(
-        `${names} cannot be told apart from what this switch published. A serial number, `
-        + 'a chassis address or somebody at the rack confirming which box it is would settle it',
+        `${names} cannot be told apart. Read the serial off one, or confirm the box at the rack`,
         {
           candidateCount: candidates.length,
           margin,
@@ -701,10 +705,11 @@ function suggest(snapshot, sws, opts = {}) {
       reason: {
         deviceUid: pick.devUid,
         confidence: identity.confidenceOf(ev),
-        // When the cables settled it, say so: it is the whole reason this box
-        // was chosen over another that agreed on everything else.
+        // When the cables settled it, say so and say only that: it is the whole
+        // reason this box was chosen over another that agreed on everything else,
+        // and the agreement itself told the two apart not at all.
         why: cabled
-          ? `${pick.why}, and ${byCable.why}`
+          ? 'the cables on this box match the switch'
           : (candidates.length === 1
             ? `${pick.why}, and it is the only box it could be`
             : pick.why),
@@ -735,8 +740,7 @@ function suggest(snapshot, sws, opts = {}) {
       const others = ids.filter((x) => x !== swId).map((x) => facts.get(x).label || x);
       proposals.delete(swId);
       reasons[swId] = blank(
-        `${others.join(' and ')} read as the same box as this one, and nothing in what they `
-        + 'published tells them apart. Confirm each switch against its own box',
+        `${others.join(' and ')} could be this box too. Confirm each switch at the rack`,
         { candidateCount: 1, notes: notes.get(swId) || [] },
       );
     }
@@ -852,8 +856,8 @@ function reconcile(base, sws, matches, opts = {}) {
         switch: sw.record.label || `switch ${sw.record.id}`,
         device: dev.name,
         confidence: level,
-        why: 'shown, not written: only a box somebody confirmed at the rack '
-          + "is written with the switch's own model, serial and ports",
+        why: 'not written yet: confirm the box at the rack to write the model, '
+          + 'serial and ports',
       });
       continue;
     }
@@ -912,7 +916,7 @@ function reconcile(base, sws, matches, opts = {}) {
         }));
     }
     changes.push({ device: dev.name, field: 'ports', was: null,
-      now: `${(r.interfaces || []).length} real ports` });
+      now: `${(r.interfaces || []).length} ports` });
   }
 
   // ── cables from LLDP, only between switches we can place ───────────────────
@@ -953,11 +957,15 @@ function reconcile(base, sws, matches, opts = {}) {
       const remote = remoteSwitchOf(n);
       if (!remote || remote.record.id === sw.record.id) continue;
       const remoteDevUid = matches[remote.record.id];
-      if (!remoteDevUid) { unresolved.push({ from: sw.record.label, seen: n.remoteSysName || n.chassisId, why: 'the neighbour is a switch in this rack but not placed yet' }); continue; }
+      if (!remoteDevUid) {
+        unresolved.push({ from: sw.record.label, seen: n.remoteSysName || null,
+          why: 'the switch at the other end has no box yet' });
+        continue;
+      }
       // A cable is a statement that two named boxes are joined. Drawing one to a
       // box nobody confirmed asserts the far end as a fact, so it waits too.
       if (!written.has(remoteDevUid)) {
-        unresolved.push({ from: sw.record.label, seen: n.remoteSysName || n.chassisId,
+        unresolved.push({ from: sw.record.label, seen: n.remoteSysName || null,
           why: 'the box at the far end has not been confirmed at the rack yet' });
         continue;
       }
@@ -967,7 +975,7 @@ function reconcile(base, sws, matches, opts = {}) {
       const remoteIf = ifUid(remoteDevUid, remoteName);
       if (!localIf || !remoteIf) {
         unresolved.push({ from: sw.record.label, seen: n.remoteSysName || remoteName,
-          why: 'could not line the LLDP port name up with a port that was read' });
+          why: 'the port it named is not one of the ports we read' });
         continue;
       }
 

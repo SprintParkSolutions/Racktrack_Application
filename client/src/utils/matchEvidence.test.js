@@ -122,7 +122,7 @@ describe('settleAdvice', () => {
 
   test('one candidate and nothing matching', () => {
     expect(settleAdvice({ confidence: 'unidentified', candidateCount: 1, margin: 3 }, false))
-      .toBe('One box could be this switch, but nothing about it matches yet. Read the serial number off the label to be sure.');
+      .toBe('One box could be this switch. Read the serial off its label to be sure.');
   });
 
   test('a clear match is left alone', () => {
@@ -131,12 +131,12 @@ describe('settleAdvice', () => {
 
   test('several candidates with a clear winner is not a tie, whatever is chosen', () => {
     expect(settleAdvice({ confidence: 'probable', candidateCount: 4, margin: 12 }, false))
-      .toBe('This switch has not been matched. Choose the box it is, or leave it as not in this rack.');
+      .toBe('Choose the box this switch is, or mark it not in this rack.');
   });
 
   test('an older server with no counts still gets a usable line', () => {
     expect(settleAdvice({ confidence: 'low' }, false))
-      .toBe('This switch has not been matched. Choose the box it is, or leave it as not in this rack.');
+      .toBe('Choose the box this switch is, or mark it not in this rack.');
   });
 });
 

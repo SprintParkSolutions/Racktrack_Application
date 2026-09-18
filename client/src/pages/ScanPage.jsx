@@ -36,12 +36,14 @@ const FIRST_SCAN_KEY = 'racktrack.scan.tipsSeen';
 // The space (hall, room, floor) the technician picked, remembered per Site.
 const SPACE_KEY_PREFIX = 'racktrack.scan.space.';
 
+// Four instructions, each one thing to do. "Step back if needed" said the same
+// as "full rack in frame", and the explanatory half of every line ("keep the top
+// and bottom visible") only restated the half before the dash.
 const SCAN_TIPS = [
-  'Full rack in frame - keep the top and bottom visible',
-  'Phone straight and level - stand directly in front',
-  'Labels clearly visible - port and device labels readable',
-  'Good lighting, no glare - turn the flash off',
-  'Step back if needed - fit the whole rack on screen',
+  'Fit the whole rack in the frame',
+  'Stand straight in front of it',
+  'Keep the labels readable',
+  'Good light, flash off',
 ];
 
 function FirstScanSheet({ onClose }) {
@@ -55,7 +57,8 @@ function FirstScanSheet({ onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="first-scan-title" className={styles.tipsSheetTitle}>Before your first scan</h2>
-        <p className={styles.tipsSheetLede}>Five things that decide whether the read is accurate.</p>
+        {/* The list is on screen. Counting it and grading it changes nothing the
+            reader does next. */}
         <ul className={styles.tipsSheetList}>
           {SCAN_TIPS.map((t) => <li key={t}>{t}</li>)}
         </ul>
@@ -127,9 +130,6 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
   // JPEG), so the caption says so instead of naming four. Testers read the old
   // list of four as the complete set of what was allowed.
   const sub = isVideo ? 'tap to browse · MP4, MOV, WEBM' : 'tap to browse · any photo format';
-  // Format pills shown only in the desktop reference layout (hidden on mobile
-  // via CSS - see .fmtPills). Mobile keeps the inline `sub` string above.
-  const formats = isVideo ? ['MP4', 'MOV', 'WEBM'] : ['JPG', 'PNG', 'HEIC', 'WebP', 'and more'];
 
   return (
     <>
@@ -158,14 +158,10 @@ function UploadZone({ onFile, mode = 'image', inputRef: externalRef = null }) {
           <p className={styles.dropSub}>{sub}</p>
         </div>
 
-        {/* Desktop reference extras - rendered always but hidden on mobile via
-            CSS (base rules set display:none; .scanContentDesktop reveals them).
-            The mobile layout above is untouched. */}
-        <p className={styles.dropSubAlt}>or <span className={styles.browseLink}>tap to browse</span></p>
-        <div className={styles.fmtPills} aria-hidden="true">
-          {formats.map(f => <span key={f} className={styles.fmtPill}>{f}</span>)}
-        </div>
-        <span className={styles.readyCaption} aria-hidden="true">READY · NO FILE SELECTED</span>
+        {/* The desktop layout used to repeat the caption above it three times over:
+            "or tap to browse", five format pills against "any photo format", and a
+            READY · NO FILE SELECTED stamp for a zone that is visibly empty. The one
+            caption says all of it. */}
       </div>
       {/* Visually hidden (NOT display:none) - Safari blocks .click() on a
           display:none file input, so the Upload button wouldn't open the picker. */}
@@ -482,7 +478,7 @@ function CameraCapture({ onCapture, onCancel }) {
     try {
       recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
     } catch {
-      setError('Could not start video recording on this device.');
+      setError('Video is not available here. Use Upload instead.');
       return;
     }
     recordChunksRef.current = [];
@@ -1040,7 +1036,10 @@ export default function ScanPage() {
   }, [loading, verifying, setTourSuspended]);
   const [verifyReject, setVerifyReject] = useState(null);     // 409 payload - detected / expected diff
 
-  const STEPS = ['Preprocessing image…','Detecting rack boundaries…','Identifying components…','Mapping ports and cables…','Locating incident target…'];
+  // One line, because the five it replaced were the pipeline's own stage names on
+  // a screen where the person can do nothing but wait. What they need while
+  // waiting is how long, and the progress bar beside it shows how far.
+  const STEPS = ['This can take up to two minutes'];
 
   // On mount, pull the list of active tickets from servicenow_inbox via
   // our Node API. Also re-fetch whenever the user switches their active
@@ -1138,7 +1137,12 @@ export default function ScanPage() {
         verifiedPassed = true;
       } catch (err) {
         setVerifying(false);
-        setError(`Identity check failed: ${err.message}`);
+        // The cause is a failed request, not something the technician can read or
+        // act on, so it goes to the console and the screen says what to do. The
+        // check is what failed, not the label: sending them back to re-photograph
+        // a label the camera never got to would be the wrong instruction.
+        console.warn('[scan] rack identity check failed:', err);
+        setError('Could not check the rack label. Try again.');
         return;
       }
     }
@@ -1222,10 +1226,7 @@ export default function ScanPage() {
         // A timeout is not a dropped connection: the photo did reach the
         // server and retrying would just wait out the same ceiling again.
         if (netErr?.name === 'TimeoutError' || netErr?.name === 'AbortError') {
-          throw new Error(
-            'The scan took too long and was stopped. The photo reached the '
-            + 'server, so try again in a moment - if it keeps happening, the '
-            + 'rack photo may be too large or the server may be busy.');
+          throw new Error('The scan took too long and stopped. Try again.');
         }
         setStep('Connection dropped - retrying…');
         await new Promise((r) => setTimeout(r, 1200));
@@ -1233,7 +1234,7 @@ export default function ScanPage() {
           res = await attempt();
         } catch (retryErr) {
           if (retryErr?.name === 'TimeoutError' || retryErr?.name === 'AbortError') {
-            throw new Error('The scan took too long and was stopped. Please try again.');
+            throw new Error('The scan took too long and stopped. Try again.');
           }
           throw new Error(
             'Upload failed - the connection dropped while sending the photo. '
@@ -1259,7 +1260,7 @@ export default function ScanPage() {
         throw new Error(data.error || 'Analysis failed. Try again.');
       }
       clearInterval(ticker);
-      setProgress(100); setStep(useTicketMode ? 'Port located!' : 'Target located!');
+      setProgress(100); setStep('Done');
 
       // Multi-rack response - { groupId, racks:[...] }. Land the user on
       // the SAME /results overview a single-rack scan would show, just
@@ -1378,14 +1379,14 @@ export default function ScanPage() {
       if (!res.ok) {
         if (data.retryable) {
           clearInterval(ticker); setLoading(false); setProgress(0);
-          setQualityChoice({ error: data.error || 'Stitch quality issue.', kind: data.kind || 'stitch' });
+          setQualityChoice({ error: data.error || 'These photos may not join cleanly.', kind: data.kind || 'stitch' });
           return;
         }
-        throw new Error(data.error || 'Stitch failed. Try again.');
+        throw new Error(data.error || 'Could not join those photos. Try again.');
       }
 
       clearInterval(ticker);
-      setProgress(100); setStep('Rack analyzed!');
+      setProgress(100); setStep('Done');
 
       // Warn (non-blocking) if any seam was uncertain - server still
       // produced a usable panorama by butting the images flush.
@@ -1462,7 +1463,7 @@ export default function ScanPage() {
           {/* No back control. Scan is where the app opens - there is nothing
               behind it, and an arrow that goes nowhere is worse than none. */}
           <div style={{ width: 38 }} aria-hidden="true" />
-          <span className={styles.headerTitle}>Scan your Rack</span>
+          <span className={styles.headerTitle}>Scan a rack</span>
           <div style={{ width: 38 }} aria-hidden="true" />
         </header>
       )}
@@ -1544,7 +1545,7 @@ export default function ScanPage() {
               ))}
             </select>
             <span className={styles.spaceHelp}>
-              The hall or room you are standing in. The scan is matched against that space&rsquo;s racks.
+              The hall or room you are standing in.
             </span>
           </div>
         )}
@@ -1673,7 +1674,7 @@ export default function ScanPage() {
                     </span>
                   </>
                 ) : (
-                  <span style={{color:'var(--muted, #474747)'}}>Manual scan (tap to link an incident)</span>
+                  <span style={{color:'var(--muted, #474747)'}}>No incident linked</span>
                 )}
               </span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -1736,9 +1737,7 @@ export default function ScanPage() {
                       <span>Manual scan</span>
                       <span style={{color:'var(--muted, #474747)',fontWeight:400,fontSize:11}}>· no ticket</span>
                     </span>
-                    <span style={{fontSize:11,color:'var(--muted, #474747)',lineHeight:1.3}}>
-                      Pick device and port yourself after the rack is analyzed
-                    </span>
+                    {/* The row above already reads "Manual scan · no ticket". */}
                   </button>
                   {tickets.map(t => {
                     const sel = ticket?.incident_number === t.incident_number;
@@ -1848,7 +1847,7 @@ export default function ScanPage() {
             {isDesktop && !canSubmit && (
               <div className={styles.analyzeHelper}>
                 <span className={styles.analyzeHelperDot} aria-hidden="true" />
-                Add an image to enable analysis
+                Add a photo first
               </div>
             )}
             </>
@@ -1896,37 +1895,41 @@ function VerifyRejectModal({ payload, onRetake, onClose }) {
   return (
     <div style={modalBackdrop} onClick={onClose}>
       <div style={modalDialog} onClick={(e) => e.stopPropagation()}>
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
-          <div style={{width:8,height:8,borderRadius:'50%',background:'#1c1c1c',boxShadow:'0 0 8px rgba(0,0,0,0.8)'}} />
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.10em',color:'#1c1c1c',textTransform:'uppercase'}}>
-            Wrong rack
-          </div>
-        </div>
+        {/* No "WRONG RACK" eyebrow above a heading that already says which rack
+            this is not. */}
         <h2 style={{margin:'0 0 8px',fontSize:18,fontWeight:600,color:'var(--text, #c6c6c6)'}}>
           This isn't <b>{payload?.expected_rack_name || 'the expected rack'}</b>
         </h2>
         <p style={{margin:'0 0 16px',fontSize:13,color:'var(--muted, #474747)',lineHeight:1.5}}>
-          {payload?.message || `The labels read from this image don't match the rack on the incident. Upload the correct rack photo to continue.`}
+          {payload?.message || 'Photograph the rack named on the incident.'}
         </p>
 
-        <div style={{display:'flex',gap:12,marginBottom:16}}>
-          <div style={diffCol}>
-            <div style={diffHeading}>Detected on your image</div>
-            {detected.length === 0
-              ? <div style={diffEmpty}>No labels read</div>
-              : <div style={chipWrap}>
-                  {detected.map(l => <code key={l} style={{...chip, background:'rgba(0,0,0,0.10)', color:'#474747'}}>{l}</code>)}
-                </div>}
+        {/* The labels are the matcher showing its working, and on a refusal the
+            person needs the instruction above, not the comparison. It is still the
+            only place that says which rack they DID photograph, which is what they
+            need if they think the refusal is wrong - so it waits behind "Why" and
+            is not thrown away. */}
+        <details style={{marginBottom:16}}>
+          <summary style={{fontSize:12,color:'var(--muted, #474747)',cursor:'pointer'}}>Why</summary>
+          <div style={{display:'flex',gap:12,marginTop:10}}>
+            <div style={diffCol}>
+              <div style={diffHeading}>On your photo</div>
+              {detected.length === 0
+                ? <div style={diffEmpty}>No labels read</div>
+                : <div style={chipWrap}>
+                    {detected.map(l => <code key={l} style={{...chip, background:'rgba(0,0,0,0.10)', color:'#474747'}}>{l}</code>)}
+                  </div>}
+            </div>
+            <div style={diffCol}>
+              <div style={diffHeading}>On the rack</div>
+              {expectedUnique.length === 0
+                ? <div style={diffEmpty}>-</div>
+                : <div style={chipWrap}>
+                    {expectedUnique.map(l => <code key={l} style={{...chip, background:'rgba(0,0,0,0.10)', color:'#474747'}}>{l}</code>)}
+                  </div>}
+            </div>
           </div>
-          <div style={diffCol}>
-            <div style={diffHeading}>Expected on the rack</div>
-            {expectedUnique.length === 0
-              ? <div style={diffEmpty}>-</div>
-              : <div style={chipWrap}>
-                  {expectedUnique.map(l => <code key={l} style={{...chip, background:'rgba(0,0,0,0.10)', color:'#474747'}}>{l}</code>)}
-                </div>}
-          </div>
-        </div>
+        </details>
 
         <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
           <button type="button" onClick={onClose} style={btnGhost}>Dismiss</button>

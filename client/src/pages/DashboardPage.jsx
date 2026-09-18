@@ -180,14 +180,14 @@ function OperationsView({ live = true, refreshTick = 0 }) {
                 <div className={styles.feedBody}>
                   <div className={styles.feedLine}>
                     <span className={styles.feedUser}>{e.username || 'guest'}</span>
-                    {e.actor_id
-                      ? <span className={styles.feedId}>{e.actor_id}</span>
-                      : e.guest ? <span className={styles.feedGuest}>not signed in</span> : null}
+                    {/* The username is beside it; the raw actor id named nobody. */}
+                    {!e.actor_id && e.guest ? <span className={styles.feedGuest}>not signed in</span> : null}
                     <span className={styles.feedAction}>{labelFor(e.action)}</span>
                     {e.org && <span className={styles.feedOrg}>{e.org}</span>}
                   </div>
                   {e.status === 'fail' && e.error && <div className={styles.feedError}>{e.error}</div>}
-                  {e.target_id && e.status !== 'fail' && <div className={styles.feedTarget}>{e.target_id}</div>}
+                  {/* A raw object id under every successful row said nothing. The
+                      failure line above it stays. */}
                 </div>
                 <span className={styles.feedTime}>{relTime(e.ts)}</span>
               </div>
@@ -213,7 +213,7 @@ function OperationsView({ live = true, refreshTick = 0 }) {
                   </div>
                 </div>
               ))}
-              {!(data?.errors || []).length && <div className={styles.empty}>No errors. 🎉</div>}
+              {!(data?.errors || []).length && <div className={styles.empty}>No errors.</div>}
             </div>
           </section>
 
@@ -389,9 +389,11 @@ function OperationsView({ live = true, refreshTick = 0 }) {
   );
 }
 
+// No per-tab subtitle: each described in a sentence what the tab beneath it was
+// already showing, and the tab's own label named it.
 const TABS = [
-  { key: 'ops',  label: 'Operations', sub: "Everything happening across RackTrack - who's scanning, what's working, what's failing." },
-  { key: 'logs', label: 'Logs',       sub: 'Live application log - email delivery, errors, and requests as the server records them.' },
+  { key: 'ops',  label: 'Operations' },
+  { key: 'logs', label: 'Logs' },
 ];
 
 // The owner console: one place for all operations AND logs. A shared header
@@ -401,7 +403,6 @@ export default function DashboardPage() {
   const [tab,  setTab]  = useState('ops');
   const [live, setLive] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
-  const active = TABS.find(t => t.key === tab) || TABS[0];
 
   return (
     <div className={styles.page}>
@@ -424,7 +425,6 @@ export default function DashboardPage() {
         <BackButton fallback="/" />
         <div>
           <h1 className={styles.title}>Operations Console</h1>
-          <p className={styles.subtitle}>{active.sub}</p>
         </div>
         <div className={styles.headerRight}>
           <button

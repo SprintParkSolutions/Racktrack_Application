@@ -49,7 +49,9 @@ describe('RackPicture', () => {
     expect(screen.getByText('80U rack')).toBeTruthy();
     expect(screen.getByText('U1 to U60 drawn here')).toBeTruthy();
     // The box above the last shelf drawn is named rather than dropped.
-    expect(screen.getByText('Above U60, not drawn here')).toBeTruthy();
+    // "Above U60" is the whole heading now: the line above it already says U1 to
+    // U60 is what got drawn, so "not drawn here" said it twice.
+    expect(screen.getByText('Above U60')).toBeTruthy();
     expect(screen.getByText(/Top box/)).toBeTruthy();
   });
 
@@ -61,8 +63,8 @@ describe('RackPicture', () => {
       ]}
       size={20}
     />);
-    expect(screen.getByText('Two boxes share this shelf in the photo')).toBeTruthy();
-    expect(screen.queryByText('Seen in the photo but not on a shelf')).toBe(null);
+    expect(screen.getByText('Sharing a shelf')).toBeTruthy();
+    expect(screen.queryByText('No shelf recorded')).toBe(null);
   });
 
   test('a tall box whose span is part taken is listed once, not drawn twice', () => {
@@ -73,7 +75,7 @@ describe('RackPicture', () => {
       ]}
       size={20}
     />);
-    expect(screen.getByText('Two boxes share this shelf in the photo')).toBeTruthy();
+    expect(screen.getByText('Sharing a shelf')).toBeTruthy();
     expect(container.querySelectorAll('[title^="U14, Tall"]').length).toBe(0);
   });
 
@@ -93,7 +95,7 @@ describe('RackPicture', () => {
   test('a box with no shelf is still shown, and still offered', () => {
     const onPick = vi.fn();
     render(<RackPicture devices={devices} size={12} onPick={onPick} />);
-    expect(screen.getByText('Seen in the photo but not on a shelf')).toBeTruthy();
+    expect(screen.getByText('No shelf recorded')).toBeTruthy();
     screen.getByRole('button', { name: /Loose box/ }).click();
     expect(onPick).toHaveBeenCalledWith('d3');
   });

@@ -292,7 +292,7 @@ export default function ReviewPage() {
       setConfirmedHere((m) => { const n = { ...m }; delete n[sw.id]; return n; });
       setConfirmNote(`The server did not record a confirmation for ${sw.label}. Its place is saved. Try Confirm again.`);
     } else if (!ack) {
-      setConfirmNote(`${sw.label} is saved, but this server does not record who confirmed a match, so it stays a proposal.`);
+      setConfirmNote(`${sw.label} is saved, but the confirmation was not recorded. It stays a proposal.`);
     }
   }
 
@@ -411,8 +411,8 @@ export default function ReviewPage() {
           <h2>Read the switches in the Network step first</h2>
           <p>
             {added === 0
-              ? 'No switches have been added for this rack yet. Add each managed switch in the Network step and read it, then come back here to match them to the photo.'
-              : `${added} switch${added === 1 ? ' is' : 'es are'} added but none has been read. Open the Network step, press Read switch on each one, then come back.`}
+              ? 'Add each managed switch on the Network screen and read it, then come back.'
+              : `${added} switch${added === 1 ? ' is' : 'es are'} added but none has been read. Read them on the Network screen, then come back.`}
           </p>
           <div className={styles.emptyActions}>
             <Link className={styles.primary} to={`/results/${rackId}/network`}>
@@ -468,14 +468,7 @@ export default function ReviewPage() {
       <>
         <div className={styles.intro}>
           <p>
-            The photo shows <strong>where</strong> each box sits. Each switch you read
-            says <strong>what</strong> it is. Choose which switch is which box, then
-            confirm each one. Saving keeps your choices; the report shows them, and
-            marks anything you have not confirmed as a proposal.
-          </p>
-          <p>
-            Nothing is invented: a value the switch did not state stays as the camera
-            had it, and a cable is only drawn when both ends are known.
+            Choose which switch is which box, then confirm each one.
           </p>
         </div>
 
@@ -703,7 +696,7 @@ export default function ReviewPage() {
                                   <Icon name="check" />
                                   {c.confirmed
                                     ? confirmedLine(c)
-                                    : 'Matched from a previous check. It does not need confirming again.'}
+                                    : 'Matched from an earlier check.'}
                                 </p>
                                 <button
                                   type="button"
@@ -717,12 +710,12 @@ export default function ReviewPage() {
                               <>
                                 <p className={styles.confirmHint}>
                                   {moved
-                                    ? 'This box has changed since it was confirmed. Confirm it again.'
+                                    ? 'The box has changed. Confirm it again.'
                                     : (c.confirmed || c.fromBinding)
-                                      ? 'This match is confirmed. Choose another box to change it, or confirm it again.'
+                                      ? 'Confirmed. Choose another box to change it.'
                                       : has
-                                        ? 'Nothing is treated as a fact until you confirm it.'
-                                        : 'Choose the box this switch is, then confirm it.'}
+                                        ? 'Confirm to write the switch onto this box.'
+                                        : 'Choose the box, then confirm.'}
                                 </p>
                                 <button
                                   type="button"
@@ -759,9 +752,7 @@ export default function ReviewPage() {
 
             <div className={styles.paneFoot}>
               <span className={`${styles.dim} ${styles.grow}`}>
-                {dirty
-                  ? 'Your choices are not saved yet. Saving keeps them; it does not confirm them.'
-                  : 'Your choices are saved. Confirming is a separate step, switch by switch.'}
+                {dirty ? 'Not saved yet.' : 'Saved. Confirm each switch separately.'}
               </span>
               <button
                 className={`${styles.secondary} ${styles.small}`}
@@ -838,8 +829,7 @@ export default function ReviewPage() {
 
                 {changes.length === 0 && (
                   <p className={styles.dimText}>
-                    The switches that answered stated nothing the camera did not
-                    already have. Nothing is overwritten.
+                    The switches added nothing the camera did not already have.
                   </p>
                 )}
 
@@ -867,7 +857,7 @@ export default function ReviewPage() {
                       {result.unresolved.length} LLDP neighbour{result.unresolved.length === 1 ? '' : 's'} not turned into a cable
                     </b>
                     {result.unresolved.map((u, i) => (
-                      <span key={i}>{u.from}: saw {u.seen || 'a neighbour'} - {plainDashes(u.why)}.</span>
+                      <span key={i}>{u.from}: {u.seen || 'a neighbour'} - {plainDashes(u.why)}.</span>
                     ))}
                   </div>
                 )}

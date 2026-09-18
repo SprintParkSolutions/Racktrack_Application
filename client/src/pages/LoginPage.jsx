@@ -62,7 +62,8 @@ export default function LoginPage() {
       <main className={s.stack}>
         <img src="/logo.jpg" alt="" className={s.logo} width="108" height="108" />
         <h1 className={s.brand}>RackTrack</h1>
-        <p className={s.tag}>Physical Infrastructure Intelligence for Data Centers.</p>
+        {/* No product tagline: a person at this screen is typing a password, not
+            choosing a product. */}
 
         <form className={s.form} onSubmit={submit} autoComplete="on" noValidate>
           <div className={s.field}>

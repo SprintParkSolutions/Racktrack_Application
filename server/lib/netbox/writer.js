@@ -38,6 +38,26 @@ class Pending {
 const isPending = (v) => v instanceof Pending;
 
 /**
+ * What NetBox refused, in a sentence rather than in JSON.
+ *
+ * An admin approving an export reads these reasons, and a reason that arrives as
+ * `{"name":["already exists"]}` is the wire format on a screen. NetBox answers a
+ * refusal as an object keyed by the field it objected to, so the field name and
+ * its complaint are what a person needs; the braces and quotes are not. The
+ * cause is never dropped - only its punctuation.
+ */
+function refusalText(err) {
+  const detail = err && err.detail;
+  if (typeof detail === 'string' && detail) return detail;
+  if (detail && typeof detail === 'object') {
+    const lines = Object.entries(detail)
+      .map(([field, said]) => `${field}: ${[].concat(said).join(' ')}`);
+    if (lines.length) return lines.join('; ');
+  }
+  return String((err && err.message) || 'no reason given');
+}
+
+/**
  * NetBox's value for `key`, flattened to something comparable.
  * It nests foreign keys as {id, ...} and choice fields as {value, label}.
  */
@@ -229,6 +249,9 @@ function aliasUid(uid, key, hash) {
  */
 function uniqueInterfaceNames(snapshot, report) {
   const byDevice = new Map();
+  // The device's own name, because the warning names the box a person has to go
+  // back and photograph. Its uid names nothing to anybody reading the screen.
+  const nameOf = new Map((snapshot.devices || []).map((d) => [d.uid, d.name]));
   for (const i of snapshot.interfaces || []) {
     if (!i || !i.deviceUid) continue;
     const taken = byDevice.get(i.deviceUid) || new Map();
@@ -237,9 +260,8 @@ function uniqueInterfaceNames(snapshot, report) {
       const place = String(i.uid || '').split(':').pop();
       const replacement = place && !taken.has(place) ? place : `${name}-${taken.size + 1}`;
       report.warnings.push(
-        `Two ports on ${i.deviceUid} were both read as "${name}"; the second is `
-        + `recorded as "${replacement}" so the device keeps one port per name. `
-        + 'Photograph the rack again to read the panel numbers properly.');
+        `${nameOf.get(i.deviceUid) || 'One device'}: two ports both read as "${name}", `
+        + `so the second is recorded as "${replacement}". Photograph the rack again.`);
       i.name = replacement;
       taken.set(replacement, true);
     } else {
@@ -304,7 +326,7 @@ async function walk(snapshot, client, apply, report) {
         skipped.add(obj.uid);
         report.changes.push({
           type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
-          reason: `evidence=${obj.evidence}, so it goes to review and never to NetBox`,
+          reason: 'the sources disagree about this, so it goes to review and not to NetBox',
         });
         bump('skip');
         continue;
@@ -318,8 +340,8 @@ async function walk(snapshot, client, apply, report) {
         report.changes.push({
           type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
           reason: blockedBy.length
-            ? `depends on excluded/failed object(s): ${blockedBy.join(', ')}`
-            : `unresolved reference(s): ${misses.join(', ')}`,
+            ? 'held back with the record it belongs to'
+            : 'held back: something it belongs to is missing from this scan',
         });
         bump('skip');
         continue;
@@ -335,7 +357,7 @@ async function walk(snapshot, client, apply, report) {
         failed.add(obj.uid);
         report.changes.push({
           type: spec.label, uid: obj.uid, name: String(name), action: 'fail',
-          reason: `lookup failed: ${JSON.stringify(err.detail ?? err.message)}`,
+          reason: `NetBox did not answer: ${refusalText(err)}`,
         });
         bump('fail');
         continue;
@@ -357,8 +379,8 @@ async function walk(snapshot, client, apply, report) {
           try { twin = await client.findByUid(spec.endpoint, staleUid, { fresh: apply }); } catch { twin = null; }
           if (twin) {
             report.warnings.push(
-              `${spec.label} "${name}" (${obj.uid}) also has a record under its previous id `
-              + `${staleUid} (NetBox id ${twin.id}); it was not merged`);
+              `${spec.label} "${name}" also has an older record in NetBox (id ${twin.id}). `
+              + 'Nothing was merged or removed.');
           }
         }
 
@@ -385,7 +407,7 @@ async function walk(snapshot, client, apply, report) {
             failed.add(obj.uid);
             report.changes.push({
               type: spec.label, uid: obj.uid, name: String(name), action: 'fail',
-              netboxId: existing.id, reason: JSON.stringify(err.detail ?? err.message),
+              netboxId: existing.id, reason: `NetBox refused this change: ${refusalText(err)}`,
             });
             bump('fail');
             continue;
@@ -412,7 +434,7 @@ async function walk(snapshot, client, apply, report) {
           failed.add(obj.uid);
           report.changes.push({
             type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
-            reason: `lookup of ${oldUid} failed: ${JSON.stringify(err.detail ?? err.message)}`,
+            reason: `NetBox did not answer: ${refusalText(err)}`,
           });
           bump('fail');
           continue;
@@ -430,7 +452,7 @@ async function walk(snapshot, client, apply, report) {
             failed.add(obj.uid);
             report.changes.push({
               type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
-              netboxId: previous.id, reason: `lookup failed: ${JSON.stringify(err.detail ?? err.message)}`,
+              netboxId: previous.id, reason: `NetBox did not answer: ${refusalText(err)}`,
             });
             bump('fail');
             continue;
@@ -439,7 +461,8 @@ async function walk(snapshot, client, apply, report) {
             failed.add(obj.uid);
             report.changes.push({
               type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
-              netboxId: previous.id, reason: 'target uid already exists',
+              netboxId: previous.id,
+              reason: 'another record took this id while the plan was running. Run the plan again',
             });
             bump('fail');
             continue;
@@ -450,7 +473,7 @@ async function walk(snapshot, client, apply, report) {
             failed.add(obj.uid);
             report.changes.push({
               type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
-              netboxId: previous.id, reason: JSON.stringify(err.detail ?? err.message),
+              netboxId: previous.id, reason: `NetBox refused this change: ${refusalText(err)}`,
             });
             bump('fail');
             continue;
@@ -482,7 +505,7 @@ async function walk(snapshot, client, apply, report) {
               type: spec.label, uid: obj.uid, name: String(name), action: 'update',
               netboxId: claimed.id,
               diff: { [UID_FIELD]: { from: null, to: obj.uid } },
-              reason: `NetBox already had this ${spec.label.toLowerCase()}, matched by ${claimed.by} and stamped rather than created again`,
+              reason: 'NetBox already had this one, so it was updated rather than created',
             });
             bump('update');
             bump('adopted');
@@ -491,7 +514,7 @@ async function walk(snapshot, client, apply, report) {
           failed.add(obj.uid);
           report.changes.push({
             type: spec.label, uid: obj.uid, name: String(name), action: 'fail',
-            reason: JSON.stringify(err.detail ?? err.message),
+            reason: `NetBox refused this change: ${refusalText(err)}`,
           });
           bump('fail');
           continue;
@@ -531,7 +554,11 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null) {
   try {
     present = await client.paginate('/api/dcim/devices/', { rack_id: rackNetboxId });
   } catch (err) {
-    report.warnings.push(`could not check for orphaned devices: ${err.message}`);
+    // The admin reading the plan gets the plain line; the cause is an operator's
+    // problem and is kept where an operator looks, rather than dropped for the
+    // sake of a shorter sentence.
+    console.warn('[netbox.writer] orphan check failed:', refusalText(err));
+    report.warnings.push('NetBox could not be asked which devices are missing from this scan.');
     return [];
   }
   const seen = new Set();
@@ -547,8 +574,8 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null) {
     if (!uid || seen.has(uid)) return [];
     return [{
       netboxId: d.id, name: d.name, uid, status: (d.status || {}).value,
-      recommendation: 'Review. It was in a previous scan and is absent from this one. '
-                    + 'Not deleted. Set status=offline only after a human checks.',
+      recommendation: 'In an earlier scan, not in this one. Nothing was deleted - '
+                    + 'check the rack before marking it offline.',
     }];
   });
 }
@@ -572,13 +599,12 @@ async function plan(snapshot, client, { ensureField = false } = {}) {
   if (!cf) {
     if (ensureField) {
       await client.ensureCustomField(objectTypes());
-      report.customField = 'created (schema change made so this diff is accurate)';
+      report.customField = 'created';
     } else {
-      report.customField = 'ABSENT';
+      report.customField = 'missing';
       report.warnings.push(
-        `'${UID_FIELD}' custom field does not exist yet, so nothing can be matched `
-        + 'and every object below reads as a create. Export creates it automatically; '
-        + 'pass ensureField for an accurate pre-flight diff.');
+        'NetBox is not set up for RackTrack yet, so every record below looks new. '
+        + 'Exporting sets it up and matches them.');
     }
   } else {
     report.customField = 'present';

@@ -93,14 +93,15 @@ export function usePrimaryNav() {
 
   return [
     // ── Rack work: the app opens on the work, so Scan is first.
+    // A hint that only rewords the label above it is a second line for nothing, so
+    // Scan, Scan history, Contact support and Profile carry none. The hints that
+    // survive all say something the label does not.
     { group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false,
-      inBar: true, barLabel: 'Scan',
-      hint: 'Photograph a rack' },
+      inBar: true, barLabel: 'Scan' },
     { group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
       inBar: true, barLabel: '2 Racks',
       hint: 'Two racks as one job' },
-    { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false,
-      hint: 'Past scans and reports' },
+    { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false },
     // Approvals is its own application on its own address, so this
     // entry carries `href` instead of `to`: the bar, the Menu and the sidebar
     // draw it as a link that leaves the app (components/ExternalLink.jsx).
@@ -127,11 +128,9 @@ export function usePrimaryNav() {
     // ── Help
     { group: 'help', to: '/help', label: 'Ask DOT', icon: <HelpIcon />, end: false,
       hint: 'Answers from the docs' },
-    { group: 'help', to: '/contact', label: 'Contact support', icon: <ContactIcon />, end: false,
-      hint: 'Email the team' },
+    { group: 'help', to: '/contact', label: 'Contact support', icon: <ContactIcon />, end: false },
 
     // ── Account. Not in the phone bar: the Menu ends with it, next to Sign out.
-    { group: 'account', to: '/profile', label: 'Profile', icon: <ProfileIcon />, end: false,
-      hint: 'Account and sign-in' },
+    { group: 'account', to: '/profile', label: 'Profile', icon: <ProfileIcon />, end: false },
   ];
 }

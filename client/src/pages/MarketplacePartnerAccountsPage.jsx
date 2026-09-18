@@ -182,10 +182,8 @@ export default function MarketplacePartnerAccountsPage() {
       action={null}
       backTo="/marketplace"
     >
-      <p className="mkt-body">
-        Connect your seller accounts on other platforms to cross-post RackTrack
-        listings, or push announcements to a Discord channel.
-      </p>
+      {/* Each of the three cards below carries its own description saying exactly
+          this, and the subtitle above already names the three platforms. */}
 
       {error && (
         <div className="mkt-banner mkt-banner--error" role="alert">

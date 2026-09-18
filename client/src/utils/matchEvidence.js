@@ -187,9 +187,9 @@ export function settleAdvice(reason, hasMatch) {
     return 'Nothing in the photo looks like this switch. Check it is in this rack, or choose the box yourself.';
   }
   if (Number.isFinite(count) && count === 1 && c === 'unidentified') {
-    return 'One box could be this switch, but nothing about it matches yet. Read the serial number off the label to be sure.';
+    return 'One box could be this switch. Read the serial off its label to be sure.';
   }
-  return 'This switch has not been matched. Choose the box it is, or leave it as not in this rack.';
+  return 'Choose the box this switch is, or mark it not in this rack.';
 }
 
 /**

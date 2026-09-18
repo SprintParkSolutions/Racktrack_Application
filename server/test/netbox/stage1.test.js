@@ -310,7 +310,8 @@ test('b. a rebind refuses when the new uid has appeared since the plan, and patc
 
   const dev = out.changes.find((c) => c.uid === target);
   assert.equal(dev.action, 'fail');
-  assert.equal(dev.reason, 'target uid already exists');
+  assert.equal(dev.reason,
+    'another record took this id while the plan was running. Run the plan again');
   assert.equal(dev.fromUid, oldUid);
   assert.equal(dev.netboxId, oldRow.id, 'it names the record it would have rebound');
   assert.ok(w.uidsOn('/api/dcim/devices/').includes(oldUid), 'the old record was not touched');
@@ -341,11 +342,12 @@ test('b. a twin left under the old hash beside the keyed record is reported, not
   w.rows('/api/dcim/racks/').push({ id: 900, name: 'A01', custom_fields: { [UID_FIELD]: `rack:${HASH}` } });
   const mark = w.calls.length;
   const planned = await writer.plan(keyed, w.client());
-  const line = planned.warnings.find((s) => s.includes(`rack:${HASH}`));
-  assert.ok(line, `a warning names the stale uid: ${JSON.stringify(planned.warnings)}`);
-  assert.match(line, /also has a record under its previous id/);
-  assert.match(line, /not merged/);
-  assert.ok(line.includes(`rack:${KEY}`), 'and the keyed uid it stands beside');
+  // The warning names the record in NetBox's own terms - its NetBox id, which an
+  // admin can open - not in ours. A RackTrack uid names nothing on that screen.
+  const line = planned.warnings.find((s) => s.includes('older record in NetBox'));
+  assert.ok(line, `a warning names the twin: ${JSON.stringify(planned.warnings)}`);
+  assert.ok(line.includes('(id 900)'), 'and the NetBox id of the older record');
+  assert.match(line, /Nothing was merged or removed/);
   assert.equal(planned.warnings.length, 1, 'one twin, one line');
   assert.equal(planned.counts.noop, RACK_SCOPED + SHARED, 'the plan itself is unchanged');
   assert.equal(planned.counts.rebind || 0, 0);
@@ -355,7 +357,7 @@ test('b. a twin left under the old hash beside the keyed record is reported, not
 
   // The push does not touch it either.
   const pushed = await writer.push(keyed, w.client());
-  assert.ok(pushed.warnings.some((s) => s.includes(`rack:${HASH}`)));
+  assert.ok(pushed.warnings.some((s) => s.includes('older record in NetBox')));
   assert.ok(!w.methods().includes('DELETE'));
   const stale = w.rows('/api/dcim/racks/').find((o) => o.id === 900);
   assert.equal(stale.custom_fields[UID_FIELD], `rack:${HASH}`, 'the twin still carries the old uid');

@@ -106,12 +106,15 @@ test('a box struck off for its shape is not announced when a box WAS chosen', ()
     `nothing about struck-off boxes when one was chosen, got ${JSON.stringify(notes)}`);
 });
 
-test('but when NOTHING was chosen it says the boxes were the wrong size', () => {
-  // The one place a person is actually asking why. One sentence, not one per box.
+test('and when NOTHING was chosen it says so in one line, with what to do', () => {
+  // A person here needs the next move, not the tally. Counting the boxes that
+  // were struck off only proved the matcher had been through them.
   const out = run([box(10, 4, null), box(12, 6, null)], [sw(1, 'sw', 48, null, null)]);
   assert.equal(out.matches[1], null);
-  assert.match(out.reasons[1].why, /right number of sockets/);
-  assert.match(out.reasons[1].why, /2 boxes have the wrong size/);
+  assert.match(out.reasons[1].why, /no box in this photo has the right number of ports/);
+  assert.match(out.reasons[1].why, /Pick the box by hand, or scan the rack again/);
+  assert.doesNotMatch(out.reasons[1].why, /wrong size|2 boxes/,
+    'the struck-off boxes are not counted at the person');
 });
 
 test('a box showing more sockets than the switch has is not that switch', () => {

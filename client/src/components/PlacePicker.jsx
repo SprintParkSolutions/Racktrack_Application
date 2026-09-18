@@ -61,12 +61,18 @@ export default function PlacePicker({
           "The camera suggests one: U10 box and U12 box cannot be told apart",
           which is the opposite of what it says. */}
       {!chosen && suggestion?.deviceUid && (
-        <p className={styles.suggest}>The camera suggests one: {suggestion.why}</p>
+        <p className={styles.suggest}>
+          The photo suggests {label(pickable.find((d) => d.uid === suggestion.deviceUid) || {})}.
+        </p>
       )}
       {!chosen && suggestion && !suggestion.deviceUid && suggestion.why && (
         <p className={styles.suggest}>Not placed: {suggestion.why}.</p>
       )}
-      {(suggestion?.notes || []).map((note) => (
+      {/* One note, never a column of them. Four of these was the complaint that
+          started this: paragraphs of the matcher's arithmetic on a card whose job
+          is to show one switch and one box. The first note is the one that asks
+          the person for something. */}
+      {(suggestion?.notes || []).slice(0, 1).map((note) => (
         <p className={styles.suggest} key={note}>{note}.</p>
       ))}
 
@@ -80,7 +86,7 @@ export default function PlacePicker({
           : (
             <button type="button" className={styles.confirm} disabled={confirming}
               onClick={() => onConfirm(chosen.uid)}>
-              {confirming ? 'Saving...' : `I checked this box at the rack: ${label(chosen)}`}
+              {confirming ? 'Saving...' : `I checked this box: ${label(chosen)}`}
             </button>
           )
       )}

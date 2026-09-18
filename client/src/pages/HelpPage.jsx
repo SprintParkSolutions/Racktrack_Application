@@ -154,7 +154,7 @@ export default function HelpPage() {
           route: 'refusal',
           content: res.status === 429
             ? (err?.message || 'That was a lot of questions at once. Try again shortly.')
-            : 'DOT is unavailable right now.',
+            : 'DOT is unavailable. Try again shortly.',
         }]);
         return;
       }
@@ -196,8 +196,8 @@ export default function HelpPage() {
     return (
       <div className={styles.page}>
         <div className={styles.unavailable}>
-          <h2>Help is unavailable</h2>
-          <p>DOT isn&apos;t running right now. Please contact your RackTrack administrator.</p>
+          <h2>DOT is unavailable</h2>
+          <p>Contact your RackTrack administrator.</p>
         </div>
       </div>
     );

@@ -313,7 +313,7 @@ export default function LabPage() {
 
       <main className={styles.main}>
 
-        {loadErr && <p className={styles.errLine}>Device list stale - {loadErr}</p>}
+        {loadErr && <p className={styles.errLine}>Could not refresh the device list. Try again in a moment.</p>}
 
         {/* Device cards. */}
         <div role="tablist" aria-label="Lab devices" className={styles.deviceGrid}>
@@ -390,20 +390,20 @@ export default function LabPage() {
 
             {!selected.enabled && (
               <p className={`${styles.banner} ${styles.bannerWarn}`}>
-                <span className={styles.bannerStrong}>Polling disabled.</span> The poller skips this
-                device entirely, so its data goes stale and no drift is recorded. Enable it to resume.
+                <span className={styles.bannerStrong}>Polling disabled.</span> This switch's data
+                will go out of date until you enable it.
               </p>
             )}
 
             {selected.last_error && (
               <div className={`${styles.banner} ${styles.bannerWarn}`}>
                 <span className={styles.bannerStrong}>
-                  Offline - the switch isn’t answering
+                  Not answering
                   {selected.consecutive_failures
                     ? ` (${selected.consecutive_failures} failed attempt${selected.consecutive_failures === 1 ? '' : 's'})`
                     : ''}.
                 </span>{' '}
-                It’s likely stopped or unreachable; polling recovers on its own once it’s back.
+                Polling resumes on its own once the switch is back.
               </div>
             )}
 
@@ -433,7 +433,7 @@ export default function LabPage() {
 
                 <div className={styles.section}>
                   <p className={styles.asOf}>
-                    {busy ? 'Refreshing…' : `Audit as of ${fmtAgo(entry.at)}`} · live SSH pass, not polled
+                    {busy ? 'Refreshing' : `Checked ${fmtAgo(entry.at)}`}
                   </p>
 
                   {tab === 'ports' && (
@@ -521,10 +521,7 @@ export default function LabPage() {
                         </table>
                       </div>
                     ) : (
-                      <p className={styles.sectionNote}>
-                        None. Expected on CoreSW - it runs the L3 IOL image, where interfaces are routed
-                        and there are no switchports to put in a VLAN.
-                      </p>
+                      <p className={styles.sectionNote}>No VLANs on this switch.</p>
                     )
                   )}
 
@@ -551,10 +548,7 @@ export default function LabPage() {
                         </table>
                       </div>
                     ) : (
-                      <p className={styles.sectionNote}>
-                        None. IOS needs <code>lldp run</code> globally, and the IOL l2-ipbase image may
-                        not support LLDP at all - Cisco defaults to CDP.
-                      </p>
+                      <p className={styles.sectionNote}>No neighbours reported.</p>
                     )
                   )}
 
@@ -566,7 +560,7 @@ export default function LabPage() {
               busy ? (
                 <div className={styles.section}>
                   <p className={styles.sectionNote}>
-                    Auditing {selected.host} over SSH - identity, ports, PoE, VLANs, LLDP and the MAC table…
+                    Checking {selected.host}
                   </p>
                 </div>
               ) : selected.enabled && !selected.last_error && !entry?.error ? (

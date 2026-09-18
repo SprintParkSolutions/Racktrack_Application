@@ -676,8 +676,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
           })()}
           {sw._switchProposal && (
             <div style={{ fontSize: '.7rem', color: '#b26a00', marginTop: 4, lineHeight: 1.45 }}>
-              These details come from a switch match nobody has confirmed yet. Confirm it
-              on the Review screen.
+              Confirm the match in Review.
             </div>
           )}
         </div>
@@ -820,9 +819,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                 <>
                   {awaitingLabel ? (
                     <StatusLine color={statusColor}>
-                      Still reading the label from the rack photo. It can take a
-                      minute - you don't have to wait, enter the make and model
-                      above and it will use yours.
+                      Still reading the label. You can enter the make and model above instead.
                     </StatusLine>
                   ) : identMissing ? (
                     <StatusLine color={statusColor}>
@@ -874,9 +871,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                   )}
                   {identMissing && !makeIsUserSupplied && !modelIsUserSupplied && (
                     <p style={{ margin: '6px 0 0', fontSize: '.72rem', color: statusColor }}>
-                      Photograph the model number on the device's faceplate - up close
-                      it reads far better than it does in the rack photo. You can take
-                      it now or upload one you already have.
+                      A close-up of the model number reads far better than the rack photo.
                     </p>
                   )}
                 </>
@@ -1836,8 +1831,8 @@ function LabelProgressNote({ ocrStatus, unidentified, onRetry }) {
       {working && <span aria-hidden="true" className={desk.pulseDot} />}
       <span style={{ fontSize: '.76rem', color: '#717171', lineHeight: 1.5 }}>
         {working
-          ? 'Reading make and model from the device labels - they fill in here as they land.'
-          : 'Couldn’t read the device labels. Positions and port counts are from the scan; add make and model yourself on any card.'}
+          ? 'Reading make and model from the device labels.'
+          : 'Could not read the device labels. Add make and model on any card.'}
       </span>
       {!working && onRetry && (
         <button
@@ -1869,8 +1864,7 @@ function PlacesProposalNote({ rackId }) {
       background: '#ffffff', border: '1px dashed #e6e6e6',
       fontSize: '.76rem', color: '#b26a00', lineHeight: 1.5,
     }}>
-      The places for this rack are still a proposal, so what the switches said is not
-      on these cards yet.{' '}
+      Nothing the switches said is on these cards yet.{' '}
       <Link to={`/results/${rackId}/review`} style={{ color: '#121212', fontWeight: 700 }}>
         Open Review
       </Link>{' '}
@@ -1896,7 +1890,7 @@ function SwitchInfoBody({ rackId, status, ocrStatus, switches, recheck, unidenti
   if (switches.length === 0) {
     return <RestingPanel
       title="No switches detected"
-      detail="The scan of this rack didn't identify any device as a switch. If there is one here, re-run the rack scan - make and model read best when the faceplate is square-on and well lit."
+      detail="No device in this rack was identified as a switch. Scan again with the faceplates square-on and well lit."
       onRetry={recheck} />;
   }
 

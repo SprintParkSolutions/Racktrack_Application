@@ -551,7 +551,7 @@ function SwitchInfoModal({
                   // reported. The Switches tab is where a make, model and version are
                   // entered by hand, so name that instead of dead-ending.
                   <p className={styles.prEmpty}>
-                    Need both model and firmware version to check for updates - set them on the Switches tab.
+                    Set the model and firmware version on the Switches tab.
                   </p>
                 )}
               </div>
@@ -656,7 +656,7 @@ function PortReportModal({ report, onClose }) {
           <section className={styles.prSection}>
             <h4>End device(s) on this port</h4>
             {macs.length === 0 ? (
-              <p className={styles.prEmpty}>No MACs learned - port idle or never carried traffic.</p>
+              <p className={styles.prEmpty}>Nothing has been seen on this port.</p>
             ) : (
               <ul className={styles.prMacList}>
                 {macs.map((m, i) => (
@@ -689,7 +689,7 @@ function PortReportModal({ report, onClose }) {
                 {lldp._via && <div><span>Resolved via</span><b>{lldp._via}</b></div>}
                 {lldp.system_desc && <div className={styles.prWide}><span>System desc</span><b>{lldp.system_desc}</b></div>}
               </div>
-            ) : <p className={styles.prEmpty}>No LLDP neighbor advertised - endpoint does not speak LLDP, or it is disabled.</p>}
+            ) : <p className={styles.prEmpty}>Nothing at the far end announced itself.</p>}
           </section>
 
           <section className={styles.prSection}>
@@ -770,7 +770,7 @@ function CredsModal({ initial, onCancel, onSubmit }) {
         </div>
         {!stored && (
           <p className={styles.credsHint}>
-            Stored only in memory for this session. SSH is used to query LLDP / MAC table on the switch.
+            Kept for this session only, never saved.
           </p>
         )}
         <label className={styles.credsField}>
@@ -2012,7 +2012,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           No scan result available
         </p>
         <p style={{ fontSize: '.84rem', color: 'var(--t2, #474747)', margin: 0, maxWidth: 420, textAlign: 'center' }}>
-          Start a new scan to identify devices, ports, and cables on a rack.
+          Scan a rack to see its devices and ports.
         </p>
         <button className="btn btn-primary" onClick={() => navigate('/scan')}>Start a Scan</button>
       </div>
@@ -3252,7 +3252,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
             {/* Next-step guidance */}
             <div style={{fontSize:12,color:'var(--muted, #474747)',lineHeight:1.5,marginTop:4}}>
-              <strong style={{color:'var(--text, #c6c6c6)'}}>Next steps:</strong> either the CMDB is stale (device was moved/replaced) or someone installed the wrong hardware. Verify physically at rack <strong>{ticket?.cmdb?.rack_name || '?'}</strong>, then update whichever side is wrong.
+              <strong style={{color:'var(--text, #c6c6c6)'}}>Next:</strong> check rack <strong>{ticket?.cmdb?.rack_name || '?'}</strong>, then update whichever side is wrong.
             </div>
 
           </div>
@@ -3848,9 +3848,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
               <span>
-                Not fully sure about this cable ({fmtPct(portInfo.cable_confidence)} confidence) - the photo
-                resolution may be too low to read it clearly. Please check the cable and its colour, and
-                correct them below if they're wrong.
+                The cable was hard to read. Check its colour below and correct it if it is wrong.
               </span>
             </div>
           )}
@@ -3955,7 +3953,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             {neighborStatus === 'empty' && (
               <>
                 <span className={styles.prEndDim}>
-                  No end device responded - the endpoint doesn’t advertise LLDP, or LLDP is disabled on the switch.
+                  Nothing answered on this port.
                 </span>
                 <button className={styles.prEndAction} onClick={() => findNeighbor()}>Retry</button>
               </>
@@ -4219,8 +4217,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 <form className={styles.shareDialogBody}
                       onSubmit={(e) => { e.preventDefault(); confirmShareSend(); }}>
                   <p className={styles.shareDialogHint}>
-                    Enter the recipient for this rack scan report. The address is remembered
-                    on this device for next time.
+                    The address is remembered on this device.
                   </p>
 
                   <label className={styles.shareDialogLabel} htmlFor="shareEmailInput">
@@ -4372,8 +4369,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               <div className={styles.consoleTerminal} ref={consoleTermRef}>
                 {consoleEntries.length === 0 && consoleStatus !== 'running-manual' && (
                   <div className={styles.consoleEmpty}>
-                    Pick an option above to query the switch - it runs as soon as
-                    you choose. Or type a command below.
+                    Pick an option above, or type a command below.
                   </div>
                 )}
 
@@ -5231,13 +5227,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           }}>
             Port history &amp; drift
           </h2>
-          <p style={{
-            margin: '0 0 20px',
-            fontSize: '.88rem',
-            color: 'var(--t2, #474747)',
-          }}>
-            Live port state, VLAN and link-flap tracking across this rack.
-          </p>
           <PortHistoryContent rackId={urlRackId || rackId || scanId} />
         </div>
       )}

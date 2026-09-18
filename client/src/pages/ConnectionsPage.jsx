@@ -158,7 +158,7 @@ export default function ConnectionsPage() {
       {refreshing && (
         <p className={styles.note}>
           <span className={styles.refreshSpinner}/>
-          Pulling fresh data from {active?.name || 'the new connection'}…
+          Refreshing from {active?.name || 'the new connection'}
         </p>
       )}
       {lastRefresh && !refreshing && (
@@ -172,8 +172,7 @@ export default function ConnectionsPage() {
           what kind of thing it is, and the two or three verbs that apply. */}
       {profiles.length === 0 && !serverNetbox ? (
         <div className={styles.empty}>
-          <p>No connections yet.</p>
-          <p className={styles.emptySub}>Add your CMDB or NetBox once and every screen uses it.</p>
+          <p>Add your CMDB or NetBox once and every screen uses it.</p>
         </div>
       ) : (
         <ul className={styles.rows}>
@@ -182,7 +181,7 @@ export default function ConnectionsPage() {
               <div className={styles.rowMain}>
                 <span className={styles.rowName}>RackTrack NetBox</span>
                 <span className={styles.rowType}>
-                  NetBox · in use · provided for every account{serverNetbox.reachable === false ? ' · not reachable right now' : ''}
+                  NetBox · in use · included with RackTrack{serverNetbox.reachable === false ? ' · not reachable' : ''}
                 </span>
               </div>
             </li>
@@ -266,7 +265,7 @@ export default function ConnectionsPage() {
                 </select>
                 {editingId && (
                   <span className={styles.fieldHint}>
-                    Type can't change after a connection is created.
+                    Type cannot be changed.
                   </span>
                 )}
               </label>
@@ -292,7 +291,7 @@ export default function ConnectionsPage() {
 
               {editingId && (
                 <p className={styles.editHint}>
-                  Leave the credential fields blank to keep what's already saved.
+                  Leave blank to keep the saved credentials.
                 </p>
               )}
 

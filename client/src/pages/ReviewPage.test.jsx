@@ -191,7 +191,7 @@ describe('ReviewPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Change' }));
     fireEvent.click(screen.getByRole('button', { name: 'U11, Switch, 24 ports' }));
-    expect(screen.getByText('This box has changed since it was confirmed. Confirm it again.')).toBeTruthy();
+    expect(screen.getByText('The box has changed. Confirm it again.')).toBeTruthy();
     expect(screen.queryByText(/Jane Patel confirmed this on /)).toBe(null);
     expect(screen.getByText('0 of 1 confirmed')).toBeTruthy();
   });
@@ -222,7 +222,7 @@ describe('ReviewPage', () => {
     reply.view = view;
     draw();
     await screen.findByText('Core A');
-    expect(screen.getByText('Matched from a previous check. It does not need confirming again.')).toBeTruthy();
+    expect(screen.getByText('Matched from an earlier check.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Change' })).toBeTruthy();
   });
 

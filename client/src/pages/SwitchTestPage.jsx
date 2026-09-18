@@ -573,7 +573,7 @@ export default function SwitchTestPage() {
     };
     try {
       let data;
-      let filed = { ok: false, why: 'Kept on this device.' };
+      let filed = { ok: false, why: '' };
       if (viaServer) {
         // The server reads it and files it in the same call.
         onStep('Asking the server to read it');
@@ -752,10 +752,8 @@ export default function SwitchTestPage() {
 
       {form.version === 'v3' ? (
         <p className={styles.fieldNote}>
-          The SNMPv3 user your network team created on the switch, at the
-          <b> noAuthNoPriv</b> level - no password, no encryption. That is how
-          the TP-Links are set up today. A user with a password comes in the
-          next build. The name stays on this phone.
+          The SNMPv3 user your network team set on the switch, at the
+          <b> noAuthNoPriv</b> level. No password yet. The name stays on this phone.
         </p>
       ) : form.version === 'v2c' ? (
         <p className={styles.fieldNote}>
@@ -764,8 +762,7 @@ export default function SwitchTestPage() {
         </p>
       ) : (
         <p className={styles.fieldNote}>
-          Choose how this switch is set up - your network team knows which, and
-          the switch's own SNMP settings page says so too.
+          Choose how this switch is set up. Its SNMP settings page says which.
         </p>
       )}
 
@@ -802,10 +799,7 @@ export default function SwitchTestPage() {
             they cannot use. Only ever shown in a browser. */}
         {viaServer && (
           <p className={styles.notice}>
-            <b>The server is reading these switches.</b> A browser cannot open the kind of
-            network connection SNMP needs, so this asks the server to do it - which works
-            whenever the server is on the same network as the switches. On a phone, the
-            phone reads them itself.
+            <b>The server is reading these switches.</b> A browser cannot reach them directly.
           </p>
         )}
 
@@ -813,7 +807,7 @@ export default function SwitchTestPage() {
           <div className={styles.empty}>
             <p>No switches on this rack yet.</p>
             <p className={styles.emptySub}>
-              Add one and it is read straight away - every value comes from the switch itself.
+              It is read as soon as you add it.
             </p>
             <button type="button" className={styles.primary} onClick={() => setForm(BLANK)}>
               Add a switch
@@ -1059,7 +1053,7 @@ export default function SwitchTestPage() {
                   {places.suggested && (match[serverIdFor(sw, rackId)]
                     ? (
                       <p className={styles.proposal}>
-                        This place is a proposal from the photo. Press Save places to keep it.
+                        Suggested. Save places to keep it.
                       </p>
                     )
                     : (
@@ -1211,15 +1205,9 @@ export default function SwitchTestPage() {
             {matchNote && (
               <p className={matchNote.ok ? styles.finishOk : styles.finishBad}>{matchNote.text}</p>
             )}
-            {/* The places on screen are the server's proposal until somebody
-                saves them. Going to the report no longer saves them on the way
-                past: the report says which facts rest on a proposal, and a
-                place is stored because a person chose to store it. */}
-            {places?.suggested && Object.values(match).some(Boolean) && (
-              <p className={styles.proposal}>
-                These places are a proposal from the photo. Press Save places to keep them.
-              </p>
-            )}
+            {/* Every card already says "Suggested. Save places to keep it.", and the
+                Save places button is the next thing on the screen. Saying it a third
+                time over the whole list taught nobody anything. */}
             <div className={styles.actions}>
               {places?.devices?.length > 0 && (
                 <button type="button" className={styles.secondary} disabled={savingMatch} onClick={() => savePlaces()}>

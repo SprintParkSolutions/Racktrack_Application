@@ -131,7 +131,7 @@ export default function HistoryPage() {
     let cancelled = false;
     setLoading(true);
     authFetch(apiUrl('/api/scans'))
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error('Could not load your scans. Try again.'))))
       .then(data => { if (!cancelled) { setScans(data.scans || []); setError(null); } })
       .catch(err => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -141,11 +141,6 @@ export default function HistoryPage() {
   // Any change to what's being listed puts you back on page 1 - otherwise a
   // search that narrows 90 scans to 3 leaves you on page 5, looking at nothing.
   useEffect(() => { setPage(1); }, [query, rangeKey, sortKey]);
-
-  const totals = useMemo(() => scans.reduce((acc, s) => ({
-    devices: acc.devices + (s.deviceCount || 0),
-    ports:   acc.ports   + (s.portCount   || 0),
-  }), { devices: 0, ports: 0 }), [scans]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -217,7 +212,7 @@ export default function HistoryPage() {
         {/* ── One panel: the archive's totals over the controls that narrow
              it. They were two floating strips with a lake of white between
              them; as a single surface the band reads as one instrument and
-             the four totals can spread the full width instead of huddling
+             the totals can spread the full width instead of huddling
              on the left. ── */}
         <section className={styles.panel}>
         <div className={styles.stats} aria-label="Totals">
@@ -225,14 +220,9 @@ export default function HistoryPage() {
             <span className={styles.statValue}>{scans.length}</span>
             <span className={styles.statLabel}>Scans</span>
           </div>
-          <div className={styles.stat}>
-            <span className={styles.statValue}>{totals.devices}</span>
-            <span className={styles.statLabel}>Devices</span>
-          </div>
-          <div className={styles.stat}>
-            <span className={styles.statValue}>{totals.ports}</span>
-            <span className={styles.statLabel}>Ports</span>
-          </div>
+          {/* Lifetime device and port totals were numbers nobody acts on: they
+              belong to no rack and change nothing on this screen. How many scans
+              there are and when the last one ran do. */}
           <div className={styles.stat}>
             <span className={`${styles.statValue} ${styles.statValueWord}`}>
               {scans.length ? formatRelative(scans[0].timestamp) : '-'}
@@ -317,13 +307,13 @@ export default function HistoryPage() {
             {scans.length === 0 ? (
               <>
                 <p className={styles.emptyTitle}>No scans yet</p>
-                <p className={styles.emptyText}>Scanned racks land here - every one you capture, kept.</p>
+                <p className={styles.emptyText}>Every rack you scan is kept here.</p>
                 <button className={styles.startBtn} onClick={() => navigate('/scan')}>Start your first scan</button>
               </>
             ) : (
               <>
                 <p className={styles.emptyTitle}>Nothing matches</p>
-                <p className={styles.emptyText}>No scan matches that search in this time range.</p>
+                {/* The title says it and the button below says what to do. */}
                 <button
                   className={styles.clearFilters}
                   onClick={() => { setQuery(''); setRangeKey('all'); }}>

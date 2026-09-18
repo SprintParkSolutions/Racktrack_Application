@@ -200,7 +200,7 @@ export default function DriftPage() {
           onBlur={saveName}
         />
         <span className={styles.nameHint}>
-          {nameSaved ? 'Saved. Edit any time.' : 'Leave blank to keep the generated id.'}
+          {nameSaved ? 'Saved.' : 'Leave blank to keep the current name.'}
         </span>
       </div>
 
@@ -220,8 +220,7 @@ export default function DriftPage() {
             </>
           ) : (
             <p>
-              Ask your administrator to add NetBox or ServiceNow under Data sources.
-              The check works as soon as one is connected.
+              Ask your administrator to connect NetBox or ServiceNow.
             </p>
           )}
         </div>
@@ -267,7 +266,7 @@ export default function DriftPage() {
               <h2>{changed.length} {changed.length === 1 ? 'thing does' : 'things do'} not match</h2>
               <p>
                 Checked against NetBox just now.
-                {auto.length > 0 && ` ${auto.length} supporting ${auto.length === 1 ? 'record' : 'records'} would be created automatically.`}
+                {auto.length > 0 && ` ${auto.length} related ${auto.length === 1 ? 'record' : 'records'} would be created too.`}
               </p>
             </>
           )}
@@ -283,7 +282,7 @@ export default function DriftPage() {
               {spoc.title && <span className={styles.goesToRole}>{spoc.title}</span>}
               {spoc.email && <span className={styles.goesToMail}>{spoc.email}</span>}
               <p className={styles.goesToNote}>
-                The rack&rsquo;s single point of contact, from NetBox. The admin can still pick someone else.
+                The rack&rsquo;s contact in NetBox. The admin can pick someone else.
               </p>
             </>
           ) : (
@@ -371,7 +370,7 @@ export default function DriftPage() {
             Send to the admin
           </button>
           <p className={styles.footNote}>
-            You are not changing NetBox. An admin decides what gets written.
+            An admin decides what reaches NetBox.
           </p>
         </div>
       )}

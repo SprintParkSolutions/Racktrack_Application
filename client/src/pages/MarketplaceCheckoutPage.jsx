@@ -274,8 +274,8 @@ export default function MarketplaceCheckoutPage() {
               </svg>
               <span>
                 {stripeEnabled
-                  ? 'You’ll be redirected to Stripe for secure payment. The seller is notified once payment is confirmed.'
-                  : 'Payment is processed securely. The seller is notified and can ship once payment is confirmed.'}
+                  ? 'Stripe handles the payment. The seller is notified once it clears.'
+                  : 'The seller is notified and ships once payment clears.'}
               </span>
             </p>
           </aside>

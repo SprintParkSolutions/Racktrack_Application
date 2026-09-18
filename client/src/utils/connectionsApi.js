@@ -144,7 +144,9 @@ export const TYPE_INFO = {
       { key: 'username', label: 'Username',       placeholder: 'your NetBox login',          required: true },
       { key: 'password', label: 'Password',       type: 'password',                          required: true },
     ],
-    hint: 'RackTrack signs in to your NetBox once and keeps an API token from then on. Your password is stored encrypted and never shown.',
+    // How the token is kept afterwards is ours to handle, not theirs to read. What
+    // they need before typing a password is what happens to the password.
+    hint: 'Your password is stored encrypted and never shown.',
   },
   orion: {
     label: 'SolarWinds Orion',

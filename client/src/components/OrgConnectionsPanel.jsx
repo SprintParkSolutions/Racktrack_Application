@@ -82,9 +82,8 @@ export default function OrgConnectionsPanel() {
         )}
       </div>
       <p style={{ margin: '0 0 14px', fontSize: 13, color: '#6b6b6b', lineHeight: 1.5, maxWidth: 640 }}>
-        Credentials for your CMDB/ITSM database, live network sources, etc. Set them once here for the
-        whole organization. They're stored <strong>encrypted</strong> and are <strong>never shown again</strong> -
-        not even to you. To change one, just re-enter it.
+        Set your organization's credentials once. They are stored <strong>encrypted</strong> and{' '}
+        <strong>never shown again</strong>. To change one, enter it again.
       </p>
 
       {error && <div style={{ ...card, borderColor: 'rgba(220,38,38,0.35)', color: '#dc2626', marginBottom: 12 }}>{error}</div>}
@@ -116,7 +115,9 @@ export default function OrgConnectionsPanel() {
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" style={ghostBtn} onClick={() => setFormOpen(false)} disabled={saving}>Cancel</button>
-            <button type="submit" style={primaryBtn} disabled={saving}>{saving ? 'Saving…' : 'Save (encrypted)'}</button>
+            {/* "(encrypted)" on the button and "· encrypted" on every saved row both
+                repeated the paragraph above, which is where that promise belongs. */}
+            <button type="submit" style={primaryBtn} disabled={saving}>{saving ? 'Saving' : 'Save'}</button>
           </div>
         </form>
       )}
@@ -133,7 +134,7 @@ export default function OrgConnectionsPanel() {
                 <div style={{ fontWeight: 700, color: '#1c1c1c', fontSize: 14 }}>
                   {p.name} <span style={{ fontSize: 12, fontWeight: 600, color: '#6b6b6b' }}>· {TYPE_INFO[p.type]?.label || p.type}</span>
                 </div>
-                <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 2 }}>● Configured · encrypted</div>
+                <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 2 }}>● Configured</div>
               </div>
               <button type="button" style={dangerBtn} onClick={() => onRemove(p)}>Remove</button>
             </div>

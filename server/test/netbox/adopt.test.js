@@ -135,8 +135,9 @@ test('a manufacturer NetBox already has is claimed, stamped and counted as an up
   assert.ok(mfr, 'the manufacturer is in the report');
   assert.equal(mfr.action, 'update', 'not a failure');
   assert.equal(mfr.netboxId, 501, 'and it is the row that was already there');
-  assert.match(mfr.reason, /already had this manufacturer/);
-  assert.match(mfr.reason, /matched by slug/);
+  // The row already says Manufacturer in its own column, and HOW it was matched
+  // is the writer's business, not the approver's.
+  assert.match(mfr.reason, /NetBox already had this one, so it was updated rather than created/);
   assert.equal(nb.rows('/api/dcim/manufacturers/').length, 1, 'no second D-Link was made');
   assert.equal(nb.rows('/api/dcim/manufacturers/')[0].custom_fields[UID_FIELD], 'mfr:d-link',
     'our uid was stamped on it');
@@ -235,7 +236,8 @@ test('an interface NetBox already has is claimed by its device and name', async 
   assert.equal(nb.rows('/api/dcim/interfaces/').length, before, 'and no duplicate interfaces');
   const iface = out2.changes.find((c) => c.type === 'Interface');
   assert.equal(iface.action, 'update');
-  assert.match(iface.reason, /matched by name and device_id/);
+  // The claim happened; which NetBox field matched it is not the approver's problem.
+  assert.match(iface.reason, /NetBox already had this one/);
 });
 
 test('a second write after a claim is a clean no-op', async () => {
