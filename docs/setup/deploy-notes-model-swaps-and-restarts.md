@@ -26,3 +26,13 @@ way to force that restart when a deploy only changes files outside `server/`
   file is 218,557,304 bytes, sha256
   600c86ff1bea678bc44672f319e0688fa1a8010a6fe08763e75851c7f3a8a1da. Fix the
   copy on the box, then re-apply the one-line swap in config.json.
+- 2026-09-18: `master_best.pt` deleted. It was only ever a candidate to replace
+  `devices_seg`, it was rolled back twice without once loading in production,
+  and the box it failed on was the Windows machine, which is gone. Nothing in
+  the tree referenced it. The three entries above are kept as the record of why
+  it was never adopted; do not go looking for the file.
+- 2026-09-18: `models.ports_typed` swapped from `Models/ports_9.pt` to
+  `Models/ports_13.pt`, and ports_9.pt deleted. This one DOES change files under
+  `server/` as well, so the restart happens on its own. The new weights are not
+  in git: `Models/ports_13.pt` (50 MB) has to be on the host before the deploy,
+  or every scan comes back with no ports at all.

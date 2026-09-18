@@ -367,7 +367,7 @@ server/auth.js:456, 1075-1078  (Gmail rule, quoted in 1.3)</pre>
       <div class="tbl"><table>
         <thead><tr><th>Directory</th><th>Size</th><th>Holds</th></tr></thead>
         <tbody>
-          <tr><td class="k">Models/</td><td class="num">483 MB</td><td>Six weight files: master_best.pt 208 MB, port_count.pt 99 MB, devices_seg.pt 52 MB, ports_9.pt 50 MB, pdu_ports_v1_det_best.pt 50 MB, rack_classifier.pth 8.7 MB. Not in git; copied separately.</td></tr>
+          <tr><td class="k">Models/</td><td class="num">275 MB</td><td>Six weight files: port_count.pt 99 MB, devices_seg.pt 52 MB, ports_13.pt 50 MB, pdu_ports_v1_det_best.pt 50 MB, cable_eff_best 16 MB, rack_classifier.pth 8.7 MB. Not in git; copied separately.</td></tr>
           <tr><td class="k">outputs/</td><td class="num">563 MB</td><td>Per-rack photos, overlays, device maps, HTML and PDF reports. Grows with every scan.</td></tr>
           <tr><td class="k">server/data</td><td class="num">47 MB</td><td>auth.db, logs.db, jwt.secret, scan-jobs.json, netbox/ export records.</td></tr>
           <tr><td class="k">active_learning_Cache/data</td><td class="num">small</td><td>Correction memory used to improve detections.</td></tr>
@@ -376,11 +376,11 @@ server/auth.js:456, 1075-1078  (Gmail rule, quoted in 1.3)</pre>
       </table></div>
       <details class="proof"><summary>Read more: proof</summary><div class="pf">
 <pre>$ du -sh Models outputs server/data active_learning_Cache        (on the Mac checkout)
-483M Models · 563M outputs · 47M server/data · 8.0K active_learning_Cache
+275M Models · 563M outputs · 47M server/data · 8.0K active_learning_Cache
 $ find Models -type f -name "*.pt*" -exec du -h {} +
-208M master_best.pt  99M port_count.pt  52M devices_seg.pt  50M ports_9.pt
+99M port_count.pt  52M devices_seg.pt  50M ports_13.pt
 50M pdu_ports_v1_det_best.pt  8.7M rack_classifier.pth</pre>
-        <div class="src">docker-compose.demo.yml comment: "Model weights — git-ignored, ~483 MB, rsync'd to the host separately." docs/architecture/overview-developers.md §6 lists auth.db, logs.db and jwt.secret under server/data.</div>
+        <div class="src">docker-compose.demo.yml comment: "Model weights — git-ignored, rsync'd to the host separately." docs/architecture/overview-developers.md §6 lists auth.db, logs.db and jwt.secret under server/data.</div>
       </div></details>
     </div>
     <div class="sec">
