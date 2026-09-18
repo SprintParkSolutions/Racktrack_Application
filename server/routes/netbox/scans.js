@@ -196,7 +196,37 @@ async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
 // adopted rack is re-read under the new rules the next time it is opened.
 //   2 — a Switch with fewer than ten ports is a Router
 //   3 - uids keyed on the customer's rack (Part B Stage 1)
-const SNAPSHOT_RULES = 3;
+//   4 - the snapshot carries the record binding a person made
+const SNAPSHOT_RULES = 4;
+
+/**
+ * Which rows of the customer's own record a person said this rack and its boxes
+ * are, and store anything the caller just said.
+ *
+ * It is kept in the binding store rather than in the scan payload, for the same
+ * reason a confirmed switch is: store.setPayload rewrites a payload whole, so
+ * an answer kept there is lost on the next re-adopt or re-detect, and a
+ * person's answer must outlive the photograph they gave it about. The store is
+ * keyed on the tenant and the scan's rack id, so a second photo of the same
+ * rack finds the same answer without anybody saying it twice.
+ *
+ * Nothing here writes to NetBox. The writer still plans a visible rebind row
+ * and an admin still approves it.
+ */
+function recordBindingFor({ tenantId, rackId, said = null, by = null }) {
+  const scope = bindings.scopeOf({ tenantId, rackId });
+  if (said && typeof said === 'object') {
+    const out = bindings.bindRecord(scope, {
+      rackNetboxId: said.rackNetboxId,
+      deviceNetboxIds: said.deviceNetboxIds || null,
+      by: said.by ?? by ?? null,
+      at: said.at ?? null,
+      why: said.why ?? '',
+    });
+    if (out.error) return { error: out.error };
+  }
+  return { binding: bindings.recordBinding(scope) };
+}
 
 router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   const { rackId } = req.params;
@@ -223,6 +253,10 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   // made from an old map. The version travels in the payload; older or
   // missing means adopt again.
   if (existing && (heldPayload.rulesVersion || 0) < SNAPSHOT_RULES) stale = true;
+  // A person naming the customer's own records is a new fact about this rack,
+  // so the snapshot is rebuilt to carry it rather than served from a copy made
+  // before they said it.
+  if (req.body && req.body.recordBinding) stale = true;
   if (existing && !req.query.refresh && !stale) {
     return res.json({ id: existing.id, rackId, adopted: false, createdAt: existing.createdAt });
   }
@@ -307,10 +341,20 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
     }
   } catch { /* no OCR file is fine: the camera's classes stand on their own */ }
 
+  // A person may name the customer's own records in the same call that adopts
+  // the rack. It is stored first, then read back, so the snapshot and the store
+  // always say the same thing.
+  const said = recordBindingFor({
+    tenantId: Number.isFinite(tenantId) ? tenantId : null, rackId,
+    said: req.body && req.body.recordBinding, by: req.user?.email || req.user?.name || null,
+  });
+  if (said.error) return res.status(400).json({ error: said.error });
+
   let snapshot;
   try {
     snapshot = cv.toSnapshot(map, {
       rackId, rackKey: known.rackKey, siteName, rackName, uHeight: cfg.U_HEIGHT, scannedAt,
+      recordBinding: said.binding,
     });
   } catch (err) {
     return res.status(500).json({ error: `The detection result could not be converted: ${err.message}` });
@@ -360,6 +404,7 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   res.status(existing ? 200 : 201).json({
     id: rec.id, rackId, adopted: true, devices,
     rackKey: known.rackKey, rackKeyWhy: known.rackKeyWhy,
+    recordBinding: said.binding,
   });
 });
 
@@ -449,6 +494,10 @@ router.post('/', gates.admin, upload.single('image'), async (req, res) => {
     const { map, stderr } = await cv.runDetect(req.file.path, outputDir);
     const snapshot = cv.toSnapshot(map, {
       rackId, rackKey: known.rackKey, siteName, rackName, uHeight, scannedAt: rec.createdAt,
+      // A rack somebody already bound to the customer's own records stays bound
+      // when it is photographed again. The store is keyed on the rack, not on
+      // the photograph.
+      recordBinding: recordBindingFor({ tenantId: known.tenantId, rackId }).binding,
     });
     store.setPayload(rec.id, { map, snapshot, siteName, rackName, uHeight, imageHash, ...keyFields });
     store.recordStage(rec.id, 'capture', 'ok', path.basename(req.file.path));
@@ -508,11 +557,20 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
   };
   const outputDir = path.join(store.SCANS_DIR, `${scan.id}-cv`);
 
+  // Read again rather than carried in the payload: a record binding outlives the
+  // photograph, and the payload is rewritten whole below.
+  const said = recordBindingFor({
+    tenantId: keyFields.tenantId, rackId: scan.rackId,
+    said: req.body && req.body.recordBinding,
+    by: req.user?.email || req.user?.name || null,
+  });
+  if (said.error) return res.status(400).json({ error: said.error });
+
   try {
     const { map, stderr } = await cv.runDetect(scan.imagePath, outputDir);
     const snapshot = cv.toSnapshot(map, {
       rackId: scan.rackId, rackKey: keyFields.rackKey, siteName, rackName, uHeight,
-      scannedAt: scan.createdAt,
+      scannedAt: scan.createdAt, recordBinding: said.binding,
     });
     // The operator's note on what changed since the last scan, kept with the
     // scan so the rack's history reads as a record, not just a pile of scans.

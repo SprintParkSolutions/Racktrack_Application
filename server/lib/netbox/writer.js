@@ -25,6 +25,8 @@ const { exportable, EXPORT_ORDER } = require('./model');
 const { orderedSpecs, objectTypes, withUid } = require('./mapping');
 const { UID_FIELD, NetBoxError } = require('./netbox');
 const { slug } = require('./reconcile');
+const find = require('./find');
+const identity = require('./identity');
 
 /**
  * A reference to an object that will not exist until this push runs.
@@ -213,6 +215,118 @@ function aliasUid(uid, key, hash) {
 }
 
 /**
+ * The record id a person said this object is, or null.
+ *
+ * A snapshot may carry a record binding: the rows of the customer's own record
+ * that a person, looking at the rack, said this rack and these boxes are. It is
+ * the SECOND way the rebind below can find its target. The first, aliasUid,
+ * only ever finds an object RackTrack itself wrote, under a uid RackTrack itself
+ * minted - which is why a rack the customer filled in by hand was invisible.
+ *
+ * Only a rack and a device. Those are the two object types adopt() deliberately
+ * refuses to claim on a collision, and this is how they are bound instead: by
+ * evidence and a person, never by a name clash.
+ */
+function boundIdFor(snapshot, field, uid) {
+  const b = snapshot && snapshot.recordBinding && typeof snapshot.recordBinding === 'object'
+    ? snapshot.recordBinding : null;
+  if (!b) return null;
+  const asId = (v) => { const n = Number(v); return Number.isInteger(n) && n > 0 ? n : null; };
+  if (field === 'racks') return asId(b.rackNetboxId);
+  if (field === 'devices') {
+    const map = b.deviceNetboxIds && typeof b.deviceNetboxIds === 'object' ? b.deviceNetboxIds : {};
+    return asId(map[uid]);
+  }
+  return null;
+}
+
+/**
+ * What a record-bound object does NOT get patched on.
+ *
+ * A bind is bind-only. This is the fourth refutation of the first design of
+ * this feature, written down as code: claiming the customer's own rack let the
+ * writer rename it to the local alias the technician typed and move it to the
+ * RackTrack site, because the payload still came from the scan. There was no
+ * notion of a bind-only object. There is now.
+ *
+ * These are the fields the customer owns and RackTrack did not read off the
+ * hardware: what the thing is called, where it lives and how big it is. A
+ * difference on one of them is REPORTED and never written. Everything else -
+ * the serial the switch published, an asset tag, a status, a description - is
+ * left alone here and still reaches the admin as an ordinary change to approve,
+ * because filling a gap in the record is the point of the whole system.
+ *
+ * It applies only to an object a person bound to the customer's own record.
+ * A rack RackTrack itself created is RackTrack's to keep correct.
+ */
+const CUSTOMER_OWNED = Object.freeze({
+  racks: ['name', 'site', 'location', 'u_height', 'desc_units'],
+  devices: ['name', 'site', 'rack', 'position', 'face'],
+});
+
+/**
+ * Hold back the fields a bound object's owner decides, and say so out loud.
+ *
+ * Returns the number withheld. `changed` is edited in place, so what is left is
+ * exactly what the plan will propose.
+ */
+function bindOnly(spec, obj, row, changed, report) {
+  const owned = CUSTOMER_OWNED[spec.field] || [];
+  const held = owned.filter((k) => Object.prototype.hasOwnProperty.call(changed, k));
+  if (!held.length) return 0;
+  const said = held.map((k) => `${k} (${JSON.stringify(changed[k].from)} in the record, `
+    + `${JSON.stringify(changed[k].to)} on this scan)`).join(', ');
+  const named = String(row.name ?? '') || `record ${row.id}`;
+  const why = `"${named}" is the customer's own record, bound by a person, so only the RackTrack `
+    + `id is ever written on it. Reported and not written: ${said}.`;
+  report.findings.push({
+    tier: 'medium', kind: 'bind-only', type: spec.label, uid: obj.uid,
+    netboxId: row.id, name: String(row.name ?? ''),
+    fields: held.map((k) => ({ field: k, was: changed[k].from, now: changed[k].to })),
+    why,
+  });
+  report.warnings.push(why);
+  for (const k of held) delete changed[k];
+  return held.length;
+}
+
+/**
+ * The plan's high finding: "Replaced. Same shelf, same address, different
+ * serial inside."
+ *
+ * One row, saying was X and now Y. NOT a removal plus an addition: that shape
+ * is what happens when a box loses its binding and reads as new here and gone
+ * there, and it hides the one thing the admin needs to see, which is that the
+ * hardware in the slot changed while the record stayed still.
+ *
+ * Only where both sides actually state a serial. The record holding none and
+ * the switch reading one is the plan's LOW tier - a gap the scan can fill - and
+ * it is not a replacement. Compared in the normalised form identity.js uses, so
+ * FDO-2117-A0X9 and fdo2117a0x9 are not reported as a swap.
+ */
+function replacement(spec, obj, row, report) {
+  if (spec.field !== 'devices') return;
+  const was = String((row || {}).serial ?? '').trim();
+  const now = String((obj || {}).serial ?? '').trim();
+  if (!was || !now) return;
+  if (identity.normalise(was) === identity.normalise(now)) return;
+  const where = obj.position === null || obj.position === undefined
+    ? 'this rack' : `shelf U${obj.position}`;
+  const named = String(row.name ?? '') || `record ${row.id}`;
+  const why = `Replaced: ${where} still holds the record "${named}", and the box in it is a `
+    + `different one. The serial was ${was} and is now ${now}.`;
+  report.findings.push({
+    tier: 'high', kind: 'replaced', type: spec.label, uid: obj.uid,
+    netboxId: row.id, name: String(row.name ?? ''), position: obj.position ?? null,
+    field: 'serial', was, now, why,
+  });
+  // Findings are new here and the stored plan has no column for them yet, so the
+  // same sentence goes on the warnings the plan already carries. A person reads
+  // it either way.
+  report.warnings.push(why);
+}
+
+/**
  * One device holds one port of each name, in an old snapshot too.
  *
  * cv.toSnapshot now gives every port on a device its own name, but a snapshot
@@ -256,6 +370,11 @@ async function walk(snapshot, client, apply, report) {
   const failed = new Set();
   const counts = {};
   let rackNetboxId = null;
+  // Records a person bound this scan's objects to. Held so the orphan check
+  // below does not report a device as missing from the rack while this same
+  // plan is about to bind it: on a preview nothing has been patched yet, so the
+  // record still carries no uid of ours.
+  const boundNetboxIds = new Set();
 
   const bump = (k) => { counts[k] = (counts[k] || 0) + 1; };
 
@@ -345,6 +464,29 @@ async function walk(snapshot, client, apply, report) {
         const { changed, pending } = diff(payload, existing);
         resolved.set(obj.uid, existing.id);
         if (spec.field === 'racks') rackNetboxId = existing.id;
+        replacement(spec, obj, existing, report);
+
+        // Our uid already names one record and a person named another. Neither
+        // is touched and neither is guessed between: both are said out loud so
+        // somebody can settle it.
+        const said = boundIdFor(snapshot, spec.field, obj.uid);
+        if (said !== null) {
+          if (said === existing.id) {
+            boundNetboxIds.add(said);
+            // A person bound this to the customer's own record, so the bind
+            // stays a bind: the fields the customer owns are reported, never
+            // patched.
+            bindOnly(spec, obj, existing, changed, report);
+          } else {
+            // The record a person named is NOT suppressed from the check below.
+            // It is a record in this rack that nothing in this scan matched, and
+            // hiding it would hide half of the contradiction.
+            report.warnings.push(
+              `${spec.label} "${name}" already carries ${obj.uid} on record ${existing.id}, `
+              + `and somebody named record ${said} as the same thing. Neither was changed; `
+              + 'a person has to say which one is right.');
+          }
+        }
 
         // The keyed record is here. Is there ALSO one under the old hash uid?
         // Then a twin was left behind (a rebind that never ran, or a second
@@ -405,6 +547,7 @@ async function walk(snapshot, client, apply, report) {
       // site, height and position are left exactly as they are.
       const oldUid = alias ? aliasUid(obj.uid, alias.key, alias.hash) : null;
       let previous = null;
+      let boundBy = null;
       if (oldUid) {
         try {
           previous = await client.findByUid(spec.endpoint, oldUid, { fresh: apply });
@@ -418,6 +561,35 @@ async function walk(snapshot, client, apply, report) {
           continue;
         }
       }
+
+      // The second way to find a rebind's target. Nothing of ours carries this
+      // uid and nothing of ours carried it under the old one either - but a
+      // person, standing at the rack, said which row of the customer's own
+      // record this is. find.byId checks that row is still there and still
+      // free; it is never taken on trust.
+      //
+      // What happens next is deliberately unchanged: the same rebind, the same
+      // custom field and nothing else, the same re-check immediately before the
+      // patch, and the same visible plan row an admin approves.
+      if (!previous) {
+        const said = boundIdFor(snapshot, spec.field, obj.uid);
+        if (said !== null) {
+          const hit = await find.byId(client, spec.endpoint, said, { uid: obj.uid });
+          if (hit.none) {
+            skipped.add(obj.uid);
+            report.changes.push({
+              type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+              reason: `somebody said this is record ${said}, but ${hit.why}. Nothing was written.`,
+            });
+            bump('skip');
+            continue;
+          }
+          previous = hit.row;
+          boundBy = hit;
+          boundNetboxIds.add(hit.id);
+        }
+      }
+
       if (previous) {
         if (apply) {
           // Look once more, right before the patch. The plan found the new uid
@@ -444,6 +616,21 @@ async function walk(snapshot, client, apply, report) {
             bump('fail');
             continue;
           }
+          // The other half of the same re-check, for a target a person named
+          // rather than one we wrote ourselves: it must still be there and
+          // still free of anybody else's uid at the moment of the patch.
+          if (boundBy) {
+            const again = await find.byId(client, spec.endpoint, previous.id, { uid: obj.uid });
+            if (again.none) {
+              failed.add(obj.uid);
+              report.changes.push({
+                type: spec.label, uid: obj.uid, name: String(name), action: 'fail',
+                netboxId: previous.id, reason: `the record changed while this was being approved: ${again.why}`,
+              });
+              bump('fail');
+              continue;
+            }
+          }
           try {
             await client.patch(spec.endpoint, previous.id, { custom_fields: { [UID_FIELD]: obj.uid } });
           } catch (err) {
@@ -458,9 +645,24 @@ async function walk(snapshot, client, apply, report) {
         }
         resolved.set(obj.uid, previous.id);
         if (spec.field === 'racks') rackNetboxId = previous.id;
+        replacement(spec, obj, previous, report);
+        // What the record carried before. For our own rebind that is the uid we
+        // wrote under the photo hash. For one a person bound, it is whatever the
+        // customer's record carried, which is normally nothing at all - and
+        // saying oldUid there would name a uid that was never on it.
+        const wasUid = boundBy
+          ? (((previous.custom_fields || {})[UID_FIELD]) || null)
+          : oldUid;
         report.changes.push({
-          type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'rebind',
-          netboxId: previous.id, diff: { [UID_FIELD]: { from: oldUid, to: obj.uid } },
+          type: spec.label, uid: obj.uid, fromUid: boundBy ? null : oldUid,
+          name: String(name), action: 'rebind',
+          netboxId: previous.id,
+          diff: { [UID_FIELD]: { from: wasUid, to: obj.uid } },
+          ...(boundBy ? {
+            boundBy: 'record-binding',
+            reason: `${boundBy.why}. Only the RackTrack id is written on it: its name, its site, `
+              + 'its height and its position are left exactly as the customer has them.',
+          } : {}),
         });
         bump('rebind');
         continue;
@@ -513,19 +715,31 @@ async function walk(snapshot, client, apply, report) {
   }
 
   report.counts = counts;
-  report.orphans = await orphans(snapshot, client, rackNetboxId, report, alias);
+  report.orphans = await orphans(snapshot, client, rackNetboxId, report, alias, boundNetboxIds);
   return report;
 }
 
 /**
- * Devices NetBox holds for this rack that this scan did not see.
+ * Devices the record holds for this rack that this scan did not see.
  *
- * Rule 3. These are REPORTED, never deleted. Scoped two ways on purpose: only
- * inside this snapshot's rack, and only objects carrying our own uid — so a
- * device someone else created, or one in another rack, is invisible to this
- * check and can never be touched by it.
+ * This is the plan's finding "a device on the record, gone from the rack", and
+ * until now it could not fire on the devices that matter. The check used to
+ * throw away every record that did not carry our own uid, so the customer's own
+ * devices - the ones somebody typed in when the rack was built, which are most
+ * of them - were invisible to it and the list came back empty however full the
+ * rack was. Now a record in this rack that this scan did not see is reported
+ * whether RackTrack wrote it or the customer did, and the row says which.
+ *
+ * Rule 3 is unchanged and is the reason this is safe to widen: these are
+ * REPORTED. Nothing here deletes, patches, or even reads a device into the
+ * write path. It is still scoped to this one rack, so a device in another rack
+ * is invisible to it.
+ *
+ * Two records are not orphans: one this scan carries under its own uid, and one
+ * a person has bound this scan to. The second matters on a preview, where the
+ * bind has not been written yet, so the record still carries nothing of ours.
  */
-async function orphans(snapshot, client, rackNetboxId, report, alias = null) {
+async function orphans(snapshot, client, rackNetboxId, report, alias = null, bound = null) {
   if (rackNetboxId === null || isPending(rackNetboxId)) return [];
   let present;
   try {
@@ -542,13 +756,25 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null) {
     const old = alias ? aliasUid(d.uid, alias.key, alias.hash) : null;
     if (old) seen.add(old);
   }
+  const boundIds = bound instanceof Set ? bound : new Set();
   return present.flatMap((d) => {
-    const uid = (d.custom_fields || {})[UID_FIELD];
-    if (!uid || seen.has(uid)) return [];
+    const uid = (d.custom_fields || {})[UID_FIELD] || null;
+    if (uid && seen.has(uid)) return [];
+    if (boundIds.has(d.id)) return [];
+    const ours = Boolean(uid);
     return [{
-      netboxId: d.id, name: d.name, uid, status: (d.status || {}).value,
-      recommendation: 'Review. It was in a previous scan and is absent from this one. '
-                    + 'Not deleted. Set status=offline only after a human checks.',
+      netboxId: d.id, name: d.name, uid, ours,
+      position: d.position ?? null, serial: d.serial || null,
+      status: (d.status || {}).value,
+      whose: ours
+        ? 'RackTrack wrote this record'
+        : 'the customer wrote this record and RackTrack has never touched it',
+      recommendation: ours
+        ? 'Review. It was in a previous scan and is absent from this one. '
+          + 'Not deleted. Set status=offline only after a human checks.'
+        : 'Review. The record says this box is in this rack and this scan did not see it. '
+          + 'Nothing has been changed and nothing will be: this record is the customer\'s, '
+          + 'and nothing here deletes.',
     }];
   });
 }
@@ -556,6 +782,10 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null) {
 const newReport = (snapshot, dryRun, client) => ({
   rackUid: snapshot.rackUid, dryRun, netboxUrl: client.url,
   customField: '', changes: [], orphans: [], counts: {}, warnings: [],
+  // Findings are what the record says that the rack contradicts, as opposed to
+  // changes, which are what this plan would write. Today only the plan's high
+  // finding "Replaced" lands here.
+  findings: [],
 });
 
 /**

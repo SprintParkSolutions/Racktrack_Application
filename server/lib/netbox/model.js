@@ -79,9 +79,15 @@ const EXPORT_ORDER = Object.freeze([
  * rack uid this same scan carried before it was keyed on the customer's rack
  * (the photo-hash form, rack:RK-...), or null. The planner uses it to find
  * objects written under the old uid and rebind them instead of creating twins.
+ *
+ * `recordBinding` is which rows of the CUSTOMER'S own record a person said this
+ * rack and these boxes are: { rackNetboxId, deviceNetboxIds, by, at, why }. It
+ * is the planner's second way to find a rebind's target, for a rack the
+ * customer filled in by hand, which carries no uid of ours to find it by. It is
+ * carried, never invented: nothing in this file or in cv.js decides it.
  */
-function emptySnapshot(rackUid = '', scannedAt = '', aliasOf = null) {
-  const snap = { rackUid, scannedAt, aliasOf, conflicts: [] };
+function emptySnapshot(rackUid = '', scannedAt = '', aliasOf = null, recordBinding = null) {
+  const snap = { rackUid, scannedAt, aliasOf, recordBinding, conflicts: [] };
   for (const key of EXPORT_ORDER) snap[key] = [];
   return snap;
 }

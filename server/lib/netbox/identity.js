@@ -451,5 +451,9 @@ const writable = (confidence) => confidence === 'confirmed';
 module.exports = {
   aliasesOf, rankOf, sameDevice, confidenceOf, evidence, weakOverlap,
   alias, kindOf, valueOf, matchKey, isStrong, isJunkValue, writable,
+  // The one place a hardware value is put into comparable form. Exported so a
+  // lookup against the customer's record compares serials the same way a
+  // binding does, rather than growing a second spelling of the same rule.
+  normalise: strip,
   LADDER, KINDS, STRONG, HW_KINDS, EVIDENCE_RANK, NOT_PRODUCED, RANK_7_IS_MEMBERSHIP,
 };

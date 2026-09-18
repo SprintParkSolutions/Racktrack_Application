@@ -322,11 +322,21 @@ function extractPorts(d) {
  * Without it the uids are exactly what they always were. When the key differs
  * from the hash, `aliasOf` keeps the hash-based rack uid so the planner can
  * find objects written before the key existed and rebind them.
+ *
+ * `recordBinding` is a person's answer to a different question: which rows of
+ * the customer's own record this rack and these boxes are. It is read from the
+ * binding store, which is keyed on the rack rather than on the scan, and simply
+ * carried onto the snapshot so it survives a re-adopt and a re-detect. Nothing
+ * here decides it and nothing here changes it.
  */
-function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight = null, scannedAt = '' }) {
+function toSnapshot(map, {
+  rackId, rackKey = null, siteName, rackName, uHeight = null, scannedAt = '',
+  recordBinding = null,
+}) {
   const key = rackKey || rackId;
   const aliasOf = rackKey && rackKey !== rackId ? `rack:${rackId}` : null;
-  const snap = emptySnapshot(`rack:${key}`, scannedAt, aliasOf);
+  const bound = recordBinding && typeof recordBinding === 'object' ? recordBinding : null;
+  const snap = emptySnapshot(`rack:${key}`, scannedAt, aliasOf, bound);
 
   const siteUid = `site:${slug(siteName)}`;
   snap.sites.push(Site(observed(siteUid, Evidence.MANUAL), { name: siteName, slug: slug(siteName) }));

@@ -89,20 +89,27 @@ function fileFor(scope) {
   return path.join(DIR, `${slug}-${hash}.json`);
 }
 
+const empty = (scope) => ({ scope: String(scope || ''), nextId: 1, items: [], record: null });
+
 function read(scope) {
   const file = fileFor(scope);
-  if (!fs.existsSync(file)) return { scope: String(scope || ''), nextId: 1, items: [] };
+  if (!fs.existsSync(file)) return empty(scope);
   try {
     const db = JSON.parse(fs.readFileSync(file, 'utf8'));
     return {
       scope: String(scope || ''),
       nextId: asInt(db.nextId) || 1,
       items: Array.isArray(db.items) ? db.items : [],
+      // The record binding lives in the same file and must survive every write
+      // through it. It is read back here so confirm(), forget() and migrate(),
+      // which all write the whole object, carry it forward instead of erasing
+      // it the next time somebody says which switch is in which box.
+      record: db.record && typeof db.record === 'object' ? db.record : null,
     };
   } catch {
     // A corrupt file is not a reason to fail a scan. It is a reason to behave as
     // though nobody has confirmed anything yet, which is the honest answer.
-    return { scope: String(scope || ''), nextId: 1, items: [] };
+    return empty(scope);
   }
 }
 
@@ -255,9 +262,13 @@ function migrate(scope, legacyScopes = []) {
   for (const from of Array.isArray(legacyScopes) ? legacyScopes : []) {
     if (!from || from === scope) continue;
     const old = read(from);
-    if (!old.items.length) continue;
+    if (!old.items.length && !old.record) continue;
     const db = read(scope);
     let changed = false;
+    // The record binding moves with the confirmations, and only into a scope
+    // that holds none: a newer answer here is never overwritten by an older one
+    // kept under a spelling of the scope nobody uses any more.
+    if (old.record && !db.record) { db.record = old.record; changed = true; }
     for (const b of old.items) {
       const clash = db.items.some((held) => held.deviceUid === b.deviceUid
         || identity.sameDevice(held.aliases, b.aliases).same);
@@ -272,10 +283,116 @@ function migrate(scope, legacyScopes = []) {
     // it again, so a box somebody had said "not in this rack" about came back
     // on the next page load: forget() removed it from this scope, and migrate
     // copied it straight back out of the old one. A drain happens once.
-    write(from, { ...old, items: [], drainedInto: String(scope || ''), drainedAt: nowIso() });
+    write(from, { ...old, items: [], record: null, drainedInto: String(scope || ''), drainedAt: nowIso() });
     if (changed) write(scope, db);
   }
   return moved;
+}
+
+// ── the record binding ──────────────────────────────────────────────────────
+//
+// A different question from the one above, kept in the same place because it
+// has the same life. The bindings above say which LIVE SWITCH is in which box.
+// A record binding says which row of the CUSTOMER'S OWN RECORD a rack and its
+// boxes are - the NetBox rack the customer typed in by hand, and the devices
+// already sitting in it.
+//
+// It lives here, in the same scope file, for the same reason: store.setPayload
+// rewrites a scan's payload whole, so a binding kept on the scan is lost on the
+// next re-adopt or re-detect, and a person's answer must outlive the
+// photograph they gave it about. The scope is the tenant plus the scan's rack
+// id, so a second photo of the same rack finds the same answer.
+//
+// Nothing here writes to NetBox. It records what a person said; the writer
+// still plans a visible rebind row and an admin still approves it.
+
+/** A NetBox id, or null for anything that is not one. */
+const asNetboxId = (v) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+/** The record binding for this rack, or null when nobody has said. */
+function recordBinding(scope) {
+  const rec = read(scope).record;
+  return rec ? view(rec) : null;
+}
+
+/**
+ * Record which rows of the customer's own record this rack and its boxes are.
+ *
+ * Merges: a call naming only the rack leaves the boxes alone, and a call naming
+ * one box leaves the rack and the other boxes alone. A box mapped to null is
+ * removed, which is how a person takes an answer back.
+ *
+ * Refuses anything that is not a NetBox id, so a binding can never carry a
+ * string, a zero or a negative number into the write path.
+ */
+function bindRecord(scope, {
+  rackNetboxId, deviceNetboxIds = null, by = null, at = null, why = '',
+} = {}) {
+  const held = read(scope);
+  const current = held.record && typeof held.record === 'object' ? held.record : {};
+  const devices = { ...(current.deviceNetboxIds && typeof current.deviceNetboxIds === 'object'
+    ? current.deviceNetboxIds : {}) };
+
+  const refused = [];
+  if (deviceNetboxIds && typeof deviceNetboxIds === 'object') {
+    for (const [uid, value] of Object.entries(deviceNetboxIds)) {
+      const key = str(uid, 200);
+      if (!key) continue;
+      if (value === null || value === undefined || value === '') { delete devices[key]; continue; }
+      const id = asNetboxId(value);
+      if (id === null) { refused.push(key); continue; }
+      devices[key] = id;
+    }
+  }
+
+  let rack = current.rackNetboxId ?? null;
+  if (rackNetboxId === null || rackNetboxId === '') {
+    rack = null;
+  } else if (rackNetboxId !== undefined) {
+    const id = asNetboxId(rackNetboxId);
+    if (id === null) refused.push('the rack');
+    else rack = id;
+  }
+
+  if (refused.length) {
+    return { error: `This is not a record id: ${refused.join(', ')}. A record binding needs the `
+      + 'number the customer\'s own record gives the rack or the box.' };
+  }
+
+  const rec = {
+    rackNetboxId: rack,
+    deviceNetboxIds: devices,
+    by: by === null || by === undefined ? (current.by ?? null) : str(by, 120),
+    at: str(at, 40) || nowIso(),
+    why: str(why, 500) || str(current.why, 500),
+  };
+  write(scope, { ...held, record: rec });
+  return { record: view(rec) };
+}
+
+/**
+ * Take a record binding back: one box, or the whole rack when no box is named.
+ *
+ * Used when a person says they named the wrong record. Nothing in NetBox
+ * changes: a uid already patched onto an object stays where it is, and undoing
+ * that is its own approved change, never a side effect of forgetting.
+ */
+function forgetRecordBinding(scope, { deviceUid = null } = {}) {
+  const held = read(scope);
+  if (!held.record) return { error: 'Nothing in the record is bound to this rack.' };
+  const uid = str(deviceUid, 200);
+  if (!uid) {
+    write(scope, { ...held, record: null });
+    return { ok: true, forgot: 'the whole rack' };
+  }
+  const devices = { ...(held.record.deviceNetboxIds || {}) };
+  if (!(uid in devices)) return { error: 'Nothing in the record is bound to that box.' };
+  delete devices[uid];
+  write(scope, { ...held, record: { ...held.record, deviceNetboxIds: devices } });
+  return { ok: true, forgot: uid };
 }
 
 /** Drop the binding for a box. Used when a person says it is not that one. */
@@ -291,4 +408,5 @@ function forget(scope, deviceUid) {
 
 module.exports = {
   scopeOf, legacyScopesOf, fileFor, list, find, confirm, forget, migrate, DIR,
+  recordBinding, bindRecord, forgetRecordBinding,
 };
