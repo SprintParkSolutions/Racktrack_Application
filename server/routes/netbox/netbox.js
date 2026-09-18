@@ -17,6 +17,13 @@ const { plan, push } = require('../../lib/netbox/writer');
 const { toCsv, toJson, toMarkdown } = require('../../lib/netbox/files');
 
 const profiles = require('../../lib/connection_profiles');
+const tenant = require('../../lib/tenant');
+const { canAccessRack } = require('../../lib/rack_access');
+const { sendNotice } = require('../../auth');
+// Who may use each route. The mount only authenticates; a member (the
+// technician at the rack) reaches preview and nothing else on this router.
+const gates = require('./gates');
+const trail = require('./trail');
 
 const router = express.Router();
 
@@ -80,7 +87,7 @@ function snapshotOf(req, res) {
 const tenantOf = (scan, req) => scan.payload?.tenantId ?? req.user?.tenant_id ?? null;
 
 /** Can we reach NetBox, and are we authenticated? */
-router.get('/health', async (req, res) => {
+router.get('/health', gates.admin, async (req, res) => {
   const t = target(req);
   if (t.source === 'none') return res.json({ ...NOT_CONFIGURED, source: t.source });
   const out = { configured: true, source: t.source, url: t.url, tokenSet: Boolean(t.token),
@@ -106,9 +113,16 @@ router.get('/health', async (req, res) => {
   }
 });
 
-router.post('/:id/preview', async (req, res) => {
+router.post('/:id/preview', gates.technician, async (req, res) => {
   const got = snapshotOf(req, res);
   if (!got) return;
+  // A technician compares only the racks their Site owns. The admin roles
+  // are scoped by their organisation as before; this check is the member's,
+  // added with the route they were given, so the route cannot show them a
+  // scan of somebody else's rack by its number.
+  if (!gates.isAdmin(req) && !canAccessRack(req.user, got.scan.rackId, tenant)) {
+    return res.status(404).json({ error: 'no such scan' });
+  }
   const t = target(req);
   if (t.source === 'none') return res.status(428).json({ stage: 'preview', ...NOT_CONFIGURED });
   try {
@@ -137,15 +151,53 @@ router.post('/:id/preview', async (req, res) => {
 });
 
 /**
- * Write to NetBox — but only what an admin approved, and only if NetBox has
+ * The email an admin gets when NetBox refused part of a write.
+ *
+ * Sent to the admin who ran the write, at their own address, so the person
+ * who pressed the button is the person who hears which objects did not go
+ * through. What was written stays written; nothing else was changed.
+ */
+function notifyWriteFailed(req, written, rackId) {
+  const to = req.user?.email;
+  if (!to) return Promise.resolve(false);
+  const r = written.result || {};
+  const lines = (r.failures || []).map((f) =>
+    `  ${f.type || 'object'} "${f.name || f.uid}"${f.reason ? ` - ${f.reason}` : ''}`);
+  const text = [
+    `Hello ${req.user.username || to},`,
+    '',
+    `The write of plan ${written.id} for rack ${rackId || written.rackId} to NetBox did not `
+      + `finish. NetBox refused ${r.failed} object${r.failed === 1 ? '' : 's'}:`,
+    '',
+    ...lines,
+    '',
+    `${r.written} object${r.written === 1 ? '' : 's'} went through before that and `
+      + (r.written === 1 ? 'is' : 'are') + ' in NetBox now. Nothing else was changed.',
+    '',
+    'The plan is marked "write failed" in the portal. Fix the cause in NetBox or in the '
+      + 'plan and export it again; NetBox is compared once more before anything is written.',
+    '',
+    '- RackTrack',
+  ].join('\n');
+  return sendNotice({
+    to, subject: `RackTrack: the write for rack ${rackId || written.rackId} did not finish`, text,
+  }).catch(() => false);
+}
+
+/**
+ * Write to NetBox - but only what an admin approved, and only if NetBox has
  * not moved since they approved it.
  *
  * Body: { planId }. Without one this refuses, because a push nobody signed is
  * the thing the whole workflow exists to prevent. Pass force:true only to
  * accept a plan whose items are not all decided; it can never bypass the
  * fingerprint check.
+ *
+ * A plan NetBox refused part of (status write_failed) may be exported again:
+ * the retry goes through every check here, the fingerprint included, so a
+ * NetBox that moved since the first attempt still stops it.
  */
-router.post('/:id/export', async (req, res) => {
+router.post('/:id/export', gates.admin, async (req, res) => {
   const got = snapshotOf(req, res);
   if (!got) return;
   if (target(req).source === 'none') return res.status(428).json({ stage: 'export', ...NOT_CONFIGURED });
@@ -168,6 +220,7 @@ router.post('/:id/export', async (req, res) => {
   }
   const approvedPlan = plans.get(planId);
   if (!approvedPlan) return res.status(404).json({ stage: 'export', error: 'no such plan' });
+  // Only a plan written in full is closed. write_failed is the retry case.
   if (approvedPlan.status === 'applied') {
     return res.status(409).json({ stage: 'export', error: 'that plan has already been written' });
   }
@@ -198,6 +251,10 @@ router.post('/:id/export', async (req, res) => {
         orgId: req.user?.organization_id ?? null, tenantId: tenantOf(got.scan, req),
       });
       store.recordStage(got.scan.id, 'export', 'failed', 'NetBox changed since approval');
+      trail.record(req, approvedPlan, 'drift.write', {
+        status: 'fail', error: 'NetBox changed since approval',
+        payload: { counts: {}, written: 0, failed: 0, newPlanId: replan.id },
+      });
       return res.status(409).json({
         stage: 'export',
         error: 'NetBox has changed since this plan was approved, so nothing was written.',
@@ -215,17 +272,34 @@ router.post('/:id/export', async (req, res) => {
     report.withheld = excluded.size;
     const status = report.counts.fail ? 'failed' : 'ok';
     store.recordStage(got.scan.id, 'export', status, countLine(report.counts));
-    plans.markApplied(approvedPlan.id, { by, result: report });
+    // Every object through: applied. Any refused: write_failed, the failures
+    // listed on the plan, the admin who ran it told by email, and the plan
+    // left open to a second export.
+    const written = plans.markApplied(approvedPlan.id, { by, result: report });
+    report.planStatus = written ? written.status : null;
+    report.failures = written ? written.result.failures : [];
+    trail.record(req, approvedPlan, 'drift.write', {
+      status: report.counts.fail ? 'fail' : 'ok',
+      payload: { counts: report.counts, written: written?.result.written ?? 0,
+                 failed: written?.result.failed ?? 0 },
+    });
+    if (written && written.status === 'write_failed') {
+      report.emailed = await notifyWriteFailed(req, written, got.scan.rackId);
+    }
     res.json(report);
   } catch (err) {
     store.recordStage(got.scan.id, 'export', 'failed', String(err.message).slice(0, 400));
+    trail.record(req, approvedPlan, 'drift.write', {
+      status: 'fail', error: err.detail ?? String(err.message),
+      payload: { counts: {}, written: 0, failed: 0 },
+    });
     res.status(502).json({ stage: 'export', url: cfg.NETBOX_URL,
                            error: err.detail ?? String(err.message) });
   }
 });
 
 /** The snapshot as a reviewable file — every value with its evidence. */
-router.get('/:id/export.md', (req, res) => {
+router.get('/:id/export.md', gates.admin, (req, res) => {
   const got = snapshotOf(req, res);
   if (!got) return;
   const name = (got.scan.rackId || `scan-${got.scan.id}`).replace(/[^A-Za-z0-9_-]/g, '_');
@@ -238,7 +312,7 @@ router.get('/:id/export.md', (req, res) => {
  * path: it lets the scan feed an automation, a CMDB, or a chat channel without
  * RackTrack needing a connector for each. Writes nothing to NetBox.
  */
-router.post('/:id/webhook', async (req, res) => {
+router.post('/:id/webhook', gates.admin, async (req, res) => {
   const got = snapshotOf(req, res);
   if (!got) return;
   const url = String((req.body || {}).url || '').trim();
@@ -262,7 +336,7 @@ router.post('/:id/webhook', async (req, res) => {
   }
 });
 
-router.get('/:id/export.json', (req, res) => {
+router.get('/:id/export.json', gates.admin, (req, res) => {
   const got = snapshotOf(req, res);
   if (!got) return;
   const name = got.snap.rackUid.replace(/:/g, '-');
@@ -271,7 +345,7 @@ router.get('/:id/export.json', (req, res) => {
 });
 
 /** NetBox bulk-import CSVs, zipped. The path that needs no API token. */
-router.get('/:id/export.csv', (req, res) => {
+router.get('/:id/export.csv', gates.admin, (req, res) => {
   const got = snapshotOf(req, res);
   if (!got) return;
   const files = toCsv(got.snap);
