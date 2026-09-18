@@ -15,6 +15,8 @@ const switches = require('../../lib/netbox/switches');
 const reconcile = require('../../lib/netbox/reconcile');
 const report = require('../../lib/netbox/report');
 const rackMatch = require('../../lib/netbox/rack_match');
+const identity = require('../../lib/netbox/identity');
+const bindings = require('../../lib/netbox/bindings');
 const { clientForUser } = require('../../lib/netbox/client_for');
 // RackTrack's own libraries: who may touch which rack, and where its scans live.
 const tenant = require('../../lib/tenant');
@@ -778,28 +780,152 @@ router.post('/:id/collect', gates.admin, async (req, res) => {
  * saved matching) so Review can show it. POST takes the human-confirmed
  * matches, merges, and stores the reconciled snapshot that Export then uses.
  */
+/**
+ * Where this scan's confirmed matches are kept.
+ *
+ * The tenant and the rack key come off the scan, because they are what the
+ * snapshot's uids were built on. A second photograph of the same identified rack
+ * gets the same scope and finds the same bindings, which is the point: a person's
+ * answer outlives the photograph they gave it about.
+ */
+function scopeForScan(scan) {
+  return bindings.scopeOf({
+    tenantId: scan.payload?.tenantId ?? null,
+    rackKey: scan.payload?.rackKey || null,
+    rackId: scan.rackId,
+  });
+}
+
+/**
+ * Check a posted matching before anything is stored.
+ *
+ * Four rules, each of which a real client has broken at least once:
+ *   - the switch has to be one of this rack's switches;
+ *   - the box has to be one of this scan's boxes;
+ *   - the box cannot be a passive one. A patch panel has nothing to answer SNMP
+ *     with, so no switch is ever a patch panel;
+ *   - one box holds one switch.
+ *
+ * Returns { matches } cleaned, or { error } in the words the operator needs.
+ */
+function checkMatches(posted, base, sws) {
+  const byId = new Map(sws.map((s) => [String(s.record.id), s]));
+  const devByUid = new Map((base.devices || []).map((d) => [d.uid, d]));
+  const labelOf = (id) => byId.get(String(id))?.record?.label || `switch ${id}`;
+  const clean = {};
+  const seen = new Map();
+
+  for (const [rawId, rawUid] of Object.entries(posted || {})) {
+    const id = String(rawId);
+    if (!byId.has(id)) {
+      return { error: `Switch ${id} is not one of this rack's switches, so it cannot be placed in it.` };
+    }
+    const uid = rawUid === null || rawUid === undefined || rawUid === '' ? null : String(rawUid);
+    if (uid === null) { clean[id] = null; continue; }
+    const dev = devByUid.get(uid);
+    if (!dev) {
+      return { error: `This scan has no box called ${uid}. Scan the rack again, then place the switch.` };
+    }
+    const cls = String(dev.provenance?.cvClass || '');
+    if (reconcile.PASSIVE_CLASS.has(cls)) {
+      return { error: `${dev.name} is a passive box (${cls}) with nothing to answer SNMP with, `
+        + 'so a managed switch cannot be it.' };
+    }
+    if (seen.has(uid)) {
+      return { error: `${labelOf(seen.get(uid))} and ${labelOf(id)} are both placed in ${dev.name}. `
+        + 'One box holds one switch.' };
+    }
+    seen.set(uid, id);
+    clean[id] = uid;
+  }
+  return { matches: clean };
+}
+
 router.get('/:id/reconcile', gates.admin, (req, res) => {
   const scan = store.getScan(req.params.id);
   if (!scan) return res.status(404).json({ error: 'no such scan' });
   const base = scan.payload && scan.payload.snapshot;
   if (!base) return res.status(409).json({ error: 'this scan has no detection result yet' });
-  res.json(reconcile.view(base, scan.rackId, scan.payload.matches || null));
+  res.json(reconcile.view(base, scan.rackId, scan.payload.matches || null,
+    { scope: scopeForScan(scan) }));
 });
 
+/**
+ * Save the matching, and confirm one switch at a time.
+ *
+ * A save stores the matching exactly as it always did, so the photo-to-record
+ * link that works today is untouched. What it does NOT do is mint a confirmation:
+ * a bulk save is somebody agreeing with a screen, and the screen's proposals are
+ * inferred from port counts. Only `confirm: true` with one switch id says a
+ * person stood at the rack and read the box, and only that writes a binding -
+ * which then outranks every score, in this scan and in every later photograph of
+ * the same rack.
+ */
 router.post('/:id/reconcile', gates.admin, (req, res) => {
   const scan = store.getScan(req.params.id);
   if (!scan) return res.status(404).json({ error: 'no such scan' });
   const base = scan.payload && scan.payload.snapshot;
   if (!base) return res.status(409).json({ error: 'this scan has no detection result yet' });
 
-  const matches = (req.body && req.body.matches) || {};
   const sws = reconcile.gatherSwitches(scan.rackId);
+  const checked = checkMatches((req.body && req.body.matches) || {}, base, sws);
+  if (checked.error) return res.status(400).json({ error: checked.error });
+  const matches = checked.matches;
+
+  // ── the one explicit act that mints a binding ──────────────────────────────
+  let confirmed = null;
+  if (req.body && req.body.confirm === true) {
+    const ids = Object.keys(matches);
+    const swId = req.body.switchId !== undefined && req.body.switchId !== null
+      ? String(req.body.switchId)
+      : (ids.length === 1 ? ids[0] : null);
+    if (!swId) {
+      return res.status(400).json({
+        error: 'Confirm one switch at a time. Send switchId with confirm, so it is clear '
+             + 'which box the person actually read.',
+      });
+    }
+    if (!Object.prototype.hasOwnProperty.call(matches, swId)) {
+      return res.status(400).json({ error: `Switch ${swId} is not in this save, so there is nothing to confirm about it.` });
+    }
+    const sw = sws.find((s) => String(s.record.id) === swId);
+    const aliases = sw.reading
+      ? identity.aliasesOf({ ...sw.reading, host: sw.record.host })
+      : [];
+    const scope = scopeForScan(scan);
+    const devUid = matches[swId];
+    const who = req.user?.email || (req.user?.id != null ? `user ${req.user.id}` : 'a person at the rack');
+
+    if (devUid === null) {
+      // "It is not in this rack" is an answer too, and it has to be able to undo
+      // a confirmation somebody made by mistake.
+      const held = aliases.length ? bindings.find(scope, aliases) : null;
+      if (held) bindings.forget(scope, held.binding.deviceUid);
+      confirmed = { switchId: swId, deviceUid: null, forgot: held ? held.binding.deviceUid : null };
+    } else {
+      const dev = (base.devices || []).find((d) => d.uid === devUid);
+      const result = bindings.confirm(scope, {
+        aliases,
+        deviceUid: devUid,
+        position: dev?.position ?? null,
+        switchId: swId,
+        evidence: [identity.evidence('confirmed',
+          `${who} confirmed ${sw.record.label || `switch ${swId}`} as ${dev?.name || devUid} at the rack`)],
+        by: who,
+        why: String((req.body.why || '')).slice(0, 500),
+      });
+      if (result.error) return res.status(400).json({ error: result.error });
+      confirmed = { switchId: swId, deviceUid: devUid, binding: result.binding, replaced: result.replaced };
+    }
+  }
+
   const { snapshot, summary } = reconcile.reconcile(base, sws, matches);
 
   store.setPayload(scan.id, { ...scan.payload, matches, reconciled: snapshot });
   store.recordStage(scan.id, 'reconcile', 'ok',
-    `${summary.matched} matched, ${summary.serials} serials, ${summary.cables} cables`);
-  res.json({ ok: true, summary });
+    `${summary.matched} matched, ${summary.serials} serials, ${summary.cables} cables`
+    + (confirmed ? ', 1 confirmed' : ''));
+  res.json({ ok: true, summary, confirmed });
 });
 
 module.exports = router;

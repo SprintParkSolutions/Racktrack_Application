@@ -21,6 +21,8 @@ const {
   Evidence, observed, Manufacturer, DeviceType, Interface, Cable, Termination,
 } = require('./model');
 const switches = require('./switches');
+const identity = require('./identity');
+const bindings = require('./bindings');
 
 const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
   .replace(/^-+|-+$/g, '') || 'x';
@@ -92,6 +94,12 @@ const norm = (s) => {
  * the model each claims, the make (OCR off the photo vs the switch's own
  * vendor), and how close their port counts are. Returns the score and a
  * plain-language reason, so the human verifying sees why it was proposed.
+ *
+ * None of these three is an identity. A model agreement is a shape agreement,
+ * and two identical switches in one rack agree with each other exactly as well
+ * as either agrees with itself. So a score is rank 8 evidence (standard section
+ * 6, Inferred) and can never be better than 'possible'; what stops it being
+ * acted on as a fact is the margin test in suggest, not the number itself.
  */
 function scorePair(sw, dev) {
   const why = [];
@@ -113,38 +121,151 @@ function scorePair(sw, dev) {
   const diff = Math.abs(dev.portCount - sw.ports);
   const tol = Math.max(4, Math.round(sw.ports * 0.25));
   if (diff === 0) { score += 60; why.push(`exact ${sw.ports} ports`); }
-  else if (diff <= tol) { score += 40 - diff * 2; why.push(`ports ${dev.portCount}≈${sw.ports}`); }
-  else { score -= 10; why.push(`ports ${dev.portCount} vs ${sw.ports}`); }
+  else if (diff <= tol) { score += 40 - diff * 2; why.push(`ports ${dev.portCount} close to ${sw.ports}`); }
+  else { score -= 10; why.push(`ports ${dev.portCount} against ${sw.ports}`); }
 
   return { score, why: why.join(', ') };
 }
 
-const confidenceOf = (score) => (score >= 160 ? 'high' : score >= 55 ? 'medium' : 'low');
-
-/** One notch up, for a pairing that has no competition. */
-const bump = (c) => (c === 'low' ? 'medium' : 'high');
-
-/**
- * Propose a match for each switch by nearest port count, biggest switch first
- * so a 52-port switch claims the 52-port device before a 28-port one can.
- * A match only stands if the counts are within a quarter (or 4 ports), so a
- * wild mismatch is left unmatched for the human rather than forced.
- */
-/**
- * Propose a switch-to-device pairing using make, model and port count together.
- *
- * Every switch is scored against every camera device, and the strongest pairs
- * are taken first, one to one. A pair is only accepted if it clears a floor, so
- * a switch with no plausible box is left for the human rather than forced onto
- * the nearest leftover. Returns the matches and, per switch, the confidence and
- * the reason, so Review can show why each was proposed and the user can verify.
- */
 // A managed switch answers SNMP, so it can only be an active network box in the
 // rack. It is never a patch panel or a PDU, both passive, and matching one to a
 // switch is always wrong. Auto-match only considers the active classes.
 const PASSIVE_CLASS = new Set(['Patch Panel', 'PDU', 'Empty']);
 
-function suggest(snapshot, sws) {
+// A score has to clear this before it counts as a candidate at all: at least a
+// port-count agreement or a make match.
+const FLOOR = 20;
+
+// Two candidates this close are not two candidates, they are one answer we do
+// not have. Nothing inside the margin is proposed; the switch shows blank and
+// says what would settle it. Two identical switches in one rack score
+// identically against the same box, which is the case this whole rule exists
+// for - it is our own office rack.
+const MARGIN = 25;
+
+/**
+ * How many shelves a device may occupy, by what the camera called it.
+ *
+ * Taken from the "Device Size and Rack Unit Occupancy" table in
+ * docs/reference/rack-planning-guide.html. Used ONLY as a veto: a reading that
+ * cannot fit the box is not a candidate for it. It never adds to a score,
+ * because fitting is not evidence - almost everything fits.
+ *
+ * The open-ended rows in that table ("2U-4U+", "2U-6U+") are capped at 8 here,
+ * and the guide says plainly that the figures are representative and must be
+ * checked against the manufacturer. So the veto is deliberately one-sided: a
+ * class the camera did not recognise gets no ceiling at all.
+ */
+const RU_BY_CLASS = new Map([
+  ['patch panel', [1, 1]],
+  ['cable manager', [1, 1]],
+  ['switch', [1, 2]],
+  ['network switch', [1, 2]],
+  ['router', [1, 2]],
+  ['firewall', [1, 2]],
+  ['kvm', [1, 2]],
+  ['server', [1, 4]],
+  ['rack server', [1, 4]],
+  ['storage', [2, 8]],
+  ['storage system', [2, 8]],
+  ['ups', [2, 8]],
+]);
+
+/**
+ * The shelves each box in this photograph occupies.
+ *
+ * The engine's unit list is the direct answer and is per device; the device
+ * type's height is a fallback, and only a fallback, because a type is shared by
+ * model and its height is whichever box created it first.
+ */
+function spanByUid(snapshot) {
+  const heightOf = new Map((snapshot.deviceTypes || []).map((t) => [t.uid, Number(t.uHeight)]));
+  const out = new Map();
+  for (const d of snapshot.devices || []) {
+    const units = (Array.isArray(d.provenance?.cvUnits) ? d.provenance.cvUnits : [])
+      .map((u) => parseInt(String(u).replace(/\D/g, ''), 10))
+      .filter((n) => Number.isFinite(n))
+      .sort((a, b) => a - b);
+    const fromUnits = units.length ? units[units.length - 1] - units[0] + 1 : 0;
+    const fromType = heightOf.get(d.deviceTypeUid);
+    out.set(d.uid, fromUnits || (Number.isFinite(fromType) && fromType > 0 ? fromType : 1));
+  }
+  return out;
+}
+
+/**
+ * Can this reading physically be this box? A plain reason when it cannot.
+ *
+ * Two rules, both from the rack planning guide's occupancy table:
+ *   - a stack needs a shelf per member. Three members cannot sit on one shelf;
+ *   - a box the camera named has a ceiling for its class. A single-chassis
+ *     switch is 1U to 2U, so it is not the 4U box.
+ *
+ * A class the table does not name has no ceiling, so an unrecognised box is
+ * never vetoed on size - only on the stack rule, which is about the reading.
+ */
+function sizeVeto(boxUnits, stackMembers, cvClass) {
+  const units = Number(boxUnits) > 0 ? Number(boxUnits) : 1;
+  const members = Number(stackMembers) > 0 ? Number(stackMembers) : 1;
+  if (units < members) {
+    return `it answers as a stack of ${members}, which needs at least ${members} shelves, `
+      + `and this box takes up ${units}`;
+  }
+  const range = RU_BY_CLASS.get(String(cvClass || '').trim().toLowerCase());
+  if (range) {
+    const ceiling = range[1] * members;
+    if (units > ceiling) {
+      return `a ${String(cvClass).toLowerCase()} of this kind takes up to ${ceiling} `
+        + `rack unit${ceiling === 1 ? '' : 's'}, and this box takes up ${units}`;
+    }
+  }
+  return null;
+}
+
+/** The scope a rack's bindings live in, from the snapshot alone. */
+function scopeFromSnapshot(snapshot) {
+  const uid = String((snapshot?.racks || [])[0]?.uid || '').replace(/^rack:/, '');
+  return bindings.scopeOf({ rackKey: uid || null });
+}
+
+/** Stable ordering, numbers as numbers, so the answer never depends on input order. */
+function cmpId(a, b) {
+  const x = Number(a);
+  const y = Number(b);
+  if (Number.isFinite(x) && Number.isFinite(y) && x !== y) return x - y;
+  return String(a).localeCompare(String(b));
+}
+
+/**
+ * Propose which box each switch is, and say nothing when it cannot be told.
+ *
+ * Three passes, in this order, because the order is the whole design:
+ *
+ *   1. A binding wins outright. Somebody stood at the rack and said this switch
+ *      is this box; no amount of port counting overrules that. The binding is
+ *      found by the SET of hardware aliases the switch published, so a reading
+ *      that names a serial and a reading that names a chassis address both find
+ *      the same one (lib/netbox/identity.js explains why that matters).
+ *   2. Every remaining switch is scored against every remaining box, with a size
+ *      veto first. A score is rank 8 evidence and tops out at 'possible'.
+ *   3. Anything two switches or two boxes cannot be told apart goes blank, with
+ *      a reason that says what would settle it.
+ *
+ * Deterministic: switches are worked in id order and candidates are ranked by
+ * score then uid, so reversing the switch list cannot change a single answer.
+ *
+ * Returns { matches, reasons } with the field names it always had. Each reason
+ * now also carries the evidence it rests on, its confidence under standard
+ * section 7, how many boxes were in the candidate set (8.3), the margin over
+ * the runner-up, and whether it came from a binding.
+ *
+ * `opts.scope` is the bindings scope, which the route computes from the scan's
+ * tenant and rack key. Left out, it is derived from the snapshot's own rack uid,
+ * which is the same value for an identified rack and the photo hash otherwise.
+ */
+function suggest(snapshot, sws, opts = {}) {
+  const scope = opts.scope || scopeFromSnapshot(snapshot);
+  const spans = spanByUid(snapshot);
   const devices = cameraDevices(snapshot)
     .filter((d) => !PASSIVE_CLASS.has(d.cvClass))
     .map((d) => ({
@@ -153,52 +274,192 @@ function suggest(snapshot, sws) {
       // camera's detected ports to it, not the reverse.
       ports: d.portCount,
       vendor: d.make,
+      units: spans.get(d.uid) || 1,
     }));
+  const deviceByUid = new Map(devices.map((d) => [d.uid, d]));
 
-  const pairs = [];
-  for (const sw of sws) {
-    const s = {
+  // Worked in id order, and the keys are created in id order too, so reversing
+  // the switch list cannot change the answer or even the shape of it.
+  const order = [...sws].sort((a, b) => cmpId(a.record.id, b.record.id));
+  const matches = {};
+  const reasons = {};
+  for (const sw of order) { matches[sw.record.id] = null; reasons[sw.record.id] = null; }
+
+  const facts = new Map();     // swId -> what the switch published about itself
+  for (const sw of order) {
+    facts.set(sw.record.id, {
       id: sw.record.id,
+      label: sw.record.label,
+      read: Boolean(sw.reading),
       ports: portsOf(sw),
       vendor: sw.reading?.system?.vendor || sw.reading?.identity?.manufacturer || null,
       model: sw.reading?.identity?.model || null,
-    };
+      stackMembers: Number(sw.reading?.identity?.stackMembers) || 1,
+      aliases: sw.reading ? identity.aliasesOf({ ...sw.reading, host: sw.record.host }) : [],
+    });
+  }
+
+  // ── 1. bindings ────────────────────────────────────────────────────────────
+  const claimedBy = new Map();   // devUid -> swId, boxes a binding has taken
+  const proposals = new Map();   // swId -> { devUid, reason }
+  for (const sw of order) {
+    const f = facts.get(sw.record.id);
+    const hit = f.aliases.length ? bindings.find(scope, f.aliases) : null;
+    if (!hit) continue;
+    const dev = deviceByUid.get(hit.binding.deviceUid);
+    if (!dev) {
+      reasons[f.id] = blank(
+        `this switch was confirmed as a box that this photograph does not show. `
+        + `Confirm it again against a box in this scan, or take the photograph the box is in`,
+        { candidateCount: 0 },
+      );
+      continue;
+    }
+    if (claimedBy.has(dev.uid)) {
+      reasons[f.id] = blank(
+        `another switch record publishes the same hardware identity and is already `
+        + `confirmed as this box. Remove whichever of the two is a duplicate`,
+        { candidateCount: 0 },
+      );
+      continue;
+    }
+    claimedBy.set(dev.uid, f.id);
+    // Two entries on purpose. The first is the person's act, which is what makes
+    // this confirmed rather than a guess; the second is the honest note that we
+    // are recalling it rather than watching it happen, which standard 10.1 asks
+    // for. confidenceOf reads the pair as 'confirmed'.
+    const ev = [
+      ...(Array.isArray(hit.binding.evidence) ? hit.binding.evidence : []),
+      identity.evidence('remembered',
+        `recalled from the binding made on ${hit.binding.at}`, { by: hit.by }),
+    ];
+    proposals.set(f.id, {
+      devUid: dev.uid,
+      reason: {
+        deviceUid: dev.uid,
+        confidence: identity.confidenceOf(ev),
+        why: `confirmed before as ${dev.name}, matched on its ${hit.by}`,
+        evidence: ev,
+        candidateCount: 1,
+        margin: null,
+        fromBinding: true,
+      },
+    });
+  }
+
+  // ── 2. scoring, with the size veto first ───────────────────────────────────
+  for (const sw of order) {
+    const f = facts.get(sw.record.id);
+    if (proposals.has(f.id) || reasons[f.id]) continue;
+    if (!f.read) {
+      reasons[f.id] = blank('this switch has not been read yet, so it has published '
+        + 'nothing to match a box on', { candidateCount: 0 });
+      continue;
+    }
+
+    const candidates = [];
+    const vetoed = [];
     for (const dev of devices) {
-      const { score, why } = scorePair(s, dev);
-      pairs.push({ swId: sw.record.id, devUid: dev.uid, score, why });
+      if (claimedBy.has(dev.uid)) continue;    // a confirmed box is not up for scoring
+      const veto = sizeVeto(dev.units, f.stackMembers, dev.cvClass);
+      if (veto) { vetoed.push(`${dev.name}: ${veto}`); continue; }
+      const { score, why } = scorePair(f, dev);
+      if (score < FLOOR) continue;
+      candidates.push({ devUid: dev.uid, name: dev.name, score, why });
+    }
+    candidates.sort((a, b) => b.score - a.score || String(a.devUid).localeCompare(String(b.devUid)));
+
+    if (!candidates.length) {
+      reasons[f.id] = blank(
+        vetoed.length
+          ? `no box in this rack fits it. ${vetoed[0]}`
+          : 'no box in this rack looks like it. Pick the box by hand, or scan the rack again '
+            + 'so the ports can be counted',
+        { candidateCount: 0 },
+      );
+      continue;
+    }
+
+    const top = candidates[0];
+    const second = candidates[1] || null;
+    const margin = second ? top.score - second.score : null;
+    const tied = candidates.filter((c) => top.score - c.score <= MARGIN);
+    if (tied.length > 1) {
+      const names = tied.map((c) => c.name).join(' and ');
+      reasons[f.id] = blank(
+        `${names} cannot be told apart from what this switch published. A serial number, `
+        + 'a chassis address or somebody at the rack confirming which box it is would settle it',
+        { candidateCount: candidates.length, margin },
+      );
+      continue;
+    }
+
+    // Rank 8, and the count that matters to standard 6.2 is how many boxes this
+    // evidence could not tell apart - which the margin test has just made one.
+    const ev = [identity.evidence('inferred', top.why, { candidateCount: tied.length })];
+    proposals.set(f.id, {
+      devUid: top.devUid,
+      reason: {
+        deviceUid: top.devUid,
+        confidence: identity.confidenceOf(ev),
+        why: candidates.length === 1
+          ? `${top.why}, and it is the only box it could be`
+          : top.why,
+        evidence: ev,
+        candidateCount: candidates.length,
+        margin,
+        fromBinding: false,
+      },
+    });
+  }
+
+  // ── 3. one box, one switch ─────────────────────────────────────────────────
+  const claimants = new Map();
+  for (const [swId, p] of proposals) {
+    const a = claimants.get(p.devUid) || [];
+    a.push(swId);
+    claimants.set(p.devUid, a);
+  }
+  for (const ids of claimants.values()) {
+    if (ids.length === 1) continue;
+    // A binding cannot be in here - a bound box is never offered to scoring -
+    // but if one ever were, the person's answer is the one that stands.
+    const keep = ids.find((x) => proposals.get(x).reason.fromBinding) ?? null;
+    for (const swId of ids) {
+      if (swId === keep) continue;
+      const others = ids.filter((x) => x !== swId).map((x) => facts.get(x).label || x);
+      proposals.delete(swId);
+      reasons[swId] = blank(
+        `${others.join(' and ')} read as the same box as this one, and nothing in what they `
+        + 'published tells them apart. Confirm each switch against its own box',
+        { candidateCount: 1 },
+      );
     }
   }
-  pairs.sort((a, b) => b.score - a.score);
 
-  const matches = {};
-  const reasons = {};
-  for (const sw of sws) { matches[sw.record.id] = null; reasons[sw.record.id] = null; }
-  const takenDev = new Set();
-  const FLOOR = 20; // needs at least a port-count agreement or a make match
-
-  // How many boxes each switch could plausibly be. A switch with exactly one
-  // candidate is not a guess — there is nothing else it could be — and the
-  // camera reading "Unidentified Switch, make unknown" is the normal case, so
-  // scoring alone leaves that pairing looking weak when it is the only one
-  // available. Counted before anything is taken.
-  const plausible = new Map();
-  for (const p of pairs) {
-    if (p.score < FLOOR) continue;
-    plausible.set(p.swId, (plausible.get(p.swId) || 0) + 1);
-  }
-
-  for (const p of pairs) {
-    if (matches[p.swId] || takenDev.has(p.devUid) || p.score < FLOOR) continue;
-    matches[p.swId] = p.devUid;
-    takenDev.add(p.devUid);
-    const sole = plausible.get(p.swId) === 1;
-    reasons[p.swId] = {
-      deviceUid: p.devUid,
-      confidence: sole ? bump(confidenceOf(p.score)) : confidenceOf(p.score),
-      why: sole ? `${p.why} — the only box it could be` : p.why,
-    };
+  for (const [swId, p] of proposals) {
+    matches[swId] = p.devUid;
+    reasons[swId] = p.reason;
   }
   return { matches, reasons };
+}
+
+/**
+ * A reason for proposing nothing.
+ *
+ * Blank is a real answer here, not a failure (standard 7.3), so it carries the
+ * same fields a match does and says what would settle it.
+ */
+function blank(why, { candidateCount = 0, margin = null } = {}) {
+  return {
+    deviceUid: null,
+    confidence: 'unidentified',
+    why,
+    evidence: [],
+    candidateCount,
+    margin,
+    fromBinding: false,
+  };
 }
 
 /**
@@ -394,9 +655,9 @@ function rackImageUrl(base, rackId) {
   return `/outputs/${encodeURIComponent(rackId)}/${encodeURIComponent(file)}`;
 }
 
-function view(base, rackId, storedMatches) {
+function view(base, rackId, storedMatches, opts = {}) {
   const sws = gatherSwitches(rackId);
-  const auto = suggest(base, sws);
+  const auto = suggest(base, sws, opts);
   const matches = storedMatches || auto.matches;
   const { summary } = reconcile(base, sws, matches);
   return {
@@ -435,4 +696,8 @@ function view(base, rackId, storedMatches) {
 
 // slug is shared with the writer, which has to undo it to find the hash-based
 // uid a keyed cable was written under: the two must agree on one rule.
-module.exports = { gatherSwitches, cameraDevices, suggest, reconcile, view, slug };
+// PASSIVE_CLASS is shared with the reconcile route, which has to refuse a posted
+// match onto a patch panel or a PDU: one list, in one place.
+module.exports = {
+  gatherSwitches, cameraDevices, suggest, reconcile, view, slug, PASSIVE_CLASS,
+};
