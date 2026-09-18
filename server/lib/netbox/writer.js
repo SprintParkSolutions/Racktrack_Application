@@ -248,26 +248,51 @@ function aliasUid(uid, key, hash) {
  * report so the reading problem stays visible.
  */
 function uniqueInterfaceNames(snapshot, report) {
-  const byDevice = new Map();
   // The device's own name, because the warning names the box a person has to go
   // back and photograph. Its uid names nothing to anybody reading the screen.
   const nameOf = new Map((snapshot.devices || []).map((d) => [d.uid, d.name]));
+  const byDevice = new Map();
   for (const i of snapshot.interfaces || []) {
     if (!i || !i.deviceUid) continue;
-    const taken = byDevice.get(i.deviceUid) || new Map();
-    const name = String(i.name ?? '');
-    if (taken.has(name)) {
+    if (!byDevice.has(i.deviceUid)) byDevice.set(i.deviceUid, []);
+    byDevice.get(i.deviceUid).push(i);
+  }
+
+  for (const [deviceUid, ports] of byDevice) {
+    // Every name this device's ports ask for, collected BEFORE any of them is
+    // changed. The old pass only knew the names it had already walked past, so
+    // a rename could take a name a later port was still going to use. That is
+    // not hypothetical: on a live 52 port switch, two ports both read as "3",
+    // the second was moved to "46" because 46 was its place in the list, and
+    // the port that genuinely read 46 came afterwards. NetBox then refused the
+    // write with "Interface with this Device and Name already exists", and one
+    // item of an otherwise clean plan was lost.
+    const wanted = new Set(ports.map((i) => String(i.name ?? '')));
+    const used = new Set();
+
+    for (const i of ports) {
+      const name = String(i.name ?? '');
+      if (!used.has(name)) { used.add(name); continue; }
+
+      // The port's place in the list is unique per device, so it is the first
+      // choice - but only when no other port on this device is going to want
+      // it as a read number.
       const place = String(i.uid || '').split(':').pop();
-      const replacement = place && !taken.has(place) ? place : `${name}-${taken.size + 1}`;
+      let replacement = place && !wanted.has(place) && !used.has(place) ? place : null;
+      if (!replacement) {
+        let n = 2;
+        while (wanted.has(`${name}-${n}`) || used.has(`${name}-${n}`)) n += 1;
+        replacement = `${name}-${n}`;
+      }
+
       report.warnings.push(
-        `${nameOf.get(i.deviceUid) || 'One device'}: two ports both read as "${name}", `
+        `${nameOf.get(deviceUid) || 'One device'}: two ports both read as "${name}", `
         + `so the second is recorded as "${replacement}". Photograph the rack again.`);
       i.name = replacement;
-      taken.set(replacement, true);
-    } else {
-      taken.set(name, true);
+      used.add(replacement);
+      // A later rename must not land on this one either.
+      wanted.add(replacement);
     }
-    byDevice.set(i.deviceUid, taken);
   }
 }
 
@@ -620,4 +645,10 @@ async function push(snapshot, client) {
   return walk(snapshot, client, true, report);
 }
 
-module.exports = { plan, push, Pending, isPending, diff, current, aliasUid, EXPORT_ORDER, NetBoxError };
+module.exports = {
+  plan, push, Pending, isPending, diff, current, aliasUid, EXPORT_ORDER, NetBoxError,
+  // Exported for the test that holds the interface naming rule down. It runs
+  // inside walk() and has no other way in, and the rule it enforces is the
+  // one NetBox refuses a whole write over.
+  _internal: { uniqueInterfaceNames },
+};
