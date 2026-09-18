@@ -100,3 +100,23 @@
 .needsSource p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted, #5f6864); }
 .connect { margin-top: 12px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 6px;
   background: #111827; color: #fff; font-size: 14px; font-weight: 600; }
+
+/* Which record this rack was compared against, and why the app believes it is
+   the same rack. One line: a person asks it once, and only once. */
+.against {
+  display: grid;
+  gap: 2px;
+  padding: 12px 16px;
+  margin: 0 0 12px;
+  border-radius: 12px;
+  background: var(--surface-2, #f4f6f5);
+  border-left: 3px solid var(--accent, #0b6a44);
+}
+.againstLabel {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-3, #7a847e);
+}
+.againstName { font-size: 16px; color: var(--text-1, #161a17); }
+.againstWhy { font-size: 13.5px; color: var(--text-2, #59635d); line-height: 1.45; }

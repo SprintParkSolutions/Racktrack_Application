@@ -54,6 +54,8 @@ export default function DriftPage() {
 
   const [plan, setPlan] = useState(null);
   const [spoc, setSpoc] = useState(null);
+  const [matched, setMatched] = useState(null);
+  const [recordRack, setRecordRack] = useState(null);
   const [busy, setBusy] = useState('Checking this rack against NetBox');
   const [error, setError] = useState('');
   const [needsSource, setNeedsSource] = useState(false);
@@ -110,7 +112,17 @@ export default function DriftPage() {
       setSent(body.status === 'submitted' || body.status === 'applied');
 
       const c = await authFetch(apiUrl(`/api/nb/plans/${report.planId}/contacts`));
-      if (c.ok) setSpoc((await c.json()).spoc);
+      if (c.ok) {
+        const body = await c.json();
+        setSpoc(body.spoc);
+        // Which rack in the customer's record this was compared against, and
+        // why the app believes it is the same rack. The server has always
+        // worked this out; the screen used to take the contact off it and drop
+        // the rest, so the one question a person asks of a comparison - "the
+        // same rack as what?" - had no answer anywhere in the app.
+        setMatched(body.matchedRack || null);
+        setRecordRack(body.rack || null);
+      }
 
       const nm = await authFetch(apiUrl(`/api/nb/scans/rack/${encodeURIComponent(rackId)}/name`));
       if (nm.ok) { const j = await nm.json(); setName(j.name || ''); setNameSaved(j.name || ''); }
@@ -216,6 +228,31 @@ export default function DriftPage() {
       )}
 
       {error && <p className={styles.error} role="alert">{error}</p>}
+
+      {/* Compared against WHAT. One line, on the screen that makes the claim.
+          A comparison a person cannot trace to a named record in the customer's
+          own database is an assertion, not a check. */}
+      {plan && !busy && (
+        <div className={styles.against}>
+          <span className={styles.againstLabel}>Compared against</span>
+          {matched && matched.confidence !== 'none' ? (
+            <>
+              <strong className={styles.againstName}>
+                {matched.name || (recordRack && recordRack.name) || 'this rack'}
+              </strong>
+              <span className={styles.againstWhy}>{matched.why}</span>
+            </>
+          ) : (
+            <>
+              <strong className={styles.againstName}>nothing yet</strong>
+              <span className={styles.againstWhy}>
+                This rack has not been set up in the record, so everything here reads as new.
+                Set it up to compare against what is already written down.
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {plan && !busy && (
         <div className={styles.verdict}>
