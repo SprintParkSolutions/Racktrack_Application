@@ -28,7 +28,7 @@ process.env.RT_DATA_DIR = TMP;
 const bindings = require('../../lib/netbox/bindings');
 const identity = require('../../lib/netbox/identity');
 
-const SCOPE = bindings.scopeOf({ tenantId: 7, rackKey: 't7:5' });
+const SCOPE = bindings.scopeOf({ tenantId: 7, rackId: 'RK-OFFICE01' });
 
 beforeEach(() => {
   fs.rmSync(bindings.DIR, { recursive: true, force: true });
@@ -40,13 +40,45 @@ after(() => {
 
 // ── 1. the scope ─────────────────────────────────────────────────────────────
 
-test('one rack is one scope, whichever way it is asked for', () => {
-  assert.equal(bindings.scopeOf({ tenantId: 7, rackKey: 't7:5' }), 't7|t7:5');
-  assert.equal(bindings.scopeOf({ tenantId: 7, rackKey: 't7:5', rackId: 'RK-OLD' }), 't7|t7:5');
-  // No key means the scan was never identified, so the photo's own rack id keys it.
+test('one rack is one scope, and the customer rack key cannot move it', () => {
+  // The scope keys on the tenant and the scan's rack id and on nothing else. It
+  // used to key on the customer's rack key when there was one, and that key is
+  // looked up in NetBox on every adopt through a call that fails soft to null:
+  // one unreachable moment moved the whole rack to another file and hid every
+  // confirmation in it.
   assert.equal(bindings.scopeOf({ tenantId: 7, rackId: 'RK-ABC' }), 't7|RK-ABC');
+  assert.equal(bindings.scopeOf({ tenantId: 7, rackKey: 't7:5', rackId: 'RK-ABC' }), 't7|RK-ABC');
+  assert.equal(bindings.scopeOf({ tenantId: 7, rackKey: null, rackId: 'RK-ABC' }), 't7|RK-ABC');
   assert.equal(bindings.scopeOf({ rackId: 'RK-ABC' }), 't0|RK-ABC');
   assert.equal(bindings.scopeOf({}), 't0|unknown');
+});
+
+test('a confirmation made under an older scope spelling is carried forward', () => {
+  // What is on disk from before: the rack was identified, so its bindings went
+  // into a file named after the customer's rack key.
+  const old = 't7|t7:5';
+  bindings.confirm(old, { aliases: ['serial:aaa111'], deviceUid: 'dev:t7:5:u10', position: 10 });
+  const now = bindings.scopeOf({ tenantId: 7, rackId: 'RK-ABC' });
+  assert.equal(bindings.find(now, ['serial:aaa111']), null, 'not there until it is moved');
+
+  const legacy = bindings.legacyScopesOf({ tenantId: 7, rackKey: 't7:5', rackId: 'RK-ABC' });
+  assert.ok(legacy.includes(old), `the old spelling should be looked for, got ${legacy.join()}`);
+  assert.deepStrictEqual(bindings.migrate(now, legacy), ['dev:t7:5:u10']);
+  assert.equal(bindings.find(now, ['serial:aaa111']).binding.deviceUid, 'dev:t7:5:u10');
+
+  // Idempotent: asking again moves nothing and does not duplicate it.
+  assert.deepStrictEqual(bindings.migrate(now, legacy), []);
+  assert.equal(bindings.list(now).length, 1);
+});
+
+test('a tenant-less scope spelling is carried forward too, and a newer answer wins', () => {
+  // A scan adopted before its tenant was written beside it landed under t0.
+  bindings.confirm('t0|RK-ABC', { aliases: ['serial:aaa111'], deviceUid: 'dev:u10' });
+  const now = bindings.scopeOf({ tenantId: 7, rackId: 'RK-ABC' });
+  bindings.confirm(now, { aliases: ['serial:aaa111'], deviceUid: 'dev:u12' });
+  bindings.migrate(now, bindings.legacyScopesOf({ tenantId: 7, rackId: 'RK-ABC' }));
+  assert.equal(bindings.list(now).length, 1, 'the older record does not come back as a second one');
+  assert.equal(bindings.find(now, ['serial:aaa111']).binding.deviceUid, 'dev:u12');
 });
 
 test('two tenants that type the same rack id do not share bindings', () => {
@@ -179,6 +211,43 @@ test('two different switches in two different boxes both stand', () => {
   assert.equal(bindings.list(SCOPE).length, 2);
   assert.equal(bindings.find(SCOPE, ['serial:aaa111']).binding.deviceUid, 'dev:t7:5:u10');
   assert.equal(bindings.find(SCOPE, ['serial:bbb222']).binding.deviceUid, 'dev:t7:5:u12');
+});
+
+test('when a reading matches two bindings equally, the one confirmed for it wins', () => {
+  // Two members of a stack, each confirmed as its own box off a reading that saw
+  // only that member. A later reading lists both member serials, so it matches
+  // both bindings at rung 1 and neither is stronger. Which box it is offered
+  // must not be decided by which record is older.
+  bindings.confirm(SCOPE, { aliases: ['serial:aaa111'], deviceUid: 'dev:u10', switchId: '1' });
+  bindings.confirm(SCOPE, { aliases: ['serial:bbb222'], deviceUid: 'dev:u12', switchId: '2' });
+  const both = ['serial:aaa111', 'serial:bbb222'];
+  assert.equal(bindings.find(SCOPE, both).binding.deviceUid, 'dev:u10', 'oldest, with nothing to break the tie');
+  assert.equal(bindings.find(SCOPE, both, { switchId: '2' }).binding.deviceUid, 'dev:u12');
+  assert.equal(bindings.find(SCOPE, both, { switchId: '1' }).binding.deviceUid, 'dev:u10');
+});
+
+test('a binding that shares only a name or an address is reported as weak, never as a match', () => {
+  bindings.confirm(SCOPE, {
+    aliases: ['serial:aaa111', 'host:10.10.1.11', 'sysname:sw-a'], deviceUid: 'dev:u10',
+  });
+  // The same switch read again, publishing nothing but its address and name.
+  const later = ['host:10.10.1.11', 'sysname:sw-a'];
+  assert.equal(bindings.find(SCOPE, later), null, 'no binding on a name or an address');
+  const weak = bindings.find(SCOPE, later, { weak: true });
+  assert.equal(weak.weak, true);
+  assert.equal(weak.binding.deviceUid, 'dev:u10');
+});
+
+test('a confirm records the photograph it was made against', () => {
+  const { binding } = bindings.confirm(SCOPE, {
+    aliases: ['serial:aaa111'], deviceUid: 'dev:u10', position: 10,
+    scanId: 42, snapshotStamp: 'abc123', rackKey: 't7:5',
+    boxPrint: { position: 10, cvClass: 'Switch', ports: 24, make: '', model: '', serial: null },
+  });
+  assert.equal(binding.scanId, '42');
+  assert.equal(binding.snapshotStamp, 'abc123');
+  assert.equal(binding.rackKey, 't7:5', 'the rack key lives in the record, not in the file name');
+  assert.equal(binding.boxPrint.ports, 24);
 });
 
 // ── 5. what it refuses ───────────────────────────────────────────────────────

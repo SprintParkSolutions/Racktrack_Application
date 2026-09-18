@@ -23,15 +23,21 @@ const sub = (d) => [d.make && d.make !== 'Unknown' ? d.make : null, d.model, d.p
   .filter(Boolean).join(' · ');
 
 export default function PlacePicker({
-  devices = [], image = null, value = '', suggestion = null, takenBy = {}, name = 'this switch', onChange,
+  devices = [], image = null, value = '', suggestion = null, takenBy = {}, name = 'this switch',
+  written = false, confirming = false, onChange, onConfirm = null,
 }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState('list');   // 'list' | 'photo'
   const [nat, setNat] = useState(null);       // the photo's own pixel size
 
   const panelRef = useModalA11y(() => setOpen(false), { active: open });
-  const chosen = useMemo(() => devices.find((d) => d.uid === value) || null, [devices, value]);
-  const boxed = useMemo(() => devices.filter((d) => Array.isArray(d.box) && d.box.length === 4), [devices]);
+  // A patch panel, a power strip, a UPS and a blanking plate have nothing to
+  // answer SNMP with, so no switch is ever one of them and the server refuses a
+  // save that says otherwise. Offering them here turned the one control that
+  // exists to correct the matcher into a way to lose the whole save.
+  const pickable = useMemo(() => devices.filter((d) => !d.passive), [devices]);
+  const chosen = useMemo(() => pickable.find((d) => d.uid === value) || null, [pickable, value]);
+  const boxed = useMemo(() => pickable.filter((d) => Array.isArray(d.box) && d.box.length === 4), [pickable]);
 
   // A photo with no rectangles on it is a picture, not a picker.
   const canPhoto = Boolean(image) && boxed.length > 0;
@@ -50,8 +56,33 @@ export default function PlacePicker({
         <span className={styles.triggerAction} aria-hidden="true">Change</span>
       </button>
 
-      {!chosen && suggestion?.why && (
+      {/* A reason always comes back now, and a reason with no box in it is the
+          server saying it cannot tell. Announcing that as a suggestion read as
+          "The camera suggests one: U10 box and U12 box cannot be told apart",
+          which is the opposite of what it says. */}
+      {!chosen && suggestion?.deviceUid && (
         <p className={styles.suggest}>The camera suggests one: {suggestion.why}</p>
+      )}
+      {!chosen && suggestion && !suggestion.deviceUid && suggestion.why && (
+        <p className={styles.suggest}>Not placed: {suggestion.why}.</p>
+      )}
+      {(suggestion?.notes || []).map((note) => (
+        <p className={styles.suggest} key={note}>{note}.</p>
+      ))}
+
+      {/* The one act that makes a match a fact. Everything else on this screen
+          is somebody agreeing with a port count; this is somebody standing at
+          the rack with the box in front of them, and only this writes the
+          switch's model, serial and ports onto that box. */}
+      {chosen && onConfirm && (
+        written
+          ? <p className={styles.suggest}>Confirmed at the rack, and written into the record.</p>
+          : (
+            <button type="button" className={styles.confirm} disabled={confirming}
+              onClick={() => onConfirm(chosen.uid)}>
+              {confirming ? 'Saving...' : `I checked this box at the rack: ${label(chosen)}`}
+            </button>
+          )
       )}
 
       {open && createPortal(
@@ -107,7 +138,7 @@ export default function PlacePicker({
                 </div>
               ) : (
                 <ul className={styles.list}>
-                  {devices.map((d) => {
+                  {pickable.map((d) => {
                     const other = d.uid !== value && takenBy[d.uid];
                     return (
                       <li key={d.uid}>

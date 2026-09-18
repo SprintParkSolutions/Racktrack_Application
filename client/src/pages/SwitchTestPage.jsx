@@ -295,6 +295,7 @@ export default function SwitchTestPage() {
   const [places, setPlaces] = useState(null);    // { devices, switches, matches }
   const [match, setMatch] = useState({});        // serverSwitchId -> deviceUid | ''
   const [savingMatch, setSavingMatch] = useState(false);
+  const [confirming, setConfirming] = useState(null);  // the switch id being confirmed
 
   // Per-switch view state: whose action menu is open, which port was tapped on
   // the faceplate, and whether the port list is showing everything or only the
@@ -368,7 +369,7 @@ export default function SwitchTestPage() {
 
 
   /** Save the places; returns true when the server took them. */
-  const savePlaces = async () => {
+  const savePlaces = async (extra = null) => {
     if (!scanId) {
       setMatchNote({ ok: false, text: 'This rack is not on the server yet. Open it from Scan once, then save.' });
       return false;
@@ -377,9 +378,16 @@ export default function SwitchTestPage() {
     try {
       const r = await authFetch(apiUrl(`/api/nb/scans/${scanId}/reconcile`), {
         method: 'POST', headers: JSON_HEADERS,
-        body: JSON.stringify({ matches: Object.fromEntries(Object.entries(match).map(([k, v]) => [k, v || null])) }),
+        body: JSON.stringify({
+          matches: Object.fromEntries(Object.entries(match).map(([k, v]) => [k, v || null])),
+          ...(extra || {}),
+        }),
       });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      // The server refuses in plain English and names the box and the switch.
+      // Throwing the status code away left the operator with "Not saved: HTTP
+      // 400" and every carefully worded message unreachable.
+      const body = await r.json().catch(() => null);
+      if (!r.ok) throw new Error((body && body.error) || `The server refused the save (HTTP ${r.status}).`);
       // Say exactly what was saved, switch by switch, so a wrong place is seen here.
       const devName = (uid) => {
         const d = (places?.devices || []).find((x) => x.uid === uid);
@@ -389,7 +397,17 @@ export default function SwitchTestPage() {
         const where = match[s.id] ? (devName(match[s.id]) || 'placed') : 'not in this rack';
         return `${s.label || s.name || s.host || s.id} → ${where}`;
       });
-      setMatchNote({ ok: true, text: said.length ? `Saved: ${said.join(' · ')}.` : 'Saved.' });
+      // A row the server would not take is reported beside the ones it did, so a
+      // partly accepted save never looks like a whole one.
+      const refused = (body?.rejected || []).map((x) => x.error);
+      const note = body?.confirmNote ? [body.confirmNote] : [];
+      setMatchNote({
+        ok: refused.length === 0,
+        text: [
+          said.length ? `Saved: ${said.join(' · ')}.` : 'Saved.',
+          ...note, ...refused,
+        ].join(' '),
+      });
       loadPlaces();
       return true;
     } catch (e) {
@@ -397,6 +415,26 @@ export default function SwitchTestPage() {
       return false;
     } finally {
       setSavingMatch(false);
+    }
+  };
+
+  /**
+   * "I checked this box at the rack."
+   *
+   * The only thing in the app that says a person stood in front of the rack and
+   * read the box, and the only thing that lets the switch's own model, serial and
+   * ports be written onto it. Everything else on this screen is agreeing with a
+   * port count.
+   */
+  const confirmPlace = async (swId, uid) => {
+    setConfirming(swId);
+    try {
+      await savePlaces({ confirm: true, switchId: String(swId), matches: {
+        ...Object.fromEntries(Object.entries(match).map(([k, v]) => [k, v || null])),
+        [swId]: uid || null,
+      } });
+    } finally {
+      setConfirming(null);
     }
   };
 
@@ -980,12 +1018,27 @@ export default function SwitchTestPage() {
                   value={match[serverIdFor(sw, rackId)] ?? ''}
                   name={sw.label}
                   suggestion={(places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.autoMatch || null}
+                  written={Boolean((places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.written)}
+                  confirming={confirming === serverIdFor(sw, rackId)}
+                  onConfirm={(uid) => confirmPlace(serverIdFor(sw, rackId), uid)}
                   takenBy={Object.fromEntries(
                     Object.entries(match)
                       .filter(([id, uid]) => uid && id !== String(serverIdFor(sw, rackId)))
                       .map(([id, uid]) => [uid, (places.switches || []).find((x) => String(x.id) === id)?.label || 'another switch']),
                   )}
-                  onChange={(uid) => setMatch((m) => ({ ...m, [serverIdFor(sw, rackId)]: uid }))}
+                  onChange={(uid) => setMatch((m) => {
+                    // One box holds one switch, so pointing this one at a box
+                    // another switch holds moves it rather than making a pair the
+                    // server has to refuse. The Review screen has always done
+                    // this; this picker only labelled the clash and then posted it.
+                    const next = { ...m, [serverIdFor(sw, rackId)]: uid };
+                    if (uid) {
+                      for (const other of Object.keys(next)) {
+                        if (String(other) !== String(serverIdFor(sw, rackId)) && next[other] === uid) next[other] = '';
+                      }
+                    }
+                    return next;
+                  })}
                 />
               )}
 
@@ -1132,7 +1185,7 @@ export default function SwitchTestPage() {
             )}
             <div className={styles.actions}>
               {places?.devices?.length > 0 && (
-                <button type="button" className={styles.secondary} disabled={savingMatch} onClick={savePlaces}>
+                <button type="button" className={styles.secondary} disabled={savingMatch} onClick={() => savePlaces()}>
                   {savingMatch ? 'Saving…' : 'Save places'}
                 </button>
               )}

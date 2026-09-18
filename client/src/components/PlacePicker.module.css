@@ -30,6 +30,19 @@
 }
 .suggest { margin: 0 0 2px; font-size: 12px; color: var(--muted); }
 
+/* The one act that turns a match into a fact - see PlacePicker.jsx. */
+.confirm {
+  width: 100%;
+  margin: 4px 0 2px;
+  padding: 9px 12px;
+  border: 1px solid #0f7b4f; border-radius: 8px;
+  background: transparent;
+  font-family: var(--font); font-size: 13px; font-weight: 650; color: #0f7b4f;
+  text-align: left;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.confirm:disabled { opacity: .55; cursor: default; }
+
 /* ── The sheet ── */
 .scrim {
   position: fixed; inset: 0; z-index: 1000;

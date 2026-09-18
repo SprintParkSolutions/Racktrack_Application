@@ -48,6 +48,32 @@ const LADDER = Object.freeze({
 const KINDS = Object.freeze(['serial', 'chassis', 'bridge', 'mac', 'sysname', 'host']);
 
 /**
+ * The three kinds that are all the same 48-bit address on almost every switch.
+ *
+ * A switch has one base address and publishes it as its LLDP chassis id, as its
+ * bridge base address and as its management interface's hardware address,
+ * depending on which table you asked. Compared as "kind:value" strings those are
+ * three different aliases, so one switch read two ways read as two devices -
+ * which is the exact mistake this module exists to prevent. So a value that is
+ * plainly a MAC is compared across these three kinds by value, and the rung
+ * reported is the WEAKER of the two, because a shared address proves no more
+ * than the weaker of the two claims about it did.
+ */
+const HW_KINDS = Object.freeze(new Set(['chassis', 'bridge', 'mac']));
+
+/** Twelve hex digits and nothing else: a 48-bit address, however it was spelled. */
+const MAC_FORM = /^[0-9a-f]{12}$/;
+
+/**
+ * LLDP subtype 4 is macAddress. It is the only subtype that makes a chassis id
+ * an address, and 4.1 rung 3 is an address. A vendor that publishes subtype
+ * local(7) or chassisComponent(1) is publishing a model string, a stack name or
+ * a hostname, which two physically different units share - so it is not an
+ * identity, and minting one from it merges two switches into one.
+ */
+const LLDP_SUBTYPE_MAC = 4;
+
+/**
  * The kinds that prove identity on their own.
  *
  * 'host' is on the ladder but excluded on purpose: 4.3 says a management
@@ -197,6 +223,28 @@ const rankOf = (kind) => (Object.prototype.hasOwnProperty.call(LADDER, kind) ? L
 /** Is this alias one that can prove identity by itself? */
 const isStrong = (a) => STRONG.has(kindOf(a));
 
+/** The value half of an alias, or '' if it is not one. */
+const valueOf = (a) => {
+  const s = String(a ?? '');
+  const i = s.indexOf(':');
+  return i > 0 ? s.slice(i + 1) : '';
+};
+
+/**
+ * The string two aliases are compared on.
+ *
+ * Identical to the alias itself for every kind but the three hardware-address
+ * ones, where a MAC-shaped value collapses to one key so chassis:X, bridge:X and
+ * mac:X are one address. A serial that happens to look like a MAC keeps its own
+ * namespace: a serial is not an address and must never merge with one.
+ */
+function matchKey(a) {
+  const kind = kindOf(a);
+  const value = valueOf(a);
+  if (HW_KINDS.has(kind) && MAC_FORM.test(value)) return `hw:${value}`;
+  return `${kind}:${value}`;
+}
+
 // ── the identity of a reading ────────────────────────────────────────────────
 
 /**
@@ -219,11 +267,32 @@ function aliasesOf(reading) {
   const out = new Set();
   const add = (kind, value) => { const a = alias(kind, value); if (a) out.add(a); };
 
-  add('serial', ident.serial);
+  // A serial field holding the device's own model number is not a serial, and
+  // the model is on the same reading, so there is no excuse for believing it.
+  // Two GS724Tv4 switches both reporting "GS724Tv4" as their serial would
+  // otherwise be one device at rung 1, and a binding made on one of them would
+  // be applied to the other as a fact.
+  const shapes = new Set([ident.model, ident.hardwareRev, ident.derivedModel]
+    .map((v) => strip(v)).filter(Boolean));
+  const addSerial = (value, ownModel = null) => {
+    const s = strip(value);
+    if (!s) return;
+    if (shapes.has(s) || (ownModel && strip(ownModel) === s)) return;
+    add('serial', value);
+  };
+
+  addSerial(ident.serial);
   for (const m of Array.isArray(ident.members) ? ident.members : []) {
-    add('serial', m && m.serial);
+    addSerial(m && m.serial, m && m.model);
   }
-  add('chassis', r.localChassisId);
+  // Only an address is rung 3. A chassis id the device published under any other
+  // LLDP subtype is a name or a model string, which two units share.
+  const subtype = r.localChassisIdSubtype ?? ident.localChassisIdSubtype ?? null;
+  const chassisValue = strip(r.localChassisId);
+  const chassisIsAddress = subtype === null || subtype === undefined || subtype === ''
+    ? MAC_FORM.test(chassisValue)
+    : Number(subtype) === LLDP_SUBTYPE_MAC;
+  if (chassisIsAddress) add('chassis', r.localChassisId);
   // No collector publishes a bridge base address or a management MAC into the
   // reading yet. Read from every place one would plausibly land so the day it
   // does, identity picks it up without another change here.
@@ -247,18 +316,56 @@ const asAliases = (v) => (Array.isArray(v) ? v : [])
  * it sits on, so the answer can be shown to a person and argued with. When
  * several aliases are shared the strongest wins, which makes the answer
  * independent of the order either list came in.
+ *
+ * Two things stop a shared alias being taken at face value:
+ *
+ *   - the three hardware-address kinds are compared by value, so one base
+ *     address published as a chassis id here and a management MAC there is one
+ *     address. The rung reported is the weaker of the two;
+ *   - a shared alias weaker than a serial is REFUTED when both sides publish
+ *     serials and none of them agree. Two different serial numbers are positive
+ *     evidence of two different devices, whatever a shared chassis string says,
+ *     and a vendor publishing a stack name as its chassis id is exactly how two
+ *     units come to share one.
+ *
+ * A refusal says so: { same: false, refutedBy: 'serial' }, so a caller can tell
+ * "nothing in common" from "these are provably not the same".
  */
 function sameDevice(aliasesA, aliasesB) {
-  const have = new Set(asAliases(aliasesA));
-  let best = null;
-  for (const a of asAliases(aliasesB)) {
-    if (!have.has(a)) continue;
-    const kind = kindOf(a);
-    if (!STRONG.has(kind)) continue;
-    const rank = rankOf(kind);
-    if (best === null || rank < best.rank) best = { same: true, by: kind, rank, alias: a };
+  const listA = asAliases(aliasesA);
+  const listB = asAliases(aliasesB);
+
+  // matchKey -> the weakest kind either side spelled it as, so a chassis id on
+  // one side and a management MAC on the other report as 'mac', rung 5.
+  const mine = new Map();
+  for (const a of listA) {
+    if (!STRONG.has(kindOf(a))) continue;
+    const key = matchKey(a);
+    const prev = mine.get(key);
+    if (!prev || rankOf(kindOf(a)) > rankOf(kindOf(prev))) mine.set(key, a);
   }
-  return best || { same: false, by: null, rank: null, alias: null };
+
+  let best = null;
+  for (const b of listB) {
+    const kindB = kindOf(b);
+    if (!STRONG.has(kindB)) continue;
+    const held = mine.get(matchKey(b));
+    if (!held) continue;
+    // The weaker of the two claims about the same value is what it proves.
+    const kind = rankOf(kindOf(held)) > rankOf(kindB) ? kindOf(held) : kindB;
+    const rank = rankOf(kind);
+    if (best === null || rank < best.rank) best = { same: true, by: kind, rank, alias: b };
+  }
+  if (!best) return { same: false, by: null, rank: null, alias: null, refutedBy: null };
+
+  if (best.rank > LADDER.serial) {
+    const serialsA = listA.filter((a) => kindOf(a) === 'serial');
+    const serialsB = listB.filter((a) => kindOf(a) === 'serial');
+    if (serialsA.length && serialsB.length && !serialsA.some((a) => serialsB.includes(a))) {
+      return { same: false, by: null, rank: null, alias: null, refutedBy: 'serial' };
+    }
+  }
+  return { ...best, refutedBy: null };
 }
 
 // ── evidence and confidence ────────────────────────────────────────────────
@@ -312,11 +419,37 @@ function confidenceOf(evidenceList) {
   return 'unidentified';
 }
 
-/** Is a binding at this confidence allowed into a system of record? 7.2. */
-const writable = (confidence) => confidence === 'confirmed' || confidence === 'probable';
+/**
+ * The weak aliases two identities share, strongest first.
+ *
+ * Never an identity - that is what 4.3 and 4.4 forbid - but it is the difference
+ * between "this switch matches nothing we hold" and "this switch matches a
+ * confirmation made under a serial it did not publish this time". The second is
+ * worth telling the person, because it names what to re-read.
+ */
+function weakOverlap(aliasesA, aliasesB) {
+  const have = new Set(asAliases(aliasesA));
+  // A management address is rung 6 and a published name is on no rung at all
+  // (4.4), so the address comes first of the two.
+  const order = (a) => rankOf(kindOf(a)) ?? 99;
+  return asAliases(aliasesB)
+    .filter((a) => have.has(a) && KINDS.includes(kindOf(a)) && !STRONG.has(kindOf(a)))
+    .sort((a, b) => order(a) - order(b));
+}
+
+/**
+ * Is a binding at this confidence allowed into a system of record?
+ *
+ * Standard 7.2 allows probable as well, marked at the destination. This version
+ * writes CONFIRMED ONLY, because there is nowhere in the snapshot to carry the
+ * mark: a serial written on a device row is read as a fact by everything
+ * downstream, and "probable" would arrive as one. Probable and possible are
+ * shown on the screen and in the report and written nowhere.
+ */
+const writable = (confidence) => confidence === 'confirmed';
 
 module.exports = {
-  aliasesOf, rankOf, sameDevice, confidenceOf, evidence,
-  alias, kindOf, isStrong, isJunkValue, writable,
-  LADDER, KINDS, STRONG, EVIDENCE_RANK, NOT_PRODUCED, RANK_7_IS_MEMBERSHIP,
+  aliasesOf, rankOf, sameDevice, confidenceOf, evidence, weakOverlap,
+  alias, kindOf, valueOf, matchKey, isStrong, isJunkValue, writable,
+  LADDER, KINDS, STRONG, HW_KINDS, EVIDENCE_RANK, NOT_PRODUCED, RANK_7_IS_MEMBERSHIP,
 };

@@ -32,6 +32,9 @@ function forClient(poll) {
     collectedAt: poll.polledAt,
     tookMs: poll.durationMs,
     localChassisId: poll.localChassisId || null,
+    // What the chassis id actually is, so identity.js can refuse one that is a
+    // model string or a stack name rather than an address (LLDP subtype 4).
+    localChassisIdSubtype: poll.localChassisIdSubtype ?? null,
     identity: {
       // ENTITY-MIB is the truth when present; otherwise the model parsed from
       // the switch's own description string, which these budget switches do
@@ -43,8 +46,11 @@ function forClient(poll) {
       hardwareRev: chassis.hardwareRev || null,
       firmwareRev: chassis.firmwareRev || null,
       softwareRev: chassis.softwareRev || null,
-      // A stack answers as one device but occupies several U of rack. Saying
-      // so is the difference between one row in NetBox and the right number.
+      // How many rows the device calls a chassis. A stack answers as one device
+      // and lists one chassis per member, so this is usually the member count -
+      // but it is a ROW COUNT, not a measurement of physical units, and some
+      // single switches list more than one row. Anything that draws a physical
+      // conclusion from it has to corroborate it first (see reconcile.js).
       stackMembers: poll.chassis.length,
       members: poll.chassis,
     },

@@ -56,6 +56,12 @@ const OID = {
   dot1qVlanStaticName: '1.3.6.1.2.1.17.7.1.4.3.1.1',
   dot1qPvid:           '1.3.6.1.2.1.17.7.1.4.5.1.1',
 
+  // The subtype says what the chassis id IS: 4 is a MAC address, and only a MAC
+  // address is an identity. 1 (chassisComponent), 5 (networkAddress) and 7
+  // (local) are a model string, an address that moves, or a name somebody typed,
+  // and two identical switches share all three. Read alongside the id so
+  // lib/netbox/identity.js can refuse the ones that are not addresses.
+  lldpLocChassisIdSubtype: '1.0.8802.1.1.2.1.3.1.0',
   lldpLocChassisId: '1.0.8802.1.1.2.1.3.2.0',
   lldpLocSysName:  '1.0.8802.1.1.2.1.3.3.0',
   lldpLocPortId:   '1.0.8802.1.1.2.1.3.7.1.3',
@@ -248,10 +254,19 @@ async function pollSwitch(target, { maxInterfaces = 1024, macTable = false } = {
     // neighbour is matched back to a specific switch when two of them share a
     // sysName, which TP-Link switches do out of the box.
     let localChassisId = null;
+    let localChassisIdSubtype = null;
     try {
       const r = await session.get([OID.lldpLocChassisId]);
       localChassisId = present(r[0] && r[0].value);
     } catch { /* LLDP off; leave null */ }
+    // Asked for separately: a switch that answers the id and not the subtype
+    // must still give us the id. A null subtype means "it did not say", which
+    // identity.js treats as "believe it only if it is shaped like an address".
+    try {
+      const r = await session.get([OID.lldpLocChassisIdSubtype]);
+      const n = Number(present(r[0] && r[0].value));
+      localChassisIdSubtype = Number.isFinite(n) ? n : null;
+    } catch { /* no subtype published; leave null */ }
 
     const entity = joinColumns({
       class:    await softWalk(session, OID.entPhysicalClass, 512),
@@ -398,6 +413,7 @@ async function pollSwitch(target, { maxInterfaces = 1024, macTable = false } = {
       ok: true,
       host: target.host,
       localChassisId,
+      localChassisIdSubtype,
       // The model parsed from sysDescr, used only when ENTITY-MIB gave none.
       derivedModel: modelFromDescr(descr),
       polledAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),

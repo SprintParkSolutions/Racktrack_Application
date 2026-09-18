@@ -112,7 +112,8 @@ test('the rungs are the ones section 4.1 lists, and a name is on none of them', 
 
 test('a shared serial is the same device, and it says which alias said so', () => {
   const hit = identity.sameDevice(['serial:abc123', 'sysname:sw1'], ['serial:abc123', 'host:10.0.0.9']);
-  assert.deepStrictEqual(hit, { same: true, by: 'serial', rank: 1, alias: 'serial:abc123' });
+  assert.deepStrictEqual(hit,
+    { same: true, by: 'serial', rank: 1, alias: 'serial:abc123', refutedBy: null });
 });
 
 test('a shared name alone is NOT the same device', () => {
@@ -192,14 +193,19 @@ test('confidence is the four levels of section 7', () => {
   assert.equal(identity.confidenceOf(null), 'unidentified');
 });
 
-test('a confirmation recalled later is still confirmed, and keeps the rank 4 note', () => {
-  // Standard 10.1: an earlier position is retained as a rank 4 source. The pair
-  // is what a stored binding produces when it is found again.
+test('the strongest rank in a list is the one that decides', () => {
+  // confidenceOf takes the best rank present, so a list holding a person's own
+  // act reads as confirmed whatever else is in it. That is why the matcher does
+  // NOT carry the rank 1 entry forward when it recalls a binding against a later
+  // photograph: standard 10.1 says an earlier position is retained as a rank 4
+  // source and must not be presented as current, and a list holding both would
+  // present it as current. See binding-suggest.test.js for the rule in action.
   const both = [
     identity.evidence('confirmed', 'a person placed it'),
     identity.evidence('remembered', 'recalled from the binding'),
   ];
   assert.equal(identity.confidenceOf(both), 'confirmed');
+  assert.equal(identity.confidenceOf([identity.evidence('remembered', 'recalled')]), 'probable');
   assert.deepStrictEqual(both.map((e) => e.rank), [1, 4]);
 });
 
@@ -207,11 +213,96 @@ test('a rank 8 entry that never counted its candidates claims nothing', () => {
   assert.equal(identity.confidenceOf([identity.evidence('inferred', 'ports agree')]), 'unidentified');
 });
 
-test('only confirmed and probable may be written to a system of record', () => {
+test('only a confirmed binding may be written to a system of record', () => {
+  // Standard 7.2 allows probable as well, marked at the destination. There is
+  // nowhere in the snapshot to carry the mark - a serial on a device row reads
+  // as a fact to everything downstream - so this version writes rank 1 to 3 and
+  // nothing else, and shows the rest.
   assert.equal(identity.writable('confirmed'), true);
-  assert.equal(identity.writable('probable'), true);
+  assert.equal(identity.writable('probable'), false);
   assert.equal(identity.writable('possible'), false);
   assert.equal(identity.writable('unidentified'), false);
+});
+
+// ── 6b. one address, published under three names ─────────────────────────────
+
+test('one base address read as a chassis id and as a management MAC is one device', () => {
+  // The same 48 bits, from two different tables of the same switch. Compared as
+  // whole strings these were two devices, which is how one switch became two.
+  const hit = identity.sameDevice(['chassis:c8787d3de530'], ['mac:c8787d3de530']);
+  assert.equal(hit.same, true);
+  // The weaker of the two claims is what a shared value proves.
+  assert.equal(hit.by, 'mac');
+  assert.equal(hit.rank, identity.LADDER.mac);
+  assert.equal(identity.sameDevice(['bridge:c8787d3de530'], ['chassis:c8787d3de530']).by, 'bridge');
+});
+
+test('a serial that happens to look like a MAC does not merge with an address', () => {
+  assert.equal(identity.sameDevice(['serial:c8787d3de530'], ['mac:c8787d3de530']).same, false);
+});
+
+test('a value that is not an address keeps its own kind', () => {
+  // Only a 48-bit value collapses. "core-stack" as a chassis id is not an
+  // address and must not match a management MAC or anything else.
+  assert.equal(identity.matchKey('chassis:c8787d3de530'), 'hw:c8787d3de530');
+  assert.equal(identity.matchKey('chassis:corestack'), 'chassis:corestack');
+});
+
+test('two different serials refute a shared chassis string', () => {
+  // A vendor that publishes a stack name as its LLDP chassis id gives two units
+  // the same chassis alias. Their serials say plainly that they are two units,
+  // and the stronger rung wins (6.3).
+  const a = ['serial:realserialone', 'chassis:corestack'];
+  const b = ['serial:realserialtwo', 'chassis:corestack'];
+  const hit = identity.sameDevice(a, b);
+  assert.equal(hit.same, false);
+  assert.equal(hit.refutedBy, 'serial');
+  // A shared serial is not refuted by anything, and one side with no serial at
+  // all refutes nothing either - absence is not disagreement.
+  assert.equal(identity.sameDevice(a, ['serial:realserialone', 'chassis:other']).same, true);
+  assert.equal(identity.sameDevice(a, ['chassis:corestack']).same, true);
+});
+
+test('a weak alias is reported as a weak alias and never as identity', () => {
+  const shared = identity.weakOverlap(['host:10.10.1.11', 'sysname:sw-a', 'serial:aaa111'],
+    ['host:10.10.1.11', 'sysname:sw-a', 'serial:bbb222']);
+  assert.deepStrictEqual(shared, ['host:10.10.1.11', 'sysname:sw-a']);
+  assert.equal(identity.sameDevice(['host:10.10.1.11'], ['host:10.10.1.11']).same, false);
+});
+
+// ── 6c. a serial field that is not a serial ──────────────────────────────────
+
+test('a serial that is the device model is not an identity', () => {
+  // Two NETGEAR GS724Tv4 switches both report "GS724Tv4" in the ENTITY serial
+  // field. Believing it makes them one device at rung 1, and a binding made on
+  // one is then applied to the other as a fact.
+  const one = identity.aliasesOf({
+    identity: { serial: 'GS724Tv4', model: 'GS724Tv4' },
+    system: { sysName: 'sw-a' }, host: '10.10.1.11',
+  });
+  const two = identity.aliasesOf({
+    identity: { serial: 'gs724tv4', model: 'GS724Tv4' },
+    system: { sysName: 'sw-b' }, host: '10.10.1.12',
+  });
+  assert.ok(!one.some((a) => a.startsWith('serial:')), `no serial alias, got ${one.join()}`);
+  assert.equal(identity.sameDevice(one, two).same, false);
+  // A real serial on the same reading is still a real serial.
+  assert.ok(identity.aliasesOf({ identity: { serial: '222B0K4000121', model: 'TL-SG2428P' } })
+    .includes('serial:222b0k4000121'));
+});
+
+// ── 6d. a chassis id that is not an address ──────────────────────────────────
+
+test('only a chassis id published as an address is an identity', () => {
+  const asMac = { localChassisId: 'C8:78:7D:3D:E5:30', localChassisIdSubtype: 4 };
+  assert.ok(identity.aliasesOf(asMac).includes('chassis:c8787d3de530'));
+  // Subtype 7 is "local": a name somebody typed, which two switches share.
+  const asName = { localChassisId: 'C8:78:7D:3D:E5:30', localChassisIdSubtype: 7 };
+  assert.ok(!identity.aliasesOf(asName).some((a) => a.startsWith('chassis:')));
+  // No subtype recorded at all - every reading taken before it was collected -
+  // is believed only where the value is plainly an address.
+  assert.ok(identity.aliasesOf({ localChassisId: '30:DE:4B:23:70:AC' }).includes('chassis:30de4b2370ac'));
+  assert.ok(!identity.aliasesOf({ localChassisId: 'core-stack' }).some((a) => a.startsWith('chassis:')));
 });
 
 // ── 7. the ranks nothing here may produce ────────────────────────────────────

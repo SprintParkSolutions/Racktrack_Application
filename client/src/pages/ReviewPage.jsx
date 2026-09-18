@@ -75,6 +75,10 @@ function explain(r, fallback) {
   const raw = String(r.body.error || '').trim().replace(/\.$/, '');
   const msg = raw ? raw[0].toUpperCase() + raw.slice(1) : fallback.replace(/\.$/, '');
   if (r.status === 404) return `${msg}. Go back to the rack and open Review again.`;
+  // A 400 is the server saying this cannot be saved as it stands, and it names
+  // the switch and the box. Waiting a moment changes nothing about it, and
+  // telling somebody to try again buries the sentence that says what to fix.
+  if (r.status === 400) return `${msg}.`;
   return `${msg}. Try again in a moment.`;
 }
 
@@ -129,16 +133,36 @@ export default function ReviewPage() {
     return () => { live = false; };
   }, [rackId, attempt]);
 
-  async function apply() {
+  async function post(extra) {
     setSaving(true); setSaveErr(null);
     const clean = {};
     for (const [id, uid] of Object.entries(matches)) clean[id] = uid || null;
     const r = await nb(`/api/nb/scans/${encodeURIComponent(scanId)}/reconcile`,
-      jsonBody('POST', { matches: clean }));
+      jsonBody('POST', { matches: clean, ...(extra || {}) }));
     setSaving(false);
-    if (!r.ok) { setSaveErr(explain(r, 'Could not save the matches')); return; }
+    if (!r.ok) { setSaveErr(explain(r, 'Could not save the matches')); return null; }
     setResult(r.body.summary || null);
     setDirty(false);
+    // A row the server would not take is named beside the ones it did, rather
+    // than the whole save being refused because one pick was wrong.
+    const refused = (r.body.rejected || []).map((x) => x.error);
+    const note = r.body.confirmNote ? [r.body.confirmNote] : [];
+    setSaveErr([...note, ...refused].join(' ') || null);
+    return r.body;
+  }
+
+  const apply = () => post(null);
+
+  /**
+   * "I checked this box at the rack."
+   *
+   * The only thing that turns a match into a fact: it records that a person on
+   * site placed this device at this shelf, which is rank 1 evidence, and rank 1
+   * is the only evidence this version writes into the record.
+   */
+  async function confirmOne(switchId) {
+    const body = await post({ confirm: true, switchId: String(switchId) });
+    if (body) reload();
   }
 
   // Shared by the dropdown and the photo picker, so both write the same value
@@ -229,9 +253,13 @@ export default function ReviewPage() {
   } else {
     const changes = (result && result.changes) || [];
 
-    const deviceOptions = [...recon.devices].sort(
-      (a, b) => (b.position ?? -1) - (a.position ?? -1),
-    );
+    // A patch panel, a power strip, a UPS and a blanking plate cannot answer
+    // SNMP, so no switch is ever one of them and the server refuses a save that
+    // says otherwise. Offering them in the dropdown made the refusal reachable
+    // from the control that exists to correct the matcher.
+    const deviceOptions = recon.devices
+      .filter((d) => !d.passive)
+      .sort((a, b) => (b.position ?? -1) - (a.position ?? -1));
     // Which switch currently claims each box, so the dropdown can say so.
     const claimedBy = {};
     for (const s of recon.switches) if (matches[s.id]) claimedBy[matches[s.id]] = s.label;
@@ -347,13 +375,39 @@ export default function ReviewPage() {
                         </button>
                       </div>
 
-                      {s.read && s.autoMatch && (
+                      {/* A reason comes back for every switch now, including the
+                          ones it could not place, so "suggested" has to be said
+                          only where there is actually a suggestion. */}
+                      {s.read && s.autoMatch?.deviceUid && (
                         <p className={`${styles.autoHint} ${confidenceClass(s.autoMatch.confidence)}`}>
                           suggested ({s.autoMatch.confidence}): {s.autoMatch.why}
                         </p>
                       )}
-                      {s.read && !s.autoMatch && (
-                        <p className={styles.autoHint}>no confident match, please set it</p>
+                      {s.read && s.autoMatch && !s.autoMatch.deviceUid && (
+                        <p className={styles.autoHint}>not placed: {s.autoMatch.why}</p>
+                      )}
+                      {(s.autoMatch?.notes || []).map((note) => (
+                        <p className={styles.autoHint} key={note}>{note}</p>
+                      ))}
+
+                      {/* The one act that lets this switch's own model, serial
+                          and ports be written onto that box. A matching saved
+                          from this screen is agreement with a port count; this
+                          is somebody at the rack with the box in front of them. */}
+                      {s.read && matches[s.id] && (
+                        s.written
+                          ? <p className={`${styles.autoHint} ${styles.autoHigh}`}>confirmed at the rack, and written</p>
+                          : (
+                            <button
+                              type="button"
+                              className={styles.pickBtn}
+                              disabled={saving || dirty}
+                              title={dirty ? 'Apply the matches first' : 'Only a confirmed box is written'}
+                              onClick={() => confirmOne(s.id)}
+                            >
+                              I checked this box at the rack
+                            </button>
+                          )
                       )}
                     </li>
                   );
@@ -547,10 +601,18 @@ function Stat({ v, k, n }) {
   );
 }
 
+/**
+ * The four confidence levels of the rack binding standard, section 7.
+ *
+ * They replaced high/medium/low on the server, and this was not changed with
+ * them, so every value fell through to no class at all and the colour coding
+ * simply stopped. Confirmed is a fact, probable and possible are qualified, and
+ * unidentified is a blank with a reason - which is a real answer, not a failure.
+ */
 function confidenceClass(c) {
-  if (c === 'high') return styles.autoHigh;
-  if (c === 'medium') return styles.autoMedium;
-  if (c === 'low') return styles.autoLow;
+  if (c === 'confirmed') return styles.autoHigh;
+  if (c === 'probable') return styles.autoMedium;
+  if (c === 'possible') return styles.autoLow;
   return '';
 }
 

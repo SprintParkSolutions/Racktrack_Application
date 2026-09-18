@@ -20,7 +20,7 @@ const bindings = require('../../lib/netbox/bindings');
 const { clientForUser } = require('../../lib/netbox/client_for');
 // RackTrack's own libraries: who may touch which rack, and where its scans live.
 const tenant = require('../../lib/tenant');
-const { rackOwnershipParam } = require('../../lib/rack_access');
+const { rackOwnershipParam, canAccessRack } = require('../../lib/rack_access');
 // Who may use each route. The mount only authenticates; a member (the
 // technician at the rack) reaches adopt and nothing else on this router.
 const gates = require('./gates');
@@ -46,6 +46,31 @@ const upload = multer({
   },
 });
 
+/**
+ * The scan behind a :id route, or null when this caller may not have it.
+ *
+ * store.getScan reads the global index, and a role gate only says what KIND of
+ * user the caller is, not whose racks they may touch. So every /:id route on this
+ * router loads its scan through here, and a scan belonging to another
+ * organisation's rack is "no such scan" - the same 404 lib/rack_access gives for
+ * a rack you cannot see, and for the same reason: a 403 would confirm it exists.
+ *
+ * This matters more than it used to. A cross-tenant POST once dirtied one scan
+ * payload that the next re-detect wiped; it now mints a binding in a file that
+ * deliberately outlives the scan, and outranks every score for that rack in every
+ * later photograph.
+ */
+function scanFor(req, res) {
+  const scan = store.getScan(req.params.id);
+  if (!scan) { res.status(404).json({ error: 'no such scan' }); return null; }
+  if (!canAccessRack(req.user, scan.rackId, tenant)) {
+    logger?.warn?.('netbox.scan.denied', { scanId: String(req.params.id), userId: req.user?.id ?? null });
+    res.status(404).json({ error: 'no such scan' });
+    return null;
+  }
+  return scan;
+}
+
 /** Is the CV engine installed and are all its weights present? */
 router.get('/engine', gates.admin, (req, res) => res.json(cv.engineStatus()));
 
@@ -57,8 +82,8 @@ router.get('/', gates.admin, (req, res) => res.json(store.listScans()));
  * record over time rather than a pile of unrelated scans.
  */
 router.get('/:id/report', gates.admin, (req, res) => {
-  const scan = store.getScan(req.params.id);
-  if (!scan) return res.status(404).json({ error: 'no such scan' });
+  const scan = scanFor(req, res);
+  if (!scan) return undefined;
   const doc = report.build(scan);
   if (!doc) return res.status(409).json({ error: 'this scan has no detection result yet' });
   res.json(doc);
@@ -183,6 +208,12 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   // not served from that copy: when the map on disk is newer than the copy,
   // adopt again. ?refresh=1 still forces it.
   const existing = store.scansForRack(rackId).find((s) => s.source === 'adopted');
+  // scansForRack reads the index, which carries no payload - the payload is a
+  // file of its own. Everything below that asks what this scan already holds has
+  // to read it, and reading `existing.payload` instead made every one of those
+  // questions answer "nothing": the rules version below always read as 0, so a
+  // rack was re-adopted on every single open however fresh its copy was.
+  const heldPayload = existing ? (store.getScan(existing.id)?.payload || {}) : {};
   let stale = false;
   if (existing && fs.existsSync(mapFile)) {
     try { stale = fs.statSync(mapFile).mtimeMs > new Date(existing.createdAt).getTime(); } catch { stale = false; }
@@ -191,7 +222,7 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   // became a router — and a copy made under the old rules is as stale as one
   // made from an old map. The version travels in the payload; older or
   // missing means adopt again.
-  if (existing && (existing.payload?.rulesVersion || 0) < SNAPSHOT_RULES) stale = true;
+  if (existing && (heldPayload.rulesVersion || 0) < SNAPSHOT_RULES) stale = true;
   if (existing && !req.query.refresh && !stale) {
     return res.json({ id: existing.id, rackId, adopted: false, createdAt: existing.createdAt });
   }
@@ -234,6 +265,19 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   const known = await recogniseRack(req, {
     tenantId: Number.isFinite(tenantId) ? tenantId : null, rackId, fallbackName: localName,
   });
+  // A rack that was recognised once does not become unrecognised because NetBox
+  // was unreachable for the two seconds this adopt ran in. recogniseRack fails
+  // soft to a null key by design, and a null key re-mints every uid in the
+  // snapshot on the photo hash - which is the duplicate rack in NetBox that Part
+  // B exists to prevent. The key a scan already holds stands until a lookup that
+  // actually answered says otherwise.
+  if (!known.rackKey && heldPayload.rackKey) {
+    known.rackKey = heldPayload.rackKey;
+    known.rackKeySource = heldPayload.rackKeySource ?? null;
+    known.rackKeyWhy = 'kept from the last time this rack was recognised, because the lookup '
+      + 'did not answer this time';
+    if (heldPayload.rackName) known.rackName = heldPayload.rackName;
+  }
   const rackName = known.rackName;
 
   // The map may carry the photo's path from wherever the engine ran; point it
@@ -287,6 +331,18 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
 
   let rec;
   if (existing) {
+    // Carry the matching forward. setPayload rewrites the payload whole, so a
+    // re-adopt used to drop every placement a person had made by hand, and the
+    // screen only re-posts a matching that still has something in it - so for the
+    // rack this whole design exists for, two identical switches with nothing to
+    // tell them apart, the answer was dropped and nothing put it back. A
+    // placement onto a box this detection no longer has is left behind.
+    const boxes = new Set((snapshot.devices || []).map((d) => d.uid));
+    const kept = {};
+    for (const [swId, uid] of Object.entries(heldPayload.matches || {})) {
+      if (uid === null || boxes.has(uid)) kept[swId] = uid ?? null;
+    }
+    if (Object.keys(kept).length) payload.matches = kept;
     store.setPayload(existing.id, payload);
     rec = existing;
   } else {
@@ -416,8 +472,8 @@ router.post('/', gates.admin, upload.single('image'), async (req, res) => {
  * result; the scan keeps its id, its rack and its place in the history.
  */
 router.post('/:id/detect', gates.admin, async (req, res) => {
-  const scan = store.getScan(req.params.id);
-  if (!scan) return res.status(404).json({ error: 'no such scan' });
+  const scan = scanFor(req, res);
+  if (!scan) return undefined;
   if (!scan.imagePath || !fs.existsSync(scan.imagePath)) {
     return res.status(409).json({
       stage: 'detect',
@@ -461,10 +517,19 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
     // The operator's note on what changed since the last scan, kept with the
     // scan so the rack's history reads as a record, not just a pile of scans.
     const changeNote = String((req.body && req.body.note) || '').trim().slice(0, 500) || null;
+    // A placement a person made by hand survives a re-detect, for the boxes this
+    // detection still has. The payload is rewritten whole here, and that is what
+    // used to drop it.
+    const boxes = new Set((snapshot.devices || []).map((d) => d.uid));
+    const kept = {};
+    for (const [swId, uid] of Object.entries(scan.payload.matches || {})) {
+      if (uid === null || boxes.has(uid)) kept[swId] = uid ?? null;
+    }
     store.setPayload(scan.id, {
       map, snapshot, siteName, rackName, uHeight,
       imageHash: scan.payload.imageHash || null,
       ...keyFields,
+      ...(Object.keys(kept).length ? { matches: kept } : {}),
       changeNote,
     });
     store.recordStage(scan.id, 'detect', 'ok',
@@ -478,8 +543,8 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
 });
 
 router.get('/:id', gates.admin, (req, res) => {
-  const scan = store.getScan(req.params.id);
-  if (!scan) return res.status(404).json({ error: 'no such scan' });
+  const scan = scanFor(req, res);
+  if (!scan) return undefined;
   const snapshot = scan.payload.snapshot;
   res.json({
     id: scan.id, rackId: scan.rackId, source: scan.source, createdAt: scan.createdAt,
@@ -503,15 +568,19 @@ router.get('/:id', gates.admin, (req, res) => {
  * worse than losing it. The UI asks before calling this.
  */
 router.delete('/:id', gates.admin, (req, res) => {
+  // Checked before it is deleted, not after: this takes the photograph with it.
+  const scan = scanFor(req, res);
+  if (!scan) return undefined;
   const rec = store.deleteScan(req.params.id);
   if (!rec) return res.status(404).json({ error: 'no such scan' });
-  res.json({ deleted: rec.id, rackId: rec.rackId });
+  return res.json({ deleted: rec.id, rackId: rec.rackId });
 });
 
 /** The uploaded photo, for the UI to show beside what was detected. */
 router.get('/:id/image', gates.admin, (req, res) => {
   const scan = store.getScan(req.params.id);
-  if (!scan || !scan.imagePath || !fs.existsSync(scan.imagePath)) {
+  if (!scan || !canAccessRack(req.user, scan.rackId, tenant)
+      || !scan.imagePath || !fs.existsSync(scan.imagePath)) {
     return res.status(404).json({ error: 'no image for this scan' });
   }
   res.sendFile(path.resolve(scan.imagePath));
@@ -725,8 +794,8 @@ const tail = (s, n = 6) =>
  * beside them rather than thrown over the top of them.
  */
 router.post('/:id/collect', gates.admin, async (req, res) => {
-  const scan = store.getScan(req.params.id);
-  if (!scan) return res.status(404).json({ error: 'no such scan' });
+  const scan = scanFor(req, res);
+  if (!scan) return undefined;
 
   const targets = switches.list(scan.rackId);
   if (targets.length === 0) {
@@ -783,71 +852,127 @@ router.post('/:id/collect', gates.admin, async (req, res) => {
 /**
  * Where this scan's confirmed matches are kept.
  *
- * The tenant and the rack key come off the scan, because they are what the
- * snapshot's uids were built on. A second photograph of the same identified rack
- * gets the same scope and finds the same bindings, which is the point: a person's
- * answer outlives the photograph they gave it about.
+ * Keyed on the tenant and the scan's rack id, and on nothing that a lookup can
+ * recompute. It used to key on the customer's rack key as well, and that key is
+ * resolved fresh on every adopt through a NetBox call that fails soft to null: a
+ * few seconds of an unreachable NetBox moved the whole rack to a different file
+ * and every confirmation in it became invisible, with nothing said to anybody.
+ *
+ * Bindings written under the older spellings are carried forward the first time
+ * the rack is opened, so nobody has to confirm anything twice.
  */
 function scopeForScan(scan) {
-  return bindings.scopeOf({
-    tenantId: scan.payload?.tenantId ?? null,
-    rackKey: scan.payload?.rackKey || null,
-    rackId: scan.rackId,
+  const tenantId = scan.payload?.tenantId ?? null;
+  const scope = bindings.scopeOf({ tenantId, rackId: scan.rackId });
+  const legacy = bindings.legacyScopesOf({
+    tenantId, rackKey: scan.payload?.rackKey || null, rackId: scan.rackId,
   });
+  if (legacy.length) {
+    try { bindings.migrate(scope, legacy); }
+    catch (err) { logger?.warn?.('netbox.bindings.migrate', { scope, error: err.message }); }
+  }
+  return scope;
 }
 
 /**
- * Check a posted matching before anything is stored.
+ * Check a posted matching before anything is stored, one row at a time.
  *
  * Four rules, each of which a real client has broken at least once:
  *   - the switch has to be one of this rack's switches;
  *   - the box has to be one of this scan's boxes;
  *   - the box cannot be a passive one. A patch panel has nothing to answer SNMP
  *     with, so no switch is ever a patch panel;
- *   - one box holds one switch.
+ *   - one box holds one switch;
+ *   - and a box somebody confirmed at the rack is not quietly overwritten by a
+ *     bulk save, which is somebody agreeing with a screen.
  *
- * Returns { matches } cleaned, or { error } in the words the operator needs.
+ * Per row, not per body. One bad pick used to refuse the whole save and discard
+ * every correct row with it, and both pickers could produce a bad pick, so the
+ * one control that exists to correct the matcher could throw away the correction.
+ *
+ * Returns { matches } cleaned, plus { rejected } - a row each, in the words the
+ * operator needs, for the screen to show beside the switch it belongs to.
  */
-function checkMatches(posted, base, sws) {
+function checkMatches(posted, base, sws, held = new Map()) {
   const byId = new Map(sws.map((s) => [String(s.record.id), s]));
   const devByUid = new Map((base.devices || []).map((d) => [d.uid, d]));
   const labelOf = (id) => byId.get(String(id))?.record?.label || `switch ${id}`;
   const clean = {};
+  const rejected = [];
   const seen = new Map();
+  const refuse = (id, error) => rejected.push({ switchId: String(id), error });
 
-  for (const [rawId, rawUid] of Object.entries(posted || {})) {
+  // Worked in a stable order so which of two rows wins a clash never depends on
+  // the order a client happened to serialise its object in.
+  const rows = Object.entries(posted || {}).sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+  for (const [rawId, rawUid] of rows) {
     const id = String(rawId);
     if (!byId.has(id)) {
-      return { error: `Switch ${id} is not one of this rack's switches, so it cannot be placed in it.` };
+      refuse(id, `Switch ${id} is not one of this rack's switches, so it cannot be placed in it.`);
+      continue;
     }
     const uid = rawUid === null || rawUid === undefined || rawUid === '' ? null : String(rawUid);
     if (uid === null) { clean[id] = null; continue; }
     const dev = devByUid.get(uid);
     if (!dev) {
-      return { error: `This scan has no box called ${uid}. Scan the rack again, then place the switch.` };
+      refuse(id, `This scan has no box called ${uid}. Scan the rack again, then place the switch.`);
+      continue;
     }
     const cls = String(dev.provenance?.cvClass || '');
-    if (reconcile.PASSIVE_CLASS.has(cls)) {
-      return { error: `${dev.name} is a passive box (${cls}) with nothing to answer SNMP with, `
-        + 'so a managed switch cannot be it.' };
+    if (reconcile.isPassive(cls)) {
+      refuse(id, `${dev.name} is a passive box (${cls}) with nothing to answer SNMP with, `
+        + 'so a managed switch cannot be it.');
+      continue;
     }
     if (seen.has(uid)) {
-      return { error: `${labelOf(seen.get(uid))} and ${labelOf(id)} are both placed in ${dev.name}. `
-        + 'One box holds one switch.' };
+      refuse(id, `${labelOf(seen.get(uid))} and ${labelOf(id)} are both placed in ${dev.name}. `
+        + 'One box holds one switch.');
+      continue;
+    }
+    const confirmedAs = held.get(id) || null;
+    if (confirmedAs && confirmedAs.deviceUid !== uid) {
+      refuse(id, `${labelOf(id)} was confirmed at the rack as ${confirmedAs.name}. `
+        + 'Confirm it against the new box instead, so the two records cannot disagree.');
+      continue;
     }
     seen.set(uid, id);
     clean[id] = uid;
   }
-  return { matches: clean };
+  return { matches: clean, rejected };
+}
+
+/**
+ * The boxes a person has confirmed against THIS photograph, by switch id.
+ *
+ * Only the fresh ones: a confirmation made against an earlier photograph is a
+ * recollection, and a person moving a box on the screen today outranks it.
+ */
+function confirmedHere(base, sws, scope, scanId) {
+  const stamp = reconcile.snapshotStamp(base);
+  const devName = new Map((base.devices || []).map((d) => [d.uid, d.name]));
+  const out = new Map();
+  for (const s of sws) {
+    if (!s.reading) continue;
+    const aliases = identity.aliasesOf({ ...s.reading, host: s.record.host });
+    const hit = aliases.length ? bindings.find(scope, aliases, { switchId: s.record.id }) : null;
+    if (!hit || hit.weak) continue;
+    if (String(hit.binding.scanId ?? '') !== String(scanId) || hit.binding.snapshotStamp !== stamp) continue;
+    if (!devName.has(hit.binding.deviceUid)) continue;
+    out.set(String(s.record.id), {
+      deviceUid: hit.binding.deviceUid,
+      name: devName.get(hit.binding.deviceUid),
+    });
+  }
+  return out;
 }
 
 router.get('/:id/reconcile', gates.admin, (req, res) => {
-  const scan = store.getScan(req.params.id);
-  if (!scan) return res.status(404).json({ error: 'no such scan' });
+  const scan = scanFor(req, res);
+  if (!scan) return undefined;
   const base = scan.payload && scan.payload.snapshot;
   if (!base) return res.status(409).json({ error: 'this scan has no detection result yet' });
-  res.json(reconcile.view(base, scan.rackId, scan.payload.matches || null,
-    { scope: scopeForScan(scan) }));
+  return res.json(reconcile.view(base, scan.rackId, scan.payload.matches || null,
+    { scope: scopeForScan(scan), scanId: scan.id }));
 });
 
 /**
@@ -858,23 +983,43 @@ router.get('/:id/reconcile', gates.admin, (req, res) => {
  * a bulk save is somebody agreeing with a screen, and the screen's proposals are
  * inferred from port counts. Only `confirm: true` with one switch id says a
  * person stood at the rack and read the box, and only that writes a binding -
- * which then outranks every score, in this scan and in every later photograph of
- * the same rack.
+ * which outranks every score in this scan, and is remembered and shown, but not
+ * restated as current, in every later photograph of the same rack (10.1).
+ *
+ * The switch's own facts - its model, its serial, its real ports, its cables -
+ * are written onto a box only where that box is confirmed against the photograph
+ * on the screen. Everything else is shown and reported, and written nowhere.
  */
 router.post('/:id/reconcile', gates.admin, (req, res) => {
-  const scan = store.getScan(req.params.id);
-  if (!scan) return res.status(404).json({ error: 'no such scan' });
+  const scan = scanFor(req, res);
+  if (!scan) return undefined;
   const base = scan.payload && scan.payload.snapshot;
   if (!base) return res.status(409).json({ error: 'this scan has no detection result yet' });
 
   const sws = reconcile.gatherSwitches(scan.rackId);
-  const checked = checkMatches((req.body && req.body.matches) || {}, base, sws);
-  if (checked.error) return res.status(400).json({ error: checked.error });
-  const matches = checked.matches;
+  const scope = scopeForScan(scan);
+  const isConfirm = Boolean(req.body && req.body.confirm === true);
+  // A confirm is allowed to contradict an earlier confirm - that is how a person
+  // corrects one. A plain save is not.
+  const held = isConfirm ? new Map() : confirmedHere(base, sws, scope, scan.id);
+  const posted = (req.body && req.body.matches) || {};
+  const { matches, rejected } = checkMatches(posted, base, sws, held);
+  // Every row refused and nothing left to store is a refusal, and it says which
+  // row and why. A mixed save keeps the rows that were right.
+  if (rejected.length && !Object.keys(matches).length) {
+    return res.status(400).json({ error: rejected.map((r) => r.error).join(' '), rejected });
+  }
 
   // ── the one explicit act that mints a binding ──────────────────────────────
+  //
+  // Stored first, confirmed second. A confirm that cannot be kept - a cheap
+  // switch that answers SNMP but publishes neither a serial nor a chassis
+  // address - used to refuse the whole request, so another switch's perfectly
+  // valid placement was thrown away with it. Now the save stands and the
+  // confirmation comes back as a note.
   let confirmed = null;
-  if (req.body && req.body.confirm === true) {
+  let confirmNote = null;
+  if (isConfirm) {
     const ids = Object.keys(matches);
     const swId = req.body.switchId !== undefined && req.body.switchId !== null
       ? String(req.body.switchId)
@@ -892,16 +1037,16 @@ router.post('/:id/reconcile', gates.admin, (req, res) => {
     const aliases = sw.reading
       ? identity.aliasesOf({ ...sw.reading, host: sw.record.host })
       : [];
-    const scope = scopeForScan(scan);
     const devUid = matches[swId];
     const who = req.user?.email || (req.user?.id != null ? `user ${req.user.id}` : 'a person at the rack');
 
     if (devUid === null) {
       // "It is not in this rack" is an answer too, and it has to be able to undo
       // a confirmation somebody made by mistake.
-      const held = aliases.length ? bindings.find(scope, aliases) : null;
-      if (held) bindings.forget(scope, held.binding.deviceUid);
-      confirmed = { switchId: swId, deviceUid: null, forgot: held ? held.binding.deviceUid : null };
+      const bound = aliases.length ? bindings.find(scope, aliases, { switchId: swId }) : null;
+      const drop = bound && !bound.weak ? bound.binding.deviceUid : null;
+      if (drop) bindings.forget(scope, drop);
+      confirmed = { switchId: swId, deviceUid: null, forgot: drop };
     } else {
       const dev = (base.devices || []).find((d) => d.uid === devUid);
       const result = bindings.confirm(scope, {
@@ -913,19 +1058,32 @@ router.post('/:id/reconcile', gates.admin, (req, res) => {
           `${who} confirmed ${sw.record.label || `switch ${swId}`} as ${dev?.name || devUid} at the rack`)],
         by: who,
         why: String((req.body.why || '')).slice(0, 500),
+        // Which photograph this was observed against, and what the box looked
+        // like in it. Standard 10.1: a position is observed fresh in each scan,
+        // so a later photograph recalls this rather than restating it.
+        scanId: scan.id,
+        snapshotStamp: reconcile.snapshotStamp(base),
+        boxPrint: reconcile.printOf(reconcile.cameraDevices(base).find((d) => d.uid === devUid)),
+        rackKey: scan.payload?.rackKey || null,
       });
-      if (result.error) return res.status(400).json({ error: result.error });
-      confirmed = { switchId: swId, deviceUid: devUid, binding: result.binding, replaced: result.replaced };
+      if (result.error) confirmNote = result.error;
+      else confirmed = { switchId: swId, deviceUid: devUid, binding: result.binding, replaced: result.replaced };
     }
   }
 
-  const { snapshot, summary } = reconcile.reconcile(base, sws, matches);
+  // What may be written is decided in one place, from the bindings, and never
+  // from the matching alone: a match is where a switch is shown, a confirmation
+  // is why its serial may be written onto that box.
+  const auto = reconcile.suggest(base, sws, { scope, scanId: scan.id });
+  const levels = reconcile.levelsFor(auto.reasons, matches);
+  const { snapshot, summary } = reconcile.reconcile(base, sws, matches, { levels });
 
   store.setPayload(scan.id, { ...scan.payload, matches, reconciled: snapshot });
   store.recordStage(scan.id, 'reconcile', 'ok',
     `${summary.matched} matched, ${summary.serials} serials, ${summary.cables} cables`
+    + (summary.withheld.length ? `, ${summary.withheld.length} shown only` : '')
     + (confirmed ? ', 1 confirmed' : ''));
-  res.json({ ok: true, summary, confirmed });
+  return res.json({ ok: true, summary, confirmed, confirmNote, rejected, levels });
 });
 
 module.exports = router;

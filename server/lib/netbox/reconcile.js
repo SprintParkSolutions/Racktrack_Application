@@ -8,15 +8,20 @@
  * ports -- is not unique when a rack holds two identical switches. So the
  * match is proposed here by port count and CONFIRMED by a human in Review.
  *
- * Once a switch is matched to a rack position, this overwrites the camera's
- * guesses with the switch's own facts (Evidence.SNMP), keeps the U position
- * the camera gave (the switch cannot know it), and builds cables from LLDP
- * where both switches are known to this rack.
+ * Once a switch is matched to a rack position AND somebody has confirmed that box
+ * at the rack, this overwrites the camera's guesses with the switch's own facts
+ * (Evidence.SNMP), keeps the U position the camera gave (the switch cannot know
+ * it), and builds cables from LLDP where both switches are placed in confirmed
+ * boxes. A match nobody confirmed is shown on the screen and in the report, and
+ * put into no record: a port-count agreement is not a serial number, and writing
+ * one into a customer's DCIM converts our uncertainty into their fact.
  *
  * Nothing is invented. A field the switch did not state stays exactly as the
  * camera left it, and a cable whose two ends cannot both be resolved is not
  * drawn.
  */
+const crypto = require('crypto');
+
 const {
   Evidence, observed, Manufacturer, DeviceType, Interface, Cable, Termination,
 } = require('./model');
@@ -66,6 +71,10 @@ function cameraDevices(snapshot) {
       name: d.name,
       position: d.position,
       cvClass: d.provenance?.cvClass || '',
+      // Passive boxes are carried, so the Review screen can still draw the whole
+      // rack, and flagged, so neither picker offers one as a switch. A screen
+      // that offers what the server refuses turns a correction into an error.
+      passive: isPassive(d.provenance?.cvClass),
       // The rectangle on the rack photo, so the Network screen can offer the
       // picture as a way of choosing rather than only a list of names.
       box: Array.isArray(d.provenance?.box) ? d.provenance.box : null,
@@ -104,57 +113,99 @@ const norm = (s) => {
 function scorePair(sw, dev) {
   const why = [];
   let score = 0;
+  let model = 'nomodel';
+  let make = 'unknown';
 
   const swModel = norm(sw.model);
   const devModel = norm(dev.model);
   if (swModel && devModel && !devModel.startsWith('unidentified') && swModel === devModel) {
-    score += 200; why.push(`same model ${sw.model}`);
+    score += 200; why.push(`same model ${sw.model}`); model = 'model';
   }
 
   const swMake = norm(sw.vendor);
   const devMake = norm(dev.make);
   if (swMake && devMake) {
-    if (swMake === devMake) { score += 100; why.push(`both ${sw.vendor}`); }
-    else { score -= 60; why.push(`make differs (${dev.make} vs ${sw.vendor})`); }
+    if (swMake === devMake) { score += 100; why.push(`both ${sw.vendor}`); make = 'same'; }
+    else { score -= 60; why.push(`make differs (${dev.make} vs ${sw.vendor})`); make = 'differs'; }
   }
 
-  const diff = Math.abs(dev.portCount - sw.ports);
-  const tol = Math.max(4, Math.round(sw.ports * 0.25));
-  if (diff === 0) { score += 60; why.push(`exact ${sw.ports} ports`); }
-  else if (diff <= tol) { score += 40 - diff * 2; why.push(`ports ${dev.portCount} close to ${sw.ports}`); }
-  else { score -= 10; why.push(`ports ${dev.portCount} against ${sw.ports}`); }
+  // A stack answers with every member's ports at once, and the camera draws one
+  // box per member chassis, so the box a person is looking at holds a SHARE of
+  // them. Compare against both and take whichever is closer, or a 2-member stack
+  // of 24-port switches matches no box in its own rack.
+  const shares = sw.members > 1
+    ? [{ n: sw.ports, member: false }, { n: Math.round(sw.ports / sw.members), member: true }]
+    : [{ n: sw.ports, member: false }];
+  let near = null;
+  for (const s of shares) {
+    const diff = Math.abs(dev.portCount - s.n);
+    if (!near || diff < near.diff) near = { ...s, diff };
+  }
+  const tol = Math.max(4, Math.round(near.n * 0.25));
+  let ports;
+  if (near.diff === 0) {
+    score += 60; ports = '0';
+    why.push(near.member
+      ? `exact ${near.n} ports, one member of a stack of ${sw.members}`
+      : `exact ${near.n} ports`);
+  } else if (near.diff <= tol) {
+    score += 40 - near.diff * 2; ports = String(near.diff);
+    why.push(`ports ${dev.portCount} close to ${near.n}`);
+  } else {
+    score -= 10; ports = 'far';
+    why.push(`ports ${dev.portCount} against ${near.n}`);
+  }
 
-  return { score, why: why.join(', ') };
+  // What this candidate was judged on, which is what the tie test compares. A
+  // raw score gap is the wrong instrument: an exact port agreement scores 60 and
+  // a two-port miss scores 36, so any fixed margin near that 24-point gap turns
+  // "one right answer and one near miss" into "cannot tell", and camera port
+  // counts are approximate. Two candidates are tied when they were judged on the
+  // SAME evidence, which is what "cannot be told apart" actually means.
+  return { score, why: why.join(', '), shape: `${model}|${make}|${ports}` };
 }
 
-// A managed switch answers SNMP, so it can only be an active network box in the
-// rack. It is never a patch panel or a PDU, both passive, and matching one to a
-// switch is always wrong. Auto-match only considers the active classes.
-const PASSIVE_CLASS = new Set(['Patch Panel', 'PDU', 'Empty']);
+/**
+ * Boxes a managed switch can never be.
+ *
+ * A switch answers SNMP; a patch panel, a power strip, a power supply, a blanking
+ * plate and a UPS have nothing to answer it with. The engine's own label set
+ * (pipeline/detection.py) is the list this has to cover: it emits UPS, PSU and
+ * Closed Unit as well as the three that were named here, and a confirm onto a UPS
+ * box put a switch's serial and management address on that row and re-proposed it
+ * on every later scan of the rack.
+ *
+ * Compared case-insensitively on purpose: one list, read by the matcher and by
+ * the route, and neither gets to disagree about capital letters.
+ */
+const PASSIVE_CLASS = new Set([
+  'Patch Panel', 'PDU', 'Empty', 'UPS', 'PSU', 'Closed Unit', 'Cable Manager',
+]);
+const PASSIVE_KEYS = new Set([...PASSIVE_CLASS].map((c) => c.toLowerCase()));
+const isPassive = (cvClass) => PASSIVE_KEYS.has(String(cvClass || '').trim().toLowerCase());
 
 // A score has to clear this before it counts as a candidate at all: at least a
 // port-count agreement or a make match.
 const FLOOR = 20;
 
-// Two candidates this close are not two candidates, they are one answer we do
-// not have. Nothing inside the margin is proposed; the switch shows blank and
-// says what would settle it. Two identical switches in one rack score
-// identically against the same box, which is the case this whole rule exists
-// for - it is our own office rack.
-const MARGIN = 25;
-
 /**
- * How many shelves a device may occupy, by what the camera called it.
+ * How many shelves a device of each class usually occupies.
  *
  * Taken from the "Device Size and Rack Unit Occupancy" table in
- * docs/reference/rack-planning-guide.html. Used ONLY as a veto: a reading that
- * cannot fit the box is not a candidate for it. It never adds to a score,
- * because fitting is not evidence - almost everything fits.
+ * docs/reference/rack-planning-guide.html, and used ONLY to write a note on the
+ * reason. It is not a veto and it does not change a score.
  *
- * The open-ended rows in that table ("2U-4U+", "2U-6U+") are capped at 8 here,
- * and the guide says plainly that the figures are representative and must be
- * checked against the manufacturer. So the veto is deliberately one-sided: a
- * class the camera did not recognise gets no ceiling at all.
+ * It was a veto, and the veto was wrong. The guide says in the same table that
+ * "these are representative examples only. Actual rack unit occupancy must be
+ * verified against the specific equipment manufacturer's specifications", and it
+ * lists a network switch as 1U to 2U - which no chassis switch obeys. As a
+ * ceiling it deleted every Catalyst 4500, every Nexus and every box whose span
+ * the detector merged from two shelves, and the reason text blamed the box size
+ * so nobody could see the ceiling was the cause. Worse, it removed candidates
+ * before the tie test, so a wrong exclusion turned "I cannot tell which of these
+ * two" into one confident answer.
+ *
+ * The open-ended rows in that table ("2U-4U+", "2U-6U+") are capped at 8 here.
  */
 const RU_BY_CLASS = new Map([
   ['patch panel', [1, 1]],
@@ -194,38 +245,105 @@ function spanByUid(snapshot) {
 }
 
 /**
- * Can this reading physically be this box? A plain reason when it cannot.
+ * A note when a box is a different size from what its class usually is.
  *
- * Two rules, both from the rack planning guide's occupancy table:
- *   - a stack needs a shelf per member. Three members cannot sit on one shelf;
- *   - a box the camera named has a ceiling for its class. A single-chassis
- *     switch is 1U to 2U, so it is not the 4U box.
- *
- * A class the table does not name has no ceiling, so an unrecognised box is
- * never vetoed on size - only on the stack rule, which is about the reading.
+ * Recorded on the reason and nothing else, so a person reading the report can see
+ * that the box is unusual for what the camera called it, and decide. It removes
+ * no candidate and moves no score: the figures are representative, and the camera
+ * class is a guess at a box whose span the detector may have merged.
  */
-function sizeVeto(boxUnits, stackMembers, cvClass) {
+function sizeAdvice(boxUnits, cvClass) {
   const units = Number(boxUnits) > 0 ? Number(boxUnits) : 1;
-  const members = Number(stackMembers) > 0 ? Number(stackMembers) : 1;
-  if (units < members) {
-    return `it answers as a stack of ${members}, which needs at least ${members} shelves, `
-      + `and this box takes up ${units}`;
-  }
   const range = RU_BY_CLASS.get(String(cvClass || '').trim().toLowerCase());
-  if (range) {
-    const ceiling = range[1] * members;
-    if (units > ceiling) {
-      return `a ${String(cvClass).toLowerCase()} of this kind takes up to ${ceiling} `
-        + `rack unit${ceiling === 1 ? '' : 's'}, and this box takes up ${units}`;
-    }
-  }
-  return null;
+  if (!range || units <= range[1]) return null;
+  return `${String(cvClass).toLowerCase()} boxes are usually ${range[0]} to ${range[1]} `
+    + `rack units and this one takes up ${units}, so check it is one box and not two`;
 }
 
-/** The scope a rack's bindings live in, from the snapshot alone. */
-function scopeFromSnapshot(snapshot) {
-  const uid = String((snapshot?.racks || [])[0]?.uid || '').replace(/^rack:/, '');
-  return bindings.scopeOf({ rackKey: uid || null });
+/**
+ * How many physical units a reading genuinely describes, and how many it claims.
+ *
+ * `stackMembers` on a reading is the number of rows the device called a chassis
+ * (collect.js filters entPhysicalClass 3), which is NOT a measurement: a single
+ * switch that lists two chassis rows would be read as a two-unit stack. So it is
+ * only believed as a member count where the rows carry DISTINCT serial numbers,
+ * which is a stack answering as itself. The raw row count is kept for the note.
+ */
+function stackSizeOf(reading) {
+  const rows = Number(reading?.identity?.stackMembers) > 0
+    ? Number(reading.identity.stackMembers) : 1;
+  const members = Array.isArray(reading?.identity?.members) ? reading.identity.members : [];
+  const serials = new Set(members
+    .map((m) => String(m && m.serial ? m.serial : '').toLowerCase().replace(/[^a-z0-9]+/g, ''))
+    .filter((s) => s && !identity.isJunkValue(s)));
+  return { rows, members: serials.size >= 2 ? serials.size : 1 };
+}
+
+/**
+ * What the camera saw of one box, small enough to store with a binding.
+ *
+ * The point of keeping it is 10.3: when a person confirms a box and a later
+ * photograph shows a different box at that shelf, that is a hardware replacement
+ * and has to be reported as one, not bound silently to the old answer.
+ */
+function printOf(dev) {
+  if (!dev) return null;
+  return {
+    position: dev.position ?? null,
+    cvClass: dev.cvClass || '',
+    ports: Number(dev.portCount) || 0,
+    make: dev.make || '',
+    model: dev.model || '',
+    serial: dev.serial || null,
+  };
+}
+
+/**
+ * A short fingerprint of one detection result.
+ *
+ * Standard 10.1: a position is observed fresh in each scan. A confirmation is a
+ * fresh observation only while the photograph it was made against is still the
+ * one on the screen, so a binding carries this stamp and the matcher compares it.
+ * A new photograph, or a re-run that read the rack differently, changes the stamp
+ * and the confirmation becomes a rank 4 recollection: shown, never written.
+ */
+function snapshotStamp(snapshot) {
+  const rows = cameraDevices(snapshot || {}).map((d) => {
+    const p = printOf(d);
+    return [d.uid, p.position, p.cvClass, p.ports, p.make, p.model, p.serial].join('~');
+  }).sort();
+  const head = [
+    String((snapshot?.racks || [])[0]?.uid || ''),
+    String(snapshot?.scannedAt || ''),
+  ].join('~');
+  return crypto.createHash('sha1').update([head, ...rows].join('\n')).digest('hex').slice(0, 16);
+}
+
+/**
+ * Does this photograph contradict what was confirmed? A plain sentence when it
+ * does, null when it does not.
+ *
+ * Only on a fact, never on camera noise: a shelf that moved, a serial read off
+ * the box that is now a different serial, a model that is now a different model.
+ * A port count that shifted by one is the camera, not the rack.
+ */
+function contradiction(was, now) {
+  if (!was || !now) return null;
+  const realModel = (m) => { const t = norm(m); return t.startsWith('unidentified') ? '' : t; };
+  if (was.position != null && now.position != null && Number(was.position) !== Number(now.position)) {
+    return `it was confirmed at U${was.position} and that box is now at U${now.position}`;
+  }
+  const wasSerial = norm(was.serial);
+  const nowSerial = norm(now.serial);
+  if (wasSerial && nowSerial && wasSerial !== nowSerial) {
+    return `the serial read off that box was ${was.serial} and is now ${now.serial}`;
+  }
+  const wasModel = realModel(was.model);
+  const nowModel = realModel(now.model);
+  if (wasModel && nowModel && wasModel !== nowModel) {
+    return `that box read as ${was.model} and now reads as ${now.model}`;
+  }
+  return null;
 }
 
 /** Stable ordering, numbers as numbers, so the answer never depends on input order. */
@@ -257,17 +375,28 @@ function cmpId(a, b) {
  * Returns { matches, reasons } with the field names it always had. Each reason
  * now also carries the evidence it rests on, its confidence under standard
  * section 7, how many boxes were in the candidate set (8.3), the margin over
- * the runner-up, and whether it came from a binding.
+ * the runner-up, whether it came from a binding, and any notes worth showing.
  *
  * `opts.scope` is the bindings scope, which the route computes from the scan's
- * tenant and rack key. Left out, it is derived from the snapshot's own rack uid,
- * which is the same value for an identified rack and the photo hash otherwise.
+ * tenant and rack id. It is REQUIRED: a guessed scope reads an empty file and
+ * quietly turns a confirmed box into an unidentified one, which is the worst
+ * failure this module has, so there is no default.
+ * `opts.scanId` and `opts.snapshotStamp` say which photograph this is, so a
+ * confirmation made against it counts as a fresh observation (10.1) and one made
+ * against an earlier one is recalled and marked.
  */
 function suggest(snapshot, sws, opts = {}) {
-  const scope = opts.scope || scopeFromSnapshot(snapshot);
+  const scope = opts.scope;
+  if (!scope) {
+    throw new Error('reconcile.suggest needs opts.scope, the bindings scope for this scan '
+      + '(bindings.scopeOf({ tenantId, rackId })). There is no safe default: a guessed scope '
+      + 'reads an empty bindings file and reports a confirmed box as unidentified.');
+  }
+  const stamp = opts.snapshotStamp || snapshotStamp(snapshot);
+  const scanId = opts.scanId === undefined || opts.scanId === null ? null : String(opts.scanId);
   const spans = spanByUid(snapshot);
   const devices = cameraDevices(snapshot)
-    .filter((d) => !PASSIVE_CLASS.has(d.cvClass))
+    .filter((d) => !d.passive)
     .map((d) => ({
       ...d,
       // The switch's own port count is the truer number, so compare the
@@ -287,6 +416,7 @@ function suggest(snapshot, sws, opts = {}) {
 
   const facts = new Map();     // swId -> what the switch published about itself
   for (const sw of order) {
+    const stack = stackSizeOf(sw.reading);
     facts.set(sw.record.id, {
       id: sw.record.id,
       label: sw.record.label,
@@ -294,7 +424,9 @@ function suggest(snapshot, sws, opts = {}) {
       ports: portsOf(sw),
       vendor: sw.reading?.system?.vendor || sw.reading?.identity?.manufacturer || null,
       model: sw.reading?.identity?.model || null,
-      stackMembers: Number(sw.reading?.identity?.stackMembers) || 1,
+      // The corroborated member count, not the row count. See stackSizeOf.
+      members: stack.members,
+      chassisRows: stack.rows,
       aliases: sw.reading ? identity.aliasesOf({ ...sw.reading, host: sw.record.host }) : [],
     });
   }
@@ -302,80 +434,156 @@ function suggest(snapshot, sws, opts = {}) {
   // ── 1. bindings ────────────────────────────────────────────────────────────
   const claimedBy = new Map();   // devUid -> swId, boxes a binding has taken
   const proposals = new Map();   // swId -> { devUid, reason }
+  const notes = new Map();       // swId -> lines to carry onto whatever reason it ends with
+  const recalledAt = new Map();  // swId -> a shelf a binding remembers but this photo lost
+  const addNote = (id, line) => {
+    const held = notes.get(id) || [];
+    held.push(line);
+    notes.set(id, held);
+  };
+
   for (const sw of order) {
     const f = facts.get(sw.record.id);
-    const hit = f.aliases.length ? bindings.find(scope, f.aliases) : null;
+    const hit = f.aliases.length
+      ? bindings.find(scope, f.aliases, { switchId: f.id, weak: true })
+      : null;
     if (!hit) continue;
+
+    // A binding that shares only a name or a management address is not this
+    // switch (4.3, 4.4), and saying nothing about it is how a person's answer
+    // goes missing without a word. Name it, and say what to re-read.
+    if (hit.weak) {
+      addNote(f.id, hit.refutedBy === 'serial'
+        ? `a box in this rack was confirmed for the switch at this address, but that `
+          + `confirmation holds a different serial number, so this looks like replacement `
+          + `hardware. Confirm the box again for the switch that is there now`
+        : `a box in this rack was confirmed for the switch at this address, under a `
+          + `hardware identity this reading did not publish. Read it again so it states its `
+          + `serial or chassis address, or confirm the box here`);
+      continue;
+    }
+
     const dev = deviceByUid.get(hit.binding.deviceUid);
     if (!dev) {
+      // 10.1: the position is observed fresh in each scan, and this photograph
+      // does not show that box. The recollection is a note and a tie-breaker, not
+      // a veto: scoring still runs, where before this the switch went permanently
+      // blank and the box it used to match lost its model, serial and cables.
+      addNote(f.id, `it was confirmed as a box this photograph does not show`
+        + `${hit.binding.position != null ? ` (U${hit.binding.position})` : ''}`);
+      if (hit.binding.position != null) {
+        recalledAt.set(f.id, { position: Number(hit.binding.position), at: hit.binding.at });
+      }
+      continue;
+    }
+
+    const clash = contradiction(hit.binding.boxPrint, printOf(dev));
+    if (clash) {
+      // 10.2 a move, 10.3 a replacement. Either way the photograph disagrees with
+      // the confirmation, and binding to it anyway would write one switch's facts
+      // onto another switch's shelf.
       reasons[f.id] = blank(
-        `this switch was confirmed as a box that this photograph does not show. `
-        + `Confirm it again against a box in this scan, or take the photograph the box is in`,
-        { candidateCount: 0 },
+        `the box confirmed for this switch is not the box that is there now: ${clash}. `
+        + 'Confirm which box it is now, so nothing is written against the old answer',
+        { candidateCount: 0, notes: notes.get(f.id) || [] },
       );
       continue;
     }
+
     if (claimedBy.has(dev.uid)) {
       reasons[f.id] = blank(
         `another switch record publishes the same hardware identity and is already `
         + `confirmed as this box. Remove whichever of the two is a duplicate`,
-        { candidateCount: 0 },
+        { candidateCount: 0, notes: notes.get(f.id) || [] },
       );
       continue;
     }
     claimedBy.set(dev.uid, f.id);
-    // Two entries on purpose. The first is the person's act, which is what makes
-    // this confirmed rather than a guess; the second is the honest note that we
-    // are recalling it rather than watching it happen, which standard 10.1 asks
-    // for. confidenceOf reads the pair as 'confirmed'.
-    const ev = [
-      ...(Array.isArray(hit.binding.evidence) ? hit.binding.evidence : []),
-      identity.evidence('remembered',
-        `recalled from the binding made on ${hit.binding.at}`, { by: hit.by }),
-    ];
+
+    // Fresh or recalled, and it decides everything downstream.
+    //
+    // A confirmation made against THIS photograph is the person's own
+    // observation of what is on the screen: rank 1, confirmed, written.
+    // A confirmation made against an earlier photograph is a recollection:
+    // rank 4, probable, shown and never written. Standard 10.1 is explicit that
+    // an earlier position must not be presented as current, and it is right -
+    // two identical switches swapped between two shelves produce exactly this
+    // situation, and nothing in a photograph of identical boxes can tell.
+    const firsthand = (Array.isArray(hit.binding.evidence) ? hit.binding.evidence : [])
+      .filter((e) => e && Number(e.rank) >= 1 && Number(e.rank) <= 3);
+    const fresh = Boolean(scanId && hit.binding.scanId && String(hit.binding.scanId) === scanId
+      && hit.binding.snapshotStamp && hit.binding.snapshotStamp === stamp
+      && firsthand.length);
+    const ev = fresh ? firsthand : [identity.evidence('remembered',
+      `confirmed as this box on ${hit.binding.at}, and this photograph does not contradict it`,
+      { by: hit.binding.by || null, at: hit.binding.at || null })];
     proposals.set(f.id, {
       devUid: dev.uid,
       reason: {
         deviceUid: dev.uid,
         confidence: identity.confidenceOf(ev),
-        why: `confirmed before as ${dev.name}, matched on its ${hit.by}`,
+        why: fresh
+          ? `confirmed at the rack as ${dev.name}, matched on its ${hit.by}`
+          : `confirmed as ${dev.name} on ${String(hit.binding.at || '').slice(0, 10)}, matched on `
+            + `its ${hit.by}, and nothing in this photograph contradicts it. Confirm it again `
+            + `to write this switch's own facts onto the box`,
         evidence: ev,
         candidateCount: 1,
         margin: null,
         fromBinding: true,
+        fresh,
+        notes: notes.get(f.id) || [],
       },
     });
   }
 
-  // ── 2. scoring, with the size veto first ───────────────────────────────────
+  // ── 2. scoring ─────────────────────────────────────────────────────────────
   for (const sw of order) {
     const f = facts.get(sw.record.id);
     if (proposals.has(f.id) || reasons[f.id]) continue;
     if (!f.read) {
       reasons[f.id] = blank('this switch has not been read yet, so it has published '
-        + 'nothing to match a box on', { candidateCount: 0 });
+        + 'nothing to match a box on', { candidateCount: 0, notes: notes.get(f.id) || [] });
+      continue;
+    }
+
+    // The one physical impossibility worth refusing on, and it is about the RACK,
+    // not about any one box: a stack of N separate chassis needs N boxes to sit
+    // in, and the camera draws one box per chassis. Demanding a single box N
+    // shelves tall - which is what this used to do - meant a real stack matched
+    // nothing in a real rack, ever. Only a corroborated member count counts.
+    const free = devices.filter((d) => !claimedBy.has(d.uid));
+    if (f.members > 1 && free.length < f.members) {
+      reasons[f.id] = blank(
+        `it answers as a stack of ${f.members} separate units and this rack has only `
+        + `${free.length} box${free.length === 1 ? '' : 'es'} left that could hold one. `
+        + 'Scan the whole rack, or place the stack by hand',
+        { candidateCount: free.length, notes: notes.get(f.id) || [] },
+      );
       continue;
     }
 
     const candidates = [];
-    const vetoed = [];
-    for (const dev of devices) {
-      if (claimedBy.has(dev.uid)) continue;    // a confirmed box is not up for scoring
-      const veto = sizeVeto(dev.units, f.stackMembers, dev.cvClass);
-      if (veto) { vetoed.push(`${dev.name}: ${veto}`); continue; }
-      const { score, why } = scorePair(f, dev);
+    const seenNote = new Set();
+    for (const dev of free) {
+      const { score, why, shape } = scorePair(f, dev);
       if (score < FLOOR) continue;
-      candidates.push({ devUid: dev.uid, name: dev.name, score, why });
+      const advice = sizeAdvice(dev.units, dev.cvClass);
+      if (advice && !seenNote.has(dev.uid)) { seenNote.add(dev.uid); addNote(f.id, `${dev.name}: ${advice}`); }
+      candidates.push({ devUid: dev.uid, name: dev.name, score, why, shape, position: dev.position });
     }
     candidates.sort((a, b) => b.score - a.score || String(a.devUid).localeCompare(String(b.devUid)));
 
+    if (f.chassisRows > 1 && f.members === 1) {
+      addNote(f.id, `it lists ${f.chassisRows} chassis entries but gives them no separate serial `
+        + 'numbers, so it is read as one unit');
+    }
+
     if (!candidates.length) {
       reasons[f.id] = blank(
-        vetoed.length
-          ? `no box in this rack fits it. ${vetoed[0]}`
-          : 'no box in this rack looks like it. Pick the box by hand, or scan the rack again '
-            + 'so the ports can be counted',
-        { candidateCount: 0 },
+        'no box in this rack looks like it. Pick the box by hand, or scan the rack again '
+        + 'so the ports can be counted',
+        { candidateCount: 0, notes: notes.get(f.id) || [] },
       );
       continue;
     }
@@ -383,32 +591,53 @@ function suggest(snapshot, sws, opts = {}) {
     const top = candidates[0];
     const second = candidates[1] || null;
     const margin = second ? top.score - second.score : null;
-    const tied = candidates.filter((c) => top.score - c.score <= MARGIN);
-    if (tied.length > 1) {
+    // Judged on the same evidence means told apart by nothing. Two boxes both at
+    // an exact port count are a tie; an exact count against a two-port miss is
+    // not, however close the two scores happen to land.
+    const tied = candidates.filter((c) => c.shape === top.shape);
+
+    // A shelf this switch was confirmed at before, when the box that was there is
+    // gone from this photograph, is rank 4 memory: it settles a tie honestly and
+    // it is still never written. Standard 10.1 keeps the old position as a source
+    // and forbids presenting it as current, which is exactly this.
+    const memory = recalledAt.get(f.id) || null;
+    const remembered = memory
+      ? tied.filter((c) => c.position != null && Number(c.position) === memory.position)
+      : [];
+
+    if (tied.length > 1 && remembered.length !== 1) {
       const names = tied.map((c) => c.name).join(' and ');
       reasons[f.id] = blank(
         `${names} cannot be told apart from what this switch published. A serial number, `
         + 'a chassis address or somebody at the rack confirming which box it is would settle it',
-        { candidateCount: candidates.length, margin },
+        { candidateCount: candidates.length, margin, notes: notes.get(f.id) || [] },
       );
       continue;
     }
 
+    const pick = remembered.length === 1 ? remembered[0] : top;
     // Rank 8, and the count that matters to standard 6.2 is how many boxes this
-    // evidence could not tell apart - which the margin test has just made one.
-    const ev = [identity.evidence('inferred', top.why, { candidateCount: tied.length })];
+    // evidence could not tell apart - which the tie test has just made one.
+    const ev = [identity.evidence('inferred', pick.why, { candidateCount: tied.length })];
+    if (memory && pick.position != null && Number(pick.position) === memory.position) {
+      ev.push(identity.evidence('remembered',
+        `this switch was confirmed at U${memory.position} on ${String(memory.at || '').slice(0, 10)}`,
+        { at: memory.at || null }));
+    }
     proposals.set(f.id, {
-      devUid: top.devUid,
+      devUid: pick.devUid,
       reason: {
-        deviceUid: top.devUid,
+        deviceUid: pick.devUid,
         confidence: identity.confidenceOf(ev),
         why: candidates.length === 1
-          ? `${top.why}, and it is the only box it could be`
-          : top.why,
+          ? `${pick.why}, and it is the only box it could be`
+          : pick.why,
         evidence: ev,
         candidateCount: candidates.length,
         margin,
         fromBinding: false,
+        fresh: false,
+        notes: notes.get(f.id) || [],
       },
     });
   }
@@ -432,7 +661,7 @@ function suggest(snapshot, sws, opts = {}) {
       reasons[swId] = blank(
         `${others.join(' and ')} read as the same box as this one, and nothing in what they `
         + 'published tells them apart. Confirm each switch against its own box',
-        { candidateCount: 1 },
+        { candidateCount: 1, notes: notes.get(swId) || [] },
       );
     }
   }
@@ -440,6 +669,11 @@ function suggest(snapshot, sws, opts = {}) {
   for (const [swId, p] of proposals) {
     matches[swId] = p.devUid;
     reasons[swId] = p.reason;
+  }
+  // A switch that never reached scoring (no reading, no candidates) still carries
+  // whatever pass 1 wanted to tell the person.
+  for (const [swId, lines] of notes) {
+    if (reasons[swId] && !reasons[swId].notes.length) reasons[swId].notes = lines;
   }
   return { matches, reasons };
 }
@@ -450,7 +684,7 @@ function suggest(snapshot, sws, opts = {}) {
  * Blank is a real answer here, not a failure (standard 7.3), so it carries the
  * same fields a match does and says what would settle it.
  */
-function blank(why, { candidateCount = 0, margin = null } = {}) {
+function blank(why, { candidateCount = 0, margin = null, notes = [] } = {}) {
   return {
     deviceUid: null,
     confidence: 'unidentified',
@@ -459,18 +693,56 @@ function blank(why, { candidateCount = 0, margin = null } = {}) {
     candidateCount,
     margin,
     fromBinding: false,
+    fresh: false,
+    notes: [...notes],
   };
 }
 
 /**
- * Apply confirmed matches to the camera snapshot and return the merged result.
+ * The confidence each posted match actually carries.
+ *
+ * A match is only as good as the reason that produced it, and a hand placement
+ * that disagrees with the reason is evidence of nothing: somebody moved a
+ * dropdown, which is worth storing and showing and is not worth writing into a
+ * customer's database. So a posted uid that is not the one the matcher reasoned
+ * about is 'unidentified' here, whatever the matcher concluded about its own.
+ */
+function levelsFor(reasons, matches) {
+  const out = {};
+  for (const [swId, uid] of Object.entries(matches || {})) {
+    const r = reasons ? reasons[swId] : null;
+    out[swId] = uid && r && r.deviceUid === uid ? r.confidence : 'unidentified';
+  }
+  return out;
+}
+
+/**
+ * Apply matches to the camera snapshot and return the merged result.
  *
  * `matches` maps a switch id to a device uid (or null for "not in this rack").
+ *
+ * `opts.levels` is the confidence of each match, from levelsFor. It gates the
+ * ENRICHMENT only - the model, the serial, the device type, the real ports, the
+ * cables - because those are facts about hardware, and writing a guessed serial
+ * into a customer's DCIM converts our uncertainty into their fact (standard 7.2,
+ * and identity.writable is the single place that decides). The device row itself,
+ * its name and its shelf are written exactly as before, so the photo-to-record
+ * link that works today is untouched whatever the binding level says.
+ *
+ * Required, and it throws without it: a default would either write everything
+ * (the bug) or write nothing (a silent loss), and neither is something a caller
+ * should get by forgetting an argument.
  */
-function reconcile(base, sws, matches) {
+function reconcile(base, sws, matches, opts = {}) {
+  if (!opts || !opts.levels) {
+    throw new Error('reconcile.reconcile needs opts.levels: the confidence of each match, from '
+      + 'reconcile.levelsFor(reasons, matches). Only a confirmed match may write hardware facts.');
+  }
+  const levels = opts.levels;
   const snap = clone(base);
   if (!snap.cables) snap.cables = [];
   const changes = [];
+  const withheld = [];
 
   const deviceByUid = new Map(snap.devices.map((d) => [d.uid, d]));
   const typeByUid = new Map(snap.deviceTypes.map((t) => [t.uid, t]));
@@ -489,11 +761,27 @@ function reconcile(base, sws, matches) {
   };
 
   // ── enrich each matched device from its switch ────────────────────────────
+  const written = new Set();
   for (const sw of sws) {
     const devUid = matches[sw.record.id];
     if (!devUid || !sw.reading) continue;
     const dev = deviceByUid.get(devUid);
     if (!dev) continue;
+
+    // The gate. Everything below this line is a hardware fact.
+    const level = levels[sw.record.id] || 'unidentified';
+    if (!identity.writable(level)) {
+      withheld.push({
+        switchId: sw.record.id,
+        switch: sw.record.label || `switch ${sw.record.id}`,
+        device: dev.name,
+        confidence: level,
+        why: 'shown, not written: only a box somebody confirmed at the rack '
+          + "is written with the switch's own model, serial and ports",
+      });
+      continue;
+    }
+    written.add(devUid);
 
     const r = sw.reading;
     const ident = r.identity || {};
@@ -583,13 +871,20 @@ function reconcile(base, sws, matches) {
 
   for (const sw of sws) {
     const devUid = matches[sw.record.id];
-    if (!devUid || !sw.reading) continue;
+    if (!devUid || !sw.reading || !written.has(devUid)) continue;
 
     for (const n of sw.reading.neighbours || []) {
       const remote = remoteSwitchOf(n);
       if (!remote || remote.record.id === sw.record.id) continue;
       const remoteDevUid = matches[remote.record.id];
       if (!remoteDevUid) { unresolved.push({ from: sw.record.label, seen: n.remoteSysName || n.chassisId, why: 'the neighbour is a switch in this rack but not placed yet' }); continue; }
+      // A cable is a statement that two named boxes are joined. Drawing one to a
+      // box nobody confirmed asserts the far end as a fact, so it waits too.
+      if (!written.has(remoteDevUid)) {
+        unresolved.push({ from: sw.record.label, seen: n.remoteSysName || n.chassisId,
+          why: 'the box at the far end has not been confirmed at the rack yet' });
+        continue;
+      }
 
       const localIf = ifUid(devUid, n.localPortName) || ifUid(devUid, `port ${n.localPort}`);
       const remoteName = n.remotePortDesc || n.remotePortId;
@@ -626,6 +921,11 @@ function reconcile(base, sws, matches) {
   const summary = {
     switchesTotal: sws.length,
     matched: Object.values(matches).filter(Boolean).length,
+    // What was matched on the screen but kept out of the record, and why. This is
+    // the honest half of the answer: the join is shown, the facts wait for a
+    // person to confirm the box.
+    written: written.size,
+    withheld,
     unmatched: sws.filter((s) => !matches[s.record.id]).length,
     serials: changes.filter((c) => c.field === 'serial').length,
     models: changes.filter((c) => c.field === 'model').length,
@@ -658,8 +958,16 @@ function rackImageUrl(base, rackId) {
 function view(base, rackId, storedMatches, opts = {}) {
   const sws = gatherSwitches(rackId);
   const auto = suggest(base, sws, opts);
-  const matches = storedMatches || auto.matches;
-  const { summary } = reconcile(base, sws, matches);
+  const matches = { ...(storedMatches || auto.matches) };
+  // A person standing at the rack outranks a saved matching, always. Without
+  // this the two stores drift apart: a plain save could point a switch at one box
+  // while the binding named another, the screen showed one and the export wrote
+  // the other, and the next re-detect silently swapped them back.
+  for (const [swId, r] of Object.entries(auto.reasons)) {
+    if (r && r.fromBinding && r.fresh && r.deviceUid) matches[swId] = r.deviceUid;
+  }
+  const levels = levelsFor(auto.reasons, matches);
+  const { summary } = reconcile(base, sws, matches, { levels });
   return {
     // The photo the camera read, as a URL this rack's owner may fetch. The
     // snapshot carries wherever the file sat on disk when it was adopted;
@@ -686,9 +994,13 @@ function view(base, rackId, storedMatches, opts = {}) {
       matchedTo: matches[s.record.id] || null,
       // Why the auto-matcher proposed this, for the user to verify against.
       autoMatch: auto.reasons[s.record.id] || null,
+      // Whether what is on the screen for this switch is written into the record,
+      // so a screen never has to guess from the confidence word.
+      written: identity.writable(levels[s.record.id] || 'unidentified'),
     })),
     matches,
     reasons: auto.reasons,
+    levels,
     summary,
     suggested: !storedMatches,
   };
@@ -699,5 +1011,6 @@ function view(base, rackId, storedMatches, opts = {}) {
 // PASSIVE_CLASS is shared with the reconcile route, which has to refuse a posted
 // match onto a patch panel or a PDU: one list, in one place.
 module.exports = {
-  gatherSwitches, cameraDevices, suggest, reconcile, view, slug, PASSIVE_CLASS,
+  gatherSwitches, cameraDevices, suggest, reconcile, view, slug,
+  levelsFor, snapshotStamp, printOf, isPassive, PASSIVE_CLASS,
 };
