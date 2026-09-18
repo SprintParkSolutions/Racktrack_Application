@@ -92,3 +92,7 @@ racktrack-support-bot
 support-bot
 cmdb_racks
 e2e
+
+# Other sessions keep git worktrees here; they move under rsync and are not
+# part of the deployment.
+.claude

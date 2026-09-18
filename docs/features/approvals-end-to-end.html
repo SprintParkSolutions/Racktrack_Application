@@ -1,0 +1,147 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Approvals End to End" | https://claude.ai/artifact/XYjHfgufUUMY6gzCY49jYY | artifact last updated 2026-09-18 | saved 2026-09-18 | images in approvals-end-to-end/img/ -->
+<title>RackTrack Approvals End to End</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--ground:#fff;--surface:#f6f7fa;--hair:#e3e7ee;--ink:#14181f;--ink-2:#4b5563;--ink-3:#79838f;--ok:#2b7350;--ok-bg:#ecf5f0;--risk:#a8443c;--risk-bg:#fbf0ef;--db:#3a51a0;--db-bg:#eef1fa;--frame:#1b1f26;
+--display:'Newsreader',Georgia,serif;--sans:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.shell{padding:0 clamp(20px,4vw,64px);padding-block:56px 96px}
+.brand{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 18px}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(2.2rem,4.4vw,3.4rem);line-height:1.02;letter-spacing:-.02em;margin:0 0 14px;max-width:17ch;text-wrap:balance}
+.stand{font-size:1.08rem;color:var(--ink-2);max-width:66ch;margin:0}
+.notice{margin:26px 0 0;border-left:3px solid var(--db);background:var(--db-bg);border-radius:0 10px 10px 0;padding:14px 20px;max-width:82ch;color:var(--ink-2)}
+.notice b{color:var(--ink)}
+.glance{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));border:1px solid var(--hair);border-radius:12px;overflow:hidden;background:var(--surface);margin:30px 0 0}
+.glance div{padding:16px 18px;border-right:1px solid var(--hair)}
+.glance div:last-child{border-right:0}
+@media (max-width:760px){.glance div{border-right:0;border-bottom:1px solid var(--hair)}.glance div:last-child{border-bottom:0}}
+.glance h4{font-family:var(--mono);font-size:.63rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:0 0 6px;font-weight:500}
+.glance b{font-family:var(--display);font-size:1.45rem;font-weight:500;display:block;line-height:1.1;margin-bottom:4px}
+.glance p{margin:0;font-size:.93rem;color:var(--ink-2);line-height:1.5}
+section{margin:64px 0 0}
+.sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:1.5px solid var(--ink);padding-bottom:12px;margin-bottom:10px;flex-wrap:wrap}
+.sec-no{font-family:var(--mono);font-size:.76rem;color:var(--ink-3)}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(1.5rem,2.4vw,2rem);letter-spacing:-.015em;margin:0}
+.lede{color:var(--ink-2);max-width:70ch;margin:0 0 22px}
+.stack{display:flex;flex-direction:column;gap:44px;margin-top:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:28px 24px;margin-top:16px}
+figure{margin:0}
+figcaption{display:flex;flex-direction:column;gap:3px}
+figcaption b{font-weight:600;font-size:1rem}
+figcaption span{font-size:.94rem;color:var(--ink-2);line-height:1.55}
+.br figcaption{margin-bottom:12px;max-width:80ch}
+.ph figcaption{margin-top:12px}
+.phone{border:6px solid var(--frame);border-radius:30px;background:var(--frame);overflow:hidden;aspect-ratio:390/844;max-width:100%}
+.phone img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;border-radius:24px}
+.browser{border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--surface);box-shadow:0 1px 2px rgba(20,24,31,.05)}
+.bar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--hair);background:#eef1f5}
+.bar i{width:9px;height:9px;border-radius:50%;background:#cfd5de;display:block}
+.bar em{font-style:normal;font-family:var(--mono);font-size:.7rem;color:var(--ink-3);margin-left:10px;background:var(--ground);border:1px solid var(--hair);border-radius:6px;padding:2px 10px}
+.browser img{display:block;width:100%;height:auto}
+.tscroll{overflow-x:auto;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:.94rem}
+th{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:0 14px 8px 0;border-bottom:1.5px solid var(--ink);font-weight:500;white-space:nowrap}
+td{padding:9px 14px 9px 0;border-top:1px solid var(--hair);vertical-align:top;color:var(--ink-2);line-height:1.5}
+td:first-child{font-weight:600;color:var(--ink)}
+.yes{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ok);background:var(--ok-bg);border-radius:6px;padding:3px 9px;white-space:nowrap}
+.no{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--risk);background:var(--risk-bg);border-radius:6px;padding:3px 9px;white-space:nowrap}
+ul.plain{margin:10px 0 0;padding-left:20px;color:var(--ink-2)}
+ul.plain li{margin:0 0 8px;max-width:74ch}
+ul.plain b{color:var(--ink);font-weight:600}
+.closing{margin-top:64px;padding-top:24px;border-top:1px solid var(--hair);color:var(--ink-2);max-width:76ch}
+code{font-family:var(--mono);font-size:.82rem;color:var(--ink);background:var(--surface);border:1px solid var(--hair);border-radius:4px;padding:1px 6px}
+</style>
+<div class="shell">
+<p class="brand">RackTrack &middot; live on demo.racktrack.ai &middot; 18 September 2026</p>
+<h1>A difference on a rack, from the photo to the record</h1>
+<p class="stand">The whole workflow, run on the live server this afternoon on a real rack with a real record behind it. Every screenshot is the running system, not a mock. Two people took part, as the specification requires: the admin who raises and assigns, and a second person who approves.</p>
+<div class="notice"><b>The rack in question.</b> RK-3CD81888 in Hall 1, thirteen devices. The comparison found 281 differences, of which 255 are ports. Because a port belongs to its device, the admin was asked nine questions, not 281.</div>
+<div class="glance">
+<div><h4>Found</h4><b>281</b><p>differences between the rack and the record</p></div>
+<div><h4>Asked</h4><b>9</b><p>questions, one per device</p></div>
+<div><h4>People</h4><b>2</b><p>the admin, and an approver who never touched the work</p></div>
+<div><h4>Written</h4><b>65</b><p>objects into NetBox, 8 refused and named</p></div>
+</div>
+
+<section>
+<div class="sec-head"><span class="sec-no">01</span><h2>The workflow, step by step</h2></div>
+<p class="lede">Fifteen screens in the order they happened. The first two are the RackTrack app on a phone; the rest are RackTrack Approvals.</p>
+<div class="stack">
+<div class="grid"><figure class="ph"><div class="phone"><img src="approvals-end-to-end/img/tech-02-drift-check.jpg" alt="1. The technician checks the rack" loading="lazy"></div><figcaption><b>1. The technician checks the rack</b><span>In the RackTrack app, on the rack itself. The check compares what the camera saw with what NetBox holds. It reports eleven differences and says that seven supporting records would be created on their own. It also says who the check will go to, or, as here, that NetBox names nobody for this rack so the admin will choose. The technician can send it. There is no button here that approves anything.</span></figcaption></figure></div>
+<div class="grid"><figure class="ph"><div class="phone"><img src="approvals-end-to-end/img/tech-03-drift-differences.jpg" alt="2. What the differences are" loading="lazy"></div><figcaption><b>2. What the differences are</b><span>One line per difference, in the rack&#x27;s own words: this device is not in NetBox. Ports are not listed separately; they belong to their device.</span></figcaption></figure></div>
+<figure class="br"><figcaption><b>3. The check arrives in RackTrack Approvals</b><span>The admin opens it by its own address. 281 differences were found, but only nine questions are asked, one per switch, because 255 ports follow their device. Nothing can be approved yet.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-02-the-check-as-it-arrived.jpg" alt="3. The check arrives in RackTrack Approvals" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>4. The admin triages it</b><span>A category, a priority and a risk, with a note. From here the clocks run: acceptance, investigation, resolution and approval, in the datacentre&#x27;s own time zone.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-03-triaged.jpg" alt="4. The admin triages it" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>5. Assigned to the person NetBox names</b><span>One action assigns the whole rack. Nine work tickets are raised, one per device, and the person is told. Nothing here decides anything: assignment is the only first move.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-04-assigned-to-the-contact.jpg" alt="5. Assigned to the person NetBox names" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>6. The person accepts and starts</b><span>The ticket moves through accepted and in progress. Anything they are waiting for pauses the resolution clock.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-05-the-contact-is-working-on-it.jpg" alt="6. The person accepts and starts" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>7. Resolved, with a finding</b><span>The person went to the rack, checked, and wrote what they found. A resolved ticket is not an approval: it comes back to the admin undecided, carrying the finding.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-06-resolved-with-a-finding.jpg" alt="7. Resolved, with a finding" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>8. The fix is verified</b><span>A second scan is compared with the plan item by item before anyone may approve. Here the admin recorded that the check was made in person instead, with a reason, and that is written into the history.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-07-verified.jpg" alt="8. The fix is verified" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>9. Nine decisions</b><span>The admin decides each device with the finding in hand. Nine decisions for a rack of 281 differences.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-08-nine-decisions-made.jpg" alt="9. Nine decisions" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>10. The rule that matters most</b><span>The admin tries to approve. The server refuses: &quot;You resolved a ticket on this plan, so somebody else has to make this decision.&quot; The person who did the work never signs it off.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-09-the-admin-cannot-approve-their-own-work.jpg" alt="10. The rule that matters most" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>11. The approver picks it up</b><span>A different person, whose role is approver. They may approve and reject, and nothing else: they cannot triage, assign or write.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-11-approver-sees-the-check.jpg" alt="11. The approver picks it up" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>12. Approved</b><span>The approval is recorded against the hash of exactly what was approved and the version of the plan. Change the plan and the approval no longer counts.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/end2end-12-approved.jpg" alt="12. Approved" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>13. The write, and what it could not do</b><span>Only an admin writes. 65 objects went into NetBox; 8 were refused because NetBox already held them under another key. The plan says &quot;write failed&quot; rather than pretending, and offers to try again. Nothing is ever deleted.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/fixed-02-the-check-after-the-write.jpg" alt="13. The write, and what it could not do" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>14. Named, one by one</b><span>Each refusal in NetBox&#x27;s own words, beside what was already written. A retry writes only the rest, under the same approval.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/fixed-03-what-the-write-could-not-do.jpg" alt="14. Named, one by one" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>15. Everything that happened</b><span>Every step with who did it and when, kept for good, separate from the comments.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/fixed-04-the-timeline.jpg" alt="15. Everything that happened" loading="lazy"></div></figure>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">02</span><h2>The rest of the application</h2></div>
+<p class="lede">What an operations team uses around the daily work.</p>
+<div class="stack">
+<figure class="br"><figcaption><b>The dashboard</b><span>Every count opens the exact list behind it. The clocks group the work: on track, at risk, breached, paused.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/fixed-01-dashboard.jpg" alt="The dashboard" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Every check</b><span>Search and filters by status, datacentre, rack, priority, risk, person and clock.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/after-05-drifts-list.jpg" alt="Every check" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>The work tickets</b><span>Who each one went to, its state, and the finding that came back.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/after-06-tickets.jpg" alt="The work tickets" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Reports</b><span>Backlog, clocks, quality, trends, resolvers, approvals, writes and exceptions. Every number opens the records behind it, and each report has a CSV beside it.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/after-07-reports.jpg" alt="Reports" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>The clock report</b><span>How the four clocks are doing, and what has breached.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/after-08-sla-report.jpg" alt="The clock report" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Accepted differences</b><span>A difference somebody has decided to keep, with an owner and an expiry, stops being raised until it expires.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/after-12-exceptions.jpg" alt="Accepted differences" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Notifications</b><span>In the application and by email, once each, with a record of what was sent and a preference per person.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/after-09-notifications.jpg" alt="Notifications" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>Settings</b><span>The clock targets per priority, the working calendar, when a second approver is required, and when things escalate.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/after-10-settings.jpg" alt="Settings" loading="lazy"></div></figure>
+<figure class="br"><figcaption><b>The audit view</b><span>Every move across every check, read only.</span></figcaption><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/</em></div><img src="approvals-end-to-end/img/after-11-audit.jpg" alt="The audit view" loading="lazy"></div></figure>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">03</span><h2>On a phone</h2></div>
+<p class="lede">An admin approving from a corridor is a real person, so every screen works at a phone's width.</p>
+<div class="grid">
+<figure class="ph"><div class="phone"><img src="approvals-end-to-end/img/phone-01-dashboard.jpg" alt="On a phone, the dashboard" loading="lazy"></div><figcaption><b>On a phone, the dashboard</b><span></span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="approvals-end-to-end/img/phone-02-the-check-after-the-write.jpg" alt="A check on a phone" loading="lazy"></div><figcaption><b>A check on a phone</b><span></span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="approvals-end-to-end/img/phone-05-drifts-list.jpg" alt="The list on a phone" loading="lazy"></div><figcaption><b>The list on a phone</b><span></span></figcaption></figure>
+<figure class="ph"><div class="phone"><img src="approvals-end-to-end/img/phone-07-reports.jpg" alt="Reports on a phone" loading="lazy"></div><figcaption><b>Reports on a phone</b><span></span></figcaption></figure>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">04</span><h2>The rules, and where each one was proved</h2></div>
+<div class="tscroll"><table>
+<thead><tr><th>The rule</th><th>Where it showed</th><th></th></tr></thead>
+<tbody>
+<tr><td>The technician never decides</td><td>Their screen has one button, Send to the admin. The server refuses them the rest.</td><td><span class="yes">held</span></td></tr>
+<tr><td>Assign before you decide</td><td>Approve and reject stayed shut until each ticket came back. A decision sent early was refused with "assign first".</td><td><span class="yes">held</span></td></tr>
+<tr><td>A resolved ticket is not an approval</td><td>Nine tickets came back resolved, with findings, and the plan waited.</td><td><span class="yes">held</span></td></tr>
+<tr><td>Whoever did the work does not sign it off</td><td>The admin who resolved the tickets was refused: somebody else has to make this decision.</td><td><span class="no">refused</span></td></tr>
+<tr><td>Only an admin writes</td><td>The approver, who may approve, was refused the write.</td><td><span class="no">refused</span></td></tr>
+<tr><td>A fix is verified before approval</td><td>The plan would not move to approval until a verification was recorded, here in person with a reason.</td><td><span class="yes">held</span></td></tr>
+<tr><td>An approval is bound to what was approved</td><td>Recorded with the hash of the approved items and the plan version.</td><td><span class="yes">held</span></td></tr>
+<tr><td>A failed write never looks like a success</td><td>8 refusals meant "write failed", each named, with the retry offered.</td><td><span class="yes">held</span></td></tr>
+<tr><td>Nothing is deleted in the record</td><td>The writer creates and updates only.</td><td><span class="yes">held</span></td></tr>
+<tr><td>A check belongs to one organization</td><td>A check raised in another organization is not listed and cannot be opened, for anybody, including the platform owner.</td><td><span class="yes">held</span></td></tr>
+<tr><td>Every step is written down</td><td>The timeline and the audit view carry who did what and when.</td><td><span class="yes">held</span></td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-no">05</span><h2>Where it lives, and what it is not</h2></div>
+<ul class="plain">
+<li><b>Its own application, on the same site.</b> RackTrack Approvals is a separate bundle at <code>demo.racktrack.ai/approvals/</code>. Same server, same database, same sign-in. The RackTrack app keeps the technician's side and links out. The portal is a different product and has nothing to do with it.</li>
+<li><b>ServiceNow stays the work system.</b> Assigning raises an incident there and reads its state back. RackTrack holds the evidence, the verification and the permission to write.</li>
+<li><b>Not built, and deliberately.</b> Alerts into Teams, which needs tokens we do not have; and the "intelligence" phase of the specification, which is advisory by its own description.</li>
+<li><b>Known and open.</b> Eight of the write's refusals were objects NetBox already held under another key; they should be matched rather than counted as failures, and that fix is in hand. A write of a few hundred objects outlasts the request that starts it, so the page follows the plan until it lands.</li>
+</ul>
+</section>
+
+<div class="closing"><p>Try it yourself on demo.racktrack.ai. Sign in as an organization admin, then open Approvals. Do not use the platform owner account for this: a check belongs to an organization, and the owner is in none.</p></div>
+</div>

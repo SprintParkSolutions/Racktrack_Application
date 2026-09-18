@@ -22,5 +22,6 @@ the document says so.
 | SPRTMS-1667 | Rack Book: enter one rack in NetBox's own fields and export it | [11-rack-book.md](11-rack-book.md) |
 | SPRTMS-1676 | Application: Organization settings, the first-run container, and the space picker on Scan | [12-application-setup.md](12-application-setup.md) |
 | SPRTMS-1684 | Drift approval: enforce the frozen workflow rules on the server and in the screens | [13-drift-rules-enforced.md](13-drift-rules-enforced.md) |
+| SPRTMS-1688 | RackTrack Approvals: the drift ticketing and approval workflow as its own application | [14-approvals-application.md](14-approvals-application.md) |
 
 The tickets live in Jira project SPRTMS and carry the same wording in their comments.
