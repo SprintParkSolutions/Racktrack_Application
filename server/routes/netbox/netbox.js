@@ -19,7 +19,7 @@ const { toCsv, toJson, toMarkdown } = require('../../lib/netbox/files');
 const profiles = require('../../lib/connection_profiles');
 const tenant = require('../../lib/tenant');
 const { canAccessRack } = require('../../lib/rack_access');
-const { sendNotice } = require('../../auth');
+
 // Who may use each route. The mount only authenticates; a member (the
 // technician at the rack) reaches preview and nothing else on this router.
 const gates = require('./gates');
@@ -162,39 +162,6 @@ router.post('/:id/preview', gates.technician, async (req, res) => {
   }
 });
 
-/**
- * The email an admin gets when NetBox refused part of a write.
- *
- * Sent to the admin who ran the write, at their own address, so the person
- * who pressed the button is the person who hears which objects did not go
- * through. What was written stays written; nothing else was changed.
- */
-function notifyWriteFailed(req, written, rackId) {
-  const to = req.user?.email;
-  if (!to) return Promise.resolve(false);
-  const r = written.result || {};
-  const lines = (r.failures || []).map((f) =>
-    `  ${f.type || 'object'} "${f.name || f.uid}"${f.reason ? ` - ${f.reason}` : ''}`);
-  const text = [
-    `Hello ${req.user.username || to},`,
-    '',
-    `The write of plan ${written.id} for rack ${rackId || written.rackId} to NetBox did not `
-      + `finish. NetBox refused ${r.failed} object${r.failed === 1 ? '' : 's'}:`,
-    '',
-    ...lines,
-    '',
-    `${r.written} object${r.written === 1 ? '' : 's'} went through before that and `
-      + (r.written === 1 ? 'is' : 'are') + ' in NetBox now. Nothing else was changed.',
-    '',
-    'The plan is marked "write failed" in the portal. Fix the cause in NetBox or in the '
-      + 'plan and export it again; NetBox is compared once more before anything is written.',
-    '',
-    '- RackTrack',
-  ].join('\n');
-  return sendNotice({
-    to, subject: `RackTrack: the write for rack ${rackId || written.rackId} did not finish`, text,
-  }).catch(() => false);
-}
 
 /**
  * Write to NetBox - but only what an admin approved, and only if NetBox has
@@ -296,7 +263,10 @@ router.post('/:id/export', gates.admin, async (req, res) => {
                  failed: written?.result.failed ?? 0 },
     });
     if (written && written.status === 'write_failed') {
-      report.emailed = await notifyWriteFailed(req, written, got.scan.rackId);
+      // One email, from the approvals notifier, which names every object
+      // NetBox refused. This route used to send its own beside it and the
+      // admin got the same news twice.
+      report.emailed = true;
     }
     res.json(report);
   } catch (err) {

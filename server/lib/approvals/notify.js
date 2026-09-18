@@ -157,8 +157,24 @@ const LINES = {
   rejected: (plan, p) => [`The drift check on ${where(plan)} was ${p.to === 'rework' ? 'sent back for rework' : 'rejected'}`
     + `${p.reason ? ` (${p.reason})` : ''}.`],
   completed: (plan) => [`The drift check on ${where(plan)} is done and NetBox now matches the rack.`],
-  write_failed: (plan) => [`The write of plan ${plan.id} for ${where(plan)} did not finish.`,
-    'NetBox refused part of it; what went through is in NetBox and nothing else was changed.'],
+  // Name every object NetBox refused, because "part of it" tells an admin
+  // nothing they can act on. This is the only email a failed write sends.
+  write_failed: (plan) => {
+    const r = plan.result || {};
+    const failures = Array.isArray(r.failures) ? r.failures : [];
+    const named = failures.map((f) => `  ${f.type || 'object'} "${f.name || f.uid}"${f.reason ? ` - ${f.reason}` : ''}`);
+    const failed = failures.length || r.failed || 0;
+    const written = Array.isArray(r.writtenUids) ? r.writtenUids.length : (r.written || 0);
+    return [
+      `The write of plan ${plan.id} for ${where(plan)} did not finish. NetBox refused `
+        + `${failed} object${failed === 1 ? '' : 's'}:`,
+      ...named,
+      `${written} object${written === 1 ? '' : 's'} went through before that and `
+        + `${written === 1 ? 'is' : 'are'} in NetBox now. Nothing else was changed.`,
+      'The plan is marked "write failed". Fix the cause and write it again; NetBox is '
+        + 'compared once more before anything is written.',
+    ];
+  },
 };
 
 const SUBJECTS = {
