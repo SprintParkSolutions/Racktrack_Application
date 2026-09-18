@@ -1544,9 +1544,6 @@ export default function ScanPage() {
                 <option key={sp.id} value={String(sp.id)}>{'\u00a0\u00a0'.repeat(sp.depth) + sp.name}</option>
               ))}
             </select>
-            <span className={styles.spaceHelp}>
-              The hall or room you are standing in.
-            </span>
           </div>
         )}
 
