@@ -58,12 +58,18 @@ describe('<ApprovalsMovedPage>', () => {
     expect(open).not.toHaveBeenCalled();
   });
 
-  test('native build: the hand-over address goes to the system browser', async () => {
+  test('native build: the hand-over address opens full screen inside the app', async () => {
     native.current = true;
     render(<ApprovalsMovedPage />);
     fireEvent.click(screen.getByRole('link', { name: 'Open Approvals' }));
     await settle();
     expect(fetched.calls[0].body).toEqual({ to: URL });
-    expect(open).toHaveBeenCalledWith({ url: '/api/auth/handoff/KEY' });
+    // Full screen in the application's own white, so Approvals reads as part
+    // of RackTrack rather than a trip out to a website.
+    expect(open).toHaveBeenCalledWith({
+      url: '/api/auth/handoff/KEY',
+      presentationStyle: 'fullscreen',
+      toolbarColor: '#ffffff',
+    });
   });
 });

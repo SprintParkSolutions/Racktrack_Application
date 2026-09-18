@@ -88,7 +88,14 @@ export async function openApprovals(path = '/approvals/') {
 
 /** Open a URL where it belongs: a new tab on the web, the system browser on a phone. */
 function openUrl(url) {
-  if (Capacitor.isNativePlatform()) return Browser.open({ url });
+  if (Capacitor.isNativePlatform()) {
+    // Approvals should read as part of RackTrack, not as a trip to a website,
+    // so it is presented full screen with the application's own white bar
+    // rather than dropped into a browser card. iOS still prints the host in a
+    // thin line of its own; only Apple can remove that, and only a native web
+    // view of ours would avoid it.
+    return Browser.open({ url, presentationStyle: 'fullscreen', toolbarColor: '#ffffff' });
+  }
   window.open(url, '_blank', 'noopener');
   return Promise.resolve();
 }
