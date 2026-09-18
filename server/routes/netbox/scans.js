@@ -19,6 +19,9 @@ const { clientForUser } = require('../../lib/netbox/client_for');
 // RackTrack's own libraries: who may touch which rack, and where its scans live.
 const tenant = require('../../lib/tenant');
 const { rackOwnershipParam } = require('../../lib/rack_access');
+// Who may use each route. The mount only authenticates; a member (the
+// technician at the rack) reaches adopt and nothing else on this router.
+const gates = require('./gates');
 const { logger } = require('../../lib/observability');
 const { db: authDb } = require('../../auth');   // for the site's name, nothing else
 
@@ -42,16 +45,16 @@ const upload = multer({
 });
 
 /** Is the CV engine installed and are all its weights present? */
-router.get('/engine', (req, res) => res.json(cv.engineStatus()));
+router.get('/engine', gates.admin, (req, res) => res.json(cv.engineStatus()));
 
-router.get('/', (req, res) => res.json(store.listScans()));
+router.get('/', gates.admin, (req, res) => res.json(store.listScans()));
 
 /**
  * The scan history for one rack, newest first, with a plain summary of what
  * changed between each scan and the one before it. This is how a rack accrues a
  * record over time rather than a pile of unrelated scans.
  */
-router.get('/:id/report', (req, res) => {
+router.get('/:id/report', gates.admin, (req, res) => {
   const scan = store.getScan(req.params.id);
   if (!scan) return res.status(404).json({ error: 'no such scan' });
   const doc = report.build(scan);
@@ -59,7 +62,7 @@ router.get('/:id/report', (req, res) => {
   res.json(doc);
 });
 
-router.get('/rack/:rackId/history', (req, res) => {
+router.get('/rack/:rackId/history', gates.admin, (req, res) => {
   const scans = store.scansForRack(req.params.rackId)
     .filter((s) => s.stages && s.stages.detect && s.stages.detect.status === 'ok')
     .map((s) => {
@@ -116,7 +119,7 @@ router.param('rackId', rackOwnershipParam({ tenant, logger }));
  * same rack-ownership check as every other :rackId route, so you can only
  * rename a rack you can see.
  */
-router.get('/rack/:rackId/name', (req, res) => {
+router.get('/rack/:rackId/name', gates.admin, (req, res) => {
   res.json({
     rackId: req.params.rackId,
     name: rackNames.get(req.params.rackId),
@@ -124,7 +127,7 @@ router.get('/rack/:rackId/name', (req, res) => {
   });
 });
 
-router.put('/rack/:rackId/name', (req, res) => {
+router.put('/rack/:rackId/name', gates.admin, (req, res) => {
   const name = rackNames.set(req.params.rackId, (req.body || {}).name);
   res.json({ rackId: req.params.rackId, name, display: rackNames.display(req.params.rackId) });
 });
@@ -168,7 +171,7 @@ async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
 //   3 - uids keyed on the customer's rack (Part B Stage 1)
 const SNAPSHOT_RULES = 3;
 
-router.post('/adopt/:rackId', async (req, res) => {
+router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   const { rackId } = req.params;
   const dir = path.join(OUTPUTS_DIR, rackId);
   const mapFile = path.join(dir, 'device_unit_map.json');
@@ -302,7 +305,7 @@ router.post('/adopt/:rackId', async (req, res) => {
   });
 });
 
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/', gates.admin, upload.single('image'), async (req, res) => {
   const engine = cv.engineStatus();
   if (!engine.ready) {
     return res.status(503).json({
@@ -410,7 +413,7 @@ router.post('/', upload.single('image'), async (req, res) => {
  * was never the problem. This re-reads the stored image and replaces the
  * result; the scan keeps its id, its rack and its place in the history.
  */
-router.post('/:id/detect', async (req, res) => {
+router.post('/:id/detect', gates.admin, async (req, res) => {
   const scan = store.getScan(req.params.id);
   if (!scan) return res.status(404).json({ error: 'no such scan' });
   if (!scan.imagePath || !fs.existsSync(scan.imagePath)) {
@@ -472,7 +475,7 @@ router.post('/:id/detect', async (req, res) => {
   }
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', gates.admin, (req, res) => {
   const scan = store.getScan(req.params.id);
   if (!scan) return res.status(404).json({ error: 'no such scan' });
   const snapshot = scan.payload.snapshot;
@@ -497,14 +500,14 @@ router.get('/:id', (req, res) => {
  * infrastructure and keeping a copy the operator believes is gone would be
  * worse than losing it. The UI asks before calling this.
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', gates.admin, (req, res) => {
   const rec = store.deleteScan(req.params.id);
   if (!rec) return res.status(404).json({ error: 'no such scan' });
   res.json({ deleted: rec.id, rackId: rec.rackId });
 });
 
 /** The uploaded photo, for the UI to show beside what was detected. */
-router.get('/:id/image', (req, res) => {
+router.get('/:id/image', gates.admin, (req, res) => {
   const scan = store.getScan(req.params.id);
   if (!scan || !scan.imagePath || !fs.existsSync(scan.imagePath)) {
     return res.status(404).json({ error: 'no image for this scan' });
@@ -527,7 +530,7 @@ const ANNOTATED_VIEWS = {
   ports: '7_rack_all_ports.png',
 };
 
-router.get('/:id/annotated', (req, res) => {
+router.get('/:id/annotated', gates.admin, (req, res) => {
   const dir = path.join(store.SCANS_DIR, `${Number(req.params.id)}-cv`, 'images');
   const wanted = ANNOTATED_VIEWS[req.query.view] || ANNOTATED_VIEWS.both;
   const order = [wanted, ...Object.values(ANNOTATED_VIEWS).filter((f) => f !== wanted)];
@@ -719,7 +722,7 @@ const tail = (s, n = 6) =>
  * are three switches' worth of evidence, and the fourth's error is reported
  * beside them rather than thrown over the top of them.
  */
-router.post('/:id/collect', async (req, res) => {
+router.post('/:id/collect', gates.admin, async (req, res) => {
   const scan = store.getScan(req.params.id);
   if (!scan) return res.status(404).json({ error: 'no such scan' });
 
@@ -775,7 +778,7 @@ router.post('/:id/collect', async (req, res) => {
  * saved matching) so Review can show it. POST takes the human-confirmed
  * matches, merges, and stores the reconciled snapshot that Export then uses.
  */
-router.get('/:id/reconcile', (req, res) => {
+router.get('/:id/reconcile', gates.admin, (req, res) => {
   const scan = store.getScan(req.params.id);
   if (!scan) return res.status(404).json({ error: 'no such scan' });
   const base = scan.payload && scan.payload.snapshot;
@@ -783,7 +786,7 @@ router.get('/:id/reconcile', (req, res) => {
   res.json(reconcile.view(base, scan.rackId, scan.payload.matches || null));
 });
 
-router.post('/:id/reconcile', (req, res) => {
+router.post('/:id/reconcile', gates.admin, (req, res) => {
   const scan = store.getScan(req.params.id);
   if (!scan) return res.status(404).json({ error: 'no such scan' });
   const base = scan.payload && scan.payload.snapshot;

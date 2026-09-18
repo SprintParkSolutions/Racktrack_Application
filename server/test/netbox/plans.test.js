@@ -28,6 +28,17 @@ before(() => {
 
 after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
+/**
+ * The two steps that come before any approve or reject: the admin hands the
+ * item to somebody, and that person reports back. Rule 2 of the frozen
+ * workflow - decide() refuses a decision on an item that has not been round.
+ */
+function handedBack(id, uid, { assignee = 'sam', finding = 'looked, as described' } = {}) {
+  const out = plans.decide(id, [{ uid, decision: 'ticketed', assignee }], { by: 'meera' });
+  if (out.refused.length) throw new Error(`could not assign ${uid}: ${out.refused[0].why}`);
+  plans.resolveTicket(id, uid, { by: assignee, finding });
+}
+
 /** A comparison result shaped exactly as writer.plan() returns one. */
 const report = (overrides = {}) => ({
   rackUid: 'rack:RK-TEST',
@@ -91,6 +102,8 @@ describe('the fingerprint is a signature on one specific list', () => {
 describe('only what an admin approved is written', () => {
   it('withholds everything else, and keeps scaffolding so references resolve', () => {
     const p = plans.create({ scanId: 2, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    handedBack(p.id, 'dev:u12');
+    handedBack(p.id, 'dev:u15');
     plans.decide(p.id, [
       { uid: 'dev:u12', decision: 'approved' },
       { uid: 'dev:u15', decision: 'rejected', note: 'that is not where it is' },
@@ -119,6 +132,7 @@ describe('only what an admin approved is written', () => {
 
   it('records who decided what, and why a rejection happened', () => {
     const p = plans.create({ scanId: 3, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    handedBack(p.id, 'dev:u15');
     plans.decide(p.id, [{ uid: 'dev:u15', decision: 'rejected', note: 'wrong shelf' }],
       { by: 'meera' });
     const item = plans.get(p.id).items.find((i) => i.uid === 'dev:u15');
@@ -162,19 +176,92 @@ describe('a ticket is a detour, not a way out', () => {
       'only the admin approving lets it through');
   });
 
-  it('closes an open ticket when the admin decides directly', () => {
+  it('cannot be overridden while open, and is closed by the decision once resolved', () => {
     const p = plans.create({ scanId: 6, rackId: 'RK-TEST', report: report(), by: 'ravi' });
     plans.decide(p.id, [{ uid: 'dev:u12', decision: 'ticketed', assignee: 'sam' }], { by: 'meera' });
+
+    const early = plans.decide(p.id, [{ uid: 'dev:u12', decision: 'approved' }], { by: 'meera' });
+    assert.deepEqual(early.refused, [{ uid: 'dev:u12', why: 'assign first' }],
+      'an open ticket is not overridden by a direct approve');
+    let item = plans.get(p.id).items.find((i) => i.uid === 'dev:u12');
+    assert.equal(item.ticket.status, 'open', 'the ticket is untouched');
+    assert.equal(item.decision, 'ticketed');
+
+    plans.resolveTicket(p.id, 'dev:u12', { by: 'sam', finding: 'it is there', outcome: 'confirmed' });
     plans.decide(p.id, [{ uid: 'dev:u12', decision: 'approved' }], { by: 'meera' });
+    item = plans.get(p.id).items.find((i) => i.uid === 'dev:u12');
+    assert.equal(item.ticket.status, 'closed', 'the decision closes the resolved ticket');
+    assert.equal(item.ticket.closedWith, 'approved');
+    assert.equal(item.ticket.closedBy, 'meera');
+    assert.equal(item.ticket.finding, 'it is there', 'the finding is kept, not overwritten');
+    assert.equal(item.ticket.resolvedBy, 'sam', 'and so is who resolved it');
+    assert.equal(item.ticket.outcome, 'confirmed');
+  });
+});
+
+describe('the admin assigns before they decide', () => {
+  it('refuses approve and reject on an item nobody has been asked to check', () => {
+    const p = plans.create({ scanId: 60, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    const out = plans.decide(p.id, [
+      { uid: 'dev:u12', decision: 'approved' },
+      { uid: 'dev:u15', decision: 'rejected', note: 'looks wrong from here' },
+    ], { by: 'meera' });
+    assert.equal(out.applied.length, 0, 'nothing was decided from a desk');
+    assert.deepEqual(out.refused, [
+      { uid: 'dev:u12', why: 'assign first' },
+      { uid: 'dev:u15', why: 'assign first' },
+    ]);
+    const items = plans.get(p.id).items;
+    assert.equal(items.find((i) => i.uid === 'dev:u12').decision, 'pending');
+    assert.equal(items.find((i) => i.uid === 'dev:u15').decision, 'pending');
+    assert.equal(plans.isSettled(plans.get(p.id)), false);
+  });
+
+  it('accepts assigning as the first move, and decides once it has come back', () => {
+    const p = plans.create({ scanId: 61, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    const first = plans.decide(p.id, [{ uid: 'dev:u12', decision: 'ticketed', assignee: 'sam' }],
+      { by: 'meera' });
+    assert.deepEqual(first.applied, [{ uid: 'dev:u12', decision: 'ticketed' }]);
+
+    plans.resolveTicket(p.id, 'dev:u12', { by: 'sam', finding: 'yes' });
+    const second = plans.decide(p.id, [{ uid: 'dev:u12', decision: 'rejected', note: 'no' }],
+      { by: 'meera' });
+    assert.deepEqual(second.applied, [{ uid: 'dev:u12', decision: 'rejected' }]);
+    assert.equal(second.refused.length, 0);
+  });
+
+  it('can be assigned again after it has come back', () => {
+    const p = plans.create({ scanId: 62, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    handedBack(p.id, 'dev:u12', { assignee: 'sam' });
+    const again = plans.decide(p.id, [{ uid: 'dev:u12', decision: 'ticketed', assignee: 'priya' }],
+      { by: 'meera' });
+    assert.equal(again.refused.length, 0);
     const item = plans.get(p.id).items.find((i) => i.uid === 'dev:u12');
-    assert.equal(item.ticket.status, 'closed');
-    assert.match(item.ticket.outcome, /approved/);
+    assert.equal(item.ticket.assignee, 'priya');
+    assert.equal(item.ticket.status, 'open', 'a fresh ticket, waiting on the new person');
+  });
+
+  it('keeps the assignee\'s NetBox id and email on the ticket, and on the ports that follow', () => {
+    const p = plans.create({ scanId: 63, rackId: 'RK-TEST', by: 'ravi', report: report({ changes: [
+      { type: 'Device', uid: 'dev:u12', name: 'Sw1', action: 'create' },
+      { type: 'Interface', uid: 'if:dev:u12:1', name: 'Gi1/0/1', action: 'create' },
+    ] }) });
+    plans.decide(p.id, [{ uid: 'dev:u12', decision: 'ticketed', assignee: 'Meera Raghavan',
+                          assigneeId: 7, assigneeEmail: 'meera.raghavan@sprintpark.com' }],
+      { by: 'meera' });
+    const items = Object.fromEntries(plans.get(p.id).items.map((i) => [i.uid, i]));
+    assert.equal(items['dev:u12'].ticket.assigneeId, 7);
+    assert.equal(items['dev:u12'].ticket.assigneeEmail, 'meera.raghavan@sprintpark.com');
+    assert.equal(items['if:dev:u12:1'].ticket.assigneeId, 7, 'the port names the same person');
+    assert.equal(items['if:dev:u12:1'].ticket.assigneeEmail, 'meera.raghavan@sprintpark.com');
   });
 });
 
 describe('a written plan is closed', () => {
   it('records the outcome and refuses further decisions', () => {
     const p = plans.create({ scanId: 7, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    handedBack(p.id, 'dev:u12');
+    handedBack(p.id, 'dev:u15');
     plans.decide(p.id, [
       { uid: 'dev:u12', decision: 'approved' },
       { uid: 'dev:u15', decision: 'approved' },
@@ -189,10 +276,65 @@ describe('a written plan is closed', () => {
     assert.equal(done.status, 'applied');
     assert.equal(done.appliedBy, 'meera');
     assert.equal(done.result.written, 4);
+    assert.equal(done.result.failed, 0);
     assert.ok(done.events.some((e) => e.what === 'written to NetBox'));
+    assert.equal(plans.summarise(done.items, done.result).written, 4);
 
     const out = plans.decide(p.id, [{ uid: 'dev:u12', decision: 'rejected' }], { by: 'meera' });
     assert.match(out.error, /already been written/);
+  });
+});
+
+describe('a write NetBox refused part of', () => {
+  it('is write_failed, not applied: the failures are listed and the plan stays open', () => {
+    const p = plans.create({ scanId: 70, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    handedBack(p.id, 'dev:u12');
+    handedBack(p.id, 'dev:u15');
+    plans.decide(p.id, [
+      { uid: 'dev:u12', decision: 'approved' },
+      { uid: 'dev:u15', decision: 'approved' },
+    ], { by: 'meera' });
+
+    plans.markApplied(p.id, { by: 'meera', result: {
+      counts: { create: 2, fail: 1 },
+      changes: [
+        { type: 'Manufacturer', uid: 'mfr:tp-link', name: 'TP-Link', action: 'create' },
+        { type: 'Device', uid: 'dev:u12', name: 'Sw1', action: 'create' },
+        { type: 'Device', uid: 'dev:u15', name: 'SW2', action: 'fail',
+          reason: 'lookup failed: "position 15 is taken"' },
+      ],
+    } });
+
+    const after = plans.get(p.id);
+    assert.equal(after.status, 'write_failed');
+    assert.equal(after.appliedAt, undefined, 'it was not applied');
+    assert.equal(after.lastWriteBy, 'meera');
+    assert.equal(after.result.written, 2);
+    assert.equal(after.result.failed, 1);
+    assert.deepEqual(after.result.failures, [{ uid: 'dev:u15', type: 'Device', name: 'SW2',
+      reason: 'lookup failed: "position 15 is taken"' }]);
+    assert.ok(after.events.some((e) => e.what === 'write failed'));
+    assert.ok(plans.STATUSES.has('write_failed'));
+
+    const s = plans.summarise(after.items, after.result);
+    assert.equal(s.failed, 1, 'the summary says how many NetBox refused');
+    assert.equal(s.written, 2);
+    assert.equal(plans.list({ scanId: 70 })[0].summary.failed, 1, 'and so does the index row');
+
+    const retry = plans.decide(p.id, [{ uid: 'dev:u15', decision: 'ticketed', assignee: 'sam' }],
+      { by: 'meera' });
+    assert.equal(retry.error, undefined, 'a write_failed plan is still open to the admin');
+  });
+});
+
+describe('a person sees their own plans', () => {
+  it('filters the index by who raised the plan', () => {
+    plans.create({ scanId: 80, rackId: 'RK-MINE', report: report(), by: 'ravi', orgId: 5 });
+    plans.create({ scanId: 81, rackId: 'RK-MINE', report: report(), by: 'priya', orgId: 5 });
+    assert.equal(plans.list({ rackId: 'RK-MINE', orgId: 5, createdBy: 'ravi' }).length, 1);
+    assert.equal(plans.list({ rackId: 'RK-MINE', orgId: 5, createdBy: 'priya' }).length, 1);
+    assert.equal(plans.list({ rackId: 'RK-MINE', orgId: 5, createdBy: 'nobody' }).length, 0);
+    assert.equal(plans.list({ rackId: 'RK-MINE', orgId: 5 }).length, 2, 'no filter, no narrowing');
   });
 });
 

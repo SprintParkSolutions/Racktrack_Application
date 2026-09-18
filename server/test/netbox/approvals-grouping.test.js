@@ -150,6 +150,9 @@ describe('a decision on the device is a decision on its ports', () => {
 
   it('rejecting the device holds its ports back with it', () => {
     const p = plans.create({ scanId: 7, rackId: 'RK-NEW', report: report(), by: 'ravi' });
+    // Somebody has to have looked first: the admin assigns before they decide.
+    plans.decide(p.id, [{ uid: DEV, decision: 'ticketed', assignee: 'sam' }], { by: 'meera' });
+    plans.resolveTicket(p.id, DEV, { by: 'sam', finding: 'nothing at U16' });
     plans.decide(p.id, [{ uid: DEV, decision: 'rejected', note: 'not there' }], { by: 'meera' });
     const after = plans.get(p.id);
     assert.equal(byUid(after)[`if:${DEV}:1`].decision, 'rejected');
@@ -175,7 +178,10 @@ describe('the whole rack in one move', () => {
       { type: 'Device', uid: DEV2, name: 'FW-20', action: 'create' },
       { type: 'Device', uid: 'dev:RK-NEW:u1', name: 'PDU', action: 'noop', netboxId: 9 },
     ]) });
-    // One device was already dealt with by hand; the rack move must leave it.
+    // One device was already dealt with by hand (assigned, come back, and
+    // rejected); the rack move must leave it.
+    plans.decide(p.id, [{ uid: DEV2, decision: 'ticketed', assignee: 'sam' }], { by: 'meera' });
+    plans.resolveTicket(p.id, DEV2, { by: 'sam', finding: 'that is rack 2' });
     plans.decide(p.id, [{ uid: DEV2, decision: 'rejected', note: 'wrong rack' }], { by: 'meera' });
 
     const decisions = wholeRack(plans.get(p.id), 'sam', 'please check the whole rack');

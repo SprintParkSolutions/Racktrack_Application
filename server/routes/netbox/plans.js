@@ -1,11 +1,14 @@
 /**
  * The push workflow: compare, identify, pass to the admin.
  *
- * Everything a rack scan would change goes to one person, who approves it,
- * rejects it, or sends it to somebody to go and look. A resolved ticket comes
- * back here rather than writing anything itself, so however many people are
- * involved there is one name against every change that reaches the customer's
- * record.
+ * Everything a rack scan would change goes to one person, who assigns it to
+ * whoever looks after the rack, and only once that person has looked and
+ * reported back approves it or rejects it. A resolved ticket comes back here
+ * rather than writing anything itself, so however many people are involved
+ * there is one name against every change that reaches the customer's record.
+ *
+ * The rules are frozen in docs/design/drift-approval-workflow.md and held
+ * here and in lib/netbox/plans.js, not in a screen.
  *
  * The write itself lives in netbox.js, gated on a plan from here.
  */
@@ -20,6 +23,8 @@ const store = require('../../lib/netbox/store');
 const tickets = require('../../lib/netbox/tickets');
 const { NetBox } = require('../../lib/netbox/netbox');
 const { sendNotice } = require('../../auth');
+const gates = require('./gates');
+const trail = require('./trail');
 
 const router = express.Router();
 
@@ -68,11 +73,16 @@ function serviceNowFor(req) {
 
 const who = (req) => (req.user && (req.user.username || req.user.email)) || null;
 const orgOf = (req) => req.user?.organization_id ?? null;
-// A plan the caller's organisation does not own is, to them, 404 — the same
+const isAdmin = gates.isAdmin;
+// A plan the caller's organisation does not own is, to them, 404 - the same
 // answer they get for a plan that does not exist. No cross-org leak, no owner
-// bypass.
-const mine = (req, plan) => plan && plans.canSee(plan.orgId ?? null, orgOf(req));
-const isAdmin = (req) => ['owner', 'org_admin', 'site_manager'].includes(req.user?.role);
+// bypass. A technician sees only the plans they raised themselves; an admin
+// sees every plan in the organisation.
+const mine = (req, plan) => plan && plans.canSee(plan.orgId ?? null, orgOf(req))
+  && (isAdmin(req) || plan.createdBy === who(req));
+
+/** A plan with the counts a screen shows, the write result included. */
+const summaryOf = (plan) => plans.summarise(plan.items, plan.result);
 
 /**
  * Everything in one place.
@@ -80,17 +90,23 @@ const isAdmin = (req) => ['owner', 'org_admin', 'site_manager'].includes(req.use
  * `?status=submitted` is the admin's inbox: comparisons a technician has
  * handed over and nobody has acted on. Without it an admin would have to know
  * a scan happened and go looking for it.
+ *
+ * `?mine=1` narrows the list to the plans the caller raised. For a technician
+ * the filter is always on: they see their own comparisons and nobody else's.
  */
-router.get('/', (req, res) => {
+router.get('/', gates.technician, (req, res) => {
+  const onlyMine = req.query.mine === '1' || req.query.mine === 'true' || !isAdmin(req);
   res.json({
     plans: plans.list({
       scanId: req.query.scanId ?? null,
       rackId: req.query.rackId ?? null,
       status: req.query.status ?? null,
       orgId: orgOf(req),
+      createdBy: onlyMine ? who(req) : null,
       limit: Math.min(Number(req.query.limit) || 50, 200),
     }),
     youAre: req.user?.role || null,
+    mine: onlyMine,
   });
 });
 
@@ -100,18 +116,23 @@ router.get('/', (req, res) => {
  * They cannot write to NetBox and this does not try to. It marks the plan as
  * waiting on an admin and carries their note across.
  */
-router.post('/:planId/submit', (req, res) => {
+router.post('/:planId/submit', gates.technician, (req, res) => {
   if (!mine(req, plans.get(req.params.planId))) return res.status(404).json({ error: 'no such plan' });
   const out = plans.submit(req.params.planId, {
     by: who(req), note: (req.body || {}).note,
   });
   if (out.error) return res.status(out.error === 'no such plan' ? 404 : 409).json(out);
+  if (!out.already) {
+    trail.record(req, out.plan, 'drift.submit', {
+      payload: { note: out.plan.submittedNote, ...summaryOf(out.plan) },
+    });
+  }
   res.json({
     planId: out.plan.id,
     status: out.plan.status,
     already: Boolean(out.already),
     submittedBy: out.plan.submittedBy,
-    summary: plans.summarise(out.plan.items),
+    summary: summaryOf(out.plan),
   });
 });
 
@@ -119,9 +140,9 @@ router.post('/:planId/submit', (req, res) => {
  * Who this rack's ticket should go to.
  *
  * Read from NetBox at the moment it is asked for, so the SPOC is whoever the
- * customer's own record currently says it is — not a copy of it that drifts.
+ * customer's own record currently says it is - not a copy of it that drifts.
  */
-router.get('/:planId/contacts', async (req, res) => {
+router.get('/:planId/contacts', gates.technician, async (req, res) => {
   const plan = plans.get(req.params.planId);
   if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
   const client = netboxFor(req);
@@ -146,10 +167,10 @@ router.get('/:planId/contacts', async (req, res) => {
  *
  * ServiceNow owns whether an incident is open or closed, so opening a plan
  * asks it rather than trusting what we last wrote down. An incident somebody
- * resolved over there returns its item here as UNDECIDED — having looked is
+ * resolved over there returns its item here as UNDECIDED - having looked is
  * not the same as having approved.
  */
-router.get('/:planId', async (req, res) => {
+router.get('/:planId', gates.technician, async (req, res) => {
   let plan = plans.get(req.params.planId);
   if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
 
@@ -170,7 +191,7 @@ router.get('/:planId', async (req, res) => {
   res.json({
     ...plan,
     settled: plans.isSettled(plan),
-    summary: plans.summarise(plan.items),
+    summary: summaryOf(plan),
     heardBack,
     serviceNowConfigured: Boolean(sn),
   });
@@ -181,10 +202,10 @@ router.get('/:planId', async (req, res) => {
  *
  * The Incidents view reads this: one row per ticket, with its ServiceNow
  * number and link, who it went to, its state, and what the rack it came from
- * is — so an admin sees the whole picture in one place, before and after each
- * one is resolved.
+ * is - so an admin sees the whole picture in one place, before and after each
+ * one is resolved. Admin only: a technician has no tickets to track.
  */
-router.get('/tickets/all', (req, res) => {
+router.get('/tickets/all', gates.admin, (req, res) => {
   const status = req.query.status || null;
   const rows = [];
   for (const idx of plans.list({ orgId: orgOf(req), limit: 200 })) {
@@ -204,6 +225,8 @@ router.get('/tickets/all', (req, res) => {
         name: it.name,
         action: it.action,
         assignee: it.ticket.assignee,
+        assigneeId: it.ticket.assigneeId ?? null,
+        assigneeEmail: it.ticket.assigneeEmail ?? null,
         status: it.ticket.status,               // open | resolved | closed
         question: it.ticket.question,
         finding: it.ticket.finding,
@@ -222,7 +245,7 @@ router.get('/tickets/all', (req, res) => {
 });
 
 /** Just the tickets, for whoever has to work them. */
-router.get('/:planId/tickets', (req, res) => {
+router.get('/:planId/tickets', gates.admin, (req, res) => {
   const plan = plans.get(req.params.planId);
   if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
   const rows = plan.items
@@ -243,20 +266,6 @@ function itemLine(plan, item) {
   const ports = plans.childrenOf(plan, item.uid).length;
   return `${item.type} "${item.name}" - ${whatDiffers(item)}`
     + (ports ? ` (${ports} port${ports === 1 ? '' : 's'} follow it)` : '');
-}
-
-/**
- * The one item a whole-rack incident is about: the rack itself, with the
- * things that differ listed in its description. Shaped as a plan item so
- * tickets.raise() takes it as it is - its uid gives the correlation id
- * racktrack:<rackId>:rack, its name gives the short description.
- */
-function rackItem(plan, targets, rackName) {
-  return {
-    uid: 'rack', type: 'Rack', action: 'check',
-    name: `${rackName} - ${targets.length} item${targets.length === 1 ? '' : 's'}`,
-    reason: `\n${targets.map((i) => `  ${itemLine(plan, i)}`).join('\n')}`,
-  };
 }
 
 /** tickets.raise()'s answer as the external record kept on the ticket. */
@@ -322,25 +331,97 @@ function notifyAssignee(plan, { person, items, incidents, rackName, siteName, by
 }
 
 /**
+ * Everyone NetBox knows for this rack, once, with the SPOC first.
+ *
+ * The rack is recognised by its real name (rack_match), so the SPOC, the
+ * incident and the email all name the customer's rack, not the photo hash.
+ * The roster is de-duplicated on the contact id: the SPOC is in the
+ * assignment list and in the contact list, and is one person.
+ */
+async function rosterFor(req, plan) {
+  const scan = plan.scanId ? store.getScan(plan.scanId) : null;
+  const fallbackName = (scan && (scan.rackName || scan.rackId)) || plan.rackId;
+  const client = netboxFor(req);
+  const resolved = await rackMatch.resolveRack(client, {
+    tenantId: plan.tenantId ?? null, rackId: plan.rackId,
+    scanName: scan && scan.rackName, fallbackName,
+  });
+  const rackName = resolved.name;
+  let people = null;
+  let all = [];
+  if (client) {
+    try { people = await spoc.forRack(client, rackName); } catch { people = null; }
+    try { all = await spoc.everyone(client); } catch { all = []; }
+  }
+  const seen = new Set();
+  const roster = [people && people.spoc, ...((people && people.others) || []), ...all]
+    .filter(Boolean)
+    .filter((p) => {
+      const key = p.netboxId != null ? `id:${p.netboxId}` : `name:${p.name}|${p.email || ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  return {
+    client, rackName, roster,
+    spoc: (people && people.spoc) || null,
+    siteName: people?.site?.name || null,
+  };
+}
+
+/**
+ * The one contact the admin meant.
+ *
+ * By NetBox contact id when the screen sent one, otherwise by the exact name
+ * picked from the roster. No match, or two contacts with that name, is a
+ * refusal: a ticket assigned to the wrong person is worse than no ticket.
+ */
+function contactFor(roster, d) {
+  if (d.assigneeId != null && d.assigneeId !== '') {
+    const byId = roster.filter((p) => String(p.netboxId) === String(d.assigneeId));
+    if (byId.length === 1) return { person: byId[0] };
+    return { error: byId.length
+      ? `more than one NetBox contact has id ${d.assigneeId}`
+      : `no NetBox contact has id ${d.assigneeId}` };
+  }
+  const name = String(d.assignee || '').trim();
+  const byName = roster.filter((p) => p.name === name);
+  if (byName.length === 1) return { person: byName[0] };
+  if (byName.length > 1) {
+    return { error: `more than one NetBox contact is named "${name}"; choose by contact id` };
+  }
+  return { error: `no NetBox contact is named "${name}"` };
+}
+
+/**
  * The admin decides. Three ways per item, and nothing is all-or-nothing.
  *
  *   { decisions: [ { uid, decision: 'approved'|'rejected'|'ticketed',
- *                    note, assignee } ] }
+ *                    note, assignee, assigneeId } ] }
+ *
+ * The first move on any item is to assign it (ticketed). Approve and reject
+ * are refused by plans.decide() until the assignee has resolved the ticket
+ * with a finding - the refusal comes back as { uid, why: 'assign first' }.
  *
  * A device's interfaces follow it (plans.toItem), so a decision names the
  * device and ONE ServiceNow incident is raised per device, not per port.
  *
  * The whole rack at once: { decisions: [ { uid: '*', decision: 'ticketed',
- * assignee, note } ] } or { scope: 'rack', assignee, note } assigns every
- * item still waiting to that person and raises ONE incident for the rack.
+ * assignee, note } ] } assigns every item still waiting to that person. It
+ * expands to one decision per item, so each item gets its own incident and
+ * its own ticket, exactly as if the admin had assigned them one by one; the
+ * assignee gets one email listing them all. The answer's raised[] then leads
+ * with one entry for the rack:
+ *
+ *   { scope: 'rack', uid: '*', items: [uid, ...], count, ticket: { system,
+ *     raised, failed, incidents: [{ uid, number, url, error }] },
+ *     number, error }
+ *
+ * followed by the per-item entries { uid, ports, ...external } as before.
  * Only assigning works rack-wide; approve and reject stay per device.
  */
-router.post('/:planId/decide', async (req, res) => {
-  if (!isAdmin(req)) {
-    return res.status(403).json({
-      error: 'Only an admin decides what gets written. Ask yours to review this plan.',
-    });
-  }
+router.post('/:planId/decide', gates.only(gates.ADMINS,
+  'Only an admin decides what gets written. Ask yours to review this plan.'), async (req, res) => {
   let plan = plans.get(req.params.planId);
   if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
   const body = req.body || {};
@@ -363,15 +444,16 @@ router.post('/:planId/decide', async (req, res) => {
     });
   }
   const rackAsk = star || (body.scope === 'rack'
-    ? { decision: 'ticketed', assignee: body.assignee, note: body.note } : null);
+    ? { decision: 'ticketed', assignee: body.assignee, assigneeId: body.assigneeId, note: body.note } : null);
   const wholeRack = Boolean(rackAsk);
+  let rackUids = [];
   if (wholeRack) {
     if (rackAsk.decision !== 'ticketed') {
       return res.status(400).json({
         error: 'The whole rack can only be assigned to somebody. Approve or reject each device on its own.',
       });
     }
-    if (!rackAsk.assignee) {
+    if (!rackAsk.assignee && rackAsk.assigneeId == null) {
       return res.status(400).json({ error: 'a ticket has to be assigned to somebody' });
     }
     // A rebind only re-labels a record NetBox already has, so there is nothing
@@ -381,67 +463,78 @@ router.post('/:planId/decide', async (req, res) => {
     if (!waiting.length) {
       return res.status(409).json({ error: 'nothing on this plan is waiting to be assigned' });
     }
+    rackUids = waiting.map((i) => i.uid);
     decisions = waiting.map((i) => ({
-      uid: i.uid, decision: 'ticketed', assignee: rackAsk.assignee, note: rackAsk.note,
+      uid: i.uid, decision: 'ticketed', assignee: rackAsk.assignee,
+      assigneeId: rackAsk.assigneeId, note: rackAsk.note,
     }));
   }
   if (!decisions.length) {
     return res.status(400).json({ error: 'send { decisions: [ { uid, decision } ] }' });
   }
   const by = who(req);
+
+  // Who each ticket goes to, settled BEFORE anything is written on the plan.
+  // The name the admin picked is resolved to one NetBox contact - its id and
+  // its email travel with the decision onto the ticket - and a name that
+  // matches nobody, or two people, refuses the whole request with nothing
+  // changed. The roster is read once for all of them.
+  const assigning = decisions.filter((d) => d && d.decision === 'ticketed'
+    && (d.assignee || d.assigneeId != null));
+  let people = null;
+  if (assigning.length) {
+    people = await rosterFor(req, plan);
+    if (!people.client) {
+      return res.status(400).json({
+        error: 'No NetBox is configured for this account, so nobody can be looked up to assign to.',
+      });
+    }
+    for (const d of assigning) {
+      const found = contactFor(people.roster, d);
+      if (found.error) return res.status(400).json({ error: found.error, uid: d.uid });
+      d.assignee = found.person.name;
+      d.assigneeId = found.person.netboxId ?? null;
+      d.assigneeEmail = found.person.email ?? null;
+    }
+  }
+
   const out = plans.decide(req.params.planId, decisions, { by });
   if (out.error) return res.status(out.error === 'no such plan' ? 404 : 409).json(out);
+  plan = plans.get(req.params.planId);
+
+  // The trail: one row per approve or reject that went through.
+  for (const d of out.applied) {
+    if (d.decision === 'ticketed') continue;
+    const sent = decisions.find((x) => x && x.uid === d.uid) || {};
+    trail.record(req, plan, 'drift.decide', {
+      payload: { uid: d.uid, decision: d.decision, note: sent.note || null },
+    });
+  }
 
   // Mirror every new ticket into ServiceNow, if one is configured. The row
-  // here is the record either way — a failure to reach ServiceNow leaves the
+  // here is the record either way - a failure to reach ServiceNow leaves the
   // ticket in place with no external number, and says so.
   const sn = serviceNowFor(req);
   const raised = [];
   const ticketed = out.applied.filter((d) => d.decision === 'ticketed');
-  plan = plans.get(req.params.planId);
   if (ticketed.length) {
-    const scan = plan.scanId ? store.getScan(plan.scanId) : null;
-    const fallbackName = (scan && (scan.rackName || scan.rackId)) || plan.rackId;
-    let people = null;
-    let roster = [];
-    const client = netboxFor(req);
-    // Recognise the rack: use the customer's real rack name, not the scan hash,
-    // so the SPOC, the incident and the email all name the right rack.
-    const resolved = await rackMatch.resolveRack(client, {
-      tenantId: plan.tenantId ?? null, rackId: plan.rackId,
-      scanName: scan && scan.rackName, fallbackName,
-    });
-    const rackName = resolved.name;
-    if (client) {
-      try { people = await spoc.forRack(client, rackName); } catch { people = null; }
-      // Everyone NetBox knows, so an assignee the admin picked by hand — not the
-      // SPOC — still resolves to a real contact with an email to write to.
-      let all = [];
-      try { all = await spoc.everyone(client); } catch { all = []; }
-      roster = [people && people.spoc, ...((people && people.others) || []), ...all].filter(Boolean);
-    }
-    const spocPerson = (people && people.spoc) || null;
-    const siteName = people?.site?.name || null;
-
-    // Who it actually goes to. NetBox names the single point of contact and
-    // that is the default the admin was shown; but the admin may assign to
-    // someone else, and when NetBox names no SPOC at all the admin has picked
-    // the person by hand. The chosen name is already on the ticket - resolve
-    // it to a full contact so the incident and the email reach that person,
-    // not whoever NetBox happens to call the SPOC.
-    const personFor = (item) => {
-      const chosen = item.ticket.assignee || (spocPerson && spocPerson.name) || null;
-      const person = (chosen && roster.find((p) => p.name === chosen)) || spocPerson || null;
-      item.ticket.spoc = spocPerson;
-      if (person && !item.ticket.assignee) item.ticket.assignee = person.name;
-      return person;
-    };
+    const { rackName, siteName, spoc: spocPerson, roster } = people;
 
     // The top-level items just assigned. decide() only accepts a device (or
     // another top-level item), so the ports are reached through childrenOf.
     const targets = ticketed
       .map((d) => plan.items.find((i) => i.uid === d.uid))
       .filter((i) => i && i.ticket);
+
+    // The contact the ticket was resolved to, by id, so the incident and the
+    // email reach the person actually assigned, not whoever NetBox happens
+    // to call the SPOC. The SPOC is kept on the ticket for the record.
+    const personFor = (item) => {
+      item.ticket.spoc = spocPerson;
+      return roster.find((p) => String(p.netboxId) === String(item.ticket.assigneeId))
+        || roster.find((p) => p.name === item.ticket.assignee)
+        || null;
+    };
 
     // One email per person, whatever they were handed: person name -> notice.
     const notices = new Map();
@@ -459,35 +552,46 @@ router.post('/:planId/decide', async (req, res) => {
       notices.set(person.name, n);
     };
 
-    if (wholeRack) {
-      // One incident for the rack, its external record on every item and port.
-      for (const item of targets) item.ticket.scope = 'rack';
-      const person = targets.length ? personFor(targets[0]) : null;
-      for (const item of targets.slice(1)) personFor(item);
+    // One incident per device; its ports carry the same external record.
+    const perItem = [];
+    for (const item of targets) {
+      const person = personFor(item);
+      if (wholeRack) item.ticket.scope = 'rack';
       const external = sn
         ? externalOf(await tickets.raise(sn, {
-          item: rackItem(plan, targets, rackName), rackId: plan.rackId, rackName, siteName,
-          spoc: person, question: rackAsk.note || null, planId: plan.id,
+          item, rackId: plan.rackId, rackName, siteName,
+          spoc: person, question: item.ticket.question, planId: plan.id,
         }))
         : NO_SERVICENOW;
-      for (const item of targets) stampExternal(plan, item, external);
-      raised.push({ uid: 'rack', scope: 'rack', items: targets.length, ...external });
-      for (const item of targets) noteFor(person, item, external);
-    } else {
-      // One incident per device; its ports carry the same external record.
-      for (const item of targets) {
-        const person = personFor(item);
-        const external = sn
-          ? externalOf(await tickets.raise(sn, {
-            item, rackId: plan.rackId, rackName, siteName,
-            spoc: person, question: item.ticket.question, planId: plan.id,
-          }))
-          : NO_SERVICENOW;
-        stampExternal(plan, item, external);
-        raised.push({ uid: item.uid, ports: plans.childrenOf(plan, item.uid).length, ...external });
-        noteFor(person, item, external);
-      }
+      stampExternal(plan, item, external);
+      perItem.push({ uid: item.uid, ports: plans.childrenOf(plan, item.uid).length, ...external });
+      noteFor(person, item, external);
+      trail.record(req, plan, 'drift.assign', {
+        payload: {
+          uid: item.uid, assignee: item.ticket.assignee,
+          assigneeId: item.ticket.assigneeId ?? null, incident: external.number || null,
+        },
+      });
     }
+
+    if (wholeRack) {
+      // The rack entry first: what was handed over as one move, and how the
+      // incidents behind it went. `number` joins them so a screen that shows
+      // one number still shows something true; `error` is the first failure.
+      const incidents = perItem.map((r) => ({
+        uid: r.uid, number: r.number || null, url: r.url || null, error: r.error || null,
+      }));
+      const numbers = incidents.map((i) => i.number).filter(Boolean);
+      const failed = incidents.filter((i) => i.error);
+      raised.push({
+        scope: 'rack', uid: '*', items: rackUids, count: rackUids.length,
+        ticket: { system: sn ? 'servicenow' : 'none', raised: numbers.length,
+                  failed: failed.length, incidents },
+        number: numbers.length ? numbers.join(', ') : null,
+        error: failed.length ? failed[0].error : null,
+      });
+    }
+    raised.push(...perItem);
 
     for (const n of notices.values()) {
       notifyAssignee(plan, {
@@ -507,10 +611,28 @@ router.post('/:planId/decide', async (req, res) => {
     raised,
     wholeRack,
     serviceNowConfigured: Boolean(sn),
-    summary: plans.summarise(plan.items),
+    summary: summaryOf(plan),
     settled: plans.isSettled(plan),
   });
 });
+
+/**
+ * Is the caller the person this ticket was assigned to?
+ *
+ * Matched three ways, because the assignee is a NetBox contact and the caller
+ * is a RackTrack user: by the name the admin picked, by the contact's email
+ * against the caller's, or by the contact id when the caller carries one.
+ */
+function isAssignee(req, ticket) {
+  const u = req.user || {};
+  const theirs = [ticket.assignee, ticket.assigneeEmail,
+    ticket.assigneeId != null ? String(ticket.assigneeId) : null]
+    .filter(Boolean).map((v) => String(v).toLowerCase());
+  const ours = [u.username, u.email, u.netbox_contact_id != null ? String(u.netbox_contact_id) : null,
+    req.query.assigneeId != null ? String(req.query.assigneeId) : null]
+    .filter(Boolean).map((v) => String(v).toLowerCase());
+  return ours.some((v) => theirs.includes(v));
+}
 
 /**
  * Whoever the ticket went to has been and looked.
@@ -518,7 +640,7 @@ router.post('/:planId/decide', async (req, res) => {
  * Their answer returns the item to the admin as undecided. A finished ticket
  * is not an approval, and this route deliberately cannot approve anything.
  */
-router.post('/:planId/tickets/:uid/resolve', (req, res) => {
+router.post('/:planId/tickets/:uid/resolve', gates.admin, (req, res) => {
   const { finding, outcome } = req.body || {};
   const plan = plans.get(req.params.planId);
   if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
@@ -530,9 +652,12 @@ router.post('/:planId/tickets/:uid/resolve', (req, res) => {
     return res.status(409).json({ error: 'this port follows its device; resolve the device ticket instead' });
   }
 
-  // The person it was assigned to can resolve it; so can an admin.
+  // The person it was assigned to can resolve it; so can an org admin or the
+  // owner. A site manager who is not the assignee cannot close somebody
+  // else's ticket.
   const me = who(req);
-  if (item.ticket.assignee !== me && !isAdmin(req)) {
+  const orgAdmin = ['owner', 'org_admin'].includes(req.user?.role);
+  if (!isAssignee(req, item.ticket) && !orgAdmin) {
     return res.status(403).json({
       error: `this ticket is assigned to ${item.ticket.assignee}`,
     });
@@ -541,6 +666,10 @@ router.post('/:planId/tickets/:uid/resolve', (req, res) => {
   const out = plans.resolveTicket(req.params.planId, req.params.uid,
                                   { by: me, finding, outcome });
   if (out.error) return res.status(409).json(out);
+  trail.record(req, out.plan, 'drift.resolve', {
+    payload: { uid: out.item.uid, outcome: out.item.ticket.outcome,
+               finding: out.item.ticket.finding, assignee: out.item.ticket.assignee },
+  });
   res.json({
     planId: out.plan.id,
     uid: out.item.uid,

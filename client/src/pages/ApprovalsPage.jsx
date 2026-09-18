@@ -15,7 +15,10 @@ import styles from './ApprovalsPage.module.css';
  * The admin assigns before they decide (docs/design/drift-approval-workflow.md).
  * A pending row has one action - hand it to whoever looks after the rack, or
  * hand the whole rack over in one move. Approve and Reject appear only once
- * that person has resolved the ticket and the finding is back.
+ * that person has resolved the ticket and the finding is back. The server
+ * enforces the same order: it refuses approve or reject on an item whose
+ * ticket is not resolved, per item ({ uid, why: 'assign first' }), and that
+ * answer is shown beside the item it is about.
  *
  * Two things on this screen are load-bearing and easy to miss.
  *
@@ -26,6 +29,9 @@ import styles from './ApprovalsPage.module.css';
  *
  *   A resolved ticket is NOT an approval. It comes back to this screen as
  *   undecided, carrying what the person found, and the admin decides again.
+ *
+ * A write that only partly went in leaves the plan in 'write_failed', with
+ * what was and was not written. The same export, called again, is the retry.
  */
 
 const ACTION_WORD = {
@@ -41,6 +47,17 @@ const DECISION_LABEL = {
   ticketed: 'With somebody',
 };
 
+const PLAN_WORD = {
+  applied: 'Written to NetBox',
+  write_failed: 'Write failed',
+};
+
+/** The server's reasons for refusing a decision, in plain words. */
+const REFUSED_WORD = {
+  'assign first': 'Assign it to somebody first. Approve and reject open once their ticket is resolved.',
+};
+const refusedWords = (why) => REFUSED_WORD[why] || (why ? `Not accepted: ${why}` : 'Not accepted.');
+
 /** "position 14 → 15", in words rather than JSON. */
 function diffLines(diff) {
   if (!diff) return [];
@@ -52,6 +69,27 @@ function diffLines(diff) {
 }
 
 const show = (v) => (v === null || v === undefined || v === '' ? ' - ' : String(v));
+const asList = (v) => (Array.isArray(v) ? v : []);
+const asCount = (v) => (Array.isArray(v) ? v.length : Number(v) || 0);
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** What the write could not do, one line per object, named as the plan names it. */
+function failedLines(result, items) {
+  // The server names each failure in result.failures; result.failed may be a count.
+  const source = Array.isArray(result?.failures) && result.failures.length ? result.failures : result?.failed;
+  return asList(source).map((f, i) => {
+    const entry = f && typeof f === 'object' ? f : { uid: String(f) };
+    const it = items.find((x) => x.uid === entry.uid) || {};
+    const type = entry.type || it.type || '';
+    const name = entry.name || it.name || entry.uid || `object ${i + 1}`;
+    const why = entry.error || entry.why || entry.reason || '';
+    return {
+      key: entry.uid || `${name}-${i}`,
+      what: [type, name].filter(Boolean).join(' '),
+      why: typeof why === 'string' ? why : JSON.stringify(why),
+    };
+  });
+}
 
 export default function ApprovalsPage() {
   const { rackId } = useParams();
@@ -69,6 +107,8 @@ export default function ApprovalsPage() {
   const [question, setQuestion] = useState('');
   const [assignee, setAssignee] = useState('');
   const [openPorts, setOpenPorts] = useState(() => new Set());
+  // What the server would not accept on the last decide call, by item uid.
+  const [refused, setRefused] = useState({});
 
   const items = plan?.items || [];
   const decidable = useMemo(() => items.filter((i) => i.decidable), [items]);
@@ -76,11 +116,13 @@ export default function ApprovalsPage() {
     () => items.filter((i) => i.supporting && ['create', 'update', 'rebind'].includes(i.action)),
     [items],
   );
-  // A device's ports, by the device uid. They follow the device's decision.
+  // A device's ports, by the device uid. A port that names a parent and is
+  // not a decision of its own follows that device. With no parentUid from
+  // the server the map stays empty and nothing is shown.
   const portsOf = useMemo(() => {
     const m = new Map();
     for (const i of items) {
-      if (!i.following || !i.parentUid) continue;
+      if (!i.parentUid || i.decidable) continue;
       if (!m.has(i.parentUid)) m.set(i.parentUid, []);
       m.get(i.parentUid).push(i);
     }
@@ -88,6 +130,14 @@ export default function ApprovalsPage() {
   }, [items]);
   const pending = decidable.filter((i) => i.decision === 'pending');
   const settled = pending.length === 0;
+  // Once the write has run nothing is decided again: applied is done, and a
+  // failed write is retried, not re-decided.
+  const deciding = !!plan && plan.status !== 'applied' && plan.status !== 'write_failed';
+  const writeFailed = plan?.status === 'write_failed';
+  const failed = writeFailed ? failedLines(plan.result, items) : [];
+  const writtenCount = writeFailed ? asCount(plan.result?.written) : 0;
+  const failedCount = writeFailed
+    ? (asCount(plan.result?.failed) || Number(plan.result?.counts?.fail) || 0) : 0;
 
   const togglePorts = (uid) => setOpenPorts((s) => {
     const n = new Set(s);
@@ -99,6 +149,7 @@ export default function ApprovalsPage() {
   const load = useCallback(async () => {
     setBusy('Comparing against NetBox');
     setError('');
+    setRefused({});
     try {
       const a = await authFetch(apiUrl(`/api/nb/scans/adopt/${encodeURIComponent(rackId)}`),
         { method: 'POST' });
@@ -140,7 +191,11 @@ export default function ApprovalsPage() {
       });
       const out = await r.json();
       if (!r.ok) throw new Error(out.error || 'That did not go through');
-      if (out.refused?.length) setError(out.refused[0].why);
+      // Per item, beside the item it is about. A later call that is
+      // accepted clears it.
+      const map = {};
+      for (const x of out.refused || []) if (x && x.uid) map[x.uid] = x.why || '';
+      setRefused(map);
       await refresh(plan.id);
     } catch (e) {
       setError(e.message || String(e));
@@ -152,6 +207,7 @@ export default function ApprovalsPage() {
     }
   }
 
+  /** The write, and the retry: the same call on a plan whose write failed. */
   async function write() {
     setBusy('Checking NetBox has not moved');
     setError('');
@@ -165,7 +221,8 @@ export default function ApprovalsPage() {
       const out = await r.json();
       if (r.status === 409 && out.newPlanId) { setDrift(out); return; }
       if (!r.ok) throw new Error(out.error || 'The write did not go through');
-      setWritten(out);
+      // Part of it did not go in: the plan says which, once refreshed.
+      setWritten(out.status === 'write_failed' ? null : out);
       await refresh(plan.id);
     } catch (e) {
       setError(e.message || String(e));
@@ -191,6 +248,8 @@ export default function ApprovalsPage() {
       .filter((p) => (seen.has(p.name) ? false : seen.add(p.name)));
   }, [people, spoc]);
 
+  const counts = written ? (written.result?.counts || written.counts || {}) : {};
+
   return (
     <div className={styles.page}>
       <header className={styles.head}>
@@ -212,25 +271,59 @@ export default function ApprovalsPage() {
 
       {plan && (
         <div className={styles.summary}>
+          {PLAN_WORD[plan.status] && (
+            <span className={writeFailed ? styles.pillBad : styles.pillOk} data-testid="plan-state">
+              {PLAN_WORD[plan.status]}
+            </span>
+          )}
           <span className={pending.length ? styles.pillWait : styles.pillOk}>
             {pending.length} waiting on you
           </span>
           <span className={styles.pill}>{plan.summary?.approved ?? 0} approved</span>
           <span className={styles.pill}>{plan.summary?.ticketed ?? 0} with somebody</span>
           <span className={styles.pill}>{plan.summary?.rejected ?? 0} rejected</span>
+          {plan.summary?.following > 0 && (
+            <span className={styles.pillQuiet}>{plan.summary.following} ports follow their devices</span>
+          )}
           <span className={styles.pillQuiet}>{supporting.length} applied automatically</span>
         </div>
       )}
 
-      {plan && pending.length > 1 && plan.status !== 'applied' && (
+      {writeFailed && (
+        // The write ran and only part of it went in. Say what did not, in
+        // the plan's own words for each object, and offer the same write again.
+        <div className={styles.failed} role="alert" data-testid="write-failed">
+          <h2>The write to NetBox did not finish</h2>
+          <p>
+            {plural(writtenCount, 'object')} written, {plural(failedCount, 'object')} not written.
+            {' '}Nothing was deleted. Fix the cause, then try the write again; it is the same write.
+          </p>
+          {failed.length > 0 && (
+            <ul className={styles.failedList}>
+              {failed.map((l) => (
+                <li key={l.key}>
+                  <span className={styles.failedWhat}>{l.what}</span>
+                  {l.why && <span className={styles.failedWhy}>{l.why}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+          <button type="button" className={styles.primary} disabled={!!busy} onClick={write}>
+            Try the write again
+          </button>
+        </div>
+      )}
+
+      {deciding && pending.length > 1 && (
         <div className={styles.rackAsk}>
           <button type="button" className={styles.rackAskBtn} disabled={!!busy}
                   onClick={() => openTicketDialog(WHOLE_RACK)}>
-            Ask about the whole rack
+            Assign the whole rack
           </button>
           <p className={styles.rackAskNote}>
             Hands all {pending.length} waiting items to one person, as one ticket.
           </p>
+          {refused['*'] && <p className={styles.refused} role="alert">{refusedWords(refused['*'])}</p>}
         </div>
       )}
 
@@ -273,7 +366,7 @@ export default function ApprovalsPage() {
         <div className={styles.done}>
           <h2>Written to NetBox</h2>
           <p>
-            {written.counts?.create || 0} added, {written.counts?.update || 0} changed,
+            {counts.create || 0} added, {counts.update || 0} changed,
             {' '}{written.withheld || 0} held back. Nothing was deleted.
           </p>
           <button type="button" className={styles.linkBtn} onClick={() => navigate(`/results/${rackId}/report`)}>
@@ -287,10 +380,16 @@ export default function ApprovalsPage() {
           const lines = diffLines(item.diff);
           const ext = item.ticket?.external;
           const ports = portsOf.get(item.uid) || [];
-          const cameBack = item.ticket && item.ticket.status === 'resolved';
-          const canAct = plan.status !== 'applied' && item.decision === 'pending';
+          // The count from the port rows, or the device's own count when the
+          // server gives one and the rows are not in the plan.
+          const follow = ports.length || (typeof item.following === 'number' ? item.following : 0);
+          // Approve and Reject open only once the ticket is resolved. Until
+          // then the one move is to assign, or assign again.
+          const resolved = item.ticket?.status === 'resolved';
+          const canAct = deciding && item.decision === 'pending';
+          const why = refused[item.uid];
           return (
-            <li key={item.uid} className={`${styles.item} ${styles[item.decision] || ''}`}>
+            <li key={item.uid} className={`${styles.item} ${styles[item.decision] || ''}`} data-testid={`item-${item.uid}`}>
               <div className={styles.itemTop}>
                 <span className={styles.type}>{item.type}</span>
                 <strong className={styles.name}>{item.name}</strong>
@@ -298,14 +397,18 @@ export default function ApprovalsPage() {
                 <span className={styles.state}>{DECISION_LABEL[item.decision] || item.decision}</span>
               </div>
 
-              {ports.length > 0 && (
+              {follow > 0 && (
                 <div className={styles.follow}>
-                  <button type="button" className={styles.followBtn}
-                          aria-expanded={openPorts.has(item.uid)}
-                          onClick={() => togglePorts(item.uid)}>
-                    {openPorts.has(item.uid) ? 'Hide' : 'Show'} - {ports.length} port{ports.length === 1 ? '' : 's'} follow this device
-                  </button>
-                  {openPorts.has(item.uid) && (
+                  {ports.length > 0 ? (
+                    <button type="button" className={styles.followBtn}
+                            aria-expanded={openPorts.has(item.uid)}
+                            onClick={() => togglePorts(item.uid)}>
+                      {openPorts.has(item.uid) ? 'Hide' : 'Show'} - {plural(follow, 'port')} follow this device
+                    </button>
+                  ) : (
+                    <span className={styles.followNote}>{plural(follow, 'port')} follow this device</span>
+                  )}
+                  {openPorts.has(item.uid) && ports.length > 0 && (
                     <ul className={styles.ports}>
                       {ports.map((p) => (
                         <li key={p.uid} className={styles.port}>
@@ -334,9 +437,12 @@ export default function ApprovalsPage() {
               {item.ticket && (
                 <div className={styles.ticket}>
                   <span className={styles.ticketTag}>
-                    {item.ticket.status === 'resolved' ? 'Came back from' : 'With'} {item.ticket.assignee}
+                    {resolved ? 'Came back from' : 'With'} {item.ticket.assignee}
                     {item.ticket.scope === 'rack' ? ' - whole rack' : ''}
                   </span>
+                  {item.ticket.assigneeEmail && (
+                    <span className={styles.ticketMail}>{item.ticket.assigneeEmail}</span>
+                  )}
                   {item.ticket.question && <p className={styles.q}>{item.ticket.question}</p>}
                   {item.ticket.finding && (
                     <p className={styles.finding}>They found: {item.ticket.finding}</p>
@@ -352,7 +458,7 @@ export default function ApprovalsPage() {
                   {item.ticket.status === 'open' && (
                     <p className={styles.q}>Waiting on them to check the rack and report back.</p>
                   )}
-                  {item.ticket.status === 'resolved' && (
+                  {resolved && (
                     <p className={styles.q}>
                       A resolved ticket is not an approval. Decide now, with their finding in hand.
                     </p>
@@ -360,19 +466,20 @@ export default function ApprovalsPage() {
                 </div>
               )}
 
-              {canAct && !cameBack && (
+              {canAct && !resolved && (
                 // The admin does not judge the rack from a desk. The first and
-                // only move on a waiting item is to hand it to somebody.
+                // only move on a waiting item is to hand it to somebody; the
+                // server refuses anything else until the ticket is resolved.
                 <div className={styles.actions}>
                   <button type="button" className={styles.ticketBtn}
                           disabled={!!busy} onClick={() => openTicketDialog(item)}>
-                    Ask somebody
+                    {item.ticket ? 'Assign again' : 'Assign to somebody'}
                   </button>
                 </div>
               )}
-              {canAct && cameBack && (
+              {canAct && resolved && (
                 // It has come back from the person who looked. Now the admin
-                // decides, or asks again.
+                // decides, or assigns again.
                 <div className={styles.actions}>
                   <button type="button" className={styles.approve}
                           disabled={!!busy} onClick={() => decide(item.uid, 'approved')}>
@@ -388,9 +495,13 @@ export default function ApprovalsPage() {
                   </button>
                   <button type="button" className={styles.ticketBtn}
                           disabled={!!busy} onClick={() => openTicketDialog(item)}>
-                    Ask again
+                    Assign again
                   </button>
                 </div>
+              )}
+              {why !== undefined && (
+                // The server said no to the last decision on this item.
+                <p className={styles.refused} role="alert">{refusedWords(why)}</p>
               )}
               {item.note && <p className={styles.note}>“{item.note}” - {item.decidedBy}</p>}
             </li>
@@ -404,7 +515,7 @@ export default function ApprovalsPage() {
         </p>
       )}
 
-      {plan && decidable.length > 0 && plan.status !== 'applied' && (
+      {plan && decidable.length > 0 && deciding && (
         <div className={styles.footer}>
           <button type="button" className={styles.primary} disabled={!settled || !!busy} onClick={write}>
             {settled ? 'Write the approved changes to NetBox' : `${pending.length} still waiting on you`}
@@ -416,10 +527,10 @@ export default function ApprovalsPage() {
       )}
 
       {ticketFor && (
-        <div className={styles.sheetWrap} role="dialog" aria-label="Ask somebody to check">
+        <div className={styles.sheetWrap} role="dialog" aria-label="Assign to somebody">
           <div className={styles.sheet}>
             <h2 className={styles.sheetTitle}>
-              {ticketFor.wholeRack ? 'Ask about the whole rack' : 'Ask somebody to check'}
+              {ticketFor.wholeRack ? 'Assign the whole rack' : 'Assign to somebody'}
             </h2>
             <p className={styles.sheetSub}>
               {ticketFor.wholeRack
@@ -439,7 +550,7 @@ export default function ApprovalsPage() {
               ))}
             </select>
 
-            <label className={styles.label} htmlFor="question">What do you want them to check?</label>
+            <label className={styles.label} htmlFor="question">What should they check?</label>
             <textarea id="question" className={styles.textarea} value={question}
                       placeholder={ticketFor.wholeRack ? 'Please check everything in this rack.' : 'Is it really at U15?'}
                       onChange={(e) => setQuestion(e.target.value)} />
