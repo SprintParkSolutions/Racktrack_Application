@@ -32,7 +32,16 @@ if [ "$ONLY" != "approvals" ]; then
   say "Application: send the code"
   rsync -az --exclude-from=deploy/demo-rsync-excludes.txt -e "ssh -i $KEY" ./ "$HOST:$DIR/"
   say "Application: build and restart"
-  $SSH "cd $DIR && docker compose -f docker-compose.demo.yml up -d --build racktrack > /tmp/demo-build.log 2>&1; tail -2 /tmp/demo-build.log"
+  # `&&`, not `;`. With a semicolon the ssh exit status is tail's, which always
+  # succeeds, so `set -e` could not see a failed build and the script went on to
+  # report a healthy deploy that had never been built.
+  $SSH "cd $DIR && docker compose -f docker-compose.demo.yml up -d --build racktrack > /tmp/demo-build.log 2>&1 && tail -2 /tmp/demo-build.log"
+  # And prove the new code is actually in the container. config.json is COPYed
+  # into the image rather than mounted, so a deploy that rsynced but did not
+  # rebuild leaves the container on the old models while the host tree looks
+  # right - which is exactly what a half finished deploy looked like once.
+  say "Application: confirm the container has the new configuration"
+  $SSH "docker exec racktrack-demo grep -o '\"ports_typed\": \"[^\"]*\"' /app/config.json"
 fi
 
 say "Caddy: pick up the new configuration and the Approvals mount"

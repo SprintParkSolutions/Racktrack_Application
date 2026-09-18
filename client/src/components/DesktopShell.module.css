@@ -38,8 +38,25 @@
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   border-right: 1px solid rgba(0,0,0,0.08);
   z-index: 5;
-  overflow-y: auto;
+  /* The rail itself no longer scrolls; .navScroll inside it does. When the
+     whole rail scrolled, the account row scrolled away with everything else. */
+  overflow-y: hidden;
 }
+
+/* The destinations and the rack chain.
+   `0 1 auto` on purpose, not `1 1 auto`: it takes the height it needs when the
+   list is short, so a technician's five rows do not get stretched and do not
+   push the account row to the floor, and it shrinks and scrolls when the list
+   is long, so a rack open on a laptop keeps Report, Switches, Profile and Sign
+   out reachable instead of hiding them below the fold. */
+.navScroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.navScroll::-webkit-scrollbar { width: 4px; }
+.navScroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
 :global([data-theme='light']) .sidebar {

@@ -978,7 +978,15 @@ def main():
 
     _target = getattr(args, "target_count", 0) or 0
     if selected["class_name"] in MAIN_PORTS_ONLY:
-        classified = detect_patch_panel_ports(device_crop, status_model_inst, conf=ports_conf)
+        # The select path, the fourth caller. The other three were moved onto
+        # the typed model when ports_13 arrived and this one was missed, so
+        # tapping a patch panel port in the detail view still read the panel
+        # with the STATUS model standing in as a detector: every port came back
+        # class Connected_port with status unknown, and the cable classifier
+        # was skipped because the type never said RJ45.
+        classified = detect_patch_panel_ports(
+            device_crop, port_model_inst, conf=ports_conf, status_model=status_model_inst
+        )
     elif _target > 0:
         # Honour the user-confirmed port count so port N here is the same N the
         # user numbered when they corrected the count (24 = the 24th position).

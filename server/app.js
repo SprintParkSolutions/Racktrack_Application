@@ -2044,7 +2044,9 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   // Same category labels the Results page shows (main→RJ45, sfp→SFP,
   // console→Console, other→USB) — the raw backend value ("main") isn't
   // what the user actually picked/sees in the app.
-  const PORT_CATEGORY_LABELS = { main: 'RJ45', sfp: 'SFP', console: 'Console', other: 'USB' };
+  // 'other' holds USB and, since ports_13, a slot with nothing fitted in it.
+  // Naming the bucket USB asserts a port the box may not have.
+  const PORT_CATEGORY_LABELS = { main: 'RJ45', sfp: 'SFP', console: 'Console', other: 'Other' };
 
   const portIdsHtml = d.port_identifications.map(p => {
     const a = accentFor(p.device_class || '');

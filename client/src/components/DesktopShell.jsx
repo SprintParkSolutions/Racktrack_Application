@@ -254,7 +254,14 @@ export default function DesktopShell({ children }) {
         </a>
 
         {/* One line per destination, grouped. The description lives in the
-            hover text and in the phone's Menu; in the rail it read as clutter. */}
+            hover text and in the phone's Menu; in the rail it read as clutter.
+
+            This block scrolls on its own so the account row below it is always
+            reachable. When the whole rail scrolled instead, a rack open at a
+            1440x800 viewport needed 1030px and simply hid the end of the chain:
+            Report, Topology, Drift, Switches, Profile and Sign out were all
+            below the fold with nothing to say so. */}
+        <div className={styles.navScroll}>
         {NAV_GROUPS.filter((g) => g.key !== 'account').map((g) => {
           const items = links.filter((l) => l.group === g.key);
           if (!items.length) return null;
@@ -296,6 +303,8 @@ export default function DesktopShell({ children }) {
             </ul>
           </>
         )}
+
+        </div>
 
         <div className={styles.sidebarBottom}>
           {links.filter((l) => l.group === 'account').map((l) => (

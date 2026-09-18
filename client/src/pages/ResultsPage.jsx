@@ -862,7 +862,9 @@ const PORT_CATEGORIES = [
   { k: 'main',    label: 'RJ45' },
   { k: 'sfp',     label: 'SFP' },
   { k: 'console', label: 'Console' },
-  { k: 'other',   label: 'USB' },
+  // Not only USB: since ports_13 this bucket also holds a slot with nothing
+  // fitted, so a 24 port switch with no USB socket was reading "24 RJ45 - 1 USB".
+  { k: 'other',   label: 'Other' },
 ];
 
 // A device's port field may arrive as an array (from /api/analyze) or as a
