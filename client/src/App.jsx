@@ -32,7 +32,6 @@ import SwitchInformationPage from './pages/SwitchInformationPage.jsx';
 import MultiRackRedirect from './pages/MultiRackRedirect.jsx';
 import PortHistoryPage from './pages/PortHistoryPage.jsx';
 import LabPage from './pages/LabPage.jsx';
-import GroundTruthPage from './pages/GroundTruthPage.jsx';
 import TenantMatPage from './pages/TenantMatPage.jsx';
 import ConnectionsPage from './pages/ConnectionsPage.jsx';
 import { setupDecision, setupUnknown } from './utils/setupGuard';
@@ -158,23 +157,6 @@ function AdminRoute({ children }) {
   return children;
 }
 
-// Ground Truth is owner-only for now. To open it to every role later, swap
-// <OwnerRoute> for <ProtectedRoute> on its route and drop the isOwner wrap on
-// its nav entry - the server queries are already role-scoped.
-function OwnerRoute({ children }) {
-  const { isAuthed, user } = useAuth();
-  const location = useLocation();
-  if (!isAuthed) {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
-  }
-  if (orgNotActive(user)) {
-    return <Navigate to="/pending" replace />;
-  }
-  if (user?.role !== 'owner') {
-    return <Navigate to="/" replace />;
-  }
-  return children;
-}
 
 // The organisation-setup gate on Scan (utils/setupGuard decides):
 //   owner / org_admin with a Site still lacking a required item -> /setup
@@ -531,14 +513,6 @@ export default function App() {
             {/* Review is reachable but not a step. */}
             <Route path="/results/:rackId/review" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><ReviewPage /></ResponsiveLayout></ProtectedRoute>
-            } />
-            {/* Ground Truth - technicians verify what the model detected.
-                Owner-only for now (OwnerRoute); the page also refuses non-owners
-                and the server API is requireRole('owner'). */}
-            {/* Per-scan now: reached from a rack's results after analyse, scoped
-                to that one upload (/ground-truth/:rackId). */}
-            <Route path="/ground-truth/:rackId" element={
-              <OwnerRoute><ResponsiveLayout withBottomNav><GroundTruthPage /></ResponsiveLayout></OwnerRoute>
             } />
             {/* Marketplace - restricted to Admin / Owner only. */}
             <Route path="/marketplace" element={

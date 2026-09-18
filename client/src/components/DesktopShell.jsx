@@ -4,7 +4,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import styles from './DesktopShell.module.css';
 import ThemeToggle from './ThemeToggle.jsx';
 import { useAuth } from '../AuthContext';
-import { usePrimaryNav, NAV_GROUPS, GroundTruthIcon } from '../nav/navLinks.jsx';
+import { usePrimaryNav, NAV_GROUPS } from '../nav/navLinks.jsx';
 import ExternalLink from './ExternalLink.jsx';
 import { ShellHeaderContext } from './ShellHeader.jsx';
 
@@ -120,7 +120,6 @@ const PAGE_TITLE = {
   '/dashboard':        { title: 'Operations Console',  sub: 'Live activity, health & server logs' },
   '/multi-rack/new':   { title: 'Scan two racks',      sub: 'Detect both + the cabling between them' },
   '/lab':              { title: 'Lab',                 sub: 'Live switches in the test lab' },
-  '/ground-truth':     { title: 'Ground Truth',        sub: 'Verify what the model detected' },
   '/help':             { title: 'Ask DOT',             sub: 'Answers from verified documentation' },
   '/contact':          { title: 'Contact support',     sub: '' },
 };
@@ -170,7 +169,6 @@ export default function DesktopShell({ children }) {
   const headerCtx = useMemo(() => ({ actionsEl, setBackHandler }), [actionsEl]);
 
   const { user, logout } = useAuth();
-  const isOwner = user?.role === 'owner';
 
   // Shared with the phone's bottom bar - see nav/navLinks.jsx. The two used
   // to keep separate hardcoded lists and drifted apart, which is how Lab and
@@ -244,9 +242,6 @@ export default function DesktopShell({ children }) {
     { to: `/results/${rackId}/topology${gq}`,  label: 'Topology', icon: <TopologyIcon />, end: false },
     { to: `/results/${rackId}${gq}#drift`,     label: 'Drift',    icon: <DriftIcon />,    end: false, active: isDriftView },
     { to: `/switch-info/${rackId}${gq}`,       label: 'Switches', icon: <SwitchesIcon />, end: false },
-    // Ground Truth - owner-only, per this scan. Only reachable here, after a
-    // rack has been analysed (there IS a rackId).
-    ...(isOwner ? [{ to: `/ground-truth/${rackId}`, label: 'Ground Truth', icon: <GroundTruthIcon />, end: false }] : []),
   ] : [];
 
   return createPortal(
