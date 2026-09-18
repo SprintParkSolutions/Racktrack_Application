@@ -35,6 +35,7 @@ from pipeline.detection import (
     assign_devices_to_units,
     build_contiguous_unit_grid,
     build_device_mapping,
+    build_unit_grid_from_model,
     derive_unit_height,
     detect_devices_dual,
     detect_devices_seg,
@@ -570,24 +571,48 @@ def main():
     #   * grid starts at the first detected device's top edge (below the
     #     top rail), never above it
     #   * grid ends at the last detected device's bottom edge
-    unit_h = derive_unit_height(devices)
-    if unit_h:
-        units = build_contiguous_unit_grid(
-            devices,
-            unit_h,
-            rack_bounds=rack_box,
-            img_shape=img.shape,
-        )
-        unit_source = "device_tiling"
-        print(
-            f"[units] contiguous grid: {len(units)} rows "
-            f"(unit_h={unit_h}px, top={units[0]['box'][1]}px, "
-            f"bot={units[-1]['box'][3]}px)"
-        )
-    else:
-        units = []
-        unit_source = "none"
-        print("[units] no Switch / Patch Panel detected — cannot derive unit_h.")
+    units = []
+    unit_source = "none"
+    units_model_path = config["models"].get("units")
+    if units_model_path and os.path.exists(units_model_path):
+        try:
+            units = build_unit_grid_from_model(img, units_model_path)
+            if units:
+                unit_source = "units_model"
+                hs = [u["box"][3] - u["box"][1] for u in units]
+                print(
+                    f"[units] read by the units model: {len(units)} rows "
+                    f"(heights {min(hs)}-{max(hs)}px, top={units[0]['box'][1]}px, "
+                    f"bot={units[-1]['box'][3]}px)"
+                )
+            else:
+                print("[units] the units model found no rows - falling back to tiling.")
+        except Exception as exc:
+            # A units model that fails must not cost the whole scan; the tiling
+            # below is the same grid the product shipped with before it existed.
+            logger.exception("units model failed")
+            print(f"[units] units model FAILED ({type(exc).__name__}: {exc}) - falling back.")
+            units = []
+
+    if not units:
+        unit_h = derive_unit_height(devices)
+        if unit_h:
+            units = build_contiguous_unit_grid(
+                devices,
+                unit_h,
+                rack_bounds=rack_box,
+                img_shape=img.shape,
+            )
+            unit_source = "device_tiling"
+            print(
+                f"[units] contiguous grid: {len(units)} rows "
+                f"(unit_h={unit_h}px, top={units[0]['box'][1]}px, "
+                f"bot={units[-1]['box'][3]}px)"
+            )
+        else:
+            units = []
+            unit_source = "none"
+            print("[units] no Switch / Patch Panel detected — cannot derive unit_h.")
 
     # --- Assign each device its top-N grid units (N = round(dev_h / unit_h)) ---
     devices = assign_devices_to_units(devices, units)
