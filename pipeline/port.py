@@ -19,7 +19,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-MODEL_PATH = r"Models/ports_9.pt"
+MODEL_PATH = r"Models/ports_13.pt"
 CONF = 0.23
 BOX_W = 30
 BOX_H = 35

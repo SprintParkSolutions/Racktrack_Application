@@ -645,11 +645,13 @@ def main():
         print(line)
 
     # --- Full rack with all devices' port boxes ---
-    # `port_model_inst`  = typed model (ports_9.pt) — used on Switch/Router/
-    #                       Firewall/Gateway.
+    # `port_model_inst`  = typed model (ports_13.pt) — used on every port
+    #                       bearing class, patch panels included.
     # `status_model_inst` = status model (port_count.pt) — IoU-bound to typed
-    #                       ports to produce connected/empty; also used as
-    #                       the standalone detector for patch panels.
+    #                       ports to produce connected/empty, and nothing else.
+    #                       It used to double as the standalone detector for
+    #                       patch panels, because the old typed model could not
+    #                       see them; ports_13 can, so it does not any more.
     port_model_inst = load_model(port_typed_path)
     status_model_inst = load_model(port_status_path)
     pdu_model_inst = (
@@ -698,7 +700,12 @@ def main():
             dev_crop, (ox, oy) = crop_device_with_origin(img, dev["box"])
 
             if dev["class_name"] in MAIN_PORTS_ONLY:
-                classified = detect_patch_panel_ports(dev_crop, status_model_inst, conf=ports_conf)
+                classified = detect_patch_panel_ports(
+                    dev_crop,
+                    port_model_inst,
+                    conf=ports_conf,
+                    status_model=status_model_inst,
+                )
             else:
                 classified = classify_ports_by_pattern(
                     dev_crop,
@@ -761,7 +768,10 @@ def main():
                 dev_crop, _ = crop_device_with_origin(img, dev["box"])
                 if dev["class_name"] in MAIN_PORTS_ONLY:
                     classified = detect_patch_panel_ports(
-                        dev_crop, status_model_inst, conf=ports_conf
+                        dev_crop,
+                        port_model_inst,
+                        conf=ports_conf,
+                        status_model=status_model_inst,
                     )
                 else:
                     classified = classify_ports_by_pattern(

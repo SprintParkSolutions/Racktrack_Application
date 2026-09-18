@@ -7,7 +7,7 @@
  * imported into ours.
  *
  * IMPORTANT: the working directory must be the engine root. pipeline/port.py
- * resolves its model with a RELATIVE path (Models/ports_9.pt), so running it
+ * resolves its model with a RELATIVE path (Models/ports_13.pt), so running it
  * from anywhere else silently fails to find the weights.
  */
 const { spawn } = require('child_process');

@@ -403,13 +403,13 @@ def handle_relabel_port_count(req):
 
     with open(config_path) as f:
         config = _json.load(f)
-    # Typed model (ports_9) carries port category. Status model (port_count)
+    # Typed model (ports_13) carries port category. Status model (port_count)
     # carries Connected_port / Empty_port and is IoU-bound onto the typed
-    # ports. Patch panels use the status model directly since they're pure
-    # RJ-45 grids.
+    # ports. Patch panels go through the same pair: ports_13 was trained on
+    # them, so the status model no longer has to stand in as their detector.
     port_model = load_model(config["models"]["ports_typed"])
     status_model_rel = config["models"].get("ports_status")
-    pp_port_model = load_model(status_model_rel) if status_model_rel else port_model
+    status_model = load_model(status_model_rel) if status_model_rel else port_model
     ports_conf = config.get("detection", {}).get("ports_conf", 0.23)
 
     from pipeline.port_pattern import (
@@ -418,7 +418,9 @@ def handle_relabel_port_count(req):
     )
 
     if device.get("class_name") == "Patch Panel":
-        classified = detect_patch_panel_ports(crop, pp_port_model, conf=ports_conf)
+        classified = detect_patch_panel_ports(
+            crop, port_model, conf=ports_conf, status_model=status_model
+        )
         # Honor the user-supplied target count — patch panels are uniform
         # grids of 24 or 48, so trimming/padding by index is meaningful.
         mp = classified.get("main_ports", [])
@@ -433,7 +435,7 @@ def handle_relabel_port_count(req):
             port_model,
             target_count,
             conf=ports_conf,
-            status_model=pp_port_model,
+            status_model=status_model,
         )
 
     main_ports = classified.get("main_ports", [])

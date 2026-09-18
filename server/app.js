@@ -10662,12 +10662,20 @@ app.post('/api/feedback', auth.requireAuth, async (req, res) => {
 
 // POST /api/feedback/port-type
 // Active-learning correction for a port's physical TYPE (RJ45 / SFP / QSFP /
-// CONSOLE / AUX / MANAGEMENT_PORT / USB_A / USB_B / USB_C). Mirrors the cable
-// path: crop the port, log to feedback.jsonl, and persist a pHash+embedding
-// memory so future scans of the same port auto-apply the corrected type. The
-// crop is filed under the corrected class so it also feeds retraining.
+// FC / LC / SC / CONSOLE / AUX / MANAGEMENT_PORT / USB_A / USB_B / USB_C).
+// Mirrors the cable path: crop the port, log to feedback.jsonl, and persist a
+// pHash+embedding memory so future scans of the same port auto-apply the
+// corrected type. The crop is filed under the corrected class so it also feeds
+// retraining, which is why this list has to be the type model's own class
+// names and has to grow with it: a correction filed under a name the model
+// does not have is a training sample it can never learn from.
+//
+// The fibre connectors came in with ports_13. The model's thirteenth class,
+// `empty`, is deliberately NOT offered here. Whether a port has anything in it
+// is the status model's answer, and putting "empty" in a list of connector
+// types would invite a technician to file occupancy as though it were type.
 const PORT_TYPE_OPTIONS = [
-  'RJ45', 'SFP', 'QSFP', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
+  'RJ45', 'SFP', 'QSFP', 'FC', 'LC', 'SC', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
   'USB_A', 'USB_B', 'USB_C',
 ];
 app.post('/api/feedback/port-type', auth.requireAuth, async (req, res) => {

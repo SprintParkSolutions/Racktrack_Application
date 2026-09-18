@@ -132,13 +132,28 @@ const CABLE_COLOR_OPTIONS = [
   'Pink', 'Red', 'White', 'Yellow', 'Violet', 'Aqua',
 ];
 
-// Physical port types the type model knows (ports_9.pt). Used by the port-type
+// Physical port types the type model knows (ports_13.pt). Used by the port-type
 // correction control; values must match the server's PORT_TYPE_OPTIONS.
+// The model's `empty` class is not offered: a slot with nothing in it is a
+// question for the status model, not a connector type someone picks here.
 const PORT_TYPE_OPTIONS = [
-  'RJ45', 'SFP', 'QSFP', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
+  'RJ45', 'SFP', 'QSFP', 'FC', 'LC', 'SC', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
   'USB_A', 'USB_B', 'USB_C',
 ];
-const prettyPortType = (t) => t ? t.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ') : '';
+// How each class name is written on screen. Nearly all of them are acronyms,
+// not words, so title casing them is wrong: the control was offering "Rj45",
+// "Sfp", "Qsfp" and "Usb A", and the fibre connectors would have joined it as
+// "Fc", "Lc" and "Sc". `empty` is here to be DISPLAYED when the model reads a
+// slot as unfitted; it is deliberately absent from PORT_TYPE_OPTIONS, which is
+// the list of types a person can choose.
+const PORT_TYPE_LABELS = {
+  RJ45: 'RJ45', SFP: 'SFP', QSFP: 'QSFP', FC: 'FC', LC: 'LC', SC: 'SC',
+  CONSOLE: 'Console', AUX: 'Aux', MANAGEMENT_PORT: 'Management port',
+  USB_A: 'USB A', USB_B: 'USB B', USB_C: 'USB C', empty: 'Empty slot',
+};
+const prettyPortType = (t) => (t
+  ? PORT_TYPE_LABELS[t] || String(t).split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ')
+  : '');
 
 // Real cable colours so the swatch matches the detected colour name (the
 // monochrome theme applies to the app chrome, not to physical cable colours - // showing an orange cable as a black dot is confusing/wrong).
