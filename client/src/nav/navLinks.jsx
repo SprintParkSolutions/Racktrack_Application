@@ -105,9 +105,15 @@ export function usePrimaryNav() {
     // Approvals is its own application on its own address, so this
     // entry carries `href` instead of `to`: the bar, the Menu and the sidebar
     // draw it as a link that leaves the app (components/ExternalLink.jsx).
-    ...(isAdmin ? [{ group: 'work', href: APPROVALS_URL, label: 'Changes', icon: <InboxIcon />,
+    // Not gated. A technician has a real queue in RackTrack Changes - their own
+    // tickets and their verification queue - and GET /api/approvals/me confirms
+    // it, returning verify:true for a member. Hiding the link asked them to
+    // check the rack and then gave them nowhere to see what they had checked,
+    // and left their phone bar with two entries where an admin has three. What
+    // each person may DO there is decided server side and unchanged by this.
+    { group: 'work', href: APPROVALS_URL, label: 'Changes', icon: <InboxIcon />,
       inBar: true,
-      hint: 'Opens RackTrack Changes' }] : []),
+      hint: isAdmin ? 'Opens RackTrack Changes' : 'Your checks in RackTrack Changes' },
 
     // ── Organization: owners and organisation admins.
     ...(isAdmin ? [{ group: 'org', to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,

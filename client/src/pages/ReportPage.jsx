@@ -60,7 +60,10 @@ async function nb(path, opts = {}) {
 function explain(r, fallback) {
   const raw = String((r.body && r.body.error) || '').trim();
   const msg = raw ? raw[0].toUpperCase() + raw.slice(1) : fallback;
-  if (r.status === 403) return 'Ask the account owner to open this report.';
+  // Not the owner: an organisation admin or a site manager can open it too, and
+  // on most accounts they are the person actually sitting next to you. Naming
+  // the owner sent people up a chain they did not need to climb.
+  if (r.status === 403) return 'This report is for an admin. Ask yours to open it.';
   if (r.status === 404) return 'This rack could not be found on the NetBox side. Go back to the rack and open Report again.';
   return msg.endsWith('.') ? msg : `${msg}.`;
 }
