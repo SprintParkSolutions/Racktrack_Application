@@ -19,11 +19,18 @@ let tmp;
 before(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-plans-group-'));
   process.env.RT_DATA_DIR = tmp;
+  // Plans live in SQLite now. Point the store at a throwaway database in this
+  // test's own directory so nothing here can reach the real auth.db.
+  process.env.RACKTRACK_APPROVALS_DB = path.join(tmp, 'approvals.db');
   delete require.cache[require.resolve('../../lib/netbox/plans')];
+  require('../../lib/approvals/store')._reset();
   plans = require('../../lib/netbox/plans');
 });
 
-after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+after(() => {
+  require('../../lib/approvals/store')._reset();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
 
 const DEV = 'dev:RK-NEW:u16';
 const DEV2 = 'dev:RK-NEW:u20';
