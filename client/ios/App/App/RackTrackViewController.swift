@@ -22,5 +22,6 @@ import Capacitor
 class RackTrackViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(SnmpUdp())
+        bridge?.registerPluginInstance(InAppSite())
     }
 }

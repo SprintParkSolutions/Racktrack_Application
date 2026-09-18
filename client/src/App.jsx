@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
+import { openApprovals } from './utils/approvals.js';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { parseAuthFragment, isAuthCallbackUrl } from './utils/socialSession';
@@ -285,6 +286,14 @@ function SocialDeepLinkHandler() {
     let sub;
     (async () => {
       sub = await CapApp.addListener('appUrlOpen', ({ url }) => {
+        // com.racktrack.app://approvals[/path] opens Approvals inside the app,
+        // so a link in a notification email lands where the work is done
+        // rather than in a browser the app knows nothing about.
+        const approvals = /^com\.racktrack\.app:\/\/approvals(\/.*)?$/i.exec(String(url || ''));
+        if (approvals) {
+          openApprovals(`/approvals${approvals[1] || '/'}`).catch(() => {});
+          return;
+        }
         if (!isAuthCallbackUrl(url)) return;   // some other deep link - leave it alone
         const result = parseAuthFragment(url);
         if (!result) return;

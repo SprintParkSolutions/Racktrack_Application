@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { apiUrl, authFetch } from './api';
 import { Browser } from '@capacitor/browser';
 
@@ -86,16 +86,29 @@ export async function openApprovals(path = '/approvals/') {
   return openUrl(plain);
 }
 
-/** Open a URL where it belongs: a new tab on the web, the system browser on a phone. */
-function openUrl(url) {
-  if (Capacitor.isNativePlatform()) {
-    // Approvals should read as part of RackTrack, not as a trip to a website,
-    // so it is presented full screen with the application's own white bar
-    // rather than dropped into a browser card. iOS still prints the host in a
-    // thin line of its own; only Apple can remove that, and only a native web
-    // view of ours would avoid it.
-    return Browser.open({ url, presentationStyle: 'fullscreen', toolbarColor: '#ffffff' });
+/**
+ * Our own full-screen web view, so Approvals is part of the application
+ * rather than a trip out to a website. It is an app-local plugin, present
+ * only in a build that carries it, hence the fallback below.
+ */
+const InAppSite = registerPlugin('InAppSite');
+
+/**
+ * Open a URL where it belongs.
+ *
+ * Web: a new tab. Phone: our own web view, which shows the page's name and a
+ * Close button and no address at all. Should that view be missing - an older
+ * build, or a platform we have not written it for - the system browser still
+ * opens the page, which is what happened before and is never a dead button.
+ */
+async function openUrl(url) {
+  if (!Capacitor.isNativePlatform()) {
+    window.open(url, '_blank', 'noopener');
+    return;
   }
-  window.open(url, '_blank', 'noopener');
-  return Promise.resolve();
+  try {
+    await InAppSite.open({ url, title: 'RackTrack Approvals', closeOn: ['/', '/login'] });
+    return;
+  } catch { /* no such view in this build - fall back to the browser */ }
+  await Browser.open({ url, presentationStyle: 'fullscreen', toolbarColor: '#ffffff' });
 }

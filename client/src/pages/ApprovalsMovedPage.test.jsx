@@ -5,15 +5,21 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
    and offers one way on. Wherever it is pressed, the link goes through the
    sign-in hand-over first, so nobody is asked to sign in again a minute after
    signing in: the server trades this app's credential for a single-use key and
-   the browser opens that. On the phone the system browser opens it; on the web
-   a new tab. */
+   that key's address is opened. On the phone it opens in our own full-screen
+   web view; on the web, a new tab. */
 
-const { native, open, fetched } = vi.hoisted(() => ({
+const { native, open, site, fetched } = vi.hoisted(() => ({
   native: { current: false },
   open: vi.fn(async () => {}),
+  site: { open: vi.fn(async () => {}), fails: { current: false } },
   fetched: { calls: [] },
 }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => native.current } }));
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { isNativePlatform: () => native.current },
+  registerPlugin: () => ({
+    open: (o) => (site.fails.current ? Promise.reject(new Error('not implemented')) : site.open(o)),
+  }),
+}));
 vi.mock('@capacitor/browser', () => ({ Browser: { open } }));
 vi.mock('../utils/api', () => ({
   apiUrl: (p) => p,
@@ -30,8 +36,8 @@ import ApprovalsMovedPage from './ApprovalsMovedPage.jsx';
 const URL = '/approvals/';
 
 afterEach(() => {
-  cleanup(); open.mockClear(); native.current = false;
-  fetched.calls.length = 0; openedWindows.length = 0;
+  cleanup(); open.mockClear(); site.open.mockClear(); native.current = false;
+  site.fails.current = false; fetched.calls.length = 0; openedWindows.length = 0;
 });
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -56,16 +62,31 @@ describe('<ApprovalsMovedPage>', () => {
     expect(fetched.calls[0].body).toEqual({ to: URL });
     expect(openedWindows).toEqual(['/api/auth/handoff/KEY']);
     expect(open).not.toHaveBeenCalled();
+    expect(site.open).not.toHaveBeenCalled();
   });
 
-  test('native build: the hand-over address opens full screen inside the app', async () => {
+  test('native build: the hand-over address opens in our own web view, no browser', async () => {
     native.current = true;
     render(<ApprovalsMovedPage />);
     fireEvent.click(screen.getByRole('link', { name: 'Open Approvals' }));
     await settle();
     expect(fetched.calls[0].body).toEqual({ to: URL });
-    // Full screen in the application's own white, so Approvals reads as part
-    // of RackTrack rather than a trip out to a website.
+    // Our view: the page's name, a Close button, and no address anywhere. The
+    // paths that close it are the ones that mean "take me back to RackTrack".
+    expect(site.open).toHaveBeenCalledWith({
+      url: '/api/auth/handoff/KEY',
+      title: 'RackTrack Approvals',
+      closeOn: ['/', '/login'],
+    });
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  test('native build without that view: the browser still opens the page', async () => {
+    native.current = true;
+    site.fails.current = true;
+    render(<ApprovalsMovedPage />);
+    fireEvent.click(screen.getByRole('link', { name: 'Open Approvals' }));
+    await settle();
     expect(open).toHaveBeenCalledWith({
       url: '/api/auth/handoff/KEY',
       presentationStyle: 'fullscreen',
