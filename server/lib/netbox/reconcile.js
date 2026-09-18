@@ -164,6 +164,31 @@ function scorePair(sw, dev) {
     why.push(`ports ${dev.portCount} against ${near.n}`);
   }
 
+  // Rung 5 of the ladder rules a candidate OUT on its shape, it does not merely
+  // score it down. A box cannot be a switch whose panel it could not hold.
+  //
+  // The two bounds are not symmetric, because the camera's errors are not. It
+  // undercounts: a bottom row hidden behind a cable bundle is read as unknown,
+  // so a 48 port switch can honestly come back as 24. It does not invent
+  // sockets it cannot see, so a box showing far MORE sockets than the switch
+  // has is not that switch.
+  //
+  // Found on a real rack: a 52 port D-Link was proposed for a 10 port box
+  // because both were read as D-Link, while the 52 port box beside it carried
+  // no readable maker. Make outranked shape, which is the wrong way round.
+  const tooMany = dev.portCount > Math.ceil(near.n * 1.15) + 1;
+  const tooFew = dev.portCount > 0 && dev.portCount < Math.floor(near.n * 0.45);
+  if (near.n > 0 && dev.portCount > 0 && (tooMany || tooFew)) {
+    return {
+      score: -Infinity,
+      why: tooMany
+        ? `this box shows ${dev.portCount} sockets and the switch has ${near.n}, so it is not this box`
+        : `this box shows ${dev.portCount} sockets against the switch's ${near.n}, too few even for a row the camera could not see`,
+      shape: 'ruled-out',
+      ruledOut: true,
+    };
+  }
+
   // What this candidate was judged on, which is what the tie test compares. A
   // raw score gap is the wrong instrument: an exact port agreement scores 60 and
   // a two-port miss scores 36, so any fixed margin near that 24-point gap turns
@@ -574,7 +599,13 @@ function suggest(snapshot, sws, opts = {}) {
     const candidates = [];
     const seenNote = new Set();
     for (const dev of free) {
-      const { score, why, shape } = scorePair(f, dev);
+      const { score, why, shape, ruledOut } = scorePair(f, dev);
+      // A box ruled out on its shape is named once, so a person looking for it
+      // knows it was considered and why, rather than wondering where it went.
+      if (ruledOut) {
+        if (!seenNote.has(dev.uid)) { seenNote.add(dev.uid); addNote(f.id, `${dev.name}: ${why}`); }
+        continue;
+      }
       if (score < FLOOR) continue;
       const advice = sizeAdvice(dev.units, dev.cvClass);
       if (advice && !seenNote.has(dev.uid)) { seenNote.add(dev.uid); addNote(f.id, `${dev.name}: ${advice}`); }
