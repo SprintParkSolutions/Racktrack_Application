@@ -30,6 +30,7 @@ const SPECS = [
     field: 'manufacturers', endpoint: '/api/dcim/manufacturers/',
     netboxType: 'dcim.manufacturer', label: 'Manufacturer',
     payload: (o) => ({ name: o.name, slug: o.slug }),
+    naturalKey: (p) => (p.slug ? { slug: p.slug } : null),
   },
   {
     field: 'deviceTypes', endpoint: '/api/dcim/device-types/',
@@ -38,16 +39,20 @@ const SPECS = [
       manufacturer: ref(o.manufacturerUid), model: o.model, slug: o.slug,
       u_height: o.uHeight, is_full_depth: o.isFullDepth,
     }),
+    naturalKey: (p) => (p.slug && Number.isInteger(p.manufacturer)
+      ? { slug: p.slug, manufacturer_id: p.manufacturer } : null),
   },
   {
     field: 'deviceRoles', endpoint: '/api/dcim/device-roles/',
     netboxType: 'dcim.devicerole', label: 'DeviceRole',
     payload: (o) => ({ name: o.name, slug: o.slug }),
+    naturalKey: (p) => (p.slug ? { slug: p.slug } : null),
   },
   {
     field: 'sites', endpoint: '/api/dcim/sites/',
     netboxType: 'dcim.site', label: 'Site',
     payload: (o) => ({ name: o.name, slug: o.slug }),
+    naturalKey: (p) => (p.slug ? { slug: p.slug } : null),
   },
   {
     field: 'locations', endpoint: '/api/dcim/locations/',
@@ -56,6 +61,8 @@ const SPECS = [
       name: o.name, slug: o.name.toLowerCase().replace(/\s+/g, '-'),
       site: ref(o.siteUid),
     }),
+    naturalKey: (p) => (p.slug && Number.isInteger(p.site)
+      ? { slug: p.slug, site_id: p.site } : null),
   },
   {
     field: 'racks', endpoint: '/api/dcim/racks/',
@@ -91,6 +98,8 @@ const SPECS = [
       description: s(o.description), enabled: o.enabled,
       mac_address: o.mac || null, label: s(o.label),
     }),
+    naturalKey: (p) => (p.name && Number.isInteger(p.device)
+      ? { name: p.name, device_id: p.device } : null),
   },
   {
     field: 'rearPorts', endpoint: '/api/dcim/rear-ports/',
@@ -98,6 +107,8 @@ const SPECS = [
     payload: (o, ref) => ({
       device: ref(o.deviceUid), name: o.name, type: o.type, positions: o.positions,
     }),
+    naturalKey: (p) => (p.name && Number.isInteger(p.device)
+      ? { name: p.name, device_id: p.device } : null),
   },
   {
     field: 'frontPorts', endpoint: '/api/dcim/front-ports/',
@@ -106,16 +117,22 @@ const SPECS = [
       device: ref(o.deviceUid), name: o.name, type: o.type, positions: 1,
       rear_ports: [{ position: 1, rear_port: ref(o.rearPortUid), rear_port_position: o.rearPortPosition }],
     }),
+    naturalKey: (p) => (p.name && Number.isInteger(p.device)
+      ? { name: p.name, device_id: p.device } : null),
   },
   {
     field: 'powerPorts', endpoint: '/api/dcim/power-ports/',
     netboxType: 'dcim.powerport', label: 'PowerPort',
     payload: (o, ref) => ({ device: ref(o.deviceUid), name: o.name }),
+    naturalKey: (p) => (p.name && Number.isInteger(p.device)
+      ? { name: p.name, device_id: p.device } : null),
   },
   {
     field: 'powerOutlets', endpoint: '/api/dcim/power-outlets/',
     netboxType: 'dcim.poweroutlet', label: 'PowerOutlet',
     payload: (o, ref) => ({ device: ref(o.deviceUid), name: o.name }),
+    naturalKey: (p) => (p.name && Number.isInteger(p.device)
+      ? { name: p.name, device_id: p.device } : null),
   },
   {
     field: 'vlans', endpoint: '/api/ipam/vlans/',
@@ -123,6 +140,9 @@ const SPECS = [
     payload: (o, ref) => ({
       vid: o.vid, name: o.name, site: o.siteUid ? ref(o.siteUid) : null,
     }),
+    // Only inside a site. A VLAN id on its own repeats across an estate.
+    naturalKey: (p) => (Number.isInteger(p.vid) && Number.isInteger(p.site)
+      ? { vid: p.vid, site_id: p.site } : null),
   },
   {
     field: 'prefixes', endpoint: '/api/ipam/prefixes/',

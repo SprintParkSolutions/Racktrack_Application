@@ -102,6 +102,76 @@ function diff(payload, existing) {
  * key (t7-5) is swapped for the slugged hash (rk-old00001), and only where it
  * is a whole dash-delimited token, so t7-5 never matches inside t7-51.
  */
+/**
+ * Did NetBox refuse because the object is already there under its own name?
+ *
+ * NetBox answers 400 with a field error whose wording varies by model and by
+ * version: "manufacturer with this name already exists", "a top-level device
+ * role with this name and slug already exists", "interface with this Device
+ * and Name already exists". The one thing they share is the phrase, so that is
+ * what is matched, and only on a 400. Any other refusal is a real failure and
+ * is left alone.
+ */
+function alreadyExists(err) {
+  if (!err || err.status !== 400) return false;
+  const body = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail ?? '');
+  return /already exist/i.test(body);
+}
+
+/**
+ * Claim an object NetBox already holds, instead of counting it a failure.
+ *
+ * The join in this system is our own custom field, which only we write. An
+ * estate that already lists D-Link, or a role called Router, or the interfaces
+ * of a device somebody created by hand, carries none of our uids, so every one
+ * of those is planned as a create and refused by NetBox on its own uniqueness
+ * rules. Eight such refusals turned one live write into "write_failed" for
+ * objects that were already correct.
+ *
+ * So: look the object up by the natural key that made NetBox refuse, and if
+ * exactly one object answers, stamp our uid on it and use it. Only the custom
+ * field is patched. Nothing about the customer's object is renamed, moved or
+ * re-parented.
+ *
+ * The guards are the point, and they are the ones three reviewers wrote after
+ * refuting the first version of this idea:
+ *
+ *   - Only specs that HAVE a natural key. A rack and a device deliberately do
+ *     not. A device sitting at a shelf is somebody's asset, and claiming it
+ *     because the position collided is exactly the mis-merge that was refuted:
+ *     it stays a failure until the rack ladder and a person bind it.
+ *   - The key must be complete and scoped. An interface is found by its device
+ *     and its name, never by name alone; a VLAN by its id AND its site, never
+ *     by an id that repeats across an estate.
+ *   - Exactly one hit. Two is ambiguous and is left as a failure.
+ *   - An object already carrying somebody else's uid is never taken. That is
+ *     the "one uid on two objects" trap, and it stops here.
+ */
+async function adopt(client, spec, payload, uid, err) {
+  if (!alreadyExists(err)) return null;
+  if (typeof spec.naturalKey !== 'function') return null;
+  const key = spec.naturalKey(payload);
+  if (!key || !Object.keys(key).length) return null;
+
+  let hits;
+  try {
+    const res = await client.get(spec.endpoint, { ...key, limit: 2 });
+    hits = res.results || [];
+  } catch { return null; }
+  if (hits.length !== 1) return null;
+
+  const found = hits[0];
+  const carried = (found.custom_fields || {})[UID_FIELD];
+  // Already ours, under this very uid: nothing to stamp, just use it.
+  if (carried && carried !== uid) return null;
+  if (!carried) {
+    try {
+      await client.patch(spec.endpoint, found.id, { custom_fields: { [UID_FIELD]: uid } });
+    } catch { return null; }
+  }
+  return { id: found.id, by: Object.keys(key).join(' and ') };
+}
+
 function aliasUid(uid, key, hash) {
   if (!uid || !key || !hash) return null;
   const s = String(uid);
@@ -334,6 +404,22 @@ async function walk(snapshot, client, apply, report) {
         try {
           created = await client.post(spec.endpoint, payload);
         } catch (err) {
+          // NetBox refused because it already holds this object under its own
+          // name. That is a match, not a failure: the thing we were about to
+          // create is already there, it simply has never carried our uid.
+          const claimed = await adopt(client, spec, payload, obj.uid, err);
+          if (claimed) {
+            resolved.set(obj.uid, claimed.id);
+            report.changes.push({
+              type: spec.label, uid: obj.uid, name: String(name), action: 'update',
+              netboxId: claimed.id,
+              diff: { [UID_FIELD]: { from: null, to: obj.uid } },
+              reason: `NetBox already had this ${spec.label.toLowerCase()}, matched by ${claimed.by} and stamped rather than created again`,
+            });
+            bump('update');
+            bump('adopted');
+            continue;
+          }
           failed.add(obj.uid);
           report.changes.push({
             type: spec.label, uid: obj.uid, name: String(name), action: 'fail',
