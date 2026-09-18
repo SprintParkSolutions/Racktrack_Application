@@ -10,6 +10,7 @@ import { Browser } from '@capacitor/browser';
 import { downloadExport } from '../utils/exportApi';
 import { setCached } from '../utils/scanPrefetch';
 import { getJSON } from '../utils/safeStorage';
+import { matchIsTrusted, serverReportsConfirmations } from '../utils/matchEvidence';
 import { useSmartBack } from '../hooks/useSmartBack';
 import styles from './ReportPage.module.css';
 
@@ -145,10 +146,18 @@ const proofText = (ev) => PROOF[ev] || String(ev || '').replace(/_/g, ' ');
  * words are the camera's and which the switch's, what was heard but not
  * proven, and the list of things nobody has stated.
  *
- * `doc` is the report (confirmed matches only). `view` is the Review picture
- * for the same scan, optional: it carries the camera's un-merged identity per
- * device and each filed switch's own headline facts. Its suggested matches
- * are never used - a proposal is not a fact.
+ * `doc` is the report. `view` is the Review picture for the same scan,
+ * optional: it carries the camera's un-merged identity per device and each
+ * filed switch's own headline facts. Its unsaved suggestions are never used -
+ * a proposal is not a fact.
+ *
+ * A stored match is not a confirmed one either. Somebody has to say "this
+ * switch is that box" on the Review screen; until they do, the make, model and
+ * serial this report shows for that device rest on a machine's proposal, and
+ * `proposalDevNames` holds the devices where that is the case so the page can
+ * say so instead of printing the values as findings. A server that does not
+ * report confirmations cannot be asked, and there the page reads as it always
+ * did.
  */
 function derive(doc, view) {
   const devices = doc.devices || [];
@@ -157,11 +166,15 @@ function derive(doc, view) {
   const confirmed = Boolean(view) && !view.suggested;
 
   const swByDevName = new Map();
+  const proposalDevNames = new Set();
   if (confirmed) {
+    const asks = serverReportsConfirmations(view);
     for (const sw of view.switches || []) {
       if (!sw.read || !sw.matchedTo) continue;
       const name = uidToName.get(sw.matchedTo);
-      if (name) swByDevName.set(name, sw);
+      if (!name) continue;
+      swByDevName.set(name, sw);
+      if (asks && !matchIsTrusted(view, sw)) proposalDevNames.add(name);
     }
   }
 
@@ -185,7 +198,7 @@ function derive(doc, view) {
     }
   }
 
-  return { camByName, swByDevName, filed, read, up, heard };
+  return { camByName, swByDevName, proposalDevNames, filed, read, up, heard };
 }
 
 export default function ReportPage() {
@@ -460,6 +473,14 @@ export default function ReportPage() {
                 <p className={styles.emptyLine}>The camera saw no devices in this rack.</p>
               )}
 
+              {facts.proposalDevNames.size > 0 && (
+                <p className={styles.proposalNote}>
+                  {facts.proposalDevNames.size === 1
+                    ? 'One device below takes its make, model or serial from a switch match nobody has confirmed yet. Open Review and confirm the match, or read that row as a proposal.'
+                    : `${facts.proposalDevNames.size} devices below take their make, model or serial from a switch match nobody has confirmed yet. Open Review and confirm the matches, or read those rows as proposals.`}
+                </p>
+              )}
+
               <div className={styles.rows}>
                 {devices.map((d) => {
                   const key = `${d.u ?? 'x'}-${d.name}`;
@@ -469,6 +490,7 @@ export default function ReportPage() {
                       d={d}
                       cam={facts.camByName.get(d.name) || null}
                       sw={facts.swByDevName.get(d.name) || null}
+                      proposal={facts.proposalDevNames.has(d.name)}
                       open={Boolean(open[key])}
                       onToggle={() => setOpen((o) => ({ ...o, [key]: !o[key] }))}
                     />
@@ -561,7 +583,7 @@ export default function ReportPage() {
  * One device: its U, what the camera saw, and - where a switch was matched to
  * it - what the switch said about itself. Ports fold out underneath.
  */
-function DeviceRow({ d, cam, sw, open, onToggle }) {
+function DeviceRow({ d, cam, sw, proposal = false, open, onToggle }) {
   const matched = String(d.source || '').startsWith('switch');
   const ports = d.ports || [];
   const inUse = ports.filter((p) => p.inUse).length;
@@ -613,10 +635,24 @@ function DeviceRow({ d, cam, sw, open, onToggle }) {
       <div className={styles.rowMain}>
         <div className={styles.rowTop}>
           <b className={styles.rowTitle}>{titleOf(d)}</b>
-          {matched && <span className={styles.tag}>from the switch</span>}
+          {matched && (
+            <span className={proposal ? styles.tagProposal : styles.tag}>
+              {proposal ? 'proposal, not confirmed' : 'from the switch'}
+            </span>
+          )}
         </div>
 
         {identity && <p className={styles.said}>{identity}</p>}
+
+        {/* The values above came off a switch that was matched to this box by
+            the machine and by nobody else. Said here, on the row they belong
+            to, because a caveat at the top of a page is not attached to
+            anything. */}
+        {matched && proposal && (
+          <p className={styles.proposalLine}>
+            A proposal, waiting for someone to confirm that this switch is this box.
+          </p>
+        )}
 
         {stats.length > 0 && (
           <div className={styles.stats}>

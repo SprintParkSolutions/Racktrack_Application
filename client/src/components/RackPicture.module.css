@@ -1,0 +1,152 @@
+/* The rack, top down: a ruler of unit numbers and a column of shelves beside
+   it. The layout and the category colours come from the rack planning guide in
+   docs/reference; the tokens, the rounding and the tap targets are this app's.
+
+   Full width by design. The picture takes whatever column it is given, on a
+   phone or on a laptop, and never sits in a narrow centred box of its own. */
+
+.wrap {
+  width: 100%;
+  min-width: 0;
+  display: flex; flex-direction: column; gap: 8px;
+  /* One step of shelf height, so the ruler and the shelves cannot drift apart:
+     both read it. A phone gets the shorter step. */
+  --u-h: 17px;
+}
+@media (min-width: 480px) { .wrap { --u-h: 19px; } }
+
+.bar {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  font-size: 12.5px; color: var(--muted);
+}
+.bar b { font-size: 13.5px; font-weight: 650; color: var(--text); }
+
+.frame {
+  display: flex;
+  border: 1px solid var(--border, rgba(0,0,0,.14));
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.ruler {
+  flex: none;
+  display: flex; flex-direction: column;
+  width: 36px;
+  border-right: 1px solid var(--border, rgba(0,0,0,.14));
+  background: var(--bg2);
+}
+.tick {
+  height: var(--u-h);
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 6px;
+  font-family: var(--mono); font-size: 9px; line-height: 1;
+  color: var(--muted); opacity: .75;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,.06));
+}
+.tick5 { opacity: 1; font-weight: 650; }
+.tick:last-child { border-bottom: 0; }
+
+.column { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* The ruler drops its last line, so the shelves drop theirs too: one stray
+   pixel at the bottom is all it takes for the numbers to stop lining up with
+   the shelves they are numbering. */
+.column > *:last-child { border-bottom: 0; }
+
+/* An empty shelf: hatched, so it reads as space rather than as a white box. */
+.empty {
+  height: var(--u-h);
+  border-bottom: 1px solid var(--border, rgba(0,0,0,.06));
+  background: repeating-linear-gradient(
+    45deg, transparent, transparent 5px,
+    rgba(120,120,120,.10) 5px, rgba(120,120,120,.10) 6px);
+}
+
+/* One device in its shelf. A button when the picture can be picked from, a
+   plain block when it cannot; both look the same. */
+.box {
+  height: var(--u-h);
+  width: 100%;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 8px;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(8,19,31,.18);
+  font-family: var(--mono); font-size: 10.5px; line-height: 1;
+  color: #08131f;
+  text-align: left;
+  overflow: hidden;
+  position: relative;
+  transition: opacity .14s ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+button.box { cursor: pointer; }
+/* The second and later shelves of a taller box: same colour, no repeated name,
+   no line across the middle of one device. */
+.cont { border-top: 0; }
+.box.cont { border-bottom-color: rgba(8,19,31,.10); }
+
+.name {
+  flex: 1; min-width: 0;
+  font-weight: 650;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ports { flex: none; opacity: .75; font-variant-numeric: tabular-nums; }
+
+/* The one device being talked about. An outline and a marker down the left
+   edge, not colour alone: the dimming says "these are the others", the outline
+   says "this is the one". */
+.on {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+  z-index: 1;
+}
+.on::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--text);
+}
+.dim { opacity: .34; }
+
+/* Boxes the camera saw but could not put on a shelf. They are still real, so
+   they are still offered; they just have nowhere to be drawn. */
+.loose { display: flex; flex-direction: column; gap: 6px; }
+.looseHead {
+  margin: 0;
+  font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: 600;
+}
+.looseRow { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex; align-items: center;
+  min-height: 30px; padding: 0 10px;
+  border: 1px solid rgba(8,19,31,.18); border-radius: 8px;
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  color: #08131f;
+  -webkit-tap-highlight-color: transparent;
+}
+button.chip { cursor: pointer; }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 4px 12px;
+  font-size: 11.5px; color: var(--muted);
+}
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i {
+  width: 10px; height: 10px; border-radius: 3px;
+  border: 1px solid rgba(8,19,31,.2);
+}
+
+/* Category colours, from the guide's legend. Dark text on every one of them,
+   in both themes, because the colour is the background and the words are the
+   thing being read. */
+.cat_network { background: #0f86c7; }
+.cat_cabling { background: #7a63d9; }
+.cat_compute { background: #189a63; }
+.cat_storage { background: #6fd6c4; }
+.cat_power   { background: #e0932a; }
+.cat_support { background: #c7d0e0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .box { transition: none; }
+}

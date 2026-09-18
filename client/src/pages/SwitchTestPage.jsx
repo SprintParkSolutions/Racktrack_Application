@@ -333,14 +333,14 @@ export default function SwitchTestPage() {
       if (!v.ok) return;
       const view = await v.json();
       setPlaces(view);
-      // Start from what is stored; otherwise take what the server proposes.
+      // Start from what is stored; otherwise show what the server proposes.
       //
       // Only a HIGH-confidence proposal used to be taken, which in practice
       // meant almost none: the camera reads "Unidentified Switch, make
       // unknown" off most boxes, so the port count is the only evidence and
       // the score never reached high - and the screen said "Not placed yet"
       // about a rack the server had already worked out. Every proposal is
-      // taken now; it is shown as a suggestion, and one tap changes it.
+      // shown now, as a proposal, and one tap changes it.
       // Once places have been saved they are the truth, including "not in
       // this rack": falling back to the server's proposal for an empty stored
       // place made a saved "none" spring back to the suggestion the moment
@@ -351,17 +351,14 @@ export default function SwitchTestPage() {
       }
       setMatch(start);
 
-      // Nothing has ever been stored for this rack and the server has
-      // proposed something: store it, so the report and the export show the
-      // rack as matched without anyone having to press Save on a screen they
-      // agreed with. A person who disagrees changes it and saves again.
-      if (view.suggested && Object.values(start).some(Boolean)) {
-        authFetch(apiUrl(`/api/nb/scans/${id}/reconcile`), {
-          method: 'POST', headers: JSON_HEADERS,
-          body: JSON.stringify({ matches: Object.fromEntries(
-            Object.entries(start).map(([k, v]) => [k, v || null])) }),
-        }).catch(() => { /* it stays a suggestion until someone saves it */ });
-      }
+      // A proposal is shown and nothing more.
+      //
+      // This used to POST the proposal the moment the screen loaded, with
+      // nobody looking at it. That was the whole bug: a stored match reads as
+      // a confirmed one everywhere downstream, so a guess made by a port count
+      // arrived in the report, the export and NetBox as a fact a person had
+      // agreed to. Saving is a person's act now - Save places here, or Confirm
+      // on the Review screen, which confirms one switch at a time.
     } catch { /* the rack simply has no places to offer yet */ }
   }, [rackId]);
 
@@ -1012,34 +1009,44 @@ export default function SwitchTestPage() {
                   places to offer. The camera found the boxes; this says which
                   box this switch is - from the list, or off the photo. */}
               {r?.kind === 'full' && serverIdFor(sw, rackId) && places?.devices?.length > 0 && !editing && (
-                <PlacePicker
-                  devices={places.devices}
-                  image={places.image}
-                  value={match[serverIdFor(sw, rackId)] ?? ''}
-                  name={sw.label}
-                  suggestion={(places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.autoMatch || null}
-                  written={Boolean((places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.written)}
-                  confirming={confirming === serverIdFor(sw, rackId)}
-                  onConfirm={(uid) => confirmPlace(serverIdFor(sw, rackId), uid)}
-                  takenBy={Object.fromEntries(
-                    Object.entries(match)
-                      .filter(([id, uid]) => uid && id !== String(serverIdFor(sw, rackId)))
-                      .map(([id, uid]) => [uid, (places.switches || []).find((x) => String(x.id) === id)?.label || 'another switch']),
-                  )}
-                  onChange={(uid) => setMatch((m) => {
-                    // One box holds one switch, so pointing this one at a box
-                    // another switch holds moves it rather than making a pair the
-                    // server has to refuse. The Review screen has always done
-                    // this; this picker only labelled the clash and then posted it.
-                    const next = { ...m, [serverIdFor(sw, rackId)]: uid };
-                    if (uid) {
-                      for (const other of Object.keys(next)) {
-                        if (String(other) !== String(serverIdFor(sw, rackId)) && next[other] === uid) next[other] = '';
+                <>
+                  <PlacePicker
+                    devices={places.devices}
+                    image={places.image}
+                    value={match[serverIdFor(sw, rackId)] ?? ''}
+                    name={sw.label}
+                    suggestion={(places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.autoMatch || null}
+                    written={Boolean((places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.written)}
+                    confirming={confirming === serverIdFor(sw, rackId)}
+                    onConfirm={(uid) => confirmPlace(serverIdFor(sw, rackId), uid)}
+                    takenBy={Object.fromEntries(
+                      Object.entries(match)
+                        .filter(([id, uid]) => uid && id !== String(serverIdFor(sw, rackId)))
+                        .map(([id, uid]) => [uid, (places.switches || []).find((x) => String(x.id) === id)?.label || 'another switch']),
+                    )}
+                    onChange={(uid) => setMatch((m) => {
+                      // One box holds one switch, so pointing this one at a box
+                      // another switch holds moves it rather than making a pair the
+                      // server has to refuse. The Review screen has always done
+                      // this; this picker only labelled the clash and then posted it.
+                      const next = { ...m, [serverIdFor(sw, rackId)]: uid };
+                      if (uid) {
+                        for (const other of Object.keys(next)) {
+                          if (String(other) !== String(serverIdFor(sw, rackId)) && next[other] === uid) next[other] = '';
+                        }
                       }
-                    }
-                    return next;
-                  })}
-                />
+                      return next;
+                    })}
+                  />
+                  {/* Nothing has been stored for this rack yet, so what is
+                      showing is the server's proposal. Say so where it shows,
+                      rather than letting it read as a place somebody chose. */}
+                  {places.suggested && match[serverIdFor(sw, rackId)] && (
+                    <p className={styles.proposal}>
+                      This place is a proposal from the photo. Press Save places to keep it.
+                    </p>
+                  )}
+                </>
               )}
 
               {/* ── What the switch actually said ──
@@ -1183,6 +1190,15 @@ export default function SwitchTestPage() {
             {matchNote && (
               <p className={matchNote.ok ? styles.finishOk : styles.finishBad}>{matchNote.text}</p>
             )}
+            {/* The places on screen are the server's proposal until somebody
+                saves them. Going to the report no longer saves them on the way
+                past: the report says which facts rest on a proposal, and a
+                place is stored because a person chose to store it. */}
+            {places?.suggested && Object.values(match).some(Boolean) && (
+              <p className={styles.proposal}>
+                These places are a proposal from the photo. Press Save places to keep them.
+              </p>
+            )}
             <div className={styles.actions}>
               {places?.devices?.length > 0 && (
                 <button type="button" className={styles.secondary} disabled={savingMatch} onClick={() => savePlaces()}>
@@ -1193,9 +1209,7 @@ export default function SwitchTestPage() {
                 type="button"
                 className={styles.primary}
                 disabled={savingMatch}
-                onClick={async () => {
-                  if (!places?.devices?.length || await savePlaces()) navigate(`/results/${encodeURIComponent(rackId)}/report`);
-                }}
+                onClick={() => navigate(`/results/${encodeURIComponent(rackId)}/report`)}
               >
                 Go to report
               </button>

@@ -387,6 +387,10 @@
   font-family: var(--font); font-size: 12.5px; font-weight: 700;
   color: #0f7b4f; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
+/* A place the server proposed and nobody has saved. Amber, like every other
+   "read this before you rely on it" line on the page. */
+.proposal { margin: 0; font-size: 12.5px; line-height: 1.45; color: #b26a00; }
+
 .formErr { margin: 0; font-size: 13px; font-weight: 600; color: #c0392b; }
 .fieldNote code {
   background: var(--bg); padding: 1px 5px; border-radius: 4px;

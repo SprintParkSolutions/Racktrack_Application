@@ -10,6 +10,7 @@ import { getCached, setCached, cacheKey } from '../utils/scanPrefetch';
 import SfpAdvisor from '../components/SfpAdvisor.jsx';
 import DeviceLabelCapture from '../components/DeviceLabelCapture.jsx';
 import { findVendorLogin } from '../utils/vendorLoginUrls';
+import { matchIsTrusted, serverReportsConfirmations } from '../utils/matchEvidence';
 import { getItem, setItem, removeItem } from '../utils/safeStorage';
 
 // CMDB-driven switch info. Reads the list of switches stored in CMDB for
@@ -157,7 +158,13 @@ function SourceBadge({ sw }) {
   const conf = sw.ocr_conf != null ? Math.round(sw.ocr_conf * 100) : null;
 
   let label, bg, color;
-  if (sw._fromSwitch) {
+  if (sw._fromSwitch && sw._switchProposal) {
+    // A switch was matched to this box by the machine alone, so what follows is
+    // a proposal and says so.
+    label = 'Proposal, not confirmed';
+    bg = '#ffffff';
+    color = '#b26a00';
+  } else if (sw._fromSwitch) {
     // The box answering for itself. Nothing the camera can offer beats it.
     label = 'From the switch';
     bg = 'rgba(15,123,79,.10)';
@@ -661,6 +668,20 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                 Reading label
               </span>
             )}
+            {/* The make, model and serial on this card came off a switch that
+                was matched to this box by the machine and by nobody else. Named
+                here, beside them, rather than presented as what the box says
+                about itself. */}
+            {sw._switchProposal && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center',
+                fontSize: '.68rem', fontWeight: 700, color: '#b26a00',
+                background: '#ffffff', border: '1px solid #ececec',
+                padding: '2px 8px', borderRadius: 20,
+              }}>
+                Proposal, not confirmed
+              </span>
+            )}
           </div>
           {(sw.position || sw.ip_address || effectiveMake) && (() => {
             // Per-vendor login portal: if we have a curated URL for this
@@ -697,6 +718,12 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
               </div>
             );
           })()}
+          {sw._switchProposal && (
+            <div style={{ fontSize: '.7rem', color: '#b26a00', marginTop: 4, lineHeight: 1.45 }}>
+              These details come from a switch match nobody has confirmed yet. Confirm it
+              on the Review screen.
+            </div>
+          )}
         </div>
 
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -1655,11 +1682,17 @@ function useSwitchData(rackId) {
         if (!v.ok || cancelled) return;
         const view = await v.json();
         const uOf = new Map((view.devices || []).map((d) => [d.uid, d.position]));
+        const asksConfirm = serverReportsConfirmations(view);
         const byU = {};
         for (const sw of view.switches || []) {
           const u = sw.matchedTo ? uOf.get(sw.matchedTo) : null;
           if (u == null) continue;
           byU[Number(u)] = {
+            // Whether a person has said this switch is this box. A match the
+            // machine proposed still fills the card - it is the best account
+            // anyone has - but the card says it is a proposal rather than
+            // presenting a guess as the box's own word.
+            proposal: asksConfirm && !matchIsTrusted(view, sw),
             make: sw.vendor || '',
             model: sw.model || '',
             serial: sw.serial || '',
@@ -1732,6 +1765,7 @@ function useSwitchData(rackId) {
       hardware_rev: live?.hardware || '',
       live_label: live?.label || '',
       _fromSwitch: Boolean(live),
+      _switchProposal: Boolean(live && live.proposal),
       ocr_conf: d.match_conf,
       raw_text: d.raw_text || '',
       port_count: live?.ports || d.port_count,
