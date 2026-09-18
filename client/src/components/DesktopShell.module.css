@@ -317,7 +317,20 @@
 :global([data-theme='light']) .navLink:hover { background: rgba(0, 0, 0, 0.045); color: #121212; }
 :global([data-theme='light']) .navLink.active { background: rgba(18, 18, 18, 0.07); font-weight: 600; }
 :global([data-theme='light']) .navLink.active::before { left: 2px; top: 10px; bottom: 10px; width: 2px; }
-.sidebarBottom { padding: 12px 4px 2px; gap: 6px; }
+/* The account row follows the last destination instead of being pinned to the
+   floor. `margin-top: auto` suits a rail that is nearly full, and an owner's
+   twelve rows nearly fill one. A technician has five. Measured at 1440x900 on
+   the live site, auto resolved to 493px for a technician against 179px for the
+   owner: the last row ended at y=342 and the next thing on the rail was this
+   block's hairline at y=835, so more than half the rail was blank with a rule
+   floating in the middle of it. A fixed gap reads as a list that ended, which
+   is what it is, and it also stops the foot being shoved below the fold on a
+   viewport under about 700px tall.
+
+   Side padding goes to 0 so the row inherits the rail's own 14px gutter. With
+   4px of its own it sat 4px right of every other row, which put a step in the
+   one icon column the eye follows down the rail. */
+.sidebarBottom { margin-top: 32px; padding: 12px 0 2px; gap: 6px; }
 .navLinkFoot { width: auto; flex: 1; margin-bottom: 0; min-width: 0; }
 .signOut { padding: 8px; border-radius: 9px; }
 .signOut svg { width: 18px; height: 18px; }
