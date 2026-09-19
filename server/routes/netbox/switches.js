@@ -15,8 +15,45 @@ const switches = require('../../lib/netbox/switches');
 // RackTrack's drift store — the table the Drift view reads.
 const { feedDrift } = require('../../lib/netbox/drift_feed');
 const { logger } = require('../../lib/observability');
+const gates = require('./gates');
+const scope = require('./scope');
 
 const router = express.Router();
+
+/**
+ * Who may reach which switch route.
+ *
+ * An admin reaches all of them. A technician is the person at the rack with
+ * the phone: the phone reads the switch itself, and files that reading so
+ * Drift can use it. That takes three routes - list this rack's switches, add
+ * one to this rack, file a reading against one - and only for a rack their
+ * Site can see. Editing, removing, server-side test and read, and the stored
+ * credentials stay with the admin.
+ */
+const TECHNICIAN_ROUTES = [
+  ['GET', /^\/$/],
+  ['POST', /^\/$/],
+  ['POST', /^\/\d+\/reading$/],
+];
+const NOT_FOR_TECHNICIANS = 'Setting up switches is for an admin. From the phone you can read a switch '
+  + 'at a rack you are scanning, and the reading is saved for it.';
+
+router.use((req, res, next) => {
+  if (gates.isAdmin(req)) return next();
+  // The whole inventory is not theirs: a list names its rack or is refused.
+  const open = req.user?.role === 'member'
+    && TECHNICIAN_ROUTES.some(([method, path]) => method === req.method && path.test(req.path))
+    && !(req.method === 'GET' && !req.query.rackId);
+  if (!open) return res.status(403).json({ error: NOT_FOR_TECHNICIANS });
+  // The rack the request is about: named in the query or body, or the one
+  // the switch was filed under. A switch that does not exist is a 404.
+  return scope.requireRack((r) => {
+    if (r.method === 'GET') return r.query.rackId;
+    if (r.path === '/') return r.body?.rackId;
+    const sw = switches.find(r.path.split('/')[1]);
+    return sw ? sw.rackId : null;
+  })(req, res, next);
+});
 
 /**
  * Every SNMP failure is somebody's job, and which one it is decides who gets

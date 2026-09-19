@@ -656,13 +656,15 @@ try {
   // - the member's six routes take gates.technician, the rest gates.admin. A
   // gate on the route can say WHY it refused; a bare 403 from the mount
   // cannot, and it would shut the technician out of the routes that are
-  // theirs. switches and unmanaged stay admin-only at the mount.
+  // theirs. switches does the same: the technician lists, adds and files a
+  // phone reading for their own rack, and the router refuses the rest.
+  // unmanaged stays admin-only at the mount.
   const nbAny   = auth.requireAuth;                                     // then a gate per route
   const nbField = auth.requireRole('owner', 'org_admin', 'site_manager');
   const nbOwner = auth.requireRole('owner');   // authenticates too — see requireRole
 
   app.use('/api/nb/scans',      nbAny,   require('./routes/netbox/scans'));
-  app.use('/api/nb/switches',   nbField, require('./routes/netbox/switches'));
+  app.use('/api/nb/switches',   nbAny,   require('./routes/netbox/switches'));
   app.use('/api/nb/unmanaged',  nbField, require('./routes/netbox/unmanaged'));
   app.use('/api/nb/plans',      nbAny,   require('./routes/netbox/plans'));
   app.use('/api/nb/netbox',     nbAny,   require('./routes/netbox/netbox'));
