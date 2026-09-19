@@ -3882,6 +3882,25 @@ app.get('/api/analyze/result/:jobId', (req, res) => {
   res.json({ status: j.status, rackId: j.rackId || null, error: j.error || null });
 });
 
+// The phone's position, from the upload's form fields, or nothing. Every value
+// is checked, so a bad or missing reading is simply absent rather than stored.
+function captureLocationFrom(body) {
+  const n = (v) => (v === undefined || v === null || v === '' ? NaN : Number(v));
+  const lat = n(body && body.lat);
+  const lng = n(body && body.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return {};
+  const acc = n(body.accuracy);
+  const at = String((body && body.locatedAt) || '').slice(0, 40);
+  return {
+    captureLocation: {
+      lat: Math.round(lat * 1e6) / 1e6,
+      lng: Math.round(lng * 1e6) / 1e6,
+      accuracyM: Number.isFinite(acc) && acc >= 0 && acc < 1e6 ? Math.round(acc) : null,
+      at: /^\d{4}-\d{2}-\d{2}T/.test(at) ? at : null,
+    },
+  };
+}
+
 app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file provided' });
   trackScanJob(req, res);
@@ -4141,6 +4160,10 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
       qualityWarning:    quality.warning || null,
       qualityWarningMsg: quality.warning_msg || null,
       ..._spaceFields,  // { space: { id, name } } only when the scan named one
+      // Where the phone was when the photo was taken, if it said. Used by the
+      // rack ladder to tell which Site the photo was taken at (lib/location.js),
+      // never to pick a rack: indoors it is good to tens of metres at best.
+      ...captureLocationFrom(req.body),
     };
     writeMeta(rackId, meta);
     _bindScanSpace(rackId, _scanTenantId, _scanUserId);

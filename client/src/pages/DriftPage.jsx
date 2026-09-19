@@ -190,6 +190,8 @@ export default function DriftPage() {
 
   // Nothing decided which rack this is, so a person still has to.
   const unsettled = !!identity && identity.decision !== 'matched';
+  // Where the photo was taken, as the rack ladder judged it (lib/location.js).
+  const where = identity && identity.evidence ? identity.evidence.location : null;
 
   // What is still open, said plainly. Only ever shown when nothing was decided.
   const stillOpen = useMemo(() => {
@@ -367,6 +369,14 @@ export default function DriftPage() {
           )}
 
           {stillOpen && <span className={styles.againstOpen}>{stillOpen}</span>}
+
+          {/* Where the photo was taken, when the phone said. Said only when it
+              tells somebody something: at this Site, at another one, or far
+              from any. "No location" is not worth a line. */}
+          {where && where.verdict !== 'unknown' && (
+            <span className={where.verdict === 'here' ? styles.againstWhy : styles.againstOpen}
+              data-testid="taken-at">{where.note}</span>
+          )}
 
           {!sent && (shortlist.length > 0 || newName) && (
             <div className={styles.pick}>

@@ -695,6 +695,62 @@ function scanNameOf(rackId) {
 }
 
 /**
+ * Rung 0, applied last: where the photo was taken.
+ *
+ * GPS indoors cannot tell one rack from the next, so it never picks a rack.
+ * It can tell one datacentre from another, and every rung above looks for the
+ * rack inside the Site the scan is filed under. So when the photo was taken at
+ * a different Site of the organisation, or nowhere near this one, a match that
+ * rests on reading a label is turned back into a suggestion, because "Rack 1"
+ * is also a rack in the other city. A person's own confirmation is not
+ * overruled: they were standing there. The verdict is always shown, whichever
+ * way it goes, including when there is nothing to go on.
+ */
+const location = require('./location');
+
+function captureLocationOf(rackId) {
+  try {
+    const meta = JSON.parse(fs.readFileSync(path.join(OUTPUTS_DIR, String(rackId), 'scan_meta.json'), 'utf8'));
+    return meta && meta.captureLocation ? meta.captureLocation : null;
+  } catch { return null; }
+}
+
+function sitesAround(tenantId) {
+  try {
+    const own = db.prepare('SELECT id, name, lat, lng, organization_id FROM tenants WHERE id = ?').get(tenantId);
+    if (!own) return { site: null, others: [] };
+    const others = own.organization_id == null ? []
+      : db.prepare('SELECT id, name, lat, lng FROM tenants WHERE organization_id = ? AND id != ?')
+        .all(own.organization_id, own.id);
+    return { site: own, others };
+  } catch { return { site: null, others: [] }; }
+}
+
+function applyLocation(out, { tenantId, capture }) {
+  if (tenantId == null) return out;
+  const { site, others } = sitesAround(tenantId);
+  const where = location.judge(capture, site, others);
+  out.evidence.location = where;
+  out.evidence.notes.push(where.note);
+  const doubtful = where.verdict === 'elsewhere' || where.verdict === 'away';
+  if (doubtful && out.decision === 'matched' && out.rule !== 'record') {
+    out.decision = 'suggested';
+    out.confidence = 'possible';
+    out.rack = null;
+    out.rackKey = null;
+    out.evidence.notes.push('So this is only a suggestion until a person confirms it.');
+  }
+  return out;
+}
+
+async function identify(rackId, opts = {}) {
+  const out = await identifyFromEvidence(rackId, opts);
+  const capture = opts.captureLocation !== undefined ? opts.captureLocation : captureLocationOf(rackId);
+  return applyLocation(out, { tenantId: opts.tenantId, capture });
+}
+
+
+/**
  * Which of the customer's racks is this scan? Reads only.
  *
  *   identify(rackId, { tenantId, spaceId?, netboxClient?, physicalLayer? })
@@ -713,7 +769,7 @@ function scanNameOf(rackId) {
  * holding twelve would otherwise merge all twelve into it
  * (docs/design/part-b-dedup-design-review.md, finding 2).
  */
-async function identify(rackId, { tenantId, spaceId, netboxClient: rawClient = null, physicalLayer } = {}) {
+async function identifyFromEvidence(rackId, { tenantId, spaceId, netboxClient: rawClient = null, physicalLayer } = {}) {
   const netboxClient = guarded(rawClient);
   const notes = [];
   const out = {
@@ -1097,6 +1153,7 @@ function tenantForRack(user, rackId, asked = null) {
 module.exports = {
   IdentityError,
   identify,
+  applyLocation,
   confirm,
   confirmedRack,
   tenantForRack,

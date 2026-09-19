@@ -972,6 +972,31 @@ export default function ScanPage() {
   const spaceTenantId = authUser?.tenant_id || null;
   const [spaces, setSpaces] = useState([]);
   const [spaceId, setSpaceId] = useState(() => (spaceTenantId ? (getItem(SPACE_KEY_PREFIX + spaceTenantId) || '') : ''));
+
+  // Where the phone is, asked once when the scan page opens rather than when
+  // Analyze is pressed, so the permission prompt can never hold up an upload.
+  // It goes with the photo and lets the rack ladder tell which Site the photo
+  // was taken at; indoors it is far too rough to pick a rack, and is never used
+  // for that. Refused, unavailable or slow simply means the photo goes without.
+  const hereRef = useRef(null);
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return undefined;
+    let live = true;
+    try {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (!live) return;
+          hereRef.current = {
+            lat: pos.coords.latitude, lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy, at: new Date(pos.timestamp || Date.now()).toISOString(),
+          };
+        },
+        () => { /* no location: the scan goes without one */ },
+        { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 },
+      );
+    } catch { /* a WebView without geolocation */ }
+    return () => { live = false; };
+  }, []);
   useEffect(() => {
     if (!spaceTenantId) { setSpaces([]); return undefined; }
     let cancelled = false;
@@ -1192,6 +1217,12 @@ export default function ScanPage() {
       // space belongs to the caller's Site and records the rack in it. With
       // nothing picked the field is absent and the request is unchanged.
       if (endpoint === '/api/analyze' && spaceId) body.append('spaceId', String(spaceId));
+      if (endpoint === '/api/analyze' && hereRef.current) {
+        body.append('lat', String(hereRef.current.lat));
+        body.append('lng', String(hereRef.current.lng));
+        body.append('accuracy', String(hereRef.current.accuracy));
+        body.append('locatedAt', hereRef.current.at);
+      }
 
       // Remember this scan so it can be reclaimed if iOS suspends the app
       // mid-analysis (the request below dies, but the scan finishes on the
