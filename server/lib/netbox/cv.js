@@ -527,24 +527,60 @@ function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight =
     // the disagreement is recorded rather than smoothed over: two ports
     // reading as one number is a detection problem for a person to look at.
     const namedOnDevice = new Map();
+
+    // A port's identity on a re-read is the number printed beside it, not its
+    // place in the detection list. The uid used to be the place, and a second
+    // reading of the same photograph lists the ports in a different order, so
+    // uid ":6" named a different physical port each time: every port looked
+    // renamed, and the renames could not be applied, because the old records
+    // - including ports this reading did not see at all, which are never
+    // deleted - still held the numbers the new ones wanted. On the demo rack
+    // that was 120 refused renames in one write. So a port on a device carried
+    // over from the previous reading inherits the record of the old port with
+    // the same printed number. Only a number actually READ is trusted for this;
+    // a fallback name made up for a duplicate is not a reading of anything.
+    const oldPorts = carried.has(mapIndex)
+      ? ((previous && previous.interfaces) || []).filter((i) => i.deviceUid === devUid) : [];
+    const oldByName = new Map(oldPorts.map((i) => [String(i.name), i.uid]));
+    const oldUids = new Set(oldPorts.map((i) => i.uid));
+    const usedPortUids = new Set();
+
     extractPorts(d).forEach((port, idx) => {
       const read = port.index != null ? String(port.index) : null;
       let portName = read || String(idx + 1);
+      let duplicateOf = null;
       if (namedOnDevice.has(portName)) {
-        const first = namedOnDevice.get(portName);
+        duplicateOf = namedOnDevice.get(portName);
         portName = String(idx + 1);
+      }
+      if (!namedOnDevice.has(portName)) namedOnDevice.set(portName, idx + 1);
+
+      let portUid = null;
+      const inherited = read !== null && portName === read ? oldByName.get(portName) : undefined;
+      if (inherited && !usedPortUids.has(inherited)) portUid = inherited;
+      if (!portUid) {
+        // A port that inherits nothing never takes over another port's record:
+        // not one some other port here inherits, and not one an unseen port
+        // still carries.
+        portUid = `if:${devUid}:${idx + 1}`;
+        for (let n = 1; oldUids.has(portUid) || usedPortUids.has(portUid); n += 1) {
+          portUid = `if:${devUid}:${idx + 1}.${n}`;
+        }
+      }
+      usedPortUids.add(portUid);
+
+      if (duplicateOf !== null) {
         snap.conflicts.push(Conflict({
-          subjectUid: `if:${devUid}:${idx + 1}`, field: 'name',
+          subjectUid: portUid, field: 'name',
           cvSays: read,
           note: `CV read two ports on "${label}" as number ${read}: the one at `
-              + `place ${first} and the one at place ${idx + 1}. One device holds one `
+              + `place ${duplicateOf} and the one at place ${idx + 1}. One device holds one `
               + `port of each name, so the second is recorded as ${portName} `
               + 'pending review.',
         }));
       }
-      if (!namedOnDevice.has(portName)) namedOnDevice.set(portName, idx + 1);
       snap.interfaces.push(Interface(
-        observed(`if:${devUid}:${idx + 1}`, Evidence.CV_ONLY,
+        observed(portUid, Evidence.CV_ONLY,
           { category: port.category, status: port.status, synthesized: port.synthesized }),
         { deviceUid: devUid, name: portName, type: port.type }));
     });

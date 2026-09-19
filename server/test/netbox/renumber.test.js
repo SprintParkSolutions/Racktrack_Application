@@ -233,16 +233,48 @@ const namesOf = (nb) => nb.rows(IFACES)
   .sort((a, b) => String(a.custom_fields[UID_FIELD]).localeCompare(String(b.custom_fields[UID_FIELD])))
   .map((o) => String(o.name));
 
-test('a switch whose ports were read again and numbered round in a circle is renamed in one write', async () => {
-  // Found live: re-reading the demo rack with the current models failed 120
-  // renames in one write, because port 2 becoming "3" is refused while port 3
-  // still holds "3", and NetBox checks one rename at a time.
+test('a re-read that lists the ports in another order keeps every port on its own record', async () => {
+  // Found live: re-reading the demo rack failed 120 port renames in one write.
+  // A port's uid was its place in the list, and a second reading lists ports in
+  // a different order, so every port looked renamed. On a re-read a port now
+  // inherits the record of the old port with the same printed number.
+  const nb = strictNetBox();
+  const before = cv.toSnapshot(switchWithPorts([1, 2, 3]), opts());
+  await writer.push(before, nb);
+  const mark = nb.calls.length;
+  const after = cv.toSnapshot(switchWithPorts([2, 3, 1]), opts(before));
+  const uidOf = (snap, name) => snap.interfaces.find((i) => i.name === name).uid;
+  for (const n of ['1', '2', '3']) assert.equal(uidOf(after, n), uidOf(before, n), `port ${n} kept its record`);
+  const out = await writer.push(after, nb);
+  assert.deepEqual(out.changes.filter((c) => c.action === 'fail'), []);
+  assert.deepEqual(nb.calls.slice(mark).filter((c) => c.method !== 'GET'), [], 'nothing needed writing at all');
+});
+
+test('a port nobody saw this time keeps its record and its number, and the new ports route round it', async () => {
+  // The other half of the live failure: 23 port records the new reading did
+  // not see still held numbers the new ports wanted. A port that inherits
+  // nothing must not take over one of those records.
+  const nb = strictNetBox();
+  const before = cv.toSnapshot(switchWithPorts([1, 2, 3, 4]), opts());
+  await writer.push(before, nb);
+  const after = cv.toSnapshot(switchWithPorts([2, 1, 3]), opts(before));   // port 4 not seen
+  const oldUids = new Set(before.interfaces.map((i) => i.uid));
+  assert.ok(after.interfaces.every((i) => oldUids.has(i.uid)), 'all three seen ports inherited');
+  const out = await writer.push(after, nb);
+  assert.deepEqual(out.changes.filter((c) => c.action === 'fail'), []);
+  assert.equal(nb.rows(IFACES).length, 4, 'the unseen port is still there; nothing was created or deleted');
+});
+
+test('a snapshot with no previous reading still renames ports in one write when their names swap', async () => {
+  // Renames still happen where there is no previous reading to inherit from,
+  // and NetBox still checks one at a time. That is what the temporary name
+  // step is for.
   const nb = strictNetBox();
   const before = cv.toSnapshot(switchWithPorts([1, 2, 3]), opts());
   await writer.push(before, nb);
   assert.deepEqual(namesOf(nb), ['1', '2', '3']);
 
-  const after = cv.toSnapshot(switchWithPorts([2, 3, 1]), opts(before));
+  const after = cv.toSnapshot(switchWithPorts([2, 3, 1]), opts());
   const out = await writer.push(after, nb);
   const fails = out.changes.filter((c) => c.action === 'fail');
   assert.deepEqual(fails, [], `refused: ${JSON.stringify(fails.map((f) => f.reason))}`);
@@ -256,7 +288,7 @@ test('a port whose rename is refused gets its old name back, not a temporary one
   const before = cv.toSnapshot(switchWithPorts([1, 2, 3]), opts());
   await writer.push(before, nb);
   nb.refuseName.add('9');
-  const after = cv.toSnapshot(switchWithPorts([9, 2, 3]), opts(before));
+  const after = cv.toSnapshot(switchWithPorts([9, 2, 3]), opts());
   const out = await writer.push(after, nb);
   assert.equal(out.changes.filter((c) => c.action === 'fail').length, 1, 'the one refused rename is reported');
   assert.deepEqual(namesOf(nb), ['1', '2', '3'], 'and the port kept the name it had');
