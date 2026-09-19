@@ -332,6 +332,39 @@ def _normalize_seg_label(raw):
     return _SEG_LABEL_MAP.get(str(raw).strip().lower(), str(raw).title())
 
 
+# ── Rack-level inference size ──────────────────────────────────
+#
+# A phone photo is 4032x3024 or larger, and YOLO shrinks it to 640 in one linear
+# step. The rack-level models (devices, units) are therefore run on a copy first
+# shrunk by a whole factor with area averaging - long side at most about 1000px -
+# and their boxes are multiplied back to the original. Ports are still read from
+# crops of the full-resolution image, so nothing that needs detail loses it.
+#
+# Measured on the 22 test photos with a long side of 2000px or more, before this
+# was adopted: devices 277 found at full size and 279 shrunk first, mean
+# confidence 0.804 and 0.803, 99% of boxes agreeing both ways; units 520 and 524,
+# 98-99% agreeing; the same median time. So it changes neither what is found nor
+# how fast. It is here so that inference behaves the same whatever camera took
+# the photo, which is what the team that adopted it asked for.
+INFERENCE_LONG_SIDE = 1000
+
+
+def shrink_for_inference(img, target=INFERENCE_LONG_SIDE):
+    """A copy with the long side divided by a whole factor, and the factor.
+
+    3000x2000 becomes 1000x666 with factor 3. Anything under twice the target is
+    returned as it is with factor 1, so a normal photo is not touched.
+    """
+    h, w = img.shape[:2]
+    factor = max(h, w) // target
+    if factor < 2:
+        return img, 1
+    small = cv2.resize(
+        img, (max(1, w // factor), max(1, h // factor)), interpolation=cv2.INTER_AREA
+    )
+    return small, factor
+
+
 def detect_devices_seg(img, model, conf=0.25, iou_thresh=0.5):
     """Single-pass segmentation device detector.
 
@@ -345,7 +378,8 @@ def detect_devices_seg(img, model, conf=0.25, iou_thresh=0.5):
     h, w = img.shape[:2]
     PAD = 2
 
-    res = model(img, conf=conf, iou=iou_thresh)
+    small, factor = shrink_for_inference(img)
+    res = model(small, conf=conf, iou=iou_thresh)
     if not res or res[0].boxes is None or len(res[0].boxes) == 0:
         return []
 
@@ -356,7 +390,8 @@ def detect_devices_seg(img, model, conf=0.25, iou_thresh=0.5):
 
     out = []
     for box, cid, score in zip(xyxy, cls_ids, scores):
-        x1, y1, x2, y2 = (int(v) for v in box)
+        # Back to the original image's pixels.
+        x1, y1, x2, y2 = (int(round(float(v) * factor)) for v in box)
         x1 = min(max(x1 + PAD, 0), w - 1)
         y1 = min(max(y1 + PAD, 0), h - 1)
         x2 = max(min(x2 - PAD, w - 1), x1 + 1)
@@ -506,11 +541,17 @@ def build_unit_grid_from_model(img, unit_model_path, conf=0.25, imgsz=768):
         return []
 
     model = load_model(unit_model_path)
-    results = model.predict(img, conf=conf, imgsz=imgsz, verbose=False)
+    small, factor = shrink_for_inference(img)
+    results = model.predict(small, conf=conf, imgsz=imgsz, verbose=False)
     if not results:
         return []
     names = getattr(model, "names", {}) or {}
     units, racks, _rails = _unit_rows_from_result(results[0], names)
+    if factor != 1:
+        # Back to the original image's pixels before any ladder rule runs.
+        for u in units:
+            u["box"] = [v * factor for v in u["box"]]
+        racks = [[v * factor for v in r] for r in racks]
     if not units:
         return []
 
