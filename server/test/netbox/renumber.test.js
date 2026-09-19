@@ -30,6 +30,7 @@ const { NetBox, NetBoxError, UID_FIELD } = require('../../lib/netbox/netbox');
 
 const RACK = 'RK-RENUM001';
 const DEVICES = '/api/dcim/devices/';
+const IFACES = '/api/dcim/interfaces/';
 
 /**
  * A NetBox that behaves like NetBox where it matters here: it refuses to put a
@@ -42,9 +43,13 @@ function strictNetBox() {
   const rows = (p) => { if (!store.has(p)) store.set(p, []); return store.get(p); };
   const occupant = (rack, position, selfId) => rows(DEVICES).find((o) => o.id !== selfId
     && o.rack === rack && position !== null && position !== undefined && o.position === position);
+  const sameName = (device, name, selfId) => rows(IFACES).find((o) => o.id !== selfId
+    && o.device === device && String(o.name) === String(name));
+  const refuseName = new Set();
   const nb = new NetBox('http://fake.invalid', 'nbt_test');
   nb.rows = rows;
   nb.calls = calls;
+  nb.refuseName = refuseName;
   nb.request = async (method, path, body = null, params = null) => {
     calls.push({ method, path, body });
     if (method === 'GET') {
@@ -58,6 +63,9 @@ function strictNetBox() {
       if (path === DEVICES && occupant(body.rack, body.position, null)) {
         throw new NetBoxError(400, { position: [`U${body.position} is already occupied.`] }, path);
       }
+      if (path === IFACES && sameName(body.device, body.name, null)) {
+        throw new NetBoxError(400, { __all__: ['Interface with this Device and Name already exists.'] }, path);
+      }
       const o = { id: nextId++, custom_fields: {}, ...body };
       rows(path).push(o);
       return o;
@@ -67,6 +75,12 @@ function strictNetBox() {
       const o = rows(m[1]).find((x) => x.id === Number(m[2]));
       if (m[1] === DEVICES && 'position' in body && occupant(o.rack, body.position, o.id)) {
         throw new NetBoxError(400, { position: [`U${body.position} is already occupied.`] }, path);
+      }
+      if (m[1] === IFACES && 'name' in body && refuseName.has(String(body.name))) {
+        throw new NetBoxError(400, { name: ['NetBox refused this name for another reason.'] }, path);
+      }
+      if (m[1] === IFACES && 'name' in body && sameName(o.device, body.name, o.id)) {
+        throw new NetBoxError(400, { __all__: ['Interface with this Device and Name already exists.'] }, path);
       }
       for (const [k, v] of Object.entries(body)) {
         if (k === 'custom_fields') o.custom_fields = { ...o.custom_fields, ...v };
@@ -206,4 +220,54 @@ test('an unchanged rack is not touched by the make-room step at all', async () =
   await writer.push(again, nb);
   const patches = nb.calls.slice(mark).filter((c) => c.method === 'PATCH');
   assert.deepEqual(patches, [], 'nothing was patched');
+});
+
+// -- ports renumbered on the same device ---------------------------------
+
+const switchWithPorts = (reads) => ({ image: 'rack.jpg', devices: [{
+  class_name: 'Switch', port_count: reads.length, units: ['u12'], box: BOX_SWITCH, center: [0, 0],
+  ports: reads.map((read, k) => ({ box: [110 + k * 40, 120, 140 + k * 40, 150], confidence: 0.9, index: read })),
+  console_ports: [], sfp_ports: [], other_ports: [], connected_ports: [],
+}] });
+const namesOf = (nb) => nb.rows(IFACES)
+  .sort((a, b) => String(a.custom_fields[UID_FIELD]).localeCompare(String(b.custom_fields[UID_FIELD])))
+  .map((o) => String(o.name));
+
+test('a switch whose ports were read again and numbered round in a circle is renamed in one write', async () => {
+  // Found live: re-reading the demo rack with the current models failed 120
+  // renames in one write, because port 2 becoming "3" is refused while port 3
+  // still holds "3", and NetBox checks one rename at a time.
+  const nb = strictNetBox();
+  const before = cv.toSnapshot(switchWithPorts([1, 2, 3]), opts());
+  await writer.push(before, nb);
+  assert.deepEqual(namesOf(nb), ['1', '2', '3']);
+
+  const after = cv.toSnapshot(switchWithPorts([2, 3, 1]), opts(before));
+  const out = await writer.push(after, nb);
+  const fails = out.changes.filter((c) => c.action === 'fail');
+  assert.deepEqual(fails, [], `refused: ${JSON.stringify(fails.map((f) => f.reason))}`);
+  assert.deepEqual(namesOf(nb), ['2', '3', '1'], 'every port has its new name');
+  assert.equal(nb.rows(IFACES).length, 3, 'and none was created twice');
+  assert.ok(!nb.rows(IFACES).some((o) => String(o.name).startsWith('~')), 'no temporary name is left behind');
+});
+
+test('a port whose rename is refused gets its old name back, not a temporary one', async () => {
+  const nb = strictNetBox();
+  const before = cv.toSnapshot(switchWithPorts([1, 2, 3]), opts());
+  await writer.push(before, nb);
+  nb.refuseName.add('9');
+  const after = cv.toSnapshot(switchWithPorts([9, 2, 3]), opts(before));
+  const out = await writer.push(after, nb);
+  assert.equal(out.changes.filter((c) => c.action === 'fail').length, 1, 'the one refused rename is reported');
+  assert.deepEqual(namesOf(nb), ['1', '2', '3'], 'and the port kept the name it had');
+  assert.ok(!nb.rows(IFACES).some((o) => String(o.name).startsWith('~')));
+});
+
+test('a port whose name is not changing is not touched', async () => {
+  const nb = strictNetBox();
+  const before = cv.toSnapshot(switchWithPorts([1, 2, 3]), opts());
+  await writer.push(before, nb);
+  const mark = nb.calls.length;
+  await writer.push(cv.toSnapshot(switchWithPorts([1, 2, 3]), opts(before)), nb);
+  assert.deepEqual(nb.calls.slice(mark).filter((c) => c.method === 'PATCH'), []);
 });

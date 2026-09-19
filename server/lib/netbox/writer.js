@@ -318,7 +318,7 @@ function uniqueInterfaceNames(snapshot, report) {
 async function makeRoom(snapshot, client) {
   const spec = orderedSpecs().find((s) => s.field === 'devices');
   const typeSpec = orderedSpecs().find((s) => s.field === 'deviceTypes');
-  if (!spec) return 0;
+  if (!spec) return [];
   // Our device type's NetBox id, by the uid we stamped on it. Unknown means the
   // type does not exist yet, so the device is certainly changing type.
   const typeIds = new Map();
@@ -331,7 +331,7 @@ async function makeRoom(snapshot, client) {
     }
     return typeIds.get(uid);
   };
-  let moved = 0;
+  const cleared = [];
   for (const d of snapshot.devices || []) {
     if (d.position === null || d.position === undefined) continue;
     let existing;
@@ -348,12 +348,55 @@ async function makeRoom(snapshot, client) {
     // id alone, so this compares like with like either way.
     const sameType = wantType === undefined || current(existing, 'device_type') === wantType;
     if (samePlace && sameType) continue;
+    // What to put back, taken before anything changes it.
+    const undo = { position: existing.position, face: current(existing, 'face') || 'front' };
     try {
       await client.patch(spec.endpoint, existing.id, { position: null, face: '' });
-      moved += 1;
+      cleared.push({ endpoint: spec.endpoint, id: existing.id, uid: d.uid, kind: 'device', undo });
     } catch { /* the device's own update below says why, in NetBox's words */ }
   }
-  return moved;
+
+  // The same problem one level down. NetBox holds an interface name unique per
+  // device and checks one rename at a time, so a switch whose ports were read
+  // again and numbered differently cannot be renamed in any order that works:
+  // port 2 becoming "3" is refused while port 3 still holds "3". Seen on the
+  // demo rack, where re-reading it with the current models failed 120 renames
+  // in one write. So every interface about to be renamed first takes a name
+  // nobody else can hold - "~" and its own NetBox id - and the walk then gives
+  // each its real name. From the preload, for the same reason as above.
+  const ifSpec = orderedSpecs().find((s) => s.field === 'interfaces');
+  if (ifSpec) {
+    for (const i of snapshot.interfaces || []) {
+      let existing;
+      try { existing = await client.findByUid(ifSpec.endpoint, i.uid, { fresh: false }); } catch { continue; }
+      if (!existing || String(existing.name) === String(i.name)) continue;
+      const undo = { name: existing.name };
+      try {
+        await client.patch(ifSpec.endpoint, existing.id, { name: `~${existing.id}` });
+        cleared.push({ endpoint: ifSpec.endpoint, id: existing.id, uid: i.uid, kind: 'interface', undo });
+      } catch { /* its own update below says why */ }
+    }
+  }
+  return cleared;
+}
+
+/**
+ * Put back anything make-room cleared whose real change then failed, so a
+ * refused write never leaves a device out of its U or a port called "~4178".
+ * Best effort: if the old value has been taken meanwhile, say so rather than
+ * guess.
+ */
+async function putBack(cleared, failed, client, report) {
+  for (const c of cleared) {
+    if (!failed.has(c.uid)) continue;
+    try {
+      await client.patch(c.endpoint, c.id, c.undo);
+    } catch (err) {
+      report.warnings.push(
+        `A ${c.kind} could not be put back as it was after its change failed (NetBox id ${c.id}): `
+        + `${refusalText(err)}. It needs looking at by hand.`);
+    }
+  }
 }
 
 async function walk(snapshot, client, apply, report) {
@@ -394,12 +437,20 @@ async function walk(snapshot, client, apply, report) {
     }
   }
 
+  let cleared = [];
   if (apply) {
-    const moved = await makeRoom(snapshot, client);
+    cleared = await makeRoom(snapshot, client);
+    const moved = cleared.filter((c) => c.kind === 'device').length;
+    const renamed = cleared.filter((c) => c.kind === 'interface').length;
     if (moved) {
       report.warnings.push(
         `${moved} device${moved === 1 ? ' was' : 's were'} taken out of ${moved === 1 ? 'its' : 'their'} U `
         + 'before being placed again, so that no two devices claimed the same U during the move.');
+    }
+    if (renamed) {
+      report.warnings.push(
+        `${renamed} port${renamed === 1 ? ' was' : 's were'} given a temporary name before being renamed, `
+        + 'so that no two ports on one device held the same name during the change.');
     }
   }
 
@@ -629,6 +680,7 @@ async function walk(snapshot, client, apply, report) {
     }
   }
 
+  if (apply && cleared.length) await putBack(cleared, failed, client, report);
   report.counts = counts;
   report.orphans = await orphans(snapshot, client, rackNetboxId, report, alias);
   return report;
