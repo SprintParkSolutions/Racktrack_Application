@@ -121,3 +121,11 @@ test('the exact five warnings from the live plan now leave five distinct names',
   assert.equal(names[6], '4');
   assert.equal(names[8], '49');
 });
+
+test('a port whose place carries a record suffix is named by the place, not the suffix', () => {
+  // cv.js gives a port "…:46.1" when place 46 is already another port's record.
+  // The ".1" is an id; a duplicate falls back to "46", or "46-2" if that is taken.
+  const ports = [iface(46, '46'), iface('46.1', '46')];
+  const { names } = run(ports);
+  assert.deepEqual(names, ['46', '46-2']);
+});

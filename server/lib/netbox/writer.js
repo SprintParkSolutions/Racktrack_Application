@@ -277,7 +277,10 @@ function uniqueInterfaceNames(snapshot, report) {
       // The port's place in the list is unique per device, so it is the first
       // choice - but only when no other port on this device is going to want
       // it as a read number.
-      const place = String(i.uid || '').split(':').pop();
+      // The place is the uid's last segment, without the ".1" a port gets when
+      // its place is already some other port's record (cv.js). That suffix is
+      // an id, not something a person should read as a port number.
+      const place = String(i.uid || '').split(':').pop().split('.')[0];
       let replacement = place && !wanted.has(place) && !used.has(place) ? place : null;
       if (!replacement) {
         let n = 2;
