@@ -324,13 +324,32 @@ function notifyAssignee(plan, { person, items, incidents, rackName, siteName, by
     '- RackTrack',
   ].filter((l) => l !== undefined).join('\n');
 
-  return sendNotice({ to: person.email, subject, text }).then((ok) => {
-    for (const item of items) {
-      if (ok) item.ticket.emailedAt = new Date().toISOString();
-      else item.ticket.emailNote = 'no mail transport configured';
-    }
-    plans.save(plan);
-  }).catch(() => {});
+  // The send finishes whenever the mail server answers, which is after this
+  // request has returned and possibly after somebody has already acted on the
+  // ticket. So the plan is read again here and only the two email fields are
+  // written. It used to save the copy of the plan it was handed at assignment
+  // time, which put back everything as it was then: resolve the first ticket
+  // straight after assigning the rack and the email landing a moment later
+  // reopened it. That happened on the demo, on plans 115 and 126, and is why
+  // one ticket always seemed to need resolving twice.
+  const stamp = (patch) => {
+    try {
+      const fresh = plans.get(plan.id);
+      if (!fresh) return;
+      const uids = new Set(items.map((i) => i.uid));
+      let touched = false;
+      for (const item of fresh.items || []) {
+        if (!uids.has(item.uid) || !item.ticket) continue;
+        Object.assign(item.ticket, patch);
+        touched = true;
+      }
+      if (touched) plans.save(fresh);
+    } catch { /* a courtesy note on the ticket; never worth failing over */ }
+  };
+  return sendNotice({ to: person.email, subject, text })
+    .then((ok) => stamp(ok ? { emailedAt: new Date().toISOString() }
+      : { emailNote: 'no mail transport configured' }))
+    .catch(() => stamp({ emailNote: 'the notice could not be sent' }));
 }
 
 /**
@@ -683,3 +702,5 @@ router.post('/:planId/tickets/:uid/resolve', gates.admin, (req, res) => {
 });
 
 module.exports = router;
+// For the test that holds the assignment email to what it may change.
+module.exports._internal = { notifyAssignee };
