@@ -1163,6 +1163,29 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // When rendered side-by-side (a rack group), the rackId comes in as a prop
   // and there's no navigation state - the cold-link fetch path populates it.
   const urlRackId = propRackId || paramRackId;
+
+  // Read this rack's photograph again with the models the server has now. An
+  // analysed rack is otherwise served from its first reading for ever, so a
+  // model that improved never reached a rack scanned before it. Corrections are
+  // carried across by the server; this only asks, and reloads when it is done.
+  const canReanalyze = ['owner', 'org_admin', 'site_manager'].includes(user?.role);
+  const [reanalyzing, setReanalyzing] = useState(false);
+  const [reanalyzeNote, setReanalyzeNote] = useState(null);
+  const reanalyzeNow = async () => {
+    if (reanalyzing || !urlRackId) return;
+    if (!window.confirm('Read this rack again with the current models? It takes a minute or two. Corrections you made are kept.')) return;
+    setReanalyzing(true);
+    setReanalyzeNote(null);
+    try {
+      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(urlRackId)}/reanalyze`), { method: 'POST' });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || `The server refused this (HTTP ${r.status}).`);
+      window.location.reload();
+    } catch (e) {
+      setReanalyzeNote(e.message);
+      setReanalyzing(false);
+    }
+  };
   // The in-page tab strip (ScanTabBar) is redundant on desktop because
   // the DesktopShell sidebar already shows the same OVERVIEW / PORTS /
   // TOPOLOGY / NETWORK / SWITCHES / DRIFT links. Mobile keeps it.
@@ -4114,8 +4137,18 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
           )}
 
+          {reanalyzeNote && <p className={styles.reanalyzeNote} role="alert">{reanalyzeNote}</p>}
           {/* Report row - View / Download / Share as labeled chips */}
           <div className={styles.reportRow} style={{ '--ac': rc }}>
+            {canReanalyze && !ticketMode && (
+              <button className={styles.reportChip} onClick={reanalyzeNow} disabled={reanalyzing}
+                title="Read this rack again with the current models">
+                {reanalyzing ? <span className={styles.btnSpinner} /> : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                )}
+                {reanalyzing ? 'Reading again' : 'Read again'}
+              </button>
+            )}
             <button className={`${styles.reportChip} ${styles.reportChipView}`}
               data-tour="full-report-btn"
               onClick={ticketMode ? () => setTicketReportOpen(true) : viewReport}

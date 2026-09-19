@@ -7088,6 +7088,45 @@ app.post('/api/scan/:rackId/report', async (req, res) => {
 // Selected Device section can prefer it over the (often partial/garbled)
 // OCR read. Previously this only lived in the browser's localStorage,
 // invisible to anything server-side including the report.
+// Read a rack's stored photograph again with the models the server has now.
+//
+// An analysed rack is a cache hit for ever, which is right for speed and wrong
+// the day a model improves: the patch panel model, the trained unit grid and the
+// OCR only ever reached new photographs. This runs the same pipeline a fresh
+// scan runs, then carries across everything filed against the old reading - a
+// person's make and model correction, the OCR result, the feedback history -
+// by matching each box to where it sits on the photo, because a better unit
+// grid numbers the rack differently and the U a correction was filed under now
+// names a different box. The whole folder is kept aside first; see
+// lib/reanalyze.js. An admin step: it changes what everyone sees for the rack.
+const reanalyze = require('./lib/reanalyze');
+const RACK_BACKUPS_DIR = path.join(__dirname, 'data', 'rack_backups');
+app.post('/api/scan/:rackId/reanalyze', auth.requireAuth, async (req, res) => {
+  const { rackId } = req.params;
+  if (!/^RK-[A-Za-z0-9]{4,32}$/.test(rackId)) {
+    return res.status(400).json({ error: 'Invalid rack id' });
+  }
+  const _auth = softAuthPayload(req);
+  if (!canAccessRack(_auth, rackId)) return res.status(404).json({ error: 'Rack not found' });
+  if (!['owner', 'org_admin', 'site_manager'].includes(req.user?.role)) {
+    return res.status(403).json({ error: 'Reading a rack again is for an admin. Ask yours to do it.' });
+  }
+  try {
+    const out = await reanalyze.reanalyzeRack({
+      rackId, outputsDir, backupsDir: RACK_BACKUPS_DIR,
+      runPipeline: (image, dir) => runPipelineAnalyze(image, dir, _auth?.organizationId || null),
+    });
+    logger.info({ event: 'scan.reanalyzed', rackId, before: out.before, after: out.after,
+      renumbered: out.renumbered.length, backup: path.basename(out.backup) }, `re-read ${rackId}`);
+    // The backup's path is the server's business, not the screen's.
+    const { backup: _backup, ...shown } = out;
+    return res.json({ ok: true, ...shown });
+  } catch (err) {
+    logger.warn({ event: 'scan.reanalyze_failed', rackId, error: err.message }, `re-read failed ${rackId}`);
+    return res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 app.post('/api/scan/:rackId/device-override', (req, res) => {
   const { rackId } = req.params;
   if (!/^RK-[A-Za-z0-9]{4,32}$/.test(rackId)) {
