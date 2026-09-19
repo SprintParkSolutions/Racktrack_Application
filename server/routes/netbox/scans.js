@@ -18,6 +18,7 @@ const rackMatch = require('../../lib/netbox/rack_match');
 const identity = require('../../lib/netbox/identity');
 const bindings = require('../../lib/netbox/bindings');
 const { clientForUser } = require('../../lib/netbox/client_for');
+const { alignPortsToNetBox } = require('../../lib/netbox/align');
 // RackTrack's own libraries: who may touch which rack, and where its scans live.
 const tenant = require('../../lib/tenant');
 const { rackOwnershipParam, canAccessRack } = require('../../lib/rack_access');
@@ -197,6 +198,19 @@ async function identifiedRack(rackId, tenantId) {
  * its uids on the photo hash, as it always did. Nothing here can fail the
  * caller: no NetBox, an unreachable one or an unbound scan all mean "no key".
  */
+/**
+ * Give each port the NetBox record that already carries its number, once, as
+ * the snapshot is made, so the plan, the approval and the write all name ports
+ * the same way. See lib/netbox/align.js. Never fails the caller: no NetBox
+ * means the camera's identities stand.
+ */
+async function alignPorts(req, snapshot) {
+  let client = null;
+  try { client = clientForUser(req.user); } catch { client = null; }
+  if (!client) return snapshot;
+  try { return (await alignPortsToNetBox(snapshot, client)).snapshot; } catch { return snapshot; }
+}
+
 async function recogniseRack(req, { tenantId, rackId, fallbackName }) {
   let client = null;
   try { client = clientForUser(req.user); } catch { client = null; }
@@ -378,6 +392,7 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
     logger?.warn?.('netbox.adopt.convert_failed', { rackId, error: err.message });
     return res.status(500).json({ error: 'This rack\'s scan could not be read. Scan it again.' });
   }
+  snapshot = await alignPorts(req, snapshot);
   // `map` is kept alongside the snapshot, as the detect step keeps it: GET /:id
   // derives the detection boxes from payload.map, and without it the Review
   // page's pick-from-photo has nothing to draw and every adopted scan reports
@@ -584,7 +599,7 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
 
   try {
     const { map, stderr } = await cv.runDetect(scan.imagePath, outputDir);
-    const snapshot = cv.toSnapshot(map, {
+    let snapshot = cv.toSnapshot(map, {
       rackId: scan.rackId, rackKey: keyFields.rackKey, siteName, rackName, uHeight,
       scannedAt: scan.createdAt,
       // The same photograph, read again: each box keeps the identity it had,
@@ -592,6 +607,7 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
       // than handing one device's record to another.
       previous: scan.payload.snapshot || null,
     });
+    snapshot = await alignPorts(req, snapshot);
     // The operator's note on what changed since the last scan, kept with the
     // scan so the rack's history reads as a record, not just a pile of scans.
     const changeNote = String((req.body && req.body.note) || '').trim().slice(0, 500) || null;

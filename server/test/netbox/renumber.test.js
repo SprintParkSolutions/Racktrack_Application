@@ -303,3 +303,69 @@ test('a port whose name is not changing is not touched', async () => {
   await writer.push(cv.toSnapshot(switchWithPorts([1, 2, 3]), opts(before)), nb);
   assert.deepEqual(nb.calls.slice(mark).filter((c) => c.method === 'PATCH'), []);
 });
+
+// -- ports aligned to the records NetBox already holds --------------------
+
+const { alignPortsToNetBox } = require('../../lib/netbox/align');
+
+test('a port takes the record already carrying its number, even one no reading knows about', async () => {
+  // The last failure on the demo rack's 52 port switch: NetBox held "45" under
+  // a uid no current reading used, and the write asked for a second "45".
+  const nb = strictNetBox();
+  const first = cv.toSnapshot(switchWithPorts([1, 2, 3, 4]), opts());
+  await writer.push(first, nb);
+
+  // A reading built with no previous one to inherit from: its uids are places,
+  // so ":1" is now port 4, and port 3 was not seen at all.
+  const raw = cv.toSnapshot(switchWithPorts([4, 1, 2]), opts());
+  const rawOut = await writer.plan(raw, nb);
+  assert.ok(rawOut.changes.some((c) => c.type === 'Interface' && c.action === 'update'),
+    'unaligned, it plans renames that NetBox would refuse');
+
+  const { snapshot, rebound } = await alignPortsToNetBox(raw, nb);
+  assert.ok(rebound > 0);
+  const mark = nb.calls.length;
+  const out = await writer.push(snapshot, nb);
+  assert.deepEqual(out.changes.filter((c) => c.action === 'fail'), []);
+  // Three ports makes the switch a Router, so the device itself changes; the
+  // ports must not.
+  assert.deepEqual(nb.calls.slice(mark).filter((c) => (c.method === 'PATCH' || c.method === 'POST')
+    && c.path.startsWith(IFACES)), [], 'aligned, no port needs writing: every one is already right');
+  assert.equal(nb.rows(IFACES).length, 4, 'and port 3, not seen, is still there');
+});
+
+test('a port whose number nobody holds gets a record of its own, never an unseen port\'s', async () => {
+  const nb = strictNetBox();
+  await writer.push(cv.toSnapshot(switchWithPorts([1, 2]), opts()), nb);
+  // Place 1 now reads "2" and place 2 reads "7", a number nobody holds.
+  const { snapshot } = await alignPortsToNetBox(cv.toSnapshot(switchWithPorts([2, 7]), opts()), nb);
+  const byName = Object.fromEntries(snapshot.interfaces.map((i) => [i.name, i.uid]));
+  assert.equal(byName['2'], `if:dev:${RACK}:u12:2`, '"2" takes the record that is 2');
+  const out = await writer.push(snapshot, nb);
+  assert.deepEqual(out.changes.filter((c) => c.action === 'fail'), []);
+  // Place 2's own record was taken by port "2", and the record holding "1" is
+  // port 1, which was simply not seen this time. So "7" is created, and port 1
+  // keeps its record and its number rather than being renamed into port 7.
+  assert.deepEqual(namesOf(nb).sort(), ['1', '2', '7']);
+  assert.ok(byName['7'].endsWith('.r1'), 'a fresh uid, not one an unseen port carries');
+});
+
+test('with no NetBox to ask, the snapshot is left exactly as the camera made it', async () => {
+  const snap = cv.toSnapshot(switchWithPorts([1, 2]), opts());
+  const broken = { paginate: async () => { throw new Error('down'); } };
+  const out = await alignPortsToNetBox(snap, broken);
+  assert.equal(out.snapshot, snap);
+  assert.equal(out.rebound, 0);
+});
+
+test('a cable follows its port to the record the port was aligned to', async () => {
+  const snap = { rackUid: `rack:${RACK}`, devices: [{ uid: 'dev:A' }],
+    interfaces: [{ uid: 'if:dev:A:1', deviceUid: 'dev:A', name: '5' }],
+    cables: [{ uid: 'cable:x', a: { objectType: 'dcim.interface', uid: 'if:dev:A:1' }, b: null }] };
+  const fake = { paginate: async (p) => (p.includes('devices')
+    ? [{ id: 1, custom_fields: { [UID_FIELD]: 'dev:A' } }]
+    : [{ id: 9, name: '5', device: { id: 1 }, custom_fields: { [UID_FIELD]: 'if:dev:A:7' } }]) };
+  const { snapshot } = await alignPortsToNetBox(snap, fake);
+  assert.equal(snapshot.interfaces[0].uid, 'if:dev:A:7');
+  assert.equal(snapshot.cables[0].a.uid, 'if:dev:A:7', 'the cable end moved with it');
+});
