@@ -1774,10 +1774,16 @@ function queue(actor) {
       const at = machine.workingStatus(tickets);
       if (buckets[at]) buckets[at].push(planId);
     }
-    const always = role === 'member';
+    // An empty bucket is skipped for everyone, a member included. Keeping a
+    // member's four empty buckets was meant to show them the shape of the work
+    // that could arrive. What it produced was six stacked tables, each with a
+    // full DRIFT / RACK / DATACENTRE / STATUS / PRIORITY / RISK / SLA / UPDATED
+    // header and nothing under it - which reads as "nothing works" rather than
+    // "nothing is assigned to you yet". The caller renders one empty state when
+    // every section is gone, which says that once instead of six times.
     for (const key of Object.keys(buckets)) {
-      if (!buckets[key].length && !always) continue;
-      add(key, buckets[key].length ? store.listPlans({ ids: buckets[key], limit: 100 }).map(rowOf) : []);
+      if (!buckets[key].length) continue;
+      add(key, store.listPlans({ ids: buckets[key], limit: 100 }).map(rowOf));
     }
   }
   return { role, sections };

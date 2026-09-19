@@ -258,6 +258,45 @@ test('the drift workflow holds its rules at every route', async (t) => {
     assert.equal(r.status, 403, `${method} ${p} as a member: ${r.status} ${r.raw}`);
   }
 
+  // ---- 2b. The phone reads a switch at the rack and files the reading, so a
+  // technician lists, adds and files for THEIR rack - and nothing more.
+  const SW = { label: 'Core', host: '10.9.9.9', port: 161, version: 'v2c', community: 'public' };
+  const mine = await call(port, memberTok, 'POST', '/api/nb/switches', { rackId: RACK, ...SW });
+  assert.equal(mine.status, 201, `a technician adds a switch to their rack: ${mine.raw}`);
+  const listed = await call(port, memberTok, 'GET', `/api/nb/switches?rackId=${RACK}`);
+  assert.equal(listed.status, 200, listed.raw);
+  assert.deepEqual(listed.json.map((s) => s.id), [mine.json.id]);
+  assert.equal(listed.json[0].community, undefined, 'no secret comes back');
+  const reading = { system: { sysName: 'core-sw' }, interfaces: [{ ifIndex: 1, name: 'Gi1/0/1' }] };
+  const filed = await call(port, memberTok, 'POST', `/api/nb/switches/${mine.json.id}/reading`, reading);
+  assert.equal(filed.status, 200, `a technician files a phone reading: ${filed.raw}`);
+
+  const ELSEWHERE = 'RK-RULES0002';
+  const theirs = await call(port, adminTok, 'POST', '/api/nb/switches', { rackId: ELSEWHERE, ...SW });
+  assert.equal(theirs.status, 201, theirs.raw);
+  for (const [method, p, body] of [
+    ['GET', `/api/nb/switches?rackId=${ELSEWHERE}`],
+    ['POST', '/api/nb/switches', { rackId: ELSEWHERE, ...SW }],
+    ['POST', `/api/nb/switches/${theirs.json.id}/reading`, reading],
+    ['POST', '/api/nb/switches/99999/reading', reading],
+  ]) {
+    const r = await call(port, memberTok, method, p, body);
+    assert.equal(r.status, 404, `${method} ${p} for a rack not theirs: ${r.status} ${r.raw}`);
+  }
+  for (const [method, p, body] of [
+    ['PATCH', `/api/nb/switches/${mine.json.id}`, { label: 'x' }],
+    ['DELETE', `/api/nb/switches/${mine.json.id}`],
+    ['POST', `/api/nb/switches/${mine.json.id}/test`, {}],
+    ['POST', `/api/nb/switches/${mine.json.id}/collect`, {}],
+    ['GET', `/api/nb/switches/${mine.json.id}/credentials`],
+    ['GET', `/api/nb/switches/${mine.json.id}/data`],
+    ['POST', '/api/nb/switches/collect-all', { rackId: RACK }],
+  ]) {
+    const r = await call(port, memberTok, method, p, body);
+    assert.equal(r.status, 403, `${method} ${p} as a member: ${r.status} ${r.raw}`);
+    assert.match(r.json.error, /for an admin/);
+  }
+
   // ---- 3. The admin cannot decide from a desk.
   const early = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
     { decisions: [{ uid: DEV, decision: 'approved' }, { uid: DEV2, decision: 'rejected', note: 'no' }] });

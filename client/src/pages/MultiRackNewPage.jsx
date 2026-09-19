@@ -12,7 +12,7 @@ async function analyzeImage(file) {
   const res = await authFetch(apiUrl('/api/analyze'), { method: 'POST', body: fd });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = data.error || `Analysis failed (HTTP ${res.status})`;
+    const msg = data.error || 'Could not analyze that photo. Try again.';
     const err = new Error(msg);
     err.kind = data.kind;   // e.g. 'not_a_rack'
     throw err;
@@ -57,13 +57,8 @@ function ImageSlot({ index, file, onPick, disabled }) {
             </span>
             <span className={styles.dropTitle}>Add a photo</span>
             <span className={styles.pickHint}>Tap to take a photo or pick from your gallery</span>
-            <span className={styles.fmtPills} aria-hidden="true">
-              <span className={styles.fmtPill}>JPG</span>
-              <span className={styles.fmtPill}>PNG</span>
-              <span className={styles.fmtPill}>HEIC</span>
-              <span className={styles.fmtPill}>WebP</span>
-              <span className={styles.fmtPill}>and more</span>
-            </span>
+            {/* No format pills: a phone camera roll cannot hand the app a format it
+                refuses, so naming five of them only filled the frame. */}
           </div>
         )}
       </button>
@@ -117,7 +112,7 @@ export default function MultiRackNewPage() {
       setStep('Analyzing rack 2…');
       const id2 = await analyzeImage(images[1]);
       if (id1 === id2) {
-        throw new Error('Both photos resolved to the same rack - use two different racks.');
+        throw new Error('Both photos show the same rack. Photograph two different racks.');
       }
       setStep('Linking the two racks…');
       const gRes = await authFetch(apiUrl('/api/rack-groups'), {
@@ -151,7 +146,11 @@ export default function MultiRackNewPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.groupId) throw new Error(data.error || 'Could not process the video.');
       if ((data.count || 0) < 2) {
-        throw new Error(`Only ${data.count || 0} rack detected - pan across both racks so each is clearly visible.`);
+        // Fewer than two, so it is one or none. Saying "only one" when the video
+        // showed none would be the shorter line and the wrong one.
+        throw new Error(data.count === 1
+          ? 'Only one rack in that video. Pan across both and record again.'
+          : 'No rack in that video. Pan across both racks and record again.');
       }
       setStep('Opening results…');
       const firstRack = data.racks?.[0]?.rackId;
@@ -174,8 +173,7 @@ export default function MultiRackNewPage() {
 
       <main className={styles.body}>
         <p className={styles.intro}>
-          Capture two racks and we'll detect each one, then show them side by side
-          with the uplink cabling that runs <b>between</b> them.
+          Both racks side by side, with the cabling between them.
         </p>
 
         <div className={styles.eyebrow}>Capture mode</div>

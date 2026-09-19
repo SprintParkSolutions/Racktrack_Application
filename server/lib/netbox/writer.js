@@ -40,6 +40,26 @@ class Pending {
 const isPending = (v) => v instanceof Pending;
 
 /**
+ * What NetBox refused, in a sentence rather than in JSON.
+ *
+ * An admin approving an export reads these reasons, and a reason that arrives as
+ * `{"name":["already exists"]}` is the wire format on a screen. NetBox answers a
+ * refusal as an object keyed by the field it objected to, so the field name and
+ * its complaint are what a person needs; the braces and quotes are not. The
+ * cause is never dropped - only its punctuation.
+ */
+function refusalText(err) {
+  const detail = err && err.detail;
+  if (typeof detail === 'string' && detail) return detail;
+  if (detail && typeof detail === 'object') {
+    const lines = Object.entries(detail)
+      .map(([field, said]) => `${field}: ${[].concat(said).join(' ')}`);
+    if (lines.length) return lines.join('; ');
+  }
+  return String((err && err.message) || 'no reason given');
+}
+
+/**
  * NetBox's value for `key`, flattened to something comparable.
  * It nests foreign keys as {id, ...} and choice fields as {value, label}.
  */
@@ -523,24 +543,157 @@ function holdBack(spec, obj, row, changed, report, finding) {
  * report so the reading problem stays visible.
  */
 function uniqueInterfaceNames(snapshot, report) {
+  // The device's own name, because the warning names the box a person has to go
+  // back and photograph. Its uid names nothing to anybody reading the screen.
+  const nameOf = new Map((snapshot.devices || []).map((d) => [d.uid, d.name]));
   const byDevice = new Map();
   for (const i of snapshot.interfaces || []) {
     if (!i || !i.deviceUid) continue;
-    const taken = byDevice.get(i.deviceUid) || new Map();
-    const name = String(i.name ?? '');
-    if (taken.has(name)) {
-      const place = String(i.uid || '').split(':').pop();
-      const replacement = place && !taken.has(place) ? place : `${name}-${taken.size + 1}`;
+    if (!byDevice.has(i.deviceUid)) byDevice.set(i.deviceUid, []);
+    byDevice.get(i.deviceUid).push(i);
+  }
+
+  for (const [deviceUid, ports] of byDevice) {
+    // Every name this device's ports ask for, collected BEFORE any of them is
+    // changed. The old pass only knew the names it had already walked past, so
+    // a rename could take a name a later port was still going to use. That is
+    // not hypothetical: on a live 52 port switch, two ports both read as "3",
+    // the second was moved to "46" because 46 was its place in the list, and
+    // the port that genuinely read 46 came afterwards. NetBox then refused the
+    // write with "Interface with this Device and Name already exists", and one
+    // item of an otherwise clean plan was lost.
+    const wanted = new Set(ports.map((i) => String(i.name ?? '')));
+    const used = new Set();
+
+    for (const i of ports) {
+      const name = String(i.name ?? '');
+      if (!used.has(name)) { used.add(name); continue; }
+
+      // The port's place in the list is unique per device, so it is the first
+      // choice - but only when no other port on this device is going to want
+      // it as a read number.
+      // The place is the uid's last segment, without the ".1" a port gets when
+      // its place is already some other port's record (cv.js). That suffix is
+      // an id, not something a person should read as a port number.
+      const place = String(i.uid || '').split(':').pop().split('.')[0];
+      let replacement = place && !wanted.has(place) && !used.has(place) ? place : null;
+      if (!replacement) {
+        let n = 2;
+        while (wanted.has(`${name}-${n}`) || used.has(`${name}-${n}`)) n += 1;
+        replacement = `${name}-${n}`;
+      }
+
       report.warnings.push(
-        `Two ports on ${i.deviceUid} were both read as "${name}"; the second is `
-        + `recorded as "${replacement}" so the device keeps one port per name. `
-        + 'Photograph the rack again to read the panel numbers properly.');
+        `${nameOf.get(deviceUid) || 'One device'}: two ports both read as "${name}", `
+        + `so the second is recorded as "${replacement}". Photograph the rack again.`);
       i.name = replacement;
-      taken.set(replacement, true);
-    } else {
-      taken.set(name, true);
+      used.add(replacement);
+      // A later rename must not land on this one either.
+      wanted.add(replacement);
     }
-    byDevice.set(i.deviceUid, taken);
+  }
+}
+
+/**
+ * Take every device that is about to move out of its U before any of them is
+ * placed again.
+ *
+ * NetBox refuses to put a device into a U another device still occupies, and it
+ * checks one PATCH at a time. So a rack whose unit grid improved - where the
+ * Switch at U12 now reads as U13 and the Router that was at U13 now reads as
+ * U20 - cannot be written in any order that works, because each move lands on
+ * a device that has not moved yet. The same goes for a device whose type grows
+ * from 1U to 2U where it stands: the U above it has to be free first.
+ *
+ * Every device still in the snapshot at this point is either unchanged or an
+ * approved change (unapproved items were filtered out before the push), so only
+ * approved moves are touched, and the device is only UNRACKED - it keeps its
+ * rack, its site and everything else, and the walk below puts it back in its
+ * new U straight away. Nothing is deleted. If the push dies between the two
+ * steps the device is left in its rack without a U, which the next comparison
+ * reports as a position to set, and a person approves it again.
+ */
+async function makeRoom(snapshot, client) {
+  const spec = orderedSpecs().find((s) => s.field === 'devices');
+  const typeSpec = orderedSpecs().find((s) => s.field === 'deviceTypes');
+  if (!spec) return [];
+  // Our device type's NetBox id, by the uid we stamped on it. Unknown means the
+  // type does not exist yet, so the device is certainly changing type.
+  const typeIds = new Map();
+  const typeIdOf = async (uid) => {
+    if (!uid || !typeSpec) return undefined;
+    if (!typeIds.has(uid)) {
+      let t = null;
+      try { t = await client.findByUid(typeSpec.endpoint, uid, { fresh: true }); } catch { t = null; }
+      typeIds.set(uid, t ? t.id : null);
+    }
+    return typeIds.get(uid);
+  };
+  const cleared = [];
+  for (const d of snapshot.devices || []) {
+    if (d.position === null || d.position === undefined) continue;
+    let existing;
+    // From the preload, not a fresh read. The walk below reads every device
+    // fresh before it writes it, so nothing is decided on this copy except
+    // whether to clear a U - and a fresh read here would be the push's FIRST
+    // question about each uid, which moves the moment a concurrent writer can
+    // be caught to before the re-check that exists to catch it.
+    try { existing = await client.findByUid(spec.endpoint, d.uid, { fresh: false }); } catch { continue; }
+    if (!existing || existing.position === null || existing.position === undefined) continue;
+    const samePlace = Number(existing.position) === Number(d.position);
+    const wantType = await typeIdOf(d.deviceTypeUid);
+    // current() flattens NetBox's nested {id, ...} to the id, and leaves a bare
+    // id alone, so this compares like with like either way.
+    const sameType = wantType === undefined || current(existing, 'device_type') === wantType;
+    if (samePlace && sameType) continue;
+    // What to put back, taken before anything changes it.
+    const undo = { position: existing.position, face: current(existing, 'face') || 'front' };
+    try {
+      await client.patch(spec.endpoint, existing.id, { position: null, face: '' });
+      cleared.push({ endpoint: spec.endpoint, id: existing.id, uid: d.uid, kind: 'device', undo });
+    } catch { /* the device's own update below says why, in NetBox's words */ }
+  }
+
+  // The same problem one level down. NetBox holds an interface name unique per
+  // device and checks one rename at a time, so a switch whose ports were read
+  // again and numbered differently cannot be renamed in any order that works:
+  // port 2 becoming "3" is refused while port 3 still holds "3". Seen on the
+  // demo rack, where re-reading it with the current models failed 120 renames
+  // in one write. So every interface about to be renamed first takes a name
+  // nobody else can hold - "~" and its own NetBox id - and the walk then gives
+  // each its real name. From the preload, for the same reason as above.
+  const ifSpec = orderedSpecs().find((s) => s.field === 'interfaces');
+  if (ifSpec) {
+    for (const i of snapshot.interfaces || []) {
+      let existing;
+      try { existing = await client.findByUid(ifSpec.endpoint, i.uid, { fresh: false }); } catch { continue; }
+      if (!existing || String(existing.name) === String(i.name)) continue;
+      const undo = { name: existing.name };
+      try {
+        await client.patch(ifSpec.endpoint, existing.id, { name: `~${existing.id}` });
+        cleared.push({ endpoint: ifSpec.endpoint, id: existing.id, uid: i.uid, kind: 'interface', undo });
+      } catch { /* its own update below says why */ }
+    }
+  }
+  return cleared;
+}
+
+/**
+ * Put back anything make-room cleared whose real change then failed, so a
+ * refused write never leaves a device out of its U or a port called "~4178".
+ * Best effort: if the old value has been taken meanwhile, say so rather than
+ * guess.
+ */
+async function putBack(cleared, failed, client, report) {
+  for (const c of cleared) {
+    if (!failed.has(c.uid)) continue;
+    try {
+      await client.patch(c.endpoint, c.id, c.undo);
+    } catch (err) {
+      report.warnings.push(
+        `A ${c.kind} could not be put back as it was after its change failed (NetBox id ${c.id}): `
+        + `${refusalText(err)}. It needs looking at by hand.`);
+    }
   }
 }
 
@@ -770,6 +923,23 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
     }
   }
 
+  let cleared = [];
+  if (apply) {
+    cleared = await makeRoom(snapshot, client);
+    const moved = cleared.filter((c) => c.kind === 'device').length;
+    const renamed = cleared.filter((c) => c.kind === 'interface').length;
+    if (moved) {
+      report.warnings.push(
+        `${moved} device${moved === 1 ? ' was' : 's were'} taken out of ${moved === 1 ? 'its' : 'their'} U `
+        + 'before being placed again, so that no two devices claimed the same U during the move.');
+    }
+    if (renamed) {
+      report.warnings.push(
+        `${renamed} port${renamed === 1 ? ' was' : 's were'} given a temporary name before being renamed, `
+        + 'so that no two ports on one device held the same name during the change.');
+    }
+  }
+
   for (const spec of orderedSpecs()) {
     for (const obj of snapshot[spec.field] || []) {
       const misses = [];
@@ -787,7 +957,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
         skipped.add(obj.uid);
         report.changes.push({
           type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
-          reason: `evidence=${obj.evidence}, so it goes to review and never to NetBox`,
+          reason: 'the sources disagree about this, so it goes to review and not to NetBox',
         });
         bump('skip');
         continue;
@@ -801,8 +971,8 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
         report.changes.push({
           type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
           reason: blockedBy.length
-            ? `depends on excluded/failed object(s): ${blockedBy.join(', ')}`
-            : `unresolved reference(s): ${misses.join(', ')}`,
+            ? 'held back with the record it belongs to'
+            : 'held back: something it belongs to is missing from this scan',
         });
         bump('skip');
         continue;
@@ -818,7 +988,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
         failed.add(obj.uid);
         report.changes.push({
           type: spec.label, uid: obj.uid, name: String(name), action: 'fail',
-          reason: `lookup failed: ${JSON.stringify(err.detail ?? err.message)}`,
+          reason: `NetBox did not answer: ${refusalText(err)}`,
         });
         bump('fail');
         continue;
@@ -881,8 +1051,8 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
           try { twin = await client.findByUid(spec.endpoint, staleUid, { fresh: apply }); } catch { twin = null; }
           if (twin) {
             report.warnings.push(
-              `${spec.label} "${name}" (${obj.uid}) also has a record under its previous id `
-              + `${staleUid} (NetBox id ${twin.id}); it was not merged`);
+              `${spec.label} "${name}" also has an older record in NetBox (id ${twin.id}). `
+              + 'Nothing was merged or removed.');
           }
         }
 
@@ -909,7 +1079,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
             failed.add(obj.uid);
             report.changes.push({
               type: spec.label, uid: obj.uid, name: String(name), action: 'fail',
-              netboxId: existing.id, reason: JSON.stringify(err.detail ?? err.message),
+              netboxId: existing.id, reason: `NetBox refused this change: ${refusalText(err)}`,
             });
             bump('fail');
             continue;
@@ -937,7 +1107,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
           failed.add(obj.uid);
           report.changes.push({
             type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
-            reason: `lookup of ${oldUid} failed: ${JSON.stringify(err.detail ?? err.message)}`,
+            reason: `NetBox did not answer: ${refusalText(err)}`,
           });
           bump('fail');
           continue;
@@ -1125,7 +1295,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
             failed.add(obj.uid);
             report.changes.push({
               type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
-              netboxId: previous.id, reason: `lookup failed: ${JSON.stringify(err.detail ?? err.message)}`,
+              netboxId: previous.id, reason: `NetBox did not answer: ${refusalText(err)}`,
             });
             bump('fail');
             continue;
@@ -1134,7 +1304,8 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
             failed.add(obj.uid);
             report.changes.push({
               type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
-              netboxId: previous.id, reason: 'target uid already exists',
+              netboxId: previous.id,
+              reason: 'another record took this id while the plan was running. Run the plan again',
             });
             bump('fail');
             continue;
@@ -1172,7 +1343,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
             failed.add(obj.uid);
             report.changes.push({
               type: spec.label, uid: obj.uid, fromUid: oldUid, name: String(name), action: 'fail',
-              netboxId: previous.id, reason: JSON.stringify(err.detail ?? err.message),
+              netboxId: previous.id, reason: `NetBox refused this change: ${refusalText(err)}`,
             });
             bump('fail');
             continue;
@@ -1248,7 +1419,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
               type: spec.label, uid: obj.uid, name: String(name), action: 'update',
               netboxId: claimed.id,
               diff: { [UID_FIELD]: { from: null, to: obj.uid } },
-              reason: `NetBox already had this ${spec.label.toLowerCase()}, matched by ${claimed.by} and stamped rather than created again`,
+              reason: 'NetBox already had this one, so it was updated rather than created',
             });
             bump('update');
             bump('adopted');
@@ -1257,7 +1428,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
           failed.add(obj.uid);
           report.changes.push({
             type: spec.label, uid: obj.uid, name: String(name), action: 'fail',
-            reason: JSON.stringify(err.detail ?? err.message),
+            reason: `NetBox refused this change: ${refusalText(err)}`,
           });
           bump('fail');
           continue;
@@ -1278,6 +1449,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
     }
   }
 
+  if (apply && cleared.length) await putBack(cleared, failed, client, report);
   report.counts = counts;
   report.orphans = await orphans(snapshot, client, rackNetboxId, report, alias, boundIds.devices);
   return report;
@@ -1319,7 +1491,11 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null, bou
   try {
     present = await client.paginate('/api/dcim/devices/', { rack_id: rackNetboxId });
   } catch (err) {
-    report.warnings.push(`could not check for orphaned devices: ${err.message}`);
+    // The admin reading the plan gets the plain line; the cause is an operator's
+    // problem and is kept where an operator looks, rather than dropped for the
+    // sake of a shorter sentence.
+    console.warn('[netbox.writer] orphan check failed:', refusalText(err));
+    report.warnings.push('NetBox could not be asked which devices are missing from this scan.');
     return [];
   }
   const seen = new Set();
@@ -1413,13 +1589,12 @@ async function plan(snapshot, client, { ensureField = false } = {}) {
   if (!cf) {
     if (ensureField) {
       await client.ensureCustomField(objectTypes());
-      report.customField = 'created (schema change made so this diff is accurate)';
+      report.customField = 'created';
     } else {
-      report.customField = 'ABSENT';
+      report.customField = 'missing';
       report.warnings.push(
-        `'${UID_FIELD}' custom field does not exist yet, so nothing can be matched `
-        + 'and every object below reads as a create. Export creates it automatically; '
-        + 'pass ensureField for an accurate pre-flight diff.');
+        'NetBox is not set up for RackTrack yet, so every record below looks new. '
+        + 'Exporting sets it up and matches them.');
     }
   } else {
     report.customField = 'present';
@@ -1491,4 +1666,10 @@ async function push(snapshot, client) {
   return walk(snapshot, client, true, report, { boundField });
 }
 
-module.exports = { plan, push, Pending, isPending, diff, current, aliasUid, EXPORT_ORDER, NetBoxError };
+module.exports = {
+  plan, push, Pending, isPending, diff, current, aliasUid, EXPORT_ORDER, NetBoxError,
+  // Exported for the test that holds the interface naming rule down. It runs
+  // inside walk() and has no other way in, and the rule it enforces is the
+  // one NetBox refuses a whole write over.
+  _internal: { uniqueInterfaceNames, makeRoom },
+};

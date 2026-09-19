@@ -41,21 +41,20 @@ export default function PendingApprovalPage() {
   const content = isPending
     ? {
         title: 'Waiting for approval',
-        body: <>Your request to create <b>{orgName}</b> has been sent to the platform owner.
-              You’ll be let in as soon as they approve it - this usually doesn’t take long.</>,
-        sub: 'This page checks automatically every few seconds.',
+        body: <>Your request to create <b>{orgName}</b> is with the platform owner. This page
+              opens by itself once they approve it.</>,
+        sub: null,
       }
     : status === 'rejected'
     ? {
         title: 'Request not approved',
-        body: <>Your request to create <b>{orgName}</b> was not approved by the platform owner.
-              If you think this is a mistake, please contact them.</>,
+        body: <>The platform owner did not approve <b>{orgName}</b>. Contact them if this is wrong.</>,
         sub: null,
       }
     : {
         title: 'Organization deactivated',
-        body: <><b>{orgName}</b> has been deactivated by the platform owner, so the app is
-              paused for now. It will come back automatically if they reactivate it.</>,
+        body: <><b>{orgName}</b> has been deactivated by the platform owner. The app comes back
+              if they reactivate it.</>,
         sub: null,
       };
 

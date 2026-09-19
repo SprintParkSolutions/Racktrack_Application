@@ -132,13 +132,28 @@ const CABLE_COLOR_OPTIONS = [
   'Pink', 'Red', 'White', 'Yellow', 'Violet', 'Aqua',
 ];
 
-// Physical port types the type model knows (ports_9.pt). Used by the port-type
+// Physical port types the type model knows (ports_13.pt). Used by the port-type
 // correction control; values must match the server's PORT_TYPE_OPTIONS.
+// The model's `empty` class is not offered: a slot with nothing in it is a
+// question for the status model, not a connector type someone picks here.
 const PORT_TYPE_OPTIONS = [
-  'RJ45', 'SFP', 'QSFP', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
+  'RJ45', 'SFP', 'QSFP', 'FC', 'LC', 'SC', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
   'USB_A', 'USB_B', 'USB_C',
 ];
-const prettyPortType = (t) => t ? t.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ') : '';
+// How each class name is written on screen. Nearly all of them are acronyms,
+// not words, so title casing them is wrong: the control was offering "Rj45",
+// "Sfp", "Qsfp" and "Usb A", and the fibre connectors would have joined it as
+// "Fc", "Lc" and "Sc". `empty` is here to be DISPLAYED when the model reads a
+// slot as unfitted; it is deliberately absent from PORT_TYPE_OPTIONS, which is
+// the list of types a person can choose.
+const PORT_TYPE_LABELS = {
+  RJ45: 'RJ45', SFP: 'SFP', QSFP: 'QSFP', FC: 'FC', LC: 'LC', SC: 'SC',
+  CONSOLE: 'Console', AUX: 'Aux', MANAGEMENT_PORT: 'Management port',
+  USB_A: 'USB A', USB_B: 'USB B', USB_C: 'USB C', empty: 'Empty slot',
+};
+const prettyPortType = (t) => (t
+  ? PORT_TYPE_LABELS[t] || String(t).split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ')
+  : '');
 
 // Real cable colours so the swatch matches the detected colour name (the
 // monochrome theme applies to the app chrome, not to physical cable colours - // showing an orange cable as a black dot is confusing/wrong).
@@ -536,7 +551,7 @@ function SwitchInfoModal({
                   // reported. The Switches tab is where a make, model and version are
                   // entered by hand, so name that instead of dead-ending.
                   <p className={styles.prEmpty}>
-                    Need both model and firmware version to check for updates - set them on the Switches tab.
+                    Set the model and firmware version on the Switches tab.
                   </p>
                 )}
               </div>
@@ -641,7 +656,7 @@ function PortReportModal({ report, onClose }) {
           <section className={styles.prSection}>
             <h4>End device(s) on this port</h4>
             {macs.length === 0 ? (
-              <p className={styles.prEmpty}>No MACs learned - port idle or never carried traffic.</p>
+              <p className={styles.prEmpty}>Nothing has been seen on this port.</p>
             ) : (
               <ul className={styles.prMacList}>
                 {macs.map((m, i) => (
@@ -674,7 +689,7 @@ function PortReportModal({ report, onClose }) {
                 {lldp._via && <div><span>Resolved via</span><b>{lldp._via}</b></div>}
                 {lldp.system_desc && <div className={styles.prWide}><span>System desc</span><b>{lldp.system_desc}</b></div>}
               </div>
-            ) : <p className={styles.prEmpty}>No LLDP neighbor advertised - endpoint does not speak LLDP, or it is disabled.</p>}
+            ) : <p className={styles.prEmpty}>Nothing at the far end announced itself.</p>}
           </section>
 
           <section className={styles.prSection}>
@@ -755,7 +770,7 @@ function CredsModal({ initial, onCancel, onSubmit }) {
         </div>
         {!stored && (
           <p className={styles.credsHint}>
-            Stored only in memory for this session. SSH is used to query LLDP / MAC table on the switch.
+            Kept for this session only, never saved.
           </p>
         )}
         <label className={styles.credsField}>
@@ -847,7 +862,9 @@ const PORT_CATEGORIES = [
   { k: 'main',    label: 'RJ45' },
   { k: 'sfp',     label: 'SFP' },
   { k: 'console', label: 'Console' },
-  { k: 'other',   label: 'USB' },
+  // Not only USB: since ports_13 this bucket also holds a slot with nothing
+  // fitted, so a 24 port switch with no USB socket was reading "24 RJ45 - 1 USB".
+  { k: 'other',   label: 'Other' },
 ];
 
 // A device's port field may arrive as an array (from /api/analyze) or as a
@@ -1146,6 +1163,29 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // When rendered side-by-side (a rack group), the rackId comes in as a prop
   // and there's no navigation state - the cold-link fetch path populates it.
   const urlRackId = propRackId || paramRackId;
+
+  // Read this rack's photograph again with the models the server has now. An
+  // analysed rack is otherwise served from its first reading for ever, so a
+  // model that improved never reached a rack scanned before it. Corrections are
+  // carried across by the server; this only asks, and reloads when it is done.
+  const canReanalyze = ['owner', 'org_admin', 'site_manager'].includes(user?.role);
+  const [reanalyzing, setReanalyzing] = useState(false);
+  const [reanalyzeNote, setReanalyzeNote] = useState(null);
+  const reanalyzeNow = async () => {
+    if (reanalyzing || !urlRackId) return;
+    if (!window.confirm('Read this rack again with the current models? It takes a minute or two. Corrections you made are kept.')) return;
+    setReanalyzing(true);
+    setReanalyzeNote(null);
+    try {
+      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(urlRackId)}/reanalyze`), { method: 'POST' });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || `The server refused this (HTTP ${r.status}).`);
+      window.location.reload();
+    } catch (e) {
+      setReanalyzeNote(e.message);
+      setReanalyzing(false);
+    }
+  };
   // The in-page tab strip (ScanTabBar) is redundant on desktop because
   // the DesktopShell sidebar already shows the same OVERVIEW / PORTS /
   // TOPOLOGY / NETWORK / SWITCHES / DRIFT links. Mobile keeps it.
@@ -1997,7 +2037,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           No scan result available
         </p>
         <p style={{ fontSize: '.84rem', color: 'var(--t2, #474747)', margin: 0, maxWidth: 420, textAlign: 'center' }}>
-          Start a new scan to identify devices, ports, and cables on a rack.
+          Scan a rack to see its devices and ports.
         </p>
         <button className="btn btn-primary" onClick={() => navigate('/scan')}>Start a Scan</button>
       </div>
@@ -3237,7 +3277,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
             {/* Next-step guidance */}
             <div style={{fontSize:12,color:'var(--muted, #474747)',lineHeight:1.5,marginTop:4}}>
-              <strong style={{color:'var(--text, #c6c6c6)'}}>Next steps:</strong> either the CMDB is stale (device was moved/replaced) or someone installed the wrong hardware. Verify physically at rack <strong>{ticket?.cmdb?.rack_name || '?'}</strong>, then update whichever side is wrong.
+              <strong style={{color:'var(--text, #c6c6c6)'}}>Next:</strong> check rack <strong>{ticket?.cmdb?.rack_name || '?'}</strong>, then update whichever side is wrong.
             </div>
 
           </div>
@@ -3833,9 +3873,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
               <span>
-                Not fully sure about this cable ({fmtPct(portInfo.cable_confidence)} confidence) - the photo
-                resolution may be too low to read it clearly. Please check the cable and its colour, and
-                correct them below if they're wrong.
+                The cable was hard to read. Check its colour below and correct it if it is wrong.
               </span>
             </div>
           )}
@@ -3940,7 +3978,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             {neighborStatus === 'empty' && (
               <>
                 <span className={styles.prEndDim}>
-                  No end device responded - the endpoint doesn’t advertise LLDP, or LLDP is disabled on the switch.
+                  Nothing answered on this port.
                 </span>
                 <button className={styles.prEndAction} onClick={() => findNeighbor()}>Retry</button>
               </>
@@ -4099,8 +4137,18 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
           )}
 
+          {reanalyzeNote && <p className={styles.reanalyzeNote} role="alert">{reanalyzeNote}</p>}
           {/* Report row - View / Download / Share as labeled chips */}
           <div className={styles.reportRow} style={{ '--ac': rc }}>
+            {canReanalyze && !ticketMode && (
+              <button className={styles.reportChip} onClick={reanalyzeNow} disabled={reanalyzing}
+                title="Read this rack again with the current models">
+                {reanalyzing ? <span className={styles.btnSpinner} /> : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                )}
+                {reanalyzing ? 'Reading again' : 'Read again'}
+              </button>
+            )}
             <button className={`${styles.reportChip} ${styles.reportChipView}`}
               data-tour="full-report-btn"
               onClick={ticketMode ? () => setTicketReportOpen(true) : viewReport}
@@ -4204,8 +4252,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 <form className={styles.shareDialogBody}
                       onSubmit={(e) => { e.preventDefault(); confirmShareSend(); }}>
                   <p className={styles.shareDialogHint}>
-                    Enter the recipient for this rack scan report. The address is remembered
-                    on this device for next time.
+                    The address is remembered on this device.
                   </p>
 
                   <label className={styles.shareDialogLabel} htmlFor="shareEmailInput">
@@ -4357,8 +4404,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               <div className={styles.consoleTerminal} ref={consoleTermRef}>
                 {consoleEntries.length === 0 && consoleStatus !== 'running-manual' && (
                   <div className={styles.consoleEmpty}>
-                    Pick an option above to query the switch - it runs as soon as
-                    you choose. Or type a command below.
+                    Pick an option above, or type a command below.
                   </div>
                 )}
 
@@ -5216,13 +5262,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           }}>
             Port history &amp; drift
           </h2>
-          <p style={{
-            margin: '0 0 20px',
-            fontSize: '.88rem',
-            color: 'var(--t2, #474747)',
-          }}>
-            Live port state, VLAN and link-flap tracking across this rack.
-          </p>
           <PortHistoryContent rackId={urlRackId || rackId || scanId} />
         </div>
       )}

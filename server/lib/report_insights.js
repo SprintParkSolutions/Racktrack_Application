@@ -344,7 +344,10 @@ function buildInsights(data, opts = {}) {
   }
 
   if (port) {
-    const CAT = { main: 'RJ45', sfp: 'SFP', console: 'Console', other: 'USB' };
+    // 'other' is not only USB. Since ports_13 it also holds a slot with
+    // nothing fitted in it, whose connector family nobody can name, so calling
+    // the bucket USB states a fact about the hardware that may be false.
+    const CAT = { main: 'RJ45', sfp: 'SFP', console: 'Console', other: 'Other' };
     const pill = port.status === 'connected' ? { text: 'connected', tone: 'ok' }
                : port.status === 'empty' ? { text: 'empty', tone: 'muted' }
                : port.status ? { text: port.status, tone: 'warn' } : null;
@@ -425,7 +428,7 @@ function buildInsights(data, opts = {}) {
   }
 
   if (port) {
-    const CATP = { main: 'RJ45', sfp: 'SFP', console: 'console', other: 'USB' };
+    const CATP = { main: 'RJ45', sfp: 'SFP', console: 'console', other: 'other' };
     const cat = port.port_category ? (CATP[port.port_category] || port.port_category) : null;
     const article = (w) => (/^[aeiou]/i.test(String(w)) || /^[fhlmnrsx]$/i.test(String(w)[0]) ? 'an' : 'a');
     // Status reads as an adjective, not a clause: "a connected RJ45 port",

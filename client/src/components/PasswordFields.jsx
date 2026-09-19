@@ -16,7 +16,7 @@ export const PW_RULES = [
   { id: 'upper', label: 'an uppercase',   test: pw => /[A-Z]/.test(pw) },
   { id: 'lower', label: 'a lowercase',    test: pw => /[a-z]/.test(pw) },
   { id: 'digit', label: 'a digit',        test: pw => /[0-9]/.test(pw) },
-  { id: 'spec',  label: 'a special char', test: pw => /[^A-Za-z0-9]/.test(pw) },
+  { id: 'spec',  label: 'a special character', test: pw => /[^A-Za-z0-9]/.test(pw) },
 ];
 export const STRENGTH_COLORS = ['#b42318', '#b42318', '#b54708', '#b54708', '#067647', '#067647'];
 

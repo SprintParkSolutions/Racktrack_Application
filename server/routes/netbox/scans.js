@@ -19,6 +19,7 @@ const identity = require('../../lib/netbox/identity');
 const bindings = require('../../lib/netbox/bindings');
 const find = require('../../lib/netbox/find');
 const { clientForUser } = require('../../lib/netbox/client_for');
+const { alignPortsToNetBox } = require('../../lib/netbox/align');
 // RackTrack's own libraries: who may touch which rack, and where its scans live.
 const tenant = require('../../lib/tenant');
 const { rackOwnershipParam, canAccessRack } = require('../../lib/rack_access');
@@ -86,7 +87,7 @@ router.get('/:id/report', gates.admin, (req, res) => {
   const scan = scanFor(req, res);
   if (!scan) return undefined;
   const doc = report.build(scan);
-  if (!doc) return res.status(409).json({ error: 'this scan has no detection result yet' });
+  if (!doc) return res.status(409).json({ error: 'This rack has not been scanned yet.' });
   res.json(doc);
 });
 
@@ -161,15 +162,56 @@ router.put('/rack/:rackId/name', gates.admin, (req, res) => {
 });
 
 /**
+ * Which rack this is, asked of lib/rack_identity - the six steps that identify a
+ * rack, ending in a person. Asked with no NetBox client on purpose: the only two
+ * steps that state a rack and hand out a key are the record and a label that
+ * equals one rack in the space the scan was tied to, and both are answered from
+ * what we already hold. So this costs no NetBox traffic and cannot be made slow
+ * by a NetBox that is not answering. Everything else it can say is a suggestion,
+ * which never becomes a key without a person.
+ *
+ * Required at the point of use and behind a catch: the identity module is not
+ * this router's to depend on, and a scan it cannot answer for must leave the
+ * adopt working exactly as it did before.
+ */
+async function identifiedRack(rackId, tenantId) {
+  if (tenantId == null) return null;
+  try {
+    const answer = await require('../../lib/rack_identity').identify(rackId, { tenantId });
+    return answer && answer.decision === 'matched' && answer.rackKey && answer.rack ? answer : null;
+  } catch { return null; }
+}
+
+/**
  * Recognise the rack before its uids are minted.
  *
  * Preview and export read the snapshot exactly as it is stored, so the moment
  * it is built is the one moment the customer's rack can become the key its
- * NetBox uids are built on. The resolver (rack_match) hands out that key only
- * when the scan was identified explicitly; otherwise the uids stay on the
- * photo hash, as they always were. Nothing here can fail the caller: no
- * NetBox, an unreachable one or an unbound scan all mean "no key".
+ * NetBox uids are built on. Two things are asked, in this order:
+ *
+ *   1. the identity steps, which include a person's own confirmation. When they
+ *      state a rack, that rack is the rack, and its key is the key. A person who
+ *      answered "which rack is this" on the screen has to see that answer in the
+ *      comparison, or the answer was theatre.
+ *   2. the resolver (rack_match) otherwise, exactly as before.
+ *
+ * Neither states a rack it only suspects, so a scan nobody has identified keeps
+ * its uids on the photo hash, as it always did. Nothing here can fail the
+ * caller: no NetBox, an unreachable one or an unbound scan all mean "no key".
  */
+/**
+ * Give each port the NetBox record that already carries its number, once, as
+ * the snapshot is made, so the plan, the approval and the write all name ports
+ * the same way. See lib/netbox/align.js. Never fails the caller: no NetBox
+ * means the camera's identities stand.
+ */
+async function alignPorts(req, snapshot) {
+  let client = null;
+  try { client = clientForUser(req.user); } catch { client = null; }
+  if (!client) return snapshot;
+  try { return (await alignPortsToNetBox(snapshot, client)).snapshot; } catch { return snapshot; }
+}
+
 async function recogniseRack(req, { tenantId, rackId, fallbackName, siteName = null }) {
   let client = null;
   try { client = clientForUser(req.user); } catch { client = null; }
@@ -182,6 +224,24 @@ async function recogniseRack(req, { tenantId, rackId, fallbackName, siteName = n
     found = { name: fallbackName, rackKey: null, source: 'scan',
               why: `the rack could not be looked up: ${err.message}` };
   }
+
+  const identified = await identifiedRack(rackId, tenantId);
+  if (identified && identified.rackKey !== found.rackKey) {
+    // The steps named a rack and the resolver did not, or named another one. The
+    // steps win: they read the photo and they carry a person's confirmation,
+    // which is the last word on this question. The name stays the record's own.
+    found = {
+      ...found,
+      rackKey: identified.rackKey,
+      knownRackId: identified.rack.id ?? null,
+      source: identified.rule === 'record' ? 'identified' : `identified-${identified.rule}`,
+      name: identified.rack.name || identified.rack.facilityId || found.name,
+      why: identified.rule === 'record'
+        ? 'this scan is tied to that rack in the record'
+        : 'the label read off the rack names that rack in the record',
+    };
+  }
+
   return {
     rackKey: found.rackKey || null,
     rackKeySource: found.source || null,
@@ -213,8 +273,11 @@ async function recogniseRack(req, { tenantId, rackId, fallbackName, siteName = n
 // adopted rack is re-read under the new rules the next time it is opened.
 //   2 — a Switch with fewer than ten ports is a Router
 //   3 - uids keyed on the customer's rack (Part B Stage 1)
-//   4 - the snapshot carries the record binding a person made
-const SNAPSHOT_RULES = 4;
+//   4 - the key may come from the identity steps, so a copy made before they
+//       were asked is keyed on the photo hash while the app says which rack it
+//       is. One re-adopt on the next open puts the two back in agreement.
+//   5 - the snapshot carries the record binding a person made
+const SNAPSHOT_RULES = 5;
 
 /**
  * Which rows of the customer's own record a person said this rack and its boxes
@@ -341,19 +404,29 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   // so the snapshot is rebuilt to carry it rather than served from a copy made
   // before they said it.
   if (req.body && req.body.recordBinding) stale = true;
+  // A person has since said which rack this is, and the copy was keyed on
+  // something else: every uid in it names the wrong rack, so the compare that
+  // reads it would go on comparing against the wrong record. That answer is what
+  // the whole identity flow is for, so it makes the copy stale like any other
+  // change. One indexed read of the local database, and only for a rack that has
+  // been adopted before, so an open of a rack nobody has confirmed costs nothing.
+  if (existing && heldPayload.tenantId != null) {
+    const confirmedKey = rackMatch.confirmedKeyFor(heldPayload.tenantId, rackId);
+    if (confirmedKey && heldPayload.rackKey !== confirmedKey) stale = true;
+  }
   if (existing && !req.query.refresh && !stale) {
     return res.json({ id: existing.id, rackId, adopted: false, createdAt: existing.createdAt });
   }
   if (!fs.existsSync(mapFile)) {
-    return res.status(409).json({
-      error: 'This rack has no detection result yet.',
-      hint: 'Scan it first — the Physical step has to run before anything after it can.',
-    });
+    return res.status(409).json({ error: 'This rack has not been scanned yet.' });
   }
 
   let map;
   try { map = JSON.parse(fs.readFileSync(mapFile, 'utf8')); }
-  catch (err) { return res.status(500).json({ error: `The detection result could not be read: ${err.message}` }); }
+  catch (err) {
+    logger?.warn?.('netbox.adopt.map_unreadable', { rackId, error: err.message });
+    return res.status(500).json({ error: 'This rack\'s scan could not be read. Scan it again.' });
+  }
 
   const image = ['original_image.jpg', 'original_image.jpeg', 'original_image.png']
     .map((f) => path.join(dir, f)).find((p) => fs.existsSync(p)) || null;
@@ -444,10 +517,15 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
     snapshot = cv.toSnapshot(map, {
       rackId, rackKey: known.rackKey, siteName, rackName, uHeight: cfg.U_HEIGHT, scannedAt,
       recordBinding: said.binding, recordMatch: known.recordMatch,
+      // The rack id is the photo's hash, so a rack adopted again is the same
+      // photograph analysed again. Each box keeps the identity it had.
+      previous: heldPayload.snapshot || null,
     });
   } catch (err) {
-    return res.status(500).json({ error: `The detection result could not be converted: ${err.message}` });
+    logger?.warn?.('netbox.adopt.convert_failed', { rackId, error: err.message });
+    return res.status(500).json({ error: 'This rack\'s scan could not be read. Scan it again.' });
   }
+  snapshot = await alignPorts(req, snapshot);
   // `map` is kept alongside the snapshot, as the detect step keeps it: GET /:id
   // derives the detection boxes from payload.map, and without it the Review
   // page's pick-from-photo has nothing to draw and every adopted scan reports
@@ -532,12 +610,17 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
 router.post('/', gates.admin, upload.single('image'), async (req, res) => {
   const engine = cv.engineStatus();
   if (!engine.ready) {
+    // Which models or which interpreter are an operator's problem, not the
+    // technician's, so they go to the log and the screen gets the line that
+    // tells the person in front of the rack what to do about it.
+    logger?.warn?.('netbox.scan.engine_not_ready', {
+      pythonPresent: engine.pythonPresent, python: engine.python,
+      modelsPresent: engine.modelsPresent, modelsTotal: engine.modelsTotal,
+    });
     return res.status(503).json({
       stage: 'detect',
-      error: 'The CV engine is not ready.',
-      detail: engine.pythonPresent
-        ? `Models missing: ${engine.modelsPresent}/${engine.modelsTotal} present.`
-        : `No Python environment at ${engine.python}.`,
+      error: 'Scanning is not ready on this server.',
+      detail: 'Ask your administrator to finish setting up the scanning service.',
       engine,
     });
   }
@@ -546,8 +629,7 @@ router.post('/', gates.admin, upload.single('image'), async (req, res) => {
   const siteName = (req.body.siteName || cfg.SITE_NAME || '').trim();
   if (!siteName) {
     return res.status(400).json({
-      error: 'siteName is required. You name your own site: '
-           + 'send siteName with the upload, or set RT_SITE_NAME.',
+      error: 'This scan needs a site name. Add the site, then scan again.',
     });
   }
   const rackId = (req.body.rackId || `RK-${Date.now().toString(36).toUpperCase()}`).trim();
@@ -628,7 +710,9 @@ router.post('/', gates.admin, upload.single('image'), async (req, res) => {
     store.recordStage(rec.id, 'capture', 'ok', path.basename(req.file.path));
     store.recordStage(rec.id, 'detect', 'ok',
       `${snapshot.devices.length} devices · ${snapshot.interfaces.length} ports`
-      + (snapshot.conflicts.length ? ` · ${snapshot.conflicts.length} conflict(s)` : ''));
+      + (snapshot.conflicts.length
+        ? ` · ${snapshot.conflicts.length} conflict${snapshot.conflicts.length === 1 ? '' : 's'}`
+        : ''));
     res.json({ scanId: rec.id, rackId, summary: summarise(snapshot), warnings: tail(stderr) });
   } catch (err) {
     store.recordStage(rec.id, 'detect', 'failed', String(err.message).slice(0, 500));
@@ -657,12 +741,17 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
 
   const engine = cv.engineStatus();
   if (!engine.ready) {
+    // Which models or which interpreter are an operator's problem, not the
+    // technician's, so they go to the log and the screen gets the line that
+    // tells the person in front of the rack what to do about it.
+    logger?.warn?.('netbox.scan.engine_not_ready', {
+      pythonPresent: engine.pythonPresent, python: engine.python,
+      modelsPresent: engine.modelsPresent, modelsTotal: engine.modelsTotal,
+    });
     return res.status(503).json({
       stage: 'detect',
-      error: 'The CV engine is not ready.',
-      detail: engine.pythonPresent
-        ? `Models missing: ${engine.modelsPresent}/${engine.modelsTotal} present.`
-        : `No Python environment at ${engine.python}.`,
+      error: 'Scanning is not ready on this server.',
+      detail: 'Ask your administrator to finish setting up the scanning service.',
       engine,
     });
   }
@@ -699,11 +788,16 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
 
   try {
     const { map, stderr } = await cv.runDetect(scan.imagePath, outputDir);
-    const snapshot = cv.toSnapshot(map, {
+    let snapshot = cv.toSnapshot(map, {
       rackId: scan.rackId, rackKey: keyFields.rackKey, siteName, rackName, uHeight,
       scannedAt: scan.createdAt, recordBinding: said.binding,
       recordMatch: keyFields.recordMatch,
+      // The same photograph, read again: each box keeps the identity it had,
+      // so a unit grid that numbers the rack differently moves devices rather
+      // than handing one device's record to another.
+      previous: scan.payload.snapshot || null,
     });
+    snapshot = await alignPorts(req, snapshot);
     // The operator's note on what changed since the last scan, kept with the
     // scan so the rack's history reads as a record, not just a pile of scans.
     const changeNote = String((req.body && req.body.note) || '').trim().slice(0, 500) || null;
@@ -797,9 +891,7 @@ router.get('/:id/annotated', gates.admin, (req, res) => {
   const order = [wanted, ...Object.values(ANNOTATED_VIEWS).filter((f) => f !== wanted)];
   const found = order.map((f) => path.join(dir, f)).find((f) => fs.existsSync(f));
   if (!found) {
-    return res.status(404).json({
-      error: 'no annotated image', detail: `nothing under ${dir}`,
-    });
+    return res.status(404).json({ error: 'no annotated image' });
   }
   res.sendFile(path.resolve(found));
 });
@@ -991,9 +1083,8 @@ router.post('/:id/collect', gates.admin, async (req, res) => {
   if (targets.length === 0) {
     store.recordStage(scan.id, 'collect', 'blocked', 'no switches registered for this rack');
     return res.status(428).json({
-      error: 'No switches are registered for this rack.',
-      hint: 'Add the management address and login of each managed switch in the '
-          + 'rack on this screen, then collect.',
+      error: 'No switches have been added for this rack.',
+      hint: 'Add each managed switch on the Network screen, then read it.',
       rackId: scan.rackId,
     });
   }
@@ -1098,20 +1189,19 @@ function checkMatches(posted, base, sws, held = new Map()) {
   for (const [rawId, rawUid] of rows) {
     const id = String(rawId);
     if (!byId.has(id)) {
-      refuse(id, `Switch ${id} is not one of this rack's switches, so it cannot be placed in it.`);
+      refuse(id, 'That switch has not been added to this rack. Add it first.');
       continue;
     }
     const uid = rawUid === null || rawUid === undefined || rawUid === '' ? null : String(rawUid);
     if (uid === null) { clean[id] = null; continue; }
     const dev = devByUid.get(uid);
     if (!dev) {
-      refuse(id, `This scan has no box called ${uid}. Scan the rack again, then place the switch.`);
+      refuse(id, 'That box is not in this photo. Scan the rack again, then place the switch.');
       continue;
     }
     const cls = String(dev.provenance?.cvClass || '');
     if (reconcile.isPassive(cls)) {
-      refuse(id, `${dev.name} is a passive box (${cls}) with nothing to answer SNMP with, `
-        + 'so a managed switch cannot be it.');
+      refuse(id, `${dev.name} is a ${cls.toLowerCase()}, so no switch can be it. Pick another box.`);
       continue;
     }
     if (seen.has(uid)) {
@@ -1121,8 +1211,8 @@ function checkMatches(posted, base, sws, held = new Map()) {
     }
     const confirmedAs = held.get(id) || null;
     if (confirmedAs && confirmedAs.deviceUid !== uid) {
-      refuse(id, `${labelOf(id)} was confirmed at the rack as ${confirmedAs.name}. `
-        + 'Confirm it against the new box instead, so the two records cannot disagree.');
+      refuse(id, `${labelOf(id)} is confirmed as ${confirmedAs.name}. `
+        + 'Confirm it against the new box instead.');
       continue;
     }
     seen.set(uid, id);
@@ -1216,12 +1306,11 @@ router.post('/:id/reconcile', gates.admin, (req, res) => {
       : (ids.length === 1 ? ids[0] : null);
     if (!swId) {
       return res.status(400).json({
-        error: 'Confirm one switch at a time. Send switchId with confirm, so it is clear '
-             + 'which box the person actually read.',
+        error: 'Confirm one switch at a time.',
       });
     }
     if (!Object.prototype.hasOwnProperty.call(matches, swId)) {
-      return res.status(400).json({ error: `Switch ${swId} is not in this save, so there is nothing to confirm about it.` });
+      return res.status(400).json({ error: 'Place this switch first, then confirm it.' });
     }
     const sw = sws.find((s) => String(s.record.id) === swId);
     const aliases = sw.reading
@@ -1277,3 +1366,7 @@ router.post('/:id/reconcile', gates.admin, (req, res) => {
 });
 
 module.exports = router;
+// Which rack a scan's uids are keyed on, out on its own so a test can ask it
+// directly: it is the one step where a person's answer either reaches the
+// comparison or is lost, and that deserves proving without a photo and a NetBox.
+module.exports.recogniseRack = recogniseRack;

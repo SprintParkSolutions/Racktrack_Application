@@ -398,25 +398,26 @@ export default function SwitchTestPage() {
       // 400" and every carefully worded message unreachable.
       const body = await r.json().catch(() => null);
       if (!r.ok) throw new Error((body && body.error) || `The server refused the save (HTTP ${r.status}).`);
-      // Say exactly what was saved, switch by switch, so a wrong place is seen here.
-      const devName = (uid) => {
-        const d = (places?.devices || []).find((x) => x.uid === uid);
-        return d ? `U${String(d.u ?? d.position ?? '').padStart(2, '0')}` : null;
-      };
-      const said = (places?.switches || []).map((s) => {
-        const where = match[s.id] ? (devName(match[s.id]) || 'placed') : 'not in this rack';
-        return `${s.label || s.name || s.host || s.id} → ${where}`;
-      });
+      // Name only what needs attention. This used to recite every switch and
+      // where it went, chained with arrows - "Saved: Core switch -> U15 - Sw01
+      // -> U12 - Sw02 -> not in this rack." - and then append the matcher's
+      // explanation of why a match could not be CONFIRMED, which named a serial
+      // number, a chassis address, a bridge address and a management MAC. None
+      // of that is an answer to "did my save work". The placements are on the
+      // screen directly above; repeating them back is the screen talking to
+      // itself, and the SNMP fields are a thing no operator can go and fix.
+      const unplaced = (places?.switches || [])
+        .filter((s) => !match[s.id])
+        .map((s) => s.label || s.name || s.host || s.id);
       // A row the server would not take is reported beside the ones it did, so a
       // partly accepted save never looks like a whole one.
       const refused = (body?.rejected || []).map((x) => x.error);
-      const note = body?.confirmNote ? [body.confirmNote] : [];
+      const saidUnplaced = unplaced.length
+        ? [`${unplaced.join(', ')} ${unplaced.length === 1 ? 'is' : 'are'} not in this rack.`]
+        : [];
       setMatchNote({
         ok: refused.length === 0,
-        text: [
-          said.length ? `Saved: ${said.join(' · ')}.` : 'Saved.',
-          ...note, ...refused,
-        ].join(' '),
+        text: ['Saved.', ...saidUnplaced, ...refused].join(' '),
       });
       loadPlaces();
       return true;
@@ -573,7 +574,7 @@ export default function SwitchTestPage() {
     };
     try {
       let data;
-      let filed = { ok: false, why: 'Kept on this device.' };
+      let filed = { ok: false, why: '' };
       if (viaServer) {
         // The server reads it and files it in the same call.
         onStep('Asking the server to read it');
@@ -752,10 +753,8 @@ export default function SwitchTestPage() {
 
       {form.version === 'v3' ? (
         <p className={styles.fieldNote}>
-          The SNMPv3 user your network team created on the switch, at the
-          <b> noAuthNoPriv</b> level - no password, no encryption. That is how
-          the TP-Links are set up today. A user with a password comes in the
-          next build. The name stays on this phone.
+          The SNMPv3 user your network team set on the switch, at the
+          <b> noAuthNoPriv</b> level. No password yet. The name stays on this phone.
         </p>
       ) : form.version === 'v2c' ? (
         <p className={styles.fieldNote}>
@@ -764,8 +763,7 @@ export default function SwitchTestPage() {
         </p>
       ) : (
         <p className={styles.fieldNote}>
-          Choose how this switch is set up - your network team knows which, and
-          the switch's own SNMP settings page says so too.
+          Choose how this switch is set up. Its SNMP settings page says which.
         </p>
       )}
 
@@ -802,10 +800,7 @@ export default function SwitchTestPage() {
             they cannot use. Only ever shown in a browser. */}
         {viaServer && (
           <p className={styles.notice}>
-            <b>The server is reading these switches.</b> A browser cannot open the kind of
-            network connection SNMP needs, so this asks the server to do it - which works
-            whenever the server is on the same network as the switches. On a phone, the
-            phone reads them itself.
+            <b>The server is reading these switches.</b> A browser cannot reach them directly.
           </p>
         )}
 
@@ -813,7 +808,7 @@ export default function SwitchTestPage() {
           <div className={styles.empty}>
             <p>No switches on this rack yet.</p>
             <p className={styles.emptySub}>
-              Add one and it is read straight away - every value comes from the switch itself.
+              It is read as soon as you add it.
             </p>
             <button type="button" className={styles.primary} onClick={() => setForm(BLANK)}>
               Add a switch
@@ -1026,6 +1021,7 @@ export default function SwitchTestPage() {
                   <PlacePicker
                     devices={places.devices}
                     image={places.image}
+                    rackLabel={places.rackName || rackId}
                     value={match[serverIdFor(sw, rackId)] ?? ''}
                     name={sw.label}
                     suggestion={(places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.autoMatch || null}
@@ -1059,7 +1055,7 @@ export default function SwitchTestPage() {
                   {places.suggested && (match[serverIdFor(sw, rackId)]
                     ? (
                       <p className={styles.proposal}>
-                        This place is a proposal from the photo. Press Save places to keep it.
+                        Suggested. Save places to keep it.
                       </p>
                     )
                     : (
@@ -1211,15 +1207,9 @@ export default function SwitchTestPage() {
             {matchNote && (
               <p className={matchNote.ok ? styles.finishOk : styles.finishBad}>{matchNote.text}</p>
             )}
-            {/* The places on screen are the server's proposal until somebody
-                saves them. Going to the report no longer saves them on the way
-                past: the report says which facts rest on a proposal, and a
-                place is stored because a person chose to store it. */}
-            {places?.suggested && Object.values(match).some(Boolean) && (
-              <p className={styles.proposal}>
-                These places are a proposal from the photo. Press Save places to keep them.
-              </p>
-            )}
+            {/* Every card already says "Suggested. Save places to keep it.", and the
+                Save places button is the next thing on the screen. Saying it a third
+                time over the whole list taught nobody anything. */}
             <div className={styles.actions}>
               {places?.devices?.length > 0 && (
                 <button type="button" className={styles.secondary} disabled={savingMatch} onClick={() => savePlaces()}>

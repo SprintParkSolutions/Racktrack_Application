@@ -54,9 +54,10 @@ export default function ForgotPasswordPage() {
     try {
       await forgotPassword(email.trim());
       setStep('code');
-      // We always show the same message regardless of whether the email is
-      // registered - the server doesn't leak that distinction either.
-      setInfo('If an account exists for that email, a 6-digit code is on its way.');
+      // The hedge is still told - the server does not say whether the address is
+      // registered, and neither do we - but it is told once, in the line under the
+      // heading. Said here as well it sat directly under "Sent to <email>", so the
+      // screen both asserted and doubted the same thing.
     } catch (err) { setError(err.message); }
   };
 
@@ -75,7 +76,10 @@ export default function ForgotPasswordPage() {
   const submitReset = async (e) => {
     e?.preventDefault();
     setError(null);
-    if (!pwInfo.allOk) { setError('Password is too weak.'); return; }
+    // "Too weak" grades the password without saying what to type. The strength
+    // hint already knows which rule is unmet ("Need a special character"), so say
+    // that instead - a refusal names the next action.
+    if (!pwInfo.allOk) { setError(pwInfo.label ? `${pwInfo.label}.` : 'Enter a password.'); return; }
     if (!matchOk)      { setError('Passwords do not match.'); return; }
     try {
       await resetPassword(email.trim(), code, password);
@@ -154,7 +158,8 @@ export default function ForgotPasswordPage() {
         <>
           <h1 className={styles.heading}>Enter your code</h1>
           <p className={styles.sentTo}>
-            Sent to <span className={styles.sentToEmail}>{email}</span> · expires in 1 minute.
+            If <span className={styles.sentToEmail}>{email}</span> has an account, a code is
+            on the way. It expires in 1 minute.
           </p>
 
           <form className={styles.form} onSubmit={submitCode} autoComplete="off">
@@ -182,7 +187,7 @@ export default function ForgotPasswordPage() {
         <>
           <h1 className={styles.heading}>Code verified</h1>
           <p className={styles.subheading}>
-            Change your password while you're here? You're signed in either way.
+            You are signed in either way.
           </p>
 
           <div className={styles.form}>

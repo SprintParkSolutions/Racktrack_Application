@@ -173,13 +173,13 @@ test('the reconcile route holds its rules', async (t) => {
   await t.test('1. a switch that is not in this rack is refused', async () => {
     const r = await call('POST', `/scans/${scanId}/reconcile`, { matches: { 99: 'dev:t1:5:u10' } });
     assert.equal(r.status, 400);
-    assert.match(r.json.error, /not one of this rack's switches/);
+    assert.match(r.json.error, /That switch has not been added to this rack/);
   });
 
   await t.test('1. a box that is not in this scan is refused', async () => {
     const r = await call('POST', `/scans/${scanId}/reconcile`, { matches: { 1: 'dev:t1:5:u99' } });
     assert.equal(r.status, 400);
-    assert.match(r.json.error, /no box called dev:t1:5:u99/);
+    assert.match(r.json.error, /That box is not in this photo/);
   });
 
   await t.test('1. one bad row does not discard the good ones beside it', async () => {
@@ -192,21 +192,21 @@ test('the reconcile route holds its rules', async (t) => {
     assert.equal(r.status, 200);
     assert.equal(r.json.rejected.length, 1);
     assert.equal(r.json.rejected[0].switchId, '2');
-    assert.match(r.json.rejected[0].error, /no box called/);
+    assert.match(r.json.rejected[0].error, /not in this photo/);
     assert.deepStrictEqual(store.getScan(scanId).payload.matches, { 1: 'dev:t1:5:u10' });
   });
 
   await t.test('2. a patch panel and a UPS are both refused', async () => {
     const panel = await call('POST', `/scans/${scanId}/reconcile`, { matches: { 1: 'dev:t1:5:u01' } });
     assert.equal(panel.status, 400);
-    assert.match(panel.json.error, /passive box \(Patch Panel\)/);
+    assert.match(panel.json.error, /is a patch panel, so no switch can be it/);
     // A UPS answers no SNMP either, and a confirm onto one used to put a switch's
     // serial and management address on that row and re-propose it every scan.
     const ups = await call('POST', `/scans/${scanId}/reconcile`, {
       matches: { 1: 'dev:t1:5:u02' }, confirm: true, switchId: 1,
     });
     assert.equal(ups.status, 400);
-    assert.match(ups.json.error, /passive box \(UPS\)/);
+    assert.match(ups.json.error, /is a ups, so no switch can be it/);
     assert.deepStrictEqual(bindings.list(SCOPE), []);
   });
 
@@ -295,7 +295,7 @@ test('the reconcile route holds its rules', async (t) => {
       matches: { 1: 'dev:t1:5:u12' },
     });
     assert.equal(r.status, 400);
-    assert.match(r.json.error, /was confirmed at the rack as U10 box/);
+    assert.match(r.json.error, /is confirmed as U10 box/);
     assert.equal(bindings.list(SCOPE)[0].deviceUid, 'dev:t1:5:u10');
     // And a confirm of the new box is how a person corrects it.
     const fix = await call('POST', `/scans/${scanId}/reconcile`, {
@@ -321,7 +321,7 @@ test('the reconcile route holds its rules', async (t) => {
       matches: { 1: 'dev:t1:5:u10' }, confirm: true, switchId: 2,
     });
     assert.equal(r.status, 400);
-    assert.match(r.json.error, /nothing to confirm about it/);
+    assert.match(r.json.error, /Place this switch first, then confirm it/);
   });
 
   await t.test('6. a confirm that cannot be kept does not throw the save away', async () => {

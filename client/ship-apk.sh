@@ -16,7 +16,13 @@ cd "$(dirname "$0")"
 # previously hardcoded here, in make-ipa.sh's docs, in lab.mjs and in the setup
 # guide. When the tunnel moved, builds kept shipping to a dead host and nobody
 # noticed until testers reported the app was down. Change that one file.
-BACKEND="${VITE_API_BASE:-$(tr -d '[:space:]' < "$(dirname "$0")/../BACKEND_URL" 2>/dev/null)}"
+# `cd` above already put us in client/, so the file is one level up from HERE.
+# Resolving it from $0 a second time meant the path only worked when the script
+# was launched from inside client/: run as ./client/ship-apk.sh from the repo
+# root it looked for client/client/../BACKEND_URL, found nothing, and exited -
+# which a caller piping the output through `tail` reads as success, so the ship
+# appeared to work and no APK was ever built.
+BACKEND="${VITE_API_BASE:-$(tr -d '[:space:]' < ../BACKEND_URL 2>/dev/null)}"
 [ -n "$BACKEND" ] || { echo "✖ no backend URL — set VITE_API_BASE or fill in BACKEND_URL at the repo root"; exit 1; }
 NOTES="${1:-New RackTrack build}"
 GROUP="${FIREBASE_GROUP:-testers}"

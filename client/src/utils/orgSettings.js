@@ -34,7 +34,9 @@ export const MANDATORY = [
    nothing to show until a datacentre exists, so it is locked rather than
    opened empty. `lead` is the one help line under the step title. */
 export const STEPS = [
-  { key: 'org', label: 'Organization', title: 'Organization', kind: 'required', lead: 'Name, short code, time zone and country.' },
+  // No lead: the four fields below are labelled Name, short code, time zone and
+  // country, so listing them above was the screen reading itself out.
+  { key: 'org', label: 'Organization', title: 'Organization', kind: 'required', lead: '' },
   { key: 'datacentres', label: 'Datacentres', title: 'Datacentres', kind: 'required', lead: 'Each building that holds racks. One is enough to start.' },
   { key: 'spaces', label: 'Spaces', title: 'Spaces and racks', kind: 'required', needsDc: true, lead: 'Halls, rooms or floors, and the racks in each.' },
   { key: 'people', label: 'People', title: 'People', kind: 'required', needsDc: true, lead: 'An approver per datacentre, plus contacts and invites.' },
@@ -43,7 +45,7 @@ export const STEPS = [
   { key: 'conventions', label: 'Naming', title: 'Naming', kind: 'optional', lead: 'Naming patterns and cable colours.' },
   { key: 'network', label: 'Switch access', title: 'Switch access', kind: 'optional', needsDc: true, lead: 'Management ranges, Wi-Fi and read-only SNMP.' },
   { key: 'rules', label: 'Rules', title: 'Rules', kind: 'required', needsDc: true, lead: 'Four rules that apply to every datacentre.' },
-  { key: 'review', label: 'Review', title: 'Review', kind: 'review', lead: 'Check what is set, then finish.' },
+  { key: 'review', label: 'Review', title: 'Review', kind: 'review', lead: '' },
 ];
 export const STEP_KEYS = STEPS.map((s) => s.key);
 export const stepOf = (key) => STEPS.find((s) => s.key === key) || null;

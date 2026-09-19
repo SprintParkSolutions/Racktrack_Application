@@ -6144,3 +6144,6 @@
 }
 @media (prefers-reduced-motion: reduce) { .stepChoice { transition: none; } }
 
+
+/* Why a re-read did not happen, in the server's own words. */
+.reanalyzeNote { margin: 0 0 8px; font-size: 0.82rem; color: var(--md-error, #b3261e); }

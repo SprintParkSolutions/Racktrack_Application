@@ -47,9 +47,6 @@ export const HistoryIcon = () => (
 export const LabIcon = () => (
   <svg {...s}><path d="M9 3v6.5L4.5 18A2 2 0 006.3 21h11.4a2 2 0 001.8-3L15 9.5V3"/><path d="M8 3h8"/><path d="M7.5 14h9"/></svg>
 );
-export const GroundTruthIcon = () => (
-  <svg {...s}><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
-);
 export const OrgIcon = () => (
   <svg {...s}><path d="M3 21h18"/><path d="M5 21V6a1 1 0 011-1h6a1 1 0 011 1v15"/><path d="M13 21V10a1 1 0 011-1h4a1 1 0 011 1v11"/><path d="M8 9h1M8 13h1M8 17h1M16 13h.5M16 17h.5"/></svg>
 );
@@ -96,20 +93,27 @@ export function usePrimaryNav() {
 
   return [
     // ── Rack work: the app opens on the work, so Scan is first.
+    // A hint that only rewords the label above it is a second line for nothing, so
+    // Scan, Scan history, Contact support and Profile carry none. The hints that
+    // survive all say something the label does not.
     { group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false,
-      inBar: true, barLabel: 'Scan',
-      hint: 'Photograph a rack' },
+      inBar: true, barLabel: 'Scan' },
     { group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
       inBar: true, barLabel: '2 Racks',
       hint: 'Two racks as one job' },
-    { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false,
-      hint: 'Past scans and reports' },
+    { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false },
     // Approvals is its own application on its own address, so this
     // entry carries `href` instead of `to`: the bar, the Menu and the sidebar
     // draw it as a link that leaves the app (components/ExternalLink.jsx).
-    ...(isAdmin ? [{ group: 'work', href: APPROVALS_URL, label: 'Approvals', icon: <InboxIcon />,
+    // Not gated. A technician has a real queue in RackTrack Changes - their own
+    // tickets and their verification queue - and GET /api/approvals/me confirms
+    // it, returning verify:true for a member. Hiding the link asked them to
+    // check the rack and then gave them nowhere to see what they had checked,
+    // and left their phone bar with two entries where an admin has three. What
+    // each person may DO there is decided server side and unchanged by this.
+    { group: 'work', href: APPROVALS_URL, label: 'Changes', icon: <InboxIcon />,
       inBar: true,
-      hint: 'Opens RackTrack Approvals' }] : []),
+      hint: isAdmin ? 'Opens RackTrack Changes' : 'Your checks in RackTrack Changes' },
 
     // ── Organization: owners and organisation admins.
     ...(isAdmin ? [{ group: 'org', to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,
@@ -130,11 +134,9 @@ export function usePrimaryNav() {
     // ── Help
     { group: 'help', to: '/help', label: 'Ask DOT', icon: <HelpIcon />, end: false,
       hint: 'Answers from the docs' },
-    { group: 'help', to: '/contact', label: 'Contact support', icon: <ContactIcon />, end: false,
-      hint: 'Email the team' },
+    { group: 'help', to: '/contact', label: 'Contact support', icon: <ContactIcon />, end: false },
 
     // ── Account. Not in the phone bar: the Menu ends with it, next to Sign out.
-    { group: 'account', to: '/profile', label: 'Profile', icon: <ProfileIcon />, end: false,
-      hint: 'Account and sign-in' },
+    { group: 'account', to: '/profile', label: 'Profile', icon: <ProfileIcon />, end: false },
   ];
 }

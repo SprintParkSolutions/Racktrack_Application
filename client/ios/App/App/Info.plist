@@ -52,6 +52,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>RackTrack uses your camera to scan and photograph your equipment racks.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>RackTrack notes where a rack photo was taken, so it can tell which of your sites the rack is in. It is never used to track you.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>RackTrack reads your network switches directly from this phone, over SNMP, so it never has to send their addresses or passwords off your network.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

@@ -71,9 +71,9 @@ afterEach(cleanup);
 describe('ReportPage', () => {
   test('a match nobody confirmed is named as a proposal', async () => {
     draw();
+    // The tag on the row is the caveat; it is not also spelled out underneath it.
     await screen.findByText('proposal, not confirmed');
-    expect(screen.getByText('A proposal, waiting for someone to confirm that this switch is this box.')).toBeTruthy();
-    expect(screen.getByText(/One device below takes its make, model or serial/)).toBeTruthy();
+    expect(screen.getByText('One device below is a proposal. Confirm its switch in Review.')).toBeTruthy();
   });
 
   test('a confirmed match reads as the switch speaking for itself', async () => {
@@ -98,13 +98,13 @@ describe('ReportPage', () => {
     await screen.findByText('from a matched switch');
     expect(screen.queryByText('from the switch')).toBe(null);
     expect(screen.queryByText('proposal, not confirmed')).toBe(null);
-    expect(screen.getByText(/This server does not record who confirmed a match/)).toBeTruthy();
+    expect(screen.getByText('Nobody is recorded as confirming these matches.')).toBeTruthy();
   });
 
   test('a matching nobody saved is named, not silently left out', async () => {
     reply.view = { ...view(), suggested: true };
     draw();
-    await screen.findByText(/This rack's places are still a proposal/);
+    await screen.findByText(/Nothing the switches said is in this report yet/);
     expect(screen.getByRole('link', { name: 'Open Review' })).toBeTruthy();
   });
 

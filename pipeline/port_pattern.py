@@ -5,14 +5,27 @@ import statistics
 This module replaces the old pattern-based classifier. The model topology is
 now:
 
-  ports_typed (ports_9.pt) → port TYPE only
+  ports_typed (ports_13.pt) → port TYPE only
     Classes: RJ45, SFP, QSFP, CONSOLE, AUX, MANAGEMENT_PORT,
-             USB_A, USB_B, USB_C
+             USB_A, USB_B, USB_C, FC, LC, SC, empty
     Carries no connected/empty signal.
 
   ports_status (port_count.pt) → STATUS only
     Classes: Connected_port, Empty_port
     Carries no type signal.
+
+ports_13 replaced the nine class ports_9. It keeps those nine classes at the
+same indices and adds four: the fibre connectors FC / LC / SC, and `empty` —
+a port POSITION with nothing fitted in it (a bare keystone hole, a vacant SFP
+cage). `empty` is a type, not a status: whether a fitted port has a cable in it
+is still port_count.pt's answer and only ever port_count.pt's answer.
+
+The other thing ports_13 brought is patch panels, which ports_9 was never
+trained on. That is why patch panels used to be read by the STATUS model
+standing in as a detector — it was the only model that could see their jacks at
+all. It no longer has to: the typed model reads a panel directly, so panels now
+go through the same typed + status flow as every other device, and the status
+model is back to answering only the question it was trained for.
 
 Per crop we run both models, NMS each within itself, then IoU-match each
 status box onto the typed box with the highest overlap. A typed port with
@@ -22,7 +35,7 @@ Public surface kept stable for runner.py + worker.py:
 
   classify_ports_by_pattern(crop, type_model, conf=..., status_model=...)
   classify_ports_with_target_count(crop, type_model, target, conf=..., status_model=...)
-  detect_patch_panel_ports(crop, status_model, conf=...)
+  detect_patch_panel_ports(crop, type_model, conf=..., status_model=...)
 
 Return shape (preserved for server/app.js consumers):
 
@@ -42,17 +55,32 @@ from pipeline.port import (  # re-export so existing imports keep working
     CONF,
 )
 
-# ports_9 class name → category bucket used by the JSON contract.
+# ports_13 class name → category bucket used by the JSON contract.
+#
+# FC / LC / SC are fibre connectors, so they join SFP and QSFP in the optical
+# bucket. They are not transceiver cages, but of the four buckets the contract
+# has, `sfp` is the only one that says "optical", and calling a fibre port
+# 1000base-t copper would be a plain lie about the hardware.
+#
+# `empty` is a slot with nothing fitted, so its connector family is exactly
+# what nobody can tell — the model can see the aperture, not what belongs in
+# it. It goes to `other`, which NetBox writes as interface type "other": the
+# one bucket that asserts no family. The slot is still a real position and is
+# still counted as one; we just decline to name it.
 _TYPE_TO_CATEGORY = {
     "RJ45": "main",
     "SFP": "sfp",
     "QSFP": "sfp",
+    "FC": "sfp",
+    "LC": "sfp",
+    "SC": "sfp",
     "CONSOLE": "console",
     "AUX": "console",
     "MANAGEMENT_PORT": "console",
     "USB_A": "other",
     "USB_B": "other",
     "USB_C": "other",
+    "empty": "other",
 }
 
 
@@ -425,7 +453,7 @@ def classify_ports_by_pattern(
     img, model, conf=CONF, skip_first_n_ports=0, status_model=None, status_dets=None
 ):
     """Detect typed ports + bind a status to each, return the legacy bucket
-    shape. `model` is ports_9.pt; `status_model` is port_count.pt.
+    shape. `model` is ports_13.pt; `status_model` is port_count.pt.
 
     `status_dets` lets a caller pass in already-computed status detections so
     the status model isn't run twice.
@@ -785,35 +813,50 @@ def _reconcile_patchpanel(ports):
     return out
 
 
-def detect_patch_panel_ports(img, model, conf=CONF):
-    """Patch panels are pure RJ-45 grids — the status model's Connected_port /
-    Empty_port are two states of the SAME physical port. We collapse an
-    overlapping connected+empty pair to one port, snap the combined count to
-    the nearest standard patch-panel size (24 / 48), then number the grid
-    as one sequence — left→right for a single row, column-wise (top then bottom
-    of each column) for two rows.
+def detect_patch_panel_ports(img, model, conf=CONF, status_model=None, status_dets=None):
+    """Read a patch panel: the typed model finds the slots, the status model
+    says which of them have a cable in.
 
-    `model` here is the status model (port_count.pt).
+    `model` is the TYPED model (ports_13.pt) and `status_model` is the status
+    model (port_count.pt). It used to be the other way round — the status model
+    was handed the panel on its own and its Connected_port / Empty_port boxes
+    were used as slot positions — because ports_9 had never been shown a patch
+    panel and found almost nothing on one. ports_13 was trained on panels, so
+    the detector job goes back to the detector.
+
+    On our own rack that swap is the difference between reading a panel and
+    guessing at it: the status model found 44 and 45 slots on two 48 way panels
+    and the count had to be snapped up, where the typed model finds 48 and 48
+    outright.
+
+    Every slot on a panel is the same physical thing — a keystone position —
+    whether a jack is fitted, a fibre adapter is fitted, or nothing is. So they
+    all stay in one sequence and one bucket rather than being split by connector
+    type, which is also what the rest of the code already assumes a panel is
+    (worker.py force-clears sfp/console on a Patch Panel). Each slot keeps the
+    type the model actually read it as, so a fibre panel's slots still say LC
+    rather than being relabelled RJ45 the way they used to be.
+
+    Count and numbering are unchanged: snap the total to the nearest standard
+    panel size (24 / 48), then number as one sequence — left→right for a single
+    row, column-wise (top then bottom of each column) for two rows.
     """
-    # Looser NMS: a connected+empty pair on one physical port can differ in
-    # size, so use lower IoU / containment to collapse them to one box.
+    # Looser NMS than a switch gets: a panel's slots sit shoulder to shoulder,
+    # and two classes firing on one physical slot (an RJ45 box and an `empty`
+    # box on the same hole) must collapse to a single port, not be counted twice.
     dets = _nms(_detections_from(model, img, conf=conf), iou_thresh=0.3, containment_thresh=0.5)
     if not dets:
         return _empty_result()
 
-    ports = []
-    for d in dets:
-        x1, y1, x2, y2 = d["bbox"]
-        ports.append(
-            {
-                "box": [int(x1), int(y1), int(x2), int(y2)],
-                "center": [(int(x1) + int(x2)) // 2, (int(y1) + int(y2)) // 2],
-                "status": _status_from_name(d["class_name"]),
-                "class_name": "RJ45",
-                "confidence": float(d["confidence"]),
-                "port_category": "main",
-            }
-        )
+    if status_dets is None:
+        status_dets = status_detections(status_model, img, conf=conf)
+    if status_dets:
+        _bind_status(dets, status_dets, iou_thresh=0.3)
+    else:
+        for d in dets:
+            d["status"] = "unknown"
+
+    ports = [_to_port_dict(d, "main") for d in dets]
 
     # Snap the combined (connected + empty) count to 24 / 48.
     ports = _reconcile_patchpanel(ports)

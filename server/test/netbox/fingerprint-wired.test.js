@@ -84,7 +84,8 @@ test('the cables pick the right box when everything else has tied', () => {
 
   const reason = out.reasons[1];
   assert.equal(out.matches[1], 'dev:RK-FPWIRE01:u10', 'it picked the box whose cables agree');
-  assert.match(reason.why, /cables match/, `the reason names the cables: ${reason.why}`);
+  assert.match(reason.why, /the cables on this box match the switch/,
+    `the reason names the cables, and only the cables: ${reason.why}`);
   assert.equal(reason.candidateCount, 1, 'and the cables left one candidate');
 });
 

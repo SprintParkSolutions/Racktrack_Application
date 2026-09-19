@@ -18,12 +18,33 @@ import styles from './PlacePicker.module.css';
  * than any label. Both write the same value.
  */
 
-const label = (d) => `${d.position ? `U${d.position} · ` : ''}${d.name || d.cvClass || 'Device'}`;
+/**
+ * What to call a box on a screen that is already showing the rack it is in.
+ *
+ * A device's stored name has to be unique across a whole SITE, because NetBox
+ * requires that, so it carries its U and its rack: "Switch U15 RK-B4DE04B1".
+ * Printed here, under a heading that says In the rack, beside a picker for that
+ * one rack, and after a U15 prefix this function adds itself, it came out as
+ * "U15 - Switch U15 RK-B4DE04B1" - the same two facts three times.
+ *
+ * So the name is trimmed of what the screen is already saying. The unique name
+ * is what gets written; this is only what gets read.
+ */
+const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const label = (d, rack = null) => {
+  const pos = d.position ? `U${d.position} · ` : '';
+  let name = String(d.name || d.cvClass || 'Device').trim();
+  if (rack) name = name.replace(new RegExp(`\\s*\\b${escapeRe(rack)}\\b\\s*$`, 'i'), '').trim();
+  if (d.position) name = name.replace(new RegExp(`\\s*\\bU0*${d.position}\\b`, 'gi'), ' ').trim();
+  name = name.replace(/\s{2,}/g, ' ');
+  return `${pos}${name || d.cvClass || 'Device'}`;
+};
 const sub = (d) => [d.make && d.make !== 'Unknown' ? d.make : null, d.model, d.portCount ? `${d.portCount} ports` : null]
   .filter(Boolean).join(' · ');
 
 export default function PlacePicker({
   devices = [], image = null, value = '', suggestion = null, takenBy = {}, name = 'this switch',
+  rackLabel = null,
   written = false, confirming = false, onChange, onConfirm = null,
 }) {
   const [open, setOpen] = useState(false);
@@ -50,7 +71,7 @@ export default function PlacePicker({
       <button type="button" className={styles.trigger} onClick={() => setOpen(true)}>
         <span className={styles.triggerLabel}>In the rack</span>
         <span className={chosen ? styles.triggerValue : styles.triggerEmpty}>
-          {chosen ? label(chosen) : 'Not placed yet'}
+          {chosen ? label(chosen, rackLabel) : 'Not placed yet'}
         </span>
         {chosen && sub(chosen) && <span className={styles.triggerSub}>{sub(chosen)}</span>}
         <span className={styles.triggerAction} aria-hidden="true">Change</span>
@@ -61,12 +82,18 @@ export default function PlacePicker({
           "The camera suggests one: U10 box and U12 box cannot be told apart",
           which is the opposite of what it says. */}
       {!chosen && suggestion?.deviceUid && (
-        <p className={styles.suggest}>The camera suggests one: {suggestion.why}</p>
+        <p className={styles.suggest}>
+          The photo suggests {label(pickable.find((d) => d.uid === suggestion.deviceUid) || {}, rackLabel)}.
+        </p>
       )}
       {!chosen && suggestion && !suggestion.deviceUid && suggestion.why && (
         <p className={styles.suggest}>Not placed: {suggestion.why}.</p>
       )}
-      {(suggestion?.notes || []).map((note) => (
+      {/* One note, never a column of them. Four of these was the complaint that
+          started this: paragraphs of the matcher's arithmetic on a card whose job
+          is to show one switch and one box. The first note is the one that asks
+          the person for something. */}
+      {(suggestion?.notes || []).slice(0, 1).map((note) => (
         <p className={styles.suggest} key={note}>{note}.</p>
       ))}
 
@@ -80,7 +107,7 @@ export default function PlacePicker({
           : (
             <button type="button" className={styles.confirm} disabled={confirming}
               onClick={() => onConfirm(chosen.uid)}>
-              {confirming ? 'Saving...' : `I checked this box at the rack: ${label(chosen)}`}
+              {confirming ? 'Saving...' : `I checked this box: ${label(chosen, rackLabel)}`}
             </button>
           )
       )}
@@ -129,7 +156,7 @@ export default function PlacePicker({
                                 U{d.position}
                               </text>
                             )}
-                            <title>{label(d)}{other ? ` - already ${other}` : ''}</title>
+                            <title>{label(d, rackLabel)}{other ? ` - already ${other}` : ''}</title>
                           </g>
                         );
                       })}
@@ -145,7 +172,7 @@ export default function PlacePicker({
                         <button type="button"
                           className={`${styles.item} ${d.uid === value ? styles.itemOn : ''}`}
                           onClick={() => pick(d.uid)}>
-                          <span className={styles.itemName}>{label(d)}</span>
+                          <span className={styles.itemName}>{label(d, rackLabel)}</span>
                           <span className={styles.itemSub}>
                             {sub(d) || 'nothing else read off it'}
                             {other ? ` · already ${other}` : ''}

@@ -17,12 +17,6 @@ function formatJoined(d) {
     return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
   } catch { return null; }
 }
-function formatJoinedLong(d) {
-  if (!d) return '-';
-  try {
-    return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
-  } catch { return '-'; }
-}
 function formatRelative(d) {
   if (!d) return '-';
   const ms = Date.now() - new Date(d).getTime();
@@ -71,7 +65,7 @@ export default function ProfilePage() {
     let cancelled = false;
     setScansLoading(true);
     authFetch(apiUrl('/api/scans'))
-      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('Could not load your scans. Try again.')))
       .then(data => { if (!cancelled) { setScans(data.scans || []); setScansError(null); } })
       .catch(err => { if (!cancelled) setScansError(err.message); })
       .finally(() => { if (!cancelled) setScansLoading(false); });
@@ -108,7 +102,7 @@ export default function ProfilePage() {
     try {
       const r = await authFetch(apiUrl('/api/auth/logout-all'), { method: 'POST' });
       const data = await r.json().catch(() => ({}));
-      if (!r.ok || !data.ok) throw new Error(data.error || `Could not sign out everywhere (HTTP ${r.status}).`);
+      if (!r.ok || !data.ok) throw new Error(data.error || 'Could not sign out everywhere. Try again.');
       logout();
       navigate('/', { replace: true });
     } catch (err) {
@@ -287,7 +281,7 @@ export default function ProfilePage() {
                         <span className={styles.rowMain}>
                           <span className={`${styles.rowTitle} ${styles.rowTitleMono}`}>{s.rackId}</span>
                           <span className={styles.rowMeta}>
-                            {s.deviceCount} dev · {s.unitCount} units · {s.portCount} port{s.portCount === 1 ? '' : 's'}
+                            {s.deviceCount} device{s.deviceCount === 1 ? '' : 's'}
                           </span>
                         </span>
                         <span className={styles.rowEnd}>
@@ -344,22 +338,13 @@ export default function ProfilePage() {
 
             <section className={styles.block}>
               <h3 className={styles.blockH}>Profile details</h3>
+              {/* Email, organisation and the join date are all in the identity
+                  block at the top of this same screen. Role is the one fact that
+                  is not, so it is the one row here. */}
               <dl className={styles.details}>
                 <div className={styles.detail}>
                   <dt className={styles.dt}>Role</dt>
                   <dd className={styles.dd}>{titleCase(user?.role)}</dd>
-                </div>
-                <div className={styles.detail}>
-                  <dt className={styles.dt}>Email</dt>
-                  <dd className={styles.dd}>{user?.email || '-'}</dd>
-                </div>
-                <div className={styles.detail}>
-                  <dt className={styles.dt}>Member since</dt>
-                  <dd className={styles.dd}>{formatJoinedLong(user?.created_at)}</dd>
-                </div>
-                <div className={styles.detail}>
-                  <dt className={styles.dt}>Default organization</dt>
-                  <dd className={styles.dd}>{orgName}</dd>
                 </div>
               </dl>
             </section>
@@ -377,7 +362,7 @@ export default function ProfilePage() {
                   {revoking ? 'Signing out…' : 'Sign out from all devices'}
                 </button>
                 <p className={styles.actionNote}>
-                  Ends every signed-in session for this account, including this one.
+                  Ends every session, including this one.
                 </p>
               </div>
             </section>
@@ -410,8 +395,7 @@ export default function ProfilePage() {
             <div className={styles.confirmIcon}><Icon name="logout" /></div>
             <h3 className={styles.confirmTitle}>Sign out from all devices?</h3>
             <p className={styles.confirmMsg}>
-              Every phone, tablet and browser signed in as <strong>{user?.username}</strong> will
-              be signed out, including this one.
+              Signs out every device using <strong>{user?.username}</strong>, including this one.
             </p>
             <div className={styles.confirmActions}>
               <button className={styles.confirmCancel} onClick={() => setConfirmingRevoke(false)} disabled={revoking}>

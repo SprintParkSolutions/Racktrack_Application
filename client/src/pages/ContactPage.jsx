@@ -26,16 +26,10 @@ const prettyBytes = (n) =>
     : n < 1024 * 1024 ? `${(n / 1024).toFixed(0)} KB`
       : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
-// Stated plainly, and each one is either true of the product or checkable.
-// Deliberately not "10,000+ teams" or a 99.9% figure nobody audits - invented
-// numbers are the fastest way for an infrastructure buyer to stop believing
-// the rest of the page.
-const SIGNALS = [
-  { icon: 'group',  label: 'Real human support' },
-  { icon: 'clock',  label: 'Replies within a few hours' },
-  { icon: 'shield', label: 'Secure & confidential' },
-  { icon: 'rack',   label: 'Built for infrastructure teams' },
-];
+// The four trust signals that used to sit here are gone. The person reading this
+// screen is already signed in and already on the support form - they are not being
+// sold the product - and one of the four ("Replies within a few hours") was said
+// again in the rail beside it.
 
 export default function ContactPage() {
   const navigate = useNavigate();
@@ -173,19 +167,10 @@ export default function ContactPage() {
             <Icon name="arrow_back" /> Back
           </button>
           <div className={styles.eyebrow}>Support</div>
-          <h1 className={styles.h1}>We&rsquo;re here to help.</h1>
+          <h1 className={styles.h1}>Contact support</h1>
           <p className={styles.lede}>
-            Tell us what you&rsquo;re running into. Our team will review the details and get
-            back to you as soon as possible.
+            Tell us what you are running into. We reply within a few hours.
           </p>
-          <ul className={styles.signals}>
-            {SIGNALS.map((s) => (
-              <li key={s.label} className={styles.signal}>
-                <Icon name={s.icon} className={styles.signalIcon} />
-                {s.label}
-              </li>
-            ))}
-          </ul>
         </div>
         {/* An <img>, not a CSS background: index.css strips background-image
             from a broad substring allow-list, and a photograph here is content
@@ -208,12 +193,9 @@ export default function ContactPage() {
             </span>
             <div>
               <h2 className={styles.doneH}>Message sent</h2>
-              <p className={styles.doneP}>
-                Thanks - our team has received your message and will get back to you
-                shortly at <strong>{email}</strong>.
-              </p>
+              <p className={styles.doneP}>We will reply to <strong>{email}</strong>.</p>
               <button className={styles.secondary} onClick={() => navigate(-1)}>
-                Back to what I was doing
+                Back
               </button>
             </div>
           </div>
@@ -232,10 +214,8 @@ export default function ContactPage() {
           {/* ── Form ── */}
           <form className={styles.form} onSubmit={submit} noValidate>
             <h2 className={styles.formH}>Send us a message</h2>
-            <p className={styles.formP}>
-              Include as much detail as you can. Screenshots and error messages help us
-              resolve issues faster.
-            </p>
+            {/* The message box's own placeholder already asks for what happened, what
+                they were doing and any error message. */}
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="ct-subject">
@@ -373,7 +353,7 @@ export default function ContactPage() {
                   <span className={styles.optionText}>
                     <span className={styles.optionName}>Ask DOT</span>
                     <span className={styles.optionSub}>
-                      Get a quick answer from our support assistant, drawn from verified documentation
+                      Answers from the RackTrack documentation
                     </span>
                   </span>
                   <Icon name="chevron_right" className={styles.optionGo} />
@@ -391,32 +371,9 @@ export default function ContactPage() {
               </div>
             </section>
 
-            <section className={styles.block}>
-              <h2 className={styles.blockH}>What happens next?</h2>
-              <ol className={styles.steps}>
-                <li className={styles.step}>
-                  <span className={styles.stepNum}>1</span>
-                  <span className={styles.stepText}>
-                    <span className={styles.stepName}>We receive your message</span>
-                    <span className={styles.stepSub}>We review the details you&rsquo;ve shared.</span>
-                  </span>
-                </li>
-                <li className={styles.step}>
-                  <span className={styles.stepNum}>2</span>
-                  <span className={styles.stepText}>
-                    <span className={styles.stepName}>We investigate</span>
-                    <span className={styles.stepSub}>We gather the information needed to understand the issue.</span>
-                  </span>
-                </li>
-                <li className={styles.step}>
-                  <span className={styles.stepNum}>3</span>
-                  <span className={styles.stepText}>
-                    <span className={styles.stepName}>We get back to you</span>
-                    <span className={styles.stepSub}>We&rsquo;ll reply with next steps or a resolution.</span>
-                  </span>
-                </li>
-              </ol>
-            </section>
+            {/* "What happens next?" in three numbered steps said only what the lede
+                already says: they tell us, we reply within a few hours. Numbering it
+                did not make it more information. */}
           </aside>
         </div>
       </div>

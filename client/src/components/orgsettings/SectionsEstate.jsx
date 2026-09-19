@@ -548,8 +548,12 @@ function PeopleBlock({ dc, s }) {
 export const RULES = [
   { t: 'Approve before write', p: 'Nothing is written to your records until the approver agrees.' },
   { t: 'Never delete', p: 'RackTrack adds and updates records. It never removes one.' },
-  { t: 'Tickets go to the rack contact, then the site contact', p: 'Then to escalation, when one is named.' },
-  { t: 'Photos are kept 90 days', p: 'Racks default to 42U, counted from the bottom.' },
+  { t: 'Tickets go to the rack contact, then the site contact', p: 'Escalation next, when one is named.' },
+  // The line under this rule used to be about 42U racks, which is nothing to do
+  // with how long photos are kept - the rule above it and the sentence below it
+  // said two different things. Both facts are still settable in Options below
+  // ("Photo retention", "Default rack height"), which is what this now points at.
+  { t: 'Photos are kept 90 days', p: 'You can change this under Options.' },
 ];
 export function RulesSection({ s, onValidity, inFlow }) {
   const dcs = s.dcs;

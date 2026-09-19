@@ -724,7 +724,7 @@ test('GET: signed in, scoped to the rack\'s organisation and Site, and it writes
       assert.equal(r.json.rackKey, `t${SITE_A}:${rack.id}`);
       assert.deepEqual(Object.keys(r.json).sort(), ['candidates', 'confidence', 'decision', 'evidence', 'ok', 'proposal',
         'rack', 'rackId', 'rackKey', 'rule', 'spaceId']);
-      assert.deepEqual(Object.keys(r.json.evidence).sort(), ['deviceHints', 'labels', 'notes', 'pattern']);
+      assert.deepEqual(Object.keys(r.json.evidence).sort(), ['deviceHints', 'labels', 'location', 'notes', 'pattern']);
     }
     // Every other outcome reads only, too: a suggestion from NetBox, a scan with no report, a refusal.
     let r = await call('GET', `/api/scan/${unmatched}/identity`, { user: TECH_A });

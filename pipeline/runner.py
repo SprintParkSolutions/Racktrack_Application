@@ -35,6 +35,7 @@ from pipeline.detection import (
     assign_devices_to_units,
     build_contiguous_unit_grid,
     build_device_mapping,
+    build_unit_grid_from_model,
     derive_unit_height,
     detect_devices_dual,
     detect_devices_seg,
@@ -570,24 +571,48 @@ def main():
     #   * grid starts at the first detected device's top edge (below the
     #     top rail), never above it
     #   * grid ends at the last detected device's bottom edge
-    unit_h = derive_unit_height(devices)
-    if unit_h:
-        units = build_contiguous_unit_grid(
-            devices,
-            unit_h,
-            rack_bounds=rack_box,
-            img_shape=img.shape,
-        )
-        unit_source = "device_tiling"
-        print(
-            f"[units] contiguous grid: {len(units)} rows "
-            f"(unit_h={unit_h}px, top={units[0]['box'][1]}px, "
-            f"bot={units[-1]['box'][3]}px)"
-        )
-    else:
-        units = []
-        unit_source = "none"
-        print("[units] no Switch / Patch Panel detected — cannot derive unit_h.")
+    units = []
+    unit_source = "none"
+    units_model_path = config["models"].get("units")
+    if units_model_path and os.path.exists(units_model_path):
+        try:
+            units = build_unit_grid_from_model(img, units_model_path)
+            if units:
+                unit_source = "units_model"
+                hs = [u["box"][3] - u["box"][1] for u in units]
+                print(
+                    f"[units] read by the units model: {len(units)} rows "
+                    f"(heights {min(hs)}-{max(hs)}px, top={units[0]['box'][1]}px, "
+                    f"bot={units[-1]['box'][3]}px)"
+                )
+            else:
+                print("[units] the units model found no rows - falling back to tiling.")
+        except Exception as exc:
+            # A units model that fails must not cost the whole scan; the tiling
+            # below is the same grid the product shipped with before it existed.
+            logger.exception("units model failed")
+            print(f"[units] units model FAILED ({type(exc).__name__}: {exc}) - falling back.")
+            units = []
+
+    if not units:
+        unit_h = derive_unit_height(devices)
+        if unit_h:
+            units = build_contiguous_unit_grid(
+                devices,
+                unit_h,
+                rack_bounds=rack_box,
+                img_shape=img.shape,
+            )
+            unit_source = "device_tiling"
+            print(
+                f"[units] contiguous grid: {len(units)} rows "
+                f"(unit_h={unit_h}px, top={units[0]['box'][1]}px, "
+                f"bot={units[-1]['box'][3]}px)"
+            )
+        else:
+            units = []
+            unit_source = "none"
+            print("[units] no Switch / Patch Panel detected — cannot derive unit_h.")
 
     # --- Assign each device its top-N grid units (N = round(dev_h / unit_h)) ---
     devices = assign_devices_to_units(devices, units)
@@ -645,11 +670,13 @@ def main():
         print(line)
 
     # --- Full rack with all devices' port boxes ---
-    # `port_model_inst`  = typed model (ports_9.pt) — used on Switch/Router/
-    #                       Firewall/Gateway.
+    # `port_model_inst`  = typed model (ports_13.pt) — used on every port
+    #                       bearing class, patch panels included.
     # `status_model_inst` = status model (port_count.pt) — IoU-bound to typed
-    #                       ports to produce connected/empty; also used as
-    #                       the standalone detector for patch panels.
+    #                       ports to produce connected/empty, and nothing else.
+    #                       It used to double as the standalone detector for
+    #                       patch panels, because the old typed model could not
+    #                       see them; ports_13 can, so it does not any more.
     port_model_inst = load_model(port_typed_path)
     status_model_inst = load_model(port_status_path)
     pdu_model_inst = (
@@ -698,7 +725,12 @@ def main():
             dev_crop, (ox, oy) = crop_device_with_origin(img, dev["box"])
 
             if dev["class_name"] in MAIN_PORTS_ONLY:
-                classified = detect_patch_panel_ports(dev_crop, status_model_inst, conf=ports_conf)
+                classified = detect_patch_panel_ports(
+                    dev_crop,
+                    port_model_inst,
+                    conf=ports_conf,
+                    status_model=status_model_inst,
+                )
             else:
                 classified = classify_ports_by_pattern(
                     dev_crop,
@@ -761,7 +793,10 @@ def main():
                 dev_crop, _ = crop_device_with_origin(img, dev["box"])
                 if dev["class_name"] in MAIN_PORTS_ONLY:
                     classified = detect_patch_panel_ports(
-                        dev_crop, status_model_inst, conf=ports_conf
+                        dev_crop,
+                        port_model_inst,
+                        conf=ports_conf,
+                        status_model=status_model_inst,
                     )
                 else:
                     classified = classify_ports_by_pattern(
@@ -943,7 +978,15 @@ def main():
 
     _target = getattr(args, "target_count", 0) or 0
     if selected["class_name"] in MAIN_PORTS_ONLY:
-        classified = detect_patch_panel_ports(device_crop, status_model_inst, conf=ports_conf)
+        # The select path, the fourth caller. The other three were moved onto
+        # the typed model when ports_13 arrived and this one was missed, so
+        # tapping a patch panel port in the detail view still read the panel
+        # with the STATUS model standing in as a detector: every port came back
+        # class Connected_port with status unknown, and the cable classifier
+        # was skipped because the type never said RJ45.
+        classified = detect_patch_panel_ports(
+            device_crop, port_model_inst, conf=ports_conf, status_model=status_model_inst
+        )
     elif _target > 0:
         # Honour the user-confirmed port count so port N here is the same N the
         # user numbered when they corrected the count (24 = the 24th position).

@@ -266,7 +266,7 @@ function SnmpBlock({ dc, s }) {
   return (
     <Block title="SNMP, read only" note={dc.name} right={<SaveMark mark={mark} />}>
       {cur.configured ? (
-        <Held title={`SNMP ${cur.version || ''}`} sub={cur.username ? `user ${cur.username}` : 'community held'}
+        <Held title={`SNMP ${cur.version || ''}`} sub={cur.username ? `User ${cur.username}` : 'Community string saved'}
           note={cur.security_level ? `${LEVEL[cur.security_level] || cur.security_level}${cur.auth_protocol ? ` (${[cur.auth_protocol, cur.priv_protocol].filter(Boolean).join('/')})` : ''}` : 'secrets stored, never shown'}>
           <Act size="sm" variant="quiet" onClick={() => setEditing((e) => !e)}>{editing ? 'Cancel' : 'Replace'}</Act>
           <Act size="sm" variant="danger" disabled={busy} onClick={() => s.removeSnmp(dc)}>Remove</Act>

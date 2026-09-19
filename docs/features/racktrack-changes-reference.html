@@ -1,0 +1,839 @@
+<!-- Published copy of the claude.ai artifact "RackTrack Changes Reference" | https://claude.ai/artifact/A5aB8SAjgjmRKhdgX3z3NL | artifact last updated 2026-09-18 | saved 2026-09-18 | images in racktrack-changes-reference/img/ -->
+<title>RackTrack Changes Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;500&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;
+--ground:#fff;--surface:#f6f7fa;--well:#eef1f6;--hair:#e3e7ee;--hair-2:#d3dae4;
+--ink:#14181f;--ink-2:#49525f;--ink-3:#79838f;--ink-4:#a2abb6;
+--ok:#2b7350;--ok-bg:#ecf5f0;--warn:#8a6116;--warn-bg:#fdf5e6;--bad:#a3342c;--bad-bg:#fbeeed;--db:#3a51a0;--db-bg:#eef1fa;
+--display:'Newsreader',Georgia,serif;--sans:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.shell{padding:0 clamp(18px,4vw,64px);padding-block:48px 96px}
+.brand{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 14px}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(2rem,4vw,3rem);line-height:1.04;letter-spacing:-.02em;margin:0 0 14px;max-width:20ch}
+.stand{font-size:1.06rem;color:var(--ink-2);max-width:74ch;margin:0}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(1.45rem,2.4vw,2rem);letter-spacing:-.015em;margin:0;line-height:1.15}
+h3{font-family:var(--sans);font-weight:700;font-size:1.02rem;margin:30px 0 8px;letter-spacing:-.005em}
+h4{font-family:var(--mono);font-weight:500;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:24px 0 8px}
+p{max-width:80ch;margin:0 0 12px;color:var(--ink-2)}
+p b,li b,td b{color:var(--ink);font-weight:600}
+section{margin:58px 0 0;scroll-margin-top:16px}
+.sec-head{border-bottom:1.5px solid var(--ink);padding-bottom:10px;margin-bottom:14px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sec-head .n{font-family:var(--mono);font-size:.74rem;color:#fff;background:var(--ink);border-radius:5px;padding:3px 9px;flex:0 0 auto}
+.sec-head p{margin:0;font-size:.97rem;color:var(--ink-2)}
+code,.m{font-family:var(--mono);font-size:.86em;background:var(--surface);border:1px solid var(--hair);border-radius:4px;padding:1px 6px;color:var(--ink);word-break:break-word}
+.tw{max-width:100%;overflow-x:auto;border:1px solid var(--hair);border-radius:10px;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:.93rem}
+th{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px 14px;background:var(--surface);font-weight:500;border-bottom:1px solid var(--hair);white-space:nowrap;vertical-align:bottom}
+td{padding:9px 14px;border-top:1px solid var(--hair);color:var(--ink-2);vertical-align:top}
+td:first-child{color:var(--ink)}
+tr:hover td{background:#fcfcfd}
+.nw{white-space:nowrap}
+ul,ol{margin:10px 0 14px;padding-left:22px;color:var(--ink-2);max-width:80ch}
+li{margin:0 0 7px}
+.note{border-left:3px solid var(--db);background:var(--db-bg);border-radius:0 10px 10px 0;padding:13px 18px;margin:16px 0;max-width:84ch;color:var(--ink-2)}
+.warnbox{border-left:3px solid var(--warn);background:var(--warn-bg);border-radius:0 10px 10px 0;padding:13px 18px;margin:16px 0;max-width:84ch;color:var(--ink-2)}
+.rule{border-left:3px solid var(--ok);background:var(--ok-bg);border-radius:0 10px 10px 0;padding:13px 18px;margin:16px 0;max-width:84ch;color:var(--ink-2)}
+.chip{display:inline-block;font-size:.76rem;font-weight:600;border-radius:5px;padding:2px 8px;line-height:1.5;white-space:nowrap}
+.c-ok{background:var(--ok-bg);color:var(--ok)}.c-warn{background:var(--warn-bg);color:var(--warn)}
+.c-bad{background:var(--bad-bg);color:var(--bad)}.c-info{background:var(--db-bg);color:var(--db)}
+.c-muted{background:var(--well);color:var(--ink-3)}
+.toc{margin:30px 0 0;border:1px solid var(--hair);border-radius:12px;padding:18px 22px;background:var(--surface)}
+.toc h4{margin:0 0 10px}
+.toc ol{columns:2;column-gap:34px;margin:0;padding-left:20px}
+@media (max-width:720px){.toc ol{columns:1}}
+.toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--hair-2)}
+.toc a:hover{border-bottom-color:var(--ink)}
+.tab{display:grid;grid-template-columns:1fr;gap:18px;padding:24px 0;border-bottom:1px solid var(--hair)}
+@media (min-width:1000px){.tab{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start}}
+.tab-words{min-width:0}
+.tab h3{margin-top:0}
+.tab-words .note,.tab-words .rule,.tab-words .warnbox{margin:12px 0 0;padding:11px 15px;font-size:.94rem}
+.tab-words p:last-child{margin-bottom:0}
+.shot{min-width:0}
+.browser{border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--surface)}
+.bar{display:flex;align-items:center;gap:6px;padding:7px 11px;border-bottom:1px solid var(--hair);background:#eef1f5}
+.bar i{width:8px;height:8px;border-radius:50%;background:#cfd5de;display:block}
+.bar em{font-style:normal;font-family:var(--mono);font-size:.66rem;color:var(--ink-3);margin-left:9px;background:var(--ground);border:1px solid var(--hair);border-radius:6px;padding:2px 9px}
+.shot img{display:block;width:100%;height:auto}
+.ph{max-width:280px}
+.phone{border:5px solid #1b1f26;border-radius:26px;background:#1b1f26;overflow:hidden}
+.phone img{display:block;width:100%;border-radius:21px}
+.kv{display:grid;grid-template-columns:minmax(78px,max-content) minmax(0,1fr);gap:7px 18px;margin:12px 0 14px;font-size:.93rem;max-width:80ch}
+.kv dt{align-self:start}
+.kv dd+dt{border-top:1px solid var(--hair);padding-top:9px}
+.kv dt+dd{border-top:1px solid var(--hair);padding-top:8px}
+.kv>dt:first-child,.kv>dt:first-child+dd{border-top:0;padding-top:0}
+@media (max-width:540px){.kv{grid-template-columns:minmax(0,1fr);gap:2px}.kv dd+dt{margin-top:10px}.kv dt+dd{border-top:0;padding-top:0}}
+.kv dt{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding-top:4px;white-space:nowrap}
+.kv dd{margin:0;color:var(--ink-2)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0 16px}
+.flow .s{font-family:var(--mono);font-size:.74rem;background:var(--well);border:1px solid var(--hair-2);border-radius:5px;padding:3px 8px;color:var(--ink)}
+.flow .a{color:var(--ink-4);font-size:.85rem}
+.closing{margin-top:56px;padding-top:22px;border-top:1px solid var(--hair);color:var(--ink-2);max-width:80ch}
+@media print{section{break-inside:auto}.tab{break-inside:avoid}}
+</style>
+<div class="shell">
+
+<p class="brand">RackTrack &middot; developer reference &middot; 18 September 2026</p>
+<h1>RackTrack Changes, from the inside</h1>
+<p class="stand">Everything the sub-application does, tab by tab and number by number, written for the person who maintains it. Every figure here was read from the running code or from demo.racktrack.ai on 18 September 2026. Where the code and the screen disagree, that is written down too, in the last section.</p>
+
+<div class="toc">
+<h4>Contents</h4>
+<ol>
+<li><a href="#shape">The shape of the thing</a></li>
+<li><a href="#tabs">The twelve tabs</a></li>
+<li><a href="#kpi">The dashboard, number by number</a></li>
+<li><a href="#detail">Anatomy of a drift</a></li>
+<li><a href="#status">Twenty-two statuses</a></li>
+<li><a href="#moves">The moves, and who may make them</a></li>
+<li><a href="#roles">Roles and capabilities</a></li>
+<li><a href="#guards">The rules that refuse</a></li>
+<li><a href="#clocks">The four clocks</a></li>
+<li><a href="#verify">Verification</a></li>
+<li><a href="#write">The write</a></li>
+<li><a href="#hash">Fingerprint and payload hash</a></li>
+<li><a href="#reports">The eight reports</a></li>
+<li><a href="#settings">Settings</a></li>
+<li><a href="#exwin">Exceptions and windows</a></li>
+<li><a href="#notify">Notifications</a></li>
+<li><a href="#tables">The eleven tables</a></li>
+<li><a href="#where">Where the code lives</a></li>
+<li><a href="#known">Known mismatches</a></li>
+</ol>
+</div>
+
+<section id="shape">
+<div class="sec-head"><span class="n">01</span><h2>The shape of the thing</h2><p>Two repositories, one API, one sign-in.</p></div>
+
+<p>RackTrack Changes is a separate front end that talks to the same server as the RackTrack app. It is not a separate product and it is not the portal. A technician photographs a rack in the app; the comparison against NetBox becomes a <b>plan</b>; deciding on that plan, assigning the work, approving it and writing it back to NetBox all happen here.</p>
+
+<dl class="kv">
+<dt>Front end</dt><dd><span class="m">/Volumes/Racktrack/racktrack_approvals</span>, a Vite and React app, about 1,950 lines. Built with <span class="m">VITE_BASE=/approvals/</span>.</dd>
+<dt>Server</dt><dd>Inside the main repo: <span class="m">server/lib/approvals/</span> is the engine, about 6,900 lines; <span class="m">server/routes/approvals/</span> is the HTTP surface, about 1,070 lines.</dd>
+<dt>Address</dt><dd><span class="m">demo.racktrack.ai/approvals/</span>, served by Caddy with <span class="m">handle_path</span> from <span class="m">/srv/approvals</span>. The name on screen is Changes; the path is still <span class="m">/approvals</span> so older links keep working.</dd>
+<dt>API</dt><dd>Everything under <span class="m">/api/approvals</span>. Forty-nine routes, plus the four ticket moves behind one of them.</dd>
+<dt>Sign-in</dt><dd>Shared. From the phone the app trades its bearer token for a single-use key at <span class="m">POST /api/auth/handoff</span>, good for 60 seconds; the browser opens the key, gets cookies and lands on the page already signed in.</dd>
+<dt>On a phone</dt><dd>The app opens it in a web view of its own, full screen, with no address bar. Below 720&nbsp;px every table becomes one card per row.</dd>
+</dl>
+
+<div class="rule"><b>The one line to remember.</b> A technician reports, an admin decides, an approver signs, and only an approval writes. Nothing is written if NetBox moved in the meantime.</div>
+</section>
+
+<section id="tabs">
+<div class="sec-head"><span class="n">02</span><h2>The twelve tabs</h2><p>What each page is for, what is on it, where it reads from and who may open it.</p></div>
+
+<p>Two things hold for every tab. You only see your own organisation's work: another organisation's drift answers 404, with no owner bypass. And no page works anything out for itself; the server sends the rows, and the counts arrive with the filters that belong beside them.</p>
+
+<div class="tab">
+<div class="tab-words">
+<h3>1. Dashboard</h3>
+<p>Where the work stands right now. Drifts counted three ways, with the ones whose clocks have run out at the top, because those are the only ones actually late. Every tile is a link, and it opens the list with the filters the server attached to that count, so a number and the list behind it can never disagree.</p>
+<dl class="kv">
+<dt>On screen</dt><dd>SLA, five tiles, breached first. A table of breaches if there are any. By status, twenty-two tiles. By priority, four. Trend, the last seven days.</dd>
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/dashboard</span>, one call</dd>
+<dt>From</dt><dd><span class="m">approval_plans</span> for status and priority, joined to <span class="m">approval_sla</span> for the clocks. Counted per request, never cached.</dd>
+<dt>Open to</dt><dd>Everyone signed in</dd>
+<dt>Empty</dt><dd>"No SLA clocks are running." and "No trend yet."</dd>
+</dl>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals</em></div><img src="racktrack-changes-reference/img/t-dashboard.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>2. My queue</h3>
+<p>The same drifts, cut to what is waiting on you and grouped by what each one is waiting for. Two people open this at the same moment and see completely different pages, because the server builds the sections from the caller's capabilities and the statuses in their organisation.</p>
+<dl class="kv">
+<dt>On screen</dt><dd>One card per section, each with its count. Three of them carry a button on every row: Verify, Approve, Triage. It opens the drift with that action already asked for.</dd>
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/queue</span></dd>
+<dt>From</dt><dd><span class="m">approval_plans</span>. The grouping is worked out per request and thrown away, because a stored queue goes stale the moment somebody else acts.</dd>
+<dt>Open to</dt><dd>Everyone signed in</dd>
+<dt>Empty</dt><dd>"Nothing is waiting on you", and per section "Nothing here."</dd>
+</dl>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/queue</em></div><img src="racktrack-changes-reference/img/t-queue.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>3. Drifts</h3>
+<p>The full list, and the page everything else opens into. Priority, risk and status sort by their place in the workflow, not alphabetically, so the order reads P1 to P4.</p>
+<dl class="kv">
+<dt>Columns</dt><dd>Drift, Rack, Datacentre, Status, Priority, Risk, Assignee, SLA, Updated. Six of them sort.</dd>
+<dt>Controls</dt><dd>Search across rack, drift and person. Nine filters: status, datacentre, rack, priority, risk, assignee, SLA state, from and to. Cursor paging, 25 a page.</dd>
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/plans</span></dd>
+<dt>From</dt><dd><span class="m">approval_plans</span>; the assignee names come from that drift's rows in <span class="m">approval_tickets</span>.</dd>
+<dt>Open to</dt><dd>Everyone signed in</dd>
+<dt>Empty</dt><dd>"No drift matches these filters."</dd>
+</dl>
+<div class="note"><b>Every filter lives in the address.</b> That is why a dashboard tile, a report figure and a pasted link all produce the identical list. A filter key the page has no control for is kept, sent on as it came, and shown as a tag you can remove.</div>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/drifts</em></div><img src="racktrack-changes-reference/img/t-drifts.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>4. Tickets</h3>
+<p>A drift is a rack. A ticket is one job for one person. This is every ticket across every drift, for when the question is who is holding what.</p>
+<dl class="kv">
+<dt>Columns</dt><dd>Drift, Rack, Item, Assignee with their email, State, ServiceNow number and its state there, SLA, Raised. A row opens the drift.</dd>
+<dt>Controls</dt><dd>Filter by ticket state. Search runs in the browser over the 200 rows loaded, so it is instant but reaches no further.</dd>
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/tickets</span></dd>
+<dt>From</dt><dd><span class="m">approval_tickets</span>, unique on drift and item, so one item can never carry two tickets. The assignee is stored three ways over: NetBox contact, RackTrack user, email.</dd>
+<dt>Open to</dt><dd>Triage, assign, approve, audit or admin</dd>
+<dt>Empty</dt><dd>"No ticket matches."</dd>
+</dl>
+<p>A technician has no Tickets tab because they hold no queue. Their own ticket reaches them by email and in the app.</p>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/tickets</em></div><img src="racktrack-changes-reference/img/t-tickets.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>5. Verification queue</h3>
+<p>Drifts waiting for a second scan to prove the work was done. The same list as Drifts with the status fixed, so the columns and filters behave identically; the status filter itself is hidden, since changing it would take you out of the queue.</p>
+<dl class="kv">
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/plans</span> with the status preset</dd>
+<dt>From</dt><dd><span class="m">approval_plans</span></dd>
+<dt>Open to</dt><dd>Verify, triage or admin</dd>
+</dl>
+<p>Verify is the widest capability after the open ones: every ordinary member has it. The person who can walk back to the rack is the technician, and requiring an admin would mean an admin standing in the datacentre. What a verification compares is section 10.</p>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/verification</em></div><img src="racktrack-changes-reference/img/t-verification.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>6. Approval queue</h3>
+<p>Drifts waiting for a signature, and the whole of an approver's job in one page. Its own tab rather than a saved filter because an approver has exactly one thing to do and should not have to find it.</p>
+<dl class="kv">
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/plans</span> with the status preset</dd>
+<dt>From</dt><dd><span class="m">approval_plans</span></dd>
+<dt>Open to</dt><dd>Approve, audit or admin. An auditor sees the queue and has no button on it.</dd>
+</dl>
+<p>Two rules bite here, both in section 8. A drift you resolved a ticket on will appear for your colleagues and not for you. And a drift with any item still undecided cannot be approved, so the queue holds things that look ready and are not.</p>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/approval</em></div><img src="racktrack-changes-reference/img/t-approval.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>7. Reports</h3>
+<p>Eight flat tables behind eight tabs, for the questions a manager asks rather than an operator. Backlog, SLA, Quality, Trends, Resolvers, Approvals, Writes, Exceptions. Section 13 says what each answers.</p>
+<dl class="kv">
+<dt>On screen</dt><dd>A plain table with a CSV link. No sorting, no clickable rows, but a number above zero that carries filters opens the drift list behind it. Approvals and Exceptions return no filters, so those two have no way through.</dd>
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/reports/:name</span>, CSV at the same path with <span class="m">.csv</span></dd>
+<dt>From</dt><dd>Queried live across <span class="m">approval_plans</span>, <span class="m">approval_items</span>, <span class="m">approval_tickets</span>, <span class="m">approval_decisions</span> and <span class="m">approval_sla</span>. No reporting table, no nightly job, no cache, so a report is never stale.</dd>
+<dt>Open to</dt><dd>Admin, audit or triage, the three answerable for the numbers</dd>
+<dt>Empty</dt><dd>"This report has no rows yet."</dd>
+</dl>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/reports</em></div><img src="racktrack-changes-reference/img/t-reports.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>8. Exceptions</h3>
+<p>Not every difference is a mistake. Some are deliberate and everyone involved knows. An exception writes that down so the same difference stops being raised every time the rack is photographed.</p>
+<dl class="kv">
+<dt>Columns</dt><dd>Item with its attribute, Where as a datacentre and rack or "every rack", Kind, State, Owner, Expires or "never", Justification, Revoke. No filters and no paging; the list loads whole.</dd>
+<dt>State</dt><dd>Worked out on the page in this order: revoked, expired, not started, review due, active. The count beside the title is the active ones only.</dd>
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/exceptions</span></dd>
+<dt>From</dt><dd><span class="m">approval_exceptions</span>, where an empty field means any: no rack means every rack, no attribute means the whole item. Revoking sets a timestamp; nothing is deleted.</dd>
+<dt>Open to</dt><dd>Read: admin, audit, triage or approve. Write: admin or triage.</dd>
+<dt>Empty</dt><dd>"No exceptions."</dd>
+</dl>
+<p>Four roles can read it on purpose. An exception only admins can see is a way of hiding drift, which is the opposite of the point.</p>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/exceptions</em></div><img src="racktrack-changes-reference/img/t-exceptions.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>9. Maintenance windows</h3>
+<p>A span of time in one datacentre when everybody has agreed work is happening. Half open: it includes its start and excludes its end.</p>
+<dl class="kv">
+<dt>Columns</dt><dd>Datacentre, State, Starts, Ends, Note, Added by, Delete. State is read off the clock: upcoming, open now, over.</dd>
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/windows</span></dd>
+<dt>From</dt><dd><span class="m">approval_windows</span>. A window belongs to exactly one datacentre, and deleting really deletes; there is no revoked flag.</dd>
+<dt>Open to</dt><dd>Read: admin, audit, triage or approve. Write: admin or triage.</dd>
+<dt>Empty</dt><dd>"No maintenance windows."</dd>
+</dl>
+<div class="rule"><b>A window changes nothing about the workflow.</b> Not who decides, not what needs approving, not what is written. Its only effect is that every clock in that datacentre pauses while it is open, and resumes with its target moved out by what the pause cost. Nobody is late for a change everyone agreed to.</div>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/windows</em></div><img src="racktrack-changes-reference/img/t-windows.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>10. Audit</h3>
+<p>Every move on every drift, newest first. The page you open when somebody asks who did what and when.</p>
+<dl class="kv">
+<dt>Columns</dt><dd>When, Drift, Rack, Action, Who, the status change written as one status to another, Reason. A row opens the drift.</dd>
+<dt>Controls</dt><dd>Search in the browser; action, from and to also go to the server. The action list is built from the rows themselves, so it only offers actions that actually occurred.</dd>
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/events</span>. If that 404s the page joins the 25 most recent drifts instead and prints a notice saying so.</dd>
+<dt>From</dt><dd><span class="m">approval_events</span></dd>
+<dt>Open to</dt><dd>Audit or admin</dd>
+<dt>Empty</dt><dd>"No events match."</dd>
+</dl>
+<div class="rule"><b>Why this page can be trusted.</b> The table is append only and the database enforces it: one trigger raises on any update, another on any delete while the drift still exists. No route writes to it directly. "Read only" is a fact about the table, not a habit of the screen.</div>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/audit</em></div><img src="racktrack-changes-reference/img/t-audit.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>11. Notifications</h3>
+<p>Two tabs on one page. Inbox is what was sent to you; Preferences is what you want sent in future. Opening the inbox asks the server again rather than trusting what the bell last polled, so Mark all read really does cover everything.</p>
+<dl class="kv">
+<dt>On screen</dt><dd>Each notice shows its subject, age, body and the event that caused it. One about a drift carries Open drift, which marks it read on the way. Preferences lists all fifteen events against in the app, email and Teams.</dd>
+<dt>Teams</dt><dd>Always the word Off, not a control. There are no tokens, and the server refuses the channel rather than accepting a setting it cannot honour.</dd>
+<dt>Reads</dt><dd><span class="m">GET /api/approvals/notifications</span> and <span class="m">.../prefs</span></dd>
+<dt>From</dt><dd><span class="m">approval_notifications</span>, one row per person per channel per event, keyed on the event, the drift, <b>the drift's version</b>, the person and the channel.</dd>
+<dt>Open to</dt><dd>Everyone signed in, and everyone sees only their own</dd>
+<dt>Empty</dt><dd>"No notifications"</dd>
+</dl>
+<p>The version in that key is what stops a repeat while still letting a drift that goes round the loop again tell people again.</p>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/notifications</em></div><img src="racktrack-changes-reference/img/t-notifications.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<div class="tab">
+<div class="tab-words">
+<h3>12. Settings</h3>
+<p>Everything here is per organisation. Nothing is fixed in the product, and two organisations on the same server can run different targets, calendars and approval rules.</p>
+<dl class="kv">
+<dt>Five cards</dt><dd><b>SLA targets</b>, four priorities by four clocks, each a number and a unit. <b>Business calendar</b>, working days and hours. <b>Dual approval</b>, which risks need two signatures. <b>Escalation</b>, when a clock warns, breaches and escalates. <b>Notification defaults</b>, what a new person receives.</dd>
+<dt>Saving</dt><dd>Each card saves on its own, so a failure on one does not lose the others. A red star marks what must be filled; nothing else is marked.</dd>
+<dt>Writes</dt><dd><span class="m">PUT /api/approvals/settings/:key</span></dd>
+<dt>From</dt><dd><span class="m">approval_settings</span>, one row per organisation per key. A key this page does not know is left alone, and a value is written back in the shape it was read in.</dd>
+<dt>Open to</dt><dd>Owner and organisation admin. Anyone else is told: "Settings are for the organization admin and the owner."</dd>
+</dl>
+<div class="warnbox">Two of the five cards have real faults today. Read section 19 before trusting what this page shows you.</div>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/settings</em></div><img src="racktrack-changes-reference/img/t-settings.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<h4>And all of it on a phone</h4>
+<div class="tab">
+<div class="tab-words">
+<p>A data table is the one thing that does not survive a narrow screen. The drifts table is 977&nbsp;px wide, so on a 390&nbsp;px phone three columns showed and six did not: status, priority, risk, assignee, SLA and updated all sat behind a sideways drag in a scroller with no visible bar.</p>
+<p>Below 720&nbsp;px each row is a card instead. The first cell heads it and every other cell sits beside its column name. Nothing is hidden and the page never slides sideways. Above 720&nbsp;px the table is exactly as it was.</p>
+<p>Two changes in one place each, which is why every list got it at once: the shared table in <span class="m">src/components/ui/index.jsx</span> now puts the column name on each cell, and one media block at the end of <span class="m">src/styles/ui.css</span> does the rest. No page was touched.</p>
+</div>
+<div class="shot ph"><div class="phone"><img src="racktrack-changes-reference/img/t-phone.jpg" alt="" loading="lazy"></div></div>
+</div>
+</section>
+
+<section id="kpi">
+<div class="sec-head"><span class="n">03</span><h2>The dashboard, number by number</h2><p>Where each figure comes from and what clicking it does.</p></div>
+
+<p>One call, <span class="m">GET /api/approvals/dashboard</span>, returns <span class="m">total</span>, <span class="m">open</span>, and three arrays: <span class="m">sla</span>, <span class="m">priority</span> and <span class="m">status</span>. Each array row is <span class="m">{ key, count, filters }</span>. The page does no arithmetic of its own: it draws what the server sends, and a positive count becomes a link to <span class="m">/drifts</span> carrying that row's filters.</p>
+
+<h3>Panel 1: SLA</h3>
+<p>Five tiles, in this order, counting <b>open</b> drifts by the state of their worst live clock.</p>
+<div class="tw"><table>
+<thead><tr><th>Tile</th><th>What it counts</th><th>Filter it links to</th><th>Live on 18 Sep</th></tr></thead>
+<tbody>
+<tr><td><span class="chip c-bad">Breached</span></td><td>A clock past its breach mark</td><td><span class="m">sla=breached&amp;open=1</span></td><td class="nw">0</td></tr>
+<tr><td><span class="chip c-warn">At risk</span></td><td>Still running, past the warn mark</td><td><span class="m">sla=at_risk&amp;open=1</span></td><td class="nw">0</td></tr>
+<tr><td><span class="chip c-muted">Paused</span></td><td>Held by a change window or on hold</td><td><span class="m">sla=paused&amp;open=1</span></td><td class="nw">0</td></tr>
+<tr><td><span class="chip c-ok">On track</span></td><td>Running and not yet warned</td><td><span class="m">sla=on_track&amp;open=1</span></td><td class="nw">0</td></tr>
+<tr><td><span class="chip c-muted">None</span></td><td>No clock has started yet</td><td><span class="m">sla=none&amp;open=1</span></td><td class="nw">49</td></tr>
+</tbody></table></div>
+<p>A drift takes the worst of its live clocks, in the order breached, at risk, paused, on track. Nothing running at all reads None. That is why a demo database full of drafts sits entirely under None: clocks start at <b>assigned</b>, not at creation.</p>
+
+<h3>Panel 2: By status</h3>
+<p>Twenty-two tiles, one per status, in workflow order, counting every drift rather than only the open ones. Each links to <span class="m">/drifts?status=&lt;key&gt;</span>. The live shape on 18 September was 43 draft, 3 triage, 3 assigned and nothing else.</p>
+
+<h3>Panel 3: By priority</h3>
+<p>Four tiles, P1 to P4, counting open drifts, linking to <span class="m">priority=P&lt;n&gt;&amp;open=1</span>. All 49 open drifts were P3, which is the default a plan is created with.</p>
+
+<h3>The SLA breaches table</h3>
+<p>Underneath, a short table of the drifts whose clocks have breached, with See all beside it. Columns: Drift, Rack, Datacentre, Status.</p>
+
+<h3>The trend panel</h3>
+<p>Raised and completed per day for the last seven days. Worth knowing: the completed series is filtered on the row's created date, not its completed date, so it does not mean what the heading suggests. That is listed again in section 19.</p>
+
+<div class="note"><b>Reading the dashboard honestly.</b> Every tile counts <i>plans</i>, never items. A plan with 294 differences counts once. The item counts live on the drift itself.</div>
+</section>
+
+<section id="detail">
+<div class="sec-head"><span class="n">04</span><h2>Anatomy of a drift</h2><p>The one screen where the work actually happens.</p></div>
+
+<div class="tab">
+<div class="tab-words">
+<p>Route <span class="m">/drifts/:id</span>. In order down the page: the header with the rack name and the drift number, a row of chips, the action bar, then Recorded versus observed, the work tickets, the verification record, the approval records, the write result, the timeline and the comments.</p>
+<p>The chips carry status, priority, risk, category, datacentre, and each SLA clock that has anything to say.</p>
+<p>The action bar is the interesting part. The server sends <span class="m">plan.next</span>, the moves the machine allows <i>this caller</i> on <i>this plan</i>, and the bar shows only those. When it is absent the client derives them from the transition table. Either way the server has the last word: a refused move comes back as 409 and the reason is printed beside the button that was pressed.</p>
+<p>When nothing is open to you it says so: "No move is open to you on this drift."</p>
+</div>
+<div class="shot"><div class="browser"><div class="bar"><i></i><i></i><i></i><em>demo.racktrack.ai/approvals/drifts/71</em></div><img src="racktrack-changes-reference/img/t-drift-detail.jpg" alt="" loading="lazy"></div></div>
+</div>
+
+<h4>Items, and why 294 differences ask 10 questions</h4>
+<p>Every change the comparison reported becomes a row in <span class="m">approval_items</span>. Three flags decide how it behaves.</p>
+<div class="tw"><table>
+<thead><tr><th>Flag</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><span class="m">supporting</span></td><td>Scaffolding: a Manufacturer, DeviceType, DeviceRole, Site, Location or Rack record that has to exist before the real thing can. Nobody is asked about it.</td></tr>
+<tr><td><span class="m">decidable</span></td><td>A person is asked to approve or reject it.</td></tr>
+<tr><td><span class="m">following</span></td><td>It follows a parent, named by <span class="m">parentUid</span>. Ports follow their device: decide the switch and its ports go with it.</td></tr>
+</tbody></table></div>
+<p>That is the whole trick. A rack with 294 differences is mostly ports; they follow their devices, so the admin answers one question per device.</p>
+
+<h4>Action traits</h4>
+<p>From <span class="m">machine.js</span>. Any action not in this table changes nothing and is reported rather than decided.</p>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>changes</th><th>ticketable</th><th>assignFirst</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td><span class="m">create</span></td><td>yes</td><td>yes</td><td>yes</td><td>Not in NetBox at all</td></tr>
+<tr><td><span class="m">update</span></td><td>yes</td><td>yes</td><td>yes</td><td>In NetBox with different values</td></tr>
+<tr><td><span class="m">rebind</span></td><td>yes</td><td><b>no</b></td><td><b>no</b></td><td>Only re-labels a record already in NetBox. Decided as it is; there is nothing to check at the rack.</td></tr>
+</tbody></table></div>
+
+<h4>The six item decisions</h4>
+<p><span class="chip c-warn">Undecided</span> <span class="chip c-info">With assignee</span> <span class="chip c-ok">Approved</span> <span class="chip c-bad">Rejected</span> <span class="chip c-muted">Excepted</span> <span class="chip c-muted">Not applicable</span></p>
+<p>Stored as <span class="m">pending</span>, <span class="m">ticketed</span>, <span class="m">approved</span>, <span class="m">rejected</span>, <span class="m">excepted</span>, <span class="m">not_applicable</span>.</p>
+</section>
+
+<section id="status">
+<div class="sec-head"><span class="n">05</span><h2>Twenty-two statuses</h2><p>In workflow order, with what each one means.</p></div>
+
+<div class="flow">
+<span class="s">draft</span><span class="a">&rarr;</span><span class="s">submitted</span><span class="a">&rarr;</span><span class="s">triage</span><span class="a">&rarr;</span><span class="s">assigned</span><span class="a">&rarr;</span><span class="s">accepted</span><span class="a">&rarr;</span><span class="s">in_progress</span><span class="a">&rarr;</span><span class="s">resolved</span><span class="a">&rarr;</span><span class="s">verification_pending</span><span class="a">&rarr;</span><span class="s">approval_pending</span><span class="a">&rarr;</span><span class="s">approved</span><span class="a">&rarr;</span><span class="s">write_in_progress</span><span class="a">&rarr;</span><span class="s">written</span><span class="a">&rarr;</span><span class="s">completed</span>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Status</th><th>What it means</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><span class="m">draft</span></td><td>The comparison is filed but not yet handed to the admin.</td></tr>
+<tr><td>2</td><td><span class="m">submitted</span></td><td>The creator has sent it; the server has not picked it up yet.</td></tr>
+<tr><td>3</td><td><span class="m">triage</span></td><td>With the admin to be prioritised, assigned, rejected, marked duplicate or excepted.</td></tr>
+<tr><td>4</td><td><span class="m">assigned</span></td><td>At least one ticket is out and not yet accepted.</td></tr>
+<tr><td>5</td><td><span class="m">accepted</span></td><td>Every open ticket has been taken, none started.</td></tr>
+<tr><td>6</td><td><span class="m">in_progress</span></td><td>Somebody is actually working a ticket.</td></tr>
+<tr><td>7</td><td><span class="m">pending</span></td><td>Every open ticket is waiting on something outside RackTrack.</td></tr>
+<tr><td>8</td><td><span class="m">resolved</span></td><td>No ticket is open; all have findings.</td></tr>
+<tr><td>9</td><td><span class="m">verification_pending</span></td><td>Waiting for the second scan that proves the fix.</td></tr>
+<tr><td>10</td><td><span class="m">approval_pending</span></td><td>Verified or skipped; waiting for a signature.</td></tr>
+<tr><td>11</td><td><span class="m">approved</span></td><td>Signed. The payload hash is on the plan and a write may run.</td></tr>
+<tr><td>12</td><td><span class="m">rejected</span></td><td>Turned down with a reason code and a comment. An admin may send it back.</td></tr>
+<tr><td>13</td><td><span class="m">rework</span></td><td>Sent back by an approver for more work.</td></tr>
+<tr><td>14</td><td><span class="m">write_in_progress</span></td><td>The controlled write is running.</td></tr>
+<tr><td>15</td><td><span class="m">written</span></td><td>The write finished with no failures. NetBox has not been re-read yet.</td></tr>
+<tr><td>16</td><td><span class="m">write_failed</span></td><td>NetBox refused at least one object, or the write threw.</td></tr>
+<tr><td>17</td><td><span class="m">manual_review</span></td><td>A write nobody can get to finish, handed to a person. A handover, not a failure.</td></tr>
+<tr><td>18</td><td><span class="m">completed</span></td><td>Written and the check after the write passed.</td></tr>
+<tr><td>19</td><td><span class="m">reopened</span></td><td>Sent back round: a failed verification, a failed post-write check, or an admin reopening.</td></tr>
+<tr><td>20</td><td><span class="m">cancelled</span></td><td>Terminal. Dropped.</td></tr>
+<tr><td>21</td><td><span class="m">duplicate</span></td><td>Terminal. Duplicates another plan, named by <span class="m">duplicateOf</span>.</td></tr>
+<tr><td>22</td><td><span class="m">known_exception</span></td><td>Terminal. Covered by an exception, named by <span class="m">exceptionId</span>.</td></tr>
+</tbody></table></div>
+
+<h4>Three derived sets</h4>
+<ul>
+<li><b>Working</b> is <span class="m">assigned</span>, <span class="m">accepted</span>, <span class="m">in_progress</span>, <span class="m">pending</span>. These four are not chosen by anybody. The plan takes whichever one its tickets add up to: any ticket open means assigned, otherwise any accepted means accepted, and so on. That is why moves between them never appear as buttons.</li>
+<li><b>Terminal</b> is <span class="m">cancelled</span>, <span class="m">duplicate</span>, <span class="m">known_exception</span>. Nothing moves a plan out of these.</li>
+<li><b>Open</b> is everything except completed, rejected and the three terminal ones.</li>
+</ul>
+</section>
+
+<section id="moves">
+<div class="sec-head"><span class="n">06</span><h2>The moves, and who may make them</h2><p>Seventeen buttons, each with a precondition.</p></div>
+
+<p>The client's table is <span class="m">src/lib/moves.js</span>; the server's is <span class="m">TRANSITIONS</span> in <span class="m">machine.js</span>. They agree, and the server wins when they do not.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Button</th><th>From</th><th>To</th><th>Who</th><th>What it needs</th></tr></thead>
+<tbody>
+<tr><td>Submit</td><td class="nw">draft</td><td class="nw">submitted</td><td>creator, admin</td><td>A scan, and something that needs a decision</td></tr>
+<tr><td>Triage</td><td class="nw">triage</td><td class="nw">assigned</td><td>admin, site manager</td><td>Every item assigned first</td></tr>
+<tr><td>Assign</td><td class="nw">triage, assigned, rejected, rework, reopened</td><td class="nw">assigned</td><td>admin, site manager</td><td>Somebody to assign to</td></tr>
+<tr><td>Accept</td><td class="nw">assigned</td><td class="nw">accepted</td><td>assignee, admin</td><td>An open ticket</td></tr>
+<tr><td>Start work</td><td class="nw">accepted, pending</td><td class="nw">in_progress</td><td>assignee, admin</td><td></td></tr>
+<tr><td>Set pending</td><td class="nw">accepted, in_progress</td><td class="nw">pending</td><td>assignee, admin</td><td>A pending reason from the list</td></tr>
+<tr><td>Resolve</td><td class="nw">in_progress, pending</td><td class="nw">resolved</td><td>assignee, admin</td><td>A finding on every resolved ticket</td></tr>
+<tr><td>Verify</td><td class="nw">verification_pending</td><td class="nw">approval_pending</td><td>technician of the Site</td><td>A passing verification scan</td></tr>
+<tr><td>Skip verification</td><td class="nw">verification_pending</td><td class="nw">approval_pending</td><td><b>admin only</b></td><td>A reason</td></tr>
+<tr><td>Approve</td><td class="nw">approval_pending</td><td class="nw">approved</td><td>approver, <b>not the resolver</b></td><td>Every item decided, and a payload hash</td></tr>
+<tr><td>Send for rework</td><td class="nw">approval_pending</td><td class="nw">rework</td><td>approver, not the resolver</td><td>Reason code and comment</td></tr>
+<tr><td>Reject</td><td class="nw">triage, approval_pending, write_failed, manual_review</td><td class="nw">rejected</td><td>depends on the status</td><td>Reason code and comment</td></tr>
+<tr><td>Write to NetBox</td><td class="nw">approved</td><td class="nw">write_in_progress</td><td>admin</td><td>The hash still stands, and something to write</td></tr>
+<tr><td>Try the write again</td><td class="nw">write_failed, manual_review</td><td class="nw">write_in_progress</td><td>admin</td><td>Same, plus a reason from manual review</td></tr>
+<tr><td>Send to manual review</td><td class="nw">write_failed</td><td class="nw">manual_review</td><td>admin</td><td>A reason</td></tr>
+<tr><td>Reopen</td><td class="nw">completed</td><td class="nw">reopened</td><td>admin</td><td>A reopen reason from the list</td></tr>
+<tr><td>Cancel drift</td><td class="nw">draft, triage, pending, manual_review</td><td class="nw">cancelled</td><td>admin, or the creator on a draft</td><td></td></tr>
+</tbody></table></div>
+
+<h4>Ticket moves</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>From ticket status</th><th>To</th></tr></thead>
+<tbody>
+<tr><td><span class="m">accept</span></td><td>open</td><td>accepted</td></tr>
+<tr><td><span class="m">start</span></td><td>open, accepted, pending</td><td>in_progress</td></tr>
+<tr><td><span class="m">pending</span></td><td>open, accepted, in_progress</td><td>pending</td></tr>
+<tr><td><span class="m">resolve</span></td><td>open, accepted, in_progress, pending</td><td>resolved</td></tr>
+</tbody></table></div>
+<p>A ticket's own statuses are open, accepted, in progress, pending, resolved and closed.</p>
+</section>
+
+<section id="roles">
+<div class="sec-head"><span class="n">07</span><h2>Roles and capabilities</h2><p>What <span class="m">GET /api/approvals/me</span> answers, and where it comes from.</p></div>
+
+<p>Seven capabilities are computed from the RackTrack role alone. The plan is not consulted here; per-plan scoping happens later, in the machine and in the read rules.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Role</th><th>triage</th><th>assign</th><th>approve</th><th>write</th><th>verify</th><th>audit</th><th>admin</th></tr></thead>
+<tbody>
+<tr><td><b>owner</b></td><td>yes</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td></tr>
+<tr><td><b>org_admin</b></td><td>yes</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td></tr>
+<tr><td><b>site_manager</b></td><td>yes</td><td>yes</td><td>&mdash;</td><td>&mdash;</td><td>yes</td><td>&mdash;</td><td>&mdash;</td></tr>
+<tr><td><b>member</b> (technician)</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>yes</td><td>&mdash;</td><td>&mdash;</td></tr>
+<tr><td><b>approver</b></td><td>&mdash;</td><td>&mdash;</td><td>yes</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+<tr><td><b>auditor</b></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>yes</td><td>&mdash;</td></tr>
+</tbody></table></div>
+
+<p><span class="m">triage</span> and <span class="m">assign</span> read the same list, so they are never different in practice. <span class="m">write</span> is owner and org admin only, which is what makes "an admin approves and writes" true.</p>
+
+<div class="note"><b>Visibility.</b> A plan belongs to the organisation that raised it. Every list and every plan-by-id route is filtered to the caller's organisation, and there is no owner bypass: another organisation's plan is a 404, exactly like one that does not exist. If the raiser has no organisation, only the raiser sees it. That is why the <span class="m">owner</span> account is the wrong account to demonstrate the workflow with.</div>
+</section>
+
+<section id="guards">
+<div class="sec-head"><span class="n">08</span><h2>The rules that refuse</h2><p>The five that matter, and the words the server uses.</p></div>
+
+<p>Refusals map to HTTP like this: not found 404, bad request 400, wrong role 403, and a guard or an impossible transition 409.</p>
+
+<h3>1. The person who did the work cannot sign it off</h3>
+<div class="rule">"You resolved a ticket on this plan, so somebody else has to make this decision."</div>
+<p>Approve, reject and rework from <span class="m">approval_pending</span> all carry <span class="m">notResolver</span>. The check matches on user id or username against the tickets. The move is not merely refused, it is not offered: the server leaves it out of <span class="m">plan.next</span>, so the button never appears.</p>
+
+<h3>2. Assign before you decide</h3>
+<div class="rule">Item level: the item comes back under <span class="m">refused</span> with <span class="m">why: 'assign first'</span>, which the screen prints as "Assign it to someone first. Approve and reject open once their ticket is resolved."</div>
+<p>A finding counts only when the ticket is <b>resolved</b> and the finding is not blank. Related refusals: "n items are still waiting to be assigned" on triage, "assign at least one item to somebody first", "a ticket on this plan is still open", "every resolved ticket needs a finding", and at approval "n items are still undecided".</p>
+<p>The exception is <span class="m">rebind</span>: "a rebind only re-labels a record already in NetBox; approve or reject it, there is nothing to check at the rack."</p>
+
+<h3>3. A technician never decides</h3>
+<div class="rule">"Approving and rejecting are for an approver or an organization admin."</div>
+<p>Enforced twice, at the route gate and again in the service, so typing the address by hand achieves nothing.</p>
+
+<h3>4. Only an approval writes</h3>
+<p>The write carries exactly three kinds of object: scaffolding nobody was asked about, every decidable item a person approved, and the ports following an approved device. Everything else is excluded by uid. Refusals: "nothing on this plan was approved for writing", and for the wrong role "An admin approves and writes. Send this plan to yours to review."</p>
+
+<h3>5. Nothing is written if NetBox moved</h3>
+<div class="rule">"NetBox has changed since this plan was approved, so nothing was written."</div>
+<p>Before any write the server compares NetBox again and re-fingerprints it. If the fingerprint has moved, the plan is pushed back to <span class="m">approval_pending</span> with its payload hash cleared, an audit row is written, and the caller gets a 409. Nothing is sent to NetBox at all.</p>
+<p>On a retry the test is more careful, because a partial write has already changed NetBox: every row the fresh comparison still wants must be a row of this plan with the same action and the same field changes, and every row of the plan that has vanished must be one this plan itself wrote. That is what <span class="m">writtenUids</span> is for.</p>
+
+<h4>Other guards worth knowing</h4>
+<div class="tw"><table>
+<thead><tr><th>Guard</th><th>What it says</th></tr></thead>
+<tbody>
+<tr><td><span class="m">submit</span></td><td>"a plan needs the scan it came from before it can be submitted"; "nothing on this plan needs a decision; cancel it instead"</td></tr>
+<tr><td><span class="m">pendingReason</span></td><td>"a pending reason is needed, one of: awaiting_requester, awaiting_vendor, awaiting_change_window, awaiting_access, awaiting_parts, awaiting_external_team"</td></tr>
+<tr><td><span class="m">verified</span></td><td>"a passing verification scan is needed first"; skipping needs an admin and a reason</td></tr>
+<tr><td><span class="m">approve</span></td><td>"the approval has nothing to sign: no payload hash"; "this plan needs a second approval, and it has to come from a different person"</td></tr>
+<tr><td><span class="m">postWritePassed</span></td><td>"a passing check of NetBox after the write is needed first"</td></tr>
+<tr><td><span class="m">duplicate</span></td><td>"a plan cannot be a duplicate of itself"</td></tr>
+</tbody></table></div>
+<p>A move that does not exist at all reads, for example, "a plan that is draft cannot become approved". A move for somebody else reads "This is for an approver." or "The server makes this move itself."</p>
+</section>
+
+<section id="clocks">
+<div class="sec-head"><span class="n">09</span><h2>The four clocks</h2><p>What starts them, what stops them, and how they are paused.</p></div>
+
+<div class="tw"><table>
+<thead><tr><th>Clock</th><th>Starts when the plan becomes</th><th>Met when it becomes</th></tr></thead>
+<tbody>
+<tr><td><b>acceptance</b></td><td>assigned</td><td>accepted, in_progress, pending, resolved, verification_pending</td></tr>
+<tr><td><b>investigation</b></td><td>accepted</td><td>in_progress, resolved, verification_pending</td></tr>
+<tr><td><b>resolution</b></td><td>assigned</td><td>resolved, verification_pending</td></tr>
+<tr><td><b>approval</b></td><td>approval_pending</td><td>approved, rejected, rework</td></tr>
+</tbody></table></div>
+
+<p>In words: acceptance is handed out to taken; investigation is taken to started; resolution is handed out to every ticket answered; approval is put up to signed, rejected or sent back.</p>
+
+<h4>The targets, in minutes unless marked</h4>
+<div class="tw"><table>
+<thead><tr><th>Priority</th><th>Acceptance</th><th>Investigation</th><th>Resolution</th><th>Approval</th></tr></thead>
+<tbody>
+<tr><td><b>P1</b></td><td>15</td><td>30</td><td>120</td><td>30</td></tr>
+<tr><td><b>P2</b></td><td>30</td><td>60</td><td>240</td><td>120</td></tr>
+<tr><td><b>P3</b></td><td>240</td><td>480</td><td>2 business days</td><td>480 business</td></tr>
+<tr><td><b>P4</b></td><td>480</td><td>1 business day</td><td>5 business days</td><td>2 business days</td></tr>
+</tbody></table></div>
+
+<h4>At risk, breached, paused</h4>
+<p>Three marks, as a percentage of the target: <b>warn at 80</b>, <b>breach at 100</b>, <b>escalate at 120</b>. The words on screen come out like this:</p>
+<ul>
+<li><b>On track</b> - running, not yet past the warn mark.</li>
+<li><b>At risk</b> - still running, but the tick has stamped <span class="m">warnedAt</span>.</li>
+<li><b>Breached</b> - the row status is breached, stamped at the breach or escalate mark.</li>
+<li><b>Paused</b> - held by a change window, or the resolution clock while the plan is on hold.</li>
+<li><b>None</b> - no clock has started.</li>
+</ul>
+<p>A plan shows the worst of its live clocks, in that order.</p>
+
+<h4>Pauses</h4>
+<p>Two things pause a clock. Setting a plan to <span class="m">pending</span> pauses the <b>resolution clock only</b>, with the reason "the plan is on hold". An open maintenance window pauses <b>every</b> clock the tick sees, with the reason "inside a change window".</p>
+<div class="rule">A pause moves the target out by exactly what it cost, measured in the clock's own units. A clock held over a weekend hands nobody an extra weekend, because a business-hours clock counts the hold in business minutes. All three marks move out together: a clock held for an hour is warned an hour later and breached an hour later, never one without the other.</div>
+<p>Only a row in status <b>running</b> is paused, so a window opening under an already breached clock does not pause it.</p>
+
+<h4>The calendar and escalation</h4>
+<p>Default working days Monday to Friday, 09:00 to 18:00, no holidays, in the datacentre's own time zone. An unknown time zone falls back to UTC silently, which is wrong by hours but never by days and never throws inside a clock tick.</p>
+<p>The tick runs every 60 seconds and fires each of warn, breach and escalate once, recording it on the row so a restart does not resend. An approval clock also emits <span class="m">approval_overdue</span> when it breaches or escalates.</p>
+</section>
+
+<section id="verify">
+<div class="sec-head"><span class="n">10</span><h2>Verification</h2><p>A second scan of the same rack, compared the same way.</p></div>
+
+<p>A verification is a <b>newer scan of the same rack</b>, put through the same comparison a preview uses, then read item by item. There are two kinds.</p>
+
+<h4>post_fix, before approval</h4>
+<ul>
+<li>The uid is no longer in the fresh comparison: <b>pass</b>, marked <span class="m">gone</span>, "it no longer differs from NetBox, so it has already been put right". The item is then set to Not applicable with the disposition remediate, and its children follow.</li>
+<li>Same action and the same stable difference: <b>pass</b>, "the second scan sees the same difference".</li>
+<li>Anything else: <b>fail</b>, "the second scan reports X, not Y" or "the second scan sees a different value". What was actually seen is kept.</li>
+</ul>
+
+<h4>post_write, after the write</h4>
+<p>Only approved items are checked, and each must have <b>disappeared</b> from the comparison. "NetBox now matches what was written", or it does not.</p>
+
+<div class="rule">One failure fails the verification, because a verification that passes with a caveat is not a verification.</div>
+
+<p>A passing post_fix moves the plan to <span class="m">approval_pending</span>. A passing post_write moves it to <span class="m">completed</span>. Either failing moves it to <span class="m">reopened</span>, adds one to the reopen count and records the reason as <span class="m">verification_failed</span> or <span class="m">write_mismatch</span>.</p>
+
+<p>Any technician of the Site may run it, including the person who reported the drift. The record stores who did it, which is the point: it is evidence, not a permission. An admin may skip it instead, with a reason, and the skip is stored on the plan.</p>
+
+<p>Refusals worth recognising: "send the id of the new scan of this rack", "that scan is of a different rack", and "that is the scan this plan was compared from; scan the rack again".</p>
+</section>
+
+<section id="write">
+<div class="sec-head"><span class="n">11</span><h2>The write</h2><p>Twelve steps, and what each one protects.</p></div>
+
+<ol>
+<li><b>Resolve the actor and the plan.</b> Not visible to you, 404.</li>
+<li><b>Check the role before touching NetBox at all.</b> Not an admin, 403.</li>
+<li><b>Prepare.</b> Load the scan snapshot and the NetBox client for this organisation.</li>
+<li><b>Compare NetBox again, live.</b> A throw here is a 400 saying NetBox could not be compared.</li>
+<li><b>The pre-check, in one transaction.</b> Status must be approved, write failed or manual review. Re-check the fingerprint, and check the approval on record signed this exact payload hash. <b>If any of that fails nothing is written</b>: the plan goes back to approval pending with its hash cleared.</li>
+<li><b>Nothing to write?</b> An approved plan with zero targets moves straight to completed, and the answer says it wrote nothing.</li>
+<li><b>Move to write_in_progress</b> and work out the targets and the filtered payload.</li>
+<li><b>Take a pre-snapshot</b> of up to 250 objects, each read by uid, trimmed to id, name, status, the RackTrack uid and exactly the fields being changed. A lookup that throws is recorded, never treated as a failed write.</li>
+<li><b>Push.</b> A throw aborts to write_failed with the error, the attempt counter up by one, and <span class="m">writtenUids</span> preserved.</li>
+<li><b>Take a post-snapshot.</b></li>
+<li><b>Record the result.</b> Counts, what was written, what failed and why, and <span class="m">writtenUids</span> as the union of this attempt and the last. Any failure means write_failed; none means written.</li>
+<li><b>Check NetBox after the write.</b> Pass means completed. Fail means reopened with <span class="m">write_mismatch</span>.</li>
+</ol>
+
+<div class="rule">This writer never deletes. What went through stays through, which is why a retry is safe and why <span class="m">writtenUids</span> has to be kept across attempts.</div>
+
+<p>A failure sends exactly one email, to the person who pressed the button, naming every object NetBox refused with its reason, how many went through first, and what to do next. Manual review is a handover, not a failure state.</p>
+</section>
+
+<section id="hash">
+<div class="sec-head"><span class="n">12</span><h2>Fingerprint and payload hash</h2><p>Two hashes, two different jobs.</p></div>
+
+<p>Both are SHA-256 truncated to 32 hex characters, computed over rows of <span class="m">uid</span>, <span class="m">action</span> and the stable JSON of the difference, joined by a NUL byte so two rows can never run together, sorted so order does not matter, and taken only over actionable changes.</p>
+
+<div class="tw"><table>
+<thead><tr><th></th><th>fingerprint</th><th>payloadHash</th></tr></thead>
+<tbody>
+<tr><td><b>Computed over</b></td><td>Every actionable change the comparison found</td><td>Only what a write would carry: scaffolding, approved items, and children of approved parents</td></tr>
+<tr><td><b>Answers</b></td><td>Has NetBox moved since we compared?</td><td>Is this still the same set of changes that was signed?</td></tr>
+<tr><td><b>Stored on</b></td><td><span class="m">approval_plans.fingerprint</span></td><td><span class="m">approval_plans.payload_hash</span> and <span class="m">approval_decisions.payload_hash</span> with <span class="m">plan_version</span></td></tr>
+</tbody></table></div>
+
+<p>The consequence to hold on to: rejecting one more item after an approval changes the payload hash, so the approval no longer stands and the write is refused with "the items have changed since this plan was approved". An approval is a signature on a specific set of changes and their values, not on a plan number.</p>
+
+<div class="note"><b>Do not touch the NUL separators.</b> They make git treat <span class="m">plans.js</span> as binary, so concurrent edits always conflict. Resolve by hand from one side and re-apply the other. Stripping them would change every hash ever computed.</div>
+</section>
+
+<section id="reports">
+<div class="sec-head"><span class="n">13</span><h2>The eight reports</h2><p>One flat table each, with a CSV beside it.</p></div>
+
+<div class="tw"><table>
+<thead><tr><th>Key</th><th>Tab</th><th>The question it answers</th></tr></thead>
+<tbody>
+<tr><td><span class="m">backlog</span></td><td>Backlog</td><td>What is open, grouped so you can see where it is stuck.</td></tr>
+<tr><td><span class="m">sla</span></td><td>SLA</td><td>How the clocks are doing: on track, at risk, breached, paused.</td></tr>
+<tr><td><span class="m">quality</span></td><td>Quality</td><td>How often work comes back: rejections, rework, reopens.</td></tr>
+<tr><td><span class="m">trends</span></td><td>Trends</td><td>Raised and completed per day.</td></tr>
+<tr><td><span class="m">resolvers</span></td><td>Resolvers</td><td>Who is resolving tickets, and how many.</td></tr>
+<tr><td><span class="m">approvals</span></td><td>Approvals</td><td>Who approved what, and how long it took.</td></tr>
+<tr><td><span class="m">writes</span></td><td>Writes</td><td>What was written, what failed and why.</td></tr>
+<tr><td><span class="m">exceptions</span></td><td>Exceptions</td><td>What is being kept rather than fixed, and what expires soon.</td></tr>
+</tbody></table></div>
+
+<p>Every report is fetched as <span class="m">GET /api/approvals/reports/:name</span> and downloaded as the same path with <span class="m">.csv</span>. A figure above zero that carries filters becomes a link into the drift list; the Approvals and Exceptions reports return no filters, so those two have no drill-through.</p>
+<p>No column in any report is sortable and rows are not clickable. Navigation is by tab only.</p>
+</section>
+
+<section id="settings">
+<div class="sec-head"><span class="n">14</span><h2>Settings</h2><p>Five keys, per organisation, nothing fixed in the product.</p></div>
+
+<div class="tw"><table>
+<thead><tr><th>Key</th><th>Card</th><th>What it holds</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><span class="m">sla_targets</span></td><td>SLA targets</td><td>Four clocks per priority, each a number and a unit: minutes, hours, business hours or business days</td><td>The table in section 9</td></tr>
+<tr><td><span class="m">calendar</span></td><td>Business calendar</td><td>Working days, day start, day end, holidays, time zone</td><td>Mon to Fri, 09:00 to 18:00, no holidays</td></tr>
+<tr><td><span class="m">dual_approval_risks</span></td><td>Dual approval</td><td>Which risk levels need two different approvers</td><td><span class="m">['critical']</span></td></tr>
+<tr><td><span class="m">escalation</span></td><td>Escalation</td><td>Warn, breach and escalate as percentages of the target</td><td>80, 100, 120</td></tr>
+<tr><td><span class="m">notification_prefs</span></td><td>Notification defaults</td><td>What a new person receives, per event and channel</td><td>In the app and email on, Teams off</td></tr>
+</tbody></table></div>
+
+<p>Each card saves on its own with <span class="m">PUT /api/approvals/settings/:key</span>. A key the screen does not know about is kept, and a value is written back in the shape it was read in.</p>
+
+<div class="warnbox"><b>Two shapes, deliberately.</b> The clocks and the notifier read a stored shape; the screens want a simpler one. <span class="m">settings_shape.js</span> translates between them: a target is <span class="m">{ minutes, business }</span> stored but a plain integer on screen; calendar days are 0-based stored and 1-based on screen; the three percentages live under <span class="m">sla_targets.thresholds</span> stored but under <span class="m">escalation</span> on screen. Changing the stored shape would quietly stop two working modules, which is why the translation exists rather than a migration.</div>
+
+<p>Validation messages you will meet: "Enter a target above zero for P1 acceptance.", "Choose at least one working day.", "The day must end after it starts.", "Warn must come before breach, and breach no later than escalate.", and from the server "in-app and email are mandatory and cannot be turned off".</p>
+</section>
+
+<section id="exwin">
+<div class="sec-head"><span class="n">15</span><h2>Exceptions and windows</h2><p>Two records that change how drift is handled.</p></div>
+
+<h3>An exception</h3>
+<p>A difference somebody has decided to keep. Scope is the caller's organisation, always; a datacentre and a rack narrow it and never widen it. <b>Every empty field means any</b>: no rack means every rack, no item type means any type, no attribute means the whole item. An item name may end in <span class="m">*</span> for a prefix match.</p>
+
+<p>Rules on creation: the justification must be at least ten characters, and an expiry date is mandatory <b>so an exception cannot become permanent by accident</b>. Both are refused in plain words: "say in a sentence why this difference is accepted" and "an exception needs a date it expires on, so it cannot become permanent by accident".</p>
+
+<p>When a plan is created, every live exception is matched against its undecided items. A match sets the item to <b>Excepted</b> with the reason code <span class="m">known_exception</span> and a note naming the exception, and the item's children follow. Items already decided are left alone, so applying twice is safe.</p>
+
+<p>Expiry is passive: once past, it simply stops covering new items. Revoking is a single timestamp. <b>Neither un-marks anything already applied</b> - those were answered at the time, and history is not rewritten. The screen says so: "stops being excepted. The record is kept."</p>
+
+<p>An attribute exception can never hide a new device, because a create has no fields to change.</p>
+
+<p>States on screen, in the order they are tested: Revoked, Expired, Not started, Review due, Active. The header count is the active ones.</p>
+
+<h3>A maintenance window</h3>
+<p>A span of time agreed for one datacentre. Half open: inclusive of the start, exclusive of the end. A plan raised inside one is stamped with the window id and an event saying so.</p>
+
+<div class="rule">A window changes nothing about who decides, what is approved, or what is written. Its only effect is that it pauses every clock: nobody is late for a change everyone agreed to.</div>
+
+<p>Deleting a window is a hard delete; there is no revoked flag. States on screen: Upcoming, Open now, Over.</p>
+</section>
+
+<section id="notify">
+<div class="sec-head"><span class="n">16</span><h2>Notifications</h2><p>Fifteen events, two channels, three that always go out.</p></div>
+
+<div class="tw"><table>
+<thead><tr><th>Event</th><th>Goes to</th><th>Channels</th><th>Always</th></tr></thead>
+<tbody>
+<tr><td><span class="m">submitted</span></td><td>triage</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">assigned</span></td><td>assignee</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">p1_p2_created</span></td><td>admin</td><td>email only</td><td></td></tr>
+<tr><td><span class="m">sla_warn</span></td><td>assignee, admin</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">sla_breach</span></td><td>assignee, admin, owner</td><td>app, email</td><td><span class="chip c-bad">yes</span></td></tr>
+<tr><td><span class="m">sla_escalate</span></td><td>owner</td><td>app, email</td><td><span class="chip c-bad">yes</span></td></tr>
+<tr><td><span class="m">pending</span></td><td>creator</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">resolved</span></td><td>creator, admin</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">verification_failed</span></td><td>assignee, admin</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">approval_requested</span></td><td>approver</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">approval_overdue</span></td><td>approver, owner</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">approved</span></td><td>creator, assignee, admin</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">rejected</span></td><td>creator, assignee, admin</td><td>app, email</td><td></td></tr>
+<tr><td><span class="m">completed</span></td><td>creator, admin</td><td>app only</td><td></td></tr>
+<tr><td><span class="m">write_failed</span></td><td>admin</td><td>app, email</td><td><span class="chip c-bad">yes</span></td></tr>
+</tbody></table></div>
+
+<div class="rule">In the app is the record; email is the courtesy. In-app can never be turned off for anybody. A failed write, a breached clock and an escalation go out whatever anybody set, because somebody has to know that NetBox refused a write.</div>
+
+<p>Recipients resolve against the organisation's users. <span class="m">owner</span> falls back to the org admins when the organisation has no owner account, because an escalation that reaches nobody is worse than one that reaches them. A person mentioned twice is written once, first mention winning.</p>
+
+<p>The dedupe key is event, plan, <b>plan version</b>, person and channel. The same event heard twice for the same version of the same plan is written once; the version is in the key so a plan that goes round again does tell people again.</p>
+
+<p>Teams is refused outright until tokens exist: "Teams notices are off until the tokens for them exist." A listener never breaks a request.</p>
+</section>
+
+<section id="tables">
+<div class="sec-head"><span class="n">17</span><h2>The eleven tables</h2><p>All in the same SQLite database as the rest of the server.</p></div>
+
+<div class="tw"><table>
+<thead><tr><th>Table</th><th>One row is</th><th>Worth knowing</th></tr></thead>
+<tbody>
+<tr><td><span class="m">approval_plans</span></td><td>One drift</td><td>Carries status, priority, risk, both hashes, version, the pre and post snapshots and the result. Unique partial index on <span class="m">legacy_id</span> for the JSON plans that were imported.</td></tr>
+<tr><td><span class="m">approval_items</span></td><td>One change the comparison reported</td><td>Unique on plan and uid. Holds the three flags, the decision, who decided and when.</td></tr>
+<tr><td><span class="m">approval_tickets</span></td><td>One work ticket, at most one per item</td><td>Unique on plan and item uid. Holds the assignee three ways over, the finding, the disposition and the ServiceNow record.</td></tr>
+<tr><td><span class="m">approval_decisions</span></td><td>One signature</td><td>Stage first or second, the payload hash and the plan version it signed.</td></tr>
+<tr><td><span class="m">approval_verifications</span></td><td>One verification run</td><td>Kind, scan, result, who, and the per-item detail.</td></tr>
+<tr><td><span class="m">approval_comments</span></td><td>One comment</td><td>Internal or shared, optionally against one item.</td></tr>
+<tr><td><span class="m">approval_events</span></td><td>One thing that happened</td><td><b>Append only, enforced by triggers</b> that raise on update and on delete while the plan still exists.</td></tr>
+<tr><td><span class="m">approval_sla</span></td><td>One clock run</td><td>Paused milliseconds are in the clock's own units. A plan that goes round again gets fresh rows.</td></tr>
+<tr><td><span class="m">approval_notifications</span></td><td>One notice to one person on one channel</td><td>Unique dedupe key. Skipped rows are kept but never shown.</td></tr>
+<tr><td><span class="m">approval_exceptions</span></td><td>One accepted difference</td><td>Null means any. Revoke is a timestamp, never a delete.</td></tr>
+<tr><td><span class="m">approval_windows</span></td><td>One change window</td><td>Belongs to exactly one datacentre. Delete is a real delete.</td></tr>
+</tbody></table></div>
+<p>A twelfth, <span class="m">approval_settings</span>, is a key and value per organisation.</p>
+</section>
+
+<section id="where">
+<div class="sec-head"><span class="n">18</span><h2>Where the code lives</h2><p>If you are looking for something, start here.</p></div>
+
+<h4>Server, the engine</h4>
+<div class="tw"><table>
+<thead><tr><th>File</th><th>Lines</th><th>What it owns</th></tr></thead>
+<tbody>
+<tr><td><span class="m">service.js</span></td><td>1958</td><td>Everything a request actually does. The biggest file; start elsewhere.</td></tr>
+<tr><td><span class="m">store.js</span></td><td>1229</td><td>The tables, the queries and the transactions.</td></tr>
+<tr><td><span class="m">sla.js</span></td><td>580</td><td>The four clocks, the calendar, the tick, escalation.</td></tr>
+<tr><td><span class="m">machine.js</span></td><td>557</td><td>Statuses, transitions, guards, roles, action traits.</td></tr>
+<tr><td><span class="m">shape.js</span></td><td>411</td><td>Fingerprint, payload hash, which items a write carries.</td></tr>
+<tr><td><span class="m">notify.js</span></td><td>380</td><td>The fifteen events, who gets them, the wording.</td></tr>
+<tr><td><span class="m">reports.js</span></td><td>372</td><td>The eight reports and their CSVs.</td></tr>
+<tr><td><span class="m">verify.js</span></td><td>341</td><td>The second scan and what it proves.</td></tr>
+<tr><td><span class="m">exceptions.js</span></td><td>336</td><td>Exceptions and maintenance windows.</td></tr>
+<tr><td><span class="m">write.js</span></td><td>288</td><td>The controlled write, the snapshots, the retry.</td></tr>
+<tr><td><span class="m">migrate.js</span></td><td>230</td><td>The one-time import of the JSON plans.</td></tr>
+<tr><td><span class="m">poller.js</span>, <span class="m">bus.js</span>, <span class="m">connections.js</span></td><td>178</td><td>ServiceNow polling, the event bus, the NetBox client per organisation.</td></tr>
+</tbody></table></div>
+
+<h4>Server, the routes</h4>
+<p><span class="m">server/routes/approvals/</span>: <span class="m">index.js</span> mounts the optional siblings; <span class="m">plans.js</span> is the bulk of it; then <span class="m">verify</span>, <span class="m">write</span>, <span class="m">sla</span>, <span class="m">notifications</span>, <span class="m">reports</span>, <span class="m">exceptions</span>, <span class="m">windows</span>, <span class="m">settings_shape</span> and <span class="m">http.js</span> for the error mapping.</p>
+
+<h4>Front end</h4>
+<p><span class="m">src/pages/</span> is one file per tab. <span class="m">src/components/shell/Layout.jsx</span> holds the navigation, the top bar, the bell and the drawer. <span class="m">src/lib/vocab.js</span> is every fixed list and the word a person reads for each code - start there when a label looks wrong. <span class="m">src/lib/moves.js</span> decides which buttons the action bar offers. <span class="m">src/components/ui/index.jsx</span> holds the shared table that every list uses.</p>
+
+<h4>Deploying</h4>
+<p><span class="m">bash deploy/deploy-demo.sh approvals</span> builds with the right base path, rsyncs to <span class="m">./approvals-dist</span> on the host, validates the Caddy file and checks all three sites answer. The whole thing takes about a minute.</p>
+</section>
+
+<section id="known">
+<div class="sec-head"><span class="n">19</span><h2>Known mismatches</h2><p>Places where the screen and the server disagree. None of these is invented; each was read from the code on 18 September 2026.</p></div>
+
+<p>These are real, they are not fixed, and knowing them will save you an afternoon.</p>
+
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Where</th><th>What is wrong</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Escalation card in Settings</td><td>The screen reads and writes <span class="m">warnPct</span>, <span class="m">breachPct</span>, <span class="m">escalatePct</span>; the API shape is <span class="m">warnAt</span>, <span class="m">breachAt</span>, <span class="m">escalateAt</span>. So the card always shows the 80 / 100 / 120 defaults whatever is stored, and saving is refused. <b>The card cannot read or save.</b></td></tr>
+<tr><td>2</td><td>Escalation card</td><td><span class="m">escalateToUserId</span> exists only on the screen. No server field corresponds to it.</td></tr>
+<tr><td>3</td><td>Notification preferences</td><td>Saving personal preferences silently does nothing: the client wraps the body as <span class="m">{ prefs }</span> but the route reads the flags at the top level, so nothing matches and no error is raised.</td></tr>
+<tr><td>4</td><td>Notification preferences</td><td>The screen looks for <span class="m">mandatory</span>; the server sends <span class="m">always</span>. So the three forced events are never greyed out and the explaining notice never appears.</td></tr>
+<tr><td>5</td><td>Notification preferences</td><td>The shape fed into the table is the organisation shape, not the per-event one, so every box shows ticked regardless of what is stored.</td></tr>
+<tr><td>6</td><td>Organisation notification defaults</td><td>The per-event defaults written by the settings screen are stored under <span class="m">events</span>, which the notifier never reads. They round-trip but have no effect at run time.</td></tr>
+<tr><td>7</td><td>Escalation recipients</td><td>The recipient lists are stored and validated but nothing reads them. The real table in <span class="m">notify.js</span> is hard-coded.</td></tr>
+<tr><td>8</td><td>Reports</td><td>The page reads <span class="m">c.label</span> for column headings; the server sends <span class="m">c.title</span>. All eight reports render generic headings.</td></tr>
+<tr><td>9</td><td>Trends report</td><td>The completed series is filtered on the created date, not the completed date.</td></tr>
+<tr><td>10</td><td>Quality report</td><td>The rework row counts decisions but links to plans in status rework, which is a different population.</td></tr>
+<tr><td>11</td><td>Backlog and quality</td><td>They mix the full visibility rule with a raw datacentre filter, so the two diverge for a member or a site manager.</td></tr>
+<tr><td>12</td><td>Add exception form</td><td>It requires datacentre, item type and item name; the server treats all three as optional wildcards. An organisation-wide exception can be made through the API but not the form.</td></tr>
+<tr><td>13</td><td>Maintenance windows page</td><td>It never loads the user list, so Added by falls back to a user id unless another page loaded them first.</td></tr>
+<tr><td>14</td><td>Audit page</td><td>The cross-plan events route is assumed rather than contracted. If it 404s the page quietly joins the 25 most recent drifts instead, which is not the same answer.</td></tr>
+</tbody></table></div>
+
+<h4>Also not built, deliberately</h4>
+<ul>
+<li><b>Teams alerts.</b> There are no tokens. The channel is refused at the route rather than failing silently.</li>
+<li><b>The intelligence phase</b> of the original specification.</li>
+<li><b>The write is one long request</b> rather than a job with a status you can poll. It works, and a large write takes about a minute with the page following it.</li>
+<li><b>Two ports read with the same name</b> still fail a write until the rack is photographed again.</li>
+</ul>
+</section>
+
+<div class="closing"><p>Every number, message and rule above was read from the code or from the running server on 18 September 2026. If something here stops matching the code, the code is right and this is out of date; the files in section 18 are where to check.</p></div>
+
+</div>

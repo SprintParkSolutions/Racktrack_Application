@@ -140,7 +140,7 @@ export default function OrgConsolePage() {
 
   const removeMember = async (m) => {
     setMenuFor(null);
-    if (!window.confirm(`Remove ${m.username}? The account is deleted; their past scans stay (shown as “-”).`)) return;
+    if (!window.confirm(`Remove ${m.username}? The account is deleted. Their past scans stay.`)) return;
     try {
       await delJSON(`/api/orgs/${activeOrg.id}/members/${m.id}`);
       flash(`${m.username} removed`);
@@ -391,8 +391,7 @@ export default function OrgConsolePage() {
             {activeOrg.name} is awaiting approval
           </div>
           <p style={{ color: '#717171', fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-            Your organization request has been submitted and is waiting for the platform owner to review it.
-            Once approved, you'll be able to add sites, invite members, and start scanning.
+            Once the platform owner approves it you can add sites, invite members and scan.
           </p>
         </div>
       )}
@@ -801,7 +800,8 @@ function CreateOrgModal({ onClose, onDone }) {
     <Modal title="New organization" onClose={onClose}>
       <form onSubmit={run} className={styles.form}>
         <Field label="Organization name" value={f.name} onChange={set('name')} placeholder="Acme Corp" autoFocus />
-        <p className={styles.formNote}>This organization gets one admin who manages its sites and members.</p>
+        {/* The three fields below are already labelled Admin username, Admin email
+            and Admin password. */}
         <Field label="Admin username" value={f.adminUsername} onChange={set('adminUsername')} placeholder="acme-admin" />
         <Field label="Admin email" type="email" value={f.adminEmail} onChange={set('adminEmail')} placeholder="admin@acme.com" />
         <Field label="Admin password" type="password" value={f.adminPassword} onChange={set('adminPassword')} placeholder="Min 8 chars, upper/lower/digit/symbol" />

@@ -25,7 +25,8 @@ export const TOUR_STEPS = [
     id: 'incident-link',
     target: 'incident-dropdown',
     title: 'Link an incident (optional)',
-    body: 'If this scan is for a specific ticket, tap here to link it - otherwise you can skip this.',
+    // The title already says "(optional)", so the body does not also offer the skip.
+    body: 'Tap here to link a ticket.',
     optional: true,
   },
   {
@@ -40,13 +41,16 @@ export const TOUR_STEPS = [
     // not be.
     advanceWhenVisible: '[data-tour="device-picker"]',
     title: 'Analyze the rack',
-    body: 'When the photo looks good, tap Analyze Rack to scan it.',
+    body: 'Tap Analyze Rack.',
   },
   {
     id: 'pick-device',
     target: 'device-picker',
     title: 'Pick a device',
-    body: 'Choose the device you’re working on, or tap it directly in the rack photo.',
+    // Not "or tap it directly in the rack photo": the very next step asks them to
+    // tap it in the photo, so offering it here as an alternative to this step
+    // contradicted the step after it.
+    body: 'Choose the device you are working on.',
     event: 'change',
   },
   {
@@ -59,7 +63,7 @@ export const TOUR_STEPS = [
     id: 'tap-device-in-rack',
     target: 'rack-image',
     title: 'Now find it in the photo',
-    body: 'Tap the device you just picked where it sits in the rack, so you can see which one it is.',
+    body: 'Tap that device in the photo.',
   },
   {
     id: 'find-port',
@@ -72,7 +76,7 @@ export const TOUR_STEPS = [
     id: 'port-image',
     target: 'port-image-tap',
     title: 'View the port',
-    body: 'Tap the photo to switch from rack view to a close-up device view.',
+    body: 'Tap the photo for a close-up.',
   },
   {
     id: 'full-report',

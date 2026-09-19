@@ -104,8 +104,7 @@ export default function AuthLayout({ children, onBack, backLabel = 'Back', aside
         <div className={styles.mediaCopy}>
           <p className={styles.mediaTitle}>Know what's actually in the rack.</p>
           <p className={styles.mediaSub}>
-            A photo returns the unit map, switch model, port layout and live
-            port state - reconciled against the CMDB record.
+            A photo returns the rack, its switches and their live ports.
           </p>
         </div>
       </div>

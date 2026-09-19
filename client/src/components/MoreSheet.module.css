@@ -95,16 +95,24 @@
 }
 
 /* ── The destinations ── */
-/* The list takes the whole height between the account and the footer and
-   spreads its rows through it: no dead band at the bottom on a tall phone,
-   and no scrolling on a short one (the rows and hints give way first). */
+/* The list takes the whole height between the account and the footer, and the
+   rows sit at the top of it. They used to be spread through it instead, so a
+   tall phone had no dead band at the bottom. That is the right trade only when
+   the menu is nearly full. An owner has ten rows and looks packed; a technician
+   has three, and every group then stretched to a third of the drawer and pushed
+   its heading and its row to opposite ends of that space - 220px between "Rack
+   work" and the single row under it. A heading that far from the thing it names
+   has stopped naming it.
+
+   So groups take the height they need and no more. A short menu now ends where
+   it ends, which is the same shape the owner's already had, only shorter. */
 .scroll {
   flex: 1; min-height: 0;
   display: flex; flex-direction: column;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 4px 10px 4px;
 }
-.group { display: flex; flex-direction: column; flex: 1 1 auto; justify-content: space-evenly; gap: 4px; margin-bottom: 2px; }
+.group { display: flex; flex-direction: column; flex: 0 0 auto; gap: 4px; margin-bottom: 2px; }
 /* A group with no heading sits under a hairline instead. */
 .group:not(:has(.groupTitle)) { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(12, 20, 32, .08); }
 .groupTitle {

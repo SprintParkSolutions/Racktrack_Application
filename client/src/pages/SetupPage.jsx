@@ -141,7 +141,7 @@ function Settings({ s, pr, gated, onOpenFlow, flowOpen }) {
           <div className={styles.paneH}>
             <div className={styles.paneHT}>
               <h2 id="os-status-t">Setup</h2>
-              <p>{s.loading ? 'Loading' : allDone ? 'Setup is complete.' : `${missing} needed ${missing === 1 ? 'item is' : 'items are'} still missing${gated ? ', and scanning waits on it' : ''}.`}</p>
+              <p>{s.loading ? 'Loading' : allDone ? 'Setup is complete.' : `${missing} still to do${gated ? ' before you can scan' : ''}.`}</p>
             </div>
             <div className={styles.paneHR}>
               {s.isOwner && s.orgs.length > 1 ? (
@@ -174,7 +174,8 @@ function Pane({ st, s, go }) {
       <div className={styles.paneH}>
         <div className={styles.paneHT}>
           <h2 id={`os-${st.key}-t`}>{st.title}</h2>
-          <p>{st.lead}</p>
+          {/* A step whose fields speak for themselves carries no lead at all. */}
+          {st.lead ? <p>{st.lead}</p> : null}
           {stars ? <p className={styles.legend}>* Required</p> : null}
         </div>
         <div className={styles.paneHR}><SaveMark mark={markFor(s.marks, st.key)} /></div>
@@ -254,7 +255,7 @@ function FlowModal({ s, step, setStep, gated, onClose, onFinish, onSignOut }) {
                 : <button type="button" className={styles.boxQuit} onClick={onClose} aria-label="Close">Close</button>}
             </span>
           </div>
-          <p className={styles.boxLead}>{def.lead}</p>
+          {def.lead ? <p className={styles.boxLead}>{def.lead}</p> : null}
           {stars ? <p className={styles.legend}>* Required</p> : null}
         </header>
 

@@ -473,9 +473,19 @@ function next(plan, actor, ctx = {}) {
     if (r.derived) continue;
     const people = r.who.filter((w) => w !== 'system');
     if (!people.some((w) => WHO[w](plan, actor, ctx))) continue;
-    if (r.notResolver && isResolver(ctx.tickets, actor)) continue;
-    const why = r.guard ? r.guard(plan, ctx, actor) : null;
-    out.push({ to, ready: !why, why: why || null, needs: r.needs || [] });
+    // Separation of duties does not remove the move, it names who it is for.
+    // Dropping it here left the approval screen saying "No move is open to you
+    // on this drift." to the one person most likely to be looking at it - the
+    // admin who resolved the tickets - with no button and no reason, which
+    // reads as the workflow having broken rather than having worked. `ready:
+    // false` with a why is what the rest of this function already does for a
+    // guard that is not met, and it is what the screen knows how to render.
+    // The bar itself is unchanged: can() still refuses with code 'role'.
+    const blocked = r.notResolver && isResolver(ctx.tickets, actor)
+      ? 'You resolved a ticket on this plan, so somebody else has to make this decision.'
+      : null;
+    const why = blocked || (r.guard ? r.guard(plan, ctx, actor) : null);
+    out.push({ to, ready: !why, why: why || null, needs: r.needs || [], blockedByRole: Boolean(blocked) });
   }
   return out;
 }

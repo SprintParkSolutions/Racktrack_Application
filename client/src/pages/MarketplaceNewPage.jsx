@@ -245,8 +245,8 @@ export default function MarketplaceNewPage() {
           {sourceRackId && (
             <p className={`mkt-banner ${styles.scanHint}`}>
               <span>
-                Prefilled from scan <span className="mkt-mono">{sourceRackId}</span>. Buyers
-                see this, so they know the listing is backed by a RackTrack scan.
+                Prefilled from scan <span className="mkt-mono">{sourceRackId}</span>, which buyers
+                see on the listing.
               </span>
             </p>
           )}

@@ -8,9 +8,11 @@
   :root{
     color-scheme: light;
     --paper:#fbfcfb;
+    --card:#ffffff;
     --ink:#161a17;
     --body:#39423c;
     --hair:#e6ebe7;
+    --hair2:#d9e0db;
     --soft:#f3f6f4;
     --red:#9a3412;
     --red-bg:#fbeee7;
@@ -24,7 +26,7 @@
     --serif:"Newsreader", Georgia, "Times New Roman", serif;
     --sans:"Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    --pad: clamp(18px, 4vw, 56px);
+    --pad: clamp(18px, 4vw, 60px);
   }
 
   body{
@@ -32,111 +34,178 @@
     color: var(--body);
     font-family: var(--sans);
     font-size: 17px;
-    line-height: 1.55;
+    line-height: 1.58;
     -webkit-font-smoothing: antialiased;
   }
+  .page{ padding-inline: var(--pad); padding-block: clamp(30px,5vw,56px) 72px; }
 
-  .page{ padding-inline: var(--pad); padding-block: clamp(32px, 5vw, 56px) 64px; }
-
-  header{ display:flex; flex-direction:column; gap:10px; padding-bottom: 26px; }
+  /* ---------- header ---------- */
+  header{ display:flex; flex-direction:column; gap:12px; }
   .eyebrow{
     font-family: var(--mono); font-size:11.5px; font-weight:600;
-    letter-spacing:.13em; text-transform:uppercase; color: var(--grey);
+    letter-spacing:.14em; text-transform:uppercase; color: var(--grey);
   }
   h1{
     font-family: var(--serif); font-weight:500;
-    font-size: clamp(32px, 5vw, 46px); line-height:1.08;
-    color: var(--ink); margin:0; letter-spacing:-.012em; text-wrap: balance;
+    font-size: clamp(33px, 5.2vw, 50px); line-height:1.06;
+    color: var(--ink); margin:0; letter-spacing:-.014em; text-wrap:balance;
   }
-  .sub{ font-family: var(--serif); font-size: clamp(18px,2.3vw,21px); color: var(--body); margin:0; }
-  .meta{ font-family: var(--mono); font-size:12px; color: var(--grey); line-height:1.8; }
+  .sub{
+    font-family: var(--serif); font-size: clamp(18px,2.4vw,22px);
+    line-height:1.45; color: var(--body); margin:0; max-width: 72ch;
+  }
+  .meta{
+    font-family: var(--mono); font-size:12px; color: var(--grey);
+    line-height:1.85; border-top:1px solid var(--hair); padding-top:12px; margin-top:6px;
+  }
 
+  /* ---------- stat strip ---------- */
+  .stats{
+    display:grid; gap:1px; background: var(--hair2);
+    border:1px solid var(--hair2); border-radius:6px; overflow:hidden;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    margin-top: 28px;
+  }
+  .stat{ background: var(--card); padding:18px 20px; display:flex; flex-direction:column; gap:3px; }
+  .stat .v{
+    font-family: var(--mono); font-size: clamp(22px,2.6vw,27px); font-weight:600;
+    color: var(--ink); font-variant-numeric: tabular-nums; line-height:1.15;
+  }
+  .stat .k{ font-size:14px; color: var(--grey); line-height:1.4; }
+  .stat.bad .v{ color: var(--red); }
+  .stat.warn .v{ color: var(--amber); }
+  .stat.good .v{ color: var(--green); }
+
+  /* ---------- sections ---------- */
+  .block{ padding-top: 44px; }
   h2{
     font-family: var(--serif); font-weight:600;
-    font-size: clamp(21px, 2.8vw, 26px); line-height:1.2;
-    color: var(--ink); margin: 0 0 4px; text-wrap: balance;
+    font-size: clamp(23px, 3vw, 30px); line-height:1.16;
+    color: var(--ink); margin:0 0 6px; text-wrap:balance;
   }
-  .block{ padding-block: 30px 6px; }
-  .block.first{ padding-top: 8px; }
+  .intro{ margin:0 0 20px; max-width: 86ch; }
+  p{ margin:0; }
+  strong{ color: var(--ink); font-weight:600; }
+  code{
+    font-family: var(--mono); font-size:.87em; color: var(--ink);
+    background: var(--soft); padding:1px 5px; border-radius:3px;
+    border:1px solid var(--hair); word-break: break-word;
+  }
 
-  /* the list */
-  ol.list{ list-style:none; margin:0; padding:0; counter-reset: n; }
-  ol.list > li{
-    counter-increment: n;
-    display: grid;
-    grid-template-columns: 34px minmax(0,1fr) auto;
-    column-gap: 14px;
-    row-gap: 4px;
-    align-items: baseline;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--hair);
+  /* ---------- callouts ---------- */
+  .call{
+    border-left:3px solid var(--green); background: var(--green-bg);
+    padding:18px clamp(16px,2vw,24px); border-radius:0 5px 5px 0;
+    display:flex; flex-direction:column; gap:10px;
   }
-  ol.list > li:first-child{ border-top: 1px solid var(--ink); }
-  ol.list > li::before{
+  .call.method{ border-color: var(--grey); background: var(--soft); }
+  .call .lbl{
+    font-family: var(--mono); font-size:11px; font-weight:600;
+    letter-spacing:.1em; text-transform:uppercase; color: var(--green);
+  }
+  .call.method .lbl{ color: var(--grey); }
+  .call p{ max-width: 88ch; }
+
+  /* ---------- the numbered list ---------- */
+  ol.issues{ list-style:none; margin:0; padding:0; counter-reset: n; }
+  ol.issues > li{
+    counter-increment: n;
+    border-top: 1px solid var(--hair2);
+    padding: 26px 0 24px;
+  }
+  ol.issues > li:last-child{ border-bottom: 1px solid var(--hair2); }
+
+  .head{
+    display:grid; grid-template-columns: 40px minmax(0,1fr) auto;
+    column-gap:14px; align-items:baseline; margin-bottom:14px;
+  }
+  .head::before{
     content: counter(n, decimal-leading-zero);
-    font-family: var(--mono); font-size: 12px; font-weight:600;
+    font-family: var(--mono); font-size:13px; font-weight:600;
     color: var(--grey); font-variant-numeric: tabular-nums;
   }
-  .t{ font-weight: 700; color: var(--ink); font-size: 17px; }
-  .d{ grid-column: 2 / -1; max-width: 90ch; color: var(--body); font-size: 16px; }
+  .title{
+    font-family: var(--serif); font-weight:600;
+    font-size: clamp(19px,2.2vw,23px); line-height:1.25; color: var(--ink);
+    text-wrap: balance;
+  }
   .tag{
     font-family: var(--mono); font-size:10.5px; font-weight:600;
-    letter-spacing:.08em; text-transform:uppercase;
-    padding: 3px 9px; border-radius:999px; white-space:nowrap;
-    justify-self: end;
+    letter-spacing:.09em; text-transform:uppercase;
+    padding:4px 10px; border-radius:999px; white-space:nowrap;
   }
   .wrong{ color: var(--red); background: var(--red-bg); }
   .missing{ color: var(--amber); background: var(--amber-bg); }
   .shape{ color: var(--blue); background: var(--blue-bg); }
   .extra{ color: var(--grey); background: var(--soft); }
-  .ok{ color: var(--green); background: var(--green-bg); }
 
-  code{
-    font-family: var(--mono); font-size: .87em; color: var(--ink);
-    background: var(--soft); padding: 1px 5px; border-radius:3px;
-    word-break: break-word;
+  .rows{ display:flex; flex-direction:column; gap:0; padding-left: 54px; }
+  .r{
+    display:grid; grid-template-columns: 148px minmax(0,1fr);
+    gap: 4px 18px; padding: 9px 0;
+    border-bottom:1px dashed var(--hair);
   }
-  strong{ color: var(--ink); font-weight:600; }
+  .r:last-child{ border-bottom:0; }
+  .r .l{
+    font-family: var(--mono); font-size:10.5px; font-weight:600;
+    letter-spacing:.09em; text-transform:uppercase; color: var(--grey);
+    padding-top:4px;
+  }
+  .r .c{ max-width: 88ch; }
+  .r.says .c{ color: var(--body); }
+  .r.truth .c{ color: var(--ink); }
+  .r.fix .l{ color: var(--blue); }
 
-  /* good box */
-  .good{
-    border-left: 3px solid var(--green);
-    background: var(--green-bg);
-    padding: 16px clamp(14px,2vw,22px);
-    border-radius: 0 4px 4px 0;
-    display:flex; flex-direction:column; gap:8px;
-    max-width: 100%;
+  .quote{
+    font-family: var(--mono); font-size:13.5px; line-height:1.7;
+    background: var(--soft); border:1px solid var(--hair);
+    border-radius:4px; padding:10px 12px; color: var(--ink);
+    display:block; overflow-x:auto; white-space:pre-wrap; word-break:break-word;
   }
-  .good .lbl{
-    font-family: var(--mono); font-size:11px; font-weight:600;
-    letter-spacing:.09em; text-transform:uppercase; color: var(--green);
-  }
-  .good p{ margin:0; max-width: 90ch; }
 
-  /* do list */
+  /* ---------- tables ---------- */
+  .scroll{ overflow-x:auto; border:1px solid var(--hair2); border-radius:6px; background: var(--card); }
+  table{ border-collapse:collapse; width:100%; font-size:14.5px; min-width: 700px; }
+  thead th{
+    font-family: var(--mono); font-size:10.5px; font-weight:600;
+    letter-spacing:.09em; text-transform:uppercase; color: var(--grey);
+    text-align:left; padding:12px 16px; border-bottom:1px solid var(--ink);
+    white-space:nowrap; background: var(--soft);
+  }
+  td{ padding:11px 16px; border-bottom:1px solid var(--hair); vertical-align:top; }
+  tbody tr:last-child td{ border-bottom:0; }
+  td.name{ color: var(--ink); font-weight:600; white-space:nowrap; }
+  td.fields{ font-family: var(--mono); font-size:12.5px; line-height:1.7; color: var(--body); }
+  .yes{ color: var(--green); font-weight:600; font-family: var(--mono); font-size:12px; }
+  .no{ color: var(--amber); font-weight:600; font-family: var(--mono); font-size:12px; }
+
+  /* ---------- checklist ---------- */
   ul.todo{ list-style:none; margin:0; padding:0; }
   ul.todo li{
-    display:grid; grid-template-columns: 22px minmax(0,1fr); gap: 12px;
-    padding: 11px 0; border-bottom: 1px solid var(--hair);
-    max-width: 100%;
+    display:grid; grid-template-columns:24px minmax(0,1fr) auto; gap:14px;
+    padding:14px 0; border-bottom:1px solid var(--hair); align-items:baseline;
   }
-  ul.todo li:first-child{ border-top: 1px solid var(--hair); }
+  ul.todo li:first-child{ border-top:1px solid var(--hair2); }
   ul.todo li::before{
-    content:"";
-    width: 13px; height: 13px; margin-top: 6px;
-    border: 1.5px solid var(--grey); border-radius: 3px;
+    content:""; width:14px; height:14px; align-self:start; margin-top:5px;
+    border:1.5px solid var(--grey); border-radius:3px;
   }
+  ul.todo .ref{ font-family: var(--mono); font-size:11px; color: var(--grey); white-space:nowrap; }
 
   footer{
-    margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--hair);
-    font-family: var(--mono); font-size: 12px; color: var(--grey); line-height:1.9;
+    margin-top:48px; padding-top:18px; border-top:1px solid var(--hair2);
+    font-family: var(--mono); font-size:12px; color: var(--grey); line-height:1.9;
   }
 
-  @media (max-width: 620px){
+  @media (max-width: 720px){
     body{ font-size:16px; }
-    ol.list > li{ grid-template-columns: 28px minmax(0,1fr); }
-    .tag{ grid-column: 2; justify-self: start; margin-top: 2px; }
-    .t{ font-size: 16.5px; }
+    .head{ grid-template-columns: 30px minmax(0,1fr); }
+    .head .tag{ grid-column:2; justify-self:start; margin-top:6px; }
+    .rows{ padding-left:0; }
+    .r{ grid-template-columns: minmax(0,1fr); gap:2px; }
+    .r .l{ padding-top:0; }
+    ul.todo li{ grid-template-columns:20px minmax(0,1fr); }
+    ul.todo .ref{ grid-column:2; }
   }
 </style>
 
@@ -145,140 +214,257 @@
   <header>
     <div class="eyebrow">Review · NetBox and CMDB field report</div>
     <h1>Is the field mapping right?</h1>
-    <p class="sub">The NetBox research is good. The sheet is built the wrong way round, so half the objects are missing.</p>
-    <div class="meta">18 September 2026 · 489 field rows checked · NetBox claims checked against netbox-4.6.10-openapi.json · CMDB claims checked against the tables our own code writes</div>
+    <p class="sub">The NetBox research in this document is careful and accurate, and most of it should be kept exactly as it is. The problem is the starting point. The sheet was built from NetBox and ServiceNow inwards, so it covers half the objects RackTrack produces and cannot describe the things only RackTrack knows.</p>
+    <div class="meta">
+      Reviewed 18 September 2026 · source: netbox-cmdb-field-report (1).docx, 9 tables, 489 field rows, 65 rows in the summary table
+    </div>
   </header>
 
-  <div class="block first">
-    <div class="good">
-      <div class="lbl">What is right, and should be kept</div>
-      <p>The NetBox column is complete. For all 8 object types it covers it lists <strong>every field NetBox has</strong>, with the right API name. Of 261 names, <strong>254 are exactly correct</strong>. Cable, IP Address, Subnet, VLAN and VRF are perfect. That is the expensive part and it does not need redoing.</p>
-      <p>Also correct, and I expected it to be wrong: <code>rack_units</code> for rack height. Our own seed script uses that exact field.</p>
+  <div class="stats">
+    <div class="stat good"><span class="v">254 / 261</span><span class="k">NetBox field names correct</span></div>
+    <div class="stat bad"><span class="v">7</span><span class="k">NetBox fields that do not exist</span></div>
+    <div class="stat warn"><span class="v">8 of 16</span><span class="k">object types covered</span></div>
+    <div class="stat warn"><span class="v">65 of 489</span><span class="k">rows that actually map across</span></div>
+  </div>
+
+  <div class="block">
+    <div class="call method">
+      <div class="lbl">How this was checked</div>
+      <p>Every NetBox field name in the document was compared against <code>netbox-4.6.10-openapi.json</code>, the schema dump for the exact NetBox version our docker-compose pins. Every CMDB claim was compared against the tables our own integration reads and writes, in <code>servicenow/cmdb_apply.py</code> and <code>server/lib/netbox/connectors/servicenow.js</code>. RackTrack's own fields come from <code>server/lib/netbox/model.js</code>, which is the single place our object model is defined. Nothing below is an opinion about style. Each point is a difference between the document and one of those three sources.</p>
     </div>
   </div>
 
   <div class="block">
-    <h2>The problems, in order</h2>
-    <ol class="list">
+    <h2>What is right, and must not be redone</h2>
+    <div class="call">
+      <div class="lbl">Keep this</div>
+      <p>The NetBox column is <strong>complete</strong>. For all 8 object types the document covers, it lists every single field that NetBox has, with the correct API name, in the correct place. I checked field by field and found nothing missing anywhere. Cable, IP Address, Subnet, VLAN and VRF are flawless, with nothing wrong and nothing left out.</p>
+      <p>Of the 261 NetBox field names given, <strong>254 are exactly correct</strong>. That is the slow, unglamorous part of this job and it does not need doing again. Every problem listed below is about what surrounds that column, not about the column itself.</p>
+      <p>One claim I expected to be wrong and was not: <code>rack_units</code> as the CMDB field for rack height. Our own seed script uses exactly that field. Good catch.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h2>The problems, explained</h2>
+    <p class="intro">Sixteen points. Each one gives what the document says, what is actually true, and what to put in its place. Four are structural and matter more than the rest: numbers 12, 13, 14 and 16.</p>
+
+    <ol class="issues">
 
       <li>
-        <span class="t">It covers 8 object types. RackTrack makes 16.</span>
-        <span class="tag missing">Missing</span>
-        <span class="d">Nine kinds of object have no table at all.</span>
+        <div class="head"><span class="title">It covers 8 object types. RackTrack produces 16.</span><span class="tag missing">Missing</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">There are tables for Rack, Device, Port, Cable, IP Address, Subnet, VLAN and VRF.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">A single rack scan produces sixteen kinds of object, listed in order in <code>model.js</code>. Seven of the eight tables match one of them. The eighth, VRF, is something we never create. So nine object types have no table at all, and they are listed in points 2 to 4 below. The full list is in the reference table at the end of this review.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Add a table for each of the nine missing types before adding any more fields to the eight that exist.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Patch panels are missing completely.</span>
-        <span class="tag missing">Missing</span>
-        <span class="d">Front ports and rear ports. This is how a cable is traced through a panel, and it is the one thing no network scan can ever find on its own. It is one of our strongest selling points and it is not in the sheet.</span>
+        <div class="head"><span class="title">Patch panels are missing completely.</span><span class="tag missing">Missing</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">Nothing. The words front port, rear port and patch panel do not appear anywhere in the document.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">NetBox models a patch panel as two separate object types, a <strong>front port</strong> and a <strong>rear port</strong>, paired together. That pairing is how a cable is threaded through a panel so that NetBox can compute the whole path from a switch, through the panel, to the far end. RackTrack builds both. It is also the one thing no amount of network scanning can ever discover, because there is nothing inside a patch panel to interrogate, which is precisely why a customer pays us to photograph it.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Add a Front Port table and a Rear Port table. NetBox has 24 fields on each. On the CMDB side both become rows in <code>cmdb_ci_port</code>. Do these two first, ahead of everything else on this list.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Power ports and power outlets are missing.</span>
-        <span class="tag missing">Missing</span>
-        <span class="d">What a device draws power through, and the PDU socket it draws from.</span>
+        <div class="head"><span class="title">Power ports and power outlets are missing.</span><span class="tag missing">Missing</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">Nothing. The Rack table has a row for <code>powerfeed_count</code> and stops there.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">A power port is what a device draws power through. A power outlet is the socket on the PDU it draws from. RackTrack creates both. NetBox has 26 fields on a power port and 28 on a power outlet.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Add both tables. On the CMDB side the PDU is <code>cmdb_ci_pdu</code>, which is also missing from the document.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Manufacturer, device type, device role, site and location are missing.</span>
-        <span class="tag missing">Missing</span>
-        <span class="d">The sheet treats these as columns on a rack or device, written as "via Rack Type". In NetBox they are separate objects that must be created first, in order. An engineer working from this sheet would not know they exist.</span>
+        <div class="head"><span class="title">Five things are written as columns when they are separate objects.</span><span class="tag missing">Missing</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c"><span class="quote">rack_manufacturer    Manufacturer (via Rack Type)     manufacturer
+rack_model           Rack Type (rack_type)            model_id
+device_manufacturer  Manufacturer (via Device Type)   manufacturer</span></span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">In NetBox, <strong>Manufacturer, Device Type, Device Role, Site and Location are five separate objects</strong>, each with its own API endpoint and its own fields. They are not columns on a rack or a device. More than that, NetBox refuses to create anything out of order: you cannot create a device whose type does not exist yet, and you cannot create a rack without a site. Our exporter walks a strict sequence for exactly this reason. The phrase "via Rack Type" hides all of that. An engineer building from this sheet would not learn that these objects exist, would try to create a device first, and would get a rejection they could not explain.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Give each of the five its own small table, and add a note that they must be created before racks and devices. On the CMDB side they collapse into plain fields on the CI row, which is a real difference worth showing rather than hiding.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Seven NetBox fields do not exist.</span>
-        <span class="tag wrong">Wrong</span>
-        <span class="d"><code>cooling_capability</code>, <code>cooling_capacity</code>, <code>cooling_method</code>, <code>cooling_intake_count</code>, <code>cooling_outflow_count</code>, <code>channels</code>, <code>channel_id</code>. None of them appear anywhere in NetBox 4.6.10, which is the version we run.</span>
+        <div class="head"><span class="title">Seven NetBox fields do not exist.</span><span class="tag wrong">Wrong</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c"><span class="quote">rack_cooling_capability       Cooling Capability (cooling_capability)
+rack_cooling_capacity         Cooling Capacity (cooling_capacity)
+device_cooling_method         Cooling Method (cooling_method)
+device_cooling_intake_count   Cooling Intake Count (cooling_intake_count)
+device_cooling_outflow_count  Cooling Outflow Count (cooling_outflow_count)
+port_channels                 Channels (channels)
+port_channel_id               Channel Id (channel_id)</span></span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">None of these seven appear anywhere in NetBox 4.6.10. Not on the object listed, and not on any other object either. I searched the whole schema for each one. They read as if they were remembered from a different product, or from a NetBox version that does not exist.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Delete all seven rows.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Two model number rows point at nothing.</span>
-        <span class="tag wrong">Wrong</span>
-        <span class="d"><code>rack_model_number</code> and <code>device_model_number</code> say "via Rack Type" and "via Device Type", but a NetBox rack type only has <code>model</code>. A device type has <code>part_number</code>, which is probably what was meant.</span>
+        <div class="head"><span class="title">Two model number rows point at a field that is not there.</span><span class="tag wrong">Wrong</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c"><span class="quote">rack_model_number     Model (via Rack Type)     model_number
+device_model_number   Model (via Device Type)   model_number</span></span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">A NetBox rack type has <code>model</code> and nothing else resembling a model number, so there is nothing for the CMDB <code>model_number</code> to map onto. A device type does have a separate field for this, called <code>part_number</code>, which is almost certainly what was meant.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Change the device row to <code>part_number</code>. On the rack row, write that NetBox has no equivalent, which is the honest answer.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">It says cables need a paid ServiceNow plugin. They do not.</span>
-        <span class="tag wrong">Wrong</span>
-        <span class="d">Every cable row is marked "TNI plugin only". A cable works fine as a relationship row, <code>cmdb_rel_ci</code> with the Connects to type, which is what our code already does. The sheet even uses <code>cmdb_rel_ci</code> to say a rack contains a device, then refuses to use it for a cable. As written this tells a customer we cannot export their cabling without buying a plugin.</span>
+        <div class="head"><span class="title">It says cables need a paid ServiceNow plugin. They do not.</span><span class="tag wrong">Wrong</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c"><span class="quote">cable_a_end   A-side Terminations   A-end termination (TNI plugin only)
+cable_b_end   B-side Terminations   Z-end termination (TNI plugin only)
+cable_type    Type (type)           Cable / product model (TNI plugin only)</span>Plus a note at the top: "base ServiceNow ITSM CMDB has no native Cable table at all".</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">The note is correct and the conclusion drawn from it is not. It is true there is no cable CI class. But a cable is a relationship between two ports, and ServiceNow models relationships in <code>cmdb_rel_ci</code> with a type of <code>Connects to::Connected by</code>. That is a base table, present in every instance, and <strong>our code already writes cables that way today</strong>. The document is inconsistent with itself as well: three rows further up it happily uses <code>cmdb_rel_ci</code> to express that a rack contains a device, then refuses to use the same mechanism for a cable.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Change all three cable rows to <code>cmdb_rel_ci</code> with the Connects to type, and delete the plugin-only wording. This one matters commercially. As written, the sheet tells a customer we cannot deliver their cabling without buying a plugin, which is the opposite of true and gives away our best answer to the question they always ask.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Four CMDB tables we write to are missing.</span>
-        <span class="tag missing">Missing</span>
-        <span class="d"><code>cmdb_ci_port</code> for panel ports, <code>cmdb_ci_netgear</code> for the panels, <code>cmdb_ci_server</code> and <code>cmdb_ci_pdu</code>. A port is mapped only to <code>cmdb_ci_network_adapter</code>, which is right for a switch NIC and wrong for a panel port.</span>
+        <div class="head"><span class="title">Four CMDB tables we write to are missing.</span><span class="tag missing">Missing</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">A port maps to <code>cmdb_ci_network_adapter</code>, and nothing else is named.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">Our integration writes to four more: <code>cmdb_ci_port</code> for patch panel ports, <code>cmdb_ci_netgear</code> for the panels themselves, <code>cmdb_ci_server</code> for servers, and <code>cmdb_ci_pdu</code>. <code>cmdb_ci_network_adapter</code> is right for a switch or server NIC and wrong for a panel port, and the sheet has only the one row for both.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Split the port row by what the port actually is, and add the four tables.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Custom fields go to the wrong place.</span>
-        <span class="tag wrong">Wrong</span>
-        <span class="d">The sheet sends them to <code>attributes</code>. In ServiceNow a custom value goes in a <code>u_</code> column. We already write <code>u_racktrack_scan_id</code> and read it back.</span>
+        <div class="head"><span class="title">Custom fields are sent to the wrong place.</span><span class="tag wrong">Wrong</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">Custom Fields maps to <code>attributes</code>, on all four objects.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">In ServiceNow a custom value lives in a <code>u_</code> column added to the CI table. That is the convention, and it is the one we already follow: we write <code>u_racktrack_scan_id</code> onto the rack CI, and our reconcile step reads that exact field back to find the rack again on a rescan. If anyone built to <code>attributes</code>, the rescan would stop matching and every rack would be created twice.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Change it to a <code>u_</code> column, and name <code>u_racktrack_scan_id</code> as the worked example.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Owner is mapped two different ways.</span>
-        <span class="tag wrong">Wrong</span>
-        <span class="d">NetBox <code>owner</code> goes to <code>managed_by_group</code> in one table, while <code>owned_by</code> is listed as CMDB-only. Both cannot be right.</span>
+        <div class="head"><span class="title">Owner is mapped two different ways in the same document.</span><span class="tag wrong">Wrong</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">In the object tables, NetBox <code>owner</code> maps to <code>managed_by_group</code>. Separately, <code>owned_by</code> is listed as a CMDB-only field with no NetBox equivalent.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">Both cannot be right at once. <code>managed_by_group</code> is who looks after it day to day, <code>owned_by</code> is who owns it. They are different questions and the sheet answers with each in turn.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Pick one, apply it to all four objects, and put a one-line note saying why the other was not chosen.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">VRF gets 19 rows for something we never make.</span>
-        <span class="tag extra">Extra</span>
-        <span class="d">Fully researched, and RackTrack does not produce VRFs and never has.</span>
+        <div class="head"><span class="title">VRF gets 19 researched rows for something we never make.</span><span class="tag extra">Extra</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">Section 5.4 has a complete and accurate 19-row VRF table.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">RackTrack does not produce VRFs. There is no VRF in our object model and no VRF in our export sequence. The table is well researched and describes work we do not do. Every CMDB cell in it is null, so it reads as a nineteen-line statement that neither side has anything, which is not the case: NetBox has all nineteen, we have none of them.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Move it to a clearly marked future-scope section, or delete it. The same question applies to VLAN, where we hold 6 fields against NetBox's 22.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">The names are copies, not decisions.</span>
-        <span class="tag shape">Structure</span>
-        <span class="d">In <strong>431 of the 489 rows</strong>, 88 percent, the name is just the object plus whatever the other column already called the field. <code>rack_serial</code> comes from NetBox <code>serial</code>. <code>port_poe_mode</code> comes from <code>poe_mode</code>. So the name column adds nothing.</span>
+        <div class="head"><span class="title">The names are copies, not decisions.</span><span class="tag shape">Structure</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">The first column is a unique name, described as the key that joins the two systems.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">I tested every row. In <strong>431 of the 489 rows, 88 percent</strong>, the unique name is nothing but the object name plus whatever the other column already called the field. <code>rack_serial</code> is NetBox's <code>serial</code>. <code>rack_model_number</code> is the CMDB's <code>model_number</code>. <code>port_poe_mode</code> is NetBox's <code>poe_mode</code>. The column was generated, not decided, so it carries no information that is not already in the row.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Decide each name from RackTrack's side, based on what we call the thing and what we would want to call it. Where NetBox's name is genuinely the best name, keep it on purpose rather than by default.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">It quietly proposes RackTrack should hold 400 more fields.</span>
-        <span class="tag shape">Structure</span>
-        <span class="d">Because the names are copied from both systems, the sheet ends up saying a rack has 107 fields, a device 119 and a port 134. That means storing a rack's outer depth, a device's virtual chassis priority, a CI's cost centre. That is a product decision, not something to inherit from a join.</span>
+        <div class="head"><span class="title">It quietly proposes that RackTrack should hold about 400 more fields.</span><span class="tag shape">Structure</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">107 rows under a rack, 119 under a device, 134 under a port.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">Because every field on either side became a row, and every row got a RackTrack-shaped name, the sheet reads as a specification for what RackTrack should store. That means committing to a rack's outer depth and mounting depth, a device's virtual chassis priority, a port's PoE type and transmit power, and a CI's attestation status, cost centre, GL account and invoice number. RackTrack holds 10 fields on a rack today, 18 on a device, 10 on a port.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">This is the decision to make consciously rather than inherit. If the intent is that RackTrack grows into the union of both systems, that is a large product commitment and should be written down as one. If not, the extra rows belong in a separate reference sheet, as in point 14.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Only 65 of the 489 rows actually map.</span>
-        <span class="tag shape">Structure</span>
-        <span class="d">The other 424 say "this exists in one system and not the other". Useful research, but not a mapping. The last table in the document already knows this, it keeps the 65 and drops the rest.</span>
+        <div class="head"><span class="title">Only 65 of the 489 rows actually map across.</span><span class="tag shape">Structure</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">489 rows of mapping across eight tables.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">A mapping row has to say "this thing here is that thing there". Only 65 rows have both sides filled in. The other <strong>424 rows have one side null</strong>, which means they say "this exists in one system and not the other". That is genuinely useful research and it is not a mapping. It also skews every count in the document: the Port table looks like 134 mapped fields and is really 14. The document already half knows this, because the summary table at the end keeps exactly those 65 and drops the rest.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Split into two sheets. Sheet one is the mapping, rows where something maps. Sheet two is "fields we do not carry", the one-sided rows, kept because they answer a customer asking why a field is empty.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">Nothing of RackTrack's own is in it.</span>
-        <span class="tag missing">Missing</span>
-        <span class="d">No row for the evidence level, the confidence score, the provenance, our stable id, the port fingerprint, or the conflict record. They could never appear, because a name copied from NetBox or ServiceNow can only describe NetBox or ServiceNow. These are the fields a customer asks about in the second meeting.</span>
+        <div class="head"><span class="title">Nothing that makes RackTrack distinctive is in it.</span><span class="tag missing">Missing</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c">Nothing. There is no row for any of them.</span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">This follows directly from point 12. A name copied from NetBox or ServiceNow can only ever describe NetBox or ServiceNow, so anything we hold that neither of them holds could never have appeared. What is missing: the <strong>evidence level</strong> (both ends of LLDP agree, SNMP said so, read off a photo, a human typed it), the <strong>confidence score</strong> derived from it, the <strong>provenance</strong> naming the image or the OID that proved it, our <strong>stable id</strong> that makes a rescan update rather than duplicate, the <strong>port fingerprint</strong> that tells two identical unlabelled switches apart, and the <strong>conflict record</strong> for when two sources disagree. Some of these do have a home on the far side: the id goes in NetBox's <code>racktrack_uid</code> custom field and the CMDB's <code>correlation_id</code>, and the evidence level is what decides whether a NetBox cable is <code>connected</code> or <code>planned</code>. Others have no home anywhere, and saying so plainly is more useful than leaving them out.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Add a row for each, with "not supported" written honestly where that is the answer. Without them the sheet describes RackTrack as a thinner NetBox. With them it shows we know things NetBox cannot, and can prove where each one came from.</span></div>
+        </div>
       </li>
 
       <li>
-        <span class="t">One sheet is right, but it needs a "How" column.</span>
-        <span class="tag shape">Structure</span>
-        <span class="d">Two sheets would drift apart, so keep one. But the two systems are shaped differently, not just named differently. "This device is in this rack" is a field in NetBox and a relationship row in ServiceNow. That is why the sheet has to write "Related Items (Contains::Contained by)" in a column meant for a field name. Add a column saying <strong>direct field, reference, relationship row, custom field, or not supported</strong>, and the problem goes away.</span>
+        <div class="head"><span class="title">One sheet is right. It needs a How column.</span><span class="tag shape">Structure</span></div>
+        <div class="rows">
+          <div class="r says"><span class="l">The sheet says</span><span class="c"><span class="quote">rack_contained_devices  Device Count (device_count)  Related Items (Contains::Contained by)
+device_rack_ref         Rack (rack)                 Related Items (parent rack)
+port_device_ref         Device (device)             Device (reference)</span></span></div>
+          <div class="r truth"><span class="l">What is true</span><span class="c">To answer the question directly: keep one sheet. Two would mean maintaining the RackTrack column twice and they would disagree within a month. But one sheet only works if it records <strong>how</strong> each side stores the thing, not just what it is called, because the two systems are shaped differently rather than just named differently. "This device is in this rack" is a plain field in NetBox and a relationship row in ServiceNow. "This device is a Cisco" is a separate object in NetBox reached through the device type, and a field on the row in ServiceNow. A cable is an object with two ends in NetBox and has no object at all in ServiceNow. With only a field-name column there is nowhere to put that, so the sheet writes prose like "Related Items (Contains::Contained by)" into a column that is supposed to hold a field name, and nobody can build from it.</span></div>
+          <div class="r fix"><span class="l">Do this</span><span class="c">Use these columns: <code>RackTrack object</code>, <code>RackTrack field</code>, <code>NetBox object</code>, <code>NetBox field</code>, <code>How</code>, <code>CMDB table</code>, <code>CMDB field</code>, <code>How</code>, <code>Notes</code>. Where each <strong>How</strong> is one of five values: direct field, reference to another object, relationship row, custom field, or not supported. That single column absorbs every piece of prose currently sitting in a field-name cell, and it is what lets one sheet serve both systems honestly.</span></div>
+        </div>
       </li>
 
     </ol>
   </div>
 
   <div class="block">
+    <h2>Reference: the sixteen objects, and what RackTrack holds</h2>
+    <p class="intro">This is the list the rebuilt sheet should be built from, in this order. The order is not cosmetic. NetBox rejects an out-of-order create, so a device cannot be written before its device type exists, and nothing can be written before its site. Field names are RackTrack's own, from <code>model.js</code>. Every object also carries <code>uid</code>, <code>evidence</code> and <code>provenance</code>, which are not repeated in each row.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>#</th><th>RackTrack object</th><th>Fields it holds</th><th>NetBox</th><th>CMDB</th><th>In the sheet?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="fields">1</td><td class="name">Manufacturer</td><td class="fields">name, slug</td><td>dcim.manufacturer</td><td>field on the CI</td><td class="no">no</td></tr>
+          <tr><td class="fields">2</td><td class="name">Device type</td><td class="fields">manufacturerUid, model, slug, uHeight, isFullDepth</td><td>dcim.devicetype</td><td>model_id, part number</td><td class="no">no</td></tr>
+          <tr><td class="fields">3</td><td class="name">Device role</td><td class="fields">name, slug</td><td>dcim.devicerole</td><td>category</td><td class="no">no</td></tr>
+          <tr><td class="fields">4</td><td class="name">Site</td><td class="fields">name, slug</td><td>dcim.site</td><td>location</td><td class="no">no</td></tr>
+          <tr><td class="fields">5</td><td class="name">Location</td><td class="fields">name, siteUid</td><td>dcim.location</td><td>location</td><td class="no">no</td></tr>
+          <tr><td class="fields">6</td><td class="name">Rack</td><td class="fields">name, siteUid, locationUid, uHeight, descUnits, description, comments</td><td>dcim.rack</td><td>cmdb_ci_rack</td><td class="yes">yes</td></tr>
+          <tr><td class="fields">7</td><td class="name">Device</td><td class="fields">name, deviceTypeUid, roleUid, siteUid, rackUid, position, face, serial, assetTag, primaryIp, mac, platform, status, description, customFields</td><td>dcim.device</td><td>cmdb_ci_ip_switch and siblings</td><td class="yes">yes</td></tr>
+          <tr><td class="fields">8</td><td class="name">Interface</td><td class="fields">deviceUid, name, type, description, mac, enabled, label</td><td>dcim.interface</td><td>cmdb_ci_network_adapter</td><td class="yes">yes</td></tr>
+          <tr><td class="fields">9</td><td class="name">Rear port</td><td class="fields">deviceUid, name, type, positions</td><td>dcim.rearport</td><td>cmdb_ci_port</td><td class="no">no</td></tr>
+          <tr><td class="fields">10</td><td class="name">Front port</td><td class="fields">deviceUid, name, type, rearPortUid, rearPortPosition</td><td>dcim.frontport</td><td>cmdb_ci_port</td><td class="no">no</td></tr>
+          <tr><td class="fields">11</td><td class="name">Power port</td><td class="fields">deviceUid, name</td><td>dcim.powerport</td><td>cmdb_ci_pdu</td><td class="no">no</td></tr>
+          <tr><td class="fields">12</td><td class="name">Power outlet</td><td class="fields">deviceUid, name</td><td>dcim.poweroutlet</td><td>cmdb_ci_pdu</td><td class="no">no</td></tr>
+          <tr><td class="fields">13</td><td class="name">VLAN</td><td class="fields">vid, name, siteUid</td><td>ipam.vlan</td><td>no native table</td><td class="yes">yes</td></tr>
+          <tr><td class="fields">14</td><td class="name">Prefix</td><td class="fields">prefix, vlanUid, description</td><td>ipam.prefix</td><td>cmdb_ci_ip_network_subnet</td><td class="yes">yes</td></tr>
+          <tr><td class="fields">15</td><td class="name">IP address</td><td class="fields">address, interfaceUid</td><td>ipam.ipaddress</td><td>cmdb_ci_allocated_ip_address</td><td class="yes">yes</td></tr>
+          <tr><td class="fields">16</td><td class="name">Cable</td><td class="fields">a, b, type, color, label, length, lengthUnit, description, status</td><td>dcim.cable</td><td>cmdb_rel_ci, Connects to</td><td class="yes">yes</td></tr>
+          <tr><td class="fields">-</td><td class="name">Conflict</td><td class="fields">subjectUid, field, cvSays, telemetrySays, note</td><td>never exported</td><td>never exported</td><td class="no">no</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="block">
     <h2>What to change</h2>
+    <p class="intro">In the order I would do them. The first two are the ones that change what the sheet is; the rest are corrections.</p>
     <ul class="todo">
-      <li>Start from RackTrack's 16 objects, not from NetBox's tables. One row per RackTrack field.</li>
-      <li>Add the nine missing object types. Front and rear ports first.</li>
-      <li>Delete the seven fields that do not exist, and change the two model number rows to <code>part_number</code>.</li>
-      <li>Fix the cable row to use <code>cmdb_rel_ci</code> Connects to, and drop the plugin-only claim.</li>
-      <li>Add the four missing CMDB tables.</li>
-      <li>Add a How column for each side.</li>
-      <li>Add the RackTrack-only fields, writing "not supported" honestly where that is the answer.</li>
-      <li>Remove the VRF table, or mark it as future scope.</li>
-      <li>Move the one-sided rows to a second sheet called "fields we do not carry".</li>
+      <li><span>Rebuild starting from RackTrack's sixteen objects, one row per RackTrack field, instead of starting from NetBox's tables.</span><span class="ref">points 1, 12</span></li>
+      <li><span>Add the How column for each side, with its five values, so references and relationships stop being written as prose.</span><span class="ref">point 16</span></li>
+      <li><span>Add the nine missing object types. Front and rear ports first, then power, then the five that are currently hidden behind "via Rack Type".</span><span class="ref">points 2, 3, 4</span></li>
+      <li><span>Delete the seven NetBox fields that do not exist.</span><span class="ref">point 5</span></li>
+      <li><span>Change the device model number row to <code>part_number</code>, and mark the rack one as having no NetBox equivalent.</span><span class="ref">point 6</span></li>
+      <li><span>Fix the three cable rows to <code>cmdb_rel_ci</code> Connects to, and remove the plugin-only claim.</span><span class="ref">point 7</span></li>
+      <li><span>Add <code>cmdb_ci_port</code>, <code>cmdb_ci_netgear</code>, <code>cmdb_ci_server</code> and <code>cmdb_ci_pdu</code>, and split the port row by what the port is.</span><span class="ref">point 8</span></li>
+      <li><span>Change custom fields from <code>attributes</code> to a <code>u_</code> column.</span><span class="ref">point 9</span></li>
+      <li><span>Settle owner on one of <code>managed_by_group</code> or <code>owned_by</code>, and use it everywhere.</span><span class="ref">point 10</span></li>
+      <li><span>Add rows for evidence, confidence, provenance, the stable id, the port fingerprint and conflicts, with "not supported" where that is the truth.</span><span class="ref">point 15</span></li>
+      <li><span>Move the 424 one-sided rows into a second sheet, "fields we do not carry".</span><span class="ref">point 14</span></li>
+      <li><span>Move VRF to future scope, or remove it.</span><span class="ref">point 11</span></li>
     </ul>
   </div>
 
   <footer>
-    Checked against docs/netbox/schema-dumps/netbox-4.6.10-openapi.json, the version our docker-compose pins<br>
-    server/lib/netbox/model.js and mapping.js for RackTrack's own fields<br>
-    servicenow/cmdb_apply.py and server/lib/netbox/connectors/servicenow.js for the CMDB tables we write
+    Sources checked against, in full:<br>
+    docs/netbox/schema-dumps/netbox-4.6.10-openapi.json, the NetBox version our docker-compose pins<br>
+    server/lib/netbox/model.js and server/lib/netbox/mapping.js, where RackTrack's objects and their NetBox translation are defined<br>
+    servicenow/cmdb_apply.py and server/lib/netbox/connectors/servicenow.js, for the CMDB tables and fields we read and write
   </footer>
 
 </div>

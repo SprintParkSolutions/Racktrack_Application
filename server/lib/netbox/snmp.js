@@ -182,6 +182,44 @@ class SnmpError extends Error {
   }
 }
 
+/**
+ * Address ranges that only exist inside somebody's own network. A packet
+ * addressed to one of these does not cross the internet, so a server hosted
+ * anywhere else cannot reach it - not slowly, not unreliably, not at all.
+ */
+const PRIVATE_RANGES = [
+  /^10\./,
+  /^192\.168\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^169\.254\./,                                 // link local
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,    // carrier grade NAT
+  /^127\./,
+];
+const isPrivateHost = (host) => PRIVATE_RANGES.some((r) => r.test(String(host || '').trim()));
+
+/** What is worth checking when a switch on a network we CAN reach stays quiet. */
+const ON_NET_CAUSES = 'the agent may be unreachable, SNMP may be disabled, or an ACL '
+  + 'on the switch may not list this host.';
+
+/**
+ * A silent switch has two very different explanations and the old hint only
+ * described one of them. It sent whoever read it to check SNMP settings and
+ * ACLs on the switch, which is the right advice when the server is on the same
+ * network and wasted effort when it is not: a hosted server asked for a
+ * 192.168.x address has no route to it, so nothing done on the switch can ever
+ * make that read succeed. Say which situation this is before naming causes.
+ */
+function timeoutHint(host) {
+  if (!isPrivateHost(host)) {
+    return `The ${ON_NET_CAUSES}`;
+  }
+  return `${host} is a private address, so it exists only inside your own network. `
+    + 'If this RackTrack server runs anywhere else, such as the hosted demo site, it '
+    + 'has no route to that address and no change on the switch can give it one. Read '
+    + 'this switch from the RackTrack app on a phone joined to that network instead. '
+    + `If the server IS on that network, then ${ON_NET_CAUSES}`;
+}
+
 const PDU_ERRORS = [
   'noError', 'tooBig', 'noSuchName', 'badValue', 'readOnly', 'genErr',
   'noAccess', 'wrongType', 'wrongLength', 'wrongEncoding', 'wrongValue',
@@ -354,8 +392,7 @@ class Session {
           if (attempt > this.retries) {
             finish(new SnmpError('timeout',
               `${this.host} did not answer in ${this.timeout} ms.`,
-              'The agent may be unreachable, SNMP may be disabled, or an ACL '
-              + 'on the switch may not list this host.'));
+              timeoutHint(this.host)));
             return;
           }
           attemptSend();
@@ -781,5 +818,6 @@ module.exports = {
   _internal: {
     encodeInt, encodeOid, encodeLength, readTLV, decodeInt, decodeOid,
     decodeOctets, decodeValue, passwordToKey, localiseKey, tlv,
+    isPrivateHost, timeoutHint,
   },
 };

@@ -87,6 +87,12 @@ netdisco-docker
 # Its bulk does not.
 servicenow/mock_scans
 servicenow/__pycache__
+# Nor its credentials. .env.example is a real ServiceNow instance, user and
+# password despite the name, and nothing on the host reads it: main.py reads
+# .env, and there is no .env there. A deploy was one rsync away from copying a
+# live password onto a public VPS for no reason at all.
+servicenow/.env
+servicenow/.env.*
 servicenow_inbox
 racktrack-support-bot
 support-bot

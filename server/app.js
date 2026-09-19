@@ -656,13 +656,15 @@ try {
   // - the member's six routes take gates.technician, the rest gates.admin. A
   // gate on the route can say WHY it refused; a bare 403 from the mount
   // cannot, and it would shut the technician out of the routes that are
-  // theirs. switches and unmanaged stay admin-only at the mount.
+  // theirs. switches does the same: the technician lists, adds and files a
+  // phone reading for their own rack, and the router refuses the rest.
+  // unmanaged stays admin-only at the mount.
   const nbAny   = auth.requireAuth;                                     // then a gate per route
   const nbField = auth.requireRole('owner', 'org_admin', 'site_manager');
   const nbOwner = auth.requireRole('owner');   // authenticates too — see requireRole
 
   app.use('/api/nb/scans',      nbAny,   require('./routes/netbox/scans'));
-  app.use('/api/nb/switches',   nbField, require('./routes/netbox/switches'));
+  app.use('/api/nb/switches',   nbAny,   require('./routes/netbox/switches'));
   app.use('/api/nb/unmanaged',  nbField, require('./routes/netbox/unmanaged'));
   app.use('/api/nb/plans',      nbAny,   require('./routes/netbox/plans'));
   app.use('/api/nb/netbox',     nbAny,   require('./routes/netbox/netbox'));
@@ -2044,7 +2046,9 @@ function renderHTMLReport(data, { inlineImages = true } = {}) {
   // Same category labels the Results page shows (main→RJ45, sfp→SFP,
   // console→Console, other→USB) — the raw backend value ("main") isn't
   // what the user actually picked/sees in the app.
-  const PORT_CATEGORY_LABELS = { main: 'RJ45', sfp: 'SFP', console: 'Console', other: 'USB' };
+  // 'other' holds USB and, since ports_13, a slot with nothing fitted in it.
+  // Naming the bucket USB asserts a port the box may not have.
+  const PORT_CATEGORY_LABELS = { main: 'RJ45', sfp: 'SFP', console: 'Console', other: 'Other' };
 
   const portIdsHtml = d.port_identifications.map(p => {
     const a = accentFor(p.device_class || '');
@@ -3880,6 +3884,25 @@ app.get('/api/analyze/result/:jobId', (req, res) => {
   res.json({ status: j.status, rackId: j.rackId || null, error: j.error || null });
 });
 
+// The phone's position, from the upload's form fields, or nothing. Every value
+// is checked, so a bad or missing reading is simply absent rather than stored.
+function captureLocationFrom(body) {
+  const n = (v) => (v === undefined || v === null || v === '' ? NaN : Number(v));
+  const lat = n(body && body.lat);
+  const lng = n(body && body.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return {};
+  const acc = n(body.accuracy);
+  const at = String((body && body.locatedAt) || '').slice(0, 40);
+  return {
+    captureLocation: {
+      lat: Math.round(lat * 1e6) / 1e6,
+      lng: Math.round(lng * 1e6) / 1e6,
+      accuracyM: Number.isFinite(acc) && acc >= 0 && acc < 1e6 ? Math.round(acc) : null,
+      at: /^\d{4}-\d{2}-\d{2}T/.test(at) ? at : null,
+    },
+  };
+}
+
 app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file provided' });
   trackScanJob(req, res);
@@ -4139,6 +4162,10 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
       qualityWarning:    quality.warning || null,
       qualityWarningMsg: quality.warning_msg || null,
       ..._spaceFields,  // { space: { id, name } } only when the scan named one
+      // Where the phone was when the photo was taken, if it said. Used by the
+      // rack ladder to tell which Site the photo was taken at (lib/location.js),
+      // never to pick a rack: indoors it is good to tens of metres at best.
+      ...captureLocationFrom(req.body),
     };
     writeMeta(rackId, meta);
     _bindScanSpace(rackId, _scanTenantId, _scanUserId);
@@ -6968,214 +6995,6 @@ app.get('/api/scans', auth.requireAuth, (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
-// Ground Truth — technicians tell us the real identity of detected
-// devices so we can find where the model is wrong and retrain on it.
-//
-// WRITES reuse the existing, battle-tested POST /api/feedback/device
-// (atomic map update + append-only feedback.jsonl + AL memory + scoreboard).
-// This section only adds the owner-only READ surfaces the tab needs:
-//   GET /api/ground-truth/queue            → least-confident, still-untruthed
-//                                            devices across all scans (worklist)
-//   GET /api/ground-truth/scans            → per-scan truth progress (browse)
-//   GET /api/ground-truth/scan/:rackId     → every device in one scan
-//   GET /api/ground-truth/crop/:rackId/:i  → lazy, cached crop of one device
-//
-// Gated to `owner` for now. The rack-visibility logic below is already
-// role-correct, so opening this to other roles later is a one-line change
-// to the guard — the queries do not need to change.
-// ════════════════════════════════════════════════════════════════════
-
-// Latest device-class verdict per device_index for a rack, from feedback.jsonl.
-function _gtDeviceFeedbackMap(rackDir) {
-  const m = new Map();
-  const fp = path.join(rackDir, 'feedback.jsonl');
-  if (!fs.existsSync(fp)) return m;
-  let lines = [];
-  try { lines = fs.readFileSync(fp, 'utf8').split('\n').filter(Boolean); }
-  catch (_) { return m; }
-  for (const ln of lines) {
-    let e; try { e = JSON.parse(ln); } catch { continue; }
-    if (e && e.feedback_type === 'device' && e.device_index != null) {
-      // File is append-order, so the last write for an index wins.
-      m.set(Number(e.device_index), {
-        is_correct: !!e.is_correct,
-        actual_class: e.actual_device_class || null,
-        predicted_class: e.predicted_device_class || null,
-        timestamp: e.timestamp || null,
-      });
-    }
-  }
-  return m;
-}
-
-// Rack-slot placeholders, not real equipment. The CV model emits one entry
-// per rack unit, so blank/closed slots come through as "Empty" / "Closed Unit"
-// (the "U01 / unit 2" rows). Ground Truth is for verifying actual devices, so
-// these are dropped from the list — matching the app-wide HIDDEN_DEVICE_TYPES
-// used on the Results view. "Unidentified" is deliberately KEPT: an unlabelled
-// device is exactly what ground-truthing exists to correct.
-const GT_UNIT_CLASSES = new Set(['Empty', 'Closed Unit']);
-
-// Normalised device list for one scan, with predicted class, confidence,
-// position, a stable label, and current truth verdict. null if the scan has
-// no device_unit_map.json yet. Shared by the queue, browse and detail routes.
-function _gtScanDevices(rackId) {
-  const rackDir = path.join(outputsDir, rackId);
-  const mapPath = path.join(rackDir, 'device_unit_map.json');
-  if (!fs.existsSync(mapPath)) return null;
-  let map;
-  try { map = JSON.parse(fs.readFileSync(mapPath, 'utf8')); } catch { return null; }
-  const meta = readMeta(rackId);
-  const fbMap = _gtDeviceFeedbackMap(rackDir);
-  const unitsDetected = map.units_detected || [];
-  const overlayName = fs.existsSync(rackImagePath(rackDir, '3_units_and_devices.png'))
-    ? '3_units_and_devices.png'
-    : (fs.existsSync(rackImagePath(rackDir, '7_rack_all_ports.png')) ? '7_rack_all_ports.png' : null);
-  const overlay = overlayName ? `/outputs/${rackId}/${rackImageUrlPath(rackDir, overlayName)}` : null;
-
-  const counts = {};
-  const devices = (map.devices || []).map((dev, i) => {
-    const idx = i + 1;
-    const code = CLASS_CODE_SRV[dev.class_name] || (dev.class_name || 'UNK').replace(/\s+/g, '').slice(0, 4).toUpperCase();
-    counts[code] = (counts[code] || 0) + 1;
-    const labelUnits = dev.units?.length ? dev.units : (unitsDetected.length ? [unitsDetected[0]] : []);
-    const position = formatUnitsRangeSrv(labelUnits) || '—';
-    const fb = fbMap.get(idx) || null;
-    return {
-      scanId: rackId,
-      device_index: idx,
-      predicted_class: dev.class_name || 'Unknown',
-      confidence: typeof dev.confidence === 'number' ? dev.confidence : null,
-      position,
-      label: `${(position.split(/[\s–—-]/)[0] || 'U')}-${code}${String(counts[code]).padStart(2, '0')}`,
-      source: dev.source || null,
-      truthed: !!fb,
-      truth: fb ? { is_correct: fb.is_correct, actual_class: fb.actual_class } : null,
-      cropUrl: `/api/ground-truth/crop/${rackId}/${idx}`,
-    };
-  })
-  // Drop the blank rack-slot rows AFTER indexing, so every kept device keeps
-  // its original 1-based device_index (the crop + truth endpoints key off it).
-  .filter(d => !GT_UNIT_CLASSES.has(d.predicted_class));
-  return { rackId, meta, overlay, devices };
-}
-
-// Which racks may this caller see. Owner → all (null). Kept general so the
-// route guard is the only thing to relax when opening the tab to other roles.
-function _gtAllowedRacks(reqUser) {
-  const role = reqUser?.role;
-  const orgId = reqUser?.organization_id;
-  const tenantId = reqUser?.tenant_id;
-  const userId = reqUser?.id;
-  if (role === 'owner') return null;
-  if (role === 'org_admin' && orgId) return tenant.orgRackIds(orgId);
-  return tenantId ? tenant.tenantUserRackIds(tenantId, userId) : new Set();
-}
-
-function _gtRackNames() {
-  try { return fs.readdirSync(outputsDir).filter(n => n.startsWith('RK-')); }
-  catch (_) { return []; }
-}
-
-// GET /api/ground-truth/queue?limit=150 — the labelling worklist.
-// Every still-untruthed device across visible scans, least-confident first
-// (unknown confidence is treated as most urgent), plus platform-wide stats.
-app.get('/api/ground-truth/queue', auth.requireRole('owner'), (req, res) => {
-  const limit = Math.min(Math.max(Number(req.query.limit) || 150, 1), 500);
-  const allowed = _gtAllowedRacks(req.user);
-
-  let scans = 0, totalDevices = 0, truthed = 0, correct = 0, wrong = 0;
-  const items = [];
-  for (const rackId of _gtRackNames()) {
-    if (allowed && !allowed.has(rackId)) continue;
-    const sd = _gtScanDevices(rackId);
-    if (!sd) continue;
-    scans++;
-    for (const dv of sd.devices) {
-      totalDevices++;
-      if (dv.truthed) {
-        truthed++;
-        if (dv.truth?.is_correct) correct++; else wrong++;
-        continue; // worklist shows only what still needs truth
-      }
-      items.push({ ...dv, scannedAt: sd.meta?.timestamp || null, rackImageUrl: sd.overlay });
-    }
-  }
-  items.sort((a, b) => ((a.confidence ?? -1) - (b.confidence ?? -1)));
-  const graded = correct + wrong;
-  res.json({
-    items: items.slice(0, limit),
-    truncated: items.length > limit,
-    stats: {
-      scans, devices: totalDevices, truthed, remaining: totalDevices - truthed,
-      correct, wrong, accuracy: graded ? correct / graded : null,
-    },
-  });
-});
-
-// GET /api/ground-truth/scans — one row per scan with truth progress (browse).
-app.get('/api/ground-truth/scans', auth.requireRole('owner'), (req, res) => {
-  const allowed = _gtAllowedRacks(req.user);
-  const scans = _gtRackNames().map((rackId) => {
-    if (allowed && !allowed.has(rackId)) return null;
-    const sd = _gtScanDevices(rackId);
-    if (!sd) return null;
-    const deviceCount = sd.devices.length;
-    const truthedCount = sd.devices.filter(d => d.truthed).length;
-    const correct = sd.devices.filter(d => d.truth?.is_correct).length;
-    const wrong = sd.devices.filter(d => d.truthed && !d.truth?.is_correct).length;
-    return { rackId, timestamp: sd.meta?.timestamp || null, deviceCount, truthedCount, correct, wrong, image: sd.overlay };
-  }).filter(Boolean).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
-  res.json({ scans });
-});
-
-// GET /api/ground-truth/scan/:rackId — every device in one scan (browse detail).
-// :rackId is guarded by app.param('rackId') (tenant scope) before we get here.
-app.get('/api/ground-truth/scan/:rackId', auth.requireRole('owner'), (req, res) => {
-  const { rackId } = req.params;
-  const sd = _gtScanDevices(rackId);
-  if (!sd) return res.status(404).json({ error: `Scan ${rackId} not found` });
-  res.json({ rackId, timestamp: sd.meta?.timestamp || null, rackImageUrl: sd.overlay, devices: sd.devices });
-});
-
-// GET /api/ground-truth/crop/:rackId/:index — a tight crop of one device from
-// the original photo, so the technician sees exactly what to identify. Cropped
-// once on first request and cached to outputs/<rackId>/gt_crops/dev<i>.png.
-app.get('/api/ground-truth/crop/:rackId/:index', auth.requireRole('owner'), async (req, res) => {
-  const { rackId } = req.params;
-  const index = Number(req.params.index);
-  if (!Number.isInteger(index) || index < 1) {
-    return res.status(400).json({ error: 'Invalid device index' });
-  }
-  const rackDir = path.join(outputsDir, rackId);
-  const mapPath = path.join(rackDir, 'device_unit_map.json');
-  if (!fs.existsSync(mapPath)) return res.status(404).json({ error: 'Scan not found' });
-
-  let box = null;
-  try {
-    const map = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
-    box = (map.devices || [])[index - 1]?.box || null;
-  } catch (_) {}
-  if (!box) return res.status(404).json({ error: 'Device not found' });
-
-  const cropDir = path.join(rackDir, 'gt_crops');
-  const dest = path.join(cropDir, `dev${index}.png`);
-  try {
-    if (!fs.existsSync(dest)) {
-      fs.mkdirSync(cropDir, { recursive: true });
-      const ok = await cropBoxImage(rackId, box, dest, 0.12, 6);
-      if (!ok) return res.status(404).json({ error: 'Crop unavailable' });
-    }
-    res.setHeader('Cache-Control', 'private, max-age=3600');
-    res.setHeader('Content-Type', 'image/png');
-    return res.sendFile(dest);
-  } catch (err) {
-    logger.warn('ground-truth crop failed: ' + err.message);
-    return res.status(404).json({ error: 'Crop unavailable' });
-  }
-});
-
 // ── Report endpoints ──────────────────────────────────────────
 // One source of truth (buildScanReportData), four output formats:
 //   GET /api/scan/:rackId/report                 → JSON metadata (no file written)
@@ -7294,6 +7113,45 @@ app.post('/api/scan/:rackId/report', async (req, res) => {
 // Selected Device section can prefer it over the (often partial/garbled)
 // OCR read. Previously this only lived in the browser's localStorage,
 // invisible to anything server-side including the report.
+// Read a rack's stored photograph again with the models the server has now.
+//
+// An analysed rack is a cache hit for ever, which is right for speed and wrong
+// the day a model improves: the patch panel model, the trained unit grid and the
+// OCR only ever reached new photographs. This runs the same pipeline a fresh
+// scan runs, then carries across everything filed against the old reading - a
+// person's make and model correction, the OCR result, the feedback history -
+// by matching each box to where it sits on the photo, because a better unit
+// grid numbers the rack differently and the U a correction was filed under now
+// names a different box. The whole folder is kept aside first; see
+// lib/reanalyze.js. An admin step: it changes what everyone sees for the rack.
+const reanalyze = require('./lib/reanalyze');
+const RACK_BACKUPS_DIR = path.join(__dirname, 'data', 'rack_backups');
+app.post('/api/scan/:rackId/reanalyze', auth.requireAuth, async (req, res) => {
+  const { rackId } = req.params;
+  if (!/^RK-[A-Za-z0-9]{4,32}$/.test(rackId)) {
+    return res.status(400).json({ error: 'Invalid rack id' });
+  }
+  const _auth = softAuthPayload(req);
+  if (!canAccessRack(_auth, rackId)) return res.status(404).json({ error: 'Rack not found' });
+  if (!['owner', 'org_admin', 'site_manager'].includes(req.user?.role)) {
+    return res.status(403).json({ error: 'Reading a rack again is for an admin. Ask yours to do it.' });
+  }
+  try {
+    const out = await reanalyze.reanalyzeRack({
+      rackId, outputsDir, backupsDir: RACK_BACKUPS_DIR,
+      runPipeline: (image, dir) => runPipelineAnalyze(image, dir, _auth?.organizationId || null),
+    });
+    logger.info({ event: 'scan.reanalyzed', rackId, before: out.before, after: out.after,
+      renumbered: out.renumbered.length, backup: path.basename(out.backup) }, `re-read ${rackId}`);
+    // The backup's path is the server's business, not the screen's.
+    const { backup: _backup, ...shown } = out;
+    return res.json({ ok: true, ...shown });
+  } catch (err) {
+    logger.warn({ event: 'scan.reanalyze_failed', rackId, error: err.message }, `re-read failed ${rackId}`);
+    return res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 app.post('/api/scan/:rackId/device-override', (req, res) => {
   const { rackId } = req.params;
   if (!/^RK-[A-Za-z0-9]{4,32}$/.test(rackId)) {
@@ -10870,12 +10728,20 @@ app.post('/api/feedback', auth.requireAuth, async (req, res) => {
 
 // POST /api/feedback/port-type
 // Active-learning correction for a port's physical TYPE (RJ45 / SFP / QSFP /
-// CONSOLE / AUX / MANAGEMENT_PORT / USB_A / USB_B / USB_C). Mirrors the cable
-// path: crop the port, log to feedback.jsonl, and persist a pHash+embedding
-// memory so future scans of the same port auto-apply the corrected type. The
-// crop is filed under the corrected class so it also feeds retraining.
+// FC / LC / SC / CONSOLE / AUX / MANAGEMENT_PORT / USB_A / USB_B / USB_C).
+// Mirrors the cable path: crop the port, log to feedback.jsonl, and persist a
+// pHash+embedding memory so future scans of the same port auto-apply the
+// corrected type. The crop is filed under the corrected class so it also feeds
+// retraining, which is why this list has to be the type model's own class
+// names and has to grow with it: a correction filed under a name the model
+// does not have is a training sample it can never learn from.
+//
+// The fibre connectors came in with ports_13. The model's thirteenth class,
+// `empty`, is deliberately NOT offered here. Whether a port has anything in it
+// is the status model's answer, and putting "empty" in a list of connector
+// types would invite a technician to file occupancy as though it were type.
 const PORT_TYPE_OPTIONS = [
-  'RJ45', 'SFP', 'QSFP', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
+  'RJ45', 'SFP', 'QSFP', 'FC', 'LC', 'SC', 'CONSOLE', 'AUX', 'MANAGEMENT_PORT',
   'USB_A', 'USB_B', 'USB_C',
 ];
 app.post('/api/feedback/port-type', auth.requireAuth, async (req, res) => {

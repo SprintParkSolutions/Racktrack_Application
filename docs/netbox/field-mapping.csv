@@ -1,0 +1,105 @@
+RackTrack object,RackTrack field,NetBox object,NetBox field,How,CMDB table,CMDB field,How,Notes
+Manufacturer,uid,dcim.manufacturer,custom_fields.racktrack_uid,custom field,by role,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+Manufacturer,evidence,dcim.manufacturer,,not supported,by role,comments,direct field,written into the provenance line
+Manufacturer,name,dcim.manufacturer,name,direct field,by role,manufacturer,direct field,a column on the device CI
+Manufacturer,slug,dcim.manufacturer,slug,direct field,,,not supported,
+DeviceType,uid,dcim.devicetype,custom_fields.racktrack_uid,custom field,by role,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+DeviceType,evidence,dcim.devicetype,,not supported,by role,comments,direct field,written into the provenance line
+DeviceType,manufacturerUid,dcim.devicetype,manufacturer,reference,,,not supported,
+DeviceType,model,dcim.devicetype,model,direct field,by role,model_id,direct field,
+DeviceType,slug,dcim.devicetype,slug,direct field,by role,model_number,direct field,
+DeviceType,uHeight,dcim.devicetype,u_height,direct field,,,not supported,"kept on the rack CI, not the device"
+DeviceType,isFullDepth,dcim.devicetype,is_full_depth,direct field,,,not supported,
+DeviceRole,uid,dcim.devicerole,custom_fields.racktrack_uid,custom field,by role,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+DeviceRole,evidence,dcim.devicerole,,not supported,by role,comments,direct field,written into the provenance line
+DeviceRole,name,dcim.devicerole,name,direct field,by role,sys_class_name,direct field,the role picks the CI class itself
+DeviceRole,slug,dcim.devicerole,slug,direct field,,,not supported,
+Site,uid,dcim.site,custom_fields.racktrack_uid,custom field,cmdb_ci_rack,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+Site,evidence,dcim.site,,not supported,cmdb_ci_rack,comments,direct field,written into the provenance line
+Site,name,dcim.site,name,direct field,cmdb_ci_rack,location,direct field,site and location share one field
+Site,slug,dcim.site,slug,direct field,,,not supported,
+Location,uid,dcim.location,custom_fields.racktrack_uid,custom field,cmdb_ci_rack,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+Location,evidence,dcim.location,,not supported,cmdb_ci_rack,comments,direct field,written into the provenance line
+Location,name,dcim.location,slug,direct field,cmdb_ci_rack,location,direct field,
+Location,siteUid,dcim.location,site,reference,,,not supported,
+Rack,uid,dcim.rack,custom_fields.racktrack_uid,custom field,cmdb_ci_rack,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+Rack,evidence,dcim.rack,,not supported,cmdb_ci_rack,comments,direct field,written into the provenance line
+Rack,name,dcim.rack,name,direct field,cmdb_ci_rack,name,direct field,
+Rack,siteUid,dcim.rack,site,reference,,,not supported,
+Rack,locationUid,dcim.rack,location,reference,cmdb_ci_rack,location,direct field,site and location collapse into one text field here
+Rack,uHeight,dcim.rack,u_height,direct field,cmdb_ci_rack,rack_units,direct field,
+Rack,descUnits,dcim.rack,desc_units,direct field,,,not supported,no equivalent; racks are numbered upward here
+Rack,description,dcim.rack,description,direct field,cmdb_ci_rack,short_description,direct field,
+Rack,comments,dcim.rack,comments,direct field,cmdb_ci_rack,comments,direct field,
+Device,uid,dcim.device,custom_fields.racktrack_uid,custom field,by role,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+Device,evidence,dcim.device,,not supported,by role,comments,direct field,written into the provenance line
+Device,name,dcim.device,name,direct field,by role,name,direct field,
+Device,deviceTypeUid,dcim.device,device_type,reference,by role,"model_id, manufacturer, model_number",reference,"the device type, by model name"
+Device,roleUid,dcim.device,role,reference,,,not supported,
+Device,siteUid,dcim.device,site,reference,,,not supported,
+Device,rackUid,dcim.device,rack,reference,cmdb_rel_ci,Contains::Contained by,relationship row,parent rack contains this device
+Device,position,dcim.device,position,direct field,by role,u_position,custom u_ column,which U it sits at
+Device,face,dcim.device,face,direct field,,,not supported,front or rear of the rack; no CMDB field
+Device,serial,dcim.device,serial,direct field,by role,serial_number,direct field,
+Device,assetTag,dcim.device,asset_tag,direct field,by role,asset_tag,direct field,
+Device,primaryIp,dcim.device,,not supported,by role,ip_address,direct field,
+Device,mac,dcim.device,,not supported,by role,mac_address,direct field,
+Device,platform,dcim.device,,not supported,,,not supported,
+Device,status,dcim.device,status,direct field,by role,operational_status,direct field,
+Device,description,dcim.device,description,direct field,by role,short_description,direct field,
+Device,customFields,dcim.device,,not supported,by role,os_version,direct field,firmware; NetBox has no native field and uses a custom one
+Interface,uid,dcim.interface,custom_fields.racktrack_uid,custom field,cmdb_ci_network_adapter,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+Interface,evidence,dcim.interface,,not supported,cmdb_ci_network_adapter,comments,direct field,written into the provenance line
+Interface,deviceUid,dcim.interface,device,reference,cmdb_ci_network_adapter,cmdb_ci,reference,the CI this adapter belongs to
+Interface,name,dcim.interface,name,direct field,cmdb_ci_network_adapter,"name, alias",direct field,
+Interface,type,dcim.interface,type,direct field,cmdb_ci_network_adapter,speed,direct field,derived from the port type
+Interface,description,dcim.interface,description,direct field,cmdb_ci_network_adapter,short_description,direct field,
+Interface,mac,dcim.interface,mac_address,direct field,cmdb_ci_network_adapter,mac_address,direct field,
+Interface,enabled,dcim.interface,enabled,direct field,cmdb_ci_network_adapter,operational_status,direct field,
+Interface,label,dcim.interface,label,direct field,,,not supported,the physical label; no CMDB field
+RearPort,uid,dcim.rearport,custom_fields.racktrack_uid,custom field,cmdb_ci_port,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+RearPort,evidence,dcim.rearport,,not supported,cmdb_ci_port,comments,direct field,written into the provenance line
+RearPort,deviceUid,dcim.rearport,device,reference,cmdb_ci_port,cmdb_ci,reference,
+RearPort,name,dcim.rearport,name,direct field,cmdb_ci_port,"name, short_description",direct field,
+RearPort,type,dcim.rearport,type,direct field,cmdb_ci_port,model_number,direct field,"the jack type, e.g. 8p8c"
+RearPort,positions,dcim.rearport,positions,direct field,,,not supported,how many front positions map here; no CMDB field
+FrontPort,uid,dcim.frontport,custom_fields.racktrack_uid,custom field,cmdb_ci_port,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+FrontPort,evidence,dcim.frontport,,not supported,cmdb_ci_port,comments,direct field,written into the provenance line
+FrontPort,deviceUid,dcim.frontport,device,reference,cmdb_ci_port,cmdb_ci,reference,
+FrontPort,name,dcim.frontport,name,direct field,cmdb_ci_port,"name, short_description",direct field,
+FrontPort,type,dcim.frontport,type,direct field,cmdb_ci_port,model_number,direct field,
+FrontPort,rearPortUid,dcim.frontport,rear_ports,reference,cmdb_rel_ci,Connects to::Connected by,relationship row,front port to its rear port
+FrontPort,rearPortPosition,dcim.frontport,,not supported,,,not supported,which position on the rear port
+PowerPort,uid,dcim.powerport,custom_fields.racktrack_uid,custom field,cmdb_ci_network_adapter,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+PowerPort,evidence,dcim.powerport,,not supported,cmdb_ci_network_adapter,comments,direct field,written into the provenance line
+PowerPort,deviceUid,dcim.powerport,device,reference,cmdb_ci_network_adapter,cmdb_ci,reference,the device that draws the power
+PowerPort,name,dcim.powerport,name,direct field,cmdb_ci_network_adapter,"name, short_description",direct field,
+PowerOutlet,uid,dcim.poweroutlet,custom_fields.racktrack_uid,custom field,cmdb_ci_pdu,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+PowerOutlet,evidence,dcim.poweroutlet,,not supported,cmdb_ci_pdu,comments,direct field,written into the provenance line
+PowerOutlet,deviceUid,dcim.poweroutlet,device,reference,cmdb_ci_pdu,cmdb_ci,reference,the PDU this outlet is on
+PowerOutlet,name,dcim.poweroutlet,name,direct field,cmdb_ci_pdu,"name, short_description",direct field,
+VLAN,uid,ipam.vlan,custom_fields.racktrack_uid,custom field,,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+VLAN,evidence,ipam.vlan,,not supported,,comments,direct field,written into the provenance line
+VLAN,vid,ipam.vlan,vid,direct field,,,not supported,base ITSM CMDB has no VLAN table
+VLAN,name,ipam.vlan,name,direct field,,,not supported,
+VLAN,siteUid,ipam.vlan,site,reference,,,not supported,
+Prefix,uid,ipam.prefix,custom_fields.racktrack_uid,custom field,cmdb_ci_ip_network_subnet,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+Prefix,evidence,ipam.prefix,,not supported,cmdb_ci_ip_network_subnet,comments,direct field,written into the provenance line
+Prefix,prefix,ipam.prefix,prefix,direct field,cmdb_ci_ip_network_subnet,"name, cidr",direct field,
+Prefix,vlanUid,ipam.prefix,vlan,reference,,,not supported,no native VLAN table to point at
+Prefix,description,ipam.prefix,description,direct field,cmdb_ci_ip_network_subnet,short_description,direct field,
+IPAddress,uid,ipam.ipaddress,custom_fields.racktrack_uid,custom field,cmdb_ci_allocated_ip_address,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+IPAddress,evidence,ipam.ipaddress,,not supported,cmdb_ci_allocated_ip_address,comments,direct field,written into the provenance line
+IPAddress,address,ipam.ipaddress,address,direct field,cmdb_ci_allocated_ip_address,"name, ip_address, ip_version",direct field,
+IPAddress,interfaceUid,ipam.ipaddress,assigned_object_id,reference,cmdb_rel_ci,Contains::Contained by,relationship row,the port holding this address
+Cable,uid,dcim.cable,custom_fields.racktrack_uid,custom field,,correlation_id,direct field,our stable id; what makes a re-scan update rather than duplicate
+Cable,evidence,dcim.cable,status,derived,,comments,direct field,decides connected vs planned
+Cable,a,dcim.cable,a_terminations,direct field,cmdb_rel_ci,Connects to::Connected by,relationship row,"A end, the relationship parent"
+Cable,b,dcim.cable,b_terminations,direct field,cmdb_rel_ci,Connects to::Connected by,relationship row,"B end, the relationship child"
+Cable,type,dcim.cable,type,direct field,,,not supported,cat6 and friends; TNI plugin only
+Cable,color,dcim.cable,color,direct field,,,not supported,
+Cable,label,dcim.cable,label,direct field,,,not supported,
+Cable,length,dcim.cable,length,direct field,,,not supported,TNI plugin only
+Cable,lengthUnit,dcim.cable,length_unit,direct field,,,not supported,
+Cable,description,dcim.cable,description,direct field,,,not supported,
+Cable,status,dcim.cable,status,direct field,,,not supported,connected or planned; no CMDB equivalent

@@ -183,7 +183,7 @@ export function LogsView({ live = true, refreshTick = 0 }) {
   // Wipe every stored log line. Destructive and not undoable, so confirm first.
   const clearLogs = async () => {
     const n = stats?.total ?? logs.length;
-    if (!window.confirm(`Delete all ${n} stored log entries and start fresh?\n\nThis cannot be undone.`)) return;
+    if (!window.confirm(`Delete all ${n} log entries? This cannot be undone.`)) return;
     setClearing(true);
     try {
       const res = await authFetch(apiUrl('/api/logs/clear'), { method: 'POST' });
@@ -210,8 +210,8 @@ export function LogsView({ live = true, refreshTick = 0 }) {
       <div className={styles.tiles}>
         <StatTile label="Total kept" value={stats?.total} />
         <StatTile label="Info"  value={byLevel.info}  tone="info" />
-        <StatTile label="Warn"  value={byLevel.warn}  tone="warn" />
-        <StatTile label="Error" value={(byLevel.error || 0) + (byLevel.fatal || 0)} tone="error" />
+        <StatTile label="Warnings"  value={byLevel.warn}  tone="warn" />
+        <StatTile label="Errors" value={(byLevel.error || 0) + (byLevel.fatal || 0)} tone="error" />
       </div>
 
       <div className={styles.controls}>

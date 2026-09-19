@@ -32,6 +32,33 @@ export default function ConnectionsPage() {
   const [name, setName]             = useState('');
   const [type, setType]             = useState(DEFAULT_TYPE);
   const [secret, setSecret]         = useState(emptySecretFor(DEFAULT_TYPE));
+  // Work out the type from the address, so nobody has to know what their
+  // system is called to connect to it. The answer fills the form; the Type
+  // list stays, so a person can always change it.
+  const [address, setAddress]       = useState('');
+  const [finding, setFinding]       = useState(false);
+  const [foundNote, setFoundNote]   = useState(null);
+  const findOut = async () => {
+    if (!address.trim() || finding) return;
+    setFinding(true);
+    setFoundNote(null);
+    try {
+      const r = await authFetch(apiUrl('/api/connections/detect'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: address.trim() }),
+      });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || 'That address could not be checked.');
+      setType(body.type);
+      setSecret({ ...emptySecretFor(body.type), ...(body.fields || {}) });
+      setFoundNote({ ok: true, text: `${typeLabel(body.type)}. ${body.why}` });
+    } catch (e) {
+      setFoundNote({ ok: false, text: e.message });
+    } finally {
+      setFinding(false);
+    }
+  };
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError]   = useState(null);
   const [openMenuFor, setOpenMenuFor] = useState(null);
@@ -74,6 +101,8 @@ export default function ConnectionsPage() {
     setEditingId(null);
     setName('');
     setType(DEFAULT_TYPE);
+    setAddress('');
+    setFoundNote(null);
     setSecret(emptySecretFor(DEFAULT_TYPE));
     setFormError(null);
     setFormOpen(true);
@@ -158,7 +187,7 @@ export default function ConnectionsPage() {
       {refreshing && (
         <p className={styles.note}>
           <span className={styles.refreshSpinner}/>
-          Pulling fresh data from {active?.name || 'the new connection'}…
+          Refreshing from {active?.name || 'the new connection'}
         </p>
       )}
       {lastRefresh && !refreshing && (
@@ -172,8 +201,7 @@ export default function ConnectionsPage() {
           what kind of thing it is, and the two or three verbs that apply. */}
       {profiles.length === 0 && !serverNetbox ? (
         <div className={styles.empty}>
-          <p>No connections yet.</p>
-          <p className={styles.emptySub}>Add your CMDB or NetBox once and every screen uses it.</p>
+          <p>Add your CMDB or NetBox once and every screen uses it.</p>
         </div>
       ) : (
         <ul className={styles.rows}>
@@ -182,7 +210,7 @@ export default function ConnectionsPage() {
               <div className={styles.rowMain}>
                 <span className={styles.rowName}>RackTrack NetBox</span>
                 <span className={styles.rowType}>
-                  NetBox · in use · provided for every account{serverNetbox.reachable === false ? ' · not reachable right now' : ''}
+                  NetBox · in use · included with RackTrack{serverNetbox.reachable === false ? ' · not reachable' : ''}
                 </span>
               </div>
             </li>
@@ -253,6 +281,33 @@ export default function ConnectionsPage() {
                 />
               </label>
 
+              {!editingId && (
+                <div className={styles.field}>
+                  <span className={styles.fieldLabel}>Address of your system</span>
+                  <div className={styles.findRow}>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder="netbox.example.com or dev12345.service-now.com"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); findOut(); } }}
+                      autoComplete="off"
+                      spellCheck="false"
+                    />
+                    <button type="button" className={styles.findBtn} onClick={findOut}
+                      disabled={finding || !address.trim()}>
+                      {finding ? 'Checking' : 'Find out'}
+                    </button>
+                  </div>
+                  {foundNote && (
+                    <span className={foundNote.ok ? styles.fieldHint : styles.findError} role={foundNote.ok ? undefined : 'alert'}>
+                      {foundNote.text}
+                    </span>
+                  )}
+                </div>
+              )}
+
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>Type</span>
                 <select
@@ -266,7 +321,7 @@ export default function ConnectionsPage() {
                 </select>
                 {editingId && (
                   <span className={styles.fieldHint}>
-                    Type can't change after a connection is created.
+                    Type cannot be changed.
                   </span>
                 )}
               </label>
@@ -292,7 +347,7 @@ export default function ConnectionsPage() {
 
               {editingId && (
                 <p className={styles.editHint}>
-                  Leave the credential fields blank to keep what's already saved.
+                  Leave blank to keep the saved credentials.
                 </p>
               )}
 

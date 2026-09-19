@@ -21,8 +21,27 @@ export default class ErrorBoundary extends Component {
     return { error };
   }
 
+  /**
+   * A page left open across a deployment is running last version's code, and
+   * the first thing it reaches for that has changed throws. There is nothing
+   * the person can do about that, and "Try again" re-renders the same stale
+   * code, so fetch the page once and only once: the flag lives for the tab,
+   * so a genuine fault still stops and shows its message the second time.
+   */
+  static staleReload() {
+    try {
+      const KEY = 'rt_boundary_reloaded_at';
+      const last = Number(window.sessionStorage.getItem(KEY) || 0);
+      if (Date.now() - last < 60000) return false;
+      window.sessionStorage.setItem(KEY, String(Date.now()));
+      window.location.reload();
+      return true;
+    } catch { return false; }
+  }
+
   componentDidCatch(error, info) {
     this.setState({ info });
+    if (ErrorBoundary.staleReload()) return;
     // Keep it in the console for anyone with a debugger attached, and make a
     // best effort to tell the server. Never let the reporting itself throw - // an error handler that crashes is worse than no error handler.
      
@@ -77,12 +96,20 @@ export default class ErrorBoundary extends Component {
           <h1 className={styles.title}>This screen stopped working</h1>
           <p className={styles.body}>
             Something went wrong drawing this page. Your scans and data are safe -
-            this is a display problem, not a lost-work problem.
+            this is a display problem, not a lost-work problem. If the app was
+            updated while this page was open, reloading picks up the new version.
           </p>
 
           <div className={styles.actions}>
             <button type="button" className={styles.primary} onClick={this.reset}>
               Try again
+            </button>
+            <button
+              type="button"
+              className={styles.ghost}
+              onClick={() => { window.location.reload(); }}
+            >
+              Reload the page
             </button>
             <button
               type="button"

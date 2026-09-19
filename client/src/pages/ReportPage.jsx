@@ -60,7 +60,10 @@ async function nb(path, opts = {}) {
 function explain(r, fallback) {
   const raw = String((r.body && r.body.error) || '').trim();
   const msg = raw ? raw[0].toUpperCase() + raw.slice(1) : fallback;
-  if (r.status === 403) return 'Only the account owner can open the NetBox tools for now. Ask them to sign in and open this report.';
+  // Not the owner: an organisation admin or a site manager can open it too, and
+  // on most accounts they are the person actually sitting next to you. Naming
+  // the owner sent people up a chain they did not need to climb.
+  if (r.status === 403) return 'This report is for an admin. Ask yours to open it.';
   if (r.status === 404) return 'This rack could not be found on the NetBox side. Go back to the rack and open Report again.';
   return msg.endsWith('.') ? msg : `${msg}.`;
 }
@@ -483,9 +486,8 @@ export default function ReportPage() {
                 </p>
                 {phoneNet && phoneNet.read > 0 && (
                   <p className={styles.hint}>
-                    This phone read {plural(phoneNet.read, 'switch', 'switches')} on the
-                    Network step ({phoneNet.ports} ports, {phoneNet.up} up). Those readings
-                    have not reached the server, so they are not in this report yet.
+                    This phone read {plural(phoneNet.read, 'switch', 'switches')}, but the
+                    readings have not reached the server yet.
                   </p>
                 )}
                 <Link to={`/results/${rackId}/network`} className={styles.linkBtn}>Open Network</Link>
@@ -509,26 +511,25 @@ export default function ReportPage() {
                   everything there is. */}
               {facts.placesUnsaved && (
                 <p className={styles.proposalNote}>
-                  This rack's places are still a proposal, so nothing the switches said
-                  is in this report yet.{' '}
-                  <Link to={`/results/${rackId}/review`}>Open Review</Link> and confirm
-                  which switch is which box.
+                  Nothing the switches said is in this report yet.{' '}
+                  <Link to={`/results/${rackId}/review`}>Open Review</Link> to confirm which
+                  switch is which box.
                 </p>
               )}
 
               {facts.proposalDevNames.size > 0 && (
                 <p className={styles.proposalNote}>
                   {facts.proposalDevNames.size === 1
-                    ? 'One device below takes its make, model or serial from a switch match nobody has confirmed yet. Open Review and confirm the match, or read that row as a proposal.'
-                    : `${facts.proposalDevNames.size} devices below take their make, model or serial from a switch match nobody has confirmed yet. Open Review and confirm the matches, or read those rows as proposals.`}
+                    ? 'One device below is a proposal. Confirm its switch in Review.'
+                    : `${facts.proposalDevNames.size} devices below are proposals. Confirm their switches in Review.`}
                 </p>
               )}
 
               {anyUnsure && (
                 <p className={styles.proposalNote}>
                   {facts.viewMissing
-                    ? 'The matching could not be loaded, so the values below that came from a switch cannot be shown as confirmed.'
-                    : 'Some values below come from a switch that was matched to a box in this rack. This server does not record who confirmed a match, so the match cannot be shown as confirmed.'}
+                    ? 'The matching could not be loaded, so nothing below is shown as confirmed.'
+                    : 'Nobody is recorded as confirming these matches.'}
                 </p>
               )}
 
@@ -564,8 +565,8 @@ export default function ReportPage() {
                 {(anyProposal || anyUnsure) && (
                   <p className={styles.subLine}>
                     {anyProposal
-                      ? 'Which box each end of these cables is comes from a switch match nobody has confirmed yet.'
-                      : 'Which box each end of these cables is comes from a switch match that cannot be shown as confirmed.'}
+                      ? 'The box at each end rests on a match nobody has confirmed.'
+                      : 'The box at each end rests on a match that cannot be shown as confirmed.'}
                   </p>
                 )}
 
@@ -712,21 +713,9 @@ function DeviceRow({ d, cam, sw, tone = 'switch', open, onToggle }) {
 
         {identity && <p className={styles.said}>{identity}</p>}
 
-        {/* The values above came off a switch that was matched to this box by
-            the machine and by nobody else. Said here, on the row they belong
-            to, because a caveat at the top of a page is not attached to
-            anything. */}
-        {matched && proposal && (
-          <p className={styles.proposalLine}>
-            A proposal, waiting for someone to confirm that this switch is this box.
-          </p>
-        )}
-        {matched && unsure && (
-          <p className={styles.proposalLine}>
-            Matched to a switch. There is no record of anyone confirming that this
-            switch is this box.
-          </p>
-        )}
+        {/* The tag beside the title already says "proposal, not confirmed" or "from a
+            matched switch" on this very row, so a paragraph under it saying the same
+            thing in a sentence was the caveat twice. The tag is the caveat. */}
 
         {stats.length > 0 && (
           <div className={styles.stats}>

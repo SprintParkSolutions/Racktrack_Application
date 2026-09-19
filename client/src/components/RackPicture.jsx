@@ -229,12 +229,12 @@ export default function RackPicture({ devices, size, highlight = null, onPick = 
       </div>
 
       <p className={styles.blankNote}>
-        A blank shelf means no box was detected there, not that the shelf is free.
+        A blank shelf means nothing was detected there.
       </p>
 
-      {group('Seen in the photo but not on a shelf', unplaced)}
-      {group('Two boxes share this shelf in the photo', shared)}
-      {group(`Above U${shelves.length}, not drawn here`, above)}
+      {group('No shelf recorded', unplaced)}
+      {group('Sharing a shelf', shared)}
+      {group(`Above U${shelves.length}`, above)}
 
       <div className={styles.legend}>
         {LEGEND.filter(([cat]) => list.some((d) => categoryOf(d) === cat

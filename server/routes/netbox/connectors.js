@@ -25,8 +25,52 @@ function snapshotOf(scanId) {
   return { snap };
 }
 
-// Literal path first, so it is never read as an :id.
+// Literal paths first, so neither is ever read as an :id.
 router.get('/types', (req, res) => res.json({ types: registry.types() }));
+
+/**
+ * What is at this address?
+ *
+ * Asked while somebody is still filling in the form, before any credentials
+ * exist, so that they do not have to know whether the thing they run is called
+ * NetBox or ServiceNow in order to connect to it. The answer is a suggestion:
+ * the form fills the type in and the person can override it, and signing in is
+ * what actually confirms it.
+ *
+ * An address we must not connect to at all is refused with its own status, not
+ * folded into "could not detect", because the two need different answers from
+ * whoever typed it.
+ */
+router.post('/detect', async (req, res) => {
+  const address = String((req.body || {}).address || '').trim();
+  if (!address) return res.status(400).json({ error: 'Enter the address of your system.' });
+  try {
+    const found = await registry.detect(address, {
+      // RackTrack installed inside the customer's own network reaches their
+      // NetBox on a private address, which is a normal deployment. A hosted
+      // RackTrack cannot, and saying so early is kinder than a timeout.
+      allowPrivate: process.env.RT_CONNECTORS_ALLOW_PRIVATE === '1',
+      allowed: String(process.env.RT_CONNECTORS_ALLOWED_HOSTS || '')
+        .split(',').map((h) => h.trim()).filter(Boolean),
+    });
+    const known = registry.get(found.type);
+    return res.json({
+      type: found.type,
+      label: known ? known.label : found.type,
+      url: found.url,
+      why: found.why,
+      fields: known ? known.fields : [],
+    });
+  } catch (err) {
+    if (err && err.code === 'address_refused') {
+      return res.status(400).json({ error: err.message, code: 'address_refused' });
+    }
+    if (err && err.code === 'no_answer') {
+      return res.status(502).json({ error: err.message, code: 'no_answer' });
+    }
+    return res.status(502).json({ error: `That address could not be checked: ${err.message}` });
+  }
+});
 
 router.get('/', (req, res) => res.json(connectorStore.list()));
 

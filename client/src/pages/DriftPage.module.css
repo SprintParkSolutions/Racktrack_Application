@@ -100,3 +100,42 @@
 .needsSource p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted, #5f6864); }
 .connect { margin-top: 12px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 6px;
   background: #111827; color: #fff; font-size: 14px; font-weight: 600; }
+
+/* Which record this rack was compared against, and why the app believes it is
+   the same rack. One line: a person asks it once, and only once. */
+.against {
+  display: grid;
+  gap: 2px;
+  padding: 12px 16px;
+  margin: 0 0 12px;
+  border-radius: 12px;
+  background: var(--surface-2, #f4f6f5);
+  border-left: 3px solid var(--accent, #0b6a44);
+}
+.againstLabel {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-3, #7a847e);
+}
+.againstName { font-size: 16px; color: var(--text-1, #161a17); }
+.againstWhy { font-size: 13.5px; color: var(--text-2, #59635d); line-height: 1.45; }
+/* What is still open about it: a suggestion nobody has confirmed, a tie, or a
+   rack the record has never heard of. */
+.againstOpen { margin-top: 4px; font-size: 13.5px; color: #8a6d1f; line-height: 1.45; }
+
+/* The last step of all: a person picks from the short list the steps above left. */
+.pick { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border, #e6eae8); }
+.pickLabel {
+  display: block; margin-bottom: 8px; font-size: 11px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-3, #7a847e); font-weight: 700;
+}
+.pickRow { display: flex; flex-wrap: wrap; gap: 8px; }
+.pickBtn {
+  flex: 1 1 auto; min-height: 42px; padding: 0 16px; border: 1px solid #0b6a44;
+  border-radius: 8px; background: var(--bg, #fff); color: #0b6a44;
+  font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer;
+}
+.pickBtn:disabled { border-color: #c9d0cc; color: #949d98; cursor: default; }
+.pickNote { display: block; margin-top: 8px; font-size: 12.5px; color: #66706a; line-height: 1.45; }
+.pickError { margin: 8px 0 0; font-size: 13.5px; color: #9d4a3f; }

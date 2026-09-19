@@ -4,7 +4,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import styles from './DesktopShell.module.css';
 import ThemeToggle from './ThemeToggle.jsx';
 import { useAuth } from '../AuthContext';
-import { usePrimaryNav, NAV_GROUPS, GroundTruthIcon } from '../nav/navLinks.jsx';
+import { usePrimaryNav, NAV_GROUPS } from '../nav/navLinks.jsx';
 import ExternalLink from './ExternalLink.jsx';
 import { ShellHeaderContext } from './ShellHeader.jsx';
 
@@ -109,7 +109,7 @@ const PAGE_TITLE = {
   '/profile':          { title: 'Profile',             sub: 'Account & history' },
   '/history':          { title: 'Scan history',        sub: 'Every rack you have scanned' },
   '/organizations':    { title: 'Organizations',       sub: 'Members, sites & approvals' },
-  '/approvals':        { title: 'Approvals',           sub: 'Moved to RackTrack Approvals' },
+  '/approvals':        { title: 'Changes',             sub: 'Moved to RackTrack Changes' },
   '/setup':            { title: 'Organization settings', sub: 'Datacentres, spaces, approvers and rules' },
   '/connections':      { title: 'Connections',         sub: 'Active data sources' },
   '/results':          { title: 'Scan results',        sub: 'Devices & ports' },
@@ -120,7 +120,6 @@ const PAGE_TITLE = {
   '/dashboard':        { title: 'Operations Console',  sub: 'Live activity, health & server logs' },
   '/multi-rack/new':   { title: 'Scan two racks',      sub: 'Detect both + the cabling between them' },
   '/lab':              { title: 'Lab',                 sub: 'Live switches in the test lab' },
-  '/ground-truth':     { title: 'Ground Truth',        sub: 'Verify what the model detected' },
   '/help':             { title: 'Ask DOT',             sub: 'Answers from verified documentation' },
   '/contact':          { title: 'Contact support',     sub: '' },
 };
@@ -170,7 +169,6 @@ export default function DesktopShell({ children }) {
   const headerCtx = useMemo(() => ({ actionsEl, setBackHandler }), [actionsEl]);
 
   const { user, logout } = useAuth();
-  const isOwner = user?.role === 'owner';
 
   // Shared with the phone's bottom bar - see nav/navLinks.jsx. The two used
   // to keep separate hardcoded lists and drifted apart, which is how Lab and
@@ -244,9 +242,6 @@ export default function DesktopShell({ children }) {
     { to: `/results/${rackId}/topology${gq}`,  label: 'Topology', icon: <TopologyIcon />, end: false },
     { to: `/results/${rackId}${gq}#drift`,     label: 'Drift',    icon: <DriftIcon />,    end: false, active: isDriftView },
     { to: `/switch-info/${rackId}${gq}`,       label: 'Switches', icon: <SwitchesIcon />, end: false },
-    // Ground Truth - owner-only, per this scan. Only reachable here, after a
-    // rack has been analysed (there IS a rackId).
-    ...(isOwner ? [{ to: `/ground-truth/${rackId}`, label: 'Ground Truth', icon: <GroundTruthIcon />, end: false }] : []),
   ] : [];
 
   return createPortal(
@@ -259,7 +254,14 @@ export default function DesktopShell({ children }) {
         </a>
 
         {/* One line per destination, grouped. The description lives in the
-            hover text and in the phone's Menu; in the rail it read as clutter. */}
+            hover text and in the phone's Menu; in the rail it read as clutter.
+
+            This block scrolls on its own so the account row below it is always
+            reachable. When the whole rail scrolled instead, a rack open at a
+            1440x800 viewport needed 1030px and simply hid the end of the chain:
+            Report, Topology, Drift, Switches, Profile and Sign out were all
+            below the fold with nothing to say so. */}
+        <div className={styles.navScroll}>
         {NAV_GROUPS.filter((g) => g.key !== 'account').map((g) => {
           const items = links.filter((l) => l.group === g.key);
           if (!items.length) return null;
@@ -301,6 +303,8 @@ export default function DesktopShell({ children }) {
             </ul>
           </>
         )}
+
+        </div>
 
         <div className={styles.sidebarBottom}>
           {links.filter((l) => l.group === 'account').map((l) => (

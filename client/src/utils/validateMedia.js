@@ -13,7 +13,9 @@ const HEIC_EXT = /\.(heic|heif)$/i;
 // Named once so the audio and unsupported messages cannot drift apart. Earlier
 // wording listed four formats, and testers read that list as the complete set
 // of what was allowed.
-const PHOTO_HINT = 'Upload a rack photo. Any photo format works (JPG, PNG, HEIC, WebP and more).';
+// Naming the four formats promised a complete list it was not, and the sentence
+// that named them was longer than the refusal it followed.
+const PHOTO_HINT = 'Pick a rack photo. Any photo format works.';
 
 export async function validateMedia(file) {
   if (!file) return { ok: false, error: 'No file selected.' };
@@ -55,7 +57,7 @@ export async function validateMedia(file) {
 
   // A file that announces itself as something else entirely (a PDF, a text
   // file, an archive) can be turned away here without a round trip.
-  return { ok: false, error: `Unsupported file type. ${PHOTO_HINT}` };
+  return { ok: false, error: `That is not a photo. ${PHOTO_HINT}` };
 }
 
 async function validateImage(file) {

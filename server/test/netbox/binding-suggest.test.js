@@ -136,7 +136,8 @@ test('a confirmation against this photograph wins outright, whatever the port co
   assert.equal(reasons[1].fromBinding, true);
   assert.equal(reasons[1].fresh, true);
   assert.equal(reasons[1].candidateCount, 1);
-  assert.match(reasons[1].why, /confirmed at the rack as U10 box, matched on its chassis/);
+  assert.match(reasons[1].why, /^confirmed at the rack as U10 box$/,
+    'the box name is the whole answer; which alias matched it is the matcher\'s business');
   assert.deepStrictEqual(reasons[1].evidence.map((e) => e.rank), [1]);
 });
 
@@ -178,8 +179,8 @@ test('a photograph that contradicts the confirmation reports a replacement, and 
   const { matches, reasons } = ask(later, [s]);
   assert.equal(matches[1], null);
   assert.equal(reasons[1].confidence, 'unidentified');
-  assert.match(reasons[1].why, /is not the box that is there now/);
-  assert.match(reasons[1].why, /TL-SG2428P.*WS-C2960X/);
+  assert.match(reasons[1].why, /Confirm the box again before anything is written/);
+  assert.match(reasons[1].why, /WS-C2960X.*TL-SG2428P/);
 });
 
 test('a binding to a box this photograph does not show is a note, not a veto', () => {
@@ -233,7 +234,7 @@ test('a confirmation found only by a name or an address is named, and bound to n
   const { matches, reasons } = ask(snap, [thin]);
   assert.equal(matches[1], 'dev:a', 'scoring still places it');
   assert.equal(reasons[1].fromBinding, false, 'but not on the strength of a name');
-  assert.ok(reasons[1].notes.some((n) => /did not publish/.test(n)),
+  assert.ok(reasons[1].notes.some((n) => /an earlier confirmation/.test(n)),
     `say the confirmation exists, got ${JSON.stringify(reasons[1].notes)}`);
 });
 
@@ -249,7 +250,7 @@ test('a binding takes its box out of the running for every other switch', () => 
   const { matches, reasons } = ask(snap, [one, two]);
   assert.equal(matches[1], 'dev:a');
   assert.equal(matches[2], null);
-  assert.match(reasons[2].why, /no box in this rack looks like it/);
+  assert.match(reasons[2].why, /no box in this photo has the right number of ports/);
 });
 
 // ── 2. ties are blank ────────────────────────────────────────────────────────
@@ -271,7 +272,7 @@ test('two identical switches and two identical boxes: both blank, with what woul
     assert.equal(reasons[id].candidateCount, 2);
     assert.equal(reasons[id].margin, 0);
     assert.match(reasons[id].why, /cannot be told apart/);
-    assert.match(reasons[id].why, /serial number, a chassis address or somebody at the rack/);
+    assert.match(reasons[id].why, /Read the serial off one, or confirm the box at the rack/);
   }
 });
 
@@ -355,7 +356,7 @@ test('a multi-shelf chassis switch is not deleted by a class ceiling', () => {
   const snap = snapshotOf([{ uid: 'dev:a', name: 'U10 chassis', ports: 48, units: 7, cvClass: 'Switch' }]);
   const { matches, reasons } = ask(snap, [sw({ id: 1, ports: 48 })]);
   assert.equal(matches[1], 'dev:a');
-  assert.ok(reasons[1].notes.some((n) => /usually 1 to 2 rack units/.test(n)),
+  assert.ok(reasons[1].notes.some((n) => /7 rack units tall/.test(n)),
     `the size should be reported, got ${JSON.stringify(reasons[1].notes)}`);
 });
 
@@ -385,7 +386,8 @@ test('a stack matches the box one of its members sits in', () => {
     members: [{ serial: 'FOC1' }, { serial: 'FOC2' }] });
   const { matches, reasons } = ask(snap, [s]);
   assert.equal(matches[1], 'dev:a');
-  assert.match(reasons[1].why, /one member of a stack of 2/);
+  assert.ok(reasons[1].notes.some((n) => /one unit of a stack of 2/.test(n)),
+    `the stack should still be reported, got ${JSON.stringify(reasons[1].notes)}`);
 });
 
 test('a stack needs enough boxes in the rack to sit in', () => {
@@ -394,7 +396,7 @@ test('a stack needs enough boxes in the rack to sit in', () => {
     members: [{ serial: 'FOC1' }, { serial: 'FOC2' }, { serial: 'FOC3' }] });
   const { matches, reasons } = ask(snap, [s]);
   assert.equal(matches[1], null);
-  assert.match(reasons[1].why, /stack of 3 separate units and this rack has only 1 box/);
+  assert.match(reasons[1].why, /stack of 3 units and only 1 box here could hold one/);
 });
 
 test('chassis rows with no separate serials are not a stack', () => {
@@ -406,7 +408,7 @@ test('chassis rows with no separate serials are not a stack', () => {
   const { matches, reasons } = ask(snap, [s]);
   assert.equal(matches[1], 'dev:a');
   assert.match(reasons[1].why, /exact 48 ports/);
-  assert.ok(reasons[1].notes.some((n) => /2 chassis entries/.test(n)));
+  assert.ok(reasons[1].notes.some((n) => /reports 2 units but gives only one serial/.test(n)));
 });
 
 // ── 5. one box, one switch ───────────────────────────────────────────────────
@@ -422,8 +424,8 @@ test('two switches that both read as one box both go blank', () => {
   const { matches, reasons } = ask(snap, [one, two]);
   assert.equal(matches[1], null);
   assert.equal(matches[2], null);
-  assert.match(reasons[1].why, /sw-two read as the same box as this one/);
-  assert.match(reasons[2].why, /sw-one read as the same box as this one/);
+  assert.match(reasons[1].why, /sw-two could be this box too/);
+  assert.match(reasons[2].why, /sw-one could be this box too/);
 });
 
 // ── 6. determinism ───────────────────────────────────────────────────────────
@@ -530,7 +532,7 @@ test('a possible match is shown and written nowhere', () => {
   assert.deepStrictEqual(summary.changes, []);
   assert.equal(summary.written, 0);
   assert.equal(summary.withheld.length, 1);
-  assert.match(summary.withheld[0].why, /shown, not written/);
+  assert.match(summary.withheld[0].why, /not written yet/);
 });
 
 test('a confirmed match writes the switch facts onto the box, and leaves the box itself alone', () => {

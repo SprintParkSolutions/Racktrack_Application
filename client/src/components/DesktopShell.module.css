@@ -38,8 +38,25 @@
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   border-right: 1px solid rgba(0,0,0,0.08);
   z-index: 5;
-  overflow-y: auto;
+  /* The rail itself no longer scrolls; .navScroll inside it does. When the
+     whole rail scrolled, the account row scrolled away with everything else. */
+  overflow-y: hidden;
 }
+
+/* The destinations and the rack chain.
+   `0 1 auto` on purpose, not `1 1 auto`: it takes the height it needs when the
+   list is short, so a technician's five rows do not get stretched and do not
+   push the account row to the floor, and it shrinks and scrolls when the list
+   is long, so a rack open on a laptop keeps Report, Switches, Profile and Sign
+   out reachable instead of hiding them below the fold. */
+.navScroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.navScroll::-webkit-scrollbar { width: 4px; }
+.navScroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
 :global([data-theme='light']) .sidebar {
@@ -317,7 +334,20 @@
 :global([data-theme='light']) .navLink:hover { background: rgba(0, 0, 0, 0.045); color: #121212; }
 :global([data-theme='light']) .navLink.active { background: rgba(18, 18, 18, 0.07); font-weight: 600; }
 :global([data-theme='light']) .navLink.active::before { left: 2px; top: 10px; bottom: 10px; width: 2px; }
-.sidebarBottom { padding: 12px 4px 2px; gap: 6px; }
+/* The account row follows the last destination instead of being pinned to the
+   floor. `margin-top: auto` suits a rail that is nearly full, and an owner's
+   twelve rows nearly fill one. A technician has five. Measured at 1440x900 on
+   the live site, auto resolved to 493px for a technician against 179px for the
+   owner: the last row ended at y=342 and the next thing on the rail was this
+   block's hairline at y=835, so more than half the rail was blank with a rule
+   floating in the middle of it. A fixed gap reads as a list that ended, which
+   is what it is, and it also stops the foot being shoved below the fold on a
+   viewport under about 700px tall.
+
+   Side padding goes to 0 so the row inherits the rail's own 14px gutter. With
+   4px of its own it sat 4px right of every other row, which put a step in the
+   one icon column the eye follows down the rail. */
+.sidebarBottom { margin-top: 32px; padding: 12px 0 2px; gap: 6px; }
 .navLinkFoot { width: auto; flex: 1; margin-bottom: 0; min-width: 0; }
 .signOut { padding: 8px; border-radius: 9px; }
 .signOut svg { width: 18px; height: 18px; }

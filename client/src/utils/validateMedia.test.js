@@ -148,7 +148,9 @@ describe('dispatch', () => {
     // as the complete set and asked whether their format was supported. The
     // server accepts every photo format now, so the message must say so.
     const r = await validateMedia(file('rack.pdf', 'application/pdf'));
-    expect(r.error).toBe('Unsupported file type. Upload a rack photo. Any photo format works (JPG, PNG, HEIC, WebP and more).');
+    // Shorter again: "Unsupported file type" was the wire's word for it, and the
+    // four formats in brackets were the list this test exists to forbid.
+    expect(r.error).toBe('That is not a photo. Pick a rack photo. Any photo format works.');
     expect(r.error).not.toMatch(/ - /);
   });
 

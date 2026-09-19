@@ -305,3 +305,13 @@
     padding: 28px 32px 64px;
   }
 }
+
+/* The address and the button that works out what it is, on one line. */
+.findRow { display: flex; gap: 8px; align-items: stretch; }
+.findRow .input { flex: 1; min-width: 0; }
+.findBtn {
+  flex: none; padding: 0 14px; border-radius: 10px; border: 1px solid var(--md-outline-variant, #d0d0d0);
+  background: var(--raised, #fff); color: inherit; font: inherit; font-weight: 600; cursor: pointer;
+}
+.findBtn:disabled { opacity: 0.5; cursor: default; }
+.findError { font-size: 0.8rem; color: var(--md-error, #b3261e); }

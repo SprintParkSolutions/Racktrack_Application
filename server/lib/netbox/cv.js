@@ -7,7 +7,7 @@
  * imported into ours.
  *
  * IMPORTANT: the working directory must be the engine root. pipeline/port.py
- * resolves its model with a RELATIVE path (Models/ports_9.pt), so running it
+ * resolves its model with a RELATIVE path (Models/ports_13.pt), so running it
  * from anywhere else silently fails to find the weights.
  */
 const { spawn } = require('child_process');
@@ -302,6 +302,43 @@ function extractPorts(d) {
 }
 
 /**
+ * The uid each device had in the previous reading of the SAME photograph.
+ *
+ * Only used when a stored photo is analysed again. The detector is the same and
+ * the picture is the same, so a box it drew last time and a box it draws now
+ * over the same pixels are the same physical device, whatever U number the unit
+ * grid gives it. Matching is one to one, best overlap first, and a pair has to
+ * share most of their area: a box that only grazes an old one is a new device.
+ *
+ * Returns Map(index in map.devices -> previous uid).
+ */
+const CARRY_MIN_IOU = 0.5;
+function carryIdentity(devices, previous) {
+  const out = new Map();
+  const old = ((previous && previous.devices) || [])
+    .map((d) => ({ uid: d.uid, box: d.provenance && d.provenance.box }))
+    .filter((d) => d.uid && Array.isArray(d.box) && d.box.length === 4);
+  if (!old.length) return out;
+  const pairs = [];
+  devices.forEach((d, i) => {
+    if (NOT_A_DEVICE.has(d.class_name)) return;
+    if (!Array.isArray(d.box) || d.box.length !== 4) return;
+    for (const o of old) {
+      const v = iou(d.box.map(Number), o.box.map(Number));
+      if (v >= CARRY_MIN_IOU) pairs.push({ i, uid: o.uid, v });
+    }
+  });
+  pairs.sort((a, b) => b.v - a.v);
+  const takenOld = new Set();
+  for (const p of pairs) {
+    if (out.has(p.i) || takenOld.has(p.uid)) continue;
+    out.set(p.i, p.uid);
+    takenOld.add(p.uid);
+  }
+  return out;
+}
+
+/**
  * Detection output -> NetBox-shaped snapshot.
  *
  * `siteName` and `rackName` are the operator's to state. A human looking at a
@@ -335,7 +372,7 @@ function extractPorts(d) {
  */
 function toSnapshot(map, {
   rackId, rackKey = null, siteName, rackName, uHeight = null, scannedAt = '',
-  recordBinding = null, recordMatch = null,
+  recordBinding = null, recordMatch = null, previous = null,
 }) {
   const key = rackKey || rackId;
   const aliasOf = rackKey && rackKey !== rackId ? `rack:${rackId}` : null;
@@ -357,7 +394,16 @@ function toSnapshot(map, {
   const usedUids = new Set();
   let unplacedN = 0;
 
-  for (const d of map.devices || []) {
+  // Who each box was last time, when this is the same photograph read again.
+  // A device's uid is built from its U, so a better unit grid that numbers the
+  // rack differently would otherwise hand the uid "dev:<rack>:u13" - the Router
+  // NetBox already holds - to whichever box now lands on U13, and quietly turn
+  // the Router's record into a Switch. It happened in a dry run on the demo rack
+  // the first time the trained unit model was applied to it.
+  const carried = carryIdentity(map.devices || [], previous);
+  for (const uid of carried.values()) usedUids.add(uid);
+
+  for (const [mapIndex, d] of (map.devices || []).entries()) {
     // A network box with fewer than ten ports is a router, not a switch.
     // The same rule as pipeline/runner.py and server/app.js; it has to hold
     // here too, because this snapshot is what the report and NetBox read,
@@ -377,12 +423,28 @@ function toSnapshot(map, {
     // sfp/console/other ports come back as arrays of detected ports, not counts.
     const sfps = Array.isArray(d.sfp_ports) ? d.sfp_ports.length : Number(d.sfp_ports || 0);
 
-    // A device name must be unique per site in NetBox. A placed device is named
-    // by its U, which is already unique; an unplaced one gets a running number
-    // so two "Unidentified" boxes cannot collide on write.
-    let label;
-    if (pos !== null) label = d.label || `${cls} U${pos}`;
-    else { unplacedN += 1; label = d.label ? `${d.label} (${unplacedN})` : `${cls} (unplaced ${unplacedN})`; }
+    // A device name must be unique per SITE in NetBox, and a U is only unique
+    // within a RACK. That is the whole bug: two racks in one site each have a
+    // U12, so "Switch U12" collided and NetBox refused the write with "Device
+    // name must be unique per site." It is not hypothetical - it is why three
+    // devices of plan 52 were never written, with RK-3CD81888 and RK-B4DE04B1
+    // both sitting in the site called Default.
+    //
+    // So a placed device carries the rack it is placed in. A name the camera
+    // actually read off the faceplate is left alone: it is the customer's own
+    // name for the box and a better one than anything built from a position.
+    // `base` is what the uid is built from and must not move: a placed device's
+    // uid is its position, an unplaced one's is this slug, and an object whose
+    // uid changes stops being the same object to NetBox. `label` is only the
+    // name, so the rack can be added there and nowhere else.
+    const rackLabel = rackName || rackId;
+    let base;
+    if (pos !== null) base = d.label || `${cls} U${pos}`;
+    else { unplacedN += 1; base = d.label ? `${d.label} (${unplacedN})` : `${cls} (unplaced ${unplacedN})`; }
+    // A name the camera read off the faceplate is left alone: it is the
+    // customer's own name for the box, and better than anything built from a
+    // position. Everything else carries the rack, which is what makes it unique.
+    const label = d.label ? base : `${base} ${rackLabel}`;
 
     // One U holds one device per face. If the engine's spans overlap it is a
     // detection artefact: the first keeps the slot, the second is exported
@@ -390,7 +452,7 @@ function toSnapshot(map, {
     const clash = units.find((u) => takenU.has(u));
     if (pos !== null && clash !== undefined) {
       snap.conflicts.push(Conflict({
-        subjectUid: `dev:${key}:${slug(label)}`, field: 'position',
+        subjectUid: `dev:${key}:${slug(base)}`, field: 'position',
         cvSays: `U${pos}`,
         note: `CV placed both "${takenU.get(clash)}" and "${label}" at U${clash}. `
             + 'One U holds one device per face. Exported unplaced pending review.',
@@ -411,7 +473,15 @@ function toSnapshot(map, {
       evIdent = Evidence.CV_OCR;          // OCR read it off the bezel
     } else {
       const noun = cls === 'Unidentified' ? 'Device' : cls;
-      model = `Unidentified ${noun}${ports ? ` (${ports}-port)` : ''}`;
+      // The height is part of the name when it is more than one U. A device
+      // type is shared by every rack in NetBox, and its height is a property of
+      // the type, so "this panel is 2U" written onto the one shared type makes
+      // NetBox check every other panel of that type for room above it - and
+      // refuse, because they were placed as 1U. That refusal is what killed
+      // plan 52. A 2U panel we cannot identify is simply a different thing from
+      // a 1U one we cannot identify, so it gets its own type.
+      const detail = [ports ? `${ports}-port` : null, span > 1 ? `${span}U` : null].filter(Boolean);
+      model = `Unidentified ${noun}${detail.length ? ` (${detail.join(', ')})` : ''}`;
       evIdent = Evidence.CV_ONLY;
     }
 
@@ -432,8 +502,11 @@ function toSnapshot(map, {
       snap.deviceRoles.push(DeviceRole(observed(uid, Evidence.CV_ONLY), { name: cls, slug: slug(cls) }));
     }
 
-    let devUid = pos !== null ? `dev:${key}:u${pos}` : `dev:${key}:${slug(label)}`;
-    if (usedUids.has(devUid)) devUid = `${devUid}:${slug(label)}`;
+    let devUid = carried.get(mapIndex) || null;
+    if (!devUid) {
+      devUid = pos !== null ? `dev:${key}:u${pos}` : `dev:${key}:${slug(base)}`;
+      if (usedUids.has(devUid)) devUid = `${devUid}:${slug(base)}`;
+    }
     usedUids.add(devUid);
 
     snap.devices.push(Device(
@@ -469,24 +542,60 @@ function toSnapshot(map, {
     // the disagreement is recorded rather than smoothed over: two ports
     // reading as one number is a detection problem for a person to look at.
     const namedOnDevice = new Map();
+
+    // A port's identity on a re-read is the number printed beside it, not its
+    // place in the detection list. The uid used to be the place, and a second
+    // reading of the same photograph lists the ports in a different order, so
+    // uid ":6" named a different physical port each time: every port looked
+    // renamed, and the renames could not be applied, because the old records
+    // - including ports this reading did not see at all, which are never
+    // deleted - still held the numbers the new ones wanted. On the demo rack
+    // that was 120 refused renames in one write. So a port on a device carried
+    // over from the previous reading inherits the record of the old port with
+    // the same printed number. Only a number actually READ is trusted for this;
+    // a fallback name made up for a duplicate is not a reading of anything.
+    const oldPorts = carried.has(mapIndex)
+      ? ((previous && previous.interfaces) || []).filter((i) => i.deviceUid === devUid) : [];
+    const oldByName = new Map(oldPorts.map((i) => [String(i.name), i.uid]));
+    const oldUids = new Set(oldPorts.map((i) => i.uid));
+    const usedPortUids = new Set();
+
     extractPorts(d).forEach((port, idx) => {
       const read = port.index != null ? String(port.index) : null;
       let portName = read || String(idx + 1);
+      let duplicateOf = null;
       if (namedOnDevice.has(portName)) {
-        const first = namedOnDevice.get(portName);
+        duplicateOf = namedOnDevice.get(portName);
         portName = String(idx + 1);
+      }
+      if (!namedOnDevice.has(portName)) namedOnDevice.set(portName, idx + 1);
+
+      let portUid = null;
+      const inherited = read !== null && portName === read ? oldByName.get(portName) : undefined;
+      if (inherited && !usedPortUids.has(inherited)) portUid = inherited;
+      if (!portUid) {
+        // A port that inherits nothing never takes over another port's record:
+        // not one some other port here inherits, and not one an unseen port
+        // still carries.
+        portUid = `if:${devUid}:${idx + 1}`;
+        for (let n = 1; oldUids.has(portUid) || usedPortUids.has(portUid); n += 1) {
+          portUid = `if:${devUid}:${idx + 1}.${n}`;
+        }
+      }
+      usedPortUids.add(portUid);
+
+      if (duplicateOf !== null) {
         snap.conflicts.push(Conflict({
-          subjectUid: `if:${devUid}:${idx + 1}`, field: 'name',
+          subjectUid: portUid, field: 'name',
           cvSays: read,
           note: `CV read two ports on "${label}" as number ${read}: the one at `
-              + `place ${first} and the one at place ${idx + 1}. One device holds one `
+              + `place ${duplicateOf} and the one at place ${idx + 1}. One device holds one `
               + `port of each name, so the second is recorded as ${portName} `
               + 'pending review.',
         }));
       }
-      if (!namedOnDevice.has(portName)) namedOnDevice.set(portName, idx + 1);
       snap.interfaces.push(Interface(
-        observed(`if:${devUid}:${idx + 1}`, Evidence.CV_ONLY,
+        observed(portUid, Evidence.CV_ONLY,
           { category: port.category, status: port.status, synthesized: port.synthesized }),
         { deviceUid: devUid, name: portName, type: port.type }));
     });
@@ -498,5 +607,6 @@ function toSnapshot(map, {
 }
 
 module.exports = {
+  carryIdentity,
   extractPorts, iou, engineStatus, runDetect, toSnapshot, uPosition, slug,
   imageHash, hamming, similarity, ENGINE_DIR, PYTHON };

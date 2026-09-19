@@ -60,6 +60,30 @@ const humanizeAction = (a) =>
 
 const labelFor = (a) => ACTION_LABELS[a] || humanizeAction(a);
 
+/* The audit log stores a code, not a sentence. This screen printed the code
+   straight out, so the operations console read "no_token", "unknown_token",
+   "revoked" - the product's own status page speaking to an operator in the
+   field names of its auth module. Most of these are not faults at all: a
+   session that ran out is what is supposed to happen to a session.
+
+   Anything not in this list falls through unchanged rather than being hidden,
+   because a code nobody has named yet is still better than nothing. */
+const ERROR_WORDS = {
+  no_token: 'Signed out, no session to refresh',
+  expired: 'Session expired',
+  revoked: 'Session was signed out elsewhere',
+  unknown_token: 'Session no longer recognised',
+  deactivated: 'Account is deactivated',
+  user_inactive: 'Account is not active',
+  missing_fields: 'Sign-in form was incomplete',
+  bad_credentials: 'Wrong username or password',
+};
+const errorWords = (code) => {
+  if (!code) return 'No detail recorded';
+  const k = String(code).trim();
+  return ERROR_WORDS[k] || k.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+};
+
 // audit_log timestamps are UTC "YYYY-MM-DD HH:MM:SS" (no zone) → parse as UTC.
 function parseTs(ts) {
   if (!ts) return null;
@@ -180,14 +204,14 @@ function OperationsView({ live = true, refreshTick = 0 }) {
                 <div className={styles.feedBody}>
                   <div className={styles.feedLine}>
                     <span className={styles.feedUser}>{e.username || 'guest'}</span>
-                    {e.actor_id
-                      ? <span className={styles.feedId}>{e.actor_id}</span>
-                      : e.guest ? <span className={styles.feedGuest}>not signed in</span> : null}
+                    {/* The username is beside it; the raw actor id named nobody. */}
+                    {!e.actor_id && e.guest ? <span className={styles.feedGuest}>not signed in</span> : null}
                     <span className={styles.feedAction}>{labelFor(e.action)}</span>
                     {e.org && <span className={styles.feedOrg}>{e.org}</span>}
                   </div>
                   {e.status === 'fail' && e.error && <div className={styles.feedError}>{e.error}</div>}
-                  {e.target_id && e.status !== 'fail' && <div className={styles.feedTarget}>{e.target_id}</div>}
+                  {/* A raw object id under every successful row said nothing. The
+                      failure line above it stays. */}
                 </div>
                 <span className={styles.feedTime}>{relTime(e.ts)}</span>
               </div>
@@ -207,13 +231,13 @@ function OperationsView({ live = true, refreshTick = 0 }) {
                     <span className={styles.errorAction}>{labelFor(e.action)}</span>
                     <span className={styles.feedTime}>{relTime(e.ts)}</span>
                   </div>
-                  <div className={styles.errorMsg}>{e.error}</div>
+                  <div className={styles.errorMsg}>{errorWords(e.error)}</div>
                   <div className={styles.errorWho}>
                     {e.username || 'anonymous'}{e.org ? ` · ${e.org}` : ''}
                   </div>
                 </div>
               ))}
-              {!(data?.errors || []).length && <div className={styles.empty}>No errors. 🎉</div>}
+              {!(data?.errors || []).length && <div className={styles.empty}>No errors.</div>}
             </div>
           </section>
 
@@ -389,9 +413,11 @@ function OperationsView({ live = true, refreshTick = 0 }) {
   );
 }
 
+// No per-tab subtitle: each described in a sentence what the tab beneath it was
+// already showing, and the tab's own label named it.
 const TABS = [
-  { key: 'ops',  label: 'Operations', sub: "Everything happening across RackTrack - who's scanning, what's working, what's failing." },
-  { key: 'logs', label: 'Logs',       sub: 'Live application log - email delivery, errors, and requests as the server records them.' },
+  { key: 'ops',  label: 'Operations' },
+  { key: 'logs', label: 'Logs' },
 ];
 
 // The owner console: one place for all operations AND logs. A shared header
@@ -401,7 +427,6 @@ export default function DashboardPage() {
   const [tab,  setTab]  = useState('ops');
   const [live, setLive] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
-  const active = TABS.find(t => t.key === tab) || TABS[0];
 
   return (
     <div className={styles.page}>
@@ -424,7 +449,6 @@ export default function DashboardPage() {
         <BackButton fallback="/" />
         <div>
           <h1 className={styles.title}>Operations Console</h1>
-          <p className={styles.subtitle}>{active.sub}</p>
         </div>
         <div className={styles.headerRight}>
           <button

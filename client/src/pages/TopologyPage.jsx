@@ -323,7 +323,7 @@ function TopologyInner({ rackId, embedded }) {
       <>
         <div className={styles.error}>Topology is being prepared</div>
         <div className={styles.errorHint}>
-          The topology snapshot for this rack isn't ready yet - it generates in the background after a scan. It should appear on its own; tap Retry if it doesn't, or rescan to regenerate it.
+          Not ready yet. Tap Retry in a moment, or scan the rack again.
         </div>
         <button
           type="button"
@@ -612,7 +612,7 @@ function HoverInfoCard({ info }) {
 
 function SceneOverlay({ traceMode }) {
   const hint = traceMode
-    ? 'TRACE MODE · click two devices to find the cable path between them'
+    ? 'Tap two devices to trace the cable between them'
     : 'right click and drag to orbit · scroll to zoom · zoom in to switch to hand-pan';
   return (
     <div className={styles.sceneOverlay} aria-hidden="true">
