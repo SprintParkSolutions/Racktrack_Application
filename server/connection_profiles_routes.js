@@ -55,6 +55,43 @@ function safeAsync(handler) {
 router.use('/api/connections', requireAuth);
 
 // GET /api/connections — list
+// What is at this address? Asked from the Data sources form before any
+// credentials exist, so nobody has to know whether what they run is called
+// NetBox or ServiceNow to connect to it. Nothing is stored; the answer fills in
+// the form and the person can still change it, and signing in confirms it.
+// The address is checked before anything is sent to it (lib/safe_address.js):
+// never a cloud metadata address, never a private one unless this installation
+// says so, never plain http to a public host, and every redirect judged too.
+const { detect } = require('./lib/netbox/connectors/detect');
+// The connector registry's names, as this page's profile types.
+const PROFILE_TYPE = { netbox: 'netbox', servicenow: 'servicenow', rest: 'generic_rest' };
+router.post('/api/connections/detect', safeAsync(async (req, res) => {
+  const address = String((req.body || {}).address || '').trim();
+  if (!address) return res.status(400).json({ error: 'Enter the address of your system.' });
+  try {
+    const found = await detect(address, {
+      allowPrivate: process.env.RT_CONNECTORS_ALLOW_PRIVATE === '1',
+      allowed: String(process.env.RT_CONNECTORS_ALLOWED_HOSTS || '')
+        .split(',').map((h) => h.trim()).filter(Boolean),
+    });
+    const type = PROFILE_TYPE[found.type] || 'generic_rest';
+    const fields = {};
+    if (type === 'servicenow') {
+      // This page asks ServiceNow for its instance id, not a URL.
+      const host = new URL(found.url).hostname;
+      const m = host.match(/^([a-z0-9-]+)\.service-?now\.com$/i);
+      fields.instance = m ? m[1] : host;
+    } else {
+      fields.base_url = found.url;
+    }
+    return res.json({ type, url: found.url, why: found.why, fields });
+  } catch (err) {
+    if (err && err.code === 'address_refused') return res.status(400).json({ error: err.message, code: err.code });
+    if (err && err.code === 'no_answer') return res.status(502).json({ error: err.message, code: err.code });
+    return res.status(502).json({ error: `That address could not be checked: ${err.message}` });
+  }
+}));
+
 router.get('/api/connections', safeAsync(async (req, res) => {
   res.json({
     ok: true,

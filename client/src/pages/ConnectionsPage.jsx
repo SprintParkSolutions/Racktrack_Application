@@ -32,6 +32,33 @@ export default function ConnectionsPage() {
   const [name, setName]             = useState('');
   const [type, setType]             = useState(DEFAULT_TYPE);
   const [secret, setSecret]         = useState(emptySecretFor(DEFAULT_TYPE));
+  // Work out the type from the address, so nobody has to know what their
+  // system is called to connect to it. The answer fills the form; the Type
+  // list stays, so a person can always change it.
+  const [address, setAddress]       = useState('');
+  const [finding, setFinding]       = useState(false);
+  const [foundNote, setFoundNote]   = useState(null);
+  const findOut = async () => {
+    if (!address.trim() || finding) return;
+    setFinding(true);
+    setFoundNote(null);
+    try {
+      const r = await authFetch(apiUrl('/api/connections/detect'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: address.trim() }),
+      });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || 'That address could not be checked.');
+      setType(body.type);
+      setSecret({ ...emptySecretFor(body.type), ...(body.fields || {}) });
+      setFoundNote({ ok: true, text: `${typeLabel(body.type)}. ${body.why}` });
+    } catch (e) {
+      setFoundNote({ ok: false, text: e.message });
+    } finally {
+      setFinding(false);
+    }
+  };
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError]   = useState(null);
   const [openMenuFor, setOpenMenuFor] = useState(null);
@@ -74,6 +101,8 @@ export default function ConnectionsPage() {
     setEditingId(null);
     setName('');
     setType(DEFAULT_TYPE);
+    setAddress('');
+    setFoundNote(null);
     setSecret(emptySecretFor(DEFAULT_TYPE));
     setFormError(null);
     setFormOpen(true);
@@ -251,6 +280,33 @@ export default function ConnectionsPage() {
                   required
                 />
               </label>
+
+              {!editingId && (
+                <div className={styles.field}>
+                  <span className={styles.fieldLabel}>Address of your system</span>
+                  <div className={styles.findRow}>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder="netbox.example.com or dev12345.service-now.com"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); findOut(); } }}
+                      autoComplete="off"
+                      spellCheck="false"
+                    />
+                    <button type="button" className={styles.findBtn} onClick={findOut}
+                      disabled={finding || !address.trim()}>
+                      {finding ? 'Checking' : 'Find out'}
+                    </button>
+                  </div>
+                  {foundNote && (
+                    <span className={foundNote.ok ? styles.fieldHint : styles.findError} role={foundNote.ok ? undefined : 'alert'}>
+                      {foundNote.text}
+                    </span>
+                  )}
+                </div>
+              )}
 
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>Type</span>
