@@ -461,8 +461,13 @@ function disagreements(row, shown) {
   if (text(want.assetTag) && identity.normalise(want.assetTag) !== identity.normalise(row.asset_tag)) {
     say('the asset tag', text(want.assetTag), text(row.asset_tag));
   }
-  if (num(want.position) !== null && num(want.position) !== num(row.position)) {
-    say('the shelf', num(want.position), num(row.position));
+  // A shelf of zero is not a shelf: NetBox numbers a rack's units from one,
+  // and a rack itself has none at all. A binding that kept a zero - which is
+  // what a rack's own row gave - read as "the shelf was 0 and is now null" and
+  // refused the very answer the person had just given.
+  const shelf = num(want.position);
+  if (shelf !== null && shelf !== 0 && shelf !== num(row.position)) {
+    say('the shelf', shelf, num(row.position));
   }
   if (num(want.rackId) !== null && num(want.rackId) !== num(idOf(row.rack))) {
     say('the rack it is in', num(want.rackId), num(idOf(row.rack)));

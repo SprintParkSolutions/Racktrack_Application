@@ -326,15 +326,22 @@ async function recordBindingFor(req, {
       if (hit.none) return { error: hit.why };
       return { row: hit.row };
     };
-    const shownFromRow = (row) => ({
-      name: row.name ?? null,
-      facilityId: row.facility_id ?? null,
-      serial: row.serial ?? null,
-      assetTag: row.asset_tag ?? null,
-      position: row.position ?? null,
-      rackId: row.rack && typeof row.rack === 'object' ? row.rack.id : row.rack ?? null,
-      siteId: row.site && typeof row.site === 'object' ? row.site.id : row.site ?? null,
-    });
+    // What the person was reading when they answered. A rack and a box are
+    // shown different things, because they ARE different things: a box sits on
+    // a shelf inside a rack, and a rack sits at a site and has neither.
+    const shownFromRow = (row, { inside = true } = {}) => {
+      const shown = {
+        name: row.name ?? null,
+        facilityId: row.facility_id ?? null,
+        serial: row.serial ?? null,
+        assetTag: row.asset_tag ?? null,
+        siteId: row.site && typeof row.site === 'object' ? row.site.id : row.site ?? null,
+      };
+      if (!inside) return shown;
+      shown.position = row.position ?? null;
+      shown.rackId = row.rack && typeof row.rack === 'object' ? row.rack.id : row.rack ?? null;
+      return shown;
+    };
 
     const askedRack = bindings.asNetboxId(said.rackNetboxId);
     if (client && askedRack !== null) {
@@ -342,7 +349,7 @@ async function recordBindingFor(req, {
       if (hit.error) {
         return { error: `Record ${askedRack} cannot be this rack: ${hit.error}` };
       }
-      Object.assign(rackShown, shownFromRow(hit.row));
+      Object.assign(rackShown, shownFromRow(hit.row, { inside: false }));
     } else if (askedRack !== null) {
       checked = false;
     }

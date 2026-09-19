@@ -297,3 +297,23 @@ test('a named object that has gone is refused rather than created around', async
   assert.equal(out.none, true);
   assert.match(out.why, /nothing at id 7/);
 });
+
+// ── a rack has no shelf ─────────────────────────────────────────────────────
+//
+// A record binding keeps what the person was reading, and the check refuses the
+// binding when the live row no longer matches it. A rack's own row has no
+// position: it is not mounted in anything. The stored answer kept a zero for it
+// and the live row gave null, so confirming "this is our RACK-1" was refused
+// with "the shelf was 0 and is now null" - on the customer's real rack, in the
+// one step the whole compare waits for.
+test('a shelf of zero is not a shelf, so it never contradicts the record', () => {
+  const { disagreements } = require('../../lib/netbox/find');
+  assert.deepEqual(disagreements({ id: 26, name: 'RACK-1' }, { name: 'RACK-1', position: 0 }), []);
+});
+
+test('a real shelf that moved is still caught', () => {
+  const { disagreements } = require('../../lib/netbox/find');
+  const moved = disagreements({ id: 5, name: 'SW01', position: 18 }, { name: 'SW01', position: 13 });
+  assert.equal(moved.length, 1);
+  assert.match(moved[0], /the shelf was 13 and is now 18/);
+});
