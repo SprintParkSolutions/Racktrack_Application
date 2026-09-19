@@ -546,19 +546,43 @@ def build_unit_grid_from_model(img, unit_model_path, conf=0.25, imgsz=768):
     if not results:
         return []
     names = getattr(model, "names", {}) or {}
-    units, racks, _rails = _unit_rows_from_result(results[0], names)
+    units, racks, rails = _unit_rows_from_result(results[0], names)
     if factor != 1:
         # Back to the original image's pixels before any ladder rule runs.
         for u in units:
             u["box"] = [v * factor for v in u["box"]]
         racks = [[v * factor for v in r] for r in racks]
+        rails = [[v * factor for v in r] for r in rails]
     if not units:
         return []
 
-    return ladder_from_unit_boxes(units, racks, img.shape[0], img.shape[1])
+    return ladder_from_unit_boxes(units, racks, img.shape[0], img.shape[1], rails)
 
 
-def ladder_from_unit_boxes(units, racks, img_h, img_w):
+def _cap_at_rails(rack_top, rack_bot, first_top, last_bot, rails):
+    """Pull the frame's top and bottom in to the cross rails, where there are any.
+
+    The Rack box is the whole cabinet when the photo shows one: roof panel,
+    plinth, castors. Taken as the extent of the rack, it adds rows for the
+    plinth and the floor under it - on a 24U cabinet with its door open that
+    was three rows of floor, and every device below them numbered three too
+    high. The model also finds the horizontal cross rails that close the
+    mounting space at the top and the bottom, and nothing mounts past them.
+    Only a rail wider than it is tall counts: an upright rail runs the whole
+    height and says nothing about where the rows stop.
+    """
+    for x1, y1, x2, y2 in rails or []:
+        if (x2 - x1) <= 2 * (y2 - y1):
+            continue
+        centre = (y1 + y2) / 2.0
+        if centre <= first_top:
+            rack_top = max(rack_top, y2)
+        elif centre >= last_bot:
+            rack_bot = min(rack_bot, y1)
+    return rack_top, rack_bot
+
+
+def ladder_from_unit_boxes(units, racks, img_h, img_w, rails=None):
     """Turn the model's raw boxes into the contiguous, numbered ladder.
 
     Split out from the prediction so it can be tested without loading weights:
@@ -616,7 +640,9 @@ def ladder_from_unit_boxes(units, racks, img_h, img_w):
                     filled.append([y2 + k * step, y2 + (k + 1) * step])
 
     # The frame plainly carrying on past the outermost row means rows the model
-    # did not see - a dark PDU at the floor, a UPS at the top.
+    # did not see - a dark PDU at the floor, a UPS at the top. Never past a
+    # cross rail, though: beyond it is the cabinet, not the rack.
+    rack_top, rack_bot = _cap_at_rails(rack_top, rack_bot, filled[0][0], filled[-1][1], rails)
     above = filled[0][0] - rack_top
     if above >= median_h * _UNIT_EXTEND_MIN:
         for k in range(max(1, int(round(above / median_h)))):
@@ -968,6 +994,37 @@ def filter_devices_inside_units(devices, units, threshold=0.99):
     return filtered
 
 
+# How close two placements of a patch panel must be before the upper one wins.
+_PANEL_TIE = 0.10
+
+
+def _patch_panel_window(dev, units, n):
+    """The N adjacent units a multi-U patch panel sits in, or None.
+
+    Patch cords leave a panel's ports and hang down, so the detector's box for
+    a panel runs on past its bottom edge into the unit below, and never above
+    its top. Picking the units with the most overlap then splits a near tie
+    the wrong way: a 2U panel boxed from the top of U5 to the middle of U3
+    overlapped U5 by 40 pixels and U3 by 41, and was placed at U3-U4 when it
+    sits at U4-U5. So a panel takes the best run of N ADJACENT units, and on a
+    near tie the higher run, which is the side the cords cannot inflate.
+    """
+    if n < 2 or "patch" not in str(dev.get("class_name", "")).lower():
+        return None
+    rows = sorted(units, key=lambda u: u["box"][1])  # top of the photo first
+    if len(rows) < n:
+        return None
+    scores = [
+        sum(_intersection_area(dev["box"], rows[i + k]["box"]) for k in range(n))
+        for i in range(len(rows) - n + 1)
+    ]
+    best = max(scores)
+    if best <= 0:
+        return None
+    first = next(i for i, sc in enumerate(scores) if sc >= best * (1 - _PANEL_TIE))
+    return [rows[first + k]["label"] for k in range(n)]
+
+
 def assign_devices_to_units(devices, units):
     """Assign each device the top-N grid units it overlaps, where N is the
     device's natural unit count derived from its height relative to the
@@ -1019,6 +1076,10 @@ def assign_devices_to_units(devices, units):
             dev["units"].append(nearest["label"])
             continue
 
+        window = _patch_panel_window(dev, units, expected_n)
+        if window:
+            dev["units"].extend(window)
+            continue
         candidates.sort(key=lambda c: -c[1])
         for unit, _ in candidates[:expected_n]:
             dev["units"].append(unit["label"])

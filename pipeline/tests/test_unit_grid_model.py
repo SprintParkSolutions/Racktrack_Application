@@ -152,3 +152,25 @@ def test_rows_never_run_off_the_image():
     for row in ladder:
         assert row["box"][1] >= 0
         assert row["box"][3] <= 200
+
+
+def test_a_cross_rail_below_the_rows_stops_the_ladder_at_the_rail():
+    # The cabinet box runs on down to the castors; the bottom cross rail
+    # closes the mounting space at 320. Nothing mounts below it.
+    ladder = ladder_from_unit_boxes([u(100, 200), u(200, 300)], [[0, 100, 500, 600]], 700, 500,
+                                    rails=[[0, 320, 500, 380]])
+    assert len(ladder) == 2
+    assert ladder[-1]["label"] == "u01"
+
+
+def test_a_cross_rail_above_the_rows_stops_the_ladder_at_the_rail():
+    ladder = ladder_from_unit_boxes([u(300, 400), u(400, 500)], [[0, 0, 500, 500]], 600, 500,
+                                    rails=[[0, 150, 500, 190]])
+    # 190 to 300 is a row's worth and more of frame inside the rail: one row.
+    assert len(ladder) == 3
+
+
+def test_an_upright_rail_says_nothing_about_where_the_rows_stop():
+    ladder = ladder_from_unit_boxes([u(100, 200), u(200, 300)], [[0, 100, 500, 500]], 600, 500,
+                                    rails=[[0, 100, 40, 500]])
+    assert len(ladder) == 4, "the frame still carries on two rows below the last one"
