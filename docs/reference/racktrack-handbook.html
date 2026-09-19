@@ -1,0 +1,747 @@
+<!-- https://claude.ai/artifact/1K6T1r1pV1vZ2eXaJyo3vc -->
+<title>RackTrack Handbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#FAFAF9; --panel:#FFFFFF; --ink:#15181D; --muted:#5B6472; --faint:#8A93A1;
+    --rule:#E2E5EA; --rule-soft:#EDEFF3; --accent:#1F4E79; --accent-soft:#EAF0F6;
+    --good:#1D6F3E; --good-soft:#E9F3EC; --warn:#8A6100; --warn-soft:#FBF2DF;
+    --stop:#993126; --stop-soft:#FBECEA; --shadow:0 1px 2px rgba(20,24,31,.06),0 8px 24px rgba(20,24,31,.05);
+    --sans:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --serif:"Newsreader",Georgia,"Times New Roman",serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --nav:288px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent)}
+
+  /* ---------- shell ---------- */
+  .shell{display:flex;min-height:100vh;align-items:flex-start}
+  .nav{width:var(--nav);flex:0 0 var(--nav);position:sticky;top:0;height:100vh;overflow-y:auto;
+       background:var(--panel);border-right:1px solid var(--rule);padding:24px 0 40px}
+  .brand{padding:0 22px 18px;border-bottom:1px solid var(--rule-soft);margin-bottom:14px}
+  .brand h1{font-family:var(--serif);font-size:23px;font-weight:600;margin:0 0 2px;letter-spacing:-.01em}
+  .brand p{margin:0;font-size:12.5px;color:var(--faint);font-family:var(--mono)}
+  .navgroup{padding:14px 22px 6px;font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+  .nav button{display:block;width:100%;text-align:left;background:none;border:0;border-left:3px solid transparent;
+       padding:8px 22px 8px 19px;font:inherit;font-size:14.5px;color:var(--muted);cursor:pointer}
+  .nav button:hover{color:var(--ink);background:var(--rule-soft)}
+  .nav button[aria-current="true"]{color:var(--accent);border-left-color:var(--accent);background:var(--accent-soft);font-weight:600}
+  .nav .num{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-right:9px}
+  .nav button[aria-current="true"] .num{color:var(--accent)}
+
+  .main{flex:1;min-width:0;padding:0 clamp(18px,3.4vw,56px) 96px}
+  .topbar{position:sticky;top:0;z-index:5;background:rgba(250,250,249,.94);backdrop-filter:blur(6px);
+          border-bottom:1px solid var(--rule);margin:0 calc(-1*clamp(18px,3.4vw,56px)) 0;
+          padding:14px clamp(18px,3.4vw,56px);display:flex;gap:18px;align-items:baseline;flex-wrap:wrap}
+  .topbar strong{font-family:var(--serif);font-weight:600;font-size:16px}
+  .topbar span{font-family:var(--mono);font-size:12px;color:var(--faint)}
+
+  section[hidden]{display:none!important}
+  .sec{padding-top:34px;max-width:1500px}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+  h2{font-family:var(--serif);font-size:clamp(28px,3vw,40px);font-weight:600;line-height:1.14;margin:0 0 10px;letter-spacing:-.015em;text-wrap:balance}
+  h3{font-family:var(--serif);font-size:22px;font-weight:600;margin:38px 0 10px;letter-spacing:-.01em}
+  h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.01em}
+  p{margin:0 0 14px;max-width:74ch}
+  .lede{font-size:18.5px;color:#2B313B;max-width:78ch}
+  ul,ol{margin:0 0 14px;padding-left:20px;max-width:74ch}
+  li{margin-bottom:6px}
+  .mono{font-family:var(--mono);font-size:13px}
+
+  /* ---------- blocks ---------- */
+  .grid{display:grid;gap:18px;margin:20px 0}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}
+  .g4{grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:18px 20px}
+  .card h4{margin-top:0}
+  .card p:last-child{margin-bottom:0}
+
+  .rule-card{background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:3px;padding:16px 18px}
+  .rule-card.stop{border-left-color:var(--stop)}
+  .rule-card.good{border-left-color:var(--good)}
+  .rule-card h4{margin:0 0 4px;font-size:14.5px}
+  .rule-card p{margin:0;color:var(--muted);font-size:14.5px}
+
+  blockquote{margin:18px 0;padding:14px 18px;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--faint);
+             border-radius:3px;font-family:var(--serif);font-size:17px;color:#2B313B;max-width:74ch}
+  blockquote cite{display:block;margin-top:6px;font-family:var(--mono);font-size:11.5px;font-style:normal;color:var(--faint)}
+
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px;background:var(--panel)}
+  thead th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);
+           border-bottom:1px solid var(--rule);padding:9px 12px;font-weight:500}
+  td{border-bottom:1px solid var(--rule-soft);padding:10px 12px;vertical-align:top}
+  tbody tr:last-child td{border-bottom:1px solid var(--rule)}
+  .tw{overflow-x:auto;margin:16px 0}
+  .num-cell{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .pill{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+        padding:2px 8px;border-radius:2px;border:1px solid var(--rule);color:var(--muted);background:var(--panel)}
+  .pill.good{color:var(--good);background:var(--good-soft);border-color:#CADFD1}
+  .pill.warn{color:var(--warn);background:var(--warn-soft);border-color:#EADBB4}
+  .pill.stop{color:var(--stop);background:var(--stop-soft);border-color:#EED0CB}
+
+  .stats{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);margin:20px 0;
+         grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+  .stat{background:var(--panel);padding:16px 18px}
+  .stat b{display:block;font-family:var(--mono);font-size:26px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .stat span{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+
+  figure{margin:22px 0;max-width:100%}
+  figure img{display:block;width:100%;height:auto;border:1px solid var(--rule);border-radius:3px;background:var(--panel)}
+  figcaption{font-size:13.5px;color:var(--muted);margin-top:8px;max-width:70ch}
+  .phone{max-width:340px}
+  .shots{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));align-items:start;margin:22px 0}
+  .shots figure{margin:0}
+  .wide{max-width:1040px}
+
+  svg.diagram{display:block;width:100%;height:auto;max-width:1040px;background:var(--panel);border:1px solid var(--rule);border-radius:3px;margin:22px 0}
+  .dg-label{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:#5B6472;letter-spacing:.04em}
+  .dg-title{font-family:"Source Sans 3",sans-serif;font-size:14px;font-weight:600;fill:#15181D}
+  .dg-body{font-family:"Source Sans 3",sans-serif;font-size:12.5px;fill:#5B6472}
+  .dg-box{fill:#FFFFFF;stroke:#D8DCE3}
+  .dg-box-accent{fill:#EAF0F6;stroke:#9DB6CC}
+  .dg-line{stroke:#B9C0CB;fill:none;stroke-width:1.2}
+
+  .foot{margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);font-size:13px;color:var(--faint);font-family:var(--mono)}
+
+  @media (max-width:900px){
+    .shell{display:block}
+    .nav{position:static;width:auto;height:auto;flex:none;border-right:0;border-bottom:1px solid var(--rule);
+         display:flex;gap:0;overflow-x:auto;padding:0;white-space:nowrap}
+    .brand,.navgroup{display:none}
+    .nav button{display:inline-block;width:auto;border-left:0;border-bottom:3px solid transparent;padding:12px 14px}
+    .nav button[aria-current="true"]{border-left:0;border-bottom-color:var(--accent);background:none}
+    .main{padding:0 16px 72px}
+    .topbar{margin:0 -16px;padding:12px 16px}
+  }
+</style>
+
+<div class="shell">
+  <nav class="nav" id="nav">
+    <div class="brand">
+      <h1>RackTrack Handbook</h1>
+      <p>Every feature, why it exists</p>
+    </div>
+    <div class="navgroup">The product</div>
+    <button data-t="overview"><span class="num">01</span>What RackTrack is</button>
+    <button data-t="photo"><span class="num">02</span>Reading a rack from a photo</button>
+    <button data-t="whichrack"><span class="num">03</span>Which rack is this</button>
+    <button data-t="whichbox"><span class="num">04</span>Which box is which</button>
+    <button data-t="snmp"><span class="num">05</span>Asking the switches</button>
+    <div class="navgroup">The record</div>
+    <button data-t="compare"><span class="num">06</span>Comparing with NetBox</button>
+    <button data-t="approvals"><span class="num">07</span>Approvals and tickets</button>
+    <button data-t="sources"><span class="num">08</span>Data sources</button>
+    <div class="navgroup">Running it</div>
+    <button data-t="setup"><span class="num">09</span>Setting up a customer</button>
+    <button data-t="office"><span class="num">10</span>Your rack, end to end</button>
+    <button data-t="limits"><span class="num">11</span>Limits and refusals</button>
+    <button data-t="history"><span class="num">12</span>How it was built</button>
+  </nav>
+
+  <main class="main">
+    <div class="topbar">
+      <strong>RackTrack</strong>
+      <span>Handbook - 20 September 2026</span>
+      <span>Written from the code, the history and the live system</span>
+    </div>
+
+    <!-- ================= 01 OVERVIEW ================= -->
+    <section id="overview" class="sec">
+      <p class="eyebrow">01 - What RackTrack is</p>
+      <h2>A rack photograph, turned into something a record can be checked against</h2>
+      <p class="lede">A data centre keeps its truth in three places that never agree: the equipment bolted into the cabinet, what the switches say about themselves, and what the asset record claims. RackTrack reads the first with a camera, asks the second over the network, and compares both with the third - then makes a person decide before anything is written down.</p>
+
+      <div class="stats">
+        <div class="stat"><b>3</b><span>sources of truth, joined</span></div>
+        <div class="stat"><b>6</b><span>trained vision models</span></div>
+        <div class="stat"><b>16</b><span>record types written</span></div>
+        <div class="stat"><b>0</b><span>records ever deleted</span></div>
+      </div>
+
+      <h3>The three witnesses, and what each one actually knows</h3>
+      <svg class="diagram" viewBox="0 0 1040 330" role="img" aria-label="Three sources of truth and what each knows">
+        <rect x="40" y="40" width="270" height="130" rx="3" class="dg-box-accent"/>
+        <text x="60" y="68" class="dg-title">The photograph</text>
+        <text x="60" y="92" class="dg-body">Knows WHERE every box sits.</text>
+        <text x="60" y="112" class="dg-body">Guesses what each box is.</text>
+        <text x="60" y="132" class="dg-body">Sees empty shelves, cables,</text>
+        <text x="60" y="150" class="dg-body">labels, panels, sockets.</text>
+
+        <rect x="385" y="40" width="270" height="130" rx="3" class="dg-box-accent"/>
+        <text x="405" y="68" class="dg-title">The switches</text>
+        <text x="405" y="92" class="dg-body">Know exactly what they are:</text>
+        <text x="405" y="112" class="dg-body">model, serial, every port,</text>
+        <text x="405" y="132" class="dg-body">every neighbour.</text>
+        <text x="405" y="150" class="dg-body">No idea where they sit.</text>
+
+        <rect x="730" y="40" width="270" height="130" rx="3" class="dg-box-accent"/>
+        <text x="750" y="68" class="dg-title">The record</text>
+        <text x="750" y="92" class="dg-body">Says what the estate is</text>
+        <text x="750" y="112" class="dg-body">supposed to contain.</text>
+        <text x="750" y="132" class="dg-body">Was true on the day</text>
+        <text x="750" y="150" class="dg-body">somebody last typed it.</text>
+
+        <path d="M175 170 L175 215 L520 215 L520 170" class="dg-line"/>
+        <path d="M865 170 L865 215 L520 215" class="dg-line"/>
+        <rect x="345" y="215" width="350" height="72" rx="3" class="dg-box"/>
+        <text x="370" y="243" class="dg-title">RackTrack</text>
+        <text x="370" y="266" class="dg-body">joins the three, and asks a person</text>
+        <text x="370" y="282" class="dg-body">before it changes anybody's record</text>
+      </svg>
+
+      <h3>The single rule everything else follows</h3>
+      <p>Every design decision in this product comes back to one sentence, written into the code that reads a photograph: an empty slot is not a device, and creating one would be inventing hardware - which is the single thing this application exists not to do.</p>
+      <div class="grid g3">
+        <div class="rule-card stop"><h4>Nothing is invented</h4><p>A value no source stated is never written, and never cleared on the way past. A guess is shown as a guess, on screen, and stops there.</p></div>
+        <div class="rule-card stop"><h4>Nothing is deleted</h4><p>There is no delete path to a customer's record anywhere in the product. Equipment that has vanished from a rack is reported for a person to judge.</p></div>
+        <div class="rule-card stop"><h4>Nothing is written to a switch</h4><p>The network layer implements reading only. The write command was deliberately left out, so the guarantee is structural rather than a matter of discipline.</p></div>
+      </div>
+
+      <h3>Who uses it</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Person</th><th>Where they are</th><th>What they do</th></tr></thead>
+        <tbody>
+          <tr><td><b>Technician</b></td><td>Standing at the cabinet, holding a phone</td><td>Photographs the rack, reads the switches, checks the result against the record, and hands the differences to their admin. Approves nothing.</td></tr>
+          <tr><td><b>Admin</b></td><td>At a desk</td><td>Hands each difference to a named person, waits for the answer, then approves or rejects it and runs the write.</td></tr>
+          <tr><td><b>Approver</b></td><td>At a desk</td><td>Signs off changes. May never approve work they resolved themselves.</td></tr>
+          <tr><td><b>Auditor</b></td><td>Anywhere</td><td>Reads everything and writes nothing, not even a comment.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Three applications, one server, one sign-in</h3>
+      <div class="grid g3">
+        <div class="card"><h4>The field application</h4><p>Android, iPhone and the same thing in a browser. Photograph a rack, read its switches, see what differs, hand it on. This is the technician's whole world, and it stays uncluttered on purpose.</p></div>
+        <div class="card"><h4>RackTrack Changes</h4><p>The desk half: triage, assignment, tickets, approvals, clocks, reports and the audit trail. Its own screens because the manager asked that the scanning application stay about scanning - but the same server, the same database and the same sign-in, so it opens already signed in.</p></div>
+        <div class="card"><h4>The portal</h4><p>For the people who run RackTrack for an organisation: what has been scanned, by whom, which switches answered, who has which role. It watches and manages. It deliberately does not decide - approvals are not there.</p></div>
+      </div>
+      <p>The vision models run on the server. The switch reading runs on the phone, because the phone is the only thing standing on the customer's own network.</p>
+    </section>
+
+    <!-- ================= 02 PHOTO ================= -->
+    <section id="photo" class="sec" hidden>
+      <p class="eyebrow">02 - Reading a rack from a photo</p>
+      <h2>From one photograph to a shelf-by-shelf inventory</h2>
+      <p class="lede">A person points a phone at an open cabinet and takes one picture. What comes back is every shelf numbered the way the data centre numbers it, every box placed on its shelf, every socket counted, and every label that could be read - with an honest gap wherever the photograph could not answer.</p>
+
+      <div class="shots">
+        <figure><img src="racktrack-handbook/img/rack-photo.jpg" alt="The office rack as photographed"><figcaption><b>What goes in.</b> One photograph of the open cabinet, taken on a phone. This is your office rack, SP-HYB-RM01-R01-R1.</figcaption></figure>
+        <figure><img src="racktrack-handbook/img/pipeline-units.jpg" alt="The same rack with units and devices drawn on"><figcaption><b>What the models see.</b> The rack frame, each shelf as its own band, and each box drawn where it actually sits. The shelf bands are not a ruler laid over the picture - they are read.</figcaption></figure>
+        <figure><img src="racktrack-handbook/img/scan-result.jpg" alt="Scan result in the application"><figcaption><b>What the person sees.</b> Every box named by its shelf, the way the rack is labelled: U20 the router, U18 and U17 the switches, U10-U11 a patch panel.</figcaption></figure>
+      </div>
+
+      <h3>Why the shelves are read and not measured</h3>
+      <p>A rack's shelves are identical in the real world, so the obvious approach - measure one shelf and tile that height down the picture - looks right and is wrong. A camera is almost never square on to a cabinet, so the near shelves are taller in the image than the far ones, the tiling drifts as it descends, and the boundary ends up slicing through the middle of a panel. A model trained on rack frames, rails and shelves reads the rows where they actually are. Measured over 24 photographs it lands within a tenth of a shelf; the tiled grid was more than twice as far out.</p>
+      <p>Two corrections came from your own rack this week. The cabinet's frame runs on past the bottom shelf into the plinth and the castors, and the ladder followed it - adding three rows of floor and numbering every device three shelves too high. The ladder now stops at the cross rail, because nothing mounts past it. And a patch panel's cords hang downward and stretch its outline with them, so a panel that sat across two shelves was being placed one shelf too low; a panel now takes the best run of adjacent shelves, and a near tie goes to the higher one, because cords pull an outline down and never up.</p>
+
+      <h3>Before anything is analysed: refusing a photograph that cannot answer honestly</h3>
+      <p>Four things are checked on the image itself first - black bands down the sides that mean a screenshot, a tilt beyond about six degrees, rails that disagree about where the cabinet is, and a shot taken from so far to one side that the shelves converge. Separately, a trained classifier judges cable clutter, because the obvious rule of thumb misfires both ways: a rack of brightly labelled equipment reads as clutter, while a wall of grey cables - the common case - barely registers. A warning lets the person carry on; only genuinely severe clutter asks for another photograph, and offers to take the rack in sections.</p>
+
+      <h3>What each model contributes</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Model</th><th>What it answers</th><th>Where its limits are</th></tr></thead>
+        <tbody>
+          <tr><td>Rack and shelves</td><td>The cabinet frame, its rails, and every shelf as its own band</td><td>A closed door, a badly angled shot, or a cabinet photographed from far to one side</td></tr>
+          <tr><td>Devices</td><td>Where each box starts and ends, and what kind of thing it is</td><td>Cable managers hidden behind cables read as an unnamed row; a white firewall above a black switch can swap their names</td></tr>
+          <tr><td>Ports</td><td>Every socket on a faceplate, counted and typed</td><td>Sockets hidden behind a bundle of cables are not invented - they simply are not counted</td></tr>
+          <tr><td>Patch panels</td><td>Panel sockets specifically, including fibre</td><td>Trained separately because the switch model, pressed into service on panels, once saw 31 sockets and invented 17</td></tr>
+          <tr><td>Labels and faceplates</td><td>The make, the model and the rack's own label, read as text</td><td>A dirty, angled or reflective sticker; a rack label on tape at the top of a cabinet</td></tr>
+          <tr><td>Cables</td><td>Which sockets have something plugged into them</td><td>Colour and type only, never where the other end goes</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Two questions about a socket, asked by two different models</h3>
+      <p>One model answers only what kind of socket it is - copper, fibre, console, management, or a position with nothing fitted in it. A second answers only whether something is plugged in. They are kept apart deliberately: the type model carries no signal about cables, and the status model carries no signal about types. Sockets are then numbered the way a faceplate is actually printed - odd along the top, even along the bottom, column by column - and a panel's row is numbered straight across.</p>
+      <p>The cable classifier is the clearest example of the discipline in this product. It recognises fourteen cable colours and connector families, and it has no "no cable" answer at all - so its confidence can be high on a crop with nothing in it. It is therefore never allowed to decide whether a socket is occupied. That answer comes only from the status model, and a socket the status model did not measure stays unknown and is said to be unknown.</p>
+
+      <h3>A rack too tall for one photograph</h3>
+      <p>Several vertical shots are joined by matching the horizontal edges - cable rows, panel borders, indicator strips - rather than the raw pixels, because rack imagery is full of uniform dark regions where pixel matching flat-lines. The join is only accepted when it is clearly better than the alternatives; when it is not, it says so rather than inventing a seam. A video panned across several cabinets is split where the pan actually moves on, and the sharpest frame of each cabinet is analysed on its own.</p>
+
+      <h3>What it refuses to do</h3>
+      <div class="grid g2">
+        <div class="rule-card stop"><h4>An empty shelf is never a device</h4><p>Nor is a box the classifier cannot name. Neither is created, placed or exported - it is noise in an inventory, not equipment.</p></div>
+        <div class="rule-card stop"><h4>An unreadable shelf number is left empty</h4><p>A device with no readable position is exported without one, rather than landed in the wrong slot with a plausible-looking number.</p></div>
+        <div class="rule-card stop"><h4>"Unknown" stays the word</h4><p>Where nothing has said what a box is, the maker is recorded as Unknown - so a person reading the record sees that at a glance, never a plausible model number.</p></div>
+        <div class="rule-card good"><h4>A person's word outranks the camera</h4><p>Someone standing at the rack who types a make and model is treated as the strongest evidence there is, and the camera never overwrites it.</p></div>
+      </div>
+
+      <h3>Reading the same photograph again, later</h3>
+      <p>A rack is identified by a fingerprint of its photograph, so an analysed rack is a cache hit for ever. That is right for speed and wrong the day a model improves. An admin can now ask for a re-read: the whole folder is copied aside first, the new reading is matched to the old box by box by where each sits on the picture, and everything filed against a shelf - a person's corrections, the label readings, the feedback history - is carried across to the shelf it now belongs to. If anything fails half way, the rack is put back exactly as it was, and the message says so.</p>
+    </section>
+
+    <!-- ================= 03 WHICH RACK ================= -->
+    <section id="whichrack" class="sec" hidden>
+      <p class="eyebrow">03 - Which rack is this</p>
+      <h2>The first question anybody senior asks: the same rack as what</h2>
+      <p class="lede">A comparison a person cannot trace to a named record in the customer's own database is an assertion, not a check. A photograph identifies itself only by its own fingerprint, which is never the name the customer's record uses - so before anything is compared, RackTrack has to work out which of their racks this is.</p>
+
+      <h3>The ladder</h3>
+      <p>Six rungs are tried in order, and the ladder stops at the first one that leaves exactly one rack. Only two of them are allowed to state a rack outright. The rest may only suggest, and wait for a person.</p>
+
+      <svg class="diagram" viewBox="0 0 1040 400" role="img" aria-label="The rack identity ladder, rung by rung">
+        <text x="30" y="32" class="dg-label">STRONGEST</text>
+        <text x="880" y="32" class="dg-label">WHAT IT MAY DO</text>
+
+        <rect x="30" y="44" width="700" height="48" rx="3" class="dg-box-accent"/>
+        <text x="48" y="65" class="dg-title">1 - A person said so</text>
+        <text x="48" y="83" class="dg-body">Somebody standing at the rack confirmed which record it is. Nothing weaker is consulted.</text>
+        <rect x="750" y="44" width="260" height="48" rx="3" class="dg-box"/><text x="768" y="73" class="dg-body">States the rack</text>
+
+        <rect x="30" y="100" width="700" height="48" rx="3" class="dg-box-accent"/>
+        <text x="48" y="121" class="dg-title">2 - The label in the photograph</text>
+        <text x="48" y="139" class="dg-body">The rack's own label, read off the cabinet, matches exactly one rack set up in this room.</text>
+        <rect x="750" y="100" width="260" height="48" rx="3" class="dg-box"/><text x="768" y="129" class="dg-body">States the rack</text>
+
+        <rect x="30" y="156" width="700" height="48" rx="3" class="dg-box"/>
+        <text x="48" y="177" class="dg-title">3 - The label against the record</text>
+        <text x="48" y="195" class="dg-body">The same label matched against the racks the record holds for this site.</text>
+        <rect x="750" y="156" width="260" height="48" rx="3" class="dg-box"/><text x="768" y="185" class="dg-body">Suggests only</text>
+
+        <rect x="30" y="212" width="700" height="48" rx="3" class="dg-box"/>
+        <text x="48" y="233" class="dg-title">4 - The names on the equipment</text>
+        <text x="48" y="251" class="dg-body">Most device names read in the photograph sit under one rack in the record: three names at least, sixty percent agreeing.</text>
+        <rect x="750" y="212" width="260" height="48" rx="3" class="dg-box"/><text x="768" y="241" class="dg-body">Suggests only</text>
+
+        <rect x="30" y="268" width="700" height="48" rx="3" class="dg-box"/>
+        <text x="48" y="289" class="dg-title">5 - The only rack in the room</text>
+        <text x="48" y="307" class="dg-body">The room is said to hold one rack, one is set up, and no other scan there is unaccounted for.</text>
+        <rect x="750" y="268" width="260" height="48" rx="3" class="dg-box"/><text x="768" y="297" class="dg-body">Suggests only</text>
+
+        <rect x="30" y="324" width="980" height="52" rx="3" class="dg-box-accent"/>
+        <text x="48" y="345" class="dg-title">Applied last - where the photograph was taken</text>
+        <text x="48" y="363" class="dg-body">Never picks a rack. Turns a match that rests on a label back into a suggestion when the photograph was taken at a different site.</text>
+      </svg>
+
+      <h3>Why only two rungs may state a rack</h3>
+      <p>Because the weaker rungs mis-merge at scale. A room set up with one rack and actually holding twelve would otherwise merge all twelve into that one record. A rack found by name proves nothing about the hardware in it - "Rack 1" exists at every site there is. So a name finds the record and then asks a question, and a person answers it once.</p>
+
+      <h3>The location step, and what it deliberately cannot do</h3>
+      <p>Indoors a phone knows where it is to tens of metres at best. That is far too coarse to tell one rack from the next, and plenty to tell one data centre from another. So the location step answers exactly one question - was this photograph taken at the site the scan is filed under - and never picks a rack.</p>
+      <ul>
+        <li>Within 300 metres of the site's address counts as here, widened to twice whatever accuracy the phone itself reported.</li>
+        <li>A reading only good to worse than two kilometres is discarded as saying nothing about which building.</li>
+        <li>Taken at another of the organisation's sites, the verdict names that site, and a match that rested on a label becomes a suggestion again.</li>
+        <li>A person's own confirmation is never overruled by it. They were standing there.</li>
+      </ul>
+      <blockquote>A scan filed under Hyderabad DC1 but photographed in Bengaluru DC1 can still read a label like "Rack 1" and match Hyderabad's Rack 1 - a different rack in a different city.<cite>Why the location step exists</cite></blockquote>
+
+      <figure class="phone"><img src="racktrack-handbook/img/drift-check.jpg" alt="Drift check showing which record the rack was compared against">
+        <figcaption><b>The answer, on the screen that uses it.</b> Compared against RACK-1, confirmed, and where the photograph was taken - here, at the site, nothing to argue with.</figcaption></figure>
+    </section>
+
+    <!-- ================= 04 WHICH BOX ================= -->
+    <section id="whichbox" class="sec" hidden>
+      <p class="eyebrow">04 - Which box is which</p>
+      <h2>Telling two identical switches apart, and admitting when you cannot</h2>
+      <p class="lede">The camera knows where a box sits and guesses what it is. A managed switch knows exactly what it is and has no idea where it sits. Joining the two is the central problem of the product, and most of the engineering here is about refusing to join them on a coincidence.</p>
+
+      <h3>Identity is a set, not a field</h3>
+      <p>The first version keyed each device on the best identifier available. In your own office that split one switch into two devices: the phone read a serial number from the vendor's private branch while the server read a chassis address from the same switch over the neighbour protocol. Now a reading carries the whole set of what it published - serial, chassis address, bridge address, management address - and two readings are the same device only when they share a strong one. A shared name or a shared management address is never enough, because both are configuration and both get reused.</p>
+
+      <h3>What may be used to match, and what may not</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Evidence</th><th>Strength</th><th>What it can do</th></tr></thead>
+        <tbody>
+          <tr><td>A person confirmed this box at this rack</td><td><span class="pill good">Confirmed</span></td><td>Binds. Outranks everything, including a later photograph</td></tr>
+          <tr><td>The device stated its own serial or asset tag</td><td><span class="pill good">Confirmed</span></td><td>Binds</td></tr>
+          <tr><td>The record itself states the rack and the shelf</td><td><span class="pill good">Confirmed</span></td><td>Binds</td></tr>
+          <tr><td>The cable pattern on the faceplate matches</td><td><span class="pill warn">Probable</span></td><td>Separates two identical switches; never enough to write</td></tr>
+          <tr><td>Make, model and port count agree</td><td><span class="pill">Possible</span></td><td>Proposes a match for a person to confirm</td></tr>
+          <tr><td>A name, or a management address</td><td><span class="pill stop">Never</span></td><td>Finds a record. Proves nothing about the hardware in it</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>The cable fingerprint</h3>
+      <p>A 48-port switch with cables in 31 of its sockets is wearing a 48-digit number on its face. The camera sees which sockets hold a cable; the switch reports which ports are up; the two are compared digit by digit, with no label, serial or model needed. It is the rung that separates two identical unlabelled switches one shelf apart. A socket that is cabled but reported down counts as unknown rather than a mismatch - a dark spare, a dead far end and a port somebody shut down all look exactly the same - and a socket hidden behind a bundle drops out entirely rather than being read as empty.</p>
+
+      <h3>Ruling a box out is different from scoring it down</h3>
+      <p>On a real rack a 52-port switch was proposed for a box with ten visible sockets, because both had been read as the same make. The shape of a box now rules a switch out rather than merely scoring it lower, and the bounds are deliberately lopsided: the camera undercounts sockets it cannot see, but it does not invent sockets that are not there.</p>
+
+      <h3>The word "confirmed" belongs to the person</h3>
+      <p>Two reviewers reading the confirmation screen found the same fault in twenty-three places: the screen asserting something nobody had said. Saving a list of proposals keeps the choices and confirms nothing; confirming is a separate act, one box at a time, by somebody standing at the rack. The engine's own highest certainty is now called "almost certain", because certainty is a person's word.</p>
+
+      <div class="shots">
+        <figure><img src="racktrack-handbook/img/review-boxes.jpg" alt="Review screen"><figcaption><b>One box at a time.</b> The rack drawn top down, each box with what the engine proposes and why, and a confirm that belongs to the person.</figcaption></figure>
+        <figure><img src="racktrack-handbook/img/drift-detail.jpg" alt="A single difference in detail"><figcaption><b>A difference, in detail.</b> What the record says, what the rack shows, and what would change - before anybody decides anything.</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- ================= 05 SNMP ================= -->
+    <section id="snmp" class="sec" hidden>
+      <p class="eyebrow">05 - Asking the switches</p>
+      <h2>The phone asks the switch, because the server cannot reach it</h2>
+      <p class="lede">The server lives on a public host and has never been able to reach a switch on a customer's private network. That is the whole history of "the probe never reached the switch". The phone standing next to the rack is already on that network, so the phone does the asking.</p>
+
+      <h3>What changed, and why it matters commercially</h3>
+      <div class="grid g2">
+        <div class="card"><h4>Before</h4><p>The server logged into switches over a remote shell and read the screen output, from outside the customer's network. On any real customer site it simply timed out - and the error message listed three things to check on a switch that had nothing wrong with it.</p></div>
+        <div class="card"><h4>Now</h4><p>The phone asks the switch directly over the standard monitoring protocol, on the network it is already standing on. The reading is filed on the server exactly as though the server had taken it, so everything downstream cannot tell the difference.</p></div>
+      </div>
+
+      <h3>What is asked, and what is never asked</h3>
+      <p>Only vendor-neutral standard questions, which is the point: one path covers every managed switch regardless of make. Four families matter - what the device says it is, its real port list, which neighbour each port can see, and its own name and description. Unmanaged switches and patch panels answer none of it, and those stay the camera's job permanently.</p>
+      <div class="rule-card stop"><h4>There is no way to change a switch</h4><p>The protocol's write command is deliberately not implemented anywhere in the product. A read-only tool is read-only in its transport layer, where the guarantee is structural rather than a matter of discipline.</p></div>
+
+      <h3>What a switch reading is used for</h3>
+      <ul>
+        <li><b>Identity.</b> The model and serial the device states about itself. No photograph of a sticker competes with that.</li>
+        <li><b>Ports.</b> The real port list, with speed, duplex, what is up, and what is connected to what.</li>
+        <li><b>Cables.</b> Where both ends report each other, a cable is proven rather than drawn.</li>
+        <li><b>Drift.</b> Each reading becomes a snapshot, so "what changed since last time" works the same for a switch read from a phone as for one polled on a schedule.</li>
+      </ul>
+
+      <div class="shots">
+        <figure><img src="racktrack-handbook/img/switch-card.jpg" alt="A switch card"><figcaption><b>One card per switch.</b> Identity paints in about twenty milliseconds; the faceplate follows in about a second.</figcaption></figure>
+        <figure><img src="racktrack-handbook/img/ports.jpg" alt="Ports view"><figcaption><b>The ports, as the switch reports them.</b> Not as the photograph guessed them.</figcaption></figure>
+        <figure><img src="racktrack-handbook/img/port-history.jpg" alt="Port history"><figcaption><b>What changed, and when.</b> A history of events rather than a wall of field differences.</figcaption></figure>
+      </div>
+
+      <h3>What it cannot read yet</h3>
+      <p>The phone speaks the common version and the simplest form of the secure version. A switch hardened with authentication and privacy on its monitoring account cannot be read from the phone today; the server-side reader handles the full set, and the phone will follow. That is a real limit and worth saying before a customer finds it.</p>
+
+      <h3>Credentials</h3>
+      <p>Switch credentials are encrypted before they touch the disk and never travel back out. The screen is told whether a password is held, never what it is: a password box can be replaced, never read back. Reading the switch and testing the password are kept apart on purpose - a wrong password should come back in a second, not after a full walk of a 48-port switch.</p>
+    </section>
+
+    <!-- ================= 06 COMPARE ================= -->
+    <section id="compare" class="sec" hidden>
+      <p class="eyebrow">06 - Comparing with NetBox</p>
+      <h2>A comparison that proposes, and a write that has to be earned</h2>
+      <p class="lede">The comparison turns a rack into sixteen kinds of record and lines them up against the customer's database. It can create and it can correct. It can never delete, never rename what is theirs, and never write anything a person has not approved.</p>
+
+      <svg class="diagram" viewBox="0 0 1040 250" role="img" aria-label="The path from a photograph to a written record">
+        <rect x="24" y="60" width="150" height="70" rx="3" class="dg-box-accent"/>
+        <text x="42" y="88" class="dg-title">Photograph</text><text x="42" y="108" class="dg-body">and switch readings</text>
+        <path d="M174 95 L214 95" class="dg-line" marker-end="url(#ar)"/>
+        <rect x="214" y="60" width="150" height="70" rx="3" class="dg-box"/>
+        <text x="232" y="88" class="dg-title">Comparison</text><text x="232" y="108" class="dg-body">reads only</text>
+        <path d="M364 95 L404 95" class="dg-line" marker-end="url(#ar)"/>
+        <rect x="404" y="60" width="150" height="70" rx="3" class="dg-box"/>
+        <text x="422" y="88" class="dg-title">Assigned</text><text x="422" y="108" class="dg-body">to a named person</text>
+        <path d="M554 95 L594 95" class="dg-line" marker-end="url(#ar)"/>
+        <rect x="594" y="60" width="150" height="70" rx="3" class="dg-box"/>
+        <text x="612" y="88" class="dg-title">Approved</text><text x="612" y="108" class="dg-body">by somebody else</text>
+        <path d="M744 95 L784 95" class="dg-line" marker-end="url(#ar)"/>
+        <rect x="784" y="60" width="230" height="70" rx="3" class="dg-box-accent"/>
+        <text x="802" y="88" class="dg-title">Written, then checked</text><text x="802" y="108" class="dg-body">by scanning the rack again</text>
+        <defs><marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#B9C0CB"/></marker></defs>
+        <text x="24" y="175" class="dg-label">AT EVERY STEP</text>
+        <text x="24" y="200" class="dg-body">Nothing is deleted - nothing is written that was not approved - nothing is written if the record moved since the approval</text>
+        <text x="24" y="222" class="dg-body">- a guess is never written - the customer's own name, site, height and model are never overwritten</text>
+      </svg>
+
+      <h3>The comparison is genuinely read-only</h3>
+      <p>The preview performs no writes at all and returns exactly the difference the write would apply. It does not even create the small marker field it uses to recognise its own records - and if that field does not exist yet, it says so out loud rather than letting the count mislead, because everything would read as new.</p>
+
+      <h3>Recognising records the customer typed themselves</h3>
+      <p>For a long time the only way anything could find an object in the customer's database was RackTrack's own marker. A rack somebody filled in by hand was invisible: every box in it was planned as new, the database refused the ones that collided, and the equipment already recorded could not even be reported. That is now solved, and the guarantee is stated narrowly on purpose.</p>
+      <blockquote>The guarantee is not that this always answers. It is that it never names the wrong one.<cite>How the customer's own records are found</cite></blockquote>
+      <ul>
+        <li>Every lookup is scoped to one site, because "Rack 1" exists at every site there is.</li>
+        <li>Every lookup asks for two rows and refuses when two answer, naming both. A tie is never broken by taking the first row.</li>
+        <li>An object already marked as belonging to a different scan is never taken.</li>
+        <li>"Nothing there" and "we could not ask" are kept strictly apart, so an expired token never reads as an empty record and causes a duplicate.</li>
+      </ul>
+
+      <h3>Binding, and what a bind is not allowed to do</h3>
+      <p>When a person ties a box to a record, that bind is only ever a bind. The customer's name for it, its site, its height and what they say it is are theirs, and are reported rather than written. An earlier design let a bind rename the customer's rack to the local alias a technician typed and move it to a site of our own making - it was refuted four times over, and the refusal now lives in the code and on the record itself.</p>
+      <div class="grid g2">
+        <div class="rule-card good"><h4>What a bind still fills in</h4><p>A serial the switch published, an asset tag, a status, a description - the gaps the record has. Filling a gap is the point of the whole system.</p></div>
+        <div class="rule-card stop"><h4>What a bind never touches</h4><p>The name, the site, the shelf, the height, the model and the role. A camera's "unidentified switch" can never replace a real model number in the customer's own record.</p></div>
+      </div>
+
+      <h3>Three things that make a real write survive contact with a real database</h3>
+      <div class="grid g3">
+        <div class="card"><h4>Claim what is already there</h4><p>A manufacturer the customer already lists, a role already named, interfaces somebody created by hand: instead of failing, the writer looks each up by its natural key and, if exactly one answers, adopts it. Only the marker is added. Nothing of theirs is renamed, moved or re-parented. On a real 275-object write this was eight refusals, none of them wrong.</p></div>
+        <div class="card"><h4>Make room before moving</h4><p>A database refuses to place a device into a shelf another device still occupies, and checks one change at a time - so an improved shelf reading could not be written in any order. Devices that are moving are lifted out first and then placed. If anything fails, whatever was lifted is put back.</p></div>
+        <div class="card"><h4>Report what is missing, never remove it</h4><p>Equipment the record holds for this rack that the scan did not see is listed, with who wrote that record, and a recommendation to check the rack. A tool that removes production records loses all trust the first time it is wrong - and it will eventually be wrong.</p></div>
+      </div>
+
+      <h3>The write, and the four things true before it touches anything</h3>
+      <ol>
+        <li>The plan is approved.</li>
+        <li>What would be written still matches what the approval signed. One more item rejected since, and the approval no longer covers it.</li>
+        <li>The record itself has not moved - the comparison is run again against the live database and must match exactly.</li>
+        <li>At least one item a person decided is approved. Supporting records are never written on their own.</li>
+      </ol>
+      <p>If the database refuses half the write, what went through stays through, the plan is marked as failed, the admin is emailed the list of refusals, and it can be run again under the same approval. And a write that finished is not a write that landed: only a fresh scan of the rack, compared again, completes it.</p>
+    </section>
+
+    <!-- ================= 07 APPROVALS ================= -->
+    <section id="approvals" class="sec" hidden>
+      <p class="eyebrow">07 - Approvals and tickets</p>
+      <h2>Somebody having looked is not somebody having approved</h2>
+      <p class="lede">The workflow was frozen on 11 September 2026 and everything since has been built to it: the technician assigns nothing, the admin assigns, the assignee resolves, the admin decides, and only then does anything get written. Each step has an explicit list of what that person cannot do.</p>
+
+      <svg class="diagram" viewBox="0 0 1040 300" role="img" aria-label="The five steps of the drift workflow and what each person cannot do">
+        <rect x="20" y="40" width="185" height="96" rx="3" class="dg-box-accent"/>
+        <text x="36" y="66" class="dg-title">Check</text><text x="36" y="86" class="dg-label">TECHNICIAN</text>
+        <text x="36" y="108" class="dg-body">Scan, compare, send</text>
+        <text x="36" y="126" class="dg-body">the whole list on</text>
+
+        <rect x="225" y="40" width="185" height="96" rx="3" class="dg-box"/>
+        <text x="241" y="66" class="dg-title">Assign</text><text x="241" y="86" class="dg-label">ADMIN</text>
+        <text x="241" y="108" class="dg-body">Hand each difference</text>
+        <text x="241" y="126" class="dg-body">to a named person</text>
+
+        <rect x="430" y="40" width="185" height="96" rx="3" class="dg-box"/>
+        <text x="446" y="66" class="dg-title">Resolve</text><text x="446" y="86" class="dg-label">ASSIGNEE</text>
+        <text x="446" y="108" class="dg-body">Go to the rack and</text>
+        <text x="446" y="126" class="dg-body">report what is true</text>
+
+        <rect x="635" y="40" width="185" height="96" rx="3" class="dg-box"/>
+        <text x="651" y="66" class="dg-title">Decide</text><text x="651" y="86" class="dg-label">ADMIN AND APPROVER</text>
+        <text x="651" y="108" class="dg-body">Approve, reject or</text>
+        <text x="651" y="126" class="dg-body">send back</text>
+
+        <rect x="840" y="40" width="180" height="96" rx="3" class="dg-box-accent"/>
+        <text x="856" y="66" class="dg-title">Write</text><text x="856" y="86" class="dg-label">THE SYSTEM</text>
+        <text x="856" y="108" class="dg-body">Approved items only,</text>
+        <text x="856" y="126" class="dg-body">then scan again</text>
+
+        <text x="20" y="180" class="dg-label">WHAT EACH ONE CANNOT DO</text>
+        <text x="20" y="204" class="dg-body">Technician: approve, reject, assign or write anything</text>
+        <text x="20" y="224" class="dg-body">Admin: approve on their own judgment before the answer comes back, or leave a difference assigned to nobody</text>
+        <text x="20" y="244" class="dg-body">Assignee: change the record - a resolved ticket writes nothing by itself</text>
+        <text x="20" y="264" class="dg-body">Approver: approve anything they resolved themselves</text>
+        <text x="20" y="284" class="dg-body">The write: touch anything unapproved, or run at all if the record moved since the approval</text>
+      </svg>
+
+      <h3>Separation of duties, enforced rather than described</h3>
+      <p>The approver may never be somebody who resolved one of the plan's tickets. Where the organisation marks a plan's risk as critical, it needs two signatures and the second must come from a different person - the refusal says exactly that. An approval counts only for the current round, and only if it signed today's list: one more item rejected afterwards and the approval no longer covers what would be written.</p>
+
+      <h3>Asking nine questions instead of two hundred and ninety</h3>
+      <p>A new rack with two 48-port switches once put 290 questions to the admin, and would have raised 290 tickets. A port now follows its device: a new switch brings its ports with it, and one decision stays one decision. The exception is a port on a device that was already in the record, because that is a real question about the rack, and it is never waved through.</p>
+
+      <h3>What is a decision, and what is only scaffolding</h3>
+      <p>Manufacturers, device types, roles, sites and locations are not decisions - they are what must exist before a decision can be written. Asking someone to approve "create manufacturer D-Link" forty times teaches them to click approve without reading, which is worse than not asking. They are applied when something that needs them is approved, and they are listed in the plan so nothing is hidden.</p>
+
+      <h3>The clocks, and when they stop</h3>
+      <p>Four clocks run: how long to accept a ticket, to start it, to answer it, and to approve the plan. They run in the data centre's own working hours and its own time zone, which is the whole reason that is stored. A ticket raised at five on Friday is not late at five past nine on Monday. A plan inside an agreed maintenance window pauses every clock, because nobody is late for a change everybody agreed to.</p>
+
+      <h3>Differences that are not faults</h3>
+      <p>Some differences between a rack and a record are deliberate: a lab switch meant to sit in the wrong shelf, a device type the customer keeps under their own name, serials they leave blank on purpose. Without somewhere to say so, every scan asks about them again for ever. An accepted difference is one person writing down what is accepted, why, for how long, and when it will be looked at again - narrowed to an organisation, a site, a rack or a single kind of item. It expires, and expiring ones are listed, because that is what stops an exception quietly becoming permanent.</p>
+
+      <div class="shots">
+        <figure class="wide"><img src="racktrack-handbook/img/approvals.jpg" alt="The approvals application"><figcaption><b>The desk half.</b> Its own screen set, so the field application stays uncluttered - one sign-in, one server, one database.</figcaption></figure>
+      </div>
+
+      <h3>The audit trail</h3>
+      <p>Every move - sent, assigned, resolved, decided, written - is written to the same audit table every other sensitive action lands in, so "who approved this, and when" is answered in one place. A broken audit table must never stop an approval or a write, so that is handled too.</p>
+    </section>
+
+    <!-- ================= 08 DATA SOURCES ================= -->
+    <section id="sources" class="sec" hidden>
+      <p class="eyebrow">08 - Data sources</p>
+      <h2>Type the address of your system, and we will work out what it is</h2>
+      <p class="lede">The form used to make a customer pick their product from a list first, and picking wrong gave a connection error that named nothing useful. Now they type the address of their own system and RackTrack works out what is there, without a password.</p>
+
+      <figure class="wide"><img src="racktrack-handbook/img/data-sources.jpg" alt="Data sources screen"><figcaption><b>One box, one button.</b> The type and the fields fill themselves in; signing in is what confirms it.</figcaption></figure>
+
+      <h3>How it tells them apart</h3>
+      <ul>
+        <li><b>ServiceNow</b> names itself twice - in its hostname, and in the challenge it sends back to a request with no credentials.</li>
+        <li><b>NetBox</b> has a status page it guards. A reply carrying its version is a NetBox, and so is a refusal, because only something that has that page bothers to protect it.</li>
+        <li><b>Anything else</b> is treated as a plain record system, and that guess is made last on purpose: a generic connector accepts almost any interface, so trying it earlier would swallow a NetBox that was simply misread.</li>
+      </ul>
+      <p>"Did not match" and "never answered" are kept apart, because reporting a type for an address that is simply down would send somebody to check credentials on a system that was never there. And the answer is offered as a suggestion, never as a fact - signing in is what confirms or corrects it.</p>
+
+      <h3>The safety around it, and why it is not optional</h3>
+      <p>A customer types an address and the server connects to it. An address typed by a user and fetched by a server is the definition of a forged request, so every address is judged before anything is sent, and judged again at every redirect - a host that passed at sign-in can answer with a redirect to somewhere nobody judged.</p>
+      <div class="grid g2">
+        <div class="rule-card stop"><h4>A name is not an address</h4><p>The name is resolved and every address it resolves to is judged, because a name can resolve to a cloud metadata address - and to something different the second time it is asked.</p></div>
+        <div class="rule-card stop"><h4>Never falls back to unencrypted</h4><p>A certificate that cannot be verified is a reason to stop, not a reason to send the same password again in the clear, which is exactly what somebody listening would be hoping for.</p></div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Typed in</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">dev266363.service-now.com</td><td><span class="pill good">ServiceNow</span> instance name filled in</td></tr>
+          <tr><td class="mono">demo.racktrack.ai/netbox</td><td><span class="pill good">NetBox</span> found by asking it, address filled in</td></tr>
+          <tr><td class="mono">169.254.169.254</td><td><span class="pill stop">Refused</span> cloud metadata address</td></tr>
+          <tr><td class="mono">10.0.0.5:8000</td><td><span class="pill stop">Refused</span> private address, from a hosted server</td></tr>
+          <tr><td class="mono">http://example.com</td><td><span class="pill stop">Refused</span> the password would go unencrypted</td></tr>
+        </tbody>
+      </table></div>
+      <p class="mono" style="color:var(--faint)">Checked against the live system on 19 September 2026.</p>
+    </section>
+
+    <!-- ================= 09 SETUP ================= -->
+    <section id="setup" class="sec" hidden>
+      <p class="eyebrow">09 - Setting up a customer</p>
+      <h2>From nothing to a rack that can be scanned</h2>
+      <p class="lede">A site in RackTrack is a data centre: one identity, one set of people, one set of racks. Setting it up is one popup that asks one thing at a time, and it is shown to the organisation's admin alone - a technician is never held at a setup screen.</p>
+
+      <figure class="wide"><img src="racktrack-handbook/img/setup.jpg" alt="Organisation setup"><figcaption><b>One step at a time.</b> Back and Next only, no progress rail, a red star on what is genuinely required, and everything editable afterwards.</figcaption></figure>
+
+      <h3>What it asks for, and what it leaves alone</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Step</th><th>Why it is asked</th></tr></thead>
+        <tbody>
+          <tr><td>The site and its address</td><td>It is the data centre. Its address and time zone drive the location check and the working-hours clocks.</td></tr>
+          <tr><td>Rooms, halls, floors, rows</td><td>Named however the customer names them - nothing assumes a convention. A scan is tied to one of these when the photograph is taken.</td></tr>
+          <tr><td>The racks in each room</td><td>The list the photograph is matched against. A rack the camera learns is recorded as learned, not as typed.</td></tr>
+          <tr><td>People and roles</td><td>Who may check, who may assign, who may approve, who may only read.</td></tr>
+          <tr><td>Data sources</td><td>Which record system this organisation uses, set once, so nobody standing at a rack is ever asked for a token.</td></tr>
+          <tr><td>Conventions, vendors, network details</td><td>Optional. A field the admin did not give is stored as empty, never guessed.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Separation between customers</h3>
+      <p>Access to a scan, a switch or a rack is access to its rack, decided in one place for the whole product. An owner sees everything, an organisation admin sees their organisation, everybody else sees their own site and only if they have one. A request for somebody else's rack answers "not found" rather than "not allowed", because saying "not allowed" would confirm that the rack exists.</p>
+
+      <div class="shots">
+        <figure class="wide"><img src="racktrack-handbook/img/dashboard.jpg" alt="Dashboard"><figcaption><b>The admin's view.</b> What is waiting, what is late, and what was written.</figcaption></figure>
+        <figure><img src="racktrack-handbook/img/history.jpg" alt="Scan history"><figcaption><b>Every scan, kept.</b> A rack's history is a record, not a pile of photographs.</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- ================= 10 OFFICE RACK ================= -->
+    <section id="office" class="sec" hidden>
+      <p class="eyebrow">10 - Your rack, end to end</p>
+      <h2>SP-HYB-RM01-R01-R1, on the live system, on 20 September 2026</h2>
+      <p class="lede">Your own office cabinet, its record loaded into NetBox from the spreadsheets you wrote at the rack, and one photograph run through the whole chain on the live server. This is the proof, with the numbers as they came out.</p>
+
+      <div class="stats">
+        <div class="stat"><b>711</b><span>records created in NetBox from your export</span></div>
+        <div class="stat"><b>16 of 16</b><span>devices read at the right shelf</span></div>
+        <div class="stat"><b>14 of 16</b><span>also given the right type</span></div>
+        <div class="stat"><b>0</b><span>records changed without a person</span></div>
+      </div>
+
+      <h3>What was loaded</h3>
+      <p>Your export - one site, one room, one 24-shelf rack, ten device types, eight roles, nineteen devices, 151 interfaces, 192 panel ports, 116 cables, the power chain and the wireless network - was loaded into NetBox exactly as written, with a rehearsal first that rolled itself back. Nothing was invented and nothing was deleted; the loader can be run again and creates nothing the second time.</p>
+
+      <h3>What the photograph read</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Your record</th><th>What RackTrack read from the photo</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>PP1 at U1-U2, PP2 at U4-U5, PP3 at U7-U8, PP4 at U10-U11</td><td>Four patch panels, every shelf exact</td><td><span class="pill good">Match</span></td></tr>
+          <tr><td>CM1 U3, CM2 U6, CM3 U9, CM4 U12, CM5 U14, CM6 U16</td><td>Six unnamed rows at exactly those shelves</td><td><span class="pill good">Placed</span></td></tr>
+          <tr><td>SW01 U13, SW02 U15, SW03 U17</td><td>Three switches, every shelf exact</td><td><span class="pill good">Match</span></td></tr>
+          <tr><td>SW04 at U18</td><td>Found at U18, called a firewall</td><td><span class="pill warn">Wrong type</span></td></tr>
+          <tr><td>FW at U19</td><td>Found at U19, not named</td><td><span class="pill warn">Unnamed</span></td></tr>
+          <tr><td>ACT router at U20</td><td>Router at U20</td><td><span class="pill good">Match</span></td></tr>
+          <tr><td>U21-U24 empty at the front, PDU at the rear</td><td>Empty</td><td><span class="pill good">Match</span></td></tr>
+        </tbody>
+      </table></div>
+      <p>The two wrong answers are both at the top of the cabinet, where a white firewall sits above a black switch on the same shelf pair. They are wrong about what the box is, never about where it is - and a person corrects either in one tap, after which the camera never overrides them again.</p>
+
+      <h3>What the comparison did next</h3>
+      <ol>
+        <li><b>It recognised the rack.</b> Matched to RACK-1 by name, inside the site Office-Sprintpark - and refused to bind on a name alone, saying so: a name finds the record and proves nothing.</li>
+        <li><b>A person confirmed it</b>, by reading the label taped to the cabinet. The location check agreed: taken at Office-Sprintpark.</li>
+        <li><b>It matched every box to your records by shelf</b> - U20 to your router, U18 to SW04, U13 to SW01 - and wrote nothing, asking for each to be confirmed.</li>
+        <li><b>Once confirmed</b>, the plan held ten rebinds: the rack and nine devices, each marked as yours, with only RackTrack's own reference added. Your names, shelves, models and site were left exactly as you wrote them.</li>
+        <li><b>The 288 ports the camera read were held back</b>, because your record already lists the real ports under your own names. That is a rejection with a reason, not a silent drop.</li>
+      </ol>
+      <div class="rule-card good"><h4>Where it stands for the demonstration</h4><p>The plan sits with the ten confirmed rebinds approved and the 288 photo-read ports open, waiting for the people whose job it is - which is exactly what the separation of duties is for. The full chain including a live write was already proved on another rack this week.</p></div>
+
+      <div class="shots">
+        <figure><img src="racktrack-handbook/img/scan-result.jpg" alt="The office rack read"><figcaption><b>The read.</b> Your cabinet, every device on its shelf.</figcaption></figure>
+        <figure><img src="racktrack-handbook/img/drift-check.jpg" alt="The comparison"><figcaption><b>The comparison.</b> Named record, confirmed, located - then the differences.</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- ================= 11 LIMITS ================= -->
+    <section id="limits" class="sec" hidden>
+      <p class="eyebrow">11 - Limits and refusals</p>
+      <h2>What it will not do, and what it cannot do yet</h2>
+      <p class="lede">A product that overstates itself in a demonstration loses the customer on the first real rack. These are the limits as they actually stand.</p>
+
+      <h3>Deliberate refusals</h3>
+      <div class="grid g2">
+        <div class="rule-card stop"><h4>It never deletes anything</h4><p>Not in the record, not on a switch, not a person's confirmation. Equipment that has gone is reported for a person to judge.</p></div>
+        <div class="rule-card stop"><h4>It never writes to a switch</h4><p>The write command does not exist in the product's network layer.</p></div>
+        <div class="rule-card stop"><h4>It never breaks a tie</h4><p>Two candidates that answer equally well are both named and neither is chosen. A tie is never broken by sort order.</p></div>
+        <div class="rule-card stop"><h4>It never turns a guess into a fact</h4><p>A camera's reading is shown as probable and is never written into a customer's record as certainty.</p></div>
+      </div>
+
+      <h3>Honest limits today</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Limit</th><th>What it means in practice</th></tr></thead>
+        <tbody>
+          <tr><td>A patch panel is invisible to the network</td><td>No protocol can ask a passive panel anything. Panels are the camera's job permanently, and the cable path through one is only known if somebody records it.</td></tr>
+          <tr><td>Unmanaged switches answer nothing</td><td>They are typed in by a person, or named from the box the camera found.</td></tr>
+          <tr><td>The camera cannot see behind cables</td><td>A socket hidden by a bundle is not counted, and is never assumed empty.</td></tr>
+          <tr><td>Device type from a photograph is not certain</td><td>On your rack, 2 of 16 were typed wrongly while all 16 were placed correctly. A person corrects it once.</td></tr>
+          <tr><td>Location cannot tell one rack from another</td><td>It answers which building, never which cabinet - on purpose.</td></tr>
+          <tr><td>Reading the switches needs the phone to be on that network</td><td>The server cannot reach a private network, and says so plainly rather than timing out.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Where the honest risk sits</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Risk</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td>Reading text off a faceplate is the weakest input, and the most load-bearing</td><td>Rack labels drive which rack a photograph is. A failed read is usually a resolution problem rather than a legibility one - which is why walking up and photographing the label works.</td></tr>
+          <tr><td>Several shelf and stitching rules are tuned on tens of photographs, not hundreds</td><td>They hold on the racks measured so far. A badly angled cabinet with invisible rails can still gain or lose a row at the extremes.</td></tr>
+          <tr><td>Only two of the rungs may state a rack outright</td><td>Correct, and it means a person is in the loop more often than a smooth demonstration implies.</td></tr>
+          <tr><td>The phone cannot read a fully hardened switch yet</td><td>Common and simple secure monitoring only, from the phone.</td></tr>
+          <tr><td>A real rack produces a lot of differences</td><td>One 13-device rack produced 281, of which 255 were ports. Triage ergonomics matter more than detection accuracy for the admin's day - which is why ports now follow their device.</td></tr>
+          <tr><td>The address of the server is fixed into each phone build</td><td>Moving a customer to their own server means a new build, not a setting.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Known and written down rather than quietly patched</h3>
+      <p>Fourteen places where a screen and the server disagree were found while writing the reference for the approvals application, and were recorded rather than patched, because each needs a decision about which side is right. That list is kept with the engineering documentation.</p>
+    </section>
+
+    <!-- ================= 12 HISTORY ================= -->
+    <section id="history" class="sec" hidden>
+      <p class="eyebrow">12 - How it was built</p>
+      <h2>From a standalone NetBox tool to one product, in sixteen days</h2>
+      <p class="lede">On 4 September 2026 there were two separate things: the mobile scanning product, and a standalone NetBox build with its own server. This is what happened between then and now - 166 commits, every one of them on the same branch.</p>
+
+      <div class="tw"><table>
+        <thead><tr><th class="num-cell">Date</th><th>What changed</th><th>Why it mattered</th></tr></thead>
+        <tbody>
+          <tr><td class="num-cell">4 Sep</td><td>The NetBox build folded in as one unit, behind the owner's account only</td><td>It had shipped with no sign-in at all and no separation between customers, so it was locked down until that existed</td></tr>
+          <tr><td class="num-cell">4 Sep</td><td>The phone reads switches itself</td><td>The server on a public host had never once reached a switch on a customer's network</td></tr>
+          <tr><td class="num-cell">7 Sep</td><td>A whole switch in one read; firmware answered from the vendors' own lists</td><td>One pass now collects every fact a switch will publish</td></tr>
+          <tr><td class="num-cell">8 Sep</td><td>Label reading fixed - it had been failing silently since the first commit</td><td>Make and model returned to scans; a read that took 27 seconds now takes under one</td></tr>
+          <tr><td class="num-cell">9-10 Sep</td><td>The comparison becomes a plan with a signature; tickets raised against the record</td><td>A write stops being a button and becomes something that has to be approved</td></tr>
+          <tr><td class="num-cell">11 Sep</td><td>The workflow frozen in writing; customers separated everywhere</td><td>One sentence the whole team builds to, and no cross-customer access anywhere</td></tr>
+          <tr><td class="num-cell">15-17 Sep</td><td>Organisation setup; recognising which rack a photograph is; the frozen rules enforced on the server</td><td>The product can be handed to a customer who has nothing set up yet</td></tr>
+          <tr><td class="num-cell">18 Sep</td><td>The approvals application; finding the customer's own records; the trained shelf model; the panel model</td><td>The largest day - sixty commits. The product stops assuming it wrote every record it reads</td></tr>
+          <tr><td class="num-cell">19 Sep</td><td>Data sources work out the system from its address; the location step; re-reading a rack under newer models</td><td>Less to type, an honest check on which site, and old scans benefit from new models</td></tr>
+          <tr><td class="num-cell">20 Sep</td><td>The shelf ladder stops at the rails; panels placed by their faces; confirming a rack stops being refused</td><td>All three found on your own office rack, and fixed on it</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>The pattern worth noticing</h3>
+      <p>Almost every fix in this history was found by running the real thing against a real rack and a real record, not by reasoning about it. The unit ladder ran into the plinth of your cabinet. The write failed on a name that must be unique per site. A hundred and twenty port renames failed in one write. Eight refusals turned out to be records the customer already had. Each one is now a test, so it cannot come back.</p>
+
+      <div class="foot">
+        RackTrack Handbook - written 20 September 2026 from the code, the commit history, the existing documentation and the running system.
+        Screenshots are of the live demonstration server. Figures for the office rack are as measured on the day.
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var nav = document.getElementById('nav');
+    var buttons = Array.prototype.slice.call(nav.querySelectorAll('button'));
+    var sections = buttons.map(function (b) { return document.getElementById(b.dataset.t); });
+
+    function show(name, push) {
+      buttons.forEach(function (b) { b.setAttribute('aria-current', String(b.dataset.t === name)); });
+      sections.forEach(function (s) { s.hidden = (s.id !== name); });
+      if (push && history.replaceState) history.replaceState(null, '', '#' + name);
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () { show(b.dataset.t, true); });
+    });
+
+    var start = (location.hash || '').replace('#', '');
+    show(buttons.some(function (b) { return b.dataset.t === start; }) ? start : 'overview', false);
+  })();
+</script>
