@@ -369,3 +369,17 @@ test('a cable follows its port to the record the port was aligned to', async () 
   assert.equal(snapshot.interfaces[0].uid, 'if:dev:A:7');
   assert.equal(snapshot.cables[0].a.uid, 'if:dev:A:7', 'the cable end moved with it');
 });
+
+test('two ports read as one number are aligned by the names they will be written as', async () => {
+  // Found on the demo rack: NetBox held "46-2" from an earlier write, and the
+  // reading had two ports read as "46". Aligned before the duplicate became
+  // "46-2", the second one planned a fresh "46-2" that NetBox then refused.
+  const nb = strictNetBox();
+  await writer.push(cv.toSnapshot(switchWithPorts([1, 46, 46]), opts()), nb);
+  assert.ok(namesOf(nb).includes('46-2') || namesOf(nb).includes('3'), 'the duplicate was written under a told-apart name');
+  const { snapshot } = await alignPortsToNetBox(cv.toSnapshot(switchWithPorts([46, 1, 46]), opts()), nb);
+  const out = await writer.push(snapshot, nb);
+  assert.deepEqual(out.changes.filter((c) => c.action === 'fail'), []);
+  assert.equal(out.changes.filter((c) => c.type === 'Interface' && c.action === 'create').length, 0,
+    'nothing is created a second time');
+});

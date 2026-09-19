@@ -32,6 +32,12 @@ const idOf = (v) => (v && typeof v === 'object' ? v.id : v);
 async function alignPortsToNetBox(snapshot, client) {
   const ports = (snapshot && snapshot.interfaces) || [];
   if (!client || !ports.length) return { snapshot, rebound: 0 };
+  // Names first, the way the writer will write them. Two ports the camera read
+  // as the same number are told apart ("46", "46-2") by the writer before it
+  // writes; aligning before that compared "46" against a NetBox that already
+  // held "46-2", and planned to create it a second time. Doing it here is the
+  // same rename the writer would do, so it is idempotent there.
+  require('./writer')._internal.uniqueInterfaceNames(snapshot, { warnings: [] });
   const rackKey = String(snapshot.rackUid || '').replace(/^rack:/, '');
   if (!rackKey) return { snapshot, rebound: 0 };
 
