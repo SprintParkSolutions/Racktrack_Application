@@ -296,6 +296,66 @@ function uniqueInterfaceNames(snapshot, report) {
   }
 }
 
+/**
+ * Take every device that is about to move out of its U before any of them is
+ * placed again.
+ *
+ * NetBox refuses to put a device into a U another device still occupies, and it
+ * checks one PATCH at a time. So a rack whose unit grid improved - where the
+ * Switch at U12 now reads as U13 and the Router that was at U13 now reads as
+ * U20 - cannot be written in any order that works, because each move lands on
+ * a device that has not moved yet. The same goes for a device whose type grows
+ * from 1U to 2U where it stands: the U above it has to be free first.
+ *
+ * Every device still in the snapshot at this point is either unchanged or an
+ * approved change (unapproved items were filtered out before the push), so only
+ * approved moves are touched, and the device is only UNRACKED - it keeps its
+ * rack, its site and everything else, and the walk below puts it back in its
+ * new U straight away. Nothing is deleted. If the push dies between the two
+ * steps the device is left in its rack without a U, which the next comparison
+ * reports as a position to set, and a person approves it again.
+ */
+async function makeRoom(snapshot, client) {
+  const spec = orderedSpecs().find((s) => s.field === 'devices');
+  const typeSpec = orderedSpecs().find((s) => s.field === 'deviceTypes');
+  if (!spec) return 0;
+  // Our device type's NetBox id, by the uid we stamped on it. Unknown means the
+  // type does not exist yet, so the device is certainly changing type.
+  const typeIds = new Map();
+  const typeIdOf = async (uid) => {
+    if (!uid || !typeSpec) return undefined;
+    if (!typeIds.has(uid)) {
+      let t = null;
+      try { t = await client.findByUid(typeSpec.endpoint, uid, { fresh: true }); } catch { t = null; }
+      typeIds.set(uid, t ? t.id : null);
+    }
+    return typeIds.get(uid);
+  };
+  let moved = 0;
+  for (const d of snapshot.devices || []) {
+    if (d.position === null || d.position === undefined) continue;
+    let existing;
+    // From the preload, not a fresh read. The walk below reads every device
+    // fresh before it writes it, so nothing is decided on this copy except
+    // whether to clear a U - and a fresh read here would be the push's FIRST
+    // question about each uid, which moves the moment a concurrent writer can
+    // be caught to before the re-check that exists to catch it.
+    try { existing = await client.findByUid(spec.endpoint, d.uid, { fresh: false }); } catch { continue; }
+    if (!existing || existing.position === null || existing.position === undefined) continue;
+    const samePlace = Number(existing.position) === Number(d.position);
+    const wantType = await typeIdOf(d.deviceTypeUid);
+    // current() flattens NetBox's nested {id, ...} to the id, and leaves a bare
+    // id alone, so this compares like with like either way.
+    const sameType = wantType === undefined || current(existing, 'device_type') === wantType;
+    if (samePlace && sameType) continue;
+    try {
+      await client.patch(spec.endpoint, existing.id, { position: null, face: '' });
+      moved += 1;
+    } catch { /* the device's own update below says why, in NetBox's words */ }
+  }
+  return moved;
+}
+
 async function walk(snapshot, client, apply, report) {
   uniqueInterfaceNames(snapshot, report);
   const resolved = new Map();   // our uid -> NetBox id (or Pending)
@@ -331,6 +391,15 @@ async function walk(snapshot, client, apply, report) {
       // What a rebind looks for carries the hash, not the key, so it needs its
       // own preload or every rebound object costs a round trip.
       if (alias) underHash.set(ep, await client.preloadByUid(ep, { [`cf_${UID_FIELD}__ic`]: alias.hash }));
+    }
+  }
+
+  if (apply) {
+    const moved = await makeRoom(snapshot, client);
+    if (moved) {
+      report.warnings.push(
+        `${moved} device${moved === 1 ? ' was' : 's were'} taken out of ${moved === 1 ? 'its' : 'their'} U `
+        + 'before being placed again, so that no two devices claimed the same U during the move.');
     }
   }
 
@@ -650,5 +719,5 @@ module.exports = {
   // Exported for the test that holds the interface naming rule down. It runs
   // inside walk() and has no other way in, and the rule it enforces is the
   // one NetBox refuses a whole write over.
-  _internal: { uniqueInterfaceNames },
+  _internal: { uniqueInterfaceNames, makeRoom },
 };

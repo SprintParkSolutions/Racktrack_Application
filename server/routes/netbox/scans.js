@@ -370,6 +370,9 @@ router.post('/adopt/:rackId', gates.technician, async (req, res) => {
   try {
     snapshot = cv.toSnapshot(map, {
       rackId, rackKey: known.rackKey, siteName, rackName, uHeight: cfg.U_HEIGHT, scannedAt,
+      // The rack id is the photo's hash, so a rack adopted again is the same
+      // photograph analysed again. Each box keeps the identity it had.
+      previous: heldPayload.snapshot || null,
     });
   } catch (err) {
     logger?.warn?.('netbox.adopt.convert_failed', { rackId, error: err.message });
@@ -584,6 +587,10 @@ router.post('/:id/detect', gates.admin, async (req, res) => {
     const snapshot = cv.toSnapshot(map, {
       rackId: scan.rackId, rackKey: keyFields.rackKey, siteName, rackName, uHeight,
       scannedAt: scan.createdAt,
+      // The same photograph, read again: each box keeps the identity it had,
+      // so a unit grid that numbers the rack differently moves devices rather
+      // than handing one device's record to another.
+      previous: scan.payload.snapshot || null,
     });
     // The operator's note on what changed since the last scan, kept with the
     // scan so the rack's history reads as a record, not just a pile of scans.

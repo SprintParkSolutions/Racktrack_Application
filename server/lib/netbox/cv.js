@@ -302,6 +302,43 @@ function extractPorts(d) {
 }
 
 /**
+ * The uid each device had in the previous reading of the SAME photograph.
+ *
+ * Only used when a stored photo is analysed again. The detector is the same and
+ * the picture is the same, so a box it drew last time and a box it draws now
+ * over the same pixels are the same physical device, whatever U number the unit
+ * grid gives it. Matching is one to one, best overlap first, and a pair has to
+ * share most of their area: a box that only grazes an old one is a new device.
+ *
+ * Returns Map(index in map.devices -> previous uid).
+ */
+const CARRY_MIN_IOU = 0.5;
+function carryIdentity(devices, previous) {
+  const out = new Map();
+  const old = ((previous && previous.devices) || [])
+    .map((d) => ({ uid: d.uid, box: d.provenance && d.provenance.box }))
+    .filter((d) => d.uid && Array.isArray(d.box) && d.box.length === 4);
+  if (!old.length) return out;
+  const pairs = [];
+  devices.forEach((d, i) => {
+    if (NOT_A_DEVICE.has(d.class_name)) return;
+    if (!Array.isArray(d.box) || d.box.length !== 4) return;
+    for (const o of old) {
+      const v = iou(d.box.map(Number), o.box.map(Number));
+      if (v >= CARRY_MIN_IOU) pairs.push({ i, uid: o.uid, v });
+    }
+  });
+  pairs.sort((a, b) => b.v - a.v);
+  const takenOld = new Set();
+  for (const p of pairs) {
+    if (out.has(p.i) || takenOld.has(p.uid)) continue;
+    out.set(p.i, p.uid);
+    takenOld.add(p.uid);
+  }
+  return out;
+}
+
+/**
  * Detection output -> NetBox-shaped snapshot.
  *
  * `siteName` and `rackName` are the operator's to state. A human looking at a
@@ -323,7 +360,7 @@ function extractPorts(d) {
  * from the hash, `aliasOf` keeps the hash-based rack uid so the planner can
  * find objects written before the key existed and rebind them.
  */
-function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight = null, scannedAt = '' }) {
+function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight = null, scannedAt = '', previous = null }) {
   const key = rackKey || rackId;
   const aliasOf = rackKey && rackKey !== rackId ? `rack:${rackId}` : null;
   const snap = emptySnapshot(`rack:${key}`, scannedAt, aliasOf);
@@ -342,7 +379,16 @@ function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight =
   const usedUids = new Set();
   let unplacedN = 0;
 
-  for (const d of map.devices || []) {
+  // Who each box was last time, when this is the same photograph read again.
+  // A device's uid is built from its U, so a better unit grid that numbers the
+  // rack differently would otherwise hand the uid "dev:<rack>:u13" - the Router
+  // NetBox already holds - to whichever box now lands on U13, and quietly turn
+  // the Router's record into a Switch. It happened in a dry run on the demo rack
+  // the first time the trained unit model was applied to it.
+  const carried = carryIdentity(map.devices || [], previous);
+  for (const uid of carried.values()) usedUids.add(uid);
+
+  for (const [mapIndex, d] of (map.devices || []).entries()) {
     // A network box with fewer than ten ports is a router, not a switch.
     // The same rule as pipeline/runner.py and server/app.js; it has to hold
     // here too, because this snapshot is what the report and NetBox read,
@@ -412,7 +458,15 @@ function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight =
       evIdent = Evidence.CV_OCR;          // OCR read it off the bezel
     } else {
       const noun = cls === 'Unidentified' ? 'Device' : cls;
-      model = `Unidentified ${noun}${ports ? ` (${ports}-port)` : ''}`;
+      // The height is part of the name when it is more than one U. A device
+      // type is shared by every rack in NetBox, and its height is a property of
+      // the type, so "this panel is 2U" written onto the one shared type makes
+      // NetBox check every other panel of that type for room above it - and
+      // refuse, because they were placed as 1U. That refusal is what killed
+      // plan 52. A 2U panel we cannot identify is simply a different thing from
+      // a 1U one we cannot identify, so it gets its own type.
+      const detail = [ports ? `${ports}-port` : null, span > 1 ? `${span}U` : null].filter(Boolean);
+      model = `Unidentified ${noun}${detail.length ? ` (${detail.join(', ')})` : ''}`;
       evIdent = Evidence.CV_ONLY;
     }
 
@@ -433,8 +487,11 @@ function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight =
       snap.deviceRoles.push(DeviceRole(observed(uid, Evidence.CV_ONLY), { name: cls, slug: slug(cls) }));
     }
 
-    let devUid = pos !== null ? `dev:${key}:u${pos}` : `dev:${key}:${slug(base)}`;
-    if (usedUids.has(devUid)) devUid = `${devUid}:${slug(base)}`;
+    let devUid = carried.get(mapIndex) || null;
+    if (!devUid) {
+      devUid = pos !== null ? `dev:${key}:u${pos}` : `dev:${key}:${slug(base)}`;
+      if (usedUids.has(devUid)) devUid = `${devUid}:${slug(base)}`;
+    }
     usedUids.add(devUid);
 
     snap.devices.push(Device(
@@ -499,5 +556,6 @@ function toSnapshot(map, { rackId, rackKey = null, siteName, rackName, uHeight =
 }
 
 module.exports = {
+  carryIdentity,
   extractPorts, iou, engineStatus, runDetect, toSnapshot, uPosition, slug,
   imageHash, hamming, similarity, ENGINE_DIR, PYTHON };
