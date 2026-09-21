@@ -12,16 +12,22 @@ import styles from './ScanTabBar.module.css';
 // Switches is in the bar and Drift is under More: what a person came to the
 // rack to look at is what is in it, and drift is a question you ask on a
 // second visit.
+// The front row is the job the person at the rack actually came to do: look at
+// what was read, ask the switches, take the report, check it against the
+// record. Report and Drift were behind the More button and the owner's
+// reaction was that a technician could not see the report at all - nothing was
+// stopping them, it was three taps away behind a row of screens they need far
+// less often.
 const PRIMARY_TABS = [
   { key: 'overview',  label: 'Overview',  icon: <IconRack /> },
   { key: 'network',   label: 'Network',   icon: <IconNetwork /> },
-  { key: 'topology',  label: 'Topology',  icon: <IconTopology /> },
-  { key: 'switches',  label: 'Switches',  icon: <IconSwitch /> },
+  { key: 'report',    label: 'Report',    icon: <IconReport /> },
+  { key: 'drift',     label: 'Drift',     icon: <IconDrift /> },
 ];
 
 const MORE_TABS = [
-  { key: 'report',    label: 'Report',    icon: <IconReport /> },
-  { key: 'drift',     label: 'Drift',     icon: <IconDrift /> },
+  { key: 'topology',  label: 'Topology',  icon: <IconTopology /> },
+  { key: 'switches',  label: 'Switches',  icon: <IconSwitch /> },
 ];
 
 export default function ScanTabBar({ activeTab, onTabChange, badges = {} }) {
