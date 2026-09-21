@@ -1055,7 +1055,7 @@ export default function SwitchTestPage() {
     return (
       <>
         <section className={styles.panel} data-state={stateOf(sw)}>
-          <div className={styles.panelHead}>
+          <div className={styles.bandHead}>
             <h2>{sw.label}</h2>
             {renderMenu(sw)}
           </div>
@@ -1138,7 +1138,7 @@ export default function SwitchTestPage() {
             one the photograph read as an SFP cage. Tap one for its own line. */}
         {r && sockets.length > 0 && !editing && (
           <section className={styles.panel}>
-            <div className={styles.panelHead}>
+            <div className={styles.bandHead}>
               <h2>Ports</h2>
               <span>{up} up, {sockets.length - up} free</span>
             </div>
@@ -1224,7 +1224,7 @@ export default function SwitchTestPage() {
         {/* ── Where the two do not agree ── */}
         {r && cmp.disagree.length > 0 && !editing && (
           <section className={styles.panel}>
-            <div className={styles.panelHead}>
+            <div className={styles.bandHead}>
               <h2>Ports that disagree</h2>
               <span>{cmp.disagree.length} of {cmp.rows.length}</span>
             </div>
@@ -1244,7 +1244,7 @@ export default function SwitchTestPage() {
             the list, or off the photograph. */}
         {r && serverId && places?.devices?.length > 0 && !editing && (
           <section className={styles.panel}>
-            <div className={styles.panelHead}><h2>Where it sits in the rack</h2></div>
+            <div className={styles.bandHead}><h2>Where it sits in the rack</h2></div>
             <PlacePicker
               devices={places.devices}
               image={places.image}
@@ -1446,7 +1446,7 @@ export default function SwitchTestPage() {
 
         {view === 'timeline' ? (
           <section className={styles.panel}>
-            <div className={styles.panelHead}>
+            <div className={styles.bandHead}>
               <h2>What changed on these ports</h2>
             </div>
             <PortHistoryContent rackId={rackId} />
@@ -1471,7 +1471,7 @@ export default function SwitchTestPage() {
             switches are apart. */}
         {switches.length > 0 && (
           <section className={styles.panel}>
-            <div className={styles.panelHead}><h2>This rack</h2></div>
+            <div className={styles.bandHead}><h2>This rack</h2></div>
             <div className={styles.facts}>
               <Fact label="Switches" value={switches.length} />
               <Fact label="Read" value={`${readCount} of ${switches.length}`} />

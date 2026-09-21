@@ -307,8 +307,12 @@
    below did not, which made a page of real information look like a photo
    viewer with two buttons under it. Picking a device gives the picture more
    room again, because then it is what you are working in. */
-.results[data-device="none"] .heroWrap { flex: 0 1 38vh; min-height: 140px; }
-.results[data-device="none"] .sheet    { flex: 1 1 auto; min-height: 0; }
+/* The frame takes what the findings and the ways on do not need, up to a little
+   over a third of the screen. Bounded, so it can never go back to being the
+   whole page; greedy under that, so there is never a band of empty white under
+   the buttons either. */
+.results[data-device="none"] .heroWrap { flex: 1 1 auto; min-height: 140px; max-height: 38vh; }
+.results[data-device="none"] .sheet    { flex: 0 1 auto; min-height: 0; }
 .results[data-device="sel"]  .heroWrap { flex: 0 1 44vh; min-height: 0; }
 .results[data-device="sel"]  .sheet    { flex: 1 1 auto; min-height: 200px; }
 
@@ -513,6 +517,9 @@
   font-size: .62rem; font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase;
   color: #757575;
+  /* Two lines' worth, always: "Against the records" wraps where "Devices" does
+     not, and without this the values in one row stop lining up. */
+  min-height: 26px;
 }
 .rackFactVal {
   font-size: .86rem; font-weight: 650; color: #121212;
