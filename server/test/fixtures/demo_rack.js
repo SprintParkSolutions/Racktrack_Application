@@ -35,6 +35,13 @@ function fakeNetBox() {
   const request = async (method, path, body = null, params = null) => {
     calls.push({ method, path, body, params });
     if (method === 'GET') {
+      // One object by its own id, as NetBox answers a detail path.
+      const one = path.match(/^(.*\/)(\d+)\/$/);
+      if (one) {
+        const held = rows(one[1]).find((x) => x.id === Number(one[2]));
+        if (!held) throw Object.assign(new Error('Not found.'), { status: 404 });
+        return held;
+      }
       const q = params || {};
       const cf = Object.keys(q).find((k) => k.startsWith(`cf_${UID_FIELD}`));
       const list = rows(path).filter((o) => {

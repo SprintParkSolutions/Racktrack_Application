@@ -13,12 +13,11 @@
  * the check holds exactly ONE item to decide, the approval is not refused, and
  * no port is ever made on the customer's record.
  *
- * FOR WHOEVER MERGES THIS WITH THE WRITE-ON-APPROVAL STAGE: in this worktree an
- * approval does not write yet, so the demo test approves as the SPOC and then
- * runs write.run as an organization admin. Once approve writes at once, the
- * step marked MERGE below becomes the approve answer itself (`write.state:
- * 'written'`), and the test gains "exactly one visible registry row: position
- * 22 to 20 on SP-R1-U20-ACT".
+ * The final approval writes at once: the server does it, as the system, on the
+ * approver's word (write.runAfterApproval, which is what the approve route
+ * calls). So the tests below approve as the SPOC and read what became of the
+ * write off that answer, and the demo ends on the one row a person sees in
+ * the change registry: position 22 to 20 on SP-R1-U20-ACT.
  */
 process.env.NODE_ENV = 'test';
 process.env.RACKTRACK_SKIP_WORKER_POOL = '1';
@@ -103,6 +102,8 @@ async function filed(nb, { boxes = [], send = true, items = null, tweak = null }
   }
   return { id: first.plan.id, rackId, preview, scanId: scan.id };
 }
+/** The write a final approval starts, as the approve route runs it: by the system, in the approver's name. */
+const writeFor = (check, nb, approver = SPOC) => write.runAfterApproval(check.id, { approver, client: nb.client() });
 const sidOf = (got, rule) => got.suggestions.find((s) => s.rule === rule && s.state === 'open');
 const decidable = (got) => got.items.filter((i) => i.decidable);
 const SERVER = () => F.cameraBox('Server', 0, ['u05']);
@@ -188,12 +189,13 @@ describe('the demo, end to end', () => {
     assert.equal(approved.plan.status, 'approved');
     assert.equal(approved.final, true);
 
-    // MERGE: once an approval writes at once, this is the approve answer.
+    // The approval writes: the system does it, on the SPOC's word.
     const from = nb.calls.length;
     const before = structuredClone(nb.record());
-    const out = await write.run(check.id, { actor: ADMIN, client: nb.client(), sender: async () => true });
-    assert.equal(out.error, undefined, out.why);
-    assert.equal(out.status, 'completed');
+    const out = await writeFor(check, nb);
+    assert.deepEqual([out.write.state, out.write.status, out.write.written, out.write.failed, out.write.changes, out.write.why],
+      ['written', 'completed', 1, 0, 1, null]);
+    assert.equal(out.plan.status, 'completed');
     const writes = nb.writes(from);
     assert.equal(writes.length, 1, JSON.stringify(writes));
     assert.equal(writes[0].method, 'PATCH');
@@ -211,8 +213,14 @@ describe('the demo, end to end', () => {
     }
     assert.equal(nb.rows(F.INTERFACES).length, 5);
     assert.equal(service.get(check.id, SPOC).plan.status, 'completed');
-    // What the registry reads off the item once the write-on-approval stage is merged.
-    assert.equal(store.getItem(check.id, F.U20).modified.source, 'suggestion');
+    // The change registry: one row a person sees, and RackTrack's own link fields kept out of sight.
+    const rows = store.changesOf(check.id);
+    const seen = rows.filter((c) => !c.internal);
+    assert.deepEqual(seen.map((c) => [c.objectName, c.action, c.field, c.before, c.after, c.result, c.source, c.rule,
+      c.approvedBy, c.writtenBy]),
+    [['SP-R1-U20-ACT', 'rebind', 'position', 22, 20, 'written', 'suggestion', 'wrong_shelf', 'dc007.spoc', 'system']]);
+    assert.ok(rows.length > 1 && rows.every((c) => c.internal || c === seen[0]));
+    assert.equal(store.getPlan(check.id, { heavy: false }).writtenBy, 'system');
   });
 });
 
@@ -345,8 +353,8 @@ describe('a rejected move', () => {
 
     assert.equal(service.approve(check.id, { actor: SPOC }).plan.status, 'approved');
     const from = nb.calls.length;
-    const written = await write.run(check.id, { actor: ADMIN, client: nb.client(), sender: async () => true });
-    assert.equal(written.status, 'completed', JSON.stringify(written.result || written.why));
+    const written = await writeFor(check, nb);
+    assert.deepEqual([written.write.state, written.write.status], ['written', 'completed'], JSON.stringify(written.write));
     const posted = nb.calls.slice(from).filter((c) => c.method === 'POST' && c.path === F.DEVICES);
     assert.deepEqual(posted.map((c) => c.body.position), [5], 'the approved server was made');
     assert.deepEqual(nb.writes(from).filter((c) => c.path === `${F.DEVICES}${F.RECORD_ID}/`), []);
@@ -379,8 +387,8 @@ describe('Mark Offline', () => {
     await service.decide(check.id, [{ uid: F.U20, decision: 'rejected', reasonCode: 'wrong_asset', note: 'a loan unit' }], { actor: SPOC });
     assert.equal(service.approve(check.id, { actor: SPOC }).plan.status, 'approved');
     const from = nb.calls.length;
-    const out = await write.run(check.id, { actor: ADMIN, client: nb.client(), sender: async () => true });
-    assert.equal(out.status, 'completed', JSON.stringify(out.result || out.why));
+    const out = await writeFor(check, nb);
+    assert.deepEqual([out.write.state, out.write.status], ['written', 'completed'], JSON.stringify(out.write));
     assert.deepEqual(nb.writes(from).map((c) => [c.method, c.path, c.body]),
       [['PATCH', `${F.DEVICES}${F.RECORD_ID}/`, { status: 'offline' }]],
       'one patch, and nothing made for the box that was turned down');
@@ -388,6 +396,14 @@ describe('Mark Offline', () => {
     assert.deepEqual(nb.record().status, { value: 'offline' });
     assert.equal(nb.record().name, 'SP-R1-CORE-SW');
     assert.equal(nb.record().position, 11, 'it keeps its shelf, and everything else');
+    // The registry names the record, and the record was read before and after by its own id.
+    assert.deepEqual(store.changesOf(check.id).filter((c) => !c.internal)
+      .map((c) => [c.objectName, c.field, c.before, c.after, c.result, c.source, c.rule]),
+    [['SP-R1-CORE-SW', 'status', 'active', 'offline', 'written', 'suggestion', 'mark_offline']]);
+    const kept = store.getPlan(check.id);
+    assert.deepEqual([kept.preSnapshot, kept.postSnapshot].map((snap) => snap.objects
+      .filter((o) => o.netboxId === F.RECORD_ID).map((o) => [o.present, o.fields.status])),
+    [[[true, 'active']], [[true, 'offline']]]);
   });
 
   it('rejecting the mark takes it back and writes nothing on the record', async () => {
@@ -434,10 +450,12 @@ describe('a value changed by hand', () => {
     await service.decide(check.id, [{ uid: F.U20, decision: 'rejected', reasonCode: 'wrong_asset', note: 'not now' }], { actor: SPOC });
     assert.equal(service.approve(check.id, { actor: SPOC }).plan.status, 'approved');
     const from = nb.calls.length;
-    const written = await write.run(check.id, { actor: ADMIN, client: nb.client(), sender: async () => true });
-    assert.equal(written.status, 'completed', JSON.stringify(written.result || written.why));
+    const written = await writeFor(check, nb);
+    assert.deepEqual([written.write.state, written.write.status], ['written', 'completed'], JSON.stringify(written.write));
     const [posted] = nb.calls.slice(from).filter((c) => c.method === 'POST' && c.path === F.DEVICES);
     assert.deepEqual([posted.body.serial, posted.body.asset_tag, posted.body.description], ['FOC1234A1BC', 'A-100', 'build server']);
+    const made = store.changesOf(check.id).filter((c) => !c.internal && c.itemUid === U05());
+    assert.deepEqual(made.map((c) => [c.action, c.field, c.result, c.source, c.rule]), [['create', '*', 'written', 'manual', null]]);
   });
 
   it('on a record already there it is an update, signed afresh, and the write carries the typed value alone', async () => {
@@ -464,8 +482,8 @@ describe('a value changed by hand', () => {
       note: 'ports are compared on a later check' })), { actor: SPOC });
     assert.equal(service.approve(check.id, { actor: SPOC }).plan.status, 'approved');
     const from = nb.calls.length;
-    const written = await write.run(check.id, { actor: ADMIN, client: nb.client(), sender: async () => true });
-    assert.equal(written.status, 'completed', JSON.stringify(written.result || written.why));
+    const written = await writeFor(check, nb);
+    assert.deepEqual([written.write.state, written.write.status], ['written', 'completed'], JSON.stringify(written.write));
     const onRecord = nb.writes(from).filter((c) => c.path === `${F.DEVICES}${F.RECORD_ID}/`);
     assert.equal(onRecord.length, 1);
     assert.deepEqual(Object.keys(onRecord[0].body).sort(), ['custom_fields', 'serial']);
