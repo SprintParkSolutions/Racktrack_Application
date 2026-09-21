@@ -119,7 +119,12 @@ function covers(position, height) {
 
 const overlap = (a, b) => a.some((u) => b.includes(u));
 const stated = (v) => (identity.isJunkValue(v) ? '' : identity.normalise(v));
-const article = (word) => (/^[aeiou]/i.test(text(word)) ? 'an' : 'a');
+/** "a Router", "an Access Switch", "a UPS", "an SFP shelf": initials go by how the first letter is said. */
+function article(word) {
+  const first = text(word).split(/\s+/)[0] || '';
+  if (/^[A-Z0-9]{2,}$/.test(first)) return /^[AEFHILMNORSX]/.test(first) ? 'an' : 'a';
+  return /^[aeiou]/i.test(first) && !/^uni(?!n)/i.test(first) ? 'an' : 'a';
+}
 const aThing = (word) => `${article(word)} ${text(word)}`;
 const shelves = (units) => (units.length > 1 ? `U${units[0]} to U${units[units.length - 1]}` : `U${units[0]}`);
 const undecided = (item) => item.decision === 'pending' || item.decision === 'ticketed';
