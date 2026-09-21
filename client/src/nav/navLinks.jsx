@@ -74,7 +74,7 @@ export const MoreIcon = () => (
    organisation, then the platform (owner only), then help, then the account.
    `group` keys into NAV_GROUPS; the sidebar and the phone's Menu both draw
    headings from it. `hint` is the one-line description shown under the name
-   in the sidebar and the Menu. `inBar` marks the four that get a permanent
+   in the sidebar and the Menu. `inBar` marks the ones that get a permanent
    slot in the phone's bottom bar; `barLabel` is a shorter name for that slot.
    A destination has either `to` (a page in this app) or `href` (somewhere
    outside it, opened in a new tab or the system browser). */
@@ -92,10 +92,14 @@ export function usePrimaryNav() {
   const isAdmin = isOwner || user?.role === 'org_admin';
 
   return [
-    // ── Rack work: the app opens on the work, so Scan is first.
+    // ── Rack work. Home is first: "/" is the app's landing screen again, so
+    // the bar needs a way back to it. `end` is true because every other route
+    // starts with "/" and Home would otherwise read as active on all of them.
     // A hint that only rewords the label above it is a second line for nothing, so
-    // Scan, Scan history, Contact support and Profile carry none. The hints that
-    // survive all say something the label does not.
+    // Home, Scan, Scan history, Contact support and Profile carry none. The hints
+    // that survive all say something the label does not.
+    { group: 'work', to: '/', label: 'Home', icon: <HomeIcon />, end: true,
+      inBar: true, barLabel: 'Home' },
     { group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false,
       inBar: true, barLabel: 'Scan' },
     { group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
