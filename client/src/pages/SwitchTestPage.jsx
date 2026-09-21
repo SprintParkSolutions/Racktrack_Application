@@ -1137,13 +1137,16 @@ export default function SwitchTestPage() {
             by port belongs to Look up a port, and this screen is about which
             switches the rack has and where they and the photograph differ. */}
 
-        {/* ── Where the two do not agree ── */}
+        {/* ── Where the two do not agree ──
+            Folded away: the count is the answer, and the list of which ports
+            is what somebody opens only when they are going to act on it. */}
         {r && cmp.disagree.length > 0 && !editing && (
-          <section className={styles.panel}>
-            <div className={styles.bandHead}>
-              <h2>Ports that disagree</h2>
-              <span>{cmp.disagree.length} of {cmp.rows.length}</span>
-            </div>
+          <details className={styles.panel}>
+            <summary className={styles.fold}>
+              <span className={styles.foldName}>Ports that disagree</span>
+              <span className={styles.foldCount}>{cmp.disagree.length} of {cmp.rows.length}</span>
+              <span className={styles.foldMark} aria-hidden="true" />
+            </summary>
             <ul className={styles.nbrRows}>
               {cmp.disagree.map((row) => (
                 <li key={row.n}>
@@ -1152,7 +1155,7 @@ export default function SwitchTestPage() {
                 </li>
               ))}
             </ul>
-          </section>
+          </details>
         )}
 
         {/* ── Where this switch sits ──

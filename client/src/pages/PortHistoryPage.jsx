@@ -520,11 +520,12 @@ function PortHistoryInner({ embedded, rackId = null }) {
           that agree, the heading sat over "Nothing has changed between readings",
           which the owner read as an empty box and asked to have removed. ── */}
       {selectedId && events.length > 0 && (
-        <section className={styles.band}>
-          <div className={styles.bandHead}>
-            <h3>What changed</h3>
-            <span>{events.length ? `${events.length} change${events.length === 1 ? '' : 's'}` : ''}</span>
-          </div>
+        <details className={styles.band}>
+          <summary className={styles.fold}>
+            <span className={styles.foldName}>What changed</span>
+            <span className={styles.foldCount}>{events.length} change{events.length === 1 ? '' : 's'}</span>
+            <span className={styles.foldMark} aria-hidden="true" />
+          </summary>
           {events.length === 0 ? (
             <p className={styles.muted}>Nothing has changed between readings.</p>
           ) : (
@@ -545,7 +546,7 @@ function PortHistoryInner({ embedded, rackId = null }) {
               )}
             </>
           )}
-        </section>
+        </details>
       )}
 
     </div>

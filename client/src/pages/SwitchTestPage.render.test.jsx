@@ -110,7 +110,10 @@ describe('the Network page', () => {
 
   test('the ports the photograph and the switch disagree about are named', async () => {
     mount();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Ports that disagree' })).toBeTruthy());
+    // Folded: the count answers, the list opens when somebody means to act on it.
+    const fold = await screen.findByText('Ports that disagree');
+    expect(fold.closest('details').open).toBe(false);
+    fireEvent.click(fold);
     expect(screen.getByText('The photo shows a cable. The switch says the port is down.')).toBeTruthy();
     expect(screen.getByText('Port 2')).toBeTruthy();
     // The faceplate is off this screen: port by port belongs to Look up a port.
@@ -124,7 +127,7 @@ describe('the Network page', () => {
     expect(within(screen.getByRole('tablist', { name: 'Switches on this rack' })).getAllByRole('tab')
       .map((c) => c.getAttribute('aria-selected'))).toEqual(['false', 'true']);
     expect(screen.getByRole('button', { name: 'Read this switch' })).toBeTruthy();
-    expect(screen.queryByRole('heading', { name: 'Ports that disagree' })).toBeNull();
+    expect(screen.queryByText('Ports that disagree')).toBeNull();
     expect(screen.getByText(/SNMP v3/)).toBeTruthy();
   });
 

@@ -583,3 +583,21 @@
   .sheetBack { align-items: center; padding: 24px; }
   .sheet { border-radius: 18px; }
 }
+
+/* A section a person opens only when they mean to act on it: the count is the
+   answer, the list is behind the arrow. */
+.fold {
+  display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer;
+  min-height: 44px; margin: -14px -16px; padding: 0 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+.fold::-webkit-details-marker { display: none; }
+.foldName { flex: 1 1 auto; font-size: var(--fs-head); font-weight: var(--fw-title); }
+.foldCount { font-size: var(--fs-sub); color: var(--muted); }
+.foldMark {
+  width: 7px; height: 7px; flex: none; margin-right: 3px;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg); transition: transform .15s ease;
+}
+details[open] > .fold > .foldMark { transform: rotate(-135deg); margin-bottom: -4px; }
+details.panel > .fold + * { margin-top: 14px; }

@@ -1445,3 +1445,20 @@
   font-family: inherit; font-size: var(--fs-body); font-weight: var(--fw-title); color: #0f7b4f;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
+
+/* The change log is folded: how many changed is the answer, and which ones is
+   what somebody opens when they are going to look into one. */
+.fold {
+  display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer;
+  min-height: 44px; -webkit-tap-highlight-color: transparent;
+}
+.fold::-webkit-details-marker { display: none; }
+.foldName { flex: 1 1 auto; font-size: var(--fs-label); letter-spacing: .08em; text-transform: uppercase; color: #6b6b6b; font-weight: var(--fw-title); }
+.foldCount { font-size: var(--fs-sub); color: #6b6b6b; }
+.foldMark {
+  width: 7px; height: 7px; flex: none; margin-right: 3px;
+  border-right: 2px solid #9a9a9a; border-bottom: 2px solid #9a9a9a;
+  transform: rotate(45deg); transition: transform .15s ease;
+}
+details[open] > .fold > .foldMark { transform: rotate(-135deg); margin-bottom: -4px; }
+details.band > .fold + * { margin-top: 8px; }
