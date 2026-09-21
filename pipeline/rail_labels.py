@@ -59,6 +59,15 @@ MIN_SIDE_PX = 24
 # where these labels carry their numbers.
 DIGIT_LOOKALIKE = {"O": "0", "o": "0", "I": "1", "i": "1", "l": "1", "L": "1"}
 
+# What a rack identifier can be made of. Telling the reader so is the single
+# biggest help it gets: left to choose from every character it knows, it reads
+# a marginal photograph of this tape as "7+H" and gives up, and the same strip
+# with the alphabet narrowed to letters, digits and the hyphen reads
+# SP-HYB-RM01-R01-R1 eleven times out of eleven. Lower case is left out on
+# purpose - the tidy step upper-cases anyway, and offering both cases only
+# gives the reader more ways to be wrong about the same stroke.
+ALLOWED_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"
+
 
 def isolate_label(crop: np.ndarray) -> np.ndarray:
     """The bright part of a rail crop: the tape or chip, without the frame."""
@@ -66,18 +75,21 @@ def isolate_label(crop: np.ndarray) -> np.ndarray:
     _, bright = cv2.threshold(gray, 140, 255, cv2.THRESH_BINARY)
     ys, xs = np.where(bright > 0)
     if len(xs) < 20:
-        return gray                      # nothing stands out; read the strip as it is
+        return gray  # nothing stands out; read the strip as it is
     y0, y1 = int(ys.min()), int(ys.max())
     x0, x1 = int(xs.min()), int(xs.max())
-    return gray[max(0, y0 - 2): y1 + 3, max(0, x0 - 2): x1 + 3]
+    return gray[max(0, y0 - 2) : y1 + 3, max(0, x0 - 2) : x1 + 3]
 
 
 def treatments(gray: np.ndarray) -> list:
     """One crop, three ways: as it is, sharpened, and thresholded."""
     out = [gray, cv2.filter2D(gray, -1, SHARPEN)]
     if min(gray.shape[:2]) >= 32:
-        out.append(cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 10))
+        out.append(
+            cv2.adaptiveThreshold(
+                gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 10
+            )
+        )
     return out
 
 
@@ -107,7 +119,7 @@ def is_plausible(text: str) -> bool:
     if sum(c.isalpha() for c in packed) < 4:
         return False
     if not re.search(r"\d", packed):
-        return False                      # a rack identifier carries a number
+        return False  # a rack identifier carries a number
     # "IIIIIIII" and "--------" are the reader failing, not a label.
     return max(packed.count(c) for c in set(packed)) / len(packed) <= 0.35
 
@@ -125,14 +137,18 @@ def vote(readings: list) -> tuple:
     # so judging it raw threw away every true reading of the office rack.
     # Tidying first also lines the readings up for the vote, since they then
     # differ only where the reader actually disagreed.
-    kept = [t for t in dict.fromkeys(_tidy(r) for r in readings if r and r.strip()) if is_plausible(t)]
+    kept = [
+        t for t in dict.fromkeys(_tidy(r) for r in readings if r and r.strip()) if is_plausible(t)
+    ]
     if not kept:
         return "", 0.0
     if len(kept) == 1:
         return kept[0], 1.0
 
     lengths = Counter(len(r) for r in kept)
-    reference = next(r for r in kept if len(r) == max(lengths.items(), key=lambda kv: (kv[1], kv[0]))[0])
+    reference = next(
+        r for r in kept if len(r) == max(lengths.items(), key=lambda kv: (kv[1], kv[0]))[0]
+    )
     ballots = [Counter({c: 1}) for c in reference]
     for other in kept:
         if other == reference:
@@ -177,7 +193,7 @@ def read_rails(image, rail_boxes, reader, scales=SCALES, min_agreement=MIN_AGREE
         if not wide_enough(box):
             continue
         x1, y1, x2, y2 = (int(v) for v in box)
-        crop = image[max(0, y1): y2, max(0, x1): x2]
+        crop = image[max(0, y1) : y2, max(0, x1) : x2]
         if crop is None or crop.size == 0:
             continue
         label = isolate_label(crop)
@@ -185,13 +201,18 @@ def read_rails(image, rail_boxes, reader, scales=SCALES, min_agreement=MIN_AGREE
             continue
         readings = []
         for scale in scales:
-            sized = (label if scale == 1.0 else
-                     cv2.resize(label, None, fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4))
+            sized = (
+                label
+                if scale == 1.0
+                else cv2.resize(label, None, fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4)
+            )
             for treated in treatments(sized):
                 as_bgr = cv2.cvtColor(treated, cv2.COLOR_GRAY2BGR) if treated.ndim == 2 else treated
                 try:
-                    results = reader.readtext(as_bgr, detail=1, paragraph=False)
-                except Exception:          # one treatment failing is not the label failing
+                    results = reader.readtext(
+                        as_bgr, detail=1, paragraph=False, allowlist=ALLOWED_CHARS
+                    )
+                except Exception:  # one treatment failing is not the label failing
                     continue
                 for item in results:
                     text = item[1] if len(item) > 1 else ""
@@ -201,12 +222,14 @@ def read_rails(image, rail_boxes, reader, scales=SCALES, min_agreement=MIN_AGREE
         text, agreement = vote(readings)
         if not text or agreement < min_agreement:
             continue
-        found.append({
-            "text": text,
-            "conf": agreement,
-            "readings": len(readings),
-            "box": [x1, y1, x2, y2],
-            "y_mid": (y1 + y2) / 2,
-        })
+        found.append(
+            {
+                "text": text,
+                "conf": agreement,
+                "readings": len(readings),
+                "box": [x1, y1, x2, y2],
+                "y_mid": (y1 + y2) / 2,
+            }
+        )
     found.sort(key=lambda r: (-r["conf"], r["y_mid"]))
     return found
