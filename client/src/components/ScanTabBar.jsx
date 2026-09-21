@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import styles from './ScanTabBar.module.css';
 
 // The rack's tab bar on a phone: Overview, Network, Report, Drift.
@@ -53,25 +54,83 @@ export default function ScanTabBar({ activeTab, onTabChange, badges = {}, flow =
   const active = port ? activeTab
     : (UNDER_OVERVIEW.includes(activeTab) ? 'overview' : activeTab);
 
+  // The bar holds five slots. With more ways on than that, four are tabs and
+  // the fifth opens the rest over the bar. A bar that scrolls sideways under
+  // the thumb hides half of itself and never says so.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef(null);
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const away = (e) => { if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false); };
+    const esc = (e) => { if (e.key === 'Escape') setMoreOpen(false); };
+    document.addEventListener('pointerdown', away);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', away); document.removeEventListener('keydown', esc); };
+  }, [moreOpen]);
+
+  const shown = tabs.length > 5 ? tabs.slice(0, 4) : tabs;
+  const rest = tabs.length > 5 ? tabs.slice(4) : [];
+  const restHolds = rest.some((t) => t.key === active);
+
+  const tabButton = (tab) => (
+    <button
+      key={tab.key}
+      role="tab"
+      aria-selected={active === tab.key}
+      className={`${styles.tab} ${active === tab.key ? styles.tabActive : ''}`}
+      onClick={() => onTabChange(tab.key)}
+      type="button"
+    >
+      <span className={styles.tabIcon}>{tab.icon}</span>
+      <span className={styles.tabLabel}>{tab.label}</span>
+      {badges[tab.key] > 0 && <span className={styles.tabBadge}>{badges[tab.key]}</span>}
+    </button>
+  );
+
   return (
     <nav className={styles.tabBar} role="tablist" aria-label="Scan results tabs">
-      <div className={`${styles.bar} ${tabs.length > 5 ? styles.barMany : ''}`}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            role="tab"
-            aria-selected={active === tab.key}
-            className={`${styles.tab} ${active === tab.key ? styles.tabActive : ''}`}
-            onClick={() => onTabChange(tab.key)}
-            type="button"
-          >
-            <span className={styles.tabIcon}>{tab.icon}</span>
-            <span className={styles.tabLabel}>{tab.label}</span>
-            {badges[tab.key] > 0 && <span className={styles.tabBadge}>{badges[tab.key]}</span>}
-          </button>
-        ))}
+      <div className={styles.bar}>
+        {shown.map(tabButton)}
+        {rest.length > 0 && (
+          <div className={styles.moreWrap} ref={moreRef}>
+            <button
+              type="button"
+              className={`${styles.tab} ${restHolds ? styles.tabActive : ''}`}
+              aria-haspopup="true"
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen((v) => !v)}
+            >
+              <span className={styles.tabIcon}><IconMore /></span>
+              <span className={styles.tabLabel}>More</span>
+            </button>
+            {moreOpen && (
+              <div className={styles.moreSheet} role="menu">
+                {rest.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    role="menuitem"
+                    className={`${styles.moreItem} ${active === tab.key ? styles.moreItemActive : ''}`}
+                    onClick={() => { setMoreOpen(false); onTabChange(tab.key); }}
+                  >
+                    <span className={styles.moreItemIcon}>{tab.icon}</span>
+                    <span className={styles.moreItemLabel}>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </nav>
+  );
+}
+
+function IconMore() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="5.5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="18.5" cy="12" r="1.6" />
+    </svg>
   );
 }
 

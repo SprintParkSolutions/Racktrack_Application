@@ -179,8 +179,71 @@
   .centre:active { transform: translateY(calc(var(--nav-lift) * -1)); }
 }
 
-/* More tabs than the pill can hold side by side: it scrolls sideways rather
-   than squeezing every label until it is clipped. */
-.barMany { overflow-x: auto; scrollbar-width: none; justify-content: flex-start; }
-.barMany::-webkit-scrollbar { display: none; }
-.barMany > * { flex: 0 0 auto; min-width: 62px; }
+/* More ways on than the bar can hold: four tabs and a More, which opens the
+   rest over the bar. It used to scroll sideways, and a bar that moves under
+   the thumb is a bar nobody trusts. */
+.moreWrap {
+  flex: 1 0 0;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.moreWrap .tab { flex: 1; }
+
+.moreSheet {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  min-width: 180px;
+  background: #ffffff;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 12px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: none;
+  animation: moreSheetIn 0.14s ease-out;
+}
+@keyframes moreSheetIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.moreItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--md-on-surface);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.14s;
+}
+.moreItem:hover { background: var(--md-surface-container-highest); }
+.moreItemActive {
+  background: var(--md-surface-container-highest);
+  color: var(--md-primary);
+}
+
+.moreItemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--md-on-surface-variant);
+  flex-shrink: 0;
+}
+.moreItemActive .moreItemIcon { color: var(--md-primary); }
+
+.moreItemLabel { flex: 1; min-width: 0; }
+
