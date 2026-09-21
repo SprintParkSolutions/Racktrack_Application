@@ -265,9 +265,13 @@ function SiteBlock({ dc, s, showAll, onValid }) {
   };
 
   /* The account. Someone in the organization with that email already has
-     one, so they are named as they are; anyone else gets a site manager
-     account on this site, made here. */
+     one: a member of this site or an organization admin is named as they
+     are, and a member of another site cannot act here, so they are refused.
+     Anyone else gets a site manager account on this site, made here. Either
+     way the SPOC ends up as the site's approver by user id, which is what
+     the drift workflow reads. */
   const member = (s.members || NONE).find((m) => m.email && c.email && m.email.toLowerCase() === c.email.trim().toLowerCase()) || null;
+  const canServe = !!member && member.active !== 0 && member.active !== false && (Number(member.tenant_id) === Number(dc.id) || member.role === 'org_admin');
   const apMember = ap?.email ? (s.members || NONE).find((m) => m.email && m.email.toLowerCase() === ap.email.toLowerCase()) : null;
   const hasAccount = !!ap?.user_id || !!apMember;
   const [open, setOpen] = useState(false);
@@ -292,9 +296,8 @@ function SiteBlock({ dc, s, showAll, onValid }) {
   };
   const useMember = async () => {
     touch('spoc_name', 'spoc_email');
-    if (errs.spoc_name || errs.spoc_email || !member || making) return;
-    const inSite = Number(member.tenant_id) === Number(dc.id) || member.role === 'org_admin';
-    const r = await s.setApprover(dc, inSite ? { user_id: Number(member.id) } : { email: member.email.toLowerCase() });
+    if (errs.spoc_name || errs.spoc_email || !canServe || making) return;
+    const r = await s.setApprover(dc, { user_id: Number(member.id) });
     if (r) setOpen(false);
   };
   const needsAccount = !hasAccount || open;
@@ -357,7 +360,9 @@ function SiteBlock({ dc, s, showAll, onValid }) {
         </Held>
       ) : null}
       {needsAccount ? (
-        member ? (
+        member && !canServe ? (
+          <Err>{member.username} already has an account at {member.site_name || 'another site'}. Enter someone else, or move them to this site first.</Err>
+        ) : member ? (
           <Held title={member.username} sub={member.email} note="Already has an account">
             <Act size="sm" variant="primary" disabled={making} onClick={useMember} data-testid={`spoc-use-${dc.id}`}>{making ? 'Saving' : 'Make them the SPOC'}</Act>
           </Held>
