@@ -36,9 +36,9 @@ export const TAB_KEYS = TABS.map((t) => t.key);
    no business on a screen about one socket. */
 const PORT_TABS = [
   { key: 'result',   label: 'Port',     icon: <IconPort /> },
-  { key: 'overview', label: 'The rack', icon: <IconRack /> },
   { key: 'switches', label: 'Switches', icon: <IconSwitch /> },
-  { key: 'timeline', label: 'History',  icon: <IconDrift /> },
+  { key: 'network',  label: 'Network',  icon: <IconNetwork /> },
+  { key: 'overview', label: 'Rack',     icon: <IconRack /> },
 ];
 
 /** Screens that belong to Overview, so the bar lights Overview on them. */
