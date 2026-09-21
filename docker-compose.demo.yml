@@ -77,6 +77,8 @@ services:
       # app.js reads this exact name (not CORS_ORIGINS). It must match the
       # browser's origin or every API call from the demo site is refused.
       - CORS_ALLOWED_ORIGINS=https://demo.racktrack.ai
+      # The address a ServiceNow incident links back to (the check in Drift Desk).
+      - PUBLIC_BASE_URL=https://demo.racktrack.ai
 
     # Deliberately `expose`, not `ports` — reachable from Caddy, not the world.
     expose:
