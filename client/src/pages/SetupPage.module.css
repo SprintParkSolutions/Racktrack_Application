@@ -1,11 +1,10 @@
 /* Organization settings.
  *
  * Flat enterprise look, light only, full width, phone first. A #f5f6f8
- * ground, white cards with a 1px #d7dce3 edge, ink for the one primary
- * action, Geist throughout. The settings view spans whatever it is given
- * (a 390px phone, an iPad, a laptop inside the shell); the guided flow is a
- * container over the app that fills a phone and sits as a card on a laptop.
- * Only that card carries a shadow.
+ * ground, ink for the one primary action, Geist throughout. There is one way
+ * in: a popup container that shows one step at a time. It fills a phone and
+ * sits as a card over a dimmed backdrop on a laptop; only that card carries
+ * a shadow.
  *
  * Class names avoid the substrings index.css restyles (card, panel, tile,
  * header, badge, chip, pill, btn, button, field, input, select, tab, bg,
@@ -29,30 +28,8 @@
 .topbarLeft { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .topbarT { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.2; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ---- Settings view ---- */
-.settings {
-  flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); align-items: start;
-  width: 100%; min-width: 0;
-  /* 96px clears the phone's fixed bottom bar, the same reserve Profile keeps. */
-  padding: 16px 16px calc(96px + env(safe-area-inset-bottom));
-  gap: 16px;
-}
-.index { display: none; }
-.panes { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-
-.pane { border: 1px solid #d7dce3; border-radius: 8px; background: #fff; min-width: 0; scroll-margin-top: 72px; }
-.paneH {
-  display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px;
-  padding: 16px; border-bottom: 1px solid #d7dce3;
-}
-.paneHT { flex: 1 1 200px; min-width: 0; }
-.paneHT h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; color: #111827; }
-.paneHT p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: #4b5563; }
-.paneHT p.legend { margin-top: 4px; }
-.paneHR { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }
-.paneB { padding: 16px; display: flex; flex-direction: column; gap: 24px; min-width: 0; }
-.orgPick { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4b5563; min-width: 0; }
-.orgPick select { min-width: 200px; }
+/* ---- While the model is being read ---- */
+.wait { padding: 24px 16px; font-size: 14px; color: #6b7280; }
 .legend { margin: 0; font-size: 12px; line-height: 1.4; color: #6b7280; }
 
 /* ---- The container: fills a phone ---- */
@@ -95,11 +72,6 @@
 
 /* ---- From the shell (768px) ---- */
 @media (min-width: 768px) {
-  .settings { padding: 24px 32px 48px; gap: 24px; }
-  .panes { gap: 24px; }
-  .paneH { padding: 16px 24px; }
-  .paneB { padding: 24px; }
-
   /* The container becomes a card over a dimmed backdrop. */
   .veil { align-items: center; padding: 24px; background: rgba(17, 24, 39, 0.4); }
   .box {
@@ -110,26 +82,4 @@
   .boxH { padding: 20px 24px 16px; }
   .boxB { padding: 24px; }
   .boxF { padding: 16px 24px; }
-}
-
-/* ---- Laptop: the section index beside the panels ---- */
-@media (min-width: 1024px) {
-  .settings { grid-template-columns: 220px minmax(0, 1fr); gap: 32px; }
-  .index {
-    display: flex; flex-direction: column;
-    position: sticky; top: 24px; align-self: start;
-  }
-  .indexT { padding: 0 0 8px; font-size: 12px; font-weight: 600; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ix {
-    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-    padding: 8px 0; border: 0; border-top: 1px solid #e5e8ec; background: transparent;
-    font-family: var(--font); font-size: 13.5px; font-weight: 500; color: #4b5563; cursor: pointer;
-  }
-  .ix:hover { color: #111827; }
-  .ix:focus-visible { outline: 2px solid #1f4ed8; outline-offset: -2px; }
-  .ixOn { color: #111827; font-weight: 600; }
-  .ix span { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ixDot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #fff; border: 1.5px solid #9aa5b3; }
-  .ixDot_done { background: #111827; border-color: #111827; }
-  .ixDot_locked { border-style: dashed; }
 }

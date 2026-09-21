@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Field, Input, Select, Act, SaveMark, CopyRow, Secret,
-  Stack, Grid, Row, Sub, Note, Empty, Err, Block, Held, cx, mono,
+  Field, Input, Select, Textarea, Act, SaveMark, CopyRow, Secret,
+  Stack, Grid, Rows, Row, Sub, Note, Empty, Err, Block, Held, cx, mono,
 } from './Fields.jsx';
 import {
-  STEPS, browserTimezone, timezones, countries, dcHasSpoc, dcRulesAccepted, spocOf,
+  STEPS, browserTimezone, timezones, countries, dcAddressed, dcHasSpoc, dcRulesAccepted, siteReady, spocOf,
   progress, remaining, summaryOf, composeAddress,
   required, vEmail, vPhone, vUsername, vPassword, proposeUsername, blank, fmtDate,
 } from '../../utils/orgSettings';
 import { EMPTY_ORG } from '../../hooks/useOrgSettings';
 import { publicOrigin } from '../../utils/api';
 
-/* The sections of the setup: the organization, its sites, the rules and the
-   review. Each one is used twice, on the first-run flow and on the settings
-   view, so nothing here knows which page it is on beyond `inFlow`.
+/* The sections of the setup: the organization, its sites, the rules, the
+   review and the closing thank you. There is one way in -  the popup
+   stepper, one step at a time -  so a section is drawn the same on first run
+   and on the day it is edited under Profile.
 
    Every section saves as it goes. A text field saves when it is left, a
    choice saves when it is made, and the answer goes into the hook so the
@@ -87,6 +88,15 @@ export function OrgSection({ s, onValidity, showAll }) {
   return (
     <Stack>
       <Grid>
+        {/* The owner has no organization of their own and sees every one on
+            the platform, so they choose which one this step is about. */}
+        {s.isOwner && s.orgs.length > 1 ? (
+          <Field label="Organization" span htmlFor="org-pick">
+            <Select id="org-pick" value={s.orgId ?? ''} onChange={(e) => s.pickOrg(e.target.value)}>
+              {s.orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </Select>
+          </Field>
+        ) : null}
         {/* The short code is made from the name by the server; it is shown
             beside the name and is not something a person types. */}
         <Field label="Organization name" span>
@@ -118,11 +128,24 @@ export function OrgSection({ s, onValidity, showAll }) {
 }
 
 /* ---- 2. Sites ---------------------------------------------------------- */
-/* First how many sites there are, then one block per site: its name and
-   location, its single point of contact with the account made for them, and
-   invites for the technicians who work there. A site that is only a number
-   so far is a name box; naming it creates it. */
+/* First how many sites there are, then one row per site: its name, where it
+   is, and who its SPOC is. A row opens into that site's own fields -  the
+   location and the rest of the facility details, the single point of contact
+   with the account made for them, and invites for the technicians who work
+   there. A site that is only a number so far is a name box; naming it
+   creates it, and a row that has not been created yet can be taken away.
+
+   The step reads whether it is done from what the server holds, not from the
+   row that happens to be open, so a closed row never blocks Next. */
 const MAX_SITES = 20;
+const siteWhere = (dc) => (has(dc?.datacentre?.address) ? dc.datacentre.address : 'No location yet');
+function siteWho(dc) {
+  const gaps = [dcAddressed(dc) ? null : 'a location', dcHasSpoc(dc) ? null : 'a SPOC with an account'].filter(Boolean);
+  if (gaps.length) return `Still needs ${gaps.join(' and ')}`;
+  const who = spocOf(dc)?.name || dc.approver?.username || dc.approver?.email || null;
+  return who ? `SPOC ${who}` : 'Ready';
+}
+
 export function SitesSection({ s, onValidity, showAll }) {
   const dcs = s.dcs;
   /* The sites not named yet, as slots with an id of their own, so typing in
@@ -130,11 +153,20 @@ export function SitesSection({ s, onValidity, showAll }) {
      that exist plus these. */
   const [slots, setSlots] = useState(() => (dcs.length ? [] : [1]));
   const nextSlot = useRef(2);
-  const [ok, setOk] = useState({});
+  /* One site open at a time: the first that still needs something, or the
+     only one there is. */
+  const [openId, setOpenId] = useState(() => dcs.find((d) => !siteReady(d))?.id ?? (dcs.length === 1 ? dcs[0].id : null));
   const count = dcs.length + slots.length;
-  const valid = dcs.length > 0 && !slots.length && dcs.every((d) => ok[d.id] === true);
+  const valid = dcs.length > 0 && !slots.length && dcs.every(siteReady);
   useReport(onValidity, valid);
   useEffect(() => { s.loadMembers(); }, [s.loadMembers]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* Next pressed while something is missing opens the site it is missing
+     from, so the messages that row carries are on screen. */
+  useEffect(() => {
+    if (!showAll) return;
+    const bad = dcs.find((d) => !siteReady(d));
+    if (bad) setOpenId(bad.id);
+  }, [showAll, dcs]);
   const low = Math.max(1, dcs.length);
   const high = Math.max(MAX_SITES, low);
   const pick = (n) => setSlots((xs) => {
@@ -143,6 +175,7 @@ export function SitesSection({ s, onValidity, showAll }) {
     const more = []; while (xs.length + more.length < want) { more.push(nextSlot.current); nextSlot.current += 1; }
     return [...xs, ...more];
   });
+  const drop = (id) => setSlots((xs) => xs.filter((x) => x !== id));
   return (
     <Stack>
       <Grid>
@@ -152,13 +185,22 @@ export function SitesSection({ s, onValidity, showAll }) {
           </Select>
         </Field>
       </Grid>
-      {dcs.map((dc) => <SiteBlock key={dc.id} dc={dc} s={s} showAll={showAll} onValid={(v) => setOk((o) => (o[dc.id] === v ? o : { ...o, [dc.id]: v }))} />)}
-      {slots.map((id, i) => <NewSite key={`new-${id}`} n={dcs.length + i + 1} s={s} showAll={showAll} onDone={() => setSlots((xs) => xs.filter((x) => x !== id))} />)}
+      <Rows>
+        {dcs.map((dc) => (
+          <SiteRow key={dc.id} dc={dc} s={s} showAll={showAll} open={openId === dc.id}
+            onToggle={() => setOpenId((x) => (x === dc.id ? null : dc.id))} />
+        ))}
+      </Rows>
+      {slots.map((id, i) => (
+        <NewSite key={`new-${id}`} n={dcs.length + i + 1} s={s} showAll={showAll}
+          onRemove={dcs.length || slots.length > 1 ? () => drop(id) : null}
+          onDone={(snap) => { drop(id); if (snap?.id) setOpenId(snap.id); }} />
+      ))}
     </Stack>
   );
 }
 
-function NewSite({ n, s, showAll, onDone }) {
+function NewSite({ n, s, showAll, onDone, onRemove }) {
   const [name, setName] = useState(''); const [adding, setAdding] = useState(false); const [tried, setTried] = useState(false);
   const can = name.trim().length >= 2;
   const mark = s.marks.datacentres;
@@ -168,10 +210,10 @@ function NewSite({ n, s, showAll, onDone }) {
     if (!can || adding) return;
     setAdding(true); setTried(true);
     const r = await s.addDatacentre(name.trim());
-    if (r) onDone(); else setAdding(false);
+    if (r) onDone(r); else setAdding(false);
   };
   return (
-    <Block title={`Site ${n}`}>
+    <Block title={`Site ${n}`} right={onRemove ? <Act size="sm" variant="quiet" disabled={adding} onClick={onRemove}>Remove</Act> : null}>
       <Row kind="add">
         <Field label="Site name" req error={failed || empty} htmlFor={`site-new-${n}`}>
           <Input id={`site-new-${n}`} value={name} maxLength={120} placeholder="Rotterdam DC1" disabled={adding || s.orgId == null} req invalid={!!(failed || empty)} onChange={(e) => { setName(e.target.value); setTried(false); }} onKeyDown={onEnter(add)} />
@@ -182,11 +224,30 @@ function NewSite({ n, s, showAll, onDone }) {
   );
 }
 
-/* Every key the facility section holds. This screen edits three of them;
-   the section is replaced whole, so the rest ride along unchanged and what
-   an older setup saved (city, provider, access notes) is not lost. */
+/* A site closed is one row; open it and the same fields are there. */
+function SiteRow({ dc, s, showAll, open, onToggle }) {
+  /* The account's own failure is said beside its button, not up here. */
+  const mark = [s.marks[`datacentres:${dc.id}`], s.marks[`facility:${dc.id}`], s.marks[`contacts:${dc.id}`], s.marks[`people:${dc.id}`]].filter(Boolean).sort((a, b) => b.at - a.at)[0];
+  if (!open) {
+    return (
+      <Held title={dc.name} sub={siteWhere(dc)} note={siteWho(dc)}>
+        <SaveMark mark={mark} />
+        <Act size="sm" variant="quiet" onClick={onToggle} data-testid={`site-open-${dc.id}`}>Edit</Act>
+      </Held>
+    );
+  }
+  return (
+    <Block title={dc.name} right={<><SaveMark mark={mark} /><Act size="sm" variant="quiet" onClick={onToggle} data-testid={`site-close-${dc.id}`}>Close</Act></>}>
+      <SiteFields dc={dc} s={s} showAll={showAll} />
+    </Block>
+  );
+}
+
+/* Every key the facility section holds. All of them are on this screen bar
+   the code, which nothing here sets; the section is replaced whole, so
+   anything an older setup saved in it is kept. */
 const FAC_KEYS = ['code', 'address_line1', 'address_line2', 'city', 'region', 'postcode', 'country', 'provider', 'access_notes', 'hours'];
-function SiteBlock({ dc, s, showAll, onValid }) {
+function SiteFields({ dc, s, showAll }) {
   const fallback = useMemo(() => browserTimezone(), []);
   const d = dc.datacentre || {};
   const fac0 = dc.profile?.facility || {};
@@ -197,8 +258,14 @@ function SiteBlock({ dc, s, showAll, onValid }) {
      the rest. */
   const [f, setF] = useState(() => ({
     address_line1: fac0.address_line1 ?? (FAC_KEYS.some((k) => has(fac0[k])) ? '' : (d.address ?? '')),
+    address_line2: fac0.address_line2 ?? '',
+    city: fac0.city ?? '',
+    region: fac0.region ?? '',
     postcode: fac0.postcode ?? '',
     country: fac0.country ?? org.country ?? '',
+    provider: fac0.provider ?? '',
+    hours: fac0.hours ?? '',
+    access_notes: fac0.access_notes ?? '',
     timezone: d.timezone ?? org.timezone ?? fallback,
   }));
   const [touched, setTouched] = useState({});
@@ -223,8 +290,6 @@ function SiteBlock({ dc, s, showAll, onValid }) {
     spoc_phone: vPhone(c.phone),
   };
   const hasSpoc = dcHasSpoc(dc);
-  const valid = !Object.values(errs).some(Boolean) && hasSpoc;
-  useEffect(() => { onValid(valid); }, [valid, onValid]);
   const show = (k) => (showAll || touched[k]) && errs[k];
   const touch = (...ks) => setTouched((t) => ({ ...t, ...Object.fromEntries(ks.map((k) => [k, true])) }));
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
@@ -317,14 +382,21 @@ function SiteBlock({ dc, s, showAll, onValid }) {
     setInviting(false);
   };
 
-  /* The account's own failure is said beside its button, not up here. */
-  const mark = [s.marks[`datacentres:${dc.id}`], s.marks[`facility:${dc.id}`], s.marks[`contacts:${dc.id}`], s.marks[`people:${dc.id}`]].filter(Boolean).sort((a, b) => b.at - a.at)[0];
   return (
-    <Block title={dc.name} right={<SaveMark mark={mark} />}>
+    <>
       {dc.loadError ? <Err>{dc.loadError.message}</Err> : null}
       <Grid>
-        <Field label="Location" req span error={show('address_line1')} htmlFor={`site-${dc.id}-loc`}>
-          <Input id={`site-${dc.id}-loc`} value={f.address_line1} maxLength={200} placeholder="12 Harbour Road, Rotterdam" autoComplete="street-address" req invalid={!!show('address_line1')} onChange={(e) => set('address_line1', e.target.value)} onBlur={() => commit(['address_line1'])} onKeyDown={stopEnter} />
+        <Field label="Address" req span error={show('address_line1')} htmlFor={`site-${dc.id}-loc`}>
+          <Input id={`site-${dc.id}-loc`} value={f.address_line1} maxLength={200} placeholder="12 Harbour Road" autoComplete="street-address" req invalid={!!show('address_line1')} onChange={(e) => set('address_line1', e.target.value)} onBlur={() => commit(['address_line1'])} onKeyDown={stopEnter} />
+        </Field>
+        <Field label="Address line 2" span htmlFor={`site-${dc.id}-loc2`}>
+          <Input id={`site-${dc.id}-loc2`} value={f.address_line2} maxLength={200} placeholder="Building B, floor 2" autoComplete="off" onChange={(e) => set('address_line2', e.target.value)} onBlur={() => commit(['address_line2'])} onKeyDown={stopEnter} />
+        </Field>
+        <Field label="City" htmlFor={`site-${dc.id}-city`}>
+          <Input id={`site-${dc.id}-city`} value={f.city} maxLength={120} placeholder="Rotterdam" autoComplete="address-level2" onChange={(e) => set('city', e.target.value)} onBlur={() => commit(['city'])} onKeyDown={stopEnter} />
+        </Field>
+        <Field label="Region" htmlFor={`site-${dc.id}-reg`}>
+          <Input id={`site-${dc.id}-reg`} value={f.region} maxLength={120} placeholder="South Holland" autoComplete="address-level1" onChange={(e) => set('region', e.target.value)} onBlur={() => commit(['region'])} onKeyDown={stopEnter} />
         </Field>
         <Field label="Postcode" htmlFor={`site-${dc.id}-pc`}>
           <Input id={`site-${dc.id}-pc`} className={mono} value={f.postcode} maxLength={20} placeholder="3011 AA" autoComplete="postal-code" onChange={(e) => set('postcode', e.target.value)} onBlur={() => commit(['postcode'])} onKeyDown={stopEnter} />
@@ -339,6 +411,19 @@ function SiteBlock({ dc, s, showAll, onValid }) {
           <Select id={`site-${dc.id}-tz`} value={f.timezone} req invalid={!!show('timezone')} onChange={(e) => { const tz = e.target.value; set('timezone', tz); commit(['timezone'], { timezone: tz }); }}>
             {zones.map((z) => <option key={z} value={z}>{z}</option>)}
           </Select>
+        </Field>
+      </Grid>
+
+      <Sub title="Facility details" />
+      <Grid>
+        <Field label="Provider" htmlFor={`site-${dc.id}-prov`}>
+          <Input id={`site-${dc.id}-prov`} value={f.provider} maxLength={120} placeholder="Who runs the building" autoComplete="off" onChange={(e) => set('provider', e.target.value)} onBlur={() => commit(['provider'])} onKeyDown={stopEnter} />
+        </Field>
+        <Field label="Opening hours" htmlFor={`site-${dc.id}-hrs`}>
+          <Input id={`site-${dc.id}-hrs`} value={f.hours} maxLength={120} placeholder="Mon to Fri, 8 to 18" autoComplete="off" onChange={(e) => set('hours', e.target.value)} onBlur={() => commit(['hours'])} onKeyDown={stopEnter} />
+        </Field>
+        <Field label="Access notes" span htmlFor={`site-${dc.id}-acc`}>
+          <Textarea id={`site-${dc.id}-acc`} rows={3} value={f.access_notes} maxLength={2000} placeholder="Who to ask for a badge, where to report on arrival" onChange={(e) => set('access_notes', e.target.value)} onBlur={() => commit(['access_notes'])} />
         </Field>
       </Grid>
 
@@ -396,14 +481,14 @@ function SiteBlock({ dc, s, showAll, onValid }) {
           <CopyRow value={l.url} />
         </Stack>
       ))}
-    </Block>
+    </>
   );
 }
 
 /* ---- 3. Rules ---------------------------------------------------------- */
-/* One sentence and one button. The two promises in it are the product's own
-   rules; accepting stamps every site. */
-export const RULE = 'RackTrack changes your records only after an approval, and it never deletes a record.';
+/* One general statement and one acceptance. It is accepted per site, so one
+   press stamps every site the organization has. */
+export const RULE = 'You accept how RackTrack works with your records: nothing is changed until someone approves it.';
 export function RulesSection({ s, onValidity }) {
   const dcs = s.dcs;
   const pending = dcs.filter((d) => !dcRulesAccepted(d));
@@ -417,6 +502,7 @@ export function RulesSection({ s, onValidity }) {
   return (
     <Stack gap={16}>
       <p className="os-rule">{RULE}</p>
+      {dcs.length > 1 ? <Note>One acceptance covers all {dcs.length} sites.</Note> : null}
       {failed.length ? <Err>Not saved for {failed.map((d) => d.name).join(', ')}. Press Accept again.</Err> : null}
       {pending.length
         ? <div><Act variant="primary" disabled={all} onClick={accept} data-testid="accept-rules">{all ? 'Accepting' : 'Accept'}</Act></div>
@@ -426,23 +512,40 @@ export function RulesSection({ s, onValidity }) {
 }
 
 /* ---- 4. Review --------------------------------------------------------- */
+/* One line per step, and what is still missing under it, each opening the
+   step that supplies it. */
 export function ReviewSection({ s, goto, onValidity }) {
   const pr = progress(s.model);
   const valid = pr.required.done === pr.required.total;
   useReport(onValidity, valid);
   return (
-    <ul className="os-review">
-      {STEPS.filter((st) => st.kind !== 'review').map((st) => {
-        const done = pr.required.items.filter((i) => i.step === st.key).every((i) => i.done);
-        return (
-          <li key={st.key}>
-            <span className={cx('os-st', done && 'ok')} />
-            <b>{st.title}</b>
-            <span className="os-what">{summaryOf(st.key, s.model)}</span>
-            <Act size="sm" variant="quiet" onClick={() => goto(st.key)}>Edit</Act>
-          </li>
-        );
-      })}
-    </ul>
+    <Stack gap={20}>
+      <ul className="os-review">
+        {STEPS.filter((st) => st.kind === 'required' && st.key !== 'review').map((st) => {
+          const done = pr.required.items.filter((i) => i.step === st.key).every((i) => i.done);
+          return (
+            <li key={st.key}>
+              <span className={cx('os-st', done && 'ok')} />
+              <b>{st.title}</b>
+              <span className="os-what">{summaryOf(st.key, s.model)}</span>
+              <Act size="sm" variant="quiet" onClick={() => goto(st.key)}>Edit</Act>
+            </li>
+          );
+        })}
+      </ul>
+      {valid ? null : <RemainingList model={s.model} goto={goto} />}
+    </Stack>
+  );
+}
+
+/* ---- 5. Done ----------------------------------------------------------- */
+/* The closing step: a thank you, one line about what they can do now, and
+   the one button in the footer that closes. */
+export function DoneSection() {
+  return (
+    <Stack gap={12}>
+      <p className="os-rule">Setup is done. You can scan a rack now and check what is in it against your records.</p>
+      <Note>Anything here can be changed later under Profile, Organization settings.</Note>
+    </Stack>
   );
 }

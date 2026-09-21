@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import {
   STEPS, stepDone, stepLocked, progress, remaining, firstIncompleteStep, mandatoryDone, stepState,
-  composeAddress, vEmail, vPhone, vUsername, vPassword, proposeUsername, spocOf, summaryOf,
+  composeAddress, vEmail, vPhone, vUsername, vPassword, proposeUsername, siteReady, spocOf, summaryOf,
 } from './orgSettings.js';
 
 const org = { name: 'Northwind Colocation', short_code: 'NORTHWIN', timezone: 'Europe/Amsterdam', country: 'NL' };
@@ -13,11 +13,32 @@ const dc = (over = {}) => ({
   ...over,
 });
 
-describe('the four steps', () => {
-  test('are in the order the flow shows them, review last', () => {
-    expect(STEPS.map((s) => s.key)).toEqual(['org', 'sites', 'rules', 'review']);
-    expect(STEPS.filter((s) => s.kind === 'required').length).toBe(3);
+describe('the steps', () => {
+  test('are in the order the stepper shows them, the closing step last', () => {
+    expect(STEPS.map((s) => s.key)).toEqual(['org', 'sites', 'rules', 'review', 'done']);
+    expect(STEPS.filter((s) => s.kind === 'required').map((s) => s.key)).toEqual(['org', 'sites', 'rules', 'review']);
+    expect(STEPS[STEPS.length - 1].kind).toBe('done');
     expect(STEPS.filter((s) => s.kind === 'optional').length).toBe(0);
+  });
+
+  test('the closing step is only true once every required item is', () => {
+    const done = { org, dcs: [dc()] };
+    expect(stepDone('review', done)).toBe(true);
+    expect(stepDone('done', done)).toBe(true);
+    const half = { org: { ...org, country: '' }, dcs: [dc()] };
+    expect(stepDone('review', half)).toBe(false);
+    expect(stepDone('done', half)).toBe(false);
+  });
+
+  test('the closing step is never the one the stepper opens on', () => {
+    expect(firstIncompleteStep({ org, dcs: [dc()] })).toBe('review');
+    expect(firstIncompleteStep({ org, dcs: [] })).toBe('sites');
+  });
+
+  test('a site is ready when it says where it is and who its SPOC is', () => {
+    expect(siteReady(dc())).toBe(true);
+    expect(siteReady(dc({ datacentre: { address: null, timezone: 'Europe/Amsterdam' } }))).toBe(false);
+    expect(siteReady(dc({ approver: null, completeness: { mandatory: { location: true, approver: false, rules: true } } }))).toBe(false);
   });
 
   test('the rules are locked until a site exists; the sites step is where one is made', () => {
