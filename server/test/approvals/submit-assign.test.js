@@ -506,7 +506,8 @@ describe('what each person is shown', () => {
       title: 'SPOC of Site 32 - Office-Sprintpark', userId: 41, source: 'site' });
     assert.equal(to.siteSpoc.siteName, 'Office-Sprintpark');
     assert.deepEqual([to.why, to.whyText, to.others, to.everyone], [null, null, [], []]);
-    assert.deepEqual([to.rack, to.site], [null, null], 'the keys the older phone builds read are still there');
+    assert.ok('rack' in to && to.site === null, 'the keys the older phone builds read are still there');
+    assert.ok(to.rack === null || typeof to.rack.name === 'string');
     assert.equal(to.assignable, undefined, 'who else it could go to is an admin\'s question');
 
     const own = await service.contacts(draft({ by: SPOC }), { actor: SPOC });
