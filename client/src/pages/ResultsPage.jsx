@@ -4022,7 +4022,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             )}
             {(neighborStatus === 'idle' || neighborStatus === 'empty' || neighborStatus === 'error') && (
               <button type="button" className={styles.pAction} onClick={() => findNeighbor()}>
-                {neighborStatus === 'idle' ? 'Ask the switch' : 'Ask again'}
+                {neighborStatus === 'idle' ? 'Find the other end' : 'Ask again'}
               </button>
             )}
           </div>
