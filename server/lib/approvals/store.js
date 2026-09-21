@@ -1251,9 +1251,14 @@ function addChange(c) {
   return Number(info.lastInsertRowid);
 }
 
-/** Every registry row of one check, oldest first, RackTrack's own link fields included. */
-const changesOf = (planId) => db()
-  .prepare('SELECT * FROM approval_changes WHERE plan_id = ? ORDER BY id').all(Number(planId)).map(changeOf);
+/**
+ * Every registry row of one check, oldest first, RackTrack's own link fields
+ * included (`internal`). The verdicts of the checks after a write are rows of
+ * their own, action 'check', and come only when asked for.
+ */
+const changesOf = (planId, { checks = false } = {}) => db()
+  .prepare(`SELECT * FROM approval_changes WHERE plan_id = ? ${checks ? '' : "AND action <> 'check'"} ORDER BY id`)
+  .all(Number(planId)).map(changeOf);
 
 /**
  * The registry, newest first, behind its filters.
@@ -1267,7 +1272,8 @@ const changesOf = (planId) => db()
  */
 function listChanges(filters = {}) {
   const f = filters;
-  const where = [];
+  // A verdict is read back on the rows of its attempt, never listed as one.
+  const where = ["c.action <> 'check'"];
   const params = {};
   const inList = (col, name, values) => {
     const keys = values.map((v, i) => { params[`${name}${i}`] = Number(v); return `@${name}${i}`; });
@@ -1316,7 +1322,7 @@ function listChanges(filters = {}) {
       (SELECT v.result FROM approval_changes v WHERE v.plan_id = c.plan_id AND v.attempt = c.attempt
          AND v.action = 'check' ORDER BY v.id DESC LIMIT 1) AS checked
     FROM approval_changes c LEFT JOIN approval_plans p ON p.id = c.plan_id
-    ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+    WHERE ${where.join(' AND ')}
     ORDER BY c.id DESC LIMIT @limit
   `).all(params);
   const sites = new Map();
