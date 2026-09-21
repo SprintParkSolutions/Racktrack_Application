@@ -712,6 +712,33 @@ describe('a check from before, that had an incident per item', () => {
   });
 });
 
+describe('what the admins are told', () => {
+  it('says each problem in plain words, with no key of ours and no long dash', async () => {
+    const { id } = await send();
+    const plan = store.getPlan(id, { heavy: false });
+    const notify = require('../../lib/approvals/notify');
+    const said = (payload) => notify.wordsFor('incident_failed', plan, { plan, ...payload }, { name: 'Aasritha' }).body;
+    const bodies = [
+      [said({ problem: 'raise_failed', error: 'ServiceNow replied 503' }),
+        /ServiceNow did not take the incident for check \d+: ServiceNow replied 503\. The check is with dc007\.spoc all the same, and RackTrack will keep trying\./],
+      [said({ problem: 'attachment_failed', what: 'the photo of the rack', error: 'ServiceNow replied 413' }),
+        /Incident INC0010041 was raised, but the photo of the rack could not be attached: ServiceNow replied 413\. RackTrack will try again\./],
+      [said({ problem: 'push_failed', op: 'raise', error: 'ServiceNow replied 503' }),
+        /ServiceNow has still not taken the incident for check \d+: ServiceNow replied 503\. RackTrack has stopped trying\./],
+      [said({ problem: 'push_failed', op: 'reassign', to: 'dc007.member', error: 'ServiceNow replied 403' }),
+        /Incident INC0010041 could not be given to dc007\.member in ServiceNow: ServiceNow replied 403\./],
+      [said({ problem: 'push_failed', op: 'state', state: null, error: 'ServiceNow replied 500' }),
+        /RackTrack could not add its note to incident INC0010041: ServiceNow replied 500\./],
+      [said({ problem: 'push_failed', op: 'state', state: 'on_hold', error: 'ServiceNow replied 500' }),
+        /Incident INC0010041 could not be set to On Hold: ServiceNow replied 500\. It is still open in ServiceNow\./],
+    ];
+    for (const [body, wanted] of bodies) {
+      assert.match(body, wanted);
+      assert.ok(!/[\u2013\u2014]|racktrack_uid|RK-ABC|sys_id/.test(body), body);
+    }
+  });
+});
+
 describe('with no ServiceNow', () => {
   it('the whole flow works inside RackTrack, and nothing is called', async () => {
     incidents._setDeps({ serviceNowFor: () => null, fetchImpl: sn.fetch });
