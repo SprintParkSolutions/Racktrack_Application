@@ -23,6 +23,13 @@
  * its device, a rebind is never sent to the rack) while the status table and
  * the role checks stand aside.
  *
+ * WHO A CHECK IS WITH. A check sent from the phone goes straight to the SPOC
+ * of its Site (spoc.js) and is theirs to decide and approve as a whole; it
+ * carries that person as its holder (spocUserId, spoc). With nobody valid to
+ * give it to it waits in triage, flagged needsAdmin, until an organization
+ * admin names somebody. The person who sent a check decides nothing on it. A
+ * check filed before this has no holder, and every older move still works.
+ *
  * A refusal is a value, not an exception: { error, code, why, from, to } with
  * code not_found, bad_request, role, guard or transition. httpStatus() turns
  * the code into 404, 400, 403 or 409.
@@ -31,6 +38,7 @@ const store = require('./store');
 const shape = require('./shape');
 const machine = require('./machine');
 const bus = require('./bus');
+const spoc = require('./spoc');
 
 const { WORKING, REASONS, ROLES, SYSTEM } = machine;
 
@@ -141,7 +149,7 @@ function ctxFor(plan, extra = {}) {
  */
 function move(effects, plan, to, opts = {}) {
   const { actor = SYSTEM, action = to, reason = null, item = null, patch = {}, payload = null,
-          force = false, ctx = null, req = null, auditPayload = null } = opts;
+          force = false, ctx = null, req = null, auditPayload = null, heard: more = null } = opts;
   const from = plan.status;
   if (!force) {
     const ok = machine.can(plan, to, actor, ctx || ctxFor(plan));
@@ -155,7 +163,7 @@ function move(effects, plan, to, opts = {}) {
   audit(effects, updated, action, {
     actor, req, payload: { from, to, reason, ...(auditPayload || {}) },
   });
-  const heard = { plan: updated, from, to, actor, reason, item };
+  const heard = { plan: updated, from, to, actor, reason, item, ...(more || {}) };
   emit(effects, 'transition', heard);
   if (NAMED[to] && from !== to) emit(effects, NAMED[to], heard);
   return { plan: updated, from, to };
@@ -173,11 +181,16 @@ function note(plan, action, { actor = SYSTEM, item = null, reason = null, payloa
  * Let the plan catch up with its tickets, and make the moves the contract
  * calls automatic. Runs after anything that touched an item or a ticket:
  *
- *   submitted            -> triage
- *   triage               -> assigned, once nothing is left to hand out and an
- *                           admin has acted on the plan (assigned something,
- *                           or triaged it)
- *   a working status     -> the working status its tickets now add up to
+ *   submitted            -> assigned, when submit() found the SPOC of the Site
+ *                           and made them the holder; else triage, where the
+ *                           check waits for an admin (needsAdmin says why)
+ *   triage               -> assigned, once it has a holder; for a check from
+ *                           before the SPOC change, once nothing is left to
+ *                           hand out and an admin has acted on the plan
+ *                           (assigned something, or triaged it)
+ *   a working status     -> the working status its tickets now add up to - but
+ *                           a check with a holder does not follow its tickets:
+ *                           it stays with that person until they decide it
  *   resolved             -> verification_pending
  *
  * These are the server's own moves: the person whose action caused them was
@@ -192,12 +205,21 @@ function settle(effects, planId, causedBy = null) {
     const tickets = store.ticketsOf(planId);
     let to = null;
     let patch = {};
+    let reason = 'follows its tickets';
+    const held = plan.spocUserId != null;
     if (plan.status === 'submitted') {
-      to = 'triage';
+      to = held ? 'assigned' : 'triage';
+      reason = held ? 'goes to the site SPOC' : (plan.needsAdmin && plan.needsAdmin.why) || 'no_spoc';
     } else if (plan.status === 'triage') {
-      const left = machine.unassigned({ items: store.itemsOf(planId), tickets }).length;
-      if (!left && (tickets.length || plan.triagedAt)) to = 'assigned';
+      if (held) {
+        to = 'assigned';
+        reason = 'an admin chose who it goes to';
+      } else {
+        const left = machine.unassigned({ items: store.itemsOf(planId), tickets }).length;
+        if (!left && (tickets.length || plan.triagedAt)) to = 'assigned';
+      }
     } else if (WORKING.includes(plan.status)) {
+      if (held) return plan;
       const target = machine.workingStatus(tickets) || 'resolved';
       if (target !== plan.status) {
         to = target;
@@ -209,7 +231,7 @@ function settle(effects, planId, causedBy = null) {
     }
     if (!to) return plan;
     move(effects, plan, to, { actor: SYSTEM, action: `auto.${to}`, force: true, patch,
-      reason: 'follows its tickets', payload: by, auditPayload: by });
+      reason, payload: by, auditPayload: by });
   }
   return store.getPlan(planId, { heavy: false });
 }
@@ -250,7 +272,8 @@ const seenByOf = (actor) => ({ orgId: actor.orgId ?? null, userId: actor.id ?? n
  * May this person read the plan? The visibility rule first, then which people
  * inside that organization: an admin, an approver and an auditor read all of
  * it; a technician reads their own and what their Site is being asked to
- * verify; anybody reads a plan that has a ticket assigned to them.
+ * verify; anybody reads a check that is with them, or that has a ticket
+ * assigned to them.
  */
 function canRead(plan, actor, tickets = null) {
   if (!canSee(plan, actor)) return false;
@@ -261,6 +284,7 @@ function canRead(plan, actor, tickets = null) {
   const sameSite = plan.tenantId != null && Number(plan.tenantId) === Number(actor.tenantId);
   if (actor.role === 'site_manager' && sameSite) return true;
   if (actor.role === 'member' && sameSite && plan.status === 'verification_pending') return true;
+  if (machine.isHolder(plan, actor)) return true;
   return machine.isAssignee(tickets || store.ticketsOf(plan.id), actor);
 }
 
@@ -366,11 +390,30 @@ function createFromPreview({ scan, snap, report, actor, tenantId = null, parentP
 }
 
 // -- Submit ---------------------------------------------------------------
+/** Who a check is with, as the record kept on the plan. */
+const holderRecord = (holder, { source, by, reason = null, previous = [] }) => ({
+  userId: holder.userId, username: holder.username, email: holder.email ?? null, source,
+  assignedAt: store.nowIso(), assignedBy: by.username ?? null, assignedById: by.id ?? null,
+  reason, previous,
+});
+
+/** One ticket per item still waiting, all to the holder: the check goes to one person as a whole. */
+const holderRows = (uids, holder, question) => uids.map((uid) => ({
+  uid, assignee: holder.username, assigneeUserId: holder.userId, assigneeEmail: holder.email ?? null,
+  scope: 'check', question: text(question) || 'Review this against the drift report.',
+}));
+
 /**
- * A technician hands the comparison to the admin: draft, submitted, and
- * straight on to triage. Their note travels with it, because "three of these
+ * A technician sends the comparison: draft, submitted, and straight on to the
+ * SPOC of the Site, who becomes its holder with a ticket for each item sent,
+ * all in this one transaction. With nobody valid to give it to - no Site, no
+ * SPOC, or the SPOC is the sender - it waits in triage, flagged needsAdmin,
+ * and the admins are told. Their note travels with it, because "three of these
  * look wrong to me" is worth more than the diff on its own. Sending it twice
  * is not an error; the second time says `already`.
+ *
+ * Nothing here reaches a network: the incident and the notice to the holder
+ * are dispatch(), after the commit.
  */
 function submit(planId, { note: said = null, items: chosen = null, actor, req = null } = {}) {
   const who = actorOf(actor);
@@ -410,31 +453,94 @@ function submit(planId, { note: said = null, items: chosen = null, actor, req = 
       actor: who, action: 'submit', req, force: !isStrict(who), ctx: ctxFor(plan),
       patch: { submittedAt: store.nowIso(), submittedBy: who.username ?? null,
                submittedById: who.id ?? null, submittedNote: text(said) || null },
-      payload: { what: 'sent to the admin', detail: { note: text(said) || null,
+      payload: { what: 'sent', detail: { note: text(said) || null,
         ...(leftNames.length ? { notSent: leftNames } : {}), ...shape.summarise(items) } },
       auditPayload: { note: text(said) || null, ...(leftNames.length ? { notSent: leftNames } : {}) },
     });
     if (moved.refused) return moved.refused;
-    settle(effects, plan.id, who);
+    const goesTo = spoc.resolve(moved.plan, { sender: who });
+    if (goesTo.ok) {
+      store.updatePlan(plan.id, { spocUserId: goesTo.holder.userId, needsAdmin: null,
+        spoc: holderRecord(goesTo.holder, { source: 'site', by: SYSTEM }) });
+      ticketRows(moved.plan, holderRows(assignableUids(plan.id), goesTo.holder, said), SYSTEM);
+    } else {
+      store.updatePlan(plan.id, { needsAdmin: { why: goesTo.why, text: goesTo.text, at: store.nowIso() } });
+    }
+    const settled = settle(effects, plan.id, who);
+    if (settled && settled.status === 'triage') {
+      emit(effects, 'reassign_needed', { plan: settled, actor: who, why: goesTo.why,
+        text: goesTo.text, rackId: settled.rackId });
+    }
     return { plan: store.getPlan(plan.id, { heavy: false }) };
   });
+}
+
+/** The check's one incident as a caller is shown it, or null. */
+const incidentOf = (plan) => (plan && plan.incident) || null;
+
+/**
+ * Tell the holder the check is theirs. Async and idempotent: a check whose
+ * holder has been told is left alone unless `again`. Never throws; a failure
+ * is a value on the plan. Answers { holder, needsAdmin, incident }.
+ *
+ * The ServiceNow incident belongs here, before anybody is told, so the notice
+ * can carry its number. It is raised once per check and stamped on the plan;
+ * until that lands the plan's incident stays null and the notice says nothing
+ * about ServiceNow.
+ */
+async function dispatch(planId, { actor, req = null, again = false } = {}) {
+  const who = actorOf(actor) || SYSTEM;
+  let plan = store.getPlan(planId, { heavy: false });
+  if (!plan) return { holder: null, needsAdmin: null, incident: null };
+  if (plan.spocUserId == null || !plan.spoc) {
+    return { holder: null, needsAdmin: plan.needsAdmin || null, incident: null };
+  }
+  if (plan.spoc.toldAt && !again) return { holder: plan.spoc, needsAdmin: null, incident: incidentOf(plan) };
+  try {
+    const effects = [];
+    plan = store.updatePlan(plan.id, { spoc: { ...plan.spoc, toldAt: store.nowIso() } });
+    const items = store.itemsOf(plan.id);
+    const site = plan.tenantId != null ? store.tenantById(plan.tenantId) : null;
+    audit(effects, plan, 'assign', { actor: who, req, payload: {
+      holder: plan.spoc.username, incident: (incidentOf(plan) || {}).number || null,
+      source: plan.spoc.source } });
+    emit(effects, 'assigned', { plan, actor: who, to: 'assigned',
+      holder: { userId: plan.spoc.userId, username: plan.spoc.username, email: plan.spoc.email ?? null },
+      source: plan.spoc.source, sender: { userId: plan.submittedById ?? null, username: plan.submittedBy ?? null },
+      rackName: plan.rackName || plan.rackId || null, siteName: (site && site.name) || null,
+      // What the notice is written from: each item sent, in its own words.
+      targets: items.filter((i) => i.decidable && !i.following && i.decision !== 'not_applicable')
+        .map((i) => ({ uid: i.uid, type: i.type, name: i.name, action: i.action })),
+      note: plan.submittedNote || null, incident: incidentOf(plan) });
+    flush(effects);
+  } catch { /* telling somebody never undoes the assignment */ }
+  return { holder: plan.spoc, needsAdmin: null, incident: incidentOf(plan) };
+}
+
+/** submit(), then dispatch(). -> submit()'s answer plus { holder, needsAdmin, incident }. */
+async function submitAndDispatch(planId, opts = {}) {
+  const out = submit(planId, opts);
+  if (!out || out.error) return out;
+  const sent = await dispatch(planId, { actor: opts.actor, req: opts.req || null });
+  return { ...out, plan: store.getPlan(planId, { heavy: false }) || out.plan, ...sent };
 }
 
 // -- Triage ---------------------------------------------------------------
 const TRIAGE_OPEN = ['triage', ...WORKING, 'reopened', 'rework'];
 
 /**
- * The admin sizes the plan up: category, priority, risk, disposition. The
- * status stays triage until everything is assigned, with two ways out from
- * here: a duplicate of another plan, or covered by a known exception.
+ * The admin sizes the plan up: category, priority, risk, disposition. An
+ * organization admin only: a site manager reads their Site's checks and no
+ * longer triages them. Two ways out from here: a duplicate of another plan,
+ * or covered by a known exception.
  */
 function triage(planId, body = {}, { actor, req = null } = {}) {
   const who = actorOf(actor);
   const found = open(planId, who);
   if (found.refused) return found.refused;
   const { plan } = found;
-  if (isStrict(who) && !(machine.isAdmin(who) || machine.managesSite(plan, who))) {
-    return refuse('role', 'Triage is for an organization admin or the site manager of this Site.');
+  if (isStrict(who) && !machine.isAdmin(who)) {
+    return refuse('role', 'Triage is for an organization admin.');
   }
   if (!TRIAGE_OPEN.includes(plan.status)) {
     return refuse('transition', `a plan that is ${plan.status.replace(/_/g, ' ')} cannot be triaged`,
@@ -526,17 +632,6 @@ function itemLine(items, item) {
   return `${item.type} "${item.name}" - ${whatDiffers(item)}`
     + (ports ? ` (${ports} port${ports === 1 ? '' : 's'} follow it)` : '');
 }
-
-/** tickets.raise()'s answer as the external record kept on the ticket. */
-const externalOf = (r) => (r.ok
-  ? { system: 'servicenow', number: r.number, sysId: r.sysId, url: r.url,
-      state: r.state, reused: r.reused, reopened: r.reopened,
-      raisedAt: new Date().toISOString() }
-  : { system: 'servicenow', error: `ServiceNow replied ${r.status || 'nothing'}`,
-      detail: typeof r.error === 'string' ? r.error.slice(0, 200) : r.error });
-
-const NO_SERVICENOW = { system: 'none',
-  why: 'No ServiceNow is configured, so this ticket lives only in RackTrack.' };
 
 /**
  * Everyone NetBox knows for this rack, once, with the SPOC first.
@@ -705,185 +800,112 @@ function notifyAssignee(plan, items, { person, targets, incidents, rackName, sit
 }
 
 /**
- * The admin hands items to a person.
+ * An organization admin gives the check to somebody: the first holder of a
+ * check that is waiting in triage, or a different one later (the SPOC is on
+ * leave, or says it is not theirs).
  *
- *   items       a list of uids, or '*' for every item still waiting
- *   assignee    the name picked from the roster, and/or
- *   assigneeId  the NetBox contact id, which settles two people with one name
- *   question    what the admin wants checked
- *   rows        instead of the four above: [{ uid, assignee, assigneeId,
- *               question }], for a caller that assigns different people at once
+ *   userId      the RackTrack user it goes to, one of spoc.assignableUsers(), or
+ *   assignee /  a NetBox contact picked from the roster, resolved to the
+ *   assigneeId  RackTrack user with that contact's email
+ *   reason      why; needed unless the check is still waiting in triage
  *
- * The person is resolved to one NetBox contact BEFORE anything is written: a
- * name that matches nobody, or two people, refuses the whole request with
- * nothing changed. Then each item gets its ticket, one ServiceNow incident is
- * raised per item through lib/netbox/tickets.js (none configured is not an
- * error: the ticket lives here), and each person gets one email listing
- * everything they were just handed. When the contact's email is a RackTrack
- * user of the organization, the ticket carries that user too.
+ * A check goes to one person as a whole, so there is no per-item form any
+ * more. The person is settled BEFORE anything is written: somebody who cannot
+ * open the check, an auditor, or the person who sent it refuses the request
+ * with nothing changed. Then, in one transaction, the plan gets its new holder
+ * (the old one kept under `previous`), every item still waiting gets a fresh
+ * ticket to them with the old one in its history, and the plan is `assigned`.
+ * After the commit the new holder is told, and the old one that it has gone.
  */
 async function assign(planId, body = {}, { actor, req = null } = {}) {
   const who = actorOf(actor);
   const found = open(planId, who);
   if (found.refused) return found.refused;
-  let { plan } = found;
+  const { plan } = found;
   const strict = isStrict(who);
-  if (strict && !(machine.isAdmin(who) || machine.managesSite(plan, who))) {
-    return refuse('role', 'Assigning is for an organization admin or the site manager of this Site.');
+  if (strict && !machine.isAdmin(who)) {
+    return refuse('role', 'Reassigning is for an organization admin.');
   }
-  if (strict && !ASSIGN_OPEN.includes(plan.status)) {
+  if (!ASSIGN_OPEN.includes(plan.status)) {
     return refuse('transition', plan.status === 'draft'
-      ? 'this plan has not been sent to the admin yet'
-      : `a plan that is ${plan.status.replace(/_/g, ' ')} cannot be assigned`,
+      ? 'this check has not been sent yet'
+      : `a plan that is ${plan.status.replace(/_/g, ' ')} cannot be given to somebody`,
     { from: plan.status, to: 'assigned' });
   }
-  if (!strict && shape.legacyStatus(plan.status) === 'applied') {
-    return refuse('transition', 'this plan has already been written');
-  }
+  const ONE_PERSON = 'Send { userId, reason }. A check goes to one person as a whole.';
+  if (body.items !== undefined || body.rows !== undefined) return refuse('bad_request', ONE_PERSON);
 
-  const wholeRack = body.items === '*';
-  let rows;
-  let rackUids = [];
-  if (wholeRack) {
-    if (!body.assignee && (body.assigneeId == null || body.assigneeId === '')) {
-      return refuse('bad_request', 'a ticket has to be assigned to somebody');
-    }
-    rackUids = assignableUids(plan.id);
-    if (!rackUids.length) return refuse('guard', 'nothing on this plan is waiting to be assigned');
-    rows = rackUids.map((uid) => ({ uid, assignee: body.assignee, assigneeId: body.assigneeId,
-      question: body.question, scope: 'rack' }));
-  } else if (Array.isArray(body.rows)) {
-    rows = body.rows.filter((r) => r && typeof r === 'object').map((r) => ({ ...r }));
-  } else {
-    const uids = Array.isArray(body.items) ? body.items : [];
-    rows = uids.map((uid) => ({ uid: String(uid), assignee: body.assignee,
-      assigneeId: body.assigneeId, question: body.question }));
-  }
-  if (!rows.length) return refuse('bad_request', "send { items: [uid] } or { items: '*' } with an assignee");
-
-  // Who each ticket goes to, settled before anything is written on the plan.
-  let people = null;
-  const naming = rows.filter((r) => r.assignee || (r.assigneeId != null && r.assigneeId !== ''));
-  if (strict && naming.length) {
-    people = await rosterFor(plan, who);
+  // Who it goes to, settled before anything is written on the plan.
+  const allowed = spoc.assignableUsers(plan);
+  const notThem = (user) => (user && Number(user.orgId) === Number(plan.orgId) && machine.isSender(plan, user)
+    ? `${user.username} sent this check, so it cannot go to them.`
+    : 'That person cannot be given this check. Choose an organization admin or somebody on its site.');
+  let target = null;
+  if (body.userId != null && body.userId !== '') {
+    target = allowed.find((u) => Number(u.id) === Number(body.userId)) || null;
+    if (!target) return refuse('bad_request', notThem(store.userById(body.userId)));
+  } else if (body.assignee || (body.assigneeId != null && body.assigneeId !== '')) {
+    const people = await rosterFor(plan, who);
     if (!people.client) {
       return refuse('bad_request',
-        'No NetBox is configured for this account, so nobody can be looked up to assign to.');
+        'No NetBox is configured for this account, so nobody can be looked up. Choose a RackTrack user.');
     }
-    for (const r of naming) {
-      const hit = contactFor(people.roster, r);
-      if (hit.error) return refuse('bad_request', hit.error, { uid: r.uid });
-      r.assignee = hit.person.name;
-      r.assigneeId = hit.person.netboxId ?? null;
-      r.assigneeEmail = hit.person.email ?? null;
-      r.spoc = people.spoc;
+    const hit = contactFor(people.roster, body);
+    if (hit.error) return refuse('bad_request', hit.error);
+    const user = hit.person.email ? store.userByEmail(plan.orgId, hit.person.email) : null;
+    if (!user) {
+      return refuse('bad_request', 'That contact has no RackTrack account, so they cannot open the check. '
+        + 'Choose a RackTrack user.');
     }
+    target = allowed.find((u) => Number(u.id) === Number(user.id)) || null;
+    if (!target) return refuse('bad_request', notThem(user));
+  } else {
+    return refuse('bad_request', ONE_PERSON);
   }
-  for (const r of naming) {
-    const user = r.assigneeEmail ? store.userByEmail(plan.orgId, r.assigneeEmail) : null;
-    r.assigneeUserId = user ? user.id : null;
+  const reason = text(body.reason);
+  if (!reason && plan.status !== 'triage') {
+    return refuse('bad_request', 'Say why this check is going to somebody else.');
+  }
+  if (plan.spocUserId != null && Number(plan.spocUserId) === Number(target.id) && WORKING.includes(plan.status)) {
+    return refuse('guard', `This check is already with ${target.username}.`, { from: plan.status, to: 'assigned' });
+  }
+  const holder = { userId: target.id, username: target.username, email: target.email ?? null };
+  if (strict) {
+    const ok = machine.can(plan, 'assigned', who, ctxFor(plan, { reason, holderUserId: holder.userId }));
+    if (!ok.ok) return refuse(ok.code, ok.why, { from: plan.status, to: 'assigned' });
   }
 
-  const out = run(() => ticketRows(plan, rows, who));
-  const raised = [];
-  const sn = strict ? require('./connections').serviceNowFor({ orgId: plan.orgId ?? who.orgId, userId: who.id }) : null;
+  const old = plan.spoc && plan.spoc.userId != null ? plan.spoc : null;
+  const out = run((effects) => {
+    const previous = [...((plan.spoc && plan.spoc.previous) || []),
+      ...(old ? [{ userId: old.userId, username: old.username, until: store.nowIso(),
+        by: who.username ?? null, reason: reason || null }] : [])];
+    store.updatePlan(plan.id, { spocUserId: holder.userId, needsAdmin: null,
+      spoc: holderRecord(holder, { source: 'admin', by: who, reason: reason || null, previous }) });
+    // Everything still waiting on a person goes with the check; what was
+    // already approved or rejected stays decided.
+    const waiting = store.itemsOf(plan.id).filter((i) => i.decidable && machine.isTicketable(i)
+      && ['pending', 'ticketed'].includes(i.decision)).map((i) => i.uid);
+    const rows = ticketRows(plan, holderRows(waiting, holder, plan.submittedNote), who);
+    const moved = move(effects, store.getPlan(plan.id, { heavy: false }), 'assigned', {
+      actor: who, action: plan.status === 'assigned' ? 'reassign' : 'assign', req, force: true,
+      reason: reason || null, payload: { from: old ? old.username : null, to: holder.username, reason: reason || null },
+      auditPayload: { from: old ? old.username : null, to: holder.username },
+    });
+    return { ...rows, plan: moved.plan };
+  });
 
-  if (out.applied.length && strict) {
-    const ticketsLib = require('../netbox/tickets');
-    const items = store.itemsOf(plan.id);
-    const { rackName, siteName, roster } = people;
-    const targets = out.applied.map((a) => items.find((i) => i.uid === a.uid)).filter(Boolean);
-    const notices = new Map();   // one email per person: contact -> what they were handed
-    const perItem = [];
+  // After the commit. A check that has its incident moves it to the new holder
+  // rather than raising another; with none yet, dispatch() is where one starts.
+  const sent = await dispatch(plan.id, { actor: who, req, again: true });
+  if (old) {
     const effects = [];
-    for (const item of targets) {
-      const ticket = store.getTicket(plan.id, item.uid);
-      const person = roster.find((p) => String(p.netboxId) === String(ticket.assigneeId))
-        || roster.find((p) => p.name === ticket.assignee) || null;
-      const external = sn
-        ? externalOf(await ticketsLib.raise(sn, {
-          item, rackId: plan.rackId, rackName, siteName,
-          spoc: person, question: ticket.question, planId: plan.id,
-        }))
-        : NO_SERVICENOW;
-      const patch = { external };
-      if (person && !person.email) patch.emailNote = `no email in NetBox for ${person.name}, so no notice was sent`;
-      store.updateTicket(plan.id, item.uid, patch, { touch: false });
-      perItem.push({ uid: item.uid, ports: shape.childrenOf(items, item.uid).length, ...external });
-      audit(effects, plan, 'assign', { actor: who, req, payload: {
-        uid: item.uid, assignee: ticket.assignee, assigneeId: ticket.assigneeId ?? null,
-        assigneeUserId: ticket.assigneeUserId ?? null, incident: external.number || null,
-        scope: wholeRack ? 'rack' : 'item',
-      } });
-      if (person && person.email) {
-        const key = person.netboxId != null ? `id:${person.netboxId}` : `name:${person.name}`;
-        const n = notices.get(key) || { person, targets: [], incidents: [], userId: ticket.assigneeUserId };
-        n.targets.push(item);
-        if (external.system === 'servicenow') n.incidents.push(external);
-        notices.set(key, n);
-      }
-    }
-    if (wholeRack) {
-      // The rack entry first: what was handed over as one move, and how the
-      // incidents behind it went. `number` joins them so a screen that shows
-      // one number still shows something true; `error` is the first failure.
-      const incidents = perItem.map((r) => ({
-        uid: r.uid, number: r.number || null, url: r.url || null, error: r.error || null,
-      }));
-      const numbers = incidents.map((i) => i.number).filter(Boolean);
-      const failed = incidents.filter((i) => i.error);
-      raised.push({
-        scope: 'rack', uid: '*', items: rackUids, count: rackUids.length,
-        ticket: { system: sn ? 'servicenow' : 'none', raised: numbers.length,
-                  failed: failed.length, incidents },
-        number: numbers.length ? numbers.join(', ') : null,
-        error: failed.length ? failed[0].error : null,
-      });
-    }
-    raised.push(...perItem);
-
-    const question = text(body.question) || null;
-    for (const n of notices.values()) {
-      notifyAssignee(plan, items, {
-        ...n, rackName, siteName, by: who.username, wholeRack,
-        question: wholeRack ? question : (n.targets.length === 1
-          ? store.getTicket(plan.id, n.targets[0].uid).question : null),
-      });
-      emit(effects, 'assigned', { plan, actor: who, to: 'assigned',
-        assignee: { name: n.person.name, email: n.person.email, netboxId: n.person.netboxId ?? null,
-                    userId: n.userId ?? null },
-        items: n.targets.map((t) => t.uid),
-        // What the notice is written from: the rack by the name on its tape,
-        // each item in its own words, the admin's question and the incident.
-        rackName, siteName,
-        targets: n.targets.map((t) => ({ uid: t.uid, type: t.type, name: t.name, action: t.action })),
-        incidents: n.incidents.map((i) => ({ number: i.number || null, url: i.url || null })),
-        question: wholeRack ? question : (n.targets.length === 1
-          ? store.getTicket(plan.id, n.targets[0].uid).question : null) });
-    }
+    emit(effects, 'reassigned', { plan: out.plan, previous: { userId: old.userId, username: old.username,
+      email: old.email ?? null }, holder, actor: who });
     flush(effects);
   }
-
-  // The plan follows: out of triage once nothing is left to hand out, and
-  // back to assigned from reopened, rework or rejected.
-  const after = run((effects) => {
-    plan = store.getPlan(plan.id, { heavy: false });
-    if (out.applied.length && ['reopened', 'rework', 'rejected'].includes(plan.status)) {
-      const moved = move(effects, plan, 'assigned', {
-        actor: who, action: 'assign_again', req, force: !strict,
-        ctx: ctxFor(plan, { reason: text(body.reason) || text(body.question) || 'assigned again' }),
-        reason: text(body.reason) || text(body.question) || 'assigned again',
-      });
-      if (moved.refused) return moved;
-    }
-    return { plan: settle(effects, plan.id, who) };
-  });
-  if (after.refused) return after.refused;
-
-  return {
-    plan: after.plan, applied: out.applied, refused: out.refused, raised, wholeRack,
-    waiting: assignableUids(plan.id), serviceNowConfigured: Boolean(sn),
-  };
+  return { plan: store.getPlan(plan.id, { heavy: false }), holder: sent.holder, previous: old,
+    incident: sent.incident, applied: out.applied, refused: out.refused };
 }
 
 /**
@@ -1117,17 +1139,36 @@ const DECIDE_OPEN = ['triage', ...WORKING, 'resolved', 'verification_pending', '
 const hasFinding = (ticket) => Boolean(ticket && ticket.status === 'resolved' && text(ticket.finding));
 
 /**
+ * May this person decide the items of this check? Null when they may, else a
+ * refusal. It is for the SPOC the check is with, whatever their role, or an
+ * organization admin in their place; an approver only signs a check that is
+ * waiting for its approval. And never for the person who sent it.
+ */
+function mayDecide(plan, who) {
+  if (!isStrict(who)) return null;
+  const theirs = machine.isAdmin(who) || machine.isHolder(plan, who)
+    || (who.role === 'approver' && plan.status === 'approval_pending');
+  if (!theirs) return refuse('role', 'Deciding this check is for its SPOC or an organization admin.');
+  if (machine.isSender(plan, who)) return refuse('role', machine.SENDER_WHY);
+  return null;
+}
+
+/**
  * Approve or reject items, one by one.
  *
- * The admin assigns before they decide. Approve and reject are refused on an
- * item nobody has been asked to check, on one whose ticket is still open, and
- * on one that came back with nothing said: the only move open there is to
- * assign it. The one exception is an item that cannot be checked at the rack
- * at all (a rebind): it is decided as it stands. This is rule 2 of the frozen
- * workflow, held on the server, so no screen can approve from a desk.
+ * The person a check is with decides it with the drift report beside them, so
+ * their decision is itself the finding: an item whose ticket is still open is
+ * decided, and the ticket closes in the same step with what they said.
+ *
+ * The old library (a trusted caller) still assigns before it decides, and so
+ * does a check imported from the old plan files while nobody holds it: approve
+ * and reject are refused there on an item nobody has been asked to check, on
+ * one whose ticket is still open, and on one that came back with nothing said.
+ * The one exception is an item that cannot be checked at the rack at all (a
+ * rebind): it is decided as it stands.
  *
  * A decision on a device is a decision on the ports that follow it, and it
- * closes the device's resolved ticket, keeping the finding beside the close.
+ * closes the device's ticket, keeping the finding beside the close.
  */
 function decideItems(planId, decisions, { actor, req = null } = {}) {
   const who = actorOf(actor);
@@ -1135,18 +1176,21 @@ function decideItems(planId, decisions, { actor, req = null } = {}) {
   if (found.refused) return found.refused;
   const { plan } = found;
   const strict = isStrict(who);
-  if (strict && !ROLES.approver.includes(who.role)) {
-    return refuse('role', 'Approving and rejecting are for an approver or an organization admin.');
-  }
+  const barred = mayDecide(plan, who);
+  if (barred) return barred;
   if (shape.legacyStatus(plan.status) === 'applied') {
     return refuse('transition', 'this plan has already been written');
   }
   if (strict && !DECIDE_OPEN.includes(plan.status)) {
     return refuse('transition', plan.status === 'draft'
-      ? 'this plan has not been sent to the admin yet'
+      ? 'this check has not been sent yet'
       : `a plan that is ${plan.status.replace(/_/g, ' ')} is closed to item decisions; send it back for rework first`);
   }
 
+  // Assign first: the old library, and a check imported from the old plan
+  // files that nobody holds yet - it keeps the rule it was filed under until
+  // an admin gives it to somebody.
+  const assignFirst = !strict || (plan.legacyId != null && plan.spocUserId == null);
   return run((effects) => {
     const applied = [];
     const refused = [];
@@ -1166,7 +1210,7 @@ function decideItems(planId, decisions, { actor, req = null } = {}) {
       }
       const ticket = store.getTicket(plan.id, item.uid);
       const found2 = hasFinding(ticket);
-      if (machine.needsAssignFirst(item) && !found2) {
+      if (assignFirst && machine.needsAssignFirst(item) && !found2) {
         refused.push({ uid: d.uid, why: 'assign first' });
         continue;
       }
@@ -1182,6 +1226,13 @@ function decideItems(planId, decisions, { actor, req = null } = {}) {
         // done. Its finding, who resolved it and when stay as they were left.
         store.updateTicket(plan.id, item.uid, { status: 'closed', closedBy: who.username ?? null,
           closedAt: store.nowIso(), closedWith: d.decision }, { touch: false });
+      } else if (strict && shape.isOpenTicket(ticket)) {
+        // Decided while the ticket was still out: the decision is the finding.
+        const now = store.nowIso();
+        store.updateTicket(plan.id, item.uid, { status: 'closed', closedBy: who.username ?? null,
+          closedAt: now, closedWith: d.decision,
+          finding: text(d.note) || ticket.finding || 'Decided at the desk with the drift report.',
+          resolvedBy: who.username ?? null, resolvedById: who.id ?? null, resolvedAt: now }, { touch: false });
       }
       applied.push({ uid: d.uid, decision: d.decision });
       audit(effects, plan, 'decide', { actor: who, req, payload: {
@@ -1225,15 +1276,21 @@ function skipVerification(planId, { reason, actor, req = null } = {}) {
  * The record carries payload_hash, the fingerprint of the approved items and
  * their scaffolding, and the plan version it was signed at. When the plan's
  * risk is in the organization's dual_approval_risks the first call records
- * the first signature and the plan stays in approval_pending; the second,
- * from a different person, approves it. Somebody who resolved a ticket on the
- * plan approves nothing on it.
+ * the first signature and parks the plan in approval_pending; the second,
+ * from a different person, approves it. The person who sent the check
+ * approves nothing on it: the table refuses them, with code `role`.
+ *
+ * `incidentState` is what the approver wants the check's ServiceNow incident
+ * left as (resolved unless they say otherwise). It is kept on the incident
+ * here, in the same transaction, and pushed once the outcome is known.
  */
-function approve(planId, { comment = null, actor, req = null } = {}) {
+function approve(planId, { comment = null, incidentState = null, actor, req = null } = {}) {
   const who = actorOf(actor);
   const found = open(planId, who);
   if (found.refused) return found.refused;
   const { plan } = found;
+  const chosen = chosenState(plan, incidentState, 'resolved', who);
+  if (chosen.refused) return chosen.refused;
   return run((effects) => {
     const ctx = ctxFor(plan);
     const ok = machine.can(plan, 'approved', who, ctx);
@@ -1247,37 +1304,70 @@ function approve(planId, { comment = null, actor, req = null } = {}) {
     const signed = { stage: stage.stage, payloadHash: ctx.payloadHash, planVersion: plan.version,
                      comment: text(comment) || null };
     if (!stage.final) {
-      const updated = store.updatePlan(plan.id, {});
+      const second = { stage: 'second', firstApproverId: who.id ?? null };
+      if (plan.status !== 'approval_pending') {
+        // Signed from where the check was with its holder: it now waits, in
+        // approval_pending, for the second name.
+        const parked = move(effects, plan, 'approval_pending', { actor: who, action: 'approve.first', req, ctx,
+          payload: signed, auditPayload: { ...signed, final: false }, patch: chosen.patch, heard: second });
+        if (parked.refused) return parked.refused;
+        return { plan: parked.plan, decision, stage: stage.stage, final: false, needsSecond: true };
+      }
+      const updated = store.updatePlan(plan.id, chosen.patch);
       note(updated, 'approve.first', { actor: who, payload: signed });
       audit(effects, updated, 'approve', { actor: who, req, payload: { ...signed, final: false } });
       emit(effects, 'approval_requested', { plan: updated, from: plan.status, to: plan.status,
-        actor: who, reason: null, item: null, stage: 'second', firstApproverId: who.id ?? null });
+        actor: who, reason: null, item: null, ...second });
       return { plan: updated, decision, stage: stage.stage, final: false, needsSecond: true };
     }
     const moved = move(effects, plan, 'approved', {
       actor: who, action: 'approve', req, force: true, payload: signed, auditPayload: { ...signed, final: true },
-      patch: { payloadHash: ctx.payloadHash },
+      patch: { payloadHash: ctx.payloadHash, ...chosen.patch },
     });
     return { plan: moved.plan, decision, stage: stage.stage, final: true, needsSecond: false };
   });
 }
 
-/** Reject, or send back for rework. Both need a reason code and a comment. */
-function sendBack(planId, to, { reasonCode, comment, actor, req = null } = {}) {
+/**
+ * What the person deciding wants the check's incident left as, as a patch for
+ * the plan: validated against the list, `fallback` when they did not say, and
+ * nothing at all for a check that has no ServiceNow incident to leave.
+ */
+function chosenState(plan, asked, fallback, who) {
+  const state = asked == null || asked === '' ? fallback : String(asked);
+  if (!machine.INCIDENT_STATES.includes(state)) {
+    return { refused: refuse('bad_request',
+      `the incident state has to be one of ${machine.INCIDENT_STATES.join(', ')}`) };
+  }
+  const inc = plan.incident;
+  if (!inc || inc.system === 'none') return { state, patch: {} };
+  return { state, patch: { incident: { ...inc, chosenState: { state, by: who.username ?? null,
+    byId: who.id ?? null, at: store.nowIso() } } } };
+}
+
+/**
+ * Reject, or send back for rework. Both need a reason code and a comment, and
+ * neither is for the person who sent the check. A holder who rejects with
+ * `wrong_spoc` is saying the check is not theirs, so the admins are told.
+ */
+function sendBack(planId, to, { reasonCode, comment, incidentState = null, actor, req = null } = {}) {
   const who = actorOf(actor);
   const found = open(planId, who);
   if (found.refused) return found.refused;
   const { plan } = found;
+  const chosen = chosenState(plan, incidentState, to === 'rework' ? 'on_hold' : 'cancelled', who);
+  if (chosen.refused) return chosen.refused;
   return run((effects) => {
     const ctx = ctxFor(plan, { reasonCode, comment });
     const moved = move(effects, plan, to, {
-      actor: who, action: to === 'rework' ? 'rework' : 'reject', req, ctx,
+      actor: who, action: to === 'rework' ? 'rework' : 'reject', req, ctx, patch: chosen.patch,
       reason: reasonCode || null, payload: { comment: text(comment) || null },
       auditPayload: { reasonCode: reasonCode || null, comment: text(comment) || null },
+      heard: { comment: text(comment) || null },
     });
     if (moved.refused) return moved.refused;
     let decision = null;
-    if (plan.status === 'approval_pending') {
+    if (plan.status === 'approval_pending' || plan.spocUserId != null) {
       decision = store.addDecision(plan.id, {
         stage: 'first', approverId: who.id ?? null, approver: who.username ?? null,
         decision: to === 'rework' ? 'rework' : 'rejected', reasonCode, comment: text(comment),
@@ -1288,6 +1378,10 @@ function sendBack(planId, to, { reasonCode, comment, actor, req = null } = {}) {
     store.addComment(plan.id, { visibility: 'shared', authorId: who.id ?? null, author: who.username ?? null,
       body: `${to === 'rework' ? 'Sent back for rework' : 'Rejected'} (${reasonCode}): ${text(comment)}` });
     if (to === 'rejected') closeOpenTickets(plan.id, who, 'rejected');
+    if (to === 'rejected' && reasonCode === 'wrong_spoc') {
+      emit(effects, 'reassign_needed', { plan: moved.plan, actor: who, why: 'wrong_spoc',
+        text: text(comment), rackId: plan.rackId, holder: plan.spoc || null });
+    }
     return { plan: store.getPlan(plan.id, { heavy: false }), decision };
   });
 }
@@ -1557,9 +1651,11 @@ function listComments(planId, { actor } = {}) {
 
 // -- Contacts -------------------------------------------------------------
 /**
- * Who this rack's ticket should go to. Read from NetBox at the moment it is
- * asked for, so the SPOC is whoever the customer's own record currently says
- * it is - not a copy of it that drifts.
+ * Who this check goes to when it is sent: the SPOC setup named for its Site,
+ * read at the moment it is asked for. When the check cannot go to them the
+ * answer says so in `why` and `whyText`, and `goesTo` is `admin`. The NetBox
+ * roster is no longer read for this; only the rack NetBox recognises is, when
+ * there is a NetBox, because the phone shows it.
  */
 async function contacts(planId, { actor } = {}) {
   const who = actorOf(actor);
@@ -1567,13 +1663,37 @@ async function contacts(planId, { actor } = {}) {
   if (!plan || !canRead(plan, who)) return NOT_FOUND();
   const { netboxFor, serviceNowFor } = require('./connections');
   const me = { orgId: plan.orgId ?? who.orgId, userId: who.id };
-  if (!netboxFor(me)) {
-    return { spoc: null, others: [], everyone: [], why: 'no NetBox is configured for this account' };
+  // A check already sent is with whoever holds it; a draft goes to whoever the
+  // resolver names for the person about to send it.
+  const goesTo = plan.status === 'draft' ? spoc.resolve(plan, { sender: who })
+    : plan.spocUserId != null ? { ok: true, holder: plan.spoc }
+      : { ok: false, why: (plan.needsAdmin && plan.needsAdmin.why) || null,
+          text: (plan.needsAdmin && plan.needsAdmin.text) || null };
+  const site = spoc.ofSite(plan);
+  const viaSite = goesTo.ok && site && Number(site.userId) === Number(goesTo.holder.userId);
+  const out = {
+    spoc: goesTo.ok ? { name: goesTo.holder.username, email: goesTo.holder.email ?? null,
+      title: viaSite ? `SPOC of ${site.siteLabel}${site.siteName ? ` - ${site.siteName}` : ''}` : 'Chosen by an admin',
+      userId: goesTo.holder.userId, source: goesTo.holder.source || 'site' } : null,
+    siteSpoc: goesTo.ok && site ? site : null,
+    goesTo: goesTo.ok ? 'spoc' : 'admin',
+    why: goesTo.ok ? null : goesTo.why, whyText: goesTo.ok ? null : goesTo.text,
+    others: [], everyone: [], serviceNow: Boolean(serviceNowFor(me)),
+  };
+  const client = netboxFor(me);
+  if (client) {
+    try {
+      const scans = require('../netbox/store');
+      const scan = plan.scanId ? scans.getScan(plan.scanId) : null;
+      const resolved = await require('../netbox/rack_match').resolveRack(client, {
+        tenantId: plan.tenantId ?? null, rackId: plan.rackId, scanName: scan && scan.rackName,
+        fallbackName: (scan && (scan.rackName || scan.rackId)) || plan.rackName || plan.rackId,
+      });
+      out.matchedRack = { name: resolved.name, confidence: resolved.confidence, why: resolved.why };
+    } catch { /* the rack's name is a nicety here, never the reason a request fails */ }
   }
-  const r = await rosterFor(plan, who);
-  return { ...(r.people || { spoc: null, others: [] }), everyone: r.everyone,
-    serviceNow: Boolean(serviceNowFor(me)),
-    matchedRack: { name: r.resolved.name, confidence: r.resolved.confidence, why: r.resolved.why } };
+  if (machine.isAdmin(who)) out.assignable = spoc.assignableUsers(plan);
+  return out;
 }
 
 // -- Reading --------------------------------------------------------------
@@ -1601,6 +1721,11 @@ function rowOf(plan) {
     summary: { ...shape.summarise(items, plan.result, tickets),
                assignable: machine.unassigned({ items, tickets }).length },
     assignees: [...new Set(tickets.filter(shape.isOpenTicket).map((t) => t.assignee).filter(Boolean))],
+    // Who it is with, who sent it, and its one incident, for a list to show.
+    holder: (plan.spoc && plan.spoc.username) || null,
+    sender: plan.submittedBy || null,
+    incidentNumber: (plan.incident && plan.incident.number) || null,
+    incidentUrl: (plan.incident && plan.incident.url) || null,
     sla: clocks.map((c) => ({ clock: c.clock, status: c.status, targetAt: c.targetAt })),
     // One of breached, at_risk, paused, on_track, none - the same word the
     // dashboard tile counts and the `sla=` list filter takes.
@@ -1612,15 +1737,17 @@ const OPEN_FILTER = machine.OPEN.filter((s) => s !== 'written');
 
 /**
  * Plans, newest first, scoped to what the caller may read. Filters: status,
- * tenantId, rackId, scanId, priority, risk, assignee, createdBy ('me' works
- * for both), since, until, q, sla, open=1 (everything not yet written or
- * closed), limit and cursor.
+ * tenantId, rackId, scanId, priority, risk, assignee, createdBy, holder ('me'
+ * works for all three), since, until, q, sla, open=1 (everything not yet
+ * written or closed), limit and cursor.
  */
 function list(actor, query = {}) {
   const who = actorOf(actor);
   const f = { ...query };
   if (f.createdBy === 'me') f.createdBy = who.username;
   if (f.assignee === 'me') { f.assigneeUserId = who.id; delete f.assignee; }
+  if (f.holder != null && f.holder !== '') f.spocUserId = f.holder === 'me' ? (who.id ?? -1) : f.holder;
+  delete f.holder;
   if (f.open === '1' || f.open === 'true' || f.open === true || f.open === 1) {
     if (!f.status) f.status = OPEN_FILTER;
   }
@@ -1634,10 +1761,19 @@ function list(actor, query = {}) {
   return { plans: page.map(rowOf), nextCursor: rows.length > limit ? page[page.length - 1].id : null };
 }
 
+const INCIDENT_LABELS = { in_progress: 'In Progress', on_hold: 'On Hold', resolved: 'Resolved',
+  closed: 'Closed', cancelled: 'Cancelled' };
+/** The states a person may leave the incident in, and what each decision picks unless told. */
+const incidentStatesFor = (incident) => (incident && incident.sysId ? {
+  options: machine.INCIDENT_STATES.map((value) => ({ value, label: INCIDENT_LABELS[value] })),
+  defaults: { approve: 'resolved', reject: 'cancelled', rework: 'on_hold' },
+} : null);
+
 /**
  * One plan with everything: items, tickets, decisions, verifications,
- * comments, events, clocks, the SPOC noted when it was assigned, the items a
- * whole-rack assign would take, and the moves this caller may make.
+ * comments, events, clocks, who it is with and who sent it, its incident, and
+ * the moves this caller may make. `spoc` and `rackContact` are the NetBox
+ * contact noted on a ticket of a check from before the SPOC change.
  */
 function get(planId, actor) {
   const who = actorOf(actor);
@@ -1652,6 +1788,11 @@ function get(planId, actor) {
     payloadHash: shape.payloadHash(items), toWrite: shape.approvedCount(items) };
   const mayTouch = canTouch(plan, who, tickets);
   const stage = machine.approvalStage(plan, ctx);
+  const next = mayTouch && isStrict(who) ? machine.next(plan, who, ctx) : [];
+  const offered = (to) => next.some((n) => n.to === to);
+  const deciding = mayTouch && isStrict(who) && DECIDE_OPEN.includes(plan.status) && !mayDecide(plan, who);
+  const reassign = mayTouch && ASSIGN_OPEN.includes(plan.status) && machine.isAdmin(who);
+  const rackContact = (tickets.find((t) => t.spoc) || {}).spoc || null;
   return {
     plan: {
       ...plan,
@@ -1667,18 +1808,35 @@ function get(planId, actor) {
     comments: store.commentsOf(plan.id, insider ? {} : { visibility: 'shared' }),
     events: store.eventsOf(plan.id),
     sla: store.slaOf(plan.id),
-    spoc: (tickets.find((t) => t.spoc) || {}).spoc || null,
+    spoc: rackContact, rackContact,
+    holder: plan.spocUserId != null ? plan.spoc : null,
+    siteSpoc: spoc.ofSite(plan),
+    sender: plan.submittedBy || plan.submittedById != null
+      ? { userId: plan.submittedById ?? null, username: plan.submittedBy ?? null, note: plan.submittedNote ?? null }
+      : null,
+    incident: plan.incident || null,
+    incidentStates: incidentStatesFor(plan.incident),
+    // Filled by the stages that own them: what the evidence suggests, what a
+    // person changed before approving, and what the write recorded.
+    suggestions: [], suggestionsNote: null, overrides: [], changes: [],
     assignable: machine.unassigned(ctx).map((i) => i.uid),
     approval: { dual: stage.dual, stage: stage.stage,
                 first: machine.firstApproval(ctx) },
     can: {
-      next: mayTouch && isStrict(who) ? machine.next(plan, who, ctx) : [],
-      assign: mayTouch && ASSIGN_OPEN.includes(plan.status)
-        && (machine.isAdmin(who) || machine.managesSite(plan, who)),
-      decide: mayTouch && DECIDE_OPEN.includes(plan.status) && ROLES.approver.includes(who.role),
+      next,
+      decide: deciding,
+      // A change is made where the check is with its holder, nowhere else.
+      modify: deciding && plan.spocUserId != null && WORKING.includes(plan.status),
+      approve: offered('approved') || offered('approval_pending'),
+      reassign, assign: reassign,
+      cancel: offered('cancelled'),
       comment: mayTouch && who.role !== 'auditor',
       tickets: tickets.filter((t) => mayTouch && (machine.isAdmin(who) || machine.isTicketAssignee(t, who)))
         .map((t) => t.itemUid),
+      report: plan.rackId != null,
+      // The sender sees the decisions greyed, and is told why.
+      blocked: isStrict(who) && machine.isSender(plan, who) && DECIDE_OPEN.includes(plan.status)
+        ? { why: machine.SENDER_WHY } : null,
     },
   };
 }
@@ -1737,16 +1895,31 @@ function listEvents(actor, query = {}) {
 }
 
 // -- Queue, dashboard, me -------------------------------------------------
-const can = (actor) => {
+/**
+ * Is this person a SPOC? The SPOC of a Site by setup, or the holder of a check
+ * that is still open (an admin may give a check to somebody who is no Site's
+ * SPOC). An auditor never is.
+ */
+function isSpoc(actor) {
+  if (!actor || actor.id == null || actor.role === 'auditor') return false;
+  if (store.sitesWhereSpoc(actor.id, actor.email).length) return true;
+  return store.listPlans({ seenBy: seenByOf(actor), spocUserId: actor.id, status: machine.OPEN, limit: 1 }).length > 0;
+}
+
+const can = (actor, { spoc: asSpoc = false } = {}) => {
   const role = actor && actor.role;
+  const admin = ROLES.admin.includes(role);
   return {
-    triage: ROLES.triage.includes(role),
-    assign: ROLES.triage.includes(role),
-    approve: ROLES.approver.includes(role),
+    triage: admin,
+    assign: admin,
+    reassign: admin,
+    approve: ROLES.approver.includes(role) || asSpoc,
     write: ROLES.writer.includes(role),
     verify: ROLES.technician.includes(role),
     audit: ROLES.auditor.includes(role),
-    admin: ROLES.admin.includes(role),
+    admin,
+    spoc: asSpoc,
+    registry: admin || role === 'auditor' || asSpoc,
   };
 };
 
@@ -1755,13 +1928,14 @@ function me(actor) {
   return {
     user: { id: who.id, username: who.username, email: who.email, role: who.role,
             orgId: who.orgId, tenantId: who.tenantId },
-    can: can(who),
+    can: can(who, { spoc: isSpoc(who) }),
   };
 }
 
 const SECTION_TITLES = {
+  spoc: 'Assigned to me',
   mine: 'My checks', verification_pending: 'Waiting for a verification scan',
-  triage: 'Triage', approval_pending: 'Waiting for approval', write_failed: 'Write failed',
+  triage: 'Needs an admin', approval_pending: 'Waiting for a second approval', write_failed: 'Write failed',
   manual_review: 'Manual review', sla_breached: 'SLA breached', recent: 'Recent',
   assigned: 'Assigned to me', accepted: 'Accepted by me', in_progress: 'In progress with me',
   pending: 'On hold with me',
@@ -1770,13 +1944,17 @@ const SECTION_TITLES = {
 /**
  * What is waiting on this person, in sections by role:
  *
- *   technician    mine, and verification_pending on their Site
- *   admin         triage, approval_pending, write_failed, manual_review,
- *                 sla_breached (a site manager, for their Site only)
+ *   a SPOC        spoc, first: the checks that are with them, whatever their
+ *                 role
+ *   technician    mine, and verification_pending on their Site when a check
+ *                 from before the SPOC change is waiting there
+ *   admin         triage (the checks that need an admin), approval_pending,
+ *                 write_failed, manual_review, sla_breached
+ *   site manager  the checks of their Site, to read
  *   approver      approval_pending
  *   auditor       recent
  *   an assignee   assigned, accepted, in_progress, pending - added for anybody
- *                 who has tickets, whatever their role
+ *                 who has tickets on a check that is not already under spoc
  */
 function queue(actor) {
   const who = actorOf(actor);
@@ -1786,18 +1964,28 @@ function queue(actor) {
   const add = (key, plans) => sections.push({ key, title: SECTION_TITLES[key], plans });
   const role = who.role;
 
+  // The checks that are with this person, first, whatever their role.
+  const held = who.id != null && role !== 'auditor'
+    ? store.listPlans({ seenBy: seenByOf(who), spocUserId: who.id, status: WORKING, limit: 100 }) : [];
+  if (held.length || (role !== 'auditor' && isSpoc(who))) add('spoc', held.map(rowOf));
+
   if (role === 'member') {
     add('mine', store.listPlans({ seenBy: seenByOf(who), createdBy: who.username, limit: 100 }).map(rowOf));
-    add('verification_pending', store.listPlans({ seenBy: seenByOf(who), tenantId: who.tenantId ?? -1,
-      status: 'verification_pending', limit: 100 }).map(rowOf));
+    const waiting = store.listPlans({ seenBy: seenByOf(who), tenantId: who.tenantId ?? -1,
+      status: 'verification_pending', limit: 100 });
+    if (waiting.length) add('verification_pending', waiting.map(rowOf));
   }
-  if (ROLES.triage.includes(role)) {
-    const site = role === 'site_manager' ? { tenantId: who.tenantId ?? -1, visibleTo: undefined } : {};
-    add('triage', plansFor({ status: 'triage', ...site }));
-    add('approval_pending', plansFor({ status: 'approval_pending', ...site }));
-    add('write_failed', plansFor({ status: 'write_failed', ...site }));
-    add('manual_review', plansFor({ status: 'manual_review', ...site }));
-    add('sla_breached', plansFor({ sla: 'breached', status: machine.OPEN, ...site }));
+  if (ROLES.admin.includes(role)) {
+    add('triage', plansFor({ status: 'triage' }));
+    add('approval_pending', plansFor({ status: 'approval_pending' }));
+    add('write_failed', plansFor({ status: 'write_failed' }));
+    add('manual_review', plansFor({ status: 'manual_review' }));
+    add('sla_breached', plansFor({ sla: 'breached', status: machine.OPEN }));
+  }
+  // A site manager reads their Site's checks; triage and reassigning are an admin's.
+  if (role === 'site_manager') {
+    sections.push({ key: 'mine', title: 'Checks of my site', plans: store.listPlans({
+      seenBy: seenByOf(who), tenantId: who.tenantId ?? -1, status: OPEN_FILTER, limit: 100 }).map(rowOf) });
   }
   if (role === 'approver') add('approval_pending', plansFor({ status: 'approval_pending' }));
   if (role === 'auditor') add('recent', store.listPlans({ ...scope, limit: 25 }).map(rowOf));
@@ -1808,7 +1996,11 @@ function queue(actor) {
     const mine = store.listTickets({ seenBy: seenByOf(who),
       ticketAssigneeUserId: who.id, ticketStatus: ['open', 'accepted', 'in_progress', 'pending'], limit: 500 });
     const byPlan = new Map();
-    for (const t of mine) byPlan.set(t.planId, [...(byPlan.get(t.planId) || []), t]);
+    const underSpoc = new Set(held.map((p) => p.id));
+    for (const t of mine) {
+      if (underSpoc.has(t.planId)) continue;
+      byPlan.set(t.planId, [...(byPlan.get(t.planId) || []), t]);
+    }
     const buckets = { assigned: [], accepted: [], in_progress: [], pending: [] };
     for (const [planId, tickets] of byPlan) {
       const at = machine.workingStatus(tickets);
@@ -1878,7 +2070,8 @@ const DEFAULT_SETTINGS = {
   // Mon to Fri 09:00 to 18:00 in the datacentre's own time zone (tenants.timezone
   // when `timezone` is null), no holidays.
   calendar: { days: [1, 2, 3, 4, 5], start: '09:00', end: '18:00', timezone: null, holidays: [] },
-  dual_approval_risks: ['critical'],
+  // Off until an organization turns it on: the SPOC's one approval writes.
+  dual_approval_risks: [],
   // In-app and email are mandatory. Teams is off until tokens exist.
   notification_prefs: { inapp: true, email: true, teams: false },
   escalation: { warn: ['assignee', 'admin'], breach: ['assignee', 'admin', 'owner'], escalate: ['owner'] },
@@ -1995,7 +2188,7 @@ module.exports = {
   // filing and reading
   create, createFromPreview, get, list, listTickets, listEvents, queue, dashboard, me, users, contacts,
   // the workflow
-  submit, triage, assign, assignLocal, assignableUids,
+  submit, submitAndDispatch, dispatch, triage, assign, assignLocal, assignableUids, notifyAssignee,
   acceptTicket, startTicket, holdTicket, resolveTicket, applyTicketStates, openSysIds, syncServiceNow,
   decideItems, skipVerification, approve, reject, rework, moveByHand, cancel, reopen,
   beginWrite, finishWrite, abortWrite,

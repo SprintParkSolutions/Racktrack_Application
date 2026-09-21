@@ -10,7 +10,9 @@
  * the roles per route, so a member who reaches the sub-application at all is
  * still refused triage by the door rather than by a rule twelve calls deep.
  * The service then applies the rule that needs the plan in hand - the creator,
- * the assignee, the person who resolved a ticket and so may not approve it.
+ * the SPOC the check is with, the person who sent it and so may not decide it.
+ * That is why deciding and approving are open to every reader at the door: the
+ * SPOC of a Site may be a site manager or a member, and only the plan says so.
  *
  * The order of the routes matters in one place: a fixed path has to be
  * declared before '/:planId' or express reads the word as an id.
@@ -24,13 +26,20 @@ const writer = require('../../lib/netbox/writer');
 const { netboxFor } = require('../../lib/approvals/connections');
 const { canAccessRack, isValidRackId } = require('../../lib/rack_access');
 const gates = require('../netbox/gates');
-const { answer, fail, refused, wrap, filtersOf } = require('./http');
+const { answer, fail, refused, wrap, filtersOf, LIST_FILTERS } = require('./http');
 
 const router = express.Router();
 
-const TRIAGE_GATE = gates.only(gates.ADMINS,
-  'Triage and assignment are for an organization admin or the site manager of this Site.');
 const ADMIN_GATE = gates.only(gates.WRITERS, 'This is for an organization admin.');
+const PLAN_FILTERS = [...LIST_FILTERS, 'holder'];
+
+/** The check's one incident, as much of it as an answer to a decision carries. */
+const incidentBrief = (plan) => {
+  const inc = plan && plan.incident;
+  if (!inc || inc.system === 'none') return null;
+  return { number: inc.number || null, state: inc.state || null,
+    pushed: Boolean(inc.pushedState), error: inc.error || null };
+};
 
 const idOf = (req) => req.params.planId;
 const bodyOf = (req) => req.body || {};
@@ -39,12 +48,13 @@ const bodyOf = (req) => req.body || {};
  * Plans, newest first, scoped to what the caller may read.
  *
  * Filters: status (one or a comma list), tenantId, rackId, scanId, priority,
- * risk, assignee ('me' works), createdBy ('me' works), since, until, q, sla,
- * open=1 for everything not yet written or closed, limit and cursor. The
- * whole set, so `?rackId=RK-1&open=1` finds the plan a rack already has open.
+ * risk, assignee ('me' works), createdBy ('me' works), holder ('me' works: the
+ * checks that are with me), since, until, q, sla, open=1 for everything not
+ * yet written or closed, limit and cursor. The whole set, so
+ * `?rackId=RK-1&open=1` finds the plan a rack already has open.
  */
 router.get('/', gates.readers, (req, res) => {
-  const out = service.list(req.user, filtersOf(req.query));
+  const out = service.list(req.user, filtersOf(req.query, PLAN_FILTERS));
   return answer(res, out);
 });
 
@@ -110,38 +120,34 @@ router.get('/:planId', gates.readers, (req, res) => {
   return res.json({ ok: true, ...out });
 });
 
-/** A technician hands the comparison to the admin, with their note. */
-router.post('/:planId/submit', gates.readers, (req, res) => answer(res,
-  service.submit(idOf(req), { note: bodyOf(req).note, actor: req.user, req })));
+/**
+ * Send the check, with a note and, when only some of what differs is being
+ * sent, { items: [uid] }. It goes straight to the SPOC of its Site: the answer
+ * carries `holder`, or `needsAdmin` when it is waiting for an admin instead,
+ * and the check's `incident`.
+ */
+router.post('/:planId/submit', gates.readers, wrap(async (req, res) => {
+  const chosen = bodyOf(req).items;
+  const out = await service.submitAndDispatch(idOf(req), { note: bodyOf(req).note,
+    items: Array.isArray(chosen) ? chosen.map(String) : null, actor: req.user, req });
+  return answer(res, out, (o) => ({ plan: o.plan, already: Boolean(o.already),
+    holder: o.holder || null, needsAdmin: o.needsAdmin || null, incident: o.incident || null }));
+}));
 
 /** The admin sizes it up: category, priority, risk, disposition, duplicate, exception. */
-router.post('/:planId/triage', TRIAGE_GATE, (req, res) => answer(res,
+router.post('/:planId/triage', ADMIN_GATE, (req, res) => answer(res,
   service.triage(idOf(req), bodyOf(req), { actor: req.user, req })));
 
 /**
- * The admin hands items to a person.
- *
- *   { items: [uid], assignee, assigneeId, question }   named items
- *   { items: '*', assignee, assigneeId, question }     everything still waiting
- *   { rows: [{ uid, assignee, assigneeId, question }] } different people at once
- *
- * The two forms are not mixed. A list that carries '*' beside real uids would
- * either drop the uids or assign everything, and neither is what was meant, so
- * it is refused before anything is written.
+ * An organization admin gives the check to somebody: { userId, reason }, or a
+ * NetBox contact as { assignee | assigneeId, reason }. A check goes to one
+ * person as a whole, so the per-item forms are refused.
  */
-router.post('/:planId/assign', TRIAGE_GATE, wrap(async (req, res) => {
+router.post('/:planId/assign', ADMIN_GATE, wrap(async (req, res) => {
   const body = bodyOf(req);
-  if (Array.isArray(body.items) && body.items.some((u) => String(u) === '*')) {
-    return res.status(400).json({
-      code: 'bad_request',
-      error: "send the whole-rack assign on its own as items: '*', not mixed with single items",
-    });
-  }
-  if (body.items === '*' && Array.isArray(body.rows) && body.rows.length) {
-    return res.status(400).json({
-      code: 'bad_request',
-      error: "send the whole-rack assign on its own as items: '*', not mixed with single items",
-    });
+  if (body.items !== undefined || body.rows !== undefined) {
+    return res.status(400).json({ code: 'bad_request',
+      error: 'Send { userId, reason }. A check goes to one person as a whole.' });
   }
   return answer(res, await service.assign(idOf(req), body, { actor: req.user, req }));
 }));
@@ -169,9 +175,10 @@ for (const [move, call] of Object.entries(TICKET_MOVES)) {
  *
  * Refused per item, never all-or-nothing: what went through is in `applied`
  * and what did not is in `refused` with the reason, so a screen can say which
- * row is still waiting on somebody.
+ * row is still waiting on somebody. For the SPOC the check is with or an
+ * organization admin, never the person who sent it; the service holds that.
  */
-router.post('/:planId/decide', gates.approver, (req, res) => {
+router.post('/:planId/decide', gates.readers, (req, res) => {
   const decisions = bodyOf(req).decisions;
   if (!Array.isArray(decisions) || !decisions.length) {
     return res.status(400).json({ code: 'bad_request',
@@ -181,18 +188,28 @@ router.post('/:planId/decide', gates.approver, (req, res) => {
     return res.status(400).json({ code: 'bad_request',
       error: 'The whole rack can only be assigned to somebody. Approve or reject each device on its own.' });
   }
-  return answer(res, service.decideItems(idOf(req), decisions, { actor: req.user, req }));
+  return answer(res, service.decideItems(idOf(req), decisions, { actor: req.user, req }),
+    (o) => ({ ...o, replanned: false }));
 });
 
-/** One name against what will be written. Twice, when the risk asks for two. */
-router.post('/:planId/approve', gates.approver, (req, res) => answer(res,
-  service.approve(idOf(req), { comment: bodyOf(req).comment, actor: req.user, req })));
+/**
+ * One name against what will be written: { comment, incidentState }. Twice,
+ * when the organization asks for two. `write` says what the write did; it is
+ * null while an admin still writes an approved check by hand.
+ */
+router.post('/:planId/approve', gates.readers, wrap(async (req, res) => {
+  const out = service.approve(idOf(req), { comment: bodyOf(req).comment,
+    incidentState: bodyOf(req).incidentState, actor: req.user, req });
+  return answer(res, out, (o) => ({ ...o, write: null, incident: incidentBrief(o.plan) }));
+}));
 
-/** Rejected, or sent back for rework. Both need a reason code and a comment. */
-router.post('/:planId/reject', gates.approver, (req, res) => answer(res,
-  service.reject(idOf(req), { ...bodyOf(req), actor: req.user, req })));
-router.post('/:planId/rework', gates.approver, (req, res) => answer(res,
-  service.rework(idOf(req), { ...bodyOf(req), actor: req.user, req })));
+/** Rejected, or sent back for rework: { reasonCode, comment, incidentState }. */
+for (const [path, call] of [['reject', service.reject], ['rework', service.rework]]) {
+  router.post(`/:planId/${path}`, gates.readers, wrap(async (req, res) => {
+    const out = call(idOf(req), { ...bodyOf(req), actor: req.user, req });
+    return answer(res, out, (o) => ({ ...o, incident: incidentBrief(o.plan) }));
+  }));
+}
 
 /**
  * Move past the verification re-scan without one.
@@ -219,9 +236,14 @@ router.post('/:planId/manual-review', ADMIN_GATE, (req, res) => answer(res,
 router.post('/:planId/reopen', ADMIN_GATE, (req, res) => answer(res,
   service.reopen(idOf(req), { ...bodyOf(req), actor: req.user, req })));
 
-/** Nothing here will be done. The open tickets go with it. */
-router.post('/:planId/cancel', gates.readers, (req, res) => answer(res,
-  service.cancel(idOf(req), { reason: bodyOf(req).reason, actor: req.user, req })));
+/**
+ * Nothing here will be done. The open tickets go with it. Whoever made a draft
+ * may cancel it; once a check is sent, cancelling is an organization admin's.
+ */
+router.post('/:planId/cancel', gates.readers, wrap(async (req, res) => {
+  const out = service.cancel(idOf(req), { reason: bodyOf(req).reason, actor: req.user, req });
+  return answer(res, out, (o) => ({ ...o, incident: incidentBrief(o.plan) }));
+}));
 
 /**
  * The thread on a plan. An internal comment is between the people handling it;
@@ -234,7 +256,7 @@ router.get('/:planId/comments', gates.readers, (req, res) => answer(res,
 router.post('/:planId/comments', gates.readers, (req, res) => answer(res,
   service.addComment(idOf(req), { ...bodyOf(req), actor: req.user })));
 
-/** Who this rack's ticket should go to, read from NetBox as it stands now. */
+/** Who this check goes to: the SPOC of its Site, and for an admin who else it could go to. */
 router.get('/:planId/contacts', gates.readers, wrap(async (req, res) => {
   const out = await service.contacts(idOf(req), { actor: req.user });
   if (refused(out)) return fail(res, out);

@@ -9,14 +9,19 @@
  *   technician  owner, org_admin, site_manager and member. A member is the
  *               person at the rack: they adopt a scan, compare it to NetBox,
  *               read their own plan and hand it to the admin. Nothing else.
- *   admin       owner, org_admin and site_manager. They assign, decide,
- *               read every plan and ticket in their organisation, and write.
+ *   admin       owner, org_admin and site_manager. They read every plan and
+ *               ticket in their organisation. Who may decide a check is not a
+ *               role any more: it is the SPOC the check is with, or an
+ *               organization admin, and never the person who sent it. That
+ *               rule needs the plan in hand, so lib/approvals/service.js holds
+ *               it and the doors to deciding and approving under
+ *               /api/approvals are open to every reader.
  *
  * The Approvals sub-application (/api/approvals) is gated from the same list,
  * with the three roles the manager's specification adds:
  *
- *   approver    owner, org_admin and approver. Approve, reject and rework,
- *               and nothing else on a plan.
+ *   approver    owner, org_admin and approver. The second signature, when
+ *               an organization asks for two, and nothing else on a plan.
  *   auditor     owner, org_admin and auditor. Reads everything, writes
  *               nothing, not even a comment.
  *   readers     everyone who may open the sub-application at all. What each

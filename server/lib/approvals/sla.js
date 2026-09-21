@@ -40,7 +40,15 @@ const CLOCKS = ['acceptance', 'investigation', 'resolution', 'approval'];
 const MINUTE = 60000;
 const DAY_MS = 86400000;
 
-/** Which status starts a clock, and which statuses stop it, met. */
+/**
+ * Which status starts a clock, and which statuses stop it, met.
+ *
+ * A check that is with its SPOC is decided straight from assigned, so the
+ * SPOC's outcome - approved, rejected, sent back, or the first of two
+ * signatures - is what meets acceptance, investigation and resolution there.
+ * The approval clock runs only while a check waits for a second signature.
+ */
+const OUTCOMES = ['approval_pending', 'approved', 'rejected', 'rework'];
 const STARTS = {
   acceptance: ['assigned'],
   investigation: ['accepted'],
@@ -48,9 +56,9 @@ const STARTS = {
   approval: ['approval_pending'],
 };
 const MEETS = {
-  acceptance: ['accepted', 'in_progress', 'pending', 'resolved', 'verification_pending'],
-  investigation: ['in_progress', 'resolved', 'verification_pending'],
-  resolution: ['resolved', 'verification_pending'],
+  acceptance: ['accepted', 'in_progress', 'pending', 'resolved', 'verification_pending', ...OUTCOMES],
+  investigation: ['in_progress', 'resolved', 'verification_pending', ...OUTCOMES],
+  resolution: ['resolved', 'verification_pending', ...OUTCOMES],
   approval: ['approved', 'rejected', 'rework'],
 };
 /** Nothing is owed on a plan that is over: whatever is still running is dropped. */

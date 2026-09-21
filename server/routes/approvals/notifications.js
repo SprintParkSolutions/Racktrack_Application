@@ -29,9 +29,11 @@ router.get('/notifications', (req, res) => {
 router.get('/notifications/prefs', (req, res) => {
   const who = service.actorOf(req.user);
   return res.json({ ok: true, prefs: notify.prefsFor(who.orgId, who.id),
-    events: notify.EVENTS, always: ['write_failed', 'sla_breach', 'sla_escalate'],
-    why: 'In-app notices are the record and cannot be turned off. A failed write and a '
-      + 'breached SLA are sent whatever else is set.' });
+    events: notify.EVENTS,
+    // Read from the table, so an event that always goes out says so here too.
+    always: notify.EVENTS.filter((e) => notify.TABLE[e].always),
+    why: 'In-app notices are the record and cannot be turned off. A check given to you, one '
+      + 'that needs an admin, a failed write and a breached SLA are sent whatever else is set.' });
 });
 
 /** PUT /notifications/prefs { email } - turn the email copy off, or on again. */
