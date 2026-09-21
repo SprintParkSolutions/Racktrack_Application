@@ -278,15 +278,19 @@ function suggest({
     return holder ? `which is with ${holder}` : 'which is waiting for an admin';
   };
   const incidentOf = (d) => text(d.incident && d.incident.number);
-  const sameCheck = plan && plan.fingerprint
-    ? older.find((d) => d.fingerprint && d.fingerprint === plan.fingerprint) : null;
+  // A check that was changed and compared again signs a new fingerprint, so
+  // the one it was FILED with (baseFingerprint, when the check keeps one) is
+  // what says two checks are about the same drift.
+  const filedAs = (p) => (p && (p.baseFingerprint || p.fingerprint)) || null;
+  const sameCheck = filedAs(plan)
+    ? older.find((d) => filedAs(d) === filedAs(plan)) : null;
   if (sameCheck) {
     const number = incidentOf(sameCheck);
     out.push(card('duplicate', {
       word: 'confirmed',
       title: `Same as check ${sameCheck.id}, ${heldBy(sameCheck)}${number ? ` (incident ${number})` : ''}`,
       evidence: [
-        `Check ${sameCheck.id} on this rack holds exactly the same differences.`,
+        `Check ${sameCheck.id} on this rack was filed with exactly the same differences.`,
         number ? `Its incident is ${number}, and it stays open.` : null,
         `Closing this check as a duplicate changes nothing on check ${sameCheck.id}.`,
       ].filter(Boolean),
@@ -539,8 +543,13 @@ function suggest({
     // Everything mark_offline asks for, except a class it can name.
     const family = classOf(o.role);
     const held = recordShelves(o);
+    // A new box one shelf away is most likely this very record, read one unit
+    // off by the camera. Calling the record gone would be the camera's error twice.
+    const nextTo = [...held, held[0] - 1, held[held.length - 1] + 1];
+    const readOneOff = newBoxes.some(({ box }) => !PASSIVE.has(classOf(box.cvClass))
+      && overlap(boxShelves(box), nextTo));
     const gone = text(o.status).toLowerCase() === 'active' && held.length > 0
-      && !boxes.some((b) => overlap(boxShelves(b), held));
+      && !boxes.some((b) => overlap(boxShelves(b), held)) && !readOneOff;
     const movedFor = roleAbstained.get(Number(o.netboxId)) || null;
     if (!family) {
       // Only where a rule would have fired: a role nobody can compare is worth a

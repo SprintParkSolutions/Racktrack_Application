@@ -49,15 +49,30 @@ const record = (o) => ({
   uid: o.uid, bound: false,
 });
 
-/** The owner's example: SP-R1-U20-ACT is held on U22, and the photo shows a network box on U20. */
+/** A port the camera counted on a new box: it follows its device and asks nothing itself. */
+const portItem = (deviceUid, n) => ({
+  uid: `if:${deviceUid}:${n}`, type: 'Interface', name: `Port ${n}`, action: 'create', netboxId: null, diff: null,
+  decidable: false, following: true, supporting: false, parentUid: deviceUid, decision: 'ticketed',
+});
+
+/**
+ * The owner's example, as the check holds it when the SPOC opens it:
+ * SP-R1-U20-ACT is held on U22, and the photo shows a network box on U20. The
+ * box is a camera "Router" - a Switch with eight ports - so it brings its
+ * ports with it, and the send has already handed every row out as a ticket.
+ */
 function demo() {
-  const moved = orphan(199, 'SP-R1-U20-ACT', 22);
+  const moved = orphan(199, 'SP-R1-U20-ACT', 22, 'Router');
+  const uid = 'dev:SPHYB:u20';
   return {
     plan: PLAN,
-    items: [createItem('dev:SPHYB:u20', 'Switch U20')],
+    items: [
+      createItem(uid, 'Router U20 SP-HYB-RM01-R01-R1', { decision: 'ticketed' }),
+      ...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => portItem(uid, n)),
+    ],
     orphans: [moved],
     findings: [],
-    evidence: { records: [record(moved)], boxes: [box('dev:SPHYB:u20', 20)] },
+    evidence: { records: [record(moved)], boxes: [box(uid, 20, 'Router', { portCount: 8 })] },
   };
 }
 const rulesOf = (r) => r.suggestions.map((s) => s.rule);
@@ -145,7 +160,7 @@ describe('wrong_shelf', () => {
       title: 'Same device, wrong shelf: move record SP-R1-U20-ACT from U22 to U20',
       evidence: [
         'The record\'s own name says U20.',
-        'Same class: the record is a Switch and the photo shows a Switch.',
+        'Same class: the record is a Router and the photo shows a Router.',
         'It is the only network record in this rack that the photo did not show.',
         'U20 is empty in NetBox.',
         'U22 is empty in the photo.',
@@ -178,9 +193,18 @@ describe('wrong_shelf', () => {
     });
   });
 
+  it('the demo with the PDU beside it: the move, and the PDU left as it is', () => {
+    const input = demo();
+    input.orphans.push({ netboxId: 204, name: 'SP-R1-PDU-A', position: null, seen: false, role: { name: 'PDU', slug: 'pdu' } });
+    const r = suggest(input);
+    assert.deepEqual(r.suggestions.map((s) => s.id), ['wrong_shelf|dev:SPHYB:u20|199', 'leave_as_is|-|204']);
+    // The eight ports follow their device: none of them carries a card of its own.
+    assert.ok(r.suggestions.every((s) => !String(s.itemUid || '').startsWith('if:')));
+  });
+
   it('a Router in the photo and a Switch in the record are one class, not a disagreement', () => {
     const input = demo();
-    input.evidence.boxes[0].cvClass = 'Router';
+    input.orphans[0].role = role('Switch');
     const s = only(suggest(input), 'wrong_shelf');
     assert.equal(s.evidence[1], 'Same class: the record is a Switch and the photo shows a Router.');
   });
@@ -281,9 +305,9 @@ describe('wrong_shelf', () => {
     const input = demo();
     input.orphans[0] = orphan(199, 'CORE-SW-01', 21);
     input.evidence.records = [record(input.orphans[0])];
-    const r = suggest(input);
-    assert.deepEqual(r.suggestions.filter((s) => s.itemUid), []);
-    assert.ok(!rulesOf(r).includes('abstain'));
+    // Not a move, not "No suggestion", and not Mark Offline either: the box on
+    // U20 may well be this record, read one shelf off.
+    assert.deepEqual(suggest(input).suggestions, []);
   });
 
   it('is not held back when the comparison put THIS record forward for the box', () => {
@@ -590,6 +614,20 @@ describe('mark_offline', () => {
     });
   }
 
+  it('never when a new box sits one shelf away: the camera reads one unit off, and that box may be this record', () => {
+    const o = orphan(250, 'SP-R1-U30-SW', 30);
+    for (const at of [29, 31]) {
+      const input = gone(o, [box(`dev:SPHYB:u${at}`, at, 'Server')]);
+      input.items = [createItem(`dev:SPHYB:u${at}`, `Server U${at}`)];
+      assert.deepEqual(suggest(input).suggestions, [], `U${at}`);
+    }
+    // Two shelves away is another box, and so is a neighbour NetBox already knows.
+    const far = gone(o, [box('dev:SPHYB:u28', 28, 'Server')]);
+    far.items = [createItem('dev:SPHYB:u28', 'Server U28')];
+    assert.deepEqual(rulesOf(suggest(far)), ['mark_offline']);
+    assert.deepEqual(rulesOf(suggest(gone(o, [box('dev:SPHYB:u31', 31, 'Server')]))), ['mark_offline']);
+  });
+
   it('never when the photo shows a box on that shelf', () => {
     assert.deepEqual(suggest(gone(orphan(250, 'SP-R1-U30-SW', 30), [box('dev:SPHYB:u30', 30, 'Server')])).suggestions, []);
   });
@@ -692,6 +730,13 @@ describe('duplicate', () => {
   const otherCheck = (extra = {}) => ({
     id: 139, status: 'assigned', fingerprint: 'f-140', spoc: holder, incident: { number: 'INC0010041' },
     items: [updateItem('dev:SPHYB:u14', 'SP-R1-U14-SW', { description: { to: 'edge', from: 'core' } })], ...extra,
+  });
+
+  it('still knows the check it duplicates after that check was changed and compared again', () => {
+    const changed = otherCheck({ fingerprint: 'f-after-the-move', baseFingerprint: 'f-140' });
+    const s = only(suggest({ ...mine(), duplicates: [changed] }), 'duplicate');
+    assert.equal(s.id, 'duplicate|-|-');
+    assert.equal(s.evidence[0], 'Check 139 on this rack was filed with exactly the same differences.');
   });
 
   it('an older open check holds exactly the same differences: close this one as its duplicate', () => {
