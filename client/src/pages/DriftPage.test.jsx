@@ -398,10 +398,10 @@ describe('<DriftPage> ports', () => {
     await screen.findByText('SW-16');
     const top = await screen.findByRole('button', { name: /^Ports/ });
     expect(top.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByText('Matched 21')).toBeTruthy();
-    expect(screen.getByText('Not matched 1')).toBeTruthy();
-    expect(screen.getByText('Not known 25')).toBeTruthy();
+    // one quiet row with one number: how many ports were read
+    expect(top.textContent).toBe('Ports47');
     fireEvent.click(top);
+    expect(screen.getByText('Matched 21, not matched 1, not known 25.')).toBeTruthy();
     expect(screen.getByText('Switch on shelf U16 - port 3')).toBeTruthy();
     expect(screen.getByText('Switch: down')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Matched ports (1)' })).toBeTruthy();
