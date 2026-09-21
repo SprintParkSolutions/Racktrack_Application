@@ -54,7 +54,7 @@ describe('<PortsCheck>', () => {
     // a port nothing is known about is counted and not listed
     expect(screen.queryByText('Switch on shelf U18 - port 9')).toBeNull();
     // and nothing internal is printed, nor any long dash
-    expect(document.body.textContent).not.toMatch(/dev:|RK-5B81BE87|not_connected|–|—/);
+    expect(document.body.textContent).not.toMatch(/dev:|RK-5B81BE87|not_connected|\u2013|\u2014/);
   });
 
   test('the note is shown as it came, and a value the screen does not know reads as not known', () => {
