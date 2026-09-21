@@ -318,6 +318,38 @@ describe('a re-plan keeps what still stands and asks again about what changed', 
       'and the suggestion is worked out again from NetBox as it is now');
   });
 
+  it('NetBox moving under an approval sends the check back compared again, and the second approval writes', async () => {
+    const nb = F.seedDemoRack(F.fakeNetBox());
+    const check = await filed(nb);
+    const accepted = await service.acceptSuggestion(check.id, sidOf(service.get(check.id, SPOC), 'wrong_shelf').id, { actor: SPOC });
+    assert.equal(service.approve(check.id, { actor: SPOC }).plan.status, 'approved');
+    nb.record().position = 24;   // somebody moved the record in NetBox after the approval
+
+    const bounced = await writeFor(check, nb);
+    assert.deepEqual([bounced.write.state, bounced.write.status, bounced.write.written], ['bounced', 'assigned', 0]);
+    assert.equal(bounced.write.why, 'NetBox changed after you approved, so nothing was written. '
+      + 'The check has been compared again - review what changed and approve it again.');
+    assert.equal(nb.writes().length, 0);
+    assert.deepEqual(store.changesOf(check.id), [], 'nothing written, nothing recorded');
+
+    // Back with its holder under the same number, the old move taken back by the system, and asked again as NetBox is now.
+    const now = service.get(check.id, SPOC);
+    assert.equal(now.plan.id, check.id);
+    assert.equal(now.holder.username, 'dc007.spoc');
+    assert.deepEqual(store.overridesOf(check.id, { active: false }).map((o) => [o.id, o.revokedBy]),
+      [[accepted.overrides[0].id, 'system']]);
+    const open = sidOf(now, 'wrong_shelf');
+    assert.equal(open.title, 'Same device, wrong shelf: move record SP-R1-U20-ACT from U24 to U20');
+
+    await service.acceptSuggestion(check.id, open.id, { actor: SPOC });
+    assert.equal(service.approve(check.id, { actor: SPOC }).plan.status, 'approved');
+    const written = await writeFor(check, nb);
+    assert.deepEqual([written.write.state, written.write.status], ['written', 'completed'], JSON.stringify(written.write));
+    assert.equal(nb.record().position, 20);
+    assert.deepEqual(store.changesOf(check.id).filter((c) => !c.internal).map((c) => [c.field, c.before, c.after]),
+      [['position', 24, 20]]);
+  });
+
   it('is only for a check that is with the person deciding it', async () => {
     const nb = F.seedDemoRack(F.fakeNetBox());
     const draft = await filed(nb, { send: false });
