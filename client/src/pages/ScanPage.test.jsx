@@ -29,6 +29,11 @@ vi.mock('../utils/scanPrefetch', () => ({ prefetchScan: () => {} }));
 import ScanPage from './ScanPage.jsx';
 import { TOUR_STEPS } from '../tourSteps.js';
 
+// The site is a dropdown, the same control as Space.
+const sitePick = () => screen.getByLabelText(/^Site/);
+const siteIs = (id) => waitFor(() => expect(sitePick().value).toBe(String(id)));
+const chooseSite = (id) => fireEvent.change(sitePick(), { target: { value: String(id) } });
+
 const OFFICE = {
   id: 32, siteId: 'Site 32', name: 'Office-Sprintpark', rackCount: 1,
   racks: [{ rackId: 'RK-5B81BE87', name: 'SP-HYB-RM01-R01-R1', spaceId: 26 }],
@@ -67,14 +72,13 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('<ScanPage> site', () => {
-  test('a technician with one site sees it stated, cannot change it, and it goes with the photo', async () => {
+  test('a technician with one site sees it already chosen in the dropdown, and it goes with the photo', async () => {
     stub({ body: { ok: true, preselect: 32, sites: [OFFICE] } });
     // Something left behind by an older choice does not outrank the only site.
     window.localStorage.setItem('rt.scan.site.935', '7');
     mount();
-    await screen.findByText('Site 32 - Office-Sprintpark - 1 rack');
-    expect(screen.queryByRole('searchbox')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Change' })).toBeNull();
+    await siteIs(32);
+    expect([...sitePick().options].map((o) => o.textContent)).toEqual(['Site 32 - Office-Sprintpark']);
     // The spaces are the chosen site's own.
     expect(screen.getByLabelText('Space').textContent).toContain('RM01');
 
@@ -85,17 +89,15 @@ describe('<ScanPage> site', () => {
     expect(sent('/api/analyze').get('siteId')).toBe('32');
   });
 
-  test('several sites: Analyze waits for a choice, the choice is searchable, sent and remembered', async () => {
+  test('several sites: Analyze waits for a choice, the choice is made in the dropdown, sent and remembered', async () => {
     stub({ body: { ok: true, preselect: null, sites: [OFFICE, HARBOUR] } });
     mount();
-    const box = await screen.findByPlaceholderText('Search by site number or name');
+    await screen.findByLabelText(/^Site/);
     addPhoto();
     expect(analyzeButton().disabled).toBe(true);
     expect(screen.getByText('Choose the site first.')).toBeTruthy();
 
-    fireEvent.change(box, { target: { value: 'harb' } });
-    expect(screen.queryByRole('button', { name: /Office-Sprintpark/ })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Site 7 - Harbour DC/ }));
+    chooseSite(7);
     expect(screen.queryByText('Choose the site first.')).toBeNull();
     expect(window.localStorage.getItem('rt.scan.site.935')).toBe('7');
 
@@ -109,19 +111,19 @@ describe('<ScanPage> site', () => {
     window.localStorage.setItem('rt.scan.site.935', '7');
     stub({ body: { ok: true, preselect: 32, sites: [OFFICE, HARBOUR] } });
     mount();
-    await screen.findByText('Site 7 - Harbour DC');
+    await siteIs(7);
     cleanup();
 
     window.localStorage.setItem('rt.scan.site.935', '999');
     mount();
-    await screen.findByText('Site 32 - Office-Sprintpark');
-    expect(screen.getByRole('button', { name: 'Change' })).toBeTruthy();
+    await siteIs(32);
+    expect(sitePick().value).toBe('32');
   });
 
   test('a tall rack set carries the site too', async () => {
     stub({ body: { ok: true, preselect: 32, sites: [OFFICE, HARBOUR] } });
     mount();
-    await screen.findByText('Site 32 - Office-Sprintpark');
+    await siteIs(32);
     fireEvent.click(screen.getByRole('button', { name: 'MULTI' }));
     fireEvent.change(fileInput(), { target: { files: [photo('top.jpg'), photo('bottom.jpg')] } });
     fireEvent.click(await screen.findByRole('button', { name: /Stitch & Analyze \(2\)/i }));
@@ -155,7 +157,7 @@ describe('<ScanPage> site', () => {
   test('the phone is never asked where it is, sends no position and shows no coordinates', async () => {
     stub({ body: { ok: true, preselect: 32, sites: [OFFICE] } });
     mount();
-    await screen.findByText('Site 32 - Office-Sprintpark - 1 rack');
+    await siteIs(32);
     addPhoto();
     await waitFor(() => expect(analyzeButton().disabled).toBe(false));
     fireEvent.click(analyzeButton());
@@ -174,13 +176,13 @@ describe('<ScanPage> site', () => {
     tour.current = { active: true, currentStep: TOUR_STEPS[0], stopTour, setSuspended: () => {} };
     stub({ body: { ok: true, preselect: null, sites: [OFFICE, HARBOUR] } });
     mount();
-    await screen.findByPlaceholderText('Search by site number or name');
+    await screen.findByLabelText(/^Site/);
     const block = () => document.querySelector(`[data-tour="${TOUR_STEPS[0].target}"]`);
     const settled = () => document.querySelector(TOUR_STEPS[0].advanceWhenVisible);
     expect(block()).toBeTruthy();
     expect(block().hasAttribute('data-tour-bypass')).toBe(false);
     expect(settled()).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Site 7 - Harbour DC/ }));
+    chooseSite(7);
     expect(settled()).toBeTruthy();
     // Still the anchor for the beat before the tour moves on.
     expect(block().textContent).toContain('Site 7 - Harbour DC');
@@ -191,7 +193,7 @@ describe('<ScanPage> site', () => {
     tour.current = { active: true, currentStep: TOUR_STEPS[0], stopTour: () => {}, setSuspended: () => {} };
     stub({ body: { ok: true, preselect: 32, sites: [OFFICE] } });
     const first = mount();
-    await screen.findByText('Site 32 - Office-Sprintpark - 1 rack');
+    await siteIs(32);
     expect(document.querySelector('[data-tour="site-picker"]')).toBeNull();
     expect(document.querySelector(TOUR_STEPS[0].advanceWhenVisible)).toBeTruthy();
     first.unmount();
@@ -207,10 +209,10 @@ describe('<ScanPage> site', () => {
     tour.current = { active: true, currentStep: TOUR_STEPS[1], stopTour: () => {}, setSuspended: () => {} };
     stub({ body: { ok: true, preselect: null, sites: [OFFICE, HARBOUR] } });
     mount();
-    await screen.findByPlaceholderText('Search by site number or name');
+    await screen.findByLabelText(/^Site/);
     const block = () => document.querySelector('[data-tour="site-picker"]');
     expect(block().getAttribute('data-tour-bypass')).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: /Site 7 - Harbour DC/ }));
+    chooseSite(7);
     expect(block().hasAttribute('data-tour-bypass')).toBe(false);
   });
 
@@ -218,11 +220,11 @@ describe('<ScanPage> site', () => {
     stub({ body: { ok: true, preselect: 32, sites: [OFFICE, HARBOUR] } },
       { 'POST /api/analyze': { status: 404, body: { error: 'Site not found' } } });
     mount();
-    await screen.findByText('Site 32 - Office-Sprintpark');
+    await siteIs(32);
     addPhoto();
     await waitFor(() => expect(analyzeButton().disabled).toBe(false));
     fireEvent.click(analyzeButton());
     await screen.findByText('That site is not one you can scan for. Choose another.');
-    expect(screen.getByRole('button', { name: 'Change' })).toBeTruthy();
+    expect(sitePick().value).toBe('32');
   });
 });

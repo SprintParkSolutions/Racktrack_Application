@@ -1,4 +1,3 @@
-import { useMemo, useState } from 'react';
 import styles from './SitePicker.module.css';
 
 /* Which site this scan is for.
@@ -9,13 +8,17 @@ import styles from './SitePicker.module.css';
  * technician can answer in a tap. So the site is chosen here, by its number
  * and its name, and that choice goes with the photo.
  *
- * Three shapes, by how many sites the server says this person may scan for:
+ * It is a dropdown, the same control as the Space picker under it, because
+ * that is where the owner looked for it: "in scan page there should be space
+ * and in dropdown sites should be present". By how many sites the server says
+ * this person may scan for:
  *   none    - nothing is drawn, and the scan goes as it always did. This is
  *             also what a server without the site list looks like.
- *   one     - a line that states it. There is nothing to choose, so there is
- *             no control.
- *   several - a search over the list. The scan waits for a choice, which is
- *             why this is the one field on the screen that carries an asterisk.
+ *   one     - the dropdown holds that one site, already chosen.
+ *   several - the dropdown opens on "Choose a site". The scan waits for a
+ *             choice, which is why this is the one field on the screen that
+ *             carries an asterisk.
+ * Under it, the racks of the chosen site, by name.
  */
 
 /* "Site 32". The server sends it ready made; a server that does not is still
@@ -53,72 +56,26 @@ export function siteMatches(s, query) {
 // wrapper, so the page never needs a box of its own around a picker that may
 // draw nothing.
 export default function SitePicker({ sites = [], value = '', onChange, className = '', ...rest }) {
-  const [query, setQuery] = useState('');
-  // Only ever true because the person asked to change a choice already made.
-  // With nothing chosen the list is open regardless.
-  const [changing, setChanging] = useState(false);
-
-  const chosen = useMemo(() => sites.find((s) => String(s.id) === String(value)) || null, [sites, value]);
-  const shown = useMemo(() => sites.filter((s) => siteMatches(s, query)), [sites, query]);
-
   if (!sites.length) return null;
 
-  if (sites.length === 1) {
-    const only = sites[0];
-    return (
-      <div className={`${styles.wrap} ${className}`} {...rest}>
-        <span className={styles.lbl}>Site</span>
-        <p className={styles.one}>{[siteLabel(only), only.name, rackWords(rackTotal(only))].filter(Boolean).join(' - ')}</p>
-      </div>
-    );
-  }
-
-  const pick = (s) => {
-    setChanging(false);
-    setQuery('');
-    onChange?.(String(s.id));
-  };
-
-  if (chosen && !changing) {
-    return (
-      <div className={`${styles.wrap} ${className}`} {...rest}>
-        <span className={styles.lbl}>Site<span className={styles.star} aria-hidden="true">*</span></span>
-        <div className={styles.chosen}>
-          <div className={styles.chosenText}>
-            <span className={styles.rowMain}>{[siteLabel(chosen), chosen.name].filter(Boolean).join(' - ')}</span>
-            <span className={styles.rowSub}>{rackLine(chosen)}</span>
-          </div>
-          <button type="button" className={styles.swap} onClick={() => setChanging(true)}>Change</button>
-        </div>
-      </div>
-    );
-  }
+  const one = sites.length === 1;
+  const current = one ? String(sites[0].id) : String(value || '');
+  const chosen = sites.find((s) => String(s.id) === current) || null;
 
   return (
     <div className={`${styles.wrap} ${className}`} {...rest}>
-      <label htmlFor="scan-site" className={styles.lbl}>Site<span className={styles.star} aria-hidden="true">*</span></label>
-      <input id="scan-site" type="search" className={styles.find} value={query}
-        placeholder="Search by site number or name" aria-required="true"
-        autoComplete="off" autoCorrect="off" spellCheck={false}
-        onChange={(e) => setQuery(e.target.value)} />
-      {shown.length > 0 ? (
-        <ul className={styles.rows} aria-label="Sites">
-          {shown.map((s) => {
-            const on = String(s.id) === String(value);
-            return (
-              <li key={s.id}>
-                <button type="button" className={`${styles.row} ${on ? styles.rowOn : ''}`}
-                  aria-pressed={on} onClick={() => pick(s)}>
-                  <span className={styles.rowMain}>{[siteLabel(s), s.name].filter(Boolean).join(' - ')}</span>
-                  <span className={styles.rowSub}>{rackLine(s)}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className={styles.none}>No site matches that.</p>
-      )}
+      <label htmlFor="scan-site" className={styles.lbl}>
+        Site{!one && <span className={styles.star} aria-hidden="true">*</span>}
+      </label>
+      <select id="scan-site" className={styles.siteSelect} value={current}
+        aria-required={one ? undefined : 'true'}
+        onChange={(e) => onChange?.(String(e.target.value))}>
+        {!one && <option value="">Choose a site</option>}
+        {sites.map((s) => (
+          <option key={s.id} value={String(s.id)}>{[siteLabel(s), s.name].filter(Boolean).join(' - ')}</option>
+        ))}
+      </select>
+      {chosen && <span className={styles.rowSub}>{rackLine(chosen)}</span>}
     </div>
   );
 }

@@ -25,6 +25,11 @@ vi.mock('../utils/validateMedia', () => ({ validateMedia: async () => ({ ok: tru
 
 import MultiRackNewPage from './MultiRackNewPage.jsx';
 
+// The site is a dropdown, the same control as Space.
+const sitePick = () => screen.getByLabelText(/^Site/);
+const siteIs = (id) => waitFor(() => expect(sitePick().value).toBe(String(id)));
+const chooseSite = (id) => fireEvent.change(sitePick(), { target: { value: String(id) } });
+
 const OFFICE = {
   id: 32, siteId: 'Site 32', name: 'Office-Sprintpark', rackCount: 1,
   racks: [{ rackId: 'RK-5B81BE87', name: 'SP-HYB-RM01-R01-R1', spaceId: 26 }],
@@ -68,12 +73,12 @@ describe('<MultiRackNewPage> site', () => {
   test('several sites: the build waits for a choice, and the choice goes with both photos', async () => {
     stub({ body: { ok: true, preselect: null, sites: [OFFICE, HARBOUR] } });
     mount();
-    await screen.findByPlaceholderText('Search by site number or name');
+    await screen.findByLabelText(/^Site/);
     await addBothPhotos();
     expect(build().disabled).toBe(true);
     expect(screen.getByText('Choose the site first.')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: /Site 32 - Office-Sprintpark/ }));
+    chooseSite(32);
     expect(screen.queryByText('Choose the site first.')).toBeNull();
     // One remembered choice for both scan screens.
     expect(window.localStorage.getItem('rt.scan.site.935')).toBe('32');
@@ -87,7 +92,7 @@ describe('<MultiRackNewPage> site', () => {
     window.localStorage.setItem('rt.scan.site.935', '7');
     stub({ body: { ok: true, preselect: 32, sites: [OFFICE, HARBOUR] } });
     mount();
-    await screen.findByText('Site 7 - Harbour DC');
+    await siteIs(7);
     fireEvent.click(screen.getByRole('button', { name: 'One video' }));
     fireEvent.change(inputs()[0], { target: { files: [clip()] } });
     await waitFor(() => expect(build().disabled).toBe(false));
@@ -111,7 +116,7 @@ describe('<MultiRackNewPage> site', () => {
     stub({ body: { ok: true, preselect: 32, sites: [OFFICE, HARBOUR] } },
       { 'POST /api/analyze': { status: 404, body: { error: 'Site not found' } } });
     mount();
-    await screen.findByText('Site 32 - Office-Sprintpark');
+    await siteIs(32);
     await addBothPhotos();
     fireEvent.click(build());
     await screen.findByText('That site is not one you can scan for. Choose another.');

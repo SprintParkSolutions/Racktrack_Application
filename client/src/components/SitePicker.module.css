@@ -22,6 +22,12 @@
 }
 .star { color: #b42318; margin-left: 3px; }
 
+/* The same control as the Space picker under it (ScanPage .spaceSelect). */
+.siteSelect {
+  width: 100%; min-height: 44px; padding: 0 12px;
+  font-size: 15px; color: var(--md-on-surface); border-radius: 8px;
+}
+
 /* One site: a statement, not a control. */
 .one {
   margin: 0; padding: 11px 12px;

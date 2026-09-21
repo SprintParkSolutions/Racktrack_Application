@@ -3,8 +3,9 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { useState } from 'react';
 import SitePicker, { rackLine, siteMatches } from './SitePicker.jsx';
 
-/* The site a scan is for: stated when there is one, searched when there are
-   several, and absent when the server has none to offer. */
+/* The site a scan is for: a dropdown like the Space picker - already chosen
+   when there is one site, waiting for a choice when there are several, and
+   absent when the server has none to offer. */
 
 const OFFICE = {
   id: 32, siteId: 'Site 32', name: 'Office-Sprintpark', rackCount: 1,
@@ -23,49 +24,37 @@ function Held({ sites, initial = '', onChange = () => {} }) {
   const [value, setValue] = useState(initial);
   return <SitePicker sites={sites} value={value} onChange={(id) => { setValue(id); onChange(id); }} />;
 }
-const rowNames = () => screen.queryAllByRole('button').map((b) => b.textContent);
+const pick = () => screen.getByLabelText(/^Site/);
+const optionNames = () => [...pick().options].map((o) => o.textContent);
 
 afterEach(cleanup);
 
 describe('<SitePicker>', () => {
-  test('one site is stated, not offered: no search, nothing to press', () => {
-    render(<Held sites={[OFFICE]} initial="32" />);
-    expect(screen.getByText('Site 32 - Office-Sprintpark - 1 rack')).toBeTruthy();
-    expect(screen.queryByRole('searchbox')).toBeNull();
+  test('one site: the dropdown holds it, already chosen, with its racks under it', () => {
+    render(<Held sites={[OFFICE]} />);
+    expect(pick().tagName).toBe('SELECT');
+    expect(pick().value).toBe('32');
+    expect(optionNames()).toEqual(['Site 32 - Office-Sprintpark']);
+    expect(screen.getByText('SP-HYB-RM01-R01-R1')).toBeTruthy();
     expect(screen.queryAllByRole('button')).toEqual([]);
     // Nothing to fill in, so nothing is marked as mandatory.
     expect(document.body.textContent).not.toContain('*');
   });
 
-  test('several sites are searched by number and by name, and the choice is handed up as a string', () => {
+  test('several sites: the dropdown lists them by number and name, and the choice is handed up as a string', () => {
     const onChange = vi.fn();
     render(<Held sites={[OFFICE, HARBOUR, NORTH]} onChange={onChange} />);
-    const box = screen.getByPlaceholderText('Search by site number or name');
-    expect(screen.getByLabelText(/^Site/, { selector: 'input' })).toBe(box);
-    expect(rowNames()).toHaveLength(3);
+    expect(pick().value).toBe('');
+    expect(optionNames()).toEqual(['Choose a site', 'Site 32 - Office-Sprintpark', 'Site 7 - Harbour DC', 'Site 132 - North Annex']);
 
-    // By number. "32" is also inside 132, and both are honest answers.
-    fireEvent.change(box, { target: { value: '32' } });
-    expect(rowNames().map((n) => n.slice(0, 8))).toEqual(['Site 32 ', 'Site 132']);
-    // By the words on the row, in any case.
-    fireEvent.change(box, { target: { value: 'site 7' } });
-    expect(rowNames()).toHaveLength(1);
-    // By name.
-    fireEvent.change(box, { target: { value: 'HARB' } });
-    expect(rowNames()).toEqual(['Site 7 - Harbour DCA1, A2, A3 and 2 more']);
-    fireEvent.change(box, { target: { value: 'nowhere' } });
-    expect(rowNames()).toEqual([]);
-    expect(screen.getByText('No site matches that.')).toBeTruthy();
-
-    fireEvent.change(box, { target: { value: 'harbour' } });
-    fireEvent.click(screen.getByRole('button', { name: /Site 7 - Harbour DC/ }));
+    fireEvent.change(pick(), { target: { value: '7' } });
     expect(onChange).toHaveBeenCalledWith('7');
-    // Chosen: the list folds away to the answer and a way back to it.
-    expect(screen.queryByRole('searchbox')).toBeNull();
-    expect(screen.getByText('Site 7 - Harbour DC')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Change' }));
-    expect(screen.getByRole('searchbox').value).toBe('');
-    expect(rowNames()).toHaveLength(3);
+    expect(pick().value).toBe('7');
+    // Chosen: its racks are named under it, and it can be changed in place.
+    expect(screen.getByText('A1, A2, A3 and 2 more')).toBeTruthy();
+    fireEvent.change(pick(), { target: { value: '132' } });
+    expect(onChange).toHaveBeenLastCalledWith('132');
+    expect(screen.getByText('No racks yet')).toBeTruthy();
   });
 
   test('the mandatory mark is a lone asterisk, and only while there is a choice to make', () => {
