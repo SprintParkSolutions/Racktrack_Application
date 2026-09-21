@@ -81,7 +81,11 @@ router.get('/api/ports/by-host/:host/overview', safeAsync(async (req, res) => {
   }
   // listDevices({ scope }) returns raw rows (host included) already filtered to
   // the Sites this user can see — so the scope check and the lookup are one step.
-  const device = portsDb.listDevices({ scope: scopeOf(req) }).find((d) => d.host === host);
+  // The caller asks by the plain address; a Site that shares an address with
+  // another has its device filed under a marked one. The scope has already
+  // narrowed the list to this caller's Sites, so at most one can match.
+  const device = portsDb.listDevices({ scope: scopeOf(req) })
+    .find((d) => portsDb.plainHost(d.host) === host);
   if (!device) return res.status(404).json({ error: 'device not found' });
   res.json({
     device: portsDb.toClientView(device),

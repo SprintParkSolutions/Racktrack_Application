@@ -298,6 +298,19 @@ function aliasesOf(reading) {
   // does, identity picks it up without another change here.
   add('bridge', r.bridgeAddress ?? ident.bridgeAddress ?? system.bridgeAddress);
   add('mac', r.mgmtMac ?? ident.mgmtMac ?? system.mgmtMac);
+  // A switch that publishes no serial, no chassis id and no bridge address still
+  // carries the hardware addresses of its own ports, and no other unit has them.
+  // The lowest one stands for the unit, at the rung of a management address. It
+  // is what lets a person confirm a D-Link DGS-1210 at all: that switch answers
+  // SNMP with no serial and no LLDP chassis id, so its confirmation was refused
+  // every time while the two switches beside it were kept.
+  if (![...out].some(isStrong)) {
+    const lowest = (Array.isArray(r.interfaces) ? r.interfaces : [])
+      .map((i) => strip(i && (i.mac ?? i.physAddress)))
+      .filter((m) => MAC_FORM.test(m) && !/^0{12}$/.test(m) && !/^f{12}$/.test(m))
+      .sort()[0];
+    if (lowest) add('mac', lowest);
+  }
   add('sysname', system.sysName);
   add('host', r.host ?? r.mgmtHost);
 

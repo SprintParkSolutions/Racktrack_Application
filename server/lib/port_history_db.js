@@ -269,6 +269,10 @@ function getDevice(id, scope = null) {
 }
 function getDeviceByHost(host) { return stmtGetDeviceHost.get(host); }
 
+/** An address as it is filed for a second Site, and the plain address back again. */
+const scopedHost = (host, tenantId) => `${host}#t${Number(tenantId)}`;
+const plainHost = (host) => String(host ?? '').replace(/#t\d+$/, '');
+
 /** Does the Site that owns a device still exist? A removed organisation leaves its devices behind. */
 function tenantExists(tenantId) {
   if (tenantId == null) return false;
@@ -563,7 +567,7 @@ function normForCompare(v) {
 module.exports = {
   TRACKED_FIELDS,
   BASE_BACKOFF_MS, MAX_BACKOFF_MS, backoffMsFor,
-  listDevices, dueDevices, getDevice, getDeviceByHost, tenantExists, rehomeDevice,
+  listDevices, dueDevices, getDevice, getDeviceByHost, tenantExists, rehomeDevice, scopedHost, plainHost,
   addDevice, setEnabled, deleteDevice,
   updateDeviceMetadata, toClientView,
   recordPollSuccess, recordPollFailure, touchPolled,

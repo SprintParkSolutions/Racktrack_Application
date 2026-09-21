@@ -33,9 +33,14 @@ function feedDrift(rec, data, { tenantId = null } = {}) {
     if (!portsDb.tenantExists(dev.tenant_id)) {
       dev = portsDb.rehomeDevice(dev.id, tenantId, rec.label || null);
     } else {
-      const err = new Error(`the address ${host} is already monitored under another Site`);
-      err.code = 'host_in_use';
-      throw err;
+      // The other Site keeps its device and its history. This Site gets one of
+      // its own, filed under the address marked with the Site, because the
+      // table holds an address once; the mark never reaches a screen.
+      const scoped = portsDb.scopedHost(host, tenantId);
+      dev = portsDb.getDeviceByHost(scoped) || portsDb.addDevice({
+        host: scoped, ssh_port: 0, vendor: 'snmp', label: rec.label || host, enabled: 0,
+        tenant_id: tenantId,
+      });
     }
   }
   if (!dev) {
