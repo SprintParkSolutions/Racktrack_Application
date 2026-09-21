@@ -878,17 +878,6 @@ const RECORD_SAID = {
   unknown: 'Could not be read',
 };
 
-/** One labelled number about the whole rack, on the Overview. */
-function RackFact({ label, value, mono = false }) {
-  if (value === null || value === undefined || value === '') return null;
-  return (
-    <div className={styles.rackFact}>
-      <span className={styles.rackFactLabel}>{label}</span>
-      <span className={`${styles.rackFactVal} ${mono ? styles.rackFactMono : ''}`}>{value}</span>
-    </div>
-  );
-}
-
 /**
  * One labelled fact on the located-port screen.
  *
@@ -5025,15 +5014,17 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             Done in {fmtMs(analysisTimings.total_ms)}
           </span>
         )}
-        {/* The mark that says this photograph has been read. It sat in the
-            middle of the bottom edge over a gradient, under a travelling scan
-            line and four corner brackets - a scanner's chrome on a screen whose
-            job is to report. One static chip in the corner of the frame says the
-            same thing and leaves the rack to be looked at. */}
-        <div className={styles.heroBadge}>
+        {/* Two marks on the frame, and nothing else on it. Top left, how the
+            rack stands against the records, because that is the answer somebody
+            opened this screen for; bottom right, when it was read. "Analysed"
+            used to sit here, which only said the machine had finished. */}
+        <div className={`${styles.heroBadge} ${identity?.decision === 'matched' ? styles.heroBadgeOk : ''}`}>
           <span className={styles.heroBadgeDot} />
-          <span className={styles.heroBadgeTxt}>ANALYSED</span>
+          <span className={styles.heroBadgeTxt}>
+            {(identity && RECORD_SAID[identity.decision]) || 'Read'}
+          </span>
         </div>
+        <div className={styles.heroWhen}>{whenText(result?.timestamp) || 'Just now'}</div>
       </div>
 
       {/* Selected device label - plain subtle-black header, no class-colour
@@ -5047,36 +5038,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
       {/* ── Action sheet ── */}
       <div className={styles.sheet}>
-
-        {/* ── What the scan found ──
-            The photograph is evidence; these are the findings, and they were
-            nowhere on the screen. Every one of them is already in what this page
-            was given: the rack's identity answer, the devices the scan returned
-            and the shelves it read. */}
-        {!ticketMode && phase !== 'all' && !portMode && (() => {
-          const found = effectiveDevices || [];
-          const switches = found.filter((d) => d.class_name === 'Switch').length;
-          const ports = found.reduce((n, d) => n + totalPortCount(d), 0);
-          const shelves = formatUnitsRange(units_detected);
-          const read = whenText(result?.timestamp);
-          return (
-            <div className={styles.rackFacts}>
-              <RackFact label="Read" value={read || 'Just now'} />
-              <RackFact label="Devices" value={found.length || null} mono />
-              <RackFact label="Switches" value={switches || null} mono />
-              <RackFact label="Ports" value={ports || null} mono />
-              <RackFact label="Shelves" value={shelves || null} mono />
-              <RackFact
-                label="Against the records"
-                value={identity ? (RECORD_SAID[identity.decision] || null) : null}
-              />
-            </div>
-          );
-        })()}
-
-        {!ticketMode && phase !== 'all' && !portMode && (
-          <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>What to do next</h3>
-        )}
 
         {/* What next. After seeing the rack there are two things to do: read
             its switches, or look at one port. Nothing else is on screen until
@@ -5100,29 +5061,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               onClick={enterPortFlow}
             >
               Look up a port
-            </button>
-          </div>
-        )}
-
-        {/* The two screens that are not steps: the rack in three dimensions,
-            and what the record holds about its switches. They used to sit in a
-            More menu on the tab bar; the bar is four tabs and no menu now, so
-            they are named here, on the page they belong to. Back returns here. */}
-        {!ticketMode && phase !== 'all' && !portMode && (
-          <div className={styles.stepChoices}>
-            <button
-              type="button"
-              className={`${styles.stepChoice} ${styles.stepChoiceSecondary}`}
-              onClick={() => handleTabChange('topology')}
-            >
-              Topology
-            </button>
-            <button
-              type="button"
-              className={`${styles.stepChoice} ${styles.stepChoiceSecondary}`}
-              onClick={() => handleTabChange('switches')}
-            >
-              Switches
             </button>
           </div>
         )}
