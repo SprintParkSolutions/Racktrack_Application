@@ -15,6 +15,12 @@
  *   - the person who sent it is refused everywhere
  *   - only an organization admin reassigns (by RackTrack user id) or cancels
  *   - a check from before all this keeps the moves it had
+ *   - a parked check leaves triage only when an admin names its holder
+ *   - a check sent back for rework takes its tickets with it, reaches an
+ *     admin's queue, and the sender's next comparison is a fresh draft
+ *   - an account with no organization files under the Site's, and still sees
+ *     its own check
+ *   - nobody's queue lost a section it had before the SPOC change
  */
 process.env.NODE_ENV = 'test';
 process.env.RACKTRACK_SKIP_WORKER_POOL = '1';
@@ -43,6 +49,10 @@ const OWNER = user(47, 'dc007.owner', 'owner', 33);
 const APPROVER = user(48, 'dc007.approver', 'approver');
 const AUDITOR = user(43, 'dc007.auditor', 'auditor');
 const ELSEWHERE = user(45, 'annex.member', 'member', 33);
+// Two accounts that belong to no organization, and an admin of another one.
+const PLATFORM = user(60, 'platform.owner', 'owner', null, null);
+const LONER = user(61, 'platform.second', 'owner', null, null);
+const OTHER_ORG = user(62, 'elsewhere.admin', 'org_admin', 90, 2);
 
 before(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-submit-assign-'));
@@ -65,7 +75,8 @@ before(() => {
   `);
   const add = db.prepare(`INSERT INTO users (id, username, email, role, tenant_id, organization_id, active)
     VALUES (?, ?, ?, ?, ?, ?, 1)`);
-  for (const u of [TECH, SPOC, MEMBER, MANAGER, ADMIN, OWNER, APPROVER, AUDITOR, ELSEWHERE]) {
+  for (const u of [TECH, SPOC, MEMBER, MANAGER, ADMIN, OWNER, APPROVER, AUDITOR, ELSEWHERE,
+    PLATFORM, LONER, OTHER_ORG]) {
     add.run(u.id, u.username, u.email, u.role, u.tenant_id, u.organization_id);
   }
 });
@@ -435,6 +446,7 @@ describe('what each person is shown', () => {
     assert.deepEqual(view.sender, { userId: 39, username: 'dc007.tech', note: 'the router is on shelf U20' });
     assert.equal(view.siteSpoc.userId, 42);
     assert.equal(view.siteSpoc.siteLabel, 'Site 32');
+    assert.equal(view.plan.siteName, 'Office-Sprintpark', 'the Site by name, for a holder who has no list of Sites');
     assert.equal(view.incident, null);
     assert.equal(view.incidentStates, null);
     assert.deepEqual([view.suggestions, view.overrides, view.changes], [[], [], []]);
@@ -495,9 +507,61 @@ describe('what each person is shown', () => {
     const admins = service.queue(ADMIN).sections;
     assert.equal(admins.find((s) => s.key === 'triage').title, 'Needs an admin');
     assert.equal(admins.find((s) => s.key === 'approval_pending').title, 'Waiting for a second approval');
+    // A site manager may not triage, but still reads the queues of their Site.
     const managers = service.queue(MANAGER).sections.map((s) => s.key);
-    assert.ok(!managers.includes('triage'), 'a site manager has no triage section');
+    assert.ok(managers.includes('triage'), 'to read: can.triage above is what says who may act');
+    assert.ok(!managers.includes('rework'), 'what was sent back is an admin\'s to give to somebody');
     assert.ok(managers.includes('mine'));
+  });
+
+  it('shows everybody the queues they saw before the SPOC change', () => {
+    // A technician: their own checks and the verification queue of their Site, empty or not.
+    const tech = service.queue(user(70, 'new.tech', 'member')).sections;
+    assert.deepEqual(tech.map((s) => s.key), ['mine', 'verification_pending']);
+    assert.equal(tech[1].title, 'Waiting for a verification scan');
+
+    // A site manager: the five sections of their own Site, then the rest of it.
+    spoc._setLookup(() => null);
+    const parked = sent();
+    const held = (spoc._setLookup(() => ({ user_id: 41 })), sent());
+    const annex = (spoc._setLookup(() => null), sent({ by: ELSEWHERE, tenantId: 33 }));
+    const q = service.queue(MANAGER).sections;
+    assert.deepEqual(q.map((s) => s.key).filter((k) => k !== 'spoc'),
+      ['triage', 'approval_pending', 'write_failed', 'manual_review', 'sla_breached', 'mine']);
+    const idsOf = (key) => q.find((s) => s.key === key).plans.map((p) => p.id);
+    assert.ok(idsOf('triage').includes(parked));
+    assert.ok(!idsOf('triage').includes(annex), 'their own Site only');
+    assert.ok(idsOf('mine').includes(held), 'a check that is with its SPOC');
+    assert.ok(!idsOf('mine').includes(parked), 'no row is listed twice');
+
+    // An admin: every Site of the organization, and what was sent back.
+    const admin = service.queue(ADMIN).sections;
+    assert.deepEqual(admin.map((s) => s.key).filter((k) => k !== 'spoc'),
+      ['triage', 'rework', 'approval_pending', 'write_failed', 'manual_review', 'sla_breached']);
+    assert.ok(admin.find((s) => s.key === 'triage').plans.some((p) => p.id === annex));
+    assert.deepEqual(service.queue(APPROVER).sections.map((s) => s.key), ['approval_pending']);
+
+    // And the lists behind the two queue pages answer the same people as before.
+    const old = service.trustedActor('meera');
+    const waiting = draft({ by: old });
+    service.submit(waiting, { actor: old });
+    service.assignLocal(waiting, [{ uid: DEV, assignee: 'sam' }, { uid: DEV2, assignee: 'sam' }], { actor: old });
+    service.resolveTicket(waiting, DEV, { finding: 'it is there' }, { actor: old });
+    service.resolveTicket(waiting, DEV2, { finding: 'it is there' }, { actor: old });
+    assert.equal(store.getPlan(waiting).status, 'verification_pending');
+    for (const who of [MEMBER, MANAGER, ADMIN, APPROVER, AUDITOR]) {
+      assert.ok(service.list(who, { status: 'verification_pending' }).plans.some((p) => p.id === waiting),
+        `${who.username} still finds it in the verification queue`);
+    }
+    assert.ok(!service.list(ELSEWHERE, { status: 'verification_pending' }).plans.some((p) => p.id === waiting));
+    // What each menu row is gated on.
+    assert.deepEqual([service.me(MEMBER).can.verify, service.me(MANAGER).can.verify, service.me(ADMIN).can.verify],
+      [true, true, true]);
+    assert.deepEqual([service.me(APPROVER).can.approve, service.me(ADMIN).can.approve, service.me(AUDITOR).can.audit],
+      [true, true, true]);
+    // Windows, exceptions and reports stay a site manager's, under a key of their own.
+    assert.deepEqual([service.me(MANAGER).can.manage, service.me(ADMIN).can.manage, service.me(MEMBER).can.manage,
+      service.me(APPROVER).can.manage], [true, true, false, false]);
   });
 
   it('tells the phone who the check goes to, or why it goes to an admin', async () => {
@@ -523,6 +587,191 @@ describe('what each person is shown', () => {
     assert.deepEqual(forAdmin.assignable.map((u) => u.username).sort(),
       ['Aasritha', 'dc007.approver', 'dc007.manager', 'dc007.member', 'dc007.owner', 'dc007.spoc'].sort(),
       'the admins and everybody on the check\'s own site, less the auditor and the sender');
+  });
+});
+
+describe('a parked check leaves triage only when an admin names its holder', () => {
+  it('stays in triage while an admin decides its items and saves its priority', async () => {
+    spoc._setLookup(() => null);
+    const id = sent();
+    assert.equal(store.getPlan(id).needsAdmin.why, 'no_spoc');
+    const rows = [DEV, DEV2, REBIND].map((uid) => ({ uid, decision: 'approved' }));
+    assert.equal(service.decideItems(id, rows, { actor: ADMIN }).applied.length, 3);
+    const saved = service.triage(id, { priority: 'P2' }, { actor: ADMIN });
+    assert.equal(saved.plan.status, 'triage');
+    assert.equal(saved.plan.needsAdmin.why, 'no_spoc');
+    assert.equal(saved.plan.spocUserId, null);
+    assert.ok(saved.plan.triagedAt);
+
+    const given = await service.assign(id, { userId: OWNER.id }, { actor: ADMIN });
+    assert.equal(given.plan.status, 'assigned');
+    assert.equal(given.plan.spocUserId, OWNER.id);
+    assert.equal(given.plan.needsAdmin, null);
+    assert.equal(service.approve(id, { actor: OWNER }).plan.status, 'approved');
+  });
+
+  it('a check with nothing to look at at the rack does the same', async () => {
+    spoc._setLookup(() => null);
+    const id = sent({ rows: [{ type: 'Device', uid: REBIND, name: 'SW U30', action: 'rebind', netboxId: 45 }] });
+    assert.equal(store.getPlan(id).status, 'triage');
+    const saved = service.triage(id, { priority: 'P3', risk: 'low' }, { actor: ADMIN });
+    assert.equal(saved.plan.status, 'triage', 'not on to verification, where nobody can be given it');
+    assert.equal(saved.plan.needsAdmin.why, 'no_spoc');
+    const given = await service.assign(id, { userId: 42 }, { actor: ADMIN });
+    assert.equal(given.plan.status, 'assigned');
+    assert.equal(given.plan.needsAdmin, null);
+  });
+
+  it('a check from before the SPOC change, parked by nobody, still moves on once it is triaged', () => {
+    spoc._setLookup(() => null);
+    const id = sent();
+    store.updatePlan(id, { needsAdmin: null });
+    const rows = [DEV, DEV2, REBIND].map((uid) => ({ uid, decision: 'approved' }));
+    assert.equal(service.decideItems(id, rows, { actor: ADMIN }).applied.length, 3);
+    const saved = service.triage(id, { priority: 'P2' }, { actor: ADMIN });
+    assert.notEqual(saved.plan.status, 'triage');
+    assert.ok(store.eventsOf(id).some((e) => e.action === 'auto.assigned'));
+  });
+});
+
+describe('a check sent back for rework', () => {
+  const WHY = { reasonCode: 'insufficient_evidence', comment: 'The photo is blurry.' };
+
+  it('takes its tickets with it, reaches an admin, and the next comparison is a fresh draft', () => {
+    const id = sent();
+    const before = store.getPlan(id);
+    assert.ok(store.ticketsOf(id).length > 0);
+    const back = service.rework(id, { ...WHY, actor: SPOC });
+    assert.equal(back.plan.status, 'rework');
+    for (const t of store.ticketsOf(id)) {
+      assert.equal(t.status, 'closed');
+      assert.equal(t.closedWith, 'rework');
+    }
+    const listed = (who) => service.queue(who).sections.filter((s) => s.plans.some((p) => p.id === id)).map((s) => s.key);
+    assert.deepEqual(listed(SPOC).filter((k) => k !== 'mine'), [], 'nothing of it is left with the holder to work');
+    assert.deepEqual(listed(ADMIN), ['rework']);
+    assert.equal(service.queue(ADMIN).sections.find((s) => s.key === 'rework').title, 'Sent back for rework');
+
+    // The technician compares the same rack again: the same differences.
+    const again = service.create({ scanId: before.scanId, rackId: before.rackId, rackName: before.rackName,
+      report: { rackUid: before.rackUid, netboxUrl: 'http://netbox.test', counts: {}, warnings: [], orphans: [],
+        changes: changes() },
+      actor: TECH, orgId: 1, tenantId: 32, reuse: true, ownOnly: true });
+    assert.equal(again.reused, false);
+    assert.notEqual(again.plan.id, id);
+    assert.equal(again.plan.status, 'draft');
+    const resent = service.submit(again.plan.id, { actor: TECH });
+    assert.equal(resent.plan.status, 'assigned');
+    assert.equal(resent.plan.spocUserId, 41);
+  });
+
+  it('an open check is still handed back, so a look at the screen files nothing new', () => {
+    const id = sent();
+    const before = store.getPlan(id);
+    const again = service.create({ scanId: before.scanId, rackId: before.rackId, rackName: before.rackName,
+      report: { rackUid: before.rackUid, netboxUrl: 'http://netbox.test', counts: {}, warnings: [], orphans: [],
+        changes: changes() },
+      actor: TECH, orgId: 1, tenantId: 32, reuse: true, ownOnly: true });
+    assert.equal(again.reused, true);
+    assert.equal(again.plan.id, id);
+  });
+
+  it('from approval_pending, on a check with no holder, closes nothing and still moves by hand', () => {
+    const old = service.trustedActor('meera');
+    spoc._setLookup(null);
+    const id = draft({ by: old });
+    service.submit(id, { actor: old });
+    service.assignLocal(id, [{ uid: DEV, assignee: 'sam' }, { uid: DEV2, assignee: 'sam' }], { actor: old });
+    service.resolveTicket(id, DEV, { finding: 'it is there' }, { actor: old });
+    service.resolveTicket(id, DEV2, { finding: 'it is there' }, { actor: old });
+    const skipped = service.skipVerification(id, { reason: 'the rack is sealed until Monday', actor: ADMIN });
+    assert.equal(skipped.plan.status, 'approval_pending');
+    const tickets = store.ticketsOf(id).map((t) => [t.itemUid, t.status, t.closedWith ?? null]);
+    const back = service.rework(id, { ...WHY, actor: APPROVER });
+    assert.equal(back.plan.status, 'rework');
+    assert.deepEqual(store.ticketsOf(id).map((t) => [t.itemUid, t.status, t.closedWith ?? null]), tickets);
+    const moved = service.moveByHand(id, { to: 'in_progress', reason: 'the technician is going back', actor: ADMIN });
+    assert.equal(moved.plan.status, 'in_progress');
+  });
+});
+
+describe('an account that belongs to no organization', () => {
+  const file = (by) => { n += 1; return service.create({ scanId: 100 + n, rackId: `RK-SUBMIT${n}`,
+    rackName: 'SP-HYB-RM01-R01-R1',
+    report: { rackUid: `rack:${n}`, netboxUrl: 'http://netbox.test', counts: {}, warnings: [], orphans: [],
+      changes: changes() },
+    actor: by, orgId: by.organization_id ?? null, tenantId: 32 }); };
+
+  it('files its check under the Site\'s organization, so it reaches the SPOC, and still sees it', async () => {
+    const filed = file(PLATFORM);
+    const id = filed.plan.id;
+    assert.equal(filed.plan.orgId, 1);
+    const out = await service.submitAndDispatch(id, { actor: PLATFORM });
+    assert.equal(out.plan.status, 'assigned');
+    assert.equal(out.plan.spocUserId, 41);
+    assert.equal(out.plan.needsAdmin, null);
+    assert.ok(heard.some((h) => h.event === 'assigned' && h.holder.userId === 41));
+
+    assert.ok(service.get(id, PLATFORM), 'the account that sent it opens it');
+    assert.ok(service.list(PLATFORM, {}).plans.some((p) => p.id === id), 'and finds it in its list');
+    assert.ok(service.get(id, ADMIN), 'so does an admin of the Site\'s organization');
+    assert.ok(service.list(ADMIN, {}).plans.some((p) => p.id === id));
+    assert.equal(service.get(id, LONER), null, 'another account with no organization does not');
+    assert.ok(!service.list(LONER, {}).plans.some((p) => p.id === id));
+    assert.equal(service.get(id, OTHER_ORG), null, 'nor does another organization');
+    assert.ok(!service.list(OTHER_ORG, {}).plans.some((p) => p.id === id));
+    // The sender decides nothing on it, as anywhere else.
+    assert.deepEqual(service.get(id, PLATFORM).can.blocked, { why: machine.SENDER_WHY });
+  });
+
+  it('is never handed somebody else\'s check of that organization', () => {
+    const theirs = sent();
+    const before = store.getPlan(theirs);
+    const mine = service.create({ scanId: before.scanId, rackId: before.rackId, rackName: before.rackName,
+      report: { rackUid: before.rackUid, netboxUrl: 'http://netbox.test', counts: {}, warnings: [], orphans: [],
+        changes: changes() },
+      actor: PLATFORM, orgId: null, tenantId: 32, reuse: true });
+    assert.equal(mine.reused, false);
+    assert.notEqual(mine.plan.id, theirs);
+  });
+
+  it('a Site that belongs to no organization leaves the check the account\'s own', () => {
+    store.db().prepare("INSERT OR REPLACE INTO tenants (id, name, slug) VALUES (1, 'Default', 'default')").run();
+    n += 1;
+    const filed = service.create({ scanId: 100 + n, rackId: `RK-SUBMIT${n}`,
+      report: { rackUid: `rack:${n}`, counts: {}, warnings: [], orphans: [], changes: changes() },
+      actor: PLATFORM, orgId: null, tenantId: 1 });
+    assert.equal(filed.plan.orgId, null);
+    const out = service.submit(filed.plan.id, { actor: PLATFORM });
+    assert.equal(out.plan.needsAdmin.why, 'no_site');
+    assert.equal(out.plan.needsAdmin.text,
+      'This check was sent from an account that belongs to no organization, so it has no SPOC.');
+    assert.ok(service.get(filed.plan.id, PLATFORM));
+    assert.equal(service.get(filed.plan.id, LONER), null);
+  });
+});
+
+describe('the holder\'s own notes', () => {
+  it('a member who holds the check may keep a note internal, and reads the internal thread', () => {
+    spoc._setLookup(() => ({ user_id: 42 }));
+    const id = sent();
+    const kept = service.addComment(id, { body: 'Ask facilities about U21.', visibility: 'internal', actor: MEMBER });
+    assert.equal(kept.comment.visibility, 'internal');
+    assert.equal(service.addComment(id, { body: 'Looking at it now.', actor: MEMBER }).comment.visibility, 'shared',
+      'said nothing, so shared, as a technician\'s always was');
+    service.addComment(id, { body: 'Admin note.', visibility: 'internal', actor: ADMIN });
+
+    const bodies = (who) => service.listComments(id, { actor: who }).comments.map((c) => c.body);
+    assert.ok(bodies(MEMBER).includes('Ask facilities about U21.'));
+    assert.ok(bodies(MEMBER).includes('Admin note.'));
+    assert.ok(service.get(id, MEMBER).comments.some((c) => c.body === 'Admin note.'));
+    assert.ok(!bodies(TECH).includes('Ask facilities about U21.'), 'the sender never reads the internal thread');
+    assert.ok(bodies(TECH).includes('Looking at it now.'));
+    assert.ok(!service.get(id, TECH).comments.some((c) => c.visibility === 'internal'));
+
+    // A member who does not hold it is a technician like any other.
+    const asked = service.addComment(id, { body: 'Mine, kept quiet?', visibility: 'internal', actor: TECH });
+    assert.equal(asked.comment.visibility, 'shared');
   });
 });
 

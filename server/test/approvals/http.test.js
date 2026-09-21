@@ -240,6 +240,28 @@ test('the approvals routes hold the workflow at every door', async (t) => {
   assert.match(auditComment.json.error, /auditor reads/i);
   // The site manager still reads their Site's checks.
   assert.equal((await call(port, tok.manager, 'GET', `/api/approvals/plans/${plan}`)).status, 200);
+  // And still sets change windows: triage went to the admins, this did not, so
+  // the Desk reads it from a key of its own and never from `triage`.
+  const mgrCan = (await call(port, tok.manager, 'GET', '/api/approvals/me')).json.can;
+  assert.deepEqual([mgrCan.triage, mgrCan.assign, mgrCan.manage, mgrCan.verify], [false, false, true, true]);
+  assert.equal((await call(port, tok.tech, 'GET', '/api/approvals/me')).json.can.manage, false);
+  assert.equal((await call(port, tok.admin, 'GET', '/api/approvals/me')).json.can.manage, true);
+  const window = await call(port, tok.manager, 'POST', '/api/approvals/windows', { tenantId: a.siteId,
+    startsAt: new Date(Date.now() + 86400000).toISOString(), endsAt: new Date(Date.now() + 90000000).toISOString(),
+    note: 'Saturday patching' });
+  assert.equal(window.status, 201, window.raw);
+  nope(await post('manager', plan, 'triage', { priority: 'P3' }), 'while triage stays refused at the door');
+  // The check names its Site, for a SPOC of any role: the Desk's list of Sites is an admin's.
+  const held = await call(port, tok.meera, 'GET', `/api/approvals/plans/${plan}`);
+  assert.equal(held.status, 200, held.raw);
+  assert.equal(held.json.plan.siteName, 'Approvals A Site');
+  // The queues a site manager and a technician saw before the SPOC change are still answered.
+  const mgrQueue = (await call(port, tok.manager, 'GET', '/api/approvals/queue')).json.sections.map((x) => x.key);
+  for (const key of ['triage', 'approval_pending', 'write_failed', 'manual_review', 'sla_breached']) {
+    assert.ok(mgrQueue.includes(key), `a site manager's queue still has ${key}`);
+  }
+  const techQueue = (await call(port, tok.tech, 'GET', '/api/approvals/queue')).json.sections.map((x) => x.key);
+  assert.ok(techQueue.includes('verification_pending'));
   // Sizing a check up is an organization admin's.
   assert.equal((await post('admin', plan, 'triage', { priority: 'P3' })).status, 200);
 

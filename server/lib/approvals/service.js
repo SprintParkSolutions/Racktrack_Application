@@ -217,7 +217,14 @@ function settle(effects, planId, causedBy = null) {
         reason = 'an admin chose who it goes to';
       } else {
         const left = machine.unassigned({ items: store.itemsOf(planId), tickets }).length;
-        if (!left && (tickets.length || plan.triagedAt)) to = 'assigned';
+        // The old rule, for a check from before the SPOC change only. A check
+        // the new flow parked (needsAdmin) leaves triage one way: an admin
+        // names its holder. Deciding its items or saving its priority is not that:
+        // with no holder and no tickets it would run on to verification, where
+        // nobody can be given it any more.
+        // Only tickets the old library handed out still move a parked check on.
+        const acted = plan.needsAdmin ? tickets.length : (tickets.length || plan.triagedAt);
+        if (!left && acted) to = 'assigned';
       }
       // Out of triage, nothing is waiting on an admin any more.
       if (to && plan.needsAdmin) patch = { needsAdmin: null };
@@ -253,6 +260,11 @@ function settle(effects, planId, causedBy = null) {
  *   accounts that both happen to have no organization are still two people,
  *   so the test compares the RAISER and never the absence of an organization.
  *
+ *   An account with no organization that scans at a Site files under that
+ *   Site's organization (create), so the check reaches its SPOC and its admins.
+ *   The raiser still sees the check they sent: a plan with an organization is
+ *   also seen by its raiser when that raiser has none.
+ *
  * Measured on the live server on 18 September 2026: signed in as the platform
  * owner (no organization), GET /api/nb/plans listed four plans and every one
  * of them answered "no such plan" when opened, because the list scoped one way
@@ -263,8 +275,8 @@ function settle(effects, planId, causedBy = null) {
 function canSee(plan, actor) {
   if (!plan || !actor) return false;
   if (actor.trusted || actor.system) return true;
-  if (plan.orgId != null) return Number(plan.orgId) === Number(actor.orgId);
-  return machine.isCreator(plan, actor);
+  if (plan.orgId != null && Number(plan.orgId) === Number(actor.orgId)) return true;
+  return (plan.orgId == null || actor.orgId == null) && machine.isCreator(plan, actor);
 }
 
 /** The same rule as a list filter, so the list and the read cannot disagree. */
@@ -329,17 +341,24 @@ function scopeFor(actor) {
 function create({ scanId = null, rackId = null, rackUid = null, rackName = null, report, actor,
                   orgId = null, tenantId = null, parentPlanId = null, reuse = false, ownOnly = false }) {
   const who = actorOf(actor) || trustedActor(null);
+  // An account with no organization (the platform owner) may scan at any Site.
+  // Its check is filed under that Site's organization: filed under none, the
+  // Site's SPOC could not hold it, no admin could see it and nobody was told.
+  const lent = orgId == null && tenantId != null;
+  if (lent) orgId = (store.tenantById(tenantId) || {}).orgId ?? null;
   const fingerprint = shape.fingerprint(report.changes);
   if (reuse && rackId != null) {
     const match = store.listPlans({ seenBy: { orgId, userId: who.id ?? null, username: who.username ?? null },
-      rackId, status: machine.OPEN, limit: 200 })
+      // A check sent back for rework is not handed back: no move on it is the
+      // sender's, so the next comparison is a fresh draft they can send.
+      rackId, status: machine.OPEN.filter((st) => st !== 'rework'), limit: 200 })
       // A check a person changed signs a new fingerprint; what it was filed as
       // is kept beside it, so the same comparison still finds the same check.
       .filter((p) => p.fingerprint === fingerprint || p.baseFingerprint === fingerprint)
       .filter((p) => !isStrict(who) || canRead(p, who))
       // ownOnly: a person gets their own check back, never somebody else's. A
       // comparison an admin runs is a second plan, theirs, as it always was.
-      .filter((p) => !ownOnly || (who.username != null && p.createdBy === who.username)
+      .filter((p) => !(ownOnly || lent) || (who.username != null && p.createdBy === who.username)
         || (who.id != null && p.createdById != null && String(p.createdById) === String(who.id)))
       // The same scan first; then a check somebody has already sent over one
       // that is still a draft, so a person who comes back to the screen is
@@ -1934,7 +1953,10 @@ function sendBack(planId, to, { reasonCode, comment, incidentState = null, actor
     // The person who raised it should be able to read why.
     store.addComment(plan.id, { visibility: 'shared', authorId: who.id ?? null, author: who.username ?? null,
       body: `${to === 'rework' ? 'Sent back for rework' : 'Rejected'} (${reasonCode}): ${text(comment)}` });
-    if (to === 'rejected') closeOpenTickets(plan.id, who, 'rejected');
+    // A held check that is sent back takes its holder's tickets with it, or it
+    // would sit in their queue as theirs with no move open. An older check is
+    // reworked from approval_pending, where every ticket is already resolved.
+    if (to === 'rejected' || (to === 'rework' && plan.spocUserId != null)) closeOpenTickets(plan.id, who, to);
     if (to === 'rejected' && reasonCode === 'wrong_spoc') {
       emit(effects, 'reassign_needed', { plan: moved.plan, actor: who, why: 'wrong_spoc',
         text: text(comment), rackId: plan.rackId, holder: plan.spoc || null });
@@ -2276,10 +2298,14 @@ function addComment(planId, { body, visibility, itemUid = null, actor } = {}) {
   }
   if (itemUid != null && !store.getItem(plan.id, itemUid)) return refuse('bad_request', 'no such item on this plan');
   // A technician's words are for the people handling their plan to read, and
-  // they never see the internal thread, so theirs are always shared.
-  const insider = ROLES.reader.includes(who.role);
+  // they never see the internal thread, so theirs are always shared. Whoever
+  // holds the check is handling it, whatever their role: their note may be
+  // internal when they say so, and is shared when they say nothing, as a
+  // technician's always was.
+  const reader = ROLES.reader.includes(who.role);
+  const insider = reader || machine.isHolder(plan, who);
   const comment = store.addComment(plan.id, { body: said, itemUid,
-    visibility: insider ? (visibility || 'internal') : 'shared',
+    visibility: insider ? (visibility || (reader ? 'internal' : 'shared')) : 'shared',
     authorId: who.id ?? null, author: who.username ?? null });
   return { comment };
 }
@@ -2288,7 +2314,7 @@ function listComments(planId, { actor } = {}) {
   const who = actorOf(actor);
   const plan = store.getPlan(planId, { heavy: false });
   if (!plan || !canRead(plan, who)) return NOT_FOUND();
-  const insider = !isStrict(who) || ROLES.reader.includes(who.role);
+  const insider = !isStrict(who) || ROLES.reader.includes(who.role) || machine.isHolder(plan, who);
   return { comments: store.commentsOf(plan.id, insider ? {} : { visibility: 'shared' }) };
 }
 
@@ -2433,7 +2459,7 @@ function get(planId, actor) {
   const tickets = store.ticketsOf(plan.id);
   if (!canRead(plan, who, tickets)) return null;
   const items = store.itemsOf(plan.id);
-  const insider = !isStrict(who) || ROLES.reader.includes(who.role);
+  const insider = !isStrict(who) || ROLES.reader.includes(who.role) || machine.isHolder(plan, who);
   const decisions = store.decisionsOf(plan.id);
   const ctx = { items, tickets, decisions, settings: settingsFor(plan.orgId),
     payloadHash: shape.payloadHash(items), toWrite: shape.approvedCount(items) };
@@ -2448,6 +2474,9 @@ function get(planId, actor) {
   return {
     plan: {
       ...plan,
+      // The Site by name, as a list row carries it: the Desk's own list of
+      // Sites is an admin's, and a SPOC of any other role has none to look in.
+      siteName: plan.tenantId != null ? (store.tenantById(plan.tenantId) || {}).name || null : null,
       legacyStatus: shape.legacyStatus(plan.status),
       settled: shape.isSettled(items),
       payloadHashNow: ctx.payloadHash,
@@ -2570,6 +2599,9 @@ const can = (actor, { spoc: asSpoc = false } = {}) => {
     triage: admin,
     assign: admin,
     reassign: admin,
+    // Maintenance windows, exceptions and reports: what a site manager still
+    // does, now that triage and assigning are an admin's alone.
+    manage: ROLES.triage.includes(role),
     approve: ROLES.approver.includes(role) || asSpoc,
     write: ROLES.writer.includes(role),
     verify: ROLES.technician.includes(role),
@@ -2592,7 +2624,7 @@ function me(actor) {
 const SECTION_TITLES = {
   spoc: 'Assigned to me',
   mine: 'My checks', verification_pending: 'Waiting for a verification scan',
-  triage: 'Needs an admin', approval_pending: 'Waiting for a second approval', write_failed: 'Write failed',
+  triage: 'Needs an admin', rework: 'Sent back for rework', approval_pending: 'Waiting for a second approval', write_failed: 'Write failed',
   manual_review: 'Manual review', sla_breached: 'SLA breached', recent: 'Recent',
   assigned: 'Assigned to me', accepted: 'Accepted by me', in_progress: 'In progress with me',
   pending: 'On hold with me',
@@ -2603,11 +2635,14 @@ const SECTION_TITLES = {
  *
  *   a SPOC        spoc, first: the checks that are with them, whatever their
  *                 role
- *   technician    mine, and verification_pending on their Site when a check
- *                 from before the SPOC change is waiting there
- *   admin         triage (the checks that need an admin), approval_pending,
+ *   technician    mine, and verification_pending on their Site (the older
+ *                 checks still waiting for a scan)
+ *   admin         triage (the checks that need an admin), rework (sent back,
+ *                 for an admin to give to somebody or close), approval_pending,
  *                 write_failed, manual_review, sla_breached
- *   site manager  the checks of their Site, to read
+ *   site manager  the same sections for their own Site, to read - they saw
+ *                 them before the SPOC change and still do; triage and
+ *                 reassigning are an admin's - then the rest of their Site
  *   approver      approval_pending
  *   auditor       recent
  *   an assignee   assigned, accepted, in_progress, pending - added for anybody
@@ -2628,21 +2663,28 @@ function queue(actor) {
 
   if (role === 'member') {
     add('mine', store.listPlans({ seenBy: seenByOf(who), createdBy: who.username, limit: 100 }).map(rowOf));
-    const waiting = store.listPlans({ seenBy: seenByOf(who), tenantId: who.tenantId ?? -1,
-      status: 'verification_pending', limit: 100 });
-    if (waiting.length) add('verification_pending', waiting.map(rowOf));
+    add('verification_pending', store.listPlans({ seenBy: seenByOf(who), tenantId: who.tenantId ?? -1,
+      status: 'verification_pending', limit: 100 }).map(rowOf));
   }
-  if (ROLES.admin.includes(role)) {
-    add('triage', plansFor({ status: 'triage' }));
-    add('approval_pending', plansFor({ status: 'approval_pending' }));
-    add('write_failed', plansFor({ status: 'write_failed' }));
-    add('manual_review', plansFor({ status: 'manual_review' }));
-    add('sla_breached', plansFor({ sla: 'breached', status: machine.OPEN }));
+  // The queues a person saw before the SPOC change are still theirs to see: a
+  // site manager for their own Site, to read. What changed is who may act -
+  // triage and reassigning are an admin's - not what anybody is shown.
+  if (ROLES.triage.includes(role)) {
+    const site = role === 'site_manager' ? { tenantId: who.tenantId ?? -1, visibleTo: undefined } : {};
+    add('triage', plansFor({ status: 'triage', ...site }));
+    if (ROLES.admin.includes(role)) add('rework', plansFor({ status: 'rework' }));
+    add('approval_pending', plansFor({ status: 'approval_pending', ...site }));
+    add('write_failed', plansFor({ status: 'write_failed', ...site }));
+    add('manual_review', plansFor({ status: 'manual_review', ...site }));
+    add('sla_breached', plansFor({ sla: 'breached', status: machine.OPEN, ...site }));
   }
-  // A site manager reads their Site's checks; triage and reassigning are an admin's.
+  // And the rest of a site manager's Site, so a check that is with its SPOC is
+  // in their queue too. No row is listed twice.
   if (role === 'site_manager') {
+    const listed = ['triage', 'approval_pending', 'write_failed', 'manual_review'];
     sections.push({ key: 'mine', title: 'Checks of my site', plans: store.listPlans({
-      seenBy: seenByOf(who), tenantId: who.tenantId ?? -1, status: OPEN_FILTER, limit: 100 }).map(rowOf) });
+      seenBy: seenByOf(who), tenantId: who.tenantId ?? -1,
+      status: OPEN_FILTER.filter((st) => !listed.includes(st)), limit: 100 }).map(rowOf) });
   }
   if (role === 'approver') add('approval_pending', plansFor({ status: 'approval_pending' }));
   if (role === 'auditor') add('recent', store.listPlans({ ...scope, limit: 25 }).map(rowOf));

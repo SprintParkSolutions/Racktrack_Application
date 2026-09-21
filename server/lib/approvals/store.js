@@ -736,7 +736,9 @@ function planWhere(f = {}) {
   // organisation sees it - no owner bypass. A plan raised by an account that
   // has no organisation belongs to that ACCOUNT, and only that account sees
   // it: two people who both happen to have no organisation are still two
-  // people. The absence of an organisation is never itself a key.
+  // people. The absence of an organisation is never itself a key. And a plan
+  // such an account filed at a Site carries that Site's organisation, so the
+  // raiser who has none still sees their own (@seenOrgId = -1 is "has none").
   //
   // This is the same test the read applies (service.canSee), written once for
   // the SQL side, so a row that cannot be opened is never listed. A list that
@@ -745,8 +747,9 @@ function planWhere(f = {}) {
   if (f.seenBy) {
     const v = f.seenBy;
     where.push(`((p.org_id IS NOT NULL AND p.org_id = @seenOrgId)
-      OR (p.org_id IS NULL AND (p.created_by_id = @seenUserId
-                                OR (p.created_by IS NOT NULL AND p.created_by = @seenUsername))))`);
+      OR ((p.org_id IS NULL OR @seenOrgId = -1)
+          AND (p.created_by_id = @seenUserId
+               OR (p.created_by IS NOT NULL AND p.created_by = @seenUsername))))`);
     params.seenOrgId = v.orgId == null ? -1 : Number(v.orgId);
     params.seenUserId = v.userId == null ? -1 : Number(v.userId);
     params.seenUsername = v.username == null ? '\u0000' : String(v.username);
@@ -1376,8 +1379,9 @@ function listChanges(filters = {}) {
   if (f.seenBy) {
     const v = f.seenBy;
     where.push(`((c.org_id IS NOT NULL AND c.org_id = @seenOrgId)
-      OR (c.org_id IS NULL AND (p.created_by_id = @seenUserId
-                                OR (p.created_by IS NOT NULL AND p.created_by = @seenUsername))))`);
+      OR ((c.org_id IS NULL OR @seenOrgId = -1)
+          AND (p.created_by_id = @seenUserId
+               OR (p.created_by IS NOT NULL AND p.created_by = @seenUsername))))`);
     params.seenOrgId = v.orgId == null ? -1 : Number(v.orgId);
     params.seenUserId = v.userId == null ? -1 : Number(v.userId);
     params.seenUsername = v.username == null ? '\u0000' : String(v.username);
