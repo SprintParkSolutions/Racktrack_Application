@@ -3926,40 +3926,43 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           })()}
 
           {/* ── What was found ──
-              Device, port, where it sits and what is in it, as one small table:
-              a label on the left and its value on the right, one rule between
-              rows. It was a headline, a subtitle, a status line and then a
-              separate list of facts, which is four shapes for one answer. */}
+              Two rows, four cells each: the label small and grey above its
+              value. A column of seven label-and-value lines was most of a
+              phone screen for seven short answers. */}
           {(() => {
             const st = portInfo?.status;
             const stateText = st === 'connected' ? 'Cable plugged in'
               : st === 'empty' ? 'Empty'
-                : 'Not clear from the photograph';
+                : 'Not clear';
             const shelf = formatUnitsRange(selectedDevice?.units || []);
+            const cell = (label, value, opts = {}) => (
+              <div className={`${styles.pCell} ${opts.wide ? styles.pCellWide : ''}`} key={label}>
+                <span className={styles.pCellKey}>{label}</span>
+                <span className={`${styles.pCellVal} ${opts.mono ? styles.mono : ''}`}>
+                  {opts.swatch && <span className={styles.pCellSwatch} style={{ background: opts.swatch }} />}
+                  {value || '-'}
+                  {opts.extra}
+                </span>
+              </div>
+            );
             return (
               <div className={styles.pBlock}>
-                <div className={styles.pList}>
-                  <PortFact label="Device" value={selectedLabel} mono />
-                  <PortFact label="Port" value={portNum} mono
-                    extra={portInfo?._port_shift ? <UserTag label="Renumbered" /> : null} />
-                  <PortFact label="Unit position" value={shelf} mono />
-                  <PortFact label="Status" value={stateText} />
-                  <PortFact
-                    label="Port type"
-                    value={portInfo?.port_type ? prettyPortType(portInfo.port_type) : null}
-                    extra={portInfo?._port_type_user ? <UserTag /> : null}
-                  />
-                  <PortFact label="Cable" value={connectorVal} />
-                  <PortFact
-                    label="Cable colour"
-                    value={colorVal}
-                    swatch={colorVal ? cableColorCSS(colorVal) : null}
-                    extra={portInfo?._cable_color_model ? <UserTag /> : null}
-                  />
-                  {neighborStatus === 'ok' && neighbor?.found && (
-                    <PortFact label="On this port" value="A device is answering" />
-                  )}
+                <div className={styles.pGrid}>
+                  {cell('Device', selectedLabel, { mono: true, wide: true })}
+                  {cell('Port', portNum, { mono: true, extra: portInfo?._port_shift ? <UserTag label="Renumbered" /> : null })}
+                  {cell('Unit', shelf, { mono: true })}
+                  {cell('Status', stateText)}
+                  {cell('Port type', portInfo?.port_type ? prettyPortType(portInfo.port_type) : null,
+                    { extra: portInfo?._port_type_user ? <UserTag /> : null })}
+                  {cell('Cable', connectorVal)}
+                  {cell('Colour', colorVal, {
+                    swatch: colorVal ? cableColorCSS(colorVal) : null,
+                    extra: portInfo?._cable_color_model ? <UserTag /> : null,
+                  })}
                 </div>
+                {neighborStatus === 'ok' && neighbor?.found && (
+                  <p className={styles.pCellNote}>A device is answering on this port.</p>
+                )}
               </div>
             );
           })()}

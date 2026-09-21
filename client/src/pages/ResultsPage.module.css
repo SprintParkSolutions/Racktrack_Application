@@ -3642,6 +3642,23 @@
 .pBlockHeadLoose { margin: 16px 16px 6px; }
 
 .pList { display: flex; flex-direction: column; }
+
+/* Two rows of four: a small grey label over its value. Seven short answers do
+   not need seven full-width lines. */
+.pGrid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 10px; padding: 2px 0 8px;
+}
+.pCellWide { grid-column: span 2; }
+.pCell { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pCellKey { font-size: var(--fs-label); color: #757575; white-space: nowrap; }
+.pCellVal {
+  display: flex; align-items: center; gap: 5px; min-width: 0;
+  font-size: var(--fs-item); font-weight: var(--fw-label); color: #121212;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pCellSwatch { flex: none; width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(0,0,0,.15); }
+.pCellNote { margin: 0 0 8px; font-size: var(--fs-sub); color: #757575; }
 .pRow {
   display: flex; align-items: baseline; gap: 14px;
   padding: 6px 0;
