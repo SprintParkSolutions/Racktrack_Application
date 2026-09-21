@@ -10,10 +10,13 @@ import styles from './PortsCheck.module.css';
  * reports, what the record holds - and says whether they agree. It decides
  * nothing and sends nothing; it is context for whoever reads the check.
  *
- * Closed by default, with the three counts on the closed line: most racks have
- * more ports than anybody wants to scroll past on the way to the Send button.
- * Opened, the ports that do not agree come first; the ones that do sit behind a
- * second line, because "21 ports match" is all most people need of them.
+ * Closed by default, with one number on the closed line - how many ports were
+ * read - because most racks have more ports than anybody wants to scroll past on
+ * the way to the Send button. The three figures used to sit on that line, where
+ * they read as a second strip of numbers beside the one the page already had;
+ * they are a sentence inside now. Opened, the ports that do not agree come
+ * first; the ones that do sit behind a second line, because "21 ports match" is
+ * all most people need of them.
  */
 
 const PHOTO = { cabled: 'cable', empty: 'no cable' };
@@ -57,22 +60,21 @@ export default function PortsCheck({ ports }) {
   const matched = count('match', agree.length);
   const notMatched = count('mismatch', differ.length);
   const notKnown = count('unknown', rows.length - agree.length - differ.length);
+  // How many ports this check read, which is the one number the closed row needs.
+  const total = matched + notMatched + notKnown;
 
   return (
     <section className={styles.ports} aria-label="Ports">
       <button type="button" className={styles.top} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         <span className={styles.name}>Ports</span>
-        <span className={styles.counts}>
-          <span className={styles.good}>Matched {matched}</span>
-          <span className={notMatched ? styles.bad : undefined}>Not matched {notMatched}</span>
-          <span>Not known {notKnown}</span>
-        </span>
+        <span className={styles.count}>{total}</span>
         <span className={styles.chevron} aria-hidden="true" />
       </button>
 
       {open && (
         <div className={styles.inside}>
           <p className={styles.sub}>Cables in the photo against what the switch and NetBox say.</p>
+          <p className={styles.tally}>Matched {matched}, not matched {notMatched}, not known {notKnown}.</p>
           {ports.note && <p className={styles.note}>{ports.note}</p>}
           {differ.length > 0 && <Rows rows={differ} differs />}
           {agree.length > 0 && (

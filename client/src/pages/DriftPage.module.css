@@ -27,14 +27,17 @@
   --accent: #1f4e79;
 }
 
+/* The header area: the title, and under it which rack this is. One hairline
+   under the whole of it, so the rack reads as part of the header and not as a
+   card of its own. */
+.top { border-bottom: 1px solid var(--hair); }
 .head {
   display: flex; align-items: center; gap: 10px;
   /* #root already keeps the notch clear; adding the inset again here is what
      left a blank band the height of the status bar above the title. */
-  padding: 10px var(--gutter) 10px;
-  border-bottom: 1px solid var(--hair);
+  padding: 10px var(--gutter) 0;
 }
-.back { flex: none; width: 36px; height: 36px; margin-left: -8px; display: grid; place-items: center;
+.back { flex: none; width: 44px; height: 44px; margin-left: -12px; display: grid; place-items: center;
         border: none; background: none; color: inherit; cursor: pointer; }
 .title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
 
@@ -42,15 +45,16 @@
 .busy { color: var(--muted-1); }
 .error { color: var(--bad); }
 
-/* Which record this rack was compared against, and why the app believes it is
-   the same rack. One label, one name, one sentence. */
-.against { display: grid; gap: 3px; padding: 14px var(--gutter) 12px; border-bottom: 1px solid var(--hair); }
-.againstLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
-.againstName { font-size: 16px; font-weight: 700; color: var(--text, #1c1c1c); }
-.againstWhy { font-size: 13.5px; color: var(--muted-1); line-height: 1.45; }
+/* Which rack this is, under the title: the rack's own name in the mono face the
+   app uses for ids, and one sentence on how the app knows. */
+.rack { display: grid; gap: 2px; padding: 4px var(--gutter) 2px; }
+.rackName { font-family: var(--mono, ui-monospace, Menlo, monospace); font-size: 14px; font-weight: 600;
+            color: var(--text, #1c1c1c); overflow-wrap: anywhere; }
+.rackUnknown { font-size: 14px; font-weight: 600; color: var(--text, #1c1c1c); }
+.rackWhy, .againstWhy { font-size: 13.5px; color: var(--muted-1); line-height: 1.45; }
 /* What is still open about it: a suggestion nobody has confirmed, a tie, or a
    rack the record has never heard of. */
-.againstOpen { margin-top: 2px; font-size: 13.5px; color: var(--warn); line-height: 1.45; }
+.rackOpen { margin-top: 2px; font-size: 13.5px; color: var(--warn); line-height: 1.45; }
 
 /* The last step of all: a person picks from the short list the steps above left. */
 .pick { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hair); }
@@ -58,7 +62,7 @@
              text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
 .pickRow { display: flex; flex-wrap: wrap; gap: 8px; }
 .pickBtn {
-  flex: 1 1 auto; min-height: 40px; padding: 0 14px; border: 1px solid var(--accent);
+  flex: 1 1 auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--accent);
   border-radius: 6px; background: var(--bg, #fff); color: var(--accent);
   font-size: 14.5px; font-weight: 600; font-family: inherit; cursor: pointer;
 }
@@ -66,25 +70,32 @@
 .pickNote { display: block; margin-top: 8px; font-size: 12.5px; color: var(--muted-1); line-height: 1.45; }
 .pickError { margin: 8px 0 0; font-size: 13.5px; color: var(--bad); }
 
+/* Every section on this page is closed by one hairline under it, never by a line
+   over the next one: a top border and a bottom border used to meet in one place
+   and draw 2px there. The answer is the exception - it runs straight into its
+   own differences with no line between them. */
+
 /* the answer, before the detail */
 .verdict { padding: 18px var(--gutter) 14px; }
 .verdict h2 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
 .verdict p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
 .tick { color: var(--good); font-size: 20px; line-height: 1; }
 
-.waiting, .done { margin: 0; padding: 14px var(--gutter); border-top: 1px solid var(--hair); }
+.waiting, .done { margin: 0; padding: 2px var(--gutter) 14px; border-bottom: 1px solid var(--hair); }
 .waiting h2, .done h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
 .done h2 { color: var(--good); }
 .waiting p, .done p { margin: 0 0 4px; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
-.spoc { color: var(--muted-1); }
 /* the one way out: the same check in RackTrack Approvals */
 .track { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 600;
          color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 
 /* Read more: the working, for whoever wants it. Closed by default, so the
    screen says one thing per line until somebody asks for the rest. */
-.more { margin-top: 6px; }
-.more > summary { display: inline-block; list-style: none; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); padding: 2px 0; }
+.more { margin-top: 0; }
+/* A thumb has to find this, so the line it sits on is 44px tall whatever the
+   type does. */
+.more > summary { display: inline-flex; align-items: center; min-height: 44px; list-style: none;
+                  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
 .more > summary::-webkit-details-marker { display: none; }
 /* A small chevron drawn from two borders; it turns over when the section opens. */
 .more > summary::after {
@@ -100,16 +111,14 @@
 .how li { margin-bottom: 2px; }
 .means { margin: 4px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
 
-/* the differences, as rows */
-.list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
-.item { padding: 12px var(--gutter); border-bottom: 1px solid var(--hair); }
+/* the differences, as rows - the substance of the page */
+.list { list-style: none; margin: 0; padding: 0; }
+.item { padding: 14px var(--gutter); border-bottom: 1px solid var(--hair); }
 .item.approved .what { color: var(--good); }
 .item.rejected .what { color: var(--bad); }
 
 .itemTop { display: flex; align-items: baseline; gap: 8px; }
-.type { flex: none; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
-        color: var(--muted-2); font-weight: 600; min-width: 52px; }
-.name { flex: 1 1 auto; min-width: 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.name { flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .what { flex: none; font-size: 12.5px; font-weight: 600; color: var(--warn); white-space: nowrap; }
 
 /* One difference per row, in three fixed columns, so a long value wraps inside
@@ -126,17 +135,19 @@
 
 /* Before sending: who this drift check will go to - the SPOC of the site, or
    an admin and the reason why. */
-.goesTo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
-          padding: 12px var(--gutter); border-top: 1px solid var(--hair); font-size: 14px; }
-.goesToLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); min-width: 60px; }
+.send { padding-bottom: 16px; border-bottom: 1px solid var(--hair); }
+/* One column, like the rack in the header and the label over the note: a
+   label, a name, and what else is known about the person. The name used to sit
+   beside the label with the address indented under nothing. */
+.goesTo { display: grid; gap: 2px; padding: 14px var(--gutter) 4px; font-size: 14px; }
+.goesToLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
 .goesToName { font-weight: 600; }
-.goesToRole { color: var(--muted-1); }
-.goesToMail { flex: 1 1 100%; margin-left: 68px; font-size: 13px; color: var(--muted-1);
-              font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
-.goesToNote { display: none; }
-.goesToWhy { flex: 1 1 100%; margin-left: 68px; font-size: 13px; line-height: 1.45; color: var(--muted-1); }
+.goesToRole { font-size: 13.5px; color: var(--muted-1); }
+.goesToMail { font-size: 13px; color: var(--muted-1);
+              font-family: var(--mono, ui-monospace, Menlo, monospace); word-break: break-all; }
+.goesToWhy { font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
 
-.footer { padding: 16px var(--gutter) 0; border-top: 1px solid var(--hair); }
+.footer { padding: 14px var(--gutter) 0; }
 .label { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
          text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
 .textarea {
@@ -150,10 +161,9 @@
   background: #121212; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
 }
 .primary:disabled { background: #c9ced4; cursor: default; }
-.footNote { margin: 8px 0 0; font-size: 12.5px; color: var(--muted-2); text-align: center; }
 
 /* optional rack name - only for a rack nothing has identified */
-.nameRow { padding: 12px var(--gutter) 4px; }
+.nameRow { margin-top: 12px; }
 .nameLabel { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
              text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
 .nameInput {
@@ -168,36 +178,19 @@
 .needsSource { padding: 16px var(--gutter); border-bottom: 1px solid var(--hair); }
 .needsSource h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
 .needsSource p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
-.connect { margin-top: 12px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 6px;
+.connect { margin-top: 12px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 6px;
   background: #121212; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
 
 /* Choosing what to send. A plain tick box, the platform's own, at the size a thumb can hit. */
-.pickAll { display: flex; align-items: center; gap: 10px; padding: 10px var(--gutter); border-top: 1px solid var(--hair);
+.pickAll { display: flex; align-items: center; gap: 10px; padding: 12px var(--gutter); border-bottom: 1px solid var(--hair);
            font-size: 13.5px; color: var(--muted-1); cursor: pointer; }
 .pickAll input, .pickOne { width: 20px; height: 20px; flex: none; margin: 0; accent-color: #121212; cursor: pointer; }
 .pickOne { align-self: center; }
 
-/* Where a sent check has got to. Four steps down the page: done ones filled,
-   the current one ringed, the rest hollow - and a line joining them. The line
-   hangs below each dot to the next one, so a step that carries a note under its
-   name stays joined to the step after it. */
-.progress { margin: 10px 0 4px; }
-.steps { list-style: none; margin: 0; padding: 0; }
-.step { position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; font-size: 14px; line-height: 20px; color: var(--muted-2); }
-.step::before { content: ''; position: absolute; left: 6px; top: 22px; bottom: -8px; width: 2px; background: var(--hair); }
-.step:last-child::before { display: none; }
-.stepDot { position: relative; z-index: 1; width: 14px; height: 14px; margin-top: 3px; flex: none; border-radius: 50%;
-           border: 2px solid var(--hair); background: var(--bg, #fff); }
-.stepWords { display: grid; gap: 1px; min-width: 0; }
-.stepNote { font-size: 13px; font-weight: 400; color: var(--muted-1); overflow-wrap: anywhere; }
-.stepDone { color: var(--text, #1c1c1c); }
-.stepDone .stepDot { border-color: var(--good); background: var(--good); }
-.stepDone::before { background: var(--good); }
-.stepNow { color: var(--text, #1c1c1c); font-weight: 700; }
-.stepNow .stepDot { border-color: var(--good); box-shadow: 0 0 0 3px rgba(28, 107, 60, .18); }
-/* Written under .progress so it outweighs the block's own paragraph rule. */
-.progress .offTrack { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted-1); }
-/* The one word that matters when a check has left the line, set apart. */
+/* The one word that matters when a check has left the line, set apart. Where a
+   check has got to used to be four steps down the page with a line joining
+   them; it has been the incident number and one line under it since, and the
+   rules that drew the steps went with them. */
 .offWord { display: inline-block; margin-right: 8px; padding: 1px 8px; border: 1px solid var(--warn); border-radius: 4px;
            font-size: 12px; font-weight: 600; color: var(--warn); white-space: nowrap; }
 
@@ -207,8 +200,7 @@
 /* The ServiceNow incident raised for the check: its number, and the way to it. */
 .waiting .incident, .done .incident { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 4px;
             padding-top: 10px; border-top: 1px solid var(--hair); }
-.incidentNumber { font-size: 14px; font-weight: 600; color: var(--text, #1c1c1c); }
-.incidentOpen { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid #121212;
+.incidentOpen { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid #121212;
                 border-radius: 6px; font-size: 13.5px; font-weight: 600; color: #121212; text-decoration: none; }
 .waiting .incidentNone, .done .incidentNone { margin: 10px 0 4px; padding-top: 10px; border-top: 1px solid var(--hair); color: var(--warn); }
 .tickets { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--hair); }
@@ -216,18 +208,12 @@
 .tickets b { color: var(--text, #1c1c1c); font-weight: 600; }
 .found { color: var(--good); }
 
-/* The rack at a glance: three numbers in a row, each with the one word it counts. */
-.glance { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); }
-.glance div { padding: 12px var(--gutter); border-left: 1px solid var(--hair); }
-.glance div:first-child { border-left: 0; }
-.glance b { display: block; font-size: 22px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text, #1c1c1c); }
-.glance span { font-size: 12.5px; color: var(--muted-1); }
-.gOk { color: var(--good) !important; } .gWarn { color: var(--warn) !important; }
+/* No strip of big numbers anywhere on this page. It said Matched, Unmatched and
+   Not seen in large type, and then the sentence above it and the three rows
+   below it said the same three numbers again. The sentence keeps the first of
+   them; the rows keep the other two, one number each. */
 
-/* A heading over the differences, and a closed box for each of the other two groups. */
-.group { display: flex; align-items: baseline; justify-content: space-between; margin: 0; padding: 14px var(--gutter) 8px;
-         font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
-.group span { font-family: ui-monospace, Menlo, monospace; letter-spacing: 0; }
+/* A closed box for each group that needs no attention. */
 .groupBox { border-bottom: 1px solid var(--hair); }
 .groupBox > summary { display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; padding: 14px var(--gutter);
                       font-size: 14.5px; font-weight: 600; color: var(--text, #1c1c1c); }
@@ -246,8 +232,8 @@
 .dotOk { background: var(--good); } .dotIdle { background: #c9ced4; }
 
 /* The report: one quiet button and what it is for. */
-.reportRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px var(--gutter); border-bottom: 1px solid var(--hair); }
-.secondaryBtn { min-height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid #121212; background: var(--bg, #fff);
+.reportRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px var(--gutter); }
+.secondaryBtn { min-height: 44px; padding: 0 16px; border-radius: 6px; border: 1px solid #121212; background: var(--bg, #fff);
                 color: #121212; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .secondaryBtn:disabled { opacity: .55; cursor: default; }
 .reportHint { flex: 1 1 160px; font-size: 12.5px; line-height: 1.4; color: var(--muted-1); }

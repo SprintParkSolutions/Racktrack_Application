@@ -24,13 +24,15 @@ const PORTS = {
 afterEach(cleanup);
 
 describe('<PortsCheck>', () => {
-  test('closed by default: the heading and the three counts, and no rows', () => {
+  test('closed by default: the heading, how many ports were read, and no rows', () => {
     render(<PortsCheck ports={PORTS} />);
     const top = screen.getByRole('button', { name: /^Ports/ });
     expect(top.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByText('Matched 2')).toBeTruthy();
-    expect(screen.getByText('Not matched 1')).toBeTruthy();
-    expect(screen.getByText('Not known 25')).toBeTruthy();
+    // one number on the row, not a strip of three
+    expect(top.textContent).toBe('Ports28');
+    expect(screen.queryByText(/Matched 2\b/)).toBeNull();
+    expect(screen.queryByText(/Not matched/)).toBeNull();
+    expect(screen.queryByText(/Not known/)).toBeNull();
     expect(screen.queryByText(/port 3/)).toBeNull();
   });
 
@@ -38,6 +40,8 @@ describe('<PortsCheck>', () => {
     render(<PortsCheck ports={PORTS} />);
     fireEvent.click(screen.getByRole('button', { name: /^Ports/ }));
     expect(screen.getByText('Cables in the photo against what the switch and NetBox say.')).toBeTruthy();
+    // the three figures are a sentence in here, said once
+    expect(screen.getByText('Matched 2, not matched 1, not known 25.')).toBeTruthy();
     expect(screen.getByText('Switch on shelf U18 - port 3')).toBeTruthy();
     expect(screen.getByText('Photo: cable')).toBeTruthy();
     expect(screen.getByText('Switch: down')).toBeTruthy();
@@ -60,10 +64,10 @@ describe('<PortsCheck>', () => {
   test('the note is shown as it came, and a value the screen does not know reads as not known', () => {
     render(<PortsCheck ports={{ ok: true, rows: [row(4, 'mismatch', { switch: 'dormant', netbox: undefined })],
       note: 'No switch has been read for this rack yet.' }} />);
-    // no summary from the server: the counts are taken from the rows
-    expect(screen.getByText('Not matched 1')).toBeTruthy();
-    expect(screen.getByText('Matched 0')).toBeTruthy();
+    // no summary from the server: the numbers are counted from the rows
+    expect(screen.getByRole('button', { name: /^Ports/ }).textContent).toBe('Ports1');
     fireEvent.click(screen.getByRole('button', { name: /^Ports/ }));
+    expect(screen.getByText('Matched 0, not matched 1, not known 0.')).toBeTruthy();
     expect(screen.getByText('No switch has been read for this rack yet.')).toBeTruthy();
     expect(screen.getByText('Switch: not known')).toBeTruthy();
     expect(screen.getByText('NetBox: not known')).toBeTruthy();

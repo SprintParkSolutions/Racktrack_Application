@@ -79,9 +79,19 @@ describe('<DriftPage>', () => {
     expect(screen.getByLabelText('Note for the SPOC (optional)')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Raise incident' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Send/ })).toBeNull();
+    // sending it is one action, so it is one block: who it goes to, the note for
+    // them and the button, with the drift report the quiet thing after it
+    const action = screen.getByRole('button', { name: 'Raise incident' }).closest('div').parentElement;
+    expect(action.contains(screen.getByText('Goes to'))).toBe(true);
+    expect(action.contains(screen.getByLabelText('Note for the SPOC (optional)'))).toBe(true);
+    expect(action.nextElementSibling.textContent).toMatch(/^Drift report/);
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
     expect(document.body.textContent).not.toMatch(/Write the approved|Assign to|Approve\b/);
-    expect(document.body.textContent).toMatch(/Send it to the SPOC to check\./);
+    // the answer is one sentence, and no strip of big numbers says it again
+    expect(document.body.textContent).toMatch(/1 thing is different from your records/);
+    expect(document.body.textContent).toContain('Compared with NetBox just now.');
+    expect(screen.queryByRole('group', { name: 'Summary of the comparison' })).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Send it to/);
     // Nothing to track until it has been sent.
     expect(screen.queryByRole('link', { name: 'Track this check' })).toBeNull();
   });
@@ -103,7 +113,8 @@ describe('<DriftPage>', () => {
     expect(screen.getByText('An organization admin')).toBeTruthy();
     expect(screen.getByText(`${NO_SPOC} An admin will choose who decides it.`)).toBeTruthy();
     expect(screen.getByLabelText('Note for the admin (optional)')).toBeTruthy();
-    expect(document.body.textContent).toMatch(/Send it to an admin to check\./);
+    // who decides it is said once, by the block over the button, not in the answer
+    expect(document.body.textContent).not.toMatch(/Send it to/);
 
     fireEvent.click(screen.getByRole('button', { name: 'Raise incident' }));
     // no incident was raised, so the heading says where it went; one line under it
@@ -387,10 +398,10 @@ describe('<DriftPage> ports', () => {
     await screen.findByText('SW-16');
     const top = await screen.findByRole('button', { name: /^Ports/ });
     expect(top.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByText('Matched 21')).toBeTruthy();
-    expect(screen.getByText('Not matched 1')).toBeTruthy();
-    expect(screen.getByText('Not known 25')).toBeTruthy();
+    // one quiet row with one number: how many ports were read
+    expect(top.textContent).toBe('Ports47');
     fireEvent.click(top);
+    expect(screen.getByText('Matched 21, not matched 1, not known 25.')).toBeTruthy();
     expect(screen.getByText('Switch on shelf U16 - port 3')).toBeTruthy();
     expect(screen.getByText('Switch: down')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Matched ports (1)' })).toBeTruthy();
@@ -424,21 +435,55 @@ describe('<DriftPage> the whole comparison', () => {
     } };
     mount();
     await screen.findByText('Router on shelf U20');
-    const glance = screen.getByRole('group', { name: 'Summary of the comparison' });
-    expect(glance.textContent).toBe('1Matched1Unmatched1Not seen');
+    // the difference is the substance of the page; what agrees and what was not
+    // seen is one quiet row each, with one number on it
+    expect(screen.getByText('Not in your records')).toBeTruthy();
+    expect(screen.getByText('Matched', { selector: 'summary > span' }).parentElement.textContent).toBe('Matched1');
+    expect(screen.getByText('Not seen', { selector: 'summary > span' }).parentElement.textContent).toBe('Not seen1');
     // the match is named by the record it matched, the unseen record by its shelf
     expect(screen.getByText('Switch on shelf U17')).toBeTruthy();
     expect(screen.getByText('SP-R1-U17-SW03')).toBeTruthy();
     expect(screen.getByText('SP-R1-U19-FW')).toBeTruthy();
     expect(screen.getByText('Shelf U19')).toBeTruthy();
-    // ports are not a row of their own on this screen: one device matches, not two items
-    // the three groups carry the same three words as the strip above them
-    const groups = [...document.querySelectorAll('h3, details > summary > span')].map((el) => el.firstChild.textContent.trim());
-    expect(groups.filter((g) => ['Unmatched', 'Matched', 'Not seen'].includes(g))).toEqual(['Unmatched', 'Matched', 'Not seen']);
+    // no strip of big numbers, and no heading that counts the differences again
+    expect(screen.queryByRole('group', { name: 'Summary of the comparison' })).toBeNull();
+    expect(document.querySelector('h3')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Unmatched/);
     expect(document.body.textContent).not.toMatch(/Matching your records|not seen in the photo/);
-    expect(screen.getByText('Matched', { selector: 'summary > span' }).parentElement.textContent).toBe('Matched1');
+    // the count is said once, and the sentence under it says the rest agrees
+    expect(document.body.textContent.match(/1 thing is different/g)).toHaveLength(1);
+    expect(document.body.textContent).toContain('Compared with NetBox just now. Nothing else differs.');
     expect(screen.getByRole('button', { name: 'Drift report' })).toBeTruthy();
     expect(screen.getByText('One page of this comparison. It is attached to the incident when you send.')).toBeTruthy();
+  });
+
+  test('each thing is said once, and in the order a person needs it', async () => {
+    stub('open', { body: { ...toSpoc.body, matchedRack: KNOWN } });
+    routes.current['GET /api/nb/plans/7'] = { body: {
+      id: 7, rackId: 'RK-1', scanId: 3, status: 'open',
+      items: [
+        { uid: 'dev:RK-1:u20', type: 'Device', name: 'Router U20', action: 'create', decidable: true, decision: 'pending' },
+        { uid: 'dev:RK-1:u17', type: 'Device', name: 'Switch U17', action: 'skip', decidable: false },
+      ],
+      orphans: [
+        { netboxId: 196, name: 'SP-R1-U17-SW03', position: 17, seen: true, matchedBox: 'dev:RK-1:u17' },
+        { netboxId: 198, name: 'SP-R1-U19-FW', position: 19, seen: false },
+      ],
+    } };
+    mount();
+    await screen.findByText('Router on shelf U20');
+    const text = document.body.textContent;
+    const at = (s) => { const i = text.indexOf(s); expect(i).toBeGreaterThan(-1); return i; };
+    // which rack, the answer, the difference itself, what needs no attention,
+    // then the one action - who it goes to, the note and the button - and last
+    // the report
+    const order = ['Drift check', 'RK-07', 'Compared with this rack in your records.', '1 thing is different from your records',
+      'Router on shelf U20', 'Matched', 'Not seen', 'Goes to', 'dc007.spoc',
+      'Note for the SPOC', 'Raise incident', 'Drift report'].map(at);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    // and no count is said twice
+    expect(text.match(/1 thing is different/g)).toHaveLength(1);
+    expect(text.match(/Matched/g)).toHaveLength(1);
   });
 
   test('the drift report is read in the app, on a fresh link that names the check', async () => {
