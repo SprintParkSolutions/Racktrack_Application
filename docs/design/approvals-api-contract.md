@@ -6,7 +6,7 @@ Written 18 September 2026 for the build of the manager's Ticketing and Drift App
 
 1. Every drift raises a ServiceNow Incident (as today). Task and Change Request are not used yet.
 2. RackTrack writes racks, devices, interfaces and their supporting records to NetBox. Never a delete.
-3. Dual approval is required when plan risk is `critical`; the second approver must be a different user. Setting `dual_approval_risks` per organization, default `["critical"]`.
+3. Dual approval is off unless an organization turns it on; the second approver must be a different user. Setting `dual_approval_risks` per organization, default `[]` (changed 21 September 2026: the SPOC's one approval writes).
 4. The `pending` status pauses the resolution clock only.
 5. Business hours Mon to Fri 09:00 to 18:00 in the datacentre's time zone (tenants.timezone), no holidays. Setting `calendar` per organization.
 6. Evidence: a scan is required to submit; a second scan is required for verification.
@@ -14,7 +14,7 @@ Written 18 September 2026 for the build of the manager's Ticketing and Drift App
 8. Channels: in-app and email are mandatory. Teams is off until tokens exist.
 9. Identity: RackTrack accounts. Roles gain `approver` and `auditor`.
 10. Volume: small; SQLite is enough.
-11. Roles: owner = super admin; org_admin = triage, assign, approve, write; site_manager = triage and assign for their Site; approver = approve, reject, rework only; auditor = read everything; member = technician: compare, submit, verify.
+11. Roles: owner = super admin; org_admin = triage, reassign, cancel, approve, write; site_manager = reads their Site (no triage, assign or cancel since 21 September 2026); approver = the second signature only; auditor = read everything; member = technician: compare, submit, verify. Whatever their role, the SPOC a check is with decides and approves it, and the person who sent a check decides nothing on it.
 12. No approvals inside the phone app. Admins use the sub-application in a browser.
 13. Plans move from JSON files into SQLite tables in auth.db, migrated once at boot.
 14. Any technician of the Site may run the verification re-scan, including the one who reported the drift. The record stores who did it.
@@ -66,44 +66,55 @@ Statuses: draft, submitted, triage, assigned, accepted, in_progress, pending, re
 | From | To | Who | Guard |
 |---|---|---|---|
 | draft | submitted, cancelled | technician (creator), admin | a scan exists; at least one decidable item or the plan is empty and cancelled |
-| submitted | triage | system, on submit | automatic |
-| triage | assigned, rejected, duplicate, known_exception, cancelled | admin, site_manager | assigned needs every pending decidable item ticketed; duplicate needs duplicate_of; known_exception needs exception_id; rejected needs reason_code and comment |
-| assigned | accepted, assigned (reassign) | assignee user or admin | |
+| submitted | assigned | system, on submit | the Site has a valid SPOC who is not the sender; the check gets that person as its holder (`spoc_user_id`) and a ticket for each item sent, all to them |
+| submitted | triage | system, on submit | nobody valid to give it to: no Site, no SPOC, the SPOC's account is gone or is an auditor, or the SPOC is the sender. `needs_admin` says which |
+| triage | assigned | admin | names a holder: a RackTrack user (site manager removed) |
+| triage | rejected, duplicate, known_exception, cancelled | admin | duplicate needs duplicate_of; known_exception needs exception_id; rejected needs reason_code and comment (site manager removed) |
+| assigned | accepted | assignee user or admin | optional on a check with a holder: it does not follow its tickets |
+| assigned | assigned (reassign) | admin | a different holder, with a reason |
 | accepted | in_progress, pending | assignee user or admin | pending needs pending_reason |
 | in_progress | pending, resolved | assignee user, admin, or ServiceNow sync | resolved needs a finding on every open ticket |
-| pending | in_progress, resolved, cancelled | assignee user or admin | |
+| pending | in_progress, resolved | assignee user or admin | |
+| assigned, accepted, in_progress, pending | approved | the SPOC the check is with, or admin; never the sender | every decidable item decided; the decision record with payload_hash |
+| assigned, accepted, in_progress, pending | approval_pending | the SPOC or admin; never the sender | the first of two signatures, only when risk is in dual_approval_risks |
+| assigned, accepted, in_progress, pending | rejected, rework | the SPOC or admin; never the sender | reason_code and comment |
+| assigned, accepted, in_progress, pending | duplicate | the SPOC or admin; never the sender | duplicate_of |
+| assigned, accepted, in_progress, pending | cancelled | admin | with reason |
+| assigned, accepted, in_progress, pending | triage | admin, system | the holder has gone; back to "needs an admin" |
 | resolved | verification_pending | system | automatic |
 | verification_pending | approval_pending, reopened | technician of the Site (verify), admin (skip only with reason, audited) | approval_pending needs a passing post_fix verification, or an admin skip with reason |
-| approval_pending | approved, rejected, rework | approver, org_admin, owner (never the resolver) | approved needs every decidable item decided and the decision record with payload_hash; dual approval when risk is in dual_approval_risks and the second approver differs |
-| rejected, rework | assigned, in_progress, verification_pending | admin | with reason |
-| approved | write_in_progress, completed (nothing to write) | org_admin, owner, or system | the payload_hash still equals the live fingerprint and the approval's hash; else back to approval_pending with a fresh plan version |
+| approval_pending | approved, rejected, rework | approver, the SPOC, org_admin, owner (never the sender) | approved needs every decidable item decided and the decision record with payload_hash; dual approval when risk is in dual_approval_risks and the second approver differs |
+| approval_pending | cancelled | admin | with reason |
+| rejected, rework | assigned, in_progress, verification_pending | admin | with reason; assigned needs a holder |
+| approved | write_in_progress, completed (nothing to write) | org_admin, owner, or system | the payload_hash still equals the live fingerprint and the approval's hash; else back to its holder (assigned), or to approval_pending for a check with no holder, with a fresh plan version |
+| approved, write_failed, manual_review | assigned | system | a stale approval on a check with a holder |
 | write_in_progress | written, write_failed | system | |
 | write_failed | write_in_progress, manual_review, rejected | org_admin, owner | retry keeps the same approval when the hash still matches |
 | manual_review | write_in_progress, rejected, cancelled | org_admin, owner | with reason |
 | written | completed, reopened | system (post_write verification) | completed needs a passing post_write verification; fail goes to reopened with reason `write_mismatch` |
 | completed | reopened | admin | with reopen_reason; reopen_count + 1; history kept |
-| reopened | assigned | admin | assign again |
+| reopened | assigned | admin | names a holder |
 
 Reason codes. Reject: insufficient_evidence, incorrect_remediation, configuration_still_differs, wrong_spoc, wrong_asset, change_not_authorized, duplicate, known_exception, maintenance_window_required, other. Pending: awaiting_requester, awaiting_vendor, awaiting_change_window, awaiting_access, awaiting_parts, awaiting_external_team. Reopen: verification_failed, drift_recurred, incorrect_closure, write_mismatch, new_evidence, other. Disposition: remediate, accept_drift, update_source_of_truth, false_positive, duplicate, known_exception, decommissioned_asset, requires_change_request.
 
-Item decisions stay: pending, ticketed, approved, rejected, excepted, not_applicable. The rule "assign first" stays: approve or reject on an item needs its ticket resolved or closed.
+Item decisions stay: pending, ticketed, approved, rejected, excepted, not_applicable. The rule "assign first" now holds only for the old library and for a check imported from the old plan files that nobody holds: the SPOC or an admin decides with the drift report beside them, and a ticket still open closes with the decision as its finding.
 
 ## Routes under /api/approvals
 
 All answer JSON `{ ok: true, ... }` or `{ error }` with the right status. Every list takes `limit`, `cursor`, and filters by `status`, `tenantId`, `rackId`, `priority`, `risk`, `assignee`, `createdBy`, `since`, `until`, `q`. Org scoping is strict; no owner bypass except read.
 
-- GET `/me` -> `{ user: { id, username, email, role, orgId, tenantId }, can: { triage, assign, approve, write, verify, audit, admin } }`
-- GET `/queue` -> role-specific: `{ sections: [{ key, title, plans: [...] }] }` (technician: mine, verification_pending on my Site; admin: triage, approval_pending, write_failed, manual_review, sla_breached; approver: approval_pending; assignee user: assigned, accepted, in_progress, pending; auditor: recent)
+- GET `/me` -> `{ user: { id, username, email, role, orgId, tenantId }, can: { triage, assign, reassign, approve, write, verify, audit, admin, spoc, registry } }` (triage, assign and reassign are admin only; spoc is true for the SPOC of a Site or the holder of an open check)
+- GET `/queue` -> role-specific: `{ sections: [{ key, title, plans: [...] }] }` (a SPOC: spoc "Assigned to me", first; technician: mine; admin: triage "Needs an admin", approval_pending "Waiting for a second approval", write_failed, manual_review, sla_breached; site manager: mine, the checks of their Site; approver: approval_pending; assignee user: assigned, accepted, in_progress, pending; auditor: recent)
 - GET `/dashboard` -> counts by status, priority, sla state, plus `{ filters }` for each count so the UI opens the exact list
-- GET `/plans`, GET `/plans/:id` (plan, items, tickets, decisions, verifications, comments, events, sla, spoc)
-- POST `/plans/:id/submit` `{ note }`
-- POST `/plans/:id/triage` `{ category, priority, risk, disposition, duplicateOf, exceptionId, note }` (sets triage fields; status stays triage until assigned)
-- POST `/plans/:id/assign` `{ items: [uid] | '*', assignee, assigneeId, question }` -> `{ raised: [...] }` (one incident per item, one email per assignee; item decision ticketed)
+- GET `/plans` (also `holder=me`; rows carry `holder`, `sender`, `incidentNumber`, `incidentUrl`), GET `/plans/:id` (plan, items, tickets, decisions, verifications, comments, events, sla, holder, siteSpoc, sender, incident, incidentStates, suggestions, overrides, changes, rackContact, can)
+- POST `/plans/:id/submit` `{ note, items }` -> `{ plan, already, holder, needsAdmin, incident }`
+- POST `/plans/:id/triage` `{ category, priority, risk, disposition, duplicateOf, exceptionId, note }` (admin only)
+- POST `/plans/:id/assign` `{ userId, reason }` or `{ assignee | assigneeId, reason }` -> `{ plan, holder, previous, incident, applied, refused }` (admin only; a check goes to one person as a whole)
 - POST `/plans/:id/tickets/:uid/accept`, `/start`, `/pending` `{ reason }`, `/resolve` `{ finding, disposition }`
 - POST `/plans/:id/verify` `{ scanId }` -> runs the compare of the new scan against the plan and stores a post_fix verification; `{ result, detail }`
-- POST `/plans/:id/decide` `{ decisions: [{ uid, decision, note, reasonCode }] }` (item level; approve or reject per item with the assign-first rule)
-- POST `/plans/:id/approve` `{ comment }` -> plan-level approval record with payload_hash; second call by a different approver when dual approval applies
-- POST `/plans/:id/reject` `{ reasonCode, comment }`; POST `/plans/:id/rework` `{ reasonCode, comment }`
+- POST `/plans/:id/decide` `{ decisions: [{ uid, decision, note, reasonCode }] }` (item level; the SPOC the check is with or an admin, never the sender)
+- POST `/plans/:id/approve` `{ comment, incidentState }` -> plan-level approval record with payload_hash, plus `write` and `incident`; second call by a different approver when dual approval applies
+- POST `/plans/:id/reject` `{ reasonCode, comment, incidentState }`; POST `/plans/:id/rework` `{ reasonCode, comment, incidentState }`
 - POST `/plans/:id/write` -> pre_snapshot, write, post_snapshot, post_write verification; `{ status, result, failures }`
 - POST `/plans/:id/reopen` `{ reasonCode, comment }`; POST `/plans/:id/cancel` `{ reason }`
 - POST `/plans/:id/comments` `{ body, visibility, itemUid }`; GET `/plans/:id/comments`
@@ -120,7 +131,7 @@ Errors: 400 for a bad body, 403 with a plain sentence for a role refusal, 404 fo
 
 ## Events on the bus and the notifications they cause
 
-submitted -> admin/triage users (inapp, email). assigned -> assignee (inapp if a user, email). p1_p2_created -> admins (email). sla_warn (80) -> assignee and admin. sla_breach (100) -> assignee, admin, org owner (email). sla_escalate (120) -> org owner. pending -> requester. resolved -> technician (creator) and admin. verification_failed -> assignee and admin. approval_requested -> approvers. approval_overdue -> approvers then org owner. approved / rejected -> technician, assignee, admin. write_failed -> admin (email). completed -> creator and admin (inapp). Dedupe key = event + plan id + recipient + plan version.
+submitted -> nobody (the event stays for the clocks and the audit). assigned -> the holder (inapp and email, always). reassigned -> the previous holder (inapp). reassign_needed -> admins (inapp and email, always). incident_failed -> admins, and the holder when ServiceNow closed the incident (inapp and email, always). p1_p2_created -> admins (email). sla_warn (80) -> assignee and admin. sla_breach (100) -> assignee, admin, org owner (email). sla_escalate (120) -> org owner. pending -> requester. resolved -> technician (creator) and admin. verification_failed -> assignee and admin. approval_requested -> approvers. approval_overdue -> approvers then org owner. approved / rejected -> the sender. write_failed -> admin and the holder (email, always). completed -> the sender (inapp and email). Every row carries `data` `{ planId, rackId, rackName, siteName, incidentNumber, incidentUrl, kind }`. Dedupe key = event + plan id + recipient + plan version.
 
 ## The verification rule
 
