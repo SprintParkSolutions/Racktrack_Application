@@ -124,7 +124,8 @@
 .state { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: var(--muted-1); }
 .finding { margin: 4px 0 0; font-size: 13px; color: var(--good); }
 
-/* Before sending: who this drift check will go to, when NetBox names somebody. */
+/* Before sending: who this drift check will go to - the SPOC of the site, or
+   an admin and the reason why. */
 .goesTo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
           padding: 12px var(--gutter); border-top: 1px solid var(--hair); font-size: 14px; }
 .goesToLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); min-width: 60px; }
@@ -133,6 +134,7 @@
 .goesToMail { flex: 1 1 100%; margin-left: 68px; font-size: 13px; color: var(--muted-1);
               font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
 .goesToNote { display: none; }
+.goesToWhy { flex: 1 1 100%; margin-left: 68px; font-size: 13px; line-height: 1.45; color: var(--muted-1); }
 
 .footer { padding: 16px var(--gutter) 0; border-top: 1px solid var(--hair); }
 .label { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
@@ -175,22 +177,40 @@
 .pickAll input, .pickOne { width: 20px; height: 20px; flex: none; margin: 0; accent-color: #121212; cursor: pointer; }
 .pickOne { align-self: center; }
 
-/* Where a sent check has got to. Seven steps down the page: done ones filled,
-   the current one ringed, the rest hollow - and a line joining them. */
+/* Where a sent check has got to. Four steps down the page: done ones filled,
+   the current one ringed, the rest hollow - and a line joining them. The line
+   hangs below each dot to the next one, so a step that carries a note under its
+   name stays joined to the step after it. */
 .progress { margin: 10px 0 4px; }
 .steps { list-style: none; margin: 0; padding: 0; }
-.step { position: relative; display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 14px; color: var(--muted-2); }
-.step::before { content: ''; position: absolute; left: 6px; top: -9px; width: 2px; height: 18px; background: var(--hair); }
-.step:first-child::before { display: none; }
-.stepDot { position: relative; z-index: 1; width: 14px; height: 14px; flex: none; border-radius: 50%;
+.step { position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; font-size: 14px; line-height: 20px; color: var(--muted-2); }
+.step::before { content: ''; position: absolute; left: 6px; top: 22px; bottom: -8px; width: 2px; background: var(--hair); }
+.step:last-child::before { display: none; }
+.stepDot { position: relative; z-index: 1; width: 14px; height: 14px; margin-top: 3px; flex: none; border-radius: 50%;
            border: 2px solid var(--hair); background: var(--bg, #fff); }
+.stepWords { display: grid; gap: 1px; min-width: 0; }
+.stepNote { font-size: 13px; font-weight: 400; color: var(--muted-1); overflow-wrap: anywhere; }
 .stepDone { color: var(--text, #1c1c1c); }
 .stepDone .stepDot { border-color: var(--good); background: var(--good); }
-.stepDone::before, .stepNow::before { background: var(--good); }
+.stepDone::before { background: var(--good); }
 .stepNow { color: var(--text, #1c1c1c); font-weight: 700; }
 .stepNow .stepDot { border-color: var(--good); box-shadow: 0 0 0 3px rgba(28, 107, 60, .18); }
-.trackNote, .offTrack { margin: 8px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
-.offTrack { color: var(--warn); }
+/* Written under .progress so it outweighs the block's own paragraph rule. */
+.progress .offTrack { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted-1); }
+/* The one word that matters when a check has left the line, set apart. */
+.offWord { display: inline-block; margin-right: 8px; padding: 1px 8px; border: 1px solid var(--warn); border-radius: 4px;
+           font-size: 12px; font-weight: 600; color: var(--warn); white-space: nowrap; }
+
+/* The incident number is the heading of a sent check, in the page's own large
+   type (the verdict above it). */
+.waiting h2.incidentBig, .done h2.incidentBig { font-size: 22px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+/* The ServiceNow incident raised for the check: its number, and the way to it. */
+.waiting .incident, .done .incident { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 4px;
+            padding-top: 10px; border-top: 1px solid var(--hair); }
+.incidentNumber { font-size: 14px; font-weight: 600; color: var(--text, #1c1c1c); }
+.incidentOpen { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid #121212;
+                border-radius: 6px; font-size: 13.5px; font-weight: 600; color: #121212; text-decoration: none; }
+.waiting .incidentNone, .done .incidentNone { margin: 10px 0 4px; padding-top: 10px; border-top: 1px solid var(--hair); color: var(--warn); }
 .tickets { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--hair); }
 .tickets li { display: grid; gap: 1px; padding: 4px 0; font-size: 13.5px; color: var(--muted-1); }
 .tickets b { color: var(--text, #1c1c1c); font-weight: 600; }

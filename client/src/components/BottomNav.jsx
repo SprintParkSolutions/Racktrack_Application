@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styles from './BottomNav.module.css';
 import { useShutter } from '../ShutterContext.jsx';
@@ -7,6 +7,7 @@ import { usePrimaryNav, MoreIcon } from '../nav/navLinks.jsx';
 import MoreSheet from './MoreSheet.jsx';
 import ScanTabBar from './ScanTabBar.jsx';
 import ExternalLink from './ExternalLink.jsx';
+import { clearRackFlow, getRackFlow } from '../utils/rackFlow';
 
 /* ──────────────────────────────────────────────────────────────────────
    BottomNav - the phone navigation: HOME / SCAN / MORE / PROFILE.
@@ -26,6 +27,11 @@ import ExternalLink from './ExternalLink.jsx';
  * to the app's navigation instead. Tapping Network therefore swapped the whole
  * bottom bar underneath you, which is exactly the kind of thing that makes an
  * app feel like several apps. Same bar on every page of a rack.
+ *
+ * Which five tabs that is depends on the job the person chose on the review
+ * page - analyse the network, or look up a port (utils/rackFlow). Network and
+ * Timeline are in both, so the choice is read here rather than guessed from
+ * the page.
  */
 function RackTabs({ rackId, pathname, hash }) {
   const navigate = useNavigate();
@@ -38,13 +44,15 @@ function RackTabs({ rackId, pathname, hash }) {
               : 'overview';
   const base = `/results/${encodeURIComponent(rackId)}`;
   const go = (key) => navigate(
-    key === 'overview' ? base
+    // Result is the results page again, which opens in its port mode while the
+    // rack is in that flow.
+    key === 'overview' || key === 'result' ? base
       : key === 'drift' ? `${base}/drift`
         : key === 'timeline' ? `${base}#drift`
         : key === 'switches' ? `/switch-info/${encodeURIComponent(rackId)}`
           : `${base}/${key}`,
   );
-  return <ScanTabBar rackId={rackId} activeTab={active} onTabChange={go} />;
+  return <ScanTabBar rackId={rackId} flow={getRackFlow(rackId)} activeTab={active} onTabChange={go} />;
 }
 
 export default function BottomNav() {
@@ -54,11 +62,17 @@ export default function BottomNav() {
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  if (!isAuthed) return null;
-
   // A rack's own pages keep the rack's tabs. (/results/:rackId itself draws
   // them inside the page, so it never reaches here.)
   const rack = location.pathname.match(/^\/(?:results|switch-info)\/([^/]+)/);
+  // The flow a rack is in lasts while the person moves between that rack's
+  // pages. Anywhere else it is forgotten, so a rack opened again - after a new
+  // scan, from History, from Profile - starts on Analyse the network.
+  const onRack = !!rack;
+  useEffect(() => { if (!onRack) clearRackFlow(); }, [onRack, location.pathname]);
+
+  if (!isAuthed) return null;
+
   if (rack) {
     return (
       <RackTabs
@@ -121,9 +135,8 @@ export default function BottomNav() {
         <div className={styles.bar}>
           {/* Menu sits LAST, not in the middle. Wedged between Scan and
               Profile it read as a peer destination and pushed Profile out of
-              the corner people reach for. It is also "Menu", not "More" - the
-              rack results screen has its own More tab, and two different More
-              buttons on adjacent screens is a naming collision. */}
+              the corner people reach for. It is "Menu", not "More": the sheet
+              it opens is the rest of the app, not more of this screen. */}
           {barLinks.map(tab)}
 
           {overflow.length > 0 && (

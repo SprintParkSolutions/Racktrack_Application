@@ -7,6 +7,7 @@ import { getItem, getJSON, setItem, setJSON } from '../utils/safeStorage';
 import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import BackButton from '../components/BackButton.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
+import { getRackFlow, setRackFlow } from '../utils/rackFlow';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import RackTabs from '../components/RackTabs.jsx';
 import StandardFeedback from '../components/StandardFeedback.jsx';
@@ -82,6 +83,15 @@ function lowestUnit(dev) {
   if (nums.length) return Math.min(...nums);
   const y = Array.isArray(dev.box) ? dev.box[3] : 0;
   return 10000 - y;   // no unit: rank below every unit-bearing device, bottom first
+}
+
+// The lines under the rack's name in the results header: the rack's other
+// name, then the room by the name the customer gave it. Where the phone stood
+// is no part of it - the site is chosen on the scan screen, and the position a
+// scan from an older build carries (its site, how far off it was) is not read
+// back to anybody.
+export function headerWhereLines(rackSaid, identity) {
+  return [rackSaid && rackSaid.also, identity && identity.spaceName].filter(Boolean);
 }
 
 export function buildDeviceLabels(devices, unitsDetected = [], pattern = null) {
@@ -1301,6 +1311,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     // Timeline is the in-page view that carried the name Drift before: the
     // port history and the switches read for this rack. Its state key is still
     // 'drift', which the hash and the back stack already know.
+    // Result is this page in its port mode: the Overview tab under the name it
+    // has while a port is being looked up.
+    if (newTab === 'result') newTab = 'overview';
     if (newTab === 'timeline') newTab = 'drift';
     else if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
       // urlRackId first: it is the id in the address bar and is set before the
@@ -1339,11 +1352,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   useEffect(() => {
     const onBack = (e) => {
       if (phase === 'port') { e.preventDefault(); leavePortView(); return; }
-      if (portMode) {
-        e.preventDefault();
-        setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null);
-        return;
-      }
+      // A tab of the port flow (Switches, Topology, Timeline) steps back to its
+      // Result first; Back on Result is what leaves the flow. The other way
+      // round left the person on Switches under a bar that has no Switches.
+      if (portMode && tab === 'overview') { e.preventDefault(); leavePortFlow(); return; }
       if (tab !== 'overview') { e.preventDefault(); handleHeaderBack(); }
     };
     window.addEventListener('rt:back', onBack);
@@ -1464,7 +1476,21 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const [deviceListOpen, setDeviceListOpen] = useState(false);
   // Which of the two things the person chose to do with this rack. Until they
   // choose, the page is the photograph and the choice - nothing else.
-  const [portMode, setPortMode] = useState(false);
+  // It is also which of the rack's two tab bars is up - Analyse the network, or
+  // Look up a port - and Network is a page of its own in both, so the choice is
+  // remembered for this rack (utils/rackFlow) and picked up again on the way
+  // back. A rack drawn inside another page (two racks side by side) has no bar.
+  const [portMode, setPortMode] = useState(() => !embeddedProp && getRackFlow(urlRackId) === 'port');
+  useEffect(() => { setPortMode(!embeddedProp && getRackFlow(urlRackId) === 'port'); }, [urlRackId, embeddedProp]);
+  const enterPortFlow = () => {
+    setRackFlow(urlRackId || rackId || scanId, 'port');
+    setPortMode(true); setDeviceListOpen(true);
+  };
+  // That screen's own Back: out of the port flow, back to the two choices.
+  const leavePortFlow = () => {
+    setRackFlow(urlRackId || rackId || scanId, 'analyse');
+    setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null);
+  };
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
   const [shareMsg, setShareMsg] = useState(null);
   const [shareChannel, setShareChannel] = useState(null); // 'slack' | 'teams' | 'outlook'
@@ -1623,9 +1649,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     };
   }, [identity]);
 
-  const takenAt = identity && identity.evidence && identity.evidence.location
-    && identity.evidence.location.verdict !== 'unknown'
-    ? identity.evidence.location : null;
+  const whereLines = headerWhereLines(rackSaid, identity);
   const [fetchedOcrLabels, setFetchedOcrLabels] = useState(null);
   const ocrLabels = fetchedOcrLabels;
   const [warningDismissed, setWarningDismissed] = useState(false);
@@ -3409,6 +3433,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         {!isDesktop && !embeddedProp && (
           <ScanTabBar
             rackId={rackId}
+            flow={portMode ? 'port' : 'analyse'}
             activeTab="overview"
             onTabChange={(key) => { leavePortView(); handleTabChange(key); }}
           />
@@ -4698,20 +4723,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <h2 className={styles.headerTitle}>
             {rackSaid ? rackSaid.name : (rackId || scanId)}
           </h2>
-          {/* The site and the coordinates belong to the scan itself. On the
-              Timeline, Topology and Switches they were three more lines above
-              a screen that is not about where the photo was taken. */}
-          {tab === 'overview' && (rackSaid || takenAt || (identity && identity.spaceName)) && (
+          {/* Where the rack is belongs to the scan itself. On the Timeline,
+              Topology and Switches it was more lines above a screen that is
+              not about that. */}
+          {tab === 'overview' && (rackSaid || whereLines.length > 0) && (
             <div className={styles.headerWhere}>
-              {rackSaid && rackSaid.also && <span>{rackSaid.also}</span>}
-              {/* The site, and no more. How many metres the phone stood from
-                  the site's address is the ladder's working, not something the
-                  person at the rack needs read back to them. */}
-              {takenAt && takenAt.site && <span>{takenAt.site}</span>}
-              {/* The room, by the name the customer gave it. It replaced the
-                  coordinates: a person finds a rack by its room, not by a pair
-                  of numbers. */}
-              {identity && identity.spaceName && <span>{identity.spaceName}</span>}
+              {/* The rack's other name and the room. A person finds a rack by
+                  its room, not by a pair of numbers. */}
+              {whereLines.map((line) => <span key={line}>{line}</span>)}
               {rackSaid && !rackSaid.confirmed && (
                 <span className={styles.headerRackAsk}>read, not confirmed</span>
               )}
@@ -4732,6 +4751,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       {!isDesktop && !embeddedProp && (
         <ScanTabBar
           rackId={rackId}
+          flow={portMode ? 'port' : 'analyse'}
           activeTab={tab === 'drift' ? 'timeline' : tab}
           onTabChange={handleTabChange}
           badges={{
@@ -5041,7 +5061,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             <button
               type="button"
               className={`${styles.stepChoice} ${styles.stepChoiceSecondary}`}
-              onClick={() => { setPortMode(true); setDeviceListOpen(true); }}
+              onClick={enterPortFlow}
             >
               Look up a port
             </button>
@@ -5053,7 +5073,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <button
             type="button"
             className={styles.stepBack}
-            onClick={() => { setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null); }}
+            onClick={leavePortFlow}
           >
             ← Back
           </button>

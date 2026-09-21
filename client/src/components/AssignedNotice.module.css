@@ -1,33 +1,40 @@
-/* The assignment notice. One bordered block, plain type, a row of buttons. */
+/* The notice where the app opens. One bordered block, plain type, a row of
+   buttons - and short: it sits above the scan screen, so closed it stays under
+   a third of a phone screen whatever the notice says. */
 .notice {
-  margin: 12px 16px 4px; padding: 14px 16px;
+  margin: 12px 16px 4px; padding: 12px 16px;
   background: var(--card, #fff); color: var(--text, #1c1c1c);
   border: 1px solid var(--border, #e3e6ea); border-left: 3px solid #1f4e79; border-radius: 6px;
 }
 .top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #1f4e79; }
 .more { font-size: 12px; color: #8b939c; }
-.title { margin: 4px 0 4px; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
-.body { margin: 0; font-size: 13.5px; line-height: 1.5; color: #5c646d; white-space: pre-line; overflow-wrap: anywhere; }
+.title { margin: 3px 0 3px; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere;
+         display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.body { margin: 0; font-size: 13.5px; line-height: 1.45; color: #5c646d; white-space: pre-line; overflow-wrap: anywhere; }
+/* Closed, the one sentence keeps to two lines; Details shows all of it. */
+.short { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: normal; }
 
-.steps { margin-top: 8px; }
-.steps > summary { display: inline-block; list-style: none; cursor: pointer; font-size: 13px; font-weight: 600; color: #1f4e79; padding: 2px 0; }
-.steps > summary::-webkit-details-marker { display: none; }
-.steps > summary::after {
-  content: ''; display: inline-block; width: 6px; height: 6px; margin: 0 0 3px 8px;
+.toggle { display: inline-flex; align-items: center; margin-top: 4px; padding: 2px 0; border: 0; background: none;
+          font: inherit; font-size: 13px; font-weight: 600; color: #1f4e79; cursor: pointer; }
+.chevron {
+  display: inline-block; width: 6px; height: 6px; margin: 0 0 3px 8px;
   border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg);
 }
-.steps[open] > summary::after { transform: rotate(-135deg); margin-bottom: -1px; }
-.steps > .body { margin-top: 6px; }
+.toggle[aria-expanded='true'] .chevron { transform: rotate(-135deg); margin-bottom: -3px; }
+.toggle:focus-visible { outline: 2px solid #1f4e79; outline-offset: 2px; }
+.steps { margin-top: 6px; }
 .subhead { display: block; margin-top: 10px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #8b939c; }
+.failed { margin: 6px 0 0; font-size: 13px; color: #94302a; }
 
-.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 8px; }
 .primary, .secondary, .quiet {
-  min-height: 38px; padding: 0 12px; border-radius: 6px; font: inherit; font-size: 14px; font-weight: 600;
+  min-height: 36px; padding: 0 12px; border-radius: 6px; font: inherit; font-size: 13.5px; font-weight: 600;
   display: inline-flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none;
+  white-space: nowrap;
 }
-.primary { flex: 1 1 140px; border: 1px solid #121212; background: #121212; color: #fff; }
-.secondary { flex: 1 1 140px; border: 1px solid var(--border, #c9ced4); background: var(--card, #fff); color: var(--text, #1c1c1c); }
+.primary { flex: 1 1 auto; border: 1px solid #121212; background: #121212; color: #fff; }
+.secondary { flex: 1 1 auto; border: 1px solid var(--border, #c9ced4); background: var(--card, #fff); color: var(--text, #1c1c1c); }
 .quiet { flex: 0 0 auto; border: 1px solid transparent; background: none; color: #5c646d; }
 .quiet:disabled { opacity: .5; cursor: default; }
 .primary:focus-visible, .secondary:focus-visible, .quiet:focus-visible { outline: 2px solid #1f4e79; outline-offset: 2px; }

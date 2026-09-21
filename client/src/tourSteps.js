@@ -15,6 +15,21 @@
 // instead of requiring a specific click.
 export const TOUR_STEPS = [
   {
+    // Only a person with more than one Site and none chosen ever sees this
+    // step. Analyze stays shut until a Site is chosen, so without it the next
+    // step waited on a button that could not come alive while the dim layer
+    // kept the list out of reach. It completes on the state, not on a tap: a
+    // tap in the search field chooses nothing. The scan page marks itself once
+    // the site list has answered and nothing is left to choose - straight
+    // away for one Site, a remembered choice or a server without the list, and
+    // then the step passes without ever being drawn.
+    id: 'choose-site',
+    target: 'site-picker',
+    advanceWhenVisible: '[data-scan-site="settled"]',
+    title: 'Choose the site',
+    body: 'Tap the site this rack is in.',
+  },
+  {
     id: 'select-image',
     target: 'media-drop-zone',
     advanceWhenVisible: '[data-tour="analyze-rack-btn"]:not(:disabled)',

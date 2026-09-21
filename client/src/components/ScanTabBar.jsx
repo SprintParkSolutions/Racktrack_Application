@@ -1,77 +1,70 @@
-import { useEffect, useRef, useState } from 'react';
+import { getRackFlow } from '../utils/rackFlow';
 import styles from './ScanTabBar.module.css';
 
-// The rack's tab bar on a phone: Overview, Network, Topology, Switches, More.
+// The rack's tab bar on a phone. A rack is worked in one of two ways, chosen on
+// the review page, and each has its own row of five:
+//
+//   Analyse the network   Overview, Network, Drift, Report, Timeline
+//   Look up a port        Result, Switches, Network, Topology, Timeline
+//
+// Every tab is a page the app already had. There used to be one row for both
+// jobs with a More tab at the end, and Topology, Switches and Timeline sat in
+// its sheet; each of them is a tab of the flow it belongs to now, so the More
+// tab and its sheet are gone.
 //
 // Ports is gone. Network IS the live switches now - read from this phone over
 // SNMP - which is what Ports was trying to do over SSH from a server that
 // could never reach them, and what the Netdisco "Discovery" view only ever
-// showed second-hand. Network and Report open their own screens; the page
-// handles that in onTabChange.
+// showed second-hand. Network, Drift and Report open their own screens; the
+// page handles that in onTabChange.
 //
-// Switches is in the bar and Drift is under More: what a person came to the
-// rack to look at is what is in it, and drift is a question you ask on a
-// second visit.
-// The front row is the job the person at the rack actually came to do: look at
-// what was read, ask the switches, take the report, check it against the
-// record. Report and Drift were behind the More button and the owner's
-// reaction was that a technician could not see the report at all - nothing was
-// stopping them, it was three taps away behind a row of screens they need far
-// less often.
-const PRIMARY_TABS = [
-  { key: 'overview',  label: 'Overview',  icon: <IconRack /> },
-  { key: 'network',   label: 'Network',   icon: <IconNetwork /> },
-  { key: 'report',    label: 'Report',    icon: <IconReport /> },
-  { key: 'drift',     label: 'Drift',     icon: <IconDrift /> },
-];
-
+// Result is the results page in its port mode: the photograph, the device
+// list, the "Find a port" card and the located port.
+//
 // Timeline is the screen that used to be called Drift: what changed on this
 // rack's ports over time, and the switches added on the Network page. Drift
 // now means the check against the record, and the owner asked where the older
 // screen had gone - so it keeps its place under a name of its own.
-const MORE_TABS = [
-  { key: 'topology',  label: 'Topology',  icon: <IconTopology /> },
-  { key: 'switches',  label: 'Switches',  icon: <IconSwitch /> },
-  { key: 'timeline',  label: 'Timeline',  icon: <IconDrift /> },
-];
+const TABS = {
+  overview: { label: 'Overview', icon: <IconRack /> },
+  result:   { label: 'Result',   icon: <IconRack /> },
+  network:  { label: 'Network',  icon: <IconNetwork /> },
+  drift:    { label: 'Drift',    icon: <IconDrift /> },
+  report:   { label: 'Report',   icon: <IconReport /> },
+  timeline: { label: 'Timeline', icon: <IconDrift /> },
+  switches: { label: 'Switches', icon: <IconSwitch /> },
+  topology: { label: 'Topology', icon: <IconTopology /> },
+};
+export const FLOW_TABS = {
+  analyse: ['overview', 'network', 'drift', 'report', 'timeline'],
+  port:    ['result', 'switches', 'network', 'topology', 'timeline'],
+};
 
-export default function ScanTabBar({ activeTab, onTabChange, badges = {} }) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef(null);
-
-  // Close the More sheet on outside click / Escape.
-  useEffect(() => {
-    if (!moreOpen) return;
-    const onDown = (e) => {
-      if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false);
-    };
-    const onKey = (e) => { if (e.key === 'Escape') setMoreOpen(false); };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('touchstart', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('touchstart', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [moreOpen]);
-
-  const moreActive = MORE_TABS.some((t) => t.key === activeTab);
-  const selectTab = (key) => { onTabChange(key); setMoreOpen(false); };
+// `flow` comes from the page when the page holds it (the results page knows its
+// own port mode); every other rack page leaves it out and the bar reads what
+// was remembered for this rack.
+export default function ScanTabBar({ rackId, flow, activeTab, onTabChange, badges = {} }) {
+  const inFlow = FLOW_TABS[flow] ? flow : getRackFlow(rackId);
+  // The results page is one screen with two names: Overview, or Result while a
+  // port is being looked up.
+  const active = activeTab === 'overview' || activeTab === 'result'
+    ? (inFlow === 'port' ? 'result' : 'overview')
+    : activeTab;
 
   return (
     <nav className={styles.tabBar} role="tablist" aria-label="Scan results tabs">
       <div className={styles.bar}>
-        {PRIMARY_TABS.map((tab) => {
-          const isActive = activeTab === tab.key;
-          const badge = badges[tab.key];
+        {FLOW_TABS[inFlow].map((key) => {
+          const tab = TABS[key];
+          const isActive = active === key;
+          const badge = badges[key];
           return (
             <button
-              key={tab.key}
+              key={key}
               role="tab"
               aria-selected={isActive}
               className={`${styles.tab} ${isActive ? styles.tabActive : ''}`}
-              onClick={() => selectTab(tab.key)}
+              onClick={() => onTabChange(key)}
               type="button"
             >
               <span className={styles.tabIcon}>{tab.icon}</span>
@@ -80,38 +73,6 @@ export default function ScanTabBar({ activeTab, onTabChange, badges = {} }) {
             </button>
           );
         })}
-
-        <div className={styles.moreWrap} ref={moreRef}>
-          <button
-            role="tab"
-            aria-selected={moreActive}
-            aria-haspopup="menu"
-            aria-expanded={moreOpen}
-            className={`${styles.tab} ${moreActive ? styles.tabActive : ''}`}
-            onClick={() => setMoreOpen((o) => !o)}
-            type="button"
-          >
-            <span className={styles.tabIcon}><IconMore /></span>
-            <span className={styles.tabLabel}>More</span>
-          </button>
-
-          {moreOpen && (
-            <div className={styles.moreSheet} role="menu">
-              {MORE_TABS.map((tab) => (
-                <button
-                  key={tab.key}
-                  role="menuitem"
-                  className={`${styles.moreItem} ${activeTab === tab.key ? styles.moreItemActive : ''}`}
-                  onClick={() => selectTab(tab.key)}
-                  type="button"
-                >
-                  <span className={styles.moreItemIcon}>{tab.icon}</span>
-                  <span className={styles.moreItemLabel}>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </nav>
   );
@@ -181,16 +142,6 @@ function IconDrift() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 17h3v-5h4v-4h4v8h4v-3h3"/>
       <line x1="3" y1="21" x2="21" y2="21"/>
-    </svg>
-  );
-}
-
-function IconMore() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="5"  cy="12" r="1.6" fill="currentColor" stroke="none"/>
-      <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>
-      <circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>
     </svg>
   );
 }

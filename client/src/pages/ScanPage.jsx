@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import styles from './ScanPage.module.css';
 import { validateMedia } from '../utils/validateMedia';
 import AssignedNotice from '../components/AssignedNotice.jsx';
+import SitePicker from '../components/SitePicker.jsx';
 import { IMAGE_ACCEPT, VIDEO_ACCEPT } from '../utils/mediaAccept';
 import { apiUrl, authFetch } from '../utils/api';
 import { prefetchScan } from '../utils/scanPrefetch';
@@ -13,9 +14,9 @@ import { useTheme } from '../ThemeContext.jsx';
 import { useTour } from '../TourContext.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { useSmartBack } from '../hooks/useSmartBack';
+import { useScanSite, SITE_REFUSED, isSiteRefused } from '../hooks/useScanSite';
 import Icon from '../components/Icon';
 import { getItem, setItem } from '../utils/safeStorage';
-import { useAuth } from '../AuthContext.jsx';
 
 // three.js is no longer reachable from this page at all. MiniRack3D was the
 // decoration on the analysing overlay and is gone; TopologyScene3D was declared
@@ -964,62 +965,42 @@ export default function ScanPage() {
     setItem(FIRST_SCAN_KEY, '1');
   }, []);
 
-  // Which space this scan belongs to (organisation setup). The list comes
-  // from the caller's own Site; an owner or org admin without a Site of
-  // their own has no spaces to pick from, so the picker does not appear.
+  // Which Site this scan is for: the list, the remembered choice and the one
+  // rule that holds a scan back (several Sites, none chosen) live in
+  // useScanSite, because Scan two racks uploads too and has to agree.
+  const { sites, siteId, chooseSite: rememberSite, needsSite, asked: sitesAsked } = useScanSite();
+  const chooseSite = (id) => {
+    rememberSite(id);
+    setError(null);
+  };
+  // The guided tour opens on the picker for a person who has a Site to choose,
+  // and for nobody else: one Site, a remembered choice and a server without
+  // the list have nothing to tap. `siteWasAsked` keeps the picker the tour's
+  // anchor for the beat after the choice, so the spotlight rests on what was
+  // just chosen before it moves on to the photo.
+  const [siteWasAsked, setSiteWasAsked] = useState(false);
+  useEffect(() => { if (needsSite) setSiteWasAsked(true); }, [needsSite]);
+  // What that step waits for: the list has answered and nothing is left to
+  // choose. Until the list answers nobody can say which, so the tour waits.
+  const siteSettled = sitesAsked && !needsSite;
+
+  // Which space this scan belongs to (organisation setup). The list is the
+  // chosen Site's own, so it changes with the Site and is empty without one.
   // Remembered per Site so a technician in the same hall does not re-pick
   // every time. Never blocks a scan: with nothing picked, nothing is sent.
-  const { user: authUser } = useAuth();
-  const spaceTenantId = authUser?.tenant_id || null;
-  const [spaces, setSpaces] = useState([]);
-  const [spaceId, setSpaceId] = useState(() => (spaceTenantId ? (getItem(SPACE_KEY_PREFIX + spaceTenantId) || '') : ''));
-
-  // Where the phone is, asked once when the scan page opens rather than when
-  // Analyze is pressed, so the permission prompt can never hold up an upload.
-  // It goes with the photo and lets the rack ladder tell which Site the photo
-  // was taken at; indoors it is far too rough to pick a rack, and is never used
-  // for that. Refused, unavailable or slow simply means the photo goes without.
-  const hereRef = useRef(null);
+  const spaces = useMemo(() => {
+    const site = sites.find((s) => String(s.id) === siteId);
+    return (site?.spaces || []).map((sp) => ({ id: sp.id, name: sp.name, depth: sp.depth || 0 }));
+  }, [sites, siteId]);
+  const [spaceId, setSpaceId] = useState('');
   useEffect(() => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) return undefined;
-    let live = true;
-    try {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (!live) return;
-          hereRef.current = {
-            lat: pos.coords.latitude, lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy, at: new Date(pos.timestamp || Date.now()).toISOString(),
-          };
-        },
-        () => { /* no location: the scan goes without one */ },
-        { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 },
-      );
-    } catch { /* a WebView without geolocation */ }
-    return () => { live = false; };
-  }, []);
-  useEffect(() => {
-    if (!spaceTenantId) { setSpaces([]); return undefined; }
-    let cancelled = false;
-    authFetch(apiUrl(`/api/setup/${spaceTenantId}`))
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (cancelled || !d) return;
-        const flat = [];
-        const walk = (list, depth) => {
-          for (const sp of list || []) { flat.push({ id: sp.id, name: sp.name, depth }); walk(sp.children, depth + 1); }
-        };
-        walk(d.spaces, 0);
-        setSpaces(flat);
-        // A remembered space that no longer exists is dropped rather than sent.
-        setSpaceId((cur) => (cur && !flat.some((sp) => String(sp.id) === String(cur)) ? '' : cur));
-      })
-      .catch(() => { /* no picker - scanning is never blocked on it */ });
-    return () => { cancelled = true; };
-  }, [spaceTenantId]);
+    const kept = siteId ? (getItem(SPACE_KEY_PREFIX + siteId) || '') : '';
+    // A remembered space that no longer exists is dropped rather than sent.
+    setSpaceId(kept && spaces.some((sp) => String(sp.id) === String(kept)) ? kept : '');
+  }, [siteId, spaces]);
   const chooseSpace = (id) => {
     setSpaceId(id);
-    if (spaceTenantId) setItem(SPACE_KEY_PREFIX + spaceTenantId, id);
+    if (siteId) setItem(SPACE_KEY_PREFIX + siteId, id);
   };
 
 
@@ -1118,7 +1099,7 @@ export default function ScanPage() {
   }, [ticket?.incident_number]);
 
   const analyze = async ({ override = false, verifiedSkip = false } = {}) => {
-    if (!file) return;
+    if (!file || needsSite) return;
     setError(null);
     setQualityChoice(null);
     setVerifyReject(null);
@@ -1214,16 +1195,13 @@ export default function ScanPage() {
       const endpoint = useMultiRack
         ? '/api/analyze-video'
         : (useTicketMode ? '/api/analyze-for-ticket' : '/api/analyze');
+      // The chosen Site goes with every kind of scan. With none chosen the
+      // field is absent and the server falls back to the caller's own Site.
+      if (siteId) body.append('siteId', siteId);
       // Bind the scan to the space picked above. /api/analyze checks that the
-      // space belongs to the caller's Site and records the rack in it. With
+      // space belongs to the chosen Site and records the rack in it. With
       // nothing picked the field is absent and the request is unchanged.
       if (endpoint === '/api/analyze' && spaceId) body.append('spaceId', String(spaceId));
-      if (endpoint === '/api/analyze' && hereRef.current) {
-        body.append('lat', String(hereRef.current.lat));
-        body.append('lng', String(hereRef.current.lng));
-        body.append('accuracy', String(hereRef.current.accuracy));
-        body.append('locatedAt', hereRef.current.at);
-      }
 
       // Remember this scan so it can be reclaimed if iOS suspends the app
       // mid-analysis (the request below dies, but the scan finishes on the
@@ -1289,6 +1267,7 @@ export default function ScanPage() {
           setVerifyReject(data);
           return;
         }
+        if (isSiteRefused(res, data)) throw new Error(SITE_REFUSED);
         throw new Error(data.error || 'Analysis failed. Try again.');
       }
       clearInterval(ticker);
@@ -1352,7 +1331,7 @@ export default function ScanPage() {
   // identical - we just route through the stitch endpoint and surface
   // any "uncertain seam" warnings to the user.
   const analyzeMulti = async ({ override = false } = {}) => {
-    if (!multiFiles || multiFiles.length < 2) return;
+    if (!multiFiles || multiFiles.length < 2 || needsSite) return;
     setError(null);
     setQualityChoice(null);
 
@@ -1400,6 +1379,7 @@ export default function ScanPage() {
       const body = new FormData();
       multiFiles.forEach((f) => body.append('images', f));
       if (override) body.append('skipQualityCheck', '1');
+      if (siteId) body.append('siteId', siteId);
 
       const clientJobId = newJobId();
       body.append('clientJobId', clientJobId);
@@ -1414,6 +1394,7 @@ export default function ScanPage() {
           setQualityChoice({ error: data.error || 'These photos may not join cleanly.', kind: data.kind || 'stitch' });
           return;
         }
+        if (isSiteRefused(res, data)) throw new Error(SITE_REFUSED);
         throw new Error(data.error || 'Could not join those photos. Try again.');
       }
 
@@ -1447,7 +1428,7 @@ export default function ScanPage() {
   };
 
   return (
-    <div className={`page ${styles.scan}`}>
+    <div className={`page ${styles.scan}`} data-scan-site={siteSettled ? 'settled' : undefined}>
       <div className={styles.amb} aria-hidden="true">
         <svg className={styles.art} viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice">
           <defs>
@@ -1567,7 +1548,21 @@ export default function ScanPage() {
         )}
 
 
-        {/* Space picker - organisation setup. Shown only when the caller's
+        {/* Site picker. Drawn only when the server has Sites to offer: a line
+            for one, a search for several. In the flow of the page, so none of
+            it can end up under the bottom bar. */}
+        {/* The guided tour's first step ('choose-site') points here while a
+            Site is still to be chosen, so the list stays live under the tour's
+            dim layer and a tap on it chooses a Site instead of ending the
+            walkthrough. Somebody who skipped that step still has a Site to
+            choose and a tour waiting on Analyze, which cannot come alive; for
+            them alone the picker stays the way out, as Back is on the results
+            page. */}
+        <SitePicker sites={sites} value={siteId} onChange={chooseSite} className={styles.siteBlock}
+          data-tour={needsSite || siteWasAsked ? 'site-picker' : undefined}
+          data-tour-bypass={tourActive && needsSite && tour?.currentStep?.id !== 'choose-site' ? 'true' : undefined} />
+
+        {/* Space picker - organisation setup. Shown only when the chosen
             Site has spaces; a scan is never blocked on it. */}
         {spaces.length > 0 && (
           <div className={styles.spaceBlock}>
@@ -1854,14 +1849,17 @@ export default function ScanPage() {
         {/* CTA - dispatches to single-image analyze() or tall-rack analyzeMulti() */}
         {!qualityChoice && (() => {
           const isMulti  = tab === 'multi';
-          const canSubmit = isMulti
+          const canSubmit = !needsSite && (isMulti
             ? multiFiles.length >= 2
-            : !!file;
+            : !!file);
           const ctaLabel = isMulti
             ? (multiFiles.length < 2 ? `Add ${2 - multiFiles.length} more photo` : `Stitch & Analyze (${multiFiles.length})`)
             : 'Analyze Rack';
           return (
             <>
+            {/* Above the button, not below it: the button carries the page's
+                bottom margin, and a line after that reads as a footnote. */}
+            {needsSite && <p className={styles.siteHint}>Choose the site first.</p>}
             <button className={`btn btn-primary btn-lg btn-full ${styles.cta}`}
               data-tour="analyze-rack-btn"
               disabled={!canSubmit}
@@ -1876,7 +1874,7 @@ export default function ScanPage() {
               </svg>
             </button>
             {/* Desktop-only helper shown while Analyze is disabled. */}
-            {isDesktop && !canSubmit && (
+            {isDesktop && !(isMulti ? multiFiles.length >= 2 : !!file) && (
               <div className={styles.analyzeHelper}>
                 <span className={styles.analyzeHelperDot} aria-hidden="true" />
                 Add a photo first

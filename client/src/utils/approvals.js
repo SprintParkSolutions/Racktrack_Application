@@ -87,6 +87,29 @@ export async function openApprovals(path = '/approvals/') {
 }
 
 /**
+ * The drift report: one printable page of a comparison.
+ *
+ * Opened with a short-lived link, because the app's own sign-in does not travel
+ * to the browser it opens in. The link is minted on every open - it lasts five
+ * minutes - and always names the check, so the page is that comparison and not
+ * whatever the rack reads as today. Throws when the page cannot be opened; the
+ * caller says so in its own words.
+ */
+export async function openDriftReport(rackId, planId) {
+  const at = `/api/scan/${encodeURIComponent(rackId)}`;
+  const r = await authFetch(apiUrl(`${at}/report-token`));
+  const { token } = r.ok ? await r.json() : {};
+  const query = [
+    planId != null ? `plan=${encodeURIComponent(planId)}` : '',
+    token ? `t=${encodeURIComponent(token)}` : '',
+  ].filter(Boolean).join('&');
+  const url = apiUrl(`${at}/drift-report${query ? `?${query}` : ''}`);
+  const full = /^https?:/.test(url) ? url : `${window.location.origin}${url}`;
+  if (Capacitor.isNativePlatform()) await Browser.open({ url: full });
+  else window.open(full, '_blank', 'noopener');
+}
+
+/**
  * Our own full-screen web view, so Approvals is part of the application
  * rather than a trip out to a website. It is an app-local plugin, present
  * only in a build that carries it, hence the fallback below.
