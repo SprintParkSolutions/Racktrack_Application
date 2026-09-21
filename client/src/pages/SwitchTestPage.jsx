@@ -1056,30 +1056,32 @@ export default function SwitchTestPage() {
       <>
         <section className={styles.panel} data-state={stateOf(sw)}>
           <div className={styles.bandHead}>
-            <h2>{sw.label}</h2>
+            <span className={styles.bandWho}>
+              <h2>{sw.label}</h2>
+              {/* What this switch IS, on one line. It used to be three rows of
+                  a grid, above every figure the faceplate draws. */}
+              <span className={styles.bandSub}>
+                {[
+                  r ? [r.vendor, r.model || r.sysName].filter(Boolean).join(' ') || 'Make not stated' : null,
+                  Number(sw.port) === 161 ? sw.host : `${sw.host}:${sw.port}`,
+                  sw.version === 'v3' ? 'SNMP v3' : 'SNMP v2c',
+                  readAt ? `read ${agoText(readAt)}` : (r ? null : 'not read yet'),
+                ].filter(Boolean).join(' \u00b7 ')}
+              </span>
+            </span>
             {renderMenu(sw)}
           </div>
 
+          {/* What the ports cannot say. Everything the faceplate shows - how
+              many there are, how many are up, how many disagree - was also
+              written out here as figures, which said the same thing twice and
+              filled the screen before the ports were reached. */}
           <div className={styles.facts}>
-            <Fact label="Make" value={r?.vendor || (r ? 'not stated' : null)} />
-            <Fact label="Model" value={r?.model || r?.sysName || (r ? 'not stated' : null)} />
-            <Fact label="Management address"
-              value={Number(sw.port) === 161 ? sw.host : `${sw.host}:${sw.port}`} />
-            <Fact label="Reads as" value={sw.version === 'v3' ? 'SNMP v3' : 'SNMP v2c'} />
-            <Fact label="Ports" value={r ? sockets.length : null} />
-            <Fact label="Ports up" value={r ? up : null} />
-            <Fact label="Ports free" value={r ? sockets.length - up : null} />
-            <Fact label="Cabled in the photo" value={box ? cmp.cabled : null} />
-            <Fact label="SFP ports in the photo" value={cmp.linedUp ? sfpCount : null} />
-            <Fact label="Ports that disagree"
-              value={cmp.linedUp ? cmp.disagree.length : null}
-              warn={cmp.disagree.length > 0} />
             <Fact label="Where it sits" value={shelf} />
             <Fact label="Serial number" value={r?.serial} />
             <Fact label="Firmware" value={r?.firmware} />
             <Fact label="Devices it has seen" value={r?.attached?.length || null} />
             <Fact label="Running" value={r?.uptime != null ? uptimeText(r.uptime)?.replace(/^up /, '') : null} />
-            <Fact label="Last read" value={readAt ? agoText(readAt) : (r ? null : 'not read yet')} />
           </div>
 
           {/* Edit opens under the switch it edits. */}
@@ -1465,82 +1467,51 @@ export default function SwitchTestPage() {
           </div>
         )}
 
-        {/* ── This rack ──
-            The whole rack in one band, so the first thing on the screen answers
-            how much of it has been read and how far the photograph and the
-            switches are apart. */}
-        {switches.length > 0 && (
-          <section className={styles.panel}>
-            <div className={styles.bandHead}><h2>This rack</h2></div>
-            <div className={styles.facts}>
-              <Fact label="Switches" value={switches.length} />
-              <Fact label="Read" value={`${readCount} of ${switches.length}`} />
-              <Fact label="Last read" value={lastReadAt ? agoText(lastReadAt) : 'not read yet'} />
-              <Fact label="Ports reported" value={readCount ? totalPorts : null} />
-              <Fact label="Ports up" value={readCount ? totalUp : null} />
-              <Fact label="Cabled in the photo" value={anyBox ? totalCabled : null} />
-              <Fact label="Ports that disagree"
-                value={anyLinedUp ? totalDisagree : null}
-                warn={totalDisagree > 0} />
-            </div>
-            {readCount < switches.length && (
-              <p className={styles.proposal}>
-                {switches.length - readCount === 1
-                  ? 'One switch has not been read yet. Choose it below and read it.'
-                  : `${switches.length - readCount} switches have not been read yet. Choose one below and read it.`}
-              </p>
-            )}
-          </section>
-        )}
-
         {/* ── The switches ──
-            One line each. Whichever is chosen is the one shown in full below,
-            because a phone screen holds one switch at a time. */}
+            A row of cards a thumb can run along, because choosing one is the
+            first thing this screen asks. The chosen one is outlined and carries
+            the mark, and everything under it is that switch. A list of long
+            lines said the same thing but never looked like a choice. */}
         {switches.length > 0 && (
           <>
-            <h2 className={styles.sectionHead}>Switches on this rack</h2>
-            <div className={styles.pick}>
-              {looks.map(({ sw, reading: r, sockets, up, cmp }, idx) => {
+            <h2 className={styles.sectionHead}>
+              Choose a switch
+              {readCount < switches.length && (
+                <span className={styles.sectionNote}>
+                  {switches.length - readCount === 1
+                    ? '1 has not been read yet'
+                    : `${switches.length - readCount} have not been read yet`}
+                </span>
+              )}
+            </h2>
+            <div className={styles.pick} role="tablist" aria-label="Switches on this rack">
+              {looks.map(({ sw, reading: r, sockets, up, cmp }) => {
                 const on = sw.id === chosen;
-                const readAt = readAtOf(sw);
                 return (
                   <button
                     type="button"
                     key={sw.id}
-                    aria-pressed={on}
-                    className={`${styles.pickRow} ${on ? styles.pickOn : ''}`}
+                    role="tab"
+                    aria-selected={on}
+                    className={`${styles.pickCard} ${on ? styles.pickOn : ''}`}
                     data-state={stateOf(sw)}
                     onClick={() => { setChosen(sw.id); setMenuFor(null); }}
                   >
-                    <span className={styles.num} aria-hidden="true">{idx + 1}</span>
-                    <span className={styles.pickWho}>
+                    <span className={styles.pickTop}>
+                      <span className={styles.pickDot} aria-hidden="true" />
                       <span className={styles.pickName}>{sw.label}</span>
-                      <span className={styles.pickWhat}>
-                        {[
-                          r ? [r.vendor, r.model || r.sysName].filter(Boolean).join(' ') || 'make and model not stated' : null,
-                          Number(sw.port) === 161 ? sw.host : `${sw.host}:${sw.port}`,
-                        ].filter(Boolean).join(' · ')}
-                      </span>
-                      <span className={styles.pickWhen}>
-                        {busy === sw.id ? (step || 'Reading') + '…'
-                          : errors[sw.id] ? 'It did not answer'
-                            : readAt ? `Last read ${agoText(readAt)}`
-                              : 'Not read yet'}
-                        {cmp.disagree.length > 0
-                          ? ` · ${cmp.disagree.length} port${cmp.disagree.length === 1 ? '' : 's'} disagree`
-                          : ''}
-                      </span>
                     </span>
-                    {r ? (
-                      <span className={styles.count}>
-                        <b>{up}<i>/</i>{sockets.length}</b>
-                        <span>ports up</span>
-                      </span>
-                    ) : (
-                      <span className={styles.state}>
-                        {busy === sw.id ? 'Reading' : errors[sw.id] ? 'No answer' : results[sw.id] ? 'Answered' : 'Not read'}
-                      </span>
-                    )}
+                    <span className={styles.pickWhat}>
+                      {r ? ([r.vendor, r.model || r.sysName].filter(Boolean).join(' ') || 'Make not stated')
+                        : (busy === sw.id ? (step || 'Reading') + '\u2026'
+                          : errors[sw.id] ? 'It did not answer' : 'Not read yet')}
+                    </span>
+                    <span className={styles.pickWhen}>
+                      {r ? `${up} of ${sockets.length} ports up` : (Number(sw.port) === 161 ? sw.host : `${sw.host}:${sw.port}`)}
+                      {cmp.disagree.length > 0
+                        ? ` \u00b7 ${cmp.disagree.length} disagree`
+                        : ''}
+                    </span>
                   </button>
                 );
               })}

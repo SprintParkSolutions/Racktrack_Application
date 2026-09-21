@@ -1,5 +1,5 @@
 import { describe, test, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 /* The Network page, as a person meets it: this rack first, then the switches,
@@ -82,34 +82,35 @@ const factValue = (label) => {
 };
 
 describe('the Network page', () => {
-  test('this rack says how much has been read, and the totals across it', async () => {
+  test('the screen opens on the choice, and says nothing the ports already say', async () => {
     mount();
-    await waitFor(() => expect(screen.getByText('This rack')).toBeTruthy());
-    expect(factValue('Switches')).toContain('2');
-    expect(factValue('Read')).toContain('1 of 2');
-    expect(factValue('Ports reported')).toContain('4');
-    expect(factValue('Ports up')).toContain('2');
-    await waitFor(() => expect(factValue('Cabled in the photo')).toContain('3'));
-    expect(screen.getByText('One switch has not been read yet. Choose it below and read it.')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('Choose a switch')).toBeTruthy());
+    // The band of totals across the whole rack is gone: the cards say it.
+    expect(screen.queryByText('This rack')).toBeNull();
+    expect(screen.queryByText('Ports reported')).toBeNull();
+    expect(screen.queryByText('Ports up')).toBeNull();
+    expect(screen.queryByText('Cabled in the photo')).toBeNull();
+    expect(screen.getByText('1 has not been read yet')).toBeTruthy();
   });
 
-  test('the switches are one line each, and the first read one is shown in full', async () => {
+  test('a switch is a card to choose, and the chosen one is what is shown below', async () => {
     mount();
-    await waitFor(() => expect(screen.getByText('Switches on this rack')).toBeTruthy());
-    expect(screen.getByText('TP-Link T2600G-28TS · 10.10.1.11')).toBeTruthy();
-    expect(screen.getByText('Not read yet')).toBeTruthy();
-    expect(screen.getByText(/Last read 12 min ago/)).toBeTruthy();
-    // The chosen switch, in detail, with every number named in plain words.
-    expect(factValue('Make')).toContain('TP-Link');
-    expect(factValue('Management address')).toContain('10.10.1.11');
-    expect(factValue('Ports free')).toContain('2');
+    await waitFor(() => expect(screen.getByText('Choose a switch')).toBeTruthy());
+    const cards = within(screen.getByRole('tablist', { name: 'Switches on this rack' })).getAllByRole('tab');
+    expect(cards.map((c) => c.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+    expect(cards[0].textContent).toContain('TP-Link T2600G-28TS');
+    expect(cards[0].textContent).toContain('2 of 4 ports up');
+    expect(cards[1].textContent).toContain('Not read yet');
+    // The chosen switch says what it is on one line, then only what its ports cannot.
+    expect(screen.getByText(/TP-Link T2600G-28TS · 10.10.1.11 · SNMP v2c · read 12 min ago/)).toBeTruthy();
     expect(factValue('Where it sits')).toContain('Shelf U15');
+    expect(screen.queryByText('Ports free')).toBeNull();
+    expect(screen.queryByText('Make')).toBeNull();
   });
 
   test('the ports the photograph and the switch disagree about are named', async () => {
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Ports that disagree' })).toBeTruthy());
-    expect(factValue('Ports that disagree')).toContain('1');
     expect(screen.getByText('The photo shows a cable. The switch says the port is down.')).toBeTruthy();
     expect(screen.getByText('Port 2')).toBeTruthy();
     expect(screen.getByText('SFP')).toBeTruthy();
@@ -118,24 +119,26 @@ describe('the Network page', () => {
 
   test('choosing the other switch shows that one instead, and offers to read it', async () => {
     mount();
-    await waitFor(() => expect(screen.getByText('Switches on this rack')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Choose a switch')).toBeTruthy());
     fireEvent.click(screen.getByText('Edge switch'));
+    expect(within(screen.getByRole('tablist', { name: 'Switches on this rack' })).getAllByRole('tab')
+      .map((c) => c.getAttribute('aria-selected'))).toEqual(['false', 'true']);
     expect(screen.getByRole('button', { name: 'Read this switch' })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Ports that disagree' })).toBeNull();
-    expect(factValue('Reads as')).toContain('SNMP v3');
+    expect(screen.getByText(/SNMP v3/)).toBeTruthy();
   });
 
   test('the Timeline is the page\'s other half, and adding a switch has no plus on it', async () => {
     mount();
-    await waitFor(() => expect(screen.getByText('This rack')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Choose a switch')).toBeTruthy());
     const add = screen.getByRole('button', { name: 'Add another switch' });
     expect(add.textContent).toBe('Add another switch');
     fireEvent.click(screen.getByRole('tab', { name: 'Timeline' }));
     expect(screen.getByText('What changed on these ports')).toBeTruthy();
     expect(screen.getByText('the change log')).toBeTruthy();
-    expect(screen.queryByText('This rack')).toBeNull();
+    expect(screen.queryByText('Choose a switch')).toBeNull();
     fireEvent.click(screen.getByRole('tab', { name: 'Switches' }));
-    expect(screen.getByText('This rack')).toBeTruthy();
+    expect(screen.getByText('Choose a switch')).toBeTruthy();
   });
 
   test('an older link to the port history opens the Timeline', async () => {
