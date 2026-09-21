@@ -197,8 +197,10 @@ def _rail_boxes(img):
         result = model.predict(img, conf=0.05, imgsz=768, verbose=False)[0]
         names = getattr(model, "names", {}) or {}
         boxes = []
-        for box, cls in zip(result.boxes.xyxy.cpu().numpy().astype(int).tolist(),
-                            result.boxes.cls.cpu().numpy().astype(int)):
+        for box, cls in zip(
+            result.boxes.xyxy.cpu().numpy().astype(int).tolist(),
+            result.boxes.cls.cpu().numpy().astype(int),
+        ):
             if str(names.get(int(cls), "")).strip().lower() == "rail":
                 boxes.append(box)
         return boxes
@@ -206,9 +208,16 @@ def _rail_boxes(img):
         return []
 
 
-def extract_side_labels(image_path: str) -> dict:
+def extract_side_labels(image_path: str, reader=None) -> dict:
+    """`reader` is the caller's own easyocr reader, when it has one.
+
+    The warm pipeline worker does, and building a second one here is a second
+    copy of the OCR models in memory: on the 8 GB demo server a side-label read
+    started beside the worker took 3.6 GB, the kernel killed it, and the
+    application went down with it. Run from the command line there is no reader
+    to share, so one is built.
+    """
     import cv2
-    import easyocr
 
     img = cv2.imread(image_path)
     if img is None:
@@ -216,7 +225,10 @@ def extract_side_labels(image_path: str) -> dict:
     h_img, w_img = img.shape[:2]
 
     side_w = max(40, int(w_img * SIDE_FRACTION))
-    reader = easyocr.Reader(["en"], gpu=False, verbose=False)
+    if reader is None:
+        import easyocr
+
+        reader = easyocr.Reader(["en"], gpu=False, verbose=False)
 
     right_raw = _ocr_strip(reader, img, w_img - side_w, w_img)
     left_raw = _ocr_strip(reader, img, 0, side_w)

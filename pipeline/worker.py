@@ -338,6 +338,40 @@ def handle_ocr_labels(req):
     return {"ok": True, **result}
 
 
+def handle_side_labels(req):
+    """Read the rack's own label and the chips on its rails, and file them.
+
+    In the warm worker, with the reader the worker already holds, for the reason
+    written on extract_side_labels: a second Python with a second copy of the
+    models is what ran the demo server out of memory. Writes side_labels.json
+    into the rack's folder, which is what the physical layer reads.
+    """
+    import datetime as _dt
+    import json as _json
+    from pathlib import Path
+
+    from pipeline.ocr_labels import _reader
+    from pipeline.side_labels import _resolve_image, extract_side_labels
+
+    rack_dir = Path(str(req.get("output_dir") or ""))
+    if not rack_dir.is_dir():
+        return {"ok": False, "error": "output_dir missing"}
+    img_path = _resolve_image(rack_dir)
+    if not img_path:
+        return {"ok": False, "error": "no original_image found"}
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        result = extract_side_labels(str(img_path), reader=_reader())
+    payload = {
+        "ok": True,
+        "rack_id": rack_dir.name,
+        "generated_at": _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        **result,
+    }
+    (rack_dir / "side_labels.json").write_text(_json.dumps(payload, indent=2))
+    return {"ok": True, "labels": len(result.get("labels") or [])}
+
+
 def handle_ocr_devices(req):
     """Read the make and model off every device in one rack photograph.
 
@@ -958,6 +992,8 @@ def handle_request(req):
         return handle_relabel_port_count(req)
     if command == "closeup_ocr":
         return handle_closeup_ocr(req)
+    if command == "side_labels":
+        return handle_side_labels(req)
     if command == "ocr_labels":
         return handle_ocr_labels(req)
     if command == "ocr_devices":

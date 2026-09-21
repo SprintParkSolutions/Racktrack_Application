@@ -9927,33 +9927,26 @@ function ensureSideLabels(rackId) {
   if (!fs.existsSync(rackDir)) return Promise.resolve(false);
   if (fs.existsSync(path.join(rackDir, 'side_labels.json'))) return Promise.resolve(false);
   if (_sideLabelRuns.has(rackId)) return _sideLabelRuns.get(rackId);
-  const run = new Promise((resolve) => {
-    let child;
+  // Asked of the engine worker, never started as a Python of its own. The
+  // worker already holds the OCR models; a second process loading its own copy
+  // took 3.6 GB on the 8 GB demo server, the kernel killed it and the
+  // application went down with it (21 Sep 2026). The worker takes one request
+  // at a time, so two racks can never be read at once either.
+  const run = (async () => {
+    let read = false;
     try {
-      child = spawnChild(pythonCmd, ['-u', '-m', 'pipeline.side_labels', rackId],
-        { cwd: PROJECT_ROOT,
-          env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' } });
+      const res = await pool.request('side_labels', { output_dir: rackDir });
+      read = Boolean(res && res.ok) && fs.existsSync(path.join(rackDir, 'side_labels.json'));
     } catch (err) {
-      logger.warn(`[side-labels] could not start for ${rackId}: ${err.message}`);
-      return resolve(false);
+      logger.warn(`[side-labels] not read for ${rackId}: ${err.message}`);
     }
-    let settled = false;
-    const done = (ok) => { if (settled) return; settled = true; resolve(ok); };
-    const killer = setTimeout(() => { try { child.kill('SIGKILL'); } catch (_) {} done(false); }, SIDE_LABELS_TIMEOUT_MS);
-    child.on('error', () => { clearTimeout(killer); done(false); });
-    child.on('close', () => {
-      clearTimeout(killer);
-      const read = fs.existsSync(path.join(rackDir, 'side_labels.json'));
-      // The rack ladder reads the physical layer from its cached file, so the
-      // file is made again here, with the labels in it, the moment they exist.
-      // Otherwise a layer built before the label was read is what every later
-      // question about this rack would be answered from.
-      if (read) {
-        try { buildPhysicalLayer(rackId, { refresh: true }).catch(() => {}); } catch (_) { /* best effort */ }
-      }
-      done(read);
-    });
-  }).finally(() => { _sideLabelRuns.delete(rackId); });
+    // The rack ladder reads the physical layer from its cached file, so the
+    // file is made again here, with the labels in it, the moment they exist.
+    if (read) {
+      try { await buildPhysicalLayer(rackId, { refresh: true }); } catch (_) { /* best effort */ }
+    }
+    return read;
+  })().finally(() => { _sideLabelRuns.delete(rackId); });
   _sideLabelRuns.set(rackId, run);
   return run;
 }
