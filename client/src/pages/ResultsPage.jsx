@@ -4651,35 +4651,37 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           onBack={handleHeaderBack}
           data-tour-bypass={tourActive ? 'true' : undefined}
         />
-        <div className={styles.headerCenter}>
-          <h2 className={styles.headerTitle}>{
+        {/* The rack is what the person in front of it knows this by: the id on
+            the cabinet leads, and the scan's own id - a hash of the photograph
+            - is not shown at all. It is still what everything is keyed on, so
+            it stays reachable as the title of the line. */}
+        <div className={styles.headerCenter} title={rackId || scanId}>
+          <span className={styles.headerKind}>{
             tab === 'switches' ? 'Switches'
             : tab === 'topology' ? 'Topology'
             : tab === 'network'  ? 'Discovery'
-            : tab === 'drift'    ? 'Port History & Drift'
-            :                       'Scan Results'
-          }</h2>
-          <div className={styles.headerMetaRow}>
-            {rackSaid ? (
-              <span className={styles.headerRack} title={rackId || scanId}>
-                {rackSaid.name}
-                {rackSaid.also && <span className={styles.headerRackAlso}>{rackSaid.also}</span>}
-                {!rackSaid.confirmed && <span className={styles.headerRackAsk}>read, not confirmed</span>}
-              </span>
-            ) : (
-              <span className={styles.headerMono}>{rackId || scanId}</span>
-            )}
-          </div>
+            : tab === 'drift'    ? 'Port history and drift'
+            :                       'Scan results'
+          }</span>
+          <h2 className={styles.headerTitle}>
+            {rackSaid ? rackSaid.name : (rackId || scanId)}
+          </h2>
           {(rackSaid || takenAt) && (
             <div className={styles.headerWhere}>
-              {rackSaid && <span className={styles.headerMono}>{rackId || scanId}</span>}
-              {takenAt && <span>{takenAt.note}</span>}
-              {takenAt && takenAt.at && Number.isFinite(takenAt.at.lat) && (
-                <span className={styles.headerMono}>
-                  {takenAt.at.lat.toFixed(5)}, {takenAt.at.lng.toFixed(5)}
-                  {Number.isFinite(takenAt.at.accuracyM) ? ` ±${takenAt.at.accuracyM} m` : ''}
-                </span>
+              {rackSaid && rackSaid.also && <span>{rackSaid.also}</span>}
+              {takenAt && takenAt.site && <span>{takenAt.site}</span>}
+              {takenAt && Number.isFinite(takenAt.distanceM) && (
+                <span>{takenAt.distanceM} m from its address</span>
               )}
+              {rackSaid && !rackSaid.confirmed && (
+                <span className={styles.headerRackAsk}>read, not confirmed</span>
+              )}
+            </div>
+          )}
+          {takenAt && takenAt.at && Number.isFinite(takenAt.at.lat) && (
+            <div className={styles.headerCoords}>
+              {takenAt.at.lat.toFixed(5)}, {takenAt.at.lng.toFixed(5)}
+              {Number.isFinite(takenAt.at.accuracyM) ? ` ±${takenAt.at.accuracyM} m` : ''}
             </div>
           )}
         </div>
