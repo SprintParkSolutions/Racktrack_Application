@@ -230,8 +230,10 @@ async function run(planId, { actor, req = null, client = null, snapshot = null, 
   const toWrite = { ...shape.filterSnapshot(snap, begun.excluded) };
   // Scaffolding nothing in this write needs is named, not removed: the walk
   // still has to see it to resolve what refers to it.
+  // What a changed or left-out box no longer needs is already named on the
+  // snapshot (overrides.js, shape.filterSnapshot); these are added to it.
   const spare = spareScaffolding(toWrite, items);
-  if (spare.size) toWrite.deferScaffolding = spare;
+  if (spare.size) toWrite.deferScaffolding = new Set([...(toWrite.deferScaffolding || []), ...spare]);
 
   const pre = await snapshotOf(nb, targets);
   store.updatePlan(plan.id, { preSnapshot: pre });

@@ -235,6 +235,24 @@ describe('a write that goes through', () => {
     assert.equal(out.write.changes, 3, 'the answer counts the rows a person is shown');
     assert.equal(store.getPlan(id).writtenBy, 'system');
   });
+
+  it('adds what it spares to what the snapshot already names, and drops neither', async () => {
+    const changes = [
+      { type: 'Manufacturer', uid: 'mfr:unknown', name: 'Unknown', action: 'create' },
+      { type: 'DeviceRole', uid: 'role:router', name: 'Router', action: 'create' },
+      { type: 'Device', uid: 'dev:t7:5:u15', name: 'SW2', action: 'update', netboxId: 44,
+        diff: { position: { from: 14, to: 15 } } },
+    ];
+    const id = approved({ changes, held: true });
+    // A box a person moved names its own catalogue on the snapshot (overrides.js), as a sorted list.
+    const snapshot = { rackUid: 'rack:t7:5', deferScaffolding: ['role:moved-box'],
+      manufacturers: [{ uid: 'mfr:unknown', name: 'Unknown' }], deviceRoles: [{ uid: 'role:router', name: 'Router' }],
+      devices: [{ uid: 'dev:t7:5:u15', name: 'SW2', roleUid: 'role:router' }] };
+    const W = driver({ comparisons: [changes, []], push: () => ({ counts: { update: 1 }, changes: [changes[2]] }) });
+    const out = await write.runAfterApproval(id, { approver: SPOC, client: client(), writer: W, snapshot });
+    assert.equal(out.write.state, 'written', out.write.why);
+    assert.deepEqual([...W.calls.pushed[0].deferScaffolding].sort(), ['mfr:unknown', 'role:moved-box', 'role:router']);
+  });
 });
 
 describe('the write a final approval starts', () => {
