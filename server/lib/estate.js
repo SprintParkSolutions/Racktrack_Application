@@ -242,6 +242,7 @@ function updateDatacentre(tenantId, body = {}, userId = null) {
   if (!sets.length) throw new EstateError(400, 'Nothing to update');
   args.push(Number(tenantId));
   db.prepare(`UPDATE tenants SET ${sets.join(', ')} WHERE id = ?`).run(...args);
+  _touchSetupCompleted(tenantId);
   logger.info({ event: 'estate.datacentre_updated', tenantId, userId, fields: sets.length }, 'datacentre updated');
   return datacentreOf(getTenant(tenantId));
 }
@@ -566,7 +567,11 @@ function _mandatory(tenantId) {
     racksTyped: db.prepare('SELECT COALESCE(SUM(rack_count), 0) AS c FROM spaces WHERE tenant_id = ?').get(t.id).c,
     racksKnown: db.prepare('SELECT COUNT(*) AS c FROM racks_known WHERE tenant_id = ?').get(t.id).c,
   };
-  const location = counts.racksKnown > 0
+  // Where the Site is. Setup asks for the Site's location and no longer for
+  // its spaces (21 Sep 2026); a Site set up the older way, with a space that
+  // holds racks or a rack already known, still counts as placed.
+  const location = !!(t.address && String(t.address).trim())
+    || counts.racksKnown > 0
     || !!db.prepare('SELECT 1 FROM spaces WHERE tenant_id = ? AND rack_count > 0 LIMIT 1').get(t.id);
   const approver = !!(t.approver_user_id || t.approver_email);
   const rules = !!t.rules_accepted_at;

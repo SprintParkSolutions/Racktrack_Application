@@ -468,3 +468,37 @@ test('accessLevel: the rule the router applies, in both directions', () => {
   assert.equal(estate.accessLevel(null, SITE_A1), null);
   assert.equal(estate.accessLevel(user({ role: 'owner' }), 9999), null, 'no such Site');
 });
+
+// Setup asks for a Site's location and no longer for its spaces (21 Sep 2026).
+// A Site of its own, in an organisation of its own, so nothing an earlier test
+// typed or scanned can be what places it.
+test('a location alone places a Site: address, then the SPOC as approver, then the rules', async () => {
+  const ORG_C = 30, SITE_C1 = 31, ADMIN_C = 8, SPOC_C1 = 9;
+  const db = new Database(DB_PATH);
+  db.prepare('INSERT INTO organizations (id,name) VALUES (?,?)').run(ORG_C, 'Org C');
+  db.prepare('INSERT INTO tenants (id,slug,name,organization_id) VALUES (?,?,?,?)').run(SITE_C1, 'c1', 'C Site One', ORG_C);
+  const u = db.prepare('INSERT INTO users (id,username,email,role,tenant_id,organization_id) VALUES (?,?,?,?,?,?)');
+  u.run(ADMIN_C, 'admin_c', 'admin_c@example.test', 'org_admin', null, ORG_C);
+  u.run(SPOC_C1, 'spoc_c1', 'spoc_c1@example.test', 'site_manager', SITE_C1, ORG_C);
+  db.close();
+  const admin = { role: 'org_admin', tenant_id: null, organization_id: ORG_C };
+  assert.equal(estate.setupSummary(admin).needsSetup, true);
+
+  const C1 = `/api/setup/${SITE_C1}`;
+  let r = await call('PUT', `${C1}/datacentre`, { user: ADMIN_C, body: { timezone: 'Europe/Amsterdam' } });
+  assert.equal(r.json.completeness.mandatory.location, false, 'a time zone is not a location');
+
+  r = await call('PUT', `${C1}/datacentre`, { user: ADMIN_C, body: { address: '12 Harbour Road, 3011 AA, Netherlands' } });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.completeness.mandatory.location, true);
+  assert.equal(r.json.completeness.canScan, false, 'the SPOC and the rules are still owed');
+
+  r = await call('PUT', `${C1}/approver`, { user: ADMIN_C, body: { user_id: SPOC_C1 } });
+  assert.equal(r.status, 200);
+  r = await call('PUT', `${C1}/rules`, { user: ADMIN_C, body: { accepted: true } });
+  assert.deepEqual(r.json.completeness.mandatory, { location: true, approver: true, rules: true });
+  assert.equal(r.json.completeness.canScan, true);
+  assert.deepEqual(r.json.completeness.counts, { spaces: 0, racksTyped: 0, racksKnown: 0 }, 'and no space was ever made');
+  assert.ok(estate.getTenant(SITE_C1).setup_completed_at, 'completion is stamped without a space');
+  assert.deepEqual(estate.setupSummary(admin), { needsSetup: false, blocked: false, reason: null }, 'the gate lifts for that organisation');
+});

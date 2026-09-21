@@ -604,3 +604,17 @@ test('facility section and org primary contact round-trip; a space carries kind,
   const badKind = await call('POST', `/api/setup/${SITE_A1}/spaces`, { user: ADMIN_A, body: { name: 'Odd', kind: 'garage' } });
   assert.equal(badKind.status, 400);
 });
+
+// The one contact setup asks for since 21 Sep 2026: the Site's single point
+// of contact, kept beside whatever an older setup saved in the section.
+test('a SPOC is a contact role of its own and sits beside the older roles', async () => {
+  const A2 = `/api/setup/${SITE_A2}`;
+  const r = await call('PUT', `${A2}/profile/contacts`, { user: ADMIN_A, body: [
+    { name: 'Priya Nair', role: 'spoc', email: 'Priya.Nair@Example.test', phone: '+31 10 000 0000' },
+    { name: 'Door', role: 'on_site' },
+  ] });
+  assert.equal(r.status, 200, r.raw.slice(0, 120));
+  assert.deepEqual(r.json.data.map((c) => c.role), ['spoc', 'on_site']);
+  assert.equal(r.json.data[0].email, 'priya.nair@example.test');
+  assert.equal((await call('DELETE', `${A2}/profile/contacts`, { user: ADMIN_A })).status, 200);
+});

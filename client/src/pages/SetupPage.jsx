@@ -9,8 +9,7 @@ import { STEPS, STEP_KEYS, stepOf, stepDone, stepLocked, progress, firstIncomple
 import { setupDecision } from '../utils/setupGuard';
 import BackButton from '../components/BackButton.jsx';
 import { Act, SaveMark, Select, Err, cx } from '../components/orgsettings/Fields.jsx';
-import { OrgSection, DatacentresSection, SpacesSection, PeopleSection, RulesSection, ReviewSection, RemainingList } from '../components/orgsettings/SectionsEstate.jsx';
-import { SystemsSection, VendorsSection, ConventionsSection, NetworkSection } from '../components/orgsettings/SectionsProfile.jsx';
+import { OrgSection, SitesSection, RulesSection, ReviewSection, RemainingList } from '../components/orgsettings/SectionsEstate.jsx';
 import '../components/orgsettings/sections.css';
 import styles from './SetupPage.module.css';
 
@@ -20,8 +19,8 @@ import styles from './SetupPage.module.css';
  * One route, two things on it:
  *
  *   The settings view: every section as a card that is edited in place,
- *   with a status card at the top that lists what is still needed and what
- *   is not filled yet. This is what Profile > Organization settings opens.
+ *   with a status card at the top that lists what is still needed. This is
+ *   what Profile > Organization settings opens.
  *
  *   The guided flow: a container over the app that shows one step at a
  *   time, with a Back and a Next button and nothing else to navigate by. It
@@ -33,12 +32,13 @@ import styles from './SetupPage.module.css';
  * fills the screen; on a laptop it is a card over a dimmed backdrop.
  */
 
-const SECTION = { org: OrgSection, datacentres: DatacentresSection, spaces: SpacesSection, people: PeopleSection, systems: SystemsSection, vendors: VendorsSection, conventions: ConventionsSection, network: NetworkSection, rules: RulesSection, review: ReviewSection };
+const SECTION = { org: OrgSection, sites: SitesSection, rules: RulesSection, review: ReviewSection };
 const PANELS = STEPS.filter((st) => st.kind !== 'review');
 
-/* The latest save mark for a step, across its per-datacentre keys. */
+/* The latest save mark for a step, across its per-site keys. The account a
+   SPOC is given says its own failure beside its button, so it is not here. */
 function markFor(marks, key) {
-  const extra = { people: ['contacts:'], network: ['snmp:'], datacentres: ['facility:'] }[key] || [];
+  const extra = { sites: ['datacentres', 'facility:', 'contacts:', 'people:'] }[key] || [];
   const keys = Object.keys(marks).filter((k) => k === key || k.startsWith(`${key}:`) || extra.some((p) => k.startsWith(p)));
   return keys.map((k) => marks[k]).sort((a, b) => b.at - a.at)[0] || null;
 }
@@ -192,8 +192,7 @@ function Pane({ st, s, go }) {
    step's mandatory work was done. The fields carry their own messages. */
 const STOP = {
   org: 'Complete the marked fields to continue.',
-  spaces: 'Add a space with racks to each datacentre to continue.',
-  people: 'Set an approver for each datacentre to continue.',
+  sites: 'Complete the marked fields and give each site\'s SPOC an account to continue.',
   rules: 'Accept the rules to continue.',
 };
 function FlowModal({ s, step, setStep, gated, onClose, onFinish, onSignOut }) {
@@ -240,7 +239,7 @@ function FlowModal({ s, step, setStep, gated, onClose, onFinish, onSignOut }) {
   const mark = markFor(s.marks, def.key);
   const Section = SECTION[def.key];
   const prev = around(-1);
-  const stop = def.key === 'datacentres' ? (s.dcs.length ? STOP.org : 'Add a datacentre to continue.') : STOP[def.key] || STOP.org;
+  const stop = def.key === 'sites' && !s.dcs.length ? 'Add a site to continue.' : STOP[def.key] || STOP.org;
 
   return createPortal(
     <div className={styles.veil} role="presentation">

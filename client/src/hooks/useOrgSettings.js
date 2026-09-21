@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../AuthContext.jsx';
 import { apiUrl, authFetch } from '../utils/api';
-import { ORG_WIDE } from '../utils/orgSettings';
 
 /**
  * Everything the first-run flow and the settings view read and write, held
@@ -11,7 +10,8 @@ import { ORG_WIDE } from '../utils/orgSettings';
  * is what the route gate reads, and the gate has to lift without a sign-out.
  *
  * Marks are the quiet "Saving / Saved / Not saved" beside a section, keyed
- * by section, and by section and datacentre for the per-datacentre ones.
+ * by section, and by section and site for the per-site ones. The older
+ * routes and names here still say datacentre; a datacentre is a site.
  *
  * The owner has no organization of their own and sees every Site on the
  * platform, so for the owner the page works on one organization at a time:
@@ -19,7 +19,7 @@ import { ORG_WIDE } from '../utils/orgSettings';
  */
 
 export const EMPTY_PROFILE = { contacts: [], vendors: [], conventions: {}, systems: {}, network: {}, facility: {}, snmp: { configured: false } };
-export const EMPTY_ORG = { name: '', slug: '', short_code: '', timezone: '', country: '', website: '', phone: '', industry: '', logo_data: null, primary_contact_name: '', primary_contact_email: '' };
+export const EMPTY_ORG = { name: '', slug: '', short_code: '', timezone: '', country: '', primary_contact_name: '', primary_contact_email: '' };
 
 const NONE = [];
 const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
@@ -38,7 +38,6 @@ async function call(method, path, body) {
 const getJSON = (p) => call('GET', p);
 const postJSON = (p, b) => call('POST', p, b);
 const putJSON = (p, b) => call('PUT', p, b);
-const delJSON = (p) => call('DELETE', p);
 
 /* The spaces tree flattened for a list. Only roots are made here (parent_id
    stays null); anything nested that arrived by import is shown indented. */
@@ -67,23 +66,15 @@ function orgOf(r, seed) {
   Object.keys(EMPTY_ORG).forEach((k) => { if (p[k] != null && p[k] !== '') out[k] = p[k]; });
   return out;
 }
-function sectionResult(section, r, body) {
-  if (r?.data !== undefined) return r.data;
-  if (section === 'snmp') return { configured: true, version: body.version, username: body.username || null, has: {} };
-  return body;
-}
-/* The fields PUT /api/setup/org/:id/profile takes. The name is not one of
-   them: it lives on the organization record. An empty short code is
-   refused, so it is left out rather than sent blank. */
-const ORG_FIELDS = ['short_code', 'timezone', 'country', 'website', 'phone', 'industry', 'logo_data', 'primary_contact_name', 'primary_contact_email'];
+const sectionResult = (r, body) => (r?.data !== undefined ? r.data : body);
+/* The fields of PUT /api/setup/org/:id/profile this page writes. The name
+   lives on the organization record and the short code is derived by the
+   server, so neither is sent; what an older setup saved in the fields that
+   were taken out (website, phone, industry, logo) is left as it is. */
+const ORG_FIELDS = ['timezone', 'country', 'primary_contact_name', 'primary_contact_email'];
 function orgBody(next) {
   const body = {};
-  ORG_FIELDS.forEach((k) => {
-    const v = next[k];
-    if (k === 'logo_data') { if (v !== undefined) body[k] = v || null; return; }
-    if (k === 'short_code') { if (v && String(v).trim()) body[k] = String(v).trim().toUpperCase(); return; }
-    if (v !== undefined) body[k] = v === '' ? null : v;
-  });
+  ORG_FIELDS.forEach((k) => { const v = next[k]; if (v !== undefined) body[k] = v === '' ? null : v; });
   return body;
 }
 
@@ -101,7 +92,6 @@ export function useOrgSettings() {
   const [orgErr, setOrgErr] = useState(null);
   const [marks, setMarks] = useState({});
   const [members, setMembers] = useState(undefined);
-  const [catalogue, setCatalogue] = useState(null);
   const [tick, setTick] = useState(0);
 
   const orgId = isOwner ? pickedOrg : ownOrgId;
@@ -197,36 +187,15 @@ export function useOrgSettings() {
   }), [orgId, run, refreshUser]);
 
   const saveDatacentre = useCallback((dc, body) => run(`datacentres:${dc.id}`, () => write(dc, () => putJSON(`/api/setup/${dc.id}/datacentre`, body), (d, r) => ({ ...d, datacentre: r.datacentre || d.datacentre }))), [run, write]);
-  const addSpace = useCallback((dc, body) => run(`spaces:${dc.id}`, () => write(dc, () => postJSON(`/api/setup/${dc.id}/spaces`, body), (d, r) => ({ ...d, spaces: [...d.spaces, { ...r.space, depth: 0 }] }))), [run, write]);
-  const patchSpace = useCallback((dc, s, body) => run(`spaces:${dc.id}`, () => write(dc, () => putJSON(`/api/setup/${dc.id}/spaces/${s.id}`, body), (d, r) => ({ ...d, spaces: d.spaces.map((x) => (x.id === s.id ? { ...x, ...r.space } : x)) }))), [run, write]);
-  const removeSpace = useCallback((dc, s) => run(`spaces:${dc.id}`, () => write(dc, () => delJSON(`/api/setup/${dc.id}/spaces/${s.id}`), (d) => ({ ...d, spaces: d.spaces.filter((x) => x.id !== s.id) }))), [run, write]);
   const setApprover = useCallback((dc, body) => run(`people:${dc.id}`, () => write(dc, () => putJSON(`/api/setup/${dc.id}/approver`, body), (d, r) => ({ ...d, approver: r.approver || null }))), [run, write]);
   const acceptRules = useCallback((dc) => run(`rules:${dc.id}`, () => write(dc, () => putJSON(`/api/setup/${dc.id}/rules`, { accepted: true }), (d, r) => ({ ...d, rules: r.rules || d.rules }))), [run, write]);
-  /* The options behind the rules go through the same route; the server
-     re-stamps the acceptance. */
-  const saveRules = useCallback((dc, body) => run(`rules:${dc.id}`, () => write(dc, () => putJSON(`/api/setup/${dc.id}/rules`, { accepted: true, ...body }), (d, r) => ({ ...d, rules: r.rules || d.rules }))), [run, write]);
-
-  /* A profile section for one datacentre, or, for an organization-wide
-     section, the same body written to every datacentre in turn. */
-  const putSection = useCallback((dc, section, body) => write(dc, () => putJSON(`/api/setup/${dc.id}/profile/${section}`, body), (d, r) => ({ ...d, profile: { ...d.profile, [section]: sectionResult(section, r, body) } })), [write]);
+  /* A profile section for one site, replaced whole. */
+  const putSection = useCallback((dc, section, body) => write(dc, () => putJSON(`/api/setup/${dc.id}/profile/${section}`, body), (d, r) => ({ ...d, profile: { ...d.profile, [section]: sectionResult(r, body) } })), [write]);
   const saveSection = useCallback((dc, section, body) => run(`${section}:${dc.id}`, () => putSection(dc, section, body)), [run, putSection]);
-  const saveSectionAll = useCallback((section, body) => run(section, async () => {
-    let last = null;
-    for (const dc of dcs || NONE) last = await putSection(dc, section, body);
-    return last;
-  }), [dcs, run, putSection]);
-  const removeSnmp = useCallback((dc) => run(`snmp:${dc.id}`, () => write(dc, () => delJSON(`/api/setup/${dc.id}/profile/snmp`), (d) => ({ ...d, profile: { ...d.profile, snmp: { configured: false, has: {} } } }))), [run, write]);
 
-  /* The live check on a naming pattern is answered by the server for the
-     first datacentre; without one there is nothing to ask. */
-  const checkPattern = useCallback((pattern, example) => {
-    const dc = (dcs || NONE)[0];
-    if (!dc) return Promise.resolve(null);
-    return postJSON(`/api/setup/${dc.id}/conventions/check`, { pattern, example });
-  }, [dcs]);
-
-  /* Members of the organization, for the approver pick. Loaded on demand,
-     once. undefined = not asked, null = loading, [] = answered. */
+  /* Members of the organization, to tell whether a SPOC already has an
+     account. Loaded on demand, once. undefined = not asked, null = loading,
+     [] = answered. */
   const loadMembers = useCallback(() => {
     if (orgId == null || members !== undefined) return;
     setMembers(null);
@@ -234,15 +203,14 @@ export function useOrgSettings() {
   }, [orgId, members]);
   const invite = useCallback((dc, email) => postJSON(`/api/sites/${dc.id}/invites`, { email, role: 'member' }), []);
 
-  /* The vendor catalogue, for the picker. Loaded on demand, once. */
-  const loadCatalogue = useCallback(() => {
-    if (catalogue !== null) return;
-    setCatalogue([]);
-    getJSON('/api/setup/catalogue/vendors').then((r) => {
-      const list = Array.isArray(r) ? r : Array.isArray(r?.vendors) ? r.vendors : [];
-      setCatalogue(list.map((v) => (typeof v === 'string' ? v : v?.name)).filter(Boolean));
-    }).catch(() => setCatalogue([]));
-  }, [catalogue]);
+  /* The SPOC's account: a site manager on that site, made through the same
+     route the console uses, then named as the site's approver so the gate's
+     approver fact points at a person who can sign in. */
+  const createSpocAccount = useCallback((dc, { username, email, password }) => run(`spoc:${dc.id}`, async () => {
+    const made = await postJSON(`/api/sites/${dc.id}/members`, { username, email, password, role: 'site_manager' });
+    setMembers(undefined);
+    return write(dc, () => putJSON(`/api/setup/${dc.id}/approver`, { user_id: made.member.id }), (d, r) => ({ ...d, approver: r.approver || null }));
+  }), [run, write]);
 
   const model = useMemo(() => ({ org: orgProfile, dcs: dcs || NONE }), [orgProfile, dcs]);
 
@@ -250,8 +218,7 @@ export function useOrgSettings() {
     user, orgId, isOwner, orgs: orgs || NONE, pickOrg,
     loading, error: err, orgError: orgErr, refresh,
     model, dcs: dcs || NONE, orgProfile, marks,
-    saveOrg, addDatacentre, saveDatacentre, addSpace, patchSpace, removeSpace, setApprover, acceptRules, saveRules,
-    saveSection, saveSectionAll, removeSnmp, checkPattern, isOrgWide: (s) => ORG_WIDE.has(s),
-    members, loadMembers, invite, catalogue: catalogue || NONE, loadCatalogue,
+    saveOrg, addDatacentre, saveDatacentre, setApprover, createSpocAccount, acceptRules, saveSection,
+    members, loadMembers, invite,
   };
 }

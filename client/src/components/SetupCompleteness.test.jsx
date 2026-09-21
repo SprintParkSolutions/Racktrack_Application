@@ -20,8 +20,8 @@ describe('completenessSummary', () => {
     const s = completenessSummary(partial);
     expect(s.done).toBe(false);
     expect(s.missing.map((f) => f.key)).toEqual(['approver', 'rules']);
-    expect(s.text).toBe('Needs an approver, the rules accepted');
-    expect(completenessSummary(none).text).toBe('Needs a space with racks, an approver, the rules accepted');
+    expect(s.text).toBe('Needs a SPOC with an account, the rules accepted');
+    expect(completenessSummary(none).text).toBe('Needs a location, a SPOC with an account, the rules accepted');
   });
 
   test('no completeness at all is "not set up yet", with everything missing', () => {
@@ -64,7 +64,7 @@ describe('<CompletenessLine>', () => {
     expect(screen.getByTestId('completeness-line').dataset.done).toBe('1');
     cleanup();
     render(<CompletenessLine completeness={partial} />);
-    expect(screen.getByTestId('completeness-line').textContent).toBe('Needs an approver, the rules accepted');
+    expect(screen.getByTestId('completeness-line').textContent).toBe('Needs a SPOC with an account, the rules accepted');
     expect(screen.getByTestId('completeness-line').dataset.done).toBe('0');
   });
 });

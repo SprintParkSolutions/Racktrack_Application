@@ -6,13 +6,15 @@ import styles from './SetupCompleteness.module.css';
  *
  *   { mandatory: { location, approver, rules }, canScan, optional: {...}, counts }
  *
- * Three mandatory facts, in the order the setup screens ask for them. The
+ * Three mandatory facts, in the order the setup screens ask for them: where
+ * the site is, who its single point of contact is (the server calls that
+ * person the approver), and the rules. The
  * same summary feeds the review step, the org console's site list and the
  * tests, so "needs an approver" is spelled one way everywhere.
  */
 export const MANDATORY = [
-  { key: 'location', label: 'Racks', missing: 'a space with racks' },
-  { key: 'approver', label: 'Approver', missing: 'an approver' },
+  { key: 'location', label: 'Location', missing: 'a location' },
+  { key: 'approver', label: 'SPOC',     missing: 'a SPOC with an account' },
   { key: 'rules',    label: 'Rules',    missing: 'the rules accepted' },
 ];
 

@@ -46,7 +46,8 @@ const VENDORS_FILE = path.join(__dirname, '..', '..', 'switch_ocr', 'vendors.jso
 
 const SOURCES = ['typed', 'imported', 'learned'];
 const SECTIONS = ['contacts', 'vendors', 'conventions', 'systems', 'network', 'facility', 'snmp'];
-const CONTACT_ROLES = ['approver', 'on_site', 'escalation', 'facilities', 'security', 'vendor'];
+// spoc: the Site's single point of contact, the one contact setup asks for.
+const CONTACT_ROLES = ['spoc', 'approver', 'on_site', 'escalation', 'facilities', 'security', 'vendor'];
 const FACES = ['front', 'rear', 'both'];
 const RECORD_SYSTEMS = ['netbox', 'servicenow', 'both', 'none'];
 const TICKETING = ['servicenow', 'jira', 'email', 'none'];

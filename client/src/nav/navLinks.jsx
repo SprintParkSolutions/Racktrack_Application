@@ -118,7 +118,7 @@ export function usePrimaryNav() {
     // ── Organization: owners and organisation admins.
     ...(isAdmin ? [{ group: 'org', to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,
       hint: 'Sites, members, invites' }] : []),
-    // Organization settings (datacentres, approvers, rules) is reached from the
+    // Organization settings (sites, their SPOCs, the rules) is reached from the
     // Profile page and the organisation console, not from the rail.
     ...(isAdmin ? [{ group: 'org', to: '/connections', label: 'Data sources', icon: <DataSourcesIcon />, end: false,
       hint: 'NetBox and ServiceNow' }] : []),

@@ -110,7 +110,7 @@ const PAGE_TITLE = {
   '/history':          { title: 'Scan history',        sub: 'Every rack you have scanned' },
   '/organizations':    { title: 'Organizations',       sub: 'Members, sites & approvals' },
   '/approvals':        { title: 'Drift Desk',          sub: 'Moved to RackTrack Drift Desk' },
-  '/setup':            { title: 'Organization settings', sub: 'Datacentres, spaces, approvers and rules' },
+  '/setup':            { title: 'Organization settings', sub: 'Sites, their SPOCs and the rules' },
   '/connections':      { title: 'Connections',         sub: 'Active data sources' },
   '/results':          { title: 'Scan results',        sub: 'Devices & ports' },
   '/switch-info':      { title: 'Switch info',         sub: 'CMDB switch list' },

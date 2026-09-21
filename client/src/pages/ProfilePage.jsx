@@ -241,7 +241,7 @@ export default function ProfilePage() {
                   <span className={styles.rowIcon}><Icon name="apartment" /></span>
                   <span className={styles.rowMain}>
                     <span className={styles.rowTitle}>Organization settings</span>
-                    <span className={styles.rowMeta}>Datacentres, spaces, approvers and rules</span>
+                    <span className={styles.rowMeta}>Sites, their SPOCs and the rules</span>
                   </span>
                   <Icon name="chevron_right" className={styles.rowChevron} />
                 </button>
