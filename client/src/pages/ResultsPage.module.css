@@ -282,6 +282,13 @@
   position: relative; overflow: hidden;
   background: #000000;
   z-index: 1;
+  /* A framed photograph, inset on the same 14px gutter as everything under it,
+     rather than a full-bleed slab running edge to edge into the panel below.
+     The rack and its boxes are drawn exactly as before; only the container
+     changed. */
+  margin: 8px 14px 0;
+  border: 1px solid #EFEFEF;
+  border-radius: 16px;
 }
 
 /* Overview sizing: until a device is picked, the rack image takes most of the
@@ -293,18 +300,15 @@
    technically - but scrolling a 33px window reads as "the page isn't showing".
    `flex: 0 1` lets the image give ground, and the panel's min-height below
    guarantees it. */
-/* Straight after a scan the photograph is evidence, not the subject: the
-   useful thing on screen is WHAT WAS FOUND. So the image takes a third of the
-   screen and the list of devices takes the rest. 74vh left one line of content
-   under it and made a page of real information look like a photo viewer.
-   Picking a device restores the old proportions, because then the picture is
-   what you are working in. */
-.results[data-device="none"] .heroWrap { flex: 1 1 auto; min-height: 0; }
-/* Nothing under the photo but two buttons, so the panel is exactly as tall as
-   they are and every remaining pixel goes to the rack. It used to claim half
-   the screen and hold a row of buttons in the top of it, leaving a white
-   field beneath them. */
-.results[data-device="none"] .sheet    { flex: 0 0 auto; min-height: 0; overflow: visible; }
+/* Straight after a scan the photograph is evidence, not the subject: the useful
+   thing on screen is what was found. The frame takes a little over a third of
+   the screen - enough to read a rack at a glance and pinch into - and the
+   findings and the ways on take the rest. It used to take every pixel the panel
+   below did not, which made a page of real information look like a photo
+   viewer with two buttons under it. Picking a device gives the picture more
+   room again, because then it is what you are working in. */
+.results[data-device="none"] .heroWrap { flex: 0 1 38vh; min-height: 140px; }
+.results[data-device="none"] .sheet    { flex: 1 1 auto; min-height: 0; }
 .results[data-device="sel"]  .heroWrap { flex: 0 1 44vh; min-height: 0; }
 .results[data-device="sel"]  .sheet    { flex: 1 1 auto; min-height: 200px; }
 
@@ -438,59 +442,22 @@
 }
 
 /* Animated scan line */
-.scanLine {
-  position: absolute; left: 0; right: 0; height: 1px; z-index: 3;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(0,0,0,0.2) 20%,
-    rgba(0,0,0,0.7) 50%,
-    rgba(0,0,0,0.2) 80%,
-    transparent 100%);
-  animation: scanDown 4s cubic-bezier(.4,0,.6,1) infinite;
-}
-@keyframes scanDown {
-  0%   { top: 0%;   opacity: 0; }
-  5%   { opacity: 0.9; }
-  90%  { opacity: 0.5; }
-  100% { top: 100%; opacity: 0; }
-}
-
-/* Corner HUD brackets */
-.hc {
-  position: absolute; z-index: 4;
-  width: 16px; height: 16px;
-  border-color: rgba(0,0,0,0.6);
-  border-style: solid;
-}
-.hcTL { top: 10px; left: 10px;  border-width: 1.5px 0 0 1.5px; }
-.hcTR { top: 10px; right: 10px; border-width: 1.5px 1.5px 0 0; }
-.hcBL { bottom: 28px; left: 10px;  border-width: 0 0 1.5px 1.5px; }
-.hcBR { bottom: 28px; right: 10px; border-width: 0 1.5px 1.5px 0; }
-
-/* Bottom gradient fade */
-.heroFade {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 90px; z-index: 2;
-  background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.55) 50%, var(--bg) 100%);
-  pointer-events: none;
-}
-
-/* Info badge floating on image */
+/* The mark on the frame: this photograph has been read. Top left, static, out
+   of the way of the rack. */
 .heroBadge {
-  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 10px; left: 10px;
   z-index: 5;
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 7px;
   background: rgba(0,0,0,0.82);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(0,0,0,0.22);
-  border-radius: 100px; padding: 5px 14px;
+  border-radius: 100px; padding: 4px 11px;
   white-space: nowrap;
 }
 .heroBadgeDot {
   width: 5px; height: 5px; border-radius: 50%;
-  background: var(--c1); box-shadow: 0 0 8px var(--c1);
-  animation: pulse 2s ease infinite;
+  background: var(--c1);
 }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
 .heroBadgeTxt {
   font-family: var(--mono); font-size: .6rem; font-weight: 700;
   color: rgba(0,0,0,0.7); letter-spacing: .1em;
@@ -522,6 +489,36 @@
   box-shadow: 0 0 12px rgba(0,0,0,0.28);
   flex-shrink: 0;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   WHAT THE SCAN FOUND - the rack's own numbers, above the ways on.
+
+   A label above each value, all the same size, all on one grid, so the row
+   reads as one set of findings rather than a sentence. Same shape as the facts
+   on the Network page, for the same reason.
+══════════════════════════════════════════════════════════════ */
+.rackFacts {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 10px 14px;
+  margin: 2px 0 0;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #EFEFEF;
+  border-radius: 14px;
+}
+.rackFact { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rackFactLabel {
+  font-size: .62rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #757575;
+}
+.rackFactVal {
+  font-size: .86rem; font-weight: 650; color: #121212;
+  letter-spacing: -0.01em; overflow-wrap: anywhere;
+}
+.rackFactMono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
 /* ══════════════════════════════════════════════════════════════
    ACTION SHEET (below hero)
@@ -4052,21 +4049,6 @@
   background: rgba(0,0,0,0.14);
 }
 
-/* HUD corner brackets - muted indigo on light */
-:global([data-theme='light']) .hc {
-  border-color: rgba(0,0,0,0.45);
-}
-
-/* Scan line - keep visible but indigo-tinted */
-:global([data-theme='light']) .scanLine {
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(0,0,0,0.20) 20%,
-    rgba(0,0,0,0.65) 50%,
-    rgba(0,0,0,0.20) 80%,
-    transparent 100%);
-}
-
 /* Port image hint pill (over photo) */
 :global([data-theme='light']) .portImgHint {
   background: rgba(255, 255, 255, 0.85);
@@ -4105,10 +4087,6 @@
 :global([data-theme='light']) .cacheBadgeCached { color: #1c1c1c; }
 :global([data-theme='light']) .cacheBadgeLive   { color: #000000; }
 
-/* Hero fade - fade to light bg */
-:global([data-theme='light']) .heroFade {
-  background: linear-gradient(to bottom, transparent 0%, rgba(255, 255, 255,0.55) 50%, var(--bg) 100%);
-}
 :global([data-theme='light']) .heroBadge {
   background: rgba(255, 255, 255, 0.85);
   border-color: #c6c6c6;

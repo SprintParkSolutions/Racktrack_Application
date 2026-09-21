@@ -847,6 +847,48 @@ const HIDDEN_DEVICE_TYPES = new Set(['Empty', 'Closed Unit', 'Unidentified']);
 // Small badge shown next to a value that came from a USER correction (active
 // learning), not the model's own output - so a tester doesn't mistake their
 // own confirmed value for a model mistake.
+/** When something happened, in the words a person would use. */
+function whenText(iso) {
+  if (!iso) return null;
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return null;
+  const mins = Math.round((Date.now() - then) / 60000);
+  if (mins < 0) return null;
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.round(hours / 24);
+  if (days < 30) return `${days} days ago`;
+  try { return new Date(iso).toLocaleDateString(); } catch { return null; }
+}
+
+/**
+ * What the records say about this rack, in one phrase.
+ *
+ * The same five answers the rack identity gives; the header already says "read,
+ * not confirmed" for one of them, and this states all five in the same place as
+ * the rest of the rack's facts.
+ */
+const RECORD_SAID = {
+  matched: 'Matched',
+  suggested: 'Read, not confirmed',
+  ambiguous: 'More than one match',
+  new: 'Not in the records',
+  unknown: 'Could not be read',
+};
+
+/** One labelled number about the whole rack, on the Overview. */
+function RackFact({ label, value, mono = false }) {
+  if (value === null || value === undefined || value === '') return null;
+  return (
+    <div className={styles.rackFact}>
+      <span className={styles.rackFactLabel}>{label}</span>
+      <span className={`${styles.rackFactVal} ${mono ? styles.rackFactMono : ''}`}>{value}</span>
+    </div>
+  );
+}
+
 /**
  * One labelled fact on the located-port screen.
  *
@@ -5027,19 +5069,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             Done in {fmtMs(analysisTimings.total_ms)}
           </span>
         )}
-        {/* scan line animation */}
-        <div className={styles.scanLine} />
-        {/* corner HUD */}
-        <span className={`${styles.hc} ${styles.hcTL}`} />
-        <span className={`${styles.hc} ${styles.hcTR}`} />
-        <span className={`${styles.hc} ${styles.hcBL}`} />
-        <span className={`${styles.hc} ${styles.hcBR}`} />
-        {/* bottom fade */}
-        <div className={styles.heroFade} />
-        {/* info badge */}
+        {/* The mark that says this photograph has been read. It sat in the
+            middle of the bottom edge over a gradient, under a travelling scan
+            line and four corner brackets - a scanner's chrome on a screen whose
+            job is to report. One static chip in the corner of the frame says the
+            same thing and leaves the rack to be looked at. */}
         <div className={styles.heroBadge}>
           <span className={styles.heroBadgeDot} />
-          <span className={styles.heroBadgeTxt}>ANALYZED</span>
+          <span className={styles.heroBadgeTxt}>ANALYSED</span>
         </div>
       </div>
 
@@ -5054,6 +5091,36 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
       {/* ── Action sheet ── */}
       <div className={styles.sheet}>
+
+        {/* ── What the scan found ──
+            The photograph is evidence; these are the findings, and they were
+            nowhere on the screen. Every one of them is already in what this page
+            was given: the rack's identity answer, the devices the scan returned
+            and the shelves it read. */}
+        {!ticketMode && phase !== 'all' && !portMode && (() => {
+          const found = effectiveDevices || [];
+          const switches = found.filter((d) => d.class_name === 'Switch').length;
+          const ports = found.reduce((n, d) => n + totalPortCount(d), 0);
+          const shelves = formatUnitsRange(units_detected);
+          const read = whenText(result?.timestamp);
+          return (
+            <div className={styles.rackFacts}>
+              <RackFact label="Read" value={read || 'Just now'} />
+              <RackFact label="Devices" value={found.length || null} mono />
+              <RackFact label="Switches" value={switches || null} mono />
+              <RackFact label="Ports" value={ports || null} mono />
+              <RackFact label="Shelves" value={shelves || null} mono />
+              <RackFact
+                label="Against the records"
+                value={identity ? (RECORD_SAID[identity.decision] || null) : null}
+              />
+            </div>
+          );
+        })()}
+
+        {!ticketMode && phase !== 'all' && !portMode && (
+          <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>What to do next</h3>
+        )}
 
         {/* What next. After seeing the rack there are two things to do: read
             its switches, or look at one port. Nothing else is on screen until
