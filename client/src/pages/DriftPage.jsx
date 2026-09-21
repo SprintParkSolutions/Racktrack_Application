@@ -423,9 +423,19 @@ export default function DriftPage() {
             </>
           ) : (
             <>
-              <h2>{changed.length} {changed.length === 1 ? 'thing does' : 'things do'} not match</h2>
+              {/* Nothing was compared when the record holds no such rack, so
+                  calling the count a mismatch is not true: those are the boxes
+                  this scan would ADD. The owner read "9 things do not match" on
+                  a rack the screen had just said was not in the record at all. */}
+              <h2>
+                {compared
+                  ? `${changed.length} ${changed.length === 1 ? 'thing does' : 'things do'} not match`
+                  : `${changed.length} ${changed.length === 1 ? 'thing' : 'things'} would be added`}
+              </h2>
               <p>
-                Checked against NetBox just now.
+                {compared
+                  ? 'Checked against NetBox just now.'
+                  : 'Nothing was compared: NetBox holds no such rack yet, so everything this scan saw would be new.'}
                 {auto.length > 0 && ` ${auto.length} related ${auto.length === 1 ? 'record' : 'records'} would be created too.`}
               </p>
             </>

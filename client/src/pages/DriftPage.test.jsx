@@ -173,6 +173,12 @@ describe('<DriftPage> which rack', () => {
     expect(screen.getByRole('button', { name: 'Add RACK 7 to the record' })).toBeTruthy();
     // Not an error, and nothing on it decides or writes to the record.
     expect(screen.queryByRole('alert')).toBeNull();
+    // And nothing is called a mismatch: nothing was compared. The owner read
+    // "9 things do not match" on a rack this screen had just said the record
+    // has never heard of.
+    expect(document.body.textContent).not.toMatch(/do(es)? not match/i);
+    expect(screen.getByText(/would be added/)).toBeTruthy();
+    expect(document.body.textContent).toMatch(/NetBox holds no such rack yet/);
   });
 
   test('with no answer from the identity route the line is what the comparison used', async () => {
