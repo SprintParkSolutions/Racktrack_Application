@@ -4,6 +4,7 @@ import { useSmartBack } from '../hooks/useSmartBack';
 import styles from './SpecificationsPage.module.css';
 import desk from './SwitchInformationPage.module.css';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import { useTheme } from '../ThemeContext.jsx';
 import { getCached, setCached, cacheKey } from '../utils/scanPrefetch';
@@ -2143,16 +2144,13 @@ export default function SwitchInformationPage() {
       <div className={styles.amb} />
       <div className={styles.amb2} />
 
-      <header className={`${styles.header} ${desk.header}`}>
-        <button className={styles.backBtn} onClick={() => goBack()} aria-label="Back">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"/>
-            <polyline points="12 19 5 12 12 5"/>
-          </svg>
-        </button>
-        <h1 className={styles.title}>Switch Information</h1>
-        <ThemeToggle />
-      </header>
+      <PageHeader
+        title="Switch Information"
+        back={() => goBack()}
+        action={<ThemeToggle />}
+        className={desk.header}
+        sticky
+      />
 
       <div
         className={styles.scrollBody}

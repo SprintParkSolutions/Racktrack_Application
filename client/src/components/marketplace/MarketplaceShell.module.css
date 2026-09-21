@@ -20,35 +20,10 @@
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* PageHeader draws the row; this only centres it on a wide screen, where the
+   marketplace is a fluid grid inside a shell rather than a phone column. */
 .headerTop {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 20px 12px;
   max-width: var(--mkt-maxw, 1180px); width: 100%; margin: 0 auto;
-}
-
-.backBtn {
-  width: 36px; height: 36px; flex-shrink: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: var(--mkt-r-sm, 8px);
-  /* Filled, to match the shared BackButton everywhere else in the app. */
-  border: 1px solid var(--mkt-ink, #121212);
-  background: var(--mkt-ink, #121212);
-  color: #ffffff;
-  cursor: pointer;
-  transition: var(--mkt-t);
-}
-.backBtn:hover { border-color: #333740; background: #333740; }
-
-.headerText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.title {
-  margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title);
-  letter-spacing: -0.02em; line-height: 1.2;
-  color: var(--mkt-ink, #121212);
-}
-.subtitle {
-  margin: 0; font-size: var(--fs-sub); line-height: 1.35;
-  color: var(--mkt-muted, #717171);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 .headerActions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -143,18 +118,19 @@
    stays sticky, pinning flush under the shell's top bar while a long
    listings grid scrolls beneath it (.fluid is the scroll container). */
 @media (min-width: 768px) {
-  .headerTop { display: none; }
+  /* !important because the row's display now comes from PageHeader's own
+     module. The two selectors have equal specificity, so without this the
+     winner would depend on bundle order. */
+  .headerTop { display: none !important; }
   /* Drop the mobile safe-area inset (meaningless on desktop; it would push
      the nav down and make it read as detached). Keep position: sticky. */
   .header { padding-top: 0; }
 }
 
 @media (max-width: 560px) {
-  .headerTop { padding: 12px 14px 10px; gap: 10px; }
   .nav  { padding: 0 14px; }
   .main { padding: 16px 14px calc(96px + env(safe-area-inset-bottom, 0px)); gap: 16px; }
-  .title { font-size: var(--fs-head); }
   /* The header already names the section; on a narrow screen the
      subtitle costs a line that the listings grid can use instead. */
-  .subtitle { display: none; }
+  .headerTop [data-ph='sub'] { display: none; }
 }

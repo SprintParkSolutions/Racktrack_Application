@@ -21,23 +21,6 @@
   padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
 }
 
-/* ── Header ── */
-.header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 16px 12px;
-}
-.backBtn {
-  width: 38px; height: 38px; flex: none;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 10px;
-  background: #121212; border: 1px solid #121212; color: #ffffff;
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
-}
-.title {
-  flex: 1; margin: 0;
-  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em; color: var(--text);
-}
-
 /* ── Which rack, when ── */
 .hero { display: flex; flex-direction: column; gap: 1px; padding: 4px 16px 0; }
 .heroMake {

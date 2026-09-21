@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProfilePage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import { useConnections } from '../ConnectionsContext.jsx';
 import { TYPE_INFO } from '../utils/connectionsApi';
 import { apiUrl, authFetch } from '../utils/api';
 import Avatar from '../components/Avatar.jsx';
 import { AVATARS, resolveAvatarIndex } from '../utils/avatars';
-import BackButton from '../components/BackButton.jsx';
 import Icon from '../components/Icon';
 import AssetImg from '../components/AssetImg';
 
@@ -142,26 +142,23 @@ export default function ProfilePage() {
 
   return (
     <div className={`page page-full ${styles.profile}`}>
-      <header className={styles.topbar}>
-        {/* Grouped with the title so the header stays left-aligned whether or
-            not the back button renders - it only appears when you arrived
-            from somewhere, since tapping Profile in the nav has nowhere to
-            go back to. */}
-        <div className={styles.topbarLeft}>
-          <BackButton fallback="/" />
-          <h1 className={styles.topbarTitle}>Profile</h1>
-        </div>
-        {/* Kept even though the identity block below carries the account
-            actions: on a phone the sidebar is a bottom bar with no sign-out,
-            so removing this would leave that surface with no way out. */}
-        <button
-          type="button"
-          className={styles.topbarIconBtn}
-          onClick={() => setConfirmingSignOut(true)}
-          aria-label="Sign out">
-          <Icon name="logout" />
-        </button>
-      </header>
+      <PageHeader
+        title="Profile"
+        backFallback="/"
+        sticky
+        /* Kept even though the identity block below carries the account
+           actions: on a phone the sidebar is a bottom bar with no sign-out,
+           so removing this would leave that surface with no way out. */
+        action={(
+          <button
+            type="button"
+            className={styles.topbarIconBtn}
+            onClick={() => setConfirmingSignOut(true)}
+            aria-label="Sign out">
+            <Icon name="logout" />
+          </button>
+        )}
+      />
 
       <main className={styles.main}>
         {/* ── Identity ──

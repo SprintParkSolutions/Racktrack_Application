@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './MarketplaceShell.module.css';
+import PageHeader from '../PageHeader.jsx';
 import './marketplace-theme.css';
 import { apiUrl, authFetch } from '../../utils/api';
 import { useAuth } from '../../AuthContext.jsx';
@@ -116,35 +117,28 @@ export default function MarketplaceShell({
   return (
     <div className={`mkt-root ${styles.page}`}>
       <header className={styles.header}>
-        <div className={styles.headerTop}>
-          <button
-            className={styles.backBtn}
-            // Back should return you to whatever you were looking at. This
-            // used to be a hardcoded '/', which dropped people on the welcome
-            // screen - every other destination came back to where they were.
-            onClick={() => {
-              if (typeof backTo === 'function') return backTo();
-              if (backTo) return navigate(backTo);
-              const idx = window.history.state && window.history.state.idx;
-              if (typeof idx === 'number' && idx > 0) return navigate(-1);
-              return navigate('/scan');
-            }}
-            aria-label="Back"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          <div className={styles.headerText}>
-            <h1 className={styles.title}>{title}</h1>
-            {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
-          </div>
-          <div className={styles.headerActions}>
-            {resolvedAction}
-            <ThemeToggle />
-          </div>
-        </div>
+        <PageHeader
+          className={styles.headerTop}
+          plain
+          title={title}
+          sub={subtitle}
+          // Back should return you to whatever you were looking at. This
+          // used to be a hardcoded '/', which dropped people on the welcome
+          // screen - every other destination came back to where they were.
+          back={() => {
+            if (typeof backTo === 'function') return backTo();
+            if (backTo) return navigate(backTo);
+            const idx = window.history.state && window.history.state.idx;
+            if (typeof idx === 'number' && idx > 0) return navigate(-1);
+            return navigate('/scan');
+          }}
+          action={(
+            <>
+              {resolvedAction}
+              <ThemeToggle />
+            </>
+          )}
+        />
 
         {/* The scroller is wrapped so the fade at its right edge can be painted
             on the wrapper. Inside an `overflow-x: auto` element a fade would

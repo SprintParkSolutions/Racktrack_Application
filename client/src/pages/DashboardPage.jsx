@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { apiUrl, authFetch } from '../utils/api';
 import { LogsView } from './LogsPage.jsx';
 import styles from './DashboardPage.module.css';
-import BackButton from '../components/BackButton.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { HeaderActions } from '../components/ShellHeader.jsx';
 
 // A short, human label for each audit action so the feed reads in plain
@@ -445,23 +445,23 @@ export default function DashboardPage() {
         <button className={styles.refreshBtn} onClick={() => setRefreshTick(n => n + 1)}>Refresh</button>
       </HeaderActions>
 
-      <header className={styles.header}>
-        <BackButton fallback="/" />
-        <div>
-          <h1 className={styles.title}>Operations Console</h1>
-        </div>
-        <div className={styles.headerRight}>
-          <button
-            className={`${styles.liveBtn} ${live ? styles.liveOn : ''}`}
-            onClick={() => setLive(v => !v)}
-            title={live ? 'Auto-refresh on' : 'Auto-refresh paused'}
-          >
-            <span className={styles.liveDot} />
-            {live ? 'Live' : 'Paused'}
-          </button>
-          <button className={styles.refreshBtn} onClick={() => setRefreshTick(n => n + 1)}>Refresh</button>
-        </div>
-      </header>
+      <PageHeader
+        title="Operations Console"
+        backFallback="/"
+        action={(
+          <>
+            <button
+              className={`${styles.liveBtn} ${live ? styles.liveOn : ''}`}
+              onClick={() => setLive(v => !v)}
+              title={live ? 'Auto-refresh on' : 'Auto-refresh paused'}
+            >
+              <span className={styles.liveDot} />
+              {live ? 'Live' : 'Paused'}
+            </button>
+            <button className={styles.refreshBtn} onClick={() => setRefreshTick(n => n + 1)}>Refresh</button>
+          </>
+        )}
+      />
 
       <nav className={styles.tabBar}>
         {TABS.map(t => (

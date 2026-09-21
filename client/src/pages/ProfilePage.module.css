@@ -27,28 +27,6 @@
   --pf-danger:    #C0392B;
 }
 
-/* ── Sticky white header ─────────────────────────────────────────── */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  padding-top: env(safe-area-inset-top, 0px);
-}
-/* Back button + title as one left-hand group, so the title does not slide to
-   the centre on the visits where the back button is present. */
-.topbarLeft { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.topbarTitle {
-  font-family: var(--font);
-  font-size: var(--fs-sub); font-weight: var(--fw-title); letter-spacing: 0.10em; line-height: 16px;
-  text-transform: uppercase; color: var(--md-on-surface); margin: 0;
-}
 .topbarIconBtn {
   width: 40px; height: 40px;
   display: inline-flex; align-items: center; justify-content: center;

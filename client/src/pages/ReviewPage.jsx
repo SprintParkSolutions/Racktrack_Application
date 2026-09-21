@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle.jsx';
-import { BackIcon } from '../components/BackButton.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import Icon from '../components/Icon.jsx';
 import RackPicture from '../components/RackPicture.jsx';
 import { apiUrl, authFetch } from '../utils/api';
@@ -895,18 +895,7 @@ export default function ReviewPage() {
 
   return (
     <div className={`page page-full ${styles.page}`}>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backBtn}
-          onClick={goBack}
-          aria-label="Back"
-        >
-          <BackIcon />
-        </button>
-        <h1 className={styles.title}>Review</h1>
-        <ThemeToggle />
-      </header>
+      <PageHeader title="Review" back={goBack} action={<ThemeToggle />} />
 
       <div className={styles.scroll}>
         {body}

@@ -23,60 +23,6 @@
     radial-gradient(ellipse 50% 40% at 0% 90%, rgba(0,0,0,0.14) 0%, transparent 50%);
 }
 
-/* ── Header ── */
-.header {
-  position: sticky; top: 0; z-index: 10;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding: 14px 16px 12px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.85));
-  border-bottom: 1px solid rgba(0,0,0,0.1);
-  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
-}
-.header h2 {
-  margin: 0;
-  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em;
-  background: linear-gradient(135deg, #000000 0%, #474747 40%, #474747 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  filter: drop-shadow(0 0 12px rgba(0,0,0,0.2));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-.headerCenter { text-align: left; flex: 1; min-width: 0; padding: 0 8px; }
-.headerMono {
-  display: block;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: var(--fs-label); color: rgba(255,255,255,0.4);
-  margin-top: 4px; letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-@media (max-width: 420px) {
-  .header { padding: 12px 10px 10px; gap: 8px; }
-  .header h2 { font-size: var(--fs-section); }
-  .headerMono { font-size: var(--fs-micro); }
-}
-@media (max-width: 360px) {
-  .header h2 { font-size: var(--fs-body); }
-}
-.backBtn {
-  flex-shrink: 0;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(0,0,0,0.65);
-  border-radius: 8px;
-  padding: 7px 12px; font-size: var(--fs-body); cursor: pointer;
-  transition: all 0.15s;
-}
-.backBtn:hover {
-  background: rgba(0,0,0,0.1);
-  border-color: rgba(0,0,0,0.32);
-  color: #121212;
-}
-
 /* ── Hero card (rack identity + stat tiles) ── */
 .hero {
   position: relative; z-index: 1;
@@ -1721,27 +1667,6 @@
   display: none;
   background: none;
 }
-:global([data-theme='light']) .header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255,0.88));
-  border-bottom: 1px solid #ffffff;
-}
-:global([data-theme='light']) .header h2 {
-  background: none;
-  -webkit-text-fill-color: #121212;
-  color: #121212;
-  filter: none;
-}
-:global([data-theme='light']) .headerMono { color: #474747; }
-:global([data-theme='light']) .backBtn {
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  color: #717171;
-}
-:global([data-theme='light']) .backBtn:hover {
-  background: #ffffff;
-  border-color: #cfcfcf;
-  color: #121212;
-}
 
 :global([data-theme='light']) .hero {
   background: #ffffff;
@@ -3029,7 +2954,6 @@
   border: 1px dashed rgba(18, 18, 18, 0.18);
   border-radius: 12px;
 }
-
 
 /* LLDP neighbour on a port row - the other end of the cable */
 .invRowNeighbor {

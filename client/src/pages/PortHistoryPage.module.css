@@ -20,30 +20,6 @@
     radial-gradient(ellipse 45% 35% at 5%  65%,  rgba(0,0,0,0.06) 0%, transparent 50%);
 }
 
-.header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px 12px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.88));
-  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
-  border-bottom: 1px solid rgba(0,0,0,0.10);
-  position: sticky; top: 0; z-index: 60;
-  flex-shrink: 0;
-}
-.backBtn {
-  width: 40px; height: 40px;
-  border-radius: 12px; border: 1px solid rgba(0,0,0,0.18);
-  background: rgba(0,0,0,0.55); color: #c6c6c6;
-  font-size: 24px; line-height: 1; cursor: pointer;
-}
-.spacer { width: 40px; }
-.headerCenter {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  flex: 1; min-width: 0;
-  padding: 0 8px; text-align: left;
-}
-.headerTitle { margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em; }
-.headerSub   { margin: 0; font-size: var(--fs-sub); color: #c6c6c6; }
-
 .main {
   position: relative; z-index: 1;
   display: flex; flex-direction: column; gap: 14px;
@@ -450,19 +426,6 @@
 }
 :global([data-theme='light']) .amb { display: none; }
 
-:global([data-theme='light']) .header {
-  background: #ffffff;
-  border-bottom: 1px solid #c6c6c6;
-  backdrop-filter: none; -webkit-backdrop-filter: none;
-}
-:global([data-theme='light']) .backBtn {
-  background: #ffffff;
-  border: 1px solid #c6c6c6;
-  color: #1c1c1c;
-}
-:global([data-theme='light']) .headerTitle { color: #1c1c1c; }
-:global([data-theme='light']) .headerSub   { color: #474747; }
-
 :global([data-theme='light']) .card {
   background: #ffffff;
   border: 1px solid #c6c6c6;
@@ -618,48 +581,6 @@
   color: var(--md-on-surface, #121212);
 }
 :global([data-theme='light']) .amb { display: none; }
-
-/* Header - flat white, hairline rule, no blur, no gradient. */
-.header {
-  background: var(--md-surface-container-lowest, #FFFFFF);
-  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-:global([data-theme='light']) .header {
-  background: var(--md-surface-container-lowest, #FFFFFF);
-  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-.backBtn {
-  background: var(--md-surface-container-lowest, #FFFFFF);
-  border: 1px solid var(--md-outline-variant, #E0E0E0);
-  color: var(--md-on-surface, #121212);
-}
-.backBtn:hover {
-  border-color: var(--md-on-surface, #121212);
-  background: var(--md-surface-container, #ffffff);
-}
-:global([data-theme='light']) .backBtn {
-  background: var(--md-surface-container-lowest, #FFFFFF);
-  border: 1px solid var(--md-outline-variant, #E0E0E0);
-  color: var(--md-on-surface, #121212);
-}
-.headerTitle {
-  color: var(--md-on-surface, #121212);
-  font-weight: var(--fw-title);
-  letter-spacing: -0.01em;
-}
-.headerSub {
-  color: var(--md-on-surface, #121212);
-  opacity: 0.65;
-}
-:global([data-theme='light']) .headerTitle { color: var(--md-on-surface, #121212); }
-:global([data-theme='light']) .headerSub {
-  color: var(--md-on-surface, #121212);
-  opacity: 0.65;
-}
 
 /* Cards - white, 12px radius, hairline only, no shadow, no gradient, no blur. */
 .card {
@@ -1457,7 +1378,6 @@
   .header { display: none; }
   .main { max-width: none; margin: 0 auto; padding: 32px 32px 64px; }
 }
-
 
 /* ── Which switch - one row of names above the hero ── */
 .switcher {

@@ -22,16 +22,6 @@
   font-size: var(--fs-section);
 }
 
-/* ── Header ─────────────────────────────────────────────── */
-.header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
 /* Console tab switcher (Operations | Logs) */
 .tabBar {
   display: flex;
@@ -60,19 +50,6 @@
 }
 
 .opsWrap { display: block; }
-.title {
-  font-size: 1.5rem;
-  font-weight: var(--fw-title);
-  letter-spacing: -0.02em;
-  margin: 0;
-}
-.subtitle {
-  margin: 4px 0 0;
-  color: var(--muted, #666666);
-  font-size: var(--fs-item);
-  max-width: 60ch;
-}
-.headerRight { display: flex; gap: 10px; align-items: center; }
 
 .liveBtn, .refreshBtn {
   display: inline-flex;
@@ -283,7 +260,6 @@
 @media (min-width: 768px) {
   .header { display: none; }
 }
-
 
 /* ── KPI strip: compact, number over word ── */
 .stats { gap: 8px; }

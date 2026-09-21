@@ -6,6 +6,7 @@ import { IMAGE_ACCEPT, VIDEO_ACCEPT } from '../utils/mediaAccept';
 import SitePicker from '../components/SitePicker.jsx';
 import { useScanSite, SITE_REFUSED, isSiteRefused } from '../hooks/useScanSite';
 import styles from './MultiRackNewPage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 
 // Analyze one image → returns its rackId (throws on failure). The chosen Site
 // goes with it exactly as it does from the scan page, so both racks are
@@ -178,11 +179,7 @@ export default function MultiRackNewPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.back} onClick={() => navigate(-1)} aria-label="Back">←</button>
-        <h1 className={styles.title}>Scan two racks</h1>
-        <span aria-hidden="true" />
-      </header>
+      <PageHeader title="Scan two racks" back={() => navigate(-1)} sticky />
 
       <main className={styles.body}>
         <p className={styles.intro}>

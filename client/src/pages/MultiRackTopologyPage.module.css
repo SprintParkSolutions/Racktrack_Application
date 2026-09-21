@@ -14,34 +14,6 @@
   background: linear-gradient(180deg, #1c1c1c 0%, #000000 100%);
   color: #eeeeee;
 }
-.header {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(0,0,0,0.10);
-}
-:global([data-theme="dark"]) .header {
-  border-bottom-color: rgba(255,255,255,0.06);
-}
-.header h2 {
-  margin: 0; font-size: var(--fs-section); font-weight: var(--fw-title);
-  color: #000000;
-  flex: 1;
-}
-:global([data-theme="dark"]) .header h2 {
-  background: linear-gradient(135deg, #000000 0%, #474747 100%);
-  -webkit-background-clip: text; background-clip: text;
-}
-.back {
-  width: 36px; height: 36px; border-radius: 8px;
-  background: rgba(0,0,0,0.06);
-  border: 1px solid rgba(0,0,0,0.20);
-  color: #000000; font-size: var(--fs-head); cursor: pointer;
-}
-:global([data-theme="dark"]) .back {
-  background: rgba(255,255,255,0.04);
-  border-color: rgba(255,255,255,0.08);
-  color: #eeeeee;
-}
 .groupTag {
   font-family: ui-monospace, Menlo, monospace; font-size: var(--fs-label);
   padding: 3px 8px; border-radius: 4px;

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle.jsx';
-import { BackIcon } from '../components/BackButton.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import ExportSheet from '../components/ExportSheet.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
@@ -341,13 +341,7 @@ export default function ReportPage() {
 
   return (
     <div className={`page page-full ${styles.page}`}>
-      <header className={styles.header}>
-        <button type="button" className={styles.backBtn} onClick={goBack} aria-label="Back">
-          <BackIcon />
-        </button>
-        <h1 className={styles.title}>Report</h1>
-        <ThemeToggle />
-      </header>
+      <PageHeader title="Report" back={goBack} action={<ThemeToggle />} />
 
       {/* What this report is for, at the top of it: three verbs, each with
           its choices underneath. Four flat buttons (CSV, JSON, Send, NetBox)

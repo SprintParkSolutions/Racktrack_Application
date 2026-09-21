@@ -23,38 +23,6 @@
   padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
-/* ── Sticky phone header (the shell draws its own from 768px) ─────── */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(18, 18, 18, 0.07);
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  padding-top: env(safe-area-inset-top, 0px);
-}
-.topbarLeft {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-.topbarTitle {
-  font-family: var(--font);
-  font-size: var(--fs-sub);
-  font-weight: var(--fw-title);
-  letter-spacing: 0.14em;
-  line-height: 16px;
-  text-transform: uppercase;
-  color: #121212;
-  margin: 0;
-}
 .countPill {
   min-width: 30px;
   height: 26px;

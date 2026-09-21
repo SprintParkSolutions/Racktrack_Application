@@ -18,56 +18,6 @@
     radial-gradient(ellipse 45% 35% at 5%  65%,  rgba(0,0,0,0.06) 0%, transparent 50%);
 }
 
-/* ── Header (matches ResultsPage exactly) ─────────────────────────────── */
-.header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px 12px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.88));
-  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
-  border-bottom: 1px solid rgba(0,0,0,0.10);
-  position: sticky; top: 0; z-index: 60;
-  flex-shrink: 0;
-}
-
-.headerCenter {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  flex: 1; min-width: 0;
-  padding: 0 8px;
-  text-align: left;
-}
-
-.headerTitle {
-  margin: 0;
-  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em;
-  background: linear-gradient(135deg, #000000 0%, #474747 40%, #474747 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  filter: drop-shadow(0 0 12px rgba(0,0,0,0.20));
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.headerMono {
-  font-family: var(--mono);
-  font-size: var(--fs-micro);
-  color: rgba(0,0,0,0.4);
-  letter-spacing: 0.08em;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 420px) {
-  .header { padding: 12px 10px 10px; }
-  .headerTitle { font-size: var(--fs-section); }
-  .headerMono  { font-size: .55rem; }
-}
-@media (max-width: 360px) {
-  .headerTitle { font-size: var(--fs-body); }
-}
-
 .healthPill {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px;
@@ -903,17 +853,6 @@
     radial-gradient(ellipse 55% 45% at 95% 95%, rgba(0,0,0,0.14) 0%, transparent 55%),
     radial-gradient(ellipse 45% 35% at 5% 65%,  rgba(0,0,0,0.08) 0%, transparent 50%);
 }
-:global([data-theme='light']) .header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255,0.88));
-  border-bottom: 1px solid #ffffff;
-}
-:global([data-theme='light']) .headerTitle {
-  background: linear-gradient(135deg, #000000 0%, #000000 50%, #474747 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  filter: none;
-}
-:global([data-theme='light']) .headerMono { color: #474747; }
 :global([data-theme='light']) .healthPill {
   background: #ffffff;
   border: 1px solid #ffffff;
@@ -1143,34 +1082,6 @@
 :global([data-theme='light']) .amb {
   background: none !important;
   display: none !important;
-}
-
-/* Header - flat white, hairline bottom border, no blur, no shadow. */
-.header,
-:global([data-theme='light']) .header {
-  background: var(--md-surface-container-lowest) !important;
-  border-bottom: 1px solid var(--md-outline-variant) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
-}
-.headerTitle,
-:global([data-theme='light']) .headerTitle {
-  background: none !important;
-  -webkit-background-clip: border-box !important;
-  background-clip: border-box !important;
-  -webkit-text-fill-color: var(--md-on-surface) !important;
-  color: var(--md-on-surface) !important;
-  filter: none !important;
-  text-shadow: none !important;
-  font-weight: var(--fw-title);
-  letter-spacing: -0.005em;
-}
-.headerMono,
-:global([data-theme='light']) .headerMono {
-  color: var(--md-on-surface) !important;
-  opacity: 0.6;
-  font-family: var(--mono);
 }
 
 /* Health pill - outlined, status accents only via class. */

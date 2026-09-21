@@ -5,6 +5,7 @@ import { OrbitControls, Environment, Grid, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './MultiRackTopologyPage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 
 const RackBundle = lazy(() => import('./TopologyScene3D.jsx').then(m => ({
   default: ({ topo, xOffset, floorY, palette, selected, setSelected }) => (
@@ -605,11 +606,5 @@ function InterRackCables({ links, placeById, floorY, U_HEIGHT, DEV_WIDTH, comput
 }
 
 function Header({ onBack, title, extra }) {
-  return (
-    <header className={styles.header}>
-      <button className={styles.back} onClick={onBack} aria-label="Back">←</button>
-      <h2>{title}</h2>
-      {extra}
-    </header>
-  );
+  return <PageHeader title={title} back={onBack} action={extra} />;
 }

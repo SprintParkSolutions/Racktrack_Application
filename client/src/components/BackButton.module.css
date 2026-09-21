@@ -5,6 +5,11 @@
   flex-shrink: 0;
   width: 38px;
   height: 38px;
+  /* The painted square stays 38px, which is the size the rest of the app was
+     drawn around, but the finger gets 44. The expander is a pseudo-element
+     rather than padding, so the hit area grows without the box growing and no
+     header shifts. */
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -21,6 +26,12 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background .14s ease, transform .12s ease;
+}
+
+.back::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
 }
 
 .back svg { width: 18px; height: 18px; }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSmartBack } from '../hooks/useSmartBack';
 import { apiUrl, authFetch } from '../utils/api';
 import styles from './PortHistoryPage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 
 // "Continuous polling & port drift" view - the client side of
 // /api/ports/*. Auto-targets the single monitored switch (host /
@@ -269,14 +270,12 @@ export default function PortHistoryPage() {
   return (
     <div className={styles.page}>
       <div className={styles.amb} aria-hidden />
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => goBack()} aria-label="Back">‹</button>
-        <div className={styles.headerCenter}>
-          <h1 className={styles.headerTitle}>Port history &amp; drift</h1>
-          <p className={styles.headerSub}>Continuous SSH telemetry</p>
-        </div>
-        <span className={styles.spacer} />
-      </header>
+      <PageHeader
+        title="Port history & drift"
+        sub="Continuous SSH telemetry"
+        back={() => goBack()}
+        sticky
+      />
       <main className={styles.main}>
         <PortHistoryInner embedded={false} />
       </main>
