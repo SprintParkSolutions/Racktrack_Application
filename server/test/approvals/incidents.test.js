@@ -280,7 +280,8 @@ describe('sending a check raises its incident', () => {
     const warning = heard.find((h) => h.event === 'incident_failed');
     const { subject, body } = notify.wordsFor('incident_failed', warning.plan, warning, { name: 'Aasritha' });
     assert.match(subject, /the ServiceNow incident for rack SP-HYB-RM01-R01-R1 needs a look/);
-    assert.match(body, /Incident INC0010041 was raised, but No ServiceNow user has the email/);
+    assert.match(body, /Incident INC0010041 was raised\. No ServiceNow user has the email/);
+    assert.doesNotMatch(body, /, but [A-Z]/);
     assert.ok(!/[–—]/.test(body));
   });
 });

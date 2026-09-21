@@ -277,7 +277,11 @@ const LINES = {
     const inc = incidentIn(plan, p) || {};
     const number = inc.number || 'The incident';
     const holder = holderName(plan, p);
-    if (p.problem === 'unassigned') return [`Incident ${number} was raised, but ${p.assignWarning || inc.assignWarning || 'it is not assigned to anybody.'}`];
+    // The warning is a sentence of its own, and may start with a product's
+    // name, so it is never folded into this one or put in lower case.
+    if (p.problem === 'unassigned') {
+      return [`Incident ${number} was raised. ${p.assignWarning || inc.assignWarning || 'It is not assigned to anybody.'}`];
+    }
     if (p.problem === 'attachment_failed') {
       return [`Incident ${number} was raised, but ${p.what || 'the drift report'} could not be attached: `
         + `${p.error || 'no reason given'}. RackTrack will try again.`];

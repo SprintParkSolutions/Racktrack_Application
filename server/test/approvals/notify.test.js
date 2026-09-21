@@ -300,6 +300,23 @@ describe('preferences, and the events that ignore them', () => {
     assert.doesNotMatch(mail.text, /refused|went through/);
   });
 
+  it('says an unassigned incident in two sentences, and never lowers a product\'s name', () => {
+    const plan = heldPlan();
+    const warning = 'No ServiceNow user has the email dev@x, so the incident is not assigned to anybody.';
+    const said = notify.wordsFor('incident_failed', plan,
+      { plan, problem: 'unassigned', incident: { number: 'INC0010134' }, assignWarning: warning }, { name: 'Aasritha' });
+    assert.ok(said.body.includes(`Incident INC0010134 was raised. ${warning}`));
+    assert.doesNotMatch(said.body, /, but [A-Z]/);
+    const refused = notify.wordsFor('incident_failed', plan, { plan, problem: 'unassigned',
+      incident: { number: 'INC0010134' },
+      assignWarning: 'ServiceNow would not assign it (403), so the incident is not assigned to anybody.' },
+    { name: 'Aasritha' });
+    assert.ok(refused.body.includes('was raised. ServiceNow would not assign it'));
+    const bare = notify.wordsFor('incident_failed', plan,
+      { plan, problem: 'unassigned', incident: { number: 'INC0010134' } }, { name: 'Aasritha' });
+    assert.ok(bare.body.includes('Incident INC0010134 was raised. It is not assigned to anybody.'));
+  });
+
   it('takes a switch per event, the shape the settings screen writes', async () => {
     const plan = planOf();
     notify.setPrefs(1, 1, { resolved: false });
