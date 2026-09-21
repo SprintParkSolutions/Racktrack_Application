@@ -35,6 +35,9 @@ const inWords = (text) => String(text || '').replace(HASH_RE, 'a rack that has n
 // What each notice is about, by the server's own word for it (`data.kind`). A
 // row written before notices carried `data` has only its event, so the event
 // names the kind instead. Anything not listed here is not this banner's business.
+// Of the rows without `data` only `assigned` is shown: the others were addressed
+// under the old rule (the sender, the holder and every admin alike), no phone
+// ever showed them, and "Your check was approved" is wrong for most of them.
 const KIND_OF_EVENT = {
   assigned: 'assigned',
   approved: 'approved',
@@ -121,7 +124,9 @@ export default function AssignedNotice() {
       const r = await authFetch(apiUrl('/api/approvals/notifications?unread=1'));
       if (!r.ok) return;
       const j = await r.json();
-      setRows((j.notifications || []).filter((n) => KIND_OF_EVENT[n.event] && !n.readAt).sort(newestFirst));
+      setRows((j.notifications || [])
+        .filter((n) => KIND_OF_EVENT[n.event] && !n.readAt && (n.event === 'assigned' || dataOf(n)))
+        .sort(newestFirst));
     } catch { /* no notice is not an error worth showing */ }
   }, []);
 
@@ -161,7 +166,9 @@ export default function AssignedNotice() {
     setBusy(false);
   };
   const openCheck = async () => {
-    if (IN_APP.has(kind) && rackId) { navigate(`/results/${encodeURIComponent(rackId)}/drift`); return; }
+    // The check is named, so the screen shows that one. Left to compare again it
+    // would file a new draft beside a check that was rejected or written.
+    if (IN_APP.has(kind) && rackId) { navigate(`/results/${encodeURIComponent(rackId)}/drift?plan=${encodeURIComponent(planId)}`); return; }
     // The SPOC reads the drift report beside the check, so it opens on it.
     await openApprovals(`/approvals/drifts/${encodeURIComponent(planId)}${kind === 'assigned' ? '?view=report' : ''}`);
   };

@@ -1,6 +1,6 @@
 import { describe, test, expect, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 /* The notice a person sees where the app opens: what happened, and a button for
    each thing they can do about it. The SPOC is told a check is theirs, the
@@ -53,7 +53,7 @@ const told = (event, kind, subject, over = {}) => row({ id: 300, planId: 140, ev
   body: `Hello dc007.tech,\n\n${subject}.\n\nPlan 140 - P3 - ${event}\n\n- RackTrack`,
   data: { ...DATA, kind }, ...over });
 
-function Landed() { const { rackId } = useParams(); return <p>drift check of {rackId}</p>; }
+function Landed() { const { rackId } = useParams(); const { search } = useLocation(); return <p>drift check of {rackId}, {search.slice(1)}</p>; }
 const mount = () => render(
   <MemoryRouter initialEntries={['/scan']}>
     <Routes>
@@ -143,24 +143,43 @@ describe('<AssignedNotice>', () => {
     }
   });
 
-  test('a row without data is labelled by its event, and an event this banner does not know is ignored', async () => {
+  test('a row written before notices carried data is shown only when it is an assignment', async () => {
+    // Older servers sent approved / rejected / completed to the sender, the
+    // holder and every admin alike, and no phone ever showed or dismissed them.
     reply.rows = [
       row({ id: 9, event: 'sla_warn', subject: 'RackTrack: a check is running late' }),
       row({ id: 8, event: 'completed', planId: 140, subject: 'RackTrack: your check on rack R1 is written', data: undefined }),
+      row({ id: 6, event: 'approved', planId: 139, subject: 'RackTrack: plan 139 was approved', data: null }),
+      row({ id: 5, event: 'rejected', planId: 138, subject: 'RackTrack: plan 138 was sent back for rework', data: null }),
+      row({ id: 4, event: 'write_failed', planId: 137, subject: 'RackTrack: the write for plan 137 failed', data: null }),
+      row({ id: 3, event: 'assigned', data: null }),
       row({ id: 7, event: 'assigned', readAt: '2026-09-21T10:00:00Z' }),
     ];
     mount();
-    await screen.findByText('Written to NetBox');
-    expect(screen.queryByText(/running late/)).toBeNull();
+    await screen.findByText('Assigned to you');
+    expect(screen.queryByText(/running late|was approved|sent back|is written|failed/)).toBeNull();
     expect(screen.queryByText(/and \d+ more/)).toBeNull();
+  });
+
+  test('a row that carries data is shown whatever its event', async () => {
+    reply.rows = [told('approved', 'approved', 'RackTrack: your check on rack R1 was approved', { data: JSON.stringify({ ...DATA, kind: 'approved' }) })];
+    mount();
+    await screen.findByText('Your check was approved');
   });
 
   test('the person who sent it opens their own drift check; whoever has to act opens Drift Desk', async () => {
     reply.rows = [told('approved', 'approved', 'RackTrack: your check on rack R1 was approved')];
     mount();
     fireEvent.click(await screen.findByRole('button', { name: 'Open the check' }));
-    await screen.findByText('drift check of RK-5B81BE87');
+    // the check is named, so the screen shows that one and does not compare again
+    await screen.findByText('drift check of RK-5B81BE87, plan=140');
     expect(opened).toEqual([]);
+    cleanup();
+
+    reply.rows = [told('rejected', 'rejected', 'RackTrack: your check on rack R1 was rejected')];
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Open the check' }));
+    await screen.findByText('drift check of RK-5B81BE87, plan=140');
     cleanup();
 
     // no rack on the notice: the check in Drift Desk is the way in
