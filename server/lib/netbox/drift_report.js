@@ -21,7 +21,7 @@ const MEANS = {
   rebind: 'The record lists it under an id RackTrack used before.',
 };
 const STATE = {
-  draft: 'Compared, not sent', open: 'Compared, not sent', submitted: 'Sent to the admin', triage: 'With the admin',
+  draft: 'Compared, not sent', open: 'Compared, not sent', submitted: 'Sent to the SPOC', triage: 'Needs an admin',
   assigned: 'Assigned', accepted: 'Accepted by the assignee', in_progress: 'Being checked at the rack', pending: 'On hold',
   resolved: 'Checked, finding recorded', verification_pending: 'Waiting for a second scan', approval_pending: 'Waiting for approval',
   approved: 'Approved', write_in_progress: 'Writing to the record', written: 'Written to the record', completed: 'Done',
@@ -61,7 +61,10 @@ function build(plan, { tickets = [], siteName = null, spaceName = null, generate
   const title = rack || 'Rack not identified yet';
   const g = groups(plan);
   const state = STATE[plan.state] || STATE[plan.status] || String(plan.state || plan.status || '');
-  const incidents = tickets.map((t) => t.external && t.external.number).filter(Boolean);
+  // A check sent to the SPOC has one incident, and every ticket of it carries a
+  // copy of that one. An older check raised one per item, and lists them all.
+  const whole = tickets.map((t) => t.external).find((e) => e && e.planLevel && e.number);
+  const incidents = whole ? [whole.number] : tickets.map((t) => t.external && t.external.number).filter(Boolean);
   const when = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : d.toUTCString().replace(' GMT', ' UTC'); };
 
   const diffRows = g.different.map((i) => {
@@ -71,7 +74,7 @@ function build(plan, { tickets = [], siteName = null, spaceName = null, generate
       return `<div class="d"><span>${esc(f)}</span> record: <b>${esc(from ?? ' - ')}</b> &nbsp; seen: <b>${esc(to ?? ' - ')}</b></div>`;
     }).join('');
     const t = tickets.find((x) => x.itemUid === i.uid);
-    const held = t ? `<div class="d">With ${esc(t.assignee || 'nobody yet')}${t.external && t.external.number ? ` - ${esc(t.external.number)}` : ''}${t.status ? ` - ${esc(String(t.status).replace(/_/g, ' '))}` : ''}</div>` : '';
+    const held = t ? `<div class="d">With ${esc(t.assignee || 'nobody yet')}${t.external && t.external.number && !t.external.planLevel ? ` - ${esc(t.external.number)}` : ''}${t.status ? ` - ${esc(String(t.status).replace(/_/g, ' '))}` : ''}</div>` : '';
     const found = t && t.finding ? `<div class="d ok">Finding: ${esc(t.finding)}</div>` : '';
     const sh = shelfOf(i);
     return `<tr><td class="u">${sh != null ? `U${sh}` : ''}</td><td><b>${esc(plainName(i.name, rack))}</b><div class="m">${esc(i.type)}</div></td>
