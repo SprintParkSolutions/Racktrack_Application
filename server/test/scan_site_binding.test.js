@@ -16,7 +16,10 @@
  *   3. an owner with no organization, scanning at a Site, mints the rack id a
  *      technician of that Site mints for the same photo;
  *   4. a refusal happens before any work, on all three routes;
- *   5. with no `siteId` nothing changes: a technician's scan is their Site's,
+ *   5. a photo already on disk becomes the chosen Site's too, and the adopted
+ *      copy of it goes stale, so the check made from it reaches that Site's
+ *      SPOC; a re-scan for the same Site leaves both alone;
+ *   6. with no `siteId` nothing changes: a technician's scan is their Site's,
  *      an admin's lands on the default tenant, and an account with no Site is
  *      still refused a walk-through video.
  */
@@ -316,11 +319,32 @@ test('a rack scanned before anybody chose a Site becomes the chosen Site\'s on t
   assert.equal(metaOf(rackId).tenantId ?? null, null);
 
   // The same photo with a Site named is a cache hit, and still that Site's.
+  // The map is touched too: an adopted copy is served until the map is newer
+  // than it, and a copy keyed under no Site would send the check to no SPOC.
+  const mapFile = path.join(OUTPUTS, rackId, 'device_unit_map.json');
+  // The fake pipeline counts no ports, and a map without port counts is
+  // analysed again on every cache hit. A real map carries them; so does this one.
+  const map = JSON.parse(fs.readFileSync(mapFile, 'utf8'));
+  map.devices.forEach((d) => { d.port_count = 0; });
+  fs.writeFileSync(mapFile, JSON.stringify(map));
+  const long = new Date(Date.now() - 60 * 60 * 1000);
+  fs.utimesSync(mapFile, long, long);
   const second = await scan(port, admin, image, SITE_2);
   assert.equal(second.status, 200);
   assert.equal(rackOf(second), rackId);
   assert.ok(claimed(SITE_2, rackId));
   assert.equal(metaOf(rackId).tenantId, SITE_2);
+  assert.ok(fs.statSync(mapFile).mtimeMs > long.getTime() + 1000, 'the adopted copy is now older than the map');
+
+  // Scanning again for the Site it already belongs to changes nothing, so a
+  // technician's every re-scan does not throw the adopted copy away.
+  fs.utimesSync(mapFile, long, long);
+  assert.equal((await scan(port, admin, image, SITE_2)).status, 200);
+  assert.equal(Math.round(fs.statSync(mapFile).mtimeMs), long.getTime());
+  // Nor does a scan that names no Site.
+  assert.equal((await scan(port, admin, image)).status, 200);
+  assert.equal(metaOf(rackId).tenantId, SITE_2);
+  assert.equal(Math.round(fs.statSync(mapFile).mtimeMs), long.getTime());
 });
 
 test('no siteId: a technician\'s scan is their own Site\'s, exactly as before', async (t) => {

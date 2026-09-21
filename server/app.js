@@ -3383,6 +3383,32 @@ function scanSiteFor(req, res) {
   return null;
 }
 
+// A Site somebody chose is the Site of this scan even when the photo was on
+// disk already - a cache hit, or a confirmed rack served in its place. The
+// comparison reads the Site from scan_meta.json when it adopts the scan, to
+// find the rack's records and the SPOC the check goes to, and a fresh analysis
+// is the only other place that writes it: a rack first scanned by an admin
+// with no Site would keep none for ever.
+//
+// When the Site really changes the map is touched as well. An adopted copy is
+// served until the map on disk is newer than it (routes/netbox/scans.js), and
+// a copy keyed under the old Site names the wrong records. Nothing happens
+// without a `siteId`, or when the scan already is that Site's. Never fatal.
+function stampScanSite(rackId, site) {
+  if (!site || !site.chosen) return;
+  try {
+    const m = readMeta(rackId) || {};
+    if (m.tenantId != null && Number(m.tenantId) === Number(site.tenantId)) return;
+    m.tenantId = site.tenantId;
+    writeMeta(rackId, m);
+    const map = path.join(outputsDir, rackId, 'device_unit_map.json');
+    if (fs.existsSync(map)) { const now = new Date(); fs.utimesSync(map, now, now); }
+  } catch (err) {
+    logger.warn({ event: 'scan.site_stamp_failed', rackId, err: err.message },
+      'could not record the chosen Site on the scan');
+  }
+}
+
 async function buildScanReportPDF(rackId) {
   const built = await buildScanReport(rackId);
   const pdfPath = path.join(built.data._rackDir, 'report.pdf');
@@ -4078,11 +4104,9 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
         if (!m.first_scanned_at) m.first_scanned_at = m.timestamp || new Date().toISOString();
         m.timestamp = new Date().toISOString();
         if (_scanSpace) m.space = _scanSpace;
-        // A Site somebody chose is the Site of this scan, cached or not: the
-        // comparison reads it from here to find the rack's records and its SPOC.
-        if (_site.chosen) m.tenantId = _site.tenantId;
         writeMeta(rackId, m);
       } catch (_) { /* non-fatal — history just keeps the old time */ }
+      stampScanSite(rackId, _site);
       _bindScanSpace(rackId, _scanTenantId, _scanUserId);
 
       timings.total_ms = Date.now() - reqStart;
@@ -4117,14 +4141,11 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
           // The rack the user is looking at is the confirmed one, so that is
           // the id the space is recorded against.
           _bindScanSpace(matchId, _scanTenantId, _scanUserId);
-          if (_scanSpace || _site.chosen) {
-            try {
-              const m = readMeta(matchId) || {};
-              if (_scanSpace) m.space = _scanSpace;
-              if (_site.chosen) m.tenantId = _site.tenantId;
-              writeMeta(matchId, m);
-            } catch (_) { /* non-fatal — the DB rows above still carry the binding */ }
+          if (_scanSpace) {
+            try { const m = readMeta(matchId) || {}; m.space = _scanSpace; writeMeta(matchId, m); }
+            catch (_) { /* non-fatal — the DB row above still carries the binding */ }
           }
+          stampScanSite(matchId, _site);
           timings.total_ms = Date.now() - reqStart;
           timings.confirmed_bypass = true;
           audit.log({ req, action: 'scan.create', status: 'ok', targetType: 'rack',
@@ -4473,11 +4494,7 @@ app.post('/api/stitch', scanLimit, upload.array('images', 8), async (req, res) =
       logger.info({ event: 'scan.cache_hit', rackId, tenantId: _scanTenantId, stitched: true }, `stitch cache hit ${rackId}`);
       recordEvent('scan.cache_hit', { rackId, tenantId: _scanTenantId, stitched: true });
       await ensurePortCounts(rackId);
-      // A Site somebody chose is the Site of this scan, cached or not.
-      if (_site.chosen) {
-        try { const m = readMeta(rackId) || {}; m.tenantId = _site.tenantId; writeMeta(rackId, m); }
-        catch (_) { /* non-fatal - the claim above still records the Site */ }
-      }
+      stampScanSite(rackId, _site);
       timings.total_ms = Date.now() - reqStart;
       timings.cached = true;
       audit.log({ req, action: 'scan.create', status: 'ok', targetType: 'rack', targetId: rackId, payload: { cached: true, stitched: true, inputs: files.length } });
@@ -5786,11 +5803,7 @@ app.post('/api/analyze-video', auth.requireAuth, scanLimit, upload.single('video
           // Cache hit — just record group membership, no re-analysis.
           cached = true;
           await ensurePortCounts(rackId);
-          // A Site somebody chose is the Site of this scan, cached or not.
-          if (_site.chosen) {
-            try { const m = readMeta(rackId) || {}; m.tenantId = tenantId; writeMeta(rackId, m); }
-            catch (_) { /* non-fatal - the claim above still records the Site */ }
-          }
+          stampScanSite(rackId, _site);
         } else {
           // Fresh analysis — same path /api/analyze takes. We save the
           // file under the same name single-rack scans use ("original_image")
