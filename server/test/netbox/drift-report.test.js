@@ -46,3 +46,30 @@ test('a scan nobody has identified is not named by the hash of its photograph, a
   assert.ok(!html.includes('RK-58353344</h1>'));
   assert.ok(!html.includes('<img src=x'), 'a name is escaped');
 });
+
+test('a check sent to the SPOC says so, and names its one incident once', () => {
+  const external = { system: 'servicenow', number: 'INC0010042', planLevel: true };
+  const items = [...PLAN.items, { uid: 'dev:RK-1:u22', type: 'Device', name: 'Switch U22 SP-HYB-RM01-R01-R1', action: 'create', decidable: true }];
+  const tickets = [
+    { itemUid: 'dev:RK-1:u20', assignee: 'dc007.spoc', status: 'open', external },
+    { itemUid: 'dev:RK-1:u22', assignee: 'dc007.spoc', status: 'open', external },
+  ];
+  const html = report.build({ ...PLAN, items }, { tickets });
+  assert.equal(html.split('INC0010042').length - 1, 1, 'the incident is the check\'s, not each item\'s');
+  assert.equal(html.split('With dc007.spoc - open').length - 1, 2);
+
+  assert.ok(report.build({ ...PLAN, state: 'submitted' }).includes('Sent to the SPOC'));
+  assert.ok(report.build({ ...PLAN, state: 'triage' }).includes('Needs an admin'));
+  assert.ok(report.build(PLAN, { tickets: [{ itemUid: 'x', external: { system: 'none' } }] }).includes('no incident raised'));
+  assert.ok(!/the admin\b/.test(report.build({ ...PLAN, state: 'submitted' })), 'nothing is sent to an admin any more');
+});
+
+test('an older check still lists the incident of each item', () => {
+  const tickets = [
+    { itemUid: 'dev:RK-1:u20', assignee: 'dc007.tech', status: 'open', external: { number: 'INC0010007' } },
+    { itemUid: 'dev:RK-1:u17', assignee: 'dc007.tech', status: 'open', external: { number: 'INC0010008' } },
+  ];
+  const html = report.build(PLAN, { tickets });
+  assert.ok(html.includes('INC0010007, INC0010008'));
+  assert.ok(html.includes('With dc007.tech - INC0010007 - open'));
+});
