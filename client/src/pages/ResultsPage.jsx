@@ -7,6 +7,7 @@ import { getItem, getJSON, setItem, setJSON } from '../utils/safeStorage';
 import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import BackButton from '../components/BackButton.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
+import { getRackFlow, setRackFlow } from '../utils/rackFlow';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import RackTabs from '../components/RackTabs.jsx';
 import StandardFeedback from '../components/StandardFeedback.jsx';
@@ -1310,6 +1311,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     // Timeline is the in-page view that carried the name Drift before: the
     // port history and the switches read for this rack. Its state key is still
     // 'drift', which the hash and the back stack already know.
+    // Result is this page in its port mode: the Overview tab under the name it
+    // has while a port is being looked up.
+    if (newTab === 'result') newTab = 'overview';
     if (newTab === 'timeline') newTab = 'drift';
     else if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
       // urlRackId first: it is the id in the address bar and is set before the
@@ -1348,11 +1352,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   useEffect(() => {
     const onBack = (e) => {
       if (phase === 'port') { e.preventDefault(); leavePortView(); return; }
-      if (portMode) {
-        e.preventDefault();
-        setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null);
-        return;
-      }
+      // A tab of the port flow (Switches, Topology, Timeline) steps back to its
+      // Result first; Back on Result is what leaves the flow. The other way
+      // round left the person on Switches under a bar that has no Switches.
+      if (portMode && tab === 'overview') { e.preventDefault(); leavePortFlow(); return; }
       if (tab !== 'overview') { e.preventDefault(); handleHeaderBack(); }
     };
     window.addEventListener('rt:back', onBack);
@@ -1473,7 +1476,21 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const [deviceListOpen, setDeviceListOpen] = useState(false);
   // Which of the two things the person chose to do with this rack. Until they
   // choose, the page is the photograph and the choice - nothing else.
-  const [portMode, setPortMode] = useState(false);
+  // It is also which of the rack's two tab bars is up - Analyse the network, or
+  // Look up a port - and Network is a page of its own in both, so the choice is
+  // remembered for this rack (utils/rackFlow) and picked up again on the way
+  // back. A rack drawn inside another page (two racks side by side) has no bar.
+  const [portMode, setPortMode] = useState(() => !embeddedProp && getRackFlow(urlRackId) === 'port');
+  useEffect(() => { setPortMode(!embeddedProp && getRackFlow(urlRackId) === 'port'); }, [urlRackId, embeddedProp]);
+  const enterPortFlow = () => {
+    setRackFlow(urlRackId || rackId || scanId, 'port');
+    setPortMode(true); setDeviceListOpen(true);
+  };
+  // That screen's own Back: out of the port flow, back to the two choices.
+  const leavePortFlow = () => {
+    setRackFlow(urlRackId || rackId || scanId, 'analyse');
+    setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null);
+  };
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
   const [shareMsg, setShareMsg] = useState(null);
   const [shareChannel, setShareChannel] = useState(null); // 'slack' | 'teams' | 'outlook'
@@ -3416,6 +3433,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         {!isDesktop && !embeddedProp && (
           <ScanTabBar
             rackId={rackId}
+            flow={portMode ? 'port' : 'analyse'}
             activeTab="overview"
             onTabChange={(key) => { leavePortView(); handleTabChange(key); }}
           />
@@ -4733,6 +4751,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       {!isDesktop && !embeddedProp && (
         <ScanTabBar
           rackId={rackId}
+          flow={portMode ? 'port' : 'analyse'}
           activeTab={tab === 'drift' ? 'timeline' : tab}
           onTabChange={handleTabChange}
           badges={{
@@ -5042,7 +5061,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             <button
               type="button"
               className={`${styles.stepChoice} ${styles.stepChoiceSecondary}`}
-              onClick={() => { setPortMode(true); setDeviceListOpen(true); }}
+              onClick={enterPortFlow}
             >
               Look up a port
             </button>
@@ -5054,7 +5073,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <button
             type="button"
             className={styles.stepBack}
-            onClick={() => { setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null); }}
+            onClick={leavePortFlow}
           >
             ← Back
           </button>
