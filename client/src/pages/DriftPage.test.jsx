@@ -81,7 +81,11 @@ describe('<DriftPage>', () => {
     expect(screen.queryByRole('button', { name: /^Send/ })).toBeNull();
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
     expect(document.body.textContent).not.toMatch(/Write the approved|Assign to|Approve\b/);
-    expect(document.body.textContent).toMatch(/Send it to the SPOC to check\./);
+    // the answer is one sentence, and no strip of big numbers says it again
+    expect(document.body.textContent).toMatch(/1 thing is different from your records/);
+    expect(document.body.textContent).toContain('Compared with NetBox just now.');
+    expect(screen.queryByRole('group', { name: 'Summary of the comparison' })).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Send it to/);
     // Nothing to track until it has been sent.
     expect(screen.queryByRole('link', { name: 'Track this check' })).toBeNull();
   });
@@ -103,7 +107,8 @@ describe('<DriftPage>', () => {
     expect(screen.getByText('An organization admin')).toBeTruthy();
     expect(screen.getByText(`${NO_SPOC} An admin will choose who decides it.`)).toBeTruthy();
     expect(screen.getByLabelText('Note for the admin (optional)')).toBeTruthy();
-    expect(document.body.textContent).toMatch(/Send it to an admin to check\./);
+    // who decides it is said once, by the block over the button, not in the answer
+    expect(document.body.textContent).not.toMatch(/Send it to/);
 
     fireEvent.click(screen.getByRole('button', { name: 'Raise incident' }));
     // no incident was raised, so the heading says where it went; one line under it
@@ -424,19 +429,24 @@ describe('<DriftPage> the whole comparison', () => {
     } };
     mount();
     await screen.findByText('Router on shelf U20');
-    const glance = screen.getByRole('group', { name: 'Summary of the comparison' });
-    expect(glance.textContent).toBe('1Matched1Unmatched1Not seen');
+    // the difference is the substance of the page; what agrees and what was not
+    // seen is one quiet row each, with one number on it
+    expect(screen.getByText('Not in your records')).toBeTruthy();
+    expect(screen.getByText('Matched', { selector: 'summary > span' }).parentElement.textContent).toBe('Matched1');
+    expect(screen.getByText('Not seen', { selector: 'summary > span' }).parentElement.textContent).toBe('Not seen1');
     // the match is named by the record it matched, the unseen record by its shelf
     expect(screen.getByText('Switch on shelf U17')).toBeTruthy();
     expect(screen.getByText('SP-R1-U17-SW03')).toBeTruthy();
     expect(screen.getByText('SP-R1-U19-FW')).toBeTruthy();
     expect(screen.getByText('Shelf U19')).toBeTruthy();
-    // ports are not a row of their own on this screen: one device matches, not two items
-    // the three groups carry the same three words as the strip above them
-    const groups = [...document.querySelectorAll('h3, details > summary > span')].map((el) => el.firstChild.textContent.trim());
-    expect(groups.filter((g) => ['Unmatched', 'Matched', 'Not seen'].includes(g))).toEqual(['Unmatched', 'Matched', 'Not seen']);
+    // no strip of big numbers, and no heading that counts the differences again
+    expect(screen.queryByRole('group', { name: 'Summary of the comparison' })).toBeNull();
+    expect(document.querySelector('h3')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Unmatched/);
     expect(document.body.textContent).not.toMatch(/Matching your records|not seen in the photo/);
-    expect(screen.getByText('Matched', { selector: 'summary > span' }).parentElement.textContent).toBe('Matched1');
+    // the count is said once, and the sentence under it says the rest agrees
+    expect(document.body.textContent.match(/1 thing is different/g)).toHaveLength(1);
+    expect(document.body.textContent).toContain('Compared with NetBox just now. Nothing else differs.');
     expect(screen.getByRole('button', { name: 'Drift report' })).toBeTruthy();
     expect(screen.getByText('One page of this comparison. It is attached to the incident when you send.')).toBeTruthy();
   });

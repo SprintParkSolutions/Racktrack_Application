@@ -755,23 +755,16 @@ export default function DriftPage() {
                   ? `${changed.length} ${changed.length === 1 ? 'thing is' : 'things are'} different from your records`
                   : `${changed.length} ${changed.length === 1 ? 'thing' : 'things'} would be added`}
               </h2>
+              {/* What the three big numbers used to say, in the sentence that
+                  already says the first of them: the rest of the rack agrees.
+                  Who it goes to is said once, by the block above the button. */}
               <p>
                 {compared
-                  ? `Compared with NetBox just now.${sent ? '' : ` Send it to ${toAdmin ? 'an admin' : 'the SPOC'} to check.`}`
+                  ? `Compared with NetBox just now.${matching.length ? ' Nothing else differs.' : ''}`
                   : 'Your records do not have this rack yet, so everything in this photo would be new.'}
               </p>
             </>
           )}
-        </div>
-      )}
-
-      {/* The rack at a glance: how much agrees, how much does not, and what the
-          record holds that the photograph did not show. */}
-      {plan && !busy && compared && (
-        <div className={styles.glance} role="group" aria-label="Summary of the comparison">
-          <div><b className={styles.gOk}>{matching.length}</b><span>Matched</span></div>
-          <div><b className={changed.length ? styles.gWarn : undefined}>{changed.length}</b><span>Unmatched</span></div>
-          <div><b>{notSeen.length}</b><span>Not seen</span></div>
         </div>
       )}
 
@@ -819,10 +812,6 @@ export default function DriftPage() {
         </div>
       )}
       {sent && reportRow}
-
-      {plan && !busy && changed.length > 0 && (
-        <h3 className={styles.group}>Unmatched <span>{changed.length}</span></h3>
-      )}
 
       {plan && !busy && !sent && changed.length > 1 && (
         <label className={styles.pickAll}>
