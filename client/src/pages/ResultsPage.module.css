@@ -6147,3 +6147,26 @@
 
 /* Why a re-read did not happen, in the server's own words. */
 .reanalyzeNote { margin: 0 0 8px; font-size: 0.82rem; color: var(--md-error, #b3261e); }
+
+/* Which rack this is, in the results header. The scan's own id is a hash of
+   the photograph and means nothing to the person holding the phone; the id on
+   the cabinet does. */
+.headerRack {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .06em;
+  color: #111111; font-weight: 600; max-width: 100%;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.headerRackAlso { font-weight: 400; color: #6b6b6b; }
+.headerRackAsk {
+  font-family: var(--sans, inherit); font-size: .58rem; font-weight: 500;
+  letter-spacing: .02em; color: #8a6100;
+  border: 1px solid #e8d7ae; background: #fbf3e0; border-radius: 2px; padding: 0 5px;
+}
+.headerWhere {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: .6rem; color: #6b6b6b; margin-top: 2px;
+}
+:global([data-theme='dark']) .headerRack { color: #f2f2f2; }
+:global([data-theme='dark']) .headerRackAlso,
+:global([data-theme='dark']) .headerWhere { color: #a8a8a8; }

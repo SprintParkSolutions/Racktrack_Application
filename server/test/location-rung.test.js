@@ -111,3 +111,13 @@ test('no location at all leaves the answer exactly as it was', () => {
   assert.equal(out.decision, 'matched');
   assert.equal(out.evidence.location.verdict, 'unknown');
 });
+
+test('the reading itself travels with the verdict, so a person can see where they were', () => {
+  const v = location.judge({ ...near(HYD, 120), accuracyM: 12 }, { id: 1, name: 'Hyderabad DC1', ...HYD }, []);
+  assert.equal(v.verdict, 'here');
+  assert.ok(v.at, 'the position is carried');
+  assert.equal(Math.round(v.at.lng * 1000), Math.round(HYD.lng * 1000));
+  assert.equal(v.at.accuracyM, 12);
+  // Nothing to go on means nothing is invented.
+  assert.equal(location.judge(null, { name: 'x', ...HYD }).at, undefined);
+});

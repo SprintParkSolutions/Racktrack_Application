@@ -1551,8 +1551,45 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   }, [consoleOpen, switchCreds.vendor]);
 
   const { scanId, rackId, cached, devices: initialDevices = [], units_detected = [], originalExt, originalImageUrl, qualityWarning, qualityWarningMsg, timings: analysisTimings } = result || {};
+
+  useEffect(() => {
+    let dropped = false;
+    if (!rackId) { setIdentity(null); return undefined; }
+    (async () => {
+      try {
+        const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/identity`));
+        if (!dropped && r.ok) setIdentity(await r.json());
+      } catch { /* the header simply says less */ }
+    })();
+    return () => { dropped = true; };
+  }, [rackId]);
+
+  // What to call this rack, and how sure that is. A rack somebody confirmed is
+  // stated; one read off the cabinet and not yet confirmed says so.
+  const rackSaid = useMemo(() => {
+    const rack = identity && identity.rack ? identity.rack : null;
+    const suggested = identity && identity.decision === 'suggested'
+      ? (identity.candidates || [])[0] : null;
+    const one = rack || suggested;
+    if (!one) return null;
+    return {
+      name: one.facilityId || one.name || null,
+      also: one.facilityId && one.name && one.facilityId !== one.name ? one.name : null,
+      confirmed: !!rack,
+    };
+  }, [identity]);
+
+  const takenAt = identity && identity.evidence && identity.evidence.location
+    && identity.evidence.location.verdict !== 'unknown'
+    ? identity.evidence.location : null;
   const [fetchedOcrLabels, setFetchedOcrLabels] = useState(null);
   const ocrLabels = fetchedOcrLabels;
+  // Which rack this is, and where the photograph was taken. The header used to
+  // show only the scan's own id - a hash of the photograph - so a person
+  // standing in front of a rack that wears SP-HYB-RM01-R01-R1 was shown
+  // RK-AD902EF2 and nothing about the site. Read-only: this asks, it never
+  // confirms, and confirming stays where it was, on the drift check.
+  const [identity, setIdentity] = useState(null);
   const [warningDismissed, setWarningDismissed] = useState(false);
 
   // ── Ticket-mode bootstrapping ──
@@ -4622,10 +4659,28 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             :                       'Scan Results'
           }</h2>
           <div className={styles.headerMetaRow}>
-            <span className={styles.headerMono}>
-              {rackId || scanId}
-            </span>
+            {rackSaid ? (
+              <span className={styles.headerRack} title={rackId || scanId}>
+                {rackSaid.name}
+                {rackSaid.also && <span className={styles.headerRackAlso}>{rackSaid.also}</span>}
+                {!rackSaid.confirmed && <span className={styles.headerRackAsk}>read, not confirmed</span>}
+              </span>
+            ) : (
+              <span className={styles.headerMono}>{rackId || scanId}</span>
+            )}
           </div>
+          {(rackSaid || takenAt) && (
+            <div className={styles.headerWhere}>
+              {rackSaid && <span className={styles.headerMono}>{rackId || scanId}</span>}
+              {takenAt && <span>{takenAt.note}</span>}
+              {takenAt && takenAt.at && Number.isFinite(takenAt.at.lat) && (
+                <span className={styles.headerMono}>
+                  {takenAt.at.lat.toFixed(5)}, {takenAt.at.lng.toFixed(5)}
+                  {Number.isFinite(takenAt.at.accuracyM) ? ` ±${takenAt.at.accuracyM} m` : ''}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div style={{ width: 40 }} />
       </header>

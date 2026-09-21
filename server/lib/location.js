@@ -69,10 +69,14 @@ function judge(capture, site, others = []) {
   }
   const radius = Math.max(SITE_RADIUS_M, 2 * (accuracyM || 0));
   const at = { lat: num(capture.lat), lng: num(capture.lng) };
+  // The reading itself travels with the verdict. A person looking at a rack
+  // asked where the photograph was taken and got a verdict with no position in
+  // it; the two coordinates are what they meant.
+  const took = { lat: at.lat, lng: at.lng, accuracyM };
 
   const here = valid(site) ? distanceM(at, { lat: num(site.lat), lng: num(site.lng) }) : null;
   if (here !== null && here <= radius) {
-    return { verdict: 'here', distanceM: Math.round(here), accuracyM, site: site.name,
+    return { verdict: 'here', distanceM: Math.round(here), accuracyM, at: took, site: site.name,
       note: `Taken at ${site.name}, ${said(here)} from its address.` };
   }
 
@@ -81,17 +85,17 @@ function judge(capture, site, others = []) {
     .filter((o) => o.d <= radius)
     .sort((a, b) => a.d - b.d)[0];
   if (near) {
-    return { verdict: 'elsewhere', distanceM: here !== null ? Math.round(here) : null, accuracyM,
+    return { verdict: 'elsewhere', distanceM: here !== null ? Math.round(here) : null, accuracyM, at: took,
       site: site && site.name, nearest: { id: near.id, name: near.name, distanceM: Math.round(near.d) },
       note: `Taken at ${near.name}, not ${site ? site.name : 'the Site this scan is filed under'}`
         + `${here !== null ? `, which is ${said(here)} away` : ''}. `
         + 'Check which Site this scan belongs to before trusting a match.' };
   }
   if (here === null) {
-    return { verdict: 'unknown', accuracyM,
+    return { verdict: 'unknown', accuracyM, at: took,
       note: `${site ? site.name : 'This Site'} has no location set, so where the photo was taken cannot be checked against it.` };
   }
-  return { verdict: 'away', distanceM: Math.round(here), accuracyM, site: site.name,
+  return { verdict: 'away', distanceM: Math.round(here), accuracyM, at: took, site: site.name,
     note: `Taken ${said(here)} from ${site.name}, and not at any other Site of this organisation.` };
 }
 
