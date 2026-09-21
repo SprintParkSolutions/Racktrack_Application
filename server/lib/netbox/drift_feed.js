@@ -78,6 +78,9 @@ function feedDrift(rec, data, { tenantId = null } = {}) {
       lldp_system:  n?.remoteSysName ?? null,
     }, ts);
   }
+  // The reading is the switch having been read, whoever took it. Without this
+  // the Timeline said "Not read yet" over a switch whose ports it had just drawn.
+  try { portsDb.recordPollSuccess(dev.id, new Date(ts)); } catch { /* the snapshots are what matter */ }
   return dev;
 }
 

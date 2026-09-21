@@ -285,6 +285,7 @@ export default function PortHistoryPage() {
 }
 
 function PortHistoryInner({ embedded, rackId = null }) {
+  const navigate = useNavigate();
   const [devices, setDevices]   = useState([]);
   const [loadErr, setLoadErr]   = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -381,6 +382,12 @@ function PortHistoryInner({ embedded, rackId = null }) {
 
   const triggerPoll = async () => {
     if (!selectedId) return;
+    // Inside a rack these switches were read by the phone, over the customer's
+    // own network, and only the phone can read them again: the server this runs
+    // on cannot reach 192.168.x from the internet. The button used to ask the
+    // server anyway and swallow the failure, so it looked dead. It now goes to
+    // the Network screen, where the phone does the reading.
+    if (rackId) { navigate(`/results/${encodeURIComponent(rackId)}/network`); return; }
     try { await authFetch(apiUrl(`/api/ports/${selectedId}/poll`), { method: 'POST' }); }
     catch (_) {}
   };
