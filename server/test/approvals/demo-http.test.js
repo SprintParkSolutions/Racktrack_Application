@@ -267,6 +267,11 @@ test('the demo, and the write NetBox refuses, at the doors', async (t) => {
     assert.equal(row.itemUid, undefined);
     const asked = await call(port, tok.admin, 'GET', `/api/approvals/changes?planId=${id}&internal=1`);
     assert.ok(asked.json.changes.length > 1, 'RackTrack\'s own link fields are recorded, and shown only when asked for');
+    // The check carries the same rows, link fields and all, for the screen that shows what its write did.
+    const done = await call(port, tok.spoc, 'GET', `/api/approvals/plans/${id}`);
+    assert.deepEqual(done.json.changes.filter((c) => !c.internal), [row]);
+    assert.deepEqual(done.json.changes.filter((c) => c.internal).map((c) => c.field).sort(), ['racktrack_bound', 'racktrack_uid']);
+    assert.equal(done.json.changes.some((c) => 'itemUid' in c), false);
     const barred = await call(port, tok.tech, 'GET', `/api/approvals/changes?planId=${id}`);
     assert.equal(barred.status, 403, barred.raw);
 

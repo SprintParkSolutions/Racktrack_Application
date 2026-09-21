@@ -160,4 +160,16 @@ function summaryOf(rows, { limit = 10 } = {}) {
     more: Math.max(0, visible.length - lines.length) };
 }
 
-module.exports = { rowsFor, verdictRow, summaryOf, approverOf, INTERNAL_FIELDS };
+/** One row as the screens read it: no uid of ours, and values as values. */
+const rowOf = (c) => ({
+  id: c.id, writtenAt: c.writtenAt, planId: c.planId, attempt: c.attempt,
+  tenantId: c.tenantId, siteName: c.siteName, rackId: c.rackId, rackName: c.rackName,
+  objectType: c.objectType, objectName: c.objectName, netboxId: c.netboxId, netboxUrl: c.netboxUrl,
+  action: c.action, field: c.field, before: c.before, after: c.after, internal: c.internal,
+  result: c.result, reason: c.reason, source: c.source, rule: c.rule,
+  approvedBy: c.approvedBy, approvedById: c.approvedById, approvedAt: c.approvedAt,
+  writtenBy: c.writtenBy, incidentNumber: c.incidentNumber, incidentUrl: c.incidentUrl,
+  checked: c.checked,
+});
+
+module.exports = { rowsFor, verdictRow, summaryOf, approverOf, rowOf, INTERNAL_FIELDS };

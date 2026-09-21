@@ -2473,8 +2473,9 @@ function get(planId, actor) {
     // What the evidence suggests, and what a person changed before approving.
     suggestions: suggested.suggestions, suggestionsNote: suggested.note,
     overrides: store.overridesOf(plan.id).map(overrideBrief),
-    // Filled by the stage that owns it: what the write recorded.
-    changes: [],
+    // What the write recorded, newest first, RackTrack's own link fields
+    // included: the same rows the registry lists, for this check alone.
+    changes: store.listChanges({ planId: plan.id, internal: 1, limit: 500 }).map(registry.rowOf),
     assignable: machine.unassigned(ctx).map((i) => i.uid),
     approval: { dual: stage.dual, stage: stage.stage,
                 first: machine.firstApproval(ctx) },
