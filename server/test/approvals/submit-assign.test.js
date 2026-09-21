@@ -751,6 +751,27 @@ describe('an account that belongs to no organization', () => {
   });
 });
 
+describe('a Rack record that is only relabelled', () => {
+  it('is a supporting record and still a question, so the Desk must offer it and Approve waits for it', () => {
+    const RACK_UID = 'rack:SPHYB:r1';
+    const id = sent({ rows: [
+      { type: 'Rack', uid: RACK_UID, name: 'SP-HYB-RM01-R01-R1', action: 'rebind', netboxId: 26, fromUid: 'rack:old' },
+      { type: 'Device', uid: DEV2, name: 'FW U21', action: 'update', netboxId: 44,
+        diff: { serial: { from: 'A', to: 'B' } } },
+    ] });
+    const view = service.get(id, SPOC);
+    const rack = view.items.find((i) => i.uid === RACK_UID);
+    assert.deepEqual([rack.supporting, rack.decidable, rack.decision], [true, true, 'pending']);
+    assert.equal(view.plan.summary.decidable, 2, 'the summary counts it');
+
+    service.decideItems(id, [{ uid: DEV2, decision: 'approved' }], { actor: SPOC });
+    const early = service.approve(id, { actor: SPOC });
+    assert.equal(early.code, 'guard', 'one item is still undecided: the Rack');
+    assert.equal(service.decideItems(id, [{ uid: RACK_UID, decision: 'approved' }], { actor: SPOC }).applied.length, 1);
+    assert.equal(service.approve(id, { actor: SPOC }).plan.status, 'approved');
+  });
+});
+
 describe('the holder\'s own notes', () => {
   it('a member who holds the check may keep a note internal, and reads the internal thread', () => {
     spoc._setLookup(() => ({ user_id: 42 }));
