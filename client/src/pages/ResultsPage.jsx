@@ -3958,11 +3958,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <div className={styles.pBlock}>
             <div className={styles.pList}>
               <PortFact
-                label="Socket"
-                value={portInfo?.status === 'connected' ? 'Cable plugged in'
-                  : portInfo?.status === 'empty' ? 'Empty' : 'Not clear from the photograph'}
-              />
-              <PortFact
                 label="Port type"
                 value={portInfo?.port_type ? prettyPortType(portInfo.port_type) : null}
                 extra={portInfo?._port_type_user ? <UserTag /> : null}
@@ -3989,7 +3984,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             || neighborStatus === 'loading'
             || (neighborStatus === 'ok' && neighbor?.found)) && (
           <div className={styles.pBlock}>
-            <h3 className={styles.pBlockHead}>What is on the other end</h3>
 
             {neighborStatus === 'loading' && (
               <p className={styles.pNote}>
@@ -4044,9 +4038,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               settle: the port type, the port number and the cable colour. They
               were scattered down the screen between other things; they are one
               group now, because answering them is one job. */}
-          {!ticketMode && portInfo && portInfo.status !== 'invalid' && (
-            <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>Is this right?</h3>
-          )}
           {/* The physical port type: RJ45, SFP, USB. Feeds the retraining set. */}
           {portInfo && portInfo.status !== 'invalid' && portInfo.port_type && (
             <StandardFeedback
@@ -4098,9 +4089,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               The type switch, then the number. Switching type re-points the
               input at that set of ports, so another kind of port can be found
               without going back to the rack. */}
-          {!ticketMode && selectedDevice && (
-            <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>Look up another port on this device</h3>
-          )}
           {!ticketMode && selectedDevice && portCatsToShow.length > 1 && (
             <div className={styles.prTypeSwitch}>
               {portCatsToShow.map(opt => {

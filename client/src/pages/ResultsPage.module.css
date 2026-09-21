@@ -1038,7 +1038,10 @@
 .portImg {
   width: 100%; height: 100%;
   display: block;
-  object-fit: contain;
+  /* The frame is wide and the rack photograph is tall, so `contain` left the
+     picture as a narrow strip with empty space either side of it. It fills the
+     frame now; the zoom view still moves it to the port. */
+  object-fit: cover;
   transition: transform .4s cubic-bezier(.25,.8,.25,1);
   transform-origin: center center;
   will-change: transform;
