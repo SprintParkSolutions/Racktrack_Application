@@ -180,18 +180,29 @@ def rack_identity(rack_id: str, front: dict | None, side: dict | None, rack_dir:
             {"text": names[rack_id], "conf": 1.0, "source": "record", "where": "rack-names.json"}
         )
     # Rail chips: identifier-shaped text on the rack's own rails.
+    #
+    # A reading taken from the RACK'S OWN RAIL is exempt from the shape test.
+    # The test exists to stop a device chip on the side margin being mistaken
+    # for the rack's name, and a customer's rack id is under no obligation to
+    # start with the word RACK: the office rack wears SP-HYB-RM01-R01-R1, which
+    # this refused, so the one label in the photograph that names the rack was
+    # thrown away and every scan ended up asking a person.
     for l in (side or {}).get("labels", []) or []:
         t = _repair(str(l.get("text", "")).strip())
-        if t and _RACK_RE.match(t):
-            cands.append(
-                {
-                    "text": t,
-                    "conf": float(l.get("conf") or 0),
-                    "source": "rail chip",
-                    "side": l.get("side"),
-                    "yPct": l.get("yPct"),
-                }
-            )
+        if not t:
+            continue
+        on_the_rail = str(l.get("side") or "").lower() == "rail"
+        if not on_the_rail and not _RACK_RE.match(t):
+            continue
+        cands.append(
+            {
+                "text": t,
+                "conf": float(l.get("conf") or 0),
+                "source": "rack rail" if on_the_rail else "rail chip",
+                "side": l.get("side"),
+                "yPct": l.get("yPct"),
+            }
+        )
     # Front labels that read as a rack identifier (a sign on the door or the top).
     for l in (front or {}).get("labels", []) or []:
         raw = str(l.get("text", "")).strip()

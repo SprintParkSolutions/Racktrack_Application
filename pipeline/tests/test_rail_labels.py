@@ -91,3 +91,26 @@ def test_readings_that_disagree_badly_are_not_offered():
     image[20:60, 100:600] = 255
     disagree = ["RACK-01", "ZONE-97", "DB-PROD-44", "SWX-12"]
     assert read_rails(image, [[0, 10, 800, 80]], Reader(disagree), min_agreement=0.9) == []
+
+
+# ── what the rest of the scan does with a rail reading ──────────────────────
+
+def test_a_rack_id_of_any_shape_is_kept_when_it_was_read_off_the_rail():
+    from pipeline.physical_layer import rack_identity
+
+    from pathlib import Path
+
+    side = {"labels": [
+        {"text": "SP-HYB-RM01-R01-R1", "side": "rail", "conf": 0.94, "yPct": 12},
+        {"text": "SWHOME", "side": "right", "conf": 0.9, "yPct": 40},
+        {"text": "RACK-07", "side": "right", "conf": 0.8, "yPct": 60},
+    ]}
+    out = rack_identity("RK-TEST0001", None, side, Path("/nonexistent"))
+    texts = {c["text"]: c["source"] for c in out["candidates"]}
+    # The rail names the rack whatever shape the customer's id is...
+    assert texts.get("SP-HYB-RM01-R01-R1") == "rack rail"
+    # ...while a chip on the side margin still has to look like a rack id, so a
+    # device's own name is not mistaken for the rack's.
+    assert "SWHOME" not in texts
+    assert texts.get("RACK-07") == "rail chip"
+    assert out["label"]["text"] == "SP-HYB-RM01-R01-R1"
