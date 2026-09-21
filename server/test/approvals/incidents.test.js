@@ -405,6 +405,14 @@ describe('the outcome of the check reaches its incident', () => {
     await settle();
     assert.equal(patches().length, 0, 'an approval alone pushes nothing: the write has not happened yet');
 
+    // What the write leaves in the change registry is what the close notes name:
+    // the fields a person reads, never RackTrack's own link field.
+    const row = (objectName, field, before, after, internal = false) => store.addChange({ orgId: 1, tenantId: 32,
+      planId: id, itemUid: objectName, objectType: 'Device', objectName, action: 'update', field, before, after,
+      internal, result: 'written', approvedBy: SPOC.username, writtenBy: 'system' });
+    row('Router U20', 'position', 22, 20);
+    row('Router U20', 'racktrack_uid', null, 'dev:t32:u20', true);
+    row('FW U21', 'serial', 'A', 'B');
     finishWrite(id, 'completed', { result: { written: 2, failed: 0, failures: [] } });
     const brief = await incidents.answerFor(id);
     assert.deepEqual(brief, { number: 'INC0010041', state: 'resolved', pushed: true, error: null });
