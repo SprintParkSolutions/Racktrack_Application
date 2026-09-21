@@ -271,7 +271,7 @@ async function raise(planId, { fetchImpl, again }) {
     return inc;
   }
 
-  const inc = stamp(plan.id, (now) => ({ system: 'servicenow', number: r.number ?? null, sysId: r.sysId ?? null,
+  stamp(plan.id, (now) => ({ system: 'servicenow', number: r.number ?? null, sysId: r.sysId ?? null,
     url: r.url ?? null, state: r.state || 'new', raisedAt: store.nowIso(), raisedFor: holder,
     assigned: Boolean(r.assigned), assignedTo: r.assignedTo || null, assignWarning: r.assignWarning || null,
     error: null, detail: null, attachments: now.attachments || [], pending: without(now, 'raise'),
