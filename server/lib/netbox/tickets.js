@@ -611,22 +611,36 @@ async function raiseCheckInner(cfg, ctx, fetchImpl = req) {
   const found = await findExisting(cfg, fields.correlation_id, fetchImpl);
   if (!found.ok) return failed({ status: found.status, body: found.error });
 
+  const holder = ctx.holder || null;
+  const sender = ctx.sender || null;
+
   if (found.incident) {
+    // The first try raised it and the answer was lost on the way back. It is
+    // the same incident: no note, no reopening, its state left alone. Only an
+    // assignee that is missing is put right.
     const row = found.incident;
-    const to = refOf(row.assigned_to);
+    let to = refOf(row.assigned_to);
+    let user = null;
+    let why = null;
+    if (!to) {
+      ({ user, why } = oneUser(await findUsers(cfg, [holder && holder.email], fetchImpl), holder));
+      if (user) {
+        const set = await update(cfg, row.sys_id, { assigned_to: user.sysId }, fetchImpl);
+        if (set.ok) to = user.sysId;
+        else why = `ServiceNow would not assign it (${set.error}), so the incident is not assigned to anybody.`;
+      }
+    }
     return {
       ok: true, reused: true,
       sysId: row.sys_id, number: row.number,
       state: STATE[Number(row.state)] || 'unknown',
       url: urlOf(cfg, row.sys_id),
       assigned: !!to,
-      assignedTo: to ? { sysId: to, name: null } : null,
-      assignWarning: to ? null : 'The incident was raised earlier and is not assigned to anybody in ServiceNow.',
+      assignedTo: to ? { sysId: to, name: user ? user.name : null } : null,
+      assignWarning: to ? null : why,
     };
   }
 
-  const holder = ctx.holder || null;
-  const sender = ctx.sender || null;
   const users = await findUsers(cfg, [holder && holder.email, sender && sender.email], fetchImpl);
   const assignee = oneUser(users, holder);
   const caller = sender && sender.email ? oneUser(users, sender).user : null;

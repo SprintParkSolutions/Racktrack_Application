@@ -268,6 +268,28 @@ describe('raising the incident of a check', () => {
     assert.deepEqual(out.assignedTo, { sysId: '6816', name: null });
   });
 
+  it('puts right a missing assignee on the incident it finds, and touches nothing else', async () => {
+    const bare = { sys_id: '9d3', number: 'INC0010042', state: '7', assigned_to: '' };
+    const impl = fake([ok([bare]), ok([SPOC_USER]), ok({ number: 'INC0010042', state: '7' })]);
+    const out = await t.raiseCheck(CFG, CTX, impl);
+    assert.deepEqual(impl.calls.map((c) => c.method), ['GET', 'GET', 'PATCH']);
+    assert.deepEqual(impl.calls[2].body, { assigned_to: '6816' }, 'no note, and a closed incident is not reopened');
+    assert.equal(out.state, 'closed');
+    assert.equal(out.assigned, true);
+    assert.deepEqual(out.assignedTo, { sysId: '6816', name: 'DC007 Spoc' });
+
+    const nobody = await t.raiseCheck(CFG, CTX, fake([ok([bare]), ok([])]));
+    assert.equal(nobody.ok, true);
+    assert.equal(nobody.assigned, false);
+    assert.equal(nobody.assignWarning,
+      'No ServiceNow user has the email spoc@dc007.example, so the incident is not assigned to anybody.');
+
+    const refusedTo = await t.raiseCheck(CFG, CTX, fake([ok([bare]), ok([SPOC_USER]), refused(403, 'ACL')]));
+    assert.equal(refusedTo.ok, true, 'the incident exists all the same');
+    assert.equal(refusedTo.assigned, false);
+    assert.match(refusedTo.assignWarning, /ServiceNow would not assign it \(ServiceNow replied 403: ACL\)/);
+  });
+
   it('never picks up the incident of an older check of the same rack', async () => {
     // The fake instance holds check 139's incident. It is only ever found by its own id.
     const held = { 'racktrack:check:139': { sys_id: 'old', number: 'INC0010001', state: '7' } };
