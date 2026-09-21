@@ -17,16 +17,10 @@ describe('<ScanTabBar>', () => {
     expect(selected()).toEqual(['Overview']);
   });
 
-  test('the centre action answers with its own key, and is not a tab', () => {
-    const picked = vi.fn();
-    render(<ScanTabBar activeTab="overview" onTabChange={picked} />);
-    // It carries no label and never lights up, so it is found by what it does.
-    const centre = screen.getByRole('button', { name: 'Look up a port' });
-    expect(centre.getAttribute('role')).toBeNull();
-    fireEvent.click(centre);
-    expect(picked.mock.calls.map(([x]) => x)).toEqual(['port']);
-    // and it is not counted among the tabs
+  test('the rack bar is four plain tabs: the raised action belongs to the app bar alone', () => {
+    render(<ScanTabBar activeTab="overview" onTabChange={() => {}} />);
     expect(labels()).toEqual(['Overview', 'Network', 'Report', 'Drift']);
+    expect(screen.queryByRole('button', { name: 'Look up a port' })).toBeNull();
   });
 
   test('each tab answers with its own key, and there is no menu', () => {

@@ -67,11 +67,9 @@ describe('<BottomNav> on a rack', () => {
     expect(screen.queryByRole('tab', { name: /^scan$/i })).toBeNull();
   });
 
-  test("the rack bar's centre action opens the results page on its port picker", () => {
+  test('the rack bar is four plain tabs, with no raised action of its own', () => {
     mountAt('/results/RK-1/network');
-    fireEvent.click(screen.getByRole('button', { name: 'Look up a port' }));
-    // The results page reads #port on arrival and opens its port picker, the
-    // same thing its own "Look up a port" button does.
-    expect(screen.getByTestId('where').textContent).toBe('/results/RK-1#port');
+    expect(screen.queryByRole('button', { name: 'Look up a port' })).toBeNull();
+    expect(tap('Report')).toBe('/results/RK-1/report');
   });
 });

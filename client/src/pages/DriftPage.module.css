@@ -40,6 +40,12 @@
 .back { flex: none; width: 44px; height: 44px; margin-left: -12px; display: grid; place-items: center;
         border: none; background: none; color: inherit; cursor: pointer; }
 .title { margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em; }
+/* The rack is what this page is about, so it is the title; "Drift check" is
+   the small line above it, the way the results page names its own screens. */
+.titleWrap { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.eyebrow { font-size: var(--fs-label); font-weight: var(--fw-label); letter-spacing: var(--ls-caps); text-transform: uppercase; color: var(--muted-2); }
+.titleRack { margin: 0; font-family: ui-monospace, Menlo, monospace; font-size: var(--fs-head); font-weight: var(--fw-title);
+             letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .busy, .error { margin: 14px var(--gutter); font-size: var(--fs-item); }
 .busy { color: var(--muted-1); }
@@ -240,3 +246,20 @@
 .secondaryBtn:disabled { opacity: .55; cursor: default; }
 .reportHint { flex: 1 1 160px; font-size: var(--fs-sub); line-height: 1.4; color: var(--muted-1); }
 @media (prefers-reduced-motion: reduce) { .groupBox > summary::after { transition: none; } }
+
+/* What needs no attention: one line of three, and the one that is picked opens
+   under it. Three stacked rows of the same shape read as a list of jobs. */
+.quiet { border-top: 1px solid var(--hair); }
+.quietPick { display: flex; gap: 6px; padding: 10px var(--gutter); overflow-x: auto; scrollbar-width: none; }
+.quietPick::-webkit-scrollbar { display: none; }
+.quietTab {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
+  min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--hair); border-radius: 999px;
+  background: transparent; color: var(--muted-1);
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.quietTab b { font-family: ui-monospace, Menlo, monospace; font-weight: var(--fw-label); color: inherit; }
+.quietOn { border-color: var(--text, #1c1c1c); color: var(--text, #1c1c1c); }
+.dotPort { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-2, #9a9a9a); flex: none; }

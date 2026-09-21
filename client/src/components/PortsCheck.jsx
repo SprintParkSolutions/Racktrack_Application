@@ -47,7 +47,7 @@ function Rows({ rows, differs = false }) {
   );
 }
 
-export default function PortsCheck({ ports }) {
+export default function PortsCheck({ ports, open: alwaysOpen = false }) {
   const [open, setOpen] = useState(false);
   const [showMatched, setShowMatched] = useState(false);
   if (!ports || ports.ok === false) return null;
@@ -65,13 +65,15 @@ export default function PortsCheck({ ports }) {
 
   return (
     <section className={styles.ports} aria-label="Ports">
-      <button type="button" className={styles.top} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        <span className={styles.name}>Ports</span>
-        <span className={styles.count}>{total}</span>
-        <span className={styles.chevron} aria-hidden="true" />
-      </button>
+      {!alwaysOpen && (
+        <button type="button" className={styles.top} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+          <span className={styles.name}>Ports</span>
+          <span className={styles.count}>{total}</span>
+          <span className={styles.chevron} aria-hidden="true" />
+        </button>
+      )}
 
-      {open && (
+      {(alwaysOpen || open) && (
         <div className={styles.inside}>
           <p className={styles.sub}>Cables in the photo against what the switch and NetBox say.</p>
           <p className={styles.tally}>Matched {matched}, not matched {notMatched}, not known {notKnown}.</p>

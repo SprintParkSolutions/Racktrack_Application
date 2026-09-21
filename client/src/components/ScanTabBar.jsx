@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import styles from './ScanTabBar.module.css';
 
 // The rack's tab bar on a phone: Overview, Network, Report, Drift.
@@ -37,44 +36,23 @@ const UNDER_OVERVIEW = ['result', 'topology', 'switches'];
 
 export default function ScanTabBar({ activeTab, onTabChange, badges = {} }) {
   const active = UNDER_OVERVIEW.includes(activeTab) ? 'overview' : activeTab;
-  // The centre action sits in the middle of the row, so the bar balances
-  // whatever the tab list holds.
-  const half = Math.floor(TABS.length / 2);
 
   return (
     <nav className={styles.tabBar} role="tablist" aria-label="Scan results tabs">
       <div className={styles.bar}>
-        {TABS.map((tab, i) => (
-          <Fragment key={tab.key}>
-            {/* The centre action is the rack's other job. It is not a tab - it
-                does not light up and it holds no label - so it answers with its
-                own key, and the page turns that into what the "Look up a port"
-                button on the Overview already does. */}
-            {i === half && (
-              <span className={styles.centreSlot}>
-                <button
-                  type="button"
-                  className={styles.centre}
-                  onClick={() => onTabChange('port')}
-                  aria-label="Look up a port"
-                  title="Look up a port"
-                >
-                  <IconPortLookup />
-                </button>
-              </span>
-            )}
-            <button
-              role="tab"
-              aria-selected={active === tab.key}
-              className={`${styles.tab} ${active === tab.key ? styles.tabActive : ''}`}
-              onClick={() => onTabChange(tab.key)}
-              type="button"
-            >
-              <span className={styles.tabIcon}>{tab.icon}</span>
-              <span className={styles.tabLabel}>{tab.label}</span>
-              {badges[tab.key] > 0 && <span className={styles.tabBadge}>{badges[tab.key]}</span>}
-            </button>
-          </Fragment>
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            role="tab"
+            aria-selected={active === tab.key}
+            className={`${styles.tab} ${active === tab.key ? styles.tabActive : ''}`}
+            onClick={() => onTabChange(tab.key)}
+            type="button"
+          >
+            <span className={styles.tabIcon}>{tab.icon}</span>
+            <span className={styles.tabLabel}>{tab.label}</span>
+            {badges[tab.key] > 0 && <span className={styles.tabBadge}>{badges[tab.key]}</span>}
+          </button>
         ))}
       </div>
     </nav>
@@ -82,17 +60,6 @@ export default function ScanTabBar({ activeTab, onTabChange, badges = {} }) {
 }
 
 // ── Tab icons (20×20, clean stroke style) ───────────────────────
-
-// The centre action: looking a port up is a search, and this is the magnifier
-// the app already uses for one, drawn in this bar's own stroke style.
-function IconPortLookup() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="M16 16l4.5 4.5" />
-    </svg>
-  );
-}
 
 function IconRack() {
   return (

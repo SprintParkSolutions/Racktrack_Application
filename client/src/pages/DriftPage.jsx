@@ -247,6 +247,16 @@ export default function DriftPage() {
   const [sentInfo, setSentInfo] = useState(null);
   // Ports, asked for once the comparison is up. The page never waits on it.
   const [ports, setPorts] = useState(null);
+  // Which of the three quiet groups is open, if any: one line of three, and
+  // only the one a person picks opens under it.
+  // How many ports the check read, for the line that folds them away. The
+  // panel itself works the three figures out again; this is only the count.
+  const portTotal = useMemo(() => {
+    const sum = ports?.summary || {};
+    const n = (k) => (Number.isFinite(Number(sum[k])) ? Number(sum[k]) : 0);
+    return n('match') + n('mismatch') + n('unknown') || (ports?.rows || []).length;
+  }, [ports]);
+  const [rest, setRest] = useState(null);
   const [matched, setMatched] = useState(null);
   const [recordRack, setRecordRack] = useState(null);
   const [identity, setIdentity] = useState(null);
@@ -617,14 +627,17 @@ export default function DriftPage() {
           <button type="button" className={styles.back} onClick={goBack} aria-label="Back">
             <BackIcon />
           </button>
-          <h1 className={styles.title} title={rackId}>Drift check</h1>
+          <span className={styles.titleWrap}>
+            <span className={styles.eyebrow}>Drift check</span>
+            <h1 className={rackName ? styles.titleRack : styles.title} title={rackId}>
+              {rackName || 'Drift check'}
+            </h1>
+          </span>
         </header>
 
         {plan && !busy && (
           <div className={styles.rack}>
-            <span className={rackName ? styles.rackName : styles.rackUnknown}>
-              {rackName || 'Not identified yet'}
-            </span>
+            {!rackName && <span className={styles.rackUnknown}>Not identified yet</span>}
             {stillOpen && <span className={styles.rackOpen}>{stillOpen}</span>}
 
             {/* The last step of all: nothing could say which rack this is, so a
@@ -831,47 +844,68 @@ export default function DriftPage() {
         })}
       </ul>
 
-      {/* What agrees, and what the record holds that was not seen. Closed by
-          default: the differences are the job, and these are the context. */}
-      {plan && !busy && compared && matching.length > 0 && (
-        <details className={styles.groupBox}>
-          <summary>
-            <span className={styles.dotOk} aria-hidden="true" />
-            <span>Matched</span><b>{matching.length}</b>
-          </summary>
-          <ul className={styles.rows}>
-            {matching.map(({ item, record }) => (
-              <li key={item.uid}>
-                <span className={styles.rowName}>{plainName(item.name, decided && (decided.rack.name || decided.rack.facilityId))}</span>
-                <span className={styles.rowNote}>{record ? record.name : 'In your records'}</span>
-                <span className={styles.dotOk} aria-label="matches" />
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-      {plan && !busy && compared && notSeen.length > 0 && (
-        <details className={styles.groupBox}>
-          <summary>
-            <span className={styles.dotIdle} aria-hidden="true" />
-            <span>Not seen</span><b>{notSeen.length}</b>
-          </summary>
-          <p className={styles.groupNote}>
-            Often behind cables, or with no face to read. Nothing is removed from your records.
-          </p>
-          <ul className={styles.rows}>
-            {notSeen.map((o) => (
-              <li key={o.netboxId ?? o.name}>
-                <span className={styles.rowName}>{o.name}</span>
-                <span className={styles.rowNote}>{o.position != null ? `Shelf U${o.position}` : 'No shelf recorded'}</span>
-                <span className={styles.dotIdle} aria-label="not seen" />
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
+      {/* What needs no attention. It was three rows of the same shape stacked
+          one under another, which read as a list of things to do; it is one
+          line of three now, and only the one a person picks opens. */}
+      {plan && !busy && ((compared && (matching.length > 0 || notSeen.length > 0)) || ports) && (
+        <div className={styles.quiet}>
+          <div className={styles.quietPick} role="tablist" aria-label="The rest of the rack">
+            {compared && matching.length > 0 && (
+              <button type="button" role="tab" aria-selected={rest === 'matched'}
+                className={`${styles.quietTab} ${rest === 'matched' ? styles.quietOn : ''}`}
+                onClick={() => setRest(rest === 'matched' ? null : 'matched')}>
+                <span className={styles.dotOk} aria-hidden="true" />
+                Matched<b>{matching.length}</b>
+              </button>
+            )}
+            {compared && notSeen.length > 0 && (
+              <button type="button" role="tab" aria-selected={rest === 'notseen'}
+                className={`${styles.quietTab} ${rest === 'notseen' ? styles.quietOn : ''}`}
+                onClick={() => setRest(rest === 'notseen' ? null : 'notseen')}>
+                <span className={styles.dotIdle} aria-hidden="true" />
+                Not seen<b>{notSeen.length}</b>
+              </button>
+            )}
+            {ports && (
+              <button type="button" role="tab" aria-selected={rest === 'ports'}
+                className={`${styles.quietTab} ${rest === 'ports' ? styles.quietOn : ''}`}
+                onClick={() => setRest(rest === 'ports' ? null : 'ports')}>
+                <span className={styles.dotPort} aria-hidden="true" />
+                Ports<b>{portTotal}</b>
+              </button>
+            )}
+          </div>
 
-      {plan && !busy && <PortsCheck ports={ports} />}
+          {rest === 'matched' && (
+            <ul className={styles.rows}>
+              {matching.map(({ item, record }) => (
+                <li key={item.uid}>
+                  <span className={styles.rowName}>{plainName(item.name, decided && (decided.rack.name || decided.rack.facilityId))}</span>
+                  <span className={styles.rowNote}>{record ? record.name : 'In your records'}</span>
+                  <span className={styles.dotOk} aria-label="matches" />
+                </li>
+              ))}
+            </ul>
+          )}
+          {rest === 'notseen' && (
+            <>
+              <p className={styles.groupNote}>
+                Often behind cables, or with no face to read. Nothing is removed from your records.
+              </p>
+              <ul className={styles.rows}>
+                {notSeen.map((o) => (
+                  <li key={o.netboxId ?? o.name}>
+                    <span className={styles.rowName}>{o.name}</span>
+                    <span className={styles.rowNote}>{o.position != null ? `Shelf U${o.position}` : 'No shelf recorded'}</span>
+                    <span className={styles.dotIdle} aria-label="not seen" />
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {rest === 'ports' && <PortsCheck ports={ports} open />}
+        </div>
+      )}
 
       {/* Sending it is one action, so it is one block: who it goes to, the note
           for them, and the button. Who decides a difference used to be said at

@@ -396,11 +396,12 @@ describe('<DriftPage> ports', () => {
     stub('open', toSpoc, { 'GET /api/nb/plans/7/connectivity': { body: PORTS } });
     mount();
     await screen.findByText('SW-16');
-    const top = await screen.findByRole('button', { name: /^Ports/ });
-    expect(top.getAttribute('aria-expanded')).toBe('false');
-    // one quiet row with one number: how many ports were read
+    // The three quiet groups share one line, and only the one picked opens.
+    const top = await screen.findByRole('tab', { name: /^Ports/ });
+    expect(top.getAttribute('aria-selected')).toBe('false');
     expect(top.textContent).toBe('Ports47');
     fireEvent.click(top);
+    expect(top.getAttribute('aria-selected')).toBe('true');
     expect(screen.getByText('Matched 21, not matched 1, not known 25.')).toBeTruthy();
     expect(screen.getByText('Switch on shelf U16 - port 3')).toBeTruthy();
     expect(screen.getByText('Switch: down')).toBeTruthy();
@@ -438,11 +439,14 @@ describe('<DriftPage> the whole comparison', () => {
     // the difference is the substance of the page; what agrees and what was not
     // seen is one quiet row each, with one number on it
     expect(screen.getByText('Not in your records')).toBeTruthy();
-    expect(screen.getByText('Matched', { selector: 'summary > span' }).parentElement.textContent).toBe('Matched1');
-    expect(screen.getByText('Not seen', { selector: 'summary > span' }).parentElement.textContent).toBe('Not seen1');
-    // the match is named by the record it matched, the unseen record by its shelf
+    expect(screen.getByRole('tab', { name: /^Matched/ }).textContent).toBe('Matched1');
+    expect(screen.getByRole('tab', { name: /^Not seen/ }).textContent).toBe('Not seen1');
+    // and only the one a person picks opens: the match is named by the record
+    // it matched, the unseen record by its shelf
+    fireEvent.click(screen.getByRole('tab', { name: /^Matched/ }));
     expect(screen.getByText('Switch on shelf U17')).toBeTruthy();
     expect(screen.getByText('SP-R1-U17-SW03')).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: /^Not seen/ }));
     expect(screen.getByText('SP-R1-U19-FW')).toBeTruthy();
     expect(screen.getByText('Shelf U19')).toBeTruthy();
     // no strip of big numbers, and no heading that counts the differences again

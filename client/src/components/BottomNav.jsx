@@ -53,10 +53,8 @@ function RackTabs({ rackId, pathname, hash }) {
               : 'overview';
   const base = `/results/${encodeURIComponent(rackId)}`;
   const go = (key) => {
-    // 'port' is the bar's centre action, not a tab: it puts the rack in the
-    // port flow and opens the results page, which reads that flow on mount and
-    // comes up with the port picker open. Same thing the "Look up a port"
-    // button on the results page fires.
+    // The rack's bar is four plain tabs. Looking a port up is the Overview's
+    // own button, which is where a person is when they want it.
     if (key === 'port') { navigate(`${base}#port`); return; }
     navigate(
       // Result is the results page again, which opens in its port mode while
