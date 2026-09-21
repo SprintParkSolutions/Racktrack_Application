@@ -1530,12 +1530,8 @@ function beginWrite(planId, { actor, freshChanges, reason = null, req = null, on
   const found = open(planId, who);
   if (found.refused) return found.refused;
   const { plan } = found;
-  if (!['approved', 'write_failed', 'manual_review'].includes(plan.status)) {
-    return refuse('transition', ['written', 'completed'].includes(plan.status)
-      ? 'that plan has already been written'
-      : 'This plan has not been approved yet. It is approved in RackTrack Approvals, then written.',
-    { from: plan.status, to: 'write_in_progress' });
-  }
+  const early = notWritable(plan);
+  if (early) return early;
   if (isStrict(who) && !ROLES.writer.includes(who.role)) {
     return refuse('role', 'An admin approves and writes. Send this plan to yours to review.');
   }
@@ -1571,6 +1567,18 @@ function beginWrite(planId, { actor, freshChanges, reason = null, req = null, on
     if (moved.refused) return moved.refused;
     return { plan: moved.plan, excluded: shape.excludedUids(items), retry };
   });
+}
+
+/**
+ * The refusal for a plan that is not where a write starts from, or null. The
+ * write asks this before it troubles NetBox, and beginWrite asks it again.
+ */
+function notWritable(plan) {
+  if (['approved', 'write_failed', 'manual_review'].includes(plan.status)) return null;
+  return refuse('transition', ['written', 'completed'].includes(plan.status)
+    ? 'that plan has already been written'
+    : 'This plan has not been approved yet. It is approved in RackTrack Approvals, then written.',
+  { from: plan.status, to: 'write_in_progress' });
 }
 
 /**
@@ -2287,7 +2295,7 @@ module.exports = {
   submit, submitAndDispatch, dispatch, triage, assign, assignLocal, assignableUids, notifyAssignee,
   acceptTicket, startTicket, holdTicket, resolveTicket, applyTicketStates, openSysIds, syncServiceNow,
   decideItems, skipVerification, approve, reject, rework, moveByHand, cancel, reopen,
-  beginWrite, finishWrite, abortWrite,
+  beginWrite, finishWrite, abortWrite, notWritable,
   listChanges,
   addComment, listComments,
   getSettings, putSetting, DEFAULT_SETTINGS, SETTING_KEYS,

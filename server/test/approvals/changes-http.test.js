@@ -121,7 +121,8 @@ function rack(n) {
   world.wants = () => changes.filter((c) => !world.held.has(c.uid)).map((c) => ({ ...c,
     ...(world.moved && c.uid === DEV2 ? { diff: { position: { from: 13, to: 15 } } } : {}) }));
   world.report = () => ({ rackUid: `rack:${RACK}`, netboxUrl: 'http://netbox.test', customField: 'present',
-    counts: {}, warnings: [], orphans: [], changes: world.wants().map(({ created, ...c }) => c) });
+    counts: {}, warnings: [], orphans: [],
+    changes: world.wants().map((c) => { const row = { ...c }; delete row.created; return row; }) });
   world.writer = {
     plan: async () => world.report(),
     push: async (snap) => {

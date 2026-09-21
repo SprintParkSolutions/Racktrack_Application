@@ -13,7 +13,7 @@ const plans = require('../../lib/netbox/plans');
 const unmanaged = require('../../lib/netbox/unmanaged');
 const entered = require('../../lib/netbox/entered');
 const { NetBox } = require('../../lib/netbox/netbox');
-const { plan, push } = require('../../lib/netbox/writer');
+const { plan } = require('../../lib/netbox/writer');
 const { toCsv, toJson, toMarkdown } = require('../../lib/netbox/files');
 
 const profiles = require('../../lib/connection_profiles');
@@ -175,17 +175,25 @@ router.post('/:id/preview', gates.technician, async (req, res) => {
 
 
 /**
- * Write to NetBox - but only what an admin approved, and only if NetBox has
- * not moved since they approved it.
+ * Write to NetBox - the old door, which is now only a way back in.
+ *
+ * A check is written by its final approval, in Drift Desk, as that approval
+ * is given. What is left for this door is the retry: a check that is approved
+ * and was never written, or whose write NetBox refused part of. It does no
+ * writing of its own. After the checks a request needs - a NetBox, an
+ * organization admin, a plan of this scan that the caller may see - it hands
+ * the plan to lib/approvals/write, the one controlled write, and answers in
+ * the keys this route always used. So nothing reaches NetBox from here that
+ * the check's SPOC did not approve, and everything that does is in the change
+ * registry. A check nobody approved answers 409 with the write's own sentence.
  *
  * Body: { planId }. Without one this refuses, because a push nobody signed is
- * the thing the whole workflow exists to prevent. Pass force:true only to
- * accept a plan whose items are not all decided; it can never bypass the
- * fingerprint check.
+ * the thing the whole workflow exists to prevent.
  *
- * A plan NetBox refused part of (status write_failed) may be exported again:
- * the retry goes through every check here, the fingerprint included, so a
- * NetBox that moved since the first attempt still stops it.
+ * When NetBox has moved since the approval, nothing is written and the check
+ * goes back to be approved again. A check from before checks went to a SPOC
+ * has nobody to re-compare it, so, as this door always did, the comparison as
+ * it stands now is filed as a new plan to review (`newPlanId`).
  */
 router.post('/:id/export', gates.admin, async (req, res) => {
   const got = snapshotOf(req, res);
@@ -201,7 +209,7 @@ router.post('/:id/export', gates.admin, async (req, res) => {
   }
 
   const by = (req.user && (req.user.username || req.user.email)) || null;
-  const { planId, force } = req.body || {};
+  const { planId } = req.body || {};
   if (!planId) {
     return res.status(428).json({
       stage: 'export',
@@ -220,66 +228,61 @@ router.post('/:id/export', gates.admin, async (req, res) => {
   if (!plans.visibleTo(approvedPlan, req.user)) {
     return res.status(404).json({ stage: 'export', error: 'no such plan' });
   }
-  if (!plans.isSettled(approvedPlan) && !force) {
-    const s = plans.summarise(approvedPlan.items);
-    return res.status(409).json({
-      stage: 'export', error: 'some items are still waiting on somebody',
-      summary: s,
-    });
-  }
 
   try {
-    // Look again, right before writing. If anything moved since the plan was
-    // frozen, stop: somebody edited NetBox between the approval and now, and
-    // writing would erase their work without anyone noticing.
-    const fresh = await plan(got.snap, client(req));
-    const now = plans.fingerprint(fresh.changes);
-    if (now !== approvedPlan.fingerprint) {
-      const replan = plans.create({
-        scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
-        report: fresh, by,
-        orgId: req.user?.organization_id ?? null, tenantId: tenantOf(got.scan, req),
-      });
-      store.recordStage(got.scan.id, 'export', 'failed', 'NetBox changed since approval');
+    const approvals = require('../../lib/approvals/service');
+    const out = await require('../../lib/approvals/write').run(approvedPlan.id, { actor: req.user, req });
+    if (out.error) {
+      store.recordStage(got.scan.id, 'export', 'failed', String(out.error).slice(0, 400));
       trail.record(req, approvedPlan, 'drift.write', {
-        status: 'fail', error: 'NetBox changed since approval',
-        payload: { counts: {}, written: 0, failed: 0, newPlanId: replan.id },
+        status: 'fail', error: out.moved ? 'NetBox changed since approval' : out.error,
+        payload: { counts: {}, written: 0, failed: 0 },
       });
-      return res.status(409).json({
-        stage: 'export',
-        error: 'NetBox has changed since this plan was approved, so nothing was written.',
-        approvedFingerprint: approvedPlan.fingerprint,
-        currentFingerprint: now,
-        newPlanId: replan.id,
-        next: 'Review the new plan and approve it if it is still what you want.',
+      const held = Boolean(out.plan && out.plan.spocUserId != null);
+      if (out.moved && !held) {
+        const fresh = await plan(got.snap, client(req));
+        const replan = plans.create({
+          scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
+          report: fresh, by,
+          orgId: req.user?.organization_id ?? null, tenantId: tenantOf(got.scan, req),
+        });
+        return res.status(409).json({
+          stage: 'export',
+          error: 'NetBox has changed since this plan was approved, so nothing was written.',
+          approvedFingerprint: approvedPlan.fingerprint,
+          currentFingerprint: out.live ?? null,
+          newPlanId: replan.id,
+          next: 'Review the new plan and approve it if it is still what you want.',
+        });
+      }
+      return res.status(approvals.httpStatus(out)).json({
+        stage: 'export', error: out.error, code: out.code,
+        ...(out.stale ? { next: held
+          ? 'The check is back with its SPOC, to be reviewed and approved again.'
+          : 'The plan has gone back to be approved again.' } : {}),
       });
     }
 
-    const excluded = plans.excludedUids(approvedPlan);
-    const toWrite = plans.filterSnapshot(got.snap, excluded);
-    const report = await push(toWrite, client(req));
-    report.planId = approvedPlan.id;
-    report.withheld = excluded.size;
-    const status = report.counts.fail ? 'failed' : 'ok';
-    store.recordStage(got.scan.id, 'export', status, countLine(report.counts));
-    // Every object through: applied. Any refused: write_failed, the failures
-    // listed on the plan, the admin who ran it told by email, and the plan
-    // left open to a second export.
-    const written = plans.markApplied(approvedPlan.id, { by, result: report });
-    report.planStatus = written ? written.status : null;
-    report.failures = written ? written.result.failures : [];
+    const result = out.result || {};
+    const counts = result.counts || {};
+    store.recordStage(got.scan.id, 'export', result.failed ? 'failed' : 'ok', countLine(counts));
     trail.record(req, approvedPlan, 'drift.write', {
-      status: report.counts.fail ? 'fail' : 'ok',
-      payload: { counts: report.counts, written: written?.result.written ?? 0,
-                 failed: written?.result.failed ?? 0 },
+      status: result.failed ? 'fail' : 'ok',
+      payload: { counts, written: result.written ?? 0, failed: result.failed ?? 0 },
     });
-    if (written && written.status === 'write_failed') {
+    const after = plans.get(approvedPlan.id);
+    res.json({
+      planId: approvedPlan.id,
+      planStatus: after ? after.status : null,
+      counts,
+      failures: result.failures || out.failures || [],
+      withheld: plans.excludedUids(after || approvedPlan).size,
+      wrote: out.wrote !== false,
       // One email, from the approvals notifier, which names every object
       // NetBox refused. This route used to send its own beside it and the
       // admin got the same news twice.
-      report.emailed = true;
-    }
-    res.json(report);
+      ...(out.status === 'write_failed' ? { emailed: true } : {}),
+    });
   } catch (err) {
     store.recordStage(got.scan.id, 'export', 'failed', String(err.message).slice(0, 400));
     trail.record(req, approvedPlan, 'drift.write', {

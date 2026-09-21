@@ -200,6 +200,9 @@ async function run(planId, { actor, req = null, client = null, snapshot = null, 
   if (!(who.trusted || who.system) && !machine.ROLES.writer.includes(who.role)) {
     return refuse('role', 'An admin approves and writes. Send this plan to yours to review.');
   }
+  // Nor is NetBox troubled for a plan that is not where a write starts from.
+  const early = service.notWritable(plan);
+  if (early) return early;
   const W = writer || _deps.writer || require('../netbox/writer');
 
   // The snapshot this plan was made from, and the NetBox it was compared with.

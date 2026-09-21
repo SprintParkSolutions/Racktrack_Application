@@ -14,6 +14,8 @@
  *   - the SPOC, or an organization admin, decides without a ticket finding;
  *     the person who sent the check, and a site manager it is not with, do not
  *   - the person a ticket went to resolves it; nobody else's site manager does
+ *   - the approval is what writes; the old export door cannot write a check
+ *     nobody approved, and is only the way to try a failed write again
  *   - a write NetBox refused part of is write_failed, emailed, and retried
  *   - every step leaves an audit row
  */
@@ -55,11 +57,23 @@ const CHANGES = [
 // takes { plan, push } off the module at require time.
 const writer = require('../../lib/netbox/writer');
 let pushResult = () => { throw new Error('push was not expected'); };
+// What NetBox holds once a write has gone through: a comparison afterwards no
+// longer wants it, which is what the check after a write looks for.
+const inNetBox = new Set();
 writer.plan = async (snap) => ({
   rackUid: snap.rackUid, netboxUrl: 'http://netbox.test', customField: 'present',
-  counts: { create: 4, update: 1 }, warnings: [], orphans: [], changes: CHANGES,
+  counts: { create: 4, update: 1 }, warnings: [], orphans: [],
+  changes: CHANGES.filter((c) => !inNetBox.has(c.uid)),
 });
-writer.push = async () => pushResult();
+writer.push = async () => {
+  const report = pushResult();
+  for (const c of report.changes) if (c.action !== 'fail') inNetBox.add(c.uid);
+  return report;
+};
+// The write reads the objects it touches before and after; here it reads a
+// NetBox that holds nothing, instead of reaching for one over the network.
+require('../../lib/approvals/write')._setDeps({
+  client: { url: 'http://netbox.test', findByUid: async () => null } });
 
 // The mail transport: every notice lands here instead of going anywhere.
 const auth = require('../../auth');
@@ -426,8 +440,15 @@ test('the drift workflow holds its rules at every route', async (t) => {
   assert.equal(open.status, 'closed', 'and a ticket still open closes with the decision as its finding');
   assert.equal(open.finding, 'leave it at 14');
 
-  // ---- 8. The write: NetBox refuses one object, the plan is write_failed and
-  // the admin who ran it is told; the retry goes through the fingerprint again.
+  // ---- 8. The write. The old export door cannot write a check nobody has
+  // approved; the approval is what writes. NetBox refuses one object, the plan
+  // is write_failed and the admins and the SPOC are told; the door is then the
+  // retry, and it goes through the fingerprint again.
+  const unapproved = await call(port, adminTok, 'POST', `/api/nb/netbox/${scanId}/export`, { planId });
+  assert.equal(unapproved.status, 409, `decided is not approved: ${unapproved.raw}`);
+  assert.match(unapproved.json.error, /has not been approved yet/);
+  assert.equal(inNetBox.size, 0, 'and nothing was written');
+
   mails.length = 0;
   pushResult = () => ({
     counts: { create: 3, fail: 1 },
@@ -439,16 +460,20 @@ test('the drift workflow holds its rules at every route', async (t) => {
         reason: 'lookup failed: "interface name already exists"' },
     ],
   });
-  const failedWrite = await call(port, adminTok, 'POST', `/api/nb/netbox/${scanId}/export`, { planId });
+  const bySender = await call(port, memberTok, 'POST', `/api/approvals/plans/${planId}/approve`, {});
+  assert.equal(bySender.status, 403, `the sender approves nothing: ${bySender.raw}`);
+  const failedWrite = await call(port, adminTok, 'POST', `/api/approvals/plans/${planId}/approve`, {});
   assert.equal(failedWrite.status, 200, failedWrite.raw);
-  assert.equal(failedWrite.json.planStatus, 'write_failed');
-  assert.equal(failedWrite.json.counts.fail, 1);
-  assert.deepEqual(failedWrite.json.failures.map((f) => f.uid), [`if:${DEV}:2`]);
-  assert.equal(failedWrite.json.emailed, true);
-  assert.deepEqual(mails.map((m) => m.to).sort(), [admin.email, MEERA.email].sort(),
+  assert.equal(failedWrite.json.final, true);
+  assert.equal(failedWrite.json.write.state, 'failed', 'the approval wrote, and NetBox refused part of it');
+  assert.equal(failedWrite.json.write.status, 'write_failed');
+  assert.equal(failedWrite.json.write.written, 3);
+  assert.deepEqual(failedWrite.json.write.failures.map((f) => f.uid), [`if:${DEV}:2`]);
+  await new Promise((r) => setTimeout(r, 50));
+  assert.deepEqual(mails.filter((m) => /did not finish/.test(m.subject)).map((m) => m.to).sort(),
+    [admin.email, MEERA.email].sort(),
     'one email each, to the organization admin and to the SPOC the check is with');
-  for (const mail of mails) {
-    assert.match(mail.subject, /did not finish/);
+  for (const mail of mails.filter((m) => /did not finish/.test(m.subject))) {
     assert.match(mail.text, /Gi1\/0\/2/);
     assert.match(mail.text, /Nothing else was changed/);
   }
@@ -458,29 +483,84 @@ test('the drift workflow holds its rules at every route', async (t) => {
   assert.equal(halfWritten.json.summary.written, 3);
   const inIndex = await call(port, adminTok, 'GET', `/api/nb/plans?rackId=${RACK}&status=write_failed`);
   assert.deepEqual(inIndex.json.plans.map((p) => p.id), [planId], 'the inbox can list a failed write');
-  const writeRows = rows('drift.write', planId);
-  assert.equal(writeRows.length, 1);
-  assert.equal(writeRows[0].status, 'fail');
-  assert.equal(writeRows[0].payload.failed, 1);
+  const registry = await call(port, adminTok, 'GET', `/api/approvals/changes?planId=${planId}`);
+  assert.equal(registry.status, 200, registry.raw);
+  assert.deepEqual(registry.json.changes.map((c) => c.result).sort(), ['failed', 'written', 'written', 'written'],
+    'what went in and what was refused are both in the registry');
+  assert.equal(registry.json.changes[0].approvedBy, admin.username);
+  assert.equal(registry.json.changes[0].writtenBy, 'system');
 
+  // The door is the retry, run by the admin who asks for it.
   pushResult = () => ({
-    counts: { create: 4 },
-    changes: CHANGES.filter((c) => c.uid !== DEV2).map((c) => ({ ...c })),
+    counts: { create: 1 },
+    changes: [{ type: 'Interface', uid: `if:${DEV}:2`, name: 'Gi1/0/2', action: 'create' }],
   });
+  const byMember = await call(port, memberTok, 'POST', `/api/nb/netbox/${scanId}/export`, { planId });
+  assert.equal(byMember.status, 403, 'never a technician');
   const retried = await call(port, adminTok, 'POST', `/api/nb/netbox/${scanId}/export`, { planId });
   assert.equal(retried.status, 200, `the retry is allowed on a write_failed plan: ${retried.raw}`);
   assert.equal(retried.json.planStatus, 'applied');
+  assert.equal(retried.json.planId, planId);
+  assert.equal(retried.json.counts.create, 1);
+  assert.deepEqual(retried.json.failures, []);
+  assert.equal(retried.json.withheld, 1, 'the rejected device is still held back');
+  assert.equal(inNetBox.has(DEV2), false);
   assert.equal(mails.filter((m) => /did not finish/.test(m.subject)).length, 2,
     'a clean write sends no failure email');
   const written = await call(port, adminTok, 'GET', `/api/nb/plans/${planId}`);
   assert.equal(written.json.status, 'applied');
   assert.equal(written.json.appliedBy, admin.username);
   const writeRowsAfter = rows('drift.write', planId);
-  assert.equal(writeRowsAfter.length, 2);
+  assert.equal(writeRowsAfter.length, 2, 'the refusal and the retry, both through the door');
   assert.equal(writeRowsAfter[0].status, 'ok', 'newest first: the retry succeeded');
+  assert.equal(writeRowsAfter[1].status, 'fail');
+  const registryAfter = await call(port, adminTok, 'GET', `/api/approvals/changes?planId=${planId}`);
+  assert.equal(registryAfter.json.changes.length, 5, 'the retry added its row to the registry and rewrote none');
+  assert.equal(registryAfter.json.changes[0].writtenBy, admin.username);
 
   const third = await call(port, adminTok, 'POST', `/api/nb/netbox/${scanId}/export`, { planId });
   assert.equal(third.status, 409, 'an applied plan is closed');
+
+  // ---- 9. The door when NetBox has moved since the approval. Nothing is
+  // written either way. A check from before checks went to a SPOC has nobody
+  // to compare it again, so the comparison as it stands is filed as a new plan;
+  // a check that is with a SPOC goes back to them and no second check appears.
+  const approvals = require('../../lib/approvals/store');
+  const shapeOf = require('../../lib/approvals/shape');
+  const sign = (id, patch = {}) => {
+    for (const item of approvals.itemsOf(id).filter((i) => i.decidable)) {
+      approvals.updateItem(id, item.uid, { decision: 'approved', decidedBy: admin.username,
+        decidedById: admin.id, decidedAt: approvals.nowIso() }, { touch: false });
+    }
+    const hash = shapeOf.payloadHash(approvals.itemsOf(id));
+    approvals.updatePlan(id, { status: 'approved', payloadHash: hash, ...patch });
+    approvals.addDecision(id, { stage: 'first', approverId: admin.id, approver: admin.username,
+      decision: 'approved', payloadHash: hash, planVersion: approvals.getPlan(id).version }, { touch: false });
+  };
+  pushResult = () => { throw new Error('push was not expected'); };
+  // The admin's own check was compared before anything was written, and is
+  // with the SPOC: NetBox has moved under it.
+  sign(adminPlanId);
+  const before = approvals.listPlans({ rackId: RACK, limit: 50 }).length;
+  const movedHeld = await call(port, adminTok, 'POST', `/api/nb/netbox/${scanId}/export`, { planId: adminPlanId });
+  assert.equal(movedHeld.status, 409, movedHeld.raw);
+  assert.match(movedHeld.json.error, /NetBox has changed since this plan was approved, so nothing was written/);
+  assert.equal(movedHeld.json.newPlanId, undefined);
+  assert.match(movedHeld.json.next, /back with its SPOC/);
+  assert.equal(approvals.getPlan(adminPlanId).status, 'assigned');
+  assert.equal(approvals.getPlan(adminPlanId).spocUserId, meera.id);
+  assert.equal(approvals.listPlans({ rackId: RACK, limit: 50 }).length, before, 'no second check was filed');
+  assert.equal(approvals.changesOf(adminPlanId).length, 0);
+
+  // The same check as it would be had it been filed before checks went to a SPOC.
+  sign(adminPlanId, { spocUserId: null, spoc: null });
+  const movedOld = await call(port, adminTok, 'POST', `/api/nb/netbox/${scanId}/export`, { planId: adminPlanId });
+  assert.equal(movedOld.status, 409, movedOld.raw);
+  assert.match(movedOld.json.error, /NetBox has changed since this plan was approved, so nothing was written/);
+  assert.ok(movedOld.json.newPlanId && movedOld.json.newPlanId !== adminPlanId,
+    'the comparison as it stands is filed to review');
+  assert.equal(approvals.getPlan(adminPlanId).status, 'approval_pending', 'and the old plan waits to be approved again');
+  assert.equal(approvals.getPlan(movedOld.json.newPlanId).status, 'draft', 'a draft: it goes to the SPOC like any check');
 
   // The audit rows carry the plan's own tenant, the Site the rack was scanned under.
   const anyRow = rows('drift.decide', planId)[0];
