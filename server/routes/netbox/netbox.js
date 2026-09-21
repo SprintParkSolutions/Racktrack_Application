@@ -151,6 +151,12 @@ router.post('/:id/preview', gates.technician, async (req, res) => {
     const filed = plans.create({
       scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
       rackName: got.scan.rackName || payload.rackName || null,
+      // The same comparison of the same rack BY THE SAME PERSON is the same check.
+      // Filing a new one on every open of the Drift screen buried the check a
+      // person had already sent under a fresh draft each time they looked, so
+      // they never saw it move - and left the admin a queue of identical drafts.
+      // Somebody else comparing the same rack still gets a plan of their own.
+      reuse: true,
       report, by: (req.user && (req.user.username || req.user.email)) || null,
       orgId: req.user?.organization_id ?? null, tenantId: tenantOf(got.scan, req),
     });

@@ -87,10 +87,10 @@ const fingerprint = (changes) => shape.fingerprint(changes);
  * comparing the same rack each get their own plan and always have.
  */
 function create({ scanId = null, rackId = null, rackUid = null, rackName = null, report,
-                  by = null, orgId = null, tenantId = null, parentPlanId = null }) {
+                  by = null, orgId = null, tenantId = null, parentPlanId = null, reuse = false }) {
   return shape.legacyPlan(service.create({
     scanId, rackId, rackUid, rackName, report, orgId, tenantId, parentPlanId,
-    actor: actorOf(by), reuse: false,
+    actor: actorOf(by), reuse: Boolean(reuse), ownOnly: Boolean(reuse),
   }));
 }
 

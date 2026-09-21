@@ -300,7 +300,7 @@ function scopeFor(actor) {
  * A technician is only ever handed back a plan of their own.
  */
 function create({ scanId = null, rackId = null, rackUid = null, rackName = null, report, actor,
-                  orgId = null, tenantId = null, parentPlanId = null, reuse = false }) {
+                  orgId = null, tenantId = null, parentPlanId = null, reuse = false, ownOnly = false }) {
   const who = actorOf(actor) || trustedActor(null);
   const fingerprint = shape.fingerprint(report.changes);
   if (reuse && rackId != null) {
@@ -308,7 +308,15 @@ function create({ scanId = null, rackId = null, rackUid = null, rackName = null,
       rackId, status: machine.OPEN, limit: 200 })
       .filter((p) => p.fingerprint === fingerprint)
       .filter((p) => !isStrict(who) || canRead(p, who))
-      .sort((a, b) => Number(b.scanId === scanId) - Number(a.scanId === scanId) || b.id - a.id)[0];
+      // ownOnly: a person gets their own check back, never somebody else's. A
+      // comparison an admin runs is a second plan, theirs, as it always was.
+      .filter((p) => !ownOnly || (who.username != null && p.createdBy === who.username)
+        || (who.id != null && p.createdById != null && String(p.createdById) === String(who.id)))
+      // The same scan first; then a check somebody has already sent over one
+      // that is still a draft, so a person who comes back to the screen is
+      // shown the check that is in progress, not a newer empty copy of it.
+      .sort((a, b) => Number(b.scanId === scanId) - Number(a.scanId === scanId)
+        || Number(b.status !== 'draft') - Number(a.status !== 'draft') || b.id - a.id)[0];
     if (match) return { ...get(match.id, who), reused: true };
   }
   const items = (report.changes || []).map(shape.toItem);
