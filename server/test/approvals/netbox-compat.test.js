@@ -160,14 +160,17 @@ test('the phone app reads the same plan it always did', async (t) => {
   assert.deepEqual(items.find((i) => i.uid === `if:${DEV}:1`).binding,
     { via: 'lldp', neighbour: 'core-a' }, 'a field the format never knew about is still there');
 
-  // ---- 2. The three refusals, in the same words.
+  // ---- 2. The refusals, in the same words - less one. An organization admin
+  // who did not send the check now decides an item with the report beside them,
+  // so "assign first" is no longer said at this door; the answer keeps its shape.
   const undecided = items.find((i) => i.decidable && i.decision === 'pending' && !i.ticket);
   assert.ok(undecided, 'there is something nobody has been asked about');
   const fromADesk = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
     { decisions: [{ uid: undecided.uid, decision: 'approved' }] });
   assert.equal(fromADesk.status, 200, fromADesk.raw);
-  assert.deepEqual(fromADesk.json.refused, [{ uid: undecided.uid, why: 'assign first' }]);
-  assert.equal(fromADesk.json.applied.length, 0, 'and nothing was decided');
+  assert.deepEqual(fromADesk.json.refused, []);
+  assert.deepEqual(fromADesk.json.applied, [{ uid: undecided.uid, decision: 'approved' }]);
+  assert.deepEqual(Object.keys(fromADesk.json).sort(), ['applied', 'planId', 'refused', 'settled', 'summary']);
 
   const aPort = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
     { decisions: [{ uid: `if:${DEV}:1`, decision: 'approved' }] });
@@ -182,17 +185,19 @@ test('the phone app reads the same plan it always did', async (t) => {
   assert.equal(mixed.json.error,
     'send the whole-rack decision on its own, not mixed with single items');
 
-  // ---- 3. Reading it changed nothing.
+  // ---- 3. Reading it, and being refused, changed nothing else.
   const again = await call(port, adminTok, 'GET', `/api/nb/plans/${planId}`);
   assert.equal(again.json.items.length, 191);
   assert.equal(again.json.summary.decidable, 9);
-  assert.equal(again.json.summary.pending, 9 - 1, 'eight waiting, one still out with somebody');
+  assert.equal(again.json.summary.pending, 9 - 2, 'seven waiting, one decided, one still out with somebody');
   assert.equal(again.json.summary.ticketed, 1, 'nothing was assigned by reading');
-  assert.equal(again.json.summary.approved, 0, 'and nothing was approved');
+  assert.equal(again.json.summary.approved, 1, 'the one decision, and no other');
   assert.equal(again.json.summary.written, 0, 'and nothing was written');
   assert.equal(again.json.status, 'submitted');
-  assert.deepEqual(again.json.items.map((i) => i.decision), items.map((i) => i.decision),
-    'every decision is where it was');
+  const moved = new Set([undecided.uid, ...items.filter((i) => i.parentUid === undecided.uid && i.following)
+    .map((i) => i.uid)]);
+  assert.deepEqual(again.json.items.filter((i) => !moved.has(i.uid)).map((i) => i.decision),
+    items.filter((i) => !moved.has(i.uid)).map((i) => i.decision), 'every other decision is where it was');
 });
 
 test('the list shows exactly what the read will open', async (t) => {

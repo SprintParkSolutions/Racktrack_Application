@@ -371,6 +371,10 @@ const heldMoves = () => ({
   rework: { who: DECIDERS, notSender: true, guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
   duplicate: { who: DECIDERS, notSender: true, guard: GUARDS.duplicate, needs: ['duplicateOf'] },
   cancelled: { who: ['admin'], guard: needsReason, needs: ['reason'] },
+  // The holder has gone. Never made bare: whoever makes this move also clears
+  // the holder (spocUserId, spoc), says why in needsAdmin, closes the holder's
+  // open tickets and tells the admins - or settle() sends the check straight
+  // back to the person who has just been declared gone.
   triage: { who: ['admin', 'system'] },
 });
 
@@ -541,7 +545,10 @@ function next(plan, actor, ctx = {}) {
   for (const [to, r] of Object.entries(TRANSITIONS[plan.status])) {
     if (r.derived) continue;
     const people = r.who.filter((w) => w !== 'system');
-    if (!people.some((w) => WHO[w](plan, actor, ctx))) continue;
+    // The sender is shown the decisions whatever their role - a technician
+    // holds nothing and is no admin - so the screen can grey them and say why.
+    const sender = Boolean(r.notSender) && isSender(plan, actor);
+    if (!sender && !people.some((w) => WHO[w](plan, actor, ctx))) continue;
     // Separation of duties does not remove the move, it names who it is for.
     // Dropping it here left the approval screen saying "No move is open to you
     // on this drift." to the one person most likely to be looking at it - the
@@ -550,7 +557,7 @@ function next(plan, actor, ctx = {}) {
     // false` with a why is what the rest of this function already does for a
     // guard that is not met, and it is what the screen knows how to render.
     // The bar itself is unchanged: can() still refuses with code 'role'.
-    const blocked = r.notSender && isSender(plan, actor) ? SENDER_WHY : null;
+    const blocked = sender ? SENDER_WHY : null;
     const why = blocked || (r.guard ? r.guard(plan, ctx, actor) : null);
     out.push({ to, ready: !why, why: why || null, needs: r.needs || [], blockedByRole: Boolean(blocked) });
   }

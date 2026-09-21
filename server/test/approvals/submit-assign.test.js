@@ -449,8 +449,14 @@ describe('what each person is shown', () => {
     assert.ok(mine.some((p) => p.id === id));
     assert.ok(mine.every((p) => p.holder === 'dc007.member'));
     assert.equal(mine.find((p) => p.id === id).sender, 'dc007.tech');
+    assert.equal(mine.find((p) => p.id === id).siteName, 'Office-Sprintpark');
+    assert.ok(mine.find((p) => p.id === id).receivedAt, 'when it reached them');
     assert.ok(service.list(MEMBER, {}).plans.some((p) => p.id === id), 'and it is in their plain list');
     assert.ok(!service.list(SPOC, { holder: 'me' }).plans.some((p) => p.id === id));
+    // Somebody else's checks, by user id, are an admin's or an auditor's to list.
+    assert.ok(service.list(ADMIN, { holder: 42 }).plans.some((p) => p.id === id));
+    assert.ok(!service.list(MANAGER, { holder: 42 }).plans.some((p) => p.id === id),
+      'for anybody else the filter means "mine"');
 
     const q = service.queue(MEMBER);
     assert.equal(q.sections[0].key, 'spoc');
@@ -469,6 +475,12 @@ describe('what each person is shown', () => {
     assert.equal(service.me(SPOC).can.registry, true);
     assert.equal(service.me(SPOC).can.triage, false);
     assert.equal(service.me(SPOC).can.assign, false);
+    assert.equal(service.me(MANAGER).can.spoc, false);
+    // The same address typed into another organization's setup makes nobody a SPOC there.
+    store.db().prepare(`INSERT OR REPLACE INTO tenants (id, name, slug, organization_id, approver_email)
+      VALUES (90, 'Elsewhere', 'elsewhere', 2, ?)`).run(MANAGER.email);
+    assert.deepEqual(store.sitesWhereSpoc(MANAGER.id, MANAGER.email), [90]);
+    assert.deepEqual(store.sitesWhereSpoc(MANAGER.id, MANAGER.email, 1), []);
     assert.equal(service.me(MANAGER).can.spoc, false);
     assert.equal(service.me(MANAGER).can.triage, false, 'a site manager no longer triages');
     assert.equal(service.me(MANAGER).can.reassign, false);
@@ -494,6 +506,7 @@ describe('what each person is shown', () => {
       title: 'SPOC of Site 32 - Office-Sprintpark', userId: 41, source: 'site' });
     assert.equal(to.siteSpoc.siteName, 'Office-Sprintpark');
     assert.deepEqual([to.why, to.whyText, to.others, to.everyone], [null, null, [], []]);
+    assert.deepEqual([to.rack, to.site], [null, null], 'the keys the older phone builds read are still there');
     assert.equal(to.assignable, undefined, 'who else it could go to is an admin\'s question');
 
     const own = await service.contacts(draft({ by: SPOC }), { actor: SPOC });

@@ -239,6 +239,7 @@ test('the drift workflow holds its rules at every route', async (t) => {
   assert.equal(contacts.json.siteSpoc.userId, meera.id);
   assert.equal(contacts.json.siteSpoc.siteName, 'Drift Site');
   assert.equal(contacts.json.matchedRack.name, 'RACK-01', 'the rack is still recognised through NetBox');
+  assert.deepEqual(contacts.json.rack, { name: 'RACK-01' }, 'and named under the key the phone falls back on');
   assert.equal(contacts.json.assignable, undefined);
 
   mails.length = 0;

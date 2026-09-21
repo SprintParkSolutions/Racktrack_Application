@@ -893,6 +893,9 @@ async function assign(planId, body = {}, { actor, req = null } = {}) {
     const waiting = store.itemsOf(plan.id).filter((i) => i.decidable && machine.isTicketable(i)
       && ['pending', 'ticketed'].includes(i.decision)).map((i) => i.uid);
     const rows = ticketRows(plan, holderRows(waiting, holder, plan.submittedNote), who);
+    // A fresh ticket carries no incident pointer. Once a check has its one
+    // incident, the pointer is stamped back onto the new tickets here, inside
+    // this transaction, by the one helper that writes it.
     const moved = move(effects, store.getPlan(plan.id, { heavy: false }), 'assigned', {
       actor: who, action: plan.status === 'assigned' ? 'reassign' : 'assign', req, force: true,
       reason: reason || null, payload: { from: old ? old.username : null, to: holder.username, reason: reason || null },
@@ -1152,10 +1155,11 @@ const hasFinding = (ticket) => Boolean(ticket && ticket.status === 'resolved' &&
  */
 function mayDecide(plan, who) {
   if (!isStrict(who)) return null;
+  // The sender first, so whoever they are they read the sentence that is about them.
+  if (machine.isSender(plan, who)) return refuse('role', machine.SENDER_WHY);
   const theirs = machine.isAdmin(who) || machine.isHolder(plan, who)
     || (who.role === 'approver' && plan.status === 'approval_pending');
   if (!theirs) return refuse('role', 'Deciding this check is for its SPOC or an organization admin.');
-  if (machine.isSender(plan, who)) return refuse('role', machine.SENDER_WHY);
   return null;
 }
 
@@ -1166,8 +1170,7 @@ function mayDecide(plan, who) {
  * their decision is itself the finding: an item whose ticket is still open is
  * decided, and the ticket closes in the same step with what they said.
  *
- * The old library (a trusted caller) still assigns before it decides, and so
- * does a check imported from the old plan files while nobody holds it: approve
+ * The old library (a trusted caller) still assigns before it decides: approve
  * and reject are refused there on an item nobody has been asked to check, on
  * one whose ticket is still open, and on one that came back with nothing said.
  * The one exception is an item that cannot be checked at the rack at all (a
@@ -1193,10 +1196,8 @@ function decideItems(planId, decisions, { actor, req = null } = {}) {
       : `a plan that is ${plan.status.replace(/_/g, ' ')} is closed to item decisions; send it back for rework first`);
   }
 
-  // Assign first: the old library, and a check imported from the old plan
-  // files that nobody holds yet - it keeps the rule it was filed under until
-  // an admin gives it to somebody.
-  const assignFirst = !strict || (plan.legacyId != null && plan.spocUserId == null);
+  // Assign first is the old library's rule, and only its.
+  const assignFirst = !strict;
   return run((effects) => {
     const applied = [];
     const refused = [];
@@ -1684,7 +1685,7 @@ async function contacts(planId, { actor } = {}) {
     siteSpoc: goesTo.ok && site ? site : null,
     goesTo: goesTo.ok ? 'spoc' : 'admin',
     why: goesTo.ok ? null : goesTo.why, whyText: goesTo.ok ? null : goesTo.text,
-    others: [], everyone: [], serviceNow: Boolean(serviceNowFor(me)),
+    others: [], everyone: [], rack: null, site: null, serviceNow: Boolean(serviceNowFor(me)),
   };
   const client = netboxFor(me);
   if (client) {
@@ -1696,6 +1697,8 @@ async function contacts(planId, { actor } = {}) {
         fallbackName: (scan && (scan.rackName || scan.rackId)) || plan.rackName || plan.rackId,
       });
       out.matchedRack = { name: resolved.name, confidence: resolved.confidence, why: resolved.why };
+      // The phone falls back on this name for its "compared against" line.
+      out.rack = resolved.name ? { name: resolved.name } : null;
     } catch { /* the rack's name is a nicety here, never the reason a request fails */ }
   }
   if (machine.isAdmin(who)) out.assignable = spoc.assignableUsers(plan);
@@ -1730,6 +1733,8 @@ function rowOf(plan) {
     // Who it is with, who sent it, and its one incident, for a list to show.
     holder: (plan.spoc && plan.spoc.username) || null,
     sender: plan.submittedBy || null,
+    siteName: plan.tenantId != null ? (store.tenantById(plan.tenantId) || {}).name || null : null,
+    receivedAt: (plan.spoc && plan.spoc.assignedAt) || plan.submittedAt || null,
     incidentNumber: (plan.incident && plan.incident.number) || null,
     incidentUrl: (plan.incident && plan.incident.url) || null,
     sla: clocks.map((c) => ({ clock: c.clock, status: c.status, targetAt: c.targetAt })),
@@ -1752,7 +1757,11 @@ function list(actor, query = {}) {
   const f = { ...query };
   if (f.createdBy === 'me') f.createdBy = who.username;
   if (f.assignee === 'me') { f.assigneeUserId = who.id; delete f.assignee; }
-  if (f.holder != null && f.holder !== '') f.spocUserId = f.holder === 'me' ? (who.id ?? -1) : f.holder;
+  // Whose checks: mine for anybody; somebody else's by user id for an admin or an auditor.
+  if (f.holder != null && f.holder !== '') {
+    const anyone = !isStrict(who) || machine.isAdmin(who) || who.role === 'auditor';
+    f.spocUserId = f.holder === 'me' || !anyone ? (who.id ?? -1) : f.holder;
+  }
   delete f.holder;
   if (f.open === '1' || f.open === 'true' || f.open === true || f.open === 1) {
     if (!f.status) f.status = OPEN_FILTER;
@@ -1908,7 +1917,7 @@ function listEvents(actor, query = {}) {
  */
 function isSpoc(actor) {
   if (!actor || actor.id == null || actor.role === 'auditor') return false;
-  if (store.sitesWhereSpoc(actor.id, actor.email).length) return true;
+  if (store.sitesWhereSpoc(actor.id, actor.email, actor.orgId ?? null).length) return true;
   return store.listPlans({ seenBy: seenByOf(actor), spocUserId: actor.id, status: machine.OPEN, limit: 1 }).length > 0;
 }
 

@@ -1212,14 +1212,18 @@ const tenantById = (id) => safely(() => {
 }, null);
 /**
  * The Sites this person is the SPOC of, as ids: named by user id, or by an
- * email that setup stored before the person had an account. A database that
- * has no such columns yet (setup adds them) answers none.
+ * email that setup stored before the person had an account. With `orgId`, only
+ * Sites of that organization: the same address typed into another
+ * organization's setup makes nobody a SPOC there. A database that has no such
+ * columns yet (setup adds them) answers none.
  */
-const sitesWhereSpoc = (userId, email) => {
+const sitesWhereSpoc = (userId, email, orgId = undefined) => {
   try {
-    return db().prepare(`SELECT id FROM tenants WHERE approver_user_id = ?
+    return db().prepare(`SELECT id, organization_id FROM tenants WHERE approver_user_id = ?
       OR (approver_email IS NOT NULL AND lower(approver_email) = lower(?))`)
-      .all(userId == null ? -1 : Number(userId), email == null ? '\u0000' : String(email)).map((r) => r.id);
+      .all(userId == null ? -1 : Number(userId), email == null ? '\u0000' : String(email))
+      .filter((r) => orgId === undefined || Number(r.organization_id ?? -1) === Number(orgId ?? -1))
+      .map((r) => r.id);
   } catch (err) {
     if (/no such (table|column)/i.test(String(err && err.message))) return [];
     throw err;

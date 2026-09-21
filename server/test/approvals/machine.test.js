@@ -563,8 +563,15 @@ describe('what a screen may offer', () => {
     assert.notEqual(theirs.approved.blockedByRole, true);
     assert.deepEqual(Object.keys(theirs).sort(),
       ['approval_pending', 'approved', 'duplicate', 'rejected', 'rework']);
-    // A technician who sent it and holds nothing is offered nothing at all.
-    assert.deepEqual(m.next(held(), RAVI, decided), []);
+    // A technician who sent it holds nothing and is no admin, and is still
+    // shown the decisions - every one of them greyed, with the sentence.
+    const senders = m.next(held(), RAVI, decided);
+    assert.deepEqual(senders.map((o) => o.to).sort(),
+      ['approval_pending', 'approved', 'duplicate', 'rejected', 'rework']);
+    assert.ok(senders.every((o) => o.ready === false && o.blockedByRole === true && o.why === m.SENDER_WHY));
+    assert.equal(m.can(held(), 'approved', RAVI, decided).code, 'role', 'and refused all the same');
+    // Somebody who neither sent it nor holds it is offered nothing at all.
+    assert.deepEqual(m.next(held(), SAM, decided), []);
   });
 
   it('offers a technician nothing on somebody else\'s triage, and the server\'s moves to nobody', () => {
