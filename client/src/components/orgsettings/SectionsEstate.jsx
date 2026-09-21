@@ -228,18 +228,74 @@ function NewSite({ n, s, showAll, onDone, onRemove }) {
 function SiteRow({ dc, s, showAll, open, onToggle }) {
   /* The account's own failure is said beside its button, not up here. */
   const mark = [s.marks[`datacentres:${dc.id}`], s.marks[`facility:${dc.id}`], s.marks[`contacts:${dc.id}`], s.marks[`people:${dc.id}`]].filter(Boolean).sort((a, b) => b.at - a.at)[0];
+  /* Removing a site asks first, in the row itself. The server counts what the
+     site still holds and refuses in words; that sentence is what is shown,
+     because only the server knows. */
+  const [asking, setAsking] = useState(false);
+  const [why, setWhy] = useState(null);
+  const [going, setGoing] = useState(false);
+  const remove = async () => {
+    setGoing(true); setWhy(null);
+    try { await s.removeDatacentre(dc); } catch (e) { setWhy(e.message); setGoing(false); setAsking(false); }
+  };
+  const removeBtn = (
+    <Act size="sm" variant="danger" onClick={() => { setAsking(true); setWhy(null); }} data-testid={`site-remove-${dc.id}`}>Remove</Act>
+  );
+  const asks = asking ? (
+    <Note>
+      Remove {dc.name}? Everything set up for this site goes with it, and it cannot be undone.
+      <Row>
+        <Act size="sm" variant="danger" disabled={going} onClick={remove} data-testid={`site-remove-yes-${dc.id}`}>{going ? 'Removing' : 'Yes, remove it'}</Act>
+        <Act size="sm" variant="quiet" disabled={going} onClick={() => setAsking(false)}>Keep it</Act>
+      </Row>
+    </Note>
+  ) : null;
   if (!open) {
     return (
-      <Held title={dc.name} sub={siteWhere(dc)} note={siteWho(dc)}>
-        <SaveMark mark={mark} />
-        <Act size="sm" variant="quiet" onClick={onToggle} data-testid={`site-open-${dc.id}`}>Edit</Act>
-      </Held>
+      <>
+        <Held title={dc.name} sub={siteWhere(dc)} note={siteWho(dc)}>
+          <SaveMark mark={mark} />
+          <Act size="sm" variant="quiet" onClick={onToggle} data-testid={`site-open-${dc.id}`}>Edit</Act>
+          {removeBtn}
+        </Held>
+        {asks}
+        {why ? <Err>{why}</Err> : null}
+      </>
     );
   }
   return (
     <Block title={dc.name} right={<><SaveMark mark={mark} /><Act size="sm" variant="quiet" onClick={onToggle} data-testid={`site-close-${dc.id}`}>Close</Act></>}>
+      <SiteName dc={dc} s={s} />
       <SiteFields dc={dc} s={s} showAll={showAll} />
+      <Sub title="Remove this site" />
+      <Row>{removeBtn}</Row>
+      {asks}
+      {why ? <Err>{why}</Err> : null}
     </Block>
+  );
+}
+
+/* The site's name. It belongs to the organization rather than to the setup
+   snapshot, so it is saved through its own route and only when it changed. */
+function SiteName({ dc, s }) {
+  const [name, setName] = useState(dc.name || '');
+  const [busy, setBusy] = useState(false);
+  const [why, setWhy] = useState(null);
+  useEffect(() => { setName(dc.name || ''); }, [dc.name]);
+  const changed = name.trim() && name.trim() !== (dc.name || '');
+  const save = async () => {
+    setBusy(true); setWhy(null);
+    try { await s.renameDatacentre(dc, name.trim()); } catch (e) { setWhy(e.message); }
+    setBusy(false);
+  };
+  return (
+    <Field label="Site name" req htmlFor={`site-name-${dc.id}`} error={why}>
+      <Row>
+        <Input id={`site-name-${dc.id}`} value={name} onChange={(e) => setName(e.target.value)}
+          onBlur={() => { if (changed) save(); }} data-testid={`site-name-${dc.id}`} />
+        <Act size="sm" variant="secondary" disabled={!changed || busy} onClick={save}>{busy ? 'Saving' : 'Save'}</Act>
+      </Row>
+    </Field>
   );
 }
 

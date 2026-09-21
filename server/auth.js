@@ -2075,6 +2075,67 @@ function registerRoutes(app) {
     res.json({ ok: true, site });
   });
 
+  // Rename a Site. The slug is left alone: it is what older rows, folders and
+  // remembered choices point at, and a rename is about the words on the screen.
+  app.patch('/api/orgs/:orgId/sites/:siteId', requireRole('owner', 'org_admin'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    if (!canManageOrg(req.user, orgId)) return res.status(403).json({ error: 'Not your organization' });
+    const site = db.prepare('SELECT id, slug, name, organization_id FROM tenants WHERE id = ?').get(Number(req.params.siteId));
+    if (!site || Number(site.organization_id) !== orgId) return res.status(404).json({ error: 'Site not found' });
+    const name = String((req.body || {}).name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Give the site a name.' });
+    db.prepare('UPDATE tenants SET name = ? WHERE id = ?').run(name.slice(0, 120), site.id);
+    audit.log({ req, user: req.user, action: 'site.rename', status: 'ok', targetType: 'site', targetId: site.id, payload: { orgId, from: site.name, to: name } });
+    res.json({ ok: true, site: { ...site, name: name.slice(0, 120) } });
+  });
+
+  /**
+   * Remove a Site.
+   *
+   * Only an empty one. A Site is the anchor of its people, its racks, its
+   * scans and its drift checks, and a cascade here would take a customer's
+   * history with it silently. So this counts what holds it first and refuses
+   * in words that say what to clear, which is the answer somebody deleting a
+   * Site they made by mistake actually wants.
+   */
+  app.delete('/api/orgs/:orgId/sites/:siteId', requireRole('owner', 'org_admin'), (req, res) => {
+    const orgId = Number(req.params.orgId);
+    if (!canManageOrg(req.user, orgId)) return res.status(403).json({ error: 'Not your organization' });
+    const siteId = Number(req.params.siteId);
+    const site = db.prepare('SELECT id, slug, name, organization_id FROM tenants WHERE id = ?').get(siteId);
+    if (!site || Number(site.organization_id) !== orgId) return res.status(404).json({ error: 'Site not found' });
+
+    const one = (sql) => Number(db.prepare(sql).get(siteId)?.n || 0);
+    const held = [];
+    const people = one('SELECT COUNT(*) n FROM users WHERE tenant_id = ?');
+    if (people) held.push(`${people} ${people === 1 ? 'person' : 'people'}`);
+    const racks = one('SELECT COUNT(*) n FROM racks_known WHERE tenant_id = ?');
+    if (racks) held.push(`${racks} ${racks === 1 ? 'rack' : 'racks'}`);
+    const spaces = one('SELECT COUNT(*) n FROM spaces WHERE tenant_id = ?');
+    if (spaces) held.push(`${spaces} ${spaces === 1 ? 'space' : 'spaces'}`);
+    const owned = one('SELECT COUNT(*) n FROM rack_owners WHERE tenant_id = ?');
+    if (owned) held.push(`${owned} scanned ${owned === 1 ? 'rack' : 'racks'}`);
+    const invited = one('SELECT COUNT(*) n FROM invites WHERE tenant_id = ?');
+    if (invited) held.push(`${invited} open ${invited === 1 ? 'invite' : 'invites'}`);
+    if (held.length) {
+      return res.status(409).json({
+        error: `${site.name} still holds ${held.join(', ')}. Move or remove them first, then the site can go.`,
+        holds: { people, racks, spaces, scanned: owned, invites: invited },
+      });
+    }
+
+    // Nothing points at it any more, so the row and the few settings rows that
+    // belong to it go together.
+    const gone = db.transaction(() => {
+      db.prepare('DELETE FROM tenant_rules WHERE tenant_id = ?').run(siteId);
+      db.prepare('DELETE FROM tenant_profile WHERE tenant_id = ?').run(siteId);
+      db.prepare('UPDATE audit_log SET tenant_id = NULL WHERE tenant_id = ?').run(siteId);
+      return db.prepare('DELETE FROM tenants WHERE id = ?').run(siteId).changes;
+    })();
+    audit.log({ req, user: req.user, action: 'site.delete', status: 'ok', targetType: 'site', targetId: siteId, payload: { orgId, name: site.name } });
+    res.json({ ok: true, removed: gone > 0, site: { id: siteId, name: site.name } });
+  });
+
   // List members of an org (with their Site).
   app.get('/api/orgs/:orgId/members', requireRole('owner', 'org_admin'), (req, res) => {
     const orgId = Number(req.params.orgId);

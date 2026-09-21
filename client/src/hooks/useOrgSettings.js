@@ -38,6 +38,8 @@ async function call(method, path, body) {
 const getJSON = (p) => call('GET', p);
 const postJSON = (p, b) => call('POST', p, b);
 const putJSON = (p, b) => call('PUT', p, b);
+const patchJSON = (p, b) => call('PATCH', p, b);
+const delJSON = (p) => call('DELETE', p);
 
 /* The spaces tree flattened for a list. Only roots are made here (parent_id
    stays null); anything nested that arrived by import is shown indented. */
@@ -186,6 +188,29 @@ export function useOrgSettings() {
     return snap;
   }), [orgId, run, refreshUser]);
 
+  /* Rename a site. The name is the organization's, not the setup snapshot's,
+     so it goes to the same route the console uses and the snapshot is read
+     back rather than guessed. */
+  const renameDatacentre = useCallback((dc, name) => run(`datacentres:${dc.id}`, async () => {
+    if (orgId == null) throw new Error('Pick an organization first');
+    await patchJSON(`/api/orgs/${orgId}/sites/${dc.id}`, { name });
+    const snap = toDc(await getJSON(`/api/setup/${dc.id}`));
+    setDcs((d) => (d || []).map((x) => (x.id === dc.id ? snap : x)));
+    refreshUser();
+    return snap;
+  }), [orgId, run, refreshUser]);
+
+  /* Remove a site. The server refuses one that still holds people, racks,
+     spaces, scans or invites, and says which - that message is what the
+     screen shows, so nothing is guessed here. */
+  const removeDatacentre = useCallback((dc) => run(`datacentres:${dc.id}`, async () => {
+    if (orgId == null) throw new Error('Pick an organization first');
+    await delJSON(`/api/orgs/${orgId}/sites/${dc.id}`);
+    setDcs((d) => (d || []).filter((x) => x.id !== dc.id));
+    refreshUser();
+    return { ok: true };
+  }), [orgId, run, refreshUser]);
+
   const saveDatacentre = useCallback((dc, body) => run(`datacentres:${dc.id}`, () => write(dc, () => putJSON(`/api/setup/${dc.id}/datacentre`, body), (d, r) => ({ ...d, datacentre: r.datacentre || d.datacentre }))), [run, write]);
   const setApprover = useCallback((dc, body) => run(`people:${dc.id}`, () => write(dc, () => putJSON(`/api/setup/${dc.id}/approver`, body), (d, r) => ({ ...d, approver: r.approver || null }))), [run, write]);
   const acceptRules = useCallback((dc) => run(`rules:${dc.id}`, () => write(dc, () => putJSON(`/api/setup/${dc.id}/rules`, { accepted: true }), (d, r) => ({ ...d, rules: r.rules || d.rules }))), [run, write]);
@@ -218,7 +243,7 @@ export function useOrgSettings() {
     user, orgId, isOwner, orgs: orgs || NONE, pickOrg,
     loading, error: err, orgError: orgErr, refresh,
     model, dcs: dcs || NONE, orgProfile, marks,
-    saveOrg, addDatacentre, saveDatacentre, setApprover, createSpocAccount, acceptRules, saveSection,
+    saveOrg, addDatacentre, saveDatacentre, renameDatacentre, removeDatacentre, setApprover, createSpocAccount, acceptRules, saveSection,
     members, loadMembers, invite,
   };
 }
