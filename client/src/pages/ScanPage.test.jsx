@@ -6,7 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
    upload, the phone is never asked where it is, and a server that has no site
    list yet gets the scan it always got. */
 
-const { routes, posts } = vi.hoisted(() => ({ routes: { current: {} }, posts: [] }));
+const { routes, posts, tour } = vi.hoisted(() => ({ routes: { current: {} }, posts: [], tour: { current: null } }));
 vi.mock('../utils/api', () => ({
   apiUrl: (p) => p,
   authFetch: vi.fn(async (url, init = {}) => {
@@ -19,6 +19,7 @@ vi.mock('../utils/api', () => ({
   }),
 }));
 vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: { id: 935, tenant_id: 32, role: 'member' } }) }));
+vi.mock('../TourContext.jsx', () => ({ useTour: () => tour.current }));
 vi.mock('../components/AssignedNotice.jsx', () => ({ default: () => null }));
 vi.mock('../hooks/useIsDesktop', () => ({ useIsDesktop: () => false, useHasSidebar: () => false }));
 // The photo checks need a real decoder; what is under test is where it goes.
@@ -53,6 +54,7 @@ const NO_POSITION = ['lat', 'lng', 'accuracy', 'locatedAt', 'here'];
 let geo;
 beforeEach(() => {
   posts.length = 0;
+  tour.current = null;
   window.localStorage.clear();
   // The first-scan sheet is a modal over the page; this device has seen it.
   window.localStorage.setItem('racktrack.scan.tipsSeen', '1');
@@ -161,6 +163,19 @@ describe('<ScanPage> site', () => {
     expect(geo.watchPosition).not.toHaveBeenCalled();
     for (const k of NO_POSITION) expect(sent('/api/analyze').has(k)).toBe(false);
     expect(document.body.textContent).not.toMatch(/latitude|longitude|coordinates|\d+\.\d{3,}\s*,\s*-?\d+\.\d{3,}/i);
+  });
+
+  test('the guided tour cannot hold a person who still has a site to choose', async () => {
+    // The tour dims the page and waits for Analyze to come alive, which it
+    // cannot while no site is chosen. The picker is the way out, and only then.
+    tour.current = { active: true, stopTour: () => {}, setSuspended: () => {} };
+    stub({ body: { ok: true, preselect: null, sites: [OFFICE, HARBOUR] } });
+    mount();
+    await screen.findByPlaceholderText('Search by site number or name');
+    const block = () => document.querySelector('[data-tour="site-picker"]');
+    expect(block().getAttribute('data-tour-bypass')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: /Site 7 - Harbour DC/ }));
+    expect(block().hasAttribute('data-tour-bypass')).toBe(false);
   });
 
   test('a site the server refuses is said in words a person can act on', async () => {

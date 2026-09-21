@@ -49,7 +49,10 @@ export function siteMatches(s, query) {
   return [String(s.id), siteLabel(s), s.name].some((v) => String(v || '').toLowerCase().includes(q));
 }
 
-export default function SitePicker({ sites = [], value = '', onChange, className = '' }) {
+// Anything else (a data- attribute the page wants on the block) lands on the
+// wrapper, so the page never needs a box of its own around a picker that may
+// draw nothing.
+export default function SitePicker({ sites = [], value = '', onChange, className = '', ...rest }) {
   const [query, setQuery] = useState('');
   // Only ever true because the person asked to change a choice already made.
   // With nothing chosen the list is open regardless.
@@ -63,7 +66,7 @@ export default function SitePicker({ sites = [], value = '', onChange, className
   if (sites.length === 1) {
     const only = sites[0];
     return (
-      <div className={`${styles.wrap} ${className}`}>
+      <div className={`${styles.wrap} ${className}`} {...rest}>
         <span className={styles.lbl}>Site</span>
         <p className={styles.one}>{[siteLabel(only), only.name, rackWords(rackTotal(only))].filter(Boolean).join(' - ')}</p>
       </div>
@@ -78,7 +81,7 @@ export default function SitePicker({ sites = [], value = '', onChange, className
 
   if (chosen && !changing) {
     return (
-      <div className={`${styles.wrap} ${className}`}>
+      <div className={`${styles.wrap} ${className}`} {...rest}>
         <span className={styles.lbl}>Site<span className={styles.star} aria-hidden="true">*</span></span>
         <div className={styles.chosen}>
           <div className={styles.chosenText}>
@@ -92,7 +95,7 @@ export default function SitePicker({ sites = [], value = '', onChange, className
   }
 
   return (
-    <div className={`${styles.wrap} ${className}`}>
+    <div className={`${styles.wrap} ${className}`} {...rest}>
       <label htmlFor="scan-site" className={styles.lbl}>Site<span className={styles.star} aria-hidden="true">*</span></label>
       <input id="scan-site" type="search" className={styles.find} value={query}
         placeholder="Search by site number or name" aria-required="true"

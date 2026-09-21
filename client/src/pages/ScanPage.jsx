@@ -1577,7 +1577,14 @@ export default function ScanPage() {
         {/* Site picker. Drawn only when the server has Sites to offer: a line
             for one, a search for several. In the flow of the page, so none of
             it can end up under the bottom bar. */}
-        <SitePicker sites={sites} value={siteId} onChange={chooseSite} className={styles.siteBlock} />
+        {/* The guided tour dims everything but the control it is pointing at,
+            and its first step waits for Analyze to come alive - which it never
+            does while a Site is still to be chosen. So for exactly that case the
+            picker is the tour's way out: a tap on it ends the walkthrough and
+            leaves the list live, the same treatment Back gets on the results
+            page. `site-picker` is there for a tour step of its own. */}
+        <SitePicker sites={sites} value={siteId} onChange={chooseSite} className={styles.siteBlock}
+          data-tour="site-picker" data-tour-bypass={tourActive && needsSite ? 'true' : undefined} />
 
         {/* Space picker - organisation setup. Shown only when the chosen
             Site has spaces; a scan is never blocked on it. */}
