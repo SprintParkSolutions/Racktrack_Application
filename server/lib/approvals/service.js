@@ -218,6 +218,8 @@ function settle(effects, planId, causedBy = null) {
         const left = machine.unassigned({ items: store.itemsOf(planId), tickets }).length;
         if (!left && (tickets.length || plan.triagedAt)) to = 'assigned';
       }
+      // Out of triage, nothing is waiting on an admin any more.
+      if (to && plan.needsAdmin) patch = { needsAdmin: null };
     } else if (WORKING.includes(plan.status)) {
       if (held) return plan;
       const target = machine.workingStatus(tickets) || 'resolved';
