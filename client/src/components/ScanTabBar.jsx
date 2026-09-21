@@ -31,16 +31,29 @@ const TABS = [
 
 export const TAB_KEYS = TABS.map((t) => t.key);
 
+/* Looking a port up is its own job, so while a person is in it the bar is the
+   places that job leads to. Report and Drift are about the whole rack and had
+   no business on a screen about one socket. */
+const PORT_TABS = [
+  { key: 'result',   label: 'Port',     icon: <IconPort /> },
+  { key: 'overview', label: 'The rack', icon: <IconRack /> },
+  { key: 'switches', label: 'Switches', icon: <IconSwitch /> },
+  { key: 'timeline', label: 'History',  icon: <IconDrift /> },
+];
+
 /** Screens that belong to Overview, so the bar lights Overview on them. */
 const UNDER_OVERVIEW = ['result', 'topology', 'switches'];
 
-export default function ScanTabBar({ activeTab, onTabChange, badges = {} }) {
-  const active = UNDER_OVERVIEW.includes(activeTab) ? 'overview' : activeTab;
+export default function ScanTabBar({ activeTab, onTabChange, badges = {}, flow = 'rack' }) {
+  const port = flow === 'port';
+  const tabs = port ? PORT_TABS : TABS;
+  const active = port ? activeTab
+    : (UNDER_OVERVIEW.includes(activeTab) ? 'overview' : activeTab);
 
   return (
     <nav className={styles.tabBar} role="tablist" aria-label="Scan results tabs">
       <div className={styles.bar}>
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.key}
             role="tab"
@@ -60,6 +73,24 @@ export default function ScanTabBar({ activeTab, onTabChange, badges = {} }) {
 }
 
 // ── Tab icons (20×20, clean stroke style) ───────────────────────
+
+function IconPort() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </svg>
+  );
+}
+
+function IconSwitch() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="8" width="18" height="8" rx="1.5"/>
+      <path d="M7 12h.01"/><path d="M10 12h.01"/><path d="M13 12h.01"/><path d="M16.5 12h1"/>
+    </svg>
+  );
+}
 
 function IconRack() {
   return (

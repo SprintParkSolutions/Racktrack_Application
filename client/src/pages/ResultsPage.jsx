@@ -3458,8 +3458,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             located port meant going back first. Picking a tab leaves the view. */}
         {!isDesktop && !embeddedProp && (
           <ScanTabBar
-            activeTab="overview"
-            onTabChange={(key) => { leavePortView(); handleTabChange(key); }}
+            flow="port"
+            activeTab="result"
+            onTabChange={(key) => {
+              // Staying on the port needs nothing; everywhere else leaves it.
+              if (key === 'result') return;
+              leavePortView();
+              handleTabChange(key === 'overview' ? 'overview' : key);
+            }}
           />
         )}
 
