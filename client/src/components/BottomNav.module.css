@@ -92,8 +92,8 @@
 
 .label {
   font-family: var(--font);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: 0.04em;
   color: inherit;
   text-transform: uppercase;

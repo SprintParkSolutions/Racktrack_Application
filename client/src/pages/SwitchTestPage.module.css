@@ -41,7 +41,7 @@
 }
 .title {
   flex: 1; margin: 0;
-  font-size: 20px; font-weight: 650; letter-spacing: -0.01em;
+  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em;
   color: var(--text);
 }
 
@@ -66,7 +66,7 @@
   width: 22px; height: 22px; margin-right: 8px;
   border-radius: 999px;
   background: #121212; color: #ffffff;
-  font-size: 12px; font-weight: 700; letter-spacing: 0;
+  font-size: var(--fs-sub); font-weight: var(--fw-title); letter-spacing: 0;
   vertical-align: 3px;
 }
 .row::before {
@@ -86,18 +86,18 @@
    used to be a 22px headline under a 17px name, so the second thing on the row
    shouted louder than the first. */
 .who h2 {
-  margin: 0; font-size: 19px; font-weight: 700; color: var(--text);
+  margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title); color: var(--text);
   letter-spacing: -.02em; line-height: 1.2; overflow-wrap: anywhere;
 }
 .model {
   margin: 3px 0 0;
-  font-size: 14px; font-weight: 650; color: var(--text);
+  font-size: var(--fs-item); font-weight: var(--fw-title); color: var(--text);
   letter-spacing: -.01em; overflow-wrap: anywhere;
 }
-.make { color: var(--muted); font-weight: 600; }
+.make { color: var(--muted); font-weight: var(--fw-label); }
 .make::after { content: ' '; }
 .meta {
-  margin: 3px 0 0; font-size: 12px; color: var(--muted);
+  margin: 3px 0 0; font-size: var(--fs-sub); color: var(--muted);
   font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
 }
 
@@ -105,19 +105,19 @@
 .count { flex: none; text-align: right; }
 .count b {
   display: block;
-  font-size: 22px; font-weight: 700; letter-spacing: -.02em;
+  font-size: var(--fs-page); font-weight: var(--fw-title); letter-spacing: -.02em;
   color: var(--text); line-height: 1.1; font-variant-numeric: tabular-nums;
 }
-.count b i { font-style: normal; font-weight: 500; color: var(--muted); margin: 0 1px; }
+.count b i { font-style: normal; font-weight: var(--fw-label); color: var(--muted); margin: 0 1px; }
 .count span {
   display: block; margin-top: 2px;
-  font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600;
+  font-size: var(--fs-micro); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-label);
 }
 .state {
   flex: none; align-self: center;
-  font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
-  font-weight: 600; color: var(--muted);
+  font-size: var(--fs-label); letter-spacing: .06em; text-transform: uppercase;
+  font-weight: var(--fw-label); color: var(--muted);
 }
 .row[data-state='bad'] .state { color: #c0392b; }
 .row[data-state='busy'] .state { color: #b26a00; }
@@ -155,7 +155,7 @@
      about 11px wide, so this is small on purpose - it is a label to confirm
      what you are pointing at, and tapping puts the whole line underneath. */
   font-family: var(--font);
-  font-size: 8px; font-weight: 700; letter-spacing: -.04em;
+  font-size: 8px; font-weight: var(--fw-title); letter-spacing: -.04em;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
   overflow: hidden;
@@ -166,7 +166,7 @@
 
 .plateNote {
   margin: 8px 2px 0;
-  font-size: 12px; color: var(--muted);
+  font-size: var(--fs-sub); color: var(--muted);
   overflow-wrap: anywhere;
 }
 .plateNote b { color: var(--text); font-variant-numeric: tabular-nums; }
@@ -203,7 +203,7 @@
   padding: 11px 12px;
   border: 0; border-radius: 8px;
   background: transparent; color: var(--text);
-  font-family: var(--font); font-size: 14px; font-weight: 600;
+  font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-label);
   text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .menu button:active { background: var(--bg2, rgba(0,0,0,.05)); }
@@ -218,22 +218,22 @@
   font-family: var(--font);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.moreSum { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); }
-.moreLink { flex: none; font-size: 13px; font-weight: 700; color: #0f7b4f; }
+.moreSum { flex: 1; min-width: 0; font-size: var(--fs-body); color: var(--muted); }
+.moreLink { flex: none; font-size: var(--fs-body); font-weight: var(--fw-title); color: #0f7b4f; }
 .dataHead {
   display: flex; align-items: baseline; gap: 10px;
   padding: 14px 0 6px;
 }
 .dataHead h3 {
   flex: 1; margin: 0;
-  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--muted); font-weight: 700;
+  font-size: var(--fs-label); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-title);
 }
 .dataCount {
-  font-size: 12px; font-weight: 700; color: var(--text);
+  font-size: var(--fs-sub); font-weight: var(--fw-title); color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.none { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.none { margin: 0; font-size: var(--fs-sub); line-height: 1.5; color: var(--muted); }
 
 /* Which ports are running, and how fast. One line per speed, the numbers set
    in a tabular column so they read as a set rather than a sentence. */
@@ -243,11 +243,11 @@
   align-items: baseline;
 }
 .speedTag {
-  font-size: 12px; font-weight: 700; color: #0f7b4f;
+  font-size: var(--fs-sub); font-weight: var(--fw-title); color: #0f7b4f;
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .speedPorts {
-  font-size: 13px; color: var(--text);
+  font-size: var(--fs-body); color: var(--text);
   font-variant-numeric: tabular-nums; letter-spacing: .02em;
   line-height: 1.7; overflow-wrap: anywhere;
 }
@@ -262,29 +262,29 @@
 }
 .nbrName {
   flex: 1; min-width: 0;
-  font-size: 13.5px; font-weight: 650; color: var(--text); overflow-wrap: anywhere;
+  font-size: var(--fs-body); font-weight: var(--fw-title); color: var(--text); overflow-wrap: anywhere;
 }
 .nbrWhere {
-  flex: none; font-size: 12px; color: var(--muted);
+  flex: none; font-size: var(--fs-sub); color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
 /* ── It did not answer ── */
 .bad { display: flex; flex-direction: column; gap: 5px; }
-.bad p { margin: 0; font-size: 13.5px; line-height: 1.5; color: #c0392b; }
-.hint { color: var(--muted) !important; font-size: 12.5px !important; }
+.bad p { margin: 0; font-size: var(--fs-body); line-height: 1.5; color: #c0392b; }
+.hint { color: var(--muted) !important; font-size: var(--fs-sub) !important; }
 
 /* ── Working ── */
 .working {
   display: flex; align-items: center; gap: 9px;
-  margin: 0; font-size: 13.5px; color: var(--muted);
+  margin: 0; font-size: var(--fs-body); color: var(--muted);
 }
 .workingStep { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .stop {
   flex: none;
   border: 1px solid var(--border, rgba(0,0,0,.2)); border-radius: 8px;
   background: transparent; color: var(--text);
-  font-family: var(--font); font-size: 12.5px; font-weight: 650;
+  font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-title);
   min-height: 32px; padding: 0 12px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
@@ -299,20 +299,20 @@
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
 
 .descr {
-  margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--muted);
+  margin: 0; font-size: var(--fs-sub); line-height: 1.55; color: var(--muted);
   overflow-wrap: anywhere;
 }
 
 /* ── Nothing here yet ── */
 .empty { padding: 44px 16px; text-align: center; }
-.empty p { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--text); }
-.emptySub { font-weight: 400 !important; font-size: 13.5px !important; color: var(--muted) !important; margin-bottom: 18px !important; }
+.empty p { margin: 0 0 6px; font-size: var(--fs-section); font-weight: var(--fw-label); color: var(--text); }
+.emptySub { font-weight: var(--fw-body) !important; font-size: var(--fs-body) !important; color: var(--muted) !important; margin-bottom: 18px !important; }
 
 /* ── Buttons ── */
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .primary, .secondary {
   flex: 1 1 auto; min-height: 46px;
-  border-radius: 10px; font-size: 14.5px; font-weight: 600;
+  border-radius: 10px; font-size: var(--fs-item); font-weight: var(--fw-label);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   padding: 0 16px;
 }
@@ -327,10 +327,10 @@
   background: transparent; border: 0;
   border-bottom: 1px solid var(--border, rgba(0,0,0,.09));
   color: var(--text); font-family: var(--font);
-  font-size: 14px; font-weight: 600;
+  font-size: var(--fs-item); font-weight: var(--fw-label);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.addMore span { font-size: 18px; font-weight: 500; color: var(--muted); }
+.addMore span { font-size: var(--fs-head); font-weight: var(--fw-label); color: var(--muted); }
 .addMore:active { background: var(--bg2, rgba(0,0,0,.03)); }
 
 /* ── Add / edit ── */
@@ -341,18 +341,18 @@
   background: var(--bg2, #fafafa);
   display: flex; flex-direction: column; gap: 14px;
 }
-.form h2 { margin: 0; font-size: 17px; font-weight: 650; color: var(--text); letter-spacing: -.01em; }
+.form h2 { margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title); color: var(--text); letter-spacing: -.01em; }
 .field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
 .field span {
-  font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600;
+  font-size: var(--fs-label); letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-label);
 }
 .field input {
   min-height: 46px; padding: 0 12px;
   border: 1px solid var(--border, rgba(0,0,0,.22));
   border-radius: 10px;
   background: var(--bg); color: var(--text);
-  font-size: 16px;   /* 16px or iOS zooms the page on focus */
+  font-size: var(--fs-section);   /* 16px or iOS zooms the page on focus */
   width: 100%;
 }
 .pair { display: flex; gap: 10px; }
@@ -371,30 +371,30 @@
   background: transparent; color: var(--muted);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.segBtn b { font-size: 14px; font-weight: 650; color: inherit; }
-.segBtn small { font-size: 11px; letter-spacing: .01em; }
+.segBtn b { font-size: var(--fs-item); font-weight: var(--fw-title); color: inherit; }
+.segBtn small { font-size: var(--fs-label); letter-spacing: .01em; }
 .segOn { background: var(--card); color: var(--text); border-color: var(--border, rgba(0,0,0,.18)); }
-.fieldNote { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
-.formErr { margin: 0; font-size: 13px; font-weight: 650; color: #c0392b; }
+.fieldNote { margin: 0; font-size: var(--fs-sub); line-height: 1.5; color: var(--muted); }
+.formErr { margin: 0; font-size: var(--fs-body); font-weight: var(--fw-title); color: #c0392b; }
 
 /* A reading the server has not been told about. */
 .unfiled {
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
-  margin: 0; font-size: 12.5px; color: #b26a00;
+  margin: 0; font-size: var(--fs-sub); color: #b26a00;
 }
 .unfiled button {
   border: 0; background: transparent; padding: 0;
-  font-family: var(--font); font-size: 12.5px; font-weight: 700;
+  font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-title);
   color: #0f7b4f; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 /* A place the server proposed and nobody has saved. Amber, like every other
    "read this before you rely on it" line on the page. */
-.proposal { margin: 0; font-size: 12.5px; line-height: 1.45; color: #b26a00; }
+.proposal { margin: 0; font-size: var(--fs-sub); line-height: 1.45; color: #b26a00; }
 
-.formErr { margin: 0; font-size: 13px; font-weight: 600; color: #c0392b; }
+.formErr { margin: 0; font-size: var(--fs-body); font-weight: var(--fw-label); color: #c0392b; }
 .fieldNote code {
   background: var(--bg); padding: 1px 5px; border-radius: 4px;
-  font-size: 12px;
+  font-size: var(--fs-sub);
 }
 
 /* Shown only in a browser: the reading happens on the phone. */
@@ -404,11 +404,11 @@
   border-bottom: 1px solid var(--border, rgba(0,0,0,.09));
   border-left: 3px solid #b26a00;
   color: var(--muted);
-  font-size: 13px; line-height: 1.55;
+  font-size: var(--fs-body); line-height: 1.55;
 }
-.notice b { font-weight: 700; color: var(--text); }
+.notice b { font-weight: var(--fw-title); color: var(--text); }
 
 /* ── Save the places and move on ── */
 .finish { padding: 18px 16px 8px; display: flex; flex-direction: column; gap: 10px; }
-.finishOk { margin: 0; font-size: 13px; color: #0f7b4f; }
-.finishBad { margin: 0; font-size: 13px; color: #c0392b; }
+.finishOk { margin: 0; font-size: var(--fs-body); color: #0f7b4f; }
+.finishBad { margin: 0; font-size: var(--fs-body); color: #c0392b; }

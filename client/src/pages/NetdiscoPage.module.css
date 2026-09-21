@@ -38,7 +38,7 @@
 
 .headerTitle {
   margin: 0;
-  font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em;
+  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em;
   background: linear-gradient(135deg, #000000 0%, #474747 40%, #474747 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   filter: drop-shadow(0 0 12px rgba(0,0,0,0.20));
@@ -50,7 +50,7 @@
 
 .headerMono {
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: var(--fs-micro);
   color: rgba(0,0,0,0.4);
   letter-spacing: 0.08em;
   max-width: 100%;
@@ -61,17 +61,17 @@
 
 @media (max-width: 420px) {
   .header { padding: 12px 10px 10px; }
-  .headerTitle { font-size: .92rem; }
+  .headerTitle { font-size: var(--fs-section); }
   .headerMono  { font-size: .55rem; }
 }
 @media (max-width: 360px) {
-  .headerTitle { font-size: .82rem; }
+  .headerTitle { font-size: var(--fs-body); }
 }
 
 .healthPill {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px;
-  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: 0.06em;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -122,8 +122,8 @@
 
 .sectionHead h3 {
   margin: 0;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-title);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(0,0,0,0.85);
@@ -135,14 +135,14 @@
 
 .subtle {
   color: rgba(0,0,0,0.5);
-  font-size: 0.65rem;
+  font-size: var(--fs-micro);
   font-family: var(--mono);
   letter-spacing: 0.04em;
 }
 
 .subhead {
   margin: 14px 0 6px;
-  font-size: 0.6rem; font-weight: 700;
+  font-size: var(--fs-micro); font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: rgba(0,0,0,0.55);
@@ -153,7 +153,7 @@
 .linkBtn {
   background: none; border: none;
   color: rgba(0,0,0,0.78);
-  font-size: 0.78rem; font-weight: 600;
+  font-size: var(--fs-mono); font-weight: var(--fw-label);
   cursor: pointer;
   padding: 6px 8px;
   min-height: 32px;
@@ -241,13 +241,13 @@
 
 .deviceName {
   font-family: var(--mono);
-  font-size: 0.9rem; font-weight: 800;
+  font-size: var(--fs-item); font-weight: var(--fw-title);
   letter-spacing: 0.03em;
   color: #c6c6c6;
 }
 
 .deviceClass {
-  font-size: 0.62rem;
+  font-size: var(--fs-micro);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(0,0,0,0.45);
@@ -259,20 +259,20 @@
 }
 
 .modelTag {
-  font-size: 0.74rem;
+  font-size: var(--fs-sub);
   color: rgba(245,245,245,0.85);
   word-break: break-word;
 }
 
 .ipTag {
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--fs-label);
   color: rgba(0,0,0,0.55);
   letter-spacing: 0.04em;
 }
 
 .unmanaged {
-  font-size: 0.7rem;
+  font-size: var(--fs-label);
   color: rgba(0,0,0,0.55);
   font-style: italic;
   letter-spacing: 0.02em;
@@ -280,7 +280,7 @@
 
 .chev {
   color: rgba(0,0,0,0.7);
-  font-size: 0.85rem;
+  font-size: var(--fs-item);
   user-select: none;
   align-self: center;
 }
@@ -299,13 +299,13 @@
 }
 
 .cnt b {
-  font-size: 0.84rem; font-weight: 800;
+  font-size: var(--fs-body); font-weight: var(--fw-title);
   letter-spacing: 0.01em;
 }
 
 .cnt i {
   font-style: normal;
-  font-size: 0.55rem; font-weight: 600;
+  font-size: 0.55rem; font-weight: var(--fw-label);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(0,0,0,0.45);
@@ -332,7 +332,7 @@
   grid-template-columns: 1.1fr 0.8fr 1.6fr 0.9fr;
   gap: 10px;
   padding: 0 14px 6px;
-  font-size: 0.58rem; font-weight: 700;
+  font-size: 0.58rem; font-weight: var(--fw-title);
   letter-spacing: 0.10em; text-transform: uppercase;
   color: rgba(0,0,0,0.45);
 }
@@ -369,14 +369,14 @@
 
 .matchScan strong {
   font-family: var(--mono);
-  font-size: 0.82rem; font-weight: 800;
+  font-size: var(--fs-body); font-weight: var(--fw-title);
   letter-spacing: 0.03em;
   color: #c6c6c6;
 }
 
 .matchNd strong {
   font-family: var(--mono);
-  font-size: 0.78rem; font-weight: 700;
+  font-size: var(--fs-mono); font-weight: var(--fw-title);
   color: #f5f5f5;
   word-break: break-all;
 }
@@ -387,7 +387,7 @@
 
 /* Port pills - same shape as ResultsPage portPill family */
 .portCount {
-  font-family: var(--mono); font-size: 0.64rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: #1c1c1c;
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.20);
@@ -396,7 +396,7 @@
 }
 
 .connCount {
-  font-family: var(--mono); font-size: 0.64rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: #000000;
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.20);
@@ -409,7 +409,7 @@
   font-family: var(--mono);
   padding: 3px 9px;
   font-size: 0.58rem;
-  font-weight: 700;
+  font-weight: var(--fw-title);
   letter-spacing: 0.06em;
   border-radius: 4px;
   text-transform: uppercase;
@@ -454,7 +454,7 @@
 }
 
 .fieldVal {
-  font-size: 0.78rem;
+  font-size: var(--fs-sub);
   color: #f5f5f5;
   word-break: break-word;
 }
@@ -467,8 +467,8 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.10);
   color: rgba(0,0,0,0.7);
-  font-size: 0.66rem;
-  font-weight: 600;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
   padding: 5px 11px;
   border-radius: 999px;
   cursor: pointer;
@@ -522,7 +522,7 @@
   padding: 9px 14px;
   position: sticky; top: 0;
   background: rgba(0,0,0,0.95);
-  font-size: 0.56rem; font-weight: 700;
+  font-size: 0.56rem; font-weight: var(--fw-title);
   letter-spacing: 0.10em; text-transform: uppercase;
   color: rgba(0,0,0,0.50);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -533,14 +533,14 @@
   display: grid;
   gap: 10px; align-items: center;
   padding: 8px 14px;
-  font-size: 0.74rem;
+  font-size: var(--fs-sub);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .portState { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.portVlan  { font-family: var(--mono); font-size: 0.7rem; color: rgba(0,0,0,0.7); }
+.portVlan  { font-family: var(--mono); font-size: var(--fs-label); color: rgba(0,0,0,0.7); }
 .portNb    { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.portNb strong { font-family: var(--mono); font-size: 0.74rem; color: #f5f5f5; }
+.portNb strong { font-family: var(--mono); font-size: var(--fs-mono); color: #f5f5f5; }
 
 .portRow:nth-child(even) {
   background: rgba(255, 255, 255, 0.015);
@@ -552,7 +552,7 @@
 
 .portName strong {
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: var(--fs-mono);
   color: #f5f5f5;
 }
 
@@ -579,8 +579,8 @@
   border: 1px solid rgba(0,0,0,0.25);
   color: #c6c6c6;
   font-family: var(--mono);
-  font-size: 0.62rem;
-  font-weight: 700;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   padding: 3px 9px;
   border-radius: 100px;
   cursor: pointer;
@@ -604,7 +604,7 @@
 }
 .endDeviceBtn strong {
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: var(--fs-mono);
   color: #c6c6c6;
   letter-spacing: 0.02em;
 }
@@ -613,7 +613,7 @@
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: rgba(0,0,0,0.65);
-  font-weight: 700;
+  font-weight: var(--fw-title);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 .endDeviceBtn:hover strong { color: #ffffff; }
@@ -636,7 +636,7 @@
 }
 
 .macLabel {
-  font-size: 0.6rem; font-weight: 700;
+  font-size: var(--fs-micro); font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: rgba(0,0,0,0.55);
@@ -648,7 +648,7 @@
   flex: 1;
   padding: 7px 12px;
   font-family: var(--mono);
-  font-size: 16px;
+  font-size: var(--fs-section);
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
@@ -661,8 +661,8 @@
 
 .macBtn {
   padding: 7px 14px;
-  font-size: 0.66rem;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.06em;
   background: rgba(0,0,0,0.10);
   border: 1px solid rgba(0,0,0,0.35);
@@ -695,7 +695,7 @@
 }
 
 .currentLabel {
-  font-size: 0.58rem; font-weight: 700;
+  font-size: 0.58rem; font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: #474747;
@@ -703,7 +703,7 @@
 
 .currentLoc strong {
   font-family: var(--mono);
-  font-size: 0.82rem; font-weight: 700;
+  font-size: var(--fs-body); font-weight: var(--fw-title);
   color: #f5f5f5;
 }
 
@@ -712,7 +712,7 @@
 .miniRow {
   display: flex; gap: 12px; align-items: center;
   padding: 7px 12px;
-  font-size: 0.72rem;
+  font-size: var(--fs-sub);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.025);
   flex-wrap: wrap;
@@ -728,7 +728,7 @@
 /* ── Empty / loading / error / warn states ────────────────────────────── */
 .loading {
   padding: 14px;
-  font-size: 0.72rem;
+  font-size: var(--fs-mono);
   color: rgba(0,0,0,0.55);
   text-align: center;
   font-family: var(--mono);
@@ -737,7 +737,7 @@
 
 .empty {
   padding: 18px;
-  font-size: 0.74rem;
+  font-size: var(--fs-sub);
   color: rgba(0,0,0,0.45);
   text-align: center;
   font-style: italic;
@@ -749,7 +749,7 @@
   background: rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.25);
   color: #474747;
-  font-size: 0.74rem;
+  font-size: var(--fs-sub);
   margin-bottom: 8px;
 }
 
@@ -759,7 +759,7 @@
   background: rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.25);
   color: #c6c6c6;
-  font-size: 0.76rem;
+  font-size: var(--fs-sub);
   line-height: 1.55;
   margin-bottom: 8px;
 }
@@ -770,7 +770,7 @@
   border-radius: 4px;
   font-family: var(--mono);
   color: #c6c6c6;
-  font-size: 0.72rem;
+  font-size: var(--fs-mono);
 }
 
 .success {
@@ -779,7 +779,7 @@
   background: rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.25);
   color: #474747;
-  font-size: 0.74rem;
+  font-size: var(--fs-sub);
   margin-bottom: 8px;
 }
 
@@ -817,7 +817,7 @@
     align-items: center;
     gap: 4px 12px;
     padding: 11px 14px;
-    font-size: 0.74rem;
+    font-size: var(--fs-sub);
   }
 
   .portRow .portName {
@@ -828,11 +828,11 @@
     min-width: 0;
   }
   .portRow .portName strong {
-    font-size: 0.86rem;
+    font-size: var(--fs-item);
     letter-spacing: 0.01em;
   }
   .portRow .portName .subtle {
-    font-size: 0.66rem;
+    font-size: var(--fs-label);
     color: rgba(0,0,0,0.45);
     white-space: nowrap;
     overflow: hidden;
@@ -849,13 +849,13 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.68rem;
+    font-size: var(--fs-label);
     color: rgba(0,0,0,0.65);
   }
   .portRow .portVlan::before {
     content: 'VLAN';
     color: rgba(0,0,0,0.42);
-    font-weight: 700;
+    font-weight: var(--fw-title);
     font-size: 0.58rem;
     letter-spacing: 0.10em;
     text-transform: uppercase;
@@ -866,13 +866,13 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.66rem;
+    font-size: var(--fs-label);
     color: rgba(0,0,0,0.55);
   }
   .portTable5 .portRow > div:nth-child(4)::before {
     content: 'MACs';
     color: rgba(0,0,0,0.42);
-    font-weight: 700;
+    font-weight: var(--fw-title);
     font-size: 0.58rem;
     letter-spacing: 0.10em;
     text-transform: uppercase;
@@ -1163,7 +1163,7 @@
   color: var(--md-on-surface) !important;
   filter: none !important;
   text-shadow: none !important;
-  font-weight: 800;
+  font-weight: var(--fw-title);
   letter-spacing: -0.005em;
 }
 .headerMono,
@@ -1181,7 +1181,7 @@
   color: var(--md-on-surface) !important;
   box-shadow: none !important;
   text-shadow: none !important;
-  font-weight: 700;
+  font-weight: var(--fw-title);
 }
 .healthOk,
 :global([data-theme='light']) .healthOk {
@@ -1217,16 +1217,16 @@
 .sectionHead h3,
 :global([data-theme='light']) .sectionHead h3 {
   color: var(--md-on-surface) !important;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
 .subhead,
 :global([data-theme='light']) .subhead {
   color: var(--md-on-surface) !important;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
@@ -1295,14 +1295,14 @@
   color: var(--md-on-surface) !important;
   font-family: var(--mono);
   opacity: 1;
-  font-weight: 800;
+  font-weight: var(--fw-title);
 }
 .deviceClass,
 :global([data-theme='light']) .deviceClass {
   color: var(--md-on-surface) !important;
   opacity: 0.55;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
@@ -1378,8 +1378,8 @@
 .matchHead,
 :global([data-theme='light']) .matchHead {
   color: var(--md-on-surface) !important;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
@@ -1422,8 +1422,8 @@
 .fieldKey,
 :global([data-theme='light']) .fieldKey {
   color: var(--md-on-surface) !important;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
   opacity: 1;
@@ -1441,7 +1441,7 @@
   border: 1px solid var(--md-outline-variant) !important;
   color: var(--md-on-surface) !important;
   opacity: 0.7;
-  font-weight: 600;
+  font-weight: var(--fw-label);
   box-shadow: none !important;
 }
 .filterBtn:hover,
@@ -1457,7 +1457,7 @@
   border: 1px solid var(--md-on-surface) !important;
   color: var(--md-on-surface) !important;
   opacity: 1;
-  font-weight: 800;
+  font-weight: var(--fw-title);
 }
 
 /* Port table - white, hairline rows. */
@@ -1472,8 +1472,8 @@
   background: var(--md-surface-container) !important;
   border-bottom: 1px solid var(--md-outline-variant) !important;
   color: var(--md-on-surface) !important;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
@@ -1544,8 +1544,8 @@
 .macLabel,
 :global([data-theme='light']) .macLabel {
   color: var(--md-on-surface) !important;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
@@ -1568,7 +1568,7 @@
   background: var(--md-surface-container-lowest) !important;
   border: 1px solid var(--md-on-surface) !important;
   color: var(--md-on-surface) !important;
-  font-weight: 700;
+  font-weight: var(--fw-title);
   box-shadow: none !important;
 }
 .macBtn:hover:not(:disabled),
@@ -1587,8 +1587,8 @@
 .currentLabel,
 :global([data-theme='light']) .currentLabel {
   color: var(--md-on-surface) !important;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
@@ -1720,8 +1720,8 @@
   padding: 0 4px !important;
 }
 .sectionHead h3 {
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.10em !important;
   line-height: 16px !important;
   text-transform: uppercase !important;
@@ -1735,12 +1735,12 @@
 }
 .subtle {
   font-family: var(--mono) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-mono) !important;
   color: var(--md-on-surface) !important;
   opacity: 0.6 !important;
 }
 .subtle b, .headRight .subtle b {
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   color: var(--md-on-surface) !important;
   opacity: 1 !important;
 }
@@ -1829,15 +1829,15 @@
   flex-wrap: wrap !important;
 }
 .deviceName {
-  font-size: 18px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-head) !important;
+  font-weight: var(--fw-label) !important;
   line-height: 24px !important;
   letter-spacing: -0.01em !important;
   color: var(--md-on-surface) !important;
 }
 .deviceClass {
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-micro) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.05em !important;
   line-height: 14px !important;
   text-transform: uppercase !important;
@@ -1858,8 +1858,8 @@
 }
 .modelTag, .ipTag {
   font-family: var(--mono) !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
+  font-size: var(--fs-mono) !important;
+  font-weight: var(--fw-body) !important;
   letter-spacing: 0 !important;
   color: var(--md-on-surface) !important;
   opacity: 0.6 !important;
@@ -1874,7 +1874,7 @@
   opacity: 0.5 !important;
 }
 .unmanaged {
-  font-size: 12px !important;
+  font-size: var(--fs-sub) !important;
   color: var(--md-on-surface) !important;
   opacity: 0.5 !important;
   font-style: normal !important;
@@ -1890,21 +1890,21 @@
   display: inline-flex !important;
   align-items: baseline !important;
   gap: 4px !important;
-  font-size: 11px !important;
+  font-size: var(--fs-label) !important;
   color: var(--md-on-surface-variant) !important;
   background: transparent !important;
   border: none !important;
   padding: 0 !important;
 }
 .cnt b, .cntLive b, .cntUp b, .cntDown b {
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   color: var(--md-on-surface) !important;
-  font-size: 14px !important;
+  font-size: var(--fs-item) !important;
 }
 .cnt i, .cntLive i, .cntUp i, .cntDown i {
   font-style: normal !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-micro) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
   color: var(--md-on-surface-variant) !important;
@@ -1913,7 +1913,7 @@
 .chev {
   grid-area: chev !important;
   align-self: start !important;
-  font-size: 22px !important;
+  font-size: var(--fs-page) !important;
   line-height: 1 !important;
   color: var(--md-on-surface-variant) !important;
   padding-top: 4px !important;
@@ -1948,8 +1948,8 @@
   color: var(--md-on-surface) !important;
   opacity: 0.6 !important;
   font-family: var(--font) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-label) !important;
   line-height: 18px !important;
   cursor: pointer !important;
   white-space: nowrap !important;
@@ -1965,7 +1965,7 @@
   color: var(--md-on-surface) !important;
   border: 1.5px solid var(--md-on-surface) !important;
   opacity: 1 !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
 }
 .filterBtnActive:hover { opacity: 0.92 !important; }
 
@@ -2009,22 +2009,22 @@
 }
 .portName strong {
   font-family: var(--mono) !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-section) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: -0.01em !important;
   color: var(--md-on-surface) !important;
 }
 .portName .subtle {
   font-family: var(--mono) !important;
-  font-size: 11px !important;
+  font-size: var(--fs-label) !important;
   color: var(--md-on-surface) !important;
   opacity: 0.55 !important;
-  font-weight: 400 !important;
+  font-weight: var(--fw-body) !important;
 }
 .portVlanLabel {
   font-family: var(--font) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-micro) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.08em !important;
   line-height: 14px !important;
   text-transform: uppercase !important;
@@ -2049,8 +2049,8 @@
   background: var(--md-surface-container-lowest) !important;
   border: 1px solid var(--md-outline-variant) !important;
   font-family: var(--mono) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-label) !important;
   text-transform: lowercase !important;
   color: var(--md-on-surface) !important;
   flex-shrink: 0 !important;
@@ -2076,8 +2076,8 @@
 /* MAC chip on the right side of a row when present */
 .macChip {
   font-family: var(--mono) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-label) !important;
   color: var(--md-on-surface) !important;
   background: var(--md-surface-container) !important;
   border: 1px solid var(--md-outline-variant) !important;
@@ -2126,8 +2126,8 @@
   padding: 0 !important;
 }
 .sectionHead h3 {
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.10em !important;
   line-height: 16px !important;
   text-transform: uppercase !important;
@@ -2182,8 +2182,8 @@
   flex-wrap: wrap !important;
 }
 .deviceName {
-  font-size: 14px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-item) !important;
+  font-weight: var(--fw-title) !important;
   line-height: 18px !important;
   letter-spacing: -0.005em !important;
   color: var(--md-on-surface, #121212) !important;
@@ -2203,7 +2203,7 @@
 }
 .modelTag, .ipTag {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 11px !important;
+  font-size: var(--fs-label) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   background: transparent !important;
@@ -2217,7 +2217,7 @@
 }
 .unmanaged {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 11px !important;
+  font-size: var(--fs-label) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
   font-style: normal !important;
@@ -2239,14 +2239,14 @@
   padding: 0 !important;
 }
 .cnt b, .cntLive b, .cntUp b, .cntDown b {
-  font-size: 13px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-title) !important;
   color: var(--md-on-surface, #121212) !important;
 }
 .cnt i, .cntLive i, .cntUp i, .cntDown i {
   font-style: normal !important;
   font-size: 9px !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
   color: var(--md-on-surface, #121212) !important;
@@ -2256,7 +2256,7 @@
 .chev {
   grid-area: chev !important;
   align-self: center !important;
-  font-size: 14px !important;
+  font-size: var(--fs-item) !important;
   line-height: 1 !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
@@ -2298,8 +2298,8 @@
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.5 !important;
   font-family: var(--font, inherit) !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-sub) !important;
+  font-weight: var(--fw-label) !important;
   line-height: 16px !important;
   letter-spacing: 0.02em !important;
   cursor: pointer !important;
@@ -2314,7 +2314,7 @@
   color: var(--md-on-surface, #121212) !important;
   border-bottom-color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
 }
 
 /* ── Port rows - dense, no rounding, hairline dividers ───────── */
@@ -2341,17 +2341,17 @@
 .portName { gap: 2px !important; }
 .portNameTop { gap: 10px !important; }
 .portName strong {
-  font-size: 13px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: -0.005em !important;
 }
 .portName .subtle {
-  font-size: 11px !important;
+  font-size: var(--fs-label) !important;
   opacity: 0.5 !important;
 }
 .portVlanLabel {
   font-size: 9px !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.08em !important;
   line-height: 12px !important;
   color: var(--md-on-surface, #121212) !important;
@@ -2364,8 +2364,8 @@
   border-radius: 9999px !important;
   background: transparent !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-micro) !important;
+  font-weight: var(--fw-label) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.85 !important;
   text-transform: lowercase !important;
@@ -2387,7 +2387,7 @@
 }
 
 .macChip {
-  font-size: 10px !important;
+  font-size: var(--fs-micro) !important;
   padding: 2px 7px !important;
   background: transparent !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
@@ -2437,8 +2437,8 @@
   margin-bottom: 16px !important;
 }
 .sectionHead h3 {
-  font-size: 13px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.06em !important;
   line-height: 18px !important;
   text-transform: uppercase !important;
@@ -2448,13 +2448,13 @@
 }
 .headRight .subtle {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-mono) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.6 !important;
 }
 .headRight .subtle b {
   font-family: var(--font, inherit) !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
 }
@@ -2526,8 +2526,8 @@
   flex-wrap: wrap !important;
 }
 .deviceName {
-  font-size: 16px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-section) !important;
+  font-weight: var(--fw-title) !important;
   line-height: 22px !important;
   letter-spacing: -0.01em !important;
   color: var(--md-on-surface, #121212) !important;
@@ -2543,7 +2543,7 @@
 }
 .modelTag {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-mono) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.7 !important;
   background: transparent !important;
@@ -2557,7 +2557,7 @@
 }
 .ipTag {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-mono) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   background: transparent !important;
@@ -2566,7 +2566,7 @@
 }
 .unmanaged {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-mono) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
   font-style: normal !important;
@@ -2592,15 +2592,15 @@
   padding: 0 !important;
 }
 .cnt b, .cntLive b, .cntUp b, .cntDown b {
-  font-size: 12px !important;
-  font-weight: 800 !important;
+  font-size: var(--fs-sub) !important;
+  font-weight: var(--fw-title) !important;
   color: var(--md-surface-container-lowest, #FFFFFF) !important;
   letter-spacing: -0.005em !important;
 }
 .cnt i, .cntLive i, .cntUp i, .cntDown i {
   font-style: normal !important;
   font-size: 9px !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.10em !important;
   text-transform: uppercase !important;
   color: var(--md-surface-container-lowest, #FFFFFF) !important;
@@ -2610,7 +2610,7 @@
 .chev {
   grid-area: chev !important;
   align-self: center !important;
-  font-size: 14px !important;
+  font-size: var(--fs-item) !important;
   line-height: 1 !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.5 !important;
@@ -2647,8 +2647,8 @@
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.85 !important;
   font-family: var(--font, inherit) !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-sub) !important;
+  font-weight: var(--fw-label) !important;
   line-height: 16px !important;
   letter-spacing: 0 !important;
   cursor: pointer !important;
@@ -2666,7 +2666,7 @@
   color: var(--md-surface-container-lowest, #FFFFFF) !important;
   border-color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
 }
 
 /* ── Port rows - a bit more padding, hover surface tint back ── */
@@ -2697,21 +2697,21 @@
 }
 .portName strong {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 14px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-item) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: -0.005em !important;
   color: var(--md-on-surface, #121212) !important;
 }
 .portName .subtle {
   font-family: var(--font, inherit) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-sub) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
-  font-weight: 400 !important;
+  font-weight: var(--fw-body) !important;
 }
 .portVlanLabel {
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-micro) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.08em !important;
   line-height: 14px !important;
   color: var(--md-on-surface, #121212) !important;
@@ -2725,8 +2725,8 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-label) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
   text-transform: lowercase !important;
@@ -2754,8 +2754,8 @@
 
 .macChip {
   font-family: var(--font, inherit) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-micro) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.04em !important;
   padding: 3px 8px !important;
   background: var(--md-surface-container, #ffffff) !important;
@@ -2797,8 +2797,8 @@
   background: transparent !important;
 }
 .sectionHead h3 {
-  font-size: 12px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-sub) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.14em !important;
   line-height: 16px !important;
   text-transform: uppercase !important;
@@ -2813,14 +2813,14 @@
 }
 .headRight .subtle {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 11px !important;
+  font-size: var(--fs-label) !important;
   letter-spacing: 0.04em !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.7 !important;
 }
 .headRight .subtle b {
   font-family: var(--font, inherit) !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
 }
@@ -2879,8 +2879,8 @@
   top: 22px !important;
   width: 40px !important;
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.06em !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
@@ -2909,8 +2909,8 @@
   flex: 1 1 auto !important;
 }
 .deviceName {
-  font-size: 20px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-head) !important;
+  font-weight: var(--fw-title) !important;
   line-height: 24px !important;
   letter-spacing: -0.015em !important;
   color: var(--md-on-surface, #121212) !important;
@@ -2926,7 +2926,7 @@
 }
 .modelTag {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-mono) !important;
   letter-spacing: 0 !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.75 !important;
@@ -2941,7 +2941,7 @@
 }
 .ipTag {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-mono) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
   background: transparent !important;
@@ -2950,7 +2950,7 @@
 }
 .unmanaged {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-mono) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.4 !important;
   font-style: normal !important;
@@ -2979,8 +2979,8 @@
 }
 .cnt b, .cntLive b, .cntUp b, .cntDown b {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 22px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-page) !important;
+  font-weight: var(--fw-title) !important;
   line-height: 1 !important;
   letter-spacing: -0.02em !important;
   color: var(--md-on-surface, #121212) !important;
@@ -2988,7 +2988,7 @@
 .cnt i, .cntLive i, .cntUp i, .cntDown i {
   font-style: normal !important;
   font-size: 9px !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.16em !important;
   text-transform: uppercase !important;
   color: var(--md-on-surface, #121212) !important;
@@ -3031,8 +3031,8 @@
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.45 !important;
   font-family: var(--font, inherit) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-label) !important;
   line-height: 18px !important;
   letter-spacing: -0.005em !important;
   cursor: pointer !important;
@@ -3048,7 +3048,7 @@
   color: var(--md-on-surface, #121212) !important;
   border-bottom-color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
 }
 
 /* ── Port list - clean indented list, hairline dividers only ─ */
@@ -3091,22 +3091,22 @@
 }
 .portName strong {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 14px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-item) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: -0.01em !important;
   color: var(--md-on-surface, #121212) !important;
 }
 .portName .subtle {
   font-family: var(--font, inherit) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-sub) !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
-  font-weight: 400 !important;
+  font-weight: var(--fw-body) !important;
 }
 .portVlanLabel {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 10px !important;
-  font-weight: 500 !important;
+  font-size: var(--fs-micro) !important;
+  font-weight: var(--fw-label) !important;
   letter-spacing: 0.04em !important;
   line-height: 14px !important;
   color: var(--md-on-surface, #121212) !important;
@@ -3125,8 +3125,8 @@
   border: none !important;
   border-radius: 0 !important;
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
+  font-size: var(--fs-mono) !important;
+  font-weight: var(--fw-label) !important;
   letter-spacing: 0 !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
@@ -3155,8 +3155,8 @@
 .macChip,
 :global([data-theme='light']) .macChip {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-label) !important;
   letter-spacing: 0 !important;
   padding: 0 !important;
   background: transparent !important;
@@ -3211,8 +3211,8 @@
   background: transparent !important;
 }
 .sectionHead h3 {
-  font-size: 12px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-sub) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.05em !important;
   line-height: 16px !important;
   text-transform: uppercase !important;
@@ -3227,14 +3227,14 @@
 }
 .headRight .subtle {
   font-family: var(--font, inherit) !important;
-  font-size: 12px !important;
+  font-size: var(--fs-sub) !important;
   letter-spacing: 0.02em !important;
   color: var(--md-on-surface-variant, #474747) !important;
   opacity: 1 !important;
 }
 .headRight .subtle b {
   font-family: var(--font, inherit) !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   color: var(--md-on-surface, #121212) !important;
 }
 .syncBtn {
@@ -3352,8 +3352,8 @@
   margin: 0 !important;
 }
 .deviceName {
-  font-size: 18px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-head) !important;
+  font-weight: var(--fw-label) !important;
   line-height: 24px !important;
   letter-spacing: -0.005em !important;
   color: var(--md-on-surface, #121212) !important;
@@ -3375,8 +3375,8 @@
 .deviceCardOpen .deviceSub { padding-left: 0 !important; }
 .modelTag {
   font-family: var(--font, inherit) !important;
-  font-size: 14px !important;
-  font-weight: 400 !important;
+  font-size: var(--fs-item) !important;
+  font-weight: var(--fw-body) !important;
   line-height: 20px !important;
   color: var(--md-on-surface-variant, #474747) !important;
   opacity: 1 !important;
@@ -3389,8 +3389,8 @@
   display: block !important;
   width: auto !important;
   font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace) !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-label) !important;
   line-height: 18px !important;
   letter-spacing: 0 !important;
   color: var(--md-on-surface-variant, #474747) !important;
@@ -3402,7 +3402,7 @@
 }
 .unmanaged {
   font-family: var(--font, inherit) !important;
-  font-size: 13px !important;
+  font-size: var(--fs-body) !important;
   color: var(--md-on-surface-variant, #474747) !important;
   opacity: 0.7 !important;
   font-style: normal !important;
@@ -3445,8 +3445,8 @@
 }
 .cnt b, .cntLive b, .cntUp b, .cntDown b {
   font-family: var(--font, inherit) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
   color: var(--md-on-surface, #121212) !important;
@@ -3454,8 +3454,8 @@
 }
 .cnt i, .cntLive i, .cntUp i, .cntDown i {
   font-style: normal !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
   color: var(--md-on-surface, #121212) !important;
@@ -3497,8 +3497,8 @@
   color: var(--md-on-surface-variant, #474747) !important;
   opacity: 0.6 !important;
   font-family: var(--font, inherit) !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-sub) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.05em !important;
   line-height: 16px !important;
   text-transform: uppercase !important;
@@ -3514,7 +3514,7 @@
   color: var(--md-on-surface, #121212) !important;
   border: none !important;
   opacity: 1 !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
 }
 
 /* ── Port list - clean rows with leading ethernet icon ───────── */
@@ -3575,8 +3575,8 @@
 }
 .portName strong {
   font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace) !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-label) !important;
   letter-spacing: 0 !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
@@ -3584,8 +3584,8 @@
 }
 .portName .subtle {
   font-family: var(--font, inherit) !important;
-  font-size: 13px !important;
-  font-weight: 400 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-body) !important;
   color: var(--md-on-surface-variant, #474747) !important;
   opacity: 1 !important;
   text-transform: none !important;
@@ -3593,8 +3593,8 @@
 .portVlanLabel,
 :global([data-theme='light']) .portVlanLabel {
   font-family: var(--font, inherit) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.05em !important;
   line-height: 14px !important;
   text-transform: uppercase !important;
@@ -3635,8 +3635,8 @@
 :global([data-theme='light']) .macChip {
   flex-shrink: 0 !important;
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-label) !important;
   letter-spacing: 0 !important;
   padding: 2px 8px !important;
   background: var(--md-surface-container-high, #e8e8e8) !important;
@@ -3677,8 +3677,8 @@
 }
 .vlanGroupLabel {
   font-family: var(--font, inherit) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.10em !important;
   line-height: 14px !important;
   text-transform: uppercase !important;
@@ -3686,8 +3686,8 @@
 }
 .vlanGroupCount {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-label) !important;
   letter-spacing: 0 !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.55 !important;
@@ -3728,8 +3728,8 @@
 /* Port name (mono) - fixed minimum column width so they ALL align */
 .portMono {
   font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-label) !important;
   letter-spacing: 0 !important;
   color: var(--md-on-surface, #121212) !important;
   font-variant-numeric: tabular-nums !important;
@@ -3739,8 +3739,8 @@
 /* Description - truncates with ellipsis if long */
 .portDesc {
   font-family: var(--font, inherit) !important;
-  font-size: 13px !important;
-  font-weight: 400 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-body) !important;
   color: var(--md-on-surface-variant, #474747) !important;
   opacity: 1 !important;
   white-space: nowrap !important;
@@ -3790,9 +3790,9 @@
   color: #1c1c1c;
 }
 .statTileText { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
-.statTileValue { font-size: 1.15rem; font-weight: 800; color: #1c1c1c; letter-spacing: -0.02em;
+.statTileValue { font-size: var(--fs-head); font-weight: var(--fw-title); color: #1c1c1c; letter-spacing: -0.02em;
                  font-variant-numeric: tabular-nums; }
-.statTileLabel { font-size: 0.66rem; font-weight: 600; color: rgba(0,0,0,0.45);
+.statTileLabel { font-size: var(--fs-label); font-weight: var(--fw-label); color: rgba(0,0,0,0.45);
                  text-transform: uppercase; letter-spacing: 0.05em; }
 
 .netPortsCard {
@@ -3803,10 +3803,10 @@
   border-radius: 10px;
 }
 .netPortsHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.netPortsTitle { font-size: 0.66rem; font-weight: 700; color: rgba(0,0,0,0.5);
+.netPortsTitle { font-size: var(--fs-label); font-weight: var(--fw-title); color: rgba(0,0,0,0.5);
                  text-transform: uppercase; letter-spacing: 0.06em; }
-.netPortsNums { font-size: 0.8rem; color: rgba(0,0,0,0.55); font-variant-numeric: tabular-nums; }
-.netPortsNums b { color: #1c1c1c; font-weight: 700; }
+.netPortsNums { font-size: var(--fs-body); color: rgba(0,0,0,0.55); font-variant-numeric: tabular-nums; }
+.netPortsNums b { color: #1c1c1c; font-weight: var(--fw-title); }
 .netDot { margin: 0 5px; color: rgba(0,0,0,0.25); }
 .netMuted { color: rgba(0,0,0,0.4); }
 .netDownNum { color: rgba(0,0,0,0.45); }
@@ -3820,11 +3820,11 @@
   background: rgba(0,0,0,0.05); color: #1c1c1c;
 }
 .vendorTag {
-  font-size: 0.7rem; font-weight: 700; color: #1c1c1c;
+  font-size: var(--fs-label); font-weight: var(--fw-title); color: #1c1c1c;
   background: rgba(0,0,0,0.06); padding: 1px 7px; border-radius: 5px;
 }
 .osTag {
-  font-size: 0.7rem; font-weight: 600; color: rgba(0,0,0,0.5);
+  font-size: var(--fs-label); font-weight: var(--fw-label); color: rgba(0,0,0,0.5);
   background: rgba(0,0,0,0.04); padding: 1px 7px; border-radius: 5px;
   font-family: ui-monospace, Menlo, monospace;
 }
@@ -3835,9 +3835,9 @@
 }
 .utilBar { flex: 1; height: 6px; border-radius: 4px; background: rgba(0,0,0,0.08); overflow: hidden; min-width: 56px; }
 .utilBarUp { height: 100%; border-radius: 4px; background: #1c1c1c; transition: width .35s ease; }
-.utilLabel { font-size: 0.74rem; color: rgba(0,0,0,0.5); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.utilUp   { color: #1c1c1c; font-weight: 700; }
-.utilConn { color: #1c1c1c; font-weight: 700; }
+.utilLabel { font-size: var(--fs-sub); color: rgba(0,0,0,0.5); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.utilUp   { color: #1c1c1c; font-weight: var(--fw-title); }
+.utilConn { color: #1c1c1c; font-weight: var(--fw-title); }
 
 /* ── Port faceplate grid - monochrome ───────────────────────────────── */
 .faceplate {
@@ -3854,7 +3854,7 @@
   aspect-ratio: 1 / 1; min-width: 0;
   border: 1px solid rgba(0,0,0,0.14);
   border-radius: 4px;
-  font-size: 0.56rem; font-weight: 700;
+  font-size: 0.56rem; font-weight: var(--fw-title);
   font-variant-numeric: tabular-nums;
   cursor: pointer; display: grid; place-items: center;
   color: rgba(0,0,0,0.5); background: #ffffff;
@@ -3867,7 +3867,7 @@
 
 .faceLegend {
   display: flex; gap: 12px; margin-top: 8px;
-  font-size: 0.68rem; color: rgba(0,0,0,0.45);
+  font-size: var(--fs-label); color: rgba(0,0,0,0.45);
 }
 .faceLegend span { display: inline-flex; align-items: center; gap: 4px; }
 .legDot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.14); }
@@ -3882,8 +3882,8 @@
   column-gap: 10px !important;
   grid-template-columns: 18px minmax(58px, auto) 1fr auto auto !important;
 }
-.portMono { font-size: 12px !important; }
-.portDesc { font-size: 11px !important; color: rgba(0,0,0,0.35) !important; }
+.portMono { font-size: var(--fs-sub) !important; }
+.portDesc { font-size: var(--fs-label) !important; color: rgba(0,0,0,0.35) !important; }
 .portArrowUp   { color: #1c1c1c !important; }
 .portArrowDown { color: rgba(0,0,0,0.24) !important; opacity: 1 !important; }
 .portArrow { width: 16px !important; height: 16px !important; }
@@ -3900,7 +3900,7 @@
 .netTableWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .netTable { width: 100%; border-collapse: collapse; min-width: 440px; }
 .netTable thead th {
-  text-align: left; font-size: 0.64rem; font-weight: 700; color: rgba(0,0,0,0.4);
+  text-align: left; font-size: var(--fs-micro); font-weight: var(--fw-title); color: rgba(0,0,0,0.4);
   text-transform: uppercase; letter-spacing: 0.06em; padding: 0 10px 8px;
   border-bottom: 1px solid rgba(0,0,0,0.10); white-space: nowrap;
 }
@@ -3910,7 +3910,7 @@
 .devTr { cursor: pointer; }
 .devTr > td {
   padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.06);
-  font-size: 0.82rem; vertical-align: middle; white-space: nowrap;
+  font-size: var(--fs-body); vertical-align: middle; white-space: nowrap;
 }
 .devTr:hover > td { background: #ffffff; }
 .devTrOpen > td { background: #f5f5f5; }
@@ -3918,20 +3918,20 @@
 .devTrDim:hover > td { background: transparent; }
 
 .tdDevice .deviceName {
-  font-family: var(--mono, ui-monospace, monospace); font-weight: 700;
-  font-size: 0.84rem; color: #1c1c1c; margin-right: 8px;
+  font-family: var(--mono, ui-monospace, monospace); font-weight: var(--fw-title);
+  font-size: var(--fs-body); color: #1c1c1c; margin-right: 8px;
 }
 .tdDevice .deviceClass {
-  font-size: 0.62rem; font-weight: 600; color: rgba(0,0,0,0.4);
+  font-size: var(--fs-micro); font-weight: var(--fw-label); color: rgba(0,0,0,0.4);
   text-transform: uppercase; letter-spacing: 0.05em;
 }
 .tdModel { color: #1c1c1c; max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
-.tdIp { font-family: var(--mono, monospace); font-size: 0.78rem; color: rgba(0,0,0,0.55); }
+.tdIp { font-family: var(--mono, monospace); font-size: var(--fs-mono); color: rgba(0,0,0,0.55); }
 .tdPorts { font-family: var(--mono, monospace); font-variant-numeric: tabular-nums; color: rgba(0,0,0,0.5); }
-.tdPorts b { color: #1c1c1c; font-weight: 700; }
-.tdLinks { font-variant-numeric: tabular-nums; font-weight: 700; color: #1c1c1c; }
+.tdPorts b { color: #1c1c1c; font-weight: var(--fw-title); }
+.tdLinks { font-variant-numeric: tabular-nums; font-weight: var(--fw-title); color: #1c1c1c; }
 .tdChev { color: rgba(0,0,0,0.35); width: 18px; }
-.unmanaged { color: rgba(0,0,0,0.35); font-size: 0.78rem; }
+.unmanaged { color: rgba(0,0,0,0.35); font-size: var(--fs-sub); }
 
 .devExpandTd {
   padding: 2px 4px 12px !important;
@@ -3970,11 +3970,11 @@
   width: 22px; height: 22px; flex: none; display: grid; place-items: center;
   border-radius: 6px; background: rgba(0,0,0,0.05); color: #1c1c1c;
 }
-.mName { font-family: var(--mono, ui-monospace, monospace); font-weight: 700; font-size: 0.85rem; color: #1c1c1c; }
-.mClass { font-size: 0.6rem; font-weight: 600; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.05em; }
-.mChev { margin-left: auto; color: rgba(0,0,0,0.35); font-size: 0.8rem; }
+.mName { font-family: var(--mono, ui-monospace, monospace); font-weight: var(--fw-title); font-size: var(--fs-item); color: #1c1c1c; }
+.mClass { font-size: var(--fs-micro); font-weight: var(--fw-label); color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.05em; }
+.mChev { margin-left: auto; color: rgba(0,0,0,0.35); font-size: var(--fs-body); }
 
-.mMeta { font-size: 0.76rem; color: rgba(0,0,0,0.6); margin: 8px 0 9px;
+.mMeta { font-size: var(--fs-sub); color: rgba(0,0,0,0.6); margin: 8px 0 9px;
          display: flex; gap: 5px; flex-wrap: wrap; overflow: hidden; }
 .mMeta > span { white-space: nowrap; }
 .mIp { font-family: var(--mono, monospace); color: rgba(0,0,0,0.45); }
@@ -3982,11 +3982,11 @@
 .mBarRow { display: flex; align-items: center; gap: 9px; }
 .mBar { flex: 1; height: 6px; border-radius: 4px; background: #ececec; overflow: hidden; min-width: 40px; }
 .mBar > i { display: block; height: 100%; background: #1c1c1c; border-radius: 4px; }
-.mNums { font-family: var(--mono, monospace); font-size: 0.72rem; color: rgba(0,0,0,0.5);
+.mNums { font-family: var(--mono, monospace); font-size: var(--fs-mono); color: rgba(0,0,0,0.5);
          white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mNums b { color: #1c1c1c; font-weight: 700; }
+.mNums b { color: #1c1c1c; font-weight: var(--fw-title); }
 
-.mUnmanaged { font-size: 0.75rem; color: rgba(0,0,0,0.38); margin-top: 8px; }
+.mUnmanaged { font-size: var(--fs-sub); color: rgba(0,0,0,0.38); margin-top: 8px; }
 
 .mBody {
   border-top: 1px solid rgba(0,0,0,0.07);
@@ -4007,9 +4007,9 @@
 }
 .mcardOpen { border-color: rgba(0,0,0,0.2); }
 .mcardHead { padding: 14px 16px; }
-.mMeta { font-size: 0.8rem; margin: 9px 0 10px; }
+.mMeta { font-size: var(--fs-body); margin: 9px 0 10px; }
 .mBar { height: 7px; }
-.mNums { font-size: 0.75rem; }
+.mNums { font-size: var(--fs-sub); }
 .mBody { padding: 12px 16px 6px; }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -4020,8 +4020,8 @@
   display: flex; align-items: baseline; justify-content: space-between;
   margin: 0 2px 14px;
 }
-.nvTitle { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; color: #1c1c1c; }
-.nvCount { font-size: 0.76rem; font-weight: 600; color: rgba(0,0,0,0.42); font-variant-numeric: tabular-nums; }
+.nvTitle { margin: 0; font-size: var(--fs-page); font-weight: var(--fw-title); letter-spacing: -0.02em; color: #1c1c1c; }
+.nvCount { font-size: var(--fs-sub); font-weight: var(--fw-label); color: rgba(0,0,0,0.42); font-variant-numeric: tabular-nums; }
 
 .nvList {
   background: #ffffff;
@@ -4050,11 +4050,11 @@
 
 .nvIdent { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
 .nvL1 { display: flex; align-items: baseline; gap: 9px; }
-.nvName { font-family: var(--mono, ui-monospace, monospace); font-weight: 700;
-          font-size: 0.92rem; color: #1c1c1c; letter-spacing: -0.01em; }
-.nvType { font-size: 0.6rem; font-weight: 600; color: rgba(0,0,0,0.38);
+.nvName { font-family: var(--mono, ui-monospace, monospace); font-weight: var(--fw-title);
+          font-size: var(--fs-section); color: #1c1c1c; letter-spacing: -0.01em; }
+.nvType { font-size: var(--fs-micro); font-weight: var(--fw-label); color: rgba(0,0,0,0.38);
           text-transform: uppercase; letter-spacing: 0.06em; }
-.nvL2 { font-size: 0.8rem; color: rgba(0,0,0,0.5); white-space: nowrap;
+.nvL2 { font-size: var(--fs-body); color: rgba(0,0,0,0.5); white-space: nowrap;
         overflow: hidden; text-overflow: ellipsis; }
 .nvSep { margin: 0 6px; color: rgba(0,0,0,0.24); }
 .nvIp { font-family: var(--mono, monospace); color: rgba(0,0,0,0.42); }
@@ -4063,11 +4063,11 @@
 .nvUtil { display: flex; align-items: center; gap: 11px; flex: none; }
 .nvBar { width: 84px; height: 5px; border-radius: 3px; background: #ececec; overflow: hidden; }
 .nvBar > i { display: block; height: 100%; background: #1c1c1c; border-radius: 3px; }
-.nvNums { font-family: var(--mono, monospace); font-size: 0.73rem; color: rgba(0,0,0,0.48);
+.nvNums { font-family: var(--mono, monospace); font-size: var(--fs-mono); color: rgba(0,0,0,0.48);
           white-space: nowrap; font-variant-numeric: tabular-nums; }
-.nvNums b { color: #1c1c1c; font-weight: 700; }
+.nvNums b { color: #1c1c1c; font-weight: var(--fw-title); }
 .nvSep2 { margin: 0 5px; color: rgba(0,0,0,0.24); }
-.nvChev { flex: none; color: rgba(0,0,0,0.3); font-size: 0.78rem; width: 12px; text-align: center; }
+.nvChev { flex: none; color: rgba(0,0,0,0.3); font-size: var(--fs-sub); width: 12px; text-align: center; }
 
 .nvPorts { padding: 4px 18px 14px; border-top: 1px solid rgba(0,0,0,0.055); }
 
@@ -4111,15 +4111,15 @@
 
 .nvIcon { width: 36px; height: 36px; border-radius: 10px; }
 .nvIcon svg { width: 18px; height: 18px; }
-.nvName { font-size: 0.96rem; }
-.nvL2 { font-size: 0.82rem; }
+.nvName { font-size: var(--fs-section); }
+.nvL2 { font-size: var(--fs-body); }
 
 /* utilization: numbers on top, thin bar under, right-aligned */
 .nvUtil { flex-direction: column !important; align-items: flex-end !important; gap: 6px !important; }
-.nvNums { font-size: 0.76rem; }
+.nvNums { font-size: var(--fs-sub); }
 .nvBar { width: 100px !important; height: 5px; }
 
-.nvChev { font-size: 1rem; color: rgba(0,0,0,0.28); }
+.nvChev { font-size: var(--fs-section); color: rgba(0,0,0,0.28); }
 
 /* expanded ports - no top line, indented under the name, subtle inset */
 .nvPorts {
@@ -4140,7 +4140,7 @@
 .nvlan:last-child { margin-bottom: 0; }
 .nvlanHead {
   display: flex; justify-content: space-between; align-items: baseline;
-  font-size: 0.6rem; font-weight: 700; color: rgba(0,0,0,0.38);
+  font-size: var(--fs-micro); font-weight: var(--fw-title); color: rgba(0,0,0,0.38);
   text-transform: uppercase; letter-spacing: 0.08em; padding: 5px 8px 3px;
 }
 .nvlanCount { color: rgba(0,0,0,0.28); font-family: var(--mono, monospace); }
@@ -4150,15 +4150,15 @@
   padding: 6px 8px; border-radius: 9px;
 }
 .nport:hover { background: #f1f1f1; }
-.nportName { font-family: var(--mono, monospace); font-weight: 700; font-size: 0.8rem; color: #1c1c1c; }
+.nportName { font-family: var(--mono, monospace); font-weight: var(--fw-title); font-size: var(--fs-body); color: #1c1c1c; }
 .nportFill { flex: 1; }
 .nportMac {
-  font-family: var(--mono, monospace); font-size: 0.66rem; font-weight: 700;
+  font-family: var(--mono, monospace); font-size: var(--fs-label); font-weight: var(--fw-title);
   color: #1c1c1c; background: rgba(0,0,0,0.06); border: none;
   border-radius: 6px; padding: 2px 7px; cursor: pointer;
 }
 .nportMac:hover { background: rgba(0,0,0,0.11); }
-.nportState { font-size: 0.72rem; font-weight: 600; width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
+.nportState { font-size: var(--fs-sub); font-weight: var(--fw-label); width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
 .nportUp { color: #1c1c1c; }
 .nportDown { color: rgba(0,0,0,0.28); }
 
@@ -4166,8 +4166,8 @@
 .portFilter { gap: 4px !important; margin: 2px 0 8px !important; }
 .filterBtn {
   background: transparent !important; border: none !important;
-  color: rgba(0,0,0,0.4) !important; font-size: 0.72rem !important;
-  font-weight: 600 !important; padding: 4px 9px !important; border-radius: 8px !important;
+  color: rgba(0,0,0,0.4) !important; font-size: var(--fs-sub) !important;
+  font-weight: var(--fw-label) !important; padding: 4px 9px !important; border-radius: 8px !important;
   cursor: pointer;
 }
 .filterBtn:hover { background: rgba(0,0,0,0.04) !important; color: rgba(0,0,0,0.7) !important; }

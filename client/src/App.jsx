@@ -373,8 +373,8 @@ function PendingScanResumer() {
         border: '3px solid rgba(255,255,255,0.18)', borderTopColor: '#5fa0ff',
         animation: 'rtspin 0.8s linear infinite',
       }} />
-      <div style={{ fontSize: '16px', fontWeight: 600 }}>Bringing your scan back&hellip;</div>
-      <div style={{ fontSize: '13.5px', opacity: 0.7, maxWidth: '32ch' }}>
+      <div style={{ fontSize: 'var(--fs-section)', fontWeight: 'var(--fw-label)' }}>Bringing your scan back&hellip;</div>
+      <div style={{ fontSize: 'var(--fs-body)', opacity: 0.7, maxWidth: '32ch' }}>
         We&rsquo;re finishing the analysis you started. This takes a moment.
       </div>
       <style>{`@keyframes rtspin{to{transform:rotate(360deg)}}`}</style>

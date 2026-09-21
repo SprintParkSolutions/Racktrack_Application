@@ -187,7 +187,7 @@
 .headerTitle   {
   /* A rack id is a code, so it is set in the monospaced face and a little
      tighter than a word would be. */
-  font-family: var(--mono); font-size: .92rem; font-weight: 700; letter-spacing: .02em;
+  font-family: var(--mono); font-size: var(--fs-section); font-weight: var(--fw-title); letter-spacing: .02em;
   max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   color: #000000;
   /* Reset the previous gradient-text trick so the title renders as solid black */
@@ -202,7 +202,7 @@
   text-overflow: ellipsis;
 }
 .headerMono    {
-  font-family: var(--mono); font-size: .6rem; color: #999999; letter-spacing: .08em;
+  font-family: var(--mono); font-size: var(--fs-micro); color: #999999; letter-spacing: .08em;
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -212,7 +212,7 @@
 /* Confirm-rack button in the All Components header */
 .confirmBtn {
   flex: none;
-  font-size: .72rem; font-weight: 700;
+  font-size: var(--fs-sub); font-weight: var(--fw-title);
   padding: 7px 13px; border-radius: 999px;
   background: var(--md-on-surface, #1c1c1c); color: var(--md-surface-container-lowest, #fff);
   border: none; cursor: pointer; font-family: inherit;
@@ -221,7 +221,7 @@
 .confirmBtn:disabled { opacity: .5; cursor: default; }
 .confirmDone {
   flex: none;
-  font-size: .72rem; font-weight: 800; white-space: nowrap;
+  font-size: var(--fs-sub); font-weight: var(--fw-title); white-space: nowrap;
   padding: 7px 12px; border-radius: 999px;
   color: #0f7040; background: #f0f0f0; border: 1px solid #d5d5d5;
 }
@@ -232,7 +232,7 @@
   margin: 10px 14px 0; padding: 10px 14px;
   border-radius: 12px;
   background: #f2f2f2; border: 1px solid #d5d5d5; color: #0f5132;
-  font-size: .8rem; font-weight: 600;
+  font-size: var(--fs-body); font-weight: var(--fw-label);
 }
 :global([data-theme='dark']) .confirmedBanner { background: #222222; border-color: #1f5133; color: #86efac; }
 
@@ -247,7 +247,7 @@
 /* Compact headers on narrow phones */
 @media (max-width: 480px) {
   .header { padding: 12px 12px 10px; }
-  .headerTitle { font-size: .98rem; }
+  .headerTitle { font-size: var(--fs-section); }
   /* Pills become compact icon-only circles */
   .navPill {
     width: 34px; height: 34px;
@@ -259,7 +259,7 @@
   .navPillLabel { display: none; }
 }
 @media (max-width: 360px) {
-  .headerTitle { font-size: .9rem; }
+  .headerTitle { font-size: var(--fs-item); }
   .navPill { width: 30px; height: 30px; }
 }
 
@@ -267,7 +267,7 @@
   display: flex; align-items: center; gap: 7px;
 }
 .cacheBadge {
-  font-family: var(--mono); font-size: .56rem; font-weight: 700;
+  font-family: var(--mono); font-size: .56rem; font-weight: var(--fw-title);
   letter-spacing: .08em; white-space: nowrap;
 }
 .cacheBadgeCached { color: #1c1c1c; }
@@ -385,7 +385,7 @@
   background: rgba(255,255,255,0.08);
   color: rgba(255,255,255,0.85);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--fs-section);
   transition: background .15s ease, transform .15s ease;
 }
 
@@ -409,7 +409,7 @@
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   color: #f3f3f3;
-  font-size: 0.74rem; font-weight: 700; letter-spacing: 0.02em;
+  font-size: var(--fs-sub); font-weight: var(--fw-title); letter-spacing: 0.02em;
   cursor: pointer;
   box-shadow: 0 6px 20px rgba(0,0,0,0.25);
   transition: background .15s ease, transform .15s ease, border-color .15s ease;
@@ -492,7 +492,7 @@
 }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
 .heroBadgeTxt {
-  font-family: var(--mono); font-size: .6rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: rgba(0,0,0,0.7); letter-spacing: .1em;
 }
 .heroBadgeSep {
@@ -510,7 +510,7 @@
   background: rgba(0,0,0,0.88);
   border: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
-  font-family: var(--mono); font-size: .72rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-mono); font-weight: var(--fw-title);
   color: rgba(0,0,0,0.92);
   letter-spacing: .08em;
   white-space: nowrap;
@@ -564,7 +564,7 @@
   background: transparent;
   color: rgba(255,255,255,0.18);
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: .56rem; font-weight: 800;
+  font-family: var(--mono); font-size: .56rem; font-weight: var(--fw-title);
   transition: all .3s ease;
   flex-shrink: 0;
 }
@@ -580,10 +580,10 @@
   color: #1c1c1c;
 }
 .stepLabel {
-  font-size: .6rem; font-weight: 600; color: rgba(255,255,255,0.2); white-space: nowrap;
+  font-size: var(--fs-micro); font-weight: var(--fw-label); color: rgba(255,255,255,0.2); white-space: nowrap;
   transition: color .3s;
 }
-.stepItemActive .stepLabel { color: #ffffff; font-weight: 700; }
+.stepItemActive .stepLabel { color: #ffffff; font-weight: var(--fw-title); }
 .stepItemDone .stepLabel   { color: rgba(0,0,0,0.55); }
 
 /* ── Device picker ── */
@@ -609,16 +609,16 @@
 .pickerTriggerLeft { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .pickerPrompt {
   display: flex; align-items: center; gap: 8px;
-  font-size: .84rem; color: rgba(255,255,255,0.28);
+  font-size: var(--fs-body); color: rgba(255,255,255,0.28);
 }
 .pickerSelCode  {
-  font-family: var(--mono); font-size: .9rem; font-weight: 800;
+  font-family: var(--mono); font-size: var(--fs-item); font-weight: var(--fw-title);
   letter-spacing: .04em; flex-shrink: 0;
 }
-.pickerSelType  { font-size: .74rem; color: rgba(255,255,255,0.4); flex: 1; text-align: left; }
+.pickerSelType  { font-size: var(--fs-sub); color: rgba(255,255,255,0.4); flex: 1; text-align: left; }
 .pickerSelPorts {
   display: inline-flex; align-items: center; gap: 5px;
-  font-family: var(--mono); font-size: .6rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; padding: 2px 8px; flex-shrink: 0;
 }
 .pickerArrow   { color: rgba(255,255,255,0.3); transition: transform .22s ease, color .2s; flex-shrink: 0; }
@@ -659,12 +659,12 @@
   flex-shrink: 0;
 }
 .sheetTitle {
-  font-size: .88rem; font-weight: 700;
+  font-size: var(--fs-item); font-weight: var(--fw-title);
   background: linear-gradient(135deg, #474747, #474747);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .sheetCount {
-  font-family: var(--mono); font-size: .62rem; font-weight: 600;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-label);
   color: rgba(255,255,255,0.3); letter-spacing: .06em;
 }
 .sheetScroll {
@@ -688,25 +688,25 @@
 .sheetOptionActive     { background: rgba(0,0,0,0.1) !important; }
 .sheetOptBar    { width: 3px; height: 32px; border-radius: 2px; flex-shrink: 0; opacity: 0.8; }
 .sheetOptInfo   { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.sheetOptCode   { font-family: var(--mono); font-size: .82rem; font-weight: 700; color: var(--t1); }
-.sheetOptType   { font-size: .68rem; color: rgba(255,255,255,0.35); }
+.sheetOptCode   { font-family: var(--mono); font-size: var(--fs-body); font-weight: var(--fw-title); color: var(--t1); }
+.sheetOptType   { font-size: var(--fs-label); color: rgba(255,255,255,0.35); }
 .pickerOptPortsWrap {
   display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
 }
 .pickerOptPorts  {
-  font-family: var(--mono); font-size: .6rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: #1c1c1c;
   background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.2);
   border-radius: 100px; padding: 1px 7px;
 }
 .pickerOptPortsC {
-  font-family: var(--mono); font-size: .6rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: #000000;
   background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.2);
   border-radius: 100px; padding: 1px 7px;
 }
 .pickerOptPortsS {
-  font-family: var(--mono); font-size: .6rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: #474747;
   background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.2);
   border-radius: 100px; padding: 1px 7px;
@@ -731,16 +731,16 @@
   gap: 10px;
 }
 .portCardTitle {
-  font-size: .78rem; font-weight: 700;
+  font-size: var(--fs-sub); font-weight: var(--fw-title);
   background: linear-gradient(135deg, #474747, #474747);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.portCardSub   { font-size: .68rem; color: rgba(255,255,255,0.35); margin-top: 2px; }
+.portCardSub   { font-size: var(--fs-label); color: rgba(255,255,255,0.35); margin-top: 2px; }
 .portCardLabel {
   flex-shrink: 0;
   font-family: var(--mono);
-  font-size: .72rem;
-  font-weight: 700;
+  font-size: var(--fs-mono);
+  font-weight: var(--fw-title);
   letter-spacing: 0.01em;
   text-align: right;
   max-width: 55%;
@@ -753,7 +753,7 @@
   min-width: 0;
   padding: 10px 12px !important;
   border-radius: 10px !important;
-  font-size: 16px !important;
+  font-size: var(--fs-section) !important;
   font-family: var(--mono) !important;
 }
 .portInput:focus {
@@ -765,8 +765,8 @@
   display: inline-flex; align-items: center; gap: 6px;
   padding: 10px 14px !important;
   border-radius: 10px !important;
-  font-size: .82rem !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-label) !important;
   white-space: nowrap;
   background: #000000 !important;
   color: #ffffff !important;
@@ -801,8 +801,8 @@
   max-height: 34px;
   padding: 0;
   font-family: var(--mono);
-  font-size: .62rem;
-  font-weight: 600;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-label);
   color: rgba(255,255,255,0.85);
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.12);
@@ -824,7 +824,7 @@
 .portLoadingRow {
   display: flex; align-items: center; gap: 8px;
   color: rgba(255,255,255,0.65);
-  font-size: .8rem;
+  font-size: var(--fs-body);
   padding: 6px 2px;
 }
 
@@ -867,8 +867,8 @@
   background: rgba(0,0,0,0.82);
   border: 1px solid rgba(0,0,0,0.45);
   color: #ffffff;
-  font-size: .78rem;
-  font-weight: 600;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-label);
   letter-spacing: 0.02em;
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 18px rgba(0,0,0,0.45), 0 0 24px rgba(0,0,0,0.18);
@@ -900,13 +900,13 @@
 }
 .heroLabelVal {
   font-family: var(--mono);
-  font-size: .92rem;
-  font-weight: 700;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-title);
   letter-spacing: 0.02em;
 }
 .heroLabelType {
   margin-left: auto;
-  font-size: .76rem;
+  font-size: var(--fs-sub);
   color: rgba(255,255,255,0.55);
 }
 
@@ -919,12 +919,12 @@
   border-radius: 10px;
 }
 .labelPreviewKey {
-  font-family: var(--mono); font-size: .6rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: rgba(0,0,0,0.35);
   text-transform: uppercase; letter-spacing: .1em; flex-shrink: 0;
 }
 .labelPreviewVal {
-  font-family: var(--mono); font-size: .74rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-mono); font-weight: var(--fw-title);
   letter-spacing: .04em; word-break: break-all;
 }
 
@@ -935,7 +935,7 @@
   background: rgba(0,0,0,0.05);
   border: 1px solid rgba(0,0,0,0.2);
   border-radius: 12px; padding: 9px 13px;
-  font-size: .76rem; color: rgba(0,0,0,0.82);
+  font-size: var(--fs-sub); color: rgba(0,0,0,0.82);
   animation: riseUp .2s ease both;
 }
 
@@ -947,7 +947,7 @@
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 14px; padding: 10px;
-  font-size: .74rem; font-weight: 600; color: rgba(255,255,255,0.45);
+  font-size: var(--fs-sub); font-weight: var(--fw-label); color: rgba(255,255,255,0.45);
   transition: all .15s;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1028,7 +1028,7 @@
 }
 .portImgHint {
   position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-  font-family: var(--mono); font-size: .56rem; font-weight: 600;
+  font-family: var(--mono); font-size: .56rem; font-weight: var(--fw-label);
   color: rgba(255,255,255,0.35);
   background: rgba(0,0,0,0.5);
   padding: 3px 10px; border-radius: 100px;
@@ -1058,11 +1058,11 @@
   padding: 16px 8px;
 }
 .pStatVal {
-  font-family: var(--mono); font-size: 1rem; font-weight: 800;
+  font-family: var(--mono); font-size: var(--fs-section); font-weight: var(--fw-title);
   color: #ffffff; line-height: 1;
 }
 .pStatKey {
-  font-family: var(--mono); font-size: .54rem; font-weight: 700;
+  font-family: var(--mono); font-size: .54rem; font-weight: var(--fw-title);
   color: rgba(0,0,0,0.45); text-transform: uppercase; letter-spacing: .12em;
 }
 .pStatDivider {
@@ -1107,7 +1107,7 @@
   background: rgba(255,255,255,0.15);
 }
 .pConnLabel {
-  font-family: var(--mono); font-size: .76rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-mono); font-weight: var(--fw-title);
   letter-spacing: .08em; text-transform: uppercase;
 }
 .pConnOn .pConnLabel { color: #1c1c1c; }
@@ -1133,11 +1133,11 @@
   display: flex; flex-direction: column; gap: 2px;
 }
 .pConnItemVal {
-  font-family: var(--mono); font-size: .88rem; font-weight: 800;
+  font-family: var(--mono); font-size: var(--fs-item); font-weight: var(--fw-title);
   color: #ffffff; line-height: 1;
 }
 .pConnItemKey {
-  font-family: var(--mono); font-size: .5rem; font-weight: 600;
+  font-family: var(--mono); font-size: .5rem; font-weight: var(--fw-label);
   color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: .1em;
 }
 .pConnColorDot {
@@ -1156,7 +1156,7 @@
   box-shadow: 0 8px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(0,0,0,0.08);
 }
 .pLabelText {
-  font-family: var(--mono); font-size: 1.15rem; font-weight: 800;
+  font-family: var(--mono); font-size: var(--fs-head); font-weight: var(--fw-title);
   background: linear-gradient(135deg, #000000, #474747, #474747);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   filter: drop-shadow(0 0 14px rgba(0,0,0,0.3));
@@ -1206,11 +1206,11 @@
   position: relative; z-index: 1;
 }
 .pInfoVal {
-  font-family: var(--mono); font-size: .76rem; font-weight: 800;
+  font-family: var(--mono); font-size: var(--fs-mono); font-weight: var(--fw-title);
   color: #ffffff;
 }
 .pInfoKey {
-  font-family: var(--mono); font-size: .48rem; font-weight: 600;
+  font-family: var(--mono); font-size: .48rem; font-weight: var(--fw-label);
   color: rgba(0,0,0,0.5); text-transform: uppercase; letter-spacing: .12em;
 }
 .pInfoDivider {
@@ -1224,7 +1224,7 @@
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 10px 16px;
   border-radius: 18px;
-  font-family: var(--mono); font-size: .72rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-mono); font-weight: var(--fw-title);
   letter-spacing: .06em;
   background: rgba(0,0,0,0.85);
   overflow: hidden;
@@ -1287,11 +1287,11 @@
 .pCableItem > div { display: flex; flex-direction: column; gap: 1px; position: relative; z-index: 1; }
 .pCableItem > svg, .pCableItem > span { position: relative; z-index: 1; }
 .pCableVal {
-  font-family: var(--mono); font-size: .8rem; font-weight: 800;
+  font-family: var(--mono); font-size: var(--fs-body); font-weight: var(--fw-title);
   color: #ffffff;
 }
 .pCableKey {
-  font-family: var(--mono); font-size: .5rem; font-weight: 600;
+  font-family: var(--mono); font-size: .5rem; font-weight: var(--fw-label);
   color: rgba(0,0,0,0.55); text-transform: uppercase; letter-spacing: .1em;
 }
 .pColorDot {
@@ -1329,11 +1329,11 @@
   opacity: .7;
 }
 .portHeroKey {
-  font-size: .58rem; font-weight: 700; letter-spacing: .22em;
+  font-size: .58rem; font-weight: var(--fw-title); letter-spacing: .22em;
   text-transform: uppercase; color: rgba(0,0,0,0.5);
 }
 .portHeroNum {
-  font-size: 3rem; font-weight: 800; line-height: 1;
+  font-size: 3rem; font-weight: var(--fw-title); line-height: 1;
   font-family: var(--mono, 'SF Mono', Menlo, monospace);
   color: #ffffff;
   text-shadow: 0 0 28px var(--ac), 0 0 10px var(--ac);
@@ -1362,7 +1362,7 @@
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ac) 50%, transparent));
 }
 .infoVal {
-  font-size: .74rem; font-weight: 700; color: #ffffff;
+  font-size: var(--fs-sub); font-weight: var(--fw-title); color: #ffffff;
   letter-spacing: -0.015em; line-height: 1.2;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   flex: 1; min-width: 0;
@@ -1398,7 +1398,7 @@
   padding: 6px 2px;
 }
 .sessionLabel {
-  font-size: .62rem; font-weight: 700; letter-spacing: .16em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: .16em;
   text-transform: uppercase; color: rgba(0,0,0,0.55);
   flex-shrink: 0;
 }
@@ -1417,7 +1417,7 @@
   background: rgba(0,0,0,0.55);
   border: 1px solid rgba(255,255,255,0.1);
   color: #e9e9e9;
-  font-size: .74rem; font-weight: 600;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   cursor: pointer;
   transition: transform .1s ease, border-color .15s ease, background .15s ease;
 }
@@ -1438,12 +1438,12 @@
   background: var(--pc, #000000);
   color: #000000;
   font-family: var(--mono, monospace);
-  font-weight: 700; font-size: .78rem;
+  font-weight: var(--fw-title); font-size: var(--fs-mono);
   box-shadow: 0 0 10px var(--pc);
 }
 .sessionPillDev {
   font-family: var(--mono, monospace);
-  font-size: .7rem; color: rgba(0,0,0,0.9);
+  font-size: var(--fs-label); color: rgba(0,0,0,0.9);
   white-space: nowrap;
 }
 
@@ -1462,20 +1462,20 @@
   background: linear-gradient(135deg, rgba(0,0,0,0.14), rgba(0,0,0,0.08));
   border: 1px solid var(--ac, rgba(0,0,0,0.45));
   color: var(--ac, #c6c6c6);
-  font-size: .8rem; font-weight: 700;
+  font-size: var(--fs-body); font-weight: var(--fw-title);
   cursor: pointer;
   transition: transform .15s ease, box-shadow .15s ease;
 }
 .neighborBtn:hover { transform: translateY(-1px); box-shadow: 0 0 14px color-mix(in srgb, var(--ac) 30%, transparent); }
 .neighborHint {
   margin-left: auto;
-  font-size: .64rem; font-weight: 600; letter-spacing: .1em;
+  font-size: var(--fs-micro); font-weight: var(--fw-label); letter-spacing: .1em;
   text-transform: uppercase; color: rgba(0,0,0,0.55);
 }
 .neighborLoading {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 6px;
-  font-size: .78rem; font-weight: 600;
+  font-size: var(--fs-mono); font-weight: var(--fw-label);
   color: rgba(0,0,0,0.8);
   font-family: var(--mono, monospace);
 }
@@ -1486,14 +1486,14 @@
   display: flex; align-items: center; justify-content: space-between;
 }
 .neighborHeaderKey {
-  font-size: .64rem; font-weight: 700; letter-spacing: .14em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: .14em;
   text-transform: uppercase; color: rgba(0,0,0,0.55);
 }
 .neighborMethod {
   margin-left: 6px;
   color: #f3f3f3;
   letter-spacing: .1em;
-  font-weight: 600;
+  font-weight: var(--fw-label);
 }
 .neighborReset {
   padding: 4px 10px;
@@ -1501,31 +1501,31 @@
   background: rgba(0,0,0,0.5);
   border: 1px solid rgba(255,255,255,0.1);
   color: rgba(0,0,0,0.75);
-  font-size: .68rem; font-weight: 600;
+  font-size: var(--fs-label); font-weight: var(--fw-label);
   cursor: pointer;
 }
 .neighborReset:hover { color: #ffffff; border-color: rgba(255,255,255,0.25); }
 .neighborRow {
   display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: baseline;
-  font-size: .78rem;
+  font-size: var(--fs-sub);
 }
 .neighborRow span {
-  font-size: .64rem; font-weight: 700; letter-spacing: .12em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: .12em;
   text-transform: uppercase; color: rgba(0,0,0,0.5);
 }
 .neighborRow strong {
-  color: #ffffff; font-weight: 700;
+  color: #ffffff; font-weight: var(--fw-title);
   font-family: var(--mono, monospace);
   word-break: break-word;
 }
 .neighborEmpty {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  font-size: .78rem; color: rgba(0,0,0,0.7);
+  font-size: var(--fs-mono); color: rgba(0,0,0,0.7);
   font-family: var(--mono, monospace);
 }
 .neighborEmptyNote {
   margin: 2px 0 4px;
-  font-size: .74rem;
+  font-size: var(--fs-sub);
   line-height: 1.5;
   color: rgba(0,0,0,0.65);
 }
@@ -1538,7 +1538,7 @@
   background: linear-gradient(135deg, rgba(0,0,0,0.18), rgba(0,0,0,0.12));
   border: 1px solid rgba(0,0,0,0.45);
   color: #c6c6c6;
-  font-size: .74rem; font-weight: 700;
+  font-size: var(--fs-sub); font-weight: var(--fw-title);
   cursor: pointer;
   transition: transform .1s ease, box-shadow .15s ease;
 }
@@ -1548,7 +1548,7 @@
 }
 .openConsoleHint {
   margin-left: auto;
-  font-size: .62rem; font-weight: 600;
+  font-size: var(--fs-micro); font-weight: var(--fw-label);
   color: rgba(0,0,0,0.7);
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -1574,23 +1574,23 @@
   display: flex; align-items: center; gap: 8px;
 }
 .neighborStepMethod {
-  font-size: .62rem; font-weight: 700; letter-spacing: .14em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: .14em;
   color: #c6c6c6;
 }
 .neighborStepOk {
   padding: 1px 6px; border-radius: 4px;
-  font-size: .6rem; font-weight: 700;
+  font-size: var(--fs-micro); font-weight: var(--fw-title);
   background: rgba(0,0,0,0.15); color: #474747;
 }
 .neighborStepMiss {
   padding: 1px 6px; border-radius: 4px;
-  font-size: .6rem; font-weight: 700;
+  font-size: var(--fs-micro); font-weight: var(--fw-title);
   background: rgba(0,0,0,0.14); color: rgba(0,0,0,0.8);
 }
 .neighborStepCmd {
   display: block;
   font-family: var(--mono, monospace);
-  font-size: .68rem;
+  font-size: var(--fs-label);
   color: #e9e9e9;
   background: rgba(0,0,0,0.5);
   padding: 4px 6px;
@@ -1599,7 +1599,7 @@
 }
 .neighborStepErr {
   margin: 0; padding: 4px 6px;
-  font-family: var(--mono, monospace); font-size: .68rem;
+  font-family: var(--mono, monospace); font-size: var(--fs-label);
   background: rgba(0,0,0,0.08);
   color: #474747;
   border-radius: 4px;
@@ -1607,7 +1607,7 @@
 }
 .neighborStepData {
   margin: 0; padding: 4px 6px;
-  font-family: var(--mono, monospace); font-size: .66rem;
+  font-family: var(--mono, monospace); font-size: var(--fs-label);
   background: rgba(255,255,255,0.02);
   color: rgba(0,0,0,0.85);
   border-radius: 4px;
@@ -1616,7 +1616,7 @@
 }
 .neighborStepRaw {
   margin: 0; padding: 6px 8px;
-  font-family: var(--mono, monospace); font-size: .64rem;
+  font-family: var(--mono, monospace); font-size: var(--fs-micro);
   background: #000000;
   color: #c6c6c6;
   border: 1px solid rgba(255,255,255,0.04);
@@ -1628,7 +1628,7 @@
   display: flex; flex-direction: column; gap: 8px;
 }
 .neighborErrMsg {
-  font-size: .74rem; color: #474747;
+  font-size: var(--fs-mono); color: #474747;
   font-family: var(--mono, monospace);
   word-break: break-word;
 }
@@ -1681,11 +1681,11 @@
   display: flex; flex-direction: column; gap: 2px; min-width: 0;
 }
 .consoleSheetTitle {
-  font-size: .95rem; font-weight: 700; color: #ffffff;
+  font-size: var(--fs-section); font-weight: var(--fw-title); color: #ffffff;
   letter-spacing: -0.01em;
 }
 .consoleSheetSub {
-  font-size: .7rem; font-weight: 600; color: rgba(0,0,0,0.8);
+  font-size: var(--fs-label); font-weight: var(--fw-label); color: rgba(0,0,0,0.8);
   font-family: var(--mono, 'SF Mono', Menlo, monospace);
 }
 .consoleSheetExit {
@@ -1695,7 +1695,7 @@
   background: rgba(0,0,0,0.1);
   border: 1px solid rgba(0,0,0,0.35);
   color: #474747;
-  font-size: .76rem; font-weight: 700;
+  font-size: var(--fs-sub); font-weight: var(--fw-title);
   cursor: pointer;
   transition: background .15s ease;
 }
@@ -1714,7 +1714,7 @@
   background: rgba(0,0,0,0.12);
   border: 1px solid rgba(0,0,0,0.4);
   color: #474747;
-  font-size: .76rem; font-weight: 700;
+  font-size: var(--fs-sub); font-weight: var(--fw-title);
   cursor: pointer;
   transition: background .12s, color .12s;
 }
@@ -1765,8 +1765,8 @@
   padding: 14px 18px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.portReportTitle { font-weight: 800; font-size: 1rem; letter-spacing: .2px; }
-.portReportSub   { font-size: .78rem; color: rgba(0,0,0,0.75); margin-top: 2px; }
+.portReportTitle { font-weight: var(--fw-title); font-size: var(--fs-section); letter-spacing: .2px; }
+.portReportSub   { font-size: var(--fs-sub); color: rgba(0,0,0,0.75); margin-top: 2px; }
 .portReportClose {
   background: transparent; border: 0; color: rgba(255,255,255,0.55); cursor: pointer;
   padding: 6px; border-radius: 8px;
@@ -1778,7 +1778,7 @@
   background: rgba(0,0,0,0.07);
   border-bottom: 1px solid rgba(0,0,0,0.2);
   color: #ffffff;
-  font-weight: 600; font-size: .88rem;
+  font-weight: var(--fw-label); font-size: var(--fs-item);
 }
 .portReportBody {
   overflow-y: auto;
@@ -1786,9 +1786,9 @@
   display: flex; flex-direction: column; gap: 18px;
 }
 .prSection h4 {
-  font-size: .78rem; letter-spacing: .05em; text-transform: uppercase;
+  font-size: var(--fs-sub); letter-spacing: .05em; text-transform: uppercase;
   color: rgba(0,0,0,0.8);
-  margin: 0 0 8px 0; font-weight: 700;
+  margin: 0 0 8px 0; font-weight: var(--fw-title);
 }
 .prGrid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -1796,17 +1796,17 @@
 }
 .prGrid > div {
   display: flex; flex-direction: column; gap: 2px;
-  font-size: .82rem;
+  font-size: var(--fs-body);
 }
 .prGrid > div > span {
-  color: rgba(255,255,255,0.5); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em;
+  color: rgba(255,255,255,0.5); font-size: var(--fs-label); text-transform: uppercase; letter-spacing: .04em;
 }
 .prGrid > div > b {
-  color: #f4f4f4; font-weight: 600;
+  color: #f4f4f4; font-weight: var(--fw-label);
 }
 .prWide { grid-column: 1 / -1; }
 .prEmpty {
-  margin: 0; color: rgba(255,255,255,0.5); font-size: .82rem; font-style: italic;
+  margin: 0; color: rgba(255,255,255,0.5); font-size: var(--fs-body); font-style: italic;
 }
 
 /* ── Switch Info modal (redesigned) ─────────────────────────── */
@@ -1830,11 +1830,11 @@
   flex-shrink: 0;
 }
 .siTitle {
-  font-weight: 800; font-size: 1.05rem; letter-spacing: .2px;
+  font-weight: var(--fw-title); font-size: var(--fs-head); letter-spacing: .2px;
   color: #f5f5f5;
 }
 .siSub {
-  font-size: .75rem; color: rgba(0,0,0,0.7); margin-top: 2px;
+  font-size: var(--fs-sub); color: rgba(0,0,0,0.7); margin-top: 2px;
   display: flex; align-items: center; gap: 6px;
 }
 .siLiveDot {
@@ -1865,7 +1865,7 @@
   color: rgba(0,0,0,0.85);
 }
 .siCardHead h4 {
-  margin: 0; font-size: .78rem; font-weight: 700;
+  margin: 0; font-size: var(--fs-sub); font-weight: var(--fw-title);
   text-transform: uppercase; letter-spacing: .05em;
   color: inherit;
 }
@@ -1880,12 +1880,12 @@
 }
 .siRow:last-child { border-bottom: none; }
 .siRow > span:first-child {
-  color: rgba(255,255,255,0.5); font-size: .75rem;
+  color: rgba(255,255,255,0.5); font-size: var(--fs-sub);
   text-transform: uppercase; letter-spacing: .04em;
   flex-shrink: 0; min-width: 100px;
 }
 .siRow > span:last-child {
-  color: #f4f4f4; font-weight: 600; font-size: .84rem;
+  color: #f4f4f4; font-weight: var(--fw-label); font-size: var(--fs-body);
   text-align: right; word-break: break-word;
 }
 
@@ -1893,12 +1893,12 @@
 .siBadge {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: 8px;
-  font-weight: 600; font-size: .82rem;
+  font-weight: var(--fw-label); font-size: var(--fs-body);
 }
 .siBadgeIcon {
   width: 20px; height: 20px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: .7rem; font-weight: 800;
+  font-size: var(--fs-label); font-weight: var(--fw-title);
 }
 .siBadge_ok {
   background: rgba(0,0,0,0.1);
@@ -1928,7 +1928,7 @@
 /* Links */
 .siLink {
   display: inline-flex; align-items: center; gap: 4px;
-  margin-top: 10px; font-size: .75rem; font-weight: 600;
+  margin-top: 10px; font-size: var(--fs-sub); font-weight: var(--fw-label);
   color: #000000; text-decoration: none;
 }
 .siLink:hover { text-decoration: underline; }
@@ -1951,19 +1951,19 @@
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 8px;
   color: rgba(0,0,0,0.85);
-  font-size: .72rem; line-height: 1.5;
+  font-size: var(--fs-mono); line-height: 1.5;
   white-space: pre-wrap; word-break: break-word;
   max-height: 280px; overflow: auto;
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
 .prHint {
-  margin: 6px 0 0 0; color: rgba(0,0,0,0.85); font-size: .78rem;
+  margin: 6px 0 0 0; color: rgba(0,0,0,0.85); font-size: var(--fs-sub);
 }
 .prMacList, .prPairList {
   list-style: none; padding: 0; margin: 0;
   display: flex; flex-direction: column; gap: 4px;
-  font-size: .85rem;
+  font-size: var(--fs-item);
 }
 .prMacList li, .prPairList li {
   display: flex; gap: 12px; align-items: baseline;
@@ -1977,7 +1977,7 @@
   color: #1c1c1c;
 }
 .prMacList span, .prPairList span {
-  color: rgba(255,255,255,0.55); font-size: .76rem;
+  color: rgba(255,255,255,0.55); font-size: var(--fs-sub);
 }
 .prTranscript {
   display: flex; flex-direction: column; gap: 6px;
@@ -1989,7 +1989,7 @@
   padding: 6px 10px;
 }
 .prCmd summary {
-  cursor: pointer; font-size: .82rem; color: rgba(0,0,0,0.9);
+  cursor: pointer; font-size: var(--fs-body); color: rgba(0,0,0,0.9);
 }
 .prCmd summary code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -2000,7 +2000,7 @@
   padding: 8px 10px;
   background: rgba(0,0,0,0.35);
   border-radius: 6px;
-  font-size: .76rem;
+  font-size: var(--fs-sub);
   color: #c6c6c6;
   white-space: pre-wrap; word-break: break-word;
   max-height: 320px; overflow-y: auto;
@@ -2012,7 +2012,7 @@
   overflow-y: auto;
   padding: 12px 14px 8px;
   font-family: var(--mono, 'SF Mono', Menlo, Consolas, monospace);
-  font-size: .78rem;
+  font-size: var(--fs-mono);
   color: #c6c6c6;
 }
 .consoleTermLine {
@@ -2031,13 +2031,13 @@
 }
 .consolePrompt {
   color: #474747;
-  font-weight: 800;
+  font-weight: var(--fw-title);
   flex-shrink: 0;
 }
 .consoleCmd {
   flex: 1;
   color: #ffffff;
-  font-weight: 700;
+  font-weight: var(--fw-title);
   background: transparent;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -2047,7 +2047,7 @@
   background: rgba(0,0,0,0.12);
   border: 1px solid rgba(0,0,0,0.3);
   color: #c6c6c6;
-  font-size: .6rem; font-weight: 700; letter-spacing: .1em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: .1em;
   text-transform: uppercase;
   flex-shrink: 0;
 }
@@ -2083,7 +2083,7 @@
   border-radius: 8px;
   color: #ffffff;
   font-family: var(--mono, 'SF Mono', Menlo, Consolas, monospace);
-  font-size: 16px;
+  font-size: var(--fs-section);
   padding: 12px 12px;
   outline: none;
 }
@@ -2099,7 +2099,7 @@
   background: linear-gradient(135deg, rgba(0,0,0,0.3), rgba(0,0,0,0.22));
   border: 1px solid rgba(0,0,0,0.5);
   color: #ffffff;
-  font-size: .88rem; font-weight: 700;
+  font-size: var(--fs-item); font-weight: var(--fw-title);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -2134,7 +2134,7 @@
   margin: -2px -6px 2px 0;
 }
 .credsTitle {
-  font-size: 1rem; font-weight: 700; color: #ffffff;
+  font-size: var(--fs-section); font-weight: var(--fw-title); color: #ffffff;
 }
 .credsClose {
   width: 28px; height: 28px;
@@ -2145,14 +2145,14 @@
 }
 .credsClose:hover { background: rgba(255,255,255,0.06); color: #ffffff; }
 .credsHint {
-  margin: 0; font-size: .72rem; color: rgba(0,0,0,0.55);
+  margin: 0; font-size: var(--fs-sub); color: rgba(0,0,0,0.55);
   line-height: 1.5;
 }
 .credsField {
   display: flex; flex-direction: column; gap: 7px;
 }
 .credsField span {
-  font-size: .68rem; font-weight: 500; letter-spacing: .08em;
+  font-size: var(--fs-label); font-weight: var(--fw-label); letter-spacing: .08em;
   text-transform: uppercase; color: rgba(0,0,0,0.5);
 }
 .vendorSegmented {
@@ -2169,7 +2169,7 @@
   background: transparent;
   border: 1px solid transparent;
   color: rgba(0,0,0,0.6);
-  font-size: .74rem; font-weight: 600;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   cursor: pointer;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
@@ -2185,7 +2185,7 @@
 }
 .credsField input {
   padding: 11px 13px !important;
-  font-size: 16px !important;
+  font-size: var(--fs-section) !important;
   background: rgba(0,0,0,0.5) !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
   color: #ffffff !important;
@@ -2208,7 +2208,7 @@
 .credsCancel, .credsSubmit {
   padding: 10px 18px;
   border-radius: 10px;
-  font-size: .82rem; font-weight: 600;
+  font-size: var(--fs-body); font-weight: var(--fw-label);
   cursor: pointer;
   transition: background .14s ease, border-color .14s ease,
               color .14s ease, box-shadow .14s ease, transform .08s ease;
@@ -2260,7 +2260,7 @@
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .reportModalTitle {
-  font-size: .85rem; font-weight: 600; color: #ffffff;
+  font-size: var(--fs-item); font-weight: var(--fw-label); color: #ffffff;
   font-family: var(--mono);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   /* Lets the title shrink instead of squeezing the Close control. */
@@ -2278,7 +2278,7 @@
   border: 0; border-radius: 999px;
   background: #ffffff;
   color: #121212;
-  font-size: .8rem; font-weight: 700; letter-spacing: .01em;
+  font-size: var(--fs-body); font-weight: var(--fw-title); letter-spacing: .01em;
   cursor: pointer;
   transition: background .15s ease, transform .1s ease;
 }
@@ -2301,7 +2301,7 @@
    no label is clipped, rather than the row breaking into two. */
 @media (max-width: 400px) {
   .reportRow { gap: 4px; margin: 0 10px 10px; }
-  .reportRow .reportChip { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: 11px; line-height: 1.1; }
+  .reportRow .reportChip { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: var(--fs-label); line-height: 1.1; }
 }
 /* Unified action pill - white-focused, black accent */
 .reportChip {
@@ -2312,7 +2312,7 @@
   background: #ffffff;
   color: #000000;
   border: 1px solid #EFEFEF;
-  font-size: .74rem; font-weight: 600;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   cursor: pointer;
   transition: background .15s ease, color .15s ease, border-color .15s ease, transform .1s ease, box-shadow .15s ease;
   white-space: nowrap;
@@ -2363,7 +2363,7 @@
   color: #000000;
   border: 1px solid #EFEFEF;
   border-radius: 10px;
-  font-size: .66rem; font-weight: 600;
+  font-size: var(--fs-label); font-weight: var(--fw-label);
   cursor: pointer;
   transition: background .12s ease, border-color .12s ease, transform .1s ease, box-shadow .12s ease;
 }
@@ -2395,7 +2395,7 @@
   margin-top: 6px;
   padding: 6px 10px;
   border-radius: 8px;
-  font-size: .72rem;
+  font-size: var(--fs-mono);
   font-family: var(--mono, monospace);
   line-height: 1.35;
   word-break: break-word;
@@ -2447,7 +2447,7 @@
 .shareDialogIcon svg { width: 22px; height: 22px; }
 .shareDialogTitle {
   flex: 1; min-width: 0;
-  font-size: .92rem; font-weight: 600;
+  font-size: var(--fs-section); font-weight: var(--fw-label);
   color: #ffffff;
   letter-spacing: -0.005em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -2472,19 +2472,19 @@
 }
 .shareDialogHint {
   margin: 0 0 12px;
-  font-size: .76rem;
+  font-size: var(--fs-sub);
   color: rgba(0,0,0,0.72);
   line-height: 1.5;
 }
 .shareDialogLabel {
-  font-size: .72rem; font-weight: 600;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   color: #ffffff;
   letter-spacing: 0.02em; text-transform: uppercase;
   margin-bottom: 6px;
 }
 .shareDialogReq { color: #474747; margin-left: 2px; }
 .shareDialogOpt {
-  font-weight: 500; text-transform: none; letter-spacing: 0;
+  font-weight: var(--fw-label); text-transform: none; letter-spacing: 0;
   color: rgba(0,0,0,0.55);
   margin-left: 4px;
 }
@@ -2492,7 +2492,7 @@
 .shareDialogTextarea {
   width: 100%;
   padding: 10px 12px;
-  font-size: 16px;
+  font-size: var(--fs-section);
   font-family: inherit;
   color: #ffffff;
   background: rgba(0,0,0,0.65);
@@ -2505,7 +2505,7 @@
 .shareDialogTextarea {
   resize: vertical;
   min-height: 64px;
-  font-size: 16px;
+  font-size: var(--fs-section);
   line-height: 1.45;
 }
 .shareDialogInput:focus,
@@ -2522,7 +2522,7 @@
 }
 .shareDialogFieldErr {
   margin-top: 6px;
-  font-size: .72rem;
+  font-size: var(--fs-sub);
   color: #474747;
 }
 .shareDialogLabel + .shareDialogInput { margin-bottom: 12px; }
@@ -2536,7 +2536,7 @@
 .shareDialogSend {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 9px 14px;
-  font-size: .8rem; font-weight: 600;
+  font-size: var(--fs-body); font-weight: var(--fw-label);
   border-radius: 9px;
   cursor: pointer;
   transition: background .14s ease, border-color .14s ease, color .14s ease, transform .1s ease, box-shadow .14s ease;
@@ -2609,7 +2609,7 @@
 /* ── Full port label, shown above the hero ── */
 .pLabelTop {
   font-family: var(--mono, 'SF Mono', Menlo, monospace);
-  font-size: 1.05rem; font-weight: 800;
+  font-size: var(--fs-head); font-weight: var(--fw-title);
   letter-spacing: -0.01em;
   color: var(--ac, #000000);
   text-align: center;
@@ -2621,7 +2621,7 @@
 .portHeroCable {
   display: inline-flex; align-items: center; gap: 8px;
   margin-top: 6px;
-  font-size: .72rem; font-weight: 600;
+  font-size: var(--fs-mono); font-weight: var(--fw-label);
   color: rgba(0,0,0,0.85);
   font-family: var(--mono, 'SF Mono', Menlo, monospace);
 }
@@ -2649,7 +2649,7 @@
 .fbPrompt {
   position: relative;
   padding-left: 12px;
-  font-size: 11px; font-weight: 700;
+  font-size: var(--fs-label); font-weight: var(--fw-title);
   color: var(--md-on-surface);
   letter-spacing: .10em;
   line-height: 16px;
@@ -2672,7 +2672,7 @@
 .fbCheckRow {
   display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
   padding: 4px 2px;
-  font-size: .76rem;
+  font-size: var(--fs-sub);
   color: rgba(0,0,0,0.85);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -2684,14 +2684,14 @@
 }
 .fbCheckLabel {
   min-width: 90px;
-  font-weight: 600;
+  font-weight: var(--fw-label);
   letter-spacing: .01em;
 }
 .fbInput {
   flex: 1; min-width: 110px;
   padding: 8px 12px !important;
   border-radius: 10px !important;
-  font-size: 16px !important;
+  font-size: var(--fs-section) !important;
   font-family: var(--mono) !important;
   color: #ffffff !important;
   background: rgba(0,0,0,0.55) !important;
@@ -2706,7 +2706,7 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 12px 16px;
   border-radius: 10px;
-  font-size: 14px; font-weight: 600;
+  font-size: var(--fs-item); font-weight: var(--fw-label);
   line-height: 20px;
   border: 1px solid var(--md-outline-variant);
   background: var(--md-surface-container-lowest);
@@ -2728,7 +2728,7 @@
   border: 1px solid var(--md-outline-variant);
   color: var(--md-on-surface);
   box-shadow: none;
-  font-weight: 600;
+  font-weight: var(--fw-label);
 }
 .fbBtnYes:hover:not(:disabled),
 .fbBtnNo:hover:not(:disabled) {
@@ -2744,8 +2744,8 @@
   gap: 4px;
   padding: 7px 14px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.02em;
   cursor: pointer;
   white-space: nowrap;
@@ -2757,7 +2757,7 @@
 
 /* Tighter pills on narrow phones */
 @media (max-width: 420px) {
-  .navPill { padding: 6px 10px; font-size: 10px; }
+  .navPill { padding: 6px 10px; font-size: var(--fs-micro); }
 }
 @media (max-width: 360px) {
   .navPill { padding: 5px 8px; font-size: 9.5px; gap: 2px; }
@@ -2796,11 +2796,11 @@
 }
 .fbDone {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: .78rem; font-weight: 600;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   color: #474747;
 }
 .fbErr {
-  font-size: .72rem;
+  font-size: var(--fs-mono);
   color: #474747;
   font-family: var(--mono);
 }
@@ -2821,7 +2821,7 @@
   flex: 1; min-width: 0; position: relative; z-index: 1;
   padding: 10px 14px !important;
   border-radius: 14px !important;
-  font-size: 16px !important;
+  font-size: var(--fs-section) !important;
   font-family: var(--mono) !important;
   background: transparent !important;
   border: none !important;
@@ -2838,8 +2838,8 @@
   display: inline-flex; align-items: center; gap: 6px;
   padding: 10px 16px !important;
   border-radius: 14px !important;
-  font-size: .8rem !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-label) !important;
   white-space: nowrap;
   background: linear-gradient(135deg,
     color-mix(in srgb, var(--btn-glow, #000000) 30%, rgba(0,0,0,0.6)),
@@ -2866,7 +2866,7 @@
   background: #ffffff;
   color: #000000;
   border: 1px solid #EFEFEF;
-  font-size: .74rem; font-weight: 600;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   cursor: pointer;
   transition: background .15s ease, color .15s ease, border-color .15s ease, transform .1s ease, box-shadow .15s ease;
   -webkit-tap-highlight-color: transparent;
@@ -2941,12 +2941,12 @@
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
 .allCardLabel {
-  font-family: var(--mono); font-size: .82rem; font-weight: 800;
+  font-family: var(--mono); font-size: var(--fs-body); font-weight: var(--fw-title);
   letter-spacing: .03em;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .allCardType {
-  font-size: .72rem; font-weight: 600; color: rgba(255,255,255,0.45);
+  font-size: var(--fs-sub); font-weight: var(--fw-label); color: rgba(255,255,255,0.45);
   flex-shrink: 0;
 }
 .allCardBottom {
@@ -2954,31 +2954,31 @@
 }
 .allCardUnit {
   display: flex; align-items: center; gap: 5px;
-  font-family: var(--mono); font-size: .64rem; font-weight: 600;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-label);
   color: rgba(255,255,255,0.3);
 }
 .allCardPorts {
   display: flex; align-items: center; gap: 4px;
 }
 .portPill {
-  font-family: var(--mono); font-size: .64rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: #1c1c1c;
   background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.2);
   border-radius: 100px; padding: 2px 8px;
 }
 .portPillC {
-  font-family: var(--mono); font-size: .64rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: #000000;
   background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.2);
   border-radius: 100px; padding: 2px 8px;
 }
 .portPillS {
-  font-family: var(--mono); font-size: .64rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: #474747;
   background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.2);
   border-radius: 100px; padding: 2px 8px;
 }
-.noPorts { color: rgba(0,0,0,0.2); font-size: .72rem; }
+.noPorts { color: rgba(0,0,0,0.2); font-size: var(--fs-sub); }
 
 /* Inline cable chips - one per connector+colour group of connected ports,
    filled in by the background cable enrichment. */
@@ -2989,7 +2989,7 @@
 }
 .cableChip {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: .62rem; font-weight: 600;
+  font-size: var(--fs-micro); font-weight: var(--fw-label);
   color: #1c1c1c;
   background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.14);
   border-radius: 100px; padding: 2px 8px 2px 5px;
@@ -2999,7 +2999,7 @@
   border: 1px solid rgba(0,0,0,0.25);
   flex: none;
 }
-.cableChipCount { font-family: var(--mono); font-weight: 800; opacity: 0.7; }
+.cableChipCount { font-family: var(--mono); font-weight: var(--fw-title); opacity: 0.7; }
 :global([data-theme='light']) .cableChipRow { border-top-color: rgba(0,0,0,0.10); }
 :global([data-theme='light']) .cableChip {
   color: #1c1c1c; background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.14);
@@ -3017,12 +3017,12 @@
   border-color: color-mix(in srgb, var(--accent, #474747) 22%, rgba(255,255,255,0.09));
 }
 .nextPortTitle {
-  font-size: .76rem; font-weight: 700;
+  font-size: var(--fs-sub); font-weight: var(--fw-title);
   background: linear-gradient(135deg, #474747, #474747);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .nextPortSub {
-  font-family: var(--mono); font-size: .62rem; color: rgba(255,255,255,0.3);
+  font-family: var(--mono); font-size: var(--fs-micro); color: rgba(255,255,255,0.3);
   margin-top: -6px;
 }
 
@@ -3034,7 +3034,7 @@
   flex: 1;
   padding: 12px 14px !important;
   border-radius: 14px !important;
-  font-size: .78rem !important;
+  font-size: var(--fs-sub) !important;
 }
 
 /* ── Actions ── */
@@ -3042,14 +3042,14 @@
   flex-shrink: 0;
   padding: 13px 20px !important;
   border-radius: 18px !important;
-  font-size: .88rem !important;
+  font-size: var(--fs-item) !important;
 }
 
 /* ── Empty ── */
 .empty {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 16px; color: rgba(0,0,0,0.35); font-size: .9rem;
+  gap: 16px; color: rgba(0,0,0,0.35); font-size: var(--fs-item);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -3094,13 +3094,13 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loadTitle {
-  font-size: .82rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  font-size: var(--fs-body); font-weight: var(--fw-title); letter-spacing: .12em; text-transform: uppercase;
   background: linear-gradient(135deg, #474747, #474747);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   position: relative;
 }
 .loadSub {
-  font-family: var(--mono); font-size: .72rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-mono); font-weight: var(--fw-title);
   color: rgba(255,255,255,0.5); letter-spacing: .02em;
   position: relative;
 }
@@ -3136,15 +3136,15 @@
   box-shadow: 0 0 8px currentColor;
 }
 .portBreakCount {
-  font-family: var(--mono); font-size: 1rem; font-weight: 800;
+  font-family: var(--mono); font-size: var(--fs-section); font-weight: var(--fw-title);
   color: var(--t1); line-height: 1;
 }
 .portBreakLabel {
-  font-family: var(--mono); font-size: .56rem; font-weight: 700;
+  font-family: var(--mono); font-size: .56rem; font-weight: var(--fw-title);
   color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: .1em;
 }
 .portBreakSub {
-  font-family: var(--mono); font-size: .52rem; font-weight: 600;
+  font-family: var(--mono); font-size: .52rem; font-weight: var(--fw-label);
   color: rgba(0,0,0,0.6); letter-spacing: .04em;
 }
 
@@ -3178,7 +3178,7 @@
   padding: 10px 14px;
   background: rgba(255,255,255,0.03);
   border-bottom: 1px solid rgba(255,255,255,0.06);
-  font-family: var(--mono); font-size: .64rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: .1em;
 }
 .cableCardHeader svg { color: rgba(0,0,0,0.5); }
@@ -3192,12 +3192,12 @@
 }
 .cableRow:last-child { border-bottom: none; }
 .cableKey {
-  font-family: var(--mono); font-size: .62rem; font-weight: 600;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-label);
   color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: .08em;
 }
 .cableVal {
   display: flex; align-items: center; gap: 8px;
-  font-family: var(--mono); font-size: .78rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-mono); font-weight: var(--fw-title);
   color: var(--t1);
 }
 
@@ -3208,7 +3208,7 @@
 }
 .portClassChip {
   display: inline-flex; align-items: center; gap: 5px;
-  font-family: var(--mono); font-size: .62rem; font-weight: 700;
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: var(--pcc, rgba(255,255,255,0.4));
   background: color-mix(in srgb, var(--pcc, #474747) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--pcc, #474747) 22%, transparent);
@@ -3248,13 +3248,13 @@
   box-shadow: 0 0 24px rgba(0,0,0,0.25);
 }
 .qualityModalTitle {
-  font-size: 1.05rem; font-weight: 800;
+  font-size: var(--fs-head); font-weight: var(--fw-title);
   color: #474747;
   letter-spacing: -0.01em;
   margin: 2px 0 0;
 }
 .qualityModalMsg {
-  font-size: .85rem; line-height: 1.5;
+  font-size: var(--fs-item); line-height: 1.5;
   color: rgba(0,0,0,0.8);
   margin: 0;
 }
@@ -3267,7 +3267,7 @@
   text-align: left;
 }
 .qualityModalTips li {
-  font-size: .76rem; line-height: 1.5;
+  font-size: var(--fs-sub); line-height: 1.5;
   color: rgba(0,0,0,0.75);
   padding: 4px 0 4px 18px;
   position: relative;
@@ -3276,7 +3276,7 @@
   content: '•';
   position: absolute; left: 4px;
   color: #474747;
-  font-weight: 700;
+  font-weight: var(--fw-title);
 }
 .qualityModalActions {
   display: flex; gap: 10px;
@@ -3288,7 +3288,7 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 11px 14px;
   border-radius: 14px;
-  font-size: .85rem; font-weight: 700;
+  font-size: var(--fs-item); font-weight: var(--fw-title);
   cursor: pointer;
   transition: transform .1s ease, background .15s ease, box-shadow .15s ease;
 }
@@ -3309,8 +3309,8 @@
 /* ── Developer view: toggle, confidence chips, diagnostics panel ── */
 .devToggle {
   font-family: var(--mono);
-  font-size: .62rem;
-  font-weight: 800;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: .12em;
   padding: 6px 9px;
   border-radius: 8px;
@@ -3332,7 +3332,7 @@
 .confChip {
   display: inline-flex; align-items: center;
   font-family: var(--mono);
-  font-size: .62rem; font-weight: 700;
+  font-size: var(--fs-micro); font-weight: var(--fw-title);
   padding: 1px 6px;
   margin-left: 6px;
   border-radius: 6px;
@@ -3358,7 +3358,7 @@
   border: 1px solid rgba(0,0,0,0.35);
   box-shadow: 0 0 24px rgba(0,0,0,0.18), 0 12px 40px rgba(0,0,0,0.5);
   color: rgba(0,0,0,0.85);
-  font-size: .75rem;
+  font-size: var(--fs-mono);
   font-family: var(--mono);
   animation: riseUp .2s ease;
 }
@@ -3369,7 +3369,7 @@
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .diagTitle {
-  font-size: .72rem; font-weight: 800;
+  font-size: var(--fs-sub); font-weight: var(--fw-title);
   color: #000000;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -3386,7 +3386,7 @@
 .diagSection { margin-top: 10px; }
 .diagSection:first-of-type { margin-top: 0; }
 .diagSectionLabel {
-  font-size: .62rem; font-weight: 700;
+  font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: rgba(0,0,0,0.5);
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -3398,15 +3398,15 @@
   border-bottom: 1px dotted rgba(255,255,255,0.05);
 }
 .diagRow:last-child { border-bottom: none; }
-.diagRowTotal { font-weight: 700; color: #000000; }
+.diagRowTotal { font-weight: var(--fw-title); color: #000000; }
 .diagVal {
   font-family: var(--mono);
-  font-size: .74rem;
+  font-size: var(--fs-mono);
   color: rgba(0,0,0,0.95);
 }
 .diagRowTotal .diagVal { color: #000000; }
 .diagEmpty {
-  font-size: .68rem;
+  font-size: var(--fs-label);
   color: rgba(0,0,0,0.4);
   font-style: italic;
   padding: 4px 0;
@@ -3416,7 +3416,7 @@
 .timingBadge {
   display: inline-flex; align-items: center; gap: 4px;
   font-family: var(--mono);
-  font-size: .62rem; font-weight: 700;
+  font-size: var(--fs-micro); font-weight: var(--fw-title);
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(0,0,0,0.12);
@@ -3466,8 +3466,8 @@
   background: rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.18);
   color: rgba(0,0,0,0.85);
-  font-size: .76rem;
-  font-weight: 600;
+  font-size: var(--fs-mono);
+  font-weight: var(--fw-label);
   font-family: var(--mono, monospace);
 }
 .consoleStatusRow svg { color: #000000; flex-shrink: 0; }
@@ -3476,7 +3476,7 @@
    line and ellipsize if the row is narrow. */
 .reportChipFile {
   font-family: var(--mono, 'SF Mono', Menlo, Consolas, monospace);
-  font-size: .68rem;
+  font-size: var(--fs-label);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3504,8 +3504,8 @@
   border-radius: 10px;
   color: #ffffff;
   font-family: inherit;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-label);
   padding: 10px 32px 10px 14px;
   cursor: pointer;
   transition: border-color .15s, background-color .15s;
@@ -3526,8 +3526,8 @@
   background: linear-gradient(135deg, #000000, #000000);
   color: #ffffff;
   font-family: inherit;
-  font-size: .85rem;
-  font-weight: 700;
+  font-size: var(--fs-item);
+  font-weight: var(--fw-title);
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(0,0,0,0.32);
   transition: transform .12s, box-shadow .15s, opacity .15s;
@@ -3539,8 +3539,8 @@
 .intentRunBtn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
 
 .intentLabel {
-  font-size: .82rem;
-  font-weight: 700;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-title);
   color: #c6c6c6;
   letter-spacing: .01em;
 }
@@ -3548,10 +3548,10 @@
   padding: 24px 16px;
   text-align: center;
   color: rgba(0,0,0,0.55);
-  font-size: .82rem;
+  font-size: var(--fs-body);
   line-height: 1.5;
 }
-.consoleEmpty strong { color: #000000; font-weight: 700; }
+.consoleEmpty strong { color: #000000; font-weight: var(--fw-title); }
 
 /* "Username & password loaded from encrypted store" pill in CredsModal */
 .credsStored {
@@ -3563,8 +3563,8 @@
   background: rgba(0,0,0,0.10);
   border: 1px solid rgba(0,0,0,0.32);
   color: #474747;
-  font-size: .76rem;
-  font-weight: 600;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-label);
   align-self: flex-start;
 }
 .credsStored svg { flex-shrink: 0; color: #1c1c1c; }
@@ -3580,8 +3580,8 @@
   background: rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.22);
   color: #c6c6c6;
-  font-size: .72rem;
-  font-weight: 600;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-label);
   letter-spacing: .01em;
 }
 .vendorStaticPill::before {
@@ -3603,8 +3603,8 @@
 .prLabelLine {
   text-align: center;
   font-family: var(--mono);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-title);
   letter-spacing: 0.03em;
   color: #000000;
   padding: 8px 16px 10px;
@@ -3637,8 +3637,8 @@
 .prPortGlow { display: none; }
 .prPortLabel {
   font-family: var(--mono);
-  font-size: .6rem;
-  font-weight: 700;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: 0.18em;
   color: rgba(255,255,255,0.75);
   position: relative;
@@ -3647,7 +3647,7 @@
 .prPortNum {
   font-family: var(--mono);
   font-size: 2.1rem;
-  font-weight: 800;
+  font-weight: var(--fw-title);
   line-height: 1;
   color: #ffffff;
   letter-spacing: 0.02em;
@@ -3683,15 +3683,15 @@
 .prMetric:hover { background: transparent; border: none; }
 .prMetricLabel {
   font-size: .58rem;
-  font-weight: 700;
+  font-weight: var(--fw-title);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #999999;
 }
 .prMetricVal {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: .84rem;
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
   color: #000000;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -3707,8 +3707,8 @@
 }
 .prMetricConf {
   font-family: var(--mono);
-  font-size: .62rem;
-  font-weight: 600;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-label);
   color: #525252;
   padding: 1px 5px;
   border-radius: 4px;
@@ -3729,7 +3729,7 @@
   color: #2563eb;
   border: 1px solid rgba(37, 99, 235, 0.28);
   font-size: 9px;
-  font-weight: 800;
+  font-weight: var(--fw-title);
   letter-spacing: 0.03em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -3768,7 +3768,7 @@
 .prLinePort {
   font-family: var(--mono);
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: var(--fw-title);
   color: #ffffff;
   line-height: 1;
   letter-spacing: 0.02em;
@@ -3777,8 +3777,8 @@
 .prLineStatus {
   display: inline-flex; align-items: center; gap: 6px;
   color: var(--sc, #c6c6c6);
-  font-weight: 700;
-  font-size: .84rem;
+  font-weight: var(--fw-title);
+  font-size: var(--fs-body);
   letter-spacing: 0.01em;
 }
 .prLineDot {
@@ -3789,14 +3789,14 @@
 }
 .prLineItem {
   display: inline-flex; align-items: center; gap: 5px;
-  font-weight: 600;
+  font-weight: var(--fw-label);
   color: rgba(255,255,255,0.82);
-  font-size: .82rem;
+  font-size: var(--fs-body);
 }
 .prLineConf {
   font-family: var(--mono);
-  font-size: .6rem;
-  font-weight: 500;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-label);
   color: rgba(255,255,255,0.4);
 }
 .prLineSwatch {
@@ -3811,7 +3811,7 @@
   display: flex; align-items: flex-start; gap: 8px;
   padding: 6px 16px 10px;
   margin: 0 14px 12px;
-  font-size: .82rem;
+  font-size: var(--fs-body);
   min-height: 40px;
   background: transparent;
   border: none;
@@ -3827,7 +3827,7 @@
 }
 .prEndLabel {
   color: rgba(255,255,255,0.4);
-  font-size: .7rem;
+  font-size: var(--fs-label);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   flex-shrink: 0;
@@ -3885,7 +3885,7 @@
   display: inline-flex; align-items: center; gap: 4px;
   font-family: var(--mono);
   font-size: .58rem;
-  font-weight: 800;
+  font-weight: var(--fw-title);
   letter-spacing: 0.12em;
   padding: 2px 8px;
   border-radius: 999px;
@@ -3907,14 +3907,14 @@
   padding: 3px 8px;
   border-radius: 999px;
   font-family: var(--mono);
-  font-size: .7rem;
+  font-size: var(--fs-label);
   color: rgba(0,0,0,0.88);
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08);
 }
 .prEndChipKey {
-  font-size: .6rem;
-  font-weight: 700;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.4);
@@ -3965,8 +3965,8 @@
   color: #ffffff;
   font-family: var(--mono);
   letter-spacing: -0.01em;
-  font-weight: 800;
-  font-size: .98rem;
+  font-weight: var(--fw-title);
+  font-size: var(--fs-section);
   line-height: 1.2;
   /* Long unbreakable tokens (MAC / FQDN) were overflowing and pushing the reset
      button off-screen - shrink + ellipsis inside the flex row instead. */
@@ -3978,7 +3978,7 @@
 .prEndDim {
   color: rgba(255,255,255,0.5);
   font-family: var(--mono);
-  font-size: .76rem;
+  font-size: var(--fs-mono);
   letter-spacing: 0.01em;
 }
 .prEndReset, .prEndAction {
@@ -3986,7 +3986,7 @@
   display: inline-flex; align-items: center; gap: 5px;
   padding: 4px 10px;
   border-radius: 8px;
-  font-size: .72rem;
+  font-size: var(--fs-sub);
   color: rgba(255,255,255,0.75);
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.12);
@@ -4013,8 +4013,8 @@
   background: linear-gradient(135deg, rgba(0,0,0,0.18), rgba(0,0,0,0.14));
   border: 1px solid rgba(0,0,0,0.4);
   color: #ffffff;
-  font-size: .84rem;
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
   cursor: pointer;
   box-shadow:
     0 4px 18px rgba(0,0,0,0.18),
@@ -4026,7 +4026,7 @@
   box-shadow: 0 6px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .prConsoleBtn svg { opacity: 0.85; }
-.prConsoleTiming { color: rgba(0,0,0,0.6); font-family: var(--mono); font-size: .68rem; margin-left: 4px; }
+.prConsoleTiming { color: rgba(0,0,0,0.6); font-family: var(--mono); font-size: var(--fs-label); margin-left: 4px; }
 
 /* Feedback - bare row so it shares width with .prAnother and action rows */
 .prFb {
@@ -4044,11 +4044,11 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 .prFbQ {
-  font-size: .8rem;
+  font-size: var(--fs-body);
   line-height: 1.35;
   color: rgba(255,255,255,0.78);
 }
-.prFbQ strong { color: var(--ac, #000000); font-weight: 700; }
+.prFbQ strong { color: var(--ac, #000000); font-weight: var(--fw-title); }
 .prFbChips {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
@@ -4056,8 +4056,8 @@
   display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 9px 10px;
   border-radius: 10px;
-  font-size: .8rem;
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
   cursor: pointer;
   transition: transform .1s ease, box-shadow .15s ease, background .15s ease;
 }
@@ -4096,14 +4096,14 @@
   background: #ffffff;
   border: 1px solid #EFEFEF;
   color: #000000;
-  font-weight: 700;
+  font-weight: var(--fw-title);
   flex-shrink: 0;
 }
 .prFbHeadQ {
   flex: 1;
-  font-size: .9rem;
+  font-size: var(--fs-item);
   color: rgba(255,255,255,0.9);
-  font-weight: 600;
+  font-weight: var(--fw-label);
 }
 .prFbClose {
   background: transparent;
@@ -4125,14 +4125,14 @@
   flex: 1;
   padding: 11px 13px !important;
   border-radius: 10px !important;
-  font-size: 16px !important;
+  font-size: var(--fs-section) !important;
   font-family: var(--mono) !important;
 }
 .prFbSubmit {
   padding: 11px 16px;
   border-radius: 10px;
-  font-size: .82rem;
-  font-weight: 700;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-title);
   background: color-mix(in srgb, var(--btn-glow, #000000) 30%, rgba(0,0,0,0.4));
   border: 1px solid color-mix(in srgb, var(--btn-glow, #000000) 55%, transparent);
   color: #ffffff;
@@ -4152,11 +4152,11 @@
   border: 1px solid rgba(255,255,255,0.1);
 }
 .prTypeHead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.prTypeLabel { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: .65; }
-.prTypeCurrent { font-size: .86rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.prTypeLabel { font-size: var(--fs-sub); font-weight: var(--fw-title); text-transform: uppercase; letter-spacing: .04em; opacity: .65; }
+.prTypeCurrent { font-size: var(--fs-item); font-weight: var(--fw-title); display: inline-flex; align-items: center; gap: 6px; }
 .prTypeEdit {
   margin-left: auto;
-  font-size: .74rem; font-weight: 700;
+  font-size: var(--fs-sub); font-weight: var(--fw-title);
   padding: 5px 12px; border-radius: 999px;
   background: transparent; color: inherit;
   border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
@@ -4167,7 +4167,7 @@
 }
 .prTypeTile {
   padding: 9px 6px; border-radius: 9px;
-  font-size: .78rem; font-weight: 600;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.12);
   color: inherit; cursor: pointer;
@@ -4176,8 +4176,8 @@
 .prTypeTile:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.4); }
 .prTypeTile:disabled { opacity: .5; cursor: default; }
 .prTypeTileOn { border-color: var(--md-primary, #3b82f6) !important; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
-.prTypeDone { margin-top: 8px; font-size: .78rem; color: #34d399; font-weight: 600; }
-.prTypeErr  { margin-top: 8px; font-size: .78rem; color: #f87171; font-weight: 600; }
+.prTypeDone { margin-top: 8px; font-size: var(--fs-sub); color: #34d399; font-weight: var(--fw-label); }
+.prTypeErr  { margin-top: 8px; font-size: var(--fs-sub); color: #f87171; font-weight: var(--fw-label); }
 :global([data-theme='light']) .prTypeBlock { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.12); }
 :global([data-theme='light']) .prTypeEdit { border-color: rgba(0,0,0,0.2); }
 :global([data-theme='light']) .prTypeTile { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.14); }
@@ -4215,27 +4215,27 @@
   box-shadow: 0 0 10px var(--c, #ffffff);
 }
 .prColorName {
-  font-size: .68rem;
+  font-size: var(--fs-label);
   color: rgba(255,255,255,0.78);
-  font-weight: 500;
+  font-weight: var(--fw-label);
   letter-spacing: 0.01em;
 }
 
 .prFbSaving {
   display: flex; align-items: center; gap: 10px;
   color: rgba(255,255,255,0.7);
-  font-size: .84rem;
+  font-size: var(--fs-body);
 }
 .prFbDone {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 2px;
   color: #474747;
-  font-size: .86rem;
-  font-weight: 600;
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
 }
 .prFbErr {
   color: #474747;
-  font-size: .78rem;
+  font-size: var(--fs-sub);
 }
 
 /* Jump-to-another-port - same card shell as the feedback and button rows */
@@ -4251,7 +4251,7 @@
   flex: 1;
   padding: 10px 14px !important;
   border-radius: 12px !important;
-  font-size: 16px !important;
+  font-size: var(--fs-section) !important;
   background: rgba(0,0,0,0.55) !important;
   border: 1px solid rgba(255,255,255,0.14) !important;
   color: #ffffff !important;
@@ -4270,8 +4270,8 @@
 .prAnother button {
   padding: 10px 16px !important;
   border-radius: 12px !important;
-  font-size: .76rem !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-sub) !important;
+  font-weight: var(--fw-label) !important;
 }
 
 /* Bottom action bar - icon-only */
@@ -4538,16 +4538,16 @@
   background-clip: initial;
   -webkit-background-clip: initial;
   color: var(--md-on-surface);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
   line-height: 20px;
   letter-spacing: 0;
 }
 :global([data-theme='light']) .portCardSub {
   color: var(--md-on-surface);
   opacity: 0.65;
-  font-size: 12px;
-  font-weight: 400;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-body);
   line-height: 16px;
   margin-top: 2px;
 }
@@ -4605,8 +4605,8 @@
   gap: 6px;
 }
 .devicePickerLabel {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   line-height: 16px;
   text-transform: uppercase;
@@ -4644,15 +4644,15 @@
   display: flex; align-items: baseline; gap: 8px;
 }
 .devicePickerValueId {
-  font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+  font-size: var(--fs-section); font-weight: var(--fw-label); letter-spacing: -.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .devicePickerValueSub {
-  font-size: 12.5px; color: var(--md-on-surface); opacity: .55;
+  font-size: var(--fs-sub); color: var(--md-on-surface); opacity: .55;
   white-space: nowrap;
 }
 .devicePickerPlaceholder {
-  font-size: 14.5px; color: var(--md-on-surface); opacity: .5;
+  font-size: var(--fs-item); color: var(--md-on-surface); opacity: .5;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -4684,7 +4684,7 @@
   border-bottom: 1px solid var(--md-outline-variant, #ececec);
 }
 .devicePickerSheetTitle {
-  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  font-size: var(--fs-label); font-weight: var(--fw-title); letter-spacing: .1em; text-transform: uppercase;
   color: var(--md-on-surface); opacity: .6;
 }
 .devicePickerSheetClose {
@@ -4732,10 +4732,10 @@
   border-color: var(--md-on-surface);
 }
 .devicePickerOptionId {
-  font-size: 14.5px; font-weight: 600; letter-spacing: -.01em;
+  font-size: var(--fs-item); font-weight: var(--fw-label); letter-spacing: -.01em;
 }
 .devicePickerOptionMeta {
-  font-size: 12px; line-height: 1.35;
+  font-size: var(--fs-sub); line-height: 1.35;
   color: var(--md-on-surface); opacity: .58;
 }
 .devicePickerClear {
@@ -4747,7 +4747,7 @@
   border-radius: 10px;
   background: #ffffff;
   color: var(--md-on-surface);
-  font-family: var(--font); font-size: 13.5px; font-weight: 600;
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -4774,8 +4774,8 @@
   background: var(--md-surface-container-lowest);
   color: var(--md-on-surface);
   font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
   line-height: 18px;
   cursor: pointer;
   transition: border-color 0.14s, background-color 0.14s, color 0.14s;
@@ -4785,7 +4785,7 @@
   border-color: var(--md-primary);
   background: var(--md-primary);
   color: var(--md-on-primary);
-  font-weight: 700;
+  font-weight: var(--fw-title);
 }
 
 /* Empty-state "no switches detected" card */
@@ -4797,7 +4797,7 @@
   background: var(--md-surface-container-lowest);
   color: var(--md-on-surface);
   opacity: 0.7;
-  font-size: 13px;
+  font-size: var(--fs-body);
   text-align: center;
 }
 
@@ -5120,7 +5120,7 @@
   box-shadow:
     0 2px 8px rgba(0,0,0,0.18),
     0 1px 0 rgba(255, 255, 255, 0.5) inset;
-  font-weight: 700;
+  font-weight: var(--fw-title);
 }
 :global([data-theme='light']) .fbBtnYes:hover:not(:disabled) {
   /* Keep the resting palette - only deepen the shadow slightly so the
@@ -5139,7 +5139,7 @@
   box-shadow:
     0 2px 8px rgba(0,0,0,0.18),
     0 1px 0 rgba(255, 255, 255, 0.5) inset;
-  font-weight: 700;
+  font-weight: var(--fw-title);
 }
 :global([data-theme='light']) .fbBtnNo:hover:not(:disabled) {
   /* Match the Yes-hover: subtle shadow lift, no color flip. */
@@ -5307,7 +5307,7 @@
   color: #121212;
   -webkit-text-fill-color: #121212;
   background: none;
-  font-size: .78rem;
+  font-size: var(--fs-sub);
   letter-spacing: .16em;
 }
 :global([data-theme='light']) .loadSub {
@@ -5813,8 +5813,8 @@
 }
 :global([data-theme='light']) .heroLabelVal {
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-section) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: -0.005em !important;
   color: var(--md-on-surface, #121212) !important;
   background: none !important;
@@ -5823,8 +5823,8 @@
 :global([data-theme='light']) .heroLabelType {
   margin-left: auto !important;
   font-family: var(--font, inherit) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.10em !important;
   line-height: 14px !important;
   text-transform: uppercase !important;
@@ -5839,8 +5839,8 @@
   gap: 6px !important;
 }
 :global([data-theme='light']) .devicePickerLabel {
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-micro) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.10em !important;
   line-height: 14px !important;
   text-transform: uppercase !important;
@@ -5866,8 +5866,8 @@
   animation: none !important;
 }
 :global([data-theme='light']) .portCardTitle {
-  font-size: 13px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-title) !important;
   line-height: 18px !important;
   color: var(--md-on-surface, #121212) !important;
   -webkit-text-fill-color: var(--md-on-surface, #121212) !important;
@@ -5875,8 +5875,8 @@
   letter-spacing: 0 !important;
 }
 :global([data-theme='light']) .portCardSub {
-  font-size: 11px !important;
-  font-weight: 400 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-body) !important;
   line-height: 14px !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 0.6 !important;
@@ -5901,8 +5901,8 @@
   background: #ffffff !important;
   color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-label) !important;
   line-height: 18px !important;
   letter-spacing: 0 !important;
   cursor: pointer !important;
@@ -5919,7 +5919,7 @@
   background: var(--md-primary, #121212) !important;
   border: 1px solid var(--md-primary, #121212) !important;
   color: var(--md-on-primary, #FFFFFF) !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   opacity: 1 !important;
   box-shadow: none !important;
 }
@@ -5940,8 +5940,8 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   color: var(--md-on-surface, #121212) !important;
   font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: 16px !important;
-  font-weight: 500 !important;
+  font-size: var(--fs-section) !important;
+  font-weight: var(--fw-label) !important;
   box-shadow: none !important;
   outline: none !important;
 }
@@ -5961,8 +5961,8 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   color: var(--md-on-surface, #121212) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-body) !important;
+  font-weight: var(--fw-label) !important;
   box-shadow: none !important;
   letter-spacing: 0 !important;
   display: inline-flex !important;
@@ -5997,8 +5997,8 @@
 }
 :global([data-theme='light']) .fbPrompt {
   padding-left: 10px !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-micro) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.10em !important;
   line-height: 14px !important;
   text-transform: uppercase !important;
@@ -6025,8 +6025,8 @@
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   color: var(--md-on-surface, #121212) !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-item) !important;
+  font-weight: var(--fw-label) !important;
   box-shadow: none !important;
 }
 /* Yes button - green border signals the recommended/confirm action. */
@@ -6058,10 +6058,10 @@
 .testOverlayHead {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 14px; border-bottom: 1px solid #f0f0f0;
-  font-size: 13px; font-weight: 700; color: #121212;
+  font-size: var(--fs-body); font-weight: var(--fw-title); color: #121212;
 }
 .testBadge {
-  font-size: 10px; font-weight: 800; letter-spacing: .08em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: .08em;
   padding: 3px 8px; border-radius: 999px;
   background: #121212; color: #fff;
 }
@@ -6071,7 +6071,7 @@
 }
 .testLegend {
   display: flex; flex-wrap: wrap; gap: 14px;
-  padding: 11px 14px; font-size: 12px; font-weight: 600; color: #717171;
+  padding: 11px 14px; font-size: var(--fs-sub); font-weight: var(--fw-label); color: #717171;
 }
 .testLegend span { display: inline-flex; align-items: center; gap: 6px; }
 .testLegend i {
@@ -6082,7 +6082,7 @@
 /* ── In-place port-type switcher in the located view ── */
 .portSwitchRow { margin: 4px 0 16px; }
 .portSwitchLabel {
-  display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  display: block; font-size: var(--fs-label); font-weight: var(--fw-title); letter-spacing: .06em;
   text-transform: uppercase; color: #6b6b6b; margin-bottom: 8px;
 }
 
@@ -6096,7 +6096,7 @@
   display: flex; align-items: flex-start; gap: 9px;
   margin: 2px 0 4px; padding: 11px 13px;
   border: 1px solid #f0dcb0; background: #ffffff; border-radius: 12px;
-  color: #8a5a12; font-size: 12.5px; line-height: 1.45; font-weight: 500;
+  color: #8a5a12; font-size: var(--fs-sub); line-height: 1.45; font-weight: var(--fw-label);
 }
 .prLowConf svg { flex: 0 0 auto; margin-top: 1px; color: #b07213; }
 
@@ -6106,7 +6106,7 @@
 .prNextStep {
   margin: 10px 0 2px;
   padding: 9px 12px;
-  font-size: .82rem;
+  font-size: var(--fs-body);
   line-height: 1.45;
   color: rgba(0,0,0,0.78);
   background: var(--accent-soft, rgba(18,18,18,0.06));
@@ -6123,7 +6123,7 @@
   border: 0; border-radius: 10px;
   background: transparent;
   color: var(--muted, #5c6878);
-  font-size: 13.5px; font-weight: 600;
+  font-size: var(--fs-body); font-weight: var(--fw-label);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .stepBack:active { background: rgba(0,0,0,.05); }
@@ -6139,7 +6139,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   padding: 8px 12px;
   border-radius: 14px;
-  font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; line-height: 1.25;
+  font-size: var(--fs-item); font-weight: var(--fw-title); letter-spacing: -.01em; line-height: 1.25;
   text-align: center; text-wrap: balance;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: transform .1s ease;
@@ -6158,23 +6158,23 @@
 
 
 /* Why a re-read did not happen, in the server's own words. */
-.reanalyzeNote { margin: 0 0 8px; font-size: 0.82rem; color: var(--md-error, #b3261e); }
+.reanalyzeNote { margin: 0 0 8px; font-size: var(--fs-body); color: var(--md-error, #b3261e); }
 
 /* Which rack this is, in the results header. The scan's own id is a hash of
    the photograph and means nothing to the person holding the phone; the id on
    the cabinet does, so that leads and the hash is not shown. */
 .headerKind {
   display: block; font-size: .56rem; letter-spacing: .12em; text-transform: uppercase;
-  color: #8a8a8a; font-weight: 600; line-height: 1.4;
+  color: #8a8a8a; font-weight: var(--fw-label); line-height: 1.4;
 }
 .headerRackAsk {
-  font-family: var(--sans, inherit); font-size: .58rem; font-weight: 500;
+  font-family: var(--sans, inherit); font-size: .58rem; font-weight: var(--fw-label);
   letter-spacing: .02em; color: #8a6100;
   border: 1px solid #e8d7ae; background: #fbf3e0; border-radius: 2px; padding: 0 5px;
 }
 .headerWhere {
   display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;
-  font-size: .62rem; color: #6b6b6b; margin-top: 1px; line-height: 1.35;
+  font-size: var(--fs-micro); color: #6b6b6b; margin-top: 1px; line-height: 1.35;
 }
 /* One separator between the facts, drawn rather than typed, so the line reads
    as one sentence at any width. */

@@ -37,7 +37,7 @@
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #c6c6c6;
-  font-size: 18px; font-weight: 300;
+  font-size: var(--fs-head); font-weight: var(--fw-body);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
@@ -73,8 +73,8 @@
 .title {
   margin: 0 0 8px;
   text-align: center;
-  font-size: 1.12rem;
-  font-weight: 700;
+  font-size: var(--fs-head);
+  font-weight: var(--fw-title);
   color: #ffffff;
   letter-spacing: 0.01em;
 }
@@ -82,7 +82,7 @@
 .body {
   margin: 0 0 18px;
   text-align: center;
-  font-size: 0.86rem;
+  font-size: var(--fs-item);
   line-height: 1.5;
   color: rgba(244,244,244,0.78);
 }
@@ -94,7 +94,7 @@
   background: rgba(0,0,0,0.1);
   border: 1px solid rgba(0,0,0,0.3);
   color: #474747;
-  font-size: 0.78rem;
+  font-size: var(--fs-sub);
   text-align: center;
 }
 
@@ -107,8 +107,8 @@
   flex: 1;
   padding: 11px 14px;
   border-radius: 11px;
-  font-size: 0.84rem;
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
   cursor: pointer;
   transition: all 0.18s;
   border: 1px solid transparent;
@@ -160,8 +160,8 @@
   background: rgba(0, 0, 0, 0.25);
   border-radius: 6px;
   padding: 2px 6px;
-  font-size: 0.65rem;
-  font-weight: 800;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: 0.08em;
 }
 
@@ -176,16 +176,16 @@
   width: fit-content;
 }
 .reqLabel {
-  font-size: 0.72rem;
+  font-size: var(--fs-sub);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: rgba(0,0,0,0.85);
-  font-weight: 600;
+  font-weight: var(--fw-label);
 }
 .reqNum {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-title);
   color: #ffffff;
 }
 
@@ -216,13 +216,13 @@
   text-align: center;
 }
 .statValue {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: var(--fs-head);
+  font-weight: var(--fw-title);
   color: #ffffff;
   line-height: 1.1;
 }
 .statLabel {
-  font-size: 0.62rem;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(0,0,0,0.85);
@@ -230,11 +230,11 @@
 }
 
 .detailsHeader {
-  font-size: 0.7rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(0,0,0,0.75);
-  font-weight: 600;
+  font-weight: var(--fw-label);
   margin: 4px 2px 8px;
 }
 .deviceList {
@@ -256,19 +256,19 @@
   gap: 8px;
 }
 .deviceName {
-  font-weight: 700;
-  font-size: 0.82rem;
+  font-weight: var(--fw-title);
+  font-size: var(--fs-body);
   color: #f4f4f4;
 }
 .uTag {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 0.62rem;
+  font-size: var(--fs-micro);
   color: rgba(0,0,0,0.85);
   background: rgba(0,0,0,0.1);
   border: 1px solid rgba(0,0,0,0.25);
   padding: 1px 5px;
   border-radius: 5px;
-  font-weight: 600;
+  font-weight: var(--fw-label);
 }
 
 .cableList {
@@ -281,7 +281,7 @@
 .cableRow {
   display: flex; align-items: center;
   gap: 8px;
-  font-size: 0.7rem;
+  font-size: var(--fs-label);
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(0,0,0,0.1);
   border-radius: 6px;
@@ -294,18 +294,18 @@
 }
 .cableArrow {
   color: rgba(0,0,0,0.7);
-  font-weight: 600;
+  font-weight: var(--fw-label);
 }
 .tagSm {
   background: rgba(0,0,0,0.1);
   border: 1px solid rgba(0,0,0,0.28);
   border-radius: 5px;
   padding: 0 5px;
-  font-size: 0.6rem;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #c6c6c6;
-  font-weight: 600;
+  font-weight: var(--fw-label);
   margin-left: auto;
 }
 .deviceMeta {
@@ -318,19 +318,19 @@
   border: 1px solid rgba(0,0,0,0.3);
   border-radius: 6px;
   padding: 1px 6px;
-  font-size: 0.62rem;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #c6c6c6;
-  font-weight: 600;
+  font-weight: var(--fw-label);
 }
 .metaText {
-  font-size: 0.72rem;
+  font-size: var(--fs-sub);
   color: rgba(244,244,244,0.72);
 }
 .metaTextMono {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 0.7rem;
+  font-size: var(--fs-label);
   color: rgba(0,0,0,0.85);
 }
 

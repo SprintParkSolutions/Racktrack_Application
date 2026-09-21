@@ -75,7 +75,7 @@
 /* Sits well back, like the card placeholders on the browse grid - a
    dropzone that shouts is a dropzone that competes with the fields. */
 .photoIcon { color: var(--mkt-ink, #121212); opacity: 0.28; }
-.photoMain { font-size: 13.5px; font-weight: 600; }
+.photoMain { font-size: var(--fs-body); font-weight: var(--fw-label); }
 
 .photoCard {
   display: flex; gap: 14px; align-items: stretch;
@@ -94,7 +94,7 @@
 }
 .photoStatus {
   display: inline-flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 600;
+  font-size: var(--fs-body); font-weight: var(--fw-label);
   color: var(--mkt-ink, #121212);
 }
 .photoSpinner { width: 14px; height: 14px; border-width: 1.5px; }

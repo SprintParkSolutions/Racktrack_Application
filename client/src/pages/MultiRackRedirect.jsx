@@ -45,7 +45,7 @@ export default function MultiRackRedirect() {
       alignItems: 'center',
       justifyContent: 'center',
       color: 'rgba(0,0,0,0.6)',
-      fontSize: 13,
+      fontSize: 'var(--fs-body)',
     }}>
       {error ? `Couldn’t open scan: ${error}` : 'Opening scan…'}
     </div>

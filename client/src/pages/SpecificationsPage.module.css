@@ -82,8 +82,8 @@
   gap: 12px;
 }
 .title {
-  font-size: 1.05rem;
-  font-weight: 800;
+  font-size: var(--fs-head);
+  font-weight: var(--fw-title);
   letter-spacing: -0.02em;
   color: var(--t1);
   flex: 1;
@@ -106,19 +106,19 @@
   display: flex; flex-direction: column; gap: 6px;
 }
 .eyebrow {
-  font-size: .64rem; font-weight: 700;
+  font-size: var(--fs-micro); font-weight: var(--fw-title);
   color: var(--c2);
   letter-spacing: .08em; text-transform: uppercase;
 }
 .h2 {
   font-size: clamp(1.25rem, 5.5vw, 1.6rem);
-  font-weight: 800;
+  font-weight: var(--fw-title);
   line-height: 1.2;
   letter-spacing: -0.03em;
   color: var(--t1);
 }
 .sub {
-  font-size: .85rem;
+  font-size: var(--fs-item);
   color: var(--muted);
   line-height: 1.45;
 }
@@ -132,8 +132,8 @@
   display: flex; flex-direction: column; gap: 6px;
 }
 .label {
-  font-size: .72rem;
-  font-weight: 600;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-label);
   color: var(--muted);
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -145,7 +145,7 @@
   background: var(--card);
   border: 1px solid var(--gb);
   color: var(--t1);
-  font-size: 16px;
+  font-size: var(--fs-section);
   font-family: var(--font);
   outline: none;
   transition: border-color .15s, box-shadow .15s;
@@ -175,14 +175,14 @@
 .suggestItem {
   padding: 9px 12px;
   border-radius: 9px;
-  font-size: .88rem;
+  font-size: var(--fs-item);
   color: var(--t1);
   cursor: pointer;
 }
 .suggestItem:hover { background: var(--cg2); color: var(--c2); }
 
 .fieldHint {
-  font-size: .72rem;
+  font-size: var(--fs-sub);
   color: var(--muted);
 }
 
@@ -198,7 +198,7 @@
   background: var(--rg);
   border: 1px solid var(--gbr);
   color: var(--red);
-  font-size: .85rem;
+  font-size: var(--fs-item);
   line-height: 1.4;
 }
 
@@ -219,7 +219,7 @@
   gap: 12px;
 }
 .summaryBody {
-  font-size: .92rem;
+  font-size: var(--fs-section);
   line-height: 1.5;
   color: var(--t2);
   margin: 0;
@@ -237,13 +237,13 @@
   gap: 12px;
   padding: 9px 0;
   border-bottom: 1px dashed var(--gbw);
-  font-size: .88rem;
+  font-size: var(--fs-item);
   line-height: 1.4;
 }
 .highlightRow:last-child { border-bottom: none; }
 .highlightLabel {
-  font-size: .7rem;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   color: var(--c2);
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -251,7 +251,7 @@
 }
 .highlightVal {
   color: var(--t1);
-  font-weight: 600;
+  font-weight: var(--fw-label);
   word-break: break-word;
 }
 .summaryActions {
@@ -260,7 +260,7 @@
 .summaryBtn {
   flex: 1 1 auto;
   min-width: 140px;
-  font-size: .85rem !important;
+  font-size: var(--fs-item) !important;
   padding: 10px 14px !important;
 }
 
@@ -283,22 +283,22 @@
   margin-bottom: 12px;
 }
 .resultVendor {
-  font-size: .7rem;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   color: var(--c2);
   letter-spacing: .05em;
   text-transform: uppercase;
 }
 .resultModel {
-  font-size: 1.1rem;
-  font-weight: 800;
+  font-size: var(--fs-head);
+  font-weight: var(--fw-title);
   color: var(--t1);
   letter-spacing: -0.02em;
   margin-top: 2px;
 }
 .sourceLink {
-  font-size: .72rem;
-  font-weight: 600;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-label);
   color: var(--c2);
   text-decoration: none;
   padding: 6px 10px;
@@ -318,13 +318,13 @@
   gap: 10px;
   padding: 9px 0;
   border-bottom: 1px dashed var(--gbw);
-  font-size: .85rem;
+  font-size: var(--fs-item);
   line-height: 1.4;
 }
 .specRow:last-child { border-bottom: none; }
 .specKey {
   color: var(--muted);
-  font-weight: 600;
+  font-weight: var(--fw-label);
 }
 .specVal {
   color: var(--t1);
@@ -359,7 +359,7 @@
 }
 .title {
   color: var(--md-on-surface, #121212);
-  font-weight: 700;
+  font-weight: var(--fw-title);
   letter-spacing: -0.01em;
 }
 
@@ -384,14 +384,14 @@
 .eyebrow {
   color: var(--md-on-surface, #121212);
   opacity: 1;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
 .h2 {
   color: var(--md-on-surface, #121212);
-  font-weight: 700;
+  font-weight: var(--fw-title);
   letter-spacing: -0.02em;
 }
 .sub {
@@ -451,8 +451,8 @@
 .resultVendor {
   color: var(--md-on-surface, #121212) !important;
   opacity: 1 !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  font-size: var(--fs-label) !important;
+  font-weight: var(--fw-title) !important;
   letter-spacing: 0.10em !important;
   text-transform: uppercase !important;
 }
@@ -463,10 +463,10 @@
 .summaryBody,
 .resultModel {
   color: var(--md-on-surface, #121212);
-  font-weight: 600;
+  font-weight: var(--fw-label);
 }
 .specVal {
-  font-weight: 500;
+  font-weight: var(--fw-label);
 }
 
 /* Error banner - flat, red border + red text, no glow. */
@@ -521,7 +521,7 @@
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   color: var(--md-on-surface, #121212) !important;
-  font-weight: 600;
+  font-weight: var(--fw-label);
   box-shadow: none !important;
   filter: none !important;
 }
@@ -538,7 +538,7 @@
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   color: var(--md-on-surface, #121212) !important;
-  font-weight: 600 !important;
+  font-weight: var(--fw-label) !important;
   box-shadow: none !important;
   filter: none !important;
   backdrop-filter: none !important;
@@ -550,7 +550,7 @@
 .cta:focus-visible,
 .summaryBtn:focus-visible {
   border-color: var(--md-on-surface, #121212) !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
   box-shadow: none !important;
   outline: none !important;
 }
@@ -655,7 +655,7 @@
 .specs [aria-selected="true"][class*="pill"],
 .specs [aria-selected="true"][class*="tag"] {
   border-color: var(--md-on-surface, #121212) !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-title) !important;
 }
 
 /* ── Generic card / tile / panel / row / header fallbacks. ── */

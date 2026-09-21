@@ -127,15 +127,15 @@
   /* The 44px indent and 26px floor here were both clearance for the mascot
      that used to sit on this corner. Without it the title starts at the card's
      own padding, like every other heading in the app. */
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-title);
   letter-spacing: -0.01em;
   color: var(--md-on-surface, #121417);
 }
 
 .bubbleBody {
   margin: 0 0 14px;
-  font-size: 13px;
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--md-on-surface-variant, #4c4546);
 }
@@ -152,8 +152,8 @@
   appearance: none;
   border-radius: 999px;
   padding: 8px 14px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-title);
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }

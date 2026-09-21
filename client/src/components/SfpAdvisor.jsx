@@ -550,13 +550,13 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
           <div style={{ marginTop: 16 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{
-                fontSize: '.78rem', fontWeight: 800, letterSpacing: '.02em',
+                fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)', letterSpacing: '.02em',
                 color: 'var(--t1, #c6c6c6)',
               }}>
                 Plug-and-play cables
               </span>
               <span style={{
-                fontSize: '.58rem', fontWeight: 700,
+                fontSize: '.58rem', fontWeight: 'var(--fw-title)',
                 letterSpacing: '.10em', textTransform: 'uppercase',
                 color: 'rgba(0,0,0,0.55)',
               }}>
@@ -597,7 +597,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
                       <SfpModuleImage module={c} size="compact" />
                     </div>
                     <span style={{
-                      fontSize: '.68rem', fontWeight: 700,
+                      fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)',
                       color: '#474747',
                       letterSpacing: '.04em',
                     }}>
@@ -605,7 +605,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
                     </span>
                     <span style={{
                       fontFamily: 'var(--mono, ui-monospace, monospace)',
-                      fontSize: '.7rem', fontWeight: 700,
+                      fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)',
                       color: 'var(--t1, #c6c6c6)',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
@@ -618,7 +618,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
                     }}>
                       {c.price && (
                         <span style={{
-                          fontSize: '.86rem', fontWeight: 800,
+                          fontSize: 'var(--fs-item)', fontWeight: 'var(--fw-title)',
                           color: '#474747',
                         }}>
                           {c.price}
@@ -626,7 +626,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
                       )}
                       {c.sourceUrl && (
                         <span style={{
-                          fontSize: '.66rem', fontWeight: 700,
+                          fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)',
                           color: 'rgba(0,0,0,0.65)',
                         }}>
                           Buy →

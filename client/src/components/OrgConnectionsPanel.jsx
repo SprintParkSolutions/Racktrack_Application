@@ -62,26 +62,26 @@ export default function OrgConnectionsPanel() {
   };
 
   const card = { border: '1px solid #ececec', borderRadius: 14, background: '#fff', padding: 16 };
-  const btn = { fontSize: 13, fontWeight: 600, padding: '9px 14px', borderRadius: 10, cursor: 'pointer' };
+  const btn = { fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-label)', padding: '9px 14px', borderRadius: 10, cursor: 'pointer' };
   const primaryBtn = { ...btn, background: '#000000', color: '#fff', border: '1px solid #000000' };
   const ghostBtn = { ...btn, background: '#fff', color: '#333', border: '1px solid #ececec' };
-  const dangerBtn = { ...btn, background: '#fff', color: '#dc2626', border: '1px solid rgba(220,38,38,0.35)', padding: '7px 12px', fontSize: 12 };
-  const label = { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b6b6b', marginBottom: 6 };
+  const dangerBtn = { ...btn, background: '#fff', color: '#dc2626', border: '1px solid rgba(220,38,38,0.35)', padding: '7px 12px', fontSize: 'var(--fs-sub)' };
+  const label = { display: 'block', fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b6b6b', marginBottom: 6 };
   // fontSize 16 (not smaller): iOS Safari auto-zooms the viewport when a
   // focused input is under 16px and never restores the scale on blur.
-  const input = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 10, border: '1px solid #e2e2e2', fontSize: 16, marginBottom: 12 };
+  const input = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 10, border: '1px solid #e2e2e2', fontSize: 'var(--fs-section)', marginBottom: 12 };
 
   return (
     <section style={{ marginTop: 28 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1c1c1c' }}>Organization integrations</h3>
+        <h3 style={{ margin: 0, fontSize: 'var(--fs-section)', fontWeight: 'var(--fw-title)', color: '#1c1c1c' }}>Organization integrations</h3>
         {!formOpen && (
           <button type="button" style={primaryBtn} onClick={() => { setFormError(null); setFormOpen(true); }}>
             + Add integration
           </button>
         )}
       </div>
-      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#6b6b6b', lineHeight: 1.5, maxWidth: 640 }}>
+      <p style={{ margin: '0 0 14px', fontSize: 'var(--fs-body)', color: '#6b6b6b', lineHeight: 1.5, maxWidth: 640 }}>
         Set your organization's credentials once. They are stored <strong>encrypted</strong> and{' '}
         <strong>never shown again</strong>. To change one, enter it again.
       </p>
@@ -110,8 +110,8 @@ export default function OrgConnectionsPanel() {
                 onChange={e => setSecret(s => ({ ...s, [f.key]: e.target.value }))} />
             </div>
           ))}
-          {info.hint && <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6b6b6b' }}>{info.hint}</p>}
-          {formError && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{formError}</div>}
+          {info.hint && <p style={{ margin: '0 0 12px', fontSize: 'var(--fs-sub)', color: '#6b6b6b' }}>{info.hint}</p>}
+          {formError && <div style={{ color: '#dc2626', fontSize: 'var(--fs-body)', marginBottom: 12 }}>{formError}</div>}
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" style={ghostBtn} onClick={() => setFormOpen(false)} disabled={saving}>Cancel</button>
@@ -131,10 +131,10 @@ export default function OrgConnectionsPanel() {
           {profiles.map(p => (
             <div key={p.id} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
               <div>
-                <div style={{ fontWeight: 700, color: '#1c1c1c', fontSize: 14 }}>
-                  {p.name} <span style={{ fontSize: 12, fontWeight: 600, color: '#6b6b6b' }}>· {TYPE_INFO[p.type]?.label || p.type}</span>
+                <div style={{ fontWeight: 'var(--fw-title)', color: '#1c1c1c', fontSize: 'var(--fs-item)' }}>
+                  {p.name} <span style={{ fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-label)', color: '#6b6b6b' }}>· {TYPE_INFO[p.type]?.label || p.type}</span>
                 </div>
-                <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 2 }}>● Configured</div>
+                <div style={{ fontSize: 'var(--fs-sub)', color: '#16a34a', fontWeight: 'var(--fw-label)', marginTop: 2 }}>● Configured</div>
               </div>
               <button type="button" style={dangerBtn} onClick={() => onRemove(p)}>Remove</button>
             </div>

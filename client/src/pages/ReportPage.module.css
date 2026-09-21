@@ -35,20 +35,20 @@
 }
 .title {
   flex: 1; margin: 0;
-  font-size: 20px; font-weight: 650; letter-spacing: -0.01em; color: var(--text);
+  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em; color: var(--text);
 }
 
 /* ── Which rack, when ── */
 .hero { display: flex; flex-direction: column; gap: 1px; padding: 4px 16px 0; }
 .heroMake {
-  font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
-  color: var(--muted); font-weight: 700;
+  font-size: var(--fs-label); letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-title);
 }
 .heroModel {
-  font-size: 24px; font-weight: 700; letter-spacing: -.02em;
+  font-size: 24px; font-weight: var(--fw-title); letter-spacing: -.02em;
   color: var(--text); line-height: 1.15; overflow-wrap: anywhere;
 }
-.heroSub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.heroSub { font-size: var(--fs-sub); color: var(--muted); margin-top: 3px; }
 
 /* At a glance. */
 .glance {
@@ -62,11 +62,11 @@
 .portsHead { display: flex; align-items: baseline; gap: 10px; }
 .portsHead span {
   flex: 1;
-  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--muted); font-weight: 700;
+  font-size: var(--fs-label); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-title);
 }
 .portsHead b {
-  font-size: 15px; font-weight: 700; color: var(--text);
+  font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 .bar {
@@ -76,9 +76,9 @@
 .bar i { display: block; height: 100%; background: #0f7b4f; border-radius: 999px; }
 .portsFoot {
   display: flex; gap: 16px;
-  font-size: 12px; color: var(--muted);
+  font-size: var(--fs-sub); color: var(--muted);
 }
-.portsFoot b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.portsFoot b { color: var(--text); font-weight: var(--fw-title); font-variant-numeric: tabular-nums; }
 .portsFoot span:last-child { margin-left: auto; font-variant-numeric: tabular-nums; }
 
 /* The rest, in a grid so the columns line up however many there are. */
@@ -88,12 +88,12 @@
 }
 .grid > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .grid b {
-  font-size: 20px; font-weight: 700; letter-spacing: -.02em;
+  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -.02em;
   color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1;
 }
 .grid span {
-  font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600;
+  font-size: var(--fs-micro); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-label);
 }
 .up { color: #0f7b4f; }
 .down { color: #c0392b; }
@@ -106,14 +106,14 @@
 }
 .noteInfo { border-left-color: #b26a00; }
 .noteBad { border-left-color: #c0392b; }
-.note h3 { margin: 0 0 5px; font-size: 14.5px; font-weight: 650; color: var(--text); }
-.note p { margin: 0 0 6px; font-size: 13px; line-height: 1.55; color: var(--muted); }
+.note h3 { margin: 0 0 5px; font-size: var(--fs-item); font-weight: var(--fw-title); color: var(--text); }
+.note p { margin: 0 0 6px; font-size: var(--fs-body); line-height: 1.55; color: var(--muted); }
 .hint { font-style: italic; }
 .linkBtn {
   display: inline-block; margin-top: 6px;
-  font-size: 13px; font-weight: 700; color: #0f7b4f; text-decoration: none;
+  font-size: var(--fs-body); font-weight: var(--fw-title); color: #0f7b4f; text-decoration: none;
 }
-.noteOk { margin: 0 16px 10px; font-size: 12.5px; color: #0f7b4f; }
+.noteOk { margin: 0 16px 10px; font-size: var(--fs-sub); color: #0f7b4f; }
 
 /* ── A band ── */
 .section { display: flex; flex-direction: column; }
@@ -123,11 +123,11 @@
 }
 .secHead h2 {
   flex: 1; margin: 0;
-  font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
-  color: var(--muted); font-weight: 700;
+  font-size: var(--fs-label); letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-title);
 }
-.secHead span { font-size: 11.5px; color: var(--muted); }
-.emptyLine { margin: 0; padding: 0 16px 12px; font-size: 13px; color: var(--muted); }
+.secHead span { font-size: var(--fs-label); color: var(--muted); }
+.emptyLine { margin: 0; padding: 0 16px 12px; font-size: var(--fs-body); color: var(--muted); }
 
 /* ── One device ── */
 .rows { display: flex; flex-direction: column; }
@@ -138,42 +138,42 @@
 }
 .u {
   flex: none; width: 40px; padding-top: 1px;
-  font-size: 13px; font-weight: 700; color: var(--text);
+  font-size: var(--fs-body); font-weight: var(--fw-title); color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.uNone { color: var(--muted); font-weight: 600; }
+.uNone { color: var(--muted); font-weight: var(--fw-label); }
 .rowMain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .rowTop { display: flex; align-items: baseline; gap: 10px; }
 .rowTitle {
   flex: 1; min-width: 0;
-  font-size: 15px; font-weight: 650; color: var(--text);
+  font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text);
   letter-spacing: -.01em; overflow-wrap: anywhere;
 }
 .tag {
   flex: none;
-  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
-  font-weight: 700; color: #0f7b4f; white-space: nowrap;
+  font-size: var(--fs-micro); letter-spacing: .06em; text-transform: uppercase;
+  font-weight: var(--fw-title); color: #0f7b4f; white-space: nowrap;
 }
 /* The same tag, for a match no person has confirmed. Amber and differently
    worded: the words say it, the colour only agrees with them. */
 .tagProposal {
   flex: none;
-  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
-  font-weight: 700; color: #b26a00; white-space: nowrap;
+  font-size: var(--fs-micro); letter-spacing: .06em; text-transform: uppercase;
+  font-weight: var(--fw-title); color: #b26a00; white-space: nowrap;
 }
-.proposalLine { margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; color: #b26a00; }
+.proposalLine { margin: 3px 0 0; font-size: var(--fs-sub); line-height: 1.45; color: #b26a00; }
 .proposalNote {
   margin: 0 16px 12px;
   padding: 10px 12px;
   border-radius: 10px;
   background: rgba(180,83,9,.07); border: 1px solid rgba(180,83,9,.26);
-  font-size: 13px; line-height: 1.5; color: var(--text);
+  font-size: var(--fs-body); line-height: 1.5; color: var(--text);
 }
 
 /* What it is. */
 .said {
   margin: 1px 0 0;
-  font-size: 14px; font-weight: 650; color: var(--text);
+  font-size: var(--fs-item); font-weight: var(--fw-title); color: var(--text);
   letter-spacing: -.01em; line-height: 1.4; overflow-wrap: anywhere;
 }
 
@@ -182,12 +182,12 @@
 .stats { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 7px; }
 .stats > div { display: flex; align-items: baseline; gap: 5px; }
 .stats b {
-  font-size: 16px; font-weight: 700; letter-spacing: -.02em;
+  font-size: var(--fs-section); font-weight: var(--fw-title); letter-spacing: -.02em;
   color: var(--text); font-variant-numeric: tabular-nums;
 }
 .stats span {
-  font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600;
+  font-size: var(--fs-micro); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-label);
 }
 
 /* Who it is: label and value, so a long firmware string cannot be mistaken
@@ -195,11 +195,11 @@
 .ids { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 3px 16px; }
 .ids > div { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .ids dt {
-  margin: 0; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600; white-space: nowrap;
+  margin: 0; font-size: var(--fs-micro); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-label); white-space: nowrap;
 }
 .ids dd {
-  margin: 0; font-size: 12.5px; color: var(--text);
+  margin: 0; font-size: var(--fs-sub); color: var(--text);
   font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
 }
 
@@ -207,7 +207,7 @@
 .more {
   align-self: flex-start; margin-top: 4px;
   border: 0; background: transparent; padding: 2px 0;
-  font-family: var(--font); font-size: 12.5px; font-weight: 700;
+  font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-title);
   color: #0f7b4f; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 
@@ -220,26 +220,26 @@
 }
 .portName {
   flex: none; min-width: 68px;
-  font-size: 12.5px; font-weight: 650; color: var(--text);
+  font-size: var(--fs-sub); font-weight: var(--fw-title); color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 .portFacts {
   flex: 1; min-width: 0;
   display: flex; flex-wrap: wrap; gap: 10px;
-  font-size: 12px; color: var(--muted);
+  font-size: var(--fs-sub); color: var(--muted);
 }
-.portNote { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); }
+.portNote { margin: 8px 0 0; font-size: var(--fs-label); color: var(--muted); }
 
 /* ── Cables, neighbours, VLANs, addresses ── */
 .sub { display: flex; flex-direction: column; }
 .sub h3 {
   display: flex; align-items: baseline; gap: 8px;
   margin: 14px 0 2px; padding: 0 16px;
-  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--muted); font-weight: 700;
+  font-size: var(--fs-label); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-title);
 }
-.count { font-size: 12px; color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
-.subLine { margin: 0; padding: 0 16px; font-size: 12.5px; color: var(--muted); }
+.count { font-size: var(--fs-sub); color: var(--text); font-weight: var(--fw-title); font-variant-numeric: tabular-nums; }
+.subLine { margin: 0; padding: 0 16px; font-size: var(--fs-sub); color: var(--muted); }
 
 .links { list-style: none; margin: 0; padding: 0; }
 .links li {
@@ -247,29 +247,29 @@
   padding: 8px 16px;
   border-top: 1px solid var(--border, rgba(0,0,0,.06));
 }
-.end { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
-.end b { color: var(--text); font-weight: 650; }
-.arrow { color: var(--muted); font-size: 12px; }
+.end { font-size: var(--fs-sub); color: var(--muted); overflow-wrap: anywhere; }
+.end b { color: var(--text); font-weight: var(--fw-title); }
+.arrow { color: var(--muted); font-size: var(--fs-sub); }
 .proof {
   margin-left: auto;
-  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
-  font-weight: 700; color: var(--muted); white-space: nowrap;
+  font-size: var(--fs-micro); letter-spacing: .06em; text-transform: uppercase;
+  font-weight: var(--fw-title); color: var(--muted); white-space: nowrap;
 }
 .proofGood { color: #0f7b4f; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 16px 0; }
 .chip {
-  font-size: 12px; color: var(--muted);
+  font-size: var(--fs-sub); color: var(--muted);
   padding: 3px 8px; border-radius: 999px;
   background: var(--bg2, #f1f3f5);
   font-variant-numeric: tabular-nums;
 }
-.chip b { color: var(--text); font-weight: 700; }
+.chip b { color: var(--text); font-weight: var(--fw-title); }
 
 /* ── Working ── */
 .working {
   display: flex; align-items: center; gap: 9px;
-  margin: 0; padding: 20px 16px; font-size: 13.5px; color: var(--muted);
+  margin: 0; padding: 20px 16px; font-size: var(--fs-body); color: var(--muted);
 }
 .spinner {
   width: 14px; height: 14px; flex: none;
@@ -296,7 +296,7 @@
   transition: background-color .14s;
 }
 .action span {
-  font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  font-size: var(--fs-label); font-weight: var(--fw-title); letter-spacing: .04em; text-transform: uppercase;
 }
 .action:disabled { opacity: .4; cursor: default; }
 .action:active { background: var(--bg2, rgba(0,0,0,.04)); }
@@ -323,7 +323,7 @@
   padding: 11px 12px;
   border: 0; border-radius: 8px;
   background: transparent; color: var(--text);
-  font-family: var(--font); font-size: 14px; font-weight: 600;
+  font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-label);
   text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .menu button:active { background: var(--bg2, rgba(0,0,0,.05)); }
@@ -337,7 +337,7 @@
   font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .rowHead .rowTop { grid-column: 1; }
-.rowSub { grid-column: 1; display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 13px; color: var(--muted, #5c646d); }
+.rowSub { grid-column: 1; display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: var(--fs-body); color: var(--muted, #5c646d); }
 .rowSub .said { margin: 0; }
 .rowBusy { white-space: nowrap; }
 .chev { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--muted, #8b939c); transition: transform .15s ease; }

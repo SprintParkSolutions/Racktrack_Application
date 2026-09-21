@@ -330,7 +330,7 @@ function TopologyInner({ rackId, embedded }) {
           onClick={retry}
           style={{ marginTop: 14, alignSelf: 'flex-start', padding: '10px 18px', borderRadius: 10,
                    border: '1px solid #000000', background: '#000000', color: '#fff',
-                   fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                   fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-title)', cursor: 'pointer' }}
         >Retry</button>
       </>
     );

@@ -17,12 +17,12 @@
 @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
 
 .head { display: flex; align-items: center; gap: 10px; padding: 16px 16px 12px; }
-.head h3 { flex: 1; margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.01em; color: var(--text); }
+.head h3 { flex: 1; margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -.01em; color: var(--text); }
 .close {
   width: 34px; height: 34px; flex: none;
   border: 0; border-radius: 9px;
   background: var(--bg2, #f1f3f5); color: var(--text);
-  font-size: 14px; cursor: pointer;
+  font-size: var(--fs-item); cursor: pointer;
 }
 
 .body {
@@ -30,7 +30,7 @@
   padding: 0 16px 8px;
   display: flex; flex-direction: column; gap: 14px;
 }
-.note { margin: 0; font-size: 13px; color: var(--muted); }
+.note { margin: 0; font-size: var(--fs-body); color: var(--muted); }
 
 /* What the connection is doing, said in one block with a coloured edge. */
 .health {
@@ -38,8 +38,8 @@
   padding: 12px 0 12px 14px;
   border-left: 3px solid var(--border, rgba(0,0,0,.2));
 }
-.health b { font-size: 14px; font-weight: 650; color: var(--text); }
-.health span { font-size: 12.5px; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
+.health b { font-size: var(--fs-item); font-weight: var(--fw-title); color: var(--text); }
+.health span { font-size: var(--fs-sub); line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
 .hint { font-style: italic; }
 .good { border-left-color: #0f7b4f; }
 .warn { border-left-color: #b26a00; }
@@ -49,8 +49,8 @@
 /* What a push would do, counted. */
 .tally { display: flex; gap: 22px; flex-wrap: wrap; }
 .tally > div { display: flex; align-items: baseline; gap: 6px; }
-.tally b { font-size: 20px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
-.tally span { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.tally b { font-size: var(--fs-head); font-weight: var(--fw-title); color: var(--text); font-variant-numeric: tabular-nums; }
+.tally span { font-size: var(--fs-label); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: var(--fw-label); }
 
 .types { list-style: none; margin: 0; padding: 0; }
 .types li {
@@ -58,11 +58,11 @@
   padding: 7px 0;
   border-top: 1px solid var(--border, rgba(0,0,0,.06));
 }
-.typeName { flex: 1; font-size: 13.5px; font-weight: 650; color: var(--text); }
-.typeCounts { font-size: 12px; color: var(--muted); }
+.typeName { flex: 1; font-size: var(--fs-body); font-weight: var(--fw-title); color: var(--text); }
+.typeCounts { font-size: var(--fs-sub); color: var(--muted); }
 
 .confirm { padding: 12px 16px 16px; border-top: 1px solid var(--border, rgba(0,0,0,.1)); }
-.confirm p { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--text); }
+.confirm p { margin: 0 0 10px; font-size: var(--fs-item); font-weight: var(--fw-label); color: var(--text); }
 
 .actions {
   display: flex; gap: 10px;
@@ -72,7 +72,7 @@
 .confirm .actions { padding: 0; border-top: 0; }
 .primary, .secondary {
   flex: 1; min-height: 48px;
-  border-radius: 10px; font-size: 14.5px; font-weight: 650;
+  border-radius: 10px; font-size: var(--fs-item); font-weight: var(--fw-title);
   font-family: var(--font);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
@@ -81,7 +81,7 @@
 .primary:disabled, .secondary:disabled { opacity: .45; cursor: default; }
 
 /* The one way out to NetBox itself. */
-.openLink { color: #0f7b4f; font-weight: 650; text-decoration: none; margin-left: 6px; }
+.openLink { color: #0f7b4f; font-weight: var(--fw-title); text-decoration: none; margin-left: 6px; }
 
 /* After the write: one unmistakable line, then the way to see it. */
 .done {
@@ -91,12 +91,12 @@
   animation: donePop .22s ease-out;
 }
 .done > div { display: flex; flex-direction: column; gap: 3px; }
-.done b { font-size: 16px; color: #0f7b4f; }
-.done span { font-size: 13px; color: var(--text); }
+.done b { font-size: var(--fs-section); color: #0f7b4f; }
+.done span { font-size: var(--fs-body); color: var(--text); }
 .doneMark {
   flex: none; width: 30px; height: 30px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
-  background: #0f7b4f; color: #fff; font-weight: 700;
+  background: #0f7b4f; color: #fff; font-weight: var(--fw-title);
 }
 @keyframes donePop { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .done { animation: none; } }
@@ -105,7 +105,7 @@
 .viewAll {
   align-self: flex-start; margin-top: 6px;
   border: 0; background: transparent; padding: 4px 0;
-  color: #0f7b4f; font-family: var(--font); font-size: 14px; font-weight: 650; cursor: pointer;
+  color: #0f7b4f; font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-title); cursor: pointer;
 }
 .all {
   list-style: none; margin: 4px 0 0; padding: 0;
@@ -115,12 +115,12 @@
 .all li {
   display: grid; grid-template-columns: 84px 1fr auto; gap: 10px; align-items: baseline;
   padding: 7px 0; border-bottom: 1px solid var(--border, rgba(0,0,0,.06));
-  font-size: 13px;
+  font-size: var(--fs-body);
 }
-.allType { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.allType { color: var(--muted); font-size: var(--fs-label); letter-spacing: .06em; text-transform: uppercase; }
 .allName { color: var(--text); overflow-wrap: anywhere; }
-.allAction { color: var(--muted); font-size: 12px; white-space: nowrap; }
-.act_create { color: #0f7b4f; font-weight: 650; }
-.act_update { color: #b26a00; font-weight: 650; }
-.act_rebind { color: #4a5fc1; font-weight: 650; }
-.act_fail { color: #c0392b; font-weight: 650; }
+.allAction { color: var(--muted); font-size: var(--fs-sub); white-space: nowrap; }
+.act_create { color: #0f7b4f; font-weight: var(--fw-title); }
+.act_update { color: #b26a00; font-weight: var(--fw-title); }
+.act_rebind { color: #4a5fc1; font-weight: var(--fw-title); }
+.act_fail { color: #c0392b; font-weight: var(--fw-title); }

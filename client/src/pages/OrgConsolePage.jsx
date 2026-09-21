@@ -387,10 +387,10 @@ export default function OrgConsolePage() {
       {/* ── Admin: organization awaiting owner approval ── */}
       {myOrgPending && activeOrg && (
         <div className={styles.empty} style={{ marginTop: 24, textAlign: 'left', padding: '28px 24px' }}>
-          <div className={styles.rowName} style={{ fontSize: '1.05rem', marginBottom: 8 }}>
+          <div className={styles.rowName} style={{ fontSize: 'var(--fs-head)', marginBottom: 8 }}>
             {activeOrg.name} is awaiting approval
           </div>
-          <p style={{ color: '#717171', fontSize: 14, lineHeight: 1.55, margin: 0 }}>
+          <p style={{ color: '#717171', fontSize: 'var(--fs-item)', lineHeight: 1.55, margin: 0 }}>
             Once the platform owner approves it you can add sites, invite members and scan.
           </p>
         </div>
@@ -401,7 +401,7 @@ export default function OrgConsolePage() {
         <>
           {isOwner && (
             <button className={styles.backLink} onClick={() => { setActiveOrg(null); setSites([]); setMembers([]); setOdash(null); }}>
-              <Icon name="arrow_back" style={{ fontSize: 16 }} />
+              <Icon name="arrow_back" style={{ fontSize: 'var(--fs-section)' }} />
               All organizations
             </button>
           )}

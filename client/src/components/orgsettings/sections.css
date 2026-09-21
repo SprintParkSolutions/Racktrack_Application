@@ -7,18 +7,18 @@
 /* ---- What is still to do ---- */
 .os-rem { display: flex; flex-direction: column; gap: 20px; }
 .os-rem-g { display: flex; flex-direction: column; gap: 6px; }
-.os-rem-t { font-size: 13px; font-weight: 600; color: #111827; }
+.os-rem-t { font-size: var(--fs-body); font-weight: var(--fw-label); color: #111827; }
 .os-rem ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.os-rem li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #e5e8ec; font-size: 13.5px; }
+.os-rem li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #e5e8ec; font-size: var(--fs-body); }
 .os-rem li:first-child { border-top: 0; padding-top: 2px; }
 .os-rem-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid #9aa5b3; background: #fff; }
 .os-rem-dot.req { border-color: #b42318; }
-.os-rem-ok { margin: 0; font-size: 13.5px; font-weight: 500; color: #111827; }
+.os-rem-ok { margin: 0; font-size: var(--fs-body); font-weight: var(--fw-label); color: #111827; }
 
 /* ---- Small shared bits ---- */
 .os-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
 .os-link {
-  background: none; border: 0; padding: 0; font-family: var(--font); font-size: inherit; font-weight: 500;
+  background: none; border: 0; padding: 0; font-family: var(--font); font-size: inherit; font-weight: var(--fw-label);
   color: #1f4ed8; text-decoration: none; cursor: pointer; text-align: left;
 }
 .os-link:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -26,13 +26,13 @@
 /* ---- Organization name with its short code ---- */
 .os-orgname {
   display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; min-height: 44px; padding: 8px 12px;
-  border: 1px solid #c9d0d9; border-radius: 6px; background: #f9fafb; font-size: 16px; line-height: 1.3; color: #4b5563; overflow-wrap: anywhere;
+  border: 1px solid #c9d0d9; border-radius: 6px; background: #f9fafb; font-size: var(--fs-section); line-height: 1.3; color: #4b5563; overflow-wrap: anywhere;
 }
-.os-orgcode { color: #9aa5b3; font-size: 13px; }
-@media (min-width: 768px) { .os-orgname { min-height: 40px; font-size: 14px; } }
+.os-orgcode { color: #9aa5b3; font-size: var(--fs-body); }
+@media (min-width: 768px) { .os-orgname { min-height: 40px; font-size: var(--fs-item); } }
 
 /* ---- Rules ---- */
-.os-rule { margin: 0; font-size: 15px; line-height: 1.55; color: #111827; max-width: 60ch; }
+.os-rule { margin: 0; font-size: var(--fs-section); line-height: 1.55; color: #111827; max-width: 60ch; }
 
 /* ---- Review rows ---- */
 .os-review { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -41,8 +41,8 @@
   padding: 10px 0; border-top: 1px solid #e5e8ec;
 }
 .os-review li:first-child { border-top: 0; padding-top: 2px; }
-.os-review b { grid-column: 2; grid-row: 1; font-size: 14px; font-weight: 600; color: #111827; overflow-wrap: anywhere; }
-.os-what { grid-column: 2; grid-row: 2; font-size: 12.5px; line-height: 1.45; color: #4b5563; overflow-wrap: anywhere; }
+.os-review b { grid-column: 2; grid-row: 1; font-size: var(--fs-item); font-weight: var(--fw-label); color: #111827; overflow-wrap: anywhere; }
+.os-what { grid-column: 2; grid-row: 2; font-size: var(--fs-sub); line-height: 1.45; color: #4b5563; overflow-wrap: anywhere; }
 /* Explicit cells: the action spans both rows, and the placement algorithm
    would otherwise seat that definite-row item first, ahead of the name. */
 .os-review li > :last-child:not(.os-what) { grid-column: 3; grid-row: 1 / span 2; }

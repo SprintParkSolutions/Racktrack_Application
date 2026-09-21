@@ -221,12 +221,12 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
         <button type="button" onClick={() => { stopCamera(); onCancel?.(); }}
           style={{
             background: 'transparent', border: 0, color: '#ffffff',
-            fontSize: '.86rem', fontWeight: 600, cursor: 'pointer', padding: 0,
+            fontSize: 'var(--fs-item)', fontWeight: 'var(--fw-label)', cursor: 'pointer', padding: 0,
           }}>Cancel</button>
         <div style={{ marginLeft: 'auto', textAlign: 'right', lineHeight: 1.25 }}>
-          <div style={{ fontSize: '.8rem', fontWeight: 700 }}>Scan the device label</div>
+          <div style={{ fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-title)' }}>Scan the device label</div>
           {deviceLabel && (
-            <div style={{ fontSize: '.68rem', opacity: 0.7 }}>{deviceLabel}</div>
+            <div style={{ fontSize: 'var(--fs-label)', opacity: 0.7 }}>{deviceLabel}</div>
           )}
         </div>
       </div>
@@ -244,10 +244,10 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
             top: `calc(${(GUIDE.y + GUIDE.h) * 100}% + 14px)`,
             textAlign: 'center', padding: '0 24px', color: '#ffffff',
           }}>
-            <p style={{ margin: 0, fontSize: '.82rem', fontWeight: 600 }}>
+            <p style={{ margin: 0, fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-label)' }}>
               Fill the box with the model label
             </p>
-            <p style={{ margin: '4px 0 0', fontSize: '.72rem', opacity: 0.75 }}>
+            <p style={{ margin: '4px 0 0', fontSize: 'var(--fs-sub)', opacity: 0.75 }}>
               The printed model number on the faceplate - not the whole device.
             </p>
             {ready && !steady && (
@@ -255,7 +255,7 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
                 display: 'inline-block', margin: '10px 0 0',
                 padding: '3px 10px', borderRadius: 20,
                 background: 'rgba(255,255,255,0.16)',
-                fontSize: '.7rem', fontWeight: 700,
+                fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)',
               }}>Hold steady</p>
             )}
           </div>
@@ -268,8 +268,8 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
             gap: 10, color: '#ffffff', padding: 24, textAlign: 'center',
           }}>
             <Spinner />
-            <p style={{ margin: 0, fontSize: '.86rem', fontWeight: 600 }}>Reading the label…</p>
-            <p style={{ margin: 0, fontSize: '.74rem', opacity: 0.7 }}>
+            <p style={{ margin: 0, fontSize: 'var(--fs-item)', fontWeight: 'var(--fw-label)' }}>Reading the label…</p>
+            <p style={{ margin: 0, fontSize: 'var(--fs-sub)', opacity: 0.7 }}>
               This takes a few seconds.
             </p>
           </div>
@@ -281,7 +281,7 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
             flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 14, color: '#ffffff', padding: 24, textAlign: 'center',
           }}>
-            <p style={{ margin: 0, fontSize: '.86rem', fontWeight: 600 }}>{error}</p>
+            <p style={{ margin: 0, fontSize: 'var(--fs-item)', fontWeight: 'var(--fw-label)' }}>{error}</p>
             {/* The floor under this whole flow: a photo that can't be read
                 hands off to the keyboard, it doesn't dead-end. */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -302,7 +302,7 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
             flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 14, color: '#ffffff', padding: 24, textAlign: 'center',
           }}>
-            <p style={{ margin: 0, fontSize: '.86rem', fontWeight: 600 }}>{error}</p>
+            <p style={{ margin: 0, fontSize: 'var(--fs-item)', fontWeight: 'var(--fw-label)' }}>{error}</p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
               <button type="button" onClick={() => fileRef.current?.click()} style={darkBtn(true)}>
                 Choose a photo
@@ -329,7 +329,7 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
             background: 'transparent', border: 0, color: '#ffffff',
-            fontSize: '.7rem', fontWeight: 600, cursor: 'pointer',
+            fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-label)', cursor: 'pointer',
             opacity: phase === 'reading' ? 0.4 : 0.9, padding: 0, width: 64,
           }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -359,7 +359,7 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
             background: 'transparent', border: 0, color: '#ffffff',
-            fontSize: '.7rem', fontWeight: 600, cursor: hasTorch ? 'pointer' : 'default',
+            fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-label)', cursor: hasTorch ? 'pointer' : 'default',
             opacity: hasTorch ? (torch ? 1 : 0.9) : 0, padding: 0, width: 64,
           }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill={torch ? 'currentColor' : 'none'}
@@ -386,12 +386,12 @@ export default function DeviceLabelCapture({ deviceLabel, onIdentified, onManual
 function darkBtn(primary) {
   return primary
     ? { background: '#ffffff', color: '#1c1c1c', border: 0,
-        padding: '8px 16px', borderRadius: 8, fontSize: '.8rem',
-        fontWeight: 700, cursor: 'pointer' }
+        padding: '8px 16px', borderRadius: 8, fontSize: 'var(--fs-body)',
+        fontWeight: 'var(--fw-title)', cursor: 'pointer' }
     : { background: 'transparent', color: '#ffffff',
         border: '1px solid rgba(255,255,255,0.4)',
-        padding: '8px 14px', borderRadius: 8, fontSize: '.8rem',
-        fontWeight: 600, cursor: 'pointer' };
+        padding: '8px 14px', borderRadius: 8, fontSize: 'var(--fs-body)',
+        fontWeight: 'var(--fw-label)', cursor: 'pointer' };
 }
 
 function Spinner() {

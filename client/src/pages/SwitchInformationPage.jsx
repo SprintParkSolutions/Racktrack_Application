@@ -605,7 +605,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.01em', color: titleColor }}>
+            <span style={{ fontWeight: 'var(--fw-title)', fontSize: 'var(--fs-section)', letterSpacing: '-0.01em', color: titleColor }}>
               {effectiveMake && effectiveModel
                 ? `${effectiveMake} ${specs?.model || effectiveModel}`
                 : effectiveMake || effectiveModel
@@ -615,7 +615,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
             {awaitingLabel && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
-                fontSize: '.68rem', fontWeight: 700, color: '#717171',
+                fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)', color: '#717171',
                 background: '#ffffff', border: '1px solid #ececec',
                 padding: '2px 8px', borderRadius: 20,
               }}>
@@ -631,7 +631,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
             {sw._switchProposal && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center',
-                fontSize: '.68rem', fontWeight: 700, color: '#b26a00',
+                fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)', color: '#b26a00',
                 background: '#ffffff', border: '1px solid #ececec',
                 padding: '2px 8px', borderRadius: 20,
               }}>
@@ -645,8 +645,8 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
             // a known support/site landing page; otherwise show nothing.
             const portal = effectiveMake ? findVendorLogin(effectiveMake) : null;
             return (
-              <div style={{ fontSize: '.72rem', color: subColor, marginTop: 3, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                {sw.position   && <span style={{ color: accent, fontWeight: 600 }}>{sw.position}</span>}
+              <div style={{ fontSize: 'var(--fs-sub)', color: subColor, marginTop: 3, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                {sw.position   && <span style={{ color: accent, fontWeight: 'var(--fw-label)' }}>{sw.position}</span>}
                 {sw.ip_address && <span>{sw.ip_address}</span>}
                 {portal && (
                   <a
@@ -659,7 +659,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                       : `Open ${portal.name} support`}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4,
-                      fontSize: '.68rem', fontWeight: 700,
+                      fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)',
                       padding: '2px 8px', borderRadius: 999,
                       background: accentDim,
                       border: `1px solid ${accentBorder}`,
@@ -675,7 +675,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
             );
           })()}
           {sw._switchProposal && (
-            <div style={{ fontSize: '.7rem', color: '#b26a00', marginTop: 4, lineHeight: 1.45 }}>
+            <div style={{ fontSize: 'var(--fs-label)', color: '#b26a00', marginTop: 4, lineHeight: 1.45 }}>
               Confirm the match in Review.
             </div>
           )}
@@ -706,15 +706,15 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
           <dl style={{ margin: 0, padding: '6px 16px 10px', borderTop: `1px solid ${divider}`, background: fieldBg }}>
             {rows.map(([label, value, sub]) => (
               <div key={label} style={{ display: 'grid', gridTemplateColumns: '84px minmax(0, 1fr)', gap: 12, alignItems: 'baseline', padding: '6px 0' }}>
-                <dt style={{ margin: 0, fontSize: '.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: accent }}>
+                <dt style={{ margin: 0, fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-title)', textTransform: 'uppercase', letterSpacing: '.07em', color: accent }}>
                   {label}
                 </dt>
                 <dd style={{ margin: 0, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: '.86rem', fontWeight: 650, color: valueColor, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-item)', fontWeight: 'var(--fw-title)', color: valueColor, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>
                     {value}
                   </span>
                   {sub && (
-                    <span style={{ display: 'block', fontSize: '.72rem', color: '#717171', marginTop: 1, overflowWrap: 'anywhere' }}>
+                    <span style={{ display: 'block', fontSize: 'var(--fs-sub)', color: '#717171', marginTop: 1, overflowWrap: 'anywhere' }}>
                       {sub}
                     </span>
                   )}
@@ -743,27 +743,27 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
           {(awaitingLabel || identMissing || identIncomplete || editingIdent || makeIsUserSupplied || modelIsUserSupplied) && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: '.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: statusColor }}>
+                <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-title)', textTransform: 'uppercase', letterSpacing: '.08em', color: statusColor }}>
                   Identification
                 </span>
                 {awaitingLabel && !editingIdent && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '.7rem', fontWeight: 700, color: '#717171', background: '#ffffff', padding: '2px 8px', borderRadius: 20, border: '1px solid #ececec' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)', color: '#717171', background: '#ffffff', padding: '2px 8px', borderRadius: 20, border: '1px solid #ececec' }}>
                     <span aria-hidden="true" className={desk.pulseDot} style={{ width: 6, height: 6 }} />
                     Still reading
                   </span>
                 )}
                 {identMissing && !editingIdent && (
-                  <span style={{ fontSize: '.7rem', fontWeight: 700, color: '#717171', background: '#ffffff', padding: '2px 8px', borderRadius: 20, border: '1px solid #ececec' }}>
+                  <span style={{ fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)', color: '#717171', background: '#ffffff', padding: '2px 8px', borderRadius: 20, border: '1px solid #ececec' }}>
                     Not detected
                   </span>
                 )}
                 {identIncomplete && !editingIdent && !makeIsUserSupplied && !modelIsUserSupplied && (
-                  <span style={{ fontSize: '.7rem', fontWeight: 700, color: '#717171', background: '#ffffff', padding: '2px 8px', borderRadius: 20, border: '1px solid #ececec' }}>
+                  <span style={{ fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)', color: '#717171', background: '#ffffff', padding: '2px 8px', borderRadius: 20, border: '1px solid #ececec' }}>
                     {effectiveMake ? 'Model not detected' : 'Vendor not detected'}
                   </span>
                 )}
                 {(makeIsUserSupplied || modelIsUserSupplied) && !editingIdent && (
-                  <span style={{ fontSize: '.7rem', fontWeight: 700, color: '#717171', background: '#ffffff', padding: '2px 8px', borderRadius: 20, border: '1px solid #ececec' }}>
+                  <span style={{ fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)', color: '#717171', background: '#ffffff', padding: '2px 8px', borderRadius: 20, border: '1px solid #ececec' }}>
                     Manual entry
                   </span>
                 )}
@@ -778,7 +778,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                     style={{
                       marginLeft: 'auto', background: linkColor, border: 0,
                       borderRadius: 999, color: '#ffffff',
-                      fontSize: '.72rem', fontWeight: 700, cursor: 'pointer',
+                      fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)', cursor: 'pointer',
                       padding: '6px 12px', minHeight: 30, whiteSpace: 'nowrap',
                     }}
                   >{
@@ -848,7 +848,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                           width: '100%', marginTop: 10, padding: '10px 14px',
                           borderRadius: 8, border: 0, background: accent, color: '#ffffff',
-                          fontSize: '.82rem', fontWeight: 700, cursor: 'pointer',
+                          fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-title)', cursor: 'pointer',
                         }}
                       >
                         <CameraGlyph />
@@ -861,7 +861,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: 6,
                           marginTop: 8, padding: 0, background: 'transparent', border: 0,
-                          color: linkColor, fontSize: '.75rem', fontWeight: 700, cursor: 'pointer',
+                          color: linkColor, fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)', cursor: 'pointer',
                         }}
                       >
                         <CameraGlyph />
@@ -870,7 +870,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                     )
                   )}
                   {identMissing && !makeIsUserSupplied && !modelIsUserSupplied && (
-                    <p style={{ margin: '6px 0 0', fontSize: '.72rem', color: statusColor }}>
+                    <p style={{ margin: '6px 0 0', fontSize: 'var(--fs-sub)', color: statusColor }}>
                       A close-up of the model number reads far better than the rack photo.
                     </p>
                   )}
@@ -909,7 +909,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                     border: 'none',
                     borderBottom: `2px solid ${on ? accent : 'transparent'}`,
                     color: on ? titleColor : statusColor,
-                    fontSize: '.74rem',
+                    fontSize: 'var(--fs-sub)',
                     fontWeight: on ? 700 : 500,
                     letterSpacing: '.04em',
                     cursor: 'pointer',
@@ -925,9 +925,9 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
           {swTab === 'firmware' && (<>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <span style={{ fontSize: '.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: statusColor }}>Firmware</span>
+              <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-title)', textTransform: 'uppercase', letterSpacing: '.08em', color: statusColor }}>Firmware</span>
               {firmwareStatus === 'ready' && (
-                <span style={{ fontSize: '.7rem', fontWeight: 700, color: fwColor, background: `${fwColor}18`, padding: '2px 8px', borderRadius: 20, border: `1px solid ${fwColor}40` }}>
+                <span style={{ fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)', color: fwColor, background: `${fwColor}18`, padding: '2px 8px', borderRadius: 20, border: `1px solid ${fwColor}40` }}>
                   {fwHeadline}
                 </span>
               )}
@@ -937,7 +937,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                   onClick={startEditVersion}
                   style={{
                     marginLeft: 'auto', background: 'transparent', border: 0,
-                    color: linkColor, fontSize: '.7rem', fontWeight: 600, cursor: 'pointer',
+                    color: linkColor, fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-label)', cursor: 'pointer',
                     padding: 0,
                   }}
                 >Edit version</button>
@@ -991,7 +991,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                   onClick={retryFirmware}
                   style={{
                     background: 'transparent', border: 0, padding: 0,
-                    color: linkColor, fontSize: '.78rem', fontWeight: 700, cursor: 'pointer',
+                    color: linkColor, fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)', cursor: 'pointer',
                   }}
                 >Try again</button>
               </div>
@@ -1030,7 +1030,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
               // it goes. Without any URL the words stay as plain text.
               const vendorLink = (text) => vendorUrl ? (
                 <a href={vendorUrl} target="_blank" rel="noreferrer noopener"
-                  style={{ color: linkColor, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  style={{ color: linkColor, fontWeight: 'var(--fw-title)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                   {text} <span aria-hidden="true">↗</span>
                 </a>
               ) : text;
@@ -1073,7 +1073,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                 {fwVerified && firmware.releaseNotesUrl && (
                   <div style={{ marginTop: 10 }}>
                     <a href={firmware.releaseNotesUrl} target="_blank" rel="noreferrer noopener"
-                      style={{ fontSize: '.76rem', fontWeight: 700, color: linkColor, textDecoration: 'none' }}>
+                      style={{ fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)', color: linkColor, textDecoration: 'none' }}>
                       Release notes <span aria-hidden="true">↗</span>
                     </a>
                   </div>
@@ -1083,10 +1083,10 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                     {changelog.map((c, i) => (
                       <div key={`${c.section || ''}-${c.version || ''}-${i}`}
                         style={{ padding: '8px 10px', borderRadius: 8, background: fieldBg, border: `1px solid ${fieldBorder}` }}>
-                        <span style={{ display: 'block', fontSize: '.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: accent, marginBottom: 3 }}>
+                        <span style={{ display: 'block', fontSize: '.58rem', fontWeight: 'var(--fw-title)', textTransform: 'uppercase', letterSpacing: '.07em', color: accent, marginBottom: 3 }}>
                           {c.section || (c.version ? `Changes in ${c.version}` : 'Changes')}
                         </span>
-                        <span style={{ display: 'block', fontSize: '.76rem', color: valueColor, lineHeight: 1.5, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                        <span style={{ display: 'block', fontSize: 'var(--fs-sub)', color: valueColor, lineHeight: 1.5, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
                           {c.text}
                         </span>
                       </div>
@@ -1094,7 +1094,7 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                   </div>
                 )}
                 {note && (
-                  <p style={{ margin: '10px 0 0', fontSize: '.78rem', color: statusColor, lineHeight: 1.55, overflowWrap: 'anywhere' }}>
+                  <p style={{ margin: '10px 0 0', fontSize: 'var(--fs-sub)', color: statusColor, lineHeight: 1.55, overflowWrap: 'anywhere' }}>
                     {note}
                   </p>
                 )}
@@ -1107,12 +1107,12 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
           {swTab === 'hardware' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: '.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: statusColor }}>
+              <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-title)', textTransform: 'uppercase', letterSpacing: '.08em', color: statusColor }}>
                 Hardware
               </span>
               {specs?.productUrl && (
                 <a href={specs.productUrl} target="_blank" rel="noreferrer noopener"
-                  style={{ fontSize: '.72rem', fontWeight: 600, color: linkColor, textDecoration: 'none' }}>
+                  style={{ fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-label)', color: linkColor, textDecoration: 'none' }}>
                   View full details ↗
                 </a>
               )}
@@ -1134,10 +1134,10 @@ function SwitchCard({ sw, rackId, defaultExpanded = false, hideHeader = false })
                       borderBottom: i < rows.length - 1 ? `1px solid ${fieldBorder}` : 'none',
                       alignItems: 'start',
                     }}>
-                      <span style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: accent, lineHeight: 1.4, paddingTop: 1 }}>
+                      <span style={{ fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)', textTransform: 'uppercase', letterSpacing: '.06em', color: accent, lineHeight: 1.4, paddingTop: 1 }}>
                         {k}
                       </span>
-                      <span style={{ fontSize: '.82rem', fontWeight: 500, color: valueColor, lineHeight: 1.45, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                      <span style={{ fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-label)', color: valueColor, lineHeight: 1.45, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                         {String(v)}
                       </span>
                     </div>
@@ -1207,7 +1207,7 @@ function VersionEditor({
           onClick={onStartEdit}
           style={{
             background: 'transparent', border: `1px solid ${accent}`,
-            color: accent, fontSize: '.72rem', fontWeight: 600,
+            color: accent, fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-label)',
             padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
           }}
         >Enter version</button>
@@ -1220,7 +1220,7 @@ function VersionEditor({
       background: fieldBg, border: `1px solid ${fieldBorder}`,
     }}>
       <span style={{
-        display: 'block', fontSize: '.62rem', fontWeight: 700,
+        display: 'block', fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-title)',
         textTransform: 'uppercase', letterSpacing: '.08em',
         color: accent, marginBottom: 8,
       }}>
@@ -1242,7 +1242,7 @@ function VersionEditor({
             padding: '6px 10px', borderRadius: 6,
             background: 'transparent', color: valueColor,
             border: `1px solid ${fieldBorder}`,
-            fontSize: '16px', fontFamily: 'inherit',
+            fontSize: 'var(--fs-section)', fontFamily: 'inherit',
             outline: 'none',
           }}
         />
@@ -1253,7 +1253,7 @@ function VersionEditor({
           style={{
             background: accent, color: '#ffffff', border: 0,
             padding: '6px 12px', borderRadius: 6,
-            fontSize: '.78rem', fontWeight: 700, cursor: draft.trim() ? 'pointer' : 'not-allowed',
+            fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)', cursor: draft.trim() ? 'pointer' : 'not-allowed',
             opacity: draft.trim() ? 1 : 0.5,
           }}
         >Save</button>
@@ -1264,7 +1264,7 @@ function VersionEditor({
             background: 'transparent', color: statusColor,
             border: `1px solid ${fieldBorder}`,
             padding: '6px 10px', borderRadius: 6,
-            fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
+            fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-label)', cursor: 'pointer',
           }}
         >Cancel</button>
         {hasExisting && (
@@ -1275,7 +1275,7 @@ function VersionEditor({
               background: 'transparent', color: '#1c1c1c',
               border: `1px solid rgba(0,0,0,0.35)`,
               padding: '6px 10px', borderRadius: 6,
-              fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
+              fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-label)', cursor: 'pointer',
             }}
           >Clear</button>
         )}
@@ -1304,7 +1304,7 @@ function IdentEditor({
     padding: '6px 10px', borderRadius: 6,
     background: 'transparent', color: valueColor,
     border: `1px solid ${fieldBorder}`,
-    fontSize: '16px', fontFamily: 'inherit',
+    fontSize: 'var(--fs-section)', fontFamily: 'inherit',
     outline: 'none',
   };
   const onKeyDown = (e) => {
@@ -1322,18 +1322,18 @@ function IdentEditor({
           marginBottom: 10, paddingBottom: 10,
           borderBottom: `1px solid ${fieldBorder}`,
         }}>
-          <p style={{ margin: 0, fontSize: '.75rem', fontWeight: 700, color: valueColor }}>
+          <p style={{ margin: 0, fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)', color: valueColor }}>
             {readSomething
               ? 'Read from your photo - check it before saving.'
               : "We couldn't read that photo either."}
           </p>
           {readSomething && read.version && (
-            <p style={{ margin: '4px 0 0', fontSize: '.72rem', color: statusColor }}>
+            <p style={{ margin: '4px 0 0', fontSize: 'var(--fs-sub)', color: statusColor }}>
               Firmware {read.version} was on the same label - it'll be saved too.
             </p>
           )}
           {!readSomething && (
-            <p style={{ margin: '4px 0 0', fontSize: '.72rem', color: statusColor }}>
+            <p style={{ margin: '4px 0 0', fontSize: 'var(--fs-sub)', color: statusColor }}>
               Enter the make and model below, or try another photo with the
               label filling more of the frame.
             </p>
@@ -1341,7 +1341,7 @@ function IdentEditor({
           {alternates.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <span style={{
-                display: 'block', fontSize: '.6rem', fontWeight: 700,
+                display: 'block', fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-title)',
                 textTransform: 'uppercase', letterSpacing: '.07em',
                 color: accent, marginBottom: 5,
               }}>Or did you mean</span>
@@ -1358,7 +1358,7 @@ function IdentEditor({
                       background: 'transparent', color: valueColor,
                       border: `1px solid ${fieldBorder}`,
                       padding: '4px 9px', borderRadius: 20,
-                      fontSize: '.72rem', fontWeight: 600, cursor: 'pointer',
+                      fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-label)', cursor: 'pointer',
                     }}
                   >{[alt.make, alt.model].filter(Boolean).join(' ')}</button>
                 ))}
@@ -1370,7 +1370,7 @@ function IdentEditor({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div>
           <span style={{
-            display: 'block', fontSize: '.6rem', fontWeight: 700,
+            display: 'block', fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-title)',
             textTransform: 'uppercase', letterSpacing: '.07em',
             color: accent, marginBottom: 4,
           }}>Make / Vendor</span>
@@ -1386,7 +1386,7 @@ function IdentEditor({
         </div>
         <div>
           <span style={{
-            display: 'block', fontSize: '.6rem', fontWeight: 700,
+            display: 'block', fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-title)',
             textTransform: 'uppercase', letterSpacing: '.07em',
             color: accent, marginBottom: 4,
           }}>Model</span>
@@ -1408,7 +1408,7 @@ function IdentEditor({
           style={{
             background: accent, color: '#ffffff', border: 0,
             padding: '6px 12px', borderRadius: 6,
-            fontSize: '.78rem', fontWeight: 700, cursor: canSave ? 'pointer' : 'not-allowed',
+            fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)', cursor: canSave ? 'pointer' : 'not-allowed',
             opacity: canSave ? 1 : 0.5,
           }}
         >Save</button>
@@ -1419,7 +1419,7 @@ function IdentEditor({
             background: 'transparent', color: statusColor,
             border: `1px solid ${fieldBorder}`,
             padding: '6px 10px', borderRadius: 6,
-            fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
+            fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-label)', cursor: 'pointer',
           }}
         >Cancel</button>
         {hasExisting && (
@@ -1430,7 +1430,7 @@ function IdentEditor({
               background: 'transparent', color: '#1c1c1c',
               border: `1px solid rgba(0,0,0,0.35)`,
               padding: '6px 10px', borderRadius: 6,
-              fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
+              fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-label)', cursor: 'pointer',
             }}
           >Clear</button>
         )}
@@ -1441,7 +1441,7 @@ function IdentEditor({
             style={{
               marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5,
               background: 'transparent', color: '#000000', border: 0,
-              padding: '6px 0', fontSize: '.75rem', fontWeight: 700, cursor: 'pointer',
+              padding: '6px 0', fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)', cursor: 'pointer',
             }}
           >
             <CameraGlyph />
@@ -1455,7 +1455,7 @@ function IdentEditor({
 
 function StatusLine({ children, color }) {
   return (
-    <p style={{ margin: 0, fontSize: '.78rem', color: color || 'rgba(0,0,0,0.7)', fontStyle: 'italic' }}>
+    <p style={{ margin: 0, fontSize: 'var(--fs-sub)', color: color || 'rgba(0,0,0,0.7)', fontStyle: 'italic' }}>
       {children}
     </p>
   );
@@ -1464,10 +1464,10 @@ function StatusLine({ children, color }) {
 function MiniField({ label, value, accent, fieldBg, fieldBorder, valueColor }) {
   return (
     <div style={{ padding: '8px 10px', borderRadius: 8, background: fieldBg, border: `1px solid ${fieldBorder}` }}>
-      <span style={{ display: 'block', fontSize: '.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: accent, marginBottom: 3 }}>
+      <span style={{ display: 'block', fontSize: '.58rem', fontWeight: 'var(--fw-title)', textTransform: 'uppercase', letterSpacing: '.07em', color: accent, marginBottom: 3 }}>
         {label}
       </span>
-      <span style={{ display: 'block', fontSize: '.8rem', fontWeight: 600, color: valueColor, wordBreak: 'break-word' }}>
+      <span style={{ display: 'block', fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-label)', color: valueColor, wordBreak: 'break-word' }}>
         {value || '-'}
       </span>
     </div>
@@ -1477,10 +1477,10 @@ function MiniField({ label, value, accent, fieldBg, fieldBorder, valueColor }) {
 function Field({ label, value }) {
   return (
     <div>
-      <span style={{ display: 'block', fontSize: '.65rem', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+      <span style={{ display: 'block', fontSize: 'var(--fs-micro)', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
         {label}
       </span>
-      <span style={{ display: 'block', fontSize: '.82rem', color: '#e9e9e9', wordBreak: 'break-word' }}>
+      <span style={{ display: 'block', fontSize: 'var(--fs-body)', color: '#e9e9e9', wordBreak: 'break-word' }}>
         {value || '-'}
       </span>
     </div>
@@ -1771,10 +1771,10 @@ function WorkingPanel({ title, detail }) {
   return (
     <div style={{ padding: '32px 16px', textAlign: 'center' }}>
       <span aria-hidden="true" className={desk.pulseDot} />
-      <p style={{ margin: '12px 0 0', fontWeight: 600, color: '#121212', fontSize: '.92rem' }}>
+      <p style={{ margin: '12px 0 0', fontWeight: 'var(--fw-label)', color: '#121212', fontSize: 'var(--fs-section)' }}>
         {title}
       </p>
-      <p style={{ margin: '6px auto 0', maxWidth: 420, fontSize: '.78rem', color: '#717171', lineHeight: 1.5 }}>
+      <p style={{ margin: '6px auto 0', maxWidth: 420, fontSize: 'var(--fs-sub)', color: '#717171', lineHeight: 1.5 }}>
         {detail}
       </p>
     </div>
@@ -1790,10 +1790,10 @@ function RestingPanel({ title, detail, onRetry, retryLabel = 'Check again' }) {
       background: '#ffffff',
       border: '1px dashed #e6e6e6',
     }}>
-      <p style={{ margin: 0, fontWeight: 600, color: '#121212', fontSize: '.92rem' }}>
+      <p style={{ margin: 0, fontWeight: 'var(--fw-label)', color: '#121212', fontSize: 'var(--fs-section)' }}>
         {title}
       </p>
-      <p style={{ margin: '6px 0 0', fontSize: '.78rem', color: '#717171', lineHeight: 1.5 }}>
+      <p style={{ margin: '6px 0 0', fontSize: 'var(--fs-sub)', color: '#717171', lineHeight: 1.5 }}>
         {detail}
       </p>
       {onRetry && (
@@ -1803,7 +1803,7 @@ function RestingPanel({ title, detail, onRetry, retryLabel = 'Check again' }) {
           style={{
             marginTop: 12, padding: '7px 14px', borderRadius: 8,
             border: '1px solid #121212', background: 'transparent',
-            color: '#121212', fontSize: '.78rem', fontWeight: 700,
+            color: '#121212', fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)',
             fontFamily: 'inherit', cursor: 'pointer',
           }}
         >{retryLabel}</button>
@@ -1829,7 +1829,7 @@ function LabelProgressNote({ ocrStatus, unidentified, onRetry }) {
       background: '#ffffff', border: '1px dashed #e6e6e6',
     }}>
       {working && <span aria-hidden="true" className={desk.pulseDot} />}
-      <span style={{ fontSize: '.76rem', color: '#717171', lineHeight: 1.5 }}>
+      <span style={{ fontSize: 'var(--fs-sub)', color: '#717171', lineHeight: 1.5 }}>
         {working
           ? 'Reading make and model from the device labels.'
           : 'Could not read the device labels. Add make and model on any card.'}
@@ -1841,7 +1841,7 @@ function LabelProgressNote({ ocrStatus, unidentified, onRetry }) {
           style={{
             marginLeft: 'auto', padding: '5px 12px', borderRadius: 8,
             border: '1px solid #121212', background: 'transparent',
-            color: '#121212', fontSize: '.74rem', fontWeight: 700,
+            color: '#121212', fontSize: 'var(--fs-sub)', fontWeight: 'var(--fw-title)',
             fontFamily: 'inherit', cursor: 'pointer',
           }}
         >Check again</button>
@@ -1862,10 +1862,10 @@ function PlacesProposalNote({ rackId }) {
     <div style={{
       marginBottom: 14, padding: '10px 14px', borderRadius: 10,
       background: '#ffffff', border: '1px dashed #e6e6e6',
-      fontSize: '.76rem', color: '#b26a00', lineHeight: 1.5,
+      fontSize: 'var(--fs-sub)', color: '#b26a00', lineHeight: 1.5,
     }}>
       Nothing the switches said is on these cards yet.{' '}
-      <Link to={`/results/${rackId}/review`} style={{ color: '#121212', fontWeight: 700 }}>
+      <Link to={`/results/${rackId}/review`} style={{ color: '#121212', fontWeight: 'var(--fw-title)' }}>
         Open Review
       </Link>{' '}
       and confirm which switch is which box.
@@ -2058,8 +2058,8 @@ function SwitchPicker({ switches, rackId }) {
                   }} />
                   <span style={{
                     fontFamily: 'var(--font, inherit)',
-                    fontSize: 10,
-                    fontWeight: 700,
+                    fontSize: 'var(--fs-micro)',
+                    fontWeight: 'var(--fw-title)',
                     letterSpacing: '0.10em',
                     textTransform: 'uppercase',
                     color: 'var(--md-on-surface, #121212)',
@@ -2070,8 +2070,8 @@ function SwitchPicker({ switches, rackId }) {
                 </span>
 
                 <span style={{
-                  fontSize: 18,
-                  fontWeight: 700,
+                  fontSize: 'var(--fs-head)',
+                  fontWeight: 'var(--fw-title)',
                   letterSpacing: '-0.01em',
                   lineHeight: '22px',
                   color: 'var(--md-on-surface, #121212)',
@@ -2082,8 +2082,8 @@ function SwitchPicker({ switches, rackId }) {
                 {tabSub(sw) && (
                   <span style={{
                     fontFamily: 'var(--mono, ui-monospace, monospace)',
-                    fontSize: 11,
-                    fontWeight: 500,
+                    fontSize: 'var(--fs-label)',
+                    fontWeight: 'var(--fw-label)',
                     letterSpacing: 0,
                     lineHeight: '14px',
                     color: 'var(--md-on-surface, #121212)',

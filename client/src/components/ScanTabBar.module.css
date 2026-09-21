@@ -79,8 +79,8 @@
 
 /* ── Label ── */
 .tabLabel {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1;
@@ -117,7 +117,7 @@
   background: var(--md-primary);
   color: #ffffff;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: var(--fw-title);
   line-height: 1;
 }
 
@@ -165,8 +165,8 @@
   cursor: pointer;
   color: var(--md-on-surface);
   font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
   text-align: left;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.14s;

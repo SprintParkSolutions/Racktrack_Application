@@ -423,8 +423,8 @@ export default function ProfilePage() {
               boxShadow: '0 -10px 40px rgba(0,0,0,.28)' }}
           >
             <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(128,128,128,.35)', margin: '0 auto 16px' }} />
-            <h3 style={{ margin: '0 0 4px', fontSize: 17, fontWeight: 750, textAlign: 'center' }}>Choose your picture</h3>
-            <p style={{ margin: '0 0 18px', fontSize: 13.5, opacity: .6, textAlign: 'center' }}>Pick a look - tap to save.</p>
+            <h3 style={{ margin: '0 0 4px', fontSize: 'var(--fs-head)', fontWeight: 'var(--fw-title)', textAlign: 'center' }}>Choose your picture</h3>
+            <p style={{ margin: '0 0 18px', fontSize: 'var(--fs-body)', opacity: .6, textAlign: 'center' }}>Pick a look - tap to save.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, justifyItems: 'center' }}>
               {AVATARS.map((_, idx) => (
                 <Avatar
@@ -442,7 +442,7 @@ export default function ProfilePage() {
             <button
               onClick={() => !savingAvatar && setPickerOpen(false)}
               style={{ width: '100%', marginTop: 22, padding: '13px', borderRadius: 13, border: '1px solid rgba(128,128,128,.28)',
-                background: 'transparent', color: 'inherit', fontSize: 15, fontWeight: 650, cursor: 'pointer' }}
+                background: 'transparent', color: 'inherit', fontSize: 'var(--fs-section)', fontWeight: 'var(--fw-title)', cursor: 'pointer' }}
             >
               {savingAvatar ? 'Saving…' : 'Close'}
             </button>

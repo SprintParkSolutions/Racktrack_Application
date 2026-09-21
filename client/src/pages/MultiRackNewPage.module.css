@@ -38,14 +38,14 @@
   border-radius: 9999px;
   border: 1px solid #e4e4e4;
   background: #fff; color: #111;
-  font-size: 18px; line-height: 1; cursor: pointer;
+  font-size: var(--fs-head); line-height: 1; cursor: pointer;
   transition: border-color .15s;
 }
 .back:hover { border-color: #111; }
 .title {
   margin: 0; text-align: center;
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 12px; font-weight: 600;
+  font-size: var(--fs-mono); font-weight: var(--fw-label);
   letter-spacing: 0.14em; text-transform: uppercase;
   color: #111;
 }
@@ -61,15 +61,15 @@
 }
 .intro {
   margin: 0;
-  font-size: 0.9rem; line-height: 1.6;
+  font-size: var(--fs-item); line-height: 1.6;
   color: #5c5c5c;
 }
-.intro b { color: #111; font-weight: 650; }
+.intro b { color: #111; font-weight: var(--fw-title); }
 
 /* ── Eyebrow section labels (mono, uppercase) ── */
 .eyebrow {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px; font-weight: 500;
+  font-size: var(--fs-label); font-weight: var(--fw-label);
   letter-spacing: 0.13em; text-transform: uppercase;
   color: #6b6b6b; line-height: 1.2;
   margin-bottom: -8px;
@@ -89,7 +89,7 @@
   padding: 10px 8px;
   border-radius: 9px;
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 12px; font-weight: 600;
+  font-size: var(--fs-mono); font-weight: var(--fw-label);
   letter-spacing: 0.04em; text-transform: uppercase;
   color: #6b6b6b;
   transition: color .16s, background .16s, box-shadow .16s;
@@ -110,7 +110,7 @@
 .slot { display: flex; flex-direction: column; gap: 10px; }
 .slotLabel {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px; font-weight: 500;
+  font-size: var(--fs-label); font-weight: var(--fw-label);
   letter-spacing: 0.13em; text-transform: uppercase;
   color: #6b6b6b;
 }
@@ -152,11 +152,11 @@
 }
 .iconWrap svg { width: 30px; height: 30px; }
 .dropTitle {
-  font-size: 17px; font-weight: 700;
+  font-size: var(--fs-head); font-weight: var(--fw-title);
   color: #111; letter-spacing: -0.01em;
 }
 .pickHint {
-  font-size: 13px; color: #6b6b6b;
+  font-size: var(--fs-body); color: #6b6b6b;
   line-height: 1.45; max-width: 240px;
 }
 .fmtPills {
@@ -165,7 +165,7 @@
 }
 .fmtPill {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px; color: #6b6b6b;
+  font-size: var(--fs-label); color: #6b6b6b;
   border: 1px solid #e4e4e4; border-radius: 999px;
   padding: 5px 12px; line-height: 1;
 }
@@ -177,7 +177,7 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 11px 8px;
   font-family: var(--font);
-  font-size: 13px; font-weight: 600;
+  font-size: var(--fs-body); font-weight: var(--fw-label);
   color: #111;
   background: #fff;
   border: 1px solid #e4e4e4;
@@ -202,7 +202,7 @@
 .slotBtnPrimary:active:not(:disabled) { background: #111; }
 
 @media (max-width: 360px) {
-  .slotBtn { font-size: 12px; padding: 11px 5px; gap: 4px; }
+  .slotBtn { font-size: var(--fs-sub); padding: 11px 5px; gap: 4px; }
 }
 
 /* ── Video mode - one dashed drop area. ── */
@@ -222,14 +222,14 @@
 .videoZoneFilled { border-style: solid; border-color: #e4e4e4; background: #fff; }
 .videoName {
   display: inline-flex; align-items: center; gap: 8px;
-  font-weight: 650; font-size: 0.95rem; color: #111;
+  font-weight: var(--fw-title); font-size: var(--fs-section); color: #111;
   word-break: break-all;
 }
 
 /* Said above the button while a Site is still to be chosen, as on Scan. */
 .siteHint {
   margin: 0 0 -8px; text-align: center;
-  font-family: var(--font); font-size: 13px; line-height: 1.4; color: #6b6b6b;
+  font-family: var(--font); font-size: var(--fs-body); line-height: 1.4; color: #6b6b6b;
 }
 
 /* ── Combine / Analyze - full-width dark button (Scan's Analyze). ── */
@@ -241,7 +241,7 @@
   background: #111;
   color: #fff;
   font-family: var(--font);
-  font-size: 15px; font-weight: 700;
+  font-size: var(--fs-section); font-weight: var(--fw-title);
   cursor: pointer;
   transition: opacity 0.15s;
 }
@@ -251,7 +251,7 @@
 /* ── Progress + error ── */
 .progress {
   display: flex; align-items: center; gap: 10px;
-  font-size: 0.88rem; font-weight: 600;
+  font-size: var(--fs-item); font-weight: var(--fw-label);
   color: #111;
 }
 .spinner {
@@ -268,7 +268,7 @@
   background: #f4f4f4;
   border: 1px solid #f1c9c2;
   color: #b23b30;
-  font-size: 0.85rem; line-height: 1.5;
+  font-size: var(--fs-item); line-height: 1.5;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -289,7 +289,7 @@
     padding: 28px clamp(28px, 5vw, 64px) 64px;
     gap: 24px;
   }
-  .intro { max-width: 720px; font-size: 0.95rem; }
+  .intro { max-width: 720px; font-size: var(--fs-section); }
 
   /* Segmented control reads best left-aligned at a fixed width. */
   .modeToggle { max-width: 420px; }
@@ -308,6 +308,6 @@
   /* Bigger viewfinder circle, matching Scan's desktop dropzone. */
   .iconWrap { width: 92px; height: 92px; }
   .iconWrap svg { width: 38px; height: 38px; }
-  .dropTitle { font-size: 22px; }
-  .pickHint { font-size: 14px; max-width: 300px; }
+  .dropTitle { font-size: var(--fs-page); }
+  .pickHint { font-size: var(--fs-item); max-width: 300px; }
 }
