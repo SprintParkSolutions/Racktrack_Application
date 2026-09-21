@@ -288,6 +288,18 @@ describe('preferences, and the events that ignore them', () => {
     notify.setPrefs(1, 2, { email: true });
   });
 
+  it('says a write that could not start did not start, and names no object NetBox refused', async () => {
+    const plan = heldPlan({ status: 'approved' });
+    const out = notify.send('write_failed', { plan, notStarted: true,
+      error: 'No NetBox is configured for this organization, so there is nowhere to write.' });
+    await out.sent;
+    const mail = sent.find((m) => m.to === 'owner@example.test');
+    assert.match(mail.subject, /did not start$/);
+    assert.match(mail.text, /was approved, but the write to NetBox could not start: No NetBox is configured for this organization, so there is nowhere to write\.\n/);
+    assert.match(mail.text, /Nothing was changed in NetBox\. The approval still stands/);
+    assert.doesNotMatch(mail.text, /refused|went through/);
+  });
+
   it('takes a switch per event, the shape the settings screen writes', async () => {
     const plan = planOf();
     notify.setPrefs(1, 1, { resolved: false });

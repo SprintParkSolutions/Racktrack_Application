@@ -340,7 +340,16 @@ const LINES = {
   },
   // Name every object NetBox refused, because "part of it" tells an admin
   // nothing they can act on. This is the only email a failed write sends.
-  write_failed: (plan) => {
+  write_failed: (plan, p) => {
+    // An approval whose write could not begin has no result to read: NetBox
+    // refused nothing, and nothing went through.
+    if (p.notStarted) {
+      return [
+        `The check on ${where(plan)} was approved, but the write to NetBox could not start: `
+          + `${String(p.error || 'no reason given').replace(/[.\s]+$/, '')}.`,
+        'Nothing was changed in NetBox. The approval still stands, and an organization admin can start the write again.',
+      ];
+    }
     const r = plan.result || {};
     const failures = Array.isArray(r.failures) ? r.failures : [];
     const named = failures.map((f) => `  ${f.type || 'object'} "${f.name || f.uid}"${f.reason ? ` - ${f.reason}` : ''}`);
@@ -376,7 +385,7 @@ const SUBJECTS = {
   approved: (plan, p) => `RackTrack: your check on ${rackOf(plan, p)} was approved`,
   rejected: (plan, p) => `RackTrack: your check on ${rackOf(plan, p)} was ${p.to === 'rework' ? 'sent back' : 'rejected'}`,
   completed: (plan, p) => `RackTrack: your check on ${rackOf(plan, p)} is written`,
-  write_failed: (plan) => `RackTrack: the write for ${where(plan)} did not finish`,
+  write_failed: (plan, p) => `RackTrack: the write for ${where(plan)} did not ${p && p.notStarted ? 'start' : 'finish'}`,
 };
 
 /** How many changes the write put into NetBox. */
