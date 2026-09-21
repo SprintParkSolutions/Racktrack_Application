@@ -4195,33 +4195,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
           {reanalyzeNote && <p className={styles.reanalyzeNote} role="alert">{reanalyzeNote}</p>}
 
-          {/* ── Where to next ──
-              A located port is the middle of a job: the rack it sits in, the
-              switch it is on, and what has happened on it before. Three ways
-              on, in one row, with no heading over them - the row says what it
-              is. The rack is first because every other way out went through it. */}
-          {!ticketMode && (
-            <div className={styles.reportRow}>
-              <button type="button" className={styles.reportChip} onClick={leavePortView}>
-                The rack
-              </button>
-              <button
-                type="button"
-                className={styles.reportChip}
-                onClick={() => { leavePortView(); handleTabChange('switches'); }}
-              >
-                Switches
-              </button>
-              <button
-                type="button"
-                className={styles.reportChip}
-                onClick={() => navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/network#timeline`)}
-              >
-                Port history
-              </button>
-            </div>
-          )}
-
           {/* View / Share / Change device / New scan */}
           <div className={styles.reportRow} style={{ '--ac': rc }}>
             <button className={`${styles.reportChip} ${styles.reportChipView}`}
