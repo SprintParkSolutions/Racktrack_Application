@@ -81,6 +81,63 @@ describe('the tables hold a plan and everything on it', () => {
       'a field the table has no column for is kept and handed back');
   });
 
+  it('keeps who a check is with, why it waits for an admin, and its incident', () => {
+    const cols = (table) => store.db().prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+    for (const col of ['spoc_user_id', 'spoc', 'needs_admin', 'incident', 'written_by_id', 'findings',
+      'evidence', 'suggestion_state']) {
+      assert.ok(cols('approval_plans').includes(col), `approval_plans.${col}`);
+    }
+    assert.ok(cols('approval_notifications').includes('data'));
+    assert.ok(store.db().prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?")
+      .get('idx_approval_plans_spoc'));
+
+    const plan = store.insertPlan({ orgId: 3, tenantId: 7, status: 'assigned', createdBy: 'ravi',
+      createdAt: store.nowIso() }, []);
+    const fresh = store.getPlan(plan.id);
+    assert.deepEqual([fresh.spocUserId, fresh.spoc, fresh.needsAdmin, fresh.incident], [null, null, null, null],
+      'a check from before the SPOC change has no holder');
+    assert.deepEqual([fresh.findings, fresh.evidence, fresh.suggestionState], [[], null, {}]);
+
+    const holder = { userId: 41, username: 'dc007.spoc', email: 'spoc@dc007.example', source: 'site', previous: [] };
+    store.updatePlan(plan.id, { spocUserId: 41, spoc: holder, needsAdmin: { why: 'no_spoc', text: 'x', at: 'now' },
+      incident: { system: 'none' }, findings: [{ rule: 'wrong_shelf' }], evidence: { seen: 1 } });
+    const held = store.getPlan(plan.id);
+    assert.equal(held.spocUserId, 41);
+    assert.deepEqual(held.spoc, holder);
+    assert.deepEqual(held.needsAdmin, { why: 'no_spoc', text: 'x', at: 'now' });
+    assert.deepEqual(held.incident, { system: 'none' });
+    assert.deepEqual(held.findings, [{ rule: 'wrong_shelf' }]);
+    const light = store.getPlan(plan.id, { heavy: false });
+    assert.deepEqual([light.findings, light.evidence], [[], null], 'the heavy columns stay home on a light read');
+    assert.equal(light.spocUserId, 41, 'and the holder does not');
+
+    // The list filter, and what a technician may see.
+    assert.deepEqual(store.listPlans({ spocUserId: 41 }).map((p) => p.id), [plan.id]);
+    assert.deepEqual(store.listPlans({ spocUserId: 42 }).map((p) => p.id), []);
+    const visibleTo = (userId) => store.listPlans({ ids: [plan.id],
+      visibleTo: { role: 'member', username: 'nobody', userId, tenantId: 99 } }).length;
+    assert.equal(visibleTo(41), 1, 'a member who holds the check is shown it');
+    assert.equal(visibleTo(42), 0);
+
+    // A notification carries what it is about, as fields.
+    const row = store.addNotification({ event: 'assigned', planId: plan.id, recipientUserId: 41,
+      channel: 'inapp', subject: 's', body: 'b', dedupeKey: `store-test|${plan.id}`,
+      data: { planId: plan.id, kind: 'assigned', incidentNumber: null } });
+    assert.deepEqual(row.data, { planId: plan.id, kind: 'assigned', incidentNumber: null });
+    assert.deepEqual(store.notificationsFor(41)[0].data.kind, 'assigned');
+  });
+
+  it('leaves a ticket that only mirrors its check\'s incident out of the ServiceNow poll', () => {
+    const plan = store.insertPlan({ orgId: 3, status: 'assigned', createdAt: store.nowIso() },
+      [{ uid: 'dev:a', action: 'create', decidable: true }, { uid: 'dev:b', action: 'create', decidable: true }]);
+    store.putTicket(plan.id, 'dev:a', { assignee: 'sam', status: 'open',
+      external: { system: 'servicenow', sysId: 'own-1', number: 'INC1' } });
+    store.putTicket(plan.id, 'dev:b', { assignee: 'sam', status: 'open',
+      external: { system: 'servicenow', sysId: 'check-1', number: 'INC2', planLevel: true } });
+    const waiting = store.ticketsWaitingOnServiceNow().filter((t) => t.planId === plan.id);
+    assert.deepEqual(waiting.map((t) => t.itemUid), ['dev:a']);
+  });
+
   it('bumps the version on every write, and only on a write', () => {
     const plan = store.insertPlan({ orgId: 3, status: 'draft', createdAt: store.nowIso(),
       createdBy: 'ravi' }, [{ uid: 'dev:2', action: 'create', decidable: true }]);

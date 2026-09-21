@@ -131,6 +131,44 @@ describe('a status change starts and stops the right clocks', () => {
     sla.onTransition({ plan: over, to: 'completed' }, { when: `${FRIDAY}T12:00:00Z` });
     assert.equal(clockOf(plan.id, 'approval').status, 'cancelled');
   });
+
+  it('meets acceptance, investigation and resolution when the SPOC approves straight from assigned', () => {
+    const plan = planOf({ status: 'assigned' });
+    sla.onTransition({ plan, to: 'assigned' }, { when: `${FRIDAY}T10:00:00Z` });
+    const approved = store.updatePlan(plan.id, { status: 'approved' });
+    sla.onTransition({ plan: approved, to: 'approved' }, { when: `${FRIDAY}T10:10:00Z` });
+
+    for (const clock of ['acceptance', 'resolution']) {
+      assert.equal(clockOf(plan.id, clock).status, 'met', clock);
+      assert.equal(clockOf(plan.id, clock).metAt, `${FRIDAY}T10:10:00Z`);
+    }
+    for (const clock of ['acceptance', 'investigation', 'resolution']) {
+      for (const to of ['approval_pending', 'approved', 'rejected', 'rework']) {
+        assert.ok(sla.MEETS[clock].includes(to), `${to} meets ${clock}`);
+      }
+    }
+    assert.equal(clockOf(plan.id, 'approval'), undefined, 'no approval clock ran: one name was enough');
+  });
+
+  it('meets an investigation that had started, and runs the approval clock only for a second signature', () => {
+    const plan = planOf({ status: 'assigned' });
+    sla.onTransition({ plan, to: 'assigned' }, { when: `${FRIDAY}T10:00:00Z` });
+    sla.onTransition({ plan: store.updatePlan(plan.id, { status: 'accepted' }), to: 'accepted' },
+      { when: `${FRIDAY}T10:02:00Z` });
+    const parked = store.updatePlan(plan.id, { status: 'approval_pending' });
+    sla.onTransition({ plan: parked, to: 'approval_pending' }, { when: `${FRIDAY}T10:20:00Z` });
+    assert.equal(clockOf(plan.id, 'investigation').status, 'met');
+    assert.equal(clockOf(plan.id, 'resolution').status, 'met');
+    assert.equal(clockOf(plan.id, 'approval').status, 'running', 'waiting for the second name');
+
+    // Sent back instead: the work is answered, and rework does not close the plan.
+    const other = planOf({ status: 'assigned' });
+    sla.onTransition({ plan: other, to: 'assigned' }, { when: `${FRIDAY}T10:00:00Z` });
+    sla.onTransition({ plan: store.updatePlan(other.id, { status: 'rework' }), to: 'rework' },
+      { when: `${FRIDAY}T10:30:00Z` });
+    assert.equal(clockOf(other.id, 'acceptance').status, 'met');
+    assert.equal(clockOf(other.id, 'resolution').status, 'met');
+  });
 });
 
 describe('a plan on hold does not burn its target', () => {
