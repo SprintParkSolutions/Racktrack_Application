@@ -47,6 +47,67 @@ const isStrict = (actor) => !(actor && (actor.trusted || actor.system));
 /** The named event a status stands for, as service.js has it. */
 const NAMED = { approval_pending: 'approval_requested', completed: 'completed' };
 
+// -- Which scan is the second scan ----------------------------------------
+// The same folder routes/netbox/scans.js adopts a rack's detection result from.
+const fs = require('node:fs');
+const path = require('node:path');
+const OUTPUTS_DIR = process.env.RT_OUTPUTS_DIR || path.resolve(__dirname, '..', '..', '..', 'outputs');
+
+/**
+ * The scan a person named.
+ *
+ * A number is a scan on the NetBox side. Anything else is the id the phone
+ * files a rack's scans under (RK-...), which is what the Drift Desk offers in
+ * its list: it names that rack's adopted scan. Looked up as a number, a rack id
+ * is NaN and matched nothing, so every choice from that list was answered
+ * "no such scan".
+ */
+function scanNamed(scans, scanId) {
+  const named = String(scanId).trim();
+  if (/^\d+$/.test(named)) return scans.getScan(named);
+  const adopted = scans.scansForRack(named).find((s) => s.source === 'adopted');
+  return adopted ? scans.getScan(adopted.id) : null;
+}
+
+/** When the rack's detection result on disk was last written, in ms. */
+function rescannedAt(rackId) {
+  if (!/^[A-Za-z0-9._-]+$/.test(String(rackId || ''))) return null;
+  try { return fs.statSync(path.join(OUTPUTS_DIR, String(rackId), 'device_unit_map.json')).mtimeMs; }
+  catch { return null; }
+}
+
+/**
+ * Why the plan's own scan is not a second scan, or null when it is one.
+ *
+ * The phone keeps ONE adopted scan per rack: scanning the rack again rebuilds
+ * that scan in place rather than adding another. So "a scan with a different
+ * number" is something the phone can never produce, and asking for one made
+ * the verification impossible to pass from the screens. What decision 6 is
+ * after is evidence newer than the drift, so the plan's own scan counts when,
+ * and only when, the rack was scanned again after the plan was raised and the
+ * adopted copy was rebuilt from that newer result.
+ */
+function staleSecondScan(scan, plan, { scannedAt = rescannedAt } = {}) {
+  // The plan's and the stage's times are kept to the whole second, the file's
+  // to the millisecond. Compared as they stand, a result written a moment
+  // BEFORE the plan was raised, in the same second, would read as newer than it.
+  // So each test is made in whole seconds, the way that can only refuse too
+  // much: the rack must have been scanned in a later second than the plan was
+  // raised, and the copy rebuilt no earlier than the second after that scan.
+  const SECOND = 1000;
+  const raised = Date.parse(plan.createdAt);
+  const again = scannedAt(scan.rackId);
+  if (!Number.isFinite(raised) || !again || again < raised + SECOND) {
+    return 'that is the scan this plan was compared from; scan the rack again';
+  }
+  const rebuilt = Date.parse((scan.stages && scan.stages.detect && scan.stages.detect.ranAt) || '');
+  if (!Number.isFinite(rebuilt) || rebuilt < Math.ceil(again / SECOND) * SECOND) {
+    return 'this rack was scanned again, but the new scan has not been opened yet: '
+      + 'open its Drift check on the phone once, then verify';
+  }
+  return null;
+}
+
 /** Which reason a failure of each kind reopens the plan with. */
 const FAIL_REASON = { post_fix: 'verification_failed', post_write: 'write_mismatch' };
 
@@ -187,7 +248,7 @@ function flush(effects) {
  */
 async function run(planId, { kind = 'post_fix', scanId = null, actor, req = null,
   changes = null, client = null, snapshot = null, writer = null, evidence = null,
-  reason = null } = {}) {
+  reason = null, scannedAt = null } = {}) {
   const who = service.actorOf(actor) || SYSTEM;
   const plan = store.getPlan(planId, { heavy: false });
   if (!plan || !service.canTouch(plan, who)) return NOT_FOUND();
@@ -211,19 +272,25 @@ async function run(planId, { kind = 'post_fix', scanId = null, actor, req = null
   }
 
   // The evidence. A second scan is required to verify a fix (decision 6),
-  // and it has to be a newer scan of the same rack.
+  // and it has to be a newer scan of the same rack. The phone names it by the
+  // rack's id and rebuilds the rack's one adopted scan in place, so both are
+  // understood here rather than refused.
   let scan = null;
+  // The plan's own scan, rebuilt from a newer scan of the rack (see staleSecondScan).
+  let rebuiltFromRescan = false;
   if (kind === 'post_fix' && !changes) {
     if (scanId == null || scanId === '') {
       return refuse('bad_request', 'send the id of the new scan of this rack');
     }
-    scan = require('../netbox/store').getScan(scanId);
+    scan = scanNamed(require('../netbox/store'), scanId);
     if (!scan) return refuse('not_found', 'no such scan');
     if (String(scan.rackId) !== String(plan.rackId)) {
       return refuse('bad_request', 'that scan is of a different rack');
     }
     if (Number(scan.id) === Number(plan.scanId)) {
-      return refuse('bad_request', 'that is the scan this plan was compared from; scan the rack again');
+      const stale = staleSecondScan(scan, plan, scannedAt ? { scannedAt } : {});
+      if (stale) return refuse('bad_request', stale);
+      rebuiltFromRescan = true;
     }
   }
 
@@ -246,7 +313,8 @@ async function run(planId, { kind = 'post_fix', scanId = null, actor, req = null
       result: verdict.result, performedBy: who.username ?? null, performedAt: now,
       detail: verdict.detail,
       evidence: evidence || { checked: verdict.checked, failed: verdict.failed,
-        remediated: verdict.remediated, scanId: scan ? scan.id : null },
+        remediated: verdict.remediated, scanId: scan ? scan.id : null,
+        ...(rebuiltFromRescan ? { sameScanRebuilt: true } : {}) },
     });
 
     // An item the second scan finds already put right is no longer a question:

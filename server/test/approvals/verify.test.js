@@ -196,6 +196,81 @@ describe('what a verification refuses', () => {
     assert.match(out.why, /scan the rack again/);
   });
 
+  // The phone keeps one adopted scan per rack and rebuilds it in place when the
+  // rack is scanned again, and the Drift Desk names it by the rack's id. Both
+  // used to make the verification impossible to pass from the screens.
+  describe('the scan the phone actually produces', () => {
+    const writer = { plan: async () => ({ changes: CHANGES() }) };
+    /** A plan raised from a rack's one adopted scan, waiting to be verified. */
+    function raisedFromAdopted(rackId) {
+      const scans = require('../../lib/netbox/store');
+      const adopted = scans.addScan({ rackId, source: 'adopted', payload: { snapshot: { devices: [] } } });
+      const filed = service.create({ scanId: adopted.id, rackId, rackName: rackId, report: report(),
+        actor: service.trustedActor('ravi'), orgId: 1, tenantId: 7 });
+      // Raised an hour ago: these times are kept to the whole second, and a test
+      // that raises, scans and rebuilds inside one second proves nothing about order.
+      const hourAgo = new Date(Date.now() - 3600e3).toISOString().replace(/\.\d+Z$/, 'Z');
+      store.updatePlan(filed.plan.id, { status: 'verification_pending', createdAt: hourAgo });
+      return { scans, adopted, id: filed.plan.id, raised: Date.parse(store.getPlan(filed.plan.id).createdAt) };
+    }
+    const HALF_HOUR = 1800e3;
+
+    it('takes the rack id the Drift Desk offers, and still refuses a rack not scanned again', async () => {
+      const { id } = raisedFromAdopted('RK-PHONE-1');
+      const out = await verify.run(id, { kind: 'post_fix', scanId: 'RK-PHONE-1', actor: ADMIN,
+        client: {}, writer, scannedAt: () => null });
+      assert.equal(out.code, 'bad_request', 'found the scan; it is refused for being old, not for being missing');
+      assert.match(out.why, /scan the rack again/);
+    });
+
+    it('answers no such scan for a rack id nothing was adopted under', async () => {
+      const { id } = raisedFromAdopted('RK-PHONE-2');
+      const out = await verify.run(id, { kind: 'post_fix', scanId: 'RK-NOBODY', actor: ADMIN });
+      assert.equal(out.code, 'not_found');
+    });
+
+    it('says the new scan has not been opened when the rack was scanned again but not adopted again', async () => {
+      const { id } = raisedFromAdopted('RK-PHONE-3');
+      const out = await verify.run(id, { kind: 'post_fix', scanId: 'RK-PHONE-3', actor: ADMIN,
+        client: {}, writer, scannedAt: () => Date.now() + HALF_HOUR });
+      assert.equal(out.code, 'bad_request');
+      assert.match(out.why, /has not been opened yet/);
+      assert.equal(store.getPlan(id).status, 'verification_pending', 'a refusal moves nothing');
+    });
+
+    it('passes on the same scan once it has been rebuilt from a newer scan of the rack', async () => {
+      const { scans, adopted, id, raised } = raisedFromAdopted('RK-PHONE-4');
+      // What adopting again does: the payload is replaced and the stage is stamped.
+      scans.setPayload(adopted.id, { snapshot: { devices: [] } });
+      scans.recordStage(adopted.id, 'detect', 'ok', 'adopted again');
+      const out = await verify.run(id, { kind: 'post_fix', scanId: 'RK-PHONE-4', actor: ADMIN,
+        client: {}, writer, scannedAt: () => raised + HALF_HOUR });
+      assert.equal(out.result, 'pass');
+      assert.equal(store.getPlan(id).status, 'approval_pending');
+      const row = store.verificationsOf(id)[0];
+      assert.equal(Number(row.scanId), adopted.id);
+      assert.equal(row.evidence.sameScanRebuilt, true, 'the record says which kind of second scan it was');
+    });
+
+    it('does not count a result written in the same second the plan was raised', async () => {
+      const { scans, adopted, id, raised } = raisedFromAdopted('RK-PHONE-6');
+      scans.recordStage(adopted.id, 'detect', 'ok', 'adopted again');
+      // 900 ms "after" a time that is only known to the second could be before it.
+      const out = await verify.run(id, { kind: 'post_fix', scanId: 'RK-PHONE-6', actor: ADMIN,
+        client: {}, writer, scannedAt: () => raised + 900 });
+      assert.equal(out.code, 'bad_request');
+      assert.match(out.why, /scan the rack again/);
+    });
+
+    it('takes the scan number as well as the rack id', async () => {
+      const { scans, adopted, id, raised } = raisedFromAdopted('RK-PHONE-5');
+      scans.recordStage(adopted.id, 'detect', 'ok', 'adopted again');
+      const out = await verify.run(id, { kind: 'post_fix', scanId: adopted.id, actor: ADMIN,
+        client: {}, writer, scannedAt: () => raised + HALF_HOUR });
+      assert.equal(out.result, 'pass');
+    });
+  });
+
   it('refuses a plan that is not waiting for one', async () => {
     const id = waiting();
     store.updatePlan(id, { status: 'triage' });
