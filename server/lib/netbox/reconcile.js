@@ -1097,4 +1097,5 @@ function view(base, rackId, storedMatches, opts = {}) {
 module.exports = {
   gatherSwitches, cameraDevices, suggest, reconcile, view, slug,
   levelsFor, snapshotStamp, printOf, isPassive, PASSIVE_CLASS,
+  spanByUid,
 };

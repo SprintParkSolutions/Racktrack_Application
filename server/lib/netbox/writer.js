@@ -24,7 +24,7 @@
 const { exportable, EXPORT_ORDER } = require('./model');
 const { orderedSpecs, objectTypes, withUid } = require('./mapping');
 const { UID_FIELD, BOUND_FIELD, NetBoxError } = require('./netbox');
-const { slug } = require('./reconcile');
+const { slug, spanByUid, cameraDevices } = require('./reconcile');
 const find = require('./find');
 const identity = require('./identity');
 
@@ -406,6 +406,9 @@ const CUSTOMER_OWNED = Object.freeze({
  */
 const HARDWARE_FIELDS = Object.freeze(['serial', 'asset_tag', 'device_type', 'role']);
 
+/** The catalogue a box brings with it, which may turn out not to be needed. */
+const SCAFFOLDING = new Set(['manufacturers', 'deviceTypes', 'deviceRoles']);
+
 /** Is this record marked, on the record itself, as one a person bound? */
 const boundOnRecord = (row) => Boolean(String(((row || {}).custom_fields || {})[BOUND_FIELD] ?? '').trim());
 
@@ -419,14 +422,49 @@ function markFor(why, snapshot, hit) {
 }
 
 /**
+ * The shelf a person approved moving this one record to, or null.
+ *
+ * The narrow exception to CUSTOMER_OWNED, and off unless the snapshot carries
+ * it: a SPOC accepted "same device, wrong shelf" on a check, so for that check
+ * and that one record the position (and the face, only where it differs) may
+ * be written. It rides on the snapshot as approvedMoves, keyed by the box and
+ * naming the record, so an allowance given for record 199 allows nothing on
+ * any other record. Name, site, rack, role, device type and tenant are never
+ * in it, whatever the snapshot says.
+ */
+const MOVE_ALLOWS = Object.freeze(['position', 'face']);
+function allowanceFor(snapshot, uid, recordId) {
+  const moves = snapshot && snapshot.approvedMoves && typeof snapshot.approvedMoves === 'object'
+    ? snapshot.approvedMoves : null;
+  const move = moves && moves[uid] && typeof moves[uid] === 'object' ? moves[uid] : null;
+  if (!move || asId(move.netboxId) === null || asId(move.netboxId) !== asId(recordId)) return null;
+  const fields = move.fields && typeof move.fields === 'object' ? move.fields : {};
+  const out = {};
+  for (const k of MOVE_ALLOWS) {
+    if (fields[k] && typeof fields[k] === 'object' && 'to' in fields[k]) out[k] = fields[k];
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/** Same shelf or same face, whether NetBox spelt it 22, 22.0 or "22". */
+const sameShelfValue = (a, b) => (a === null || a === undefined || a === '' || b === null || b === undefined || b === ''
+  ? (a ?? '') === (b ?? '')
+  : (Number.isFinite(Number(a)) && Number.isFinite(Number(b)) ? Number(a) === Number(b) : String(a) === String(b)));
+
+/** Is this exact change - from this value, to that one - the one that was approved? */
+const moveAllows = (allow, key, change) => Boolean(allow && allow[key] && change
+  && sameShelfValue(allow[key].from, change.from) && sameShelfValue(allow[key].to, change.to));
+
+/**
  * Hold back the fields a bound object's owner decides, and say so out loud.
  *
  * Returns the number withheld. `changed` is edited in place, so what is left is
  * exactly what the plan will propose.
  */
-function bindOnly(spec, obj, row, changed, report) {
+function bindOnly(spec, obj, row, changed, report, allow = null) {
   const owned = CUSTOMER_OWNED[spec.field] || [];
-  const held = owned.filter((k) => Object.prototype.hasOwnProperty.call(changed, k));
+  const held = owned.filter((k) => Object.prototype.hasOwnProperty.call(changed, k)
+    && !moveAllows(allow, k, changed[k]));
   if (!held.length) return 0;
   const said = held.map((k) => `${k} (${JSON.stringify(changed[k].from)} in the record, `
     + `${JSON.stringify(changed[k].to)} on this scan)`).join(', ');
@@ -640,6 +678,13 @@ async function makeRoom(snapshot, client) {
     // be caught to before the re-check that exists to catch it.
     try { existing = await client.findByUid(spec.endpoint, d.uid, { fresh: false }); } catch { continue; }
     if (!existing || existing.position === null || existing.position === undefined) continue;
+    // Never a record that is the customer's. Its shelf is theirs and is not
+    // written, so a record taken out of its U here is never put back: the walk
+    // finds it, withholds the position, calls the row a noop, and putBack only
+    // restores a row that failed. A shelf move a SPOC approved needs no room
+    // made either: it is only offered when the target U is empty in NetBox,
+    // and NetBox itself refuses the patch otherwise, with nothing lost.
+    if (boundOnRecord(existing) || boundIdFor(snapshot, 'devices', d.uid) !== null) continue;
     const samePlace = Number(existing.position) === Number(d.position);
     const wantType = await typeIdOf(d.deviceTypeUid);
     // current() flattens NetBox's nested {id, ...} to the id, and leaves a bare
@@ -923,6 +968,11 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
     }
   }
 
+  // Catalogue entries nothing in this snapshot needs any more (overrides.js
+  // names them when a box is moved onto the customer's own record).
+  const deferred = new Set(Array.isArray(snapshot.deferScaffolding) || snapshot.deferScaffolding instanceof Set
+    ? snapshot.deferScaffolding : []);
+
   let cleared = [];
   if (apply) {
     cleared = await makeRoom(snapshot, client);
@@ -1034,7 +1084,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
         // file let the next compare rename and re-site the customer's rack.
         if (said !== null || boundOnRecord(existing)) {
           if (said !== null) remember(spec, said);
-          bindOnly(spec, obj, existing, changed, report);
+          bindOnly(spec, obj, existing, changed, report, allowanceFor(snapshot, obj.uid, existing.id));
         }
         // The record and this box disagree about which box it is. What the
         // hardware is stays as the customer has it until somebody settles it.
@@ -1284,6 +1334,34 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
           continue;
         }
 
+        // A shelf move a SPOC approved for this record, on this check. The only
+        // fields of the customer's that are ever written on a bind, and only
+        // when the record still stands where it stood when the move was
+        // accepted: the change is from THAT shelf to this one, and a record
+        // somebody has moved since is a different change nobody approved.
+        const allow = boundBy ? allowanceFor(snapshot, obj.uid, previous.id) : null;
+        const shelfMove = {};
+        let movedSince = false;
+        for (const k of allow ? Object.keys(allow) : []) {
+          const was = current(previous, k) ?? null;
+          if (sameShelfValue(was, payload[k])) continue;
+          if (moveAllows(allow, k, { from: was, to: payload[k] })) shelfMove[k] = { from: was, to: payload[k] };
+          else movedSince = true;
+        }
+        if (movedSince) {
+          skipped.add(obj.uid);
+          const why = `the record moved since this change was accepted: "${String(previous.name ?? '')}" is `
+            + `on ${previous.position == null ? 'no shelf' : `U${Number(previous.position)}`} now. `
+            + 'Nothing was written. Compare the rack again.';
+          report.warnings.push(why.charAt(0).toUpperCase() + why.slice(1));
+          report.changes.push({
+            type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+            netboxId: previous.id, reason: why,
+          });
+          bump('skip');
+          continue;
+        }
+
         if (apply) {
           // Look once more, right before the patch. The plan found the new uid
           // absent, but another writer may have minted it since, and two
@@ -1337,8 +1415,12 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
             const mark = boundBy && boundField
               ? { [BOUND_FIELD]: markFor(bindWhy, snapshot, boundBy) }
               : {};
+            // One patch. The approved shelf rides with the uid, so NetBox records
+            // one change on the record, and nothing of the customer's but the
+            // shelf is in it.
+            const shelf = Object.fromEntries(Object.keys(shelfMove).map((k) => [k, payload[k]]));
             await client.patch(spec.endpoint, previous.id,
-              { custom_fields: { [UID_FIELD]: obj.uid, ...mark } });
+              { ...shelf, custom_fields: { [UID_FIELD]: obj.uid, ...mark } });
           } catch (err) {
             failed.add(obj.uid);
             report.changes.push({
@@ -1375,16 +1457,47 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
           diff: {
             [UID_FIELD]: { from: wasUid, to: obj.uid },
             ...(boundBy ? { recordId: { from: null, to: previous.id } } : {}),
+            // The approved shelf is inside the diff for the same reason the
+            // target is: a check moving the record to U20 and one moving it to
+            // U21 must not sign identically.
+            ...shelfMove,
           },
           ...(boundBy ? {
             boundBy: bindWhy || 'record-binding',
             evidence: boundBy.evidence ?? null,
             confidence: boundBy.confidence ?? null,
-            reason: `${boundBy.why}. Only the RackTrack id is written on it: its name, its site, `
-              + 'its height, its position and what it is are left exactly as the customer has them.',
+            // What the mark on the record says. Beside the diff and never in it:
+            // the diff is what open approvals have signed.
+            ...(boundField ? { boundMark: markFor(bindWhy, snapshot, boundBy) } : {}),
+            reason: Object.keys(shelfMove).length
+              ? `${boundBy.why}. The shelf is moved ${shelfMove.position
+                ? `from U${Number(shelfMove.position.from)} to U${Number(shelfMove.position.to)} ` : ''}`
+                + 'on the word of the person who accepted that change, and the RackTrack id is written on '
+                + 'it. Its name, its site, its rack, its role and what it is are left exactly as the '
+                + 'customer has them.'
+              : `${boundBy.why}. Only the RackTrack id is written on it: its name, its site, `
+                + 'its height, its position and what it is are left exactly as the customer has them.',
           } : {}),
         });
         bump('rebind');
+        continue;
+      }
+
+      // A catalogue entry only a moved box used: a device type, a role or a
+      // manufacturer the camera minted for a box that turned out to be the
+      // customer's own record. Their type and role are theirs and are never
+      // written, so making this entry would put an object in their NetBox for
+      // nothing. The box still refers to it, so it resolves as something a later
+      // plan may make, and the row says why it was not made. A preview says the
+      // same, because the preview is what happens.
+      if (SCAFFOLDING.has(spec.field) && deferred.has(obj.uid)) {
+        resolved.set(obj.uid, new Pending(spec.label, obj.uid));
+        report.changes.push({
+          type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+          reason: 'not needed: the only box that used it is the customer\'s own record, '
+            + 'and what that record is stays as they have it',
+        });
+        bump('skip');
         continue;
       }
 
@@ -1451,8 +1564,143 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
 
   if (apply && cleared.length) await putBack(cleared, failed, client, report);
   report.counts = counts;
-  report.orphans = await orphans(snapshot, client, rackNetboxId, report, alias, boundIds.devices);
+  // The one read of everything NetBox holds in this rack answers three things:
+  // which records the scan did not see, what a suggestion may compare the
+  // photo with, and nothing else is asked twice.
+  const inRack = {};
+  report.orphans = await orphans(snapshot, client, rackNetboxId, report, alias, boundIds.devices, inRack);
+  report.records = recordsOf(inRack.present, boundIds.devices);
+  // Evidence for a suggestion, never a reason for a comparison to fail.
+  try { report.boxes = boxesOf(snapshot); } catch { report.boxes = []; }
+  await offlineRows(snapshot, client, report, apply, { rackNetboxId, bump });
   return report;
+}
+
+/** NetBox nests a choice as {value, label} and a reference as {id, name, ...}. */
+const choiceOf = (v) => (v && typeof v === 'object' ? (v.value ?? null) : (v ?? null));
+const roleOf = (d) => {
+  const r = d.role || d.device_role || null;
+  return r && typeof r === 'object' ? { id: r.id ?? null, name: r.name ?? null, slug: r.slug ?? null } : null;
+};
+const typeOf = (d) => {
+  const t = d.device_type && typeof d.device_type === 'object' ? d.device_type : null;
+  if (!t) return { model: null, manufacturer: null, uHeight: null };
+  const maker = t.manufacturer && typeof t.manufacturer === 'object' ? t.manufacturer.name : t.manufacturer;
+  const tall = t.u_height === null || t.u_height === undefined || t.u_height === '' ? null : Number(t.u_height);
+  return { model: t.model ?? null, manufacturer: maker ?? null, uHeight: Number.isFinite(tall) ? tall : null };
+};
+
+/**
+ * Every device NetBox holds in this rack, as a suggestion reads it: enough to
+ * say which shelves the record calls taken and what kind of box sits on each.
+ * Reported, never fingerprinted, and nothing here reaches the write path.
+ */
+function recordsOf(present, bound = null) {
+  const boundIds = bound instanceof Set ? bound : new Set();
+  return (Array.isArray(present) ? present : []).map((d) => {
+    const type = typeOf(d);
+    return {
+      netboxId: d.id, name: d.name ?? null, position: d.position ?? null, uHeight: type.uHeight,
+      face: choiceOf(d.face), status: choiceOf(d.status), role: roleOf(d),
+      deviceType: { model: type.model, manufacturer: type.manufacturer },
+      serial: d.serial || null, assetTag: d.asset_tag || null,
+      uid: (d.custom_fields || {})[UID_FIELD] || null,
+      bound: boundOnRecord(d) || boundIds.has(d.id),
+    };
+  });
+}
+
+/** The boxes of this photograph, as a suggestion reads them. */
+function boxesOf(snapshot) {
+  if (!snapshot || !Array.isArray(snapshot.devices)) return [];
+  const shaped = { ...snapshot, deviceTypes: snapshot.deviceTypes || [], manufacturers: snapshot.manufacturers || [] };
+  const spans = spanByUid(shaped);
+  const byUid = new Map(snapshot.devices.map((d) => [d.uid, d]));
+  const typeEvidence = new Map(shaped.deviceTypes.map((t) => [t.uid, t.evidence]));
+  return cameraDevices(shaped).map(({ sockets, box, ...b }) => {
+    const d = byUid.get(b.uid) || {};
+    return {
+      ...b,
+      span: spans.get(b.uid) ?? 1,
+      // A model is evidence only when it was read off the faceplate. One the
+      // camera made up from the class and the port count says nothing.
+      modelIsOcr: typeEvidence.get(d.deviceTypeUid) === 'cv_ocr',
+      assetTag: d.assetTag || null,
+      evidence: d.evidence ?? null,
+    };
+  });
+}
+
+/**
+ * Records a SPOC said to mark offline: in this rack, in the record, not seen by
+ * this scan. One `update` row each, status to offline and nothing else, so the
+ * change is fingerprinted, signed, rechecked, written, checked after the write
+ * and registered like any other row. This writer never deletes, and this is
+ * not a delete: the record stays, with everything the customer wrote on it.
+ *
+ * The record is read fresh by its id every time, because the answer decides a
+ * write. It has to be in the rack being scanned still, hold the status it held
+ * when the person decided, and not be a box this scan carries after all.
+ */
+async function offlineRows(snapshot, client, report, apply, { rackNetboxId = null, bump = () => {} } = {}) {
+  const asked = snapshot && snapshot.approvedOffline && typeof snapshot.approvedOffline === 'object'
+    ? snapshot.approvedOffline : null;
+  if (!asked) return;
+  const endpoint = '/api/dcim/devices/';
+  const carried = new Set((snapshot.devices || []).map((d) => d.uid));
+  for (const [key, want] of Object.entries(asked)) {
+    const id = asId(key);
+    if (id === null || !want || typeof want !== 'object') continue;
+    const uid = `nb:device:${id}`;
+    const row = (extra) => ({ type: 'Device', uid, name: String(want.name || `record ${id}`),
+      netboxId: id, synthetic: 'offline', ...extra });
+    const skip = (reason) => { report.changes.push(row({ action: 'skip', reason })); bump('skip'); };
+    let record;
+    try {
+      const res = await client.get(endpoint, { id });
+      record = (Array.isArray(res && res.results) ? res.results : []).find((r) => Number(r.id) === id) || null;
+    } catch (err) {
+      report.changes.push(row({ action: 'fail', reason: `NetBox did not answer: ${refusalText(err)}` }));
+      bump('fail');
+      continue;
+    }
+    if (!record) { skip('the record is no longer in NetBox, so there is nothing to mark offline'); continue; }
+    const named = (extra) => ({ ...row(extra), name: String(record.name || want.name || `record ${id}`) });
+    const inRack = record.rack && typeof record.rack === 'object' ? record.rack.id : record.rack;
+    if (rackNetboxId === null || isPending(rackNetboxId) || asId(inRack) !== asId(rackNetboxId)) {
+      skip('the record is no longer in this rack, so it is not marked offline from a scan of this rack');
+      continue;
+    }
+    const itsUid = (record.custom_fields || {})[UID_FIELD] || null;
+    if (itsUid && carried.has(itsUid)) {
+      skip('this scan shows the box after all, so the record is not marked offline');
+      continue;
+    }
+    const status = choiceOf(record.status);
+    if (status === 'offline') {
+      report.changes.push(named({ action: 'noop' }));
+      bump('noop');
+      continue;
+    }
+    if (status !== (want.from ?? 'active')) {
+      skip(`the record's status changed to ${status || 'nothing'} since this was decided, so it was left as it is`);
+      continue;
+    }
+    if (apply) {
+      try {
+        await client.patch(endpoint, id, { status: 'offline' });
+      } catch (err) {
+        report.changes.push(named({ action: 'fail', reason: `NetBox refused this change: ${refusalText(err)}` }));
+        bump('fail');
+        continue;
+      }
+    }
+    report.changes.push(named({
+      action: 'update', diff: { status: { from: status, to: 'offline' } },
+      reason: 'Marked offline on the SPOC\'s word: the record is in this rack and the scan did not see it.',
+    }));
+    bump('update');
+  }
 }
 
 /**
@@ -1485,7 +1733,7 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
  * with the box that answers named, and "gone from the rack" keeps its meaning:
  * the record says this box is here and the scan found that shelf empty.
  */
-async function orphans(snapshot, client, rackNetboxId, report, alias = null, bound = null) {
+async function orphans(snapshot, client, rackNetboxId, report, alias = null, bound = null, keep = null) {
   if (rackNetboxId === null || isPending(rackNetboxId)) return [];
   let present;
   try {
@@ -1498,6 +1746,8 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null, bou
     report.warnings.push('NetBox could not be asked which devices are missing from this scan.');
     return [];
   }
+  // Handed back to the caller, so what NetBox holds in this rack is read once.
+  if (keep && typeof keep === 'object') keep.present = present;
   const seen = new Set();
   for (const d of snapshot.devices || []) {
     seen.add(d.uid);
@@ -1531,6 +1781,11 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null, bou
     return null;
   };
 
+  // What kind of box the record says it is. A suggestion reads these to tell a
+  // switch that has gone from a PDU no front photograph could ever show.
+  const seenAs = (d) => ({ role: roleOf(d), deviceType: typeOf(d), assetTag: d.asset_tag || null,
+    face: choiceOf(d.face) });
+
   return present.flatMap((d) => {
     const uid = (d.custom_fields || {})[UID_FIELD] || null;
     if (uid && seen.has(uid)) return [];
@@ -1542,6 +1797,7 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null, bou
         netboxId: d.id, name: d.name, uid, ours: false, seen: true,
         position: d.position ?? null, serial: d.serial || null,
         status: (d.status || {}).value,
+        ...seenAs(d),
         matchedBox: answer.box.uid, matchedBy: answer.by,
         whose: 'the customer wrote this record and RackTrack has never touched it',
         recommendation: `Review. The record puts "${d.name}" here and this scan saw ${answer.by} `
@@ -1553,6 +1809,7 @@ async function orphans(snapshot, client, rackNetboxId, report, alias = null, bou
       netboxId: d.id, name: d.name, uid, ours, seen: false,
       position: d.position ?? null, serial: d.serial || null,
       status: (d.status || {}).value,
+      ...seenAs(d),
       whose: ours
         ? 'RackTrack wrote this record'
         : 'the customer wrote this record and RackTrack has never touched it',
@@ -1671,5 +1928,5 @@ module.exports = {
   // Exported for the test that holds the interface naming rule down. It runs
   // inside walk() and has no other way in, and the rule it enforces is the
   // one NetBox refuses a whole write over.
-  _internal: { uniqueInterfaceNames, makeRoom },
+  _internal: { uniqueInterfaceNames, makeRoom, offlineRows, recordsOf, boxesOf, allowanceFor },
 };
