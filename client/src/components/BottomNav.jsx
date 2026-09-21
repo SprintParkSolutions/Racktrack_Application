@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styles from './BottomNav.module.css';
 import { useShutter } from '../ShutterContext.jsx';
 import { useAuth } from '../AuthContext.jsx';
-import { usePrimaryNav, MoreIcon, HomeIcon } from '../nav/navLinks.jsx';
+import { usePrimaryNav, MoreIcon, ScanIcon } from '../nav/navLinks.jsx';
 import MoreSheet from './MoreSheet.jsx';
 import ScanTabBar from './ScanTabBar.jsx';
 import ExternalLink from './ExternalLink.jsx';
@@ -18,7 +18,7 @@ import ExternalLink from './ExternalLink.jsx';
    built eight role-gated links, which is how Lab and Marketplace ended up
    with no tappable route on a phone at all.
 
-   The centre action is Home, the app's landing screen, because that is what
+   The centre action is the camera, because taking a scan is what the app is
    for. It is the same action the Scan slot has always fired - including the
    shutter hijack while the viewfinder is live - given the prominence it
    deserves; the slot stays, because it is also how you get to that screen
@@ -169,10 +169,12 @@ export default function BottomNav() {
   // holds a different number.
   const half = Math.floor(items.length / 2);
 
-  // The centre action is Home, at the owner's word (22 Sep): the app's landing
-  // screen, where a person sees their racks and starts a scan. It is a button
-  // rather than a link only so it sits in the same slot the bar draws for it.
-  const goHome = () => navigate('/');
+  // The centre action is the camera, and Home is a tab in the row: a person
+  // taps Scan far more often than anything else, so it is the raised one.
+  const takeScan = () => {
+    if (typeof shutterFn === 'function') { if (canShoot) shutterFn(); return; }
+    navigate('/scan');
+  };
 
   return (
     <>
@@ -183,10 +185,10 @@ export default function BottomNav() {
             <button
               type="button"
               className={styles.centre}
-              onClick={goHome}
-              aria-label="Home"
+              onClick={takeScan}
+              aria-label={canShoot && typeof shutterFn === 'function' ? 'Take the photograph' : 'Scan a rack'}
             >
-              <HomeIcon />
+              <ScanIcon />
             </button>
           </span>
           {items.slice(half)}

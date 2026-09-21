@@ -55,15 +55,16 @@ describe('<BottomNav> on a rack', () => {
     expect(screen.getByText('SCAN')).toBeTruthy();
   });
 
-  test('the centre action is Home, and is not one of the items', () => {
-    mountAt('/scan');
+  test('the centre action takes a scan, and is not one of the items', () => {
+    mountAt('/');
     // It carries no label, so it is found by what it says it does.
-    const centre = screen.getByRole('button', { name: 'Home' });
+    const centre = screen.getByRole('button', { name: 'Scan a rack' });
     expect(centre).toBeTruthy();
+    // Off the Scan page it goes there; on it, ScanPage's shutter takes over.
     fireEvent.click(centre);
-    expect(screen.getByTestId('where').textContent).toBe('/');
-    // and Home takes no slot in the row beside it
-    expect(screen.queryByRole('tab', { name: /home/i })).toBeNull();
+    expect(screen.getByTestId('where').textContent).toBe('/scan');
+    // and Scan takes no slot in the row beside it
+    expect(screen.queryByRole('tab', { name: /^scan$/i })).toBeNull();
   });
 
   test("the rack bar's centre action opens the results page on its port picker", () => {

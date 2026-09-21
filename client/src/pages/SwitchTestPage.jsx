@@ -1463,16 +1463,25 @@ export default function SwitchTestPage() {
             lines said the same thing but never looked like a choice. */}
         {switches.length > 0 && (
           <>
-            <h2 className={styles.sectionHead}>
-              Choose a switch
-              {readCount < switches.length && (
-                <span className={styles.sectionNote}>
-                  {switches.length - readCount === 1
-                    ? '1 has not been read yet'
-                    : `${switches.length - readCount} have not been read yet`}
-                </span>
+            <div className={styles.pickHead}>
+              <h2 className={styles.sectionHead}>
+                Choose a switch
+                {readCount < switches.length && (
+                  <span className={styles.sectionNote}>
+                    {switches.length - readCount === 1
+                      ? '1 has not been read yet'
+                      : `${switches.length - readCount} have not been read yet`}
+                  </span>
+                )}
+              </h2>
+              {/* Adding one belongs beside the heading, not after the cards:
+                  a full-width button under a sideways row read as part of it. */}
+              {!form && (
+                <button type="button" className={styles.addBeside} onClick={() => setForm(BLANK)}>
+                  Add a switch
+                </button>
               )}
-            </h2>
+            </div>
             <div className={styles.pick} role="tablist" aria-label="Switches on this rack">
               {looks.map(({ sw, reading: r, sockets, up, cmp }) => {
                 const on = sw.id === chosen;
@@ -1512,11 +1521,6 @@ export default function SwitchTestPage() {
             The button sits on its own line under the cards, and what it opens
             is a sheet over the page rather than a form pushed into the middle
             of it: adding a switch is a short errand, not a step of this screen. */}
-        {switches.length > 0 && !form && (
-          <button type="button" className={styles.addMore} onClick={() => setForm(BLANK)}>
-            Add another switch
-          </button>
-        )}
         {form && !form.id && (
           <div className={styles.sheetBack} role="presentation" onClick={() => setForm(null)}>
             <div className={styles.sheet} role="dialog" aria-modal="true" aria-label="Add a switch"

@@ -131,8 +131,10 @@ describe('the Network page', () => {
   test('the Timeline is the page\'s other half, and adding a switch has no plus on it', async () => {
     mount();
     await waitFor(() => expect(screen.getByText('Choose a switch')).toBeTruthy());
-    const add = screen.getByRole('button', { name: 'Add another switch' });
-    expect(add.textContent).toBe('Add another switch');
+    // It sits on the heading's line, to the right of it, not as a full-width
+    // button under the row of cards where it read as one of them.
+    const add = screen.getByRole('button', { name: 'Add a switch' });
+    expect(add.textContent).toBe('Add a switch');
     fireEvent.click(screen.getByRole('tab', { name: 'Timeline' }));
     expect(screen.getByText('What changed on these ports')).toBeTruthy();
     expect(screen.getByText('the change log')).toBeTruthy();

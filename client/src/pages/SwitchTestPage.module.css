@@ -134,7 +134,16 @@
   scrollbar-width: none;
 }
 .pick::-webkit-scrollbar { display: none; }
-.addMore { margin-top: 10px; }
+/* The heading and the way to add one share a line, above the row of cards. */
+.pickHead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.pickHead .sectionHead { margin: 0; flex: 1 1 auto; min-width: 0; }
+.addBeside {
+  flex: 0 0 auto; min-height: 44px; padding: 0 12px;
+  border: 0; background: transparent; color: var(--text);
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.addBeside:active { opacity: .6; }
 .sectionNote { font-weight: var(--fw-body); color: var(--muted); font-size: var(--fs-sub); }
 /* A switch, as a card in a row a thumb runs along. The chosen one is outlined
    and carries the mark; what is under it is that switch. */

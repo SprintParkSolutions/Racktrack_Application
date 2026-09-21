@@ -98,11 +98,11 @@ export function usePrimaryNav() {
     // A hint that only rewords the label above it is a second line for nothing, so
     // Home, Scan, Scan history, Contact support and Profile carry none. The hints
     // that survive all say something the label does not.
-    // Home is the bar's centre action (BottomNav), so it takes no slot in the
-    // row of four beside it.
-    { group: 'work', to: '/', label: 'Home', icon: <HomeIcon />, end: true },
-    { group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false,
-      inBar: true, barLabel: 'Scan' },
+    { group: 'work', to: '/', label: 'Home', icon: <HomeIcon />, end: true,
+      inBar: true, barLabel: 'Home' },
+    // Scan is the bar's raised centre action (BottomNav), so it takes no slot
+    // in the row of four beside it.
+    { group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false },
     { group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
       inBar: true, barLabel: '2 Racks',
       hint: 'Two racks as one job' },
