@@ -39,6 +39,8 @@ approval_items: id, plan_id, uid, type, name, action, netbox_id, diff (json), re
 
 approval_tickets: id, plan_id, item_uid, assignee, assignee_id, assignee_email, assignee_user_id (nullable, a RackTrack user when the email matches), spoc (json), raised_by, raised_at, status (open, accepted, in_progress, pending, resolved, closed), pending_reason, pending_since, accepted_at, question, finding, disposition, resolved_by, resolved_at, closed_by, closed_at, external (json: system, number, sysId, url, state, reused, reopened, raisedAt, error), emailed_at, email_note. Unique (plan_id, item_uid).
 
+approval_overrides: id, plan_id, item_uid (nullable for offline), kind (move, offline, value), netbox_id, record_name, fields (json {field: {from, to}}), shown (json), source (suggestion, manual), suggestion_id, rule, note, created_by, created_by_id, created_at, revoked_at, revoked_by. What a person changed on a check before approving it; never edited or deleted, a change taken back is stamped revoked. approval_plans also holds findings, evidence and suggestion_state (json) and base_fingerprint (the fingerprint the check was filed with, kept when a change re-plans it).
+
 approval_decisions: id, plan_id, stage (first, second), approver_id, decision (approved, rejected, rework), reason_code, comment, payload_hash, plan_version, decided_at.
 
 approval_verifications: id, plan_id, kind (post_fix, post_write), scan_id, result (pass, fail), performed_by, performed_at, detail (json: per item uid, expected, observed, ok), evidence (json).
@@ -113,6 +115,9 @@ All answer JSON `{ ok: true, ... }` or `{ error }` with the right status. Every 
 - POST `/plans/:id/tickets/:uid/accept`, `/start`, `/pending` `{ reason }`, `/resolve` `{ finding, disposition }`
 - POST `/plans/:id/verify` `{ scanId }` -> runs the compare of the new scan against the plan and stores a post_fix verification; `{ result, detail }`
 - POST `/plans/:id/decide` `{ decisions: [{ uid, decision, note, reasonCode }] }` (item level; the SPOC the check is with or an admin, never the sender)
+  A row may be a change: `{ uid, decision: "modified", modified: { serial, asset_tag, description }, note }`. It is stored as `approved` with `item.modified`, the check is compared again in place and the answer says `replanned: true`. The shelf is never changed by hand.
+- POST `/plans/:id/suggestions/:sid/accept` `{ note }`, POST `/plans/:id/suggestions/:sid/dismiss` `{ note }` (`:sid` URL-encoded) -> the whole check as GET `/plans/:id` gives it. 409 when the suggestion no longer applies, when NetBox could not be compared, or when the fresh comparison does not show the change.
+- DELETE `/plans/:id/overrides/:overrideId` -> takes a change back, compares the check again, and answers the whole check.
 - POST `/plans/:id/approve` `{ comment, incidentState }` -> plan-level approval record with payload_hash, plus `write` and `incident`; second call by a different approver when dual approval applies
 - POST `/plans/:id/reject` `{ reasonCode, comment, incidentState }`; POST `/plans/:id/rework` `{ reasonCode, comment, incidentState }`
 - POST `/plans/:id/write` -> pre_snapshot, write, post_snapshot, post_write verification; `{ status, result, failures }`

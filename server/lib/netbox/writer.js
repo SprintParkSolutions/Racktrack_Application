@@ -1617,8 +1617,12 @@ function boxesOf(snapshot) {
   const spans = spanByUid(shaped);
   const byUid = new Map(snapshot.devices.map((d) => [d.uid, d]));
   const typeEvidence = new Map(shaped.deviceTypes.map((t) => [t.uid, t.evidence]));
-  return cameraDevices(shaped).map(({ sockets, box, ...b }) => {
-    const d = byUid.get(b.uid) || {};
+  return cameraDevices(shaped).map((seen) => {
+    const d = byUid.get(seen.uid) || {};
+    // The socket list and the rectangle on the photo stay with the screens that draw them.
+    const b = { ...seen };
+    delete b.sockets;
+    delete b.box;
     return {
       ...b,
       span: spans.get(b.uid) ?? 1,

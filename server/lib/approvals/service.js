@@ -1407,20 +1407,39 @@ async function replan(planId, { actor, req = null, why = 'change', tentative = [
 
   const loaded = require('./snapshot').forPlan(plan, { extra: fresh, without: revoke });
   if (loaded.error) return refuse('guard', `${loaded.error}, so the change was not applied.`);
+  // A client for each comparison: a client remembers what it preloaded, and a
+  // second comparison through the same one reads its own memory as a duplicate.
   const given = _compare && _compare.client;
-  const nb = (typeof given === 'function' ? given() : given) || require('./connections').netboxFor({
+  const clientFor = () => (typeof given === 'function' ? given() : given) || require('./connections').netboxFor({
     orgId: plan.orgId ?? who.orgId, userId: who.id ?? null });
+  const W = (_compare && _compare.writer) || require('../netbox/writer');
+  const nb = clientFor();
   if (!nb) return refuse('guard', NETBOX_DOWN);
   let report;
   try {
-    report = await ((_compare && _compare.writer) || require('../netbox/writer')).plan(loaded.snap, nb);
+    report = await W.plan(loaded.snap, nb);
   } catch {
     return refuse('guard', NETBOX_DOWN);
   }
   for (const o of fresh) {
     const refusedBy = tookOf(report, o);
     // A change the comparison will not show is a change the write will not make.
-    if (refusedBy && !who.system) return refuse('guard', refusedBy);
+    if (refusedBy) return refuse('guard', refusedBy);
+  }
+  // The system comparing a check again (NetBox moved under an approval) cannot
+  // refuse: a person's change that NetBox no longer takes is taken back, the
+  // check is compared without it, and its suggestion is open again for them.
+  const lost = who.system
+    ? store.overridesOf(plan.id).filter((o) => !(revoke || []).map(Number).includes(o.id) && tookOf(report, o))
+    : [];
+  if (lost.length) {
+    revoke = [...(revoke || []), ...lost.map((o) => o.id)];
+    const again = require('./snapshot').forPlan(plan, { extra: fresh, without: revoke });
+    try {
+      report = await W.plan(again.snap, clientFor());
+    } catch {
+      return refuse('guard', NETBOX_DOWN);
+    }
   }
 
   return run((effects) => {
@@ -1432,6 +1451,11 @@ async function replan(planId, { actor, req = null, why = 'change', tentative = [
       return refuse('guard', 'This check was changed by somebody else just now. Open it again and repeat the change.');
     }
     for (const id of revoke || []) store.revokeOverride(id, who.username ?? null, { touch: false });
+    if (lost.length) {
+      const gone = new Set(lost.map((o) => o.id));
+      store.updatePlan(plan.id, { suggestionState: Object.fromEntries(Object.entries(current.suggestionState || {})
+        .filter(([, said]) => !(said && gone.has(Number(said.overrideId))))) });
+    }
     const kept = fresh.map((o) => store.addOverride(plan.id, o, { touch: false }));
     const live = store.overridesOf(plan.id);
 

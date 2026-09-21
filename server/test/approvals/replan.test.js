@@ -87,10 +87,10 @@ let racks = 0;
  * the comparison is the real writer's against `nb`, and the check is filed by
  * the technician. Each call is a rack of its own, so checks do not meet.
  */
-async function filed(nb, { boxes = [], send = true, items = null } = {}) {
+async function filed(nb, { boxes = [], send = true, items = null, tweak = null } = {}) {
   racks += 1;
   const rackId = `RK-REPLAN${racks}`;
-  const snapshot = () => F.demoSnapshot({ boxes });
+  const snapshot = () => { const snap = F.demoSnapshot({ boxes }); if (tweak) tweak(snap); return snap; };
   const scan = scans.addScan({ rackId, source: 'adopted', rackName: 'SP-HYB-RM01-R01-R1',
     payload: { snapshot: snapshot(), tenantId: 32, rackName: 'SP-HYB-RM01-R01-R1' } });
   service._setCompare({ client: () => nb.client() });
@@ -288,6 +288,28 @@ describe('a re-plan keeps what still stands and asks again about what changed', 
     untouched();
   });
 
+  it('compared again by the system, a change NetBox no longer takes is taken back and nothing is decided for anybody', async () => {
+    const nb = F.seedDemoRack(F.fakeNetBox());
+    const check = await filed(nb, { boxes: [SERVER()] });
+    await service.decide(check.id, [{ uid: U05(), decision: 'approved' }], { actor: SPOC });
+    const accepted = await service.acceptSuggestion(check.id, sidOf(service.get(check.id, SPOC), 'wrong_shelf').id, { actor: SPOC });
+    nb.record().position = 24;   // somebody moved the record in NetBox
+
+    const machine = require('../../lib/approvals/machine');
+    const out = await service.replan(check.id, { actor: { ...machine.SYSTEM, orgId: 1 }, why: 'netbox_changed' });
+    assert.equal(out.error, undefined, out.why);
+    const now = service.get(check.id, SPOC);
+    assert.deepEqual(now.overrides, []);
+    assert.deepEqual(store.overridesOf(check.id, { active: false }).map((o) => [o.id, o.revokedBy]),
+      [[accepted.overrides[0].id, 'system']]);
+    const byUid = new Map(now.items.map((i) => [i.uid, i]));
+    assert.deepEqual([byUid.get(F.U20).action, byUid.get(F.U20).decision], ['create', 'pending'], 'asked of a person again');
+    assert.equal(byUid.get(U05()).decision, 'approved', 'what did not change stays decided');
+    const open = sidOf(now, 'wrong_shelf');
+    assert.equal(open.title, 'Same device, wrong shelf: move record SP-R1-U20-ACT from U24 to U20',
+      'and the suggestion is worked out again from NetBox as it is now');
+  });
+
   it('is only for a check that is with the person deciding it', async () => {
     const nb = F.seedDemoRack(F.fakeNetBox());
     const draft = await filed(nb, { send: false });
@@ -418,20 +440,56 @@ describe('a value changed by hand', () => {
     assert.deepEqual([posted.body.serial, posted.body.asset_tag, posted.body.description], ['FOC1234A1BC', 'A-100', 'build server']);
   });
 
-  it('on a record already there it is an update with a new fingerprint; a newer value replaces the older; it can be taken back', async () => {
+  it('on a record already there it is an update, signed afresh, and the write carries the typed value alone', async () => {
+    // The switch published a serial for the box, the record has none, and the SPOC reads the right one off the label.
     const nb = afterTheDemo();
-    const check = await filed(nb);
+    const check = await filed(nb, { tweak: (snap) => { snap.devices[0].serial = 'SNMP-0001'; } });
     const before = service.get(check.id, SPOC);
-    assert.equal(before.items.find((i) => i.uid === F.U20).action, 'noop');
-    // The box is known, so its camera-counted ports are questions of their own; one of them is the way in.
-    const first = await service.decide(check.id, [{ uid: F.U20, decision: 'modified', modified: { serial: 'FOC1' } }], { actor: SPOC });
-    assert.deepEqual(first.refused, [{ uid: F.U20, why: 'not a decidable item' }], 'a box with nothing to decide takes no change');
+    assert.deepEqual(before.items.find((i) => i.uid === F.U20).diff, { serial: { from: '', to: 'SNMP-0001' } });
 
-    const gap = afterTheDemo();
-    gap.record().serial = 'OLD-1';
-    const wrong = await filed(gap);
-    const held = await service.decide(wrong.id, [{ uid: F.U20, decision: 'modified', modified: { serial: 'FOC1' } }], { actor: SPOC });
-    assert.equal(held.refused[0].uid, F.U20);
+    const out = await service.decide(check.id, [{ uid: F.U20, decision: 'modified', modified: { serial: 'FOC1234A1BC' } }],
+      { actor: SPOC });
+    assert.deepEqual(out.applied, [{ uid: F.U20, decision: 'approved', modified: true }], JSON.stringify(out.refused));
+    const got = service.get(check.id, SPOC);
+    const item = got.items.find((i) => i.uid === F.U20);
+    assert.deepEqual(item.diff, { serial: { from: '', to: 'FOC1234A1BC' } });
+    assert.deepEqual(item.modified.original, { action: 'update', diff: { serial: { from: '', to: 'SNMP-0001' } },
+      name: item.name }, 'what the scan proposed is kept beside the change');
+    assert.notEqual(got.plan.fingerprint, before.plan.fingerprint, 'a different value is a different signature');
+    assert.equal(got.plan.baseFingerprint, before.plan.fingerprint);
+
+    // The camera-counted ports of a box that is already the customer's record are questions of their own; not now.
+    const ports = got.items.filter((i) => i.decidable && i.type === 'Interface');
+    await service.decide(check.id, ports.map((i) => ({ uid: i.uid, decision: 'rejected', reasonCode: 'wrong_asset',
+      note: 'ports are compared on a later check' })), { actor: SPOC });
+    assert.equal(service.approve(check.id, { actor: SPOC }).plan.status, 'approved');
+    const from = nb.calls.length;
+    const written = await write.run(check.id, { actor: ADMIN, client: nb.client(), sender: async () => true });
+    assert.equal(written.status, 'completed', JSON.stringify(written.result || written.why));
+    const onRecord = nb.writes(from).filter((c) => c.path === `${F.DEVICES}${F.RECORD_ID}/`);
+    assert.equal(onRecord.length, 1);
+    assert.deepEqual(Object.keys(onRecord[0].body).sort(), ['custom_fields', 'serial']);
+    assert.equal(nb.record().serial, 'FOC1234A1BC');
+    assert.equal(nb.record().position, 20);
+  });
+
+  it('is refused, with the reason, when the record already states another serial, or when nothing is asked about the box', async () => {
+    const stated = afterTheDemo();
+    stated.record().serial = 'OLD-0001';
+    const check = await filed(stated, { tweak: (snap) => { snap.devices[0].assetTag = 'A-7'; } });
+    const before = service.get(check.id, SPOC);
+    const held = await service.decide(check.id, [{ uid: F.U20, decision: 'modified', modified: { serial: 'FOC1234A1BC' } }],
+      { actor: SPOC });
+    assert.deepEqual(held.applied, []);
+    assert.match(held.refused[0].why, /do not agree on which box it is/);
+    assert.deepEqual(service.get(check.id, SPOC).overrides, []);
+    assert.equal(service.get(check.id, SPOC).plan.fingerprint, before.plan.fingerprint);
+
+    const settled = await filed(afterTheDemo());
+    assert.equal(service.get(settled.id, SPOC).items.find((i) => i.uid === F.U20).action, 'noop');
+    const none = await service.decide(settled.id, [{ uid: F.U20, decision: 'modified', modified: { serial: 'FOC1' } }],
+      { actor: SPOC });
+    assert.deepEqual(none.refused, [{ uid: F.U20, why: 'not a decidable item' }]);
   });
 
   it('never the shelf, and nothing outside the three fields', async () => {
