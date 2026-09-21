@@ -3925,58 +3925,44 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             );
           })()}
 
-          {/* ── The answer ──
-              Which port, on which device, and what is in it. One statement, at
-              the top, in the one place a person looks first. */}
+          {/* ── What was found ──
+              Device, port, where it sits and what is in it, as one small table:
+              a label on the left and its value on the right, one rule between
+              rows. It was a headline, a subtitle, a status line and then a
+              separate list of facts, which is four shapes for one answer. */}
           {(() => {
-            const s = portInfo?.status;
-            const stateText = s === 'connected' ? 'A cable is plugged in'
-              : s === 'empty' ? 'The socket is empty'
-                : 'The photograph could not tell';
+            const st = portInfo?.status;
+            const stateText = st === 'connected' ? 'Cable plugged in'
+              : st === 'empty' ? 'Empty'
+                : 'Not clear from the photograph';
             const shelf = formatUnitsRange(selectedDevice?.units || []);
-            const where = [
-              selectedLabel,
-              selectedDevice?.class_name,
-              shelf ? `shelf ${shelf}` : null,
-            ].filter(Boolean).join(' · ');
             return (
-              <div className={styles.pAnswer}>
-                <span className={styles.pAnswerPort}>Port {portNum}</span>
-                {where && <span className={styles.pAnswerWhere}>{where}</span>}
-                <span className={styles.pAnswerState}>
-                  <span className={`${styles.pAnswerDot} ${s === 'connected' ? '' : styles.pAnswerDotEmpty}`} />
-                  {stateText}
-                  {portInfo?._port_shift && <UserTag label="Renumbered" />}
-                </span>
-                {neighborStatus === 'ok' && neighbor?.found && (
-                  <span className={styles.pAnswerAlso}>A device is answering on this port.</span>
-                )}
+              <div className={styles.pBlock}>
+                <div className={styles.pList}>
+                  <PortFact label="Device" value={selectedLabel} mono />
+                  <PortFact label="Port" value={portNum} mono
+                    extra={portInfo?._port_shift ? <UserTag label="Renumbered" /> : null} />
+                  <PortFact label="Unit position" value={shelf} mono />
+                  <PortFact label="Status" value={stateText} />
+                  <PortFact
+                    label="Port type"
+                    value={portInfo?.port_type ? prettyPortType(portInfo.port_type) : null}
+                    extra={portInfo?._port_type_user ? <UserTag /> : null}
+                  />
+                  <PortFact label="Cable" value={connectorVal} />
+                  <PortFact
+                    label="Cable colour"
+                    value={colorVal}
+                    swatch={colorVal ? cableColorCSS(colorVal) : null}
+                    extra={portInfo?._cable_color_model ? <UserTag /> : null}
+                  />
+                  {neighborStatus === 'ok' && neighbor?.found && (
+                    <PortFact label="On this port" value="A device is answering" />
+                  )}
+                </div>
               </div>
             );
           })()}
-
-          {/* ── What was found ──
-              Four facts, not eleven. The device and its shelf are in the answer
-              above; what a person at the rack needs here is the socket, what
-              kind of port it is, and the cable. The confidences, the port count
-              and how long the search took were the machine talking about
-              itself. Everything else about the device is on the Report. */}
-          <div className={styles.pBlock}>
-            <div className={styles.pList}>
-              <PortFact
-                label="Port type"
-                value={portInfo?.port_type ? prettyPortType(portInfo.port_type) : null}
-                extra={portInfo?._port_type_user ? <UserTag /> : null}
-              />
-              <PortFact label="Cable" value={connectorVal} />
-              <PortFact
-                label="Cable colour"
-                value={colorVal}
-                swatch={colorVal ? cableColorCSS(colorVal) : null}
-                extra={portInfo?._cable_color_model ? <UserTag /> : null}
-              />
-            </div>
-          </div>
 
           {/* ── What is on the other end ──
               Asked of the live switch, not the photograph. Shown for any socket

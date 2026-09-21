@@ -2266,7 +2266,7 @@
 /* ── Report view/download row ── */
 .reportRow {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
-  margin: 0 14px 10px;
+  margin: 8px 14px 10px;
 }
 /* Four buttons, one row, on every phone. With Read again gone there are exactly
    four, and at 360px each still has 78px: the icon sits above the word there so
@@ -2279,8 +2279,8 @@
 .reportChip {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-width: 0;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
   background: #ffffff;
   color: #000000;
   border: 1px solid #EFEFEF;
@@ -3626,8 +3626,10 @@
 .pAnswerAlso { font-size: var(--fs-sub); color: #474747; }
 
 /* A group of facts, and the line that names it. */
+/* Compact: this screen is a table, a question and a row of ways on, and it
+   should sit on one phone screen without scrolling to reach the buttons. */
 .pBlock {
-  padding: 12px 16px 2px;
+  padding: 8px 16px 0;
   border-top: 1px solid #EFEFEF;
 }
 .pBlockHead {
@@ -3642,7 +3644,7 @@
 .pList { display: flex; flex-direction: column; }
 .pRow {
   display: flex; align-items: baseline; gap: 14px;
-  padding: 9px 0;
+  padding: 6px 0;
   border-top: 1px solid #F4F4F4;
 }
 .pRow:first-child { border-top: 0; }
@@ -5619,7 +5621,7 @@
 
 /* ── Compact port-type switch above the "another port" input ── */
 .prTypeSwitch {
-  display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px;
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px;
 }
 
 /* ── Low-confidence cable nudge (asks the tech to verify/correct) ── */
