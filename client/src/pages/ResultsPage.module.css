@@ -2239,57 +2239,8 @@
   opacity: .35; cursor: not-allowed; box-shadow: none;
 }
 
-/* ── Report modal (in-app viewer) ── */
-.reportModalBackdrop {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  display: flex; align-items: stretch; justify-content: center;
-  padding: env(safe-area-inset-top) 0 0 0;
-}
-.reportModal {
-  position: relative; display: flex; flex-direction: column;
-  width: 100%; height: 100%;
-  background: #000000;
-  border: 1px solid rgba(0,0,0,0.2);
-}
-.reportModalHeader {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(0,0,0,0.9);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-.reportModalTitle {
-  font-size: .85rem; font-weight: 600; color: #ffffff;
-  font-family: var(--mono);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  /* Lets the title shrink instead of squeezing the Close control. */
-  min-width: 0;
-}
-/* Testers could not find the way out of the report. It was a dark chip
-   (rgba(0,0,0,.6)) on a near-black header with a 12%-alpha border - nearly
-   invisible - and its hover state flipped to light, which read as a different
-   control. It is now the one light element on a dark bar, carries the word
-   "Close" rather than an X alone, and is a 40px target. */
-.reportModalClose {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  flex: 0 0 auto;
-  height: 40px; padding: 0 14px;
-  border: 0; border-radius: 999px;
-  background: #ffffff;
-  color: #121212;
-  font-size: .8rem; font-weight: 700; letter-spacing: .01em;
-  cursor: pointer;
-  transition: background .15s ease, transform .1s ease;
-}
-.reportModalClose:hover { background: #e6e6e6; }
-.reportModalClose:active { transform: scale(.97); }
-.reportModalClose:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
-.reportModalFrame {
-  /* White (was #000000) so there's no black flash before the light report
-     paints - the report itself is a white document. */
-  flex: 1; width: 100%; border: 0; background: #ffffff;
-}
+/* The report itself is read in components/ReportViewer.jsx, which carries its
+   own styles: one viewer for every screen that shows a report. */
 
 /* ── Report view/download row ── */
 .reportRow {
@@ -5316,27 +5267,6 @@
 }
 
 /* Report modal */
-:global([data-theme='light']) .reportModalBackdrop {
-  background: rgba(0,0,0,0.18);
-}
-:global([data-theme='light']) .reportModal {
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.22);
-}
-:global([data-theme='light']) .reportModalHeader {
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
-}
-:global([data-theme='light']) .reportModalTitle { color: #1c1c1c; }
-:global([data-theme='light']) .reportModalClose {
-  color: #474747;
-}
-:global([data-theme='light']) .reportModalClose:hover {
-  background: rgba(0,0,0,0.08);
-  color: #000000;
-}
-
 /* Console sheet - fully lightened */
 :global([data-theme='light']) .consoleSheetBackdrop {
   background: rgba(0,0,0,0.20);

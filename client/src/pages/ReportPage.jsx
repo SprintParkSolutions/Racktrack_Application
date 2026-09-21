@@ -5,8 +5,7 @@ import { BackIcon } from '../components/BackButton.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import ExportSheet from '../components/ExportSheet.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
-import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
+import ReportViewer from '../components/ReportViewer.jsx';
 import { downloadExport } from '../utils/exportApi';
 import { setCached } from '../utils/scanPrefetch';
 import { getJSON } from '../utils/safeStorage';
@@ -252,23 +251,31 @@ export default function ReportPage() {
   const [sharing, setSharing] = useState(null);   // null | 'teams' | 'outlook' | 'link'
   const [menu, setMenu] = useState(null);         // which of the three is open
 
+  // The printed report, read in the app. Both addresses carry a short-lived
+  // report token, because a frame and a download can neither of them carry a
+  // header: the page for reading, and the server-rendered PDF for the one
+  // thing the WebView cannot do for itself, which is save a file.
+  const [printed, setPrinted] = useState(null);   // { url, pdfUrl } | null
   /**
-   * The PDF the server already renders for this rack. It needs a short-lived
-   * report token in the URL because a download cannot carry a header; on the
-   * phone the WebView ignores downloads, so the URL goes to the system
-   * browser, which saves it.
+   * Open the printed report. It used to hand the PDF's address to the system
+   * browser, which threw the person out of the app onto one of our own pages;
+   * the report opens here now, and the PDF is one quiet link away inside it.
    */
-  const openPdf = async () => {
+  const openPrinted = async () => {
     setFileBusy('pdf'); setNote(null);
     try {
       const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/report-token`));
-      if (!r.ok) throw new Error('The server would not authorise the PDF.');
+      if (!r.ok) throw new Error('The server would not authorise the report.');
       const { token } = await r.json();
-      const url = apiUrl(`/api/scan/${encodeURIComponent(rackId)}/report?format=pdf&download=1&t=${encodeURIComponent(token)}`);
-      if (Capacitor.isNativePlatform()) await Browser.open({ url });
-      else window.open(url, '_blank', 'noopener');
+      const at = `/api/scan/${encodeURIComponent(rackId)}/report`;
+      const t = encodeURIComponent(token);
+      const abs = (u) => (/^https?:/.test(u) ? u : `${window.location.origin}${u}`);
+      setPrinted({
+        url: abs(apiUrl(`${at}?format=html&t=${t}`)),
+        pdfUrl: abs(apiUrl(`${at}?format=pdf&download=1&t=${t}`)),
+      });
     } catch (e) {
-      setNote({ tone: 'bad', text: e.message || 'The PDF could not be made.' });
+      setNote({ tone: 'bad', text: e.message || 'The report could not be opened.' });
     } finally {
       setFileBusy(null);
     }
@@ -358,7 +365,7 @@ export default function ReportPage() {
           ['download', 'Download', <IconDownload key="i" />, [
             ['CSV', () => getFile('csv'), fileBusy === 'csv'],
             ['JSON', () => getFile('json'), fileBusy === 'json'],
-            ['PDF', openPdf, fileBusy === 'pdf'],
+            ['PDF', openPrinted, fileBusy === 'pdf'],
           ]],
           // Nobody writes to NetBox from this app. Whoever is holding the phone
           // checks whether the rack matches the record and hands the answer
@@ -637,6 +644,21 @@ export default function ReportPage() {
         <ExportSheet scanId={scanId} rackId={rackId} onClose={() => setExporting(false)} />
       )}
       {sharing && <ShareSheet rackId={rackId} initial={sharing} onClose={() => setSharing(null)} />}
+
+      {/* The printed report, over this page. Sending it is the app's own way of
+          handing it to somebody, so that button is here rather than a trip out. */}
+      {printed && (
+        <ReportViewer
+          title="Report"
+          url={printed.url}
+          browserUrl={printed.pdfUrl}
+          onClose={() => setPrinted(null)}
+        >
+          <button type="button" onClick={() => { setPrinted(null); setSharing('outlook'); }}>
+            Send it
+          </button>
+        </ReportViewer>
+      )}
     </div>
   );
 }

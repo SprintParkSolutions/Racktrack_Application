@@ -23,7 +23,12 @@ vi.mock('../utils/api', () => ({
   },
 }));
 vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: { role: 'owner' } }) }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
+// The report is read inside the app now, and the viewer that shows it reaches
+// ExternalLink for its one way out - which registers the app's own web view.
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { isNativePlatform: () => false },
+  registerPlugin: () => ({ open: async () => {} }),
+}));
 vi.mock('@capacitor/browser', () => ({ Browser: { open: async () => {} } }));
 vi.mock('../utils/exportApi', () => ({
   downloadExport: async () => ({ tone: 'ok', text: 'done' }),

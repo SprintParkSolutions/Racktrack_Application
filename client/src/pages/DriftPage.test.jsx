@@ -1,5 +1,5 @@
 import { describe, test, expect, afterEach, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 /* The technician's screen: it compares and sends, and that is all. Nothing on
@@ -441,15 +441,45 @@ describe('<DriftPage> the whole comparison', () => {
     expect(screen.getByText('One page of this comparison. It is attached to the incident when you send.')).toBeTruthy();
   });
 
-  test('the drift report is opened with a fresh link that names the check', async () => {
+  test('the drift report is read in the app, on a fresh link that names the check', async () => {
     stub('open', contactsFor(KNOWN), { 'GET /api/scan/RK-1/report-token': { body: { token: 'tok' } } });
     const opened = vi.spyOn(window, 'open').mockImplementation(() => null);
     mount();
     await screen.findByText('SW-16');
     fireEvent.click(screen.getByRole('button', { name: 'Drift report' }));
-    await waitFor(() => expect(opened).toHaveBeenCalled());
-    expect(opened.mock.calls[0][0]).toMatch(/\/api\/scan\/RK-1\/drift-report\?plan=7&t=tok$/);
+    const frame = await screen.findByTitle('Drift report');
+    expect(frame.tagName).toBe('IFRAME');
+    expect(frame.getAttribute('src')).toMatch(/\/api\/scan\/RK-1\/drift-report\?plan=7&t=tok$/);
+    // nothing inside the report may steer the app somewhere else
+    expect(frame.getAttribute('sandbox')).toBe('allow-same-origin');
+    // and nobody is sent out to a browser to read our own page
+    expect(opened).not.toHaveBeenCalled();
     opened.mockRestore();
+  });
+
+  test("the report's own back arrow closes it and leaves the check where it was", async () => {
+    stub('open', contactsFor(KNOWN), { 'GET /api/scan/RK-1/report-token': { body: { token: 'tok' } } });
+    mount();
+    await screen.findByText('SW-16');
+    fireEvent.click(screen.getByRole('button', { name: 'Drift report' }));
+    const report = await screen.findByRole('dialog', { name: 'Drift report' });
+    fireEvent.click(within(report).getByRole('button', { name: 'Back' }));
+    expect(screen.queryByRole('dialog', { name: 'Drift report' })).toBeNull();
+    expect(screen.getByText('SW-16')).toBeTruthy();
+  });
+
+  test("the phone's own back button closes the report rather than leaving the check", async () => {
+    stub('open', contactsFor(KNOWN), { 'GET /api/scan/RK-1/report-token': { body: { token: 'tok' } } });
+    mount();
+    await screen.findByText('SW-16');
+    fireEvent.click(screen.getByRole('button', { name: 'Drift report' }));
+    await screen.findByRole('dialog', { name: 'Drift report' });
+    // App.jsx asks the screen first and takes a cancelled event as "handled here"
+    let handled = true;
+    act(() => { handled = window.dispatchEvent(new CustomEvent('rt:back', { cancelable: true })); });
+    expect(handled).toBe(false);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Drift report' })).toBeNull());
+    expect(screen.getByText('SW-16')).toBeTruthy();
   });
 });
 

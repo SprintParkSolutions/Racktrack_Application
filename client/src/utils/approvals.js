@@ -87,15 +87,19 @@ export async function openApprovals(path = '/approvals/') {
 }
 
 /**
- * The drift report: one printable page of a comparison.
+ * The address of the drift report: one printable page of a comparison.
  *
- * Opened with a short-lived link, because the app's own sign-in does not travel
- * to the browser it opens in. The link is minted on every open - it lasts five
- * minutes - and always names the check, so the page is that comparison and not
- * whatever the rack reads as today. Throws when the page cannot be opened; the
- * caller says so in its own words.
+ * A short-lived link, because the app's own sign-in does not travel in an
+ * iframe's address and a frame cannot carry a header. The link is minted on
+ * every open - it lasts five minutes - and always names the check, so the page
+ * is that comparison and not whatever the rack reads as today.
+ *
+ * It used to open the report in the system browser, which threw the person out
+ * of the app. The report is shown in the app now (components/ReportViewer.jsx),
+ * so this hands back the address and opens nothing. Throws when the address
+ * cannot be minted; the caller says so in its own words.
  */
-export async function openDriftReport(rackId, planId) {
+export async function driftReportUrl(rackId, planId) {
   const at = `/api/scan/${encodeURIComponent(rackId)}`;
   const r = await authFetch(apiUrl(`${at}/report-token`));
   const { token } = r.ok ? await r.json() : {};
@@ -104,9 +108,7 @@ export async function openDriftReport(rackId, planId) {
     token ? `t=${encodeURIComponent(token)}` : '',
   ].filter(Boolean).join('&');
   const url = apiUrl(`${at}/drift-report${query ? `?${query}` : ''}`);
-  const full = /^https?:/.test(url) ? url : `${window.location.origin}${url}`;
-  if (Capacitor.isNativePlatform()) await Browser.open({ url: full });
-  else window.open(full, '_blank', 'noopener');
+  return /^https?:/.test(url) ? url : `${window.location.origin}${url}`;
 }
 
 /**
