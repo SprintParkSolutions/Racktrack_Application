@@ -182,35 +182,100 @@ def wide_enough(box) -> bool:
     return (x2 - x1) >= MIN_SIDE_PX and (y2 - y1) >= 8
 
 
-def read_rails(image, rail_boxes, reader, scales=SCALES, min_agreement=MIN_AGREEMENT) -> list:
+# Reading a whole rail strip eighteen times over, at up to four times its size,
+# is what it cost to read one line of tape - and on the two-core demo server it
+# ran past its three-minute limit, so no photograph taken after the first day
+# ever had its label read. The strip is now looked at ONCE to find where the
+# writing is, and the eighteen careful readings are spent on that small patch.
+LOCATE_SCALE = 2.0
+VOTE_SCALES = (2.0, 3.0, 4.0, 5.0, 6.0)
+# A reading this well agreed needs no second rail to back it up.
+GOOD_ENOUGH = 0.8
+# The tape is on the top of a cabinet far more often than the bottom, and a
+# rack has a handful of cross rails at most; past the second there is nothing
+# left worth the time.
+MAX_RAILS = 2
+
+
+def _bgr(gray):
+    return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR) if gray.ndim == 2 else gray
+
+
+def locate_text(reader, gray):
+    """The patch of a rail strip that carries the identifier, or None.
+
+    One pass over the whole strip. Whatever it reads there is not trusted - it
+    is the careful readings afterwards that vote - only WHERE it read it.
+    """
+    sized = cv2.resize(gray, None, fx=LOCATE_SCALE, fy=LOCATE_SCALE, interpolation=cv2.INTER_CUBIC)
+    try:
+        results = reader.readtext(_bgr(sized), detail=1, paragraph=False, allowlist=ALLOWED_CHARS)
+    except Exception:
+        return None
+    best, best_key = None, None
+    for item in results:
+        if len(item) < 2 or not item[0]:
+            continue
+        tidy = _tidy(str(item[1]))
+        if len(tidy) < 5:
+            continue
+        key = (is_plausible(tidy), len(tidy))
+        if best_key is None or key > best_key:
+            best, best_key = item[0], key
+    if best is None:
+        return None
+    try:
+        xs = [float(pt[0]) / LOCATE_SCALE for pt in best]
+        ys = [float(pt[1]) / LOCATE_SCALE for pt in best]
+    except (TypeError, ValueError, IndexError):
+        return None
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+    pad_x, pad_y = max(8.0, (x1 - x0) * 0.12), max(4.0, (y1 - y0) * 0.35)
+    h, w = gray.shape[:2]
+    patch = gray[
+        max(0, int(y0 - pad_y)) : min(h, int(y1 + pad_y) + 1),
+        max(0, int(x0 - pad_x)) : min(w, int(x1 + pad_x) + 1),
+    ]
+    # Writing was found, but the box around it is no use (a sliver, or geometry
+    # the reader did not fill in). Read the whole strip, as before, rather than
+    # lose a label over where exactly it was.
+    return patch if patch.shape[0] >= 6 and patch.shape[1] >= 12 else gray
+
+
+def read_rails(image, rail_boxes, reader, scales=None, min_agreement=MIN_AGREEMENT) -> list:
     """Every label read off the rails, best agreement first.
 
     `reader` is anything with easyocr's readtext(image) -> [(points, text,
     confidence)], so this is testable without a model or a reader.
     """
     found = []
-    for box in rail_boxes or []:
-        if not wide_enough(box):
-            continue
+    # Top of the rack first: that is where the tape is, and a confident reading
+    # there ends the search.
+    ordered = sorted((b for b in rail_boxes or [] if wide_enough(b)), key=lambda b: b[1])
+    for box in ordered[:MAX_RAILS]:
         x1, y1, x2, y2 = (int(v) for v in box)
         crop = image[max(0, y1) : y2, max(0, x1) : x2]
         if crop is None or crop.size == 0:
             continue
-        label = isolate_label(crop)
-        if label.size == 0:
+        strip = isolate_label(crop)
+        if strip.size == 0:
+            continue
+        patch = locate_text(reader, strip)
+        # Found nothing to read on this rail at all: move on rather than spend
+        # the full set of readings on bare metal.
+        if patch is None:
             continue
         readings = []
-        for scale in scales:
+        for scale in scales or VOTE_SCALES:
             sized = (
-                label
+                patch
                 if scale == 1.0
-                else cv2.resize(label, None, fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4)
+                else cv2.resize(patch, None, fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4)
             )
             for treated in treatments(sized):
-                as_bgr = cv2.cvtColor(treated, cv2.COLOR_GRAY2BGR) if treated.ndim == 2 else treated
                 try:
                     results = reader.readtext(
-                        as_bgr, detail=1, paragraph=False, allowlist=ALLOWED_CHARS
+                        _bgr(treated), detail=1, paragraph=False, allowlist=ALLOWED_CHARS
                     )
                 except Exception:  # one treatment failing is not the label failing
                     continue
@@ -231,5 +296,7 @@ def read_rails(image, rail_boxes, reader, scales=SCALES, min_agreement=MIN_AGREE
                 "y_mid": (y1 + y2) / 2,
             }
         )
+        if agreement >= GOOD_ENOUGH:
+            break
     found.sort(key=lambda r: (-r["conf"], r["y_mid"]))
     return found

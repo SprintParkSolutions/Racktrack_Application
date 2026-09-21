@@ -1126,6 +1126,10 @@ async function runPipelineAnalyze(imagePath, outputDir, orgId = null) {
     if (orgId != null) payload.org_id = orgId;
     const res = await pool.request('analyze', payload);
     if (!res.ok) throw new Error(res.error || 'pipeline analyze failed');
+    // The rack's own label is read in the background from here, so it is there
+    // by the time the results screen asks which rack this is. Never awaited: a
+    // scan is finished when its devices are, and the label follows.
+    try { ensureSideLabels(path.basename(outputDir)).catch(() => {}); } catch (_) { /* best effort */ }
     return res;
   }, { imagePath, outputDir });
 }
@@ -9906,7 +9910,61 @@ const PHYSICAL_LAYER_TIMEOUT_MS = 60_000;
 // one build per rack at a time: a second caller waits for the python already
 // running instead of starting its own.
 const _physicalLayerBuilds = new Map();
-function physicalLayerReport(rackId, { refresh = false } = {}) {
+
+// The labels off the rack's own rails and margins, read once per scan.
+//
+// The reader used to run only when something called POST .../side-labels, and
+// nothing in the application ever did: the tape across the office rack was read
+// on the two scans it was run for by hand, and on no photograph taken after.
+// So the ladder's label rungs had nothing to stand on and every new scan came
+// back "unknown". It is now part of building the physical layer - which is what
+// the rack ladder reads - and is started as soon as a scan has been analysed.
+// One run per rack at a time; a rack that already has its reading is left alone.
+const _sideLabelRuns = new Map();
+const SIDE_LABELS_WAIT_MS = 75_000;
+function ensureSideLabels(rackId) {
+  const rackDir = path.join(outputsDir, rackId);
+  if (!fs.existsSync(rackDir)) return Promise.resolve(false);
+  if (fs.existsSync(path.join(rackDir, 'side_labels.json'))) return Promise.resolve(false);
+  if (_sideLabelRuns.has(rackId)) return _sideLabelRuns.get(rackId);
+  const run = new Promise((resolve) => {
+    let child;
+    try {
+      child = spawnChild(pythonCmd, ['-u', '-m', 'pipeline.side_labels', rackId],
+        { cwd: PROJECT_ROOT,
+          env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' } });
+    } catch (err) {
+      logger.warn(`[side-labels] could not start for ${rackId}: ${err.message}`);
+      return resolve(false);
+    }
+    let settled = false;
+    const done = (ok) => { if (settled) return; settled = true; resolve(ok); };
+    const killer = setTimeout(() => { try { child.kill('SIGKILL'); } catch (_) {} done(false); }, SIDE_LABELS_TIMEOUT_MS);
+    child.on('error', () => { clearTimeout(killer); done(false); });
+    child.on('close', () => {
+      clearTimeout(killer);
+      done(fs.existsSync(path.join(rackDir, 'side_labels.json')));
+    });
+  }).finally(() => { _sideLabelRuns.delete(rackId); });
+  _sideLabelRuns.set(rackId, run);
+  return run;
+}
+
+async function physicalLayerReport(rackId, opts = {}) {
+  // Wait for the labels, but not for ever: a slow reader must not hold a
+  // results screen. If it has not finished, the layer is built from what there
+  // is, and built again - with the labels - the next time it is asked for.
+  let fresh = false;
+  if (/^RK-[A-Z0-9]+$/i.test(String(rackId))) {
+    fresh = await Promise.race([
+      ensureSideLabels(rackId),
+      new Promise((resolve) => setTimeout(() => resolve(false), SIDE_LABELS_WAIT_MS)),
+    ]);
+  }
+  return buildPhysicalLayer(rackId, { ...opts, refresh: Boolean(opts.refresh) || fresh === true });
+}
+
+function buildPhysicalLayer(rackId, { refresh = false } = {}) {
   if (!/^RK-[A-Z0-9]+$/i.test(String(rackId))) {
     return Promise.resolve({ status: 400, body: { ok: false, error: 'bad rack id' } });
   }
@@ -9922,7 +9980,16 @@ function physicalLayerReport(rackId, { refresh = false } = {}) {
       return { status: 500, body: { ok: false, error: `physical layer unreadable: ${e.message}` } };
     }
   };
-  if (!refresh && fs.existsSync(outPath)) return Promise.resolve(read());
+  // A layer built before the labels were read is stale the moment they arrive:
+  // the reader can finish after the wait above gave up, and without this the
+  // copy made without them would be served for good.
+  const stale = () => {
+    try {
+      const labels = path.join(rackDir, 'side_labels.json');
+      return fs.existsSync(labels) && fs.statSync(labels).mtimeMs > fs.statSync(outPath).mtimeMs;
+    } catch { return false; }
+  };
+  if (!refresh && fs.existsSync(outPath) && !stale()) return Promise.resolve(read());
   if (_physicalLayerBuilds.has(rackId)) return _physicalLayerBuilds.get(rackId);
   const build = new Promise((resolve) => {
     const child = spawnChild(pythonCmd,
