@@ -14,9 +14,9 @@ import { useTheme } from '../ThemeContext.jsx';
 import { useTour } from '../TourContext.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { useSmartBack } from '../hooks/useSmartBack';
+import { useScanSite, SITE_REFUSED, isSiteRefused } from '../hooks/useScanSite';
 import Icon from '../components/Icon';
 import { getItem, setItem } from '../utils/safeStorage';
-import { useAuth } from '../AuthContext.jsx';
 
 // three.js is no longer reachable from this page at all. MiniRack3D was the
 // decoration on the analysing overlay and is gone; TopologyScene3D was declared
@@ -37,12 +37,6 @@ import { useAuth } from '../AuthContext.jsx';
 const FIRST_SCAN_KEY = 'racktrack.scan.tipsSeen';
 // The space (hall, room, floor) the technician picked, remembered per Site.
 const SPACE_KEY_PREFIX = 'racktrack.scan.space.';
-// The Site the technician last scanned for, remembered per person: two people
-// sharing a phone do not share a site.
-const SITE_KEY_PREFIX = 'rt.scan.site.';
-// What the server's "Site not found" means to the person holding the phone.
-const SITE_REFUSED = 'That site is not one you can scan for. Choose another.';
-const isSiteRefused = (res, data) => res.status === 404 && data?.error === 'Site not found';
 
 // Four instructions, each one thing to do. "Step back if needed" said the same
 // as "full rack in frame", and the explanatory half of every line ("keep the top
@@ -971,44 +965,14 @@ export default function ScanPage() {
     setItem(FIRST_SCAN_KEY, '1');
   }, []);
 
-  // Which Site this scan is for. The server says which Sites this person may
-  // scan for (one for a technician, every Site of the organisation for its
-  // admins) and the choice goes with every upload, so the rack is matched
-  // inside that Site and nowhere else. The phone is never asked where it is.
-  //
-  // A server without the list, a failed request and an empty list all end the
-  // same way: no picker, no `siteId`, and the scan goes as it always did.
-  const { user: authUser } = useAuth();
-  const siteKey = authUser?.id != null ? SITE_KEY_PREFIX + authUser.id : null;
-  const [sites, setSites] = useState([]);
-  const [siteId, setSiteId] = useState('');
-  useEffect(() => {
-    let cancelled = false;
-    authFetch(apiUrl('/api/scan-sites'))
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (cancelled || !d || !Array.isArray(d.sites)) return;
-        const list = d.sites.filter((s) => s && s.id != null);
-        if (!list.length) return;
-        const has = (id) => id != null && id !== '' && list.some((s) => String(s.id) === String(id));
-        const stored = siteKey ? getItem(siteKey) : null;
-        setSites(list);
-        // One Site is the answer, whatever was remembered. Otherwise the last
-        // choice if it is still on the list, else the server's suggestion.
-        setSiteId(list.length === 1 ? String(list[0].id)
-          : has(stored) ? String(stored)
-            : has(d.preselect) ? String(d.preselect) : '');
-      })
-      .catch(() => { /* no picker - scanning is never blocked on it */ });
-    return () => { cancelled = true; };
-  }, [siteKey]);
+  // Which Site this scan is for: the list, the remembered choice and the one
+  // rule that holds a scan back (several Sites, none chosen) live in
+  // useScanSite, because Scan two racks uploads too and has to agree.
+  const { sites, siteId, chooseSite: rememberSite, needsSite, asked: sitesAsked } = useScanSite();
   const chooseSite = (id) => {
-    setSiteId(id);
+    rememberSite(id);
     setError(null);
-    if (siteKey) setItem(siteKey, id);
   };
-  // Several Sites and none chosen is the one thing that holds a scan back.
-  const needsSite = sites.length > 1 && !siteId;
 
   // Which space this scan belongs to (organisation setup). The list is the
   // chosen Site's own, so it changes with the Site and is empty without one.
