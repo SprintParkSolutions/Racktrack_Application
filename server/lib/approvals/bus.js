@@ -12,6 +12,14 @@
  *   submitted, assigned, pending, resolved, approval_requested, approved,
  *   rejected, completed, p1_p2_created, write_failed
  *
+ * and three about who a check is with, which are not a change of status:
+ *
+ *   reassign_needed   a sent check has nobody valid to go to, or its holder
+ *                     says it is not theirs: { plan, actor, why, text, rackId }
+ *   reassigned        an admin gave it to somebody else: { plan, previous,
+ *                     holder, actor }
+ *   incident_failed   its ServiceNow incident needs a look: { plan, problem, ... }
+ *
  * The SLA clocks, the notifications and the reports are listeners. A listener
  * must never break a request: emit() here calls each one on its own, catches
  * what it throws, catches the promise it returns, and logs. The bus has no
@@ -51,6 +59,8 @@ bus.setMaxListeners(50);
 bus.EVENTS = Object.freeze(['transition', 'submitted', 'assigned', 'pending', 'resolved',
   'approval_requested', 'approved', 'rejected', 'completed', 'p1_p2_created', 'write_failed',
   // Emitted by the builders that follow: verification, SLA and notifications.
-  'verification_failed', 'sla_warn', 'sla_breach', 'sla_escalate', 'approval_overdue']);
+  'verification_failed', 'sla_warn', 'sla_breach', 'sla_escalate', 'approval_overdue',
+  // Who a check is with.
+  'reassign_needed', 'reassigned', 'incident_failed']);
 
 module.exports = bus;

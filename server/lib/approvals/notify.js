@@ -19,10 +19,16 @@
  * row keeps the attempt count and the last error, so an admin can see that a
  * notice was written and why it never left.
  *
- * PREFERENCES, WITH THREE EXCEPTIONS. A person may turn email off for
- * themselves in `notification_prefs`. Three events ignore that and always go
- * out: write_failed, sla_breach and sla_escalate. Somebody has to know that
- * NetBox refused a write, whatever their inbox rules are.
+ * PREFERENCES, WITH EXCEPTIONS. A person may turn email off for themselves in
+ * `notification_prefs`. The rows marked `always` ignore that and go out
+ * anyway: a check given to you, a check that needs an admin, an incident that
+ * needs a look, write_failed, sla_breach and sla_escalate. Somebody has to
+ * know a check is theirs, or that NetBox refused a write, whatever their inbox
+ * rules are.
+ *
+ * WHAT IT IS ABOUT, AS FIELDS. Every row carries `data`: the plan, the rack,
+ * the site, the incident and a `kind`, so a screen can draw a card and its
+ * buttons without parsing the words.
  *
  * A LISTENER NEVER BREAKS A REQUEST. Everything here is wrapped: a bad
  * recipient, a database that is busy, a mail server that is down. The worst
@@ -38,12 +44,18 @@ const CHANNELS = ['inapp', 'email'];
  * `always` means preferences do not apply.
  */
 const TABLE = {
-  submitted: { to: ['triage'], channels: ['inapp', 'email'] },
-  // In the application only. The person is already sent one email when a ticket
-  // is put on them - the one that lists what they were handed and carries the
-  // incident - and now that this notice lists the same things, mailing it too
-  // would be the same message twice.
-  assigned: { to: ['assignee'], channels: ['inapp'] },
+  // `submitted` has no row any more: a sent check goes straight to its SPOC,
+  // who hears `assigned`. The bus event stays, for the clocks and the audit.
+  //
+  // In the application and by email, whatever the person's switches say: the
+  // check is theirs now and nothing moves until they look.
+  assigned: { to: ['holder'], channels: ['inapp', 'email'], always: true },
+  reassigned: { to: ['previous_holder'], channels: ['inapp'] },
+  reassign_needed: { to: ['admin'], channels: ['inapp', 'email'], always: true },
+  // The holder too when ServiceNow closed the incident under them: it changes
+  // nothing here, and they should hear that from us rather than wonder.
+  incident_failed: { to: ['admin'], channels: ['inapp', 'email'], always: true,
+    also: (payload) => (payload && payload.problem === 'closed_outside' ? ['holder'] : []) },
   p1_p2_created: { to: ['admin'], channels: ['email'] },
   sla_warn: { to: ['assignee', 'admin'], channels: ['inapp', 'email'] },
   sla_breach: { to: ['assignee', 'admin', 'owner'], channels: ['inapp', 'email'], always: true },
@@ -53,10 +65,10 @@ const TABLE = {
   verification_failed: { to: ['assignee', 'admin'], channels: ['inapp', 'email'] },
   approval_requested: { to: ['approver'], channels: ['inapp', 'email'] },
   approval_overdue: { to: ['approver', 'owner'], channels: ['inapp', 'email'] },
-  approved: { to: ['creator', 'assignee', 'admin'], channels: ['inapp', 'email'] },
-  rejected: { to: ['creator', 'assignee', 'admin'], channels: ['inapp', 'email'] },
-  completed: { to: ['creator', 'admin'], channels: ['inapp'] },
-  write_failed: { to: ['admin'], channels: ['inapp', 'email'], always: true },
+  approved: { to: ['sender'], channels: ['inapp', 'email'] },
+  rejected: { to: ['sender'], channels: ['inapp', 'email'] },
+  completed: { to: ['sender'], channels: ['inapp', 'email'] },
+  write_failed: { to: ['admin', 'holder'], channels: ['inapp', 'email'], always: true },
 };
 
 const EVENTS = Object.keys(TABLE);
@@ -69,7 +81,11 @@ const person = (u) => (u && (u.id != null || u.email)
   ? { userId: u.id ?? null, email: u.email || null, name: u.username || u.name || null, role: u.role || null }
   : null);
 
-/** Everyone a plan's tickets are out with, as people rather than contacts. */
+/**
+ * Everyone a plan's tickets went to, as people rather than contacts. A ticket
+ * of any status counts: a clock that runs out after the tickets have closed
+ * still has to reach somebody.
+ */
 function assigneesOf(plan, payload) {
   const out = [];
   if (payload && payload.assignee) {
@@ -77,7 +93,6 @@ function assigneesOf(plan, payload) {
       name: payload.assignee.name || null, role: 'assignee' });
   }
   for (const t of store.ticketsOf(plan.id)) {
-    if (!['open', 'accepted', 'in_progress', 'pending', 'resolved'].includes(t.status)) continue;
     if (t.assigneeUserId == null && !t.assigneeEmail) continue;
     out.push({ userId: t.assigneeUserId ?? null, email: t.assigneeEmail || null,
       name: t.assignee || null, role: 'assignee' });
@@ -90,6 +105,20 @@ function creatorOf(plan) {
   const u = (plan.createdById != null ? store.userById(plan.createdById) : null)
     || (plan.createdBy ? store.userByUsername(plan.createdBy) : null);
   return u ? [person(u)] : [];
+}
+
+/** The person the check is with; for a check from before the SPOC change, whoever its tickets went to. */
+function holderOf(plan, payload) {
+  const h = plan.spocUserId != null ? plan.spoc : null;
+  if (!h) return assigneesOf(plan, payload);
+  return [{ userId: h.userId ?? null, email: h.email || null, name: h.username || null, role: 'holder' }];
+}
+
+/** The person who sent the check, or failing that whoever ran the comparison. */
+function senderOf(plan) {
+  const u = (plan.submittedById != null ? store.userById(plan.submittedById) : null)
+    || (plan.submittedBy ? store.userByUsername(plan.submittedBy) : null);
+  return u ? [person(u)] : creatorOf(plan);
 }
 
 /** The people one role word stands for, on this plan. */
@@ -109,7 +138,13 @@ function peopleFor(word, plan, payload) {
     return owners.length ? owners : all.filter((u) => u.role === 'org_admin').map(person);
   }
   if (word === 'creator') return creatorOf(plan);
-  if (word === 'assignee') return assigneesOf(plan, payload);
+  if (word === 'sender') return senderOf(plan);
+  if (word === 'holder' || word === 'assignee') return holderOf(plan, payload);
+  if (word === 'previous_holder') {
+    const was = payload && payload.previous;
+    return was ? [{ userId: was.userId ?? null, email: was.email || null, name: was.username || null,
+      role: 'previous_holder' }] : [];
+  }
   if (word === 'site_manager') {
     return all.filter((u) => u.role === 'site_manager'
       && Number(u.tenantId) === Number(plan.tenantId)).map(person);
@@ -123,9 +158,15 @@ function recipientsFor(event, plan, payload) {
   if (!rule) return [];
   const seen = new Set();
   const out = [];
-  for (const word of rule.to) {
+  // A second signature is never asked of the person who sent the check, nor of
+  // the one who has just signed first.
+  const notThem = event === 'approval_requested'
+    ? [plan.submittedById, payload && payload.firstApproverId].filter((id) => id != null).map(Number) : [];
+  const words = [...rule.to, ...(rule.also ? rule.also(payload) : [])];
+  for (const word of words) {
     for (const p of peopleFor(word, plan, payload)) {
       if (!p) continue;
+      if (p.userId != null && notThem.includes(Number(p.userId))) continue;
       const key = p.userId != null ? `u:${p.userId}` : `e:${String(p.email || '').toLowerCase()}`;
       if (key === 'e:' || seen.has(key)) continue;
       seen.add(key);
@@ -161,42 +202,93 @@ function plainItem(item, rackName) {
   return means ? `${name}: ${means}.` : `${name}.`;
 }
 
+/** A reject reason code, as a person would say it. */
+const REASON_WORDS = {
+  insufficient_evidence: 'not enough evidence', incorrect_remediation: 'the wrong fix',
+  configuration_still_differs: 'it still differs', wrong_spoc: 'not the right person',
+  wrong_asset: 'the wrong device', change_not_authorized: 'not authorised', duplicate: 'a duplicate',
+  known_exception: 'a known exception', maintenance_window_required: 'needs a maintenance window',
+  other: 'another reason',
+};
+const INCIDENT_STATE_WORDS = { new: 'New', in_progress: 'In Progress', on_hold: 'On Hold',
+  resolved: 'Resolved', closed: 'Closed', cancelled: 'Cancelled' };
+
+const rackOf = (plan, p) => rackWords((p && p.rackName) || plan.rackName || plan.rackId);
+const siteOf = (plan, p) => (p && p.siteName)
+  || (plan.tenantId != null ? (store.tenantById(plan.tenantId) || {}).name : null) || null;
+const senderName = (plan, p) => (p && p.sender && p.sender.username) || plan.submittedBy || 'A technician';
+const actorName = (p, fallback) => (p && p.actor && !p.actor.system && p.actor.username) || fallback;
+const holderName = (plan, p) => (p && p.holder && p.holder.username) || (plan.spoc && plan.spoc.username)
+  || 'its SPOC';
+const incidentIn = (plan, p) => (p && p.incident) || plan.incident || null;
+
 const LINES = {
-  submitted: (plan) => [`A drift check on ${where(plan)} is waiting for triage.`,
-    `${plan.createdBy || 'A technician'} sent it over.`],
   // The one message a person acts on without having asked for it, so it says
   // everything they need before they open anything: which rack and where, each
-  // thing to look at in plain words, the question the admin typed, the ServiceNow
-  // incident, and the three steps. It used to say "please check rack RK-2F85EE94,
-  // open the plan" - the photograph's hash and no reason.
+  // difference in plain words, what the sender said, the ServiceNow incident,
+  // and the three steps. The phone reads this body: the `What to do:` marker
+  // stays, and the only address in it is the incident's.
   assigned: (plan, p) => {
-    const rack = rackWords(p.rackName || plan.rackName || plan.rackId);
+    const rack = rackOf(plan, p);
+    const site = siteOf(plan, p);
+    const at = site ? ` at ${site}` : '';
+    const sender = senderName(plan, p);
     const targets = Array.isArray(p.targets) ? p.targets : [];
-    const incidents = (Array.isArray(p.incidents) ? p.incidents : []).filter((i) => i && i.number);
-    const by = p.actor && p.actor.username ? p.actor.username : 'An admin';
-    // A whole rack handed over is ten items and ten incidents. Reciting them all
-    // filled a phone screen with a list nobody reads; the first few say what kind
-    // of job it is, and the check itself has the rest.
+    const inc = incidentIn(plan, p);
+    // A whole rack is ten differences. Reciting them all filled a phone screen
+    // with a list nobody reads; the first few say what kind of job it is, and
+    // the check itself has the rest.
     const SHOWN = 4;
-    const numbers = incidents.map((i) => i.number);
+    const note = p.note || plan.submittedNote || null;
     return [
-      `${by} has asked you to check ${rack}${p.siteName ? ` at ${p.siteName}` : ''}`
-        + `${targets.length > 1 ? `: ${targets.length} things` : ''}.`,
+      p.source === 'admin'
+        ? `${actorName(p, 'An admin')} has given you the drift check on ${rack}${at}, sent by ${sender}.`
+        : `${sender} sent a drift check on ${rack}${at}. It is yours as the SPOC of this site.`,
       '',
-      targets.length ? 'What to check:' : '',
+      targets.length ? 'What differs:' : '',
       ...targets.slice(0, SHOWN).map((t) => `  - ${plainItem(t, p.rackName || plan.rackName || '')}`),
       targets.length > SHOWN ? `  - and ${targets.length - SHOWN} more, listed in the check.` : '',
-      p.question ? '' : '',
-      p.question ? `${by} asks: "${p.question}"` : '',
-      numbers.length ? '' : '',
-      numbers.length ? `ServiceNow: ${numbers.slice(0, 3).join(', ')}${numbers.length > 3 ? ` and ${numbers.length - 3} more` : ''}` : '',
-      incidents[0] && incidents[0].url ? incidents[0].url : '',
+      '',
+      note ? `${sender} says: "${note}"` : '',
+      '',
+      inc && inc.number ? `ServiceNow: ${inc.number}` : '',
+      inc && inc.number && inc.url ? inc.url : '',
+      inc && !inc.number && inc.error ? 'ServiceNow: no incident could be raised. An admin has been told.' : '',
       '',
       'What to do:',
-      '  1. Open the check and press Accept.',
-      '  2. Go to the rack and look. Press Start work while you are there.',
-      '  3. Press Resolve and write what you found. It then goes to the admin for approval.',
+      '  1. Open the check. The drift report is beside it.',
+      '  2. Approve, reject or change each difference.',
+      '  3. Approve the check. What you approved is written to NetBox at once.',
     ];
+  },
+  reassigned: (plan, p) => [`${actorName(p, 'An admin')} has given the drift check on ${rackOf(plan, p)} `
+    + `to ${holderName(plan, p)}. There is nothing more for you to do on it.`],
+  reassign_needed: (plan, p) => {
+    const site = siteOf(plan, p);
+    return [
+      `${senderName(plan, p)} sent a drift check on ${rackOf(plan, p)}${site ? ` at ${site}` : ''}.`,
+      p.why === 'wrong_spoc'
+        ? `${holderName(plan, p)} says this check is not theirs: "${p.text || ''}".`
+        : (p.text || ''),
+      'Open the check in Drift Desk and choose who it goes to.',
+    ];
+  },
+  incident_failed: (plan, p) => {
+    const inc = incidentIn(plan, p) || {};
+    const number = inc.number || 'The incident';
+    const holder = holderName(plan, p);
+    if (p.problem === 'unassigned') return [`Incident ${number} was raised, but ${p.assignWarning || inc.assignWarning || 'it is not assigned to anybody.'}`];
+    if (p.problem === 'attachment_failed') return [`Incident ${number} was raised, but the drift report could not be attached: ${p.error || 'no reason given'}.`];
+    if (p.problem === 'push_failed') {
+      return [`Incident ${number} could not be set to ${INCIDENT_STATE_WORDS[p.state] || p.state || 'its new state'}: `
+        + `${p.error || 'no reason given'}. It is still open in ServiceNow.`];
+    }
+    if (p.problem === 'closed_outside') {
+      return [`Incident ${number} was set to ${INCIDENT_STATE_WORDS[p.state] || p.state || 'closed'} in ServiceNow. `
+        + `That does not approve or write anything: check ${plan.id} is still with ${holder}.`];
+    }
+    return [`ServiceNow did not take the incident for check ${plan.id}: ${p.error || inc.error || 'no reason given'}. `
+      + `The check is with ${holder} all the same, and RackTrack will keep trying.`];
   },
   p1_p2_created: (plan) => [`A ${plan.priority} drift check was raised on ${where(plan)}.`],
   sla_warn: (plan, p) => [`The ${p.clock} clock on ${where(plan)} is ${p.percent || 80} percent through.`,
@@ -210,12 +302,26 @@ const LINES = {
     'It is waiting for a verification scan.'],
   verification_failed: (plan, p) => [`The verification scan of ${where(plan)} did not confirm the fix.`,
     p.reason ? String(p.reason) : ''],
-  approval_requested: (plan) => [`A drift check on ${where(plan)} is waiting for approval.`],
+  approval_requested: (plan, p) => [p.stage === 'second'
+    ? `A drift check on ${rackOf(plan, p)} has its first approval from ${actorName(p, 'its SPOC')} and is waiting for a second.`
+    : `A drift check on ${where(plan)} is waiting for approval.`],
   approval_overdue: (plan) => [`A drift check on ${where(plan)} has been waiting for approval too long.`],
-  approved: (plan, p) => [`The drift check on ${where(plan)} was approved${p.actor && p.actor.username ? ` by ${p.actor.username}` : ''}.`],
-  rejected: (plan, p) => [`The drift check on ${where(plan)} was ${p.to === 'rework' ? 'sent back for rework' : 'rejected'}`
-    + `${p.reason ? ` (${p.reason})` : ''}.`],
-  completed: (plan) => [`The drift check on ${where(plan)} is done and NetBox now matches the rack.`],
+  approved: (plan, p) => [`${actorName(p, 'The SPOC')} approved your drift check on ${rackOf(plan, p)}. `
+    + 'It is being written to NetBox now.'],
+  rejected: (plan, p) => {
+    const who = actorName(p, 'The SPOC');
+    const said = p.comment ? `: "${p.comment}"` : '.';
+    return [p.to === 'rework'
+      ? `${who} sent your drift check on ${rackOf(plan, p)} back to be checked again${said}`
+      : `${who} rejected your drift check on ${rackOf(plan, p)}`
+        + `${p.reason ? ` (${REASON_WORDS[p.reason] || String(p.reason).replace(/_/g, ' ')})` : ''}${said}`];
+  },
+  completed: (plan, p) => {
+    const n = writtenCount(plan);
+    return [`Your drift check on ${rackOf(plan, p)} is done. ` + (n
+      ? `${n} change${n === 1 ? ' was' : 's were'} written to NetBox and it now matches what was approved.`
+      : 'Nothing needed to be written.')];
+  },
   // Name every object NetBox refused, because "part of it" tells an admin
   // nothing they can act on. This is the only email a failed write sends.
   write_failed: (plan) => {
@@ -230,15 +336,18 @@ const LINES = {
       ...named,
       `${written} object${written === 1 ? '' : 's'} went through before that and `
         + `${written === 1 ? 'is' : 'are'} in NetBox now. Nothing else was changed.`,
-      'The plan is marked "write failed". Fix the cause and write it again; NetBox is '
-        + 'compared once more before anything is written.',
+      'The check is marked "write failed". An organization admin can try the write again; '
+        + 'NetBox is compared once more before anything is written.',
     ];
   },
 };
 
 const SUBJECTS = {
-  submitted: (plan) => `RackTrack: a drift check on ${where(plan)} needs triage`,
-  assigned: (plan, p) => `Assigned to you: check ${rackWords(p.rackName || plan.rackName || plan.rackId)}`,
+  // The phone looks for a subject that starts "Assigned to you:".
+  assigned: (plan, p) => `Assigned to you: check ${rackOf(plan, p)}`,
+  reassigned: (plan, p) => `RackTrack: ${rackOf(plan, p)} has gone to somebody else`,
+  reassign_needed: (plan, p) => `RackTrack: a drift check on ${rackOf(plan, p)} needs an admin`,
+  incident_failed: (plan, p) => `RackTrack: the ServiceNow incident for ${rackOf(plan, p)} needs a look`,
   p1_p2_created: (plan) => `RackTrack: ${plan.priority} drift on ${where(plan)}`,
   sla_warn: (plan, p) => `RackTrack: the ${p.clock} clock on ${where(plan)} is close to its target`,
   sla_breach: (plan, p) => `RackTrack: the ${p.clock} clock on ${where(plan)} has run out`,
@@ -248,11 +357,41 @@ const SUBJECTS = {
   verification_failed: (plan) => `RackTrack: the verification scan of ${where(plan)} failed`,
   approval_requested: (plan) => `RackTrack: ${where(plan)} is waiting for approval`,
   approval_overdue: (plan) => `RackTrack: ${where(plan)} has been waiting for approval`,
-  approved: (plan) => `RackTrack: ${where(plan)} was approved`,
-  rejected: (plan) => `RackTrack: ${where(plan)} was sent back`,
-  completed: (plan) => `RackTrack: ${where(plan)} is done`,
+  approved: (plan, p) => `RackTrack: your check on ${rackOf(plan, p)} was approved`,
+  rejected: (plan, p) => `RackTrack: your check on ${rackOf(plan, p)} was ${p.to === 'rework' ? 'sent back' : 'rejected'}`,
+  completed: (plan, p) => `RackTrack: your check on ${rackOf(plan, p)} is written`,
   write_failed: (plan) => `RackTrack: the write for ${where(plan)} did not finish`,
 };
+
+/** How many changes the write put into NetBox. */
+const writtenCount = (plan) => {
+  const r = plan.result || {};
+  return Array.isArray(r.writtenUids) ? r.writtenUids.length : Number(r.written) || 0;
+};
+
+/** What a row is about, as the one word a screen switches on. */
+const KINDS = { assigned: 'assigned', reassigned: 'reassigned', reassign_needed: 'needs_admin',
+  incident_failed: 'incident', approved: 'approved', completed: 'written', write_failed: 'write_failed' };
+
+/**
+ * What a notice is about, as fields: always the plan, the rack, the site, the
+ * incident and a `kind`, null where unknown, plus the few extras an event has.
+ * The rack's name is left null while it is only the hash of a photograph.
+ */
+function dataFor(event, plan, payload = {}) {
+  const inc = incidentIn(plan, payload) || {};
+  const name = payload.rackName || plan.rackName || null;
+  const data = {
+    planId: plan.id, rackId: plan.rackId ?? null,
+    rackName: name && !/^RK-[0-9A-F]{6,}$/i.test(String(name)) ? name : null,
+    siteName: siteOf(plan, payload), incidentNumber: inc.number || null, incidentUrl: inc.url || null,
+    kind: event === 'rejected' ? (payload.to === 'rework' ? 'rework' : 'rejected') : (KINDS[event] || event),
+  };
+  if (event === 'reassign_needed') data.why = payload.why || null;
+  if (event === 'incident_failed') data.problem = payload.problem || 'raise_failed';
+  if (event === 'completed') data.changes = writtenCount(plan);
+  return data;
+}
 
 /** The subject and the body one person reads. */
 function wordsFor(event, plan, payload, to) {
@@ -351,6 +490,7 @@ function send(event, payload = {}) {
   const people = recipientsFor(event, fresh, payload);
   const rows = [];
   const emails = [];
+  const data = dataFor(event, fresh, payload);
   for (const to of people) {
     const prefs = prefsFor(fresh.orgId, to.userId);
     for (const channel of rule.channels) {
@@ -361,7 +501,7 @@ function send(event, payload = {}) {
       const { subject, body } = wordsFor(event, fresh, payload, to);
       const row = store.addNotification({
         event, planId: fresh.id, recipientUserId: to.userId ?? null, recipientEmail: to.email || null,
-        channel, subject, body, dedupeKey: keyOf(event, fresh, to, channel),
+        channel, subject, body, data, dedupeKey: keyOf(event, fresh, to, channel),
         status: !wanted ? 'skipped' : channel === 'inapp' ? 'sent' : 'queued',
       });
       if (!row) continue;   // heard before, at this version, for this person
@@ -435,7 +575,7 @@ function subscribe() {
 
 module.exports = {
   TABLE, EVENTS, CHANNELS,
-  recipientsFor, peopleFor, wordsFor, prefsFor, setPrefs,
+  recipientsFor, peopleFor, wordsFor, dataFor, prefsFor, setPrefs,
   send, deliver, retryQueued, listFor, markRead, markAllRead,
   setTransport, subscribe,
 };
