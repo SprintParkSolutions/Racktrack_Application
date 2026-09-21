@@ -160,9 +160,10 @@ function FlowModal({ s, step, setStep, gated, onClose, onFinish, onSignOut }) {
         <header className={styles.boxH}>
           <div className={styles.boxHRow}>
             <h2 id="os-flow-t" className={styles.boxT} ref={titleRef} tabIndex={-1}>{def.title}</h2>
+            {/* The closing step has its one button below and nothing else. */}
             <span className={styles.boxHRight}>
               <SaveMark mark={mark} />
-              {gated
+              {last ? null : gated
                 ? <button type="button" className={styles.boxQuit} onClick={onSignOut}>Sign out</button>
                 : <button type="button" className={styles.boxQuit} onClick={onClose} aria-label="Close">Close</button>}
             </span>

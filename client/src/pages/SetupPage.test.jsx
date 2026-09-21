@@ -85,6 +85,7 @@ describe('<SetupPage>', () => {
     expect(screen.getByText(/Setup is done/)).toBeTruthy();
     // The closing step has one button, and it closes.
     expect(box().queryByRole('button', { name: 'Back' })).toBeNull();
+    expect(box().queryByRole('button', { name: 'Close' })).toBeNull();
     expect(screen.queryByTestId('next')).toBeNull();
     fireEvent.click(screen.getByTestId('finish'));
     expect(screen.getByTestId('finish')).toBeTruthy();
