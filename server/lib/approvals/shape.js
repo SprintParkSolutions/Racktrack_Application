@@ -239,6 +239,16 @@ function filterSnapshot(snapshot, excluded) {
       out.recordBinding.shown = { ...binding.shown, devices: without(binding.shown.devices) };
     }
   }
+  // A device type, a role or a manufacturer only a left-out box used is not
+  // made either: scaffolding goes with whatever needs it, and nothing does.
+  // Named, not removed - the writer leaves a named entry unmade.
+  if (Array.isArray(snapshot.devices) && snapshot.devices.some((d) => d && excluded.has(d.uid))) {
+    const unneeded = require('./overrides').unneededScaffolding(snapshot, excluded);
+    if (unneeded.length) {
+      out.deferScaffolding = [...new Set([...(Array.isArray(snapshot.deferScaffolding)
+        ? snapshot.deferScaffolding : []), ...unneeded])].sort();
+    }
+  }
   return out;
 }
 

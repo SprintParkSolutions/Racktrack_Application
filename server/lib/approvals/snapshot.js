@@ -25,8 +25,10 @@ const overrides = require('./overrides');
  *             over it, and nothing read from disk
  *   extra     overrides not stored yet, laid over last: a change is tried on
  *             the comparison before it is kept
+ *   without   ids of stored overrides to leave out: a change being taken back
+ *             is tried the same way
  */
-function forPlan(plan, { scanId = null, snapshot = null, extra = [] } = {}) {
+function forPlan(plan, { scanId = null, snapshot = null, extra = [], without = [] } = {}) {
   let snap = snapshot;
   let scan = null;
   if (!snap) {
@@ -42,7 +44,9 @@ function forPlan(plan, { scanId = null, snapshot = null, extra = [] } = {}) {
       require('../netbox/entered').applyTo(snap, scan.rackId);
     } catch { /* a scan with no hand-declared extras compares just the same */ }
   }
-  const live = [...(plan && plan.id != null ? store.overridesOf(plan.id) : []), ...(extra || [])];
+  const left = new Set((without || []).map(Number));
+  const live = [...(plan && plan.id != null ? store.overridesOf(plan.id) : [])
+    .filter((o) => !left.has(Number(o.id))), ...(extra || [])];
   // A snapshot somebody handed over is theirs: it is copied before anything is
   // laid over it, and left alone when there is nothing to lay.
   if (snapshot && live.length) snap = structuredClone(snap);

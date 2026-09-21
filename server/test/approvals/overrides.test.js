@@ -138,6 +138,14 @@ describe('a box left out of the write takes its answers with it', () => {
     assert.deepEqual(snap, frozen, 'the snapshot handed in is not changed');
   });
 
+  it('names the catalogue only that box used, so nothing is made for a box that was turned down', () => {
+    const out = shape.filterSnapshot(snapshot(), new Set([U20]));
+    assert.deepEqual(out.deferScaffolding, ['dtype:router-8', 'mfr:acme', 'role:router']);
+    assert.equal(out.deviceTypes.length, 2, 'named, not removed');
+    assert.equal(shape.filterSnapshot(snapshot(), new Set(['if:x:1'])).deferScaffolding, undefined,
+      'a port left out brings no catalogue with it');
+  });
+
   it('keeps them when the box is approved', () => {
     const snap = overrides.applyTo(snapshot(), [MOVE, OFFLINE]);
     const out = shape.filterSnapshot(snap, new Set([U05]));

@@ -332,7 +332,9 @@ function create({ scanId = null, rackId = null, rackUid = null, rackName = null,
   if (reuse && rackId != null) {
     const match = store.listPlans({ seenBy: { orgId, userId: who.id ?? null, username: who.username ?? null },
       rackId, status: machine.OPEN, limit: 200 })
-      .filter((p) => p.fingerprint === fingerprint)
+      // A check a person changed signs a new fingerprint; what it was filed as
+      // is kept beside it, so the same comparison still finds the same check.
+      .filter((p) => p.fingerprint === fingerprint || p.baseFingerprint === fingerprint)
       .filter((p) => !isStrict(who) || canRead(p, who))
       // ownOnly: a person gets their own check back, never somebody else's. A
       // comparison an admin runs is a second plan, theirs, as it always was.
@@ -354,6 +356,13 @@ function create({ scanId = null, rackId = null, rackUid = null, rackName = null,
       status: 'draft', fingerprint,
       counts: report.counts || {}, warnings: report.warnings || [], orphans: report.orphans || [],
       customField: report.customField ?? null,
+      // What the comparison found beside its changes, and what it compared:
+      // every record of the rack and every box of the photo. Suggestions are
+      // worked out from these on each read. A report that carries neither
+      // (an older caller) leaves no evidence, and the check says so.
+      findings: report.findings || [],
+      evidence: report.records || report.boxes
+        ? { records: report.records || [], boxes: report.boxes || [] } : null,
       createdBy: who.username ?? null, createdById: who.id ?? null,
       parentPlanId,
     }, items);
@@ -1253,6 +1262,488 @@ function decideItems(planId, decisions, { actor, req = null } = {}) {
   });
 }
 
+// -- A change before approving: overrides, the re-plan, suggestions -------
+/**
+ * A person may change a check before they approve it: accept what RackTrack
+ * suggests (a record is on the wrong shelf, a record not seen is marked
+ * offline) or type a serial number, an asset tag or a description by hand.
+ *
+ * The write is driven by the scan, so a change is never kept on the item
+ * alone. It is stored as an override, laid over the scan by snapshot.forPlan
+ * for every comparison of this check from then on, and the check is compared
+ * again IN PLACE: the same check number, the same incident, fresh items, a
+ * fresh fingerprint. Whatever somebody had signed before no longer matches.
+ * Nothing is kept unless the fresh comparison really shows the change, so what
+ * a person reads on the check afterwards is what the write will do.
+ */
+const overridesLib = require('./overrides');
+const suggestLib = require('./suggest');
+
+const CHANGE_OPEN = WORKING;
+const NETBOX_DOWN = 'NetBox could not be compared, so the change was not applied.';
+const GONE = 'That suggestion no longer applies.';
+const changeKey = (i) => `${i.uid} ${i.action} ${shape.stable(i.diff)}`;
+
+/** Tests hand in the NetBox and the writer a re-plan compares with: { client, writer }. */
+let _compare = null;
+function _setCompare(deps) { _compare = deps || null; }
+
+/** An override as a screen is shown it. */
+const overrideBrief = (o) => ({ id: o.id, kind: o.kind, itemUid: o.itemUid, netboxId: o.netboxId,
+  recordName: o.recordName, fields: o.fields, source: o.source, rule: o.rule, note: o.note,
+  createdBy: o.createdBy, createdAt: o.createdAt });
+
+/** May this person change this check, here and now? Null when they may. */
+function mayChange(plan, who) {
+  const barred = mayDecide(plan, who);
+  if (barred) return barred;
+  if (!CHANGE_OPEN.includes(plan.status) || (isStrict(who) && plan.spocUserId == null)) {
+    return refuse('transition', plan.status === 'draft'
+      ? 'this check has not been sent yet'
+      : 'A check can be changed only while it is with the person deciding it.');
+  }
+  return null;
+}
+
+/**
+ * Did the fresh comparison really take this change? Null when it did, else the
+ * sentence a person is refused with - the writer's own reason where it gave one.
+ */
+function tookOf(report, o) {
+  const rows = report.changes || [];
+  const sameValue = (a, b) => (Number.isFinite(Number(a)) && Number.isFinite(Number(b)) && a !== '' && b !== ''
+    && a !== null && b !== null ? Number(a) === Number(b) : String(a ?? '') === String(b ?? ''));
+  if (o.kind === 'move') {
+    const row = rows.find((c) => c.uid === o.itemUid) || null;
+    const want = o.fields.position;
+    const got = row && row.diff && row.diff.position;
+    if (!row) return 'The scan no longer has that box, so the record was not moved.';
+    if (!['rebind', 'update'].includes(row.action) || Number(row.netboxId) !== Number(o.netboxId)) {
+      return row.reason || 'NetBox would not take that record for this box, so it was not moved.';
+    }
+    if (!got) return 'The record is already on that shelf in NetBox, so there is nothing to move.';
+    if (!sameValue(got.from, want.from) || !sameValue(got.to, want.to)) {
+      return 'The record moved since this was suggested, so it was not moved again. Compare the rack again.';
+    }
+    if ((report.orphans || []).some((r) => Number(r.netboxId) === Number(o.netboxId))) {
+      return 'NetBox still lists that record as not seen, so the move was not applied.';
+    }
+    if (rows.some((c) => shape.ACTIONABLE.has(c.action) && shape.parentUidOf(c) === o.itemUid)) {
+      return 'The move would add ports the camera counted to the customer\'s record, so it was not applied.';
+    }
+    return null;
+  }
+  if (o.kind === 'offline') {
+    const row = rows.find((c) => c.uid === `nb:device:${o.netboxId}`) || null;
+    if (row && row.action === 'update' && row.diff && row.diff.status && row.diff.status.to === 'offline') return null;
+    if (row && row.action === 'noop') return 'The record is already offline in NetBox.';
+    return (row && row.reason) || 'NetBox would not mark that record offline, so nothing was changed.';
+  }
+  const row = rows.find((c) => c.uid === o.itemUid) || null;
+  if (!row) return 'The scan no longer has that box, so the value was not changed.';
+  if (row.action === 'rebind') {
+    return 'This box is being matched to the customer\'s own record, and that writes nothing else on it. '
+      + 'Approve and write it first, then change the value on the next check.';
+  }
+  for (const [field, pair] of Object.entries(o.fields)) {
+    // A create has no diff. Its payload, where the comparison reports one, says what would be made.
+    if (row.action === 'create') {
+      if (row.created && Object.prototype.hasOwnProperty.call(row.created, field)
+        && !sameValue(row.created[field], pair.to)) return 'NetBox would not be given that value, so it was not applied.';
+      continue;
+    }
+    const got = row.diff && row.diff[field];
+    if (row.action === 'update' && got && sameValue(got.to, pair.to)) continue;
+    const held = (report.findings || []).find((f) => f && f.uid === o.itemUid && f.kind === 'held-back'
+      && (f.fields || []).some((x) => x.field === field));
+    if (held) return held.why;
+    return row.reason || 'The record already holds that value, or NetBox would not take it, so nothing was changed.';
+  }
+  return null;
+}
+
+/** Close the open ticket on an item a person has just decided by changing it. */
+function closeDecidedTicket(planId, uid, who, how, said = null) {
+  const ticket = store.getTicket(planId, uid);
+  if (!shape.isOpenTicket(ticket)) return;
+  const now = store.nowIso();
+  store.updateTicket(planId, uid, { status: 'closed', closedBy: who.username ?? null,
+    closedAt: now, closedWith: how,
+    finding: text(said) || ticket.finding || 'Decided at the desk with the drift report.',
+    resolvedBy: who.username ?? null, resolvedById: who.id ?? null, resolvedAt: now }, { touch: false });
+}
+
+/** The item an override shows up as on the check. */
+const itemUidOf = (o) => (o.kind === 'offline' ? `nb:device:${o.netboxId}` : o.itemUid);
+
+/**
+ * Compare the check again, in place, with `tentative` overrides laid over its
+ * scan and the stored overrides in `revoke` left out.
+ *
+ * Nothing is stored unless NetBox answered and every tentative override shows
+ * in the fresh comparison. Then, in one transaction: the overrides are kept (or
+ * revoked), the items are replaced - a decision stands where the item is the
+ * same change to the byte, and everything else is asked again - and the plan
+ * takes the fresh fingerprint, counts, warnings, orphans, findings and
+ * evidence. An item born from an override is approved by the person who made
+ * it, and says so in `modified`. `also(effects, { overrideIds })` runs inside
+ * that transaction, for the caller's own bookkeeping.
+ */
+async function replan(planId, { actor, req = null, why = 'change', tentative = [], revoke = [], also = null } = {}) {
+  const who = actorOf(actor);
+  const found = open(planId, who);
+  if (found.refused) return found.refused;
+  const { plan } = found;
+  const barred = mayChange(plan, who);
+  if (barred) return barred;
+
+  const now = store.nowIso();
+  const fresh = [];
+  for (const t of tentative || []) {
+    try { overridesLib.validate(t.kind, t.fields); } catch (err) { return refuse('bad_request', err.message); }
+    fresh.push({ ...t, createdBy: who.username ?? null, createdById: who.id ?? null, createdAt: now });
+  }
+  const standing = store.overridesOf(plan.id).map((o) => o.id);
+
+  const loaded = require('./snapshot').forPlan(plan, { extra: fresh, without: revoke });
+  if (loaded.error) return refuse('guard', `${loaded.error}, so the change was not applied.`);
+  const given = _compare && _compare.client;
+  const nb = (typeof given === 'function' ? given() : given) || require('./connections').netboxFor({
+    orgId: plan.orgId ?? who.orgId, userId: who.id ?? null });
+  if (!nb) return refuse('guard', NETBOX_DOWN);
+  let report;
+  try {
+    report = await ((_compare && _compare.writer) || require('../netbox/writer')).plan(loaded.snap, nb);
+  } catch {
+    return refuse('guard', NETBOX_DOWN);
+  }
+  for (const o of fresh) {
+    const refusedBy = tookOf(report, o);
+    // A change the comparison will not show is a change the write will not make.
+    if (refusedBy && !who.system) return refuse('guard', refusedBy);
+  }
+
+  return run((effects) => {
+    // NetBox was asked outside any transaction. If somebody else changed this
+    // check meanwhile, what was compared is no longer what the check holds.
+    const current = store.getPlan(plan.id, { heavy: false });
+    const still = store.overridesOf(plan.id).map((o) => o.id);
+    if (!current || current.status !== plan.status || still.join() !== standing.join()) {
+      return refuse('guard', 'This check was changed by somebody else just now. Open it again and repeat the change.');
+    }
+    for (const id of revoke || []) store.revokeOverride(id, who.username ?? null, { touch: false });
+    const kept = fresh.map((o) => store.addOverride(plan.id, o, { touch: false }));
+    const live = store.overridesOf(plan.id);
+
+    const before = store.itemsOf(plan.id);
+    const beforeByKey = new Map(before.map((i) => [changeKey(i), i]));
+    const beforeByUid = new Map(before.map((i) => [i.uid, i]));
+    const ticketed = new Set(store.ticketsOf(plan.id).filter(shape.isOpenTicket).map((t) => t.itemUid));
+    const bornOf = new Map(live.map((o) => [itemUidOf(o), o]));   // the latest change on an item names it
+
+    const items = (report.changes || []).map(shape.toItem);
+    for (const item of items) {
+      const same = beforeByKey.get(changeKey(item)) || null;
+      // What a change that has been taken back made of an item goes with it,
+      // decision and all, even where the item reads the same to the byte (a
+      // value typed onto a new box changes no diff).
+      const stale = Boolean(same && same.modified && !live.some((o) => o.id === same.modified.overrideId));
+      if (same && !stale) {
+        Object.assign(item, { decision: same.decision, decidedBy: same.decidedBy, decidedById: same.decidedById,
+          decidedAt: same.decidedAt, note: same.note, reasonCode: same.reasonCode, exceptionId: same.exceptionId });
+        for (const k of ['modified', 'disposition']) if (same[k] !== undefined) item.extra = { ...item.extra, [k]: same[k] };
+      }
+      const o = item.decidable ? bornOf.get(item.uid) : null;
+      const named = Boolean(o && same && !stale && same.modified && same.modified.overrideId === o.id);
+      if (o && !named) {
+        const was = beforeByUid.get(item.uid) || null;
+        const original = was && was.modified ? was.modified.original
+          : was ? { action: was.action, diff: was.diff ?? null, name: was.name ?? null } : null;
+        item.extra = { ...item.extra, modified: { overrideId: o.id, kind: o.kind, source: o.source, rule: o.rule ?? null,
+          by: o.createdBy ?? null, byId: o.createdById ?? null, at: o.createdAt, note: o.note ?? null,
+          recordName: o.recordName ?? null, original } };
+        // The system comparing a check again decides nothing: a person's change
+        // that came out differently is asked of a person again.
+        if (!who.system) {
+          Object.assign(item, { decision: 'approved', decidedBy: who.username ?? null, decidedById: who.id ?? null,
+            decidedAt: now, note: o.note ?? null, reasonCode: null, exceptionId: null });
+          closeDecidedTicket(plan.id, item.uid, who, 'approved', o.note);
+          continue;
+        }
+      }
+      if ((!same || stale) && item.decidable) item.decision = ticketed.has(item.uid) ? 'ticketed' : 'pending';
+    }
+    // A port goes the way of its device, as it does for every other decision.
+    const byUid = new Map(items.map((i) => [i.uid, i]));
+    for (const item of items) {
+      if (!item.following || beforeByKey.has(changeKey(item))) continue;
+      const parent = byUid.get(item.parentUid);
+      if (parent) {
+        Object.assign(item, { decision: parent.decision, decidedBy: parent.decidedBy ?? null,
+          decidedById: parent.decidedById ?? null, decidedAt: parent.decidedAt ?? null });
+      }
+    }
+
+    const fingerprint = shape.fingerprint(report.changes);
+    const updated = store.replaceItems(plan.id, items, {
+      fingerprint, payloadHash: null,
+      // What the check was FILED as, kept the first time a change moves the
+      // fingerprint: it is how the phone, comparing without the change, still
+      // gets this check back and not a second draft of the same drift.
+      baseFingerprint: current.baseFingerprint || current.fingerprint,
+      counts: report.counts || {}, warnings: report.warnings || [], orphans: report.orphans || [],
+      findings: report.findings || [],
+      evidence: report.records || report.boxes
+        ? { records: report.records || [], boxes: report.boxes || [] } : null,
+    });
+    // A ticket on an item the check no longer asks about would stay open for ever.
+    const asked = new Set(items.filter((i) => i.decidable).map((i) => i.uid));
+    for (const t of store.ticketsOf(plan.id)) {
+      if (!shape.isOpenTicket(t) || asked.has(t.itemUid)) continue;
+      store.updateTicket(plan.id, t.itemUid, { status: 'closed', closedBy: who.username ?? null,
+        closedAt: now, closedWith: 'replanned' }, { touch: false });
+    }
+
+    const overrideIds = kept.map((o) => o.id);
+    const payload = { why,
+      before: { fingerprint: current.fingerprint, summary: shape.summarise(before) },
+      after: { fingerprint, summary: shape.summarise(items) },
+      overrides: overrideIds, revoked: (revoke || []).map(Number) };
+    note(updated, 'replan', { actor: who, payload });
+    audit(effects, updated, 'replan', { actor: who, req, payload });
+    if (typeof also === 'function') also(effects, { overrideIds, overrides: kept });
+    return { plan: store.getPlan(plan.id, { heavy: false }), overrides: overrideIds, replanned: true };
+  });
+}
+
+/** Every suggestion the check supports right now, with what people have said about each. */
+function suggestionsFor(plan, items = null) {
+  const { findings, evidence } = store.evidenceOf(plan.id);
+  const rows = items || store.itemsOf(plan.id);
+  let live = [];
+  let others = [];
+  if (evidence) {
+    const exceptions = require('./exceptions');
+    live = store.listExceptions({ orgId: plan.orgId ?? null }).filter((ex) => exceptions.isActive(ex));
+    others = plan.orgId != null && plan.rackId != null
+      ? store.listPlans({ orgId: plan.orgId, rackId: plan.rackId, status: machine.OPEN, limit: 50 })
+        .filter((p) => p.id !== plan.id && p.status !== 'draft')
+        .map((p) => ({ ...p, items: store.itemsOf(p.id) }))
+      : [];
+  }
+  const state = plan.suggestionState || {};
+  const out = suggestLib.suggest({ plan, items: rows, orphans: plan.orphans || [], findings, evidence,
+    exceptions: live, duplicates: others, state });
+  // An accepted suggestion changes the very thing it was worked out from, so
+  // it is no longer worked out. The card is kept as it was accepted, so the
+  // person still reads what was accepted, by whom, and can take it back.
+  const shown = new Set(out.suggestions.map((s) => s.id));
+  const accepted = Object.entries(state)
+    .filter(([id, said]) => said && said.state === 'accepted' && said.card && !shown.has(id))
+    .map(([id, said]) => ({ ...said.card, id, state: 'accepted', stateBy: said.by ?? null,
+      stateAt: said.at ?? null, overrideId: said.overrideId ?? null }));
+  return { suggestions: [...accepted, ...out.suggestions], note: out.note };
+}
+
+/** The open suggestion a person pressed, or the refusal. */
+function openSuggestion(planId, sid, who) {
+  const found = open(planId, who);
+  if (found.refused) return found;
+  const barred = mayDecide(found.plan, who);
+  if (barred) return { refused: barred };
+  if (isStrict(who) && !DECIDE_OPEN.includes(found.plan.status)) {
+    return { refused: refuse('transition', 'This check is not open to decisions any more.') };
+  }
+  const s = suggestionsFor(found.plan).suggestions.find((x) => x.id === String(sid) && x.state === 'open');
+  if (!s) return { refused: refuse('guard', GONE) };
+  return { plan: found.plan, s };
+}
+
+/** Write down what a person said about a suggestion, with the evidence they were shown. */
+function saySuggestion(effects, plan, s, state, who, { said = null, overrideId = null, req = null } = {}) {
+  const { id } = s;
+  const card = { rule: s.rule, word: s.word, title: s.title, evidence: s.evidence, itemUid: s.itemUid,
+    netboxId: s.netboxId, recordName: s.recordName, proposes: s.proposes, candidates: s.candidates,
+    acceptLabel: s.acceptLabel };
+  const fresh = store.getPlan(plan.id, { heavy: false });
+  store.updatePlan(plan.id, { suggestionState: { ...(fresh.suggestionState || {}),
+    [id]: { state, by: who.username ?? null, byId: who.id ?? null, at: store.nowIso(),
+      note: text(said) || null, overrideId, ...(state === 'accepted' ? { card } : {}) } } });
+  // The sentences are kept in the event, so why it was accepted survives a re-plan.
+  const payload = { id, rule: s.rule, title: s.title, evidence: s.evidence, note: text(said) || null, overrideId };
+  note(fresh, `suggestion.${state === 'accepted' ? 'accept' : 'dismiss'}`, { actor: who, item: s.itemUid || null, payload });
+  audit(effects, fresh, `suggestion.${state === 'accepted' ? 'accept' : 'dismiss'}`, { actor: who, req, payload });
+}
+
+/**
+ * Accept a suggestion. What that does is the rule's own answer
+ * (suggest.acceptanceOf): a change and a re-plan, a decision on the item, an
+ * exception applied, the check closed as a duplicate, or nothing but the word.
+ */
+async function acceptSuggestion(planId, sid, { note: said = null, actor, req = null } = {}) {
+  const who = actorOf(actor);
+  const found = openSuggestion(planId, sid, who);
+  if (found.refused) return found.refused;
+  const { plan, s } = found;
+  const act = suggestLib.acceptanceOf(s) || { does: 'state' };
+
+  if (act.does === 'override') {
+    const out = await replan(plan.id, { actor: who, req, why: `suggestion ${s.rule}`,
+      tentative: [{ ...act.override, note: text(said) || null }],
+      also: (effects, { overrideIds }) => saySuggestion(effects, plan, s, 'accepted', who,
+        { said, overrideId: overrideIds[0] ?? null, req }) });
+    if (out.error) return out;
+    return { ...get(plan.id, who), replanned: true };
+  }
+
+  const out = run((effects) => {
+    const now = store.nowIso();
+    if (act.does === 'decide' || act.does === 'except') {
+      const items = store.itemsOf(plan.id);
+      const item = items.find((i) => i.uid === s.itemUid);
+      if (!item || !item.decidable || !['pending', 'ticketed'].includes(item.decision)) return refuse('guard', GONE);
+      const row = act.does === 'except'
+        ? { decision: 'excepted', exceptionId: act.exceptionId, reasonCode: 'known_exception',
+          note: `${s.title}. ${s.evidence.join(' ')}`.slice(0, 1000) }
+        : { decision: act.decisions[0].decision, reasonCode: null,
+          note: text(said) || act.decisions[0].note || `Suggestion accepted: ${s.title}.` };
+      const decided = { ...row, decidedBy: who.username ?? null, decidedById: who.id ?? null, decidedAt: now };
+      store.updateItem(plan.id, item.uid, decided, { touch: false });
+      for (const child of shape.childrenOf(items, item.uid)) store.updateItem(plan.id, child.uid, decided, { touch: false });
+      closeDecidedTicket(plan.id, item.uid, who, decided.decision, decided.note);
+      audit(effects, plan, 'decide', { actor: who, req, payload: { uid: item.uid, decision: decided.decision,
+        note: decided.note, action: item.action, suggestion: s.id } });
+    }
+    if (act.does === 'duplicate') {
+      const moved = move(effects, plan, 'duplicate', { actor: who, action: 'duplicate', req,
+        patch: { duplicateOf: act.duplicateOf, disposition: 'duplicate' },
+        ctx: ctxFor(plan, { duplicateOf: act.duplicateOf }), reason: s.title,
+        auditPayload: { duplicateOf: act.duplicateOf, suggestion: s.id } });
+      if (moved.refused) return moved.refused;
+      closeOpenTickets(plan.id, who, 'duplicate');
+    }
+    saySuggestion(effects, plan, s, 'accepted', who, { said, req });
+    return { ok: true };
+  });
+  if (out.error) return out;
+  return { ...get(plan.id, who), replanned: false };
+}
+
+/** Put a suggestion away without acting on it. Nothing else changes. */
+function dismissSuggestion(planId, sid, { note: said = null, actor, req = null } = {}) {
+  const who = actorOf(actor);
+  const found = openSuggestion(planId, sid, who);
+  if (found.refused) return found.refused;
+  run((effects) => saySuggestion(effects, found.plan, found.s, 'dismissed', who, { said, req }));
+  return { ...get(found.plan.id, who), replanned: false };
+}
+
+/**
+ * Take a change back. The check is compared again without it, the items it
+ * made go back to what the scan proposed, and the suggestion it came from is
+ * open again.
+ */
+async function revokeOverride(planId, overrideId, { actor, req = null } = {}) {
+  const who = actorOf(actor);
+  const found = open(planId, who);
+  if (found.refused) return found.refused;
+  const o = store.getOverride(overrideId);
+  if (!o || o.planId !== found.plan.id || o.revokedAt) return refuse('not_found', 'no such change on this check');
+  const out = await replan(found.plan.id, { actor: who, req, why: 'change taken back', revoke: [o.id],
+    also: () => {
+      const fresh = store.getPlan(found.plan.id, { heavy: false });
+      const state = Object.fromEntries(Object.entries(fresh.suggestionState || {})
+        .filter(([, said]) => !(said && Number(said.overrideId) === Number(o.id))));
+      store.updatePlan(found.plan.id, { suggestionState: state });
+    } });
+  if (out.error) return out;
+  return { ...get(found.plan.id, who), replanned: true };
+}
+
+const BY_HAND = ['serial', 'asset_tag', 'description'];
+
+/**
+ * Decide items, one by one, where a row may also be a change:
+ * { uid, decision: 'modified', modified: { serial?, asset_tag?, description? }, note }.
+ *
+ * 'modified' is a word a person sends, never one that is stored: the value is
+ * kept as an override, the check is compared again, and the item comes back
+ * approved with the change on it. The shelf is never changed this way - only
+ * by accepting the suggestion that found the record. Rejecting an item a change
+ * made takes the change back first, so a check never sits with a rejected move
+ * still laid over its scan.
+ */
+async function decide(planId, decisions, { actor, req = null } = {}) {
+  const who = actorOf(actor);
+  const rows = Array.isArray(decisions) ? decisions : [];
+  const changes = rows.filter((d) => d && d.decision === 'modified');
+  const itemsNow = () => store.itemsOf(Number(planId));
+  const takesBack = rows.filter((d) => d && d.decision === 'rejected'
+    && (itemsNow().find((i) => i.uid === d.uid) || {}).modified);
+  if (!changes.length && !takesBack.length) {
+    const out = decideItems(planId, rows, { actor: who, req });
+    return out.error ? out : { ...out, replanned: false };
+  }
+
+  const found = open(planId, who);
+  if (found.refused) return found.refused;
+  const barred = mayDecide(found.plan, who);
+  if (barred) return barred;
+  const applied = [];
+  const refused = [];
+  let replanned = false;
+
+  for (const d of takesBack) {
+    const item = itemsNow().find((i) => i.uid === d.uid);
+    const out = await revokeOverride(planId, item.modified.overrideId, { actor: who, req });
+    if (out.error) { refused.push({ uid: d.uid, why: out.why }); continue; }
+    replanned = true;
+    // A record marked offline is not an item of the scan: taking the change
+    // back is the whole of rejecting it.
+    if (!itemsNow().some((i) => i.uid === d.uid)) applied.push({ uid: d.uid, decision: 'rejected' });
+  }
+
+  for (const d of changes) {
+    const item = itemsNow().find((i) => i.uid === d.uid);
+    const asked = d.modified && typeof d.modified === 'object' ? d.modified : {};
+    const keys = Object.keys(asked);
+    let why = null;
+    if (!item) why = 'not in this plan';
+    else if (!item.decidable) why = 'not a decidable item';
+    else if (item.type !== 'Device') why = 'Only a device can be changed by hand.';
+    else if (keys.some((k) => ['position', 'face'].includes(k))) {
+      why = 'The shelf is changed only by accepting the suggestion that found the record, never by hand.';
+    } else if (!keys.length || keys.some((k) => !BY_HAND.includes(k))) {
+      why = 'A serial number, an asset tag or a description can be changed by hand, and nothing else.';
+    } else if (keys.some((k) => typeof asked[k] !== 'string' || !asked[k].trim())) {
+      why = 'Type the value to write. An empty value is never written over what the record holds.';
+    }
+    if (why) { refused.push({ uid: d ? d.uid : null, why }); continue; }
+    const fields = Object.fromEntries(keys.map((k) => [k,
+      { from: (item.diff && item.diff[k] && item.diff[k].from) ?? null, to: asked[k].trim() }]));
+    // A newer value by hand replaces the older one on the same box.
+    const older = store.overridesOf(found.plan.id)
+      .filter((o) => o.kind === 'value' && o.itemUid === item.uid).map((o) => o.id);
+    const out = await replan(planId, { actor: who, req, why: 'changed by hand', revoke: older,
+      tentative: [{ kind: 'value', itemUid: item.uid, netboxId: item.netboxId ?? null, recordName: item.name ?? null,
+        fields, source: 'manual', note: text(d.note) || null }] });
+    if (out.error) { refused.push({ uid: d.uid, why: out.why }); continue; }
+    replanned = true;
+    applied.push({ uid: d.uid, decision: 'approved', modified: true });
+  }
+
+  // What is left is an ordinary decision: every other row, and the rejection of
+  // an item whose change has just been taken back, which is an item of the scan again.
+  const done = new Set([...changes.map((d) => d.uid), ...applied.map((a) => a.uid), ...refused.map((r) => r.uid)]);
+  const plain = rows.filter((d) => !d || (d.decision !== 'modified' && !done.has(d.uid)));
+  if (plain.length) {
+    const out = decideItems(planId, plain, { actor: who, req });
+    if (out.error && !applied.length && !refused.length) return out;
+    if (!out.error) { applied.push(...out.applied); refused.push(...out.refused); }
+  }
+  return { plan: store.getPlan(found.plan.id, { heavy: false }), applied, refused, replanned };
+}
+
 // -- Verification, skipped ------------------------------------------------
 /**
  * Move past the verification scan without one. An organization admin only,
@@ -1808,6 +2299,7 @@ function get(planId, actor) {
   const deciding = mayTouch && isStrict(who) && DECIDE_OPEN.includes(plan.status) && !mayDecide(plan, who);
   const reassign = mayTouch && ASSIGN_OPEN.includes(plan.status) && machine.isAdmin(who);
   const rackContact = (tickets.find((t) => t.spoc) || {}).spoc || null;
+  const suggested = suggestionsFor(plan, items);
   return {
     plan: {
       ...plan,
@@ -1833,9 +2325,11 @@ function get(planId, actor) {
       : null,
     incident: plan.incident || null,
     incidentStates: incidentStatesFor(plan.incident),
-    // Filled by the stages that own them: what the evidence suggests, what a
-    // person changed before approving, and what the write recorded.
-    suggestions: [], suggestionsNote: null, overrides: [], changes: [],
+    // What the evidence suggests, and what a person changed before approving.
+    suggestions: suggested.suggestions, suggestionsNote: suggested.note,
+    overrides: store.overridesOf(plan.id).map(overrideBrief),
+    // Filled by the stage that owns it: what the write recorded.
+    changes: [],
     assignable: machine.unassigned(ctx).map((i) => i.uid),
     approval: { dual: stage.dual, stage: stage.stage,
                 first: machine.firstApproval(ctx) },
@@ -2208,6 +2702,7 @@ module.exports = {
   submit, submitAndDispatch, dispatch, triage, assign, assignLocal, assignableUids, notifyAssignee,
   acceptTicket, startTicket, holdTicket, resolveTicket, applyTicketStates, openSysIds, syncServiceNow,
   decideItems, skipVerification, approve, reject, rework, moveByHand, cancel, reopen,
+  decide, replan, acceptSuggestion, dismissSuggestion, revokeOverride, suggestionsFor, _setCompare,
   beginWrite, finishWrite, abortWrite,
   addComment, listComments,
   getSettings, putSetting, DEFAULT_SETTINGS, SETTING_KEYS,

@@ -79,7 +79,8 @@ function validate(kind, fields) {
 }
 
 /**
- * The catalogue entries only the moved boxes used.
+ * The catalogue entries only these boxes used (`movedUids`: the boxes that no
+ * longer need one made for them).
  *
  * A box the camera minted brings a device type, a role and perhaps a
  * manufacturer with it. Once the box is the customer's own record its type and
@@ -172,4 +173,4 @@ function applyTo(snap, overrides) {
   return snap;
 }
 
-module.exports = { applyTo, validate, MOVE_FIELDS, VALUE_FIELDS: Object.keys(VALUE_FIELDS), KINDS };
+module.exports = { applyTo, validate, unneededScaffolding, MOVE_FIELDS, VALUE_FIELDS: Object.keys(VALUE_FIELDS), KINDS };

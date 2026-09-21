@@ -933,6 +933,12 @@ function updateItem(planId, uid, patch, { touch = true } = {}) {
   return getItem(planId, uid);
 }
 
+/** What a suggestion is worked out from, without the rest of the heavy columns. */
+function evidenceOf(planId) {
+  const r = db().prepare('SELECT findings, evidence FROM approval_plans WHERE id = ?').get(Number(planId));
+  return { findings: parse(r && r.findings, []), evidence: parse(r && r.evidence) };
+}
+
 /**
  * Swap a plan's items for a fresh comparison's, and patch the plan, in one
  * transaction. The caller has already carried over every decision that still
@@ -1356,7 +1362,7 @@ module.exports = {
   SLA_STATES, slaStateOf,
   // items and tickets
   insertItem, itemsOf, getItem, updateItem,
-  replaceItems, addOverride, getOverride, overridesOf, revokeOverride,
+  replaceItems, addOverride, getOverride, overridesOf, revokeOverride, evidenceOf,
   ticketsOf, getTicket, putTicket, updateTicket, listTickets, ticketsWaitingOnServiceNow,
   // the history of a plan
   addDecision, decisionsOf, addVerification, verificationsOf,
