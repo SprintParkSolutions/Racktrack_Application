@@ -17,6 +17,22 @@ import styles from './HomePage.module.css';
  * thing the app does, your own figures, your own racks, and whatever has been
  * put on you. Scanning is one tap away, from the dark card and from the bar.
  *
+ * The composition, top to bottom, is a hierarchy rather than a stack of
+ * equal blocks:
+ *
+ *   the greeting     your name, heavier than anything else made of words
+ *   the dark card    the one dark object on the page. It carries the figure
+ *                    that matters - how many racks have been read - and the
+ *                    one action, at full width. A brand-new account has no
+ *                    figure, so the promise leads the card instead.
+ *   a pair           the two drift figures, side by side because they are the
+ *                    same kind of thing. One on its own goes full width as a
+ *                    row rather than sitting half-empty.
+ *   waiting on you   whatever is held by this person, on a light ground so it
+ *                    reads as the second-strongest thing on the screen.
+ *   your racks       the substance: one hairline between rows, the rack name
+ *                    in the mono face, and the state told by a dot and a word.
+ *
  * Every figure on this page is one the server already answers. Nothing here
  * adds a route or a field, and a number the server cannot give is left out
  * rather than guessed:
@@ -46,6 +62,14 @@ const PLAN_WINDOW = 100;
 // is not something to print. Same test as ReportPage's.
 const UNNAMED = /^RK-[0-9A-F]{6,}$/i;
 const NO_NAME = 'Rack not identified yet';
+
+// What happens on a first scan, for the account that has not taken one yet.
+// Three plain sentences, no promises the app does not keep.
+const FIRST_SCAN = [
+  'Take one photo of the rack.',
+  'RackTrack reads the equipment mounted in it.',
+  'Whatever does not match your records is shown as a difference.',
+];
 
 /** The plan statuses that mean nobody has finished with the check yet. */
 const OPEN_STATUS = new Set([
@@ -199,14 +223,21 @@ export default function HomePage() {
   const org = user?.organization?.name || null;
   const where = user?.tenant?.name || null;
 
-  const figures = [];
-  if (!nothingYet) {
-    figures.push({ key: 'racks', value: (scans || []).length, label: 'Racks scanned' });
+  // The figure the dark card carries. Held back until /api/scans has answered,
+  // so the card never shows a 0 it is about to replace.
+  const scanned = loading || nothingYet ? null : (scans || []).length;
+
+  // The two that belong together, because they are the same kind of thing:
+  // drift work. Either can be absent - the dashboard is refused outright for
+  // an account with no part in the approval workflow, and nobody has an
+  // incident until a check is with them - and one on its own goes full width.
+  const pair = [];
+  if (scanned != null) {
     if (openCount != null) {
-      figures.push({ key: 'open', value: openCount, label: 'Differences waiting' });
+      pair.push({ key: 'open', value: openCount, label: 'Differences waiting' });
     }
     if (incidents > 0) {
-      figures.push({ key: 'incidents', value: incidents, label: 'Incidents with you' });
+      pair.push({ key: 'incidents', value: incidents, label: 'Incidents with you' });
     }
   }
 
@@ -215,29 +246,52 @@ export default function HomePage() {
       <main className={styles.main}>
         {/* ── 1. Who you are ── */}
         <header className={styles.greet}>
-          <div className={styles.greetText}>
-            <p className={styles.welcome}>Welcome back</p>
-            <h1 className={styles.who}>{user?.username || 'there'}</h1>
-            {(org || where) && (
-              <p className={styles.place}>
-                {org}
-                {org && where ? <span className={styles.dot} aria-hidden="true" /> : null}
-                {where}
-              </p>
-            )}
-          </div>
+          <p className={styles.welcome}>Welcome back</p>
+          <h1 className={styles.who}>{user?.username || 'there'}</h1>
+          {(org || where) && (
+            <p className={styles.place}>
+              {org}
+              {org && where ? <span className={styles.dot} aria-hidden="true" /> : null}
+              {where}
+            </p>
+          )}
         </header>
 
-        {/* ── 2. The one thing this app is for ── */}
+        {/* ── 2. The one dark object: what this app is for, the figure that
+               matters, and the action. ── */}
         <section className={styles.start} aria-labelledby="home-start">
-          <h2 className={styles.startTitle} id="home-start">Ready to scan a rack</h2>
+          {scanned != null && (
+            <p className={styles.startFigure}>
+              <span className={styles.startValue}>{scanned}</span>
+              <span className={styles.startLabel}>Racks scanned</span>
+            </p>
+          )}
+          <h2
+            className={`${styles.startTitle} ${scanned == null ? styles.startLead : ''}`}
+            id="home-start"
+          >
+            Ready to scan a rack
+          </h2>
           <p className={styles.startWords}>
             One photo and RackTrack reads the rack, then checks it against your records.
           </p>
           <button type="button" className={styles.startBtn} onClick={() => navigate('/scan')}>
             Start a scan
+            <Icon name="arrow_forward" className={styles.startArrow} />
           </button>
         </section>
+
+        {/* ── 3. The pair of drift figures, under the card that leads them. ── */}
+        {pair.length > 0 && (
+          <ul className={`${styles.figures} ${pair.length === 1 ? styles.figuresOne : ''}`}>
+            {pair.map((f) => (
+              <li key={f.key} className={styles.figure}>
+                <span className={styles.figureValue}>{f.value}</span>
+                <span className={styles.figureLabel}>{f.label}</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* Anything an admin or a SPOC has put on this person - the app's
             existing notices card, the same one the Scan screen shows. It draws
@@ -249,77 +303,50 @@ export default function HomePage() {
           <AssignedNotice />
         </div>
 
+        {/* ── 4. Nothing scanned yet. Still a screen somebody can read: what
+               is missing, and what the first scan does. ── */}
         {nothingYet && (
-          <p className={styles.blank}>
-            {scansFailed
-              ? 'Your racks could not be loaded just now. Pull up again in a moment.'
-              : 'Your racks will appear here after the first scan.'}
-          </p>
+          <div className={styles.blank}>
+            <span className={styles.slot} aria-hidden="true">
+              <Icon name="rack" className={styles.slotGlyph} />
+            </span>
+            <p className={styles.blankLead}>
+              {scansFailed ? 'Your racks could not be loaded just now' : 'No racks yet'}
+            </p>
+            <p className={styles.blankWords}>
+              {scansFailed
+                ? 'Pull up again in a moment.'
+                : 'Your racks will appear here after the first scan.'}
+            </p>
+            {!scansFailed && (
+              <ol className={styles.steps}>
+                {FIRST_SCAN.map((line, i) => (
+                  <li key={line} className={styles.step}>
+                    <span className={styles.stepNo} aria-hidden="true">{i + 1}</span>
+                    {line}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
         )}
 
-        {/* ── 3. What this person actually has ── */}
-        {figures.length > 0 && (
-          <ul className={styles.figures}>
-            {figures.map((f) => (
-              <li key={f.key} className={styles.figure}>
-                <span className={styles.figureValue}>{f.value}</span>
-                <span className={styles.figureLabel}>{f.label}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* ── 4. Your racks ── */}
-        {!nothingYet && !loading && recent.length > 0 && (
-          <section className={styles.sect}>
-            <div className={styles.sectTop}>
-              <h2 className={styles.sectTitle}>Your racks</h2>
-              <button type="button" className={styles.seeAll} onClick={() => navigate('/history')}>
-                See all
-              </button>
-            </div>
-            <ul className={styles.rows}>
-              {recent.map((r) => (
-                <li key={r.rackId}>
-                  <button
-                    type="button"
-                    className={styles.row}
-                    onClick={() => navigate(`/results/${encodeURIComponent(r.rackId)}`)}
-                  >
-                    <span className={styles.rowText}>
-                      <span className={`${styles.rackName} ${r.name ? '' : styles.rackUnnamed}`}>
-                        {r.name || NO_NAME}
-                      </span>
-                      <span className={styles.rowMeta}>
-                        {/* The Site gives way first: how long ago a rack was
-                            read is short and always worth the room, a Site's
-                            name is neither. */}
-                        {r.where && <span className={styles.metaGives}>{r.where}</span>}
-                        {r.where && r.when ? <span className={styles.dot} aria-hidden="true" /> : null}
-                        {r.when && <span className={styles.metaKeeps}>{r.when}</span>}
-                      </span>
-                    </span>
-                    <span className={`${styles.state} ${styles[r.state.key]}`}>{r.state.label}</span>
-                    <Icon name="chevron_right" className={styles.chev} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* ── 5. What is waiting on this person. Only when there is something. ── */}
+        {/* ── 5. What is waiting on this person. Only when there is something,
+               and on a ground of its own when there is. ── */}
         {waiting.length > 0 && (
-          <section className={styles.sect}>
+          <section className={`${styles.sect} ${styles.waiting}`} aria-labelledby="home-waiting">
             <div className={styles.sectTop}>
-              <h2 className={styles.sectTitle}>Waiting on you</h2>
+              <h2 className={`${styles.sectTitle} ${styles.sectTitleLoud}`} id="home-waiting">
+                Waiting on you
+              </h2>
+              <span className={styles.count}>{waiting.length}</span>
             </div>
             <ul className={styles.rows}>
               {waiting.slice(0, WAITING_SHOWN).map((p) => {
                 const named = p.rackName && !UNNAMED.test(p.rackName) ? String(p.rackName) : null;
                 const place = places.get(String(p.rackId)) || {};
                 return (
-                  <li key={p.id}>
+                  <li key={p.id} className={styles.rowItem}>
                     <button type="button" className={styles.row} onClick={() => openCheck(p.id)}>
                       <span className={styles.rowText}>
                         <span className={`${styles.inc} ${p.incidentNumber ? '' : styles.rackUnnamed}`}>
@@ -340,6 +367,49 @@ export default function HomePage() {
                 and {waiting.length - WAITING_SHOWN} more with you
               </p>
             )}
+          </section>
+        )}
+
+        {/* ── 6. Your racks. The substance of the page: a list, not a stack of
+               cards. ── */}
+        {!nothingYet && !loading && recent.length > 0 && (
+          <section className={styles.sect} aria-labelledby="home-racks">
+            <div className={styles.sectTop}>
+              <h2 className={styles.sectTitle} id="home-racks">Your racks</h2>
+              <button type="button" className={styles.seeAll} onClick={() => navigate('/history')}>
+                See all
+              </button>
+            </div>
+            <ul className={styles.rows}>
+              {recent.map((r) => (
+                <li key={r.rackId} className={styles.rowItem}>
+                  <button
+                    type="button"
+                    className={styles.row}
+                    onClick={() => navigate(`/results/${encodeURIComponent(r.rackId)}`)}
+                  >
+                    <span className={styles.rowText}>
+                      <span className={`${styles.rackName} ${r.name ? '' : styles.rackUnnamed}`}>
+                        {r.name || NO_NAME}
+                      </span>
+                      <span className={styles.rowMeta}>
+                        {/* The Site gives way first: how long ago a rack was
+                            read is short and always worth the room, a Site's
+                            name is neither. */}
+                        {r.where && <span className={styles.metaGives}>{r.where}</span>}
+                        {r.where && r.when ? <span className={styles.dot} aria-hidden="true" /> : null}
+                        {r.when && <span className={styles.metaKeeps}>{r.when}</span>}
+                      </span>
+                    </span>
+                    <span className={`${styles.state} ${styles[r.state.key]}`}>
+                      <span className={styles.stateDot} aria-hidden="true" />
+                      {r.state.label}
+                    </span>
+                    <Icon name="chevron_right" className={styles.chev} />
+                  </button>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
       </main>
