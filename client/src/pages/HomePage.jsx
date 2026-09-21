@@ -239,9 +239,15 @@ export default function HomePage() {
           </button>
         </section>
 
-        {/* Anything an admin or a SPOC has put on this person. The component
-            draws nothing when there is nothing, so it never leaves a gap. */}
-        <AssignedNotice />
+        {/* Anything an admin or a SPOC has put on this person - the app's
+            existing notices card, the same one the Scan screen shows. It draws
+            nothing when there is nothing, so it never leaves a gap. The wrapper
+            cancels the card's own margins, which were written for a page with
+            no gutter; without it the notice sits 16px narrower than everything
+            else in this column. */}
+        <div className={styles.notice}>
+          <AssignedNotice />
+        </div>
 
         {nothingYet && (
           <p className={styles.blank}>
@@ -285,9 +291,12 @@ export default function HomePage() {
                         {r.name || NO_NAME}
                       </span>
                       <span className={styles.rowMeta}>
-                        {r.where}
+                        {/* The Site gives way first: how long ago a rack was
+                            read is short and always worth the room, a Site's
+                            name is neither. */}
+                        {r.where && <span className={styles.metaGives}>{r.where}</span>}
                         {r.where && r.when ? <span className={styles.dot} aria-hidden="true" /> : null}
-                        {r.when}
+                        {r.when && <span className={styles.metaKeeps}>{r.when}</span>}
                       </span>
                     </span>
                     <span className={`${styles.state} ${styles[r.state.key]}`}>{r.state.label}</span>

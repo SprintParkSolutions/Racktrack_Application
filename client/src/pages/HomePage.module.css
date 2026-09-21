@@ -149,6 +149,12 @@
 .startBtn:active { transform: scale(0.985); }
 .startBtn:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
 
+/* The notices card (components/AssignedNotice.jsx) carries margins of its own,
+   written for a page that has no gutter. Cancelled here so it lines up with
+   the rest of the column and the flex gap alone does the spacing. An empty
+   wrapper around nothing collapses, so this never leaves a hole. */
+.notice > * { margin: 0 -16px !important; }
+
 /* The one line a brand-new account sees under the card. */
 .blank {
   margin: 0;
@@ -280,15 +286,19 @@
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+  min-width: 0;
   font-family: var(--font);
   font-size: 12px;
   font-weight: 500;
   line-height: 16px;
   color: var(--hm-ink-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* A flex container clips its children rather than ellipsising them, so the
+   two halves of the line say for themselves which one gives way. Without this
+   a long Site name pushed "2h ago" off the row and left it reading "1w". */
+.metaGives { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.metaKeeps { flex: none; }
 
 /* The state of a rack, told by form rather than by colour: this app has no
    colour accent. A filled black label is finished, a hairline outline is out
