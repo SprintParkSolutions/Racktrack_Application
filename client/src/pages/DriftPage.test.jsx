@@ -40,11 +40,12 @@ function stub(status, contacts = { body: { spoc: null } }, extra = {}) {
     ...extra,
   };
 }
-const mount = () => render(
-  <MemoryRouter initialEntries={['/results/RK-1/drift']}>
+const mountAt = (path) => render(
+  <MemoryRouter initialEntries={[path]}>
     <Routes><Route path="/results/:rackId/drift" element={<DriftPage />} /></Routes>
   </MemoryRouter>,
 );
+const mount = () => mountAt('/results/RK-1/drift');
 const buttonNames = () => screen.queryAllByRole('button').map((b) => b.textContent.trim().toLowerCase());
 const FORBIDDEN = /approve|reject|assign|write|export/;
 
@@ -317,6 +318,41 @@ describe('<DriftPage> choosing and following', () => {
     mount();
     await screen.findByText('The SPOC approved this and it was written to NetBox. Nothing more is needed from you.');
     expect(stepNow()).toBe('Written');
+  });
+});
+
+/* A notice about a sent check names it. The screen shows that check as it
+   stands: comparing again would file a new draft beside a rejected one. */
+describe('<DriftPage> opened on a named check', () => {
+  const asked = () => authFetch.mock.calls.map(([url, init = {}]) => `${(init.method || 'GET').toUpperCase()} ${url}`);
+
+  test('a rejected check is shown as rejected: nothing is compared again and nothing can be sent', async () => {
+    stub('open');                                   // what comparing again would answer: a new draft
+    routes.current['GET /api/nb/plans/140'] = { body: { ...plan('rejected'), id: 140, state: 'rejected' } };
+    routes.current['GET /api/nb/plans/140/contacts'] = toSpoc;
+    mountAt('/results/RK-1/drift?plan=140');
+    await waitFor(() => expect(screen.getAllByText('Rejected').length).toBeGreaterThan(0));
+    expect(asked().filter((c) => /\/adopt\/|\/preview$/.test(c))).toEqual([]);
+    expect(asked()).toContain('GET /api/nb/plans/140/contacts');
+    expect(asked()).toContain('GET /api/approvals/plans/140');
+    expect(screen.queryByRole('button', { name: /^(Send|Raise)/ })).toBeNull();
+    expect(screen.queryByText('Goes to')).toBeNull();
+  });
+
+  test("another rack's check, one never sent, or one that cannot be read: compared as usual", async () => {
+    for (const named of [
+      { body: { ...plan('rejected'), id: 140, rackId: 'RK-2' } },
+      { body: { ...plan('open'), id: 140 } },
+      { status: 404, body: { error: 'no such plan' } },
+    ]) {
+      stub('open', toSpoc);
+      routes.current['GET /api/nb/plans/140'] = named;
+      mountAt('/results/RK-1/drift?plan=140');
+      await screen.findByText('Goes to');
+      expect(asked()).toContain('POST /api/nb/netbox/3/preview');
+      expect(asked()).not.toContain('GET /api/nb/plans/140/contacts');
+      cleanup(); authFetch.mockClear();
+    }
   });
 });
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { BackIcon } from '../components/BackButton.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import { useSmartBack } from '../hooks/useSmartBack';
@@ -252,6 +252,11 @@ function Incident({ incident }) {
 
 export default function DriftPage() {
   const { rackId } = useParams();
+  // A notice about a check that was sent names it (?plan=). That check is shown
+  // as it stands; comparing again would file a new draft beside a check that
+  // was rejected or written, with a live send button under it.
+  const [query] = useSearchParams();
+  const named = query.get('plan') || '';
   const goBack = useSmartBack(`/results/${rackId}/report`);
 
   const [plan, setPlan] = useState(null);
@@ -341,30 +346,45 @@ export default function DriftPage() {
     setPickError('');
     setNeedsSource(false);
     try {
-      const a = await authFetch(apiUrl(`/api/nb/scans/adopt/${encodeURIComponent(rackId)}`),
-        { method: 'POST' });
-      const adopted = await a.json();
-      if (!a.ok) throw new Error(adopted.error || 'Could not open this rack');
-
-      const p = await authFetch(apiUrl(`/api/nb/netbox/${adopted.id}/preview`), { method: 'POST' });
-      const report = await p.json();
-      if (!p.ok) {
-        // No record system connected yet. That is not a failure of the check,
-        // it is a thing somebody has to set up, so say who and offer the way
-        // there rather than a red line the technician can do nothing about.
-        if (report.hint || /no netbox connection/i.test(String(report.error || ''))) {
-          setNeedsSource(true);
-          return;
-        }
-        throw new Error(report.error || 'Could not reach NetBox');
+      // The check a notice named, when it is a sent check of this rack. Anything
+      // else - no such check, another rack's, one never sent - compares as usual.
+      let body = null;
+      let planId = null;
+      if (named) {
+        try {
+          const asked = await authFetch(apiUrl(`/api/nb/plans/${encodeURIComponent(named)}`));
+          const got = asked.ok ? await asked.json() : null;
+          if (got && got.rackId === rackId && isSent(got)) { body = got; planId = got.id; }
+        } catch { /* compared as usual */ }
       }
 
-      const full = await authFetch(apiUrl(`/api/nb/plans/${report.planId}`));
-      const body = await full.json();
+      if (!body) {
+        const a = await authFetch(apiUrl(`/api/nb/scans/adopt/${encodeURIComponent(rackId)}`),
+          { method: 'POST' });
+        const adopted = await a.json();
+        if (!a.ok) throw new Error(adopted.error || 'Could not open this rack');
+
+        const p = await authFetch(apiUrl(`/api/nb/netbox/${adopted.id}/preview`), { method: 'POST' });
+        const report = await p.json();
+        if (!p.ok) {
+          // No record system connected yet. That is not a failure of the check,
+          // it is a thing somebody has to set up, so say who and offer the way
+          // there rather than a red line the technician can do nothing about.
+          if (report.hint || /no netbox connection/i.test(String(report.error || ''))) {
+            setNeedsSource(true);
+            return;
+          }
+          throw new Error(report.error || 'Could not reach NetBox');
+        }
+
+        const full = await authFetch(apiUrl(`/api/nb/plans/${report.planId}`));
+        body = await full.json();
+        planId = report.planId;
+      }
       setPlan(body);
       setSent(isSent(body));
 
-      const c = await authFetch(apiUrl(`/api/nb/plans/${report.planId}/contacts`));
+      const c = await authFetch(apiUrl(`/api/nb/plans/${planId}/contacts`));
       if (c.ok) {
         const body = await c.json();
         setSpoc(body.spoc || null);
@@ -395,7 +415,7 @@ export default function DriftPage() {
     } finally {
       setBusy('');
     }
-  }, [rackId]);
+  }, [rackId, named]);
 
   useEffect(() => { load(); }, [load]);
 
