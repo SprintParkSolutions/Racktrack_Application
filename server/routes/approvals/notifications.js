@@ -36,17 +36,23 @@ router.get('/notifications/prefs', (req, res) => {
       + 'that needs an admin, a failed write and a breached SLA are sent whatever else is set.' });
 });
 
-/** PUT /notifications/prefs { email } - turn the email copy off, or on again. */
+/** PUT /notifications/prefs { email, <event>: bool } - the switches themselves, at the top level of the body. */
 router.put('/notifications/prefs', (req, res) => {
   const who = service.actorOf(req.user);
   if (who.orgId == null || who.id == null) {
     return res.status(400).json({ error: 'your account belongs to no organization, so it has no preferences' });
   }
   const body = req.body || {};
-  for (const key of ['inapp', 'email', 'teams', ...notify.EVENTS]) {
+  const switches = ['inapp', 'email', 'teams', ...notify.EVENTS];
+  for (const key of switches) {
     if (body[key] !== undefined && typeof body[key] !== 'boolean') {
       return res.status(400).json({ error: `${key} is true or false` });
     }
+  }
+  // A body that carries no switch (the switches wrapped inside another key, for
+  // one) saves nothing, and must never be answered as if it had.
+  if (!switches.some((key) => body[key] !== undefined)) {
+    return res.status(400).json({ error: 'No preference was sent, so nothing was changed.' });
   }
   if (body.teams === true) {
     return res.status(400).json({ error: 'Teams notices are off until the tokens for them exist.' });

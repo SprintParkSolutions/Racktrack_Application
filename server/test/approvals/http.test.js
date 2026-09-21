@@ -262,6 +262,18 @@ test('the approvals routes hold the workflow at every door', async (t) => {
   }
   const techQueue = (await call(port, tok.tech, 'GET', '/api/approvals/queue')).json.sections.map((x) => x.key);
   assert.ok(techQueue.includes('verification_pending'));
+  // Preferences are the switches themselves. Wrapped inside another key nothing
+  // matches, so the answer is a refusal and never a "saved" that saved nothing.
+  const wrapped = await call(port, tok.meera, 'PUT', '/api/approvals/notifications/prefs',
+    { prefs: { approved: { inapp: true, email: false } } });
+  assert.equal(wrapped.status, 400, wrapped.raw);
+  assert.equal(wrapped.json.error, 'No preference was sent, so nothing was changed.');
+  const flat = await call(port, tok.meera, 'PUT', '/api/approvals/notifications/prefs', { approved: false });
+  assert.equal(flat.status, 200, flat.raw);
+  assert.equal(flat.json.prefs.events.approved, false);
+  const read = await call(port, tok.meera, 'GET', '/api/approvals/notifications/prefs');
+  assert.equal(read.json.prefs.events.approved, false);
+  assert.equal((await call(port, tok.meera, 'PUT', '/api/approvals/notifications/prefs', { approved: true })).status, 200);
   // Sizing a check up is an organization admin's.
   assert.equal((await post('admin', plan, 'triage', { priority: 'P3' })).status, 200);
 
