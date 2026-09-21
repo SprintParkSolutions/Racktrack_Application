@@ -338,6 +338,21 @@ function _prep() {
   _ensureColumn('approval_plans', 'legacy_id', 'legacy_id INTEGER');
   _ensureColumn('approval_items', 'extra', 'extra TEXT');
   _ensureColumn('approval_tickets', 'history', 'history TEXT');
+  // A check goes to one person as a whole. spoc_user_id is who it is with, and
+  // a plan that has one is on the SPOC flow; `spoc` is the same person in
+  // full, with who held it before. needs_admin says why a sent check is
+  // waiting for an admin instead, and `incident` is its one ServiceNow incident.
+  _ensureColumn('approval_plans', 'spoc_user_id', 'spoc_user_id INTEGER');
+  _ensureColumn('approval_plans', 'spoc', 'spoc TEXT');
+  _ensureColumn('approval_plans', 'needs_admin', 'needs_admin TEXT');
+  _ensureColumn('approval_plans', 'incident', 'incident TEXT');
+  _ensureColumn('approval_plans', 'written_by_id', 'written_by_id INTEGER');
+  _ensureColumn('approval_plans', 'findings', 'findings TEXT');
+  _ensureColumn('approval_plans', 'evidence', 'evidence TEXT');
+  _ensureColumn('approval_plans', 'suggestion_state', 'suggestion_state TEXT');
+  // What a notice is about, as fields a screen can read without parsing words.
+  _ensureColumn('approval_notifications', 'data', 'data TEXT');
+  handle().exec('CREATE INDEX IF NOT EXISTS idx_approval_plans_spoc ON approval_plans(spoc_user_id, status)');
   _ready = true;
 }
 
@@ -391,13 +406,18 @@ function planOf(r, { heavy = true } = {}) {
     parentPlanId: r.parent_plan_id, duplicateOf: r.duplicate_of,
     exceptionId: r.exception_id, windowId: r.window_id,
     verification: parse(r.verification), result: parse(r.result),
-    writtenAt: r.written_at, writtenBy: r.written_by,
+    writtenAt: r.written_at, writtenBy: r.written_by, writtenById: r.written_by_id ?? null,
     completedAt: r.completed_at, cancelledAt: r.cancelled_at, cancelReason: r.cancel_reason,
     updatedAt: r.updated_at, legacyId: r.legacy_id,
+    spocUserId: r.spoc_user_id ?? null, spoc: parse(r.spoc), needsAdmin: parse(r.needs_admin),
+    incident: parse(r.incident), suggestionState: parse(r.suggestion_state, {}),
+    findings: [], evidence: null,
   };
   if (heavy) {
     out.preSnapshot = parse(r.pre_snapshot);
     out.postSnapshot = parse(r.post_snapshot);
+    out.findings = parse(r.findings, []);
+    out.evidence = parse(r.evidence);
   }
   return out;
 }
@@ -465,7 +485,7 @@ const notificationOf = (r) => r && ({
   id: r.id, event: r.event, planId: r.plan_id, recipientUserId: r.recipient_user_id,
   recipientEmail: r.recipient_email, channel: r.channel, subject: r.subject, body: r.body,
   status: r.status, attempts: r.attempts, lastError: r.last_error, dedupeKey: r.dedupe_key,
-  createdAt: r.created_at, sentAt: r.sent_at, readAt: r.read_at,
+  createdAt: r.created_at, sentAt: r.sent_at, readAt: r.read_at, data: parse(r.data),
 });
 
 const exceptionOf = (r) => r && ({
@@ -498,9 +518,13 @@ const PLAN_COLS = {
   result: 'result', preSnapshot: 'pre_snapshot', postSnapshot: 'post_snapshot',
   writtenAt: 'written_at', writtenBy: 'written_by', completedAt: 'completed_at',
   cancelledAt: 'cancelled_at', cancelReason: 'cancel_reason', legacyId: 'legacy_id',
+  spocUserId: 'spoc_user_id', spoc: 'spoc', needsAdmin: 'needs_admin', incident: 'incident',
+  writtenById: 'written_by_id', findings: 'findings', evidence: 'evidence',
+  suggestionState: 'suggestion_state',
 };
 const PLAN_JSON = new Set(['counts', 'warnings', 'orphans', 'verification', 'result',
-  'preSnapshot', 'postSnapshot']);
+  'preSnapshot', 'postSnapshot', 'spoc', 'needsAdmin', 'incident', 'findings', 'evidence',
+  'suggestionState']);
 
 const ITEM_COLS = {
   type: 'type', name: 'name', action: 'action', netboxId: 'netbox_id', diff: 'diff',
@@ -607,9 +631,10 @@ function updatePlan(id, patch) {
  *   seenBy ({ orgId, userId, username }: the visibility rule, below),
  *   orgId (undefined = no scoping, null = the unowned rows), tenantId, scanId,
  *   rackId, status (one, a comma list or an array), priority, risk, createdBy,
- *   assignee (a name, an email, or a user id), assigneeUserId, since, until
- *   (on created_at), sla (a clock state), q (free text), ids, and visibleTo
- *   ({ role, username, userId, tenantId }: what that person may read).
+ *   assignee (a name, an email, or a user id), assigneeUserId, spocUserId (who
+ *   the check is with), since, until (on created_at), sla (a clock state), q
+ *   (free text), ids, and visibleTo ({ role, username, userId, tenantId }:
+ *   what that person may read).
  */
 function planWhere(f = {}) {
   const where = [];
@@ -655,6 +680,10 @@ function planWhere(f = {}) {
     where.push('EXISTS (SELECT 1 FROM approval_tickets t WHERE t.plan_id = p.id AND t.assignee_user_id = @assigneeUserId)');
     params.assigneeUserId = Number(f.assigneeUserId);
   }
+  if (f.spocUserId != null && f.spocUserId !== '') {
+    where.push('p.spoc_user_id = @spocUserId');
+    params.spocUserId = Number(f.spocUserId);
+  }
   if (f.assignee != null && f.assignee !== '') {
     where.push(`EXISTS (SELECT 1 FROM approval_tickets t WHERE t.plan_id = p.id
       AND (t.assignee = @assignee OR lower(t.assignee_email) = lower(@assignee)
@@ -662,11 +691,12 @@ function planWhere(f = {}) {
     params.assignee = String(f.assignee);
   }
   // What a technician or a site manager may read: what they raised, what is
-  // assigned to them, and for their own Site - everything (a site manager) or
-  // what is waiting for a verification scan (a technician).
+  // with them as its SPOC, what is assigned to them, and for their own Site -
+  // everything (a site manager) or what is waiting for a verification scan (a
+  // technician).
   if (f.visibleTo) {
     const v = f.visibleTo;
-    const mine = ['p.created_by = @vUsername',
+    const mine = ['p.created_by = @vUsername', 'p.spoc_user_id = @vUserId',
       'EXISTS (SELECT 1 FROM approval_tickets t WHERE t.plan_id = p.id AND t.assignee_user_id = @vUserId)'];
     if (v.role === 'site_manager') mine.push('p.tenant_id = @vTenantId');
     else mine.push("(p.tenant_id = @vTenantId AND p.status = 'verification_pending')");
@@ -951,13 +981,18 @@ function listTickets(filters = {}) {
   }));
 }
 
-/** Every ticket still waiting on ServiceNow: not resolved here, and mirrored there. */
+/**
+ * Every ticket still waiting on ServiceNow: not resolved here, and mirrored
+ * there. A ticket that only carries a copy of its check's one incident
+ * (planLevel) is left out: that incident is asked about once, for the check.
+ */
 function ticketsWaitingOnServiceNow() {
   return db().prepare(`
     SELECT t.*, p.org_id AS p_org_id FROM approval_tickets t
     JOIN approval_plans p ON p.id = t.plan_id
     WHERE t.status IN ('open', 'accepted', 'in_progress', 'pending')
       AND t.external IS NOT NULL AND json_extract(t.external, '$.sysId') IS NOT NULL
+      AND json_extract(t.external, '$.planLevel') IS NOT 1
   `).all().map((r) => ({ ...ticketOf(r), orgId: r.p_org_id }));
 }
 
@@ -1042,11 +1077,11 @@ const slaByStatus = (status) => db()
 function addNotification(n) {
   const info = db().prepare(`
     INSERT OR IGNORE INTO approval_notifications (event, plan_id, recipient_user_id, recipient_email,
-      channel, subject, body, status, dedupe_key, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      channel, subject, body, status, dedupe_key, created_at, data)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(String(n.event), n.planId ?? null, n.recipientUserId ?? null, n.recipientEmail ?? null,
     n.channel || 'inapp', n.subject ?? null, n.body ?? null, n.status || 'queued',
-    n.dedupeKey ?? null, n.createdAt || nowIso());
+    n.dedupeKey ?? null, n.createdAt || nowIso(), json(n.data));
   if (!info.changes) return null;
   return notificationOf(db().prepare('SELECT * FROM approval_notifications WHERE id = ?').get(info.lastInsertRowid));
 }
@@ -1175,6 +1210,21 @@ const tenantById = (id) => safely(() => {
   return r ? { id: r.id, name: r.name, slug: r.slug, orgId: r.organization_id ?? null,
                timezone: r.timezone ?? null } : null;
 }, null);
+/**
+ * The Sites this person is the SPOC of, as ids: named by user id, or by an
+ * email that setup stored before the person had an account. A database that
+ * has no such columns yet (setup adds them) answers none.
+ */
+const sitesWhereSpoc = (userId, email) => {
+  try {
+    return db().prepare(`SELECT id FROM tenants WHERE approver_user_id = ?
+      OR (approver_email IS NOT NULL AND lower(approver_email) = lower(?))`)
+      .all(userId == null ? -1 : Number(userId), email == null ? '\u0000' : String(email)).map((r) => r.id);
+  } catch (err) {
+    if (/no such (table|column)/i.test(String(err && err.message))) return [];
+    throw err;
+  }
+};
 
 // -- Removing an organization ------------------------------------------
 /**
@@ -1224,6 +1274,6 @@ module.exports = {
   addWindow, getWindow, listWindows, deleteWindow,
   getSetting, setSetting, allSettings,
   // people and Sites
-  userById, userByUsername, userByEmail, usersOfOrg, tenantById,
+  userById, userByUsername, userByEmail, usersOfOrg, tenantById, sitesWhereSpoc,
   purgeOrg,
 };
