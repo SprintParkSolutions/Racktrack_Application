@@ -27,12 +27,15 @@
   --accent: #1f4e79;
 }
 
+/* The header area: the title, and under it which rack this is. One hairline
+   under the whole of it, so the rack reads as part of the header and not as a
+   card of its own. */
+.top { border-bottom: 1px solid var(--hair); }
 .head {
   display: flex; align-items: center; gap: 10px;
   /* #root already keeps the notch clear; adding the inset again here is what
      left a blank band the height of the status bar above the title. */
-  padding: 10px var(--gutter) 10px;
-  border-bottom: 1px solid var(--hair);
+  padding: 10px var(--gutter) 0;
 }
 .back { flex: none; width: 36px; height: 36px; margin-left: -8px; display: grid; place-items: center;
         border: none; background: none; color: inherit; cursor: pointer; }
@@ -42,15 +45,16 @@
 .busy { color: var(--muted-1); }
 .error { color: var(--bad); }
 
-/* Which record this rack was compared against, and why the app believes it is
-   the same rack. One label, one name, one sentence. */
-.against { display: grid; gap: 3px; padding: 14px var(--gutter) 12px; border-bottom: 1px solid var(--hair); }
-.againstLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
-.againstName { font-size: 16px; font-weight: 700; color: var(--text, #1c1c1c); }
-.againstWhy { font-size: 13.5px; color: var(--muted-1); line-height: 1.45; }
+/* Which rack this is, under the title: the rack's own name in the mono face the
+   app uses for ids, and one sentence on how the app knows. */
+.rack { display: grid; gap: 2px; padding: 4px var(--gutter) 12px; }
+.rackName { font-family: var(--mono, ui-monospace, Menlo, monospace); font-size: 14px; font-weight: 600;
+            color: var(--text, #1c1c1c); overflow-wrap: anywhere; }
+.rackUnknown { font-size: 14px; font-weight: 600; color: var(--text, #1c1c1c); }
+.rackWhy, .againstWhy { font-size: 13.5px; color: var(--muted-1); line-height: 1.45; }
 /* What is still open about it: a suggestion nobody has confirmed, a tie, or a
    rack the record has never heard of. */
-.againstOpen { margin-top: 2px; font-size: 13.5px; color: var(--warn); line-height: 1.45; }
+.rackOpen { margin-top: 2px; font-size: 13.5px; color: var(--warn); line-height: 1.45; }
 
 /* The last step of all: a person picks from the short list the steps above left. */
 .pick { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hair); }
@@ -153,7 +157,7 @@
 .footNote { margin: 8px 0 0; font-size: 12.5px; color: var(--muted-2); text-align: center; }
 
 /* optional rack name - only for a rack nothing has identified */
-.nameRow { padding: 12px var(--gutter) 4px; }
+.nameRow { margin-top: 12px; }
 .nameLabel { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
              text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
 .nameInput {

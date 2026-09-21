@@ -464,6 +464,23 @@ export default function DriftPage() {
   // match. Offered only with a name that was actually read off the rack.
   const newName = unsettled && identity.decision === 'new' ? (identity.proposal?.name || '') : '';
 
+  // Which rack this is, for the header: its own name, and one sentence on how
+  // the app knows it is that rack. It used to be a labelled box of its own under
+  // the title, so the first thing on the page was a card rather than an answer.
+  const rackName = decided
+    ? (decided.rack.name || decided.rack.facilityId || (compared && compared.name) || 'this rack')
+    : compared ? (compared.name || (recordRack && recordRack.name) || 'this rack')
+      : '';
+  const rackWhy = decided
+    ? (decided.confidence === 'confirmed'
+      ? 'This is the rack in your records.'
+      : 'This looks like the rack in your records. Not confirmed yet.')
+    : compared ? 'Compared with this rack in your records.'
+      // Only where nothing has said which rack this is. Where something has, the
+      // line below says it once and this does not say it twice.
+      : stillOpen ? ''
+        : 'This rack has not been set up in the record, so everything here reads as new. Set it up to compare against what is already written down.';
+
   /** A person says which rack this is. The check then runs again against it. */
   async function pick(choice) {
     setPickError('');
@@ -590,35 +607,103 @@ export default function DriftPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.head}>
-        <button type="button" className={styles.back} onClick={goBack} aria-label="Back">
-          <BackIcon />
-        </button>
-        {/* The title and nothing under it. The rack is named once, just below,
-            in the line that says what it was compared against; the scan's own
-            id is a hash of the photograph and tells the person nothing. */}
-        <h1 className={styles.title} title={rackId}>Drift check</h1>
-      </header>
+      {/* The header area: the title, and under it which rack this is - the rack's
+          own name and one sentence. The scan's own id is a hash of the
+          photograph and tells the person nothing, so it stays on the title.
+          Everything else about the rack - how it was matched, the racks it could
+          be, a name typed by hand - is quiet and folded away under it. */}
+      <div className={styles.top}>
+        <header className={styles.head}>
+          <button type="button" className={styles.back} onClick={goBack} aria-label="Back">
+            <BackIcon />
+          </button>
+          <h1 className={styles.title} title={rackId}>Drift check</h1>
+        </header>
 
-      {/* A name typed by hand is the fallback for a rack nothing has identified.
-          Once the app has said which rack this is, the box only invited people
-          to type over an answer that was already right. */}
-      {!decided && !busy && plan && (
-      <div className={styles.nameRow}>
-        <label className={styles.nameLabel} htmlFor="rackname">Rack name (optional)</label>
-        <input
-          id="rackname"
-          className={styles.nameInput}
-          value={name}
-          placeholder={rackId}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={saveName}
-        />
-        <span className={styles.nameHint}>
-          {nameSaved ? 'Saved.' : 'Leave blank to keep the current name.'}
-        </span>
+        {plan && !busy && (
+          <div className={styles.rack}>
+            <span className={rackName ? styles.rackName : styles.rackUnknown}>
+              {rackName || 'Not identified yet'}
+            </span>
+            {rackWhy && <span className={styles.rackWhy}>{rackWhy}</span>}
+            {stillOpen && <span className={styles.rackOpen}>{stillOpen}</span>}
+
+            {/* How it was matched, for whoever asks. Closed. */}
+            {decided ? (
+              <details className={styles.more}>
+                <summary>Read more</summary>
+                <span className={styles.moreLabel}>Compared against</span>
+                <span className={styles.againstWhy}>{foundBy}</span>
+                <span className={styles.moreLabel}>How it was matched</span>
+                <ul className={styles.how}>
+                  {matchedHow.map((line) => <li key={line}>{line}</li>)}
+                </ul>
+              </details>
+            ) : compared ? (
+              <details className={styles.more}>
+                <summary>Read more</summary>
+                <span className={styles.moreLabel}>Compared against</span>
+                <span className={styles.againstWhy}>{compared.why}</span>
+              </details>
+            ) : null}
+
+            {/* The last step of all: nothing could say which rack this is, so a
+                person picks from the short list the steps above left. */}
+            {!sent && (shortlist.length > 0 || newName) && (
+              <div className={styles.pick}>
+                <span className={styles.pickLabel}>Which rack is this?</span>
+                <div className={styles.pickRow}>
+                  {shortlist.map((c) => (
+                    <button
+                      key={`${c.source}-${c.id}`}
+                      type="button"
+                      className={styles.pickBtn}
+                      disabled={!!busy}
+                      onClick={() => pick(c.source === 'netbox' ? { netboxRackId: c.id } : { knownRackId: c.id })}
+                    >
+                      {c.name || c.facilityId}
+                    </button>
+                  ))}
+                  {newName && (
+                    <button
+                      type="button"
+                      className={styles.pickBtn}
+                      disabled={!!busy}
+                      onClick={() => pick({ name: newName })}
+                    >
+                      Add {newName} to the record
+                    </button>
+                  )}
+                </div>
+                <span className={styles.pickNote}>
+                  The next check compares against the rack you choose.
+                </span>
+                {pickError && <p className={styles.pickError} role="alert">{pickError}</p>}
+              </div>
+            )}
+
+            {/* A name typed by hand is the fallback for a rack nothing has
+                identified. Once the app has said which rack this is, the box only
+                invited people to type over an answer that was already right. */}
+            {!decided && (
+              <div className={styles.nameRow}>
+                <label className={styles.nameLabel} htmlFor="rackname">Rack name (optional)</label>
+                <input
+                  id="rackname"
+                  className={styles.nameInput}
+                  value={name}
+                  placeholder={rackId}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={saveName}
+                />
+                <span className={styles.nameHint}>
+                  {nameSaved ? 'Saved.' : 'Leave blank to keep the current name.'}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      )}
 
       {busy && <p className={styles.busy}>{busy}…</p>}
 
@@ -643,99 +728,6 @@ export default function DriftPage() {
       )}
 
       {error && <p className={styles.error} role="alert">{error}</p>}
-
-      {/* Compared against WHAT, and how that was worked out. One line, on the
-          screen that makes the claim. A comparison a person cannot trace to a
-          named record in the customer's own database is an assertion, not a
-          check - and a rack nobody has confirmed is never called a match. Where
-          it cannot be decided, the racks it could be are offered here and a
-          person chooses; that choice is what the next check compares against. */}
-      {plan && !busy && (
-        <div className={styles.against}>
-          <span className={styles.againstLabel}>Rack</span>
-          {decided ? (
-            <>
-              <strong className={styles.againstName}>
-                {decided.rack.name || decided.rack.facilityId
-                  || (compared && compared.name) || 'this rack'}
-              </strong>
-              <span className={styles.againstWhy}>
-                {decided.confidence === 'confirmed'
-                  ? 'This is the rack in your records.'
-                  : 'This looks like the rack in your records. Not confirmed yet.'}
-              </span>
-              <details className={styles.more}>
-                <summary>Read more</summary>
-                <span className={styles.moreLabel}>Compared against</span>
-                <span className={styles.againstWhy}>{foundBy}</span>
-                <span className={styles.moreLabel}>How it was matched</span>
-                <ul className={styles.how}>
-                  {matchedHow.map((line) => <li key={line}>{line}</li>)}
-                </ul>
-              </details>
-            </>
-          ) : compared ? (
-            <>
-              <strong className={styles.againstName}>
-                {compared.name || (recordRack && recordRack.name) || 'this rack'}
-              </strong>
-              <span className={styles.againstWhy}>Compared with this rack in your records.</span>
-              <details className={styles.more}>
-                <summary>Read more</summary>
-                <span className={styles.moreLabel}>Compared against</span>
-                <span className={styles.againstWhy}>{compared.why}</span>
-              </details>
-            </>
-          ) : (
-            <>
-              <strong className={styles.againstName}>Not identified yet</strong>
-              {/* Only where nothing has said which rack this is. Where something
-                  has, it says it once, below, and this does not say it twice. */}
-              {!stillOpen && (
-                <span className={styles.againstWhy}>
-                  This rack has not been set up in the record, so everything here reads as new.
-                  Set it up to compare against what is already written down.
-                </span>
-              )}
-            </>
-          )}
-
-          {stillOpen && <span className={styles.againstOpen}>{stillOpen}</span>}
-
-          {!sent && (shortlist.length > 0 || newName) && (
-            <div className={styles.pick}>
-              <span className={styles.pickLabel}>Which rack is this?</span>
-              <div className={styles.pickRow}>
-                {shortlist.map((c) => (
-                  <button
-                    key={`${c.source}-${c.id}`}
-                    type="button"
-                    className={styles.pickBtn}
-                    disabled={!!busy}
-                    onClick={() => pick(c.source === 'netbox' ? { netboxRackId: c.id } : { knownRackId: c.id })}
-                  >
-                    {c.name || c.facilityId}
-                  </button>
-                ))}
-                {newName && (
-                  <button
-                    type="button"
-                    className={styles.pickBtn}
-                    disabled={!!busy}
-                    onClick={() => pick({ name: newName })}
-                  >
-                    Add {newName} to the record
-                  </button>
-                )}
-              </div>
-              <span className={styles.pickNote}>
-                The next check compares against the rack you choose.
-              </span>
-              {pickError && <p className={styles.pickError} role="alert">{pickError}</p>}
-            </div>
-          )}
-        </div>
-      )}
 
       {plan && !busy && (
         <div className={styles.verdict}>
