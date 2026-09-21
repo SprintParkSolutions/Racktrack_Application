@@ -85,7 +85,6 @@
 .waiting h2, .done h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
 .done h2 { color: var(--good); }
 .waiting p, .done p { margin: 0 0 4px; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
-.spoc { color: var(--muted-1); }
 /* the one way out: the same check in RackTrack Approvals */
 .track { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 600;
          color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
@@ -119,8 +118,6 @@
 .item.rejected .what { color: var(--bad); }
 
 .itemTop { display: flex; align-items: baseline; gap: 8px; }
-.type { flex: none; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
-        color: var(--muted-2); font-weight: 600; min-width: 52px; }
 .name { flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .what { flex: none; font-size: 12.5px; font-weight: 600; color: var(--warn); white-space: nowrap; }
 
@@ -148,7 +145,6 @@
 .goesToRole { font-size: 13.5px; color: var(--muted-1); }
 .goesToMail { font-size: 13px; color: var(--muted-1);
               font-family: var(--mono, ui-monospace, Menlo, monospace); word-break: break-all; }
-.goesToNote { display: none; }
 .goesToWhy { font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
 
 .footer { padding: 14px var(--gutter) 0; }
@@ -165,7 +161,6 @@
   background: #121212; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
 }
 .primary:disabled { background: #c9ced4; cursor: default; }
-.footNote { margin: 8px 0 0; font-size: 12.5px; color: var(--muted-2); text-align: center; }
 
 /* optional rack name - only for a rack nothing has identified */
 .nameRow { margin-top: 12px; }
@@ -192,27 +187,10 @@
 .pickAll input, .pickOne { width: 20px; height: 20px; flex: none; margin: 0; accent-color: #121212; cursor: pointer; }
 .pickOne { align-self: center; }
 
-/* Where a sent check has got to. Four steps down the page: done ones filled,
-   the current one ringed, the rest hollow - and a line joining them. The line
-   hangs below each dot to the next one, so a step that carries a note under its
-   name stays joined to the step after it. */
-.progress { margin: 10px 0 4px; }
-.steps { list-style: none; margin: 0; padding: 0; }
-.step { position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; font-size: 14px; line-height: 20px; color: var(--muted-2); }
-.step::before { content: ''; position: absolute; left: 6px; top: 22px; bottom: -8px; width: 2px; background: var(--hair); }
-.step:last-child::before { display: none; }
-.stepDot { position: relative; z-index: 1; width: 14px; height: 14px; margin-top: 3px; flex: none; border-radius: 50%;
-           border: 2px solid var(--hair); background: var(--bg, #fff); }
-.stepWords { display: grid; gap: 1px; min-width: 0; }
-.stepNote { font-size: 13px; font-weight: 400; color: var(--muted-1); overflow-wrap: anywhere; }
-.stepDone { color: var(--text, #1c1c1c); }
-.stepDone .stepDot { border-color: var(--good); background: var(--good); }
-.stepDone::before { background: var(--good); }
-.stepNow { color: var(--text, #1c1c1c); font-weight: 700; }
-.stepNow .stepDot { border-color: var(--good); box-shadow: 0 0 0 3px rgba(28, 107, 60, .18); }
-/* Written under .progress so it outweighs the block's own paragraph rule. */
-.progress .offTrack { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted-1); }
-/* The one word that matters when a check has left the line, set apart. */
+/* The one word that matters when a check has left the line, set apart. Where a
+   check has got to used to be four steps down the page with a line joining
+   them; it has been the incident number and one line under it since, and the
+   rules that drew the steps went with them. */
 .offWord { display: inline-block; margin-right: 8px; padding: 1px 8px; border: 1px solid var(--warn); border-radius: 4px;
            font-size: 12px; font-weight: 600; color: var(--warn); white-space: nowrap; }
 
@@ -222,7 +200,6 @@
 /* The ServiceNow incident raised for the check: its number, and the way to it. */
 .waiting .incident, .done .incident { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 4px;
             padding-top: 10px; border-top: 1px solid var(--hair); }
-.incidentNumber { font-size: 14px; font-weight: 600; color: var(--text, #1c1c1c); }
 .incidentOpen { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid #121212;
                 border-radius: 6px; font-size: 13.5px; font-weight: 600; color: #121212; text-decoration: none; }
 .waiting .incidentNone, .done .incidentNone { margin: 10px 0 4px; padding-top: 10px; border-top: 1px solid var(--hair); color: var(--warn); }
