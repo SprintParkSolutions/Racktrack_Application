@@ -17,7 +17,7 @@
   flex-direction: column;
   min-height: 100vh;
   background: #ffffff;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  padding-bottom: var(--nav-clear);
 
   --pf-line:      #E6E7EB;
   --pf-line-soft: #F0F1F4;

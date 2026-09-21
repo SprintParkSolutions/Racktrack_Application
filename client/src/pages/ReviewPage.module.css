@@ -23,7 +23,7 @@
   -webkit-overflow-scrolling: touch;
   display: flex; flex-direction: column; gap: 16px;
   padding-top: 12px;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--nav-clear);
 }
 
 /* ── Intro ── */

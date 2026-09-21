@@ -205,13 +205,33 @@
      uppercase needs the extra tracking or it sets as a solid block. */
   --ls-caps: 0.06em;
 
-  /* ── The two bottom bars - the app's (BottomNav) and the rack's tabs
-     (ScanTabBar) - are drawn from these, so they cannot drift apart again.
-     They were 23px icons against 32px ones, and two different active marks,
-     which is why walking into a rack felt like changing app. ── */
-  --nav-h:     64px;   /* the bar itself, above the safe-area inset */
-  --nav-chip:  32px;   /* the round container the active tab fills in */
-  --nav-glyph: 20px;   /* the icon inside it */
+  /* ══ THE BOTTOM BAR ═══════════════════════════════════════════════════
+     The app's bar (BottomNav) and the rack's tabs (ScanTabBar) are one bar
+     drawn twice, so both read these and cannot drift apart again. They were a
+     23px bare icon against a 32px filled chip with two different active
+     marks, which is why walking into a rack read as changing app.
+
+     It floats: a white pill held in from both edges with a gap under it,
+     lifted off the page by a soft shadow, four items around a centre action
+     that stands proud of the pill and carries the one thing that surface is
+     for - taking a scan in the app, looking up a port in a rack.
+     ══════════════════════════════════════════════════════════════════════ */
+  --nav-h:      60px;   /* the pill itself */
+  --nav-inset:  12px;   /* how far it is held in from the left and right */
+  --nav-gap:    10px;   /* the gap under it, above the safe-area inset */
+  --nav-lift:   14px;   /* how far the centre action stands above the pill */
+  --nav-glyph:  21px;   /* an item's icon */
+  --nav-act:    54px;   /* the centre action - bigger than an item, and round */
+  /* Soft, wide, low-contrast, and true greyscale like every other shadow in
+     this file. A floating surface casts downward, so this one does not take
+     the top-left light of --lift. */
+  --nav-shadow: 0 8px 24px rgba(17, 17, 17, 0.10), 0 2px 6px rgba(17, 17, 17, 0.05);
+  /* What a page keeps clear at the bottom so nothing ends up under the bar:
+     the gap below it, the pill, the part of the centre action that stands
+     above the pill, and a little air. Every page's scroll container reserves
+     this - it is the one number to change if the bar ever moves. */
+  --nav-clear:  calc(var(--nav-h) + var(--nav-gap) + var(--nav-lift) + 12px
+                     + env(safe-area-inset-bottom, 0px));
 
   /* Radii - opened back up slightly: soft-depth surfaces want gently
      rounded corners; crisp 4px corners fight the shadow language. */

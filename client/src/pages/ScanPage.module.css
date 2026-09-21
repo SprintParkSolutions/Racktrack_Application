@@ -86,7 +86,7 @@
   flex-direction: column;
   gap: 24px;
   justify-content: flex-start;
-  padding: 12px 24px calc(96px + env(safe-area-inset-bottom, 0px));
+  padding: 12px 24px var(--nav-clear);
   min-height: 0;
   /* Scroll instead of clip: when an incident + approval banner are added the
      content can exceed the viewport, and overflow:hidden was cutting the
@@ -913,7 +913,7 @@
 }
 .camWrapFull .hud {
   padding-top:    max(12px, calc(env(safe-area-inset-top, 0px) + 12px));
-  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--nav-clear);
 }
 .camCloseBtn {
   position:absolute;

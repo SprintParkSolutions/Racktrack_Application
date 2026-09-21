@@ -51,34 +51,69 @@ export default function ScanTabBar({ rackId, flow, activeTab, onTabChange, badge
     ? (inFlow === 'port' ? 'result' : 'overview')
     : activeTab;
 
+  const keys = FLOW_TABS[inFlow];
+  const item = (key) => {
+    const tab = TABS[key];
+    const isActive = active === key;
+    const badge = badges[key];
+    return (
+      <button
+        key={key}
+        role="tab"
+        aria-selected={isActive}
+        className={`${styles.tab} ${isActive ? styles.tabActive : ''}`}
+        onClick={() => onTabChange(key)}
+        type="button"
+      >
+        <span className={styles.tabIcon}>{tab.icon}</span>
+        <span className={styles.tabLabel}>{tab.label}</span>
+        {badge != null && badge > 0 && <span className={styles.tabBadge}>{badge}</span>}
+      </button>
+    );
+  };
+  // Two tabs, the centre action, then the rest. Splitting the list rather than
+  // naming positions means the bar still balances whatever that list holds.
+  const half = Math.floor(keys.length / 2);
+
   return (
     <nav className={styles.tabBar} role="tablist" aria-label="Scan results tabs">
       <div className={styles.bar}>
-        {FLOW_TABS[inFlow].map((key) => {
-          const tab = TABS[key];
-          const isActive = active === key;
-          const badge = badges[key];
-          return (
-            <button
-              key={key}
-              role="tab"
-              aria-selected={isActive}
-              className={`${styles.tab} ${isActive ? styles.tabActive : ''}`}
-              onClick={() => onTabChange(key)}
-              type="button"
-            >
-              <span className={styles.tabIcon}>{tab.icon}</span>
-              <span className={styles.tabLabel}>{tab.label}</span>
-              {badge != null && badge > 0 && <span className={styles.tabBadge}>{badge}</span>}
-            </button>
-          );
-        })}
+        {keys.slice(0, half).map(item)}
+        {/* The centre action is the rack's other job. It is not a tab - it does
+            not light up and it holds no label - so it answers with its own key
+            and the page turns that into what the "Look up a port" button on the
+            results page already does: remember the port flow for this rack and
+            open the picker. */}
+        <span className={styles.centreSlot}>
+          <button
+            type="button"
+            className={styles.centre}
+            onClick={() => onTabChange('port')}
+            aria-label="Look up a port"
+            title="Look up a port"
+          >
+            <IconPortLookup />
+          </button>
+        </span>
+        {keys.slice(half).map(item)}
       </div>
     </nav>
   );
 }
 
 // ── Tab icons (20×20, clean stroke style) ───────────────────────
+
+// The centre action: looking a port up is a search, and this is the magnifier
+// the app already uses for one (components/Icon.jsx, 'search'), drawn here in
+// this bar's own stroke style so it sits with its neighbours.
+function IconPortLookup() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </svg>
+  );
+}
 
 function IconRack() {
   return (

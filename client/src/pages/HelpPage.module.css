@@ -368,7 +368,7 @@
   .meBubble { max-width: 88%; }
   .starters { grid-template-columns: 1fr; gap: 8px; }
   .form {
-    padding-bottom: calc(12px + 64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--nav-clear);
   }
 }
 

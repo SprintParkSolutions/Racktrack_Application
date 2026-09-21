@@ -34,7 +34,7 @@
   flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); align-items: start;
   width: 100%; min-width: 0;
   /* 96px clears the phone's fixed bottom bar, the same reserve Profile keeps. */
-  padding: 16px 16px calc(96px + env(safe-area-inset-bottom));
+  padding: 16px 16px var(--nav-clear);
   gap: 16px;
 }
 .index { display: none; }

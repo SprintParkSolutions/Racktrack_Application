@@ -114,7 +114,7 @@
    full content column, matching MarketplaceShell's .main padding. */
 .actionBar {
   position: sticky;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  bottom: var(--nav-clear);
   z-index: 20;
   display: flex; justify-content: flex-end; gap: 10px;
   margin: 4px -20px 0;

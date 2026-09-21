@@ -3,20 +3,30 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styles from './BottomNav.module.css';
 import { useShutter } from '../ShutterContext.jsx';
 import { useAuth } from '../AuthContext.jsx';
-import { usePrimaryNav, MoreIcon } from '../nav/navLinks.jsx';
+import { usePrimaryNav, MoreIcon, ScanIcon } from '../nav/navLinks.jsx';
 import MoreSheet from './MoreSheet.jsx';
 import ScanTabBar from './ScanTabBar.jsx';
 import ExternalLink from './ExternalLink.jsx';
-import { clearRackFlow, getRackFlow } from '../utils/rackFlow';
+import { clearRackFlow, getRackFlow, setRackFlow } from '../utils/rackFlow';
 
 /* ──────────────────────────────────────────────────────────────────────
-   BottomNav - the phone navigation: HOME / SCAN / MORE / PROFILE.
+   BottomNav - the phone navigation: a floating pill with four items around a
+   raised centre action.
 
-   The three permanent slots come from the shared destination list in
-   nav/navLinks.jsx, and MORE opens a sheet with everything else that list
+   The permanent slots come from the shared destination list in
+   nav/navLinks.jsx, and MENU opens a sheet with everything else that list
    contains. This used to be three hardcoded constants while the sidebar
    built eight role-gated links, which is how Lab and Marketplace ended up
    with no tappable route on a phone at all.
+
+   The centre action is the camera, because taking a scan is what the app is
+   for. It is the same action the Scan slot has always fired - including the
+   shutter hijack while the viewfinder is live - given the prominence it
+   deserves; the slot stays, because it is also how you get to that screen
+   when you are not ready to shoot yet.
+
+   The items are laid out around the centre by splitting the list down the
+   middle, so this keeps working whatever that list ends up holding.
    ────────────────────────────────────────────────────────────────────── */
 
 /**
@@ -43,19 +53,27 @@ function RackTabs({ rackId, pathname, hash }) {
             : hash === '#drift' ? 'timeline'
               : 'overview';
   const base = `/results/${encodeURIComponent(rackId)}`;
-  const go = (key) => navigate(
-    // Result is the results page again, which opens in its port mode while the
-    // rack is in that flow.
-    key === 'overview' || key === 'result' ? base
-      : key === 'drift' ? `${base}/drift`
-        : key === 'timeline' ? `${base}#drift`
-        : key === 'switches' ? `/switch-info/${encodeURIComponent(rackId)}`
-          : `${base}/${key}`,
-  );
+  const go = (key) => {
+    // 'port' is the bar's centre action, not a tab: it puts the rack in the
+    // port flow and opens the results page, which reads that flow on mount and
+    // comes up with the port picker open. Same thing the "Look up a port"
+    // button on the results page fires.
+    if (key === 'port') { setRackFlow(rackId, 'port'); navigate(base); return; }
+    navigate(
+      // Result is the results page again, which opens in its port mode while
+      // the rack is in that flow.
+      key === 'overview' || key === 'result' ? base
+        : key === 'drift' ? `${base}/drift`
+          : key === 'timeline' ? `${base}#drift`
+          : key === 'switches' ? `/switch-info/${encodeURIComponent(rackId)}`
+            : `${base}/${key}`,
+    );
+  };
   return <ScanTabBar rackId={rackId} flow={getRackFlow(rackId)} activeTab={active} onTabChange={go} />;
 }
 
 export default function BottomNav() {
+  const navigate = useNavigate();
   const { fn: shutterFn, canShoot } = useShutter();
   const { isAuthed } = useAuth();
   const links = usePrimaryNav();
@@ -108,7 +126,6 @@ export default function BottomNav() {
       {/* barLabel lets a destination carry a shorter name in the bar than in
           the sidebar, where there is room for the full one. */}
       <span className={styles.label}>{(l.barLabel || l.label).toUpperCase()}</span>
-      <span className={styles.dot} aria-hidden="true" />
     </>
   );
 
@@ -129,29 +146,55 @@ export default function BottomNav() {
     </NavLink>
   ));
 
+  // Menu sits LAST, not in the middle. Wedged between Scan and Profile it read
+  // as a peer destination and pushed Profile out of the corner people reach
+  // for. It is "Menu", not "More": the sheet it opens is the rest of the app,
+  // not more of this screen.
+  const items = [...barLinks.map(tab)];
+  if (overflow.length > 0) {
+    items.push(
+      <button
+        key="menu"
+        type="button"
+        className={`${styles.tab} ${moreOpen || onOverflowPage ? styles.active : ''}`}
+        onClick={() => setMoreOpen((o) => !o)}
+        aria-expanded={moreOpen}
+        aria-haspopup="dialog"
+      >
+        <span className={styles.icon} aria-hidden="true"><MoreIcon /></span>
+        <span className={styles.label}>MENU</span>
+      </button>,
+    );
+  }
+  // Two items, the centre action, then the rest. Splitting the list rather
+  // than naming positions means the bar still balances if that list ever
+  // holds a different number.
+  const half = Math.floor(items.length / 2);
+
+  // The centre action fires exactly what the Scan slot fires: the shutter while
+  // the viewfinder is live, otherwise the Scan page. It is a button rather than
+  // a link because on the Scan page it takes the photograph.
+  const takeScan = () => {
+    if (typeof shutterFn === 'function') { if (canShoot) shutterFn(); return; }
+    navigate('/scan');
+  };
+
   return (
     <>
       <nav className={styles.nav}>
         <div className={styles.bar}>
-          {/* Menu sits LAST, not in the middle. Wedged between Scan and
-              Profile it read as a peer destination and pushed Profile out of
-              the corner people reach for. It is "Menu", not "More": the sheet
-              it opens is the rest of the app, not more of this screen. */}
-          {barLinks.map(tab)}
-
-          {overflow.length > 0 && (
+          {items.slice(0, half)}
+          <span className={styles.centreSlot}>
             <button
               type="button"
-              className={`${styles.tab} ${moreOpen || onOverflowPage ? styles.active : ''}`}
-              onClick={() => setMoreOpen((o) => !o)}
-              aria-expanded={moreOpen}
-              aria-haspopup="dialog"
+              className={styles.centre}
+              onClick={takeScan}
+              aria-label={canShoot && typeof shutterFn === 'function' ? 'Take the photograph' : 'Scan a rack'}
             >
-              <span className={styles.icon} aria-hidden="true"><MoreIcon /></span>
-              <span className={styles.label}>MENU</span>
-              <span className={styles.dot} aria-hidden="true" />
+              <ScanIcon />
             </button>
-          )}
+          </span>
+          {items.slice(half)}
         </div>
       </nav>
 

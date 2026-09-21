@@ -11,7 +11,7 @@
   max-width: none;
   margin: 0 auto;
   min-height: 100vh;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--nav-clear);
   background:
     radial-gradient(90% 55% at 50% 8%, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0) 58%),
     linear-gradient(180deg, var(--bg), var(--bg));

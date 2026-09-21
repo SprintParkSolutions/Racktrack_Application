@@ -38,6 +38,18 @@ describe('<ScanTabBar>', () => {
     expect(labels()).toEqual(['Overview', 'Network', 'Drift', 'Report', 'Timeline']);
   });
 
+  test('the centre action answers with its own key, and is not a tab', () => {
+    const picked = vi.fn();
+    render(<ScanTabBar rackId="RK-1" activeTab="overview" onTabChange={picked} />);
+    // It carries no label and never lights up, so it is found by what it does.
+    const centre = screen.getByRole('button', { name: 'Look up a port' });
+    expect(centre.getAttribute('role')).toBeNull();
+    fireEvent.click(centre);
+    expect(picked.mock.calls.map(([k]) => k)).toEqual(['port']);
+    // and it is not counted among the tabs
+    expect(labels()).toEqual(['Overview', 'Network', 'Drift', 'Report', 'Timeline']);
+  });
+
   test('there is no More tab and no sheet: every tab answers with its own key', () => {
     const picked = vi.fn();
     for (const [flow, keys] of [['analyse', ['overview', 'network', 'drift', 'report', 'timeline']],

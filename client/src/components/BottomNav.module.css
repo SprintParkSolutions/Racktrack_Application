@@ -1,47 +1,48 @@
-/* BottomNav - the app's bottom bar: white, a hairline on top, five inline
-   slots, the active one marked by a filled round icon and a tiny dot under
-   its label.
+/* BottomNav - the app's bottom bar: a white pill floating clear of the bottom
+   edge, four items around a raised centre action.
 
-   This and ScanTabBar.module.css - the rack's own tabs - draw the same bar.
-   The height, the icon, the label and the active mark all come from the
-   --nav-* and type tokens in index.css so the two cannot drift apart: before
-   that they were a 23px bare icon against a 32px filled chip, so walking into
-   a rack read as changing app. Keep them in step: if you change one of these
-   rules, change the same rule there. */
+   This and ScanTabBar.module.css draw the same bar. Every number comes from
+   the --nav-* tokens in index.css so the two cannot drift apart; if you change
+   a rule here, change the same rule there.
+
+   The active item is carried by ink and weight - no pill, no underline, no dot
+   behind it. Those were three marks doing one job. */
 
 .nav {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   width: 100%;
   max-width: 540px;
+  margin: 0 auto;
   z-index: 200;
-  padding-bottom: env(safe-area-inset-bottom);
-  /* The bar inside this is white, but this wrapper used to be transparent and
-     pass taps through - so the safe-area strip below it, over the home
-     indicator, showed the page scrolling underneath and a finger resting near
-     the bottom edge reached the content behind it. Same fix the rack's bar
-     already had. */
-  background: #ffffff;
-  pointer-events: auto;
+  /* The pill is held in from both edges and lifted off the bottom, so the page
+     shows through beside and below it. That space is the page, not the bar, so
+     it does not take taps - only the pill does. */
+  padding: 0 var(--nav-inset) calc(var(--nav-gap) + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
 }
 
 .bar {
   position: relative;
   display: flex;
-  justify-content: space-around;
-  align-items: center;
+  justify-content: space-between;
+  align-items: stretch;
   height: var(--nav-h);
-  padding: 0 8px;
+  padding: 0 4px;
   background: #ffffff;
-  border-top: 1px solid #E8E8E8;
+  /* Close to a full pill, and no border: the shadow separates it from the
+     page, which is what lets it read as floating rather than as a strip
+     welded to the bottom of the screen. */
+  border-radius: 9999px;
+  box-shadow: var(--nav-shadow);
   pointer-events: auto;
 }
 
-/* Each tab - icon block + label + (active-only) dot. MENU is a <button>, the
-   rest are links, so the element defaults have to be reset here or the button
-   renders with a border and the system font. */
+/* Each item - icon over a label. MENU is a <button>, the rest are links, so
+   the element defaults have to be reset here or the button renders with a
+   border and the system font. */
 .tab {
   position: relative;
   display: flex;
@@ -51,8 +52,7 @@
   text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  padding: 4px 4px 0;
-  gap: 2px;
+  gap: 3px;
   /* #757575 (not the old #6b6b6b) because the 10px uppercase label has to
      clear WCAG AA 4.5:1 against the bar's white - #6b6b6b measured 1.92:1,
      this measures 4.61:1. */
@@ -64,76 +64,107 @@
   font-family: var(--font);
   transition: color 0.18s;
   /* Equal slots that shrink together, so the bar fits a 320px phone rather
-     than pushing the last tab off the edge. Now five of them - Home, Scan,
-     2 Racks, Profile and Menu - which is why the two-rack entry carries a
-     shortened barLabel. */
+     than pushing the last item off the edge. The full bar height is the touch
+     target, which is 60px - comfortably over the 44px minimum. */
   flex: 1 1 0;
   min-width: 0;
 }
 
 .tab:focus-visible {
   outline: 2px solid var(--md-primary, #171717);
-  outline-offset: -3px;
-  border-radius: 8px;
+  outline-offset: -4px;
+  border-radius: 9999px;
 }
 
-.tab:hover {
-  color: var(--md-primary);
-}
+.tab:hover { color: var(--md-primary); }
 
-.tab.active {
-  color: var(--md-primary);
-}
-
-/* Inline SVG rather than the Material icon font - the tabs now share their
-   icons with the sidebar, so both navigations look like the same app. The
-   container is what the active tab fills in, so it is a circle at rest too. */
+/* Inline SVG rather than the Material icon font - the items share their icons
+   with the sidebar, so both navigations look like the same app. */
 .icon {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--nav-chip);
-  height: var(--nav-chip);
-  border-radius: 9999px;
+  width: var(--nav-glyph);
+  height: var(--nav-glyph);
   color: inherit;
-  transition: background-color 0.18s, color 0.18s;
 }
 
 .icon svg {
-  width: var(--nav-glyph);
-  height: var(--nav-glyph);
+  width: 100%;
+  height: 100%;
   stroke-width: 1.8;
-}
-
-.tab.active .icon {
-  background: var(--md-primary);
-  color: #ffffff;
+  transition: stroke-width 0.18s;
 }
 
 .label {
   font-family: var(--font);
   font-size: var(--fs-micro);
   line-height: 1;
-  font-weight: var(--fw-title);
+  font-weight: var(--fw-label);
   letter-spacing: var(--ls-caps);
   color: inherit;
   text-transform: uppercase;
   white-space: nowrap;
-  margin-top: 2px;
+  /* The bar holds whatever the item list holds. If that list ever grows past
+     five the labels truncate rather than running into each other. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-/* Tiny dot indicator below the label - only visible on the active tab */
-.dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
+/* The active item: ink, and a step heavier in both the stroke and the label.
+   Nothing is drawn behind it. */
+.tab.active { color: var(--md-primary); }
+.tab.active .icon svg { stroke-width: 2.4; }
+.tab.active .label { font-weight: var(--fw-title); }
+
+/* ── The centre action ────────────────────────────────────────────────────
+   It takes a slot in the row like an item, so the four items stay evenly
+   spread, and the button inside it stands proud of the pill. The slot itself
+   has no height of its own, so the pill's height is unaffected. */
+.centreSlot {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.centre {
+  width: var(--nav-act);
+  height: var(--nav-act);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Proud of the pill by --nav-lift. The page reserves that in --nav-clear. */
+  transform: translateY(calc(var(--nav-lift) * -1));
+  border: 0;
+  border-radius: 9999px;
   background: var(--md-primary);
-  margin-top: 2px;
-  opacity: 0;
-  transition: opacity 0.18s;
+  color: #ffffff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* Its own shadow, a shade stronger than the pill's, so it reads as sitting
+     on top of the bar rather than cut out of it. */
+  box-shadow: 0 6px 18px rgba(17, 17, 17, 0.22), 0 1px 3px rgba(17, 17, 17, 0.10);
+  transition: transform 0.14s var(--ease-out), background-color 0.14s;
 }
 
-.tab.active .dot {
-  opacity: 1;
+.centre svg {
+  width: 26px;
+  height: 26px;
+  stroke-width: 1.9;
+}
+
+.centre:hover { background: var(--c2); }
+.centre:active { transform: translateY(calc(var(--nav-lift) * -1)) scale(0.94); }
+.centre:focus-visible {
+  outline: 2px solid var(--md-primary, #171717);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .centre { transition: none; }
+  .centre:active { transform: translateY(calc(var(--nav-lift) * -1)); }
 }

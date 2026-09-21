@@ -11,6 +11,7 @@ vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ isAuthed: true }) }));
 vi.mock('../nav/navLinks.jsx', () => ({
   usePrimaryNav: () => [{ to: '/', label: 'Home', icon: null, inBar: true, end: true }, { to: '/scan', label: 'Scan', icon: null, inBar: true }],
   MoreIcon: () => null,
+  ScanIcon: () => null,
 }));
 
 import BottomNav from './BottomNav.jsx';
@@ -59,5 +60,23 @@ describe('<BottomNav> on a rack', () => {
     expect(screen.queryAllByRole('tab')).toEqual([]);
     expect(screen.getByText('SCAN')).toBeTruthy();
     expect(getRackFlow('RK-1')).toBe('analyse');
+  });
+
+  test('the centre action takes a scan, and is not one of the items', () => {
+    mountAt('/');
+    // It carries no label, so it is found by what it says it does.
+    const centre = screen.getByRole('button', { name: 'Scan a rack' });
+    expect(centre).toBeTruthy();
+    // Off the Scan page it goes there; on it, ScanPage's shutter handler takes
+    // over (mocked to none here, so this is the navigating case).
+    fireEvent.click(centre);
+    expect(screen.getByTestId('where').textContent).toBe('/scan');
+  });
+
+  test("the rack bar's centre action puts the rack in the port flow and opens the picker", () => {
+    mountAt('/results/RK-1/network');
+    fireEvent.click(screen.getByRole('button', { name: 'Look up a port' }));
+    expect(getRackFlow('RK-1')).toBe('port');
+    expect(screen.getByTestId('where').textContent).toBe('/results/RK-1');
   });
 });

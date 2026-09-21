@@ -12,7 +12,7 @@
   /* Reserve space at the bottom so the fixed ScanTabBar doesn't overlap the
      last row of content. The bar is 64px plus the home-indicator inset, and
      #root already keeps that inset clear, so 64px is the whole reserve. */
-  padding-bottom: 64px;
+  padding-bottom: var(--nav-clear);
 }
 
 /* …but only while that bar is actually on screen. Straight after a scan there

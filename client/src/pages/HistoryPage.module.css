@@ -20,7 +20,7 @@
   min-height: 100vh;
   /* No background here: `.page-full` is forced transparent, so the white
      ground shows through. */
-  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  padding-bottom: var(--nav-clear);
 }
 
 .countPill {

@@ -105,7 +105,7 @@
 .main {
   flex: 1; width: 100%;
   max-width: var(--mkt-maxw, 1180px); margin: 0 auto;
-  padding: 20px 20px calc(96px + env(safe-area-inset-bottom, 0px));
+  padding: 20px 20px var(--nav-clear);
   display: flex; flex-direction: column; gap: 20px;
 }
 
@@ -129,7 +129,7 @@
 
 @media (max-width: 560px) {
   .nav  { padding: 0 14px; }
-  .main { padding: 16px 14px calc(96px + env(safe-area-inset-bottom, 0px)); gap: 16px; }
+  .main { padding: 16px 14px var(--nav-clear); gap: 16px; }
   /* The header already names the section; on a narrow screen the
      subtitle costs a line that the listings grid can use instead. */
   .headerTop [data-ph='sub'] { display: none; }
