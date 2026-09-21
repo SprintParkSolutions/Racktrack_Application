@@ -747,7 +747,7 @@ export default function DriftPage() {
               </h2>
               <p>
                 {compared
-                  ? `Compared with NetBox just now. Send it to ${toAdmin ? 'an admin' : 'the SPOC'} to check.`
+                  ? `Compared with NetBox just now.${sent ? '' : ` Send it to ${toAdmin ? 'an admin' : 'the SPOC'} to check.`}`
                   : 'Your records do not have this rack yet, so everything in this photo would be new.'}
               </p>
             </>

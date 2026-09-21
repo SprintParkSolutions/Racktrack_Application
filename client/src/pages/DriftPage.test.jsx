@@ -113,6 +113,8 @@ describe('<DriftPage>', () => {
     mount();
     await screen.findByText('Sent to the SPOC');
     expect(screen.queryByRole('button', { name: /^Send/ })).toBeNull();
+    // it has gone, so nothing on the screen still asks for it to be sent
+    expect(document.body.textContent).not.toMatch(/Send it to/);
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
     expect(screen.getByText('Waiting on the SPOC')).toBeTruthy();
     // One link out: this check, in RackTrack Approvals.
