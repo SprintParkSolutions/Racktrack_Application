@@ -348,7 +348,11 @@ function createFromPreview({ scan, snap, report, actor, tenantId = null, parentP
   const who = actorOf(actor);
   return create({
     scanId: scan.id, rackId: scan.rackId, rackUid: snap && snap.rackUid,
-    rackName: scan.rackName || null, report, actor: who,
+    // The name lives in the scan's payload, where the adopt step writes what
+    // the rack ladder decided. Read from the index record alone it was always
+    // empty, so every drift in RackTrack Changes was headed by the hash of the
+    // photograph instead of the id on the cabinet.
+    rackName: scan.rackName || (scan.payload && scan.payload.rackName) || null, report, actor: who,
     orgId: who ? who.orgId : null, tenantId, parentPlanId, reuse,
   });
 }

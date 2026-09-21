@@ -7,7 +7,11 @@
    a pile of cards. */
 
 .page {
-  min-height: 100%; padding: 0 0 40px;
+  /* The rack's tab bar is fixed over the bottom of this page: 64px, above the
+     home-indicator inset that #root already keeps clear. Without room reserved
+     for it the last thing on the page - the button that sends the check - sat
+     underneath the bar, where nobody could press it. */
+  min-height: 100%; padding: 0 0 calc(64px + 28px);
   background: var(--bg, #fff); color: var(--text, #1c1c1c);
   --gutter: 16px;
   --hair: var(--border, #e3e6ea);
