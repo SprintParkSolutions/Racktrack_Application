@@ -48,7 +48,7 @@
 /* Which rack this is, under the title: the rack's own name in the mono face the
    app uses for ids, and one sentence on how the app knows. */
 .rack { display: grid; gap: 2px; padding: 4px var(--gutter) 2px; }
-.rackName { font-family: var(--mono, ui-monospace, Menlo, monospace); font-size: 14px; font-weight: 600;
+.rackName { font-family: var(--mono, ui-monospace, Menlo, monospace); font-size: 19px; font-weight: 700;
             color: var(--text, #1c1c1c); overflow-wrap: anywhere; }
 .rackUnknown { font-size: 14px; font-weight: 600; color: var(--text, #1c1c1c); }
 .rackWhy, .againstWhy { font-size: 13.5px; color: var(--muted-1); line-height: 1.45; }
@@ -78,6 +78,8 @@
 /* the answer, before the detail */
 .verdict { padding: 18px var(--gutter) 14px; }
 .verdict h2 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+/* The answer sits a step under the rack's name, which is the headline. */
+.answer { font-size: 16px !important; font-weight: 600 !important; margin: 0 !important; }
 .verdict p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
 .tick { color: var(--good); font-size: 20px; line-height: 1; }
 

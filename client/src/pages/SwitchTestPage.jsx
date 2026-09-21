@@ -1520,11 +1520,21 @@ export default function SwitchTestPage() {
         )}
 
         {/* ── Add ──
-            The form opens at the button, so it is on screen the moment it exists. */}
-        {form && !form.id ? renderForm() : switches.length > 0 && !form && (
+            The button sits on its own line under the cards, and what it opens
+            is a sheet over the page rather than a form pushed into the middle
+            of it: adding a switch is a short errand, not a step of this screen. */}
+        {switches.length > 0 && !form && (
           <button type="button" className={styles.addMore} onClick={() => setForm(BLANK)}>
             Add another switch
           </button>
+        )}
+        {form && !form.id && (
+          <div className={styles.sheetBack} role="presentation" onClick={() => setForm(null)}>
+            <div className={styles.sheet} role="dialog" aria-modal="true" aria-label="Add a switch"
+              onClick={(e) => e.stopPropagation()}>
+              {renderForm()}
+            </div>
+          </div>
         )}
 
         {/* ── The chosen switch, in full ── */}

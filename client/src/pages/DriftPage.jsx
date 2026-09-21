@@ -625,27 +625,7 @@ export default function DriftPage() {
             <span className={rackName ? styles.rackName : styles.rackUnknown}>
               {rackName || 'Not identified yet'}
             </span>
-            {rackWhy && <span className={styles.rackWhy}>{rackWhy}</span>}
             {stillOpen && <span className={styles.rackOpen}>{stillOpen}</span>}
-
-            {/* How it was matched, for whoever asks. Closed. */}
-            {decided ? (
-              <details className={styles.more}>
-                <summary>Read more</summary>
-                <span className={styles.moreLabel}>Compared against</span>
-                <span className={styles.againstWhy}>{foundBy}</span>
-                <span className={styles.moreLabel}>How it was matched</span>
-                <ul className={styles.how}>
-                  {matchedHow.map((line) => <li key={line}>{line}</li>)}
-                </ul>
-              </details>
-            ) : compared ? (
-              <details className={styles.more}>
-                <summary>Read more</summary>
-                <span className={styles.moreLabel}>Compared against</span>
-                <span className={styles.againstWhy}>{compared.why}</span>
-              </details>
-            ) : null}
 
             {/* The last step of all: nothing could say which rack this is, so a
                 person picks from the short list the steps above left. */}
@@ -733,8 +713,7 @@ export default function DriftPage() {
         <div className={styles.verdict}>
           {changed.length === 0 ? (
             <>
-              <h2><span className={styles.tick} aria-hidden="true">✓</span>Everything matches your records</h2>
-              <p>Compared with NetBox just now. Nothing to send.</p>
+              <h2 className={styles.answer}><span className={styles.tick} aria-hidden="true">✓</span>Everything matches</h2>
               {housekeeping && (
                 <details className={styles.more}>
                   <summary>Read more</summary>
@@ -750,19 +729,19 @@ export default function DriftPage() {
                   calling the count a mismatch is not true: those are the boxes
                   this scan would ADD. The owner read "9 things do not match" on
                   a rack the screen had just said was not in the record at all. */}
-              <h2>
+              {/* The answer, in as few words as it takes. It was a headline
+                  the width of the screen with a sentence under it saying when
+                  the comparison ran; the rack's name above is the headline. */}
+              <h2 className={styles.answer}>
                 {compared
-                  ? `${changed.length} ${changed.length === 1 ? 'thing is' : 'things are'} different from your records`
-                  : `${changed.length} ${changed.length === 1 ? 'thing' : 'things'} would be added`}
+                  ? `${changed.length} ${changed.length === 1 ? 'difference' : 'differences'}`
+                  : `${changed.length} would be added`}
               </h2>
-              {/* What the three big numbers used to say, in the sentence that
-                  already says the first of them: the rest of the rack agrees.
-                  Who it goes to is said once, by the block above the button. */}
-              <p>
-                {compared
-                  ? `Compared with NetBox just now.${matching.length ? ' Nothing else differs.' : ''}`
-                  : 'Your records do not have this rack yet, so everything in this photo would be new.'}
-              </p>
+              {/* Only where the count needs it: a rack the records have never
+                  held is not a rack that disagrees, and saying so once keeps
+                  the count honest. Nothing is said when there is a comparison,
+                  because the count is then the whole answer. */}
+              {!compared && <p>Your records do not have this rack yet, so everything in this photo would be new.</p>}
             </>
           )}
         </div>
@@ -856,7 +835,10 @@ export default function DriftPage() {
           default: the differences are the job, and these are the context. */}
       {plan && !busy && compared && matching.length > 0 && (
         <details className={styles.groupBox}>
-          <summary><span>Matched</span><b>{matching.length}</b></summary>
+          <summary>
+            <span className={styles.dotOk} aria-hidden="true" />
+            <span>Matched</span><b>{matching.length}</b>
+          </summary>
           <ul className={styles.rows}>
             {matching.map(({ item, record }) => (
               <li key={item.uid}>
@@ -870,7 +852,10 @@ export default function DriftPage() {
       )}
       {plan && !busy && compared && notSeen.length > 0 && (
         <details className={styles.groupBox}>
-          <summary><span>Not seen</span><b>{notSeen.length}</b></summary>
+          <summary>
+            <span className={styles.dotIdle} aria-hidden="true" />
+            <span>Not seen</span><b>{notSeen.length}</b>
+          </summary>
           <p className={styles.groupNote}>
             Often behind cables, or with no face to read. Nothing is removed from your records.
           </p>

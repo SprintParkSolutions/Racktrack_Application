@@ -311,20 +311,20 @@
    over a third of the screen. Bounded, so it can never go back to being the
    whole page; greedy under that, so there is never a band of empty white under
    the buttons either. */
-.results[data-device="none"] .heroWrap { flex: 1 1 auto; min-height: 140px; max-height: 48vh; }
+.results[data-device="none"] .heroWrap { flex: 1 1 auto; min-height: 140px; max-height: 60vh; }
 .results[data-device="none"] .sheet    { flex: 0 1 auto; min-height: 0; }
-.results[data-device="sel"]  .heroWrap { flex: 0 1 55vh; min-height: 0; }
+.results[data-device="sel"]  .heroWrap { flex: 0 1 68vh; min-height: 0; }
 .results[data-device="sel"]  .sheet    { flex: 1 1 auto; min-height: 200px; }
 
 /* On a short screen the image yields further still - the controls matter more
    than a larger picture you can already pinch-zoom. */
 @media (max-height: 720px) {
-  .results[data-device="sel"]  .heroWrap { flex: 0 1 48vh; }
+  .results[data-device="sel"]  .heroWrap { flex: 0 1 60vh; }
 }
 
 /* Result variant */
 .resultHero {
-  flex: 0 0 48vh;
+  flex: 0 0 60vh;
   position: relative; overflow: hidden;
   background: #000000; z-index: 1;
 }

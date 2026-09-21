@@ -134,6 +134,7 @@
   scrollbar-width: none;
 }
 .pick::-webkit-scrollbar { display: none; }
+.addMore { margin-top: 10px; }
 .sectionNote { font-weight: 400; color: var(--muted); font-size: 12.5px; }
 /* A switch, as a card in a row a thumb runs along. The chosen one is outlined
    and carries the mark; what is under it is that switch. */
@@ -548,3 +549,24 @@
 .finish { flex: none; padding: 18px 16px 8px; display: flex; flex-direction: column; gap: 10px; }
 .finishOk { margin: 0; font-size: 13px; color: #0f7b4f; }
 .finishBad { margin: 0; font-size: 13px; color: #c0392b; }
+
+/* Adding a switch is a short errand: it opens over the page instead of pushing
+   the switch you were reading down the screen. */
+.sheetBack {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,.34);
+  padding: 0;
+}
+.sheet {
+  width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto;
+  background: var(--bg1, #fff);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 40px rgba(0,0,0,.18);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.sheet > .form { border: 0; border-radius: 0; margin: 0; }
+@media (min-width: 620px) {
+  .sheetBack { align-items: center; padding: 24px; }
+  .sheet { border-radius: 18px; }
+}

@@ -88,8 +88,8 @@ describe('<DriftPage>', () => {
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
     expect(document.body.textContent).not.toMatch(/Write the approved|Assign to|Approve\b/);
     // the answer is one sentence, and no strip of big numbers says it again
-    expect(document.body.textContent).toMatch(/1 thing is different from your records/);
-    expect(document.body.textContent).toContain('Compared with NetBox just now.');
+    expect(document.body.textContent).toMatch(/1 difference/);
+    expect(document.body.textContent).not.toMatch(/Compared with NetBox just now/);
     expect(screen.queryByRole('group', { name: 'Summary of the comparison' })).toBeNull();
     expect(document.body.textContent).not.toMatch(/Send it to/);
     // Nothing to track until it has been sent.
@@ -451,8 +451,7 @@ describe('<DriftPage> the whole comparison', () => {
     expect(document.body.textContent).not.toMatch(/Unmatched/);
     expect(document.body.textContent).not.toMatch(/Matching your records|not seen in the photo/);
     // the count is said once, and the sentence under it says the rest agrees
-    expect(document.body.textContent.match(/1 thing is different/g)).toHaveLength(1);
-    expect(document.body.textContent).toContain('Compared with NetBox just now. Nothing else differs.');
+    expect(document.body.textContent.match(/1 difference/g)).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Drift report' })).toBeTruthy();
     expect(screen.getByText('One page of this comparison. It is attached to the incident when you send.')).toBeTruthy();
   });
@@ -477,12 +476,12 @@ describe('<DriftPage> the whole comparison', () => {
     // which rack, the answer, the difference itself, what needs no attention,
     // then the one action - who it goes to, the note and the button - and last
     // the report
-    const order = ['Drift check', 'RK-07', 'Compared with this rack in your records.', '1 thing is different from your records',
+    const order = ['Drift check', 'RK-07', '1 difference',
       'Router on shelf U20', 'Matched', 'Not seen', 'Goes to', 'dc007.spoc',
       'Note for the SPOC', 'Raise incident', 'Drift report'].map(at);
     expect(order).toEqual([...order].sort((a, b) => a - b));
     // and no count is said twice
-    expect(text.match(/1 thing is different/g)).toHaveLength(1);
+    expect(text.match(/1 difference/g)).toHaveLength(1);
     expect(text.match(/Matched/g)).toHaveLength(1);
   });
 
@@ -540,7 +539,7 @@ describe('<DriftPage> housekeeping', () => {
       }, { uid: 'site:office', type: 'Site', name: 'Office-Sprintpark', action: 'create', supporting: true, decidable: false }],
     } };
     mount();
-    await screen.findByText('Everything matches your records');
+    await screen.findByText('Everything matches');
     expect(screen.queryByText(/does not match/)).toBeNull();
     expect(screen.queryByText(/racktrack_uid|recordId|rack:t32:16/)).toBeNull();
     expect(screen.queryByText(/related record/)).toBeNull();
@@ -577,7 +576,7 @@ describe('<DriftPage> housekeeping', () => {
       }],
     } };
     mount();
-    await screen.findByText(/1 thing is different from your records|1 thing would be added/);
+    await screen.findByText(/1 difference|would be added/);
     expect(screen.getByText('Listed under an older id')).toBeTruthy();
     expect(screen.queryByText(/racktrack_uid/)).toBeNull();
   });
@@ -596,10 +595,12 @@ describe('<DriftPage> which rack', () => {
     });
     mount();
     await screen.findByText('SW-16');
-    expect(screen.getByText('Compared against')).toBeTruthy();
+    // The rack's own name is the heading; how it was matched is in the drift
+    // report, not on this screen (the owner took the sentence and its Read more
+    // off on 22 Sep: the screen answers what differs, not how the rack was found).
     expect(screen.getByText('RK-07')).toBeTruthy();
-    // What found it, and how sure that leaves it: a reading is never a confirmation.
-    expect(screen.getByText('Matched by the label read off the rack. Probable, not confirmed.')).toBeTruthy();
+    expect(screen.queryByText('Compared against')).toBeNull();
+    expect(document.querySelector('[class*="rack"] details')).toBeNull();
     // It is settled, so nothing is asked of anybody.
     expect(screen.queryByText('Which rack is this?')).toBeNull();
     // Nothing internal reaches the screen.
@@ -637,12 +638,11 @@ describe('<DriftPage> which rack', () => {
     expect(screen.queryByRole('button', { name: 'RK-10' })).toBeNull();
 
     fireEvent.click(choices[1]);
-    await waitFor(() => expect(screen.getByText('Confirmed: this rack is tied to that record.')).toBeTruthy());
     // The rack that was picked is the one it was confirmed as, by its record.
     const sent = authFetch.mock.calls.find(([url, init]) => url === '/api/scan/RK-1/identity/confirm' && init);
     expect(JSON.parse(sent[1].body)).toEqual({ knownRackId: 6 });
     // And the check ran again, against the rack that was chosen.
-    expect(screen.getByText('RK-08')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('RK-08')).toBeTruthy());
     expect(screen.queryByText('Which rack is this?')).toBeNull();
   });
 
@@ -675,7 +675,9 @@ describe('<DriftPage> which rack', () => {
     mount();
     await screen.findByText('SW-16');
     expect(screen.getByText('RK-07')).toBeTruthy();
-    expect(screen.getByText(KNOWN.why)).toBeTruthy();
+    // The sentence about how the rack was found is off this screen (22 Sep):
+    // the name is the heading, and the reasoning is in the drift report.
+    expect(screen.queryByText(KNOWN.why)).toBeNull();
     expect(screen.queryByText('Which rack is this?')).toBeNull();
   });
 });
