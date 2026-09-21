@@ -205,6 +205,14 @@
      uppercase needs the extra tracking or it sets as a solid block. */
   --ls-caps: 0.06em;
 
+  /* ── The two bottom bars - the app's (BottomNav) and the rack's tabs
+     (ScanTabBar) - are drawn from these, so they cannot drift apart again.
+     They were 23px icons against 32px ones, and two different active marks,
+     which is why walking into a rack felt like changing app. ── */
+  --nav-h:     64px;   /* the bar itself, above the safe-area inset */
+  --nav-chip:  32px;   /* the round container the active tab fills in */
+  --nav-glyph: 20px;   /* the icon inside it */
+
   /* Radii - opened back up slightly: soft-depth surfaces want gently
      rounded corners; crisp 4px corners fight the shadow language. */
   --r1: 0.375rem;

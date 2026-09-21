@@ -1,5 +1,13 @@
-/* BottomNav - white bar, hairline top border, 3 inline tabs with a tiny
-   black dot below the active label. No floating FAB. */
+/* BottomNav - the app's bottom bar: white, a hairline on top, five inline
+   slots, the active one marked by a filled round icon and a tiny dot under
+   its label.
+
+   This and ScanTabBar.module.css - the rack's own tabs - draw the same bar.
+   The height, the icon, the label and the active mark all come from the
+   --nav-* and type tokens in index.css so the two cannot drift apart: before
+   that they were a 23px bare icon against a 32px filled chip, so walking into
+   a rack read as changing app. Keep them in step: if you change one of these
+   rules, change the same rule there. */
 
 .nav {
   position: fixed;
@@ -10,7 +18,13 @@
   max-width: 540px;
   z-index: 200;
   padding-bottom: env(safe-area-inset-bottom);
-  pointer-events: none;
+  /* The bar inside this is white, but this wrapper used to be transparent and
+     pass taps through - so the safe-area strip below it, over the home
+     indicator, showed the page scrolling underneath and a finger resting near
+     the bottom edge reached the content behind it. Same fix the rack's bar
+     already had. */
+  background: #ffffff;
+  pointer-events: auto;
 }
 
 .bar {
@@ -18,16 +32,16 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 64px;
-  padding: 0 var(--space-lg, 24px);
+  height: var(--nav-h);
+  padding: 0 8px;
   background: #ffffff;
   border-top: 1px solid #E8E8E8;
   pointer-events: auto;
 }
 
-/* Each tab - vertical stack: icon + label + (active-only) dot indicator.
-   MORE is a <button>, the rest are links, so the element defaults have to be
-   reset here or the button renders with a border and the system font. */
+/* Each tab - icon block + label + (active-only) dot. MENU is a <button>, the
+   rest are links, so the element defaults have to be reset here or the button
+   renders with a border and the system font. */
 .tab {
   position: relative;
   display: flex;
@@ -37,20 +51,21 @@
   text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  padding: 8px 4px;
+  padding: 4px 4px 0;
   gap: 2px;
   /* #757575 (not the old #6b6b6b) because the 10px uppercase label has to
      clear WCAG AA 4.5:1 against the bar's white - #6b6b6b measured 1.92:1,
      this measures 4.61:1. */
   color: #757575;
-  transition: color 0.18s;
-  /* button reset */
+  /* button reset first - `font: inherit` would wipe a font-family set above it */
   font: inherit;
   background: none;
   border: 0;
+  font-family: var(--font);
+  transition: color 0.18s;
   /* Equal slots that shrink together, so the bar fits a 320px phone rather
      than pushing the last tab off the edge. Now five of them - Home, Scan,
-     2 Racks, Profile and More - which is why the two-rack entry carries a
+     2 Racks, Profile and Menu - which is why the two-rack entry carries a
      shortened barLabel. */
   flex: 1 1 0;
   min-width: 0;
@@ -71,32 +86,40 @@
 }
 
 /* Inline SVG rather than the Material icon font - the tabs now share their
-   icons with the sidebar, so both navigations look like the same app. */
+   icons with the sidebar, so both navigations look like the same app. The
+   container is what the active tab fills in, so it is a circle at rest too. */
 .icon {
-  width: 23px;
-  height: 23px;
-  color: inherit;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: var(--nav-chip);
+  height: var(--nav-chip);
+  border-radius: 9999px;
+  color: inherit;
+  transition: background-color 0.18s, color 0.18s;
 }
 
 .icon svg {
-  width: 100%;
-  height: 100%;
-  stroke-width: 1.9;
-  transition: stroke-width 0.18s;
+  width: var(--nav-glyph);
+  height: var(--nav-glyph);
+  stroke-width: 1.8;
 }
 
-.tab.active .icon svg { stroke-width: 2.3; }
+.tab.active .icon {
+  background: var(--md-primary);
+  color: #ffffff;
+}
 
 .label {
   font-family: var(--font);
   font-size: var(--fs-micro);
+  line-height: 1;
   font-weight: var(--fw-title);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ls-caps);
   color: inherit;
   text-transform: uppercase;
+  white-space: nowrap;
   margin-top: 2px;
 }
 

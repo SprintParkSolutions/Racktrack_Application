@@ -1,8 +1,13 @@
 /* ══════════════════════════════════════════════════════════════════════
-   ScanTabBar - fixed bottom nav for the Results page. White surface,
-   hairline top border, 5 inline slots (Overview / Switches / Ports /
-   Topology / More). Active tab gets a circular black icon and a tiny
-   dot under the label, matching the BottomNav aesthetic.
+   ScanTabBar - the rack's own tabs, in the app's bottom bar. White surface,
+   a hairline on top, five inline slots, the active one marked by a filled
+   round icon and a tiny dot under its label.
+
+   This and BottomNav.module.css draw the same bar. The height, the icon, the
+   label and the active mark all come from the --nav-* and type tokens in
+   index.css so the two cannot drift apart. Keep them in step: if you change
+   one of these rules, change the same rule there. Which tabs the bar holds is
+   ScanTabBar.jsx's business, not this file's.
    ══════════════════════════════════════════════════════════════════════ */
 
 .tabBar {
@@ -28,7 +33,7 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: 64px;
+  height: var(--nav-h);
   padding: 0 8px;
   background: #ffffff;
   border-top: 1px solid #E8E8E8;
@@ -37,7 +42,7 @@
 
 /* ── Tab - icon block + label + (active) dot ── */
 .tab {
-  flex: 1 0 0;
+  flex: 1 1 0;
   min-width: 0;
   position: relative;
   display: flex;
@@ -58,6 +63,11 @@
   transition: color 0.18s;
 }
 .tab:hover { color: var(--md-primary); }
+.tab:focus-visible {
+  outline: 2px solid var(--md-primary, #171717);
+  outline-offset: -3px;
+  border-radius: 8px;
+}
 
 /* ── Icon container - neutral by default, circular black when active ── */
 .tabIcon {
@@ -65,11 +75,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: var(--nav-chip);
+  height: var(--nav-chip);
   border-radius: 9999px;
   color: inherit;
   transition: background-color 0.18s, color 0.18s;
+}
+.tabIcon svg {
+  width: var(--nav-glyph);
+  height: var(--nav-glyph);
+  stroke-width: 1.8;
 }
 .tabActive { color: var(--md-primary); }
 .tabActive .tabIcon {
@@ -80,10 +95,10 @@
 /* ── Label ── */
 .tabLabel {
   font-size: var(--fs-micro);
-  font-weight: var(--fw-title);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   line-height: 1;
+  font-weight: var(--fw-title);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
   white-space: nowrap;
   margin-top: 2px;
   color: inherit;
@@ -116,7 +131,7 @@
   border-radius: 9999px;
   background: var(--md-primary);
   color: #ffffff;
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-weight: var(--fw-title);
   line-height: 1;
 }
