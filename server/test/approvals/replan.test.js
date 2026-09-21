@@ -534,6 +534,77 @@ describe('a value changed by hand', () => {
   });
 });
 
+describe('the suggestions that change nothing in the scan', () => {
+  it('fills a blank: accepting approves the item as it stands, with no change stored', async () => {
+    const nb = F.seedDemoRack(F.fakeNetBox(), { position: 20 });
+    nb.record().custom_fields = { racktrack_uid: F.U20, racktrack_bound: 'bound by dc007.spoc' };
+    const check = await filed(nb, { tweak: (snap) => { Object.assign(snap.devices[0], { serial: 'FOC1234A1BC', evidence: 'snmp' }); } });
+    const before = service.get(check.id, SPOC);
+    const s = sidOf(before, 'fills_blank');
+    assert.equal(s.title, 'The switch fills a blank: approve as it stands');
+    const out = await service.acceptSuggestion(check.id, s.id, { actor: SPOC });
+    assert.equal(out.error, undefined, out.why);
+    assert.equal(out.replanned, false);
+    assert.equal(out.plan.fingerprint, before.plan.fingerprint);
+    assert.deepEqual(out.overrides, []);
+    const item = out.items.find((i) => i.uid === F.U20);
+    assert.deepEqual([item.decision, item.decidedBy, item.modified], ['approved', 'dc007.spoc', undefined]);
+    assert.equal(store.ticketsOf(check.id).find((t) => t.itemUid === F.U20).status, 'closed');
+    assert.deepEqual(out.suggestions.filter((x) => x.id === s.id).map((x) => [x.state, x.stateBy]), [['accepted', 'dc007.spoc']]);
+  });
+
+  it('leave as it is: only the word is kept, and nothing is written or stored about the record', async () => {
+    const nb = F.seedDemoRack(F.fakeNetBox());
+    nb.rows(F.DEVICES).push({ id: 230, name: 'SP-R1-PDU-A', rack: { id: F.RACK_ID }, site: { id: 7 }, position: null,
+      face: null, status: { value: 'active' }, role: { id: 12, name: 'PDU', slug: 'pdu' }, custom_fields: {} });
+    const check = await filed(nb);
+    const before = service.get(check.id, SPOC);
+    const s = sidOf(before, 'leave_as_is');
+    assert.equal(s.recordName, 'SP-R1-PDU-A');
+    const out = await service.acceptSuggestion(check.id, s.id, { actor: SPOC });
+    assert.equal(out.error, undefined, out.why);
+    assert.deepEqual(out.overrides, []);
+    assert.deepEqual(out.items.map((i) => [i.uid, i.decision]), before.items.map((i) => [i.uid, i.decision]));
+    assert.equal(out.suggestions.find((x) => x.id === s.id).state, 'accepted');
+    assert.ok(sidOf(out, 'wrong_shelf'), 'and the move is still offered beside it');
+    assert.equal(nb.writes().length, 0);
+  });
+
+  it('an exception made after the check was filed sets its item aside', async () => {
+    const nb = F.seedDemoRack(F.fakeNetBox());
+    const check = await filed(nb, { boxes: [SERVER()] });
+    const ex = store.addException({ orgId: 1, tenantId: 32, rackId: check.rackId, itemType: 'Device',
+      itemName: 'Server U5*', kind: 'accepted_drift', justification: 'A loan unit for the migration',
+      expiresAt: '2099-01-01T00:00:00Z', approvedBy: 'Aasritha' });
+    const s = sidOf(service.get(check.id, SPOC), 'exception');
+    assert.equal(s.title, `Covered by exception ${ex.id}`);
+    const out = await service.acceptSuggestion(check.id, s.id, { actor: SPOC });
+    assert.equal(out.error, undefined, out.why);
+    const item = out.items.find((i) => i.uid === U05());
+    assert.deepEqual([item.decision, item.exceptionId, item.reasonCode], ['excepted', ex.id, 'known_exception']);
+    assert.equal(store.ticketsOf(check.id).find((t) => t.itemUid === U05()).status, 'closed');
+    store.revokeException(ex.id);
+  });
+
+  it('the same drift sent twice: the newer check closes as a duplicate, and the older one is not touched', async () => {
+    const nb = F.seedDemoRack(F.fakeNetBox());
+    const first = await filed(nb);
+    const report = await writer.plan(F.demoSnapshot(), nb.client());
+    const other = user(42, 'dc007.member', 'member');
+    const second = service.create({ scanId: first.scanId, rackId: first.rackId, rackName: 'SP-HYB-RM01-R01-R1', report,
+      actor: other, orgId: 1, tenantId: 32, reuse: false }).plan.id;
+    await service.submitAndDispatch(second, { actor: other });
+    const s = service.get(second, SPOC).suggestions.find((x) => x.rule === 'duplicate' && !x.itemUid);
+    assert.match(s.title, new RegExp(`^Same as check ${first.id}, which is with dc007\\.spoc`));
+    const untouched = service.get(first.id, SPOC).plan.version;
+    const out = await service.acceptSuggestion(second, s.id, { actor: SPOC });
+    assert.equal(out.error, undefined, out.why);
+    assert.deepEqual([out.plan.status, out.plan.duplicateOf], ['duplicate', first.id]);
+    assert.equal(store.ticketsOf(second).filter(shape.isOpenTicket).length, 0);
+    assert.deepEqual([service.get(first.id, SPOC).plan.status, service.get(first.id, SPOC).plan.version], ['assigned', untouched]);
+  });
+});
+
 describe('dismissing, and a check from before suggestions', () => {
   it('puts a suggestion away with who and when, and an answered suggestion cannot be pressed again', async () => {
     const nb = F.seedDemoRack(F.fakeNetBox());
