@@ -84,7 +84,7 @@ function lowestUnit(dev) {
   return 10000 - y;   // no unit: rank below every unit-bearing device, bottom first
 }
 
-function buildDeviceLabels(devices, unitsDetected = [], pattern = null) {
+export function buildDeviceLabels(devices, unitsDetected = [], pattern = null) {
   const counts = {};
   const padding = pattern?.padding || 2;
   // Number from the BOTTOM of the rack, as racks themselves are numbered (U1
@@ -102,7 +102,28 @@ function buildDeviceLabels(devices, unitsDetected = [], pattern = null) {
     // When OCR detected a real label on this rack, mint matching names for
     // the rest (e.g. RVEW-CORE-SW01 → RVEW-CORE-PDU01) instead of falling
     // back to the unit-prefixed scheme.
-    if (pattern) { out[idx] = `${pattern.prefix}${pattern.sep}${code}${seq}`; continue; }
+    if (pattern) {
+      // The pattern is read off ONE label, and on a rack named the way this
+      // one is - SP-R1-U15-SW02 - its prefix carries THAT device's own shelf.
+      // Stamped on everything else it made a rack of SP-R1-U15-RO01,
+      // SP-R1-U15-PP04 and so on: one shelf number on nine devices. The shelf
+      // segment belongs to the device, so each device gets its own.
+      const shelf = pattern.prefix.match(/^(.*)([-_])U(\d+)$/);
+      if (shelf) {
+        // A box with no shelf of its own keeps the rack part and says nothing
+        // about a shelf, rather than borrowing somebody else's.
+        const own = (dev.units || [])
+          .map((u) => parseInt(String(u).replace(/\D/g, ''), 10))
+          .filter(Number.isFinite);
+        const width = shelf[3].length;
+        out[idx] = own.length
+          ? `${shelf[1]}${shelf[2]}U${String(Math.min(...own)).padStart(width, '0')}${pattern.sep}${code}${seq}`
+          : `${shelf[1]}${pattern.sep}${code}${seq}`;
+        continue;
+      }
+      out[idx] = `${pattern.prefix}${pattern.sep}${code}${seq}`;
+      continue;
+    }
     const labelUnits = dev.units?.length ? dev.units : unitsDetected.length ? [unitsDetected[0]] : [];
     const formatted = formatUnitsRange(labelUnits) || 'U01';
     const primaryLabel = formatted.split(' ')[0];
