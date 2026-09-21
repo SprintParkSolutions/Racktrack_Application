@@ -87,12 +87,14 @@ services:
     volumes:
       # Model weights — git-ignored, ~483 MB, rsync'd to the host separately.
       - ./Models:/app/Models:ro
-      # The OCR reader's own weights, ~94 MB, rsync'd to the host the same way.
-      # Without them EasyOCR tries to fetch them on first use, every scan that
-      # reads a label waits on that download, and a re-read of a rack timed out
-      # after two minutes. Read-only, and mounted rather than baked in for the
-      # same reason the rack models are: the image is rebuilt on every deploy.
-      - ./easyocr-model:/home/app/.EasyOCR/model:ro
+      # The OCR reader's own home, holding its ~94 MB of weights. Without them
+      # it tries to fetch them on first use, every scan that reads a label waits
+      # on that download, and a re-read of a rack timed out after two minutes.
+      # The WHOLE folder is mounted, and writable: the reader also wants a
+      # user_network folder of its own beside the weights, and with only the
+      # weights mounted read-only it could not create one - every rail and side
+      # label read then failed with a permission error.
+      - ./easyocr-home:/home/app/.EasyOCR
       - ./active_learning_Cache/data:/app/active_learning_Cache/data
       - ./outputs:/app/outputs
       # auth.db and jwt.secret live here. Without this mount every redeploy
