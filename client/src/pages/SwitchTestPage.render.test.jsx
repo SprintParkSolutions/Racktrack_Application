@@ -113,8 +113,8 @@ describe('the Network page', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Ports that disagree' })).toBeTruthy());
     expect(screen.getByText('The photo shows a cable. The switch says the port is down.')).toBeTruthy();
     expect(screen.getByText('Port 2')).toBeTruthy();
-    expect(screen.getByText('SFP')).toBeTruthy();
-    expect(screen.getByText('disagrees')).toBeTruthy();
+    // The faceplate is off this screen: port by port belongs to Look up a port.
+    expect(document.querySelector('[class*="plate"]')).toBeNull();
   });
 
   test('choosing the other switch shows that one instead, and offers to read it', async () => {

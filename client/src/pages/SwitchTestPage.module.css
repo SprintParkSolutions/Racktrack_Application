@@ -127,15 +127,19 @@
 /* ── Which switch ──
    One line each, the chosen one filled. The state rail runs down the left of
    the line it belongs to, as it does on a card. */
+/* The page's scroller is a column flex box, so anything in it shrinks below
+   its own content unless it says not to. Without this the row of cards
+   collapsed to a sliver and what followed was drawn over it. */
 .pick {
+  flex: 0 0 auto;
   display: flex; gap: 10px;
   overflow-x: auto; -webkit-overflow-scrolling: touch;
-  padding: 2px 0 6px; margin-bottom: 16px;
+  padding: 2px 16px 6px; margin-bottom: 4px;
   scrollbar-width: none;
 }
 .pick::-webkit-scrollbar { display: none; }
 /* The heading and the way to add one share a line, above the row of cards. */
-.pickHead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.pickHead { flex: 0 0 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-right: 8px; }
 .pickHead .sectionHead { margin: 0; flex: 1 1 auto; min-width: 0; }
 .addBeside {
   flex: 0 0 auto; min-height: 44px; padding: 0 12px;
@@ -149,7 +153,7 @@
    and carries the mark; what is under it is that switch. */
 .pickCard {
   position: relative;
-  flex: 0 0 auto; width: 158px; min-height: 92px;
+  flex: 0 0 auto; width: 158px; height: 92px; box-sizing: border-box;
   display: flex; flex-direction: column; gap: 3px;
   padding: 11px 12px;
   border: 1px solid var(--border, rgba(0,0,0,.12)); border-radius: 12px;

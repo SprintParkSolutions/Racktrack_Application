@@ -1133,95 +1133,9 @@ export default function SwitchTestPage() {
           )}
         </section>
 
-        {/* ── Port by port ──
-            Every socket on the front of the box, two rows, fitted to the width
-            of the screen however many there are. Lit means the switch says the
-            port is up; a marked socket is one the photograph disagrees with, or
-            one the photograph read as an SFP cage. Tap one for its own line. */}
-        {r && sockets.length > 0 && !editing && (
-          <section className={styles.panel}>
-            <div className={styles.bandHead}>
-              <h2>Ports</h2>
-              <span>{up} up, {sockets.length - up} free</span>
-            </div>
-            <div className={styles.plate}>
-              <div
-                className={styles.pins}
-                style={{ '--cols': Math.ceil(sockets.length / 2) }}
-                aria-label="Ports"
-              >
-                {sockets.map((i) => {
-                  const row = cmp.rows.find((x) => x.index === i.index) || null;
-                  return (
-                    <button
-                      type="button"
-                      key={i.index}
-                      aria-label={`Port ${i.name}, ${i.up ? 'up' : 'free'}${row?.disagrees ? ', disagrees with the photo' : ''}${row?.sfp ? ', SFP' : ''}`}
-                      aria-pressed={pin[sw.id] === i.index}
-                      className={[
-                        styles.pinCell,
-                        i.up ? styles.pinUp : '',
-                        row?.sfp ? styles.pinSfp : '',
-                        row?.disagrees ? styles.pinBad : '',
-                        pin[sw.id] === i.index ? styles.pinOn : '',
-                      ].filter(Boolean).join(' ')}
-                      onClick={() => setPin((m) => ({ ...m, [sw.id]: m[sw.id] === i.index ? null : i.index }))}
-                    >
-                      {portNum(i.name)}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <p className={styles.plateNote}>
-                {tapped ? (
-                  <>
-                    <b>Port {portNum(tapped.name)}</b>
-                    {' · '}{tapped.up ? 'up' : 'free'}
-                    {tapped.speedMbps ? ` · ${speedText(tapped.speedMbps)}` : ''}
-                    {tapped.duplex ? ` · ${tapped.duplex} duplex` : ''}
-                    {tappedRow?.sfp ? ' · SFP in the photo' : ''}
-                    {tappedRow && tappedRow.camera !== 'unknown'
-                      ? ` · photo shows ${tappedRow.camera === 'cabled' ? 'a cable' : 'an empty socket'}`
-                      : ''}
-                    {tapped.descr ? ` · named ${tapped.descr}` : ''}
-                    {neighbourOn(r, tapped.name) ? ` · to ${neighbourOn(r, tapped.name).sysName}` : ''}
-                    {tapped.attached
-                      ? ` · ${tapped.attached} device${tapped.attached === 1 ? '' : 's'} seen`
-                      : ''}
-                  </>
-                ) : (
-                  <>
-                    <span className={styles.key}><i className={styles.keyUp} />up</span>
-                    <span className={styles.key}><i className={styles.keyDown} />free</span>
-                    {cmp.linedUp && sfpCount > 0 && (
-                      <span className={styles.key}><i className={styles.keySfp} />SFP</span>
-                    )}
-                    {cmp.disagree.length > 0 && (
-                      <span className={styles.key}><i className={styles.keyBad} />disagrees</span>
-                    )}
-                    <span className={styles.keyHint}>tap a port</span>
-                  </>
-                )}
-              </p>
-            </div>
-
-            {/* What the photograph is worth for this box, in one line. */}
-            {box && !cmp.linedUp && (
-              <p className={styles.proposal}>
-                The photograph shows {cmp.cabled + cmp.emptyInPhoto + cmp.unreadable} socket
-                {cmp.cabled + cmp.emptyInPhoto + cmp.unreadable === 1 ? '' : 's'} on this box and the
-                switch reports {sockets.length}, so the two cannot be lined up port by port.
-              </p>
-            )}
-            {!box && places?.devices?.length > 0 && (
-              <p className={styles.proposal}>
-                Say which box in the rack this switch is, below, and the photograph
-                can be compared with it port by port.
-              </p>
-            )}
-          </section>
-        )}
+        {/* The faceplate is gone from here at the owner's word (22 Sep): port
+            by port belongs to Look up a port, and this screen is about which
+            switches the rack has and where they and the photograph differ. */}
 
         {/* ── Where the two do not agree ── */}
         {r && cmp.disagree.length > 0 && !editing && (

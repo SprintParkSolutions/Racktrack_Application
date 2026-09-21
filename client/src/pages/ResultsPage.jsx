@@ -3950,22 +3950,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           })()}
 
           {/* ── What was found ──
-              Every fact in one list, one label style, one alignment. */}
+              Four facts, not eleven. The device and its shelf are in the answer
+              above; what a person at the rack needs here is the socket, what
+              kind of port it is, and the cable. The confidences, the port count
+              and how long the search took were the machine talking about
+              itself. Everything else about the device is on the Report. */}
           <div className={styles.pBlock}>
-            <h3 className={styles.pBlockHead}>What was found</h3>
             <div className={styles.pList}>
-              <PortFact label="Device name" value={selectedLabel} mono />
-              <PortFact
-                label="Device type"
-                value={selectedDevice?.class_name}
-                extra={selectedDevice?.class_name_source === 'user_corrected' ? <UserTag /> : null}
-              />
-              <PortFact label="Where it sits" value={formatUnitsRange(selectedDevice?.units || [])} mono />
-              <PortFact
-                label="Ports on this device"
-                value={selectedDevice?.port_count > 0 ? selectedDevice.port_count : null}
-                mono
-              />
               <PortFact
                 label="Socket"
                 value={portInfo?.status === 'connected' ? 'Cable plugged in'
@@ -3983,39 +3974,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 swatch={colorVal ? cableColorCSS(colorVal) : null}
                 extra={portInfo?._cable_color_model ? <UserTag /> : null}
               />
-              <PortFact
-                label="Confidence in the port"
-                value={portInfo?.confidence != null ? fmtPct(portInfo.confidence) : null}
-                mono
-              />
-              <PortFact
-                label="Confidence in the cable"
-                value={portInfo?.cable_confidence != null ? fmtPct(portInfo.cable_confidence) : null}
-                mono
-              />
-              <PortFact
-                label="Time to find it"
-                value={portTimings?.total_ms != null ? fmtMs(portTimings.total_ms) : null}
-                mono
-              />
             </div>
           </div>
-
-          {/* Low-confidence nudge - when the cable read is uncertain (usually a
-              low-resolution / poorly-lit photo), tell the tech plainly and ask
-              them to verify and correct it with the feedback below. */}
-          {portInfo?.status === 'connected' && portInfo?.cable_confidence != null
-            && portInfo.cable_confidence < 0.5 && (
-            <div className={styles.prLowConf}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-              <span>
-                The cable was hard to read. Check its colour below and correct it if it is wrong.
-              </span>
-            </div>
-          )}
 
           {/* ── What is on the other end ──
               Asked of the live switch, not the photograph. Shown for any socket
@@ -4248,48 +4208,32 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           {reanalyzeNote && <p className={styles.reanalyzeNote} role="alert">{reanalyzeNote}</p>}
 
           {/* ── Where to next ──
-              What was missing. A located port is the middle of a job, and from
-              here a person wants the switch this port is on, the rack it sits
-              in, and what has happened on this port before. All three were tabs
-              of this screen's own bar until tonight and items in a More sheet
-              before that; with one four tab bar they had nowhere left, so they
-              are named here, on the screen that needs them. Back to the rack is
-              first because it is the one every other way out went through. */}
+              A located port is the middle of a job: the rack it sits in, the
+              switch it is on, and what has happened on it before. Three ways
+              on, in one row, with no heading over them - the row says what it
+              is. The rack is first because every other way out went through it. */}
           {!ticketMode && (
-            <>
-              <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>Where to next</h3>
-              <div className={styles.reportRow}>
-                <button type="button" className={styles.reportChip} onClick={leavePortView}>
-                  The rack
-                </button>
-                <button
-                  type="button"
-                  className={styles.reportChip}
-                  onClick={() => { leavePortView(); handleTabChange('switches'); }}
-                >
-                  Switches
-                </button>
-                <button
-                  type="button"
-                  className={styles.reportChip}
-                  onClick={() => { leavePortView(); handleTabChange('topology'); }}
-                >
-                  Topology
-                </button>
-                <button
-                  type="button"
-                  className={styles.reportChip}
-                  onClick={() => navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/network#timeline`)}
-                >
-                  Port history
-                </button>
-              </div>
-            </>
+            <div className={styles.reportRow}>
+              <button type="button" className={styles.reportChip} onClick={leavePortView}>
+                The rack
+              </button>
+              <button
+                type="button"
+                className={styles.reportChip}
+                onClick={() => { leavePortView(); handleTabChange('switches'); }}
+              >
+                Switches
+              </button>
+              <button
+                type="button"
+                className={styles.reportChip}
+                onClick={() => navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/network#timeline`)}
+              >
+                Port history
+              </button>
+            </div>
           )}
 
-          {!ticketMode && (
-            <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>This scan</h3>
-          )}
           {/* View / Share / Change device / New scan */}
           <div className={styles.reportRow} style={{ '--ac': rc }}>
             <button className={`${styles.reportChip} ${styles.reportChipView}`}
