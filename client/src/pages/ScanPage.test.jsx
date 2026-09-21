@@ -27,6 +27,7 @@ vi.mock('../utils/validateMedia', () => ({ validateMedia: async () => ({ ok: tru
 vi.mock('../utils/scanPrefetch', () => ({ prefetchScan: () => {} }));
 
 import ScanPage from './ScanPage.jsx';
+import { TOUR_STEPS } from '../tourSteps.js';
 
 const OFFICE = {
   id: 32, siteId: 'Site 32', name: 'Office-Sprintpark', rackCount: 1,
@@ -165,10 +166,45 @@ describe('<ScanPage> site', () => {
     expect(document.body.textContent).not.toMatch(/latitude|longitude|coordinates|\d+\.\d{3,}\s*,\s*-?\d+\.\d{3,}/i);
   });
 
-  test('the guided tour cannot hold a person who still has a site to choose', async () => {
+  test('the guided tour asks for the site first, and a tap on the picker chooses it', async () => {
     // The tour dims the page and waits for Analyze to come alive, which it
-    // cannot while no site is chosen. The picker is the way out, and only then.
-    tour.current = { active: true, stopTour: () => {}, setSuspended: () => {} };
+    // cannot while no site is chosen. So the picker is the tour's own first
+    // step: it is the anchor, not a way out, and the page says when it is done.
+    const stopTour = vi.fn();
+    tour.current = { active: true, currentStep: TOUR_STEPS[0], stopTour, setSuspended: () => {} };
+    stub({ body: { ok: true, preselect: null, sites: [OFFICE, HARBOUR] } });
+    mount();
+    await screen.findByPlaceholderText('Search by site number or name');
+    const block = () => document.querySelector(`[data-tour="${TOUR_STEPS[0].target}"]`);
+    const settled = () => document.querySelector(TOUR_STEPS[0].advanceWhenVisible);
+    expect(block()).toBeTruthy();
+    expect(block().hasAttribute('data-tour-bypass')).toBe(false);
+    expect(settled()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Site 7 - Harbour DC/ }));
+    expect(settled()).toBeTruthy();
+    // Still the anchor for the beat before the tour moves on.
+    expect(block().textContent).toContain('Site 7 - Harbour DC');
+    expect(stopTour).not.toHaveBeenCalled();
+  });
+
+  test('the tour passes the site step for a person with nothing to choose', async () => {
+    tour.current = { active: true, currentStep: TOUR_STEPS[0], stopTour: () => {}, setSuspended: () => {} };
+    stub({ body: { ok: true, preselect: 32, sites: [OFFICE] } });
+    const first = mount();
+    await screen.findByText('Site 32 - Office-Sprintpark - 1 rack');
+    expect(document.querySelector('[data-tour="site-picker"]')).toBeNull();
+    expect(document.querySelector(TOUR_STEPS[0].advanceWhenVisible)).toBeTruthy();
+    first.unmount();
+
+    // A server without the site list: nothing to wait for once it has answered.
+    stub(null);
+    mount();
+    await waitFor(() => expect(document.querySelector(TOUR_STEPS[0].advanceWhenVisible)).toBeTruthy());
+    expect(document.querySelector('[data-tour="site-picker"]')).toBeNull();
+  });
+
+  test('somebody who skipped the site step can still leave the tour through the picker', async () => {
+    tour.current = { active: true, currentStep: TOUR_STEPS[1], stopTour: () => {}, setSuspended: () => {} };
     stub({ body: { ok: true, preselect: null, sites: [OFFICE, HARBOUR] } });
     mount();
     await screen.findByPlaceholderText('Search by site number or name');

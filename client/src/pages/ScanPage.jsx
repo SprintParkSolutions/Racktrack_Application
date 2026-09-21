@@ -973,6 +973,16 @@ export default function ScanPage() {
     rememberSite(id);
     setError(null);
   };
+  // The guided tour opens on the picker for a person who has a Site to choose,
+  // and for nobody else: one Site, a remembered choice and a server without
+  // the list have nothing to tap. `siteWasAsked` keeps the picker the tour's
+  // anchor for the beat after the choice, so the spotlight rests on what was
+  // just chosen before it moves on to the photo.
+  const [siteWasAsked, setSiteWasAsked] = useState(false);
+  useEffect(() => { if (needsSite) setSiteWasAsked(true); }, [needsSite]);
+  // What that step waits for: the list has answered and nothing is left to
+  // choose. Until the list answers nobody can say which, so the tour waits.
+  const siteSettled = sitesAsked && !needsSite;
 
   // Which space this scan belongs to (organisation setup). The list is the
   // chosen Site's own, so it changes with the Site and is empty without one.
@@ -1418,7 +1428,7 @@ export default function ScanPage() {
   };
 
   return (
-    <div className={`page ${styles.scan}`}>
+    <div className={`page ${styles.scan}`} data-scan-site={siteSettled ? 'settled' : undefined}>
       <div className={styles.amb} aria-hidden="true">
         <svg className={styles.art} viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice">
           <defs>
@@ -1541,14 +1551,16 @@ export default function ScanPage() {
         {/* Site picker. Drawn only when the server has Sites to offer: a line
             for one, a search for several. In the flow of the page, so none of
             it can end up under the bottom bar. */}
-        {/* The guided tour dims everything but the control it is pointing at,
-            and its first step waits for Analyze to come alive - which it never
-            does while a Site is still to be chosen. So for exactly that case the
-            picker is the tour's way out: a tap on it ends the walkthrough and
-            leaves the list live, the same treatment Back gets on the results
-            page. `site-picker` is there for a tour step of its own. */}
+        {/* The guided tour's first step ('choose-site') points here while a
+            Site is still to be chosen, so the list stays live under the tour's
+            dim layer and a tap on it chooses a Site instead of ending the
+            walkthrough. Somebody who skipped that step still has a Site to
+            choose and a tour waiting on Analyze, which cannot come alive; for
+            them alone the picker stays the way out, as Back is on the results
+            page. */}
         <SitePicker sites={sites} value={siteId} onChange={chooseSite} className={styles.siteBlock}
-          data-tour="site-picker" data-tour-bypass={tourActive && needsSite ? 'true' : undefined} />
+          data-tour={needsSite || siteWasAsked ? 'site-picker' : undefined}
+          data-tour-bypass={tourActive && needsSite && tour?.currentStep?.id !== 'choose-site' ? 'true' : undefined} />
 
         {/* Space picker - organisation setup. Shown only when the chosen
             Site has spaces; a scan is never blocked on it. */}
