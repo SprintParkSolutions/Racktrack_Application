@@ -29,6 +29,11 @@ const MANAGER = who('site_manager', { id: 23 });
 const APPROVER = who('approver', { id: 24 });
 const AUDITOR = who('auditor', { id: 25 });
 const SAM = who('member', { id: 26, username: 'sam', email: 'sam@example.test' });
+// The SPOC of the Site: a member like any other, until a check is with them.
+const PRIYA = who('member', { id: 29, username: 'priya', email: 'priya@example.test' });
+/** A check sent by ravi and now with priya. */
+const held = (over = {}) => plan({ status: 'assigned', submittedBy: 'ravi', submittedById: 10,
+  spocUserId: 29, ...over });
 
 const item = (over = {}) => ({ uid: 'dev:1', type: 'Device', action: 'create', decidable: true,
   decision: 'pending', supporting: false, following: false, parentUid: null, ...over });
@@ -62,7 +67,7 @@ describe('what each action means for the workflow', () => {
 });
 
 describe('the moves the table names, and the ones it does not', () => {
-  const ANYBODY = [RAVI, ADMIN, OWNER, MANAGER, APPROVER, AUDITOR, SAM];
+  const ANYBODY = [RAVI, ADMIN, OWNER, MANAGER, APPROVER, AUDITOR, SAM, PRIYA];
 
   it('refuses a move the table does not have, and says so in words', () => {
     const out = m.can(plan({ status: 'draft' }), 'approved', ADMIN, ctx());
@@ -83,8 +88,8 @@ describe('the moves the table names, and the ones it does not', () => {
   });
 
   /** Who is allowed, and everybody else refused with code 'role'. */
-  const only = (from, to, allowed, c = ctx()) => {
-    const p = plan({ status: from });
+  const only = (from, to, allowed, c = ctx(), over = {}) => {
+    const p = plan({ status: from, ...over });
     for (const actor of allowed) {
       const out = m.can(p, to, actor, c);
       assert.notEqual(out.code, 'role', `${actor.role} may move ${from} to ${to}: ${out.why || ''}`);
@@ -104,20 +109,28 @@ describe('the moves the table names, and the ones it does not', () => {
 
   it('submitted and resolved move themselves', () => {
     only('submitted', 'triage', []);
+    only('submitted', 'assigned', [], ctx({ holderUserId: 29 }));
     assert.equal(m.can(plan({ status: 'submitted' }), 'triage', m.SYSTEM, ctx()).ok, true);
+    // Straight to the SPOC, when the Site has one to give it to.
+    assert.equal(m.can(plan({ status: 'submitted' }), 'assigned', m.SYSTEM, ctx({ holderUserId: 29 })).ok, true);
+    const nobody = m.can(plan({ status: 'submitted' }), 'assigned', m.SYSTEM, ctx());
+    assert.equal(nobody.code, 'guard');
+    assert.equal(nobody.why, 'this site has no SPOC');
     assert.equal(m.can(plan({ status: 'resolved' }), 'verification_pending', m.SYSTEM, ctx()).ok, true);
     assert.match(m.can(plan({ status: 'submitted' }), 'triage', ADMIN, ctx()).why,
       /The server makes this move itself/);
   });
 
-  it('triage: an admin, or the site manager of this Site', () => {
-    const settled = ctx({ items: [item({ decision: 'approved' })] });
-    only('triage', 'assigned', [ADMIN, OWNER, MANAGER], settled);
-    only('triage', 'rejected', [ADMIN, OWNER, MANAGER], settled);
-    only('triage', 'cancelled', [ADMIN, OWNER, MANAGER], settled);
-    // Another Site's manager is not this Site's.
-    const elsewhere = who('site_manager', { id: 27, tenantId: 99 });
-    assert.equal(m.can(plan({ status: 'triage' }), 'assigned', elsewhere, settled).code, 'role');
+  it('triage: an organization admin, and no longer the site manager', () => {
+    const settled = ctx({ items: [item({ decision: 'approved' })], holderUserId: 29 });
+    only('triage', 'assigned', [ADMIN, OWNER], settled);
+    only('triage', 'rejected', [ADMIN, OWNER], settled);
+    only('triage', 'duplicate', [ADMIN, OWNER], settled);
+    only('triage', 'cancelled', [ADMIN, OWNER], settled);
+    // The site manager of this very Site reads it, and moves nothing.
+    const out = m.can(plan({ status: 'triage' }), 'assigned', MANAGER, settled);
+    assert.equal(out.code, 'role');
+    assert.equal(out.why, 'This is for an organization admin.');
   });
 
   it('the working statuses: the assignee, or an admin', () => {
@@ -130,20 +143,80 @@ describe('the moves the table names, and the ones it does not', () => {
     assert.equal(m.can(plan({ status: 'assigned' }), 'accepted', MANAGER, out).code, 'role');
   });
 
-  it('approval: an approver or an admin, and never the person who resolved it', () => {
+  it('approval: the SPOC or an admin, and never the person who sent it', () => {
     const decided = ctx({ items: [item({ decision: 'approved' })] });
+    // A check from before the SPOC change, waiting in approval_pending.
     only('approval_pending', 'approved', [ADMIN, OWNER, APPROVER], decided);
     only('approval_pending', 'rejected', [ADMIN, OWNER, APPROVER], decided);
     only('approval_pending', 'rework', [ADMIN, OWNER, APPROVER], decided);
 
+    // A check with a holder is approved straight from assigned, by the holder
+    // whatever their role, or by an admin in their place.
+    const sent = { submittedBy: 'ravi', submittedById: 10, spocUserId: 29 };
+    for (const from of m.WORKING) {
+      only(from, 'approved', [PRIYA, ADMIN, OWNER], decided, sent);
+      only(from, 'rejected', [PRIYA, ADMIN, OWNER], decided, sent);
+      only(from, 'rework', [PRIYA, ADMIN, OWNER], decided, sent);
+      only(from, 'duplicate', [PRIYA, ADMIN, OWNER], decided, sent);
+    }
+    assert.equal(m.can(held(), 'approved', PRIYA, decided).ok, true, 'a member who holds it may approve');
+    const manager = who('site_manager', { id: 31, username: 'dev' });
+    assert.equal(m.can(held({ spocUserId: 31 }), 'approved', manager, decided).ok, true,
+      'and so may a site manager who holds it');
+    assert.equal(m.can(held(), 'approved', MANAGER, decided).code, 'role',
+      'a site manager who does not hold it may not');
+    assert.equal(m.can(held(), 'approved', APPROVER, decided).code, 'role',
+      'an approver signs second, never in place of the SPOC');
+
+    // Resolving a ticket bars nobody any more: the SPOC looks, and then decides.
     const theyLooked = ctx({ items: [item({ decision: 'approved' })],
-      tickets: [ticket({ status: 'closed', resolvedBy: 'a.approver', resolvedById: 24 })] });
-    const out = m.can(plan({ status: 'approval_pending' }), 'approved', APPROVER, theyLooked);
-    assert.equal(out.ok, false);
-    assert.equal(out.code, 'role');
-    assert.match(out.why, /somebody else has to make this decision/);
-    assert.equal(m.can(plan({ status: 'approval_pending' }), 'approved', ADMIN, theyLooked).ok, true,
-      'somebody who did not resolve it still can');
+      tickets: [ticket({ status: 'closed', resolvedBy: 'priya', resolvedById: 29 })] });
+    assert.equal(m.can(held(), 'approved', PRIYA, theyLooked).ok, true,
+      'a resolver who is not the sender may approve');
+    assert.equal(m.isResolver(theyLooked.tickets, PRIYA), true, 'the reports still read who resolved it');
+  });
+
+  it('the sender decides nothing, matched by id and else by username', () => {
+    const decided = ctx({ items: [item({ decision: 'approved' })] });
+    // The SPOC sent it themselves, and an admin reassigned nothing: refused.
+    const byId = held({ submittedBy: 'someone.renamed', submittedById: 29 });
+    for (const to of ['approved', 'approval_pending', 'rejected', 'rework', 'duplicate']) {
+      const out = m.can(byId, to, PRIYA, { ...decided, reasonCode: 'other', comment: 'x', duplicateOf: 9 });
+      assert.equal(out.ok, false, `the sender must not move it to ${to}`);
+      assert.equal(out.code, 'role');
+      assert.equal(out.why, m.SENDER_WHY);
+    }
+    assert.equal(m.SENDER_WHY, 'You sent this check, so somebody else has to decide it.');
+    // A check sent from an older phone build carries a name and no id.
+    const byName = held({ submittedBy: 'Priya', submittedById: null });
+    assert.equal(m.can(byName, 'approved', PRIYA, decided).why, m.SENDER_WHY);
+    assert.equal(m.isSender(byName, PRIYA), true);
+    assert.equal(m.isSender(held(), PRIYA), false);
+    // An admin who sent it is refused as well, and another admin is not.
+    const adminSent = held({ submittedBy: ADMIN.username, submittedById: ADMIN.id });
+    assert.equal(m.can(adminSent, 'approved', ADMIN, decided).why, m.SENDER_WHY);
+    assert.equal(m.can(adminSent, 'approved', OWNER, decided).ok, true, 'an admin in place of the SPOC');
+    // And the second signature of an old check is closed to its sender too.
+    const waiting = plan({ status: 'approval_pending', submittedBy: 'a.approver', submittedById: 24 });
+    assert.equal(m.can(waiting, 'approved', APPROVER, decided).why, m.SENDER_WHY);
+    // The creator who did not send it is nobody special.
+    assert.equal(m.isSender(held({ createdById: 29 }), PRIYA), false);
+  });
+
+  it('reassigning and cancelling after send are for an organization admin', () => {
+    const sent = { submittedBy: 'ravi', submittedById: 10, spocUserId: 29 };
+    const c = ctx({ reason: 'on leave', holderUserId: 26 });
+    for (const from of m.WORKING) only(from, 'cancelled', [ADMIN, OWNER], c, sent);
+    only('approval_pending', 'cancelled', [ADMIN, OWNER], c, sent);
+    only('assigned', 'assigned', [ADMIN, OWNER], c, sent);
+    only('reopened', 'assigned', [ADMIN, OWNER], c, sent);
+    only('rework', 'assigned', [ADMIN, OWNER], c, sent);
+    assert.match(m.can(held(), 'cancelled', ADMIN, ctx()).why, /a reason is needed/);
+    // The holder has gone: back to "needs an admin", by an admin or the server.
+    for (const from of m.WORKING) only(from, 'triage', [ADMIN, OWNER], c, sent);
+    assert.equal(m.can(held(), 'triage', m.SYSTEM, ctx()).ok, true);
+    // A sender may still cancel their own draft.
+    assert.equal(m.can(plan({ status: 'draft' }), 'cancelled', RAVI, ctx()).ok, true);
   });
 
   it('the write: an organization admin, never a site manager', () => {
@@ -153,11 +226,17 @@ describe('the moves the table names, and the ones it does not', () => {
     only('approved', 'write_in_progress', [ADMIN, OWNER], ready);
     only('write_failed', 'manual_review', [ADMIN, OWNER], ready);
     only('manual_review', 'rejected', [ADMIN, OWNER], ready);
+    // An approval that went stale puts a held check back with its holder, and
+    // only the server makes that move.
+    for (const from of ['approved', 'write_failed', 'manual_review']) {
+      only(from, 'assigned', [], ready);
+      assert.equal(m.can(plan({ status: from, spocUserId: 29 }), 'assigned', m.SYSTEM, ready).ok, true);
+    }
   });
 
   it('verification: a technician of the Site', () => {
     const passed = ctx({ verification: { kind: 'post_fix', result: 'pass' } });
-    only('verification_pending', 'approval_pending', [RAVI, ADMIN, OWNER, MANAGER, SAM], passed);
+    only('verification_pending', 'approval_pending', [RAVI, ADMIN, OWNER, MANAGER, SAM, PRIYA], passed);
     const elsewhere = who('member', { id: 28, tenantId: 99 });
     assert.equal(m.can(plan({ status: 'verification_pending' }), 'approval_pending', elsewhere, passed).code,
       'role', 'a technician of another Site is not a technician of this rack');
@@ -180,19 +259,29 @@ describe('the guards say what is missing', () => {
     assert.equal(m.can(plan({ status: 'draft' }), 'submitted', RAVI, ctx()).ok, true);
   });
 
-  it('assigned needs everything handed out, and counts what is left', () => {
-    const two = ctx({ items: [item(), item({ uid: 'dev:2' })] });
-    const out = refusal('triage', 'assigned', ADMIN, two);
+  it('assigned needs somebody to hold the check', () => {
+    const out = refusal('triage', 'assigned', ADMIN, ctx());
     assert.equal(out.code, 'guard');
-    assert.equal(out.why, '2 items are still waiting to be assigned');
-    const one = ctx({ items: [item(), item({ uid: 'dev:2', decision: 'approved' })] });
-    assert.equal(why('triage', 'assigned', ADMIN, one), '1 item is still waiting to be assigned');
-    // A rebind cannot be assigned, so it never holds the plan in triage.
-    const rebind = ctx({ items: [item({ uid: 'dev:3', action: 'rebind' })] });
-    assert.equal(refusal('triage', 'assigned', ADMIN, rebind).ok, true);
-    // Neither does an item that is already out with somebody.
-    const out2 = ctx({ items: [item()], tickets: [ticket()] });
-    assert.equal(refusal('triage', 'assigned', ADMIN, out2).ok, true);
+    assert.equal(out.why, 'choose who this check goes to first');
+    // The request names a holder, the check already has one, or (a check from
+    // before the SPOC change) a ticket on it is still open.
+    assert.equal(refusal('triage', 'assigned', ADMIN, ctx({ holderUserId: 29 })).ok, true);
+    assert.equal(m.can(plan({ status: 'triage', spocUserId: 29 }), 'assigned', ADMIN, ctx()).ok, true);
+    assert.equal(refusal('triage', 'assigned', ADMIN, ctx({ tickets: [ticket()] })).ok, true);
+    assert.equal(refusal('triage', 'assigned', ADMIN,
+      ctx({ tickets: [ticket({ status: 'closed' })] })).ok, false, 'a closed ticket holds nothing');
+  });
+
+  it('counts what is still waiting to be handed out', () => {
+    const left = (c) => m.GUARDS.everyItemTicketed(plan({ status: 'triage' }), c);
+    assert.equal(left(ctx({ items: [item(), item({ uid: 'dev:2' })] })),
+      '2 items are still waiting to be assigned');
+    assert.equal(left(ctx({ items: [item(), item({ uid: 'dev:2', decision: 'approved' })] })),
+      '1 item is still waiting to be assigned');
+    // A rebind cannot be assigned, so it is never counted.
+    assert.equal(left(ctx({ items: [item({ uid: 'dev:3', action: 'rebind' })] })), null);
+    // Neither is an item that is already out with somebody.
+    assert.equal(left(ctx({ items: [item()], tickets: [ticket()] })), null);
   });
 
   it('a duplicate names the plan it duplicates, and an exception names the exception', () => {
@@ -294,7 +383,7 @@ describe('the guards say what is missing', () => {
   it('a plan sent back needs a reason, and somebody to send it to', () => {
     assert.match(why('rejected', 'assigned', ADMIN, ctx()), /a reason is needed/);
     assert.match(why('rejected', 'assigned', ADMIN, ctx({ reason: 'try again' })),
-      /assign at least one item to somebody first/);
+      /choose who this check goes to first/);
     assert.equal(refusal('rejected', 'assigned', ADMIN,
       ctx({ reason: 'try again', tickets: [ticket()] })).ok, true);
     assert.equal(refusal('rework', 'in_progress', ADMIN, ctx({ reason: 'have another look' })).ok, true);
@@ -303,15 +392,38 @@ describe('the guards say what is missing', () => {
 
 describe('two names on a critical change', () => {
   const critical = plan({ status: 'approval_pending', risk: 'critical' });
-  const decided = (over = {}) => ctx({ items: [item({ decision: 'approved' })], ...over });
+  const DUAL = { dualApprovalRisks: ['critical'] };
+  const decided = (over = {}) => ctx({ items: [item({ decision: 'approved' })], settings: DUAL, ...over });
+
+  it('is off until an organization turns it on', () => {
+    const plain = ctx({ items: [item({ decision: 'approved' })] });
+    assert.equal(m.needsSecondApproval(plan({ risk: 'critical' }), plain), false);
+    assert.deepEqual(m.approvalStage(critical, plain), { stage: 'first', final: true, dual: false });
+    assert.match(m.can(held({ risk: 'critical' }), 'approval_pending', PRIYA, plain).why,
+      /does not need a second approval/);
+  });
 
   it('asks for a second approval only when the risk says so', () => {
-    assert.equal(m.needsSecondApproval(plan({ risk: 'critical' }), decided()), true,
-      'critical, by the contract\'s default');
+    assert.equal(m.needsSecondApproval(plan({ risk: 'critical' }), decided()), true);
     assert.equal(m.needsSecondApproval(plan({ risk: 'high' }), decided()), false);
     assert.equal(m.needsSecondApproval(plan({ risk: 'high' }),
       decided({ settings: { dualApprovalRisks: ['high', 'critical'] } })), true,
     'and whatever else the organization set');
+  });
+
+  it('the first signature from assigned parks it in approval_pending', () => {
+    const p = held({ risk: 'critical' });
+    assert.equal(m.can(p, 'approval_pending', PRIYA, decided()).ok, true);
+    assert.equal(m.can(p, 'approval_pending', RAVI, decided()).code, 'role', 'never by the sender');
+    const waiting = decided({ items: [item()] });
+    assert.equal(m.can(p, 'approval_pending', PRIYA, waiting).why, '1 item is still undecided');
+    // Once signed, the second name comes from somebody else, in approval_pending.
+    const signed = decided({ decisions: [{ stage: 'first', decision: 'approved',
+      payloadHash: 'hash', approverId: PRIYA.id }] });
+    const parked = held({ status: 'approval_pending', risk: 'critical' });
+    assert.match(m.can(parked, 'approved', PRIYA, signed).why, /has to come from a different person/);
+    assert.equal(m.can(parked, 'approved', APPROVER, signed).ok, true);
+    assert.equal(m.can(parked, 'approved', ADMIN, signed).ok, true);
   });
 
   it('the first signature leaves it waiting, and the second has to be somebody else', () => {
@@ -415,40 +527,44 @@ describe('what a screen may offer', () => {
     assert.deepEqual(Object.keys(by).sort(),
       ['assigned', 'cancelled', 'duplicate', 'known_exception', 'rejected']);
     assert.equal(by.assigned.ready, false);
-    assert.equal(by.assigned.why, '1 item is still waiting to be assigned');
+    assert.equal(by.assigned.why, 'choose who this check goes to first');
     assert.deepEqual(by.rejected.needs, ['reasonCode', 'comment']);
     assert.equal(by.cancelled.ready, true);
     assert.equal(by.cancelled.why, null);
   });
 
-  it('offers the approval to whoever resolved the tickets, marked not ready and saying why', () => {
-    // Found on the demo: every ticket on the one plan waiting for approval had
-    // been resolved by the owner, so separation of duties barred them - which
-    // is right. The move was then left out of the list entirely, so the screen
-    // had nothing to draw and said only "No move is open to you on this
-    // drift.". That reads as the workflow having broken, when what it is doing
-    // is waiting for somebody else. The move is offered, and refused in words.
-    const resolved = [ticket({ status: 'resolved', resolvedById: ADMIN.id, resolvedBy: ADMIN.username })];
-    const offered = m.next(plan({ status: 'approval_pending' }), ADMIN,
-      ctx({ tickets: resolved, items: [item({ decision: 'approved' })] }));
+  it('offers the approval to the sender, marked not ready and saying why', () => {
+    // Found on the demo, when the bar was on whoever resolved the tickets: the
+    // move was left out of the list entirely, so the screen had nothing to
+    // draw and said only "No move is open to you on this drift.". That reads
+    // as the workflow having broken, when what it is doing is waiting for
+    // somebody else. The move is offered, and refused in words.
+    const decided = ctx({ items: [item({ decision: 'approved' })] });
+    const sentByAdmin = held({ submittedBy: ADMIN.username, submittedById: ADMIN.id });
+    const offered = m.next(sentByAdmin, ADMIN, decided);
     const by = Object.fromEntries(offered.map((o) => [o.to, o]));
     assert.ok(by.approved, 'the approval is still offered, not hidden');
     assert.equal(by.approved.ready, false);
-    assert.match(by.approved.why, /somebody else has to make this decision/);
+    assert.equal(by.approved.why, m.SENDER_WHY);
     assert.equal(by.approved.blockedByRole, true);
+    assert.equal(by.rejected.blockedByRole, true);
+    assert.equal(by.rework.blockedByRole, true);
+    assert.equal(by.cancelled.blockedByRole, false, 'an admin who sent it may still cancel it');
 
     // And the bar itself has not moved: the move is still refused.
-    const verdict = m.can(plan({ status: 'approval_pending' }), 'approved', ADMIN,
-      ctx({ tickets: resolved, items: [item({ decision: 'approved' })] }));
+    const verdict = m.can(sentByAdmin, 'approved', ADMIN, decided);
     assert.equal(verdict.ok, false);
     assert.equal(verdict.code, 'role');
 
-    // Somebody who resolved nothing is offered it ready.
-    const other = m.next(plan({ status: 'approval_pending' }), APPROVER,
-      ctx({ tickets: resolved, items: [item({ decision: 'approved' })] }));
-    const theirs = Object.fromEntries(other.map((o) => [o.to, o]));
-    assert.ok(theirs.approved, 'an approver who resolved nothing still sees it');
+    // The holder, who sent nothing, is offered it ready - and offered no
+    // reassign and no cancel, which are an admin's.
+    const theirs = Object.fromEntries(m.next(held(), PRIYA, decided).map((o) => [o.to, o]));
+    assert.equal(theirs.approved.ready, true);
     assert.notEqual(theirs.approved.blockedByRole, true);
+    assert.deepEqual(Object.keys(theirs).sort(),
+      ['approval_pending', 'approved', 'duplicate', 'rejected', 'rework']);
+    // A technician who sent it and holds nothing is offered nothing at all.
+    assert.deepEqual(m.next(held(), RAVI, decided), []);
   });
 
   it('offers a technician nothing on somebody else\'s triage, and the server\'s moves to nobody', () => {

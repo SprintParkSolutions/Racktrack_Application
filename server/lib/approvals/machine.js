@@ -16,11 +16,24 @@
  *   admin         owner and org_admin
  *   site_manager  the site manager of the plan's own Site, nobody else's
  *   assignee      the RackTrack user a ticket on the plan is assigned to
- *   approver      approver, org_admin and owner - and never somebody who
- *                 resolved one of the plan's tickets
+ *   spoc          the person the check is with: the SPOC of its Site when it
+ *                 was sent, or whoever an admin gave it to since. Whatever
+ *                 their role - a site manager, a member - the check is theirs
+ *                 to decide and approve.
+ *   approver      approver, org_admin and owner
  *   writer        org_admin and owner
  *   technician    a technician of the plan's Site (a member or a site manager
  *                 there), or an admin
+ *
+ * THE SENDER DECIDES NOTHING. Whoever sent a check - matched on the user id it
+ * was submitted under, else on the username - cannot approve it, reject it or
+ * send it back, whatever else they are: its SPOC, an admin, an approver. The
+ * rows that carry `notSender` hold that, and the sentence is SENDER_WHY.
+ *
+ * A CHECK WITH A HOLDER. A check sent since the SPOC change carries
+ * spocUserId, and is decided as a whole by that one person: it goes from
+ * assigned straight to approved, and it does not follow its tickets. A check
+ * filed before has no holder and keeps every move it had.
  *
  * THE WORKING STATUSES. assigned, accepted, in_progress and pending describe
  * tickets, and a plan can have several. The plan shows the least advanced
@@ -145,12 +158,24 @@ const isResolver = (tickets, actor) => Boolean(actor) && (tickets || []).some((t
 const isTechnicianOf = (plan, actor) => Boolean(actor) && (isAdmin(actor)
   || (['member', 'site_manager'].includes(actor.role) && sameId(plan && plan.tenantId, actor.tenantId)));
 
+/**
+ * Did this person send the check? By the user id it was submitted under, else
+ * by the username: a check sent from an older phone build carries a name and
+ * no id. The sender, not the creator - an admin may file a comparison that a
+ * technician then sends.
+ */
+const isSender = (plan, actor) => Boolean(actor && plan
+  && (sameId(plan.submittedById, actor.id) || same(plan.submittedBy, actor.username)));
+/** Is the check with this person? By user id only: a holder is always a RackTrack user. */
+const isHolder = (plan, actor) => Boolean(actor && plan && sameId(plan.spocUserId, actor.id));
+
 const WHO = {
   system: (plan, actor) => isSystem(actor),
   creator: (plan, actor) => isCreator(plan, actor),
   admin: (plan, actor) => isAdmin(actor),
   site_manager: (plan, actor) => managesSite(plan, actor),
   assignee: (plan, actor, ctx) => isAssignee(ctx.tickets, actor),
+  spoc: (plan, actor) => isHolder(plan, actor),
   approver: (plan, actor) => Boolean(actor && ROLES.approver.includes(actor.role)),
   writer: (plan, actor) => Boolean(actor && ROLES.writer.includes(actor.role)),
   technician: (plan, actor) => isTechnicianOf(plan, actor),
@@ -162,6 +187,7 @@ const WHO_SENTENCE = {
   admin: 'an organization admin',
   site_manager: 'the site manager of this Site',
   assignee: 'the person the ticket is assigned to',
+  spoc: 'the SPOC this check is with',
   approver: 'an approver',
   writer: 'an organization admin',
   technician: 'a technician of this Site',
@@ -188,8 +214,7 @@ const needsCodeAndComment = (kind) => (plan, ctx) => {
   if (!text(ctx.comment)) return 'a comment is needed';
   return null;
 };
-const needsOpenTicket = (plan, ctx) => (openTickets(ctx).length ? null
-  : 'assign at least one item to somebody first');
+const SENDER_WHY = 'You sent this check, so somebody else has to decide it.';
 
 const GUARDS = {
   submit(plan, ctx) {
@@ -203,6 +228,11 @@ const GUARDS = {
     const left = unassigned(ctx).length;
     return left ? `${left} item${left === 1 ? ' is' : 's are'} still waiting to be assigned` : null;
   },
+  // The check is with somebody: it has a holder, the request names one, or (a
+  // check from before the SPOC change) a ticket on it is still open.
+  held: (plan, ctx) => ((plan.spocUserId != null || ctx.holderUserId != null || openTickets(ctx).length)
+    ? null : 'choose who this check goes to first'),
+  hasSpoc: (plan, ctx) => (ctx.holderUserId != null ? null : 'this site has no SPOC'),
   duplicate(plan, ctx) {
     if (ctx.duplicateOf == null || ctx.duplicateOf === '') return 'say which plan this one duplicates';
     if (Number(ctx.duplicateOf) === Number(plan.id)) return 'a plan cannot be a duplicate of itself';
@@ -240,6 +270,13 @@ const GUARDS = {
       return 'this plan needs a second approval, and it has to come from a different person';
     }
     return null;
+  },
+  // The first signature of two, which parks the check until the second.
+  firstOfTwo(plan, ctx, actor) {
+    const why = GUARDS.approve(plan, ctx, actor);
+    if (why) return why;
+    return needsSecondApproval(plan, ctx) && !firstApproval(ctx) ? null
+      : 'this check does not need a second approval';
   },
   hashStillStands(plan, ctx) {
     // The service compares NetBox again just before a write and hands the
@@ -279,9 +316,13 @@ const all = (...guards) => (plan, ctx, actor) => {
 };
 
 // -- Dual approval ------------------------------------------------------
-/** Does this plan need two people? Its risk is in the organization's dual_approval_risks. */
+/**
+ * Does this plan need two people? Its risk is in the organization's
+ * dual_approval_risks. Off until an organization turns it on: the SPOC's one
+ * signature is what writes.
+ */
 function needsSecondApproval(plan, ctx) {
-  const risks = (ctx.settings && ctx.settings.dualApprovalRisks) || ['critical'];
+  const risks = (ctx.settings && ctx.settings.dualApprovalRisks) || [];
   return risks.includes(plan.risk);
 }
 
@@ -299,7 +340,7 @@ const lastApproval = (ctx) => [...(ctx.decisions || [])].reverse().find((d) => d
 
 /**
  * What an approve call would be: the first signature or the second, and
- * whether it settles the plan. With dual approval the first signature leaves
+ * whether it settles the plan. With dual approval the first signature puts
  * the plan in approval_pending and the second, from somebody else, approves it.
  */
 function approvalStage(plan, ctx) {
@@ -310,9 +351,28 @@ function approvalStage(plan, ctx) {
 }
 
 // -- The table ----------------------------------------------------------
-const APPROVERS = ['approver'];
-const TRIAGERS = ['admin', 'site_manager'];
+const APPROVERS = ['approver', 'spoc', 'admin'];
+const DECIDERS = ['spoc', 'admin'];
+const TRIAGERS = ['admin'];
 const WORKERS = ['assignee', 'admin', 'system'];
+
+/** The states a ServiceNow incident may be left in when a check is decided. */
+const INCIDENT_STATES = ['in_progress', 'on_hold', 'resolved', 'closed', 'cancelled'];
+
+/**
+ * What the person a check is with may do from any working status. The SPOC,
+ * or an admin in their place, and never the sender. Cancelling, and sending
+ * the check back to "needs an admin" when its holder has gone, are an admin's.
+ */
+const heldMoves = () => ({
+  approved: { who: DECIDERS, notSender: true, guard: GUARDS.approve },
+  approval_pending: { who: DECIDERS, notSender: true, guard: GUARDS.firstOfTwo },
+  rejected: { who: DECIDERS, notSender: true, guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
+  rework: { who: DECIDERS, notSender: true, guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
+  duplicate: { who: DECIDERS, notSender: true, guard: GUARDS.duplicate, needs: ['duplicateOf'] },
+  cancelled: { who: ['admin'], guard: needsReason, needs: ['reason'] },
+  triage: { who: ['admin', 'system'] },
+});
 
 const TRANSITIONS = {
   draft: {
@@ -320,10 +380,13 @@ const TRANSITIONS = {
     cancelled: { who: ['creator', 'admin'] },
   },
   submitted: {
+    // Straight to the SPOC of the Site. With nobody valid to give it to - no
+    // Site, no SPOC, or the SPOC is the sender - it waits for an admin.
+    assigned: { who: ['system'], guard: GUARDS.hasSpoc },
     triage: { who: ['system'] },
   },
   triage: {
-    assigned: { who: [...TRIAGERS, 'system'], guard: GUARDS.everyItemTicketed },
+    assigned: { who: [...TRIAGERS, 'system'], guard: GUARDS.held },
     rejected: { who: TRIAGERS, guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
     duplicate: { who: TRIAGERS, guard: GUARDS.duplicate, needs: ['duplicateOf'] },
     known_exception: { who: TRIAGERS, guard: GUARDS.knownException, needs: ['exceptionId'] },
@@ -331,20 +394,24 @@ const TRANSITIONS = {
   },
   assigned: {
     accepted: { who: WORKERS },
-    assigned: { who: TRIAGERS, guard: needsOpenTicket },
+    // Reassigned: the check goes to somebody else and stays where it is.
+    assigned: { who: ['admin'], guard: GUARDS.held },
+    ...heldMoves(),
   },
   accepted: {
     in_progress: { who: WORKERS },
     pending: { who: WORKERS, guard: GUARDS.pendingReason, needs: ['pendingReason'] },
+    ...heldMoves(),
   },
   in_progress: {
     pending: { who: WORKERS, guard: GUARDS.pendingReason, needs: ['pendingReason'] },
     resolved: { who: WORKERS, guard: GUARDS.everyTicketHasFinding },
+    ...heldMoves(),
   },
   pending: {
     in_progress: { who: WORKERS },
     resolved: { who: WORKERS, guard: GUARDS.everyTicketHasFinding },
-    cancelled: { who: ['assignee', 'admin'] },
+    ...heldMoves(),
   },
   resolved: {
     verification_pending: { who: ['system'] },
@@ -354,17 +421,18 @@ const TRANSITIONS = {
     reopened: { who: ['technician', 'system'], guard: GUARDS.verificationFailed },
   },
   approval_pending: {
-    approved: { who: APPROVERS, notResolver: true, guard: GUARDS.approve },
-    rejected: { who: APPROVERS, notResolver: true, guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
-    rework: { who: APPROVERS, notResolver: true, guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
+    approved: { who: APPROVERS, notSender: true, guard: GUARDS.approve },
+    rejected: { who: APPROVERS, notSender: true, guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
+    rework: { who: APPROVERS, notSender: true, guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
+    cancelled: { who: ['admin'], guard: needsReason, needs: ['reason'] },
   },
   rejected: {
-    assigned: { who: ['admin'], guard: all(needsReason, needsOpenTicket), needs: ['reason'] },
+    assigned: { who: ['admin'], guard: all(needsReason, GUARDS.held), needs: ['reason'] },
     in_progress: { who: ['admin'], guard: needsReason, needs: ['reason'] },
     verification_pending: { who: ['admin'], guard: needsReason, needs: ['reason'] },
   },
   rework: {
-    assigned: { who: ['admin'], guard: all(needsReason, needsOpenTicket), needs: ['reason'] },
+    assigned: { who: ['admin'], guard: all(needsReason, GUARDS.held), needs: ['reason'] },
     in_progress: { who: ['admin'], guard: needsReason, needs: ['reason'] },
     verification_pending: { who: ['admin'], guard: needsReason, needs: ['reason'] },
   },
@@ -372,8 +440,10 @@ const TRANSITIONS = {
     write_in_progress: { who: ['writer', 'system'], guard: all(GUARDS.hashStillStands, GUARDS.somethingToWrite) },
     completed: { who: ['writer', 'system'], guard: all(GUARDS.hashStillStands, GUARDS.nothingToWrite) },
     // The guard's own "else": the hash no longer stands, so the approval does
-    // not either, and the plan goes back to be approved again.
+    // not either, and the plan goes back to be approved again - to its holder
+    // when it has one, which is where a check with a SPOC is approved.
     approval_pending: { who: ['system'] },
+    assigned: { who: ['system'] },
   },
   write_in_progress: {
     written: { who: ['system'] },
@@ -384,12 +454,14 @@ const TRANSITIONS = {
     manual_review: { who: ['writer'], guard: needsReason, needs: ['reason'] },
     rejected: { who: ['writer'], guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
     approval_pending: { who: ['system'] },
+    assigned: { who: ['system'] },
   },
   manual_review: {
     write_in_progress: { who: ['writer'], guard: all(needsReason, GUARDS.hashStillStands, GUARDS.somethingToWrite), needs: ['reason'] },
     rejected: { who: ['writer'], guard: needsCodeAndComment('reject'), needs: ['reasonCode', 'comment'] },
     cancelled: { who: ['writer'], guard: needsReason, needs: ['reason'] },
     approval_pending: { who: ['system'] },
+    assigned: { who: ['system'] },
   },
   written: {
     completed: { who: ['system'], guard: GUARDS.postWritePassed },
@@ -399,7 +471,7 @@ const TRANSITIONS = {
     reopened: { who: ['admin'], guard: GUARDS.reopen, needs: ['reasonCode'] },
   },
   reopened: {
-    assigned: { who: TRIAGERS, guard: needsOpenTicket },
+    assigned: { who: ['admin'], guard: GUARDS.held },
   },
   cancelled: {},
   duplicate: {},
@@ -451,10 +523,7 @@ function can(plan, to, actor, ctx = {}) {
     return { ok: false, code: 'role',
       why: people.length ? `This is for ${people.join(' or ')}.` : 'The server makes this move itself.' };
   }
-  if (r.notResolver && isResolver(ctx.tickets, actor)) {
-    return { ok: false, code: 'role',
-      why: 'You resolved a ticket on this plan, so somebody else has to make this decision.' };
-  }
+  if (r.notSender && isSender(plan, actor)) return { ok: false, code: 'role', why: SENDER_WHY };
   const why = r.guard ? r.guard(plan, ctx, actor) : null;
   if (why) return { ok: false, code: 'guard', why };
   return { ok: true };
@@ -476,14 +545,12 @@ function next(plan, actor, ctx = {}) {
     // Separation of duties does not remove the move, it names who it is for.
     // Dropping it here left the approval screen saying "No move is open to you
     // on this drift." to the one person most likely to be looking at it - the
-    // admin who resolved the tickets - with no button and no reason, which
+    // person who sent the check - with no button and no reason, which
     // reads as the workflow having broken rather than having worked. `ready:
     // false` with a why is what the rest of this function already does for a
     // guard that is not met, and it is what the screen knows how to render.
     // The bar itself is unchanged: can() still refuses with code 'role'.
-    const blocked = r.notResolver && isResolver(ctx.tickets, actor)
-      ? 'You resolved a ticket on this plan, so somebody else has to make this decision.'
-      : null;
+    const blocked = r.notSender && isSender(plan, actor) ? SENDER_WHY : null;
     const why = blocked || (r.guard ? r.guard(plan, ctx, actor) : null);
     out.push({ to, ready: !why, why: why || null, needs: r.needs || [], blockedByRole: Boolean(blocked) });
   }
@@ -558,10 +625,10 @@ function workingStatus(tickets) {
 
 module.exports = {
   STATUSES, WORKING, TERMINAL, OPEN, PRIORITIES, RISKS, ITEM_DECISIONS, TICKET_STATUSES,
-  REASONS, ROLES, SYSTEM, TRANSITIONS, TICKET_MOVES,
+  REASONS, ROLES, SYSTEM, TRANSITIONS, TICKET_MOVES, INCIDENT_STATES, SENDER_WHY, GUARDS,
   ACTION_TRAITS, traitsOf, isTicketable, needsAssignFirst,
   can, next, rule, canTicket, workingStatus,
   approvalStage, needsSecondApproval, firstApproval, lastApproval, approvalStands,
   isSystem, isAdmin, isCreator, managesSite, isAssignee, isTicketAssignee, isResolver,
-  isTechnicianOf, unassigned,
+  isSender, isHolder, isTechnicianOf, unassigned,
 };
