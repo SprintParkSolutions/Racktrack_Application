@@ -30,6 +30,7 @@ const auth = require('./auth');
 const audit = require('./audit');
 const tenant = require('./lib/tenant');
 const estate = require('./lib/estate');
+const scanSite = require('./lib/scan_site');
 const rackAccess = require('./lib/rack_access');
 const ocrCache = require('./lib/ocr_cache');
 const imageIntake = require('./lib/image_intake');
@@ -666,6 +667,10 @@ try {
   app.use('/api/nb/scans',      nbAny,   require('./routes/netbox/scans'));
   app.use('/api/nb/switches',   nbAny,   require('./routes/netbox/switches'));
   app.use('/api/nb/unmanaged',  nbField, require('./routes/netbox/unmanaged'));
+  // The ports section of a check. A router that answers /:planId/connectivity
+  // and nothing else, so it sits in front of the plans router on the same
+  // prefix and gate, and everything else falls through to it.
+  app.use('/api/nb/plans',      nbAny,   require('./routes/netbox/connectivity'));
   app.use('/api/nb/plans',      nbAny,   require('./routes/netbox/plans'));
   app.use('/api/nb/netbox',     nbAny,   require('./routes/netbox/netbox'));
   // Connectors hold the NetBox token itself.
@@ -693,6 +698,9 @@ try {
 //   - the ServiceNow poller starts, so an incident resolved over there comes
 //     back here without an admin having to open the plan.
 try {
+  // The same ports section for the desk, in front of the sub-application the
+  // way its phone twin sits in front of /api/nb/plans.
+  app.use('/api/approvals/plans', auth.requireAuth, require('./routes/approvals/connectivity'));
   app.use('/api/approvals', auth.requireAuth, require('./routes/approvals'));
   const imported = require('./lib/approvals/migrate').run();
   const poller = require('./lib/approvals/poller').start();
@@ -722,6 +730,19 @@ try {
 } catch (err) {
   logger.warn({ event: 'router.load_failed', router: 'setup', err: err.message },
     'setup router not loaded');
+}
+
+// The Sites the scan screen offers - one list for every role, scoped on the
+// server: a technician gets their one Site, an organisation admin every Site
+// of the organisation. The scan routes below take the chosen one as `siteId`
+// (lib/scan_site.resolve). No coordinates: a person names the Site.
+try {
+  app.use('/api/scan-sites', auth.requireAuth, require('./routes/scan_sites'));
+  logger.info({ event: 'router.loaded', router: 'scan_sites', prefix: '/api/scan-sites' },
+    'scan sites router loaded');
+} catch (err) {
+  logger.warn({ event: 'router.load_failed', router: 'scan_sites', err: err.message },
+    'scan sites router not loaded');
 }
 
 // Demo tenant-mat — a prototype dataset for the /demo/topology UI.
@@ -3342,6 +3363,52 @@ function scanOwnerTenantId(authPayload) {
   try { return auth.getDefaultTenantId() || null; } catch { return null; }
 }
 
+// Which Site this scan request is for.
+//
+// The scan screen sends `siteId` when a person chose one. lib/scan_site checks
+// the caller may read that Site and hands back the payload as a technician of
+// that Site would carry it; every scan handler then uses THAT for rackScope(),
+// the claim, the space check and the scan meta, so an admin scanning at Site
+// 32 mints the rack id a Site 32 technician would. No `siteId` - every phone
+// build before the picker - gives the payload back untouched.
+//
+// Answers the refusal itself and returns null, so a handler only has to clean
+// up its upload and stop.
+function scanSiteFor(req, res) {
+  const site = scanSite.resolve(softAuthPayload(req), req.body?.siteId, scanOwnerTenantId);
+  if (site.ok) return site;
+  logger.warn({ event: 'scan.site_denied', siteId: String(req.body?.siteId ?? '').slice(0, 32),
+    userId: softAuthUserId(req) }, 'scan asked for a Site the caller may not read');
+  res.status(site.status).json({ error: site.error });
+  return null;
+}
+
+// A Site somebody chose is the Site of this scan even when the photo was on
+// disk already - a cache hit, or a confirmed rack served in its place. The
+// comparison reads the Site from scan_meta.json when it adopts the scan, to
+// find the rack's records and the SPOC the check goes to, and a fresh analysis
+// is the only other place that writes it: a rack first scanned by an admin
+// with no Site would keep none for ever.
+//
+// When the Site really changes the map is touched as well. An adopted copy is
+// served until the map on disk is newer than it (routes/netbox/scans.js), and
+// a copy keyed under the old Site names the wrong records. Nothing happens
+// without a `siteId`, or when the scan already is that Site's. Never fatal.
+function stampScanSite(rackId, site) {
+  if (!site || !site.chosen) return;
+  try {
+    const m = readMeta(rackId) || {};
+    if (m.tenantId != null && Number(m.tenantId) === Number(site.tenantId)) return;
+    m.tenantId = site.tenantId;
+    writeMeta(rackId, m);
+    const map = path.join(outputsDir, rackId, 'device_unit_map.json');
+    if (fs.existsSync(map)) { const now = new Date(); fs.utimesSync(map, now, now); }
+  } catch (err) {
+    logger.warn({ event: 'scan.site_stamp_failed', rackId, err: err.message },
+      'could not record the chosen Site on the scan');
+  }
+}
+
 async function buildScanReportPDF(rackId) {
   const built = await buildScanReport(rackId);
   const pdfPath = path.join(built.data._rackDir, 'report.pdf');
@@ -3916,11 +3983,18 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
   // rack id is computed. It used to live in a bare block, which put it out of
   // scope at the call site and made every scan throw ReferenceError — surfaced
   // to the user as "Please upload a clearer photo", blaming their image.
-  const _a = softAuthPayload(req);
-  if (_a?.organizationId && !auth.isOrgActive(_a.organizationId)) {
+  const _caller = softAuthPayload(req);
+  if (_caller?.organizationId && !auth.isOrgActive(_caller.organizationId)) {
     safeUnlink(req.file.path);
     return res.status(403).json({ error: 'Your organization is awaiting owner approval before you can scan.' });
   }
+
+  // The Site the person chose on the scan screen, when they chose one. From
+  // here on `_a` is the caller as a technician of that Site; without `siteId`
+  // it is the caller exactly as they signed in.
+  const _site = scanSiteFor(req, res);
+  if (!_site) { safeUnlink(req.file.path); return undefined; }
+  const _a = _site.auth;
 
   // Optional binding to a space the admin set up (organisation setup). The
   // phone sends `spaceId` alongside the image. The space must belong to the
@@ -3980,7 +4054,7 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
     // Tenant ownership: anyone scanning an image (cached or fresh) is
     // making a tenant-scoped claim on this rack. Idempotent — multiple
     // tenants can co-own the same RK-id when they scan the same image.
-    const _authPayload = softAuthPayload(req);
+    const _authPayload = _a;
     const _scanTenantId = scanOwnerTenantId(_authPayload);
     const _scanUserId = _authPayload?.sub || null;
     if (_scanTenantId) tenant.claimRack(_scanTenantId, rackId, _scanUserId);
@@ -4032,6 +4106,7 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
         if (_scanSpace) m.space = _scanSpace;
         writeMeta(rackId, m);
       } catch (_) { /* non-fatal — history just keeps the old time */ }
+      stampScanSite(rackId, _site);
       _bindScanSpace(rackId, _scanTenantId, _scanUserId);
 
       timings.total_ms = Date.now() - reqStart;
@@ -4070,6 +4145,7 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
             try { const m = readMeta(matchId) || {}; m.space = _scanSpace; writeMeta(matchId, m); }
             catch (_) { /* non-fatal — the DB row above still carries the binding */ }
           }
+          stampScanSite(matchId, _site);
           timings.total_ms = Date.now() - reqStart;
           timings.confirmed_bypass = true;
           audit.log({ req, action: 'scan.create', status: 'ok', targetType: 'rack',
@@ -4158,7 +4234,7 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
     const meta = {
       rackId,
       userId:     softAuthUserId(req),  // null for unauthenticated scans
-      tenantId:   softAuthPayload(req)?.tenantId ?? null,  // owning Site, so the folder carries a tenant signal on disk
+      tenantId:   _a?.tenantId ?? null,  // owning Site (the chosen one, when one was), so the folder carries a tenant signal on disk
       imageHash:  crypto.createHash('sha256').update(fs.readFileSync(imagePath)).digest('hex'),
       imagePath,
       timestamp:  new Date().toISOString(),
@@ -4175,7 +4251,7 @@ app.post('/api/analyze', auth.requireAuth, scanLimit, upload.single('image'), as
     _bindScanSpace(rackId, _scanTenantId, _scanUserId);
 
     const tPipeStart = Date.now();
-    await runPipelineAnalyze(imagePath, rackDir, softAuthPayload(req)?.organizationId || null);
+    await runPipelineAnalyze(imagePath, rackDir, _a?.organizationId || null);
     timings.pipeline_ms = Date.now() - tPipeStart;
 
     // ── Front-of-rack + framing check (post-pipeline) ──────
@@ -4359,6 +4435,12 @@ app.post('/api/stitch', scanLimit, upload.array('images', 8), async (req, res) =
     return res.status(400).json({ error: 'Please upload at least 2 images to stitch (top-to-bottom).' });
   }
 
+  // The Site chosen on the scan screen, as in /api/analyze: refused before any
+  // work when the caller may not read it, and the caller's own when none was sent.
+  const _site = scanSiteFor(req, res);
+  if (!_site) { files.forEach(f => safeUnlink(f.path)); return undefined; }
+  const _a = _site.auth;
+
   const reqStart = Date.now();
   const timings = {};
   const tmpPaths = [];
@@ -4397,11 +4479,11 @@ app.post('/api/stitch', scanLimit, upload.array('images', 8), async (req, res) =
     tmpPaths.forEach(safeUnlink);
 
     // ── Now mirror /api/analyze flow on the stitched image ───────
-    const rackId   = computeRackId(stitchedPath, rackScope(softAuthPayload(req)));
+    const rackId   = computeRackId(stitchedPath, rackScope(_a));
     const rackDir  = path.join(outputsDir, rackId);
     const jsonPath = path.join(rackDir, 'device_unit_map.json');
 
-    const _authPayload = softAuthPayload(req);
+    const _authPayload = _a;
     const _scanTenantId = scanOwnerTenantId(_authPayload);
     const _scanUserId = _authPayload?.sub || null;
     if (_scanTenantId) tenant.claimRack(_scanTenantId, rackId, _scanUserId);
@@ -4412,6 +4494,7 @@ app.post('/api/stitch', scanLimit, upload.array('images', 8), async (req, res) =
       logger.info({ event: 'scan.cache_hit', rackId, tenantId: _scanTenantId, stitched: true }, `stitch cache hit ${rackId}`);
       recordEvent('scan.cache_hit', { rackId, tenantId: _scanTenantId, stitched: true });
       await ensurePortCounts(rackId);
+      stampScanSite(rackId, _site);
       timings.total_ms = Date.now() - reqStart;
       timings.cached = true;
       audit.log({ req, action: 'scan.create', status: 'ok', targetType: 'rack', targetId: rackId, payload: { cached: true, stitched: true, inputs: files.length } });
@@ -4456,7 +4539,7 @@ app.post('/api/stitch', scanLimit, upload.array('images', 8), async (req, res) =
     const meta = {
       rackId,
       userId:     softAuthUserId(req),
-      tenantId:   softAuthPayload(req)?.tenantId ?? null,  // owning Site, so the folder carries a tenant signal on disk
+      tenantId:   _a?.tenantId ?? null,  // owning Site (the chosen one, when one was), so the folder carries a tenant signal on disk
       imageHash:  crypto.createHash('sha256').update(fs.readFileSync(imagePath)).digest('hex'),
       imagePath,
       timestamp:  new Date().toISOString(),
@@ -4469,7 +4552,7 @@ app.post('/api/stitch', scanLimit, upload.array('images', 8), async (req, res) =
     writeMeta(rackId, meta);
 
     const tPipeStart = Date.now();
-    await runPipelineAnalyze(imagePath, rackDir, softAuthPayload(req)?.organizationId || null);
+    await runPipelineAnalyze(imagePath, rackDir, _a?.organizationId || null);
     timings.pipeline_ms = Date.now() - tPipeStart;
 
     // Post-pipeline framing check (looser than /api/analyze — the user
@@ -5659,8 +5742,14 @@ app.post('/api/analyze-video', auth.requireAuth, scanLimit, upload.single('video
   const reqStart = Date.now();
   const videoPath = req.file.path;
 
+  // The Site chosen on the scan screen, as in /api/analyze. Without one the
+  // payload is the caller's own, so an account with no Site is still refused
+  // below; with one, an admin's walk-through lands in the Site they named.
+  const _site = scanSiteFor(req, res);
+  if (!_site) { safeUnlink(videoPath); return undefined; }
+
   // Tenant required — multi-rack scans always go into someone's tenant.
-  const authPayload = softAuthPayload(req);
+  const authPayload = _site.auth;
   const tenantId = authPayload?.tenantId;
   const userId   = authPayload?.sub || null;
   if (!tenantId) {
@@ -5714,6 +5803,7 @@ app.post('/api/analyze-video', auth.requireAuth, scanLimit, upload.single('video
           // Cache hit — just record group membership, no re-analysis.
           cached = true;
           await ensurePortCounts(rackId);
+          stampScanSite(rackId, _site);
         } else {
           // Fresh analysis — same path /api/analyze takes. We save the
           // file under the same name single-rack scans use ("original_image")
@@ -5725,7 +5815,7 @@ app.post('/api/analyze-video', auth.requireAuth, scanLimit, upload.single('video
           const ext = path.extname(normalizedPath) || '.jpg';
           const imagePath = path.join(rackDir, `original_image${ext}`);
           fs.copyFileSync(normalizedPath, imagePath);
-          await runPipelineAnalyze(imagePath, rackDir, softAuthPayload(req)?.organizationId || null);
+          await runPipelineAnalyze(imagePath, rackDir, authPayload?.organizationId || null);
           await ensurePortCounts(rackId);
           writeMeta(rackId, {
             rackId, userId, tenantId,
