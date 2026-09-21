@@ -176,6 +176,36 @@ def _ocr_strip(reader, img, x_start: int, x_end: int) -> list[dict]:
     return out
 
 
+def _rail_boxes(img):
+    """Where the rack's own rails are, as the units model sees them.
+
+    The model that reads the shelves is already trained on the frame and its
+    rails, so the rack's own label can be looked for on a strip of frame rather
+    than hunted for in the whole photograph. Nothing here fails a scan: no
+    model, no answer, and the side strips still run.
+    """
+    try:
+        import json
+
+        from pipeline.detection import load_model
+
+        cfg = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
+        path = (cfg.get("models") or {}).get("units")
+        if not path:
+            return []
+        model = load_model(str(ROOT / path) if not Path(path).is_absolute() else path)
+        result = model.predict(img, conf=0.05, imgsz=768, verbose=False)[0]
+        names = getattr(model, "names", {}) or {}
+        boxes = []
+        for box, cls in zip(result.boxes.xyxy.cpu().numpy().astype(int).tolist(),
+                            result.boxes.cls.cpu().numpy().astype(int)):
+            if str(names.get(int(cls), "")).strip().lower() == "rail":
+                boxes.append(box)
+        return boxes
+    except Exception:
+        return []
+
+
 def extract_side_labels(image_path: str) -> dict:
     import cv2
     import easyocr
@@ -214,6 +244,26 @@ def extract_side_labels(image_path: str) -> dict:
                     "conf": round(raw["raw_conf"], 3),
                 }
             )
+
+    # The rack's own name, read off its rails. Kept apart from the device chips
+    # by its side, "rail", because it names the RACK: the rack ladder is what
+    # reads these, and it must not mistake a device label for a rack label.
+    try:
+        from pipeline import rail_labels
+
+        for rail in rail_labels.read_rails(img, _rail_boxes(img), reader):
+            labels.append(
+                {
+                    "text": rail["text"],
+                    "yPct": round(rail["y_mid"] / h_img * 100, 2),
+                    "y": int(rail["y_mid"]),
+                    "side": "rail",
+                    "conf": round(float(rail["conf"]), 3),
+                    "readings": rail["readings"],
+                }
+            )
+    except Exception:
+        pass
 
     # Dedupe — sometimes the same chip is read twice (slight bbox jitter).
     seen = set()

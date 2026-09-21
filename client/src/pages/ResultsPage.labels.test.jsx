@@ -19,10 +19,16 @@ describe('buildDeviceLabels', () => {
     const out = buildDeviceLabels(devices, [], SP);
     expect(out).toEqual([
       'SP-R1-U20-RO01', 'SP-R1-U19-FW01', 'SP-R1-U18-SW04', 'SP-R1-U17-SW03',
-      'SP-R1-U15-SW02', 'SP-R1-U13-SW01', 'SP-R1-U10-PP02', 'SP-R1-U01-PP01',
+      'SP-R1-U15-SW02', 'SP-R1-U13-SW01', 'SP-R1-U10-U11-PP02', 'SP-R1-U01-U02-PP01',
     ]);
     // The shelf the sticker happened to be on is not stamped on everything.
     expect(out.filter((n) => n.includes('U15'))).toHaveLength(1);
+  });
+
+  test('a box across two shelves carries both', () => {
+    // The office rack's panels are 2U: the bottom one is U01-U02.
+    const out = buildDeviceLabels([dev('Patch Panel', 1, 2), dev('Patch Panel', 4, 5)], [], SP);
+    expect(out).toEqual(['SP-R1-U01-U02-PP01', 'SP-R1-U04-U05-PP02']);
   });
 
   test('a box with no shelf keeps the rack part and drops the shelf segment', () => {

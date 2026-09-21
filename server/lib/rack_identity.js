@@ -90,7 +90,11 @@ const MIN_SHARE = 0.6;
 const TIE_MARGIN = 0.1;
 // How much a label match is worth by how it matched, before the reading's own
 // confidence is applied.
-const TIER_WEIGHT = { exact: 1, separators: 0.95, pattern: 0.85 };
+const TIER_WEIGHT = { exact: 1, separators: 0.95, pattern: 0.85, near: 0.7 };
+// A reading has to be this long before one wrong character is a small enough
+// part of it to look past. "R1" and "R7" are two racks; "SP-HYB-RM01-R01-R1"
+// with one letter misread is one rack and a smudge.
+const NEAR_MIN_LENGTH = 8;
 // A rack segment shared by the device labels carries no OCR confidence of its
 // own; it ranks below anything read off the rack itself.
 const INFERRED_CONFIDENCE = 0.6;
@@ -370,6 +374,35 @@ function addCandidate(list, cand) {
  * R10-1. Across labels every rack that matched is kept: two labels naming two
  * racks is a disagreement, not a choice.
  */
+/**
+ * One character apart, and no more: "SP-HYB-AM01-R01-R1" against
+ * "SP-HYB-RM01-R01-R1". A reader that gets seventeen characters of a rack id
+ * right and one wrong has still told us which rack this is - but it has not
+ * PROVED it, so a match found this way only ever suggests.
+ */
+function nearlyEqual(a, b) {
+  if (a === b) return false;                       // that is an exact match, not a near one
+  if (a.length < NEAR_MIN_LENGTH || b.length < NEAR_MIN_LENGTH) return false;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  // One substitution, or one character inserted or dropped.
+  if (a.length === b.length) {
+    let wrong = 0;
+    for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i] && (wrong += 1) > 1) return false;
+    return wrong === 1;
+  }
+  const [shortText, longText] = a.length < b.length ? [a, b] : [b, a];
+  let i = 0;
+  let j = 0;
+  let skipped = false;
+  while (i < shortText.length && j < longText.length) {
+    if (shortText[i] === longText[j]) { i += 1; j += 1; continue; }
+    if (skipped) return false;
+    skipped = true;
+    j += 1;
+  }
+  return true;
+}
+
 function matchLabels(labels, racks, describe) {
   const found = [];
   const index = racks.map((r) => ({
@@ -387,6 +420,14 @@ function matchLabels(labels, racks, describe) {
       tiers.push(['pattern', (v) => keyOf(v) === keyOf(label.normalized),
         `was repaired to "${label.normalized}" because the rack pattern says digits there, and that equals`]);
     }
+    // Last, and only ever as a suggestion: a reading that differs from one
+    // rack by a single character. Reading a rack's own label off the
+    // photograph is what stops every scan asking a person which rack this is,
+    // and a reader that hands back seventeen characters of eighteen has
+    // answered. It is still a reading, so it asks rather than states, and it
+    // is refused outright when two racks are equally close.
+    tiers.push(['near', (v) => nearlyEqual(keyOf(v), keyOf(label.text)),
+      'is one character different from']);
     for (const [tier, test, words] of tiers) {
       const hits = [];
       for (const { r, values } of index) {
@@ -394,13 +435,20 @@ function matchLabels(labels, racks, describe) {
         if (on) hits.push({ r, field: on[0] });
       }
       if (!hits.length) continue;
+      // Two racks a character away from the same reading is not a near miss,
+      // it is a coin toss, and this never tosses one.
+      if (tier === 'near' && hits.length > 1) continue;
       for (const { r, field } of hits) {
         const conf = label.confidence == null ? '' : `, confidence ${round2(label.confidence)}`;
-        addCandidate(found, {
+        const cand = {
           ...r,
           score: round2(TIER_WEIGHT[tier] * weightOf(label)),
           reasons: [`the label "${label.text}" (${label.where}${conf}) ${words} the ${field} of ${describe}`],
-        });
+        };
+        // Only where it is true: a candidate carrying `near: undefined` is not
+        // the same object as one without the key, and callers compare these.
+        if (tier === 'near') cand.near = true;
+        addCandidate(found, cand);
       }
       break;
     }
@@ -887,6 +935,12 @@ async function identifyFromEvidence(rackId, { tenantId, spaceId, netboxClient: r
   const byLabel = matchLabels(labels, knownRacks, where);
   if (byLabel.length === 1) {
     const cand = byLabel[0];
+    if (cand.near) {
+      // Read, not proved: the reading is one character from this rack's id, so
+      // the rack is named and a person says yes.
+      cand.reasons.push('one character was read differently, so this is a suggestion until a person confirms it');
+      return suggest('label', cand);
+    }
     if (out.spaceId == null) {
       cand.reasons.push('the scan is not tied to a space, so this is a suggestion until a person confirms it');
       return suggest('label', cand);

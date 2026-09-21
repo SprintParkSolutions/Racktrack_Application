@@ -112,12 +112,13 @@ export function buildDeviceLabels(devices, unitsDetected = [], pattern = null) {
       if (shelf) {
         // A box with no shelf of its own keeps the rack part and says nothing
         // about a shelf, rather than borrowing somebody else's.
-        const own = (dev.units || [])
-          .map((u) => parseInt(String(u).replace(/\D/g, ''), 10))
-          .filter(Number.isFinite);
-        const width = shelf[3].length;
-        out[idx] = own.length
-          ? `${shelf[1]}${shelf[2]}U${String(Math.min(...own)).padStart(width, '0')}${pattern.sep}${code}${seq}`
+        // The shelves it actually occupies, as the rack is read: a 2U panel on
+        // the bottom two shelves is U01-U02, not U01. A box with none keeps the
+        // rack part and says nothing about a shelf, rather than borrowing
+        // somebody else's.
+        const own = formatUnitsRange(dev.units || []).split(' ')[0];
+        out[idx] = own
+          ? `${shelf[1]}${shelf[2]}${own}${pattern.sep}${code}${seq}`
           : `${shelf[1]}${pattern.sep}${code}${seq}`;
         continue;
       }

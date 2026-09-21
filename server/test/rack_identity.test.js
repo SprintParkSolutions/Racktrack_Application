@@ -192,6 +192,42 @@ test('label: a label that equals exactly one rack in the scan\'s space is that r
   assert.match(byFacility.candidates[0].reasons[0], /facility id/);
 });
 
+test('label: a reading one character out names the rack and asks, and two racks that close ask nothing', async () => {
+  // What the rails actually gave on the office rack: seventeen characters of
+  // eighteen, with an R read as an A.
+  const space = mkSpace(SITE_A, 6);
+  const rack = mkRack(SITE_A, space.id, 'RACK-1', 'SP-HYB-RM01-R01-R1');
+  const read = await rackIdentity.identify(
+    mkScan(SITE_A, space.id, TECH_A, report({ labels: [['SP-HYB-AM01-R01-R1']] })), { tenantId: SITE_A });
+  assert.equal(read.decision, 'suggested', 'read, not proved: a person still says yes');
+  assert.equal(read.rack, null, 'and no rack is stated');
+  assert.equal(read.rackKey, null, 'so nothing is written under it');
+  assert.equal(read.candidates.length, 1);
+  assert.equal(read.candidates[0].name, 'RACK-1', 'but the right rack is named');
+  assert.match(read.candidates[0].reasons[0], /is one character different from the facility id/);
+  assert.match(read.candidates.concat(read).map((c) => (c.reasons || []).join(' ')).join(' '),
+    /one character was read differently/);
+
+  // Two racks a character away from one reading is a coin toss, and it is
+  // never tossed: the near tier stands aside entirely.
+  mkRack(SITE_A, space.id, 'RACK-2', 'SP-HYB-RM01-R01-R2');
+  const tie = await rackIdentity.identify(
+    mkScan(SITE_A, space.id, TECH_A, report({ labels: [['SP-HYB-RM01-R01-RX']] })), { tenantId: SITE_A });
+  assert.notEqual(tie.decision, 'matched');
+  assert.equal(tie.rackKey, null);
+  assert.deepEqual(tie.candidates.filter((c) => c.near), []);
+});
+
+test('label: a reading that equals a rack exactly still states it, near or not', async () => {
+  const space = mkSpace(SITE_A, 6);
+  const rack = mkRack(SITE_A, space.id, 'RACK-9', 'SP-HYB-RM01-R01-R9');
+  const r = await rackIdentity.identify(
+    mkScan(SITE_A, space.id, TECH_A, report({ labels: [['SP-HYB-RM01-R01-R9']] })), { tenantId: SITE_A });
+  assert.equal(r.decision, 'matched');
+  assert.equal(r.rack.id, rack.id);
+  assert.equal(r.rackKey, rackMatch.rackKeyFor(SITE_A, rack.id));
+});
+
 test('label: a rack in a space beneath the scan\'s space is in this space', async () => {
   const hall = mkSpace(SITE_A, null);
   const row = mkSpace(SITE_A, 4, hall.id);
