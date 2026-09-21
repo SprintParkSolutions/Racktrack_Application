@@ -122,7 +122,8 @@ router.get('/users', gates.readers, (req, res) => res.json({ ok: true, ...servic
  * there. A file that throws on require is logged and skipped rather than
  * taking the whole sub-application down with it.
  */
-const OPTIONAL = ['verify', 'write', 'sla', 'notifications', 'reports', 'exceptions', 'windows'];
+const OPTIONAL = ['verify', 'write', 'sla', 'notifications', 'reports', 'exceptions', 'windows',
+  'changes'];
 const mounted = [];
 for (const name of OPTIONAL) {
   const file = path.join(__dirname, `${name}.js`);
@@ -142,6 +143,15 @@ for (const name of OPTIONAL) {
 }
 
 router.use('/plans', require('./plans'));
+
+// A write the server was stopped in the middle of would sit in
+// write_in_progress for good: nothing but the write itself moves a check out
+// of it. Once, as the routes load, what has sat there longer than any write
+// runs is marked write_failed, where an organization admin can run it again.
+// Not in tests, by the same two flags that keep the ServiceNow poller out.
+if (process.env.NODE_ENV !== 'test' && process.env.RACKTRACK_SKIP_WORKER_POOL !== '1') {
+  try { require('../../lib/approvals/write').recoverStranded(); } catch { /* the routes load all the same */ }
+}
 
 /** Which of the optional routers are in, for the boot log and for a health check. */
 router.mountedRouters = mounted;

@@ -377,8 +377,8 @@ function answerOf(planId, out) {
  *                     still approved, the admins and the holder are told, and
  *                     an organization admin starts it again
  */
-async function runAfterApproval(planId, { approver, req = null, waitMs = 25000, client = null,
-  writer = null, snapshot = null } = {}) {
+async function runAfterApproval(planId, { approver, req = null, waitMs = _deps.waitMs ?? 25000,
+  client = null, writer = null, snapshot = null } = {}) {
   const plan = store.getPlan(planId, { heavy: false });
   if (!plan) return { plan: null, write: null };
   const system = { ...machine.SYSTEM, orgId: plan.orgId ?? null };
@@ -461,11 +461,14 @@ function recoverStranded({ olderThanMs = 10 * 60 * 1000, now = Date.now() } = {}
   return out;
 }
 
-/** Tests only: the writer, the NetBox client and the snapshot every write uses. null restores. */
-let _deps = { writer: null, client: null, snapshot: null };
+/**
+ * Tests only: the writer, the NetBox client and the snapshot every write
+ * uses, and how long an approval waits for its write. null restores.
+ */
+let _deps = { writer: null, client: null, snapshot: null, waitMs: null };
 function _setDeps(deps) {
   _deps = { writer: (deps && deps.writer) || null, client: (deps && deps.client) || null,
-    snapshot: (deps && deps.snapshot) || null };
+    snapshot: (deps && deps.snapshot) || null, waitMs: (deps && deps.waitMs) ?? null };
 }
 
 /** The scan snapshot and the NetBox client a write needs. */

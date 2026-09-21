@@ -1,5 +1,5 @@
 /**
- * The eight reports, and the one rule that makes them worth reading.
+ * The nine reports, and the one rule that makes them worth reading.
  *
  * EVERY NUMBER OPENS THE LIST IT COUNTS. The first test here takes each row of
  * the backlog and the SLA report, hands its filters straight to the plan list
@@ -190,6 +190,41 @@ describe('the other six', () => {
   });
 });
 
+describe('the ninth: what the writes changed', () => {
+  const change = (planId, over = {}) => store.addChange({ orgId: 1, tenantId: 7, planId, attempt: 1,
+    rackId: 'RK-7', rackName: 'RACK-07', itemUid: 'dev:t7:5:u7', objectType: 'Device', objectName: 'SW7',
+    action: 'update', field: 'position', before: 6, after: 7, result: 'written', approvedBy: 'meera',
+    approvedById: 5, writtenBy: 'system', writtenAt: store.nowIso(), incidentNumber: 'INC0010007', ...over });
+
+  it('counts a check by the registry rows its filter opens, and leaves the link fields out', () => {
+    const p7 = store.listPlans({ orgId: 1, rackId: 'RK-7', limit: 1 })[0].id;
+    const p6 = store.listPlans({ orgId: 1, rackId: 'RK-6', limit: 1 })[0].id;
+    change(p7);
+    change(p7, { field: 'serial', before: null, after: 'FTX7' });
+    change(p7, { field: 'racktrack_uid', before: null, after: 'dev:t7:5:u7', internal: true });
+    change(p6, { rackId: 'RK-6', rackName: 'RACK-06', field: '*', result: 'failed', reason: 'duplicate name' });
+    change(9, { orgId: 2, rackId: 'RK-9' });
+
+    const report = reports.run('changes', { actor: ADMIN });
+    assert.deepEqual(report.rows.map((r) => [r.planId, r.written, r.failed]), [[p6, 0, 1], [p7, 2, 0]],
+      'newest first, one organization only');
+    for (const row of report.rows) {
+      const behind = service.listChanges(ADMIN, report.filtersFor[row.key]).changes;
+      assert.equal(behind.length, row.written + row.failed, `check ${row.planId} opens what it counts`);
+    }
+    assert.equal(report.rows[1].approvedBy, 'meera');
+    assert.equal(report.rows[1].incidentNumber, 'INC0010007');
+    const csv = reports.toCsv(report).split('\n');
+    assert.equal(csv[0], 'Check,Rack,Written,Failed,Approved by,Incident,When');
+    assert.equal(csv.length, 4);
+  });
+
+  it('is empty, not an error, for somebody the registry is not for', () => {
+    const report = reports.run('changes', { actor: { id: 77, username: 'ravi', role: 'member', orgId: 1, tenantId: 7 } });
+    assert.deepEqual(report.rows, []);
+  });
+});
+
 describe('the same report as a file', () => {
   it('writes the columns it declares, with the commas escaped', () => {
     const report = reports.run('backlog', { actor: ADMIN });
@@ -201,6 +236,6 @@ describe('the same report as a file', () => {
 
   it('has no report by that name', () => {
     assert.equal(reports.run('whatever', { actor: ADMIN }), null);
-    assert.equal(reports.NAMES.length, 8);
+    assert.equal(reports.NAMES.length, 9);
   });
 });

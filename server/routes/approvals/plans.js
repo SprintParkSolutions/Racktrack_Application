@@ -20,6 +20,7 @@
 const express = require('express');
 
 const service = require('../../lib/approvals/service');
+const write = require('../../lib/approvals/write');
 const scans = require('../../lib/netbox/store');
 const tenant = require('../../lib/tenant');
 const writer = require('../../lib/netbox/writer');
@@ -194,13 +195,24 @@ router.post('/:planId/decide', gates.readers, (req, res) => {
 
 /**
  * One name against what will be written: { comment, incidentState }. Twice,
- * when the organization asks for two. `write` says what the write did; it is
- * null while an admin still writes an approved check by hand.
+ * when the organization asks for two.
+ *
+ * The final approval writes at once: the server does it, as the system, on
+ * this person's word, and the answer waits for it. `write` says what became of
+ * it - written, nothing_to_write, failed, bounced (the check is back with its
+ * holder, with why), not_started, or writing when it is still going after
+ * twenty-five seconds and the screen should poll the check. It is null while
+ * the check still waits for its second approval.
  */
 router.post('/:planId/approve', gates.readers, wrap(async (req, res) => {
   const out = service.approve(idOf(req), { comment: bodyOf(req).comment,
     incidentState: bodyOf(req).incidentState, actor: req.user, req });
-  return answer(res, out, (o) => ({ ...o, write: null, incident: incidentBrief(o.plan) }));
+  if (refused(out)) return fail(res, out);
+  const done = out.final
+    ? await write.runAfterApproval(out.plan.id, { approver: req.user, req })
+    : { plan: out.plan, write: null };
+  const plan = done.plan || out.plan;
+  return res.json({ ok: true, ...out, plan, write: done.write, incident: incidentBrief(plan) });
 }));
 
 /** Rejected, or sent back for rework: { reasonCode, comment, incidentState }. */

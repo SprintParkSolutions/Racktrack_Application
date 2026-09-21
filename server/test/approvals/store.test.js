@@ -211,6 +211,16 @@ describe('the change registry only ever grows', () => {
       ['position']);
   });
 
+  it('finds the checks a person holds or held', () => {
+    const mine = store.insertPlan({ orgId: 4343, status: 'assigned', createdAt: store.nowIso(), spocUserId: 41,
+      spoc: { userId: 41, username: 'now', previous: [{ userId: 40, username: 'before' }] } }, []);
+    store.insertPlan({ orgId: 4343, status: 'assigned', createdAt: store.nowIso(), spocUserId: 42 }, []);
+    assert.deepEqual(store.plansHeldBy(41, { orgId: 4343 }), [mine.id]);
+    assert.deepEqual(store.plansHeldBy(40, { orgId: 4343 }), [mine.id], 'the one it was taken from still reads it');
+    assert.deepEqual(store.plansHeldBy(41, { orgId: 9999 }), [], 'inside their own organization only');
+    assert.deepEqual(store.plansHeldBy(null), []);
+  });
+
   it('will not let a row be rewritten or erased while its check exists', () => {
     const plan = store.insertPlan({ orgId: 4343, status: 'written', createdAt: store.nowIso() }, []);
     const id = store.addChange(row(plan.id));
