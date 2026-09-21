@@ -20,6 +20,7 @@
 const express = require('express');
 
 const service = require('../../lib/approvals/service');
+const incidents = require('../../lib/approvals/incidents');
 const scans = require('../../lib/netbox/store');
 const tenant = require('../../lib/tenant');
 const writer = require('../../lib/netbox/writer');
@@ -39,6 +40,17 @@ const incidentBrief = (plan) => {
   if (!inc || inc.system === 'none') return null;
   return { number: inc.number || null, state: inc.state || null,
     pushed: Boolean(inc.pushedState), error: inc.error || null };
+};
+
+/**
+ * The same, once ServiceNow has heard the outcome. Reject, rework and cancel
+ * have nothing to wait for, so they `push` at once; an approval is pushed by
+ * incidents.js when its write finishes, and is only waited for here. Never
+ * long: past ten seconds the answer says `pending` and the push lands later.
+ */
+const incidentAfter = async (plan, opts) => {
+  if (!plan || !plan.incident || plan.incident.system === 'none') return incidentBrief(plan);
+  return (await incidents.answerFor(plan.id, opts)) || incidentBrief(plan);
 };
 
 const idOf = (req) => req.params.planId;
@@ -200,14 +212,16 @@ router.post('/:planId/decide', gates.readers, (req, res) => {
 router.post('/:planId/approve', gates.readers, wrap(async (req, res) => {
   const out = service.approve(idOf(req), { comment: bodyOf(req).comment,
     incidentState: bodyOf(req).incidentState, actor: req.user, req });
-  return answer(res, out, (o) => ({ ...o, write: null, incident: incidentBrief(o.plan) }));
+  const incident = refused(out) ? null : await incidentAfter(out && out.plan);
+  return answer(res, out, (o) => ({ ...o, write: null, incident }));
 }));
 
 /** Rejected, or sent back for rework: { reasonCode, comment, incidentState }. */
 for (const [path, call] of [['reject', service.reject], ['rework', service.rework]]) {
   router.post(`/:planId/${path}`, gates.readers, wrap(async (req, res) => {
     const out = call(idOf(req), { ...bodyOf(req), actor: req.user, req });
-    return answer(res, out, (o) => ({ ...o, incident: incidentBrief(o.plan) }));
+    const incident = refused(out) ? null : await incidentAfter(out && out.plan, { push: true });
+    return answer(res, out, (o) => ({ ...o, incident }));
   }));
 }
 
@@ -242,7 +256,8 @@ router.post('/:planId/reopen', ADMIN_GATE, (req, res) => answer(res,
  */
 router.post('/:planId/cancel', gates.readers, wrap(async (req, res) => {
   const out = service.cancel(idOf(req), { reason: bodyOf(req).reason, actor: req.user, req });
-  return answer(res, out, (o) => ({ ...o, incident: incidentBrief(o.plan) }));
+  const incident = refused(out) ? null : await incidentAfter(out && out.plan, { push: true });
+  return answer(res, out, (o) => ({ ...o, incident }));
 }));
 
 /**

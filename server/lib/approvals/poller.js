@@ -10,8 +10,15 @@
  * service.applyTicketStates - which returns its item to the admin as
  * UNDECIDED, exactly as a person resolving it by hand would.
  *
- * It is a reader. It never resolves an incident, never writes to NetBox and
- * never approves anything.
+ * A check that went to its SPOC has one incident of its own, and the same pass
+ * covers it through lib/approvals/incidents.js: what ServiceNow says about it
+ * is written on the check, an incident somebody closed over there is flagged
+ * and never counted as an approval, and whatever RackTrack still owes
+ * ServiceNow - a raise, an outcome, an attachment that failed - is tried again.
+ *
+ * It decides nothing. It never writes to NetBox and never approves anything,
+ * and the only state it sets on an incident is one RackTrack's own check
+ * already reached and could not push at the time.
  *
  * NOT IN TESTS. A test that boots the app must not reach out to the network
  * five minutes in, and a run that finishes in four seconds would never see
@@ -36,11 +43,12 @@ async function tick() {
   try {
     const service = require('./service');
     last = { at: new Date().toISOString(), ...(await service.syncServiceNow()) };
-    if (last.changed) {
+    if (last.changed || last.retried) {
       try {
         require('../observability').logger.info(
           { event: 'approvals.servicenow.sync', ...last },
-          `approvals: ${last.changed} drift ticket${last.changed === 1 ? '' : 's'} heard back from ServiceNow`);
+          `approvals: ${last.changed} drift ticket${last.changed === 1 ? '' : 's'} heard back from ServiceNow, `
+            + `${last.retried || 0} call${last.retried === 1 ? '' : 's'} to it tried again`);
       } catch { /* the log is not the point of the pass */ }
     }
     return last;

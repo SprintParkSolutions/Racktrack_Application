@@ -704,6 +704,7 @@ try {
   app.use('/api/approvals', auth.requireAuth, require('./routes/approvals'));
   const imported = require('./lib/approvals/migrate').run();
   const poller = require('./lib/approvals/poller').start();
+  require('./lib/approvals/incidents').subscribe();
   logger.info({ event: 'router.loaded', router: 'approvals', prefix: '/api/approvals',
     imported: imported.imported, skipped: imported.skipped, polling: Boolean(poller),
     optional: require('./routes/approvals').mountedRouters },

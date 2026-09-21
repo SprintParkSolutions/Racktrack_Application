@@ -278,7 +278,23 @@ const LINES = {
     const number = inc.number || 'The incident';
     const holder = holderName(plan, p);
     if (p.problem === 'unassigned') return [`Incident ${number} was raised, but ${p.assignWarning || inc.assignWarning || 'it is not assigned to anybody.'}`];
-    if (p.problem === 'attachment_failed') return [`Incident ${number} was raised, but the drift report could not be attached: ${p.error || 'no reason given'}.`];
+    if (p.problem === 'attachment_failed') {
+      return [`Incident ${number} was raised, but ${p.what || 'the drift report'} could not be attached: `
+        + `${p.error || 'no reason given'}. RackTrack will try again.`];
+    }
+    // The call RackTrack has stopped trying: a raise, a new assignee, or a state.
+    if (p.problem === 'push_failed' && p.op === 'raise') {
+      return [`ServiceNow has still not taken the incident for check ${plan.id}: ${p.error || 'no reason given'}. `
+        + `RackTrack has stopped trying. The check is with ${holder} all the same.`];
+    }
+    if (p.problem === 'push_failed' && p.op === 'reassign') {
+      return [`Incident ${number} could not be given to ${p.to || holder} in ServiceNow: ${p.error || 'no reason given'}. `
+        + 'In RackTrack the check is theirs all the same.'];
+    }
+    if (p.problem === 'push_failed' && !p.state) {
+      return [`RackTrack could not add its note to incident ${number}: ${p.error || 'no reason given'}. `
+        + 'Nothing else about the check has changed.'];
+    }
     if (p.problem === 'push_failed') {
       return [`Incident ${number} could not be set to ${INCIDENT_STATE_WORDS[p.state] || p.state || 'its new state'}: `
         + `${p.error || 'no reason given'}. It is still open in ServiceNow.`];

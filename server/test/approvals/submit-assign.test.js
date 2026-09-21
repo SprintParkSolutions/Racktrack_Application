@@ -121,7 +121,9 @@ describe('submit gives the check to the SPOC of its site', () => {
     assert.equal(out.holder.assignedBy, 'system');
     assert.deepEqual(out.holder.previous, []);
     assert.equal(out.needsAdmin, null);
-    assert.equal(out.incident, null, 'no incident is raised from here yet');
+    assert.equal(out.incident.system, 'none', 'with no ServiceNow the check lives in RackTrack alone');
+    assert.ok(store.ticketsOf(id).every((t) => t.external.system === 'none' && t.external.planLevel),
+      'and every ticket says the same');
 
     const tickets = store.ticketsOf(id);
     assert.deepEqual(tickets.map((t) => t.itemUid).sort(), [DEV, DEV2], 'a rebind has nothing to look at');
@@ -371,7 +373,7 @@ describe('only an organization admin reassigns or cancels', () => {
     assert.equal(out.holder.source, 'admin');
     assert.equal(out.holder.assignedBy, 'Aasritha');
     assert.equal(out.previous, null);
-    assert.equal(out.incident, null);
+    assert.equal(out.incident.system, 'none');
     assert.deepEqual(out.applied.map((a) => a.uid).sort(), [DEV, DEV2]);
     assert.ok(store.ticketsOf(id).every((t) => t.assigneeUserId === 42 && t.scope === 'check'));
     assert.equal(heard.filter((h) => h.event === 'assigned').length, 1);

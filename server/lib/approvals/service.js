@@ -484,23 +484,51 @@ function submit(planId, { note: said = null, items: chosen = null, actor, req = 
 /** The check's one incident as a caller is shown it, or null. */
 const incidentOf = (plan) => (plan && plan.incident) || null;
 
+// How long a send waits for ServiceNow before it answers without the number.
+const RAISE_WAIT_MS = 12000;
+const RAISING = { system: 'servicenow', number: null, url: null, state: 'raising', assigned: false, error: null };
+
 /**
- * Tell the holder the check is theirs. Async and idempotent: a check whose
- * holder has been told is left alone unless `again`. Never throws; a failure
- * is a value on the plan. Answers { holder, needsAdmin, incident }.
+ * Raise the check's incident and tell the holder the check is theirs. Async
+ * and idempotent: a check whose holder has been told is left alone unless
+ * `again`. Never throws; a failure is a value on the plan. Answers
+ * { holder, needsAdmin, incident }.
  *
- * The ServiceNow incident belongs here, before anybody is told, so the notice
- * can carry its number. It is raised once per check and stamped on the plan;
- * until that lands the plan's incident stays null and the notice says nothing
- * about ServiceNow.
+ * The send waits for the incident so its answer can carry the number, but not
+ * for long: a ServiceNow that is slow or dead is given RAISE_WAIT_MS, after
+ * which the answer goes out saying the incident is still `raising`. The raise
+ * carries on by itself, lands on the plan, and the holder is told then.
  */
-async function dispatch(planId, { actor, req = null, again = false } = {}) {
+async function dispatch(planId, opts = {}) {
+  const incidents = require('./incidents');
+  const wait = Number(process.env.RT_INCIDENT_WAIT_MS) || RAISE_WAIT_MS;
+  const waited = await incidents.within(tellHolder(planId, opts), wait);
+  if (!waited.late && waited.value) return waited.value;
+  const plan = store.getPlan(planId, { heavy: false });
+  return { holder: (plan && plan.spoc) || null, needsAdmin: null,
+    incident: (plan && plan.incident) || RAISING };
+}
+
+/**
+ * dispatch() without the clock. The ServiceNow incident comes first, before
+ * anybody is told, so the notice can carry its number. It is raised once per
+ * check and stamped on the plan by incidents.js; with no ServiceNow, or one
+ * that refused, the notice goes out all the same and says what it can.
+ */
+async function tellHolder(planId, { actor, req = null, again = false } = {}) {
   const who = actorOf(actor) || SYSTEM;
   let plan = store.getPlan(planId, { heavy: false });
   if (!plan) return { holder: null, needsAdmin: null, incident: null };
   if (plan.spocUserId == null || !plan.spoc) {
     return { holder: null, needsAdmin: plan.needsAdmin || null, incident: null };
   }
+  if (plan.spoc.toldAt && !again) return { holder: plan.spoc, needsAdmin: null, incident: incidentOf(plan) };
+  try {
+    await require('./incidents').raiseFor(plan.id, { again });
+  } catch { /* the check is with its holder whatever ServiceNow did */ }
+  plan = store.getPlan(planId, { heavy: false });
+  if (!plan || plan.spocUserId == null || !plan.spoc) return { holder: null, needsAdmin: null, incident: null };
+  // Two sends at once share one raise, and only the first of them tells the holder.
   if (plan.spoc.toldAt && !again) return { holder: plan.spoc, needsAdmin: null, incident: incidentOf(plan) };
   try {
     const effects = [];
@@ -896,6 +924,7 @@ async function assign(planId, body = {}, { actor, req = null } = {}) {
     // A fresh ticket carries no incident pointer. Once a check has its one
     // incident, the pointer is stamped back onto the new tickets here, inside
     // this transaction, by the one helper that writes it.
+    if (plan.incident) require('./incidents').stamp(plan.id, {});
     const moved = move(effects, store.getPlan(plan.id, { heavy: false }), 'assigned', {
       actor: who, action: plan.status === 'assigned' ? 'reassign' : 'assign', req, force: true,
       reason: reason || null, payload: { from: old ? old.username : null, to: holder.username, reason: reason || null },
@@ -906,6 +935,12 @@ async function assign(planId, body = {}, { actor, req = null } = {}) {
 
   // After the commit. A check that has its incident moves it to the new holder
   // rather than raising another; with none yet, dispatch() is where one starts.
+  // Neither holds the admin's request up for longer than a send is held.
+  if (plan.incident && plan.incident.sysId) {
+    const incidents = require('./incidents');
+    await incidents.within(incidents.reassign(plan.id, holder, { by: who.username ?? null, reason: reason || null }),
+      Number(process.env.RT_INCIDENT_WAIT_MS) || RAISE_WAIT_MS);
+  }
   const sent = await dispatch(plan.id, { actor: who, req, again: true });
   if (old) {
     const effects = [];
@@ -1061,12 +1096,18 @@ function applyTicketStates(planId, states, { by = 'ServiceNow' } = {}) {
   const plan = store.getPlan(planId, { heavy: false });
   if (!plan || !states) return { plan, changed: [] };
   if (['written', 'completed'].includes(plan.status)) return { plan, changed: [] };
+  // A check with a holder has one incident of its own, heard through
+  // incidents.applyState(): somebody closing it in ServiceNow is flagged on
+  // the check and is never a finding, an approval or a reason to move it.
+  if (plan.spocUserId != null) return { plan, changed: [] };
   const changed = [];
   const out = run((effects) => {
     const items = store.itemsOf(plan.id);
     for (const t of store.ticketsOf(plan.id)) {
       const ext = t.external;
-      if (!ext || !ext.sysId) continue;
+      // A copy of the check's one incident is not this ticket's to resolve,
+      // even on a check that has since lost its holder.
+      if (!ext || !ext.sysId || ext.planLevel) continue;
       const now = states[ext.sysId];
       if (!now) continue;
       const was = ext.state;
@@ -1104,7 +1145,7 @@ function applyTicketStates(planId, states, { by = 'ServiceNow' } = {}) {
 
 /** Every open incident this plan is waiting on, as sys_ids. */
 const openSysIds = (planId) => [...new Set(store.ticketsOf(planId)
-  .filter((t) => shape.isOpenTicket(t) && t.external && t.external.sysId)
+  .filter((t) => shape.isOpenTicket(t) && t.external && t.external.sysId && !t.external.planLevel)
   .map((t) => t.external.sysId))];
 
 /**
@@ -1137,7 +1178,11 @@ async function syncServiceNow() {
       try { changed += applyTicketStates(planId, r.states).changed.length; } catch { /* next plan */ }
     }
   }
-  return { asked, changed };
+  // The checks that have one incident of their own: what ServiceNow says about
+  // each is heard, and whatever RackTrack still owes it is tried again.
+  let held = { asked: 0, changed: 0, retried: 0 };
+  try { held = await require('./incidents').sync(); } catch { /* the next pass asks again */ }
+  return { asked: asked + held.asked, changed: changed + held.changed, retried: held.retried };
 }
 
 // -- Item decisions -------------------------------------------------------
