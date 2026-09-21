@@ -565,7 +565,10 @@ export default function DriftPage() {
       <button type="button" className={styles.secondaryBtn} onClick={openReport} disabled={reportBusy}>
         {reportBusy ? 'Opening the report' : 'Drift report'}
       </button>
-      <span className={styles.reportHint}>One page of this comparison. It is attached to the incident when you send.</span>
+      <span className={styles.reportHint}>
+        One page of this comparison.
+        {!sent ? ' It is attached to the incident when you send.' : incident?.number ? ' It is attached to the incident.' : ''}
+      </span>
     </div>
   ) : null;
   // The same check, in RackTrack Approvals. Offered only once it has been sent.

@@ -238,6 +238,8 @@ describe('<DriftPage> choosing and following', () => {
     const reports = screen.getAllByRole('button', { name: 'Drift report' });
     expect(reports).toHaveLength(1);
     expect(sentBlock().nextElementSibling.contains(reports[0])).toBe(true);
+    // it has been sent, so the line beside it no longer says "when you send"
+    expect(sentBlock().nextElementSibling.textContent).toBe('Drift reportOne page of this comparison. It is attached to the incident.');
   });
 
   test('right after Send the line starts where the check landed, without waiting to be told again', async () => {
