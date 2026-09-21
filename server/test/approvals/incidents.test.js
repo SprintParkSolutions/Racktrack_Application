@@ -685,6 +685,33 @@ describe('an admin gives the check to somebody else', () => {
   });
 });
 
+describe('a check from before, that had an incident per item', () => {
+  it('keeps each old number beside the new one, and tells the old incident where the work went', async () => {
+    spoc._setLookup(() => null);
+    const id = draft();
+    await service.submitAndDispatch(id, { actor: TECH });
+    assert.equal(store.getPlan(id).status, 'triage', 'nobody to give it to: it waits for an admin');
+    assert.equal(incidentOf(id), null, 'and no incident is raised for nobody');
+    // As the old flow left it: a ticket with an incident of its own.
+    sn.rows.set('old-1', { sys_id: 'old-1', number: 'INC0009001', state: '2', correlation_id: 'racktrack:RK:x' });
+    store.putTicket(id, DEV, { assignee: 'meera', status: 'open', external: { system: 'servicenow',
+      number: 'INC0009001', sysId: 'old-1', url: 'https://acme.service-now.com/x', state: 'in progress' } });
+
+    const out = await service.assign(id, { userId: SPOC.id }, { actor: ADMIN });
+    assert.equal(out.plan.status, 'assigned');
+    assert.equal(out.incident.number, 'INC0010041', 'giving it to somebody is where its incident starts');
+    const t = store.getTicket(id, DEV);
+    assert.equal(t.external.number, 'INC0010041');
+    assert.deepEqual(t.external.previous, { number: 'INC0009001', sysId: 'old-1',
+      url: 'https://acme.service-now.com/x', state: 'in progress' });
+
+    service.reject(id, { reasonCode: 'other', comment: 'No.', actor: SPOC });
+    await incidents.pushOutcome(id);
+    assert.equal(sn.rows.get('old-1').work_notes, 'Continued under INC0010041.');
+    assert.equal(sn.rows.get('old-1').state, '2', 'its state is left to whoever works it');
+  });
+});
+
 describe('with no ServiceNow', () => {
   it('the whole flow works inside RackTrack, and nothing is called', async () => {
     incidents._setDeps({ serviceNowFor: () => null, fetchImpl: sn.fetch });

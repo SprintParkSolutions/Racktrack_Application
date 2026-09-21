@@ -143,12 +143,14 @@ function stamp(planId, patch = {}) {
     if (JSON.stringify(next) !== JSON.stringify(was)) store.updatePlan(plan.id, { incident: next });
     const pointer = pointerOf(next);
     for (const t of store.ticketsOf(plan.id)) {
-      const ext = t.external;
+      // A ticket made afresh for a new holder starts with no pointer at all;
+      // what the one before it carried is in its history.
+      const ext = t.external || ((t.history || []).slice(-1)[0] || {}).external || null;
       const own = ext && ext.sysId && !ext.planLevel && ext.sysId !== pointer.sysId
         ? { number: ext.number ?? null, sysId: ext.sysId, url: ext.url ?? null, state: ext.state ?? null }
         : (ext && ext.previous) || null;
       const external = own ? { ...pointer, previous: own } : pointer;
-      if (JSON.stringify(external) === JSON.stringify(ext)) continue;
+      if (JSON.stringify(external) === JSON.stringify(t.external)) continue;
       store.updateTicket(plan.id, t.itemUid, { external }, { touch: false });
     }
     return next;
