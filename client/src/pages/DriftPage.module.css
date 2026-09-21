@@ -37,7 +37,7 @@
      left a blank band the height of the status bar above the title. */
   padding: 10px var(--gutter) 0;
 }
-.back { flex: none; width: 36px; height: 36px; margin-left: -8px; display: grid; place-items: center;
+.back { flex: none; width: 44px; height: 44px; margin-left: -12px; display: grid; place-items: center;
         border: none; background: none; color: inherit; cursor: pointer; }
 .title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
 
@@ -47,7 +47,7 @@
 
 /* Which rack this is, under the title: the rack's own name in the mono face the
    app uses for ids, and one sentence on how the app knows. */
-.rack { display: grid; gap: 2px; padding: 4px var(--gutter) 12px; }
+.rack { display: grid; gap: 2px; padding: 4px var(--gutter) 2px; }
 .rackName { font-family: var(--mono, ui-monospace, Menlo, monospace); font-size: 14px; font-weight: 600;
             color: var(--text, #1c1c1c); overflow-wrap: anywhere; }
 .rackUnknown { font-size: 14px; font-weight: 600; color: var(--text, #1c1c1c); }
@@ -62,7 +62,7 @@
              text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
 .pickRow { display: flex; flex-wrap: wrap; gap: 8px; }
 .pickBtn {
-  flex: 1 1 auto; min-height: 40px; padding: 0 14px; border: 1px solid var(--accent);
+  flex: 1 1 auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--accent);
   border-radius: 6px; background: var(--bg, #fff); color: var(--accent);
   font-size: 14.5px; font-weight: 600; font-family: inherit; cursor: pointer;
 }
@@ -92,8 +92,11 @@
 
 /* Read more: the working, for whoever wants it. Closed by default, so the
    screen says one thing per line until somebody asks for the rest. */
-.more { margin-top: 6px; }
-.more > summary { display: inline-block; list-style: none; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); padding: 2px 0; }
+.more { margin-top: 0; }
+/* A thumb has to find this, so the line it sits on is 44px tall whatever the
+   type does. */
+.more > summary { display: inline-flex; align-items: center; min-height: 44px; list-style: none;
+                  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
 .more > summary::-webkit-details-marker { display: none; }
 /* A small chevron drawn from two borders; it turns over when the section opens. */
 .more > summary::after {
@@ -136,15 +139,17 @@
 /* Before sending: who this drift check will go to - the SPOC of the site, or
    an admin and the reason why. */
 .send { padding-bottom: 16px; border-bottom: 1px solid var(--hair); }
-.goesTo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
-          padding: 14px var(--gutter) 4px; font-size: 14px; }
-.goesToLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); min-width: 60px; }
+/* One column, like the rack in the header and the label over the note: a
+   label, a name, and what else is known about the person. The name used to sit
+   beside the label with the address indented under nothing. */
+.goesTo { display: grid; gap: 2px; padding: 14px var(--gutter) 4px; font-size: 14px; }
+.goesToLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
 .goesToName { font-weight: 600; }
-.goesToRole { color: var(--muted-1); }
-.goesToMail { flex: 1 1 100%; margin-left: 68px; font-size: 13px; color: var(--muted-1);
-              font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+.goesToRole { font-size: 13.5px; color: var(--muted-1); }
+.goesToMail { font-size: 13px; color: var(--muted-1);
+              font-family: var(--mono, ui-monospace, Menlo, monospace); word-break: break-all; }
 .goesToNote { display: none; }
-.goesToWhy { flex: 1 1 100%; margin-left: 68px; font-size: 13px; line-height: 1.45; color: var(--muted-1); }
+.goesToWhy { font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
 
 .footer { padding: 14px var(--gutter) 0; }
 .label { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
@@ -178,11 +183,11 @@
 .needsSource { padding: 16px var(--gutter); border-bottom: 1px solid var(--hair); }
 .needsSource h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
 .needsSource p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
-.connect { margin-top: 12px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 6px;
+.connect { margin-top: 12px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 6px;
   background: #121212; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
 
 /* Choosing what to send. A plain tick box, the platform's own, at the size a thumb can hit. */
-.pickAll { display: flex; align-items: center; gap: 10px; padding: 10px var(--gutter); border-bottom: 1px solid var(--hair);
+.pickAll { display: flex; align-items: center; gap: 10px; padding: 12px var(--gutter); border-bottom: 1px solid var(--hair);
            font-size: 13.5px; color: var(--muted-1); cursor: pointer; }
 .pickAll input, .pickOne { width: 20px; height: 20px; flex: none; margin: 0; accent-color: #121212; cursor: pointer; }
 .pickOne { align-self: center; }
@@ -218,7 +223,7 @@
 .waiting .incident, .done .incident { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 4px;
             padding-top: 10px; border-top: 1px solid var(--hair); }
 .incidentNumber { font-size: 14px; font-weight: 600; color: var(--text, #1c1c1c); }
-.incidentOpen { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid #121212;
+.incidentOpen { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid #121212;
                 border-radius: 6px; font-size: 13.5px; font-weight: 600; color: #121212; text-decoration: none; }
 .waiting .incidentNone, .done .incidentNone { margin: 10px 0 4px; padding-top: 10px; border-top: 1px solid var(--hair); color: var(--warn); }
 .tickets { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--hair); }
@@ -251,7 +256,7 @@
 
 /* The report: one quiet button and what it is for. */
 .reportRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px var(--gutter); }
-.secondaryBtn { min-height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid #121212; background: var(--bg, #fff);
+.secondaryBtn { min-height: 44px; padding: 0 16px; border-radius: 6px; border: 1px solid #121212; background: var(--bg, #fff);
                 color: #121212; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .secondaryBtn:disabled { opacity: .55; cursor: default; }
 .reportHint { flex: 1 1 160px; font-size: 12.5px; line-height: 1.4; color: var(--muted-1); }

@@ -36,7 +36,7 @@
 .whyNot { color: var(--warn, #87610a); }
 
 .fold {
-  display: inline-flex; align-items: center; margin-top: 4px; padding: 8px 0; border: 0; background: none;
+  display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; padding: 0; border: 0; background: none;
   font: inherit; font-size: 13px; font-weight: 600; color: var(--accent, #1f4e79); cursor: pointer;
 }
 .fold > .chevron { border-color: currentColor; width: 6px; height: 6px; }
