@@ -7052,6 +7052,11 @@ app.get('/api/scan/:rackId/drift-report', (req, res) => {
       const known = plan.tenantId != null ? estate.getRackByRackId(plan.tenantId, rackId) : null;
       const space = known && known.space_id != null ? estate.getSpace(known.space_id) : null;
       spaceName = space ? space.name : null;
+      // A check filed before the rack was identified still carries the hash of
+      // its photograph as a name. The rack is known now, so it is called by the
+      // id on its tape.
+      const named = known && (known.facility_id || known.name);
+      if (named && (!plan.rackName || /^RK-[0-9A-F]{6,}$/i.test(plan.rackName))) plan = { ...plan, rackName: named };
     } catch (_) { /* the report still stands without them */ }
 
     const html = require('./lib/netbox/drift_report').build(plan, { tickets, siteName, spaceName });
