@@ -5,8 +5,7 @@ import { BackIcon } from '../components/BackButton.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import ExportSheet from '../components/ExportSheet.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
-import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
+import ReportViewer from '../components/ReportViewer.jsx';
 import { downloadExport } from '../utils/exportApi';
 import { setCached } from '../utils/scanPrefetch';
 import { getJSON } from '../utils/safeStorage';
@@ -112,6 +111,12 @@ const noMake = (s) => !s || /^unknown$/i.test(s) || /^enterprise\s*\d+$/i.test(s
 const noModel = (s) => !s || /^unidentified\b/i.test(s);
 const said = (make, model) => [noMake(make) ? '' : make, noModel(model) ? '' : model].filter(Boolean).join(' ');
 const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || `${one}s`)}`;
+// "Patch Panel" reads as "patch panels" in a sentence. "PDU" does not become
+// "pdus", so a word that is all capitals is an abbreviation and is left alone.
+const kindWord = (k) => (/^[A-Z0-9]+$/.test(k) ? k : k.toLowerCase());
+// A rack nothing has identified is known only by the hash of its photograph,
+// which tells a person nothing at all.
+const UNNAMED_RACK = /^RK-[0-9A-F]{6,}$/i;
 
 /**
  * The camera names a placed device by its class and U ("Switch U12"). Next to
@@ -252,23 +257,31 @@ export default function ReportPage() {
   const [sharing, setSharing] = useState(null);   // null | 'teams' | 'outlook' | 'link'
   const [menu, setMenu] = useState(null);         // which of the three is open
 
+  // The printed report, read in the app. Both addresses carry a short-lived
+  // report token, because a frame and a download can neither of them carry a
+  // header: the page for reading, and the server-rendered PDF for the one
+  // thing the WebView cannot do for itself, which is save a file.
+  const [printed, setPrinted] = useState(null);   // { url, pdfUrl } | null
   /**
-   * The PDF the server already renders for this rack. It needs a short-lived
-   * report token in the URL because a download cannot carry a header; on the
-   * phone the WebView ignores downloads, so the URL goes to the system
-   * browser, which saves it.
+   * Open the printed report. It used to hand the PDF's address to the system
+   * browser, which threw the person out of the app onto one of our own pages;
+   * the report opens here now, and the PDF is one quiet link away inside it.
    */
-  const openPdf = async () => {
+  const openPrinted = async () => {
     setFileBusy('pdf'); setNote(null);
     try {
       const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/report-token`));
-      if (!r.ok) throw new Error('The server would not authorise the PDF.');
+      if (!r.ok) throw new Error('The server would not authorise the report.');
       const { token } = await r.json();
-      const url = apiUrl(`/api/scan/${encodeURIComponent(rackId)}/report?format=pdf&download=1&t=${encodeURIComponent(token)}`);
-      if (Capacitor.isNativePlatform()) await Browser.open({ url });
-      else window.open(url, '_blank', 'noopener');
+      const at = `/api/scan/${encodeURIComponent(rackId)}/report`;
+      const t = encodeURIComponent(token);
+      const abs = (u) => (/^https?:/.test(u) ? u : `${window.location.origin}${u}`);
+      setPrinted({
+        url: abs(apiUrl(`${at}?format=html&t=${t}`)),
+        pdfUrl: abs(apiUrl(`${at}?format=pdf&download=1&t=${t}`)),
+      });
     } catch (e) {
-      setNote({ tone: 'bad', text: e.message || 'The PDF could not be made.' });
+      setNote({ tone: 'bad', text: e.message || 'The report could not be opened.' });
     } finally {
       setFileBusy(null);
     }
@@ -327,6 +340,22 @@ export default function ReportPage() {
   const noReadings = Boolean(facts) && switchesRead === 0;
   const hasNetwork = Boolean(facts) && (cables.length > 0 || facts.heard.length > 0 || vlans.length > 0 || addresses.length > 0);
   const addrSwitch = addresses.filter((a) => a.kind === 'switch').length;
+  // The name, or plainly that there is not one yet. The hash of a photograph is
+  // not a name, and the drift report already says so in words.
+  const rackTitle = doc && doc.rackName && !UNNAMED_RACK.test(doc.rackName)
+    ? doc.rackName : 'Rack not identified yet';
+  // What is in the rack, counted by kind. "12 devices" hides the two patch
+  // panels and the power strip, and those are the rows a reader looks for and
+  // cannot find. The record's own word for a box comes first; where the record
+  // has none, the word the camera used.
+  const kinds = (() => {
+    const by = new Map();
+    for (const d of devices) {
+      const word = String(d.role || facts?.camByName.get(d.name)?.cvClass || 'Device').trim();
+      by.set(word, (by.get(word) || 0) + 1);
+    }
+    return [...by.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  })();
   // Rows whose values came off a switch rather than the camera. Which caveat
   // they carry depends on what is known about the match behind them.
   const fromSwitch = devices.some((d) => String(d.source || '').startsWith('switch'));
@@ -358,7 +387,7 @@ export default function ReportPage() {
           ['download', 'Download', <IconDownload key="i" />, [
             ['CSV', () => getFile('csv'), fileBusy === 'csv'],
             ['JSON', () => getFile('json'), fileBusy === 'json'],
-            ['PDF', openPdf, fileBusy === 'pdf'],
+            ['PDF', openPrinted, fileBusy === 'pdf'],
           ]],
           // Nobody writes to NetBox from this app. Whoever is holding the phone
           // checks whether the rack matches the record and hands the answer
@@ -426,7 +455,7 @@ export default function ReportPage() {
             {/* Which rack, when. The two facts a person checks first. */}
             <div className={styles.hero}>
               <span className={styles.heroMake}>{doc.siteName || 'Rack'}</span>
-              <span className={styles.heroModel}>{doc.rackName || rackId}</span>
+              <span className={styles.heroModel}>{rackTitle}</span>
               <span className={styles.heroSub}>
                 {doc.scannedAt ? `Scanned ${when(doc.scannedAt)}` : 'Scan time not recorded'}
                 {doc.changeNote ? ` · ${doc.changeNote}` : ''}
@@ -447,6 +476,10 @@ export default function ReportPage() {
               const cells = [
                 [s.devices || 0, 'devices'],
                 [switchesRead, `switch${switchesRead === 1 ? '' : 'es'} read`],
+                // In use counts a cable or a link; this counts the links the
+                // switches say are up, which is not the same number and was the
+                // one fact the summary held and never said.
+                [s.portsUp ?? facts.up ?? 0, 'links up'],
                 [s.seen || 0, 'plugged in'],
                 [s.cables || 0, 'cables'],
                 [s.vlans || 0, 'VLANs'],
@@ -505,6 +538,12 @@ export default function ReportPage() {
                 <h2>Rack</h2>
                 <span>{plural(devices.length, 'device')} · top down</span>
               </div>
+
+              {kinds.length > 1 && (
+                <p className={styles.subLine}>
+                  {kinds.map(([k, n]) => plural(n, kindWord(k))).join(' · ')}
+                </p>
+              )}
 
               {devices.length === 0 && (
                 <p className={styles.emptyLine}>The camera saw no devices in this rack.</p>
@@ -623,6 +662,7 @@ export default function ReportPage() {
                     <p className={styles.subLine}>
                       {addrSwitch} on switches · {addresses.length - addrSwitch} on things plugged into them
                     </p>
+                    <AddressList rows={addresses} />
                   </div>
                 )}
               </section>
@@ -637,6 +677,21 @@ export default function ReportPage() {
         <ExportSheet scanId={scanId} rackId={rackId} onClose={() => setExporting(false)} />
       )}
       {sharing && <ShareSheet rackId={rackId} initial={sharing} onClose={() => setSharing(null)} />}
+
+      {/* The printed report, over this page. Sending it is the app's own way of
+          handing it to somebody, so that button is here rather than a trip out. */}
+      {printed && (
+        <ReportViewer
+          title="Report"
+          url={printed.url}
+          browserUrl={printed.pdfUrl}
+          onClose={() => setPrinted(null)}
+        >
+          <button type="button" onClick={() => { setPrinted(null); setSharing('outlook'); }}>
+            Send it
+          </button>
+        </ReportViewer>
+      )}
     </div>
   );
 }
@@ -674,6 +729,13 @@ function DeviceRow({ d, cam, sw, tone = 'switch', rackName = '', open, onToggle 
   const identity = matched ? said(sw ? sw.vendor : d.vendor, sw ? sw.model : d.model)
     : (isRouter ? '' : said(camMake, camModel));
 
+  // What kind of box it is, in the record's own word, or the camera's where the
+  // record has none. Where the title is already that word - "Switch U12" is
+  // titled "Switch" - saying it again is noise, so it is said once.
+  const titleText = titleOf(d, rackName);
+  const kind = String(d.role || cam?.cvClass || '').trim();
+  const kindShown = kind && kind.toLowerCase() !== titleText.toLowerCase() ? kind : '';
+
   // How it is doing, as numbers with their names - a sentence of six facts
   // separated by dots wraps into a shape nobody can scan, and "1 of 28 ports
   // up" next to a button saying "16 ports in use" reads as a contradiction
@@ -687,13 +749,22 @@ function DeviceRow({ d, cam, sw, tone = 'switch', rackName = '', open, onToggle 
     [d.seen, 'devices'],
   ].filter(([n]) => n != null && n > 0);
 
-  // Who it is, for anyone who has to find it again.
+  // Who it is, for anyone who has to find it again. The report holds more about
+  // a box than the five facts this used to print: the kind of box, the name the
+  // switch answers to, where the switch says it is standing, and which of the
+  // two witnesses the row was read from. All of it is here, none of it invented.
   const ids = [
+    ['role', kindShown],
     ['at', d.mgmtIp],
+    ['known as', sw ? sw.sysName : null],
     ['serial', d.serial],
     ['hardware', d.hardware],
     ['firmware', d.firmware],
+    ['location', d.location],
     ['up', d.uptimeSeconds ? uptimeText(d.uptimeSeconds).replace(/^up /, '') : null],
+    // Which witness this row was read from, said plainly on every row rather
+    // than only on the ones a switch was matched to.
+    ['read from', matched ? 'the switch and the photograph' : 'the photograph'],
   ].filter(([, v]) => v);
 
   // The witness that knows most goes first. A matched device is the switch
@@ -712,7 +783,7 @@ function DeviceRow({ d, cam, sw, tone = 'switch', rackName = '', open, onToggle 
             all of that is still here, one tap away. */}
         <button type="button" className={styles.rowHead} aria-expanded={open} onClick={onToggle}>
           <span className={styles.rowTop}>
-            <b className={styles.rowTitle}>{titleOf(d, rackName)}</b>
+            <b className={styles.rowTitle}>{titleText}</b>
             {/* One phrase for every matched device, and the colour carries the
                 rest: green where a person confirmed the match, orange where
                 nobody has yet. The owner did not want it spelled out each time. */}
@@ -725,7 +796,11 @@ function DeviceRow({ d, cam, sw, tone = 'switch', rackName = '', open, onToggle 
             )}
           </span>
           <span className={styles.rowSub}>
-            {identity ? <span className={styles.said}>{identity}</span> : null}
+            {/* A switch says its make and model; a patch panel has neither, and
+                used to show a bare title with nothing under it. It says what
+                kind of box it is instead - one line either way, no clutter. */}
+            {identity ? <span className={styles.said}>{identity}</span>
+              : kindShown ? <span className={styles.said}>{kindShown}</span> : null}
             {(d.portCount || camPorts) ? (
               <span className={styles.rowBusy}>{inUse} of {d.portCount || camPorts} ports in use</span>
             ) : null}
@@ -775,6 +850,42 @@ function DeviceRow({ d, cam, sw, tone = 'switch', rackName = '', open, onToggle 
   );
 }
 
+/**
+ * The addresses, one line each.
+ *
+ * The report has carried every address the switches know for a long time and
+ * the page printed two numbers from it. A reader who wants to find a thing in
+ * the rack wants the addresses themselves: the switches' own first, because
+ * those are the ones somebody signs in to, then everything they have heard.
+ * Long lists fold, the same way a device's ports do.
+ */
+function AddressList({ rows }) {
+  const [showAll, setShowAll] = useState(false);
+  const ordered = [...rows].sort((a, b) => (a.kind === 'switch' ? 0 : 1) - (b.kind === 'switch' ? 0 : 1));
+  const shown = showAll ? ordered : ordered.slice(0, 8);
+  return (
+    <>
+      <ul className={styles.links}>
+        {shown.map((a, i) => (
+          <li key={`${a.ip}-${a.on}-${i}`}>
+            <span className={styles.end}><b>{a.ip}</b></span>
+            <span className={styles.arrow} aria-hidden="true">→</span>
+            <span className={styles.end}>{a.on}{a.mac ? ` · ${a.mac}` : ''}</span>
+            <span className={styles.proof}>{a.kind === 'switch' ? 'the switch itself' : 'heard on it'}</span>
+          </li>
+        ))}
+      </ul>
+      {ordered.length > shown.length || showAll ? (
+        <div className={styles.moreRow}>
+          <button type="button" className={styles.more} onClick={() => setShowAll((v) => !v)}>
+            {showAll ? 'Show fewer' : `View all ${ordered.length} addresses`}
+          </button>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 /** The ports in use, one line each: the switch's view and the camera's, side by side. */
 function PortList({ ports, total, all = false }) {
   return (
@@ -782,6 +893,14 @@ function PortList({ ports, total, all = false }) {
       {ports.map((p, i) => {
         const cable = cableText(p);
         const hosts = p.hosts || [];
+        // Every address the switch heard on this port, not only the first of
+        // them: "2 hosts · 10.0.0.5" left the second one unnamed on the page
+        // that is supposed to be the whole record of the rack.
+        const ips = hosts.map((h) => h.ip).filter(Boolean);
+        // A thing the switch has heard but nobody has an address for is known by
+        // its hardware address and nothing else. That is still who is on the
+        // port, so it is said rather than counted and dropped.
+        const macs = ips.length ? [] : hosts.map((h) => h.mac).filter(Boolean);
         return (
           <div key={`${p.name}-${i}`} className={styles.port}>
             <span className={styles.portName}>{p.name}</span>
@@ -790,13 +909,20 @@ function PortList({ ports, total, all = false }) {
                 <span className={p.state === 'up' ? styles.up : styles.down}>{p.state}</span>
               )}
               {p.state === 'up' && p.speedMbps ? <span>{speedText(p.speedMbps)}</span> : null}
+              {p.state === 'up' && p.duplex ? <span>{String(p.duplex).toLowerCase()} duplex</span> : null}
               {p.vlan != null && <span>VLAN {p.vlan}</span>}
               {p.neighbour && (
                 <span>→ {p.neighbour.device}{p.neighbour.port ? ` ${p.neighbour.port}` : ''}</span>
               )}
               {cable && <span>{cable}</span>}
               {hosts.length > 0 && (
-                <span>{plural(hosts.length, 'host')}{hosts[0].ip ? ` · ${hosts[0].ip}` : ''}</span>
+                <span>
+                  {plural(hosts.length, 'host')}
+                  {ips.length ? ` · ${ips.slice(0, 4).join(', ')}` : ''}
+                  {ips.length > 4 ? ` and ${ips.length - 4} more` : ''}
+                  {macs.length ? ` · ${macs.slice(0, 2).join(', ')}` : ''}
+                  {macs.length > 2 ? ` and ${macs.length - 2} more` : ''}
+                </span>
               )}
             </span>
           </div>

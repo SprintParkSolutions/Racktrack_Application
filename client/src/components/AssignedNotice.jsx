@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { apiUrl, authFetch } from '../utils/api';
-import { openApprovals, openDriftReport } from '../utils/approvals';
+import { openApprovals, driftReportUrl } from '../utils/approvals';
+import ReportViewer from './ReportViewer.jsx';
 import styles from './AssignedNotice.module.css';
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -118,6 +119,10 @@ export default function AssignedNotice() {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState('');
+  // The drift report, shown over this card.
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportUrl, setReportUrl] = useState(null);
+  const [reportError, setReportError] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -172,9 +177,15 @@ export default function AssignedNotice() {
     // The SPOC reads the drift report beside the check, so it opens on it.
     await openApprovals(`/approvals/drifts/${encodeURIComponent(planId)}${kind === 'assigned' ? '?view=report' : ''}`);
   };
+  // The drift report, read in the app rather than handed to the system browser:
+  // it is RackTrack's own page and there is no reason to leave RackTrack for it.
   const openReport = async () => {
     setFailed('');
-    try { await openDriftReport(rackId, planId); } catch { setFailed('The drift report could not be opened.'); }
+    setReportUrl(null);
+    setReportError('');
+    setReportOpen(true);
+    try { setReportUrl(await driftReportUrl(rackId, planId)); }
+    catch { setReportError('The drift report could not be opened.'); }
   };
   const openIncident = (e) => {
     if (!Capacitor.isNativePlatform()) return;          // the anchor opens a tab on the web
@@ -226,6 +237,15 @@ export default function AssignedNotice() {
         )}
         <button type="button" className={styles.quiet} onClick={markRead} disabled={busy}>Dismiss</button>
       </div>
+
+      {reportOpen && (
+        <ReportViewer
+          title="Drift report"
+          url={reportUrl}
+          error={reportError}
+          onClose={() => setReportOpen(false)}
+        />
+      )}
     </section>
   );
 }

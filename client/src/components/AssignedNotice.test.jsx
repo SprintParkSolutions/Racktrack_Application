@@ -1,5 +1,5 @@
 import { describe, test, expect, afterEach, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 /* The notice a person sees where the app opens: what happened, and a button for
@@ -17,11 +17,20 @@ vi.mock('../utils/api', () => ({
 }));
 vi.mock('../utils/approvals', () => ({
   openApprovals: vi.fn(async (path) => { opened.push(path); }),
-  openDriftReport: vi.fn(async (rackId, planId) => { reports.push([rackId, planId]); }),
+  driftReportUrl: vi.fn(async (rackId, planId) => {
+    reports.push([rackId, planId]);
+    return `/api/scan/${rackId}/drift-report?plan=${planId}&t=tok`;
+  }),
+  // ExternalLink, which the report's own way out is made of.
+  openExternalClick: vi.fn(),
 }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { isNativePlatform: () => false },
+  registerPlugin: () => ({ open: async () => {} }),
+}));
 vi.mock('@capacitor/browser', () => ({ Browser: { open: vi.fn(async () => {}) } }));
 
+import { Browser } from '@capacitor/browser';
 import AssignedNotice, { splitBody } from './AssignedNotice.jsx';
 
 const BODY = [
@@ -115,6 +124,15 @@ describe('<AssignedNotice>', () => {
     expect(screen.getByRole('link', { name: 'Open in ServiceNow' }).getAttribute('href')).toBe(DATA.incidentUrl);
     fireEvent.click(screen.getByRole('button', { name: 'Drift report' }));
     await waitFor(() => expect(reports).toEqual([['RK-5B81BE87', 140]]));
+    // It is read here, on the app's own screen. Nothing is handed to a browser.
+    const frame = await screen.findByTitle('Drift report');
+    expect(frame.tagName).toBe('IFRAME');
+    expect(frame.getAttribute('src')).toBe('/api/scan/RK-5B81BE87/drift-report?plan=140&t=tok');
+    expect(frame.getAttribute('sandbox')).toBe('allow-same-origin');
+    expect(Browser.open).not.toHaveBeenCalled();
+    // and the arrow in its header gives the card back
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Drift report' })).getByRole('button', { name: 'Back' }));
+    expect(screen.queryByTitle('Drift report')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Open the check' }));
     await waitFor(() => expect(opened).toEqual(['/approvals/drifts/140?view=report']));
     // nothing internal and no address reaches the banner

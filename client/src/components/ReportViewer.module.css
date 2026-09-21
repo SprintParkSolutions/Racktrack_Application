@@ -1,0 +1,75 @@
+/* A RackTrack report, read inside the app - see ReportViewer.jsx.
+
+   The app's own look and nothing new: white ground, the header shape every
+   page uses, one black button face for anything the screen can still do with
+   the report, and the report itself given all the room that is left. */
+
+.scrim {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: stretch; justify-content: center;
+  background: var(--bg, #fff);
+  /* The viewer is portalled to the body, so it is outside the element that
+     keeps the notch clear and has to keep it clear itself. */
+  padding: env(safe-area-inset-top, 0px) 0 0;
+}
+
+.viewer {
+  display: flex; flex-direction: column;
+  width: 100%; min-width: 0; height: 100%;
+  background: var(--bg, #fff); color: var(--text, #1c1c1c);
+  --gutter: 16px;
+  --hair: var(--border, #e3e6ea);
+  --muted-1: #5c646d;
+  --bad: #94302a;
+}
+
+/* The header shape the pages already use: the arrow, then the name. */
+.head {
+  display: flex; align-items: center; gap: 10px;
+  flex: none;
+  padding: 10px var(--gutter);
+  border-bottom: 1px solid var(--hair);
+}
+.back {
+  flex: none; width: 36px; height: 36px; margin-left: -8px;
+  display: grid; place-items: center;
+  border: none; background: none; color: inherit; cursor: pointer;
+}
+.title {
+  margin: 0; min-width: 0;
+  font-size: 18px; font-weight: 700; letter-spacing: -0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.busy { margin: 14px var(--gutter); font-size: 14px; color: var(--muted-1); }
+.error { margin: 14px var(--gutter); font-size: 14px; color: var(--bad); }
+
+/* White, not transparent: the report is a light document, and a frame that
+   starts see-through flashes whatever is behind it before the page paints. */
+.frame { flex: 1 1 auto; min-height: 0; width: 100%; border: 0; background: #fff; }
+
+/* What can still be done with the report, and the way out to the browser.
+   The bar is part of the viewer, above the home indicator and above the app's
+   bottom bar, which the viewer covers entirely. */
+.foot {
+  flex: none;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--hair);
+}
+/* Whatever the calling screen puts in the bar wears the app's own button face,
+   so the bar reads the same wherever the report was opened from and no screen
+   has to dress its own. Black ground, 6px, the same as every primary button. */
+.foot button {
+  min-height: 40px; padding: 0 16px; border: none; border-radius: 6px;
+  background: #121212; color: #fff;
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.foot button:disabled { background: #c9ced4; cursor: default; }
+
+/* The last resort, and dressed as one: a plain link, not a button. */
+.browser {
+  margin-left: auto;
+  font-size: 13px; color: var(--muted-1);
+  text-decoration: underline; text-underline-offset: 3px;
+}

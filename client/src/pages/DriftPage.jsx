@@ -5,7 +5,8 @@ import { apiUrl, authFetch } from '../utils/api';
 import { useSmartBack } from '../hooks/useSmartBack';
 import ExternalLink from '../components/ExternalLink.jsx';
 import PortsCheck from '../components/PortsCheck.jsx';
-import { driftCheckUrl, openDriftReport } from '../utils/approvals.js';
+import ReportViewer from '../components/ReportViewer.jsx';
+import { driftCheckUrl, driftReportUrl } from '../utils/approvals.js';
 import styles from './DriftPage.module.css';
 
 /**
@@ -296,14 +297,23 @@ export default function DriftPage() {
 
   // The drift report: one printable page of this comparison. The server
   // attaches the same page to the incident when the check is sent.
+  //
+  // It is read here, in the app. It used to be handed to the system browser,
+  // which took the person out of RackTrack to read RackTrack's own page.
   const [reportBusy, setReportBusy] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportUrl, setReportUrl] = useState(null);
+  const [reportError, setReportError] = useState('');
   const openReport = async () => {
     if (!plan?.id) return;
     setReportBusy(true);
+    setReportUrl(null);
+    setReportError('');
+    setReportOpen(true);
     try {
-      await openDriftReport(rackId, plan.id);
+      setReportUrl(await driftReportUrl(rackId, plan.id));
     } catch (e) {
-      setError(e.message || 'The drift report could not be opened');
+      setReportError(e.message || 'The drift report could not be opened.');
     } finally {
       setReportBusy(false);
     }
@@ -937,6 +947,15 @@ export default function DriftPage() {
                 : `Raise incident for ${picked.length} of ${changed.length}`}
           </button>
         </div>
+      )}
+
+      {reportOpen && (
+        <ReportViewer
+          title="Drift report"
+          url={reportUrl}
+          error={reportError}
+          onClose={() => setReportOpen(false)}
+        />
       )}
     </div>
   );

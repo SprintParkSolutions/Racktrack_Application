@@ -7,6 +7,7 @@ import { getItem, getJSON, setItem, setJSON } from '../utils/safeStorage';
 import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import BackButton from '../components/BackButton.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
+import ReportViewer from '../components/ReportViewer.jsx';
 import { getRackFlow, setRackFlow } from '../utils/rackFlow';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import RackTabs from '../components/RackTabs.jsx';
@@ -20,7 +21,6 @@ import AssetImg from '../components/AssetImg';
 import { useSmartBack } from '../hooks/useSmartBack';
 import { useTour } from '../TourContext.jsx';
 import { useAuth } from '../AuthContext';
-import { Browser } from '@capacitor/browser';
 
 // ── Naming convention ─────────────────────────────────────────
 const CLASS_CODE = {
@@ -1351,6 +1351,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // reads the state as it is now and never an old copy.
   useEffect(() => {
     const onBack = (e) => {
+      // The report is over everything: it closes itself (ReportViewer listens
+      // too), and nothing under it may step back in the same press.
+      if (reportOpen) return;
       if (phase === 'port') { e.preventDefault(); leavePortView(); return; }
       // A tab of the port flow (Switches, Topology, Timeline) steps back to its
       // Result first; Back on Result is what leaves the flow. The other way
@@ -1457,12 +1460,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     try { setItem('rt_devOpen', devOpen ? '1' : '0'); } catch { /* ignore */ }
   }, [devOpen]);
   const [reportOpen, setReportOpen] = useState(false);
-  // When true, the in-app report iframe loads with the #download hash, which
-  // makes the report auto-trigger window.print() (Save-as-PDF) INSIDE the
-  // WebView. (The reason given here used to be ngrok's browser-warning
-  // interstitial; the backend is on the Hostinger VPS now, so that no longer
-  // applies - keeping it in-WebView is simply the shorter path for a preview.)
-  const [reportDownload, setReportDownload] = useState(false);
   // The report <iframe src> can't send an Authorization header, which is why
   // /api/scan/:rackId/report used to be public - and therefore served any
   // tenant's rack to anyone with an id. It now needs a short-lived token scoped
@@ -2919,7 +2916,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // Which part of the report to land on. The tour sends the user here right
   // after Find Port, and testers reported arriving at the top with no idea the
   // port detail was further down. When a port has been located, go to it.
-  const reportHash = reportDownload ? '#download' : (portInfo ? '#ports' : '');
+  const reportHash = portInfo ? '#ports' : '';
 
   // `download` asks the server for Content-Disposition: attachment. Without it
   // the PDF is served inline, so a browser renders it instead of saving it -
@@ -2940,47 +2937,25 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       setReportTokenErr(err.message || 'could not authorise report');
     }
   };
-  const viewReport = () => { setReportDownload(false); setReportOpen(true); fetchReportToken(); };
-  // Same in-app modal as View, but with the auto-print hash - keeps the whole
-  // download flow inside the app (no external browser, no ngrok URL shown).
-  const openReportForDownload = () => { setReportDownload(true); setReportOpen(true); fetchReportToken(); };
-  const downloadReport = async (format) => {
-    try {
-      const url = reportUrl(format, true);
-
-      // Inside the packaged app the WebView ignores both blob: URLs and the
-      // <a download> attribute, so the tap did nothing at all and there was no
-      // error to show - the report simply never arrived. Hand the URL to the
-      // system instead, which downloads it properly. The URL already carries
-      // the short-lived report token, so it works without an auth header.
-      const isNative = typeof window !== 'undefined'
-        && (window.Capacitor?.isNativePlatform?.() || !!window.Capacitor?.isNative);
-      if (isNative) {
-        // `window.open(url, '_system')` is a Cordova convention. Capacitor has
-        // no handler for that target, so the tap did nothing at all in the
-        // packaged app - testers reported the Download button as dead. The
-        // Capacitor equivalent is Browser.open, which this app already uses for
-        // OAuth in SocialSignIn.jsx; it hands the URL to a Custom Tab / Safari
-        // view that honours the attachment header and saves the file.
-        await Browser.open({ url });
-        return;
-      }
-
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Report request failed (${res.status})`);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `${scanId}_report.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch (err) {
-      setError(`Download failed: ${err.message}`);
-    }
-  };
+  const viewReport = () => { setReportOpen(true); fetchReportToken(); };
+  // The scan report, read in the app: the app's own header with a back arrow,
+  // and the report under it. The page has two shapes and both show the report,
+  // so it is built once here rather than written out twice.
+  //
+  // The address the frame is given is absolute, because in the packaged app the
+  // page itself is served from the device and a relative address would look for
+  // the report there. Saving it as a file is the one thing the WebView cannot
+  // do for itself, so the PDF is what the quiet link at the bottom hands over.
+  const abs = (u) => (/^https?:/.test(u) ? u : `${window.location.origin}${u}`);
+  const reportViewer = (
+    <ReportViewer
+      title="Scan report"
+      url={reportTokenErr || !reportToken ? null : abs(reportUrl('html') + reportHash)}
+      browserUrl={reportTokenErr || !reportToken ? null : abs(reportUrl('pdf', true))}
+      error={reportTokenErr ? `The report could not be opened. ${reportTokenErr}` : null}
+      onClose={() => setReportOpen(false)}
+    />
+  );
 
   const resetFeedback = () => {
     setFeedbackStatus('idle');
@@ -4423,26 +4398,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           );
         })()}
 
-        {reportOpen && (
-          <div className={styles.reportModalBackdrop}>
-            <div className={styles.reportModal}>
-              <div className={styles.reportModalHeader}>
-                <span className={styles.reportModalTitle}>Scan Report · {scanId}</span>
-                <button className={styles.reportModalClose} onClick={() => setReportOpen(false)} aria-label="Close">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  Close
-                </button>
-              </div>
-              {reportTokenErr ? (
-                <div className={styles.errBox} style={{ margin: 20 }}>Could not open report: {reportTokenErr}</div>
-              ) : !reportToken ? (
-                <div className={styles.portLoadingRow} style={{ padding: 20 }}>Preparing report…</div>
-              ) : (
-                <iframe className={styles.reportModalFrame} src={reportUrl('html') + reportHash} title="Scan report" />
-              )}
-            </div>
-          </div>
-        )}
+        {reportOpen && reportViewer}
 
         {credsOpen && (
           <CredsModal
@@ -5403,26 +5359,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         </div>
       )}
 
-      {reportOpen && (
-        <div className={styles.reportModalBackdrop}>
-          <div className={styles.reportModal}>
-            <div className={styles.reportModalHeader}>
-              <span className={styles.reportModalTitle}>Scan Report · {scanId}</span>
-              <button className={styles.reportModalClose} onClick={() => setReportOpen(false)} aria-label="Close">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                Close
-              </button>
-            </div>
-            {reportTokenErr ? (
-                <div className={styles.errBox} style={{ margin: 20 }}>Could not open report: {reportTokenErr}</div>
-              ) : !reportToken ? (
-                <div className={styles.portLoadingRow} style={{ padding: 20 }}>Preparing report…</div>
-              ) : (
-                <iframe className={styles.reportModalFrame} src={reportUrl('html') + reportHash} title="Scan report" />
-              )}
-          </div>
-        </div>
-      )}
+      {reportOpen && reportViewer}
 
       {devOpen && (
         <div className={styles.diagPanel}>

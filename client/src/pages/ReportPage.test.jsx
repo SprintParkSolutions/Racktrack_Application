@@ -6,7 +6,7 @@
  * the machine and by nobody else, the row says so.
  */
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 const { reply } = vi.hoisted(() => ({ reply: { view: null, doc: null } }));
@@ -23,7 +23,12 @@ vi.mock('../utils/api', () => ({
   },
 }));
 vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: { role: 'owner' } }) }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
+// The report is read inside the app now, and the viewer that shows it reaches
+// ExternalLink for its one way out - which registers the app's own web view.
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { isNativePlatform: () => false },
+  registerPlugin: () => ({ open: async () => {} }),
+}));
 vi.mock('@capacitor/browser', () => ({ Browser: { open: async () => {} } }));
 vi.mock('../utils/exportApi', () => ({
   downloadExport: async () => ({ tone: 'ok', text: 'done' }),
@@ -107,6 +112,67 @@ describe('ReportPage', () => {
     draw();
     await screen.findByText(/Nothing the switches said is in this report yet/);
     expect(screen.getByRole('link', { name: 'Open Review' })).toBeTruthy();
+  });
+
+  test('the page says everything the report holds, not a chosen five facts of it', async () => {
+    reply.doc = {
+      rackName: 'SP-HYB-RM01-R01-R1',
+      siteName: 'Office-Sprintpark',
+      summary: { devices: 2, switchesRead: 1, ports: 48, portsInUse: 1, portsUp: 1, addresses: 2 },
+      devices: [
+        {
+          name: 'Switch', u: 12, role: 'Access switch', source: 'switch + camera',
+          vendor: 'Cisco', model: 'C2960X', serial: 'FOC1', mgmtIp: '10.0.0.1',
+          hardware: 'V03', firmware: '15.2(7)', location: 'Room 3, rack 26',
+          portCount: 24, portsUp: 1, seen: 2,
+          ports: [{
+            name: 'Gi1/0/1', inUse: true, state: 'up', speedMbps: 1000, duplex: 'Full', vlan: 10,
+            hosts: [{ mac: 'aa:bb:cc:dd:ee:01', ip: '10.0.0.5' }, { mac: 'aa:bb:cc:dd:ee:02', ip: '10.0.0.9' }],
+          }],
+        },
+        { name: 'PP-01', u: 5, role: 'Patch panel', source: 'camera', portCount: 24, ports: [] },
+      ],
+      cables: [], vlans: [],
+      addresses: [
+        { ip: '10.0.0.1', on: 'Core A', kind: 'switch' },
+        { ip: '10.0.0.5', mac: 'aa:bb:cc:dd:ee:01', on: 'Core A', kind: 'host' },
+      ],
+    };
+    reply.view = view({ sysName: 'core-a.dc007' });
+    draw();
+
+    // the rack is named, and what is in it is counted by kind - the patch panel
+    // is not swallowed by "2 devices"
+    await screen.findByText('SP-HYB-RM01-R01-R1');
+    expect(screen.getByText('1 access switch · 1 patch panel')).toBeTruthy();
+    // the links the switches say are up: a number the summary held and never said
+    expect(screen.getByText('links up')).toBeTruthy();
+    // a box with no make or model of its own still says what it is
+    expect(screen.getByText('Patch panel')).toBeTruthy();
+
+    // open the switch: every named fact the report carries about it
+    fireEvent.click(screen.getByText('Cisco C2960X'));
+    expect(screen.getByText('Access switch')).toBeTruthy();
+    expect(screen.getByText('core-a.dc007')).toBeTruthy();
+    expect(screen.getByText('Room 3, rack 26')).toBeTruthy();
+    expect(screen.getByText('15.2(7)')).toBeTruthy();
+    expect(screen.getByText('the switch and the photograph')).toBeTruthy();
+    // the port line carries the duplex and every address heard on it
+    expect(screen.getByText('full duplex')).toBeTruthy();
+    expect(screen.getByText('2 hosts · 10.0.0.5, 10.0.0.9')).toBeTruthy();
+
+    // the addresses themselves, not two counts of them
+    expect(screen.getByText('the switch itself')).toBeTruthy();
+    expect(screen.getByText('heard on it')).toBeTruthy();
+    expect(screen.getByText('Core A')).toBeTruthy();
+    expect(screen.getByText('Core A · aa:bb:cc:dd:ee:01')).toBeTruthy();
+  });
+
+  test('a rack nothing has identified is said in words, never as the hash of its photograph', async () => {
+    reply.doc = { ...doc(), rackName: 'RK-5B81BE87' };
+    draw();
+    await screen.findByText('Rack not identified yet');
+    expect(document.body.textContent).not.toMatch(/RK-5B81BE87/);
   });
 
   test('a report with no matching at all cannot show a match as confirmed', async () => {
