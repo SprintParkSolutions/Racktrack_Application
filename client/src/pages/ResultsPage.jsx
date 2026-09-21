@@ -4707,7 +4707,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <h2 className={styles.headerTitle}>
             {rackSaid ? rackSaid.name : (rackId || scanId)}
           </h2>
-          {(rackSaid || takenAt) && (
+          {/* The site and the coordinates belong to the scan itself. On the
+              Timeline, Topology and Switches they were three more lines above
+              a screen that is not about where the photo was taken. */}
+          {tab === 'overview' && (rackSaid || takenAt) && (
             <div className={styles.headerWhere}>
               {rackSaid && rackSaid.also && <span>{rackSaid.also}</span>}
               {/* The site, and no more. How many metres the phone stood from
@@ -4719,7 +4722,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               )}
             </div>
           )}
-          {takenAt && takenAt.at && Number.isFinite(takenAt.at.lat) && (
+          {tab === 'overview' && takenAt && takenAt.at && Number.isFinite(takenAt.at.lat) && (
             <div className={styles.headerCoords}>
               {takenAt.at.lat.toFixed(5)}, {takenAt.at.lng.toFixed(5)}
               {Number.isFinite(takenAt.at.accuracyM) ? ` ±${takenAt.at.accuracyM} m` : ''}
@@ -5373,16 +5376,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
       {/* ── Tab: Drift (continuous SSH telemetry from monitored switches) ── */}
       {tab === 'drift' && (
-        <div className={styles.tabContent} style={{ minHeight: '60vh', padding: '20px 24px' }}>
-          <h2 style={{
-            margin: '0 0 12px',
-            fontSize: '1.4rem',
-            fontWeight: 800,
-            letterSpacing: '-0.01em',
-            color: 'var(--t1, #1c1c1c)',
-          }}>
-            Port history and switches
-          </h2>
+        <div className={styles.tabContent} style={{ minHeight: '60vh', padding: '16px' }}>
+          <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.5, color: 'var(--muted, #5c646d)' }}>
+            What changed on this rack's switch ports, reading by reading.
+          </p>
           <PortHistoryContent rackId={urlRackId || rackId || scanId} />
         </div>
       )}

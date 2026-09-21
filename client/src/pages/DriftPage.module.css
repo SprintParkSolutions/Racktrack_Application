@@ -11,7 +11,11 @@
      home-indicator inset that #root already keeps clear. Without room reserved
      for it the last thing on the page - the button that sends the check - sat
      underneath the bar, where nobody could press it. */
-  min-height: 100%; padding: 0 0 calc(64px + 28px);
+  /* The page is its own scroller, exactly as tall as the space #root gives it.
+     Left to #root it did not scroll on the phone, and the send button stayed
+     under the tab bar with no way to reach it. */
+  height: 100%; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; padding: 0 0 calc(64px + 28px);
   background: var(--bg, #fff); color: var(--text, #1c1c1c);
   --gutter: 16px;
   --hair: var(--border, #e3e6ea);
@@ -25,7 +29,9 @@
 
 .head {
   display: flex; align-items: center; gap: 10px;
-  padding: calc(env(safe-area-inset-top, 0px) + 10px) var(--gutter) 10px;
+  /* #root already keeps the notch clear; adding the inset again here is what
+     left a blank band the height of the status bar above the title. */
+  padding: 10px var(--gutter) 10px;
   border-bottom: 1px solid var(--hair);
 }
 .back { flex: none; width: 36px; height: 36px; margin-left: -8px; display: grid; place-items: center;
@@ -84,6 +90,8 @@
 .more[open] > summary::after { content: ' -'; }
 .more > span, .more > ul { display: block; margin-top: 6px; }
 .moreLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
+.how { margin: 6px 0 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--muted-1); }
+.how li { margin-bottom: 2px; }
 .means { margin: 4px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
 
 /* the differences, as rows */

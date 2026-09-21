@@ -219,6 +219,27 @@ export default function DriftPage() {
       .filter(Boolean).join(' ')
     : '';
 
+  // How the rack was matched, for whoever opens Read more: what was read off
+  // the rack, where the photo was taken, and the reason the app itself gave for
+  // each rack it considered. Only what the server said; nothing is inferred here.
+  const matchedHow = useMemo(() => {
+    if (!identity) return [];
+    const out = [];
+    const ev = identity.evidence || {};
+    const labels = (ev.labels || []).map((l) => `${l.normalized || l.text}${l.conf != null ? ` (${Math.round(l.conf * 100)}% sure)` : ''}`);
+    out.push(labels.length ? `Label read off the rack: ${labels.join(', ')}.` : 'No label was read off the rack in this photo.');
+    if (ev.location && ev.location.verdict === 'here' && ev.location.site) out.push(`The phone was at ${ev.location.site} when the photo was taken.`);
+    else if (ev.location && ev.location.verdict && ev.location.verdict !== 'unknown' && ev.location.site) out.push(`The phone was not at ${ev.location.site} when the photo was taken.`);
+    else out.push('The phone gave no location with this photo.');
+    for (const c of (identity.candidates || []).slice(0, 2)) {
+      for (const why of (c.reasons || [])) {
+        const line = `${c.facilityId || c.name}: ${why}`;
+        out.push(line.endsWith('.') ? line : `${line}.`);
+      }
+    }
+    return out;
+  }, [identity]);
+
   // Nothing decided which rack this is, so a person still has to.
   const unsettled = !!identity && identity.decision !== 'matched';
   // Where the photo was taken, as the rack ladder judged it (lib/location.js).
@@ -391,6 +412,10 @@ export default function DriftPage() {
                 <summary>Read more</summary>
                 <span className={styles.moreLabel}>Compared against</span>
                 <span className={styles.againstWhy}>{foundBy}</span>
+                <span className={styles.moreLabel}>How it was matched</span>
+                <ul className={styles.how}>
+                  {matchedHow.map((line) => <li key={line}>{line}</li>)}
+                </ul>
               </details>
             </>
           ) : compared ? (
@@ -574,7 +599,6 @@ export default function DriftPage() {
                   </ul>
                 )}
                 {item.reason && <span className={styles.againstWhy}>{item.reason}</span>}
-                <span className={styles.againstWhy}>Nothing changes in NetBox until an admin approves it.</span>
               </details>
 
               {sent && (
@@ -604,9 +628,6 @@ export default function DriftPage() {
           <button type="button" className={styles.primary} disabled={!!busy} onClick={send}>
             Send to the admin
           </button>
-          <p className={styles.footNote}>
-            Nothing changes in NetBox until an admin approves it.
-          </p>
         </div>
       )}
     </div>

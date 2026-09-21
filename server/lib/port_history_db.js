@@ -268,6 +268,20 @@ function getDevice(id, scope = null) {
   return inScope(row, scope) ? row : undefined;
 }
 function getDeviceByHost(host) { return stmtGetDeviceHost.get(host); }
+
+/** Does the Site that owns a device still exist? A removed organisation leaves its devices behind. */
+function tenantExists(tenantId) {
+  if (tenantId == null) return false;
+  try { return Boolean(db.prepare('SELECT 1 FROM tenants WHERE id = ?').get(Number(tenantId))); }
+  catch { return true; }   // no tenants table to ask: assume it does, and change nothing
+}
+
+/** Hand a device nobody owns any more to the Site that is reading it now. */
+function rehomeDevice(id, tenantId, label = null) {
+  db.prepare('UPDATE monitored_devices SET tenant_id = ?, label = COALESCE(?, label) WHERE id = ?')
+    .run(tenantId == null ? null : Number(tenantId), label, Number(id));
+  return getDevice(id);
+}
 function addDevice({ host, ssh_port = 22, vendor = 'tplink', label = null, enabled = 1, tenant_id = null }) {
   const info = stmtInsertDevice.run({ host, ssh_port, vendor, label, enabled, tenant_id });
   return getDevice(info.lastInsertRowid);
@@ -549,7 +563,7 @@ function normForCompare(v) {
 module.exports = {
   TRACKED_FIELDS,
   BASE_BACKOFF_MS, MAX_BACKOFF_MS, backoffMsFor,
-  listDevices, dueDevices, getDevice, getDeviceByHost,
+  listDevices, dueDevices, getDevice, getDeviceByHost, tenantExists, rehomeDevice,
   addDevice, setEnabled, deleteDevice,
   updateDeviceMetadata, toClientView,
   recordPollSuccess, recordPollFailure, touchPolled,

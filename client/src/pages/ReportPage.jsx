@@ -118,9 +118,14 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || `${one}s`)}`;
  * a U badge that repeats itself, so the row shows the class alone; a name a
  * person gave is kept exactly.
  */
-function titleOf(d) {
+function titleOf(d, rackName = '') {
   if (d.role && d.u != null && d.name === `${d.role} U${d.u}`) return d.role;
-  return d.name || d.role || 'Device';
+  let name = String(d.name || d.role || 'Device');
+  // "Router U20 SP-HYB-RM01-R01-R1": the rack is the page this is on and the
+  // shelf is the badge beside it, so the title keeps the part that is new.
+  if (rackName && name.endsWith(rackName)) name = name.slice(0, -rackName.length).trim();
+  if (d.u != null) name = name.replace(new RegExp(`\\s+U0?${d.u}$`), '').trim();
+  return name || d.role || 'Device';
 }
 
 const speedText = (mbps) => (!mbps ? '' : mbps >= 1000 ? `${mbps / 1000}G` : `${mbps}M`);
@@ -543,6 +548,7 @@ export default function ReportPage() {
                       cam={facts.camByName.get(d.name) || null}
                       sw={facts.swByDevName.get(d.name) || null}
                       tone={toneFor(d.name)}
+                      rackName={doc.rackName || ''}
                       open={Boolean(open[key])}
                       onToggle={() => setOpen((o) => ({ ...o, [key]: !o[key] }))}
                     />
@@ -650,7 +656,7 @@ export default function ReportPage() {
  * confirmed the match, 'proposal' when the server says nobody has, and
  * 'unsure' when nothing here can say either way.
  */
-function DeviceRow({ d, cam, sw, tone = 'switch', open, onToggle }) {
+function DeviceRow({ d, cam, sw, tone = 'switch', rackName = '', open, onToggle }) {
   const matched = String(d.source || '').startsWith('switch');
   const proposal = tone === 'proposal';
   const unsure = tone === 'unsure';
@@ -702,22 +708,33 @@ function DeviceRow({ d, cam, sw, tone = 'switch', open, onToggle }) {
         {d.u != null ? `U${d.u}` : ' - '}
       </span>
       <div className={styles.rowMain}>
-        <div className={styles.rowTop}>
-          <b className={styles.rowTitle}>{titleOf(d)}</b>
-          {matched && (
-            <span className={proposal || unsure ? styles.tagProposal : styles.tag}>
-              {proposal ? 'proposal, not confirmed' : unsure ? 'from a matched switch' : 'from the switch'}
-            </span>
-          )}
-        </div>
-
-        {identity && <p className={styles.said}>{identity}</p>}
+        {/* Closed, a device is one glance: what it is, what it says it is, and
+            how many of its ports are busy. The owner read the old card - five
+            counts, five identifiers and a button, on every device - as clutter;
+            all of that is still here, one tap away. */}
+        <button type="button" className={styles.rowHead} aria-expanded={open} onClick={onToggle}>
+          <span className={styles.rowTop}>
+            <b className={styles.rowTitle}>{titleOf(d, rackName)}</b>
+            {matched && (
+              <span className={proposal || unsure ? styles.tagProposal : styles.tag}>
+                {proposal ? 'proposal, not confirmed' : unsure ? 'from a matched switch' : 'from the switch'}
+              </span>
+            )}
+          </span>
+          <span className={styles.rowSub}>
+            {identity ? <span className={styles.said}>{identity}</span> : null}
+            {(d.portCount || camPorts) ? (
+              <span className={styles.rowBusy}>{inUse} of {d.portCount || camPorts} ports in use</span>
+            ) : null}
+          </span>
+          <span className={styles.chev} aria-hidden="true">{open ? '-' : '+'}</span>
+        </button>
 
         {/* The tag beside the title already says "proposal, not confirmed" or "from a
             matched switch" on this very row, so a paragraph under it saying the same
             thing in a sentence was the caveat twice. The tag is the caveat. */}
 
-        {stats.length > 0 && (
+        {open && stats.length > 0 && (
           <div className={styles.stats}>
             {stats.map(([n, what]) => (
               <div key={what}><b>{n}</b><span>{what}</span></div>
@@ -725,7 +742,7 @@ function DeviceRow({ d, cam, sw, tone = 'switch', open, onToggle }) {
           </div>
         )}
 
-        {ids.length > 0 && (
+        {open && ids.length > 0 && (
           <dl className={styles.ids}>
             {ids.map(([k, v]) => (
               <div key={k}><dt>{k}</dt><dd>{v}</dd></div>
@@ -733,16 +750,11 @@ function DeviceRow({ d, cam, sw, tone = 'switch', open, onToggle }) {
           </dl>
         )}
 
-        {ports.length > 0 && (
+        {open && ports.length > 0 && inUse > 0 && ports.length > inUse && (
           <div className={styles.moreRow}>
-            <button type="button" className={styles.more} aria-expanded={open} onClick={onToggle}>
-              {open ? 'Hide ports' : inUse > 0 ? `${plural(inUse, 'port')} in use` : `View all ${ports.length}`}
+            <button type="button" className={styles.more} onClick={() => setShowAll((v) => !v)}>
+              {showAll ? 'In use only' : `View all ${ports.length} ports`}
             </button>
-            {open && inUse > 0 && ports.length > inUse && (
-              <button type="button" className={styles.more} onClick={() => setShowAll((v) => !v)}>
-                {showAll ? 'In use only' : `View all ${ports.length}`}
-              </button>
-            )}
           </div>
         )}
         {open && (

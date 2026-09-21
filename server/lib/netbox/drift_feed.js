@@ -24,6 +24,20 @@ function feedDrift(rec, data, { tenantId = null } = {}) {
   const host = rec && rec.host;
   if (!host) return null;
   let dev = portsDb.getDeviceByHost(host);
+  // An address is filed once for the whole installation, and 192.168.1.11 is
+  // everybody's switch. When the Site that first read this address has been
+  // removed, its device is nobody's: the Site reading it now takes it over,
+  // history and all. When that Site still exists the reading is NOT filed under
+  // it - one customer's port history is not another's - and the caller is told.
+  if (dev && tenantId != null && dev.tenant_id != null && Number(dev.tenant_id) !== Number(tenantId)) {
+    if (!portsDb.tenantExists(dev.tenant_id)) {
+      dev = portsDb.rehomeDevice(dev.id, tenantId, rec.label || null);
+    } else {
+      const err = new Error(`the address ${host} is already monitored under another Site`);
+      err.code = 'host_in_use';
+      throw err;
+    }
+  }
   if (!dev) {
     dev = portsDb.addDevice({
       host, ssh_port: 0, vendor: 'snmp', label: rec.label || host, enabled: 0,
