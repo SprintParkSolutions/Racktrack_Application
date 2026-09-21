@@ -223,13 +223,17 @@ test('the incident of a check, at the doors', async (t) => {
   assert.equal(cancelled.status, 200, cancelled.raw);
   assert.deepEqual(cancelled.json.incident, { number: 'INC002003', state: 'cancelled', pushed: true, error: null });
 
-  // ---- An approval pushes nothing by itself: the write has not happened.
+  // ---- An approval whose write could not start (this check has no scan to
+  // write from) resolves nothing: the incident hears it in a note and stays open.
   const p4 = file();
   await call(port, tok.tech, 'POST', `/api/nb/plans/${p4}/submit`, {});
   await desk('spoc', p4, 'decide', { decisions: [{ uid: DEV, decision: 'approved' }] });
   const approved = await desk('spoc', p4, 'approve', { incidentState: 'closed' });
   assert.equal(approved.status, 200, approved.raw);
+  assert.equal(approved.json.write.state, 'not_started', approved.raw);
+  assert.equal(approved.json.plan.status, 'approved');
   assert.deepEqual(approved.json.incident, { number: 'INC002004', state: 'new', pushed: false, error: null });
+  assert.equal(sn.rows.get(`inc-${stamp}-4`).close_notes, undefined);
   assert.equal(store.getPlan(p4).incident.chosenState.state, 'closed', 'what the approver chose waits for the write');
 
   // ---- A ServiceNow that never answers holds nobody up.
