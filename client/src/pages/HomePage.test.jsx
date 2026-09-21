@@ -8,8 +8,9 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
  *   the full state   every figure and every row comes from a request the
  *                    server already answers, and a rack's state is told in the
  *                    words the rest of the app uses
- *   the empty state  a new account gets the greeting, the card and one plain
- *                    line - never a grid of zeroes
+ *   the empty state  a new account gets the greeting, the card, what is
+ *                    missing and what a first scan does - never a grid of
+ *                    zeroes
  *   the button       the one thing this page is for reaches /scan
  *
  * Every request is stubbed by path, so a page that starts asking for something
@@ -163,6 +164,16 @@ describe('<HomePage> with work behind it', () => {
     // incident numbers on the checks that are with this person.
     await waitFor(() => expect(screen.getByText('Racks scanned')).toBeTruthy());
     await waitFor(() => expect(screen.getByText('Differences waiting')).toBeTruthy());
+
+    // The figure that matters is carried inside the dark card, with the one
+    // action. The other two are a pair underneath it, not in it.
+    const card = screen.getByRole('heading', { name: 'Ready to scan a rack' }).closest('section');
+    expect(within(card).getByText('Racks scanned')).toBeTruthy();
+    expect(within(card).getByText('5')).toBeTruthy();
+    expect(within(card).getByRole('button', { name: 'Start a scan' })).toBeTruthy();
+    expect(within(card).queryByText('Differences waiting')).toBeNull();
+    expect(within(card).queryByText('Incidents with you')).toBeNull();
+
     const figure = (label) => screen.getByText(label).parentElement.firstChild.textContent;
     expect(figure('Racks scanned')).toBe('5');
     expect(figure('Differences waiting')).toBe('6');
@@ -211,6 +222,11 @@ describe('<HomePage> with work behind it', () => {
     expect(racks.getByText('Written')).toBeTruthy();
     expect(racks.getByText('Matches your records')).toBeTruthy();
     expect(racks.getByText('Unmatched')).toBeTruthy();
+    // Told by a dot and a word rather than a boxed label, and the dot is
+    // never read out.
+    const dot = racks.getByText('With the SPOC').firstElementChild;
+    expect(dot.tagName).toBe('SPAN');
+    expect(dot.getAttribute('aria-hidden')).toBe('true');
 
     fireEvent.click(racks.getByText('SP-HYB-RM01-R01-R1').closest('button'));
     expect(screen.getByTestId('where').textContent).toBe('/results/RK-5B81BE87');
@@ -226,6 +242,10 @@ describe('<HomePage> with work behind it', () => {
   test('what is with this person names the incident and the rack, and opens the check', async () => {
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Waiting on you' })).toBeTruthy());
+    // Four are held by this person, and the section says so beside its
+    // heading before it names the three it has room for.
+    const held = within(screen.getByRole('heading', { name: 'Waiting on you' }).closest('section'));
+    expect(held.getByText('4')).toBeTruthy();
     expect(screen.getByText('INC0012345')).toBeTruthy();
     expect(screen.getByText('INC0012346')).toBeTruthy();
     expect(screen.getByText('INC0012347')).toBeTruthy();
@@ -274,11 +294,19 @@ describe('<HomePage> on a new account', () => {
     };
   });
 
-  test('the greeting, the card and one plain line - never a grid of zeroes', async () => {
+  test('the greeting, the card, and what a first scan does - never a grid of zeroes', async () => {
     mount();
     await waitFor(() => expect(
       screen.getByText('Your racks will appear here after the first scan.'),
     ).toBeTruthy());
+
+    // What is missing, said plainly, and the three things a first scan does.
+    expect(screen.getByText('No racks yet')).toBeTruthy();
+    expect(screen.getByText('Take one photo of the rack.')).toBeTruthy();
+    expect(screen.getByText('RackTrack reads the equipment mounted in it.')).toBeTruthy();
+    expect(screen.getByText(
+      'Whatever does not match your records is shown as a difference.',
+    )).toBeTruthy();
 
     expect(screen.getByText('Welcome back')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Ready to scan a rack' })).toBeTruthy();
@@ -300,9 +328,13 @@ describe('<HomePage> on a new account', () => {
     answers.current['/api/scans'] = 'refused';
     mount();
     await waitFor(() => expect(
-      screen.getByText('Your racks could not be loaded just now. Pull up again in a moment.'),
+      screen.getByText('Your racks could not be loaded just now'),
     ).toBeTruthy());
+    expect(screen.getByText('Pull up again in a moment.')).toBeTruthy();
     expect(screen.queryByText('Racks scanned')).toBeNull();
+    // A failure is not the place to teach somebody what a scan does.
+    expect(screen.queryByText('Take one photo of the rack.')).toBeNull();
+    expect(screen.queryByText('No racks yet')).toBeNull();
   });
 });
 

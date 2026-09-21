@@ -1,14 +1,18 @@
 /* Home.
  *
- * White ground, one near-black card, hairline separators, no elevation and no
- * colour. The same restraint as Profile and Contact.
+ * White ground, one near-black card, hairlines, no elevation and no colour.
+ * The craft is meant to come from the composition: one big figure inside the
+ * dark card, a pair of smaller ones under it, a light tray for whatever is
+ * held by this person, and the racks as a list rather than a stack of cards.
+ * Four type sizes carry the hierarchy - 48px in the card, 28px in the pair,
+ * 28px for the name, and the scale for everything else.
  *
  * Two rules in index.css shape the class names here. Anything whose class
  * contains card / tile / panel / hero / surface / chip / badge / pill is
  * auto-elevated AND re-toned to var(--raised), which would repaint the dark
  * card white and put a lift shadow under every status label. So the
- * containers are .start, .figure, .row and .state, which match neither list.
- * Renaming .start to .heroCard silently destroys the page.
+ * containers are .start, .figure, .row, .state and .waiting, which match
+ * neither list. Renaming .start to .heroCard silently destroys the page.
  */
 
 .home {
@@ -19,21 +23,24 @@
   width: 100%;
   background: #ffffff;
 
-  --hm-line:      #E6E7EB;
-  --hm-line-soft: #F0F1F4;
+  --hm-line:      #E6E7EB;   /* a hairline that has to be seen */
+  --hm-line-soft: #EFF0F3;   /* a hairline between two rows of a list */
+  --hm-tray:      #F5F5F7;   /* the one light ground on the page */
+  --hm-tray-line: #E3E4E9;   /* a hairline on that ground */
   --hm-ink:       #121212;
   --hm-ink-2:     #5B5F6B;
   --hm-ink-3:     #878B96;
+  --hm-ink-4:     #B6BAC2;   /* a chevron, a dot: seen, never read */
 }
 
 /* Full content width, like every other page: a max-width here would box Home
    into a centred column with dead gutters.
 
-   The space kept clear at the foot is the phone's navigation bar. It is read
-   from --rt-bottom-nav-space so that the bar - which is being turned into a
-   floating pill, and will then be taller than the flat bar - can publish its
-   own height on :root and this page follows without another edit. The fallback
-   is what the flat 64px bar plus its safe area needs today. */
+   The space kept clear at the foot is the phone's floating bar. It is read
+   from --rt-bottom-nav-space so a bar that publishes its own height on :root
+   is followed without another edit here; --nav-clear in index.css is that
+   height today and is the fallback, so there is no second copy of the number
+   on this page. */
 .main {
   flex: 1;
   min-width: 0;
@@ -42,50 +49,53 @@
   -webkit-overflow-scrolling: touch;
   width: 100%;
   box-sizing: border-box;
-  padding: 24px 20px;
-  padding-bottom: var(--rt-bottom-nav-space, calc(96px + env(safe-area-inset-bottom, 0px)));
+  padding: 22px 20px 0;
+  padding-bottom: var(--rt-bottom-nav-space, var(--nav-clear));
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 .main > * { flex-shrink: 0; }
+/* The page ends on air, not on the last hairline. */
+.main::after { content: ''; display: block; height: 4px; }
 
 /* ── 1. The greeting ───────────────────────────────────────────────── */
 .greet {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  min-width: 0;
+  padding-top: 2px;
 }
-.greetText { min-width: 0; }
 
 .welcome {
   margin: 0;
   font-family: var(--font);
   font-size: var(--fs-body);
   font-weight: var(--fw-label);
-  line-height: 18px;
-  color: var(--hm-ink-2);
+  line-height: var(--lh-body);
+  color: var(--hm-ink-3);
 }
+/* The person's name, in the heaviest face on the page. A display size, which
+   the type scale leaves alone on purpose. */
 .who {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   font-family: var(--font);
-  font-size: 27px;
-  font-weight: var(--fw-label);
-  line-height: 1.15;
-  letter-spacing: -0.022em;
+  font-size: 28px;
+  font-weight: var(--fw-title);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
   color: var(--hm-ink);
   overflow-wrap: anywhere;
 }
 .place {
-  margin: 6px 0 0;
+  margin: 7px 0 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   font-family: var(--font);
   font-size: var(--fs-sub);
   font-weight: var(--fw-label);
-  line-height: 16px;
+  line-height: var(--lh-sub);
   color: var(--hm-ink-3);
 }
 
@@ -102,39 +112,83 @@
   flex: none;
 }
 
-/* ── 2. The one thing this app is for ──────────────────────────────── */
+/* ── 2. The one dark object ─────────────────────────────────────────
+   Deeper padding than anything else on the page, the figure that matters at
+   display size inside it, and the action at full width along the foot. */
 .start {
+  display: flex;
+  flex-direction: column;
   background: #121212;
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 26px 22px 22px;
   color: #ffffff;
 }
+
+/* How many racks have been read. Held back until the server has answered, so
+   this is never a 0 about to be replaced. */
+.startFigure {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 22px;
+}
+.startValue {
+  font-family: var(--font);
+  font-size: 48px;
+  font-weight: var(--fw-title);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+.startLabel {
+  margin-top: 8px;
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  line-height: var(--lh-label);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+/* With a figure above it the card's own heading is the line that introduces
+   the action; on a brand-new account there is no figure, so the same heading
+   leads the card and takes the page size. */
 .startTitle {
   margin: 0;
   font-family: var(--font);
-  font-size: var(--fs-page);
+  font-size: var(--fs-head);
   font-weight: var(--fw-label);
-  line-height: 1.2;
-  letter-spacing: -0.018em;
+  line-height: var(--lh-head);
+  letter-spacing: -0.016em;
   color: #ffffff;
 }
+.startLead {
+  font-size: var(--fs-page);
+  font-weight: var(--fw-title);
+  line-height: var(--lh-page);
+  letter-spacing: -0.024em;
+}
 .startWords {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
+  max-width: 34ch;
   font-family: var(--font);
-  font-size: var(--fs-item);
+  font-size: var(--fs-body);
   font-weight: var(--fw-body);
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.66);
+  line-height: var(--lh-body);
+  color: rgba(255, 255, 255, 0.62);
 }
 .startBtn {
-  margin-top: 20px;
+  margin-top: 22px;
   width: 100%;
-  min-height: 52px;
+  min-height: 54px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+  padding: 0 20px;
+  box-sizing: border-box;
   border: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   background: #ffffff;
   color: #121212;
   font-family: var(--font);
@@ -145,82 +199,192 @@
   -webkit-tap-highlight-color: transparent;
   transition: transform var(--dur-fast, 150ms) var(--ease-out), background-color 0.18s;
 }
+.startArrow { font-size: var(--fs-section); }
 .startBtn:hover { background: #F0F1F4; }
 .startBtn:active { transform: scale(0.985); }
 .startBtn:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
 
-/* The notices card (components/AssignedNotice.jsx) carries margins of its own,
-   written for a page that has no gutter. Cancelled here so it lines up with
-   the rest of the column and the flex gap alone does the spacing. An empty
-   wrapper around nothing collapses, so this never leaves a hole. */
-.notice > * { margin: 0 -16px !important; }
-
-/* The one line a brand-new account sees under the card. */
-.blank {
-  margin: 0;
-  font-family: var(--font);
-  font-size: var(--fs-item);
-  font-weight: var(--fw-body);
-  line-height: 1.5;
-  color: var(--hm-ink-2);
-}
-
-/* ── 3. What this person has ───────────────────────────────────────── */
+/* ── 3. The pair of drift figures ───────────────────────────────────
+   Side by side, because they are the same kind of thing. One on its own is a
+   full-width row instead - a lone figure in a half-width box reads as a
+   missing second box. */
 .figures {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 .figure {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   min-width: 0;
-  padding: 14px 14px 15px;
+  padding: 16px 16px 17px;
   border: 1px solid var(--hm-line);
-  border-radius: 14px;
+  border-radius: 18px;
   background: #ffffff;
+}
+.figuresOne { grid-template-columns: minmax(0, 1fr); }
+.figuresOne .figure {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 18px 16px;
 }
 .figureValue {
   font-family: var(--font);
-  font-size: 26px;
-  font-weight: var(--fw-label);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-size: 28px;
+  font-weight: var(--fw-title);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
   color: var(--hm-ink);
   font-variant-numeric: tabular-nums;
 }
 .figureLabel {
+  margin-top: 6px;
   font-family: var(--font);
   font-size: var(--fs-label);
   font-weight: var(--fw-label);
-  line-height: 15px;
+  line-height: var(--lh-label);
   color: var(--hm-ink-3);
 }
+.figuresOne .figureLabel { margin-top: 0; }
 
-/* ── 4 and 5. A section with a heading and rows ─────────────────────── */
-.sect { display: flex; flex-direction: column; gap: 10px; }
+/* The notices card (components/AssignedNotice.jsx) carries margins of its own,
+   written for a page that has no gutter. Cancelled here so it lines up with
+   the rest of the column and the flex gap alone does the spacing. Its corner
+   is taken up to this page's radius as well, so it does not sit among the
+   other blocks looking like something from another screen. An empty wrapper
+   around nothing collapses, so this never leaves a hole. */
+.notice > * {
+  margin: 0 -16px !important;
+  border-radius: 16px !important;
+}
+
+/* ── 4. Nothing scanned yet ─────────────────────────────────────────
+   A first account gets a block that has been thought about: the shape of the
+   thing that is missing, what is missing, and what the first scan does. */
+.blank {
+  padding: 22px 20px 20px;
+  border: 1px solid var(--hm-line);
+  border-radius: 20px;
+  background: #ffffff;
+}
+.slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--hm-tray);
+  color: var(--hm-ink-4);
+}
+.slotGlyph { font-size: var(--fs-page); }
+.blankLead {
+  margin: 16px 0 0;
+  font-family: var(--font);
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
+  line-height: var(--lh-item);
+  letter-spacing: -0.012em;
+  color: var(--hm-ink);
+}
+.blankWords {
+  margin: 4px 0 0;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-body);
+  line-height: var(--lh-body);
+  color: var(--hm-ink-2);
+}
+.steps {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--hm-line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-body);
+  line-height: var(--lh-body);
+  color: var(--hm-ink-2);
+}
+.stepNo {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--hm-tray);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  color: var(--hm-ink);
+}
+
+/* ── 5 and 6. A section: a quiet heading, then rows ─────────────────
+   The heading is smaller and greyer than the rows under it, and carries more
+   air above it than below, so the eye reads it as belonging to what follows
+   rather than to what came before. */
+.sect {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
 
 .sectTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 24px;
+  min-height: 22px;
 }
 .sectTitle {
   margin: 0;
   font-family: var(--font);
-  font-size: var(--fs-section);
+  font-size: var(--fs-label);
   font-weight: var(--fw-label);
-  line-height: 20px;
-  letter-spacing: -0.012em;
-  color: var(--hm-ink);
+  line-height: var(--lh-label);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--hm-ink-3);
 }
+/* The heading of the one section that is about this person. */
+.sectTitleLoud { color: var(--hm-ink); }
+
+/* How many are with this person, beside that heading. */
+.count {
+  flex: none;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--hm-ink);
+  color: #ffffff;
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
 /* A text control still has to be 44px tall to be tapped, so the padding does
    the work and a negative margin keeps it optically on the heading's line. */
 .seeAll {
@@ -239,37 +403,44 @@
 .seeAll:hover { color: var(--hm-ink); }
 .seeAll:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 2px; border-radius: 8px; }
 
-.rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+/* The rows. One hairline between two of them - a border on each row instead
+   drew four boxes and made a list of four racks read as four unrelated
+   things. */
+.rows { list-style: none; margin: 0; padding: 0; }
+.rowItem + .rowItem { border-top: 1px solid var(--hm-line-soft); }
 
 .row {
-  width: 100%;
-  min-height: 68px;
+  width: calc(100% + 16px);
+  margin: 0 -8px;
+  min-height: 64px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 13px 12px 13px 15px;
-  border: 1px solid var(--hm-line);
+  gap: 10px;
+  padding: 14px 8px;
+  box-sizing: border-box;
+  border: 0;
   border-radius: 14px;
-  background: #ffffff;
+  background: transparent;
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.18s, background-color 0.18s;
+  transition: background-color 0.18s;
 }
-.row:hover { border-color: rgba(18, 18, 18, 0.28); background: #FCFCFC; }
-.row:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 2px; }
+.row:hover { background: #F7F7F9; }
+.row:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: -2px; }
 
-.rowText { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.rowText { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
 
 /* A rack id and an incident number are machine-issued strings a person reads
-   character by character, so both are set in the mono face. */
+   character by character, so both are set in the mono face - and at the size
+   the row is really about, a step up from the line under it. */
 .rackName,
 .inc {
   font-family: var(--mono);
-  font-size: var(--fs-body);
+  font-size: var(--fs-item);
   font-weight: var(--fw-label);
-  line-height: 18px;
-  letter-spacing: -0.01em;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
   color: var(--hm-ink);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -279,7 +450,9 @@
    reading face and steps back a tone. */
 .rackUnnamed {
   font-family: var(--font);
+  font-size: var(--fs-item);
   font-weight: var(--fw-label);
+  letter-spacing: -0.01em;
   color: var(--hm-ink-3);
 }
 .rowMeta {
@@ -289,8 +462,8 @@
   min-width: 0;
   font-family: var(--font);
   font-size: var(--fs-sub);
-  font-weight: var(--fw-label);
-  line-height: 16px;
+  font-weight: var(--fw-body);
+  line-height: var(--lh-sub);
   color: var(--hm-ink-3);
   white-space: nowrap;
 }
@@ -300,53 +473,93 @@
 .metaGives { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .metaKeeps { flex: none; }
 
-/* The state of a rack, told by form rather than by colour: this app has no
-   colour accent. A filled black label is finished, a hairline outline is out
-   with somebody, a heavy outline wants attention, a dashed one never started. */
+/* The state of a rack, told by a dot and a word. A boxed label on every row
+   drew five small frames down the right-hand side and none of them was the
+   point; a dot carries the same four states with nothing around it.
+
+   The dot is form, not colour, because this app has no colour accent: filled
+   black is finished, filled grey matches, a ring is out with somebody, a
+   filled dot with a halo wants attention, and a light ring never started. */
 .state {
   flex: none;
-  padding: 5px 9px;
-  border-radius: 9999px;
-  border: 1px solid transparent;
-  font-family: var(--font);
-  font-size: var(--fs-label);
-  font-weight: var(--fw-label);
-  line-height: 14px;
-  letter-spacing: -0.005em;
-  white-space: nowrap;
-}
-.matched   { background: #F1F1F1; color: var(--hm-ink); }
-.written   { background: #121212; color: #ffffff; }
-.spoc      { background: #ffffff; border-color: rgba(18, 18, 18, 0.5); color: var(--hm-ink); }
-.unmatched { background: #ffffff; border-color: #121212; color: var(--hm-ink); font-weight: var(--fw-label); }
-.unchecked { background: #ffffff; border-style: dashed; border-color: rgba(18, 18, 18, 0.26); color: var(--hm-ink-3); }
-
-.chev { flex: none; font-size: var(--fs-head); color: var(--hm-ink-3); }
-
-.rest {
-  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-family: var(--font);
   font-size: var(--fs-sub);
   font-weight: var(--fw-label);
+  line-height: var(--lh-sub);
+  letter-spacing: -0.006em;
+  color: var(--hm-ink-2);
+  white-space: nowrap;
+}
+.stateDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hm-ink);
+}
+.matched   .stateDot { background: #C9CBD2; }
+.written   .stateDot { background: var(--hm-ink); }
+.spoc      .stateDot { background: #ffffff; box-shadow: inset 0 0 0 1.6px var(--hm-ink); }
+.unmatched .stateDot { background: var(--hm-ink); box-shadow: 0 0 0 3px rgba(18, 18, 18, 0.13); }
+.unchecked .stateDot { background: #ffffff; box-shadow: inset 0 0 0 1.5px #D8DAE0; }
+/* The one state that wants doing reads at full strength; the one that is not
+   a state at all reads quietest. */
+.unmatched { color: var(--hm-ink); }
+.unchecked { color: var(--hm-ink-3); }
+
+.chev { flex: none; font-size: var(--fs-head); color: var(--hm-ink-4); }
+
+/* ── The tray: the section that is about this person ────────────────
+   A light ground rather than a colour, which this page does not have. It is
+   the second-strongest object on the screen after the dark card, and the only
+   section whose heading is set in ink. */
+.waiting {
+  margin-top: 10px;
+  padding: 16px 16px 14px;
+  border-radius: 22px;
+  background: var(--hm-tray);
+}
+.waiting .rowItem + .rowItem { border-top-color: var(--hm-tray-line); }
+.waiting .row:hover { background: rgba(255, 255, 255, 0.72); }
+.waiting .rowMeta { color: var(--hm-ink-2); }
+
+.rest {
+  margin: 10px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--hm-tray-line);
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-label);
+  line-height: var(--lh-sub);
   color: var(--hm-ink-3);
 }
 
-/* A narrow phone: three figures side by side leave no room for a two-digit
-   number and its label, so they wrap into a two-then-one grid instead. The
-   status label stays - it is what the row is for - and loses its padding
-   rather than being hidden. */
+/* A narrow phone. The status word is what the row is for, so it keeps its
+   place and gives up a size rather than being hidden; the pair of figures
+   stacks instead of splitting a two-digit number over two lines. */
 @media (max-width: 359px) {
-  .figures { grid-auto-flow: row; grid-template-columns: repeat(2, 1fr); }
-  .row { padding-left: 12px; gap: 8px; }
-  .state { padding: 4px 7px; font-size: var(--fs-micro); }
+  .main { padding-left: 16px; padding-right: 16px; }
+  .start { padding: 22px 18px 18px; }
+  .startValue { font-size: 42px; }
+  .figures { grid-template-columns: minmax(0, 1fr); }
+  .row { gap: 8px; }
+  .state { font-size: var(--fs-label); gap: 6px; }
+  .waiting { padding: 14px 14px 12px; }
 }
 
 /* Tablet and up, inside the desktop shell: the page is wider than a phone, so
-   the rows can breathe and the dark card does not need to be a full-bleed
-   block of ink. */
+   the card does not need to be a full-bleed block of ink and its action does
+   not need to be a full-bleed white bar. */
 @media (min-width: 720px) {
-  .main { padding: 28px 28px; gap: 28px; }
-  .start { padding: 32px 28px 28px; }
-  .startBtn { width: auto; min-width: 220px; padding: 0 28px; }
-  .who { font-size: 31px; }
+  .main { padding: 28px 28px 0; gap: 24px; }
+  .start { padding: 34px 30px 30px; }
+  .startValue { font-size: 56px; }
+  .startWords { font-size: var(--fs-item); }
+  .startBtn { width: auto; min-width: 240px; align-self: flex-start; }
+  .who { font-size: 32px; }
+  .figure { padding: 18px 20px 19px; }
+  .row { min-height: 68px; padding: 16px 8px; }
 }
