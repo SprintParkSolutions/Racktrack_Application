@@ -115,8 +115,10 @@ export function usePrimaryNav() {
     // check the rack and then gave them nowhere to see what they had checked,
     // and left their phone bar with two entries where an admin has three. What
     // each person may DO there is decided server side and unchanged by this.
+    // `barLabel` because the bar carries five tabs now: "DRIFT DESK" wrapped
+    // onto two lines and pushed its own row out of line with the others.
     { group: 'work', href: APPROVALS_URL, label: 'Drift Desk', icon: <InboxIcon />,
-      inBar: true,
+      inBar: true, barLabel: 'Drift',
       hint: isAdmin ? 'Opens RackTrack Drift Desk' : 'Your checks in RackTrack Drift Desk' },
 
     // ── Organization: owners and organisation admins.
