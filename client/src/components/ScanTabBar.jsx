@@ -39,6 +39,9 @@ const PORT_TABS = [
   { key: 'switches', label: 'Switches', icon: <IconSwitch /> },
   { key: 'network',  label: 'Network',  icon: <IconNetwork /> },
   { key: 'overview', label: 'Rack',     icon: <IconRack /> },
+  { key: 'drift',    label: 'Drift',    icon: <IconDrift /> },
+  { key: 'topology', label: 'Topology', icon: <IconTopology /> },
+  { key: 'report',   label: 'Report',   icon: <IconReport /> },
 ];
 
 /** Screens that belong to Overview, so the bar lights Overview on them. */
@@ -52,7 +55,7 @@ export default function ScanTabBar({ activeTab, onTabChange, badges = {}, flow =
 
   return (
     <nav className={styles.tabBar} role="tablist" aria-label="Scan results tabs">
-      <div className={styles.bar}>
+      <div className={`${styles.bar} ${tabs.length > 5 ? styles.barMany : ''}`}>
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -88,6 +91,17 @@ function IconSwitch() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="8" width="18" height="8" rx="1.5"/>
       <path d="M7 12h.01"/><path d="M10 12h.01"/><path d="M13 12h.01"/><path d="M16.5 12h1"/>
+    </svg>
+  );
+}
+
+function IconTopology() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="3" width="6" height="5" rx="1"/>
+      <rect x="3" y="16" width="6" height="5" rx="1"/>
+      <rect x="15" y="16" width="6" height="5" rx="1"/>
+      <path d="M12 8v4"/><path d="M6 16v-4h12v4"/>
     </svg>
   );
 }

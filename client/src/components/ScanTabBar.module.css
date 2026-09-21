@@ -178,3 +178,9 @@
   .centre { transition: none; }
   .centre:active { transform: translateY(calc(var(--nav-lift) * -1)); }
 }
+
+/* More tabs than the pill can hold side by side: it scrolls sideways rather
+   than squeezing every label until it is clipped. */
+.barMany { overflow-x: auto; scrollbar-width: none; justify-content: flex-start; }
+.barMany::-webkit-scrollbar { display: none; }
+.barMany > * { flex: 0 0 auto; min-width: 62px; }
