@@ -11,6 +11,7 @@ import PointerGlow from './components/PointerGlow.jsx';
 import Splash from './components/Splash.jsx';
 import RouteBoundary from './components/RouteBoundary.jsx';
 import { useHasSidebar } from './hooks/useIsDesktop';
+import HomePage from './pages/HomePage.jsx';
 import ScanPage from './pages/ScanPage.jsx';
 import ResultsPage from './pages/ResultsPage.jsx';
 import RackResultsRoute from './pages/RackResultsRoute.jsx';
@@ -415,10 +416,16 @@ export default function App() {
             <RouteBoundary>
             <Suspense fallback={<div className="route-loading" aria-busy="true" />}>
             <Routes>
-            {/* There is no Home. The app opens on the work: scanning a rack.
-                "/" is kept only as a redirect so every old link, the sidebar
-                brand and the post-login landing all arrive somewhere real. */}
-            <Route path="/" element={<ProtectedRoute><Navigate to="/scan" replace /></ProtectedRoute>} />
+            {/* Home. The app opens here: who you are, the one thing it is for,
+                your racks and whatever is waiting on you. It used to redirect
+                straight to /scan, which dropped a person into the middle of a
+                job with nothing to tell them what they had. Scan is one tap
+                away, from the dark card and from the bar, and is unchanged.
+                Gated like /scan, so an admin whose organization still lacks a
+                required item lands on Organization settings exactly as before. */}
+            <Route path="/" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><SetupGate><HomePage /></SetupGate></ResponsiveLayout></ProtectedRoute>
+            } />
             <Route path="/login"  element={<LoginPage />} />
             {/* No self-signup. RackTrack is given out by an administrator, so
                 the only ways in are a login you were issued and an invite link
