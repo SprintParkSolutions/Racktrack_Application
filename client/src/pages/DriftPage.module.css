@@ -86,8 +86,14 @@
 .more { margin-top: 6px; }
 .more > summary { display: inline-block; list-style: none; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); padding: 2px 0; }
 .more > summary::-webkit-details-marker { display: none; }
-.more > summary::after { content: ' +'; }
-.more[open] > summary::after { content: ' -'; }
+/* A small chevron drawn from two borders; it turns over when the section opens. */
+.more > summary::after {
+  content: ''; display: inline-block; width: 6px; height: 6px; margin: 0 0 3px 8px;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(45deg); transition: transform .15s ease;
+}
+.more[open] > summary::after { transform: rotate(-135deg); margin-bottom: -1px; }
+@media (prefers-reduced-motion: reduce) { .more > summary::after { transition: none; } }
 .more > span, .more > ul { display: block; margin-top: 6px; }
 .moreLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
 .how { margin: 6px 0 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--muted-1); }

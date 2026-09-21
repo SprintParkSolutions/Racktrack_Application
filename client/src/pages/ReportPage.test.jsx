@@ -71,16 +71,18 @@ afterEach(cleanup);
 describe('ReportPage', () => {
   test('a match nobody confirmed is named as a proposal', async () => {
     draw();
-    // The tag on the row is the caveat; it is not also spelled out underneath it.
-    await screen.findByText('proposal, not confirmed');
-    expect(screen.getByText('One device below is a proposal. Confirm its switch in Review.')).toBeTruthy();
+    // One phrase for every matched device; the colour - carried as data-match -
+    // says nobody has confirmed this one, and no sentence says it again.
+    const tag = await screen.findByText('from the switch');
+    expect(tag.getAttribute('data-match')).toBe('proposal');
+    expect(screen.queryByText(/is a proposal/)).toBe(null);
   });
 
   test('a confirmed match reads as the switch speaking for itself', async () => {
     reply.view = view({ confirmed: true, confirmedAt: '2026-09-18T09:30:00Z', confirmedBy: 'Jane Patel' });
     draw();
-    await screen.findByText('from the switch');
-    expect(screen.queryByText('proposal, not confirmed')).toBe(null);
+    const tag = await screen.findByText('from the switch');
+    expect(tag.getAttribute('data-match')).toBe('confirmed');
   });
 
   test('a match carried over from an earlier check needs no note', async () => {
@@ -88,16 +90,15 @@ describe('ReportPage', () => {
     v.reasons[1].fromBinding = true;
     reply.view = v;
     draw();
-    await screen.findByText('from the switch');
-    expect(screen.queryByText('proposal, not confirmed')).toBe(null);
+    const tag = await screen.findByText('from the switch');
+    expect(tag.getAttribute('data-match')).toBe('confirmed');
   });
 
   test('a server that cannot report confirmations says so, rather than claiming one', async () => {
     reply.view = { ...view(), reasons: { 1: { deviceUid: 'd1', confidence: 'high', why: 'same port count' } } };
     draw();
-    await screen.findByText('from a matched switch');
-    expect(screen.queryByText('from the switch')).toBe(null);
-    expect(screen.queryByText('proposal, not confirmed')).toBe(null);
+    const tag = await screen.findByText('from the switch');
+    expect(tag.getAttribute('data-match')).toBe('unsure');
     expect(screen.getByText('Nobody is recorded as confirming these matches.')).toBeTruthy();
   });
 
@@ -111,8 +112,8 @@ describe('ReportPage', () => {
   test('a report with no matching at all cannot show a match as confirmed', async () => {
     reply.view = null;   // the reconcile call came back empty
     draw();
-    await screen.findByText('from a matched switch');
+    const tag = await screen.findByText('from the switch');
+    expect(tag.getAttribute('data-match')).toBe('unsure');
     expect(screen.getByText(/The matching could not be loaded/)).toBeTruthy();
-    expect(screen.queryByText('from the switch')).toBe(null);
   });
 });

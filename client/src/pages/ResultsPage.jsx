@@ -4241,15 +4241,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           {reanalyzeNote && <p className={styles.reanalyzeNote} role="alert">{reanalyzeNote}</p>}
           {/* Report row - View / Download / Share as labeled chips */}
           <div className={styles.reportRow} style={{ '--ac': rc }}>
-            {canReanalyze && !ticketMode && (
-              <button className={styles.reportChip} onClick={reanalyzeNow} disabled={reanalyzing}
-                title="Read this rack again with the current models">
-                {reanalyzing ? <span className={styles.btnSpinner} /> : (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                )}
-                {reanalyzing ? 'Reading again' : 'Read again'}
-              </button>
-            )}
             <button className={`${styles.reportChip} ${styles.reportChipView}`}
               data-tour="full-report-btn"
               onClick={ticketMode ? () => setTicketReportOpen(true) : viewReport}

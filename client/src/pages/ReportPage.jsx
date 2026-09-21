@@ -522,13 +522,6 @@ export default function ReportPage() {
                 </p>
               )}
 
-              {facts.proposalDevNames.size > 0 && (
-                <p className={styles.proposalNote}>
-                  {facts.proposalDevNames.size === 1
-                    ? 'One device below is a proposal. Confirm its switch in Review.'
-                    : `${facts.proposalDevNames.size} devices below are proposals. Confirm their switches in Review.`}
-                </p>
-              )}
 
               {anyUnsure && (
                 <p className={styles.proposalNote}>
@@ -720,9 +713,14 @@ function DeviceRow({ d, cam, sw, tone = 'switch', rackName = '', open, onToggle 
         <button type="button" className={styles.rowHead} aria-expanded={open} onClick={onToggle}>
           <span className={styles.rowTop}>
             <b className={styles.rowTitle}>{titleOf(d, rackName)}</b>
+            {/* One phrase for every matched device, and the colour carries the
+                rest: green where a person confirmed the match, orange where
+                nobody has yet. The owner did not want it spelled out each time. */}
             {matched && (
-              <span className={proposal || unsure ? styles.tagProposal : styles.tag}>
-                {proposal ? 'proposal, not confirmed' : unsure ? 'from a matched switch' : 'from the switch'}
+              <span className={proposal || unsure ? styles.tagProposal : styles.tag}
+                data-match={proposal ? 'proposal' : unsure ? 'unsure' : 'confirmed'}
+                title={proposal || unsure ? 'Matched to a switch. Nobody has confirmed it yet.' : 'Matched to a switch, and confirmed.'}>
+                from the switch
               </span>
             )}
           </span>
@@ -732,7 +730,10 @@ function DeviceRow({ d, cam, sw, tone = 'switch', rackName = '', open, onToggle 
               <span className={styles.rowBusy}>{inUse} of {d.portCount || camPorts} ports in use</span>
             ) : null}
           </span>
-          <span className={styles.chev} aria-hidden="true">{open ? '-' : '+'}</span>
+          <svg className={`${styles.chev} ${open ? styles.chevOpen : ''}`} aria-hidden="true" width="18" height="18"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </button>
 
         {/* The tag beside the title already says "proposal, not confirmed" or "from a

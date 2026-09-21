@@ -2296,10 +2296,12 @@
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
   margin: 0 14px 10px;
 }
-/* On narrow phones 4 equal columns leave ~33px per label - the words clip
-   mid-character. Drop to 2 columns so each chip's text fits. */
+/* Four buttons, one row, on every phone. With Read again gone there are exactly
+   four, and at 360px each still has 78px: the icon sits above the word there so
+   no label is clipped, rather than the row breaking into two. */
 @media (max-width: 400px) {
-  .reportRow { grid-template-columns: repeat(2, 1fr); }
+  .reportRow { gap: 4px; margin: 0 10px 10px; }
+  .reportRow .reportChip { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: 11px; line-height: 1.1; }
 }
 /* Unified action pill - white-focused, black accent */
 .reportChip {
