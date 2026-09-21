@@ -93,6 +93,18 @@ function fakeNetBox() {
           && !String(o.serial ?? '').toLowerCase().includes(String(p.serial__ic).toLowerCase())) return false;
         if (p.name !== undefined && !same(o.name, p.name)) return false;
         if (p.slug !== undefined && o.slug !== p.slug) return false;
+        if (p.model !== undefined && !same(o.model, p.model)) return false;
+        // A model repeats between makers and a location name between sites, so
+        // the real NetBox scopes both. A fake that ignored the scope answered a
+        // question nobody asked: "any type with this model", which would adopt
+        // one maker's model as another's.
+        if (p.manufacturer_id !== undefined
+          && Number(idOf(o.manufacturer)) !== Number(p.manufacturer_id)) return false;
+        // NetBox's case-insensitive exact lookups, which is how a catalogue
+        // object is found under the customer's own spelling of its name.
+        for (const f of ['name', 'slug', 'model']) {
+          if (p[`${f}__ie`] !== undefined && !same(o[f], p[`${f}__ie`])) return false;
+        }
         return true;
       });
       if (p.limit !== undefined) list = list.slice(0, Number(p.limit));

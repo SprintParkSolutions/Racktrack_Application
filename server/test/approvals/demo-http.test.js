@@ -254,6 +254,13 @@ test('the demo, and the write NetBox refuses, at the doors', async (t) => {
       assert.deepEqual(now[field], before[field], `${field} is as the customer had it`);
     }
     assert.equal(nb.rows(F.INTERFACES).length, 5, 'the record keeps its own five ports and gains none');
+    // The site is the object that failed this write live: the scan's id for it
+    // was on nothing, so it read as a create NetBox refused. It is found by its
+    // name now, and a write that does not need it does not touch it at all.
+    const sites = nb.rows('/api/dcim/sites/');
+    assert.equal(sites.length, 1, 'no second site of the same name was made');
+    assert.deepEqual([sites[0].slug, sites[0].custom_fields], ['office-sprint', {}],
+      'their site keeps their own slug and carries nothing of ours');
 
     // ---- The change registry: one row a person sees.
     const changes = await call(port, tok.spoc, 'GET', `/api/approvals/changes?planId=${id}`);

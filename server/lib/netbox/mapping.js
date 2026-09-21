@@ -42,12 +42,31 @@ const s = (v) => (v === null || v === undefined ? '' : String(v));
  */
 const known = (v) => (v === null || v === undefined || v === '' ? undefined : v);
 
+/**
+ * Two keys beside the payload, and they are deliberately not the same key.
+ *
+ *   naturalKey  the key NetBox refused a create on, in NetBox's own filter
+ *               form, so an object already there can be claimed and stamped
+ *               with our id instead of counted a failure (writer.adopt).
+ *   nameKey     the name NetBox itself keeps unique for a catalogue type, and
+ *               the scope it is unique inside: a site's name, a maker's name, a
+ *               role's name, a model within its maker, a location within its
+ *               site. Our slug is OURS - the customer's site of the same name
+ *               may carry any slug they like - so the name is the only thing
+ *               both sides can be trusted to agree on. Used before a create,
+ *               through find.byName, and again if a create is refused anyway.
+ *
+ * A rack and a device have neither. A rack at a shelf and a box in it are
+ * somebody's asset: they are bound by evidence and by a person (find.js,
+ * bindings.js), never by a name clash.
+ */
 const SPECS = [
   {
     field: 'manufacturers', endpoint: '/api/dcim/manufacturers/',
     netboxType: 'dcim.manufacturer', label: 'Manufacturer',
     payload: (o) => ({ name: o.name, slug: o.slug }),
     naturalKey: (p) => (p.slug ? { slug: p.slug } : null),
+    nameKey: (p) => (p.name ? { field: 'name', value: p.name } : null),
   },
   {
     field: 'deviceTypes', endpoint: '/api/dcim/device-types/',
@@ -58,18 +77,23 @@ const SPECS = [
     }),
     naturalKey: (p) => (p.slug && Number.isInteger(p.manufacturer)
       ? { slug: p.slug, manufacturer_id: p.manufacturer } : null),
+    // A model repeats across makers, so the maker is part of the question.
+    nameKey: (p) => (p.model && Number.isInteger(p.manufacturer)
+      ? { field: 'model', value: p.model, scope: { manufacturer_id: p.manufacturer } } : null),
   },
   {
     field: 'deviceRoles', endpoint: '/api/dcim/device-roles/',
     netboxType: 'dcim.devicerole', label: 'DeviceRole',
     payload: (o) => ({ name: o.name, slug: o.slug }),
     naturalKey: (p) => (p.slug ? { slug: p.slug } : null),
+    nameKey: (p) => (p.name ? { field: 'name', value: p.name } : null),
   },
   {
     field: 'sites', endpoint: '/api/dcim/sites/',
     netboxType: 'dcim.site', label: 'Site',
     payload: (o) => ({ name: o.name, slug: o.slug }),
     naturalKey: (p) => (p.slug ? { slug: p.slug } : null),
+    nameKey: (p) => (p.name ? { field: 'name', value: p.name } : null),
   },
   {
     field: 'locations', endpoint: '/api/dcim/locations/',
@@ -80,6 +104,9 @@ const SPECS = [
     }),
     naturalKey: (p) => (p.slug && Number.isInteger(p.site)
       ? { slug: p.slug, site_id: p.site } : null),
+    // A location name repeats between sites, so the site is part of the question.
+    nameKey: (p) => (p.name && Number.isInteger(p.site)
+      ? { field: 'name', value: p.name, scope: { site_id: p.site } } : null),
   },
   {
     field: 'racks', endpoint: '/api/dcim/racks/',
