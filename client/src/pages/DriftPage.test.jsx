@@ -154,6 +154,36 @@ describe('<DriftPage> choosing and following', () => {
   });
 });
 
+describe('<DriftPage> the whole comparison', () => {
+  test('says how much matches, names the record each match is, and lists what was not seen', async () => {
+    stub('open', contactsFor(KNOWN));
+    routes.current['GET /api/nb/plans/7'] = { body: {
+      id: 7, rackId: 'RK-1', scanId: 3, status: 'open',
+      items: [
+        { uid: 'dev:RK-1:u20', type: 'Device', name: 'Router U20', action: 'create', decidable: true, decision: 'pending' },
+        { uid: 'dev:RK-1:u17', type: 'Device', name: 'Switch U17', action: 'skip', decidable: false },
+        { uid: 'if:1', type: 'Interface', name: '1', action: 'skip' },
+      ],
+      orphans: [
+        { netboxId: 196, name: 'SP-R1-U17-SW03', position: 17, seen: true, matchedBox: 'dev:RK-1:u17' },
+        { netboxId: 198, name: 'SP-R1-U19-FW', position: 19, seen: false },
+      ],
+    } };
+    mount();
+    await screen.findByText('Router on shelf U20');
+    const glance = screen.getByRole('group', { name: 'Summary of the comparison' });
+    expect(glance.textContent).toBe('1match1different1not seen');
+    // the match is named by the record it matched, the unseen record by its shelf
+    expect(screen.getByText('Switch on shelf U17')).toBeTruthy();
+    expect(screen.getByText('SP-R1-U17-SW03')).toBeTruthy();
+    expect(screen.getByText('SP-R1-U19-FW')).toBeTruthy();
+    expect(screen.getByText('Shelf U19')).toBeTruthy();
+    // ports are not a row of their own on this screen: one device matches, not two items
+    expect(screen.getByText('Matching your records').parentElement.textContent).toBe('Matching your records1');
+    expect(screen.getByRole('button', { name: 'Drift report' })).toBeTruthy();
+  });
+});
+
 describe('<DriftPage> housekeeping', () => {
   test("RackTrack's own tag on a matched rack is a note, not a mismatch, and shows no internal keys", async () => {
     stub('draft');

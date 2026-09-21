@@ -7018,6 +7018,55 @@ app.get('/api/scan/:rackId/report-token', auth.requireAuth, (req, res) => {
   res.json({ token: t, expires_in: REPORT_TOKEN_TTL_SEC });
 });
 
+// GET /api/scan/:rackId/drift-report?plan=<id>
+// The drift report for one check of this rack: what matches the record, what
+// differs, what the record holds that was not seen, and where the check stands.
+// One printable page, so it can be sent or attached to the ServiceNow incident.
+// Reachable the same two ways as the scan report below - a signed-in request or
+// ?t=<report token> - because app.param('rackId') has already authorised the
+// rack. The check must belong to that rack, or it is not there.
+app.get('/api/scan/:rackId/drift-report', (req, res) => {
+  const { rackId } = req.params;
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const nbPlans = require('./lib/netbox/plans');
+    const approvalsStore = require('./lib/approvals/store');
+    const asked = Number(req.query.plan);
+    let plan = Number.isFinite(asked) && asked > 0 ? nbPlans.get(asked) : null;
+    if (plan && String(plan.rackId) !== String(rackId)) plan = null;
+    if (!plan) {
+      // No check named: the one furthest along for this rack, then the newest.
+      const rows = nbPlans.list({ rackId }) || [];
+      const best = rows.sort((a, b) => Number(b.status !== 'open') - Number(a.status !== 'open') || b.id - a.id)[0];
+      plan = best ? nbPlans.get(best.id) : null;
+    }
+    if (!plan) return res.status(404).json({ error: 'This rack has not been compared with the record yet.' });
+
+    let tickets = [];
+    try { tickets = approvalsStore.ticketsOf(plan.id) || []; } catch (_) { tickets = []; }
+    let siteName = null; let spaceName = null;
+    try {
+      const estate = require('./lib/estate');
+      const tenantRow = plan.tenantId != null ? estate.getTenant(plan.tenantId) : null;
+      siteName = tenantRow ? tenantRow.name : null;
+      const known = plan.tenantId != null ? estate.getRackByRackId(plan.tenantId, rackId) : null;
+      const space = known && known.space_id != null ? estate.getSpace(known.space_id) : null;
+      spaceName = space ? space.name : null;
+    } catch (_) { /* the report still stands without them */ }
+
+    const html = require('./lib/netbox/drift_report').build(plan, { tickets, siteName, spaceName });
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.removeHeader('X-Frame-Options');
+    if (req.query.download === '1') {
+      res.setHeader('Content-Disposition', `attachment; filename="drift-report-${String(plan.rackName || rackId).replace(/[^A-Za-z0-9._-]+/g, '-')}.html"`);
+    }
+    return res.send(html);
+  } catch (err) {
+    logger.error(`[drift-report] ${rackId}: ${err.message}`);
+    return res.status(500).json({ error: 'The drift report could not be built.' });
+  }
+});
+
 // Reachable two ways: a normal Authorization header (ProfilePage fetches
 // format=json via authFetch), or ?t=<report token> for the iframe. Either way
 // app.param('rackId') above has already authorised this rack — this route does

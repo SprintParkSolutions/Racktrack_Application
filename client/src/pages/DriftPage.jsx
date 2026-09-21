@@ -5,6 +5,8 @@ import { apiUrl, authFetch } from '../utils/api';
 import { useSmartBack } from '../hooks/useSmartBack';
 import ExternalLink from '../components/ExternalLink.jsx';
 import { driftCheckUrl } from '../utils/approvals.js';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import styles from './DriftPage.module.css';
 
 /**
@@ -216,6 +218,43 @@ export default function DriftPage() {
   const items = plan?.items || [];
   const changed = useMemo(() => items.filter((i) => i.decidable && !isHousekeeping(i)), [items]);
   const housekeeping = useMemo(() => items.some(isHousekeeping), [items]);
+
+  // The whole comparison, so the screen can say how much of the rack agrees and
+  // not only what does not. A box the scan saw on the shelf where the record has
+  // one is a match, and the record's own name for it is shown beside it; what
+  // the record holds that the photograph did not show is listed last, because a
+  // cable manager behind a wall of cables is expected and a missing switch is not.
+  const orphans = plan?.orphans || [];
+  const matching = useMemo(() => {
+    const byBox = new Map(orphans.filter((o) => o.seen && o.matchedBox).map((o) => [o.matchedBox, o]));
+    const differs = new Set(changed.map((i) => i.uid));
+    return items
+      .filter((i) => i.type === 'Device' && !differs.has(i.uid))
+      .map((i) => ({ item: i, record: byBox.get(i.uid) || null }))
+      .filter((m) => m.record || m.item.netboxId != null || ['noop', 'rebind'].includes(m.item.action));
+  }, [items, orphans, changed]);
+  const notSeen = useMemo(() => orphans.filter((o) => !o.seen), [orphans]);
+
+  // The drift report: one printable page of this comparison, to send or to
+  // attach to the incident. Opened with a short-lived link, because the app's
+  // own sign-in does not travel to the browser it opens in.
+  const [reportBusy, setReportBusy] = useState(false);
+  const openReport = async () => {
+    if (!plan?.id) return;
+    setReportBusy(true);
+    try {
+      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/report-token`));
+      const { token } = r.ok ? await r.json() : {};
+      const url = apiUrl(`/api/scan/${encodeURIComponent(rackId)}/drift-report?plan=${plan.id}${token ? `&t=${encodeURIComponent(token)}` : ''}`);
+      const full = /^https?:/.test(url) ? url : `${window.location.origin}${url}`;
+      if (Capacitor.isNativePlatform()) await Browser.open({ url: full });
+      else window.open(full, '_blank', 'noopener');
+    } catch (e) {
+      setError(e.message || 'The drift report could not be opened');
+    } finally {
+      setReportBusy(false);
+    }
+  };
   // What is ticked to go: everything that differs, less what the person unticked.
   const picked = useMemo(() => changed.filter((i) => !left.has(i.uid)), [changed, left]);
   const toggle = (uid) => setLeft((prev) => {
@@ -628,6 +667,16 @@ export default function DriftPage() {
         </div>
       )}
 
+      {/* The rack at a glance: how much agrees, how much does not, and what the
+          record holds that the photograph did not show. */}
+      {plan && !busy && compared && (
+        <div className={styles.glance} role="group" aria-label="Summary of the comparison">
+          <div><b className={styles.gOk}>{matching.length}</b><span>match</span></div>
+          <div><b className={changed.length ? styles.gWarn : undefined}>{changed.length}</b><span>different</span></div>
+          <div><b>{notSeen.length}</b><span>not seen</span></div>
+        </div>
+      )}
+
       {/* Who it goes to, when the record names somebody. Where it names nobody
           there is nothing to say: the admin chooses, as the admin always may,
           and a sentence about a missing contact read as a fault with the rack. */}
@@ -657,6 +706,10 @@ export default function DriftPage() {
           <Progress flow={flow} rackName={decided && (decided.rack.name || decided.rack.facilityId)} />
           {track}
         </div>
+      )}
+
+      {plan && !busy && changed.length > 0 && (
+        <h3 className={styles.group}>Different from your records <span>{changed.length}</span></h3>
       )}
 
       {plan && !busy && !sent && changed.length > 1 && (
@@ -721,6 +774,49 @@ export default function DriftPage() {
           );
         })}
       </ul>
+
+      {/* What agrees, and what the record holds that was not seen. Closed by
+          default: the differences are the job, and these are the context. */}
+      {plan && !busy && compared && matching.length > 0 && (
+        <details className={styles.groupBox}>
+          <summary><span>Matching your records</span><b>{matching.length}</b></summary>
+          <ul className={styles.rows}>
+            {matching.map(({ item, record }) => (
+              <li key={item.uid}>
+                <span className={styles.rowName}>{plainName(item.name, decided && (decided.rack.name || decided.rack.facilityId))}</span>
+                <span className={styles.rowNote}>{record ? record.name : 'In your records'}</span>
+                <span className={styles.dotOk} aria-label="matches" />
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {plan && !busy && compared && notSeen.length > 0 && (
+        <details className={styles.groupBox}>
+          <summary><span>In your records, not seen in the photo</span><b>{notSeen.length}</b></summary>
+          <p className={styles.groupNote}>
+            Often behind cables, or with no face to read. Nothing is removed from your records.
+          </p>
+          <ul className={styles.rows}>
+            {notSeen.map((o) => (
+              <li key={o.netboxId ?? o.name}>
+                <span className={styles.rowName}>{o.name}</span>
+                <span className={styles.rowNote}>{o.position != null ? `Shelf U${o.position}` : 'No shelf recorded'}</span>
+                <span className={styles.dotIdle} aria-label="not seen" />
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      {plan && !busy && compared && (
+        <div className={styles.reportRow}>
+          <button type="button" className={styles.secondaryBtn} onClick={openReport} disabled={reportBusy}>
+            {reportBusy ? 'Opening the report' : 'Drift report'}
+          </button>
+          <span className={styles.reportHint}>One page of this comparison, to send or attach to the incident.</span>
+        </div>
+      )}
 
       {plan && changed.length > 0 && !sent && (
         <div className={styles.footer}>
